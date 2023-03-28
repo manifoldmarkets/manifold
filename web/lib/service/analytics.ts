@@ -40,11 +40,14 @@ export async function track(eventName: string, eventProperties?: any) {
     if (eventProperties) console.log(eventName, eventProperties)
     else console.log(eventName)
   }
-
-  await Promise.all([
-    amplitude.track(eventName, eventProperties).promise,
-    saveUserEvent(userId, eventName, props),
-  ])
+  try {
+    await Promise.all([
+      amplitude.track(eventName, eventProperties).promise,
+      saveUserEvent(userId, eventName, props),
+    ])
+  } catch (e) {
+    console.log('error tracking event:', e)
+  }
 }
 
 // Convenience functions:

@@ -112,10 +112,13 @@ export function AuthProvider(props: {
 
           const [currentAuthUser, supabaseJwt] = await Promise.all([
             getUserAndPrivateUser(fbUser.uid),
-            getSupabaseToken(),
+            getSupabaseToken().catch((e) => {
+              console.error('Error getting supabase token', e)
+              return null
+            }),
           ])
-
-          updateSupabaseAuth(supabaseJwt.jwt)
+          // When testing on a mobile device, we'll be pointed at a local ip or ngrok address, so this will fail
+          if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
 
           if (!currentAuthUser.user || !currentAuthUser.privateUser) {
             const deviceToken = ensureDeviceToken()

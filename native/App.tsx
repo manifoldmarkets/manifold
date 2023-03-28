@@ -49,21 +49,24 @@ import { NativeShareData } from 'common/src/native-share-data'
 import { clearData, getData, storeData } from './lib/auth'
 
 // NOTE: URIs other than manifold.markets and localhost:3000 won't work for API requests due to CORS
-// const baseUri = 'https://bbe3-181-41-206-141.jp.ngrok.io'
+// this means no supabase jwt, placing bets, creating markets, etc.
+// const baseUri = 'http://192.168.0.74:3000/'
 const baseUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 const nativeQuery = `?nativePlatform=${Platform.OS}`
 const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
-  const [hasLoadedWebView, setHasLoadedWebView] = useState(false)
-  const [listeningToNative, setListeningToNative] = useState(false)
-  const [lastNotificationInMemory, setLastNotificationInMemory] = useState<
-    Notification | undefined
-  >()
   const webview = useRef<WebView>(null)
   const notificationResponseListener = useRef<Subscription>()
   useFonts({ ReadexPro_400Regular })
+
+  // This tracks if the webview has loaded its first page
+  const [hasLoadedWebView, setHasLoadedWebView] = useState(false)
+  // This tracks if the app has its nativeMessageListener set up
+  const [listeningToNative, setListeningToNative] = useState(false)
+  // Sometimes we're linked to a url but the webview has been killed by the OS. We save it here to reload it on reboot
+  const [lastLinkInMemory, setLastLinkInMemory] = useState<string | undefined>()
 
   // Auth
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
@@ -92,6 +95,12 @@ const App = () => {
   useEffect(() => {
     if (listeningToNative && fbUser) {
       // We use a timeout because sometimes the auth persistence manager is still undefined on the client side
+      // Seems my iPhone 12 mini can regularly handle a shorter timeout
+      setTimeout(() => {
+        log('Sending fbUser to webview:', fbUser.email)
+        communicateWithWebview('nativeFbUser', fbUser)
+      }, 100)
+      // My older android phone needs a bit longer
       setTimeout(() => {
         log('Sending fbUser to webview:', fbUser.email)
         communicateWithWebview('nativeFbUser', fbUser)
@@ -112,7 +121,7 @@ const App = () => {
   const [backgroundColor, setBackgroundColor] = useState('rgba(255,255,255,1)')
   const [theme, setTheme] = useState<'dark' | 'light'>('light')
 
-  const setUrlWithNativeQuery = (endpoint?: string) => {
+  const setEndpointWithNativeQuery = (endpoint?: string) => {
     const newUrl = baseUri + (endpoint ?? '/home') + nativeQuery
     log('Setting new url:', newUrl)
     // React native doesn't come with Url, so we may want to use a library
@@ -145,8 +154,8 @@ const App = () => {
         'notification',
         response.notification.request.content.data
       )
-      setLastNotificationInMemory(notification)
-    } else setUrlWithNativeQuery(getSourceUrl(notification))
+      setLastLinkInMemory(getSourceUrl(notification))
+    } else setEndpointWithNativeQuery(getSourceUrl(notification))
   }
 
   useEffect(() => {
@@ -154,19 +163,19 @@ const App = () => {
       'Running lastNotificationInMemory effect, has loaded webview:',
       hasLoadedWebView
     )
-    log('last notification in memory:', lastNotificationInMemory)
+    log('last notification in memory:', lastLinkInMemory)
     // If there's a notification in memory and the webview has not loaded, set it as the url to load
-    if (lastNotificationInMemory && !hasLoadedWebView) {
+    if (lastLinkInMemory && !hasLoadedWebView) {
       log(
         'Setting url to load from last notification in memory:',
-        lastNotificationInMemory
+        lastLinkInMemory
       )
-      setUrlWithNativeQuery(getSourceUrl(lastNotificationInMemory))
+      setEndpointWithNativeQuery(lastLinkInMemory)
     }
-    if (lastNotificationInMemory) {
+    if (lastLinkInMemory) {
       // Delete the last notification in memory after 3 seconds
       const timeout = setTimeout(() => {
-        setLastNotificationInMemory(undefined)
+        setLastLinkInMemory(undefined)
         log('Cleared last notification in memory')
       }, 3000)
       return () => {
@@ -174,7 +183,7 @@ const App = () => {
         log('Cleared last notification in memory timeout')
       }
     }
-  }, [lastNotificationInMemory, hasLoadedWebView])
+  }, [lastLinkInMemory, hasLoadedWebView])
 
   useEffect(() => {
     // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
@@ -218,8 +227,10 @@ const App = () => {
           queryParams
         )}`
       )
-      communicateWithWebview('link', { url: path ? path : '/' })
-      // If we don't clear the url, we won't reopen previously opened links
+      const url = path ? path : '/'
+      communicateWithWebview('link', { url })
+      setLastLinkInMemory(url)
+      // If we don't clear the url, we'll reopen previously opened links
       const clearUrlCacheEvent = {
         hostname: 'manifold.markets',
         url: 'blank',
@@ -380,7 +391,6 @@ const App = () => {
   }
 
   const signOutUsers = async (errorMessage: string) => {
-    setFbUser(null)
     try {
       await auth.signOut()
     } catch (err) {
@@ -389,6 +399,7 @@ const App = () => {
         extra: { message: errorMessage },
       })
     }
+    setFbUser(null)
     await clearData('user').catch((err) => {
       log('Error clearing user data', err)
       Sentry.Native.captureException(err, {
@@ -401,7 +412,7 @@ const App = () => {
     type: nativeToWebMessageType,
     data: object
   ) => {
-    log('Sending message to webview', type, 'is listening:', listeningToNative)
+    log('Sending message to webview:', type, 'is listening:', listeningToNative)
     webview.current?.postMessage(
       JSON.stringify({
         type,
@@ -474,7 +485,7 @@ const App = () => {
             source={{ uri: urlToLoad }}
             ref={webview}
             onError={(e) =>
-              handleWebviewError(e, () => setUrlWithNativeQuery())
+              handleWebviewError(e, () => setEndpointWithNativeQuery())
             }
             renderError={(e) => handleRenderError(e, width, height)}
             // On navigation state change changes on every url change
@@ -504,7 +515,7 @@ const App = () => {
           />
         </View>
       </SafeAreaView>
-      {/*<ExportLogsButton />*/}
+      <ExportLogsButton />
     </>
   )
 }
