@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/core'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { Group, MAX_GROUP_NAME_LENGTH, PrivacyStatusType } from 'common/group'
+import { MAX_GROUP_NAME_LENGTH, PrivacyStatusType } from 'common/group'
 import { User } from 'common/user'
 import { useRouter } from 'next/router'
 import { useState } from 'react'

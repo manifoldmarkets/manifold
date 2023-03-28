@@ -1,12 +1,8 @@
-import { Group, groupPath } from 'common/group'
-import { NextRouter, useRouter } from 'next/router'
+import { groupPath } from 'common/group'
+import { useRouter } from 'next/router'
 import { useEffect } from 'react'
-import Lottie from 'react-lottie'
-import { Col } from 'web/components/layout/col'
-import { Page } from 'web/components/layout/page'
 import { getGroup } from 'web/lib/supabase/group'
 import { LoadingNewThing } from 'web/pages/loading/[contractId]'
-import loading from '../../../public/lottie/loading-icon.json'
 
 export async function getStaticProps(props: { params: { groupId: string } }) {
   const { groupId } = props.params

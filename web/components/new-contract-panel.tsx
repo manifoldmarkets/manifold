@@ -8,8 +8,6 @@ import clsx from 'clsx'
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
-  Contract,
-  contractPath,
   outcomeType,
   visibility,
 } from 'common/contract'

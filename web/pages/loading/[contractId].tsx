@@ -1,12 +1,10 @@
 import { Contract, contractPath } from 'common/contract'
-import { Group, groupPath } from 'common/group'
-import { NextRouter, useRouter } from 'next/router'
+import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import Lottie from 'react-lottie'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { getContract } from 'web/lib/supabase/contracts'
-import { getGroup } from 'web/lib/supabase/group'
 import loading from '../../public/lottie/loading-icon.json'
 
 export async function getStaticProps(props: {
