@@ -37,39 +37,8 @@ import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { QfExplainer } from './contract/qf-overview'
 
-import { Contract, contractPath } from 'common/contract'
-import { debounce } from 'lodash'
-import { useRouter } from 'next/router'
-import { useRef } from 'react'
-import { getContract } from 'web/lib/supabase/contracts'
-import { LOADING_PING_INTERVAL } from 'web/pages/group/loading/[groupId]'
-import LoadingNewContract from './contract/waiting-for-supabase-button'
+import { Contract } from 'common/contract'
 import WaitingForSupabaseButton from './contract/waiting-for-supabase-button'
-
-// export default function LoadingNewContract(props: { contractId: string }) {
-//   const { contractId } = props
-//   const router = useRouter()
-//   const waitForContract = useRef(
-//     debounce(fetchContract, LOADING_PING_INTERVAL)
-//   ).current
-
-//   async function fetchContract() {
-//     const newContract = await getContract(contractId)
-//     if (newContract) {
-//       console.log(newContract as Contract)
-//       router.replace(contractPath(newContract as Contract)).catch((e) => {
-//         console.log(e)
-//       })
-//     } else {
-//       waitForContract()
-//     }
-//   }
-//   useEffect(() => {
-//     waitForContract()
-//   }, [])
-
-//   return <LoadingNewThing thing={'contract'} />
-// }
 
 export type NewQuestionParams = {
   groupId?: string

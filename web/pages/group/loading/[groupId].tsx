@@ -37,7 +37,7 @@ export default function LoadingNewGroup(props: { groupId: string }) {
         console.log(e)
       })
     } else {
-      fetchGroup()
+      waitForGroup()
     }
   }
 
