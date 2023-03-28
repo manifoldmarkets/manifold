@@ -133,10 +133,9 @@ export function QuestsModal(props: {
               BETTING_STREAK_BONUS_MAX
             )}
           />
-          <Row className={'text-primary-700'}>Weekly</Row>
           <QuestRow
             emoji={'📤'}
-            title={`Share ${shareStatus.requiredCount} markets this week`}
+            title={`Share ${shareStatus.requiredCount} market today`}
             complete={shareStatus.currentCount >= shareStatus.requiredCount}
             status={`(${shareStatus.currentCount}/${shareStatus.requiredCount})`}
             reward={QUEST_DETAILS.SHARES.rewardAmount}
@@ -144,6 +143,7 @@ export function QuestsModal(props: {
               'Share a market, comment, group, or your referral link with a friend!'
             }
           />
+          <Row className={'text-primary-700'}>Weekly</Row>
           <QuestRow
             emoji={'📈'}
             title={`Create ${createStatus.requiredCount} market this week`}

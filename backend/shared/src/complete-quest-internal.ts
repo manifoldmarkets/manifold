@@ -157,7 +157,7 @@ const awardQuestBonus = async (
       .where('category', '==', 'QUEST_REWARD')
       .where('data.questType', '==', questType)
       .where('data.questCount', '==', newCount)
-      .where('createdTime', '>=', dayjs().subtract(1, 'day').valueOf())
+      .where('createdTime', '>=', dayjs().startOf('day').valueOf())
       .limit(1)
     const previousTxn = (await previousTxns.get()).docs[0]
     if (previousTxn) {

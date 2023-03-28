@@ -23,9 +23,9 @@ export const QUEST_DETAILS: Record<
     title: 'Prediction Streak',
   },
   SHARES: {
-    requiredCount: 3,
-    rewardAmount: 25,
-    scoreId: 'sharesThisWeek',
+    requiredCount: 1,
+    rewardAmount: 5,
+    scoreId: 'sharesToday',
     title: 'Sharing',
   },
   MARKETS_CREATED: {
@@ -37,7 +37,7 @@ export const QUEST_DETAILS: Record<
   ARCHAEOLOGIST: {
     requiredCount: 1,
     rewardAmount: 25,
-    scoreId: 'oldContractsBetOn',
+    scoreId: 'oldContractsBetOnThisWeek',
     title: 'Archaeologist',
   },
 }
