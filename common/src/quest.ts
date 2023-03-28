@@ -4,6 +4,7 @@ export const QUEST_TYPES = [
   'SHARES',
   'MARKETS_CREATED',
   'ARCHAEOLOGIST',
+  'REFERRALS',
 ] as const
 export type QuestType = typeof QUEST_TYPES[number]
 
@@ -39,6 +40,12 @@ export const QUEST_DETAILS: Record<
     rewardAmount: 25,
     scoreId: 'oldContractsBetOnThisWeek',
     title: 'Archaeologist',
+  },
+  REFERRALS: {
+    requiredCount: 1,
+    rewardAmount: 250,
+    scoreId: 'referralsThisWeek',
+    title: 'Referrals',
   },
 }
 export const QUEST_SCORE_IDS = QUEST_TYPES.map((t) => QUEST_DETAILS[t].scoreId)

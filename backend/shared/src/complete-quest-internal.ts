@@ -22,6 +22,7 @@ import { SupabaseClient } from 'common/supabase/utils'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { sortBy } from 'lodash'
+import { getReferralCount } from 'common/supabase/referrals'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -31,7 +32,7 @@ dayjs.tz.setDefault('America/Los_Angeles')
 const START_OF_WEEK = dayjs().startOf('week').add(1, 'day').valueOf()
 const START_OF_DAY = dayjs().startOf('day').valueOf()
 
-type QUESTS_INTERNALLY_CALCULATED = 'MARKETS_CREATED' | 'SHARES'
+type QUESTS_INTERNALLY_CALCULATED = 'MARKETS_CREATED' | 'SHARES' | 'REFERRALS'
 export const completeCalculatedQuest = async (
   user: User,
   questType: 'SHARES'
@@ -60,6 +61,24 @@ export const completeCalculatedQuestFromTrigger = async (
     count,
     idempotencyKey
   )
+}
+
+export const completeReferralsQuest = async (
+  user: User,
+  idempotencyKey: string
+) => {
+  const db = createSupabaseClient()
+  const questDetails = QUEST_DETAILS['REFERRALS']
+  const count = await getCurrentCountForQuest(user, 'REFERRALS', db)
+  await setScoreValue(
+    user.id,
+    QUEST_SET_ID,
+    questDetails.scoreId,
+    count,
+    db,
+    idempotencyKey
+  )
+  // onCreateBet handles the referral payout
 }
 
 export const completeArchaeologyQuest = async (
@@ -142,6 +161,8 @@ const getCurrentCountForQuest = async (
       Date.now(),
       db
     )
+  } else if (questType === 'REFERRALS') {
+    return await getReferralCount(user.id, START_OF_WEEK, db)
   } else return 0
 }
 
