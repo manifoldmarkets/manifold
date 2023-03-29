@@ -30,7 +30,7 @@ import {
 import { Contract } from '../firebase/contracts'
 import { getBets, getTotalBetCount } from './bets'
 import { getAllComments } from './comments'
-import { db } from './db'
+import { adminDb, db } from './db'
 
 export async function getContractIds(contractIds: string[]) {
   const { data } = await run(
@@ -115,9 +115,13 @@ export async function getYourTrendingContracts(
   return data?.map((d) => (d as any).data as Contract)
 }
 
-export async function getContractFromSlug(contractSlug: string) {
+export async function getContractFromSlug(
+  contractSlug: string,
+  permission?: 'admin'
+) {
+  const client = permission == 'admin' ? adminDb : db
   const { data: contract } = await run(
-    db.from('contracts').select('data').eq('slug', contractSlug)
+    client.from('contracts').select('data').eq('slug', contractSlug)
   )
   if (contract && contract.length > 0) {
     return (contract[0] as unknown as { data: Contract }).data
