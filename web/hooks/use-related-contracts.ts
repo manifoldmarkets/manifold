@@ -37,7 +37,7 @@ export const useRelatedMarkets = (
       const groupSlugsToUse = contract.groupSlugs.filter(
         (slug) => !['spam', 'improperly-resolved'].includes(slug)
       )
-      const [{ data: groupSlugData }, { data: creatorData }, relatedData] =
+      const [{ data: groupSlugData }, { data: creatorData }] =
         await Promise.all([
           db.rpc('search_contracts_by_group_slugs' as any, {
             group_slugs: groupSlugsToUse,
@@ -50,23 +50,12 @@ export const useRelatedMarkets = (
             lim: GROUPS_PAGE_SIZE,
             start: creatorPage.current * GROUPS_PAGE_SIZE,
           }),
-          getRelatedContracts(
-            contract,
-            RELATED_PAGE_SIZE,
-            savedContracts.map((c) => c.id)
-          ),
         ])
 
       if (groupSlugData) setContracts(groupSlugData, groupsPage)
       if (creatorData) setContracts(creatorData, creatorPage)
-      // Append related contracts last as they tend to be less relevant.
-      if (relatedData) setContracts(relatedData, relatedPage)
     } else {
-      const contracts = await getRelatedContracts(
-        contract,
-        RELATED_PAGE_SIZE,
-        savedContracts.map((c) => c.id)
-      )
+      const contracts = await getRelatedContracts(contract, RELATED_PAGE_SIZE)
       setContracts(contracts, relatedPage)
     }
   })
@@ -78,18 +67,12 @@ export const useRelatedMarkets = (
   return { contracts: savedContracts, loadMore }
 }
 
-export async function getRelatedContracts(
-  contract: Contract,
-  count = 10,
-  excludedContractIds: string[] = []
-) {
-  const { data } = await db
-    .from('related_contracts')
-    .select('*')
-    .filter('from_contract_id', 'eq', contract.id)
-    .not('contract_id', 'in', `(${excludedContractIds.join(',')})`)
-    .order('distance', { ascending: true })
-    .limit(count)
-  const contracts = (data ?? []).map((c) => c.data)
+export async function getRelatedContracts(contract: Contract, count = 10) {
+  const { data } = await db.rpc('closest_contract_embeddings', {
+    input_contract_id: contract.id,
+    match_count: count,
+    similarity_threshold: 0.7,
+  })
+  const contracts = (data ?? []).map((c) => (c as any).data)
   return contracts
 }
