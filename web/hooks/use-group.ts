@@ -23,7 +23,6 @@ import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { limit, query } from 'firebase/firestore'
 import { useTrendingContracts } from './use-contracts'
 import {
-  inMemoryStore,
   storageStore,
   usePersistentState,
 } from './use-persistent-state'
