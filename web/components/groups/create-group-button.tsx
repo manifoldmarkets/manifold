@@ -4,6 +4,7 @@ import { MAX_GROUP_NAME_LENGTH, PrivacyStatusType } from 'common/group'
 import { User } from 'common/user'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { useAdmin } from 'web/hooks/use-admin'
 import { createGroup } from 'web/lib/firebase/api'
 import { ColorType } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
@@ -164,7 +165,7 @@ export function CreateGroupButton(props: {
               onClick={() => setPrivacy('curated')}
               size="sm"
             />
-            {goToGroupOnSubmit && (
+            {goToGroupOnSubmit && useAdmin() && (
               <PrivacyStatusView
                 viewStatus={'private'}
                 isSelected={privacy == 'private'}
