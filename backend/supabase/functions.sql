@@ -168,10 +168,25 @@ create or replace function get_recommended_contracts_embeddings(uid text, n int,
   immutable parallel safe
   language sql
 as $$
-with available_contracts as (
-  select user_trending_contract.contract_id, distance, popularity_score, created_time, close_time from user_trending_contract
-  where user_trending_contract.user_id = uid
-    and not exists (
+  with user_embedding as (
+    select interest_embedding
+    from user_embeddings
+    where user_id = uid
+  ), closest_contracts as (
+    select contract_id, (select interest_embedding from user_embedding) <=> ce.embedding as distance
+    from contract_embeddings as ce
+    order by (select interest_embedding from user_embedding) <=> ce.embedding
+    limit 5000
+  ), available_contracts as (
+    select
+      contract_id,
+      distance,
+      (lpc.data->>'popularityScore')::real as popularity_score,
+      lpc.created_time,
+      lpc.close_time
+    from closest_contracts
+    join listed_open_contracts lpc on lpc.id = contract_id
+    where not exists (
       select 1 from unnest(excluded_contract_ids) as w
       where w = contract_id
     )
@@ -188,7 +203,7 @@ with available_contracts as (
       select 1
       from user_seen_markets
       where user_seen_markets.user_id = uid
-        and user_seen_markets.contract_id = user_trending_contract.contract_id
+        and user_seen_markets.contract_id = closest_contracts.contract_id
     )
     -- That has not been viewed as a card recently.
     and not exists(

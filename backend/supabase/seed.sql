@@ -461,7 +461,7 @@ create policy "admin write access" on contract_embeddings
 
 create index if not exists contract_embeddings_embedding on contract_embeddings
   using ivfflat (embedding vector_cosine_ops)
-  with (lists = 100);
+  with (lists = 20);
 
 begin;
   drop publication if exists supabase_realtime;
