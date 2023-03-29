@@ -54,6 +54,7 @@ export async function updateUserInterestEmbedding(
   userId: string
 ) {
   await pg.task('update-user-embedding', async (pg) => {
+    // TODO: load user_topics embedding and average them with interest embedding
     const interestedContractIds = await getInterestedContractIds(pg, userId)
     const interestEmbedding = await getAverageContractEmbedding(
       pg,

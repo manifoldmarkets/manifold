@@ -8,7 +8,6 @@ import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
-import { useMemberGroupIds } from 'web/hooks/use-group'
 import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
 
 export function TopicSelectorDialog(props: {
@@ -20,19 +19,9 @@ export function TopicSelectorDialog(props: {
 
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
 
-  // TODO: replace group following with user interst vector stuff
-  const memberGroupIds = useMemberGroupIds(user)
   useEffect(() => {
-    if (!memberGroupIds || !memberGroupIds.length) return
-    if (selectedTopics.length) return
-
-    const newTopics = Object.keys(TOPICS_TO_SUBTOPICS)
-      .flatMap(getSubtopics)
-      .filter(([, , groupId]) => memberGroupIds?.includes(groupId))
-      .map(([, subtopic]) => subtopic)
-
-    setSelectedTopics(uniq([...selectedTopics, ...newTopics]))
-  }, [memberGroupIds, selectedTopics])
+    // TODO save selected topics to user_topics table
+  }, [selectedTopics])
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -62,10 +51,12 @@ export function TopicSelectorDialog(props: {
                           setSelectedTopics(
                             selectedTopics.filter((t) => t !== subtopic)
                           )
-                          if (groupId && user) leaveGroup(groupId, user.id)
+                          if (topic === '👥 Communities' && groupId && user)
+                            leaveGroup(groupId, user.id)
                         } else {
                           setSelectedTopics(uniq([...selectedTopics, subtopic]))
-                          if (groupId && user) joinGroup(groupId, user.id)
+                          if (topic === '👥 Communities' && groupId && user)
+                            joinGroup(groupId, user.id)
                         }
                       }}
                       className="bg-ink-100 mr-1 mb-2 max-w-[16rem] truncate"

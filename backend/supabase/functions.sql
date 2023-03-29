@@ -618,6 +618,8 @@ as $$
   limit match_count;
 $$;
 
+-- TODO create a function to compute average user topic embedding from an array of topics and save to user_topics table.
+
 create or replace function firebase_uid()
   returns text
   language sql
