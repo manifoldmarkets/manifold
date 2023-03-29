@@ -263,6 +263,7 @@ function EditableCloseDate(props: {
 
   const isSameYear = dayJsCloseTime.isSame(dayJsNow, 'year')
   const isSameDay = dayJsCloseTime.isSame(dayJsNow, 'day')
+  const isSoon = dayJsCloseTime.diff(dayJsNow, 'month') < 4
 
   let newCloseTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -367,9 +368,9 @@ function EditableCloseDate(props: {
             )}{' '}
             {isSameDay
               ? fromNow(closeTime)
-              : isSameYear
+              : isSameYear || isSoon
               ? dayJsCloseTime.format('MMM D')
-              : dayJsCloseTime.format('MMM D, YYYY')}
+              : dayJsCloseTime.format('YYYY')}
           </Row>
         </DateTimeTooltip>
         {editable && <PencilIcon className="h-4 w-4" />}
