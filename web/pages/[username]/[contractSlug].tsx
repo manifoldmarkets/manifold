@@ -94,7 +94,7 @@ export async function getStaticProps(ctx: {
   const { contractSlug } = ctx.params
   // Fetched from Firebase to avoid replicator delay on first create.
   // TODO: Switch to Supabase once contracts are created in supabase.
-  const contract = (await getContractFromSlug(contractSlug)) ?? null
+  const contract = (await getContractFromSlug(contractSlug, 'admin')) ?? null
 
   if (contract === null) {
     return {
