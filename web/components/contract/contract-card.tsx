@@ -667,7 +667,7 @@ function ReasonChosen(props: { contract: Contract }) {
 
   return (
     <Row className="gap-3">
-      <div className="flex items-center gap-1 font-semibold">
+      <div className="flex items-center gap-1">
         {reason}
         {reason === 'New' && <StarIcon className="h-4 w-4" />}
       </div>
