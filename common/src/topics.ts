@@ -186,7 +186,7 @@ const GROUP_IDs: { [key: string]: string } = {
 
 const cleanTopic = (topic: string) =>
   topic
-    // remove non ascii
+    // eslint-disable-next-line no-control-regex
     .replace(/[^\x00-\x7F]/g, '')
     .trim()
 
