@@ -31,6 +31,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { useStoreItems } from './use-store'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -213,12 +214,9 @@ export function useGroups(groupIds: string[]) {
 }
 
 export function useIsGroupMember(groupSlug: string) {
-  const [isMember, setIsMember] = usePersistentState<any | undefined>(
+  const [isMember, setIsMember] = usePersistentInMemoryState<any | undefined>(
     undefined,
-    {
-      key: 'is-member-' + groupSlug,
-      store: inMemoryStore(),
-    }
+    'is-member-' + groupSlug
   )
   const isAuthorized = useIsAuthorized()
   useEffect(() => {
