@@ -139,11 +139,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     <Row
       ref={commentRef}
       id={comment.id}
-      className={clsx(
-        commentKind,
-        'gap-2',
-        highlighted ? 'bg-primary-50' : 'hover:bg-canvas-50'
-      )}
+      className={clsx(commentKind, 'gap-2', highlighted ? 'bg-primary-50' : '')}
     >
       <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
       <Col className="w-full">
@@ -292,10 +288,7 @@ export const FeedComment = memo(function FeedComment(props: {
     <Row
       ref={commentRef}
       id={comment.id}
-      className={clsx(
-        'ml-9 gap-2 ',
-        highlighted ? 'bg-primary-50' : 'hover:bg-canvas-50'
-      )}
+      className={clsx('ml-9 gap-2 ', highlighted ? 'bg-primary-50' : '')}
     >
       <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
       <Col className="w-full">
