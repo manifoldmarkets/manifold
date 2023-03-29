@@ -17,37 +17,45 @@ async function backfillSupabaseQuests() {
     console.log(`Found ${users.length} users`)
     const db = createSupabaseClient()
     let count = 0
-    // calculate how many markets they created this week
+    const chunk = 2000
+    const start = 21000
+    const end = start + chunk
+    console.log(`Processing users from ${start} to ${end}`)
     await Promise.all(
-      users.map(async (user) => {
-        const marketsCreatedCount = await getRecentContractsCount(
-          user.id,
-          START_OF_WEEK,
-          db
-        )
-        if (marketsCreatedCount > 0) {
-          await setQuestScoreValue(
+      users.slice(start, end).map(async (user) => {
+        try {
+          const marketsCreatedCount = await getRecentContractsCount(
             user.id,
-            QUEST_DETAILS['MARKETS_CREATED'].scoreId,
-            marketsCreatedCount,
+            START_OF_WEEK,
             db
           )
-        }
-        const referralsCount = await getReferralCount(
-          user.id,
-          START_OF_WEEK,
-          db
-        )
-        if (referralsCount > 0) {
-          await setQuestScoreValue(
+          if (marketsCreatedCount > 0) {
+            await setQuestScoreValue(
+              user.id,
+              QUEST_DETAILS['MARKETS_CREATED'].scoreId,
+              marketsCreatedCount,
+              db
+            )
+          }
+          const referralsCount = await getReferralCount(
             user.id,
-            QUEST_DETAILS['REFERRALS'].scoreId,
-            referralsCount,
+            START_OF_WEEK,
             db
           )
+          if (referralsCount > 0) {
+            await setQuestScoreValue(
+              user.id,
+              QUEST_DETAILS['REFERRALS'].scoreId,
+              referralsCount,
+              db
+            )
+          }
+          count++
+          if (count % 100 === 0) console.log(`Processed ${count} users`)
+        } catch (e) {
+          console.error(`Error processing user ${user.id}`)
+          console.error(e)
         }
-        count++
-        if (count % 100 === 0) console.log(`Processed ${count} users`)
       })
     )
   } catch (e) {
