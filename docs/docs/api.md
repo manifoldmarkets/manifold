@@ -289,9 +289,9 @@ Requires no authorization.
 Get positions information about a single market by ID. 
 
 Parameters:
-- `sort` - Optional. The field to sort results by. Default: `profit`. Options: `shares` or `profit`,
-- `top` - Optional. The number of top positions (sorted by `sort`) to return. Default: `null`.
-- `bottom` - Optional. The number of bottom positions (sorted by `sort`) to return. Default: `null`.
+- `order` - Optional. The field to order results by. Default: `profit`. Options: `shares` or `profit`,
+- `top` - Optional. The number of top positions (ordered by `order`) to return. Default: `null`.
+- `bottom` - Optional. The number of bottom positions (ordered by `order`) to return. Default: `null`.
 - `userId` - Optional. The user ID to query by. Default: `null`. If provided, only the position for this user will be returned.
 
 
