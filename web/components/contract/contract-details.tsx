@@ -277,24 +277,11 @@ function EditableCloseDate(props: {
     }
     if (!newCloseTime) return
 
-    if (newCloseTime === closeTime) setIsEditingCloseTime(false)
-    else {
-      const content = contract.description
-      const editor = new Editor({ content, extensions: editorExtensions() })
-      editor.commands.focus('end')
-
-      // const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
-      // insertContent(
-      //   editor,
-      //   `<p></p><p>Close date updated to ${formattedCloseDate}</p>`
-      // )
-
+    setIsEditingCloseTime(false)
+    if (newCloseTime !== closeTime) {
       updateContract(contract.id, {
         closeTime: newCloseTime,
-        description: editor.getJSON(),
       })
-
-      setIsEditingCloseTime(false)
     }
   }
 
