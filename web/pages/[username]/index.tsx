@@ -220,14 +220,11 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
             isCurrentUser={isCurrentUser}
           />
           {user.bio && (
-            <>
-              <div className="sm:text-md mt-2 text-sm">
-                <Linkify text={user.bio}></Linkify>
-              </div>
-              <Spacer h={2} />
-            </>
+            <div className="sm:text-md mt-2 text-sm">
+              <Linkify text={user.bio}></Linkify>
+            </div>
           )}
-          <Row className="flex-wrap items-center gap-2 sm:gap-4">
+          <Row className="mt-2 flex-wrap items-center gap-2 sm:gap-4">
             {user.website && (
               <SiteLink
                 href={
