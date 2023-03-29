@@ -7,7 +7,6 @@ import {
   PlusIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { Row } from '../layout/row'
@@ -32,7 +31,6 @@ import { GroupLink, groupPath } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
-import { editorExtensions } from '../widgets/editor'
 import { LikeButton } from './like-button'
 
 export type ShowTime = 'resolve-date' | 'close-date'
