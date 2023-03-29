@@ -57,6 +57,7 @@ export function CreateGroupButton(props: {
   const [errorText, setErrorText] = useState('')
   const [privacy, setPrivacy] = useState<PrivacyStatusType>('public')
   const router = useRouter()
+  const isManifoldAdmin = useAdmin()
 
   const editor = useTextEditor({
     key: 'create a group',
@@ -165,7 +166,7 @@ export function CreateGroupButton(props: {
               onClick={() => setPrivacy('curated')}
               size="sm"
             />
-            {goToGroupOnSubmit && useAdmin() && (
+            {goToGroupOnSubmit && isManifoldAdmin && (
               <PrivacyStatusView
                 viewStatus={'private'}
                 isSelected={privacy == 'private'}
