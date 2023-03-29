@@ -1,6 +1,7 @@
 import React from 'react'
 import { useRouter } from 'next/router'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import Image from 'next/image'
 
 export const SignInButton = () => {
   const router = useRouter()
@@ -25,7 +26,7 @@ export const GoogleSignInButton = (props: { onClick: () => any }) => {
       onClick={props.onClick}
       className="flex items-center whitespace-nowrap rounded-md bg-white p-2 text-sm shadow-sm outline-2 outline-indigo-200 hover:outline dark:bg-blue-500"
     >
-      <img src="/google-32x32.png" alt="" className="h-6 w-6" />
+      <Image src="/google-32x32.png" alt="" width={24} height={24} />
       <span className="w-3 shrink" />
       <span>Sign in with Google</span>
     </button>
