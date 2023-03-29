@@ -4,6 +4,7 @@ import { Col } from '../layout/col'
 import * as unlocking from '../../public/lottie/unlocking-icon.json'
 import Lottie from 'react-lottie'
 import { GroupPageContent } from 'web/pages/group/[...slugs]'
+import { Title } from '../widgets/title'
 
 export function LoadingPrivateThing() {
   return (
@@ -45,7 +46,7 @@ export function InaccessiblePrivateThing(props: { thing: string }) {
 export function PrivateGroupPage(props: { slugs: string[] }) {
   const { slugs } = props
   const isMember = useIsGroupMember(slugs[0])
-  if (isMember === undefined) {
+  if (isMember === undefined || isMember === null) {
     return <LoadingPrivateThing />
   }
   if (isMember === false) {
