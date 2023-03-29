@@ -5,9 +5,16 @@ create or replace view public_open_contracts as (
        and close_time > now() + interval '10 minutes'
 );
 
+create or replace view listed_open_contracts as (
+  select * from contracts
+  where resolution_time is null
+       and visibility != 'unlisted'
+       and close_time > now() + interval '10 minutes'
+);
+
 create or replace view trending_contracts as (
-  select * from public_open_contracts
-  where (public_open_contracts.data->>'popularityScore')::real >= 0
+  select * from listed_open_contracts
+  where (listed_open_contracts.data->>'popularityScore')::real >= 0
   order by (data->>'popularityScore')::numeric desc
 );
 
@@ -28,7 +35,7 @@ create or replace view related_contracts as (
     distance,
     data
   from contract_distance
-  join public_open_contracts on id = id2
+  join listed_open_contracts on id = id2
   where id1 != id2
 );
 
