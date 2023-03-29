@@ -1,20 +1,3 @@
-const cleanTopic = (topic: string) => topic.substring(3)
-
-const topicsToIgnore = ['Communities', 'Knowledge']
-
-export const getSubtopics = (topic: string) =>
-  TOPICS_TO_SUBTOPICS[topic]
-    .concat(topic)
-    .map(
-      (subtopicWithEmoji) =>
-        [
-          subtopicWithEmoji,
-          cleanTopic(subtopicWithEmoji),
-          GROUP_IDs[cleanTopic(subtopicWithEmoji)],
-        ] as const
-    )
-    .filter(([, subtopic]) => !topicsToIgnore.includes(subtopic))
-
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
   '💻 Technology': [
     '🤖 AI',
@@ -97,10 +80,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🎰 Wall Street Bets',
   ],
 }
-
-export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
-  .flatMap(getSubtopics)
-  .map(([, subtopic]) => subtopic)
 
 const GROUP_IDs: { [key: string]: string } = {
   Politics: 'UCnpxVUdLOZYgoMsDlHD',
@@ -204,3 +183,28 @@ const GROUP_IDs: { [key: string]: string } = {
   SBF: 'svyYtbhviU1lv8aMS9E1',
   'GPT-4 speculation': 'SWiC5KtQnc48oWmaoAZA',
 }
+
+const cleanTopic = (topic: string) =>
+  topic
+    // remove non ascii
+    .replace(/[^\x00-\x7F]/g, '')
+    .trim()
+
+const topicsToIgnore = ['Communities', 'Knowledge']
+
+export const getSubtopics = (topic: string) =>
+  TOPICS_TO_SUBTOPICS[topic]
+    .concat(topic)
+    .map(
+      (subtopicWithEmoji) =>
+        [
+          subtopicWithEmoji,
+          cleanTopic(subtopicWithEmoji),
+          GROUP_IDs[cleanTopic(subtopicWithEmoji)],
+        ] as const
+    )
+    .filter(([, subtopic]) => !topicsToIgnore.includes(subtopic))
+
+export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
+  .flatMap(getSubtopics)
+  .map(([, subtopic]) => subtopic)
