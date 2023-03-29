@@ -244,18 +244,14 @@ const MainContent = () => {
 
 export const ContractsSection = memo(function ContractsSection(props: {
   contracts: Contract[]
-  label: string
-  icon: string
   className?: string
 }) {
   const { contracts, className } = props
   return (
-    <Col className={className}>
-      <Col className="max-w-2xl">
-        {contracts.map((contract) => (
-          <ContractCardNew key={contract.id} contract={contract} />
-        ))}
-      </Col>
+    <Col className={clsx('max-w-2xl', className)}>
+      {contracts.map((contract) => (
+        <ContractCardNew key={contract.id} contract={contract} />
+      ))}
     </Col>
   )
 })

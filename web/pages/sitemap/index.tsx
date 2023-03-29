@@ -11,6 +11,7 @@ import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-co
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
+import { PrivacyAndTerms } from 'web/components/privacy-terms'
 import { SEO } from 'web/components/SEO'
 import { Card } from 'web/components/widgets/card'
 import { Title } from 'web/components/widgets/title'
@@ -239,6 +240,7 @@ export default function LabsPage() {
             href="/tournaments"
           />
         </Masonry>
+        <PrivacyAndTerms />
       </Col>
     </Page>
   )

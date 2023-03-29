@@ -27,6 +27,7 @@ import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-co
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { LogoSEO } from 'web/components/LogoSEO'
 import { db } from 'web/lib/supabase/db'
+import { PrivacyAndTerms } from 'web/components/privacy-terms'
 
 const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
@@ -110,12 +111,12 @@ export default function Home(props: {
 
         <ContractsSection
           className="self-center"
-          label={'Trending'}
           contracts={trendingContracts}
-          icon={'🔥'}
         />
 
         <TestimonialsPanel />
+
+        <PrivacyAndTerms />
       </Col>
     </Page>
   )
