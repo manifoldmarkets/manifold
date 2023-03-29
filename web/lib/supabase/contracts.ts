@@ -17,7 +17,7 @@ import { filterDefined } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import { compressPoints, pointsToBase64 } from 'common/util/og'
 import { HistoryPoint } from 'web/components/charts/generic-charts'
-import { getInitialRelatedMarkets } from 'web/hooks/use-related-contracts'
+import { getRelatedContracts } from 'web/hooks/use-related-contracts'
 import { getUser } from 'web/lib/supabase/user'
 import {
   ContractParams,
@@ -205,7 +205,7 @@ export async function getContractParams(contract: Contract) {
   const creator = contract && (await getUser(contract.creatorId))
 
   const relatedContracts = contract
-    ? await getInitialRelatedMarkets(contract)
+    ? await getRelatedContracts(contract, 10)
     : []
 
   return removeUndefinedProps({

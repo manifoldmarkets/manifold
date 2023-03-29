@@ -10,7 +10,28 @@ create or replace view trending_contracts as (
   where (public_open_contracts.data->>'popularityScore')::real >= 0
   order by (data->>'popularityScore')::numeric desc
 );
-       
+
+create or replace view contract_distance as (
+  select
+    ce1.contract_id as id1,
+    ce2.contract_id as id2,
+    ce1.embedding <=> ce2.embedding as distance
+  from contract_embeddings ce1
+  cross join contract_embeddings ce2
+  order by distance
+);
+
+create or replace view related_contracts as (
+  select
+    id1 as from_contract_id,
+    id2 as contract_id,
+    distance,
+    data
+  from contract_distance
+  join public_open_contracts on id = id2
+  where id1 != id2
+);
+
 create or replace view user_contract_distance as (
   select
     user_id,
