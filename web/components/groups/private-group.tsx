@@ -1,10 +1,9 @@
 import { LockClosedIcon } from '@heroicons/react/solid'
-import { useIsGroupMember } from 'web/hooks/use-group'
-import { Col } from '../layout/col'
-import * as unlocking from '../../public/lottie/unlocking-icon.json'
 import Lottie from 'react-lottie'
+import { useIsGroupMember } from 'web/hooks/use-group'
 import { GroupPageContent } from 'web/pages/group/[...slugs]'
-import { Title } from '../widgets/title'
+import * as unlocking from '../../public/lottie/unlocking-icon.json'
+import { Col } from '../layout/col'
 
 export function LoadingPrivateThing() {
   return (
@@ -46,7 +45,7 @@ export function InaccessiblePrivateThing(props: { thing: string }) {
 export function PrivateGroupPage(props: { slugs: string[] }) {
   const { slugs } = props
   const isMember = useIsGroupMember(slugs[0])
-  if (isMember === undefined || isMember === null) {
+  if (isMember === undefined) {
     return <LoadingPrivateThing />
   }
   if (isMember === false) {

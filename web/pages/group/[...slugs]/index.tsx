@@ -48,7 +48,6 @@ import { listPosts } from 'web/lib/firebase/posts'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { getPost } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
-import { Title } from 'web/components/widgets/title'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50

@@ -221,7 +221,6 @@ export function useIsGroupMember(groupSlug: string) {
   const isAuthorized = useIsAuthorized()
   useEffect(() => {
     // if there is no user
-    console.log('auth:', isAuthorized, ' isMember:', isMember)
     if (isAuthorized === null) {
       setIsMember(false)
     } else if (isAuthorized) {
