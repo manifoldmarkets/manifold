@@ -1,7 +1,6 @@
 import React from 'react'
 import { useRouter } from 'next/router'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import Image from 'next/image'
 
 export const SignInButton = () => {
   const router = useRouter()
