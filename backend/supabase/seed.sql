@@ -469,7 +469,7 @@ create policy "admin write access" on topic_embeddings
 create table if not exists user_topics (
     user_id text not null primary key,
     created_at timestamp not null default now(),
-    topic_embedding vector(1536) not null
+    topic_embedding vector(1536) not null,
     topics text[] not null
 );
 alter table user_topics enable row level security;
