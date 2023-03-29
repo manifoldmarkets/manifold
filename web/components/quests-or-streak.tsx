@@ -22,6 +22,10 @@ import {
 } from 'common/economy'
 import { QUEST_DETAILS, QUEST_TYPES } from 'common/quest'
 import { filterDefined } from 'common/util/array'
+import { getQuestScores } from 'common/supabase/set-scores'
+import { useQuestStatus } from 'web/hooks/use-quest-status'
+import { db } from 'web/lib/supabase/db'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -35,6 +39,9 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
     'week'
   )
   const [showQuestsModal, setShowQuestsModal] = useState(false)
+  const questStatus = useQuestStatus(user)
+  const { allQuestsComplete } = questStatus ?? { allQuestsComplete: true }
+
   useEffect(() => {
     if (showQuestsModal) {
       track(QUEST_STATS_CLICK_EVENT)
@@ -42,7 +49,7 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
     }
   }, [showQuestsModal])
   if (!user) return <></>
-  const { allQuestsComplete } = getQuestCompletionStatus(user)
+
   return (
     <>
       <button
@@ -80,14 +87,21 @@ export function QuestsModal(props: {
   user: User
 }) {
   const { open, setOpen, user } = props
+  const questStatus = useQuestStatus(user)
+
   const { totalQuestsCompleted, totalQuests, questToCompletionStatus } =
-    getQuestCompletionStatus(user)
+    questStatus ?? { questToCompletionStatus: null }
+  if (!questToCompletionStatus)
+    return (
+      <Modal open={open} setOpen={setOpen} size={'lg'}>
+        <LoadingIndicator />
+      </Modal>
+    )
   const streakStatus = questToCompletionStatus['BETTING_STREAK']
-  const streakComplete = streakStatus.currentCount >= streakStatus.requiredCount
   const shareStatus = questToCompletionStatus['SHARES']
-  const shareComplete = shareStatus.currentCount >= shareStatus.requiredCount
   const createStatus = questToCompletionStatus['MARKETS_CREATED']
-  const createComplete = createStatus.currentCount >= createStatus.requiredCount
+  const archeologistStatus = questToCompletionStatus['ARCHAEOLOGIST']
+  const referralsStatus = questToCompletionStatus['REFERRALS']
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
@@ -113,30 +127,55 @@ export function QuestsModal(props: {
                 ? `Continue your ${user.currentBettingStreak}-day prediction streak`
                 : 'Make a prediction once per day'
             }
-            complete={streakComplete}
+            complete={streakStatus.currentCount >= streakStatus.requiredCount}
             status={`(${streakStatus.currentCount}/${streakStatus.requiredCount})`}
             reward={Math.min(
               BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
               BETTING_STREAK_BONUS_MAX
             )}
           />
-          <Row className={'text-primary-700'}>Weekly</Row>
           <QuestRow
             emoji={'📤'}
-            title={`Share ${shareStatus.requiredCount} markets this week`}
-            complete={shareComplete}
+            title={`Share ${shareStatus.requiredCount} market today`}
+            complete={shareStatus.currentCount >= shareStatus.requiredCount}
             status={`(${shareStatus.currentCount}/${shareStatus.requiredCount})`}
             reward={QUEST_DETAILS.SHARES.rewardAmount}
             info={
               'Share a market, comment, group, or your referral link with a friend!'
             }
           />
+          <Row className={'text-primary-700'}>Weekly</Row>
           <QuestRow
             emoji={'📈'}
-            title={`Create ${createStatus.requiredCount} market this week`}
-            complete={createComplete}
+            title={`Create a market this week`}
+            complete={createStatus.currentCount >= createStatus.requiredCount}
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
+          />
+          <QuestRow
+            emoji={'🏺'}
+            title={`Trade on an ancient market this week`}
+            complete={
+              archeologistStatus.currentCount >=
+              archeologistStatus.requiredCount
+            }
+            status={`(${archeologistStatus.currentCount}/${archeologistStatus.requiredCount})`}
+            reward={QUEST_DETAILS.ARCHAEOLOGIST.rewardAmount}
+            info={
+              'This has to be a market that no other user has bet on in the last 3 months'
+            }
+          />{' '}
+          <QuestRow
+            emoji={'🙋️'}
+            title={`Refer a friend this week`}
+            complete={
+              referralsStatus.currentCount >= referralsStatus.requiredCount
+            }
+            status={`(${referralsStatus.currentCount}/${referralsStatus.requiredCount})`}
+            reward={QUEST_DETAILS.REFERRALS.rewardAmount}
+            info={
+              'Just click the share button on a market and your referral code will be added to the link'
+            }
           />
         </Col>
       </div>
@@ -191,12 +230,14 @@ const QuestRow = (props: {
     </Row>
   )
 }
-const getQuestCompletionStatus = (user: User) => {
+export const getQuestCompletionStatus = async (user: User) => {
   const questToCompletionStatus = Object.fromEntries(
     QUEST_TYPES.map((t) => [t, { requiredCount: 0, currentCount: 0 }])
   )
+  const keys = QUEST_TYPES.map((questType) => QUEST_DETAILS[questType].scoreId)
+  const scores = await getQuestScores(user.id, keys, db)
 
-  for (const questType of QUEST_TYPES) {
+  QUEST_TYPES.forEach((questType) => {
     const questData = QUEST_DETAILS[questType]
     if (questType === 'BETTING_STREAK')
       questToCompletionStatus[questType] = {
@@ -206,9 +247,10 @@ const getQuestCompletionStatus = (user: User) => {
     else
       questToCompletionStatus[questType] = {
         requiredCount: questData.requiredCount,
-        currentCount: user[questData.userKey] ?? 0,
+        currentCount: scores[questData.scoreId].score,
       }
-  }
+  })
+
   const totalQuestsCompleted = sum(
     Object.values(questToCompletionStatus).map((v) =>
       v.currentCount >= v.requiredCount ? 1 : 0

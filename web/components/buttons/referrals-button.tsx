@@ -12,8 +12,10 @@ import { updateUser } from 'web/lib/firebase/users'
 import { TextButton } from './text-button'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from './button'
-import { getReferralCount, getReferrals } from 'web/lib/supabase/referrals'
+import { getReferrals } from 'web/lib/supabase/referrals'
 import { UserSearchResult } from 'web/lib/supabase/users'
+import { getReferralCount } from 'common/supabase/referrals'
+import { db } from 'web/lib/supabase/db'
 
 export const ReferralsButton = memo(function ReferralsButton(props: {
   user: User
@@ -26,7 +28,7 @@ export const ReferralsButton = memo(function ReferralsButton(props: {
   )
   const [referralCount, setReferralCount] = useState(0)
   useEffect(() => {
-    getReferralCount(user.id).then(setReferralCount)
+    getReferralCount(user.id, 0, db).then(setReferralCount)
   }, [user.id])
 
   useEffect(() => {
