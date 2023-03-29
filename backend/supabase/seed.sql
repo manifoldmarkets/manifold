@@ -451,6 +451,20 @@ create index if not exists contract_embeddings_embedding on contract_embeddings
   using ivfflat (embedding vector_cosine_ops)
   with (lists = 100);
 
+
+create table if not exists topic_embeddings (
+    topic text not null primary key,
+    created_at timestamp not null default now(),
+    embedding vector(1536) not null
+);
+alter table topic_embeddings enable row level security;
+drop policy if exists "public read" on topic_embeddings;
+create policy "public read" on topic_embeddings for select using (true);
+drop policy if exists "admin write access" on topic_embeddings;
+create policy "admin write access" on topic_embeddings
+  as PERMISSIVE FOR ALL
+  to service_role;
+
 begin;
   drop publication if exists supabase_realtime;
   create publication supabase_realtime;
