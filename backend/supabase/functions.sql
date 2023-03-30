@@ -168,13 +168,23 @@ create or replace function get_recommended_contracts_embeddings(uid text, n int,
   immutable parallel safe
   language sql
 as $$
-with available_contracts as (
-  select user_trending_contract.contract_id, distance, popularity_score, created_time, close_time from user_trending_contract
-  where user_trending_contract.user_id = uid
-    and not exists (
-      select 1 from unnest(excluded_contract_ids) as w
-      where w = contract_id
-    )
+  with user_embedding as (
+    select interest_embedding
+    from user_embeddings
+    where user_id = uid
+  ), available_contracts as (
+    select
+      contract_id,
+      (select interest_embedding from user_embedding) <=> ce.embedding as distance,
+      lpc.popularity_score,
+      lpc.created_time,
+      lpc.close_time
+    from contract_embeddings as ce
+    join listed_open_contracts lpc on lpc.id = contract_id
+    where not exists (
+        select 1 from unnest(excluded_contract_ids) as w
+        where w = contract_id
+      )
     -- That has not been viewed.
     and not exists (
       select 1
@@ -188,7 +198,7 @@ with available_contracts as (
       select 1
       from user_seen_markets
       where user_seen_markets.user_id = uid
-        and user_seen_markets.contract_id = user_trending_contract.contract_id
+        and user_seen_markets.contract_id = ce.contract_id
     )
     -- That has not been viewed as a card recently.
     and not exists(
@@ -199,25 +209,30 @@ with available_contracts as (
         and user_events.data ->> 'contractId' = contract_id
         and (user_events.data -> 'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
     )
+    order by (select interest_embedding from user_embedding) <=> ce.embedding
+    -- Find many that are close to your interests
+    -- so that among them we can filter for new, closing soon, and trending.
+    limit 2000
   ), new_contracts as (
     select *, row_number() over (order by distance) as row_num
     from available_contracts
     where created_time > (now() - interval '1 day')
     and close_time > (now() + interval '1 day')
-    and distance < 0.14
+    and distance < 0.12
     order by distance
     limit n / 5
   ), closing_soon_contracts as (
     select *, row_number() over (order by distance) as row_num
     from available_contracts
     where close_time < (now() + interval '1 day')
-    and distance < 0.14
+    and distance < 0.12
     order by distance
     limit n / 5
   ), trending_contracts as (
     select * from available_contracts
     where created_time < (now() - interval '1 day')
     and close_time > (now() + interval '1 day')
+    and popularity_score >= 0
   ), results1 as (
     select *, row_number() over (order by popularity_score desc) as row_num
     from trending_contracts
@@ -251,7 +266,7 @@ with available_contracts as (
     select *, 2 as result_id2, row_number() over (order by row_num, result_id) as row_num2 from combined_new_closing_soon
     order by row_num2, result_id2
   )
-  select data, distance, popularity_score
+  select data, distance, combined_results.popularity_score
   from combined_results
   join contracts on contracts.id = combined_results.contract_id
 $$;
@@ -510,7 +525,7 @@ returns table (data jsonb, score real)
 immutable parallel safe
 language sql
 as $$
-  select data, coalesce((data->>'popularityScore')::real, 0.0) as score
+  select data, popularity_score as score
   from get_your_contract_ids(uid)
   left join contracts on contracts.id = contract_id
   where is_valid_contract(contracts) and contracts.outcome_type = 'BINARY'
@@ -614,7 +629,7 @@ as $$
   join contracts
   on contract_id = contracts.id
   where contract_id != input_contract_id and resolution_time is null
-  order by similarity * similarity * log(coalesce((data->>'popularityScore')::real, 0.0) + 100) desc
+  order by similarity * similarity * log(popularity_score + 100) desc
   limit match_count;
 $$;
 

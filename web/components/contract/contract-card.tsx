@@ -55,6 +55,7 @@ import { LikeButton } from './like-button'
 import { CommentsButton } from '../swipe/swipe-comments'
 import { BetRow } from '../bet/bet-row'
 import { fromNow } from 'web/lib/util/time'
+import Router from 'next/router'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -504,13 +505,12 @@ export function FeaturedPill(props: { label?: string }) {
 
 export function ContractCardNew(props: {
   contract: Contract
-  hideImage?: boolean
   className?: string
 }) {
-  const { hideImage, className } = props
+  const { className } = props
   const user = useUser()
 
-  const contract = useContract(props.contract.id) ?? props.contract
+  const contract = props.contract
   const {
     closeTime,
     isResolved,
@@ -545,17 +545,24 @@ export function ContractCardNew(props: {
       ? description
       : richTextToString(description)
 
-  const showImage = !hideImage && coverImageUrl
+  const showImage = !!coverImageUrl
+
+  const path = contractPath(contract)
 
   return (
-    <Link
-      href={contractPath(contract)}
+    <div
       className={clsx(
         'relative',
-        'border-ink-300 group my-2 flex flex-col overflow-hidden rounded-xl border-[0.5px]',
-        'focus:bg-ink-400/20 lg:hover:bg-ink-400/20 transition-colors',
+        'border-ink-300 group my-2 flex cursor-pointer flex-col overflow-hidden rounded-xl border-[0.5px]',
+        'focus:bg-ink-400/20 lg:hover:bg-ink-400/20 outline-none transition-colors',
         className
       )}
+      // we have other links inside this card like the username, so can't make the whole card a button or link
+      tabIndex={-1}
+      onClick={(e) => {
+        Router.push(path)
+        e.currentTarget.focus() // focus the div like a button, for style
+      }}
     >
       <div
         className={clsx(
@@ -564,7 +571,7 @@ export function ContractCardNew(props: {
         )}
       >
         <Row className="text-ink-500 items-center gap-3 overflow-hidden text-sm">
-          <Row className="z-10 gap-2">
+          <Row className="gap-2" onClick={(e) => e.stopPropagation()}>
             <Avatar
               username={creatorUsername}
               avatarUrl={creatorAvatarUrl}
@@ -581,14 +588,16 @@ export function ContractCardNew(props: {
           <ReasonChosen contract={contract} />
         </Row>
 
-        <div
+        {/* Title is link to contract for open in new tab and a11y */}
+        <Link
+          href={path}
           className={clsx(
-            'break-anywhere my-2 whitespace-normal font-medium',
+            'break-anywhere group-hover:text-primary-800 transition-color focus:text-primary-800 group-focus:text-primary-800 my-2 whitespace-normal font-medium outline-none',
             textColor
           )}
         >
           {question}
-        </div>
+        </Link>
 
         <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
           <div className="text-base font-semibold">
@@ -596,17 +605,14 @@ export function ContractCardNew(props: {
           </div>
 
           {isBinaryCpmm && (
-            <div className="z-10 flex gap-2">
+            <div className="flex gap-2">
               <BetRow contract={contract} noUser={!user} />
             </div>
           )}
 
           <Row
             className="ml-auto items-center gap-1"
-            onClick={(e) => {
-              // Don't navigate to the contract page when clicking buttons.
-              e.preventDefault()
-            }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-1.5 p-1">
               <LikeButton
@@ -647,7 +653,7 @@ export function ContractCardNew(props: {
           </div>
         </>
       )}
-    </Link>
+    </div>
   )
 }
 

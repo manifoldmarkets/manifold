@@ -22,7 +22,7 @@ export type AddContractToGroupPermissionType =
 
 export function getAddContractToGroupPermission(
   privacyStatus: PrivacyStatusType,
-  userRole: groupRoleType | null
+  userRole: groupRoleType | null | undefined
 ): AddContractToGroupPermissionType {
   if (
     privacyStatus != 'private' &&
@@ -45,7 +45,7 @@ export function getAddContractToGroupPermission(
 export function AddContractButton(props: {
   group: Group
   user?: User | null
-  userRole: groupRoleType | null
+  userRole: groupRoleType | null | undefined
   className?: string
 }) {
   const { group, user, className, userRole } = props

@@ -30,7 +30,7 @@ export const useFeed = (
 
   const loadMore = useEvent(() => {
     if (userId) {
-      db.rpc('get_recommended_contracts', {
+      db.rpc('get_recommended_contracts_embeddings', {
         uid: userId,
         n: PAGE_SIZE,
         excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
@@ -38,8 +38,9 @@ export const useFeed = (
         if (res.data) {
           console.log('got', res)
           const newContracts =
-            (res.data as any).map((row: any) => row as Contract | undefined) ??
-            []
+            (res.data as any).map(
+              (row: any) => row.data as Contract | undefined
+            ) ?? []
           setSavedContracts((contracts) =>
             uniqBy(buildArray(contracts, newContracts), (c) => c.id)
           )

@@ -207,7 +207,7 @@ export async function getContractParams(contract: Contract) {
   const creator = contract && (await getUser(contract.creatorId))
 
   const relatedContracts = contract
-    ? await getRelatedContracts(contract, 10)
+    ? await getRelatedContracts(contract, 9)
     : []
 
   return removeUndefinedProps({

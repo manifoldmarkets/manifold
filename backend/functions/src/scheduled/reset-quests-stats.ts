@@ -6,10 +6,11 @@ import { setQuestScoreValueOnUsers } from 'common/supabase/set-scores'
 import { QUEST_SCORE_IDS } from 'common/quest'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { chunk } from 'lodash'
+import { secrets } from 'shared/secrets'
 const firestore = admin.firestore()
 const DAILY_QUEST_SCORE_IDS = ['currentBettingStreak', 'sharesToday']
 export const resetWeeklyQuestStats = functions
-  .runWith({ timeoutSeconds: 540, memory: '1GB' })
+  .runWith({ timeoutSeconds: 540, memory: '1GB', secrets })
   // 12am midnight on Monday Pacific time
   .pubsub.schedule(`0 0 * * 0`)
   .timeZone('America/Los_Angeles')
@@ -21,8 +22,8 @@ export const resetWeeklyQuestStats = functions
     }
   })
 export const resetDailyQuestStats = functions
-  .runWith({ timeoutSeconds: 540, memory: '1GB' })
-  // 12am midnight on Monday Pacific time
+  .runWith({ timeoutSeconds: 540, memory: '1GB', secrets })
+  // 12am midnight every day Pacific time
   .pubsub.schedule(`0 0 * * *`)
   .timeZone('America/Los_Angeles')
   .onRun(async () => {
@@ -56,7 +57,6 @@ export const resetDailyQuestStatsInternal = async () => {
   console.log(`Resetting quest stats for ${usersSnap.docs.length} users`)
   const userIds = usersSnap.docs.map((d) => d.id)
   const db = createSupabaseClient()
-  // TODO: test on prod
   const chunks = chunk(userIds, 1000)
   await Promise.all(
     chunks.map(async (chunk) => {
