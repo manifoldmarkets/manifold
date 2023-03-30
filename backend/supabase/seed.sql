@@ -206,29 +206,6 @@ new.resolution := (new.data)->>'resolution';
 new.popularity_score := coalesce(((new.data)->>'popularityScore')::numeric, 0);
 end if;
 return new;
-create or replace function contract_populate_cols() returns trigger language plpgsql as $$ begin if new.data is not null then new.slug := (new.data)->>'slug';
-new.question := (new.data)->>'question';
-new.creator_id := (new.data)->>'creatorId';
-new.visibility := (new.data)->>'visibility';
-new.mechanism := (new.data)->>'mechanism';
-new.outcome_type := (new.data)->>'outcomeType';
-new.created_time := case
-  when new.data ? 'createdTime' then millis_to_ts(((new.data)->>'createdTime')::bigint)
-  else null
-end;
-new.close_time := case
-  when new.data ? 'closeTime' then millis_to_ts(((new.data)->>'closeTime')::bigint)
-  else null
-end;
-new.resolution_time := case
-  when new.data ? 'resolutionTime' then millis_to_ts(((new.data)->>'resolutionTime')::bigint)
-  else null
-end;
-new.resolution_probability := ((new.data)->>'resolutionProbability')::numeric;
-new.resolution := (new.data)->>'resolution';
-new.popularity_score := coalesce(((new.data)->>'popularityScore')::numeric, 0);
-end if;
-return new;
 end $$;
 create trigger contract_populate before
 insert
