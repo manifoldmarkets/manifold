@@ -96,3 +96,31 @@ create or replace view user_groups as (
     (select member_id, array_agg(group_id) as groups from group_members group by member_id)
     user_groups on users.id=user_groups.member_id)
 );
+
+CREATE OR REPLACE VIEW
+  contracts_rbac AS
+SELECT
+  *
+FROM
+  contracts
+WHERE
+  contracts.visibility = 'public'
+  or contracts.visibility = 'unlisted'
+  or (
+    contracts.visibility = 'private'
+    and (can_access_contract(contracts.id, firebase_uid())
+    )
+  )
+
+  CREATE OR REPLACE VIEW
+  groups_rbac AS
+SELECT
+  *
+FROM
+  groups
+WHERE
+  groups.data->>'privacyStatus' <> 'private'
+  or (
+(EXISTS ( SELECT 1
+   FROM group_members
+  WHERE ((group_members.group_id = groups.id) AND (group_members.member_id = firebase_uid())))))

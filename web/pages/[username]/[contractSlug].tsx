@@ -1,6 +1,5 @@
+import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { first } from 'lodash'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { Answer } from 'common/answer'
 import { ContractComment } from 'common/comment'
 import { visibility } from 'common/contract'
@@ -8,8 +7,10 @@ import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
+import { first } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
@@ -26,6 +27,7 @@ import { ContractLeaderboard } from 'web/components/contract/contract-leaderboar
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
+import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
@@ -38,6 +40,7 @@ import { ResolutionPanel } from 'web/components/resolution-panel'
 import { SEO } from 'web/components/SEO'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { Linkify } from 'web/components/widgets/linkify'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useBets } from 'web/hooks/use-bets'
 import { useContract } from 'web/hooks/use-contracts'
@@ -63,9 +66,6 @@ import {
 } from 'web/lib/supabase/contracts'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
-import { UserIcon } from '@heroicons/react/solid'
-import { Tooltip } from 'web/components/widgets/tooltip'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -92,9 +92,7 @@ export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  // Fetched from Firebase to avoid replicator delay on first create.
   const contract = (await getContractFromSlug(contractSlug, 'admin')) ?? null
-
   if (contract === null) {
     return {
       props: {
@@ -114,7 +112,6 @@ export async function getStaticProps(ctx: {
     }
   } else {
     const contractParams = await getContractParams(contract)
-
     return {
       props: {
         visibility,
