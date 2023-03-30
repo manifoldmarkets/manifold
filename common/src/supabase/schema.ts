@@ -167,6 +167,7 @@ export interface Database {
           outcome_type: string | null
           popularity_score: number | null
           question: string | null
+          question_fts: unknown | null
           resolution: string | null
           resolution_probability: number | null
           resolution_time: string | null
@@ -184,6 +185,7 @@ export interface Database {
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -201,6 +203,7 @@ export interface Database {
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -683,6 +686,62 @@ export interface Database {
           id2: string | null
         }
       }
+      contracts_rbac: {
+        Row: {
+          close_time: string | null
+          created_time: string | null
+          creator_id: string | null
+          data: Json | null
+          fs_updated_time: string | null
+          id: string | null
+          mechanism: string | null
+          outcome_type: string | null
+          popularity_score: number | null
+          question: string | null
+          question_fts: unknown | null
+          resolution: string | null
+          resolution_probability: number | null
+          resolution_time: string | null
+          slug: string | null
+          visibility: string | null
+        }
+        Insert: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          popularity_score?: number | null
+          question?: string | null
+          question_fts?: unknown | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          popularity_score?: number | null
+          question?: string | null
+          question_fts?: unknown | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
+        }
+      }
       contracts_view: {
         Row: {
           close_time: number | null
@@ -725,6 +784,23 @@ export interface Database {
           name: string | null
           role: string | null
           username: string | null
+        }
+      }
+      groups_rbac: {
+        Row: {
+          data: Json | null
+          fs_updated_time: string | null
+          id: string | null
+        }
+        Insert: {
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+        }
+        Update: {
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
         }
       }
       listed_open_contracts: {
@@ -947,6 +1023,13 @@ export interface Database {
           row2: unknown
         }
         Returns: number
+      }
+      can_access_contract: {
+        Args: {
+          contract_id: string
+          member_id: string
+        }
+        Returns: boolean
       }
       closest_contract_embeddings: {
         Args: {
