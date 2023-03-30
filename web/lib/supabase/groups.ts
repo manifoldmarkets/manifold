@@ -17,7 +17,7 @@ export type SearchGroupInfo = Pick<
 export async function searchGroups(prompt: string, limit: number) {
   const query = selectFrom(
     db,
-    'groups',
+    'groups_rbac',
     'id',
     'name',
     'about',
@@ -38,7 +38,7 @@ export async function getMemberGroups(userId: string) {
   const groupIds = await getMemberGroupIds(userId)
   const query = selectFrom(
     db,
-    'groups',
+    'groups_rbac',
     'id',
     'name',
     'about',
@@ -56,7 +56,7 @@ export async function getMemberGroups(userId: string) {
 
 export async function getShouldBlockDestiny(userId: string) {
   const groupIds = await getMemberGroupIds(userId)
-  const query = selectFrom(db, 'groups', 'id', 'slug')
+  const query = selectFrom(db, 'groups_rbac', 'id', 'slug')
     .in(
       'id',
       groupIds.map((d: { group_id: string }) => d.group_id)
@@ -130,7 +130,7 @@ export async function getNonPublicGroupsWhereUserHasRole(userId: string) {
 export async function getPublicGroups() {
   const groupThings = await run(
     db
-      .from('groups')
+      .from('groups_rbac')
       .select('data')
       .eq('data->>privacyStatus', 'public')
       .order('data->>name')
