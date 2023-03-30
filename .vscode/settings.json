@@ -12,5 +12,16 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[sql]": {
     "editor.defaultFormatter": "mtxr.sqltools"
-  }
+  },
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "server": "db.pxidrgkatumlvfqaxcll.supabase.co",
+      "port": 5432,
+      "driver": "PostgreSQL",
+      "name": "Manifold Prod",
+      "database": "postgres",
+      "username": "postgres"
+    }
+  ]
 }
