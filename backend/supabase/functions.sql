@@ -176,7 +176,7 @@ as $$
     select
       contract_id,
       (select interest_embedding from user_embedding) <=> ce.embedding as distance,
-      (lpc.data->>'popularityScore')::real as popularity_score,
+      lpc.popularity_score,
       lpc.created_time,
       lpc.close_time
     from contract_embeddings as ce
@@ -266,7 +266,7 @@ as $$
     select *, 2 as result_id2, row_number() over (order by row_num, result_id) as row_num2 from combined_new_closing_soon
     order by row_num2, result_id2
   )
-  select data, distance, popularity_score
+  select data, distance, combined_results.popularity_score
   from combined_results
   join contracts on contracts.id = combined_results.contract_id
 $$;
@@ -525,7 +525,7 @@ returns table (data jsonb, score real)
 immutable parallel safe
 language sql
 as $$
-  select data, coalesce((data->>'popularityScore')::real, 0.0) as score
+  select data, popularity_score as score
   from get_your_contract_ids(uid)
   left join contracts on contracts.id = contract_id
   where is_valid_contract(contracts) and contracts.outcome_type = 'BINARY'
@@ -629,7 +629,7 @@ as $$
   join contracts
   on contract_id = contracts.id
   where contract_id != input_contract_id and resolution_time is null
-  order by similarity * similarity * log(coalesce((data->>'popularityScore')::real, 0.0) + 100) desc
+  order by similarity * similarity * log(popularity_score + 100) desc
   limit match_count;
 $$;
 
