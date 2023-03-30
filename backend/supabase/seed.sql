@@ -152,7 +152,6 @@ select using (true);
 create index if not exists user_seen_markets_data_gin on user_seen_markets using GIN (data);
 alter table user_seen_markets cluster on user_seen_markets_pkey;
 create table if not exists contracts (
-<<<<<<< HEAD
   id text not null primary key,
   slug text,
   question text,
@@ -165,10 +164,24 @@ create table if not exists contracts (
   resolution_time timestamptz,
   resolution_probability numeric,
   resolution text,
+  popularity_score numeric,
   data jsonb not null,
   question_fts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, question)) STORED,
   fs_updated_time timestamp not null
 );
+alter table contracts enable row level security;
+drop policy if exists "public read" on contracts;
+create policy "public read" on contracts for
+select using (true);
+create index if not exists contracts_data_gin on contracts using GIN (data);
+create index if not exists contracts_group_slugs_gin on contracts using GIN ((data->'groupSlugs'));
+create index if not exists contracts_slug on contracts (slug);
+create index if not exists contracts_creator_id on contracts (creator_id, created_time);
+create index if not exists contracts_created_time on contracts (created_time desc);
+create index if not exists contracts_close_time on contracts (close_time desc);
+create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
+create index if not exists contracts_popularity_score on contracts (popularity_score desc);
+create index if not exists contracts_visibility on contracts(visibility);
 alter table contracts cluster on contracts_creator_id;
 create or replace function contract_populate_cols() returns trigger language plpgsql as $$ begin if new.data is not null then new.slug := (new.data)->>'slug';
 new.question := (new.data)->>'question';
@@ -190,60 +203,32 @@ new.resolution_time := case
 end;
 new.resolution_probability := ((new.data)->>'resolutionProbability')::numeric;
 new.resolution := (new.data)->>'resolution';
+new.popularity_score := coalesce(((new.data)->>'popularityScore')::numeric, 0);
 end if;
 return new;
-=======
-    id text not null primary key,
-    slug text,
-    question text,
-    creator_id text,
-    visibility text,
-    mechanism text,
-    outcome_type text,
-    created_time timestamptz,
-    close_time timestamptz,
-    resolution_time timestamptz,
-    resolution_probability numeric,
-    resolution text,
-    popularity_score numeric,
-    data jsonb not null,
-    fs_updated_time timestamp not null
-);
-alter table contracts enable row level security;
-drop policy if exists "public read" on contracts;
-create policy "public read" on contracts for select using (true);
-create index if not exists contracts_data_gin on contracts using GIN (data);
-create index if not exists contracts_group_slugs_gin on contracts using GIN ((data->'groupSlugs'));
-create index if not exists contracts_slug on contracts (slug);
-create index if not exists contracts_creator_id on contracts (creator_id, created_time);
-create index if not exists contracts_created_time on contracts (created_time desc);
-create index if not exists contracts_close_time on contracts (close_time desc);
-create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
-create index if not exists contracts_popularity_score on contracts (popularity_score desc);
-create index if not exists contracts_visibility on contracts(visibility);
-
-alter table contracts cluster on contracts_creator_id;
-
-create or replace function contract_populate_cols()
-  returns trigger
-  language plpgsql
-as $$ begin
-  if new.data is not null then
-    new.slug := (new.data)->>'slug';
-    new.question := (new.data)->>'question';
-    new.creator_id := (new.data)->>'creatorId';
-    new.visibility := (new.data)->>'visibility';
-    new.mechanism := (new.data)->>'mechanism';
-    new.outcome_type := (new.data)->>'outcomeType';
-    new.created_time := case when new.data ? 'createdTime' then millis_to_ts(((new.data)->>'createdTime')::bigint) else null end;
-    new.close_time := case when new.data ? 'closeTime' then millis_to_ts(((new.data)->>'closeTime')::bigint) else null end;
-    new.resolution_time := case when new.data ? 'resolutionTime' then millis_to_ts(((new.data)->>'resolutionTime')::bigint) else null end;
-    new.resolution_probability := ((new.data)->>'resolutionProbability')::numeric;
-    new.resolution := (new.data)->>'resolution';
-    new.popularity_score := coalesce(((new.data)->>'popularityScore')::numeric, 0);
-  end if;
-  return new;
->>>>>>> main
+create or replace function contract_populate_cols() returns trigger language plpgsql as $$ begin if new.data is not null then new.slug := (new.data)->>'slug';
+new.question := (new.data)->>'question';
+new.creator_id := (new.data)->>'creatorId';
+new.visibility := (new.data)->>'visibility';
+new.mechanism := (new.data)->>'mechanism';
+new.outcome_type := (new.data)->>'outcomeType';
+new.created_time := case
+  when new.data ? 'createdTime' then millis_to_ts(((new.data)->>'createdTime')::bigint)
+  else null
+end;
+new.close_time := case
+  when new.data ? 'closeTime' then millis_to_ts(((new.data)->>'closeTime')::bigint)
+  else null
+end;
+new.resolution_time := case
+  when new.data ? 'resolutionTime' then millis_to_ts(((new.data)->>'resolutionTime')::bigint)
+  else null
+end;
+new.resolution_probability := ((new.data)->>'resolutionProbability')::numeric;
+new.resolution := (new.data)->>'resolution';
+new.popularity_score := coalesce(((new.data)->>'popularityScore')::numeric, 0);
+end if;
+return new;
 end $$;
 create trigger contract_populate before
 insert
@@ -478,20 +463,8 @@ drop policy if exists "public read" on user_embeddings;
 create policy "public read" on user_embeddings for
 select using (true);
 drop policy if exists "admin write access" on user_embeddings;
-<<<<<<< HEAD
 create policy "admin write access" on user_embeddings as PERMISSIVE FOR ALL to service_role;
 create index if not exists user_embeddings_interest_embedding on user_embeddings using ivfflat (interest_embedding vector_cosine_ops) with (lists = 100);
-=======
-create policy "admin write access" on user_embeddings
-  as PERMISSIVE FOR ALL
-  to service_role;
-
-create index if not exists user_embeddings_interest_embedding on user_embeddings
-  using ivfflat (interest_embedding vector_cosine_ops)
-  with (lists = 100);
-
-
->>>>>>> main
 create table if not exists contract_embeddings (
   contract_id text not null primary key,
   created_at timestamp not null default now(),
@@ -502,20 +475,11 @@ drop policy if exists "public read" on contract_embeddings;
 create policy "public read" on contract_embeddings for
 select using (true);
 drop policy if exists "admin write access" on contract_embeddings;
-<<<<<<< HEAD
 create policy "admin write access" on contract_embeddings as PERMISSIVE FOR ALL to service_role;
 create index if not exists contract_embeddings_embedding on contract_embeddings using ivfflat (embedding vector_cosine_ops) with (lists = 100);
-=======
-create policy "admin write access" on contract_embeddings
-  as PERMISSIVE FOR ALL
-  to service_role;
-
+create policy "admin write access" on contract_embeddings as PERMISSIVE FOR ALL to service_role;
 SET ivfflat.probes = 5;
-create index if not exists contract_embeddings_embedding on contract_embeddings
-  using ivfflat (embedding vector_cosine_ops)
-  with (lists = 100);
-
->>>>>>> main
+create index if not exists contract_embeddings_embedding on contract_embeddings using ivfflat (embedding vector_cosine_ops) with (lists = 100);
 begin;
 drop publication if exists supabase_realtime;
 create publication supabase_realtime;
