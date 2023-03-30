@@ -459,6 +459,7 @@ create policy "admin write access" on contract_embeddings
   as PERMISSIVE FOR ALL
   to service_role;
 
+SET ivfflat.probes = 5;
 create index if not exists contract_embeddings_embedding on contract_embeddings
   using ivfflat (embedding vector_cosine_ops)
   with (lists = 100);
