@@ -93,8 +93,8 @@ language sql
 as $$
   select data, score
   from get_recommended_contract_scores_unseen(uid)
-  left join contracts_rbac on contracts_rbac.id = contract_id
-  where is_valid_contract(contracts_rbac) and outcome_type = 'BINARY'
+  left join contracts on contracts.id = contract_id
+  where is_valid_contract(contracts) and outcome_type = 'BINARY'
   -- Not in the list of contracts to exclude.
   and not exists (
     select 1 from unnest(excluded_contract_ids) as w
@@ -316,7 +316,7 @@ as $$
 select ts_to_millis(now())
 $$;
 
-create or replace function is_valid_contract(ct contracts_rbac)
+create or replace function is_valid_contract(ct contracts)
     returns boolean
     stable parallel safe
 as $$
@@ -349,9 +349,9 @@ as $$
 select array_agg(data) from (
   select data
   from get_related_contract_ids(cid)
-    left join contracts_rbac
-    on contracts_rbac.id = contract_id
-    where is_valid_contract(contracts_rbac)
+    left join contracts
+    on contracts.id = contract_id
+    where is_valid_contract(contracts)
   limit lim
   offset start
   ) as rel_contracts
@@ -364,9 +364,9 @@ create or replace function search_contracts_by_group_slugs(group_slugs text[], l
 as $$
 select array_agg(data) from (
     select data
-    from contracts_rbac
+    from contracts
     where data->'groupSlugs' ?| group_slugs
-    and is_valid_contract(contracts_rbac)
+    and is_valid_contract(contracts)
     order by (data->'uniqueBettors7Days')::int desc, data->'slug'
     offset start limit lim
     ) as search_contracts
@@ -379,10 +379,10 @@ create or replace function search_contracts_by_group_slugs_for_creator(creator_i
 as $$
 select array_agg(data) from (
     select data
-    from contracts_rbac
+    from contracts
     where data->'groupSlugs' ?| group_slugs
-      and is_valid_contract(contracts_rbac)
-      and contracts_rbac.creator_id = $1
+      and is_valid_contract(contracts)
+      and contracts.creator_id = $1
     order by (data->'uniqueBettors7Days')::int desc, data->'slug'
     offset start limit lim
 ) as search_contracts
@@ -396,7 +396,7 @@ create or replace function get_contract_metrics_with_contracts(uid text, count i
 as $$
 select ucm.contract_id, ucm.data as metrics, c.data as contract
 from user_contract_metrics as ucm
-join contracts_rbac as c on c.id = ucm.contract_id
+join contracts as c on c.id = ucm.contract_id
 where ucm.user_id = uid and ucm.data->'lastBetTime' is not null
 order by ((ucm.data)->'lastBetTime')::bigint desc
 offset start
@@ -408,7 +408,7 @@ create or replace function get_open_limit_bets_with_contracts(uid text, count in
     immutable parallel safe
     language sql
 as $$;
-select contract_id, bets.data as bets, contracts_rbac.data as contracts
+select contract_id, bets.data as bets, contracts.data as contracts
 from (
          select contract_id, array_agg(data order by (data->>'createdTime') desc) as data from contract_bets
          where (data->>'userId') = uid and
@@ -416,8 +416,8 @@ from (
                  (data->>'isCancelled')::boolean = false
          group by contract_id
      ) as bets
- join contracts_rbac
- on contracts_rbac.id = bets.contract_id
+ join contracts
+ on contracts.id = bets.contract_id
 limit count
 $$;
 
@@ -426,16 +426,16 @@ create or replace function get_user_bets_from_resolved_contracts(uid text, count
     immutable parallel safe
     language sql
 as $$;
-select contract_id, bets.data as bets, contracts_rbac.data as contracts
+select contract_id, bets.data as bets, contracts.data as contracts
 from (
          select contract_id, array_agg(data order by (data->>'createdTime') desc) as data from contract_bets
          where (data->>'userId') = uid and
                (data->>'amount')::real != 0
          group by contract_id
      ) as bets
- join contracts_rbac
- on contracts_rbac.id = bets.contract_id
- where contracts_rbac.resolution_time is not null and contracts_rbac.outcome_type = 'BINARY'
+ join contracts
+ on contracts.id = bets.contract_id
+ where contracts.resolution_time is not null and contracts.outcome_type = 'BINARY'
 limit count
 offset start
 $$;
@@ -447,8 +447,8 @@ returns table(creator_id text, contracts jsonb)
     language sql
 as $$
     select creator_id, jsonb_agg(data) as contracts
-    from contracts_rbac
-    where creator_id = any(creator_ids) and contracts_rbac.created_time > millis_to_ts($2)
+    from contracts
+    where creator_id = any(creator_ids) and contracts.created_time > millis_to_ts($2)
     group by creator_id;
 $$;
 
@@ -498,8 +498,8 @@ language sql
 as $$
   select data, coalesce((data->>'dailyScore')::real, 0.0) as daily_score
   from get_your_contract_ids(uid)
-  left join contracts_rbac on contracts_rbac.id = contract_id
-  where contracts_rbac.outcome_type = 'BINARY'
+  left join contracts on contracts.id = contract_id
+  where contracts.outcome_type = 'BINARY'
   order by daily_score desc
   limit n
   offset start
@@ -512,8 +512,8 @@ language sql
 as $$
   select data, coalesce((data->>'popularityScore')::real, 0.0) as score
   from get_your_contract_ids(uid)
-  left join contracts_rbac on contracts_rbac.id = contract_id
-  where is_valid_contract(contracts_rbac) and contracts_rbac.outcome_type = 'BINARY'
+  left join contracts on contracts.id = contract_id
+  where is_valid_contract(contracts) and contracts.outcome_type = 'BINARY'
   order by score desc
   limit n
   offset start
@@ -624,30 +624,4 @@ create or replace function firebase_uid()
   stable parallel safe
 as $$
   select nullif(current_setting('request.jwt.claims', true)::json->>'sub', '')::text;
-$$;
-
-create or replace function can_access_contract(
-  contract_id text,
-  member_id text
-)
-returns boolean
-  stable parallel safe
-language sql
-as $$
-      select EXISTS (
-        SELECT
-          1
-        FROM
-          (
-            group_members
-            JOIN group_contracts ON (
-              (group_members.group_id = group_contracts.group_id)
-            )
-          )
-        WHERE
-          (
-            (group_contracts.contract_id = contract_id)
-            AND (group_members.member_id = member_id)
-          )
-      )
 $$;

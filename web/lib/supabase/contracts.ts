@@ -34,7 +34,7 @@ import { adminDb, db } from './db'
 
 export async function getContractIds(contractIds: string[]) {
   const { data } = await run(
-    db.from('contracts_rbac').select('data').in('id', contractIds)
+    db.from('contracts').select('data').in('id', contractIds)
   )
   if (data && data.length > 0) {
     return data.map((d) => d.data as Contract)
@@ -44,9 +44,7 @@ export async function getContractIds(contractIds: string[]) {
 }
 
 export const getContract = async (id: string) => {
-  const { data } = await run(
-    db.from('contracts_rbac').select('data').eq('id', id)
-  )
+  const { data } = await run(db.from('contracts').select('data').eq('id', id))
   return data && data.length > 0 ? (data[0].data as Contract) : null
 }
 
@@ -55,7 +53,7 @@ export const getContracts = async (options: {
   beforeTime?: number
   order?: 'asc' | 'desc'
 }) => {
-  let q = selectJson(db, 'contracts_rbac')
+  let q = selectJson(db, 'contracts')
   q = q.order('created_time', {
     ascending: options?.order === 'asc',
   } as any)
@@ -123,7 +121,7 @@ export async function getContractFromSlug(
 ) {
   const client = permission == 'admin' ? adminDb : db
   const { data: contract } = await run(
-    client.from('contracts_rbac').select('data').eq('slug', contractSlug)
+    client.from('contracts').select('data').eq('slug', contractSlug)
   )
   if (contract && contract.length > 0) {
     return (contract[0] as unknown as { data: Contract }).data
@@ -133,7 +131,7 @@ export async function getContractFromSlug(
 
 export async function getContractVisibilityFromSlug(contractSlug: string) {
   const { data: contractVisibility } = await run(
-    db.from('contracts_rbac').select('visibility').eq('slug', contractSlug)
+    db.from('contracts').select('visibility').eq('slug', contractSlug)
   )
 
   if (contractVisibility && contractVisibility.length > 0) {
@@ -145,8 +143,9 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
 
 export async function getContractParams(contract: Contract) {
   const contractId = contract?.id
-
+  const start = Date.now()
   const totalBets = contractId ? await getTotalBetCount(contractId) : 0
+  console.log('got total bets', Date.now() - start)
   const shouldUseBetPoints =
     contract?.outcomeType === 'BINARY' ||
     contract?.outcomeType === 'PSEUDO_NUMERIC'
@@ -160,6 +159,8 @@ export async function getContractParams(contract: Contract) {
         order: 'desc',
       })
     : []
+
+  console.log('got bets', Date.now() - start)
   const betPoints = shouldUseBetPoints
     ? bets.map(
         (bet) =>
@@ -175,19 +176,23 @@ export async function getContractParams(contract: Contract) {
     : []
 
   const comments = contractId ? await getAllComments(contractId, 100) : []
+  console.log('got comments', Date.now() - start)
 
   const userPositionsByOutcome =
     contractId && contract?.outcomeType === 'BINARY'
       ? await getBinaryContractUserContractMetrics(contractId, 100)
       : {}
+
+  console.log('got userPositions', Date.now() - start)
   const topContractMetrics = contract?.resolution
     ? await getTopContractMetrics(contract.id, 10)
     : []
+  console.log('got topContractMetrics', Date.now() - start)
   const totalPositions =
     contractId && contract?.outcomeType === 'BINARY'
       ? await getTotalContractMetrics(contractId, db)
       : 0
-
+  console.log('got totalPositions', Date.now() - start)
   if (shouldUseBetPoints && contract) {
     const firstPoint = {
       x: contract.createdTime,
@@ -209,7 +214,7 @@ export async function getContractParams(contract: Contract) {
   const relatedContracts = contract
     ? await getRelatedContracts(contract, 10)
     : []
-
+  console.log('got relatedContracts', Date.now() - start)
   return removeUndefinedProps({
     contract,
     historyData: {
@@ -230,7 +235,7 @@ export async function getContractParams(contract: Contract) {
 export async function searchContract(query: string) {
   const { data } = await run(
     db
-      .from('contracts_rbac')
+      .from('contracts')
       .select('data')
       .textSearch('question', `${query}`)
       .limit(10)

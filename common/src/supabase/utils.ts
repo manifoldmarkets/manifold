@@ -25,6 +25,7 @@ export type PlainViews = {
 }
 export type PlainTablesAndViews = PlainTables & PlainViews
 export type TableName = keyof Tables
+export type ViewName = keyof Views
 export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
 
 export type CollectionTableMapping = { [coll: string]: TableName }
@@ -109,11 +110,13 @@ type TableJsonTypes = {
   group_contracts: GroupContractDoc
 }
 
-export type DataFor<T extends TableName> = T extends keyof TableJsonTypes
-  ? TableJsonTypes[T]
-  : any
+export type DataFor<T extends TableName | ViewName> =
+  T extends keyof TableJsonTypes ? TableJsonTypes[T] : any
 
-export function selectJson<T extends TableName>(db: SupabaseClient, table: T) {
+export function selectJson<T extends TableName | ViewName>(
+  db: SupabaseClient,
+  table: T
+) {
   return db.from(table).select<string, { data: DataFor<T> }>('data')
 }
 
@@ -125,6 +128,17 @@ export function selectFrom<
 >(db: SupabaseClient, table: T, ...fields: TFields) {
   const query = fields.map((f) => `data->${f}`).join(', ')
   const builder = db.from(table).select<string, TResult>(query)
+  return builder
+}
+
+export function selectFromView<
+  V extends ViewName,
+  VData extends DataFor<V>,
+  VFields extends (string & keyof VData)[],
+  VResult = Pick<VData, VFields[number]>
+>(db: SupabaseClient, view: V, ...fields: VFields) {
+  const query = fields.map((f) => `data->${f}`).join(', ')
+  const builder = db.from(view).select<string, VResult>(query)
   return builder
 }
 

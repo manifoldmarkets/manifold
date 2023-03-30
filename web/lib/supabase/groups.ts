@@ -1,6 +1,6 @@
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { Group } from 'common/group'
-import { run, selectFrom } from 'common/supabase/utils'
+import { run, selectFrom, selectFromView } from 'common/supabase/utils'
 import { db } from './db'
 export type SearchGroupInfo = Pick<
   Group,
@@ -15,7 +15,7 @@ export type SearchGroupInfo = Pick<
 
 // functions called for multiple groups
 export async function searchGroups(prompt: string, limit: number) {
-  const query = selectFrom(
+  const query = selectFromView(
     db,
     'groups_rbac',
     'id',
@@ -36,7 +36,7 @@ export async function searchGroups(prompt: string, limit: number) {
 
 export async function getMemberGroups(userId: string) {
   const groupIds = await getMemberGroupIds(userId)
-  const query = selectFrom(
+  const query = selectFromView(
     db,
     'groups_rbac',
     'id',
@@ -56,7 +56,7 @@ export async function getMemberGroups(userId: string) {
 
 export async function getShouldBlockDestiny(userId: string) {
   const groupIds = await getMemberGroupIds(userId)
-  const query = selectFrom(db, 'groups_rbac', 'id', 'slug')
+  const query = selectFromView(db, 'groups_rbac', 'id', 'slug')
     .in(
       'id',
       groupIds.map((d: { group_id: string }) => d.group_id)

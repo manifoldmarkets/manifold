@@ -786,19 +786,20 @@ export interface Database {
         }
       }
       groups_rbac: {
-          data: Json
-          fs_updated_time: string
-          id: string
+        Row: {
+          data: Json | null
+          fs_updated_time: string | null
+          id: string | null
         }
         Insert: {
-          data: Json
-          fs_updated_time: string
-          id: string
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
         }
         Update: {
-          data?: Json
-          fs_updated_time?: string
-          id?: string
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
         }
       }
       listed_open_contracts: {

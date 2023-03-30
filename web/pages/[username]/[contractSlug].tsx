@@ -66,6 +66,7 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { UserIcon } from '@heroicons/react/solid'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import dayjs from 'dayjs'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -93,8 +94,9 @@ export async function getStaticProps(ctx: {
 }) {
   const { contractSlug } = ctx.params
   // Fetched from Firebase to avoid replicator delay on first create.
+  const start = Date.now()
   const contract = (await getContractFromSlug(contractSlug, 'admin')) ?? null
-
+  console.log('got contract', Date.now() - start)
   if (contract === null) {
     return {
       props: {
@@ -113,8 +115,8 @@ export async function getStaticProps(ctx: {
       },
     }
   } else {
+    console.log('getting params', Date.now() - start)
     const contractParams = await getContractParams(contract)
-
     return {
       props: {
         visibility,
