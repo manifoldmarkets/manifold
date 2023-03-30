@@ -14,8 +14,8 @@ create or replace view listed_open_contracts as (
 
 create or replace view trending_contracts as (
   select * from listed_open_contracts
-  where (listed_open_contracts.data->>'popularityScore')::real >= 0
-  order by (data->>'popularityScore')::numeric desc
+  where listed_open_contracts.popularity_score > 0
+  order by popularity_score desc
 );
 
 create or replace view contract_distance as (
@@ -53,12 +53,12 @@ create or replace view user_trending_contract as (
     user_contract_distance.user_id,
     user_contract_distance.contract_id,
     distance,
-    (public_open_contracts.data->>'popularityScore')::real as popularity_score,
+    public_open_contracts.popularity_score,
     public_open_contracts.created_time,
     public_open_contracts.close_time
   from user_contract_distance
   join public_open_contracts on public_open_contracts.id = user_contract_distance.contract_id
-  where (public_open_contracts.data->>'popularityScore')::real >= 0
+  where public_open_contracts.popularity_score > 0
   order by popularity_score desc
 );
 

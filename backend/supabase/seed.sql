@@ -164,6 +164,7 @@ create table if not exists contracts (
     resolution_time timestamptz,
     resolution_probability numeric,
     resolution text,
+    popularity_score numeric,
     data jsonb not null,
     fs_updated_time timestamp not null
 );
@@ -177,7 +178,7 @@ create index if not exists contracts_creator_id on contracts (creator_id, create
 create index if not exists contracts_created_time on contracts (created_time desc);
 create index if not exists contracts_close_time on contracts (close_time desc);
 create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
-create index if not exists contracts_popularity_score on contracts (((data->>'popularityScore')::real) desc);
+create index if not exists contracts_popularity_score on contracts (popularity_score desc);
 create index if not exists contracts_visibility on contracts(visibility);
 
 alter table contracts cluster on contracts_creator_id;
@@ -198,6 +199,7 @@ as $$ begin
     new.resolution_time := case when new.data ? 'resolutionTime' then millis_to_ts(((new.data)->>'resolutionTime')::bigint) else null end;
     new.resolution_probability := ((new.data)->>'resolutionProbability')::numeric;
     new.resolution := (new.data)->>'resolution';
+    new.popularity_score := coalesce(((new.data)->>'popularityScore')::numeric, 0);
   end if;
   return new;
 end $$;
@@ -442,7 +444,7 @@ create policy "admin write access" on user_embeddings
   as PERMISSIVE FOR ALL
   to service_role;
 
-create index if not exists user_embeddings_interest_embedding on user_embeddings 
+create index if not exists user_embeddings_interest_embedding on user_embeddings
   using ivfflat (interest_embedding vector_cosine_ops)
   with (lists = 100);
 
