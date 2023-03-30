@@ -691,6 +691,13 @@ export interface Database {
           id: string | null
           is_resolved: boolean | null
           outcome_type: string | null
+          popularity_score: number | null
+          question: string | null
+          question_fts: unknown | null
+          resolution: string | null
+          resolution_probability: number | null
+          resolution_time: string | null
+          slug: string | null
           visibility: string | null
         }
         Insert: {
@@ -699,8 +706,16 @@ export interface Database {
           creator_id?: never
           id?: string | null
           is_resolved?: never
-          outcome_type?: never
-          visibility?: never
+          mechanism?: string | null
+          outcome_type?: string | null
+          popularity_score?: number | null
+          question?: string | null
+          question_fts?: unknown | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
         }
         Update: {
           close_time?: never
@@ -708,8 +723,16 @@ export interface Database {
           creator_id?: never
           id?: string | null
           is_resolved?: never
-          outcome_type?: never
-          visibility?: never
+          mechanism?: string | null
+          outcome_type?: string | null
+          popularity_score?: number | null
+          question?: string | null
+          question_fts?: unknown | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
         }
       }
       group_role: {
@@ -1076,7 +1099,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database["public"]["CompositeTypes"]["table_spec"]
+        Returns: Database['public']['CompositeTypes']['table_spec']
       }
       get_open_limit_bets_with_contracts: {
         Args: {
@@ -1276,31 +1299,31 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
@@ -1316,7 +1339,7 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
@@ -1387,7 +1410,7 @@ export interface Database {
       }
       set_limit: {
         Args: {
-          "": number
+          '': number
         }
         Returns: number
       }
@@ -1397,7 +1420,7 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          "": string
+          '': string
         }
         Returns: string[]
       }
@@ -1410,7 +1433,7 @@ export interface Database {
       }
       to_jsonb: {
         Args: {
-          "": Json
+          '': Json
         }
         Returns: Json
       }
@@ -1429,37 +1452,37 @@ export interface Database {
           }
       vector_avg: {
         Args: {
-          "": number[]
+          '': number[]
         }
         Returns: unknown
       }
       vector_dims: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          "": unknown[]
+          '': unknown[]
         }
         Returns: number
       }

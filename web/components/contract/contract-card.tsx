@@ -564,10 +564,10 @@ export function ContractCardNew(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <div
+      <Col
         className={clsx(
           showImage ? 'bg-canvas-0/95' : 'bg-canvas-0/70',
-          'py-2 px-4 backdrop-blur-sm'
+          'gap-2 py-2 px-4 backdrop-blur-sm'
         )}
       >
         <Row className="text-ink-500 items-center gap-3 overflow-hidden text-sm">
@@ -592,7 +592,7 @@ export function ContractCardNew(props: {
         <Link
           href={path}
           className={clsx(
-            'break-anywhere group-hover:text-primary-800 transition-color focus:text-primary-800 group-focus:text-primary-800 my-2 whitespace-normal font-medium outline-none',
+            'break-anywhere group-hover:text-primary-800 transition-color focus:text-primary-800 group-focus:text-primary-800 whitespace-normal font-medium outline-none',
             textColor
           )}
         >
@@ -637,7 +637,7 @@ export function ContractCardNew(props: {
         {isBinaryCpmm && metrics && metrics.hasShares && (
           <YourMetricsFooter metrics={metrics} />
         )}
-      </div>
+      </Col>
 
       {showImage && (
         <>

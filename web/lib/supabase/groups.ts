@@ -1,6 +1,6 @@
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { Group } from 'common/group'
-import { run, selectFrom, selectFromView } from 'common/supabase/utils'
+import { run, selectFrom } from 'common/supabase/utils'
 import { db } from './db'
 export type SearchGroupInfo = Pick<
   Group,
