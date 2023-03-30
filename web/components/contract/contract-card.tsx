@@ -18,6 +18,7 @@ import {
   NumericContract,
   PseudoNumericContract,
   contractPath,
+  StonkContract,
 } from 'common/contract'
 import {
   BinaryContractOutcomeLabel,
@@ -410,6 +411,23 @@ export function PseudoNumericResolutionOrExpectation(props: {
           <div className="text-base font-light">expected</div>
         </>
       )}
+    </Row>
+  )
+}
+export function StonkPrice(props: {
+  contract: StonkContract
+  className?: string
+}) {
+  const { contract, className } = props
+
+  const value = getMappedValue(contract, getProbability(contract))
+
+  return (
+    <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
+      <Tooltip text={value.toFixed(2)} placement="bottom">
+        {formatLargeNumber(value)}
+      </Tooltip>
+      <div className="text-base font-light">expected</div>
     </Row>
   )
 }

@@ -32,6 +32,7 @@ export type AnyOutcomeType =
   | Numeric
   | Cert
   | QuadraticFunding
+  | Stonk
 
 export type AnyContractType =
   | (CPMM & Binary)
@@ -43,6 +44,7 @@ export type AnyContractType =
   | (Uniswap2 & Cert)
   | (CPMM2 & MultipleChoice)
   | QuadraticFunding
+  | (CPMM & Stonk)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -114,6 +116,8 @@ export type Uniswap2CertContract = CertContract & Uniswap2
 export type DpmMultipleChoiceContract = Contract & MultipleChoice & DPM
 export type CPMMMultipleChoiceContract = Contract & MultipleChoice & CPMM2
 export type QuadraticFundingContract = Contract & QuadraticFunding
+export type StonkContract = Contract & Stonk
+export type CPMMStonkContract = StonkContract & CPMM
 
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
@@ -216,6 +220,13 @@ export type Numeric = {
   resolutionValue?: number
 }
 
+export type Stonk = {
+  outcomeType: 'STONK'
+  min: number
+  max: number
+  initialProbability: number
+}
+
 export type outcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
@@ -227,6 +238,7 @@ export const OUTCOME_TYPES = [
   'NUMERIC',
   'CERT',
   'QUADRATIC_FUNDING',
+  'STONK',
 ] as const
 
 export const MAX_QUESTION_LENGTH = 120

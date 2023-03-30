@@ -1,8 +1,4 @@
-import {
-  BinaryContract,
-  CPMMBinaryContract,
-  PseudoNumericContract,
-} from 'common/contract'
+import { CPMMContract } from 'common/contract'
 import { User } from 'common/user'
 import { getContractBetMetrics } from 'common/calculate'
 import { useState } from 'react'
@@ -21,7 +17,7 @@ import { SellPanel } from './sell-panel'
 import { TweetButton, getPositionTweet } from '../buttons/tweet-button'
 
 export function SellRow(props: {
-  contract: BinaryContract | PseudoNumericContract
+  contract: CPMMContract
   user: User | null | undefined
   className?: string
   showTweet?: boolean
@@ -86,7 +82,7 @@ export function SellRow(props: {
 
 function SellSharesModal(props: {
   className?: string
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'

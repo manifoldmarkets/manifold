@@ -5,7 +5,11 @@ import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
 
 import { useUser } from 'web/hooks/use-user'
-import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  CPMMBinaryContract,
+  PseudoNumericContract,
+  StonkContract,
+} from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
@@ -48,6 +52,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
 import { SiteLink } from '../widgets/site-link'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
+import { STONK_NO, STONK_YES } from 'common/stonk'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -328,7 +333,8 @@ export function BuyPanel(props: {
           onSelect={(choice) => {
             onOptionChoice(choice)
           }}
-          isPseudoNumeric={isPseudoNumeric}
+          yesLabel={isPseudoNumeric ? 'HIGHER' : undefined}
+          noLabel={isPseudoNumeric ? 'LOWER' : undefined}
         />
         <button
           className={clsx(
@@ -467,6 +473,250 @@ export function BuyPanel(props: {
           />
         </>
       )}
+    </Col>
+  )
+}
+export function BuyStonkPanel(props: {
+  contract: StonkContract
+  user: User | null | undefined
+  unfilledBets: LimitBet[]
+  balanceByUserId: { [userId: string]: number }
+  hidden: boolean
+  onBuySuccess?: () => void
+  mobileView?: boolean
+  initialOutcome?: binaryOutcomes
+  location?: string
+  className?: string
+}) {
+  const {
+    contract,
+    user,
+    unfilledBets,
+    balanceByUserId,
+    hidden,
+    onBuySuccess,
+    mobileView,
+    initialOutcome,
+    location = 'bet panel',
+    className,
+  } = props
+
+  const initialProb = getProbability(contract)
+  const [option, setOption] = useState<binaryOutcomes>(initialOutcome)
+  const outcome = option
+
+  const [betAmount, setBetAmount] = useState<number | undefined>(10)
+  const [error, setError] = useState<string | undefined>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [inputRef, focusAmountInput] = useFocus()
+
+  useEffect(() => {
+    if (initialOutcome) {
+      setOption(initialOutcome)
+    }
+  }, [initialOutcome])
+
+  function onOptionChoice(choice: 'YES' | 'NO') {
+    if (option === choice) {
+      setOption(undefined)
+    } else {
+      setOption(choice)
+    }
+
+    if (!isIOS() && !isAndroid()) {
+      focusAmountInput()
+    }
+  }
+
+  function onBetChange(newAmount: number | undefined) {
+    setBetAmount(newAmount)
+    if (!outcome) {
+      setOption('YES')
+    }
+  }
+
+  async function submitBet() {
+    if (!user || !betAmount) return
+
+    setError(undefined)
+    setIsSubmitting(true)
+
+    placeBet({
+      outcome,
+      amount: betAmount,
+      contractId: contract.id,
+    })
+      .then((r) => {
+        console.log('placed bet. Result:', r)
+        setIsSubmitting(false)
+        setBetAmount(undefined)
+        if (onBuySuccess) onBuySuccess()
+        else {
+          toast('Trade submitted!', {
+            icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
+          })
+        }
+      })
+      .catch((e) => {
+        if (e instanceof APIError) {
+          setError(e.toString())
+        } else {
+          console.error(e)
+          setError('Error placing bet')
+        }
+        setIsSubmitting(false)
+      })
+
+    track('bet', {
+      location,
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      amount: betAmount,
+      outcome,
+      isLimitOrder: false,
+    })
+  }
+
+  const betDisabled =
+    isSubmitting || !betAmount || !!error || outcome === undefined
+
+  const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
+    outcome ?? 'YES',
+    betAmount ?? 0,
+    contract,
+    undefined,
+    unfilledBets,
+    balanceByUserId
+  )
+
+  const resultProb = getCpmmProbability(newPool, newP)
+  const probStayedSame =
+    formatPercent(resultProb) === formatPercent(initialProb)
+
+  const probChange = Math.abs(resultProb - initialProb)
+  const currentPayout = newBet.shares
+  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
+  const currentReturnPercent = formatPercent(currentReturn)
+
+  const rawDifference = Math.abs(
+    getMappedValue(contract, resultProb) - getMappedValue(contract, initialProb)
+  )
+  const displayedDifference = formatLargeNumber(rawDifference)
+
+  const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
+
+  const warning =
+    (betAmount ?? 0) >= 100 && bankrollFraction >= 0.5 && bankrollFraction <= 1
+      ? `You might not want to spend ${formatPercent(
+          bankrollFraction
+        )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
+          user?.balance ?? 0
+        )}`
+      : (betAmount ?? 0) > 10 && probChange > 0.299 && bankrollFraction <= 1
+      ? `Are you sure you want to move the market by ${displayedDifference}?`
+      : undefined
+
+  const displayError = !!outcome
+
+  return (
+    <Col className={clsx(className, hidden ? 'hidden' : '')}>
+      <Row className="mb-2 w-full items-center gap-3">
+        <YesNoSelector
+          className="flex-1"
+          btnClassName="flex-1"
+          selected={outcome}
+          onSelect={(choice) => {
+            onOptionChoice(choice)
+          }}
+          yesLabel={STONK_YES}
+          noLabel={STONK_NO}
+        />
+      </Row>
+
+      <Col
+        className={clsx(
+          outcome === 'NO'
+            ? 'bg-red-500/10'
+            : outcome === 'YES'
+            ? 'bg-teal-500/10'
+            : 'hidden',
+          'rounded-lg px-4 py-2'
+        )}
+      >
+        <Row className="text-ink-500 mt-2 mb-1 items-center justify-between text-left text-sm">
+          Amount
+        </Row>
+
+        <BuyAmountInput
+          inputClassName="w-full max-w-none"
+          amount={betAmount}
+          onChange={onBetChange}
+          error={displayError ? error : undefined}
+          setError={setError}
+          disabled={isSubmitting}
+          inputRef={inputRef}
+          sliderOptions={{ show: true, wrap: false }}
+          binaryOutcome={outcome}
+          showBalance
+        />
+
+        <Row className="mt-8 w-full">
+          <Col className="w-1/2 text-sm">
+            <Col className="text-ink-500 flex-nowrap whitespace-nowrap text-sm">
+              <div>{'Shares'}</div>
+            </Col>
+            <div>
+              <span className="whitespace-nowrap text-lg">
+                {formatMoney(currentPayout)}
+              </span>
+              <span className="text-ink-500 pr-3 text-sm">
+                {' '}
+                +{currentReturnPercent}
+              </span>
+            </div>
+          </Col>
+          <Col className="w-1/2 text-sm">
+            <Row>
+              <span className="text-ink-500 whitespace-nowrap text-sm">
+                {'Stonk price'}
+              </span>
+            </Row>
+            {probStayedSame ? (
+              <div className="text-lg">
+                {getFormattedMappedValue(contract, initialProb)}
+              </div>
+            ) : (
+              <div className="text-lg">
+                {getFormattedMappedValue(contract, resultProb)}
+              </div>
+            )}
+          </Col>
+        </Row>
+
+        <Spacer h={8} />
+        {user && (
+          <WarningConfirmationButton
+            marketType="binary"
+            amount={betAmount}
+            warning={warning}
+            onSubmit={submitBet}
+            isSubmitting={isSubmitting}
+            disabled={betDisabled}
+            size="xl"
+            color={outcome === 'NO' ? 'red' : 'green'}
+            actionLabel={
+              betDisabled
+                ? `Select ${formatOutcomeLabel(
+                    contract,
+                    'YES'
+                  )} or ${formatOutcomeLabel(contract, 'NO')}`
+                : 'Wager'
+            }
+          />
+        )}
+      </Col>
     </Col>
   )
 }

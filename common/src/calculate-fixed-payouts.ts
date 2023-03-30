@@ -50,6 +50,9 @@ function calculateFixedMktPayout(
 
     return betP * shares
   }
+  if (contract.outcomeType === 'STONK') {
+    return 0
+  }
 
   const { resolutions, pool } = contract
   const resolutionsSum = resolutions ? sum(Object.values(resolutions)) : 100

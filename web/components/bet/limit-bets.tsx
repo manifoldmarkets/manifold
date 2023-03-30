@@ -1,6 +1,10 @@
 import clsx from 'clsx'
 import { LimitBet } from 'common/bet'
-import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  CPMMBinaryContract,
+  PseudoNumericContract,
+  StonkContract,
+} from 'common/contract'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { sortBy } from 'lodash'
@@ -54,7 +58,7 @@ export function YourOrders(props: {
 
 export function OrderTable(props: {
   limitBets: LimitBet[]
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
   isYou: boolean
   side?: 'YES' | 'NO'
 }) {
@@ -118,7 +122,7 @@ export function OrderTable(props: {
 }
 
 function OrderRow(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
   bet: LimitBet
   isYou: boolean
   showOutcome?: boolean

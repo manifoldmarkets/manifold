@@ -20,12 +20,13 @@ import {
   FreeResponseContract,
   PseudoNumericContract,
   MultipleChoiceContract,
+  StonkContract,
 } from './contract'
 import { floatingEqual } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 
 export function getProbability(
-  contract: BinaryContract | PseudoNumericContract
+  contract: BinaryContract | PseudoNumericContract | StonkContract
 ) {
   return contract.mechanism === 'cpmm-1'
     ? getCpmmProbability(contract.pool, contract.p)
@@ -39,7 +40,7 @@ export function getDisplayProbability(
 }
 
 export function getInitialProbability(
-  contract: BinaryContract | PseudoNumericContract
+  contract: BinaryContract | PseudoNumericContract | StonkContract
 ) {
   if (contract.initialProbability) return contract.initialProbability
 

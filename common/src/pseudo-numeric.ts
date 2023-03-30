@@ -1,9 +1,9 @@
-import { Contract, PseudoNumericContract } from './contract'
+import { Contract, PseudoNumericContract, StonkContract } from './contract'
 import { formatLargeNumber, formatPercent } from './util/format'
 
 export function formatNumericProbability(
   p: number,
-  contract: PseudoNumericContract
+  contract: PseudoNumericContract | StonkContract
 ) {
   const value = getMappedValue(contract, p)
   return formatLargeNumber(value)

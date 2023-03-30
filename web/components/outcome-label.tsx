@@ -37,6 +37,9 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'CERT' || outcomeType === 'QUADRATIC_FUNDING') {
     return <span>TODO Cert outcome label</span>
   }
+  if (outcomeType === 'STONK') {
+    return <span>TODO Stonk outcome label</span>
+  }
 
   return (
     <FreeResponseOutcomeLabel

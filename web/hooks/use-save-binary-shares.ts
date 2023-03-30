@@ -1,4 +1,8 @@
-import { BinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  BinaryContract,
+  PseudoNumericContract,
+  StonkContract,
+} from 'common/contract'
 import { Bet } from 'common/bet'
 import { partition, sumBy } from 'lodash'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -6,7 +10,7 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { useStateCheckEquality } from './use-state-check-equality'
 
 export const useSaveBinaryShares = (
-  contract: BinaryContract | PseudoNumericContract,
+  contract: BinaryContract | PseudoNumericContract | StonkContract,
   userBets: Bet[] | undefined
 ) => {
   const [savedShares, setSavedShares] = useStateCheckEquality({

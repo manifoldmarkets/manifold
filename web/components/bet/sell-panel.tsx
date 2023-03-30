@@ -2,11 +2,7 @@ import { APIError } from 'common/api'
 import { Bet, LimitBet } from 'common/bet'
 import { getContractBetMetrics, getProbability } from 'common/calculate'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
-import {
-  CPMMBinaryContract,
-  PseudoNumericContract,
-  CPMMContract,
-} from 'common/contract'
+import { CPMMContract } from 'common/contract'
 import { getMappedValue, getFormattedMappedValue } from 'common/pseudo-numeric'
 import { User } from 'common/user'
 import {
@@ -27,7 +23,7 @@ import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
 
 export function SellPanel(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'

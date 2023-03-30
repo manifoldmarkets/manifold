@@ -1,5 +1,10 @@
 import { ENV_CONFIG } from '../envs/constants'
-import { BinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  BinaryContract,
+  PseudoNumericContract,
+  StonkContract,
+} from 'common/contract'
+import { STONK_NO, STONK_YES } from 'common/stonk'
 
 const formatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -113,11 +118,14 @@ export function toCamelCase(words: string) {
 }
 
 export const formatOutcomeLabel = (
-  contract: BinaryContract | PseudoNumericContract,
+  contract: BinaryContract | PseudoNumericContract | StonkContract,
   outcomeLabel: 'YES' | 'NO'
 ) => {
   if (contract.outcomeType === 'BINARY') {
     return outcomeLabel
+  }
+  if (contract.outcomeType === 'STONK') {
+    return outcomeLabel === 'YES' ? STONK_YES : STONK_NO
   }
   return outcomeLabel === 'YES' ? 'HIGHER' : 'LOWER'
 }
