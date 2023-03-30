@@ -8,14 +8,14 @@ import { db } from 'web/lib/supabase/db'
 import { useEvent } from './use-event'
 
 const GROUPS_PAGE_SIZE = 6
-const RELATED_PAGE_SIZE = 10
+// const RELATED_PAGE_SIZE = 10
 
 export const useRelatedMarkets = (
   contract: Contract,
   initialContracts: Contract[]
 ) => {
   const [savedContracts, setSavedContracts] = useState(initialContracts)
-  const relatedPage = useRef(0)
+  // const relatedPage = useRef(0)
   const groupsPage = useRef(0)
   const creatorPage = useRef(0)
   const privateUser = usePrivateUser()
@@ -55,8 +55,8 @@ export const useRelatedMarkets = (
       if (groupSlugData) setContracts(groupSlugData, groupsPage)
       if (creatorData) setContracts(creatorData, creatorPage)
     } else {
-      const contracts = await getRelatedContracts(contract, RELATED_PAGE_SIZE)
-      setContracts(contracts, relatedPage)
+      // const contracts = await getRelatedContracts(contract, RELATED_PAGE_SIZE)
+      // setContracts(contracts, relatedPage)
     }
   })
 
