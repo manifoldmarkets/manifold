@@ -17,7 +17,7 @@ supabase status: columns exist for
   resolutionTime?: timestamp (from millis)
   resolution?: text
   resolutionProbability?: numeric
-  volume: numeric
+  popularityScore: numeric
 
 any changes to the type of these columns in firestore will require modifying
 the supabase trigger, or replication of contracts may fail!
