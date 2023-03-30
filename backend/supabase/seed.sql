@@ -178,6 +178,7 @@ create index if not exists contracts_created_time on contracts (created_time des
 create index if not exists contracts_close_time on contracts (close_time desc);
 create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
 create index if not exists contracts_popularity_score on contracts (((data->>'popularityScore')::real) desc);
+create index if not exists contracts_visibility on contracts(visibility);
 
 alter table contracts cluster on contracts_creator_id;
 
