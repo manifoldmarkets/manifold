@@ -172,24 +172,19 @@ as $$
     select interest_embedding
     from user_embeddings
     where user_id = uid
-  ), closest_contracts as (
-    select contract_id, (select interest_embedding from user_embedding) <=> ce.embedding as distance
-    from contract_embeddings as ce
-    order by (select interest_embedding from user_embedding) <=> ce.embedding
-    limit 5000
   ), available_contracts as (
     select
       contract_id,
-      distance,
+      (select interest_embedding from user_embedding) <=> ce.embedding as distance,
       (lpc.data->>'popularityScore')::real as popularity_score,
       lpc.created_time,
       lpc.close_time
-    from closest_contracts
+    from contract_embeddings as ce
     join listed_open_contracts lpc on lpc.id = contract_id
     where not exists (
-      select 1 from unnest(excluded_contract_ids) as w
-      where w = contract_id
-    )
+        select 1 from unnest(excluded_contract_ids) as w
+        where w = contract_id
+      )
     -- That has not been viewed.
     and not exists (
       select 1
@@ -203,7 +198,7 @@ as $$
       select 1
       from user_seen_markets
       where user_seen_markets.user_id = uid
-        and user_seen_markets.contract_id = closest_contracts.contract_id
+        and user_seen_markets.contract_id = ce.contract_id
     )
     -- That has not been viewed as a card recently.
     and not exists(
@@ -214,6 +209,10 @@ as $$
         and user_events.data ->> 'contractId' = contract_id
         and (user_events.data -> 'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
     )
+    order by (select interest_embedding from user_embedding) <=> ce.embedding
+    -- Find many that are close to your interests
+    -- so that among them we can filter for new, closing soon, and trending.
+    limit 2000
   ), new_contracts as (
     select *, row_number() over (order by distance) as row_num
     from available_contracts
@@ -233,6 +232,7 @@ as $$
     select * from available_contracts
     where created_time < (now() - interval '1 day')
     and close_time > (now() + interval '1 day')
+    and popularity_score >= 0
   ), results1 as (
     select *, row_number() over (order by popularity_score desc) as row_num
     from trending_contracts
