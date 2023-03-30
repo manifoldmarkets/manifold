@@ -143,9 +143,7 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
 
 export async function getContractParams(contract: Contract) {
   const contractId = contract?.id
-  const start = Date.now()
   const totalBets = contractId ? await getTotalBetCount(contractId) : 0
-  console.log('got total bets', Date.now() - start)
   const shouldUseBetPoints =
     contract?.outcomeType === 'BINARY' ||
     contract?.outcomeType === 'PSEUDO_NUMERIC'
@@ -160,7 +158,6 @@ export async function getContractParams(contract: Contract) {
       })
     : []
 
-  console.log('got bets', Date.now() - start)
   const betPoints = shouldUseBetPoints
     ? bets.map(
         (bet) =>
@@ -176,23 +173,21 @@ export async function getContractParams(contract: Contract) {
     : []
 
   const comments = contractId ? await getAllComments(contractId, 100) : []
-  console.log('got comments', Date.now() - start)
 
   const userPositionsByOutcome =
     contractId && contract?.outcomeType === 'BINARY'
       ? await getBinaryContractUserContractMetrics(contractId, 100)
       : {}
 
-  console.log('got userPositions', Date.now() - start)
   const topContractMetrics = contract?.resolution
     ? await getTopContractMetrics(contract.id, 10)
     : []
-  console.log('got topContractMetrics', Date.now() - start)
+
   const totalPositions =
     contractId && contract?.outcomeType === 'BINARY'
       ? await getTotalContractMetrics(contractId, db)
       : 0
-  console.log('got totalPositions', Date.now() - start)
+
   if (shouldUseBetPoints && contract) {
     const firstPoint = {
       x: contract.createdTime,
@@ -214,7 +209,7 @@ export async function getContractParams(contract: Contract) {
   const relatedContracts = contract
     ? await getRelatedContracts(contract, 10)
     : []
-  console.log('got relatedContracts', Date.now() - start)
+
   return removeUndefinedProps({
     contract,
     historyData: {

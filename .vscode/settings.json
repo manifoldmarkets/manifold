@@ -10,18 +10,6 @@
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "sqltools.connections": [
-    {
-      "previewLimit": 50,
-      "server": "db.mfodonznyfxllcezufgr.supabase.co",
-      "port": 5432,
-      "driver": "PostgreSQL",
-      "name": "Manifold Dev",
-      "database": "postgres",
-      "username": "postgres",
-      "password": "MqiafyKBqAV0XG5h"
-    }
-  ],
   "[sql]": {
     "editor.defaultFormatter": "mtxr.sqltools"
   }
