@@ -5,6 +5,7 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { createMarketHelper } from './create-market'
 import { HOUR_MS } from 'common/util/time'
 import { runTxn } from 'shared/run-txn'
+import { revalidateStaticProps } from 'shared/utils'
 
 const bodySchema = z.object({
   topic1: z.string().min(1).max(MAX_QUESTION_LENGTH),
@@ -56,5 +57,8 @@ export const createDebate = authEndpoint(async (req, auth) => {
     auth.uid,
     contract.slug
   )
+
+  await revalidateStaticProps('/debate')
+
   return contract
 })
