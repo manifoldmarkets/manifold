@@ -94,33 +94,16 @@ export async function getStaticProps(ctx: {
 }) {
   const { contractSlug } = ctx.params
   const contract = (await getContractFromSlug(contractSlug, 'admin')) ?? null
-  if (contract === null) {
-    return {
-      props: {
-        contractSlug,
-        visibility: null,
-      },
-    }
-  }
+  // No contract found
+  if (contract === null) return { props: { contractSlug, visibility: null } }
 
-  const visibility = contract ? contract.visibility : null
-  if (visibility === 'private') {
-    return {
-      props: {
-        contractSlug,
-        visibility: 'private',
-      },
-    }
-  } else {
-    const contractParams = await getContractParams(contract)
-    return {
-      props: {
-        visibility,
-        contractSlug,
-        contractParams,
-      },
-    }
-  }
+  // Private markets
+  const { visibility } = contract
+  if (visibility === 'private') return { props: { contractSlug, visibility } }
+
+  // Public markets
+  const contractParams = await getContractParams(contract)
+  return { props: { visibility, contractSlug, contractParams } }
 }
 
 export async function getStaticPaths() {
