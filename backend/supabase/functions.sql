@@ -300,23 +300,24 @@ create or replace function get_recommended_contracts_embeddings(uid text, n int,
     from combined_new_closing_soon
     order by row_num2,
       result_id2
-  ), final_results as (
-    select * from combined_results
-    union all
-    -- Fill remaining with trending by least distance.
+  ), extra_trending as (
     select *,
       3 as result_id,
        3 as result_id2,
       row_number() over (
-        order by distance
+        order by log(coalesce(popularity_score, 0) + 10) / distance desc
       ) as row_num,
       row_number() over (
-        order by distance
+        order by log(coalesce(popularity_score, 0) + 10) / distance desc
       ) as row_num2
     from trending_contracts
     where not contract_id in (select contract_id from combined_results)
     order by row_num2, result_id2
     limit n - (select count(*) from combined_results)
+  ), final_results as (
+    select * from combined_results
+    union all
+    select * from extra_trending
   )
 select data,
   distance,
