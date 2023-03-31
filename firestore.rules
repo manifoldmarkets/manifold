@@ -19,6 +19,10 @@ service cloud.firestore {
       ]
     }
 
+    function isGroupMember(groupId) {
+      return exists(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid));
+    }
+
     match /stats/stats {
       allow read;
     }
@@ -137,7 +141,11 @@ service cloud.firestore {
     }
 
     match /contracts/{contractId} {
-      allow read;
+      allow read: if isAdmin()
+      // allow read if contract is not private
+      allow read: if resource.data.visibility!='private';
+      // allow read if contract is private and user is member of associated private group
+      allow read: if resource.data.visibility=='private' && resource.data.groupLinks!=null && isGroupMember(resource.data.groupLinks[0].groupId);
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['tags', 'lowercaseTags', 'groupSlugs', 'groupLinks', 'flaggedByUsernames']);                                                     
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
@@ -216,7 +224,9 @@ service cloud.firestore {
     }
 
     match /groups/{groupId} {
-      allow read;
+      allow read: if isAdmin()
+      allow read: if resource.data.privacyStatus!='private';
+      allow read: if resource.data.privacyStatus=='private' && isGroupMember(groupId);
       allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                         && request.resource.data.diff(resource.data)
                         .affectedKeys()
@@ -229,7 +239,7 @@ service cloud.firestore {
         request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || 
         isAdmin() || 
         (
-        isGroupMember() && 
+        isGroupMember(groupId) && 
         (
         get(/databases/$(database)/documents/contracts/$(contractId)).data.creatorId == request.auth.uid || 
         ['admin','contributor'].includes(get(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid)).data.role)
@@ -245,14 +255,9 @@ service cloud.firestore {
         allow delete: if request.auth.uid == resource.data.userId;
       }
 
-
-      function isGroupMember() {
-        return exists(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid));
-      }
-
       match /comments/{commentId} {
         allow read;
-        allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isGroupMember();
+        allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isGroupMember(groupId);
       }
     }
 
