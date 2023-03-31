@@ -11,6 +11,7 @@ import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-co
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
+import { PrivacyAndTerms } from 'web/components/privacy-terms'
 import { SEO } from 'web/components/SEO'
 import { Card } from 'web/components/widgets/card'
 import { Title } from 'web/components/widgets/title'
@@ -214,6 +215,32 @@ export default function LabsPage() {
         </Masonry>
 
         <Spacer h={8} />
+
+        <Title>⌛️ Past projects</Title>
+        <Masonry
+          breakpointCols={{ default: 2, 768: 1 }}
+          className="-ml-4 flex w-auto"
+          columnClassName="pl-4 bg-clip-padding"
+        >
+          <LabCard
+            title="🇺🇸 2022 US Midterm Elections"
+            description="Manifold's midterm forecast"
+            href="/midterms"
+          />
+
+          <LabCard
+            title="⚽️ World Cup"
+            description="2022 FIFA World Cup tournament"
+            href="/worldcup"
+          />
+
+          <LabCard
+            title="🏆 Tournaments"
+            description="Ongoing and past prediction tournaments"
+            href="/tournaments"
+          />
+        </Masonry>
+        <PrivacyAndTerms />
       </Col>
     </Page>
   )

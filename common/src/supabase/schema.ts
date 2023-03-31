@@ -475,19 +475,16 @@ export interface Database {
         Row: {
           created_at: string
           interest_embedding: unknown
-          pre_signup_interest_embedding: unknown | null
           user_id: string
         }
         Insert: {
           created_at?: string
           interest_embedding: unknown
-          pre_signup_interest_embedding?: unknown | null
           user_id: string
         }
         Update: {
           created_at?: string
           interest_embedding?: unknown
-          pre_signup_interest_embedding?: unknown | null
           user_id?: string
         }
       }
@@ -1027,10 +1024,10 @@ export interface Database {
         }
         Returns: number
       }
-      can_access_private_contract: {
+      can_access_contract: {
         Args: {
-          this_contract_id: string
-          this_member_id: string
+          contract_id: string
+          member_id: string
         }
         Returns: boolean
       }
@@ -1162,7 +1159,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database["public"]["CompositeTypes"]["table_spec"]
+        Returns: Database['public']['CompositeTypes']['table_spec']
       }
       get_open_limit_bets_with_contracts: {
         Args: {
@@ -1362,31 +1359,31 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
@@ -1402,7 +1399,7 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
@@ -1480,7 +1477,7 @@ export interface Database {
       }
       set_limit: {
         Args: {
-          "": number
+          '': number
         }
         Returns: number
       }
@@ -1490,7 +1487,7 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          "": string
+          '': string
         }
         Returns: string[]
       }
@@ -1503,7 +1500,7 @@ export interface Database {
       }
       to_jsonb: {
         Args: {
-          "": Json
+          '': Json
         }
         Returns: Json
       }
@@ -1522,37 +1519,37 @@ export interface Database {
           }
       vector_avg: {
         Args: {
-          "": number[]
+          '': number[]
         }
         Returns: unknown
       }
       vector_dims: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          "": unknown[]
+          '': unknown[]
         }
         Returns: number
       }
