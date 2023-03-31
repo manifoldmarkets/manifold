@@ -668,19 +668,13 @@ export function BuyStonkPanel(props: {
               <div>{'Shares'}</div>
             </Col>
             <div>
-              <span className="whitespace-nowrap text-lg">
-                {formatMoney(currentPayout)}
-              </span>
-              <span className="text-ink-500 pr-3 text-sm">
-                {' '}
-                +{currentReturnPercent}
-              </span>
+              <span className="whitespace-nowrap text-lg">{currentPayout}</span>
             </div>
           </Col>
           <Col className="w-1/2 text-sm">
             <Row>
               <span className="text-ink-500 whitespace-nowrap text-sm">
-                {'Stonk price'}
+                {'New stonk price'}
               </span>
             </Row>
             {probStayedSame ? (

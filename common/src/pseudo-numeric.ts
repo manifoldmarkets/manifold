@@ -23,7 +23,9 @@ export const getMappedValue = (contract: Contract, prob: number) => {
 }
 
 export const getFormattedMappedValue = (contract: Contract, prob: number) => {
-  if (contract.outcomeType !== 'PSEUDO_NUMERIC') return formatPercent(prob)
+  const { outcomeType } = contract
+  if (outcomeType !== 'PSEUDO_NUMERIC' && outcomeType !== 'STONK')
+    return formatPercent(prob)
 
   const value = getMappedValue(contract, prob)
   return formatLargeNumber(value)
