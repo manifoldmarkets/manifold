@@ -39,21 +39,9 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
 }
 
 export const useContractParams = (contract: Contract) => {
-  const [contractParams, setContractParams] = useState<ContractParams>({
-    contract: contract,
-    historyData: {
-      bets: [],
-      points: [],
-    },
-    comments: [],
-    userPositionsByOutcome: {},
-    totalPositions: 0,
-    totalBets: 0,
-    topContractMetrics: [],
-    relatedContracts: [],
-    pointsString: undefined,
-    creatorTwitter: undefined,
-  })
+  const [contractParams, setContractParams] = useState<
+    ContractParams | undefined
+  >()
 
   useEffect(() => {
     getContractParams(contract).then(setContractParams)
