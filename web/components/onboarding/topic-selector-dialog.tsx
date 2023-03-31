@@ -21,7 +21,7 @@ export function TopicSelectorDialog(props: {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedTopics.length > 0) {
       db.rpc('save_user_topics', {
         p_user_id: user.id,
         p_topics: selectedTopics,

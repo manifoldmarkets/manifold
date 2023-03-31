@@ -80,12 +80,10 @@ export const createuser = authEndpoint(async (req, auth) => {
   const interestEmbedding = visitedContractIds
     ? await getAverageContractEmbedding(pg, visitedContractIds)
     : getDefaultEmbedding()
-  
-  // TODO: Add this interestEmbedding based visited contracts to user_topics table.
 
   await pg.none(
-    `insert into user_embeddings (user_id, interest_embedding) values ($1, $2)`,
-    [auth.uid, interestEmbedding]
+    `insert into user_embeddings (user_id, interest_embedding, pre_signup_interest_embedding) values ($1, $2, $3)`,
+    [auth.uid, interestEmbedding, interestEmbedding]
   )
 
   // Only undefined prop should be avatarUrl

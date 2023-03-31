@@ -87,6 +87,15 @@ async function computeUserInterestEmbedding(
       select topic_embedding as combined_embedding
       from user_topics
       where user_id = $2
+      -- Append user's pre-signup interest embeddings twice to be averaged in.
+      union all
+      select pre_signup_interest_embedding as combined_embedding
+      from user_embeddings
+      where user_id = $2
+      union all
+      select pre_signup_interest_embedding as combined_embedding
+      from user_embeddings
+      where user_id = $2
     ) as combined_embeddings`,
     [contractIds, userId],
     (r: { average_embedding: number[] }) => {
