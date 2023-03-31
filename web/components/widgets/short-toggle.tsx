@@ -32,7 +32,7 @@ export default function ShortToggle(props: {
       <span
         aria-hidden="true"
         className={clsx(
-          on ? 'bg-primary-600' : 'bg-ink-200',
+          on ? 'bg-primary-600' : 'bg-ink-400',
           'pointer-events-none absolute mx-auto h-4 w-9 rounded-full transition-colors duration-200 ease-in-out'
         )}
       />
@@ -40,7 +40,7 @@ export default function ShortToggle(props: {
         aria-hidden="true"
         className={clsx(
           on ? 'translate-x-5' : 'translate-x-0',
-          'border-ink-200 bg-canvas-0 pointer-events-none absolute left-0 inline-block h-5 w-5 transform rounded-full border shadow ring-0 transition-transform duration-200 ease-in-out'
+          'border-ink-400 bg-canvas-0 pointer-events-none absolute left-0 inline-block h-5 w-5 transform rounded-full border shadow ring-0 transition-transform duration-200 ease-in-out'
         )}
       />
     </Switch>

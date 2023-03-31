@@ -54,9 +54,9 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'gray-outline' &&
       'ring-2 ring-ink-500 text-ink-500 enabled:hover:bg-ink-500 enabled:hover:text-ink-0 disabled:opacity-50',
     color === 'gradient' &&
-      'disabled:bg-ink-300 enabled:bg-gradient-to-r from-primary-500 to-blue-500 text-white hover:from-primary-700 hover:to-blue-700',
+      'disabled:bg-ink-300 enabled:bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:to-primary-700',
     color === 'gradient-pink' &&
-      'disabled:bg-ink-300 enabled:bg-gradient-to-r from-primary-500 to-fuchsia-500 text-white',
+      'disabled:bg-ink-300 enabled:bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white',
     color === 'gray-white' &&
       'text-ink-600 hover:bg-ink-200 shadow-none disabled:opacity-50',
     color === 'yellow-outline' &&

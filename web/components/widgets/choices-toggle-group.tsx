@@ -6,7 +6,7 @@ const colorClasses = {
   'indigo-dark':
     'text-ink-900 hover:bg-primary-50 aria-checked:bg-primary-500 aria-checked:text-white',
   indigo:
-    'text-ink-500 hover:bg-ink-100 aria-checked:bg-primary-100 aria-checked:text-primary-900',
+    'text-ink-1000 hover:bg-primary-400 aria-checked:bg-primary-900 aria-checked:text-ink-200',
   green:
     'text-ink-500 hover:bg-ink-100 aria-checked:bg-teal-500/30 aria-checked:text-teal-600',
   red: 'hover:bg-ink-100 aria-checked:bg-scarlet-100 aria-checked:text-scarlet-600',

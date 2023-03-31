@@ -312,7 +312,7 @@ export function ContractPageContent(props: {
             <Col className="gap-3 sm:gap-4">
               <div ref={titleRef}>
                 <Linkify
-                  className="text-primary-700 text-lg sm:text-2xl"
+                  className="text-primary-700 text-lg font-bold sm:text-2xl"
                   text={contract.question}
                 />
               </div>
