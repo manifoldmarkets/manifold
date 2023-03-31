@@ -14,7 +14,7 @@ export async function getAverageContractEmbedding(
   return await pg.one(
     `select avg(embedding) as average_embedding
     from contract_embeddings
-    where contract_id in ($1:list)`,
+    where contract_id = any($1)`,
     [contractIds],
     (r: { average_embedding: number[] }) => {
       if (r.average_embedding === null) {
@@ -73,13 +73,12 @@ async function computeUserInterestEmbedding(
   contractIds: string[]
 ) {
   return await pg.one(
-    `select avg(combined_embedding) as average_embedding
-     from (
+    `with combined_embeddings as (
       select embedding as combined_embedding
       from contract_embeddings
-      where contract_id in ($1:list)
+      where contract_id = any($1)
+      union all
       -- Append user's topic embeddings twice to be averaged in.
-      union all
       select topic_embedding as combined_embedding
       from user_topics
       where user_id = $2
@@ -87,8 +86,8 @@ async function computeUserInterestEmbedding(
       select topic_embedding as combined_embedding
       from user_topics
       where user_id = $2
+      union all
       -- Append user's pre-signup interest embeddings twice to be averaged in.
-      union all
       select pre_signup_interest_embedding as combined_embedding
       from user_embeddings
       where user_id = $2
@@ -96,7 +95,9 @@ async function computeUserInterestEmbedding(
       select pre_signup_interest_embedding as combined_embedding
       from user_embeddings
       where user_id = $2
-    ) as combined_embeddings`,
+     )
+    select avg(combined_embedding) as average_embedding
+    from combined_embeddings`,
     [contractIds, userId],
     (r: { average_embedding: number[] }) => {
       if (r.average_embedding === null) {

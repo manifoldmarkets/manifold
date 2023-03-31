@@ -45,6 +45,7 @@ import { getprivatecontractbyslug } from './get-private-contract-by-slug'
 import { redeemad } from './redeem-ad-reward'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
+import { updateUserEmbedding } from './update-user-embedding'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -114,6 +115,7 @@ app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/getprivatecontractbyslug', ...apiRoute(getprivatecontractbyslug))
 app.post('/redeemad', ...apiRoute(redeemad))
 app.post('/completequest', ...apiRoute(completequest))
+app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)

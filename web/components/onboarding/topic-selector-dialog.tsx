@@ -10,6 +10,7 @@ import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { db } from 'web/lib/supabase/db'
+import { updateUserEmbedding } from 'web/lib/firebase/api'
 
 export function TopicSelectorDialog(props: {
   open: boolean
@@ -19,6 +20,7 @@ export function TopicSelectorDialog(props: {
   const user = useUser()
 
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (user && selectedTopics.length > 0) {
@@ -30,6 +32,16 @@ export function TopicSelectorDialog(props: {
       })
     }
   }, [selectedTopics])
+
+  const recomputeEmbeddingsAndReload = () => {
+    if (user) {
+      setIsLoading(true)
+      updateUserEmbedding({ userId: user.id }).then(() => {
+        // Reload to recompute feed!
+        window.location.reload()
+      })
+    }
+  }
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -79,7 +91,9 @@ export function TopicSelectorDialog(props: {
         </div>
 
         <Row className={'justify-end'}>
-          <Button onClick={() => setOpen(false)}>Done</Button>
+          <Button onClick={recomputeEmbeddingsAndReload} loading={isLoading}>
+            Done
+          </Button>
         </Row>
       </Col>
     </Modal>
