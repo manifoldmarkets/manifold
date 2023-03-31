@@ -9,6 +9,7 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
+import { db } from 'web/lib/supabase/db'
 
 export function TopicSelectorDialog(props: {
   open: boolean
@@ -20,7 +21,14 @@ export function TopicSelectorDialog(props: {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
 
   useEffect(() => {
-    // TODO save selected topics to user_topics table
+    if (user) {
+      db.rpc('save_user_topics', {
+        p_user_id: user.id,
+        p_topics: selectedTopics,
+      }).then(() => {
+        console.log('saved user topics')
+      })
+    }
   }, [selectedTopics])
 
   return (

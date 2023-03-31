@@ -618,7 +618,22 @@ as $$
   limit match_count;
 $$;
 
--- TODO create a function to compute average user topic embedding from an array of topics and save to user_topics table.
+create or replace function save_user_topics(p_user_id text, p_topics text[])
+returns void
+language sql
+as $$
+  with topic_embedding as (
+    select avg(embedding) as average
+    from topic_embeddings
+    where topic = any(p_topics)
+  )
+  insert into user_topics (user_id, topics, topic_embedding)
+  values (p_user_id, p_topics, (select average from topic_embedding))
+  on conflict (user_id)
+  do update set
+    topics = excluded.topics,
+    topic_embedding = excluded.topic_embedding;
+$$;
 
 create or replace function firebase_uid()
   returns text
