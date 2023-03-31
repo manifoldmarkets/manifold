@@ -208,40 +208,6 @@ export function LandingPage0(props: { isMobile: boolean }) {
   )
 }
 
-export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
-  const { isMobile } = props
-  return (
-    <Row className="absolute right-4 top-2 items-center gap-2">
-      {isMobile && (
-        <img
-          className="transition-all group-hover:rotate-12"
-          src={'/logo-white.svg'}
-          width={20}
-          height={20}
-          alt=""
-        />
-      )}
-      {!isMobile && (
-        <img
-          className="transition-all group-hover:rotate-12"
-          src={'/logo.svg'}
-          width={24}
-          height={24}
-          alt=""
-        />
-      )}
-      <div
-        className={clsx(
-          'font-major-mono text-xs lowercase sm:whitespace-nowrap sm:text-sm',
-          isMobile ? 'text-ink-1000' : 'text-white'
-        )}
-      >
-        Manifold Markets
-      </div>
-    </Row>
-  )
-}
-
 export function LandingPage1(props: { isMobile: boolean }) {
   const { isMobile } = props
   const startPredictMs = 3000

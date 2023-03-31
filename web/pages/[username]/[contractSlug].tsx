@@ -1,7 +1,6 @@
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
-import { ContractComment } from 'common/comment'
 import { visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
@@ -15,7 +14,6 @@ import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
-import { HistoryPoint } from 'web/components/charts/generic-charts'
 import { BackButton } from 'web/components/contract/back-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import {
@@ -54,19 +52,14 @@ import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { Bet, BetFilter } from 'web/lib/firebase/bets'
-import {
-  ContractMetricsByOutcome,
-  getTopContractMetrics,
-} from 'web/lib/firebase/contract-metrics'
+import { BetFilter } from 'web/lib/firebase/bets'
+import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
-import {
-  getContractFromSlug,
-  getContractParams,
-} from 'web/lib/supabase/contracts'
+import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import { getContractParams } from 'web/lib/contracts'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -74,53 +67,23 @@ export const CONTRACT_BET_FILTER: BetFilter = {
   filterAntes: false,
 }
 
-type HistoryData = { bets: Bet[]; points: HistoryPoint<Partial<Bet>>[] }
-
-export type ContractParams = {
-  contract: Contract | null
-  historyData: HistoryData
-  pointsString?: string
-  comments: ContractComment[]
-  userPositionsByOutcome: ContractMetricsByOutcome
-  totalPositions: number
-  totalBets: number
-  topContractMetrics: ContractMetric[]
-  creatorTwitter?: string
-  relatedContracts: Contract[]
-}
+export type ContractParams = Awaited<ReturnType<typeof getContractParams>>
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
   const contract = (await getContractFromSlug(contractSlug, 'admin')) ?? null
-  if (contract === null) {
-    return {
-      props: {
-        contractSlug,
-        visibility: null,
-      },
-    }
-  }
+  // No contract found
+  if (contract === null) return { props: { contractSlug, visibility: null } }
 
-  const visibility = contract ? contract.visibility : null
-  if (visibility === 'private') {
-    return {
-      props: {
-        contractSlug,
-        visibility: 'private',
-      },
-    }
-  } else {
-    const contractParams = await getContractParams(contract)
-    return {
-      props: {
-        visibility,
-        contractSlug,
-        contractParams,
-      },
-    }
-  }
+  // Private markets
+  const { visibility } = contract
+  if (visibility === 'private') return { props: { contractSlug, visibility } }
+
+  // Public markets
+  const contractParams = await getContractParams(contract)
+  return { props: { visibility, contractSlug, contractParams } }
 }
 
 export async function getStaticPaths() {
@@ -165,9 +128,7 @@ export function NonPrivateContractPage(props: {
         <ContractSEO contract={contract} points={pointsString} />
         <ContractPageContent
           key={contract.id}
-          contractParams={
-            props.contractParams as ContractParams & { contract: Contract }
-          }
+          contractParams={props.contractParams}
         />
       </>
     )
@@ -183,6 +144,7 @@ export function ContractPageContent(props: {
     totalPositions,
     creatorTwitter,
     relatedContracts,
+    shareholderStats,
   } = contractParams
   const contract =
     useContract(contractParams.contract?.id) ?? contractParams.contract
@@ -383,6 +345,7 @@ export function ContractPageContent(props: {
                 contract={contract}
                 bets={bets}
                 betPoints={betPoints}
+                shareholderStats={shareholderStats}
               />
             </Col>
 
@@ -481,6 +444,7 @@ export function ContractPageContent(props: {
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
+                shareholderStats={shareholderStats}
               />
             </div>
           </Col>

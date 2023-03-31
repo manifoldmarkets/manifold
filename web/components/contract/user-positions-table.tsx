@@ -6,7 +6,12 @@ import {
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
 import { ContractMetrics } from 'common/calculate-metrics'
-import { getContractMetricsForContractId } from 'common/supabase/contract-metrics'
+import {
+  classWarfareEnabled,
+  getAppropriateEmoji,
+  getContractMetricsForContractId,
+  ShareholderStats,
+} from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { partition } from 'lodash'
 import { useContractMetrics } from 'web/hooks/use-contract-metrics'
@@ -23,14 +28,17 @@ import clsx from 'clsx'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { SortRow } from 'web/components/contract/contract-tabs'
+import { CPMMBinaryContract } from 'common/contract'
 
 export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
-    contractId: string
+    contract: CPMMBinaryContract
     positions: ContractMetricsByOutcome
     setTotalPositions: (count: number) => void
+    shareholderStats?: ShareholderStats
   }) {
-    const { contractId, setTotalPositions } = props
+    const { contract, setTotalPositions, shareholderStats } = props
+    const contractId = contract.id
     const [page, setPage] = useState(0)
     const pageSize = 20
     const outcomes = ['YES', 'NO']
@@ -81,6 +89,43 @@ export const BinaryUserPositionsTable = memo(
         ? yesPositionsSorted.length
         : noPositionsSorted.length
 
+    const wareFareEnabled = classWarfareEnabled(contract.prob, shareholderStats)
+
+    const getPositionsTitle = (outcome: 'YES' | 'NO') => {
+      if (!wareFareEnabled) {
+        return outcome === 'YES' ? (
+          <span>
+            <YesLabel /> payouts
+          </span>
+        ) : (
+          <span>
+            <NoLabel /> payouts
+          </span>
+        )
+      }
+      const peoplesChoice = shareholderStats?.peoplesChoice
+      if (outcome === peoplesChoice) {
+        return (
+          <span>
+            {getAppropriateEmoji(outcome, shareholderStats)}
+            {outcome === 'YES'
+              ? shareholderStats?.yesShareholders
+              : shareholderStats?.noShareholders}{' '}
+            strong hold {outcome === 'YES' ? <YesLabel /> : <NoLabel />}
+            {getAppropriateEmoji(outcome, shareholderStats)}
+          </span>
+        )
+      }
+      return (
+        <span>
+          {getAppropriateEmoji(outcome, shareholderStats)}
+          {shareholderStats?.noShareholders} aristocrats' butlers hold{' '}
+          {outcome === 'YES' ? <YesLabel /> : <NoLabel />}
+          {getAppropriateEmoji(outcome, shareholderStats)}
+        </span>
+      )
+    }
+
     return (
       <Col className={'w-full'}>
         <Row className={'mb-2 items-center justify-end gap-2'}>
@@ -102,9 +147,7 @@ export const BinaryUserPositionsTable = memo(
               {sortBy === 'profit' ? (
                 <span className={'text-ink-500'}>Profit</span>
               ) : (
-                <span>
-                  <YesLabel /> payouts
-                </span>
+                <span>{getPositionsTitle('YES')}</span>
               )}
             </Row>
             {visibleYesPositions.map((position) => {
@@ -130,9 +173,7 @@ export const BinaryUserPositionsTable = memo(
               {sortBy === 'profit' ? (
                 <span className={'text-ink-500'}>Loss</span>
               ) : (
-                <span>
-                  <NoLabel /> payouts
-                </span>
+                <span>{getPositionsTitle('NO')}</span>
               )}
             </Row>
             {visibleNoPositions.map((position) => {

@@ -1,10 +1,7 @@
-import { AnyContractType, Contract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { useContractParams } from 'web/hooks/use-contract-supabase'
 import { usePrivateContract } from 'web/hooks/use-contracts'
-import {
-  ContractPageContent,
-  ContractParams,
-} from 'web/pages/[username]/[contractSlug]'
+import { ContractPageContent } from 'web/pages/[username]/[contractSlug]'
 import {
   InaccessiblePrivateThing,
   LoadingPrivateThing,
@@ -22,14 +19,9 @@ export function PrivateContractPage(props: { contractSlug: string }) {
   }
 }
 
-export function ContractParamsPageContent(props: {
-  contract: Contract<AnyContractType>
-}) {
+export function ContractParamsPageContent(props: { contract: Contract }) {
   const { contract } = props
   const contractParams = useContractParams(contract)
-  return (
-    <ContractPageContent
-      contractParams={contractParams as ContractParams & { contract: Contract }}
-    />
-  )
+  if (contractParams === undefined) return <LoadingPrivateThing />
+  return <ContractPageContent contractParams={contractParams} />
 }

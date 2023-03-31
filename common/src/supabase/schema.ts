@@ -475,16 +475,19 @@ export interface Database {
         Row: {
           created_at: string
           interest_embedding: unknown
+          pre_signup_interest_embedding: unknown | null
           user_id: string
         }
         Insert: {
           created_at?: string
           interest_embedding: unknown
+          pre_signup_interest_embedding?: unknown | null
           user_id: string
         }
         Update: {
           created_at?: string
           interest_embedding?: unknown
+          pre_signup_interest_embedding?: unknown | null
           user_id?: string
         }
       }
@@ -1024,10 +1027,10 @@ export interface Database {
         }
         Returns: number
       }
-      can_access_contract: {
+      can_access_private_contract: {
         Args: {
-          contract_id: string
-          member_id: string
+          this_contract_id: string
+          this_member_id: string
         }
         Returns: boolean
       }
@@ -1439,6 +1442,13 @@ export interface Database {
           id: number
           succeeded: boolean
         }[]
+      }
+      save_user_topics: {
+        Args: {
+          p_user_id: string
+          p_topics: string[]
+        }
+        Returns: undefined
       }
       search_contract_embeddings: {
         Args: {

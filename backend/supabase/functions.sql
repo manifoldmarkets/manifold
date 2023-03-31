@@ -153,7 +153,8 @@ create or replace function get_recommended_contracts_embeddings(uid text, n int,
     data jsonb,
     distance numeric,
     popularity_score numeric
-  ) immutable parallel safe language sql as $$ with user_embedding as (
+  ) immutable parallel safe language sql as $$
+  with user_embedding as (
     select interest_embedding
     from user_embeddings
     where user_id = uid
@@ -299,12 +300,31 @@ create or replace function get_recommended_contracts_embeddings(uid text, n int,
     from combined_new_closing_soon
     order by row_num2,
       result_id2
+  ), extra_trending as (
+    select *,
+      3 as result_id,
+       3 as result_id2,
+      row_number() over (
+        order by log(coalesce(popularity_score, 0) + 10) / distance desc
+      ) as row_num,
+      row_number() over (
+        order by log(coalesce(popularity_score, 0) + 10) / distance desc
+      ) as row_num2
+    from trending_contracts
+    where not contract_id in (select contract_id from combined_results)
+    order by row_num2, result_id2
+    limit n - (select count(*) from combined_results)
+  ), final_results as (
+    select * from combined_results
+    union all
+    select * from extra_trending
   )
 select data,
   distance,
-  combined_results.popularity_score
-from combined_results
-  join contracts on contracts.id = combined_results.contract_id $$;
+  final_results.popularity_score
+from final_results
+  join contracts on contracts.id = final_results.contract_id $$;
+
 create or replace function get_cpmm_pool_prob(pool jsonb, p numeric) returns numeric language plpgsql immutable parallel safe as $$
 declare p_no numeric := (pool->>'NO')::numeric;
 p_yes numeric := (pool->>'YES')::numeric;
@@ -580,10 +600,35 @@ FROM search_contract_embeddings(
     match_count + 10
   )
   join contracts on contract_id = contracts.id
-where contract_id != input_contract_id
+  where contract_id != input_contract_id
   and resolution_time is null
-order by similarity * similarity * log(popularity_score + 100) desc
-limit match_count;
+  order by similarity * similarity * log(popularity_score + 100) desc
+  limit match_count;
+$$;
+
+create or replace function save_user_topics(p_user_id text, p_topics text[])
+returns void
+language sql
+as $$
+  with topic_embedding as (
+    select avg(embedding) as average
+    from topic_embeddings
+    where topic = any(p_topics)
+  )
+  insert into user_topics (user_id, topics, topic_embedding)
+  values (p_user_id, p_topics, (select average from topic_embedding))
+  on conflict (user_id)
+  do update set
+    topics = excluded.topics,
+    topic_embedding = excluded.topic_embedding;
+$$;
+
+create or replace function firebase_uid()
+  returns text
+  language sql
+  stable parallel safe
+as $$
+  select nullif(current_setting('request.jwt.claims', true)::json->>'sub', '')::text;
 $$;
 create or replace function firebase_uid() returns text language sql stable parallel safe as $$
 select nullif(

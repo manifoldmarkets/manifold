@@ -202,3 +202,7 @@ export function getPrivateContractBySlug(params: { contractSlug: string }) {
 export function getSupabaseToken() {
   return call(getApiUrl('getsupabasetoken'), 'GET')
 }
+
+export function updateUserEmbedding(params: { userId: string }) {
+  return call(getApiUrl('update-user-embedding'), 'POST', params)
+}

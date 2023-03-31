@@ -431,9 +431,10 @@ drop policy if exists "admin write access" on contract_recommendation_features;
 create policy "admin write access" on contract_recommendation_features as PERMISSIVE FOR ALL to service_role;
 create index if not exists contract_recommendation_features_freshness_score on contract_recommendation_features (freshness_score desc);
 create table if not exists user_embeddings (
-  user_id text not null primary key,
-  created_at timestamp not null default now(),
-  interest_embedding vector(1536) not null
+    user_id text not null primary key,
+    created_at timestamp not null default now(),
+    interest_embedding vector(1536) not null,
+    pre_signup_interest_embedding vector(1536)
 );
 alter table user_embeddings enable row level security;
 drop policy if exists "public read" on user_embeddings;
@@ -454,7 +455,39 @@ select using (true);
 drop policy if exists "admin write access" on contract_embeddings;
 create policy "admin write access" on contract_embeddings as PERMISSIVE FOR ALL to service_role;
 SET ivfflat.probes = 5;
-create index if not exists contract_embeddings_embedding on contract_embeddings using ivfflat (embedding vector_cosine_ops) with (lists = 100);
+create index if not exists contract_embeddings_embedding on contract_embeddings
+  using ivfflat (embedding vector_cosine_ops)
+  with (lists = 100);
+
+
+create table if not exists topic_embeddings (
+    topic text not null primary key,
+    created_at timestamp not null default now(),
+    embedding vector(1536) not null
+);
+alter table topic_embeddings enable row level security;
+drop policy if exists "public read" on topic_embeddings;
+create policy "public read" on topic_embeddings for select using (true);
+drop policy if exists "admin write access" on topic_embeddings;
+create policy "admin write access" on topic_embeddings
+  as PERMISSIVE FOR ALL
+  to service_role;
+
+
+create table if not exists user_topics (
+    user_id text not null primary key,
+    created_at timestamp not null default now(),
+    topic_embedding vector(1536) not null,
+    topics text[] not null
+);
+alter table user_topics enable row level security;
+drop policy if exists "public read" on user_topics;
+create policy "public read" on user_topics for select using (true);
+drop policy if exists "public write access" on user_topics;
+create policy "public write access" on user_topics
+  for all using(true);
+
+
 begin;
 drop publication if exists supabase_realtime;
 create publication supabase_realtime;
