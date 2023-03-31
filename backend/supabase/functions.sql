@@ -599,10 +599,35 @@ FROM search_contract_embeddings(
     match_count + 10
   )
   join contracts on contract_id = contracts.id
-where contract_id != input_contract_id
+  where contract_id != input_contract_id
   and resolution_time is null
-order by similarity * similarity * log(popularity_score + 100) desc
-limit match_count;
+  order by similarity * similarity * log(popularity_score + 100) desc
+  limit match_count;
+$$;
+
+create or replace function save_user_topics(p_user_id text, p_topics text[])
+returns void
+language sql
+as $$
+  with topic_embedding as (
+    select avg(embedding) as average
+    from topic_embeddings
+    where topic = any(p_topics)
+  )
+  insert into user_topics (user_id, topics, topic_embedding)
+  values (p_user_id, p_topics, (select average from topic_embedding))
+  on conflict (user_id)
+  do update set
+    topics = excluded.topics,
+    topic_embedding = excluded.topic_embedding;
+$$;
+
+create or replace function firebase_uid()
+  returns text
+  language sql
+  stable parallel safe
+as $$
+  select nullif(current_setting('request.jwt.claims', true)::json->>'sub', '')::text;
 $$;
 create or replace function firebase_uid() returns text language sql stable parallel safe as $$
 select nullif(

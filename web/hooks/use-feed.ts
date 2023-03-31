@@ -56,6 +56,7 @@ export const useFeed = (
   const filteredContracts = savedContracts?.filter(
     (c) =>
       !isContractBlocked(privateUser, c) &&
+      c.question.split(' ').filter((a) => a.trim()).length > 2 &&
       (!options?.binaryOnly || c.outcomeType === 'BINARY')
   )
 
