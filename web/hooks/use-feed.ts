@@ -36,7 +36,6 @@ export const useFeed = (
         excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
       }).then((res) => {
         if (res.data) {
-          console.log('got', res)
           const newContracts =
             (res.data as any).map(
               (row: any) => row.data as Contract | undefined

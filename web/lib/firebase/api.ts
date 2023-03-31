@@ -204,6 +204,5 @@ export function getSupabaseToken() {
 }
 
 export function updateUserEmbedding(params: { userId: string }) {
-  console.log('calling update-user-embedding', params)
   return call(getApiUrl('update-user-embedding'), 'POST', params)
 }
