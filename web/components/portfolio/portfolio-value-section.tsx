@@ -92,6 +92,9 @@ export const PortfolioValueSection = memo(
       )
     }
 
+    // hide graph if there's no data
+    const hideGraph = graphPoints.length <= 1
+
     const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
     const totalValue = balance + investmentValue
     const totalProfit = totalValue - totalDeposits
@@ -102,6 +105,7 @@ export const PortfolioValueSection = memo(
         onClickNumber={onClickNumber}
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setTimePeriod}
+        hideSwitcher={hideGraph}
         switcherColor={
           graphMode === 'profit'
             ? totalProfit > 0
@@ -152,8 +156,8 @@ export const PortfolioValueSection = memo(
           </div>
         }
         graphElement={
-          graphPoints.length <= 1
-            ? () => <></> // hide graph for new users
+          hideGraph
+            ? () => <></> //TODO: better empty state so there isn't content shift from a flash of placeholder
             : (width, height) => (
                 <PortfolioGraph
                   key={graphMode} // we need to reset axis scale state if mode changes
@@ -181,6 +185,7 @@ export function PortfolioValueSkeleton(props: {
   balanceElement: ReactNode
   valueElement: ReactNode
   graphElement: (width: number, height: number) => ReactNode
+  hideSwitcher?: boolean
   switcherColor?: ColorType
   userId?: string
   disabled?: boolean
@@ -195,6 +200,7 @@ export function PortfolioValueSkeleton(props: {
     balanceElement,
     valueElement,
     graphElement,
+    hideSwitcher,
     switcherColor,
     userId,
     disabled,
@@ -256,7 +262,7 @@ export function PortfolioValueSkeleton(props: {
 
         <AddFundsButton userId={userId} className="self-center max-sm:hidden" />
 
-        {!placement && (
+        {!placement && !hideSwitcher && (
           <TimeRangePicker
             currentTimePeriod={currentTimePeriod}
             setCurrentTimePeriod={setCurrentTimePeriod}
@@ -269,7 +275,7 @@ export function PortfolioValueSkeleton(props: {
       <SizedContainer fullHeight={200} mobileHeight={150}>
         {graphElement}
       </SizedContainer>
-      {placement === 'bottom' && (
+      {placement === 'bottom' && !hideSwitcher && (
         <TimeRangePicker
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
