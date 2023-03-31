@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react'
 import {
   getContractFromSlug,
   getContractIds,
-  getContractParams,
   getContracts,
 } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { ContractParams } from 'web/pages/[username]/[contractSlug]'
 import { useEffectCheckEquality } from './use-effect-check-equality'
+import { getContractParams } from 'web/lib/contracts'
 
 export const useContracts = (contractIds: string[]) => {
   const [contracts, setContracts] = useState<Contract[]>([])

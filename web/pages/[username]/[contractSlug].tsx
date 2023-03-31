@@ -61,12 +61,10 @@ import {
 } from 'web/lib/firebase/contract-metrics'
 import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
-import {
-  getContractFromSlug,
-  getContractParams,
-} from 'web/lib/supabase/contracts'
+import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import { getContractParams } from 'web/lib/contracts'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
