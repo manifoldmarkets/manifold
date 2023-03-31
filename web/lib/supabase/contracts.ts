@@ -142,21 +142,19 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
 }
 
 export async function getContractParams(contract: Contract) {
-  const contractId = contract?.id
-  const totalBets = contractId ? await getTotalBetCount(contractId) : 0
+  const contractId = contract.id
+  const totalBets = await getTotalBetCount(contractId)
   const shouldUseBetPoints =
-    contract?.outcomeType === 'BINARY' ||
-    contract?.outcomeType === 'PSEUDO_NUMERIC'
+    contract.outcomeType === 'BINARY' ||
+    contract.outcomeType === 'PSEUDO_NUMERIC'
 
   // in original code, prioritize newer bets via descending order
-  const bets = contractId
-    ? await getBets({
-        contractId,
-        ...CONTRACT_BET_FILTER,
-        limit: shouldUseBetPoints ? 50000 : 4000,
-        order: 'desc',
-      })
-    : []
+  const bets = await getBets({
+    contractId,
+    ...CONTRACT_BET_FILTER,
+    limit: shouldUseBetPoints ? 50000 : 4000,
+    order: 'desc',
+  })
 
   const betPoints = shouldUseBetPoints
     ? bets.map(
@@ -172,23 +170,23 @@ export async function getContractParams(contract: Contract) {
       )
     : []
 
-  const comments = contractId ? await getAllComments(contractId, 100) : []
+  const comments = await getAllComments(contractId, 100)
 
   const userPositionsByOutcome =
-    contractId && contract?.outcomeType === 'BINARY'
+    contract.outcomeType === 'BINARY'
       ? await getBinaryContractUserContractMetrics(contractId, 100)
       : {}
 
-  const topContractMetrics = contract?.resolution
+  const topContractMetrics = contract.resolution
     ? await getTopContractMetrics(contract.id, 10)
     : []
 
   const totalPositions =
-    contractId && contract?.outcomeType === 'BINARY'
+    contract.outcomeType === 'BINARY'
       ? await getTotalContractMetrics(contractId, db)
       : 0
 
-  if (shouldUseBetPoints && contract) {
+  if (shouldUseBetPoints) {
     const firstPoint = {
       x: contract.createdTime,
       y: getInitialProbability(
@@ -204,11 +202,9 @@ export async function getContractParams(contract: Contract) {
       ? pointsToBase64(compressPoints(betPoints))
       : undefined
 
-  const creator = contract && (await getUser(contract.creatorId))
+  const creator = await getUser(contract.creatorId)
 
-  const relatedContracts = contract
-    ? await getRelatedContracts(contract, 9)
-    : []
+  const relatedContracts = await getRelatedContracts(contract, 9)
 
   return removeUndefinedProps({
     contract,
