@@ -51,6 +51,8 @@ export const useContractParams = (contract: Contract) => {
     totalBets: 0,
     topContractMetrics: [],
     relatedContracts: [],
+    pointsString: undefined,
+    creatorTwitter: undefined,
   })
 
   useEffect(() => {

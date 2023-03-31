@@ -1,7 +1,6 @@
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
-import { ContractComment } from 'common/comment'
 import { visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
@@ -15,7 +14,6 @@ import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
-import { HistoryPoint } from 'web/components/charts/generic-charts'
 import { BackButton } from 'web/components/contract/back-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import {
@@ -54,11 +52,8 @@ import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { Bet, BetFilter } from 'web/lib/firebase/bets'
-import {
-  ContractMetricsByOutcome,
-  getTopContractMetrics,
-} from 'web/lib/firebase/contract-metrics'
+import { BetFilter } from 'web/lib/firebase/bets'
+import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
@@ -72,20 +67,7 @@ export const CONTRACT_BET_FILTER: BetFilter = {
   filterAntes: false,
 }
 
-type HistoryData = { bets: Bet[]; points: HistoryPoint<Partial<Bet>>[] }
-
-export type ContractParams = {
-  contract: Contract | null
-  historyData: HistoryData
-  pointsString?: string
-  comments: ContractComment[]
-  userPositionsByOutcome: ContractMetricsByOutcome
-  totalPositions: number
-  totalBets: number
-  topContractMetrics: ContractMetric[]
-  creatorTwitter?: string
-  relatedContracts: Contract[]
-}
+export type ContractParams = Awaited<ReturnType<typeof getContractParams>>
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }

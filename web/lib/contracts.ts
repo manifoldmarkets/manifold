@@ -4,10 +4,7 @@ import {
   PseudoNumericContract,
 } from 'common/contract'
 import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
-import {
-  CONTRACT_BET_FILTER,
-  ContractParams,
-} from 'web/pages/[username]/[contractSlug]'
+import { CONTRACT_BET_FILTER } from 'web/pages/[username]/[contractSlug]'
 import { removeUndefinedProps } from 'common/util/object'
 import { HistoryPoint } from 'web/components/charts/generic-charts'
 import { Bet } from 'common/bet'
@@ -102,5 +99,5 @@ export async function getContractParams(contract: Contract) {
     topContractMetrics,
     creatorTwitter: creator?.twitterHandle,
     relatedContracts,
-  }) as ContractParams
+  })
 }
