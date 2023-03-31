@@ -53,6 +53,7 @@ import {
   getAppropriateEmoji,
   ShareholderStats,
 } from 'common/supabase/contract-metrics'
+import { APRIL_FOOLS_ENABLED } from 'common/envs/constants'
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
@@ -204,15 +205,26 @@ export function BuyPanel(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement>()
+  const [currentChangeAudio, setCurrentChangeAudio] =
+    useState<HTMLAudioElement>()
   const wareFareEnabled =
     contract.mechanism === 'cpmm-1' &&
     classWarfareEnabled(contract.prob, shareholderStats)
 
-  const playAppropriateAudio = (
+  const audioFilesDir = '/mp3s/'
+  const playAppropriatePlaceBetAudio = (
     bet: 'YES' | 'NO',
     shareholderStats?: ShareholderStats
   ) => {
-    if (!shareholderStats || !wareFareEnabled) return
+    if (!APRIL_FOOLS_ENABLED) return
+    if (!wareFareEnabled) {
+      const audio = new Audio(audioFilesDir + 'register.mp3')
+      if (currentAudio) currentAudio.pause()
+      audio.play()
+      setCurrentAudio(audio)
+      return
+    }
+    if (!shareholderStats) return
     const bbAudioFiles = ['bb1.mp3', 'bb2.mp3', 'bb3.mp3', 'bb4.mp3', 'bb5.mp3']
     const pcAudioFiles = ['pc1.mp3', 'pc2.mp3', 'pc3.mp3', 'pc4.mp3']
     let fileName = ''
@@ -223,11 +235,17 @@ export function BuyPanel(props: {
       const randomIndex = Math.floor(Math.random() * bbAudioFiles.length)
       fileName = bbAudioFiles[randomIndex]
     }
+    const audio = new Audio(audioFilesDir + fileName)
     if (currentAudio) currentAudio.pause()
-
-    const prefix = '/mp3s/'
-    const audio = new Audio(prefix + fileName)
     audio.play()
+    setCurrentAudio(audio)
+  }
+  const playAppropriateClickBetAudio = (file: string) => {
+    if (!APRIL_FOOLS_ENABLED) return
+    const audio = new Audio(audioFilesDir + file)
+    audio.volume = 0.5
+    if (currentAudio) currentAudio.pause()
+    audio.play().then(() => setCurrentAudio(undefined))
     setCurrentAudio(audio)
   }
 
@@ -252,7 +270,7 @@ export function BuyPanel(props: {
     } else {
       setOption(choice)
     }
-
+    playAppropriateClickBetAudio('bonus1.mp3')
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
     }
@@ -263,16 +281,31 @@ export function BuyPanel(props: {
     if (!outcome) {
       setOption('YES')
     }
+    if (!APRIL_FOOLS_ENABLED) return
+    if (!currentChangeAudio) {
+      const changeAudio = new Audio(audioFilesDir + 'counting.mp3')
+      changeAudio.volume = 0.25
+      setCurrentChangeAudio(changeAudio)
+      changeAudio.play()
+    }
   }
+
+  useEffect(() => {
+    if (currentChangeAudio) {
+      const timeout = setTimeout(() => {
+        currentChangeAudio.pause()
+        setCurrentChangeAudio(undefined)
+      }, 1200)
+      return () => clearTimeout(timeout)
+    }
+  }, [betAmount])
 
   async function submitBet() {
     if (!user || !betAmount) return
 
     setError(undefined)
     setIsSubmitting(true)
-    outcome &&
-      wareFareEnabled &&
-      playAppropriateAudio(outcome, shareholderStats)
+    outcome && playAppropriatePlaceBetAudio(outcome, shareholderStats)
     placeBet({
       outcome,
       amount: betAmount,
