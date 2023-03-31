@@ -18,11 +18,15 @@ import { useAdmin } from './use-admin'
 import { useUser } from './use-user'
 
 export function useRealtimeRole(groupId: string | undefined) {
-  const [userRole, setUserRole] = useState<groupRoleType | null>(null)
+  const [userRole, setUserRole] = useState<groupRoleType | null | undefined>(
+    undefined
+  )
   const user = useUser()
   const isManifoldAdmin = useAdmin()
   useEffect(() => {
-    setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
+    if (user && groupId) {
+      setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
+    }
   }, [user, isManifoldAdmin, groupId])
   useEffect(() => {
     const channel = db.channel('user-group-role-realtime')

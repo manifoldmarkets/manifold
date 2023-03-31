@@ -54,7 +54,7 @@ export function UserContractsList(props: { creator: User }) {
           total={formatWithCommas(marketsCreated ?? 0)}
           subTitle={
             unresolvedMarkets === 0 ? null : (
-              <Tooltip text={'Closed & unresolved markets'}>
+              <Tooltip text={'Closed and waiting for resolution'}>
                 <div className="bg-scarlet-300 text-ink-0 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3 ">
                   {`${unresolvedMarkets}`}
                 </div>

@@ -17,7 +17,7 @@ import { filterDefined } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import { compressPoints, pointsToBase64 } from 'common/util/og'
 import { HistoryPoint } from 'web/components/charts/generic-charts'
-import { getInitialRelatedMarkets } from 'web/hooks/use-related-contracts'
+import { getRelatedContracts } from 'web/hooks/use-related-contracts'
 import { getUser } from 'web/lib/supabase/user'
 import {
   ContractParams,
@@ -143,7 +143,6 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
 
 export async function getContractParams(contract: Contract) {
   const contractId = contract?.id
-
   const totalBets = contractId ? await getTotalBetCount(contractId) : 0
   const shouldUseBetPoints =
     contract?.outcomeType === 'BINARY' ||
@@ -158,6 +157,7 @@ export async function getContractParams(contract: Contract) {
         order: 'desc',
       })
     : []
+
   const betPoints = shouldUseBetPoints
     ? bets.map(
         (bet) =>
@@ -178,9 +178,11 @@ export async function getContractParams(contract: Contract) {
     contractId && contract?.outcomeType === 'BINARY'
       ? await getBinaryContractUserContractMetrics(contractId, 100)
       : {}
+
   const topContractMetrics = contract?.resolution
     ? await getTopContractMetrics(contract.id, 10)
     : []
+
   const totalPositions =
     contractId && contract?.outcomeType === 'BINARY'
       ? await getTotalContractMetrics(contractId, db)
@@ -205,7 +207,7 @@ export async function getContractParams(contract: Contract) {
   const creator = contract && (await getUser(contract.creatorId))
 
   const relatedContracts = contract
-    ? await getInitialRelatedMarkets(contract)
+    ? await getRelatedContracts(contract, 9)
     : []
 
   return removeUndefinedProps({
@@ -223,4 +225,19 @@ export async function getContractParams(contract: Contract) {
     creatorTwitter: creator?.twitterHandle,
     relatedContracts,
   }) as ContractParams
+}
+
+export async function searchContract(query: string) {
+  const { data } = await run(
+    db
+      .from('contracts')
+      .select('data')
+      .textSearch('question', `${query}`)
+      .limit(10)
+  )
+  if (data && data.length > 0) {
+    return data.map((d) => d.data as Contract)
+  } else {
+    return []
+  }
 }

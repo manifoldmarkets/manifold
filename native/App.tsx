@@ -97,12 +97,10 @@ const App = () => {
       // We use a timeout because sometimes the auth persistence manager is still undefined on the client side
       // Seems my iPhone 12 mini can regularly handle a shorter timeout
       setTimeout(() => {
-        log('Sending fbUser to webview:', fbUser.email)
         communicateWithWebview('nativeFbUser', fbUser)
       }, 100)
       // My older android phone needs a bit longer
       setTimeout(() => {
-        log('Sending fbUser to webview:', fbUser.email)
         communicateWithWebview('nativeFbUser', fbUser)
       }, 250)
     }
@@ -140,7 +138,7 @@ const App = () => {
     log(
       'Push notification tapped, has loaded webview:',
       hasLoadedWebView,
-      'is listening to native:',
+      ', is listening to native:',
       listeningToNative
     )
     log('webview.current:', webview.current)
@@ -159,11 +157,13 @@ const App = () => {
   }
 
   useEffect(() => {
-    log(
-      'Running lastNotificationInMemory effect, has loaded webview:',
-      hasLoadedWebView
-    )
-    log('last notification in memory:', lastLinkInMemory)
+    if (lastLinkInMemory)
+      log(
+        'Running lastNotificationInMemory effect, has loaded webview:',
+        hasLoadedWebView,
+        'last link in memory:',
+        lastLinkInMemory
+      )
     // If there's a notification in memory and the webview has not loaded, set it as the url to load
     if (lastLinkInMemory && !hasLoadedWebView) {
       log(
@@ -217,15 +217,15 @@ const App = () => {
 
   // Handle deep links
   useEffect(() => {
-    if (!linkedUrl) return
-    log('Linked url', linkedUrl, '- has loaded webview:', hasLoadedWebView)
-
+    if (!linkedUrl || linkedUrl === 'blank') return
     const { hostname, path, queryParams } = Linking.parse(linkedUrl)
     if (path !== 'blank' && hostname) {
       log(
-        `Linked to app with hostname: ${hostname}, path: ${path} and data: ${JSON.stringify(
-          queryParams
-        )}`
+        'Linked url',
+        linkedUrl,
+        ', has loaded webview:',
+        hasLoadedWebView,
+        `, and data: ${JSON.stringify(queryParams)}`
       )
       const url = path ? path : '/'
       communicateWithWebview('link', { url })

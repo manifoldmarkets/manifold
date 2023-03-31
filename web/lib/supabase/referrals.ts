@@ -13,13 +13,3 @@ export async function getReferrals(userId: string) {
 
   return (await run(query)).data
 }
-
-export async function getReferralCount(userId: string) {
-  const { count } = await run(
-    db
-      .from('users')
-      .select('*', { head: true, count: 'exact' })
-      .contains('data', { referredByUserId: userId })
-  )
-  return count
-}

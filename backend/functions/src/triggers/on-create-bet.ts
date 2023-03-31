@@ -41,6 +41,10 @@ import { Group } from 'common/group'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { secrets } from 'shared/secrets'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
+import {
+  completeArchaeologyQuest,
+  completeReferralsQuest,
+} from 'shared/complete-quest-internal'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -98,8 +102,10 @@ export const onCreateBet = functions
     await updateUserInterestEmbedding(pg, bettor.id)
 
     // Referrals should always be handled before the betting streak bc they both use lastBetTime
-    await handleReferral(bettor, eventId)
-    await updateBettingStreak(bettor, bet, contract, eventId)
+    await handleReferral(bettor, eventId).then(async () => {
+      await updateBettingStreak(bettor, bet, contract, eventId)
+    })
+    await completeArchaeologyQuest(bet, bettor, contract, eventId)
   })
 
 const updateBettingStreak = async (
@@ -446,5 +452,6 @@ async function handleReferral(staleUser: User, eventId: string) {
       referredByContract,
       referredByGroup
     )
+    await completeReferralsQuest(user)
   })
 }

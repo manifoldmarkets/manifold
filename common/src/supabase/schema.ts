@@ -165,7 +165,9 @@ export interface Database {
           id: string
           mechanism: string | null
           outcome_type: string | null
+          popularity_score: number | null
           question: string | null
+          question_fts: unknown | null
           resolution: string | null
           resolution_probability: number | null
           resolution_time: string | null
@@ -181,7 +183,9 @@ export interface Database {
           id: string
           mechanism?: string | null
           outcome_type?: string | null
+          popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -197,7 +201,9 @@ export interface Database {
           id?: string
           mechanism?: string | null
           outcome_type?: string | null
+          popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -548,6 +554,26 @@ export interface Database {
           user_id?: string
         }
       }
+      user_quest_metrics: {
+        Row: {
+          idempotency_key: string | null
+          score_id: string
+          score_value: number
+          user_id: string
+        }
+        Insert: {
+          idempotency_key?: string | null
+          score_id: string
+          score_value: number
+          user_id: string
+        }
+        Update: {
+          idempotency_key?: string | null
+          score_id?: string
+          score_value?: number
+          user_id?: string
+        }
+      }
       user_reactions: {
         Row: {
           data: Json
@@ -653,6 +679,69 @@ export interface Database {
       }
     }
     Views: {
+      contract_distance: {
+        Row: {
+          distance: number | null
+          id1: string | null
+          id2: string | null
+        }
+      }
+      contracts_rbac: {
+        Row: {
+          close_time: string | null
+          created_time: string | null
+          creator_id: string | null
+          data: Json | null
+          fs_updated_time: string | null
+          id: string | null
+          mechanism: string | null
+          outcome_type: string | null
+          popularity_score: number | null
+          question: string | null
+          question_fts: unknown | null
+          resolution: string | null
+          resolution_probability: number | null
+          resolution_time: string | null
+          slug: string | null
+          visibility: string | null
+        }
+        Insert: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          popularity_score?: number | null
+          question?: string | null
+          question_fts?: unknown | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          popularity_score?: number | null
+          question?: string | null
+          question_fts?: unknown | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
+        }
+      }
       contracts_view: {
         Row: {
           close_time: number | null
@@ -697,7 +786,24 @@ export interface Database {
           username: string | null
         }
       }
-      public_open_contracts: {
+      groups_rbac: {
+        Row: {
+          data: Json | null
+          fs_updated_time: string | null
+          id: string | null
+        }
+        Insert: {
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+        }
+        Update: {
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+        }
+      }
+      listed_open_contracts: {
         Row: {
           close_time: string | null
           created_time: string | null
@@ -707,6 +813,7 @@ export interface Database {
           id: string | null
           mechanism: string | null
           outcome_type: string | null
+          popularity_score: number | null
           question: string | null
           resolution: string | null
           resolution_probability: number | null
@@ -723,6 +830,7 @@ export interface Database {
           id?: string | null
           mechanism?: string | null
           outcome_type?: string | null
+          popularity_score?: number | null
           question?: string | null
           resolution?: string | null
           resolution_probability?: number | null
@@ -739,12 +847,82 @@ export interface Database {
           id?: string | null
           mechanism?: string | null
           outcome_type?: string | null
+          popularity_score?: number | null
           question?: string | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
           visibility?: string | null
+        }
+      }
+      private_contract_comments: {
+        Row: {
+          comment_id: string | null
+          contract_id: string | null
+          data: Json | null
+          fs_updated_time: string | null
+        }
+      }
+      public_open_contracts: {
+        Row: {
+          close_time: string | null
+          created_time: string | null
+          creator_id: string | null
+          data: Json | null
+          fs_updated_time: string | null
+          id: string | null
+          mechanism: string | null
+          outcome_type: string | null
+          popularity_score: number | null
+          question: string | null
+          resolution: string | null
+          resolution_probability: number | null
+          resolution_time: string | null
+          slug: string | null
+          visibility: string | null
+        }
+        Insert: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          popularity_score?: number | null
+          question?: string | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          popularity_score?: number | null
+          question?: string | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
+        }
+      }
+      related_contracts: {
+        Row: {
+          contract_id: string | null
+          data: Json | null
+          distance: number | null
+          from_contract_id: string | null
         }
       }
       trending_contracts: {
@@ -757,6 +935,7 @@ export interface Database {
           id: string | null
           mechanism: string | null
           outcome_type: string | null
+          popularity_score: number | null
           question: string | null
           resolution: string | null
           resolution_probability: number | null
@@ -773,6 +952,7 @@ export interface Database {
           id?: string | null
           mechanism?: string | null
           outcome_type?: string | null
+          popularity_score?: number | null
           question?: string | null
           resolution?: string | null
           resolution_probability?: number | null
@@ -789,6 +969,7 @@ export interface Database {
           id?: string | null
           mechanism?: string | null
           outcome_type?: string | null
+          popularity_score?: number | null
           question?: string | null
           resolution?: string | null
           resolution_probability?: number | null
@@ -820,7 +1001,7 @@ export interface Database {
           contract_id: string | null
           created_time: string | null
           distance: number | null
-          freshness_score: number | null
+          popularity_score: number | null
           user_id: string | null
         }
       }
@@ -842,6 +1023,13 @@ export interface Database {
           row2: unknown
         }
         Returns: number
+      }
+      can_access_contract: {
+        Args: {
+          contract_id: string
+          member_id: string
+        }
+        Returns: boolean
       }
       closest_contract_embeddings: {
         Args: {
@@ -874,6 +1062,10 @@ export interface Database {
         }
         Returns: number
       }
+      firebase_uid: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_contract_metrics_for_contract: {
         Args: {
           contractid: string
@@ -884,6 +1076,16 @@ export interface Database {
         }[]
       }
       get_contract_metrics_grouped_by_user: {
+        Args: {
+          uids: string[]
+          period: string
+        }
+        Returns: {
+          user_id: string
+          contract_metrics: Json[]
+        }[]
+      }
+      get_contract_metrics_grouped_by_user_ids: {
         Args: {
           uids: string[]
           period: string
@@ -970,6 +1172,12 @@ export interface Database {
           contract: Json
         }[]
       }
+      get_profit: {
+        Args: {
+          portfolio: Json
+        }
+        Returns: number
+      }
       get_recommended_contract_scores: {
         Args: {
           uid: string
@@ -1045,7 +1253,19 @@ export interface Database {
         Returns: {
           data: Json
           distance: number
-          freshness_score: number
+          popularity_score: number
+        }[]
+      }
+      get_recommended_contracts_embeddings2: {
+        Args: {
+          uid: string
+          n: number
+          excluded_contract_ids: string[]
+        }
+        Returns: {
+          data: Json
+          distance: number
+          popularity_score: number
         }[]
       }
       get_related_contract_ids: {
@@ -1080,6 +1300,10 @@ export interface Database {
           bets: Json[]
           contract: Json
         }[]
+      }
+      get_user_group_id_for_current_user: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_your_contract_ids:
         | {

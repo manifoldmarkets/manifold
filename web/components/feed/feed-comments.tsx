@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useRef, useState } from 'react'
+import React, { memo, ReactNode, useEffect, useRef, useState } from 'react'
 import { Editor } from '@tiptap/react'
 import { useRouter } from 'next/router'
 import clsx from 'clsx'
@@ -103,6 +103,65 @@ export function FeedCommentThread(props: {
     </Col>
   )
 }
+export const FeedComment = memo(function FeedComment(props: {
+  contract: Contract
+  comment: ContractComment
+  highlighted?: boolean
+  showLike?: boolean
+  onReplyClick?: (comment: ContractComment) => void
+  children?: ReactNode
+  className?: string
+}) {
+  const {
+    contract,
+    className,
+    comment,
+    highlighted,
+    showLike,
+    onReplyClick,
+    children,
+  } = props
+  const { userUsername, userAvatarUrl } = comment
+  const commentRef = useRef<HTMLDivElement>(null)
+  const marketCreator = contract.creatorId === comment.userId
+
+  useEffect(() => {
+    if (highlighted && commentRef.current) {
+      commentRef.current.scrollIntoView(true)
+    }
+  }, [highlighted])
+
+  return (
+    <Row
+      ref={commentRef}
+      id={comment.id}
+      className={clsx(
+        className ? className : 'ml-9 gap-2',
+        highlighted ? 'bg-primary-50' : ''
+      )}
+    >
+      <Avatar
+        size={children ? 'sm' : 'xs'}
+        username={userUsername}
+        avatarUrl={userAvatarUrl}
+        className={marketCreator ? 'shadow shadow-amber-300' : ''}
+      />
+      <Col className="w-full">
+        <FeedCommentHeader comment={comment} contract={contract} />
+        <HideableContent comment={comment} />
+        <Row className={children ? 'justify-between' : 'justify-end'}>
+          {children}
+          <CommentActions
+            onReplyClick={onReplyClick}
+            comment={comment}
+            showLike={showLike}
+            contract={contract}
+          />
+        </Row>
+      </Col>
+    </Row>
+  )
+})
 
 export const ParentFeedComment = memo(function ParentFeedComment(props: {
   contract: Contract
@@ -124,7 +183,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     seeReplies,
     numComments,
   } = props
-  const { userUsername, userAvatarUrl } = comment
+  const { userUsername } = comment
   const commentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -133,37 +192,22 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     }
   }, [highlighted])
 
-  const commentKind =
-    userUsername === 'ManifoldDream' ? 'ub-dream-comment' : null
+  const commentKind = userUsername === 'ManifoldDream' ? 'ub-dream-comment' : ''
   return (
-    <Row
-      ref={commentRef}
-      id={comment.id}
-      className={clsx(
-        commentKind,
-        'gap-2',
-        highlighted ? 'bg-primary-50' : 'hover:bg-canvas-50'
-      )}
+    <FeedComment
+      contract={contract}
+      comment={comment}
+      onReplyClick={onReplyClick}
+      highlighted={highlighted}
+      showLike={showLike}
+      className={clsx('gap-2', commentKind)}
     >
-      <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
-      <Col className="w-full">
-        <FeedCommentHeader comment={comment} contract={contract} />
-        <HideableContent comment={comment} />
-        <Row className="justify-between">
-          <ReplyToggle
-            seeReplies={seeReplies}
-            numComments={numComments}
-            onClick={onSeeReplyClick}
-          />
-          <CommentActions
-            onReplyClick={onReplyClick}
-            comment={comment}
-            showLike={showLike}
-            contract={contract}
-          />
-        </Row>
-      </Col>
-    </Row>
+      <ReplyToggle
+        seeReplies={seeReplies}
+        numComments={numComments}
+        onClick={onSeeReplyClick}
+      />
+    </FeedComment>
   )
 })
 
@@ -271,47 +315,6 @@ export function CommentActions(props: {
   )
 }
 
-export const FeedComment = memo(function FeedComment(props: {
-  contract: Contract
-  comment: ContractComment
-  highlighted?: boolean
-  showLike?: boolean
-  onReplyClick?: (comment: ContractComment) => void
-}) {
-  const { contract, comment, highlighted, showLike, onReplyClick } = props
-  const { userUsername, userAvatarUrl } = comment
-  const commentRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (highlighted && commentRef.current) {
-      commentRef.current.scrollIntoView(true)
-    }
-  }, [highlighted])
-
-  return (
-    <Row
-      ref={commentRef}
-      id={comment.id}
-      className={clsx(
-        'ml-9 gap-2 ',
-        highlighted ? 'bg-primary-50' : 'hover:bg-canvas-50'
-      )}
-    >
-      <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
-      <Col className="w-full">
-        <FeedCommentHeader comment={comment} contract={contract} />
-        <HideableContent comment={comment} />
-        <CommentActions
-          onReplyClick={onReplyClick}
-          comment={comment}
-          showLike={showLike}
-          contract={contract}
-        />
-      </Col>
-    </Row>
-  )
-})
-
 function CommentStatus(props: {
   contract: Contract
   comment: ContractComment
@@ -395,6 +398,7 @@ export function FeedCommentHeader(props: {
 }) {
   const { comment, contract } = props
   const { userUsername, userName, createdTime } = comment
+  const marketCreator = contract.creatorId === comment.userId
   const betOutcome = comment.betOutcome
   let bought: string | undefined
   let money: string | undefined
@@ -405,7 +409,11 @@ export function FeedCommentHeader(props: {
   const shouldDisplayOutcome = betOutcome && !comment.answerOutcome
   return (
     <span className="text-ink-600 mt-0.5 text-sm">
-      <UserLink username={userUsername} name={userName} />
+      <UserLink
+        username={userUsername}
+        name={userName}
+        marketCreator={marketCreator}
+      />
       <span className="text-ink-400 ml-1">
         <CommentStatus contract={contract} comment={comment} />
         {bought} {money}

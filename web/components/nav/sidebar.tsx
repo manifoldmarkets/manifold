@@ -93,9 +93,7 @@ export default function Sidebar(props: {
           setIsModalOpen={setIsModalOpen}
         />
 
-        {user === null && (
-          <SignInButton key="sign-in-button" className="mt-3" />
-        )}
+        {user === null && <SignInButton />}
 
         {createMarketButton}
       </div>

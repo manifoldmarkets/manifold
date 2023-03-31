@@ -210,7 +210,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     return <Custom404Content />
   }
 
-  if (group.privacyStatus == 'private' && !userRole) {
+  if (group.privacyStatus == 'private' && userRole === null) {
     return <InaccessiblePrivateThing thing={'group'} />
   }
 

@@ -7,7 +7,6 @@ import {
   PlusIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { Row } from '../layout/row'
@@ -32,7 +31,6 @@ import { GroupLink, groupPath } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
-import { editorExtensions } from '../widgets/editor'
 import { LikeButton } from './like-button'
 
 export type ShowTime = 'resolve-date' | 'close-date'
@@ -263,6 +261,7 @@ function EditableCloseDate(props: {
 
   const isSameYear = dayJsCloseTime.isSame(dayJsNow, 'year')
   const isSameDay = dayJsCloseTime.isSame(dayJsNow, 'day')
+  const isSoon = dayJsCloseTime.diff(dayJsNow, 'month') < 4
 
   let newCloseTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -276,24 +275,11 @@ function EditableCloseDate(props: {
     }
     if (!newCloseTime) return
 
-    if (newCloseTime === closeTime) setIsEditingCloseTime(false)
-    else {
-      const content = contract.description
-      const editor = new Editor({ content, extensions: editorExtensions() })
-      editor.commands.focus('end')
-
-      // const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
-      // insertContent(
-      //   editor,
-      //   `<p></p><p>Close date updated to ${formattedCloseDate}</p>`
-      // )
-
+    setIsEditingCloseTime(false)
+    if (newCloseTime !== closeTime) {
       updateContract(contract.id, {
         closeTime: newCloseTime,
-        description: editor.getJSON(),
       })
-
-      setIsEditingCloseTime(false)
     }
   }
 
@@ -367,9 +353,9 @@ function EditableCloseDate(props: {
             )}{' '}
             {isSameDay
               ? fromNow(closeTime)
-              : isSameYear
+              : isSameYear || isSoon
               ? dayJsCloseTime.format('MMM D')
-              : dayJsCloseTime.format('MMM D, YYYY')}
+              : dayJsCloseTime.format('YYYY')}
           </Row>
         </DateTimeTooltip>
         {editable && <PencilIcon className="h-4 w-4" />}

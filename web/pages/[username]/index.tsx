@@ -55,6 +55,7 @@ import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { DailyStats } from 'web/components/daily-stats'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 
 export const getStaticProps = async (props: {
   params: {
@@ -350,7 +351,7 @@ function ProfilePublicStats(props: {
   isCurrentUser: boolean
   className?: string
 }) {
-  const { user, className } = props
+  const { user, className, isCurrentUser } = props
   const [isOpen, setIsOpen] = useState(false)
   const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
   const followingIds = useFollows(user.id)
@@ -380,6 +381,9 @@ function ProfilePublicStats(props: {
         Followers
       </TextButton>
 
+      {isCurrentUser && (
+        <UserLikedContractsButton user={user} className={className} />
+      )}
       <SiteLink
         href={'/' + user.username + '/calibration'}
         className={clsx(linkClass, 'cursor-pointer items-center text-sm')}
