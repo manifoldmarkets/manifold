@@ -3,6 +3,8 @@ import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
 import { THEOREMONE_CONFIG } from './theoremone'
 
+export const APRIL_FOOLS_ENABLED = false
+
 export const BACKGROUND_COLOR = 'bg-canvas-50'
 export const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
 
