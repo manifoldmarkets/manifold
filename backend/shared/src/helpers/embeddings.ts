@@ -26,7 +26,25 @@ export async function getAverageContractEmbedding(
   )
 }
 
-export async function getInterestedContractIds(
+export async function updateUserInterestEmbedding(
+  pg: SupabaseDirectClient,
+  userId: string
+) {
+  await pg.task('update-user-embedding', async (pg) => {
+    const interestedContractIds = await getInterestedContractIds(pg, userId)
+    const interestEmbedding = await computeUserInterestEmbedding(
+      pg,
+      userId,
+      interestedContractIds
+    )
+    await pg.none(
+      'insert into user_embeddings (user_id, interest_embedding) values ($1, $2) on conflict (user_id) do update set interest_embedding = $2',
+      [userId, interestEmbedding]
+    )
+  })
+}
+
+async function getInterestedContractIds(
   pg: SupabaseDirectClient | ITask<any>,
   userId: string
 ) {
@@ -49,20 +67,34 @@ export async function getInterestedContractIds(
   )
 }
 
-export async function updateUserInterestEmbedding(
-  pg: SupabaseDirectClient,
-  userId: string
+async function computeUserInterestEmbedding(
+  pg: SupabaseDirectClient | ITask<any>,
+  userId: string,
+  contractIds: string[]
 ) {
-  await pg.task('update-user-embedding', async (pg) => {
-    // TODO: load user_topics embedding and average them with interest embedding
-    const interestedContractIds = await getInterestedContractIds(pg, userId)
-    const interestEmbedding = await getAverageContractEmbedding(
-      pg,
-      interestedContractIds
-    )
-    await pg.none(
-      'insert into user_embeddings (user_id, interest_embedding) values ($1, $2) on conflict (user_id) do update set interest_embedding = $2',
-      [userId, interestEmbedding]
-    )
-  })
+  return await pg.one(
+    `select avg(combined_embedding) as average_embedding
+     from (
+      select embedding as combined_embedding
+      from contract_embeddings
+      where contract_id in ($1:list)
+      -- Append user's topic embeddings twice to be averaged in.
+      union all
+      select topic_embedding as combined_embedding
+      from user_topics
+      where user_id = $2
+      union all
+      select topic_embedding as combined_embedding
+      from user_topics
+      where user_id = $2
+    ) as combined_embeddings`,
+    [contractIds, userId],
+    (r: { average_embedding: number[] }) => {
+      if (r.average_embedding === null) {
+        console.error('No average of embeddings for', contractIds)
+        return getDefaultEmbedding()
+      }
+      return r.average_embedding
+    }
+  )
 }
