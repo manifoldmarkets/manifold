@@ -614,6 +614,26 @@ export interface Database {
           user_id?: string
         }
       }
+      user_topics: {
+        Row: {
+          created_at: string
+          topic_embedding: unknown
+          topics: string[]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          topic_embedding: unknown
+          topics: string[]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          topic_embedding?: unknown
+          topics?: string[]
+          user_id?: string
+        }
+      }
       users: {
         Row: {
           data: Json
