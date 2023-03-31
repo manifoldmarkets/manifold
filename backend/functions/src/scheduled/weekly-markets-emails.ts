@@ -18,6 +18,7 @@ import { getTrendingContracts } from 'shared/utils'
 import { secrets } from 'shared/secrets'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { PrivateUser } from 'common/user'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 const USERS_TO_EMAIL = 500
 const numContractsToSend = 6
@@ -38,7 +39,6 @@ export const weeklyMarketsEmails = functions
   })
 
 const firestore = admin.firestore()
-const db = createSupabaseClient()
 
 export async function sendTrendingMarketsEmailsToAllUsers(isDebug = false) {
   const privateUsers =
@@ -80,11 +80,13 @@ export async function sendTrendingMarketsEmailsToAllUsers(isDebug = false) {
     'users'
   )
 
+  const db = createSupabaseClient()
+
   const fallbackContracts = await getUniqueTrendingContracts()
   let sent = 0
 
   for (const privateUser of privateUsersToSendEmailsTo) {
-    await sendEmailToPrivateUser(privateUser, fallbackContracts)
+    await sendEmailToPrivateUser(privateUser, fallbackContracts, db)
       .then(() =>
         log('sent email to', privateUser.email, ++sent, '/', USERS_TO_EMAIL)
       )
@@ -94,7 +96,8 @@ export async function sendTrendingMarketsEmailsToAllUsers(isDebug = false) {
 
 const sendEmailToPrivateUser = async (
   privateUser: PrivateUser,
-  fallbackContracts: Contract[]
+  fallbackContracts: Contract[],
+  db: SupabaseClient
 ) => {
   if (!privateUser.email) return
 
