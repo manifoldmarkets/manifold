@@ -21,7 +21,8 @@ export function ManifoldLogo(props: {
     >
       <img
         className="transition-all group-hover:rotate-12"
-        src={darkBackground ? '/logo-white.svg' : '/logo.svg'}
+        // src={darkBackground ? '/logo-white.svg' : '/logo.svg'}
+        src={'/logo-april-fools.svg'}
         width={45}
         height={45}
         alt=""
