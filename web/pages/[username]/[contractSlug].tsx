@@ -21,6 +21,7 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import {
   AuthorInfo,
   CloseOrResolveTime,
+  ContractLike,
   MarketGroups,
 } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
@@ -282,6 +283,20 @@ export function ContractPageContent(props: {
     relatedContracts
   )
 
+  // detect whether header is stuck by observing if title is visible
+  const titleRef = useRef<any>(null)
+  const [headerStuck, setStuck] = useState(false)
+  useEffect(() => {
+    const element = titleRef.current
+    if (!element) return
+    const observer = new IntersectionObserver(
+      ([e]) => setStuck(e.intersectionRatio < 1),
+      { threshold: 1 }
+    )
+    observer.observe(element)
+    return () => observer.unobserve(element)
+  }, [titleRef])
+
   return (
     <>
       {creatorTwitter && (
@@ -293,15 +308,15 @@ export function ContractPageContent(props: {
       <Row className="w-full items-start gap-8 self-center">
         <Col
           className={clsx(
-            'bg-canvas-0 w-full max-w-3xl rounded-b  xl:w-[70%]',
+            'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
             // Keep content in view when scrolling related markets on desktop.
             'sticky bottom-0 min-h-screen self-end'
           )}
         >
           <div
             className={clsx(
-              'relative flex max-w-3xl items-start justify-between py-2 px-4',
-              !coverImageUrl ? 'bg-canvas-100 flex sm:hidden' : 'h-[80px]'
+              'sticky  z-50 flex items-center',
+              !coverImageUrl ? 'bg-canvas-100 top-0' : 'top-[-92px] h-[140px]'
             )}
           >
             {coverImageUrl && (
@@ -315,11 +330,31 @@ export function ContractPageContent(props: {
                 />
               </div>
             )}
-            <BackButton />
+            <div
+              className={clsx(
+                'sticky -top-px z-50 mt-px flex w-full justify-between py-2 px-4 transition-colors',
+                headerStuck ? 'bg-black/20 backdrop-blur-2xl' : ''
+              )}
+            >
+              <div className="mr-4 flex items-center truncate">
+                <BackButton />
+                {headerStuck && (
+                  <span className="ml-4 text-white">{contract.question}</span>
+                )}
+              </div>
+              <ExtraContractActionsRow contract={contract} />
+            </div>
           </div>
 
           <Col className="mb-4 p-4 md:px-8 md:pb-8">
             <Col className="gap-3 sm:gap-4">
+              <div ref={titleRef}>
+                <Linkify
+                  className="text-primary-700 text-lg sm:text-2xl"
+                  text={contract.question}
+                />
+              </div>
+
               <div className="flex items-center justify-between">
                 <div className="text-ink-600 flex gap-4 text-sm">
                   <AuthorInfo contract={contract} />
@@ -342,14 +377,8 @@ export function ContractPageContent(props: {
                   </Tooltip>
                 </div>
 
-                <ExtraContractActionsRow contract={contract} />
+                <ContractLike contract={contract} />
               </div>
-
-              <Linkify
-                className="text-primary-700 text-lg sm:text-2xl"
-                text={contract.question}
-              />
-
               <ContractOverview
                 contract={contract}
                 bets={bets}
