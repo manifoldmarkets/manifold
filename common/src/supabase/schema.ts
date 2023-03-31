@@ -167,6 +167,7 @@ export interface Database {
           outcome_type: string | null
           popularity_score: number | null
           question: string | null
+          question_fts: unknown | null
           resolution: string | null
           resolution_probability: number | null
           resolution_time: string | null
@@ -184,6 +185,7 @@ export interface Database {
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -201,6 +203,7 @@ export interface Database {
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -683,13 +686,15 @@ export interface Database {
           id2: string | null
         }
       }
-      contracts_view: {
+      contracts_rbac: {
         Row: {
-          close_time: number | null
-          created_time: number | null
+          close_time: string | null
+          created_time: string | null
           creator_id: string | null
+          data: Json | null
+          fs_updated_time: string | null
           id: string | null
-          is_resolved: boolean | null
+          mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
           question: string | null
@@ -701,11 +706,12 @@ export interface Database {
           visibility: string | null
         }
         Insert: {
-          close_time?: never
-          created_time?: never
-          creator_id?: never
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
           id?: string | null
-          is_resolved?: never
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -718,11 +724,12 @@ export interface Database {
           visibility?: string | null
         }
         Update: {
-          close_time?: never
-          created_time?: never
-          creator_id?: never
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
           id?: string | null
-          is_resolved?: never
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -733,6 +740,35 @@ export interface Database {
           resolution_time?: string | null
           slug?: string | null
           visibility?: string | null
+        }
+      }
+      contracts_view: {
+        Row: {
+          close_time: number | null
+          created_time: number | null
+          creator_id: string | null
+          id: string | null
+          is_resolved: boolean | null
+          outcome_type: string | null
+          visibility: string | null
+        }
+        Insert: {
+          close_time?: never
+          created_time?: never
+          creator_id?: never
+          id?: string | null
+          is_resolved?: never
+          outcome_type?: never
+          visibility?: never
+        }
+        Update: {
+          close_time?: never
+          created_time?: never
+          creator_id?: never
+          id?: string | null
+          is_resolved?: never
+          outcome_type?: never
+          visibility?: never
         }
       }
       group_role: {
@@ -748,6 +784,23 @@ export interface Database {
           name: string | null
           role: string | null
           username: string | null
+        }
+      }
+      groups_rbac: {
+        Row: {
+          data: Json | null
+          fs_updated_time: string | null
+          id: string | null
+        }
+        Insert: {
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+        }
+        Update: {
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
         }
       }
       listed_open_contracts: {
@@ -971,6 +1024,13 @@ export interface Database {
         }
         Returns: number
       }
+      can_access_contract: {
+        Args: {
+          contract_id: string
+          member_id: string
+        }
+        Returns: boolean
+      }
       closest_contract_embeddings: {
         Args: {
           input_contract_id: string
@@ -1099,7 +1159,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database['public']['CompositeTypes']['table_spec']
+        Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_open_limit_bets_with_contracts: {
         Args: {
@@ -1299,31 +1359,31 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -1339,7 +1399,7 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -1410,7 +1470,7 @@ export interface Database {
       }
       set_limit: {
         Args: {
-          '': number
+          "": number
         }
         Returns: number
       }
@@ -1420,7 +1480,7 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: string[]
       }
@@ -1433,7 +1493,7 @@ export interface Database {
       }
       to_jsonb: {
         Args: {
-          '': Json
+          "": Json
         }
         Returns: Json
       }
@@ -1452,37 +1512,37 @@ export interface Database {
           }
       vector_avg: {
         Args: {
-          '': number[]
+          "": number[]
         }
         Returns: unknown
       }
       vector_dims: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          '': unknown[]
+          "": unknown[]
         }
         Returns: number
       }
