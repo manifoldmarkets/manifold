@@ -153,7 +153,8 @@ create or replace function get_recommended_contracts_embeddings(uid text, n int,
     data jsonb,
     distance numeric,
     popularity_score numeric
-  ) immutable parallel safe language sql as $$ with user_embedding as (
+  ) immutable parallel safe language sql as $$
+  with user_embedding as (
     select interest_embedding
     from user_embeddings
     where user_id = uid
@@ -299,12 +300,30 @@ create or replace function get_recommended_contracts_embeddings(uid text, n int,
     from combined_new_closing_soon
     order by row_num2,
       result_id2
+  ), final_results as (
+    select * from combined_results
+    union all
+    -- Fill remaining with trending by least distance.
+    select *,
+      3 as result_id,
+       3 as result_id2,
+      row_number() over (
+        order by distance
+      ) as row_num,
+      row_number() over (
+        order by distance
+      ) as row_num2
+    from trending_contracts
+    where not contract_id in (select contract_id from combined_results)
+    order by row_num2, result_id2
+    limit n - (select count(*) from combined_results)
   )
 select data,
   distance,
-  combined_results.popularity_score
-from combined_results
-  join contracts on contracts.id = combined_results.contract_id $$;
+  final_results.popularity_score
+from final_results
+  join contracts on contracts.id = final_results.contract_id $$;
+
 create or replace function get_cpmm_pool_prob(pool jsonb, p numeric) returns numeric language plpgsql immutable parallel safe as $$
 declare p_no numeric := (pool->>'NO')::numeric;
 p_yes numeric := (pool->>'YES')::numeric;
