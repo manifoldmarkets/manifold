@@ -14,6 +14,7 @@ module.exports = {
       {
         'major-mono': ['Major Mono Display', 'monospace'],
         'readex-pro': ['Readex Pro', 'icomoon', 'emoji', 'sans-serif'],
+        'grenze-gotisch': ['Grenze Gotisch', 'cursive'],
       }
     ),
     extend: {
