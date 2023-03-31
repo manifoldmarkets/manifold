@@ -10,6 +10,6 @@ CREATE POLICY "Enable read access for private group markets if user is member" O
 SELECT USING (
         (
             visibility = 'private'::text
-            and can_access_contract(id, firebase_uid())
+            and can_access_private_contract(id, firebase_uid())
         )
     );

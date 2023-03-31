@@ -1,4 +1,4 @@
-create or replace function can_access_contract(contract_id text, member_id text) returns boolean stable parallel safe language sql as $$
+create or replace function can_access_private_contract(this_contract_id text, this_member_id text) returns boolean immutable parallel safe language sql as $ $
 select EXISTS (
         SELECT 1
         FROM (
@@ -10,7 +10,7 @@ select EXISTS (
                 )
             )
         WHERE (
-                (group_contracts.contract_id = contract_id)
-                AND (group_members.member_id = member_id)
+                (group_contracts.contract_id = this_contract_id)
+                AND (group_members.member_id = this_member_id)
             )
-    ) $$;
+    ) $ $;
