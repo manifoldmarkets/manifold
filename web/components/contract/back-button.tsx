@@ -26,10 +26,10 @@ export function BackButton() {
   if (!canGoBack) return <div />
   return (
     <button
-      className="flex rounded-full bg-black/60 p-2 transition-colors hover:bg-black/80 sm:hidden"
+      className="flex rounded-full bg-black/60 p-2 transition-colors hover:bg-black/80 lg:hidden"
       onClick={router.back}
     >
-      <ArrowLeftIcon className="h-6 w-6 text-white" aria-hidden />
+      <ArrowLeftIcon className="h-4 w-4 text-white" aria-hidden />
       <div className="sr-only">Back</div>
     </button>
   )
