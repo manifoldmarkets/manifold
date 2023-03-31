@@ -55,7 +55,11 @@ export function CopyLinkButton(props: {
   const Button = (props: { onClick: () => void }) => {
     const { onClick } = props
     return (
-      <Tooltip text={tooltip ?? (iconPressed ? 'Copied!' : 'Copy link')} noTap>
+      <Tooltip
+        text={tooltip ?? (iconPressed ? 'Copied!' : 'Copy link')}
+        noTap
+        placement="bottom"
+      >
         <IconButton size="2xs" onClick={onClick} className={className}>
           <Col className={'items-center gap-x-2 sm:flex-row'}>
             {isNative ? (

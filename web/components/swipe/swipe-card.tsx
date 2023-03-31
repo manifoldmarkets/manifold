@@ -17,7 +17,6 @@ import { SiteLink } from '../widgets/site-link'
 import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize from './swipe-helpers'
 import { MoreSwipeInfo } from './more-swipe-info'
-import { DailyStats } from '../daily-stats'
 import { SwipeComments } from './swipe-comments'
 import { Percent } from './percent'
 import { SwitchHorizontalIcon } from '@heroicons/react/solid'
@@ -163,7 +162,7 @@ const CornerDetails = (props: {
   className?: string
   toggleView?: () => void
 }) => {
-  const { contract, className, user, toggleView } = props
+  const { contract, className, toggleView } = props
   const { creatorName, creatorUsername, creatorAvatarUrl, closeTime } = contract
 
   return (
@@ -185,7 +184,6 @@ const CornerDetails = (props: {
       </Row>
 
       <div className="flex items-center rounded-full text-white">
-        <DailyStats user={user} showLoans={false} />
         {toggleView && (
           <SwitchHorizontalIcon className="ml-2 h-6 w-6" onClick={toggleView} />
         )}

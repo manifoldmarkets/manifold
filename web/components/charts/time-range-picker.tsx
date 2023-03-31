@@ -18,6 +18,7 @@ export const TimeRangePicker = (props: {
   color?: ColorType
   disabled?: boolean
   className?: string
+  toggleClassName?: string
 }) => {
   const {
     currentTimePeriod,
@@ -26,6 +27,7 @@ export const TimeRangePicker = (props: {
     color,
     disabled,
     className,
+    toggleClassName,
   } = props
 
   const disabledOptions = !maxRange
@@ -43,7 +45,7 @@ export const TimeRangePicker = (props: {
       disabledOptions={disabledOptions}
       color={color}
       className={clsx('!shadow-none', className)}
-      toggleClassName="py-1 !px-1"
+      toggleClassName={clsx('py-1 !px-1', toggleClassName)}
     />
   )
 }

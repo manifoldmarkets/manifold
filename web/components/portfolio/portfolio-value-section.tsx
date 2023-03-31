@@ -14,6 +14,8 @@ import { TimeRangePicker } from '../charts/time-range-picker'
 import { ColorType } from '../widgets/choices-toggle-group'
 import { useSingleValueHistoryChartViewScale } from '../charts/generic-charts'
 import { AddFundsButton } from '../profile/add-funds-button'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { track } from 'web/lib/service/analytics'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
@@ -26,9 +28,11 @@ export const PortfolioValueSection = memo(
         portfolioHistory?.map((p) => ({
           x: p.timestamp,
           y:
-            p.balance +
-            p.investmentValue -
-            (graphMode === 'profit' ? p.totalDeposits : 0),
+            graphMode === 'balance'
+              ? p.balance
+              : p.balance +
+                p.investmentValue -
+                (graphMode === 'profit' ? p.totalDeposits : 0),
           obj: p,
         })),
       [portfolioHistory, graphMode]
@@ -47,6 +51,7 @@ export const PortfolioValueSection = memo(
       graphView.setViewYScale(undefined)
     })
     const graphView = useSingleValueHistoryChartViewScale()
+    const isMobile = useIsMobile()
 
     //zooms out of graph if zoomed in upon time selection change
     const setTimePeriod = useEvent((timePeriod: Period) => {
@@ -54,6 +59,10 @@ export const PortfolioValueSection = memo(
       graphView.setViewXScale(undefined)
       graphView.setViewYScale(undefined)
     })
+
+    const placeholderSection = (
+      <div className="text-ink-500 animate-pulse text-lg sm:text-xl">---</div>
+    )
 
     // placeholder when loading
     if (graphPoints === undefined || !lastPortfolioMetrics) {
@@ -64,16 +73,9 @@ export const PortfolioValueSection = memo(
           onClickNumber={onClickNumber}
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
-          profitElement={
-            <div className="text-ink-500 animate-pulse text-lg sm:text-xl">
-              ---
-            </div>
-          }
-          valueElement={
-            <div className="text-ink-500 animate-pulse text-lg sm:text-xl">
-              ---
-            </div>
-          }
+          profitElement={placeholderSection}
+          balanceElement={placeholderSection}
+          valueElement={placeholderSection}
           graphElement={(_width, height) => (
             <div
               style={{
@@ -85,9 +87,13 @@ export const PortfolioValueSection = memo(
             </div>
           )}
           disabled={true}
+          placement={isMobile ? 'bottom' : undefined}
         />
       )
     }
+
+    // hide graph if there's no data
+    const hideGraph = graphPoints.length <= 1
 
     const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
     const totalValue = balance + investmentValue
@@ -99,8 +105,13 @@ export const PortfolioValueSection = memo(
         onClickNumber={onClickNumber}
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setTimePeriod}
+        hideSwitcher={hideGraph}
         switcherColor={
-          graphMode === 'value' ? 'indigo' : totalProfit > 0 ? 'green' : 'red'
+          graphMode === 'profit'
+            ? totalProfit > 0
+              ? 'green'
+              : 'red'
+            : 'indigo'
         }
         profitElement={
           <div
@@ -110,10 +121,10 @@ export const PortfolioValueSection = memo(
                   ? graphDisplayNumber.toString().includes('-')
                     ? 'text-scarlet-500'
                     : 'text-teal-500'
-                  : totalProfit > 0
+                  : totalProfit >= 0
                   ? 'text-teal-500'
                   : 'text-scarlet-500'
-                : totalProfit > 0
+                : totalProfit >= 0
                 ? 'text-teal-500'
                 : 'text-scarlet-500',
               'text-lg sm:text-xl'
@@ -126,6 +137,15 @@ export const PortfolioValueSection = memo(
               : formatMoney(totalProfit)}
           </div>
         }
+        balanceElement={
+          <div className={clsx('text-primary-600 text-lg sm:text-xl')}>
+            {graphMode === 'balance'
+              ? graphDisplayNumber
+                ? graphDisplayNumber
+                : formatMoney(balance)
+              : formatMoney(balance)}
+          </div>
+        }
         valueElement={
           <div className={clsx('text-primary-600 text-lg sm:text-xl')}>
             {graphMode === 'value'
@@ -136,8 +156,8 @@ export const PortfolioValueSection = memo(
           </div>
         }
         graphElement={
-          graphPoints.length <= 1
-            ? () => <></> // hide graph for new users
+          hideGraph
+            ? () => <></> //TODO: better empty state so there isn't content shift from a flash of placeholder
             : (width, height) => (
                 <PortfolioGraph
                   key={graphMode} // we need to reset axis scale state if mode changes
@@ -150,6 +170,7 @@ export const PortfolioValueSection = memo(
                 />
               )
         }
+        placement={isMobile ? 'bottom' : undefined}
       />
     )
   }
@@ -161,11 +182,14 @@ export function PortfolioValueSkeleton(props: {
   currentTimePeriod: Period
   setCurrentTimePeriod: (timePeriod: Period) => void
   profitElement: ReactNode
+  balanceElement: ReactNode
   valueElement: ReactNode
   graphElement: (width: number, height: number) => ReactNode
+  hideSwitcher?: boolean
   switcherColor?: ColorType
   userId?: string
   disabled?: boolean
+  placement?: 'bottom'
 }) {
   const {
     graphMode,
@@ -173,15 +197,23 @@ export function PortfolioValueSkeleton(props: {
     currentTimePeriod,
     setCurrentTimePeriod,
     profitElement,
+    balanceElement,
     valueElement,
     graphElement,
+    hideSwitcher,
     switcherColor,
     userId,
     disabled,
+    placement,
   } = props
   return (
     <>
-      <Row className="mb-1 items-start gap-2 sm:mb-2">
+      <Row
+        className={clsx(
+          'mb-1 items-start gap-2 sm:mb-2',
+          placement === 'bottom' ? 'ml-2 gap-8' : ''
+        )}
+      >
         <Col
           className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
@@ -191,10 +223,27 @@ export function PortfolioValueSkeleton(props: {
           )}
           onClick={() => {
             onClickNumber('profit')
+            track('Trading Profits Clicked')
           }}
         >
           <div className="text-ink-600 text-xs sm:text-sm">Trading profits</div>
           {profitElement}
+        </Col>
+
+        <Col
+          className={clsx(
+            'w-24 cursor-pointer sm:w-28 ',
+            graphMode != 'balance'
+              ? 'cursor-pointer opacity-40 hover:opacity-80'
+              : ''
+          )}
+          onClick={() => {
+            onClickNumber('balance')
+            track('Graph Balance Clicked')
+          }}
+        >
+          <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
+          {balanceElement}
         </Col>
 
         <Col
@@ -204,25 +253,38 @@ export function PortfolioValueSkeleton(props: {
           )}
           onClick={() => {
             onClickNumber('value')
+            track('Portfolio Value Clicked')
           }}
         >
-          <div className="text-ink-600 text-xs sm:text-sm">Portfolio value</div>
+          <div className="text-ink-600 text-xs sm:text-sm">Portfolio</div>
           {valueElement}
         </Col>
 
         <AddFundsButton userId={userId} className="self-center max-sm:hidden" />
 
+        {!placement && !hideSwitcher && (
+          <TimeRangePicker
+            currentTimePeriod={currentTimePeriod}
+            setCurrentTimePeriod={setCurrentTimePeriod}
+            color={switcherColor}
+            disabled={disabled}
+            className="ml-auto"
+          />
+        )}
+      </Row>
+      <SizedContainer fullHeight={200} mobileHeight={150}>
+        {graphElement}
+      </SizedContainer>
+      {placement === 'bottom' && !hideSwitcher && (
         <TimeRangePicker
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
           color={switcherColor}
           disabled={disabled}
-          className="ml-auto"
+          className="mx-2 mt-1"
+          toggleClassName="grow justify-center"
         />
-      </Row>
-      <SizedContainer fullHeight={200} mobileHeight={100}>
-        {graphElement}
-      </SizedContainer>
+      )}
     </>
   )
 }

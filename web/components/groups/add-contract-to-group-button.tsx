@@ -1,5 +1,6 @@
 import {
   CheckCircleIcon,
+  LockClosedIcon,
   PlusCircleIcon,
   XCircleIcon,
 } from '@heroicons/react/solid'
@@ -21,7 +22,7 @@ export type AddContractToGroupPermissionType =
 
 export function getAddContractToGroupPermission(
   privacyStatus: PrivacyStatusType,
-  userRole: groupRoleType | null
+  userRole: groupRoleType | null | undefined
 ): AddContractToGroupPermissionType {
   if (
     privacyStatus != 'private' &&
@@ -44,7 +45,7 @@ export function getAddContractToGroupPermission(
 export function AddContractButton(props: {
   group: Group
   user?: User | null
-  userRole: groupRoleType | null
+  userRole: groupRoleType | null | undefined
   className?: string
 }) {
   const { group, user, className, userRole } = props
@@ -84,6 +85,9 @@ export function AddContractButton(props: {
         >
           <div className="bg-canvas-0 relative h-12 w-12 rounded-full">
             <PlusCircleIcon className="text-primary-700 absolute -left-2 -top-2 h-16 w-16 drop-shadow" />
+            {group.privacyStatus == 'private' && (
+              <LockClosedIcon className="text-canvas-0 absolute right-[6px] bottom-[4px] h-[16px] w-[16px]" />
+            )}
           </div>
         </IconButton>
         <AddMarketToGroupModal

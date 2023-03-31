@@ -57,7 +57,7 @@ export function ActivityLog(props: {
       shouldBlockDestiny && DESTINY_GROUP_SLUGS
     )
 
-    Promise.all(blockedGroupSlugs.map(getGroupFromSlug))
+    Promise.all(blockedGroupSlugs.map((slug) => getGroupFromSlug(slug)))
       .then((groups) =>
         Promise.all(filterDefined(groups).map((g) => getGroupContractIds(g.id)))
       )
@@ -72,7 +72,6 @@ export function ActivityLog(props: {
 
   const rawBets = useRealtimeBets(count * 3 + 20, {
     filterRedemptions: true,
-    filterAntes: true,
   })
   const bets = (rawBets ?? []).filter(
     (bet) =>

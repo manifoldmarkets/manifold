@@ -16,10 +16,17 @@ const pages: PageData[] = [
     slug: '/create',
     keywords: ['add', 'make', 'ask'],
   },
+  {
+    label: 'Groups',
+    slug: '/groups',
+    keywords: ['create group'], // TODO: this flow is bad
+  },
   { label: 'Get mana', slug: '/add-funds', keywords: ['buy', 'subscribe'] },
   { label: 'Charity', slug: '/charity', keywords: ['donate', 'for good'] },
   { label: 'Referrals', slug: '/referrals' },
   { label: 'Live Feed', slug: '/live' },
+  { label: 'About & Help', slug: 'https://help.manifold.markets' },
+  { label: 'Ads', slug: '/ad', keywords: ['advertisement'] },
 
   { label: 'Markets', slug: '/markets' },
   { label: 'Newest', slug: '/search?s=newest&f=open' },
@@ -32,7 +39,11 @@ const pages: PageData[] = [
     keywords: ['most popular'],
   },
   { label: 'Closing Soon', slug: '/search?s=close-date&f=open' },
-  { label: 'Recently Resolved', slug: '/search?s=resolve-date&f=resolved' },
+  {
+    label: 'Just Resolved',
+    slug: '/search?s=resolve-date&f=resolved',
+    keywords: ['recently resolved'],
+  },
 ]
 
 export function searchPages(query: string, limit: number) {

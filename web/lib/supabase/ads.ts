@@ -12,9 +12,10 @@ export async function getAllAds() {
 }
 
 export async function getWatchedAdIds(userId: string) {
-  const query = selectFrom(db, 'txns', 'fromId')
-    .eq('data->>category', 'AD_REDEEM')
-    .eq('data->>toId', userId)
+  const query = selectFrom(db, 'txns', 'fromId').contains('data', {
+    category: 'AD_REDEEM',
+    toId: userId,
+  })
   const { data } = await run(query)
   return data.map(({ fromId }) => fromId)
 }
@@ -29,9 +30,10 @@ export async function getSkippedAdIds(userId: string) {
 }
 
 export async function getUsersWhoWatched(adId: string) {
-  const query = selectFrom(db, 'txns', 'toId')
-    .eq('data->>category', 'AD_REDEEM')
-    .eq('data ->>fromId', adId)
+  const query = selectFrom(db, 'txns', 'toId').contains('data', {
+    category: 'AD_REDEEM',
+    fromId: adId,
+  })
   const { data } = await run(query)
   return data.map(({ toId }) => toId) ?? []
 }

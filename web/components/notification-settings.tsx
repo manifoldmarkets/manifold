@@ -8,6 +8,7 @@ import {
   InboxInIcon,
   InformationCircleIcon,
   LightBulbIcon,
+  RefreshIcon,
   TrendingUpIcon,
   UserIcon,
   UsersIcon,
@@ -35,6 +36,7 @@ import {
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getIsNative } from 'web/lib/native/is-native'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { postMessageToNative } from 'web/components/native-message-listener'
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined
@@ -387,11 +389,20 @@ export function NotificationSettings(props: {
 
     // Otherwise, they rejected the system modal, so they've to re-enable it in their settings
     return (
-      <Row className="text-ink-700 items-center justify-center text-sm">
-        <span className={'bg-ink-100 rounded-md p-2'}>
+      <Row className="text-ink-700 bg-ink-100 items-center justify-center gap-2 rounded-md p-2 text-sm">
+        <span className={''}>
           Mobile push notifications are disabled. To enable them, go to your
-          phone's notification settings.
+          phone's notification settings and turn them on for Manifold. Then tap
+          this button ➡️
         </span>
+        <Button
+          onClick={() =>
+            postMessageToNative('promptEnablePushNotifications', {})
+          }
+          className={'whitespace-nowrap'}
+        >
+          <RefreshIcon className={'h-4 w-4 '} />
+        </Button>
       </Row>
     )
   }

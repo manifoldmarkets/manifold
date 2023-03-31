@@ -1,9 +1,9 @@
-import { Row } from 'web/components/layout/row'
 import { ArrowLeftIcon } from '@heroicons/react/solid'
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/router'
 
-export function BackRow() {
+// meant to be used over a cover image
+export function BackButton() {
   const router = useRouter()
   const [canGoBack, setCanGoBack] = React.useState(false)
 
@@ -25,18 +25,12 @@ export function BackRow() {
 
   if (!canGoBack) return <div />
   return (
-    <header className="border-ink-200 top-2 w-full border-b lg:hidden">
-      <Row className="bg-canvas-0 items-center justify-between gap-2">
-        <div className="flex flex-1">
-          <button
-            className="hover:bg-ink-200 text-primary-700 flex px-3 py-2 text-sm "
-            onClick={router.back}
-          >
-            <ArrowLeftIcon className="mr-2 h-5 w-5" aria-hidden />
-            Back
-          </button>
-        </div>
-      </Row>
-    </header>
+    <button
+      className="flex rounded-full bg-black/60 p-2 transition-colors hover:bg-black/80 lg:hidden"
+      onClick={router.back}
+    >
+      <ArrowLeftIcon className="h-4 w-4 text-white" aria-hidden />
+      <div className="sr-only">Back</div>
+    </button>
   )
 }

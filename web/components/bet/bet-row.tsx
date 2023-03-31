@@ -20,7 +20,7 @@ export function BetRow(props: {
         color="gray-outline"
         className="!ring-1"
         onClick={(e) => {
-          e.preventDefault()
+          e.stopPropagation()
           if (noUser) {
             firebaseLogin()
             return
@@ -36,7 +36,7 @@ export function BetRow(props: {
         color="gray-outline"
         className="!ring-1"
         onClick={(e) => {
-          e.preventDefault()
+          e.stopPropagation()
           if (noUser) {
             firebaseLogin()
             return

@@ -9,7 +9,7 @@ import { Leaderboard } from 'web/components/leaderboard'
 import { SEO } from 'web/components/SEO'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getUsersBlockFacetFilters, User } from 'web/lib/firebase/users'
-import { Custom404Content } from '../../404'
+import Custom404, { Custom404Content } from '../../404'
 
 import { ArrowLeftIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -45,7 +45,7 @@ import { usePosts } from 'web/hooks/use-post'
 import { useRealtimePost } from 'web/hooks/use-post-supabase'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listPosts } from 'web/lib/firebase/posts'
-import { getGroupFromSlug, getGroupPrivacyBySlug } from 'web/lib/supabase/group'
+import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { getPost } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 
@@ -65,16 +65,23 @@ type GroupParams = {
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
   const groupSlug = slugs[0]
-  const groupPrivacy = await getGroupPrivacyBySlug(groupSlug)
-  if (groupPrivacy === 'private') {
+  const group = await getGroupFromSlug(groupSlug, 'admin')
+  if (!group) {
     return {
       props: {
-        groupPrivacy,
+        groupPrivacy: null,
+        slugs,
+      },
+    }
+  }
+  if (group.privacyStatus === 'private') {
+    return {
+      props: {
+        groupPrivacy: 'private',
         slugs,
       },
     }
   } else {
-    const group = await getGroupFromSlug(slugs[0])
     const creatorPromise = group ? getUser(group.creatorId) : null
     const cachedTopTraderIds =
       (group && group.cachedLeaderboard?.topTraders) ?? []
@@ -92,7 +99,7 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
     ) as Post[]
     return {
       props: {
-        groupPrivacy,
+        groupPrivacy: group.privacyStatus,
         slugs,
         groupParams: {
           group: group ?? null,
@@ -114,11 +121,14 @@ export async function getStaticPaths() {
 const groupSubpages = [undefined, 'markets', 'about', 'leaderboards'] as const
 
 export default function GroupPage(props: {
-  groupPrivacy: PrivacyStatusType
+  groupPrivacy: PrivacyStatusType | null
   slugs: string[]
   groupParams?: GroupParams
 }) {
   const { groupPrivacy, slugs, groupParams } = props
+  if (!groupPrivacy) {
+    return <Custom404 />
+  }
   return (
     <Page touchesTop={true}>
       {groupPrivacy == 'private' && <PrivateGroupPage slugs={slugs} />}
@@ -153,7 +163,6 @@ export function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
 
 export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const { groupParams } = props
-
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
   const page = slugs?.[1] as typeof groupSubpages[number]
@@ -176,7 +185,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
   const aboutPost =
     useRealtimePost(group?.aboutPostId) ?? groupParams?.aboutPost
-
   const groupPosts = usePosts(group?.postIds ?? []) ?? groupParams?.posts ?? []
   const creator = useGroupCreator(group) ?? groupParams?.creator
 
@@ -202,7 +210,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     return <Custom404Content />
   }
 
-  if (group.privacyStatus == 'private' && !userRole) {
+  if (group.privacyStatus == 'private' && userRole === null) {
     return <InaccessiblePrivateThing thing={'group'} />
   }
 

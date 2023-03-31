@@ -6,18 +6,21 @@ Any code that people have found it convenient to write and run against our backe
 
 Follow Setting up Authentication under [/functions/README](../functions/README.md#setting-up-authentication).
 
-### Environment variables
+## Example script
 
-Copy the keys from the google secrets page
+Simply import `runScript` and pass it a function.
 
-- Dev: https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets
-- Prod: https://console.cloud.google.com/security/secret-manager?project=mantic-markets
+```typescript
+import { runScript } from 'run-script'
+import { DAY_MS } from 'common/util/time'
+import { getRecentContractLikes } from 'shared/supabase/likes'
 
-Then, save them locally in e.g. `~/.zshrc` or `~/.bashrc`:
-
-```
-export SUPABASE_KEY=ABCDE12345
-export SUPABASE_PASSWORD=12345ABCD
+if (require.main === module) {
+  runScript(async ({ db }) => {
+    const weekAgo = Date.now() - 7 * DAY_MS
+    console.log(await getRecentContractLikes(db, weekAgo))
+  })
+}
 ```
 
 ## Running a script
@@ -40,3 +43,7 @@ Or if you don't want to use `ts-node` you can compile and run them with Node:
 ```shell
 $ yarn build && node lib/script.js
 ```
+
+### Environment variables
+
+Secret keys are automatically loaded into `process.env` when you use the `runScript` function.

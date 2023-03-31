@@ -1,22 +1,13 @@
 import { useEffect } from 'react'
 import { DarkModeContext, theme_option } from 'web/hooks/dark-mode-context'
-import {
-  storageStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { postMessageToNative } from './native-message-listener'
 
 export const DarkModeProvider = (props: { children: any }) => {
-  const [theme, changeTheme] = usePersistentState<theme_option>('auto', {
-    key: 'theme',
-    store: storageStore(safeLocalStorage),
-  })
-  //init theme state. TODO: fix/replace usePersistentState to do this
-  useEffect(() => {
-    safeLocalStorage &&
-      changeTheme(JSON.parse(safeLocalStorage.getItem('theme') as any))
-  }, [])
+  const [theme, changeTheme] = usePersistentLocalState<theme_option>(
+    'auto',
+    'theme'
+  )
 
   const reRenderTheme = () => {
     const autoDark = window.matchMedia('(prefers-color-scheme: dark)').matches

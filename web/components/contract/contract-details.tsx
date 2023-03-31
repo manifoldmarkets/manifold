@@ -7,7 +7,6 @@ import {
   PlusIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { Row } from '../layout/row'
@@ -16,8 +15,7 @@ import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../widgets/avatar'
 import { useState } from 'react'
-import { MiniUserFollowButton } from '../buttons/follow-button'
-import { useUser } from 'web/hooks/use-user'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -29,12 +27,11 @@ import {
 } from 'web/lib/firebase/groups'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { GroupLink, groupPath } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
-import { editorExtensions } from '../widgets/editor'
+import { LikeButton } from './like-button'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -102,70 +99,47 @@ export function MiscDetails(props: {
   )
 }
 
-export function ContractDetails(props: { contract: Contract }) {
+export function MarketGroups(props: { contract: Contract }) {
   const { contract } = props
-
-  return (
-    <Col className="gap-2">
-      <Row className="justify-between">
-        <MarketSubheader contract={contract} />
-        <ExtraContractActionsRow contract={contract} />
-      </Row>
-      {contract.visibility != 'private' && <MarketGroups contract={contract} />}
-      {contract.visibility == 'private' && (
-        <PrivateMarketGroups contract={contract} />
-      )}
-    </Col>
-  )
+  if (contract.visibility === 'private') {
+    return <PrivateMarketGroups contract={contract} />
+  } else {
+    return <PublicMarketGroups contract={contract} />
+  }
 }
 
-export function PrivateMarketGroups(props: { contract: Contract }) {
+function PrivateMarketGroups(props: { contract: Contract }) {
   const { contract } = props
   if (contract.groupLinks) {
     return (
-      <GroupDisplay groupToDisplay={contract.groupLinks[0]} isPrivate={true} />
+      <div className="flex">
+        <GroupDisplay groupToDisplay={contract.groupLinks[0]} isPrivate />
+      </div>
     )
   }
   return <></>
 }
 
-export function MarketSubheader(props: { contract: Contract }) {
+export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
-  const {
-    creatorName,
-    creatorUsername,
-    creatorId,
-    creatorAvatarUrl,
-    creatorCreatedTime,
-  } = contract
-  const user = useUser()
-  const isEditable = user?.id === creatorId
+  const { creatorName, creatorUsername, creatorAvatarUrl, creatorCreatedTime } =
+    contract
 
   return (
-    <Row className="grow items-center gap-3">
+    <Row className="grow items-center gap-2">
       <div className="relative">
         <Avatar
           username={creatorUsername}
           avatarUrl={creatorAvatarUrl}
-          size={9}
-        />
-        <MiniUserFollowButton
-          userId={creatorId}
-          className="absolute -bottom-1 -right-1"
+          size={6}
         />
       </div>
 
-      <Col className="whitespace-nowrap text-sm">
-        <UserLink
-          className="text-ink-600"
-          name={creatorName}
-          username={creatorUsername}
-          createdTime={creatorCreatedTime}
-        />
-        <span className="text-ink-400 text-xs font-light">
-          <CloseOrResolveTime contract={contract} editable={isEditable} />
-        </span>
-      </Col>
+      <UserLink
+        name={creatorName}
+        username={creatorUsername}
+        createdTime={creatorCreatedTime}
+      />
     </Row>
   )
 }
@@ -179,7 +153,7 @@ export function CloseOrResolveTime(props: {
 
   if (!!closeTime || !!isResolved) {
     return (
-      <Row className="select-none items-center">
+      <Row className="select-none items-center font-light">
         {isResolved && resolutionTime && (
           <DateTimeTooltip
             className="whitespace-nowrap"
@@ -203,7 +177,7 @@ export function CloseOrResolveTime(props: {
   } else return <></>
 }
 
-function MarketGroups(props: { contract: Contract }) {
+function PublicMarketGroups(props: { contract: Contract }) {
   const [open, setOpen] = useState(false)
   const user = useUser()
   const { contract } = props
@@ -211,8 +185,7 @@ function MarketGroups(props: { contract: Contract }) {
 
   return (
     <>
-      {/* Put after market action icons on mobile, but before them on desktop*/}
-      <Row className="order-last w-full flex-wrap items-end gap-1 sm:order-[unset]">
+      <Row className="w-full flex-wrap items-end gap-1">
         {groupsToDisplay.map((group) => (
           <GroupDisplay key={group.groupId} groupToDisplay={group} />
         ))}
@@ -252,7 +225,7 @@ function GroupDisplay(props: {
     <Link prefetch={false} href={groupPath(groupToDisplay.slug)} legacyBehavior>
       <a
         className={clsx(
-          'w-fit max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs font-light sm:max-w-[250px]',
+          'w-fit max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-sm font-light sm:max-w-[250px]',
           isPrivate
             ? 'text-ink-1000 bg-indigo-200 dark:bg-indigo-700'
             : 'bg-ink-400 text-ink-0'
@@ -288,6 +261,7 @@ function EditableCloseDate(props: {
 
   const isSameYear = dayJsCloseTime.isSame(dayJsNow, 'year')
   const isSameDay = dayJsCloseTime.isSame(dayJsNow, 'day')
+  const isSoon = dayJsCloseTime.diff(dayJsNow, 'month') < 4
 
   let newCloseTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -301,24 +275,11 @@ function EditableCloseDate(props: {
     }
     if (!newCloseTime) return
 
-    if (newCloseTime === closeTime) setIsEditingCloseTime(false)
-    else {
-      const content = contract.description
-      const editor = new Editor({ content, extensions: editorExtensions() })
-      editor.commands.focus('end')
-
-      // const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
-      // insertContent(
-      //   editor,
-      //   `<p></p><p>Close date updated to ${formattedCloseDate}</p>`
-      // )
-
+    setIsEditingCloseTime(false)
+    if (newCloseTime !== closeTime) {
       updateContract(contract.id, {
         closeTime: newCloseTime,
-        description: editor.getJSON(),
       })
-
-      setIsEditingCloseTime(false)
     }
   }
 
@@ -330,9 +291,13 @@ function EditableCloseDate(props: {
         setOpen={setIsEditingCloseTime}
         position="top"
       >
-        <Col className="bg-canvas-0 items-center rounded p-8">
-          <Title className="!text-2xl">Change when this market closes</Title>
-          <Row className="flex-wrap items-center justify-center gap-2">
+        <Col className="bg-canvas-0 rounded p-8">
+          <Title className="!text-2xl">Market close time</Title>
+          <div className="mb-4">
+            Change when this market closes. All trading will be halted at this
+            time.
+          </div>
+          <Row className="flex-wrap items-center justify-end gap-2">
             <Input
               type="date"
               className="w-full shrink-0 sm:w-fit"
@@ -355,14 +320,17 @@ function EditableCloseDate(props: {
           </Row>
 
           {(contract.closeTime ?? Date.now() + 1) > Date.now() && (
-            <Button
-              className="mt-8"
-              size={'sm'}
-              color="gray-white"
-              onClick={() => onSave(Date.now())}
-            >
-              (Or, close this market now)
-            </Button>
+            <Row className="align-center mt-8">
+              <div className="mt-1 mr-2">Or close market now:</div>
+              <Button
+                className=""
+                size={'xs'}
+                color="gray"
+                onClick={() => onSave(Date.now())}
+              >
+                Close market
+              </Button>
+            </Row>
           )}
         </Col>
       </Modal>
@@ -377,22 +345,43 @@ function EditableCloseDate(props: {
           placement="bottom-start"
           noTap
         >
-          <span suppressHydrationWarning>
-            {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}{' '}
-          </span>
-          {isSameDay ? (
-            <span className={'capitalize'} suppressHydrationWarning>
-              {' '}
-              {fromNow(closeTime)}
-            </span>
-          ) : isSameYear ? (
-            dayJsCloseTime.format('MMM D')
-          ) : (
-            dayJsCloseTime.format('MMM D, YYYY')
-          )}
+          <Row>
+            {dayjs().isBefore(closeTime) ? (
+              <ClockIcon className="mr-1 flex h-5 w-5" />
+            ) : (
+              'closed'
+            )}{' '}
+            {isSameDay
+              ? fromNow(closeTime)
+              : isSameYear || isSoon
+              ? dayJsCloseTime.format('MMM D')
+              : dayJsCloseTime.format('YYYY')}
+          </Row>
         </DateTimeTooltip>
         {editable && <PencilIcon className="h-4 w-4" />}
       </Row>
     </>
+  )
+}
+
+export const ContractLike = (props: { contract: Contract }) => {
+  const { contract } = props
+  const user = useUser()
+  const privateUser = usePrivateUser()
+
+  return (
+    <LikeButton
+      contentId={contract.id}
+      contentCreatorId={contract.creatorId}
+      user={user}
+      contentType={'contract'}
+      totalLikes={contract.likedByUserCount ?? 0}
+      contract={contract}
+      contentText={contract.question}
+      className={clsx(
+        '-mr-2',
+        isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
+      )}
+    />
   )
 }

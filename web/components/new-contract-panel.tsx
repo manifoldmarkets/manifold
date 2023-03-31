@@ -8,8 +8,6 @@ import clsx from 'clsx'
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
-  Contract,
-  contractPath,
   outcomeType,
   visibility,
 } from 'common/contract'
@@ -38,6 +36,9 @@ import { getGroup } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { QfExplainer } from './contract/qf-overview'
+
+import { Contract } from 'common/contract'
+import WaitingForSupabaseButton from './contract/waiting-for-supabase-button'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -73,6 +74,9 @@ export function NewContractPanel(props: {
   const [initialValueString, setInitialValueString] = useState(initValue)
   const [visibility, setVisibility] = useState<visibility>(
     (params?.visibility as visibility) ?? 'public'
+  )
+  const [newContract, setNewContract] = useState<Contract | undefined>(
+    undefined
   )
   // for multiple choice, init to 3 empty answers
   const [answers, setAnswers] = useState(['', '', ''])
@@ -208,7 +212,7 @@ export function NewContractPanel(props: {
       editor?.commands.clearContent(true)
       // force clear save, because it can fail if editor unrenders
       safeLocalStorage?.removeItem(`text create market`)
-      await router.push(contractPath(result as Contract))
+      setNewContract(result as Contract)
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)
       setErrorText(
@@ -251,6 +255,24 @@ export function NewContractPanel(props: {
         </label>
         <TextEditor editor={editor} />
       </div>
+      <Spacer h={6} />
+      {!fromGroup && visibility != 'private' && (
+        <>
+          <Row className={'items-end gap-x-2'}>
+            <GroupSelector
+              selectedGroup={selectedGroup}
+              setSelectedGroup={setSelectedGroup}
+              options={{ showSelector: true, showLabel: true }}
+              isContractCreator={true}
+            />
+            {selectedGroup && (
+              <a target="_blank" href={groupPath(selectedGroup.slug)}>
+                <ExternalLinkIcon className=" text-ink-500 ml-1 mb-3 h-5 w-5" />
+              </a>
+            )}
+          </Row>
+        </>
+      )}
 
       {hideOptions ? (
         <Row className="mt-4 justify-end">
@@ -382,25 +404,6 @@ export function NewContractPanel(props: {
               </div>
             </>
           )}
-          {!fromGroup && visibility != 'private' && (
-            <>
-              <Spacer h={4} />
-              <Row className={'items-end gap-x-2'}>
-                <GroupSelector
-                  selectedGroup={selectedGroup}
-                  setSelectedGroup={setSelectedGroup}
-                  options={{ showSelector: true, showLabel: true }}
-                  isContractCreator={true}
-                />
-                {selectedGroup && (
-                  <a target="_blank" href={groupPath(selectedGroup.slug)}>
-                    <ExternalLinkIcon className=" text-ink-500 ml-1 mb-3 h-5 w-5" />
-                  </a>
-                )}
-              </Row>
-              <Spacer h={6} />
-            </>
-          )}
           <div className="mb-1 flex flex-col items-start">
             <label className="mb-1 gap-2 px-1 py-2">
               <span>Question closes in </span>
@@ -527,20 +530,28 @@ export function NewContractPanel(props: {
 
       <Spacer h={6} />
       <Row className="w-full justify-center">
-        <Button
-          className="w-full"
-          type="submit"
-          color="indigo"
-          size="xl"
-          loading={isSubmitting}
-          disabled={!isValid || editor?.storage.upload.mutation.isLoading}
-          onClick={(e) => {
-            e.preventDefault()
-            submit()
-          }}
-        >
-          {isSubmitting ? 'Creating...' : 'Create market'}
-        </Button>
+        {newContract && (
+          <WaitingForSupabaseButton
+            contractId={newContract.id}
+            router={router}
+          />
+        )}
+        {!newContract && (
+          <Button
+            className="w-full"
+            type="submit"
+            color="indigo"
+            size="xl"
+            loading={isSubmitting}
+            disabled={!isValid || editor?.storage.upload.mutation.isLoading}
+            onClick={(e) => {
+              e.preventDefault()
+              submit()
+            }}
+          >
+            {isSubmitting ? 'Creating...' : 'Create market'}
+          </Button>
+        )}
       </Row>
 
       <Spacer h={6} />

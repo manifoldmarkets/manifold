@@ -1,13 +1,10 @@
 import { Editor } from '@tiptap/core'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import {
-  groupPath,
-  MAX_GROUP_NAME_LENGTH,
-  PrivacyStatusType,
-} from 'common/group'
+import { MAX_GROUP_NAME_LENGTH, PrivacyStatusType } from 'common/group'
 import { User } from 'common/user'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { useAdmin } from 'web/hooks/use-admin'
 import { createGroup } from 'web/lib/firebase/api'
 import { ColorType } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
@@ -59,8 +56,8 @@ export function CreateGroupButton(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
   const [privacy, setPrivacy] = useState<PrivacyStatusType>('public')
-
   const router = useRouter()
+  const isManifoldAdmin = useAdmin()
 
   const editor = useTextEditor({
     key: 'create a group',
@@ -88,7 +85,6 @@ export function CreateGroupButton(props: {
       console.error(e)
       return e
     })
-    console.log(result.details)
 
     if (editorHasContent(editor)) {
       savePost(editor, result.group, null)
@@ -96,12 +92,9 @@ export function CreateGroupButton(props: {
     editor?.commands.clearContent(true)
 
     if (result.group) {
-      if (goToGroupOnSubmit)
-        router.push(groupPath(result.group.slug)).catch((e) => {
-          console.log(e)
-          setErrorText(e.message)
-        })
-      else if (addGroupIdParamOnSubmit) {
+      if (goToGroupOnSubmit) {
+        router.push(`/group/loading/${result.group.id}`)
+      } else if (addGroupIdParamOnSubmit) {
         router.replace({
           pathname: router.pathname,
           query: { ...router.query, groupId: result.group.id },
@@ -173,13 +166,14 @@ export function CreateGroupButton(props: {
               onClick={() => setPrivacy('curated')}
               size="sm"
             />
-            {/* TODO: INGA add private groups */}
-            {/* <PrivacyStatusView
-              viewStatus={'private'}
-              isSelected={privacy == 'private'}
-              onClick={() => setPrivacy('private')}
-              size="sm"
-            /> */}
+            {goToGroupOnSubmit && isManifoldAdmin && (
+              <PrivacyStatusView
+                viewStatus={'private'}
+                isSelected={privacy == 'private'}
+                onClick={() => setPrivacy('private')}
+                size="sm"
+              />
+            )}
           </Col>
         </div>
 

@@ -47,17 +47,17 @@ export const BlockUser = (props: {
     <Col>
       <Col className={'mb-6 gap-2'}>
         <span>
-          · You {isBlocked ? "can't" : "won't"} see their content on home and
+          · You {isBlocked ? "can't" : "won't"} see their markets on home and
           search.
         </span>
         <span>· You {isBlocked ? "can't" : "won't"} see their comments</span>
         <span>
-          · They {isBlocked ? "can't" : "won't"} add new comments on your
-          content.
+          · They {isBlocked ? "can't" : "won't"} see your markets on home and
+          search.
         </span>
         <span>
-          · They {isBlocked ? "can't" : "won't"} see your content on home and
-          search.
+          · They {isBlocked ? "can't" : "won't"} add new comments on your
+          content.
         </span>
       </Col>
       <Row className={'justify-between'}>

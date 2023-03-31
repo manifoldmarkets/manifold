@@ -3,7 +3,7 @@ import { run } from 'common/supabase/utils'
 import { uniqBy } from 'lodash'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 import { User } from '../firebase/users'
-import { db } from './db'
+import { adminDb, db, initSupabaseClient } from './db'
 
 // functions called for one group
 export async function getNumGroupMembers(groupId: string) {
@@ -125,9 +125,12 @@ export async function searchUserInGroup(
   ).slice(0, limit)
 }
 
-export async function getGroupPrivacyBySlug(groupSlug: string) {
+export async function getGroupPrivacyBySlug(
+  groupSlug: string,
+  permission: 'admin' | 'client'
+) {
   const { data: groupPrivacy } = await run(
-    db
+    initSupabaseClient(permission)
       .from('groups')
       .select('data->>privacyStatus')
       .contains('data', { slug: groupSlug })
@@ -136,12 +139,25 @@ export async function getGroupPrivacyBySlug(groupSlug: string) {
     .privacyStatus
 }
 
-export async function getGroupFromSlug(groupSlug: string) {
+export async function getGroupFromSlug(
+  groupSlug: string,
+  permission?: 'admin'
+) {
+  const client = permission == 'admin' ? adminDb : db
   const { data: group } = await run(
-    db.from('groups').select('data').contains('data', { slug: groupSlug })
+    client.from('groups').select('data').contains('data', { slug: groupSlug })
   )
   if (group && group.length > 0) {
     return group[0].data as Group
   }
   return null
+}
+
+export async function getGroup(groupId: string) {
+  const { data } = await run(db.from('groups').select('data').eq('id', groupId))
+  if (data && data.length > 0) {
+    return data[0].data as Group
+  } else {
+    return null
+  }
 }

@@ -124,8 +124,8 @@ export const LikeButton = memo(function LikeButton(props: {
         hasSafePolygon={showList}
         className={clsx(
           'flex flex-row items-center',
-          size === 'md' && 'mx-2',
-          size === 'xl' && 'mx-4',
+          size === 'md' && 'px-2',
+          size === 'xl' && 'px-4',
           className
         )}
       >

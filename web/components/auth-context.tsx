@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useEffect } from 'react'
 import { pickBy } from 'lodash'
-import { onIdTokenChanged } from 'firebase/auth'
+import { onIdTokenChanged, User } from 'firebase/auth'
 import {
   auth,
   getUserAndPrivateUser,
@@ -18,6 +18,8 @@ import { UserAndPrivateUser } from 'common/user'
 import { nativePassUsers, nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
+import { getSupabaseToken } from 'web/lib/firebase/api'
+import { updateSupabaseAuth } from 'web/lib/supabase/db'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -90,30 +92,49 @@ export function AuthProvider(props: {
     }
   }, [authUser])
 
+  const onAuthLoad = (fbUser: User, newUser: UserAndPrivateUser) => {
+    setAuthUser({ ...newUser, authLoaded: true })
+
+    nativePassUsers(
+      JSON.stringify({
+        fbUser: fbUser.toJSON(),
+        privateUser: newUser.privateUser,
+      })
+    )
+  }
+
   useEffect(() => {
     return onIdTokenChanged(
       auth,
       async (fbUser) => {
         if (fbUser) {
           setUserCookie(fbUser.toJSON())
-          let current = await getUserAndPrivateUser(fbUser.uid)
-          if (!current.user || !current.privateUser) {
+
+          const [currentAuthUser, supabaseJwt] = await Promise.all([
+            getUserAndPrivateUser(fbUser.uid),
+            getSupabaseToken().catch((e) => {
+              console.error('Error getting supabase token', e)
+              return null
+            }),
+          ])
+          // When testing on a mobile device, we'll be pointed at a local ip or ngrok address, so this will fail
+          if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
+
+          if (!currentAuthUser.user || !currentAuthUser.privateUser) {
             const deviceToken = ensureDeviceToken()
             const adminToken = getAdminToken()
-            current = (await createUser({
+
+            const newUser = (await createUser({
               deviceToken,
               adminToken,
               visitedContractIds: getSavedContractVisitsLocally(),
             })) as UserAndPrivateUser
-            setCachedReferralInfoForUser(current.user)
+
+            setCachedReferralInfoForUser(newUser.user)
+            onAuthLoad(fbUser, newUser)
+          } else {
+            onAuthLoad(fbUser, currentAuthUser)
           }
-          setAuthUser({ ...current, authLoaded: true })
-          nativePassUsers(
-            JSON.stringify({
-              fbUser: fbUser.toJSON(),
-              privateUser: current.privateUser,
-            })
-          )
         } else {
           // User logged out; reset to null
           setUserCookie(undefined)

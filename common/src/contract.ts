@@ -3,6 +3,27 @@ import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
 import { GroupLink } from 'common/group'
 
+/************************************************
+
+supabase status: columns exist for
+  slug: text
+  creatorId: text
+  question: text
+  visibility: text
+  mechanism: text
+  outcomeType: text
+  createdTime: timestamp (from millis)
+  closeTime?: timestamp (from millis)
+  resolutionTime?: timestamp (from millis)
+  resolution?: text
+  resolutionProbability?: numeric
+  popularityScore: numeric
+
+any changes to the type of these columns in firestore will require modifying
+the supabase trigger, or replication of contracts may fail!
+
+*************************************************/
+
 export type AnyOutcomeType =
   | Binary
   | MultipleChoice

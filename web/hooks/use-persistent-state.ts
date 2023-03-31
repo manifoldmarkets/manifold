@@ -110,6 +110,7 @@ export const inMemoryStore = <T>(): PersistentStore<T> => ({
   },
 })
 
+/** @deprecated  - use usePersistentLocalState or write new hook */
 export const usePersistentState = <T>(
   initial: T,
   persist?: PersistenceOptions<T>
@@ -150,6 +151,7 @@ export const usePersistentState = <T>(
   return [state, setState] as const
 }
 
+/** @deprecated  - use usePersistentLocalState or write new hook */
 export const usePersistentRevalidatedState = <T>(
   initial: T,
   persist: PersistenceOptions<T>,

@@ -1,6 +1,5 @@
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager'
 import { zip } from 'lodash'
-import { getServiceAccountCredentials } from './init-admin'
 
 // List of secrets that are available to backend (api, functions, scripts, etc.)
 // Edit them at:
@@ -8,20 +7,29 @@ import { getServiceAccountCredentials } from './init-admin'
 // dev - https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets
 export const secrets = [
   'API_SECRET',
-  'SUPABASE_KEY',
-  'SUPABASE_PASSWORD',
-  'MAILGUN_KEY',
   'DREAM_KEY',
+  'MAILGUN_KEY',
   'OPENAI_API_KEY',
+  'STRIPE_APIKEY',
+  'STRIPE_WEBHOOKSECRET',
+  'SUPABASE_KEY',
+  'SUPABASE_JWT_SECRET',
+  'SUPABASE_PASSWORD',
+  'TEST_CREATE_USER_KEY',
 ]
 
-export const loadSecretsToEnv = async () => {
-  const credentials = getServiceAccountCredentials()
-  const projectId = credentials['project_id']
-  const client = new SecretManagerServiceClient({
-    credentials,
-    projectId,
-  })
+export const loadSecretsToEnv = async (credentials?: any) => {
+  let client: SecretManagerServiceClient
+  if (credentials) {
+    const projectId = credentials['project_id']
+    client = new SecretManagerServiceClient({
+      credentials,
+      projectId,
+    })
+  } else {
+    client = new SecretManagerServiceClient()
+  }
+  const projectId = await client.getProjectId()
 
   const fullSecretNames = secrets.map(
     (secret: string) =>
@@ -42,7 +50,6 @@ export const loadSecretsToEnv = async () => {
   for (const [key, value] of zip(secrets, secretValues)) {
     if (key && value) {
       process.env[key] = value
-      console.log(`Loaded secret: ${key}`, value)
     }
   }
 }

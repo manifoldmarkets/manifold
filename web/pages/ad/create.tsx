@@ -16,7 +16,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { createPost } from 'web/lib/firebase/api'
 import { postPath } from 'web/lib/firebase/posts'
 
-const PRICE_PER_USER = 10
+const PRICE_PER_USER = 5
 
 export default function CreateAdPage() {
   const editor = useTextEditor({ size: 'lg' })

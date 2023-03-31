@@ -44,6 +44,8 @@ import { getuserisgroupmember } from './get-user-is-group-member'
 import { getprivatecontractbyslug } from './get-private-contract-by-slug'
 import { redeemad } from './redeem-ad-reward'
 import { completequest } from './complete-quest'
+import { getsupabasetoken } from './get-supabase-token'
+import { updateUserEmbedding } from './update-user-embedding'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -80,6 +82,7 @@ const apiRoute = (endpoint: RequestHandler) => {
 app.options('*', allowCors)
 app.get('/health', ...apiRoute(health))
 app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
+app.get('/unsubscribe', ...apiRoute(unsubscribe))
 
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
@@ -98,7 +101,6 @@ app.post('/createmarket', ...apiRoute(createmarket))
 app.post('/creategroup', ...apiRoute(creategroup))
 app.post('/resolvemarket', ...apiRoute(resolvemarket))
 app.post('/closemarket', ...apiRoute(closemarket))
-app.post('/unsubscribe', ...apiRoute(unsubscribe))
 app.post('/savetwitchcredentials', ...apiRoute(savetwitchcredentials))
 app.post('/createpost', ...apiRoute(createpost))
 app.post('/validateIap', ...apiRoute(validateiap))
@@ -113,6 +115,8 @@ app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/getprivatecontractbyslug', ...apiRoute(getprivatecontractbyslug))
 app.post('/redeemad', ...apiRoute(redeemad))
 app.post('/completequest', ...apiRoute(completequest))
+app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
+app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)
 app.post(

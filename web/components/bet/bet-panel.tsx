@@ -332,14 +332,14 @@ export function BuyPanel(props: {
         />
         <button
           className={clsx(
-            'inline-flex items-center justify-center rounded-3xl border-2 py-2 px-4',
+            'inline-flex items-center justify-center rounded-3xl border-2 p-2',
             seeLimit
               ? 'border-indigo-500 bg-indigo-500 text-white'
-              : 'bg-canvas-0 border-indigo-500 text-indigo-500 hover:border-indigo-500 hover:text-indigo-500'
+              : 'bg-canvas-0 border-indigo-500 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-500/10 hover:text-indigo-500'
           )}
           onClick={() => onOptionChoice('LIMIT')}
         >
-          %
+          <div className="h-6 w-6 text-center">%</div>
         </button>
       </Row>
 

@@ -374,7 +374,6 @@ export function MarketResolvedNotification(props: {
         setOpacity(opacity - 0.02)
       }, opacity * 100)
   }, [isVisible, opacity])
-  console.log(data)
   const betterThan = (totalShareholders ?? 0) - (profitRank ?? 0)
   const comparison =
     profitRank && totalShareholders && betterThan > 0

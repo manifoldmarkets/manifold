@@ -11,6 +11,7 @@ import { BadgeCheckIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { Avatar } from './avatar'
 import { DAY_MS } from 'common/util/time'
+import ScalesIcon from 'web/lib/icons/scales-icon'
 
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
@@ -51,11 +52,32 @@ export function UserLink(props: {
   noLink?: boolean
   createdTime?: number
   hideBadge?: boolean
+  marketCreator?: boolean
 }) {
-  const { name, username, className, short, noLink, createdTime, hideBadge } =
-    props
+  const {
+    name,
+    username,
+    className,
+    short,
+    noLink,
+    createdTime,
+    hideBadge,
+    marketCreator,
+  } = props
   const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name) : name
+  const children = (
+    <>
+      <span className="max-w-[200px] truncate">{shortName}</span>
+      {!hideBadge && (
+        <UserBadge
+          username={username}
+          fresh={fresh}
+          marketCreator={marketCreator}
+        />
+      )}
+    </>
+  )
   if (noLink) {
     return (
       <div
@@ -65,8 +87,7 @@ export function UserLink(props: {
           className
         )}
       >
-        <span className="max-w-[200px] truncate">{shortName}</span>
-        {!hideBadge && <UserBadge username={username} fresh={fresh} />}
+        {children}
       </div>
     )
   }
@@ -76,8 +97,7 @@ export function UserLink(props: {
       className={clsx('inline-flex flex-row items-center gap-1', className)}
       followsLinkClass
     >
-      <span className="max-w-[200px] truncate">{shortName}</span>
-      {!hideBadge && <UserBadge username={username} fresh={fresh} />}
+      {children}
     </SiteLink>
   )
 }
@@ -100,8 +120,12 @@ export function PostBanBadge() {
   )
 }
 
-export function UserBadge(props: { username: string; fresh?: boolean }) {
-  const { username, fresh } = props
+export function UserBadge(props: {
+  username: string
+  fresh?: boolean
+  marketCreator?: boolean
+}) {
+  const { username, fresh, marketCreator } = props
   if (BOT_USERNAMES.includes(username)) {
     return <BotBadge />
   }
@@ -113,6 +137,9 @@ export function UserBadge(props: { username: string; fresh?: boolean }) {
   }
   if (fresh) {
     return <FreshBadge />
+  }
+  if (marketCreator) {
+    return <MarketCreatorBadge />
   }
   return null
 }
@@ -143,6 +170,14 @@ function FreshBadge() {
   return (
     <Tooltip text="I'm new here!" placement="right">
       <SparklesIcon className="h-4 w-4 text-green-500" aria-hidden="true" />
+    </Tooltip>
+  )
+}
+
+function MarketCreatorBadge() {
+  return (
+    <Tooltip text="Market Creator" placement="right">
+      <ScalesIcon className="h-4 w-4 text-amber-400" aria-hidden="true" />
     </Tooltip>
   )
 }

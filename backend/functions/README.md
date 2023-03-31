@@ -77,15 +77,11 @@ Developing with a local copy of the database is deprecated. The old instructions
 
 ## Secrets management
 
-Secrets are strings that shouldn't be checked into Git (eg API keys, passwords). We store these using [Google Secret Manager](https://console.cloud.google.com/security/secret-manager), which provides them as environment variables to functions that require them. Some useful workflows:
+Secrets are strings that shouldn't be checked into Git (eg API keys, passwords).
 
-- Set a secret: `$ firebase functions:secrets:set STRIPE_APIKEY`
-  - Then, enter the secret in the prompt.
-- Read a secret: `$ firebase functions:secrets:access STRIPE_APIKEY`
+Add or remove keys using [Google Secret Manager](https://console.cloud.google.com/security/secret-manager), which provides them as environment variables to functions that require them.
 
-To access a secret from a cloud function, you'll need to:
+[Dev secrets manager](https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets)
+[Prod secrets manager](https://console.cloud.google.com/security/secret-manager?project=mantic-markets)
 
-1. Expose it to the function, by editing the function in Google Cloud Console (like [here's onCreateContract](https://console.cloud.google.com/functions/edit/us-central1/onCreateContract?env=gen1&authuser=0&hl=en&project=mantic-markets)).
-   - Go to "Security and image repo"->Secrets->Add->choose exposed as env variable.
-2. Expose it programatically to the function by adding a runWith param
-   - Example: `.runWith({ secrets: ['MAILGUN_KEY', 'DREAM_KEY'] }`)
+Secondly, please update the list of secret keys at `backend/shared/src/secrets.ts`. Only these keys are provided to functions, scripts, and the api.

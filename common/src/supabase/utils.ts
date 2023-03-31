@@ -16,7 +16,16 @@ import { UserEvent } from '../events'
 
 export type Schema = Database['public']
 export type Tables = Schema['Tables']
+export type PlainTables = {
+  [table in keyof Tables]: Tables[table]['Row']
+}
+export type Views = Schema['Views']
+export type PlainViews = {
+  [view in keyof Views]: Views[view]['Row']
+}
+export type PlainTablesAndViews = PlainTables & PlainViews
 export type TableName = keyof Tables
+export type ViewName = keyof Views
 export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
 
 export type CollectionTableMapping = { [coll: string]: TableName }
@@ -101,11 +110,13 @@ type TableJsonTypes = {
   group_contracts: GroupContractDoc
 }
 
-export type DataFor<T extends TableName> = T extends keyof TableJsonTypes
-  ? TableJsonTypes[T]
-  : any
+export type DataFor<T extends TableName | ViewName> =
+  T extends keyof TableJsonTypes ? TableJsonTypes[T] : any
 
-export function selectJson<T extends TableName>(db: SupabaseClient, table: T) {
+export function selectJson<T extends TableName | ViewName>(
+  db: SupabaseClient,
+  table: T
+) {
   return db.from(table).select<string, { data: DataFor<T> }>('data')
 }
 
@@ -120,13 +131,21 @@ export function selectFrom<
   return builder
 }
 
+export function selectFromView<
+  V extends ViewName,
+  VData extends DataFor<V>,
+  VFields extends (string & keyof VData)[],
+  VResult = Pick<VData, VFields[number]>
+>(db: SupabaseClient, view: V, ...fields: VFields) {
+  const query = fields.map((f) => `data->${f}`).join(', ')
+  const builder = db.from(view).select<string, VResult>(query)
+  return builder
+}
+
 export function millisToTs(millis: number) {
   return new Date(millis).toISOString()
 }
 
 export function tsToMillis(ts: string) {
-  // mqp: hack for temporary unwise choice of postgres timestamp without time zone type
-  // -- we have to make it look like an ISO9601 date or the JS date constructor will
-  // assume that it's in local time. will fix this up soon
-  return Date.parse(ts + '+0000')
+  return Date.parse(ts)
 }

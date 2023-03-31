@@ -11,7 +11,7 @@ export async function getAllComments(contractId: string, maxCount: number) {
       .order('data->>createdTime', { ascending: false } as any)
       .limit(maxCount)
   )
-  return comments.map((comment) => comment.data)
+  return comments.map((comment) => comment.data as ContractComment)
 }
 
 export async function getComments(limit: number) {

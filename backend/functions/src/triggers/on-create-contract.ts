@@ -11,11 +11,12 @@ import { dalleWithDefaultParams } from 'shared/dream-utils'
 import { getImagePrompt, generateEmbeddings } from 'shared/helpers/openai-utils'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { secrets } from 'shared/secrets'
-import { completeQuestInternal } from 'shared/quest'
+import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 
 export const onCreateContract = functions
   .runWith({
     secrets,
+    timeoutSeconds: 540,
   })
   .firestore.document('contracts/{contractId}')
   .onCreate(async (snapshot, context) => {
@@ -28,6 +29,11 @@ export const onCreateContract = functions
     const desc = contract.description as JSONContent
     const mentioned = parseMentions(desc)
     await addUserToContractFollowers(contract.id, contractCreator.id)
+    await completeCalculatedQuestFromTrigger(
+      contractCreator,
+      'MARKETS_CREATED',
+      eventId
+    )
     await createNewContractNotification(
       contractCreator,
       contract,
@@ -50,6 +56,4 @@ export const onCreateContract = functions
     await createSupabaseClient()
       .from('contract_embeddings')
       .insert({ contract_id: contract.id, embedding })
-
-    await completeQuestInternal(contractCreator, 'MARKETS_CREATED')
   })
