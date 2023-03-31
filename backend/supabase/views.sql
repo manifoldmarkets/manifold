@@ -102,7 +102,7 @@ WHERE contracts.visibility = 'public'
   or (
     contracts.visibility = 'private'
     and (
-      can_access_contract(contracts.id, firebase_uid())
+      can_access_private_contract(contracts.id, firebase_uid())
     )
   )
 CREATE OR REPLACE VIEW groups_rbac AS
