@@ -12,11 +12,7 @@ import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { db } from 'web/lib/supabase/db'
 import { updateUserEmbedding } from 'web/lib/firebase/api'
 
-export function TopicSelectorDialog(props: {
-  open: boolean
-  setOpen: (open: boolean) => void
-}) {
-  const { open, setOpen } = props
+export function TopicSelectorDialog() {
   const user = useUser()
 
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
@@ -44,7 +40,7 @@ export function TopicSelectorDialog(props: {
   }
 
   return (
-    <Modal open={open} setOpen={setOpen}>
+    <Modal open={true} setOpen={() => {}}>
       <Col className="bg-canvas-0 h-[42rem] rounded-md px-8 py-6 text-sm font-light md:text-base">
         <span
           className={'text-primary-700 mb-2 text-2xl'}

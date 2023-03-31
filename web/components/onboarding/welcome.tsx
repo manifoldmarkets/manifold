@@ -74,13 +74,7 @@ export default function Welcome() {
 
   if (!shouldShowWelcomeModals) return <></>
 
-  if (groupSelectorOpen)
-    return (
-      <TopicSelectorDialog
-        open={groupSelectorOpen}
-        setOpen={() => setGroupSelectorOpen(false)}
-      />
-    )
+  if (groupSelectorOpen) return <TopicSelectorDialog />
 
   return (
     <Modal open={open} setOpen={close}>
