@@ -120,7 +120,7 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
 export async function searchContract(query: string) {
   const { data } = await run(
     db
-      .from('contracts')
+      .from('contracts_rbac')
       .select('data')
       .textSearch('question', `${query}`)
       .limit(10)
