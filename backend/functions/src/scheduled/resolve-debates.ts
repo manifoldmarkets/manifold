@@ -5,7 +5,7 @@ import { getUser, getValues, revalidateStaticProps } from 'shared/utils'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { secrets } from 'shared/secrets'
-import { resolveMarket } from 'api/src/resolve-market'
+import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { getProbability } from 'common/calculate'
 
 export const resolveDebates = functions
@@ -43,7 +43,7 @@ export async function doResolveDebates() {
     const creator = await getUser(contract.creatorId)
     if (creator) {
       const prob = getProbability(contract as CPMMBinaryContract)
-      await resolveMarket(contract, creator, {
+      await resolveMarketHelper(contract, creator, {
         outcome: 'MKT',
         probabilityInt: Math.round(prob * 100),
         value: undefined,
