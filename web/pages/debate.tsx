@@ -1,10 +1,10 @@
-import { StarIcon, ClockIcon, UserIcon } from '@heroicons/react/solid'
+import { ClockIcon, UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
 import { ContractCardView } from 'common/events'
 import { formatMoney } from 'common/util/format'
-import { DAY_MS } from 'common/util/time'
+import { MINUTE_MS } from 'common/util/time'
 import Router from 'next/router'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
@@ -23,7 +23,6 @@ import { useUser } from 'web/hooks/use-user'
 import { createDebate } from 'web/lib/firebase/api'
 import { listGroupContracts } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
-import { fromNow } from 'web/lib/util/time'
 import { Row } from 'web/components/layout/row'
 import { useContract } from 'web/hooks/use-contracts'
 import { binaryOutcomes } from 'web/components/bet/bet-panel'
@@ -34,9 +33,12 @@ import { getProbability } from 'common/calculate'
 export const getStaticProps = async () => {
   const debateGroupId = '0i8ozKhPq5qJ89DG9tCW'
   const contracts = await listGroupContracts(debateGroupId)
+  const openContracts = contracts.filter(
+    (contract) => contract.isResolved === false
+  )
   return {
     props: {
-      contracts,
+      contracts: openContracts,
     },
   }
 }
@@ -136,7 +138,14 @@ function ContractCardDebate(props: { contract: Contract; className?: string }) {
   const user = useUser()
 
   const contract = useContract(props.contract.id) ?? props.contract
-  const { question, coverImageUrl, outcomeType, mechanism } = contract
+  const {
+    question,
+    coverImageUrl,
+    outcomeType,
+    mechanism,
+    closeTime,
+    uniqueBettorCount,
+  } = contract
 
   const metrics = useSavedContractMetrics(contract)
 
@@ -152,6 +161,9 @@ function ContractCardDebate(props: { contract: Contract; className?: string }) {
 
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const showImage = !!coverImageUrl
+  const minutesRemaining = Math.ceil(
+    ((closeTime ?? 1000) - Date.now()) / MINUTE_MS
+  )
 
   const path = contractPath(contract)
 
@@ -174,13 +186,9 @@ function ContractCardDebate(props: { contract: Contract; className?: string }) {
       <Col
         className={clsx(
           showImage ? 'bg-canvas-0/95' : 'bg-canvas-0/70',
-          'gap-2 py-2 px-4 backdrop-blur-sm'
+          'gap-2 px-0 pb-2 backdrop-blur-sm'
         )}
       >
-        <Row className="text-ink-500 items-center gap-3 overflow-hidden text-sm">
-          <ReasonChosen contract={contract} />
-        </Row>
-
         <BetRow
           contract={contract as CPMMBinaryContract}
           noUser={!user}
@@ -188,13 +196,28 @@ function ContractCardDebate(props: { contract: Contract; className?: string }) {
           topic2={topic2 ?? 'NO'}
         />
 
-        <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
-          {isBinaryCpmm && metrics && metrics.hasShares && (
-            <YourMetricsFooter metrics={metrics} />
-          )}
+        <Row
+          ref={ref}
+          className="text-ink-500 items-center justify-between gap-4 overflow-hidden px-4 text-sm"
+        >
+          <Tooltip
+            text={`${uniqueBettorCount ?? 0} unique traders`}
+            placement="bottom"
+            className={'z-10'}
+          >
+            <Row className={'shrink-0 items-center gap-1'}>
+              <UserIcon className="h-4 w-4" />
+              <div>{uniqueBettorCount ?? 0}</div>
+            </Row>
+          </Tooltip>
+
+          <Row className="items-center gap-2">
+            <ClockIcon className="h-4 w-4" />
+            {minutesRemaining} min remaining
+          </Row>
 
           <Row
-            className="ml-auto items-center gap-1"
+            className="items-center gap-1"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-1.5 p-1">
@@ -216,53 +239,14 @@ function ContractCardDebate(props: { contract: Contract; className?: string }) {
             <CommentsButton contract={contract} user={user} />
           </Row>
         </Row>
+
+        {isBinaryCpmm && metrics && metrics.hasShares && (
+          <Row className="w-full px-4">
+            <YourMetricsFooter metrics={metrics} />
+          </Row>
+        )}
       </Col>
     </div>
-  )
-}
-
-function ReasonChosen(props: { contract: Contract }) {
-  const { contract } = props
-  const { createdTime, closeTime, uniqueBettorCount } = contract
-
-  const now = Date.now()
-  const reason =
-    createdTime > now - DAY_MS
-      ? 'New'
-      : closeTime && closeTime < now + DAY_MS
-      ? 'Closing soon'
-      : !uniqueBettorCount || uniqueBettorCount <= 5
-      ? 'For you'
-      : 'Trending'
-
-  return (
-    <Row className="gap-3">
-      <div className="flex items-center gap-1">
-        {reason}
-        {reason === 'New' && <StarIcon className="h-4 w-4" />}
-      </div>
-      <Row className="shrink-0 items-center gap-1 whitespace-nowrap">
-        {reason === 'Closing soon' && (
-          <>
-            <ClockIcon className="h-4 w-4" />
-            {fromNow(closeTime || 0)}
-          </>
-        )}
-        {reason === 'New' && fromNow(createdTime)}
-        {reason === 'Trending' && (
-          <Tooltip
-            text={`${uniqueBettorCount ?? 0} unique traders`}
-            placement="bottom"
-            className={'z-10'}
-          >
-            <Row className={'shrink-0 items-center gap-1'}>
-              <UserIcon className="h-4 w-4" />
-              <div>{uniqueBettorCount ?? 0}</div>
-            </Row>
-          </Tooltip>
-        )}
-      </Row>
-    </Row>
   )
 }
 
@@ -272,7 +256,7 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className="border-ink-200 items-center gap-4 rounded border p-2 text-sm">
+    <Row className="border-ink-200 w-full items-center gap-4 rounded border p-2 text-sm">
       <Row className="items-center gap-2">
         <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
         <span className="text-ink-600 font-semibold">
@@ -304,17 +288,17 @@ function BetRow(props: {
   const prob = getProbability(contract)
 
   return (
-    <Row className="relative w-full items-center rounded-lg border border-gray-200">
+    <Row className="relative w-full items-center rounded-lg">
       <div
         className={clsx(
-          'absolute -z-10 h-full rounded-l-lg bg-green-200 transition-all'
+          'absolute -z-10 h-full rounded-tl-lg bg-green-200 transition-all'
         )}
         style={{ width: `${100 * prob}%` }}
         aria-hidden
       />
       <div
         className={clsx(
-          'absolute right-0 -z-10 h-full rounded-r-lg bg-red-200 transition-all'
+          'absolute right-0 -z-10 h-full rounded-tr-lg bg-red-200 transition-all'
         )}
         style={{ width: `${100 * (1 - prob)}%` }}
         aria-hidden
