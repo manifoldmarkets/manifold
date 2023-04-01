@@ -32,6 +32,7 @@ import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
 import { ContractsList } from './contract/contracts-list'
 import { SiteLink } from './widgets/site-link'
 import { useUser } from 'web/hooks/use-user'
+import { getCurrentFilter } from './search/contract-search-helpers'
 
 export const SORTS = [
   { label: 'Relevance', value: 'relevance' },
@@ -51,9 +52,9 @@ export const SORTS = [
 export type Sort = typeof SORTS[number]['value']
 export const PROB_SORTS = ['prob-descending', 'prob-ascending']
 
-type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
+export type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
-type SearchParameters = {
+export type SearchParameters = {
   query: string
   sort: Sort
   openClosedFilter: 'open' | 'closed' | undefined
@@ -362,6 +363,7 @@ function ContractSearchControls(props: {
     filter === 'closed' ? 'isResolved:false' : '',
     filter === 'resolved' ? 'isResolved:true' : '',
   ].filter((f) => f)
+  console.log(filter, sort)
 
   const openClosedFilter =
     filter === 'open' ? 'open' : filter === 'closed' ? 'closed' : undefined
@@ -422,7 +424,7 @@ function ContractSearchControls(props: {
   )
 }
 
-function SearchFilters(props: {
+export function SearchFilters(props: {
   filter: string
   selectFilter: (newFilter: filter) => void
   hideOrderSelector: boolean | undefined

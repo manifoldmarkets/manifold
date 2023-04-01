@@ -104,6 +104,7 @@ type TableJsonTypes = {
   user_events: UserEvent
   user_contract_metrics: ContractMetrics
   contracts: Contract
+  cotracts_rbac: Contract
   contract_bets: Bet
   groups: Group
   group_members: GroupMemberDoc
