@@ -25,35 +25,48 @@ import { createDebate } from 'web/lib/firebase/api'
 import { listGroupContracts } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
-import { useContract } from 'web/hooks/use-contracts'
+import { useContract, useContracts } from 'web/hooks/use-contracts'
 import { binaryOutcomes } from 'web/components/bet/bet-panel'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import { getDisplayProbability, getProbability } from 'common/calculate'
 import { ExclamationIcon } from '@heroicons/react/outline'
+import { useGroupContractIds } from 'web/hooks/use-group'
+import { filterDefined } from 'common/util/array'
+
+const debateGroupId = '0i8ozKhPq5qJ89DG9tCW'
 
 export const getStaticProps = async () => {
-  const debateGroupId = '0i8ozKhPq5qJ89DG9tCW'
   const contracts = await listGroupContracts(debateGroupId)
   const openContracts = contracts.filter(
     (contract) => contract.isResolved === false
   )
-  const sortedContracts = sortBy(openContracts, (c) => c.createdTime).reverse()
   return {
     props: {
-      contracts: sortedContracts,
+      contracts: openContracts,
     },
   }
 }
 
 const Versus = (props: { contracts: Contract[] }) => {
-  const { contracts } = props
+  const contractIds = useGroupContractIds(debateGroupId)
+  const loadedContracts = filterDefined(useContracts(contractIds))
+  const contracts =
+    loadedContracts.length >= props.contracts.length
+      ? loadedContracts
+      : props.contracts
+
+  const openContracts = contracts.filter(
+    (contract) => contract.isResolved === false
+  )
+  const sortedContracts = sortBy(openContracts, (c) => c.createdTime).reverse()
+
   return (
     <Page>
       <SEO title="Versus" description="Battle with mana." url="/versus" />
       <Col className="w-full max-w-xl self-center">
         <Title className="text-ink-800 mt-4 ml-6">⚔️ Versus ⚔️</Title>
-        <VersusCards contracts={contracts} />
+        <VersusCards contracts={sortedContracts} />
         <CreateVersusWidget className="mt-8" />
       </Col>
     </Page>
@@ -83,8 +96,10 @@ const CreateVersusWidget = (props: { className?: string }) => {
     if (isValid) setIsLoading(true)
     createDebate({ topic1, topic2 }).then((data) => {
       console.log('hello, market created', data)
-      window.location.reload()
       setIsLoading(false)
+      setTopic1('')
+      setTopic2('')
+      window.scrollTo(0, 0)
     })
   }
 
