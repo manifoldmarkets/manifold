@@ -89,8 +89,8 @@ export default function LabsPage() {
           {(!isNative || (isNative && platform !== 'ios')) && (
             <>
               <LabCard
-                title="💰 Get taccyons"
-                description={`Buy ${ENV_CONFIG.moneyMoniker} to trade in your favorite markets`}
+                title="💰 Get mana"
+                description="Buy Ṁ to trade in your favorite markets"
                 href="/add-funds"
               />
 
@@ -104,7 +104,7 @@ export default function LabsPage() {
 
           <LabCard
             title="💸 Referrals"
-            description={`Refer your friends to earn ${ENV_CONFIG.moneyMoniker}`}
+            description="Refer your friends to earn mana"
             href="/referrals"
           />
 
@@ -130,7 +130,7 @@ export default function LabsPage() {
 
           <LabCard
             title="👀 Ads"
-            description={`Read ads for ${ENV_CONFIG.moneyMoniker}. Or pay to promote your markets or anything else you want.`}
+            description="Read ads for mana. Or pay mana to promote your markets or anything else you want."
             href="/ad"
           />
 
@@ -171,7 +171,7 @@ export default function LabsPage() {
           />
 
           <LabCard
-            title="💸 Taccyonlinks"
+            title="💸 Manalinks"
             description={`Send ${ENV_CONFIG.moneyMoniker} to anyone`}
             href="/links"
           />
