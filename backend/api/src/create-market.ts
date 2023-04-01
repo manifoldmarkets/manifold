@@ -38,13 +38,7 @@ import { mintAndPoolCert } from 'shared/helpers/cert-txns'
 import { getCloseDate } from 'shared/helpers/openai-utils'
 import { getContract, htmlToRichText } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
-import {
-  APIError,
-  AuthedUser,
-  authEndpoint,
-  validate,
-  zTimestamp,
-} from './helpers'
+import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -75,9 +69,10 @@ const bodySchema = z.object({
   descriptionHtml: z.string().optional(),
   descriptionMarkdown: z.string().optional(),
   tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
-  closeTime: zTimestamp()
+  closeTime: z
+    .union([z.date(), z.number()])
     .refine(
-      (date) => date.getTime() > new Date().getTime(),
+      (date) => (typeof date === 'number' ? date : date.getTime()) > Date.now(),
       'Close time must be in the future.'
     )
     .optional(),
@@ -105,11 +100,16 @@ const multipleChoiceSchema = z.object({
   answers: z.string().trim().min(1).array().min(2),
 })
 
+type schema = z.infer<typeof bodySchema> &
+  (z.infer<typeof binarySchema> | {}) &
+  (z.infer<typeof numericSchema> | {}) &
+  (z.infer<typeof multipleChoiceSchema> | {})
+
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
 })
 
-export async function createMarketHelper(body: any, auth: AuthedUser) {
+export async function createMarketHelper(body: schema, auth: AuthedUser) {
   const {
     question,
     description,
@@ -255,7 +255,9 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   })
 
   const closeTimestamp = closeTime
-    ? closeTime.getTime()
+    ? typeof closeTime === 'number'
+      ? closeTime
+      : closeTime.getTime()
     : // Use AI to get date, default to one week after now if failure
       (await getCloseDate(question)) ?? Date.now() + 7 * 24 * 60 * 60 * 1000
 

@@ -12,9 +12,11 @@ import {
   SunIcon,
   SparklesIcon,
   StarIcon,
+  ExclamationIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { APRIL_FOOLS_ENABLED } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { capitalize } from 'lodash'
@@ -133,11 +135,17 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         href: '/leaderboards',
         icon: TrophyIcon,
       },
-      {
-        name: 'Ads',
-        icon: SpeakerphoneIcon,
-        href: '/ad',
-      }
+      APRIL_FOOLS_ENABLED
+        ? {
+            name: 'Versus',
+            icon: ExclamationIcon,
+            href: '/versus',
+          }
+        : {
+            name: 'Ads',
+            icon: SpeakerphoneIcon,
+            href: '/ad',
+          }
     )
 
   return buildArray(
