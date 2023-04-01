@@ -1,11 +1,12 @@
 import { ClockIcon, UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import Router from 'next/router'
+
 import { ContractMetrics } from 'common/calculate-metrics'
 import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
 import { ContractCardView } from 'common/events'
 import { formatMoney, formatPercentShort } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
-import Router from 'next/router'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { LikeButton } from 'web/components/contract/like-button'
@@ -42,36 +43,32 @@ export const getStaticProps = async () => {
   }
 }
 
-const Debate = (props: { contracts: Contract[] }) => {
+const Versus = (props: { contracts: Contract[] }) => {
   const { contracts } = props
   return (
     <Page>
-      <SEO
-        title="Debate"
-        description="Debate the big questions"
-        url="/debate"
-      />
+      <SEO title="Versus" description="Battle with mana." url="/versus" />
       <Col className="w-full max-w-xl self-center">
-        <Title className="text-ink-800">Debates</Title>
-        <Debates contracts={contracts} />
-        <CreateDebateWidget className="mt-8" />
+        <Title className="text-ink-800">⚔️ Versus ⚔️</Title>
+        <VersusCards contracts={contracts} />
+        <CreateVersusWidget className="mt-8" />
       </Col>
     </Page>
   )
 }
 
-const Debates = (props: { contracts: Contract[] }) => {
+const VersusCards = (props: { contracts: Contract[] }) => {
   const { contracts } = props
   return (
     <Col>
       {contracts.map((contract) => (
-        <ContractCardDebate key={contract.id} contract={contract} />
+        <ContractCardVersus key={contract.id} contract={contract} />
       ))}
     </Col>
   )
 }
 
-const CreateDebateWidget = (props: { className?: string }) => {
+const CreateVersusWidget = (props: { className?: string }) => {
   const { className } = props
   const [topic1, setTopic1] = useState<string>('')
   const [topic2, setTopic2] = useState<string>('')
@@ -89,7 +86,7 @@ const CreateDebateWidget = (props: { className?: string }) => {
   return (
     <Col className={clsx(className, 'w-full rounded-lg border px-6 py-6')}>
       <Col className="text-ink-800 w-full max-w-[275px] gap-4 self-center ">
-        <div className="mb-2 text-2xl">Create a debate</div>
+        <div className="mb-2 text-2xl">Create your Versus</div>
 
         <Col>
           <label className="px-1 pb-3">
@@ -130,9 +127,9 @@ const CreateDebateWidget = (props: { className?: string }) => {
   )
 }
 
-export default Debate
+export default Versus
 
-function ContractCardDebate(props: { contract: Contract; className?: string }) {
+function ContractCardVersus(props: { contract: Contract; className?: string }) {
   const { className } = props
   const user = useUser()
 
