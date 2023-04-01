@@ -21,6 +21,7 @@ import {
 } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
+import { useIsDarkMode } from 'web/hooks/dark-mode-context'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 
@@ -74,6 +75,8 @@ export const BinaryContractChart = (props: {
     return [...betPoints, { x: end ?? Date.now() + DAY_MS, y: endP }]
   }, [end, endP, betPoints])
 
+  const isDarkMode = useIsDarkMode()
+
   const rightmostDate = getRightmostVisibleDate(
     end,
     last(betPoints)?.x,
@@ -96,7 +99,7 @@ export const BinaryContractChart = (props: {
       viewScaleProps={viewScaleProps}
       yKind="percent"
       data={data}
-      color={color ?? '#11b981'}
+      color={color ?? (isDarkMode ? '#9fd19f' : '#6fa172')}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={BinaryChartTooltip}

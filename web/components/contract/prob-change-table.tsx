@@ -36,7 +36,7 @@ export function ProbChangeTable(props: {
     return <div className="text-ink-500 px-4">None</div>
 
   return (
-    <Col className="bg-canvas-0 divide-ink-300 border-ink-300 w-full divide-y-[0.5px] rounded-sm border-[0.5px]">
+    <Col className="bg-canvas-0 divide-ink-500 border-ink-500 w-full divide-y-[0.5px] rounded-sm border-[0.5px]">
       {contracts.map((contract) => (
         <ContractWithProbChange key={contract.id} contract={contract} />
       ))}

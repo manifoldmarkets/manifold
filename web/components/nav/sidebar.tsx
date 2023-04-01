@@ -76,7 +76,7 @@ export default function Sidebar(props: {
       aria-label="Sidebar"
       className={clsx('flex h-screen flex-col xl:ml-2', className)}
     >
-      <ManifoldLogo className="py-6" twoLine />
+      <ManifoldLogo className="py-6" twoLine={!isMobile} />
 
       {user === undefined && <div className="h-[56px]" />}
 
@@ -165,7 +165,7 @@ const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
-    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
+    { name: 'Get taccyons', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
     {
       name: `Ads - earn ${formatMoney(5)} per view!`,

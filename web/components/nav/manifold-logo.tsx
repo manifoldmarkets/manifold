@@ -38,22 +38,22 @@ export function ManifoldLogo(props: {
         ) : twoLine ? (
           <div
             className={clsx(
-              'font-major-mono text-ink-900 mt-1 text-lg lowercase',
+              'font-major-mono text-ink-900 text-3xl leading-8 tracking-[.08em]',
               darkBackground && 'text-ink-1000'
             )}
           >
-            Manifold
+            Manaculus
             <br />
             Markets
           </div>
         ) : (
           <div
             className={clsx(
-              'font-major-mono text-ink-900 mt-2 text-2xl lowercase md:whitespace-nowrap',
+              'font-major-mono text-ink-900 mt-2 text-3xl leading-8 tracking-[.08em] md:whitespace-nowrap',
               darkBackground && 'text-ink-1000'
             )}
           >
-            Manifold Markets
+            Manaculus Markets
           </div>
         ))}
     </Link>
