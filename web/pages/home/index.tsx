@@ -2,7 +2,7 @@ import { PencilAltIcon, SwitchHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 
 import { Contract, CPMMContract } from 'common/contract'
-import { BACKGROUND_COLOR } from 'common/envs/constants'
+import { APRIL_FOOLS_ENABLED, BACKGROUND_COLOR } from 'common/envs/constants'
 import Router from 'next/router'
 import { memo, ReactNode } from 'react'
 import { ActivityLog } from 'web/components/activity-log'
@@ -32,6 +32,8 @@ import { ContractCardNew } from 'web/components/contract/contract-card'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { GradientContainer } from 'web/components/widgets/gradient-container'
+import { formatMoney } from 'common/util/format'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -225,6 +227,14 @@ const MainContent = () => {
 
   return (
     <Col>
+      {APRIL_FOOLS_ENABLED && (
+        <SiteLink href="/mana-auction">
+          <GradientContainer className="hover:bg-ink-200 my-4 text-xl hover:underline">
+            💰 Manifold's <strong>{formatMoney(10000)} auction</strong> is live!
+            💰
+          </GradientContainer>
+        </SiteLink>
+      )}
       <ChoicesToggleGroup
         className="mb-2 border-0"
         choicesMap={{

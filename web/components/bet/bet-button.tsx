@@ -9,12 +9,14 @@ import { User } from 'web/lib/firebase/users'
 import { SellRow } from './sell-row'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { ShareholderStats } from 'common/supabase/contract-metrics'
 
 export function SignedInBinaryMobileBetting(props: {
   contract: BinaryContract | PseudoNumericContract
   user: User
+  shareholderStats?: ShareholderStats
 }) {
-  const { contract, user } = props
+  const { contract, user, shareholderStats } = props
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     contract.id
   )
@@ -30,6 +32,7 @@ export function SignedInBinaryMobileBetting(props: {
         unfilledBets={unfilledBets}
         balanceByUserId={balanceByUserId}
         mobileView={isMobile}
+        shareholderStats={shareholderStats}
       />
       <SellRow
         contract={contract}
