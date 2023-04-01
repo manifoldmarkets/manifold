@@ -183,7 +183,7 @@ function ContractCardVersus(props: { contract: Contract; className?: string }) {
 
   const { ref } = useIsVisible(
     () =>
-      track('view market card', {
+      track('view versus card', {
         contractId: contract.id,
         creatorId: contract.creatorId,
         slug: contract.slug,
@@ -386,6 +386,7 @@ function BetRow(props: {
         initialOutcome={outcome}
         open={betDialogOpen}
         setOpen={setBetDialogOpen}
+        trackingLocation="versus card"
       />
     </Row>
   )
