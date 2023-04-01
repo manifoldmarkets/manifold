@@ -90,11 +90,11 @@ const CreateVersusWidget = (props: { className?: string }) => {
 
         <Col>
           <label className="px-1 pb-3">
-            Topic 1 <span className={'text-scarlet-500 text-sm'}>*</span>
+            Player 1 <span className={'text-scarlet-500 text-sm'}>*</span>
           </label>
 
           <Input
-            placeholder="e.g. Elon Musk"
+            placeholder="e.g. Trump"
             autoFocus
             maxLength={140}
             value={topic1}
@@ -104,10 +104,10 @@ const CreateVersusWidget = (props: { className?: string }) => {
         <div className="self-center text-xl">vs.</div>
         <Col>
           <label className="px-1 pb-3">
-            Topic 2 <span className={'text-scarlet-500 text-sm'}>*</span>
+            Player 2 <span className={'text-scarlet-500 text-sm'}>*</span>
           </label>
           <Input
-            placeholder="e.g. Bill Gates"
+            placeholder="e.g. Biden"
             autoFocus
             maxLength={140}
             value={topic2}
