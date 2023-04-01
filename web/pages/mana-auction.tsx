@@ -47,19 +47,19 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
   const time = useTimer()
   const timeRemaining = getCountdown(time, CUTOFF_TIME)
 
-  // if (!APRIL_FOOLS_ENABLED)
-  //   return (
-  //     <Page>
-  //       <Col className="gap-4 sm:px-4 sm:pb-4">
-  //         <Title className="mx-2 !mb-0 mt-2 sm:mx-0 lg:mt-0">
-  //           Coming soon...
-  //         </Title>
-  //       </Col>
-  //     </Page>
-  //   )
+  if (!APRIL_FOOLS_ENABLED)
+    return (
+      <Page>
+        <Col className="gap-4 sm:px-4 sm:pb-4">
+          <Title className="mx-2 !mb-0 mt-2 sm:mx-0 lg:mt-0">
+            Coming soon...
+          </Title>
+        </Col>
+      </Page>
+    )
 
   return (
-    <Page>
+    <Page className="px-4">
       <Col className="gap-4 sm:px-4 sm:pb-4">
         <Title className="mx-2 !mb-0 mt-2 sm:mx-0 lg:mt-0">
           💰 {formatMoney(10000)} auction 💰
