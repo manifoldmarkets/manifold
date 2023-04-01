@@ -1,5 +1,6 @@
 import {
   APPLE_APP_URL,
+  APRIL_FOOLS_ENABLED,
   DOMAIN,
   ENV_CONFIG,
   GOOGLE_PLAY_APP_URL,
@@ -106,6 +107,14 @@ export default function LabsPage() {
             description="Refer your friends to earn mana"
             href="/referrals"
           />
+
+          {APRIL_FOOLS_ENABLED && (
+            <LabCard
+              title="⚔️ Versus"
+              description="Create mana-battles between two players"
+              href="/versus"
+            />
+          )}
 
           <LabCard
             title="🔥 Swipe"

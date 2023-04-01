@@ -34,6 +34,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { formatMoney } from 'common/util/format'
+import { Button } from 'web/components/buttons/button'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -114,7 +115,18 @@ function MobileHome() {
         {isLoading && <LoadingIndicator />}
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
-          <MainContent />
+          <Col>
+            {APRIL_FOOLS_ENABLED && (
+              <SiteLink href="/versus">
+                <Button className="shadow-lg" color="gradient-pink" size="2xl">
+                  <Title className="!mb-0 text-gray-100">
+                    ⚔️ Versus Mode ⚔️
+                  </Title>
+                </Button>
+              </SiteLink>
+            )}
+            <MainContent />
+          </Col>
         </Col>
       </Col>
 

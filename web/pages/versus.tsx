@@ -50,7 +50,7 @@ const Versus = (props: { contracts: Contract[] }) => {
     <Page>
       <SEO title="Versus" description="Battle with mana." url="/versus" />
       <Col className="w-full max-w-xl self-center">
-        <Title className="text-ink-800">⚔️ Versus ⚔️</Title>
+        <Title className="text-ink-800 mt-4 ml-6">⚔️ Versus ⚔️</Title>
         <VersusCards contracts={contracts} />
         <CreateVersusWidget className="mt-8" />
       </Col>
@@ -99,7 +99,6 @@ const CreateVersusWidget = (props: { className?: string }) => {
 
           <Input
             placeholder="e.g. Trump"
-            autoFocus
             maxLength={140}
             value={topic1}
             onChange={(e) => setTopic1(e.target.value ?? '')}
@@ -112,7 +111,6 @@ const CreateVersusWidget = (props: { className?: string }) => {
           </label>
           <Input
             placeholder="e.g. Biden"
-            autoFocus
             maxLength={140}
             value={topic2}
             onChange={(e) => setTopic2(e.target.value ?? '')}
