@@ -15,6 +15,7 @@ import { UserCard } from 'web/components/cards/UserCard'
 import { getContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { Contract } from 'common/contract'
+import { useRouter } from 'next/router'
 
 const TOTAL_MARKETS = 5
 
@@ -39,6 +40,7 @@ function useContractsByIds(ids: string[]) {
 // A memory game with 2 rows of TOTAL_MARKETS cards
 // Users flip 2 cards at a time; if they match, they stay flipped
 export default function CardsPage() {
+  const router = useRouter()
   // GAME STATE
   // Boolean array of whether each card is faceup
   const [faceups, setFaceups] = useState<boolean[]>(
@@ -151,8 +153,13 @@ export default function CardsPage() {
         ))}
       </div>
       {matches === TOTAL_MARKETS && (
-        <Button size="2xl" color="gradient" className="mx-auto max-w-md">
-          <Link href="/cards">Play again!</Link>
+        <Button
+          size="2xl"
+          color="gradient"
+          className="mx-auto max-w-md"
+          onClick={() => router.reload()}
+        >
+          Play again!
         </Button>
       )}
     </Page>
