@@ -205,8 +205,6 @@ export function BuyPanel(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement>()
-  const [currentChangeAudio, setCurrentChangeAudio] =
-    useState<HTMLAudioElement>()
   const wareFareEnabled =
     contract.mechanism === 'cpmm-1' &&
     classWarfareEnabled(contract.prob, shareholderStats)
@@ -240,14 +238,6 @@ export function BuyPanel(props: {
     audio.play()
     setCurrentAudio(audio)
   }
-  const playAppropriateClickBetAudio = (file: string) => {
-    if (!APRIL_FOOLS_ENABLED) return
-    const audio = new Audio(audioFilesDir + file)
-    audio.volume = 0.5
-    if (currentAudio) currentAudio.pause()
-    audio.play().then(() => setCurrentAudio(undefined))
-    setCurrentAudio(audio)
-  }
 
   const outcome = option === 'LIMIT' ? undefined : option
   const seeLimit = option === 'LIMIT'
@@ -270,7 +260,6 @@ export function BuyPanel(props: {
     } else {
       setOption(choice)
     }
-    playAppropriateClickBetAudio('bonus1.mp3')
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
     }
@@ -281,24 +270,7 @@ export function BuyPanel(props: {
     if (!outcome) {
       setOption('YES')
     }
-    if (!APRIL_FOOLS_ENABLED) return
-    if (!currentChangeAudio) {
-      const changeAudio = new Audio(audioFilesDir + 'counting.mp3')
-      changeAudio.volume = 0.25
-      setCurrentChangeAudio(changeAudio)
-      changeAudio.play()
-    }
   }
-
-  useEffect(() => {
-    if (currentChangeAudio) {
-      const timeout = setTimeout(() => {
-        currentChangeAudio.pause()
-        setCurrentChangeAudio(undefined)
-      }, 1200)
-      return () => clearTimeout(timeout)
-    }
-  }, [betAmount])
 
   async function submitBet() {
     if (!user || !betAmount) return
