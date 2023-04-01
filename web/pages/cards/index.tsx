@@ -68,7 +68,6 @@ export default function CardsPage() {
   const marketCreators = markets.map((market) => market.creatorId)
   const creators = useMemo(() => shuffle(marketCreators), [topMarkets.length])
 
-  console.log('results', markets, creators)
   function clicksMatch(a: number, b: number) {
     // Set i to be the lesser, and j to be the greater
     const i = Math.min(a, b)
