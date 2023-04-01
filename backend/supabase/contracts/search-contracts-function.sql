@@ -9,7 +9,7 @@ BEGIN
   RETURN QUERY
   SELECT contracts_rbac.data
   FROM contracts_rbac, websearch_to_tsquery('english', term) query
-  WHERE contracts_rbac.question_fts @@ query
+  WHERE (contracts_rbac.question_fts @@ query or similarity(question,term)>0.1)
     AND (
     (contract_filter = 'open' AND contracts_rbac.resolution_time IS NULL)
     OR (contract_filter = 'closed' AND contracts_rbac.close_time <  NOW() and contracts_rbac.resolution_time IS NULL)
@@ -39,3 +39,4 @@ ORDER BY
   ;
 END;
 $$ LANGUAGE plpgsql;
+

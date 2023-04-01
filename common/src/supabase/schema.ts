@@ -1488,6 +1488,16 @@ export interface Database {
         }
         Returns: Json[]
       }
+      search_contracts_fuzzy: {
+        Args: {
+          term: string
+          contract_filter: string
+          contract_sort: string
+        }
+        Returns: {
+          data: Json
+        }[]
+      }
       set_limit: {
         Args: {
           "": number
