@@ -42,7 +42,7 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
 
   const bids = useBids(props.bids)
   const maxBid = max(bids.map((b) => b.amount)) ?? 0
-  const bidder = bids.find((b) => b.amount === maxBid)?.username ?? 'None'
+  const bidder = bids.find((b) => b.amount === maxBid)?.displayName ?? 'None'
 
   const time = useTimer()
   const timeRemaining = getCountdown(time, CUTOFF_TIME)
@@ -90,8 +90,6 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
           </Row>
         </GradientContainer>
 
-        <div>Place your bid to win big!</div>
-
         <BidButton />
 
         <BidTable bids={bids} />
@@ -133,7 +131,7 @@ const useTimer = () => {
 }
 
 const getCountdown = (now: number, later: number) => {
-  const distance = later - now
+  const distance = now >= later ? 0 : later - now
 
   const hours = Math.floor(
     (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
@@ -153,7 +151,7 @@ const BidTable = ({ bids }: { bids: Bid[] }) => {
 
       <div>Bids</div>
 
-      <Col className="bg-canvas-0 divide-ink-300 border-ink-300  w-60 divide-y-[0.5px] rounded-sm border-[0.5px]">
+      <Col className="bg-canvas-0 divide-ink-300 border-ink-300  w-72 divide-y-[0.5px] rounded-sm border-[0.5px]">
         {bids.map((bid) => (
           <div
             key={bid.createdTime}
@@ -163,7 +161,16 @@ const BidTable = ({ bids }: { bids: Bid[] }) => {
               'justify-between'
             )}
           >
-            <Avatar username={bid.username} avatarUrl={bid.avatar} size="xs" />
+            <Row className="text-ink-700 max-w-sm truncate">
+              <Avatar
+                username={bid.username}
+                avatarUrl={bid.avatar}
+                size="xs"
+                className="mr-2"
+              />
+              {bid.displayName}
+            </Row>
+
             <div>{formatMoney(bid.amount)}</div>
             <div className="text-ink-700">
               {dayjs(bid.createdTime).format('h:mm A')}
@@ -221,8 +228,10 @@ const BidButton = () => {
   }
 
   return (
-    <>
-      <Row>
+    <div className="">
+      <div className="mb-4">Place your bid to win big!</div>
+
+      <Row className="">
         <BuyAmountInput
           amount={amount}
           onChange={onAmountChange}
@@ -243,7 +252,7 @@ const BidButton = () => {
       {isSuccess && amount && <div>Success! Bid placed.</div>}
 
       {isLoading && <div>Processing...</div>}
-    </>
+    </div>
   )
 }
 
