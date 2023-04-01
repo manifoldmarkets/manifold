@@ -115,12 +115,13 @@ const CreateVersusWidget = (props: { className?: string }) => {
           />
         </Col>
 
-        <Col className="mt-6 gap-2">
+        <Col className="mt-4 gap-2">
           <div>Cost: {formatMoney(50)}</div>
           <div>Resolves after 1 hour</div>
         </Col>
-        <Button onClick={onCreate} disabled={!isValid}>
-          Start debate
+
+        <Button className="mt-4" onClick={onCreate} disabled={!isValid}>
+          Start battle
         </Button>
       </Col>
     </Col>
