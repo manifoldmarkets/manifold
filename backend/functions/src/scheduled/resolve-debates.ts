@@ -32,7 +32,8 @@ export async function doResolveDebates() {
   const contracts = await pg.map(
     `select data from contracts
           where id = any($1)
-          and close_time < now()`,
+          and close_time < now()
+          and resolution_time is null`,
     [contractIds],
     (r) => r.data as Contract
   )
