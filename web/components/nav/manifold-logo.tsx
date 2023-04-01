@@ -42,7 +42,7 @@ export function ManifoldLogo(props: {
               darkBackground && 'text-ink-1000'
             )}
           >
-            Manifold
+            Manifuuls
             <br />
             Markets
           </div>
@@ -53,7 +53,7 @@ export function ManifoldLogo(props: {
               darkBackground && 'text-ink-1000'
             )}
           >
-            Manifold Markets
+            Manifuuls Markets
           </div>
         ))}
     </Link>
