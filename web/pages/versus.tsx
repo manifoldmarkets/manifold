@@ -29,6 +29,7 @@ import { binaryOutcomes } from 'web/components/bet/bet-panel'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import { getDisplayProbability, getProbability } from 'common/calculate'
+import { ExclamationIcon } from '@heroicons/react/outline'
 
 export const getStaticProps = async () => {
   const debateGroupId = '0i8ozKhPq5qJ89DG9tCW'
@@ -86,7 +87,10 @@ const CreateVersusWidget = (props: { className?: string }) => {
   return (
     <Col className={clsx(className, 'w-full rounded-lg border px-6 py-6')}>
       <Col className="text-ink-800 w-full max-w-[275px] gap-4 self-center ">
-        <div className="mb-2 text-2xl">Create your battle</div>
+        <div className="mb-2 text-2xl">
+          <ExclamationIcon className="mr-2 inline-block h-7 w-7" />
+          Create your battle
+        </div>
 
         <Col>
           <label className="px-1 pb-3">
