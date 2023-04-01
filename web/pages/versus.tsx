@@ -57,7 +57,10 @@ const Versus = (props: { contracts: Contract[] }) => {
       : props.contracts
 
   const openContracts = contracts.filter(
-    (contract) => contract.isResolved === false
+    (contract) =>
+      contract.isResolved === false &&
+      contract.closeTime &&
+      contract.closeTime > Date.now()
   )
   const sortedContracts = sortBy(openContracts, (c) => c.createdTime).reverse()
 
