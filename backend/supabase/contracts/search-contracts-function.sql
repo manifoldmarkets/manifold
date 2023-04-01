@@ -10,6 +10,12 @@ BEGIN
   SELECT contracts_rbac.data
   FROM contracts_rbac, websearch_to_tsquery('english', term) query
   WHERE contracts_rbac.question_fts @@ query
+    AND (
+    (contract_filter = 'open' AND contracts_rbac.resolution_time IS NULL)
+    OR (contract_filter = 'closed' AND contracts_rbac.close_time <  NOW() and contracts_rbac.resolution_time IS NULL)
+    OR (contract_filter = 'resolved' AND contracts_rbac.resolution_time IS NOT NULL)
+    OR (contract_filter = 'all')
+  )
   AND (contract_sort != 'close-date' OR (contract_sort = 'close-date' AND contracts_rbac.close_time > NOW()))
 ORDER BY
   CASE contract_sort
@@ -20,7 +26,7 @@ ORDER BY
     WHEN 'daily-score' THEN (contracts_rbac.data->>'dailyScore')::numeric
     WHEN '24-hour-vol' THEN (contracts_rbac.data->>'volume24Hours')::numeric
     WHEN 'liquidity' THEN (contracts_rbac.data->>'elasticity')::numeric
-        WHEN 'last-updated' THEN (contracts_rbac.data->>'lastUpdatedTime')::numeric
+    WHEN 'last-updated' THEN (contracts_rbac.data->>'lastUpdatedTime')::numeric
     END DESC NULLS LAST,
   CASE contract_sort
     WHEN 'most-popular' THEN (contracts_rbac.data->>'uniqueBettorCount')::integer

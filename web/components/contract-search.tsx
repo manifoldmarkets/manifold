@@ -52,7 +52,7 @@ export const SORTS = [
 export type Sort = typeof SORTS[number]['value']
 export const PROB_SORTS = ['prob-descending', 'prob-ascending']
 
-export type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
+export type filter = 'open' | 'closed' | 'resolved' | 'all'
 
 export type SearchParameters = {
   query: string
