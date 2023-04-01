@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createMarketHelper } from './create-market'
-import { HOUR_MS } from 'common/util/time'
+import { DAY_MS } from 'common/util/time'
 import { runTxn } from 'shared/run-txn'
 import { getUser, revalidateStaticProps } from 'shared/utils'
 
@@ -45,7 +45,7 @@ export const createDebate = authEndpoint(async (req, auth) => {
     question: `${topic1} vs ${topic2}`,
     descriptionMarkdown: `Yes = ${topic1}\n\nNo = ${topic2}\n\nCreated by ${user?.name} (@${user?.username})`,
     initialProb: 50,
-    closeTime: Date.now() + HOUR_MS,
+    closeTime: Date.now() + DAY_MS,
     outcomeType: 'BINARY' as const,
     groupId: debateGroupId,
     visibility: 'public' as const,

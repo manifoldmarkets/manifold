@@ -6,7 +6,11 @@ import { sortBy } from 'lodash'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
 import { ContractCardView } from 'common/events'
-import { formatMoney, formatPercentShort } from 'common/util/format'
+import {
+  formatMoney,
+  formatPercent,
+  formatPercentShort,
+} from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
@@ -147,7 +151,7 @@ const CreateVersusWidget = (props: { className?: string }) => {
 
         <Col className="mt-4 gap-2">
           <div>Cost: {formatMoney(50)}</div>
-          <div>Resolves after 1 hour</div>
+          <div>At a random time within 24h, resolves to currrent market %.</div>
         </Col>
 
         <Button
@@ -193,8 +197,9 @@ function ContractCardVersus(props: { contract: Contract; className?: string }) {
 
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const showImage = !!coverImageUrl
-  const minutesRemaining = Math.ceil(
-    ((closeTime ?? 1000) - Date.now()) / MINUTE_MS
+  const minutesRemaining = Math.max(
+    Math.ceil(((closeTime ?? 1000) - Date.now()) / MINUTE_MS),
+    0
   )
 
   const path = contractPath(contract)
@@ -245,7 +250,7 @@ function ContractCardVersus(props: { contract: Contract; className?: string }) {
 
           <Row className="items-center gap-2">
             <ClockIcon className="h-4 w-4" />
-            {minutesRemaining} min remaining
+            {formatPercent(1 / minutesRemaining)} chance resolves next minute
           </Row>
 
           <Row

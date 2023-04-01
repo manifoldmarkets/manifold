@@ -7,6 +7,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { secrets } from 'shared/secrets'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { getProbability } from 'common/calculate'
+import { MINUTE_MS } from 'common/util/time'
 
 export const resolveDebates = functions
   .runWith({
@@ -37,9 +38,13 @@ export async function doResolveDebates() {
     (r) => r.data as Contract
   )
 
-  const contractsToResolve = contracts.filter(
-    (c) => Math.random() < 1 / 60 || (c.closeTime && c.closeTime < Date.now())
-  )
+  const contractsToResolve = contracts.filter((c) => {
+    if (c.closeTime) {
+      const minutesLeft = Math.max(1, c.closeTime - Date.now() / MINUTE_MS)
+      return 1 / minutesLeft > Math.random()
+    }
+    return true
+  })
 
   console.log('contracts to resolve', contractsToResolve)
 
