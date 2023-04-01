@@ -11,7 +11,7 @@ export function GreenCard(props: {
   const { imageUrl, title, description, faceup, onClick } = props
   return (
     <div
-      className="font-grenze-gotisch relative h-[300px] w-[200px] cursor-pointer transition hover:z-10 hover:scale-125"
+      className="font-grenze-gotisch relative h-[284px] w-[200px] cursor-pointer transition hover:z-10 hover:scale-125"
       onClick={onClick}
     >
       {faceup ? (
@@ -23,7 +23,7 @@ export function GreenCard(props: {
       ) : (
         <Image
           className="absolute top-0 left-0"
-          src={'/cards/back_red.png'}
+          src={'/cards/back_green.png'}
           width={200}
           height={400}
           alt="Frame"

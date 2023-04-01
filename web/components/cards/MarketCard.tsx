@@ -60,7 +60,7 @@ export function MarketCard(props: {
   const { contract, faceup, onClick } = props
   return (
     <div
-      className="font-grenze-gotisch relative h-[300px] w-[200px] cursor-zoom-in transition hover:z-10 hover:scale-125"
+      className="font-grenze-gotisch relative z-50 h-[284px] w-[200px] cursor-zoom-in transition hover:scale-125"
       onClick={onClick}
     >
       {faceup ? (

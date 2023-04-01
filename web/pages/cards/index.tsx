@@ -92,6 +92,7 @@ export default function CardsPage() {
           </h1>
           <Spacer h={4} />
           <h2 className="text-2xl">Match each market to its creator!</h2>
+          <h2 className="block sm:hidden">(Best played on desktop 😛)</h2>
         </Col>
         <Col className="justify-end">
           <h2 className="text-6xl">
