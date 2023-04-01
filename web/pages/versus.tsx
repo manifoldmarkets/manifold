@@ -86,7 +86,7 @@ const CreateVersusWidget = (props: { className?: string }) => {
   return (
     <Col className={clsx(className, 'w-full rounded-lg border px-6 py-6')}>
       <Col className="text-ink-800 w-full max-w-[275px] gap-4 self-center ">
-        <div className="mb-2 text-2xl">Create your Versus</div>
+        <div className="mb-2 text-2xl">Create your battle</div>
 
         <Col>
           <label className="px-1 pb-3">
