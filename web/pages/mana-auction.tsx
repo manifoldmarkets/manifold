@@ -23,6 +23,7 @@ import { getApiUrl } from 'common/api'
 import { APRIL_FOOLS_ENABLED } from 'common/envs/constants'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { SEO } from 'web/components/SEO'
+import { buildArray } from 'common/util/array'
 
 const CUTOFF_TIME = 1680418800000 // Apr 2nd, 12 am PT
 
@@ -151,13 +152,18 @@ const useTimer = () => {
 const getCountdown = (now: number, later: number) => {
   const distance = now >= later ? 0 : later - now
 
+  const days = Math.floor(distance / (1000 * 60 * 60 * 24))
+
   const hours = Math.floor(
     (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
   )
   const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
   const seconds = Math.floor((distance % (1000 * 60)) / 1000)
 
-  return `${hours}h ${minutes}m ${seconds}s`
+  return buildArray(
+    days > 0 && days + 'd',
+    `${hours}h ${minutes}m ${seconds}s`
+  ).join(' ')
 }
 
 const BidTable = ({ bids }: { bids: Bid[] }) => {
