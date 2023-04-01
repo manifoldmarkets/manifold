@@ -22,6 +22,7 @@ import { call } from 'web/lib/firebase/api'
 import { getApiUrl } from 'common/api'
 import { APRIL_FOOLS_ENABLED } from 'common/envs/constants'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
+import { SEO } from 'web/components/SEO'
 
 const CUTOFF_TIME = 1680418800000 // Apr 2nd, 12 am PT
 
@@ -61,6 +62,11 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
   return (
     <Page className="px-4">
       <Col className="gap-4 sm:px-4 sm:pb-4">
+        <SEO
+          title="Mana auction"
+          description="To celebrate April 1st and to give back to the community, Manifold is
+          hosting an auction for M10,000."
+        />
         <Title className="mx-2 !mb-0 mt-2 sm:mx-0 lg:mt-0">
           💰 {formatMoney(10000)} auction 💰
         </Title>
