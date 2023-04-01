@@ -6,14 +6,35 @@ import {
   useTopMarketsByUser,
 } from 'web/components/cards/MarketCard'
 import { groupBy, shuffle } from 'lodash'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { Button } from 'web/components/buttons/button'
 import Link from 'next/link'
 import { UserCard } from 'web/components/cards/UserCard'
+import { getContracts } from 'common/supabase/contracts'
+import { db } from 'web/lib/supabase/db'
+import { Contract } from 'common/contract'
 
 const TOTAL_MARKETS = 5
+
+const DEFAULT_MARKETS = [
+  'YTIuuSsNRn2OlA4KykRM',
+  'DreezzZ09K5d4ee1E64l',
+  'YBxwKfe5eY2Ynw1ACGYI',
+  '0GswU1qy80Sk1UogWuKR',
+  'NRLwgQYqCLk5zTasmxOn',
+  'usSjx2AtbUvfg7QNq5g2',
+  '4MkPyu5D9MRLPREODSD7',
+]
+
+function useContractsByIds(ids: string[]) {
+  const [contracts, setContracts] = useState<Contract[]>([])
+  useEffect(() => {
+    getContracts(ids, db).then((contracts) => setContracts(contracts))
+  }, [ids])
+  return contracts
+}
 
 // A memory game with 2 rows of TOTAL_MARKETS cards
 // Users flip 2 cards at a time; if they match, they stay flipped
@@ -34,8 +55,9 @@ export default function CardsPage() {
   const user = useUser()
   // TODO: what if user doesn't have enough top markets?
   const topMarkets = useTopMarketsByUser(user?.id ?? '')
+  const defaults = useContractsByIds(DEFAULT_MARKETS)
   const shuffledMarkets = useMemo(
-    () => shuffle(topMarkets),
+    () => shuffle([...topMarkets, ...defaults]),
     [topMarkets.length]
   )
   const groupedMarkets = groupBy(shuffledMarkets, 'creatorId')
@@ -46,6 +68,7 @@ export default function CardsPage() {
   const marketCreators = markets.map((market) => market.creatorId)
   const creators = useMemo(() => shuffle(marketCreators), [topMarkets.length])
 
+  console.log('results', markets, creators)
   function clicksMatch(a: number, b: number) {
     // Set i to be the lesser, and j to be the greater
     const i = Math.min(a, b)
