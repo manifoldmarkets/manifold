@@ -75,15 +75,17 @@ const CreateVersusWidget = (props: { className?: string }) => {
   const { className } = props
   const [topic1, setTopic1] = useState<string>('')
   const [topic2, setTopic2] = useState<string>('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const isValid = topic1 && topic2
 
   const onCreate = () => {
-    if (isValid)
-      createDebate({ topic1, topic2 }).then((data) => {
-        console.log('hello, market created', data)
-        window.location.reload()
-      })
+    if (isValid) setIsLoading(true)
+    createDebate({ topic1, topic2 }).then((data) => {
+      console.log('hello, market created', data)
+      window.location.reload()
+      setIsLoading(false)
+    })
   }
 
   return (
@@ -124,7 +126,12 @@ const CreateVersusWidget = (props: { className?: string }) => {
           <div>Resolves after 1 hour</div>
         </Col>
 
-        <Button className="mt-4" onClick={onCreate} disabled={!isValid}>
+        <Button
+          className="mt-4"
+          onClick={onCreate}
+          disabled={!isValid}
+          loading={isLoading}
+        >
           Start battle
         </Button>
       </Col>
