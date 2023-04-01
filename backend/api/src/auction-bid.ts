@@ -10,7 +10,7 @@ const bodySchema = z.object({
   amount: z.number().gte(1),
 })
 
-const CUTOFF_TIME = 1683010800000 // Apr 2nd, 12 am PT
+const CUTOFF_TIME = 1680418800000 // Apr 2nd, 12 am PT
 
 export const auctionbid = authEndpoint(async (req, auth) => {
   if (Date.now() >= CUTOFF_TIME) throw new APIError(400, 'Auction closed')

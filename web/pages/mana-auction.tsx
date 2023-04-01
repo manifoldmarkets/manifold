@@ -1,3 +1,6 @@
+import clsx from 'clsx'
+import dayjs from 'dayjs'
+
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
@@ -9,8 +12,7 @@ import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { useEffect, useState } from 'react'
 import { Avatar } from 'web/components/widgets/avatar'
-import clsx from 'clsx'
-import dayjs from 'dayjs'
+
 import { Spacer } from 'web/components/layout/spacer'
 import { coll, getValues, listenForValues } from 'web/lib/firebase/utils'
 import { Bid } from 'common/bid'
@@ -19,8 +21,9 @@ import { max } from 'lodash'
 import { call } from 'web/lib/firebase/api'
 import { getApiUrl } from 'common/api'
 import { APRIL_FOOLS_ENABLED } from 'common/envs/constants'
+import { GradientContainer } from 'web/components/widgets/gradient-container'
 
-const CUTOFF_TIME = 1683010800000 // Apr 2nd, 12 am PT
+const CUTOFF_TIME = 1680418800000 // Apr 2nd, 12 am PT
 
 export async function getStaticProps() {
   const q = query(coll<Bid>('apr1-auction'), orderBy('createdTime', 'desc'))
@@ -39,6 +42,10 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
 
   const bids = useBids(props.bids)
   const maxBid = max(bids.map((b) => b.amount)) ?? 0
+  const bidder = bids.find((b) => b.amount === maxBid)?.username ?? 'None'
+
+  const time = useTimer()
+  const timeRemaining = getCountdown(time, CUTOFF_TIME)
 
   // if (!APRIL_FOOLS_ENABLED)
   //   return (
@@ -63,10 +70,25 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
           hosting an auction for {formatMoney(10000)}.
         </div>
 
-        <div className="text-ink-700 text-center text-xl">
-          Highest bid{' '}
-          <div className="text-primary-700 text-4xl">{formatMoney(maxBid)}</div>
-        </div>
+        <GradientContainer className="mb-8 p-4">
+          <Row className="gap-4 sm:gap-8">
+            <div className="text-ink-700 text-center text-xl">
+              Highest bid{' '}
+              <div className="text-primary-700 text-4xl">
+                {formatMoney(maxBid)}
+              </div>
+            </div>
+
+            <div className="text-ink-700 hidden flex-col text-center text-xl sm:flex">
+              Bidder <div className="text-secondary-700 text-3xl">{bidder}</div>
+            </div>
+
+            <div className="text-ink-700 text-center text-xl">
+              Time remaining{' '}
+              <div className="text-secondary-700 text-3xl">{timeRemaining}</div>
+            </div>
+          </Row>
+        </GradientContainer>
 
         <div>Place your bid to win big!</div>
 
@@ -97,6 +119,29 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
       </Col>
     </Page>
   )
+}
+
+const useTimer = () => {
+  const [time, setTime] = useState(+new Date(2023, 3, 1))
+
+  useEffect(() => {
+    const interval = setInterval(() => setTime(Date.now()), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  return time
+}
+
+const getCountdown = (now: number, later: number) => {
+  const distance = later - now
+
+  const hours = Math.floor(
+    (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+  )
+  const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((distance % (1000 * 60)) / 1000)
+
+  return `${hours}h ${minutes}m ${seconds}s`
 }
 
 const BidTable = ({ bids }: { bids: Bid[] }) => {
