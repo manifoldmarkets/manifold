@@ -1,6 +1,7 @@
 import { ClockIcon, UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Router from 'next/router'
+import { sortBy } from 'lodash'
 
 import { ContractMetrics } from 'common/calculate-metrics'
 import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
@@ -37,9 +38,10 @@ export const getStaticProps = async () => {
   const openContracts = contracts.filter(
     (contract) => contract.isResolved === false
   )
+  const sortedContracts = sortBy(openContracts, (c) => c.createdTime).reverse()
   return {
     props: {
-      contracts: openContracts,
+      contracts: sortedContracts,
     },
   }
 }
