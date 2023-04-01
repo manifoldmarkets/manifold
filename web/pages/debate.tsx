@@ -3,12 +3,11 @@ import clsx from 'clsx'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
 import { ContractCardView } from 'common/events'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatPercentShort } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
 import Router from 'next/router'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { ContractStatusLabel } from 'web/components/contract/contracts-list-entry'
 import { LikeButton } from 'web/components/contract/like-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -28,7 +27,7 @@ import { useContract } from 'web/hooks/use-contracts'
 import { binaryOutcomes } from 'web/components/bet/bet-panel'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { BetDialog } from 'web/components/bet/bet-dialog'
-import { getProbability } from 'common/calculate'
+import { getDisplayProbability, getProbability } from 'common/calculate'
 
 export const getStaticProps = async () => {
   const debateGroupId = '0i8ozKhPq5qJ89DG9tCW'
@@ -53,10 +52,9 @@ const Debate = (props: { contracts: Contract[] }) => {
         url="/debate"
       />
       <Col className="w-full max-w-xl self-center">
-        <Title>Manifold Debate</Title>
+        <Title className="text-ink-800">Debates</Title>
         <Debates contracts={contracts} />
-        <div className="my-6 border-t-2" />
-        <CreateDebateWidget />
+        <CreateDebateWidget className="mt-8" />
       </Col>
     </Page>
   )
@@ -73,7 +71,8 @@ const Debates = (props: { contracts: Contract[] }) => {
   )
 }
 
-const CreateDebateWidget = () => {
+const CreateDebateWidget = (props: { className?: string }) => {
+  const { className } = props
   const [topic1, setTopic1] = useState<string>('')
   const [topic2, setTopic2] = useState<string>('')
 
@@ -88,10 +87,10 @@ const CreateDebateWidget = () => {
   }
 
   return (
-    <Col>
-      <div className="mb-6 text-2xl">Create a debate</div>
+    <Col className={clsx(className, 'w-full rounded-lg border px-6 py-6')}>
+      <Col className="text-ink-800 w-full max-w-[275px] gap-4 self-center ">
+        <div className="mb-2 text-2xl">Create a debate</div>
 
-      <Col className="max-w-[200px] gap-4">
         <Col>
           <label className="px-1 pb-3">
             Topic 1 <span className={'text-scarlet-500 text-sm'}>*</span>
@@ -121,7 +120,7 @@ const CreateDebateWidget = () => {
 
         <Col className="mt-6 gap-2">
           <div>Cost: {formatMoney(50)}</div>
-          <div>Duration: 1 hour</div>
+          <div>Resolves after 1 hour</div>
         </Col>
         <Button onClick={onCreate} disabled={!isValid}>
           Start debate
@@ -323,8 +322,8 @@ function BetRow(props: {
             <div className="whitespace-nowrap">{topic1}</div>
           </Col>
         </Button>
-        <Col className="items-center text-base font-semibold">
-          <ContractStatusLabel contract={contract} />
+        <Col className="items-center text-xl font-semibold text-gray-800">
+          {formatPercentShort(getDisplayProbability(contract))}
         </Col>
         <Button
           className="min-w-[100px] shadow"
