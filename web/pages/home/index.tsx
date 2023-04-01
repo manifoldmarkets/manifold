@@ -250,13 +250,24 @@ const AprilFools = () => {
         </SiteLink>
         <Col className="gap-2">
           <SiteLink href="/mana-auction">
-            <GradientContainer className="hover:bg-ink-200 text-xl hover:underline">
-              💰 <strong>{formatMoney(10000)} for auction</strong> 💰
-            </GradientContainer>
+            <Button className="w-full shadow-lg" color="gradient" size="2xl">
+              <Title className="!mb-0 text-gray-100">
+                💰 <strong>{formatMoney(10000)} Auction</strong> 💰
+              </Title>
+            </Button>
           </SiteLink>
           <SiteLink href="/versus">
-            <Button className="shadow-lg" color="gradient-pink" size="2xl">
+            <Button
+              className="w-full shadow-lg"
+              color="gradient-pink"
+              size="2xl"
+            >
               <Title className="!mb-0 text-gray-100">⚔️ Versus Mode ⚔️</Title>
+            </Button>
+          </SiteLink>
+          <SiteLink href="https://manifold.markets/Conflux/will-the-average-probability-of-thi">
+            <Button className="w-full shadow-lg" size="2xl">
+              <Title className="!mb-0 text-gray-100">✊ "The Market" 🛥️</Title>
             </Button>
           </SiteLink>
         </Col>
