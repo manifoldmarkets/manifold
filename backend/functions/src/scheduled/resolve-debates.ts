@@ -40,7 +40,7 @@ export async function doResolveDebates() {
 
   const contractsToResolve = contracts.filter((c) => {
     if (c.closeTime) {
-      const minutesLeft = Math.max(1, c.closeTime - Date.now() / MINUTE_MS)
+      const minutesLeft = Math.max(1, (c.closeTime - Date.now()) / MINUTE_MS)
       return 1 / minutesLeft > Math.random()
     }
     return true
