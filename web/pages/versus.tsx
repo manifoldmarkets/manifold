@@ -8,7 +8,7 @@ import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
 import { ContractCardView } from 'common/events'
 import { formatMoney, formatPercentShort } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { LikeButton } from 'web/components/contract/like-button'
 import { Col } from 'web/components/layout/col'
@@ -63,6 +63,12 @@ const Versus = (props: { contracts: Contract[] }) => {
       contract.closeTime > Date.now()
   )
   const sortedContracts = sortBy(openContracts, (c) => c.createdTime).reverse()
+
+  const [_, setCount] = useState(0)
+  useEffect(() => {
+    const intervalId = setInterval(() => setCount((c) => c + 1), MINUTE_MS)
+    return clearInterval(intervalId)
+  }, [])
 
   return (
     <Page>
