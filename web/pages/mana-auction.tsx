@@ -109,9 +109,7 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
           </Row>
         </GradientContainer>
 
-        {time < CUTOFF_TIME && <BidButton />}
-
-        <BidTable bids={bids} />
+        {time < CUTOFF_TIME && <BidButton maxBid={maxBid} />}
 
         <div className="prose prose-sm text-ink-600 max-w-[800px]">
           <b>Rules</b>
@@ -133,6 +131,8 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
             </li>
           </ul>
         </div>
+
+        <BidTable bids={bids} />
       </Col>
     </Page>
   )
@@ -206,7 +206,7 @@ const BidTable = ({ bids }: { bids: Bid[] }) => {
   )
 }
 
-const BidButton = () => {
+const BidButton = ({ maxBid }: { maxBid: number }) => {
   const user = useUser()
 
   const [amount, setAmount] = useState<number | undefined>(undefined)
@@ -253,7 +253,12 @@ const BidButton = () => {
 
   return (
     <div className="">
-      <div className="mb-4">Place your bid to win big!</div>
+      <div className="mb-4">
+        Place your bid to win big!{' '}
+        <span className="text-xs">
+          (Minimum bid: {formatMoney(Math.ceil(maxBid * 1.1))})
+        </span>
+      </div>
 
       <Row className="">
         <BuyAmountInput
