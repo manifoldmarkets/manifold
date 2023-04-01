@@ -39,7 +39,7 @@ const emojiArr = Object.entries(invertBy(shortcodes)).map(
 
 emojiArr.push({
   codePoint: '2133',
-  shortcodes: ['taccyon', 'mana', 'm$', 't$'],
+  shortcodes: ['mana', 'm$'],
   character: ENV_CONFIG.moneyMoniker,
 })
 

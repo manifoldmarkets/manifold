@@ -165,7 +165,7 @@ const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
-    { name: 'Get taccyons', icon: CashIcon, onClick: toggleModal },
+    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
     {
       name: `Ads - earn ${formatMoney(5)} per view!`,

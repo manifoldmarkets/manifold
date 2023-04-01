@@ -31,7 +31,7 @@ export function ProfileSummary(props: { user: User }) {
               setBuyModalOpen(true)
             }}
           >
-            <div className="sr-only">Get taccyons</div>
+            <div className="sr-only">Get mana</div>
             <PlusIcon className="h-2 w-2" strokeWidth="4.5" />
           </button>
           <AddFundsModal open={buyModalOpen} setOpen={setBuyModalOpen} />
