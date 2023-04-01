@@ -37,7 +37,7 @@ export function AddFundsModal(props: {
         currentPageForAnalytics="buy modal"
         tabs={[
           {
-            title: 'Buy Mana',
+            title: 'Buy Taccyons',
             content: <BuyManaTab onClose={() => setOpen(false)} />,
           },
           {
@@ -92,7 +92,8 @@ export function BuyManaTab(props: { onClose: () => void }) {
   return (
     <>
       <div className="mt-6 mb-4">
-        Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite markets.
+        Buy taccyons ({ENV_CONFIG.moneyMoniker}) to trade in your favorite
+        markets.d
         <div className="italic">Not redeemable for cash.</div>
       </div>
 
