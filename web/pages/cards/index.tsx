@@ -1,13 +1,17 @@
 import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
 import { useUser } from 'web/hooks/use-user'
-import { MarketCard, useTopMarketsByUser } from './MarketCard'
-import { UserCard } from './UserCard'
+import {
+  MarketCard,
+  useTopMarketsByUser,
+} from 'web/components/cards/MarketCard'
 import { groupBy, shuffle } from 'lodash'
 import { useMemo, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { Button } from 'web/components/buttons/button'
+import Link from 'next/link'
+import { UserCard } from 'web/components/cards/UserCard'
 
 const TOTAL_MARKETS = 5
 
@@ -125,7 +129,7 @@ export default function CardsPage() {
       </div>
       {matches === TOTAL_MARKETS && (
         <Button size="2xl" color="gradient" className="mx-auto max-w-md">
-          <a href="/cards">Play again!</a>
+          <Link href="/cards">Play again!</Link>
         </Button>
       )}
     </Page>
