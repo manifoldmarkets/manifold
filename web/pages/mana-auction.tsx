@@ -17,7 +17,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { coll, getValues, listenForValues } from 'web/lib/firebase/utils'
 import { Bid } from 'common/bid'
 import { orderBy, query } from 'firebase/firestore'
-import { max } from 'lodash'
+import { groupBy, keyBy, max } from 'lodash'
 import { call } from 'web/lib/firebase/api'
 import { getApiUrl } from 'common/api'
 import { APRIL_FOOLS_ENABLED } from 'common/envs/constants'
@@ -44,6 +44,9 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
   const bids = useBids(props.bids)
   const maxBid = max(bids.map((b) => b.amount)) ?? 0
   const bidder = bids.find((b) => b.amount === maxBid)?.displayName ?? 'None'
+  const totalRaised = Object.entries(groupBy(bids, 'userId'))
+    .map(([, bids]) => max(bids.map((b) => b.amount)) ?? 0)
+    .reduce((a, b) => a + b, 0)
 
   const time = useTimer()
   const timeRemaining = getCountdown(time, CUTOFF_TIME)
@@ -93,10 +96,19 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
               Time remaining{' '}
               <div className="text-secondary-700 text-3xl">{timeRemaining}</div>
             </div>
+
+            {time > CUTOFF_TIME && (
+              <div className="text-ink-700 hidden flex-col text-center text-xl sm:flex">
+                Total raised{' '}
+                <div className="text-secondary-700 text-3xl">
+                  {formatMoney(totalRaised)}
+                </div>
+              </div>
+            )}
           </Row>
         </GradientContainer>
 
-        <BidButton />
+        {time < CUTOFF_TIME && <BidButton />}
 
         <BidTable bids={bids} />
 
