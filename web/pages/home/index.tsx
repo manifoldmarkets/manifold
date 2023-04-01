@@ -2,7 +2,11 @@ import { PencilAltIcon, SwitchHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 
 import { Contract, CPMMContract } from 'common/contract'
-import { APRIL_FOOLS_ENABLED, BACKGROUND_COLOR } from 'common/envs/constants'
+import {
+  APRIL_FOOLS_ENABLED,
+  BACKGROUND_COLOR,
+  ENV,
+} from 'common/envs/constants'
 import Router from 'next/router'
 import { memo, ReactNode } from 'react'
 import { ActivityLog } from 'web/components/activity-log'
@@ -35,6 +39,11 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
+import { UserCard } from 'web/components/cards/UserCard'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -116,15 +125,6 @@ function MobileHome() {
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
           <Col>
-            {APRIL_FOOLS_ENABLED && (
-              <SiteLink href="/versus">
-                <Button className="shadow-lg" color="gradient-pink" size="2xl">
-                  <Title className="!mb-0 text-gray-100">
-                    ⚔️ Versus Mode ⚔️
-                  </Title>
-                </Button>
-              </SiteLink>
-            )}
             <MainContent />
           </Col>
         </Col>
@@ -231,6 +231,40 @@ const YourFeedSection = memo(function YourFeedSection(props: {
   )
 })
 
+const AprilFools = () => {
+  return (
+    <Col className="gap-4">
+      <HomeSectionHeader label="Our latest features" icon="🃏" />
+      <div className="m-2 flex flex-col gap-2 sm:flex-row">
+        <SiteLink href="/cards">
+          {/* Hardcode @ManifoldMarkets aka Mana-chan */}
+          <UserCard
+            userId={
+              ENV === 'PROD'
+                ? HOUSE_LIQUIDITY_PROVIDER_ID
+                : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+            }
+            faceup={true}
+            onClick={() => {}}
+          />
+        </SiteLink>
+        <Col className="gap-2">
+          <SiteLink href="/mana-auction">
+            <GradientContainer className="hover:bg-ink-200 text-xl hover:underline">
+              💰 <strong>{formatMoney(10000)} for auction</strong> 💰
+            </GradientContainer>
+          </SiteLink>
+          <SiteLink href="/versus">
+            <Button className="shadow-lg" color="gradient-pink" size="2xl">
+              <Title className="!mb-0 text-gray-100">⚔️ Versus Mode ⚔️</Title>
+            </Button>
+          </SiteLink>
+        </Col>
+      </div>
+    </Col>
+  )
+}
+
 const MainContent = () => {
   const [section, setSection] = usePersistentInMemoryState(
     0,
@@ -239,14 +273,7 @@ const MainContent = () => {
 
   return (
     <Col>
-      {APRIL_FOOLS_ENABLED && (
-        <SiteLink href="/mana-auction">
-          <GradientContainer className="hover:bg-ink-200 my-4 text-xl hover:underline">
-            💰 Manifold's <strong>{formatMoney(10000)} auction</strong> is live!
-            💰
-          </GradientContainer>
-        </SiteLink>
-      )}
+      {APRIL_FOOLS_ENABLED && <AprilFools />}
       <ChoicesToggleGroup
         className="mb-2 border-0"
         choicesMap={{

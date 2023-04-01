@@ -21,6 +21,7 @@ module.exports = {
           'sans-serif',
         ],
         'source-serif-pro': ['var(--font-rich)', 'sans-serif'],
+        'grenze-gotisch': ['Grenze Gotisch', 'cursive'],
       }
     ),
     fontWeight: {
