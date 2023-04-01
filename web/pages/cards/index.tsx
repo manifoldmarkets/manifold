@@ -1,117 +1,133 @@
-import Image from 'next/image'
-import { useState } from 'react'
 import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
-import { useFollows } from 'web/hooks/use-follows'
 import { useUser } from 'web/hooks/use-user'
-import { useUserById } from 'web/hooks/use-user-supabase'
 import { MarketCard, useTopMarketsByUser } from './MarketCard'
+import { UserCard } from './UserCard'
+import { groupBy, shuffle } from 'lodash'
+import { useMemo, useState } from 'react'
+import { Row } from 'web/components/layout/row'
+import { Col } from 'web/components/layout/col'
+import { Button } from 'web/components/buttons/button'
 
+const TOTAL_MARKETS = 5
+
+// A memory game with 2 rows of TOTAL_MARKETS cards
+// Users flip 2 cards at a time; if they match, they stay flipped
 export default function CardsPage() {
+  // GAME STATE
+  // Boolean array of whether each card is faceup
+  const [faceups, setFaceups] = useState<boolean[]>(
+    Array.from({ length: TOTAL_MARKETS * 2 }, () => false)
+  )
+  // Last card clicked
+  const [clicked, setClicked] = useState<number | undefined>(undefined)
+  // Total clicks
+  const [clicks, setClicks] = useState(0)
+  const [matches, setMatches] = useState(0)
+  const [waiting, setWaiting] = useState(false)
+
+  // GAME DATA
   const user = useUser()
-  const follows = useFollows(user?.id)
+  // TODO: what if user doesn't have enough top markets?
   const topMarkets = useTopMarketsByUser(user?.id ?? '')
-  console.log('top markets', topMarkets)
+  const shuffledMarkets = useMemo(
+    () => shuffle(topMarkets),
+    [topMarkets.length]
+  )
+  const groupedMarkets = groupBy(shuffledMarkets, 'creatorId')
+  const markets = Object.values(groupedMarkets)
+    .filter((group) => group.length === 1)
+    .flat()
+    .slice(0, TOTAL_MARKETS)
+  const marketCreators = markets.map((market) => market.creatorId)
+  const creators = useMemo(() => shuffle(marketCreators), [topMarkets.length])
+
+  function clicksMatch(a: number, b: number) {
+    // Set i to be the lesser, and j to be the greater
+    const i = Math.min(a, b)
+    const j = Math.max(a, b)
+    if (i >= TOTAL_MARKETS || j < TOTAL_MARKETS) {
+      return false
+    }
+    return markets[i].creatorId === creators[j - TOTAL_MARKETS]
+  }
+
+  function click(index: number) {
+    if (waiting) return
+    setClicks(clicks + 1)
+    const newFaceups = [...faceups]
+    newFaceups[index] = true
+    setFaceups(newFaceups)
+    if (clicked === undefined) {
+      setClicked(index)
+    } else {
+      if (clicksMatch(clicked, index)) {
+        setMatches(matches + 1)
+        setClicked(undefined)
+      } else {
+        setWaiting(true)
+        // Wait for 1s, then flip them back down
+        setTimeout(() => {
+          const newFaceups = [...faceups]
+          newFaceups[clicked] = false
+          newFaceups[index] = false
+          setFaceups(newFaceups)
+          setWaiting(false)
+          setClicked(undefined)
+        }, 2000)
+      }
+    }
+  }
+
   return (
-    <Page maxWidth="max-w-7xl font-grenze-gotisch">
-      <h1 className="text-6xl">Manifold: the Gambling</h1>
+    <Page maxWidth="max-w-7xl p-2">
+      <Row className="justify-between">
+        <Col>
+          <h1 className="font-grenze-gotisch text-6xl">
+            Manifold: the Gambling
+          </h1>
+          <Spacer h={4} />
+          <h2 className="text-2xl">Match each market to its creator!</h2>
+        </Col>
+        <Col className="justify-end">
+          <h2 className="text-6xl">
+            {/* Show a ✅ for each match */}{' '}
+            {Array.from({ length: matches }, () => (
+              <span>✅</span>
+            ))}
+            {/* And a ❌ for non-matches */}
+            {Array.from({ length: TOTAL_MARKETS - matches }, () => (
+              <span>🃏</span>
+            ))}
+          </h2>
+          <Spacer h={4} />
+          <h2 className="text-right text-2xl">Clicks: {clicks}</h2>
+        </Col>
+      </Row>
       <Spacer h={4} />
-      {/* Show a card for each follower in a grid, 6 cards wide */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-        {follows?.slice(0, 12).map((userId) => (
-          <UserCard userId={userId} />
+        {markets.map((contract, i) => (
+          <MarketCard
+            contract={contract}
+            faceup={faceups[i]}
+            onClick={() => click(i)}
+          />
         ))}
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-        {topMarkets?.slice(0, 12).map((contract) => (
-          <MarketCard contract={contract} />
+        {creators.map((userId, i) => (
+          <UserCard
+            userId={userId}
+            faceup={faceups[TOTAL_MARKETS + i]}
+            onClick={() => click(TOTAL_MARKETS + i)}
+          />
         ))}
       </div>
+      {matches === TOTAL_MARKETS && (
+        <Button size="2xl" color="gradient" className="mx-auto max-w-md">
+          <a href="/cards">Play again!</a>
+        </Button>
+      )}
     </Page>
   )
-}
-
-export function GreenCard(props: {
-  imageUrl: string
-  title: string
-  description: string
-}) {
-  const { imageUrl, title, description } = props
-  const [faceup, setFaceup] = useState(false)
-  return (
-    <div
-      className="font-grenze-gotisch relative h-[300px] w-[200px] cursor-pointer transition hover:z-10 hover:scale-125"
-      onClick={() => setFaceup(!faceup)}
-    >
-      {faceup ? (
-        <FaceupGreenCard
-          imageUrl={imageUrl}
-          title={title}
-          description={description}
-        />
-      ) : (
-        <Image
-          className="absolute top-0 left-0"
-          src={'/cards/back_red.png'}
-          width={200}
-          height={400}
-          alt="Frame"
-        />
-      )}
-    </div>
-  )
-}
-
-export function FaceupGreenCard(props: {
-  imageUrl: string
-  title: string
-  description: string
-}) {
-  const { imageUrl, title, description } = props
-  const upscaleUrl = upscaleGoogleUrl(imageUrl)
-  return (
-    <div>
-      <Image
-        className="absolute top-0 left-0"
-        src={upscaleUrl}
-        width={200}
-        height={200}
-        alt="Avatar"
-      />
-      <Image
-        className="absolute top-0 left-0"
-        src={'/cards/frame_green.png'}
-        width={200}
-        height={400}
-        alt="Frame"
-      />
-      <div className="line-clamp-1 absolute top-[165px] left-0 w-full bg-transparent text-center text-2xl font-extrabold text-white drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,1)]">
-        {title}
-      </div>
-      <div className="line-clamp-4 absolute top-[210px] left-[15px] w-[170px] text-center text-sm leading-3">
-        {description}
-      </div>
-    </div>
-  )
-}
-
-export function UserCard(props: { userId: string }) {
-  const { userId } = props
-  const user = useUserById(userId)
-  if (!user) return null
-  return (
-    <GreenCard
-      imageUrl={user.avatarUrl}
-      title={user.name}
-      description={user.bio ?? user.followerCountCached + ' followers'}
-    />
-  )
-}
-
-function upscaleGoogleUrl(url: string) {
-  // If the url ends in '=s96-c', upscale it to '=s200-c'
-  if (url.endsWith('=s96-c')) {
-    return url.replace(/=s96-c$/, '=s200-c')
-  }
-  return url
 }
