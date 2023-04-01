@@ -5,7 +5,7 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { createMarketHelper } from './create-market'
 import { HOUR_MS } from 'common/util/time'
 import { runTxn } from 'shared/run-txn'
-import { revalidateStaticProps } from 'shared/utils'
+import { getUser, revalidateStaticProps } from 'shared/utils'
 
 const bodySchema = z.object({
   topic1: z.string().min(1).max(MAX_QUESTION_LENGTH),
@@ -38,10 +38,12 @@ export const createDebate = authEndpoint(async (req, auth) => {
     return result
   })
 
+  const user = await getUser(auth.uid)
+
   // Create the debate market!
   const createParams = {
     question: `${topic1} vs ${topic2}`,
-    descriptionMarkdown: `Yes = ${topic1}\n\nNo = ${topic2}\n\nMake your bets!`,
+    descriptionMarkdown: `Yes = ${topic1}\n\nNo = ${topic2}\n\nCreated by ${user?.name} (@${user?.username})`,
     initialProb: 50,
     closeTime: Date.now() + HOUR_MS,
     outcomeType: 'BINARY' as const,
@@ -50,11 +52,14 @@ export const createDebate = authEndpoint(async (req, auth) => {
   }
   const fakeAuthForDebateBot = { uid: debateBotUserId, creds: {} as any }
   const contract = await createMarketHelper(createParams, fakeAuthForDebateBot)
+
   console.log(
     'Created debate market: ',
     contract.id,
     'for user: ',
     auth.uid,
+    user?.name,
+    user?.username,
     contract.slug
   )
 
