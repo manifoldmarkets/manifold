@@ -96,7 +96,7 @@ export const PROD_CONFIG: EnvConfig = {
   ],
   visibility: 'PUBLIC',
 
-  moneyMoniker: '₮',
+  moneyMoniker: 'Ṁ',
   bettor: 'trader',
   verbPastBet: 'traded',
   nounBet: 'trade',

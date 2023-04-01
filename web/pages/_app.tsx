@@ -26,7 +26,7 @@ const metacculusLogo = localFont({
 })
 
 const metacculusText = localFont({
-  src: './ABCDiatypeRoundedVariable-Trial.woff2',
+  src: './ABCDiatypeVariable.stolen.woff2', // sorry, Gaia
   variable: '--font-dia',
 })
 
@@ -120,7 +120,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
       </Head>
       <div
         className={clsx(
-          'contents font-normal',
+          'font-readex-pro contents font-normal',
           metacculusLogo.variable,
           metacculusText.variable,
           metacculusRich.variable
