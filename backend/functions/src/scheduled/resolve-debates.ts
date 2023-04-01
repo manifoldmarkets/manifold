@@ -32,15 +32,18 @@ export async function doResolveDebates() {
   const contracts = await pg.map(
     `select data from contracts
           where id = any($1)
-          and close_time < now()
           and resolution_time is null`,
     [contractIds],
     (r) => r.data as Contract
   )
 
-  console.log('contracts to resolve', contracts)
+  const contractsToResolve = contracts.filter(
+    (c) => Math.random() < 1 / 60 || (c.closeTime && c.closeTime < Date.now())
+  )
 
-  for (const contract of contracts) {
+  console.log('contracts to resolve', contractsToResolve)
+
+  for (const contract of contractsToResolve) {
     const creator = await getUser(contract.creatorId)
     if (creator) {
       const prob = getProbability(contract as CPMMBinaryContract)
@@ -53,5 +56,5 @@ export async function doResolveDebates() {
     }
   }
 
-  if (contracts.length) await revalidateStaticProps('/debate')
+  if (contracts.length) await revalidateStaticProps('/versus')
 }
