@@ -1461,6 +1461,16 @@ export interface Database {
           similarity: number
         }[]
       }
+      search_contracts: {
+        Args: {
+          term: string
+          contract_filter: string
+          contract_sort: string
+        }
+        Returns: {
+          data: Json
+        }[]
+      }
       search_contracts_by_group_slugs: {
         Args: {
           group_slugs: string[]

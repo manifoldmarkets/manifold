@@ -137,51 +137,88 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
 
 export async function searchContract(
   query: string,
-  filter?: filter,
-  sort?: Sort
+  filter: filter,
+  sort: Sort
 ) {
-  let queryBuilder = selectJson(db, 'contracts_rbac').textSearch(
-    'question',
-    `${query}`
-  )
-
-  const handleSort: {
-    [key in Sort]: (q: typeof queryBuilder) => any
-  } = {
-    relevance: (query) => query,
-    newest: (query) => query.order('created_time', { ascending: false }),
-    score: (query) => query.order('popularity_score', { ascending: false }),
-    'daily-score': (query) =>
-      query.order('data->dailyScore', { ascending: false }),
-    '24-hour-vol': (query) =>
-      query.order('data->volume24Hours', { ascending: false }),
-    'most-popular': (query) =>
-      query.order('data->uniqueBettorCount', { ascending: false }),
-    liquidity: (query) => query.order('data->elasticity', { ascending: true }),
-    'last-updated': (query) =>
-      query.order('data->lastUpdatedTime', { ascending: false }),
-    'close-date': (query) =>
-      query
-        .order('close_time', { ascending: true })
-        .gt('close_time', new Date().toISOString()),
-    'just-resolved': (query) =>
-      query.order('resolution_time', { ascending: false }),
-    'prob-descending': (query) =>
-      query.order('resolution_probability', { ascending: false }),
-    'prob-ascending': (query) =>
-      query.order('resolution_probability', { ascending: true }),
-  }
-  if (sort) {
-    const func = handleSort[sort]
-    if (func) {
-      queryBuilder = func(queryBuilder)
-    }
-  }
-
-  const { data } = await run(queryBuilder)
+  const { data } = await db.rpc('search_contracts', {
+    term: query,
+    contract_filter: filter,
+    contract_sort: sort,
+  })
+  console.log('data', data)
   if (data && data.length > 0) {
-    return data.map((d) => d.data as Contract)
-  } else {
-    return []
+    return data.map((d) => (d as any).data) as Contract[]
   }
+  return []
+
+  // let queryBuilder = selectJson(db, 'contracts_rbac').textSearch(
+  //   'question',
+  //   `${query}`
+  // )
+
+  // const handleSort: {
+  //   [key in Sort]: (q: typeof queryBuilder) => any
+  // } = {
+  //   relevance: (query) =>
+  //     query.order('rank', { ascending: false, nullsFirst: false }),
+  //   // tested
+  //   newest: (query) =>
+  //     query.order('created_time', { ascending: false, nullsFirst: false }),
+
+  //   // tested
+  //   score: (query) =>
+  //     query.order('popularity_score', { ascending: false, nullsFirst: false }),
+
+  //   // tested
+  //   'daily-score': (query) =>
+  //     query.order('data->dailyScore', { ascending: false, nullsFirst: false }),
+
+  //   // tested
+  //   '24-hour-vol': (query) =>
+  //     query.order('data->volume24Hours', {
+  //       ascending: false,
+  //       nullsFirst: false,
+  //     }),
+
+  //   //tested
+  //   'most-popular': (query) =>
+  //     query.order('data->uniqueBettorCount', {
+  //       ascending: false,
+  //       nullsFirst: false,
+  //     }),
+
+  //   // TODO: James pls check this, you said ascending but that doesn't make sense to me
+  //   liquidity: (query) =>
+  //     query.order('data->elasticity', { ascending: false, nullsFirst: false }),
+
+  //   //tested
+  //   'last-updated': (query) =>
+  //     query.order('data->lastUpdatedTime', {
+  //       ascending: false,
+  //       nullsFirst: false,
+  //     }),
+
+  //   //tested
+  //   'close-date': (query) =>
+  //     query
+  //       .order('close_time', { ascending: true, nullsFirst: false })
+  //       .gt('close_time', new Date().toISOString()),
+
+  //   // tested
+  //   'resolve-date': (query) =>
+  //     query.order('resolution_time', { ascending: false, nullsFirst: false }),
+  // }
+  // // if (sort) {
+  // //   const func = handleSort[sort]
+  // //   if (func) {
+  // //     queryBuilder = func(queryBuilder)
+  // //   }
+  // // }
+
+  // const { data } = await run(queryBuilder)
+  // if (data && data.length > 0) {
+  //   return data.map((d) => d.data as Contract)
+  // } else {
+  //   return []
+  // }
 }
