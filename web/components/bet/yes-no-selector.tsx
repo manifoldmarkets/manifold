@@ -12,6 +12,8 @@ export function YesNoSelector(props: {
   replaceYesButton?: React.ReactNode
   replaceNoButton?: React.ReactNode
   isPseudoNumeric?: boolean
+  yesEmoji?: string
+  noEmoji?: string
 }) {
   const {
     selected,
@@ -21,6 +23,8 @@ export function YesNoSelector(props: {
     replaceNoButton,
     replaceYesButton,
     isPseudoNumeric,
+    yesEmoji,
+    noEmoji,
   } = props
 
   const commonClassNames =
@@ -43,7 +47,9 @@ export function YesNoSelector(props: {
           )}
           onClick={() => onSelect('YES')}
         >
+          {yesEmoji}
           {isPseudoNumeric ? 'HIGHER' : 'YES'}
+          {yesEmoji}
         </button>
       )}
 
@@ -62,7 +68,9 @@ export function YesNoSelector(props: {
           )}
           onClick={() => onSelect('NO')}
         >
+          {noEmoji}
           {isPseudoNumeric ? 'LOWER' : 'NO'}
+          {noEmoji}
         </button>
       )}
     </Row>

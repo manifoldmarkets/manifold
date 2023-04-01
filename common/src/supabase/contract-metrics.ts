@@ -1,4 +1,12 @@
-import { chunk, Dictionary, flatMap, groupBy, uniqBy } from 'lodash'
+import {
+  chunk,
+  Dictionary,
+  flatMap,
+  groupBy,
+  orderBy,
+  sum,
+  uniqBy,
+} from 'lodash'
 import { run, selectFrom, selectJson, SupabaseClient } from './utils'
 import { ContractMetrics } from '../calculate-metrics'
 import { getContracts } from './contracts'
@@ -199,4 +207,70 @@ export async function getContractMetricsForContractId(
     .order(`data->profit` as any, { ascending: false })
   const { data } = await run(q)
   return data.map((d) => d.data) as ContractMetrics[]
+}
+
+export async function getContractMetricSummaryStatsForContractId(
+  contractId: string,
+  db: SupabaseClient
+) {
+  const cms = orderBy(
+    await getContractMetricsForContractId(contractId, db),
+    (cm) => cm.invested,
+    'desc'
+  )
+  const yesShareholders = cms.filter((cm) => cm.hasYesShares).length
+  const noShareholders = cms.filter((cm) => cm.hasNoShares).length
+  const yesInvested = sum(
+    cms.filter((cm) => cm.hasYesShares).map((cm) => cm.invested)
+  )
+  const noInvested = sum(
+    cms.filter((cm) => cm.hasNoShares).map((cm) => cm.invested)
+  )
+  const averageYesInvested = yesInvested / yesShareholders
+  const averageNoInvested = noInvested / noShareholders
+
+  const peoplesChoice = yesShareholders > noShareholders ? 'YES' : 'NO'
+
+  return {
+    yesShareholders,
+    noShareholders,
+    yesInvested,
+    noInvested,
+    averageYesInvested,
+    averageNoInvested,
+    peoplesChoice,
+  }
+}
+export type ShareholderStats = Awaited<
+  ReturnType<typeof getContractMetricSummaryStatsForContractId>
+>
+export const getAppropriateEmoji = (
+  bet: 'YES' | 'NO' | undefined,
+  shareholderStats: ShareholderStats | undefined
+) => {
+  if (!bet || !shareholderStats) return ''
+  const peoplesChoiceBet = shareholderStats?.peoplesChoice
+  return peoplesChoiceBet === bet ? ' ✊ ' : ' 🛥️ '
+}
+
+// warfare enabled if the majority of people are betting against the contract probability
+export const classWarfareEnabled = (
+  contractProb: number,
+  shareholderStats: ShareholderStats | undefined
+) => {
+  if (!shareholderStats) return false
+  const { peoplesChoice } = shareholderStats
+  const marketOutcome = Math.round(contractProb) === 1 ? 'YES' : 'NO'
+  return marketOutcome !== peoplesChoice
+
+  // The following is harder to really get behind, and we need war.
+  // const bourgeoisieInvestedMore =
+  //   (peoplesChoice === 'YES' &&
+  //     shareholderStats.averageNoInvested >
+  //       shareholderStats.averageYesInvested) ||
+  //   (peoplesChoice === 'NO' &&
+  //     shareholderStats.averageYesInvested > shareholderStats.averageNoInvested)
+  // if (bourgeoisieInvestedMore) console.log('bourgeoisie avg invested more')
+  //
+  // return bourgeoisieInvestedMore
 }

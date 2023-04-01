@@ -6,7 +6,7 @@ export function Title(props: { className?: string; children?: ReactNode }) {
   return (
     <h1
       className={clsx(
-        'text-primary-700 mb-4 inline-block text-2xl font-normal sm:mb-6 sm:text-3xl',
+        'text-primary-700 mb-4 inline-block text-2xl font-bold sm:mb-6 sm:text-3xl',
         className
       )}
     >

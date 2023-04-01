@@ -128,9 +128,7 @@ export function NonPrivateContractPage(props: {
         <ContractSEO contract={contract} points={pointsString} />
         <ContractPageContent
           key={contract.id}
-          contractParams={
-            props.contractParams as ContractParams & { contract: Contract }
-          }
+          contractParams={props.contractParams}
         />
       </>
     )
@@ -146,6 +144,7 @@ export function ContractPageContent(props: {
     totalPositions,
     creatorTwitter,
     relatedContracts,
+    shareholderStats,
   } = contractParams
   const contract =
     useContract(contractParams.contract?.id) ?? contractParams.contract
@@ -313,7 +312,7 @@ export function ContractPageContent(props: {
             <Col className="gap-3 sm:gap-4">
               <div ref={titleRef}>
                 <Linkify
-                  className="text-primary-700 text-lg sm:text-2xl"
+                  className="text-primary-700 text-lg font-bold sm:text-2xl"
                   text={contract.question}
                 />
               </div>
@@ -346,6 +345,7 @@ export function ContractPageContent(props: {
                 contract={contract}
                 bets={bets}
                 betPoints={betPoints}
+                shareholderStats={shareholderStats}
               />
             </Col>
 
@@ -444,6 +444,7 @@ export function ContractPageContent(props: {
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
+                shareholderStats={shareholderStats}
               />
             </div>
           </Col>

@@ -9,5 +9,4 @@
 <url><loc>https://manifold.markets/groups</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
 <url><loc>https://manifold.markets/tournaments</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
 <url><loc>https://manifold.markets/sitemap</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
-<url><loc>https://manifold.markets/midterms</loc><changefreq>hourly</changefreq><priority>0.1</priority></url>
 </urlset>

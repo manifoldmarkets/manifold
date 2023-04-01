@@ -15,6 +15,26 @@ import { SearchProvider } from 'web/components/search/search-context'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
+import localFont from 'next/font/local'
+import clsx from 'clsx'
+
+import { Source_Serif_Pro } from 'next/font/google'
+
+const metacculusLogo = localFont({
+  src: './GothicNoDD.otf',
+  variable: '--font-goth',
+})
+
+const metacculusText = localFont({
+  src: './ABCDiatypeRoundedVariable-Trial.woff2',
+  variable: '--font-dia',
+})
+
+const metacculusRich = Source_Serif_Pro({
+  weight: ['400', '600', '700'],
+  variable: '--font-rich',
+  subsets: ['latin'],
+})
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -98,17 +118,30 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           title="Manifold Markets"
         />
       </Head>
-      <AuthProvider serverUser={pageProps.auth}>
-        <DarkModeProvider>
-          <NativeMessageListener />
-          <QueryClientProvider client={queryClient}>
-            <SearchProvider>
-              <Welcome />
-              <Component {...pageProps} />
-            </SearchProvider>
-          </QueryClientProvider>
-        </DarkModeProvider>
-      </AuthProvider>
+      <div
+        className={clsx(
+          'contents font-normal',
+          metacculusLogo.variable,
+          metacculusText.variable,
+          metacculusRich.variable
+        )}
+      >
+        <AuthProvider serverUser={pageProps.auth}>
+          <DarkModeProvider>
+            <NativeMessageListener />
+            <QueryClientProvider client={queryClient}>
+              <SearchProvider>
+                <Welcome />
+                <Component {...pageProps} />
+              </SearchProvider>
+            </QueryClientProvider>
+          </DarkModeProvider>
+        </AuthProvider>
+        {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
+        <div id="headlessui-portal-root">
+          <div />
+        </div>
+      </div>
       <Analytics />
       <Script
         src="https://analytics.umami.is/script.js"

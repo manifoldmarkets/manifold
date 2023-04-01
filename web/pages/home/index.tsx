@@ -2,7 +2,7 @@ import { PencilAltIcon, SwitchHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 
 import { Contract, CPMMContract } from 'common/contract'
-import { BACKGROUND_COLOR } from 'common/envs/constants'
+import { APRIL_FOOLS_ENABLED, BACKGROUND_COLOR } from 'common/envs/constants'
 import Router from 'next/router'
 import { memo, ReactNode } from 'react'
 import { ActivityLog } from 'web/components/activity-log'
@@ -32,6 +32,9 @@ import { ContractCardNew } from 'web/components/contract/contract-card'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { GradientContainer } from 'web/components/widgets/gradient-container'
+import { formatMoney } from 'common/util/format'
+import { Button } from 'web/components/buttons/button'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -112,7 +115,18 @@ function MobileHome() {
         {isLoading && <LoadingIndicator />}
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
-          <MainContent />
+          <Col>
+            {APRIL_FOOLS_ENABLED && (
+              <SiteLink href="/versus">
+                <Button className="shadow-lg" color="gradient-pink" size="2xl">
+                  <Title className="!mb-0 text-gray-100">
+                    ⚔️ Versus Mode ⚔️
+                  </Title>
+                </Button>
+              </SiteLink>
+            )}
+            <MainContent />
+          </Col>
         </Col>
       </Col>
 
@@ -225,6 +239,14 @@ const MainContent = () => {
 
   return (
     <Col>
+      {APRIL_FOOLS_ENABLED && (
+        <SiteLink href="/mana-auction">
+          <GradientContainer className="hover:bg-ink-200 my-4 text-xl hover:underline">
+            💰 Manifold's <strong>{formatMoney(10000)} auction</strong> is live!
+            💰
+          </GradientContainer>
+        </SiteLink>
+      )}
       <ChoicesToggleGroup
         className="mb-2 border-0"
         choicesMap={{
