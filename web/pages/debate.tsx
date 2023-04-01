@@ -257,7 +257,9 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   return (
     <Row className="border-ink-200 w-full items-center gap-4 rounded border p-2 text-sm">
       <Row className="items-center gap-2">
-        <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
+        <span className="text-ink-500">
+          Payout at {maxSharesOutcome === 'YES' ? '100%' : '0%'}:
+        </span>
         <span className="text-ink-600 font-semibold">
           {maxSharesOutcome === 'YES'
             ? formatMoney(yesShares)
@@ -318,7 +320,7 @@ function BetRow(props: {
           }}
         >
           <Col>
-            Bet
+            Bet on
             <div className="whitespace-nowrap">{topic1}</div>
           </Col>
         </Button>
@@ -340,7 +342,7 @@ function BetRow(props: {
           }}
         >
           <Col>
-            Bet
+            Bet on
             <div className="whitespace-nowrap">{topic2}</div>
           </Col>
         </Button>
