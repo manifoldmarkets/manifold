@@ -58,7 +58,7 @@ export const createDebate = authEndpoint(async (req, auth) => {
     contract.slug
   )
 
-  await revalidateStaticProps('/debate')
+  await revalidateStaticProps('/versus')
 
   return contract
 })
