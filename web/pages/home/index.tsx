@@ -2,7 +2,11 @@ import { PencilAltIcon, SwitchHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 
 import { Contract, CPMMContract } from 'common/contract'
-import { APRIL_FOOLS_ENABLED, BACKGROUND_COLOR } from 'common/envs/constants'
+import {
+  APRIL_FOOLS_ENABLED,
+  BACKGROUND_COLOR,
+  ENV,
+} from 'common/envs/constants'
 import Router from 'next/router'
 import { memo, ReactNode } from 'react'
 import { ActivityLog } from 'web/components/activity-log'
@@ -36,6 +40,10 @@ import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import { UserCard } from 'web/components/cards/UserCard'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -231,7 +239,11 @@ const AprilFools = () => {
         <SiteLink href="/cards">
           {/* Hardcode @ManifoldMarkets aka Mana-chan */}
           <UserCard
-            userId="IPTOzEqrpkWmEzh6hwvAyY9PqFb2"
+            userId={
+              ENV === 'PROD'
+                ? HOUSE_LIQUIDITY_PROVIDER_ID
+                : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+            }
             faceup={true}
             onClick={() => {}}
           />
