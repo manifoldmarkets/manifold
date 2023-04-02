@@ -2,9 +2,7 @@ import { PencilAltIcon, SwitchHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 
 import { Contract, CPMMContract } from 'common/contract'
-import {
-  BACKGROUND_COLOR,
-} from 'common/envs/constants'
+import { BACKGROUND_COLOR } from 'common/envs/constants'
 import Router from 'next/router'
 import { memo, ReactNode } from 'react'
 import { ActivityLog } from 'web/components/activity-log'
