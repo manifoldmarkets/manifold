@@ -17,7 +17,7 @@ export const SearchButton = (props: { className?: string }) => {
     <button
       onClick={() => setOpen(true)}
       className={clsx(
-        'border-ink-700 text-ink-400 bg-canvas-0 hover:border-primary-700 flex items-center rounded-md border p-2 text-sm',
+        'border-ink-300 text-ink-400 bg-canvas-0 hover:border-primary-300 flex items-center rounded-md border p-2 text-sm',
         props.className
       )}
     >

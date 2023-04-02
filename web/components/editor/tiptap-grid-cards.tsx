@@ -43,7 +43,7 @@ function GridComponent(attrs: any) {
   const loaded = contracts.every((c) => c !== undefined)
 
   return (
-    <div className=" not-prose font-readex-pro font-normal">
+    <div className=" not-prose font-normal">
       {loaded ? (
         <ContractsGrid
           contracts={filterDefined(contracts)}

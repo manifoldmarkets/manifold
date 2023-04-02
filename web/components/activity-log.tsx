@@ -197,7 +197,7 @@ export function ActivityLog(props: {
       )}
       {!allLoaded && <LoadingIndicator />}
       {allLoaded && (
-        <Col className="border-ink-500 divide-ink-500 divide-y-[0.5px] rounded-sm border-[0.5px]">
+        <Col className="border-ink-300 divide-ink-300 divide-y-[0.5px] rounded-sm border-[0.5px]">
           {groups.map(({ contractId, items }) => {
             const contract = contractsById[contractId] as Contract
             return (

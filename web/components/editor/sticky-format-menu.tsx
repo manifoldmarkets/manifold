@@ -27,7 +27,7 @@ export function StickyFormatMenu(props: {
   const [marketOpen, setMarketOpen] = useState(false)
 
   return (
-    <div className="text border-ink-700 flex h-9 items-stretch border-t">
+    <div className="text border-ink-300 flex h-9 items-stretch border-t">
       <UploadButton upload={upload} />
       <ToolbarButton label="Add dream" onClick={() => setDreamOpen(true)}>
         <DreamModal editor={editor} open={dreamOpen} setOpen={setDreamOpen} />

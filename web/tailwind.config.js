@@ -12,26 +12,12 @@ module.exports = {
     fontFamily: Object.assign(
       { ...defaultTheme.fontFamily },
       {
-        'major-mono': ['var(--font-goth)', 'sans-serif'],
-        'readex-pro': [
-          'icomoon',
-          'var(--font-dia)',
-          'Helvetica',
-          'emoji',
-          'sans-serif',
-        ],
-        'source-serif-pro': ['var(--font-rich)', 'sans-serif'],
-        'grenze-gotisch': ['Grenze Gotisch', 'cursive'],
+        'major-mono': ['Major Mono Display', 'monospace'],
+        'readex-pro': ['Readex Pro', 'icomoon', 'emoji', 'sans-serif'],
       }
     ),
-    fontWeight: {
-      ...defaultTheme.fontWeight,
-      light: '400',
-      normal: '500',
-    },
     extend: {
       fontFamily: {
-        // 'major-mono': ['var(--font-goth)', ...fontFamily['major-mono']],
         mana: ['icomoon'],
       },
       transitionTimingFunction: {
@@ -312,19 +298,19 @@ module.exports = {
           900: 'rgb(var(--color-primary-900)/ <alpha-value>)',
         },
         gray: {
-          50: '#fff',
-          100: '#fbfbfc',
-          200: '#f7f7f8',
-          300: '#e0e0e1',
-          400: '#c8ccce',
-          500: '#91999e',
-          600: '#777',
-          700: '#555',
-          800: '#2d2e2e',
-          900: '#161c22',
+          50: '#FBFBFF',
+          100: '#F4F4FB',
+          200: '#E7E7F4',
+          300: '#D8D8EB',
+          400: '#B1B1C7',
+          500: '#9191A7',
+          600: '#66667C',
+          700: '#4a4a68',
+          800: '#2d2d54',
+          900: '#111140',
         },
-        warning: '#ffaf1e',
-        error: '#d85699',
+        warning: '#F59E0B', // amber-500 TODO: change color
+        error: '#FF5033', // TODO: change color
         'red-25': '#FDF7F6',
         'indigo-25': '#F2F7FF',
         'highlight-blue': '#5BCEFF',

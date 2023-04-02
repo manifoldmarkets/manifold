@@ -63,9 +63,8 @@ export const editorExtensions = (simple = false): Extensions =>
 
 export const proseClass = (size: 'sm' | 'md' | 'lg') =>
   clsx(
-    'font-source-serif-pro',
     'prose dark:prose-invert max-w-none leading-relaxed',
-    'prose-a:text-primary-700',
+    'prose-a:text-primary-700 prose-a:no-underline',
     size === 'sm' ? 'prose-sm' : 'text-md',
     size !== 'lg' && 'prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0',
     '[&>p]:prose-li:my-0',
@@ -170,7 +169,7 @@ export function TextEditor(props: {
 
   return (
     // matches input styling
-    <div className="border-ink-700 bg-canvas-0 focus-within:border-primary-500 focus-within:ring-primary-500 w-full overflow-hidden rounded-lg border shadow-sm transition-colors focus-within:ring-1">
+    <div className="border-ink-300 bg-canvas-0 focus-within:border-primary-500 focus-within:ring-primary-500 w-full overflow-hidden rounded-lg border shadow-sm transition-colors focus-within:ring-1">
       <FloatingFormatMenu editor={editor} advanced={!simple} />
       <div
         className={clsx(

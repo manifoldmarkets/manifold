@@ -553,7 +553,7 @@ export function ContractCardNew(props: {
     <div
       className={clsx(
         'relative',
-        'border-ink-500 group my-2 flex cursor-pointer flex-col overflow-hidden rounded-xl border-[0.5px]',
+        'border-ink-300 group my-2 flex cursor-pointer flex-col overflow-hidden rounded-xl border-[0.5px]',
         'focus:bg-ink-400/20 lg:hover:bg-ink-400/20 outline-none transition-colors',
         className
       )}
