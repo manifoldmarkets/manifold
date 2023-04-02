@@ -20,7 +20,6 @@ import { orderBy, query } from 'firebase/firestore'
 import { groupBy, max } from 'lodash'
 import { call } from 'web/lib/firebase/api'
 import { getApiUrl } from 'common/api'
-import { APRIL_FOOLS_ENABLED } from 'common/envs/constants'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { SEO } from 'web/components/SEO'
 import { buildArray } from 'common/util/array'
@@ -51,17 +50,6 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
 
   const time = useTimer()
   const timeRemaining = getCountdown(time, CUTOFF_TIME)
-
-  if (!APRIL_FOOLS_ENABLED)
-    return (
-      <Page>
-        <Col className="gap-4 sm:px-4 sm:pb-4">
-          <Title className="mx-2 !mb-0 mt-2 sm:mx-0 lg:mt-0">
-            Coming soon...
-          </Title>
-        </Col>
-      </Page>
-    )
 
   return (
     <Page className="px-4">

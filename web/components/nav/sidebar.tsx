@@ -16,7 +16,6 @@ import {
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { APRIL_FOOLS_ENABLED } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { capitalize } from 'lodash'
@@ -135,17 +134,16 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         href: '/leaderboards',
         icon: TrophyIcon,
       },
-      APRIL_FOOLS_ENABLED
-        ? {
-            name: 'Versus',
-            icon: ExclamationIcon,
-            href: '/versus',
-          }
-        : {
-            name: 'Ads',
-            icon: SpeakerphoneIcon,
-            href: '/ad',
-          }
+      {
+        name: 'Versus',
+        icon: ExclamationIcon,
+        href: '/versus',
+      }
+      // {
+      //   name: 'Ads',
+      //   icon: SpeakerphoneIcon,
+      //   href: '/ad',
+      // }
     )
 
   return buildArray(
@@ -164,7 +162,13 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
+    {
+      name: 'Versus',
+      icon: ExclamationIcon,
+      href: '/versus',
+    },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
+
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
     {
