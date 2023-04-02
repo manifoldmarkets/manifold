@@ -21,7 +21,7 @@ const pages: PageData[] = [
     slug: '/groups',
     keywords: ['create group'], // TODO: this flow is bad
   },
-  { label: 'Get mana', slug: '/add-funds', keywords: ['buy', 'subscribe'] },
+  { label: 'Get taccyons', slug: '/add-funds', keywords: ['buy', 'subscribe'] },
   { label: 'Charity', slug: '/charity', keywords: ['donate', 'for good'] },
   { label: 'Referrals', slug: '/referrals' },
   { label: 'Live Feed', slug: '/live' },
