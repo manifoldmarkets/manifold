@@ -19,8 +19,8 @@ const debateGroupId = '0i8ozKhPq5qJ89DG9tCW'
 export const createDebate = authEndpoint(async (req, auth) => {
   const { topic1, topic2 } = validate(bodySchema, req.body)
 
-  // Charge the user 50 mana.
-  const cost = 50
+  // Charge the user 20 mana.
+  const cost = 20
   const firestore = admin.firestore()
   await firestore.runTransaction(async (transaction) => {
     const result = await runTxn(transaction, {

@@ -150,7 +150,7 @@ const CreateVersusWidget = (props: { className?: string }) => {
         </Col>
 
         <Col className="mt-4 gap-2">
-          <div>Cost: {formatMoney(50)}</div>
+          <div>Cost: {formatMoney(20)}</div>
           <div>At a random time within 24h, resolves to currrent market %.</div>
         </Col>
 
