@@ -6,11 +6,7 @@ import { sortBy } from 'lodash'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
 import { ContractCardView } from 'common/events'
-import {
-  formatMoney,
-  formatPercent,
-  formatPercentShort,
-} from 'common/util/format'
+import { formatMoney, formatPercentShort } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
@@ -250,7 +246,7 @@ function ContractCardVersus(props: { contract: Contract; className?: string }) {
 
           <Row className="items-center gap-2">
             <ClockIcon className="h-4 w-4" />
-            {formatPercent(1 / minutesRemaining)} chance resolves next minute
+            {(100 / minutesRemaining).toFixed(2)}% chance resolves next minute
           </Row>
 
           <Row
