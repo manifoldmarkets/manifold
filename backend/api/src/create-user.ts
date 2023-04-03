@@ -102,6 +102,10 @@ export const createuser = authEndpoint(async (req, auth) => {
     shouldShowWelcome: true,
     achievements: {},
     creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
+    isBannedFromPosting: Boolean(
+      (deviceToken && bannedDeviceTokens.includes(deviceToken)) ||
+        bannedIpAddresses.includes(req.ip)
+    ),
   })
 
   await firestore.collection('users').doc(auth.uid).create(user)
@@ -153,3 +157,7 @@ function getStorageBucketId() {
     ? PROD_CONFIG.firebaseConfig.storageBucket
     : DEV_CONFIG.firebaseConfig.storageBucket
 }
+
+// Automatically ban users with these device tokens or ip addresses.
+const bannedDeviceTokens = ['fa807d664415', 'dcf208a11839', 'bbf18707c15d']
+const bannedIpAddresses = ['::ffff:169.254.1.1']
