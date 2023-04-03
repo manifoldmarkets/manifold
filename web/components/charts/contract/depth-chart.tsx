@@ -7,13 +7,17 @@ import {
   VictoryLabel,
 } from 'victory'
 import { LimitBet } from 'common/bet'
-import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  CPMMBinaryContract,
+  PseudoNumericContract,
+  StonkContract,
+} from 'common/contract'
 import { getDisplayProbability } from 'common/calculate'
 import { Col } from '../../layout/col'
 import { useIsDarkMode } from 'web/hooks/dark-mode-context'
 
 export function DepthChart(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
   yesBets: LimitBet[]
   noBets: LimitBet[]
 }) {

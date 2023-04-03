@@ -1,4 +1,4 @@
-import { BuyPanel, BuyStonkPanel } from './bet-panel'
+import { BuyPanel } from './bet-panel'
 import {
   BinaryContract,
   CPMMBinaryContract,
@@ -53,7 +53,7 @@ export function SignedInStonkMobileBetting(props: {
 
   return (
     <Col className="my-3 w-full px-1">
-      <BuyStonkPanel
+      <BuyPanel
         hidden={false}
         contract={contract}
         user={user}

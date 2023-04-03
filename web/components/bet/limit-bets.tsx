@@ -30,7 +30,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { DepthChart } from '../charts/contract/depth-chart'
 
 export function YourOrders(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
   bets: LimitBet[]
   className?: string
 }) {
@@ -191,7 +191,7 @@ function OrderRow(props: {
 
 export function OrderBookButton(props: {
   limitBets: LimitBet[]
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
   className?: string
 }) {
   const { limitBets, contract, className } = props

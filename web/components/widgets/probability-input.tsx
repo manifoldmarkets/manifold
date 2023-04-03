@@ -1,5 +1,9 @@
 import clsx from 'clsx'
-import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  CPMMBinaryContract,
+  PseudoNumericContract,
+  StonkContract,
+} from 'common/contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BucketInput } from './bucket-input'
 import { Input } from './input'
@@ -48,7 +52,7 @@ export function ProbabilityInput(props: {
 }
 
 export function ProbabilityOrNumericInput(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
   prob: number | undefined
   setProb: (prob: number | undefined) => void
   isSubmitting: boolean

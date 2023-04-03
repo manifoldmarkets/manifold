@@ -153,7 +153,8 @@ export function SellPanel(props: {
   }
   const onStonkAmountChange = (amount: number | undefined) => {
     setAmountValue(amount)
-    setAmount(((amount ?? 0) / totalSaleValue) * shares)
+    if (totalSaleValue - (amount ?? 0) < 1) setAmount(shares)
+    else setAmount(((amount ?? 0) / totalSaleValue) * shares)
 
     // Check for errors.
     if (amount !== undefined) {

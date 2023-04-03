@@ -275,7 +275,7 @@ export const getBinaryCpmmBetInfo = (
 export const getBinaryBetStats = (
   outcome: 'YES' | 'NO',
   betAmount: number,
-  contract: CPMMBinaryContract | PseudoNumericContract,
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract,
   limitProb: number,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number }

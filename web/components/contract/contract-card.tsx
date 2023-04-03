@@ -427,7 +427,6 @@ export function StonkPrice(props: {
       <Tooltip text={value.toFixed(2)} placement="bottom">
         {formatLargeNumber(value)}
       </Tooltip>
-      <div className="text-base font-light">expected</div>
     </Row>
   )
 }

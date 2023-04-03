@@ -34,7 +34,7 @@ export function getProbability(
 }
 
 export function getDisplayProbability(
-  contract: BinaryContract | PseudoNumericContract
+  contract: BinaryContract | PseudoNumericContract | StonkContract
 ) {
   return contract.resolutionProbability ?? getProbability(contract)
 }
