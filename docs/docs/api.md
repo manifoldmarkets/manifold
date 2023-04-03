@@ -926,6 +926,7 @@ Requires no authorization.
   </details>
 
 ## Changelog
+- 2023-04-03: Add `/market/[marketId]/group` POST endpoint.
 - 2023-03-21: Add `/market/[marketId]/positions` and `/search-markets` endpoints
 - 2022-11-22: Update /market GET to remove `bets` and `comments`
 - 2022-10-17: Update /market POST to allow `visibility` and `groupId`; mark `closeTime` as optional; remove `tags`
