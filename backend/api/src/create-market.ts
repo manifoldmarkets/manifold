@@ -24,7 +24,7 @@ import {
   VISIBILITIES,
 } from 'common/contract'
 import { ANTES } from 'common/economy'
-import { isAdmin, isManifoldId } from 'common/envs/constants'
+import { CHECK_USERNAMES, isAdmin, isManifoldId } from 'common/envs/constants'
 import { Group, GroupLink, MAX_ID_LENGTH } from 'common/group'
 import { getNewContract } from 'common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from 'common/numeric-constants'
@@ -36,7 +36,7 @@ import { slugify } from 'common/util/slugify'
 import { marked } from 'marked'
 import { mintAndPoolCert } from 'shared/helpers/cert-txns'
 import { getCloseDate } from 'shared/helpers/openai-utils'
-import { getContract, htmlToRichText } from 'shared/utils'
+import { getContract, getUser, htmlToRichText } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 
@@ -170,6 +170,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     if (!groupDoc.exists) {
       throw new APIError(400, 'No group exists with the given group ID.')
     }
+    const user = await getUser(auth.uid)
 
     group = groupDoc.data() as Group
     const groupMembersSnap = await firestore
@@ -204,6 +205,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
         group: group,
         isMarketCreator: true,
         isManifoldAdmin: isManifoldId(auth.uid) || isAdmin(firebaseUser.email),
+        isTrustworthy: CHECK_USERNAMES.includes(user?.username ?? '_'),
         userGroupRole: groupMemberRole,
       })
     ) {

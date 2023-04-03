@@ -1,11 +1,12 @@
 import { Contract } from 'common/contract'
-import { isAdmin, isManifoldId } from 'common/envs/constants'
+import { CHECK_USERNAMES, isAdmin, isManifoldId } from 'common/envs/constants'
 import { Group, GroupLink } from 'common/group'
 import { GroupMember } from 'common/group-member'
 import * as admin from 'firebase-admin'
 import { uniq } from 'lodash'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
+import { getUser } from 'shared/utils'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -41,6 +42,7 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
     const group = groupSnap.data() as Group
     const contract = contractSnap.data() as Contract
     const firebaseUser = await admin.auth().getUser(auth.uid)
+    const user = await getUser(auth.uid)
 
     if (contract.visibility == 'private') {
       throw new APIError(400, 'You cannot add a group to a private contract')
@@ -71,6 +73,7 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
         userGroupRole: groupMember
           ? (groupMember.role as 'admin' | 'moderator')
           : undefined,
+        isTrustworthy: CHECK_USERNAMES.includes(user?.username ?? '_'),
       })
     ) {
       throw new APIError(
@@ -104,17 +107,25 @@ export function canUserAddGroupToMarket(props: {
   group: Group
   isMarketCreator: boolean
   isManifoldAdmin: boolean
+  isTrustworthy: boolean
   userGroupRole?: 'admin' | 'moderator'
 }) {
-  const { userId, group, isMarketCreator, isManifoldAdmin, userGroupRole } =
-    props
+  const {
+    userId,
+    group,
+    isMarketCreator,
+    isManifoldAdmin,
+    userGroupRole,
+    isTrustworthy,
+  } = props
   return (
     isManifoldAdmin ||
+    // TODO: shouldn't the user still need to be market creator/admin/trustworthy to add a market to a non-public group?
     //if user is admin or moderator of group
     userGroupRole ||
     // if user is creator of group
     group.creatorId === userId ||
     // if user owns the contract and is a public group
-    (isMarketCreator && group.privacyStatus == 'public')
+    (group.privacyStatus == 'public' ? isMarketCreator || isTrustworthy : false)
   )
 }
