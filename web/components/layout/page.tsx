@@ -10,18 +10,11 @@ export function Page(props: {
   rightSidebar?: ReactNode
   className?: string
   children?: ReactNode
-  touchesTop?: boolean
   hideSidebar?: boolean
   mainClassName?: string
 }) {
-  const {
-    children,
-    rightSidebar,
-    className,
-    touchesTop,
-    hideSidebar,
-    mainClassName,
-  } = props
+  const { children, rightSidebar, className, hideSidebar, mainClassName } =
+    props
 
   const isMobile = useIsMobile()
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
