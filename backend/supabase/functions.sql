@@ -610,10 +610,17 @@ create or replace function save_user_topics(p_user_id text, p_topics text[])
 returns void
 language sql
 as $$
-  with topic_embedding as (
+  with chosen_embedding as (
     select avg(embedding) as average
     from topic_embeddings
     where topic = any(p_topics)
+  ), not_chosen_embedding as (
+    select avg(embedding) as average
+    from topic_embeddings
+    where topic not in (select unnest(p_topics))
+  ), topic_embedding as (
+    select (chosen.average - not_chosen.average) as average
+    from chosen_embedding as chosen, not_chosen_embedding as not_chosen
   )
   insert into user_topics (user_id, topics, topic_embedding)
   values (p_user_id, p_topics, (select average from topic_embedding))
