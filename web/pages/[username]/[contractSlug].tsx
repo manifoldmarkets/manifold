@@ -1,31 +1,32 @@
+import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { first } from 'lodash'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { Answer } from 'common/answer'
-import { ContractComment } from 'common/comment'
 import { visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
+import { first } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
-import { HistoryPoint } from 'web/components/charts/generic-charts'
 import { BackButton } from 'web/components/contract/back-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import {
   AuthorInfo,
   CloseOrResolveTime,
+  ContractLike,
   MarketGroups,
 } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
+import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
@@ -38,6 +39,7 @@ import { ResolutionPanel } from 'web/components/resolution-panel'
 import { SEO } from 'web/components/SEO'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { Linkify } from 'web/components/widgets/linkify'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useBets } from 'web/hooks/use-bets'
 import { useContract } from 'web/hooks/use-contracts'
@@ -50,22 +52,14 @@ import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { Bet, BetFilter } from 'web/lib/firebase/bets'
-import {
-  ContractMetricsByOutcome,
-  getTopContractMetrics,
-} from 'web/lib/firebase/contract-metrics'
+import { BetFilter } from 'web/lib/firebase/bets'
+import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
-import {
-  getContractFromSlug,
-  getContractParams,
-} from 'web/lib/supabase/contracts'
+import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
-import { UserIcon } from '@heroicons/react/solid'
-import { Tooltip } from 'web/components/widgets/tooltip'
+import { getContractParams } from 'web/lib/contracts'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -73,56 +67,23 @@ export const CONTRACT_BET_FILTER: BetFilter = {
   filterAntes: false,
 }
 
-type HistoryData = { bets: Bet[]; points: HistoryPoint<Partial<Bet>>[] }
-
-export type ContractParams = {
-  contract: Contract | null
-  historyData: HistoryData
-  pointsString?: string
-  comments: ContractComment[]
-  userPositionsByOutcome: ContractMetricsByOutcome
-  totalPositions: number
-  totalBets: number
-  topContractMetrics: ContractMetric[]
-  creatorTwitter?: string
-  relatedContracts: Contract[]
-}
+export type ContractParams = Awaited<ReturnType<typeof getContractParams>>
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  // Fetched from Firebase to avoid replicator delay on first create.
   const contract = (await getContractFromSlug(contractSlug, 'admin')) ?? null
+  // No contract found
+  if (contract === null) return { props: { contractSlug, visibility: null } }
 
-  if (contract === null) {
-    return {
-      props: {
-        contractSlug,
-        visibility: null,
-      },
-    }
-  }
+  // Private markets
+  const { visibility } = contract
+  if (visibility === 'private') return { props: { contractSlug, visibility } }
 
-  const visibility = contract ? contract.visibility : null
-  if (visibility === 'private') {
-    return {
-      props: {
-        contractSlug,
-        visibility: 'private',
-      },
-    }
-  } else {
-    const contractParams = await getContractParams(contract)
-
-    return {
-      props: {
-        visibility,
-        contractSlug,
-        contractParams,
-      },
-    }
-  }
+  // Public markets
+  const contractParams = await getContractParams(contract)
+  return { props: { visibility, contractSlug, contractParams } }
 }
 
 export async function getStaticPaths() {
@@ -167,9 +128,7 @@ export function NonPrivateContractPage(props: {
         <ContractSEO contract={contract} points={pointsString} />
         <ContractPageContent
           key={contract.id}
-          contractParams={
-            props.contractParams as ContractParams & { contract: Contract }
-          }
+          contractParams={props.contractParams}
         />
       </>
     )
@@ -185,6 +144,7 @@ export function ContractPageContent(props: {
     totalPositions,
     creatorTwitter,
     relatedContracts,
+    shareholderStats,
   } = contractParams
   const contract =
     useContract(contractParams.contract?.id) ?? contractParams.contract
@@ -285,6 +245,20 @@ export function ContractPageContent(props: {
     relatedContracts
   )
 
+  // detect whether header is stuck by observing if title is visible
+  const titleRef = useRef<any>(null)
+  const [headerStuck, setStuck] = useState(false)
+  useEffect(() => {
+    const element = titleRef.current
+    if (!element) return
+    const observer = new IntersectionObserver(
+      ([e]) => setStuck(e.intersectionRatio < 1),
+      { threshold: 1 }
+    )
+    observer.observe(element)
+    return () => observer.unobserve(element)
+  }, [titleRef])
+
   return (
     <>
       {creatorTwitter && (
@@ -296,15 +270,15 @@ export function ContractPageContent(props: {
       <Row className="w-full items-start gap-8 self-center">
         <Col
           className={clsx(
-            'bg-canvas-0 w-full max-w-3xl rounded-b  xl:w-[70%]',
+            'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
             // Keep content in view when scrolling related markets on desktop.
             'sticky bottom-0 min-h-screen self-end'
           )}
         >
           <div
             className={clsx(
-              'relative flex max-w-3xl items-start justify-between py-2 px-4',
-              !coverImageUrl ? 'bg-canvas-100 flex sm:hidden' : 'h-[80px]'
+              'sticky  z-50 flex items-center',
+              !coverImageUrl ? 'bg-canvas-100 top-0' : 'top-[-92px] h-[140px]'
             )}
           >
             {coverImageUrl && (
@@ -318,11 +292,31 @@ export function ContractPageContent(props: {
                 />
               </div>
             )}
-            <BackButton />
+            <div
+              className={clsx(
+                'sticky -top-px z-50 mt-px flex w-full justify-between py-2 px-4 transition-colors',
+                headerStuck ? 'bg-black/20 backdrop-blur-2xl' : ''
+              )}
+            >
+              <div className="mr-4 flex items-center truncate">
+                <BackButton />
+                {headerStuck && (
+                  <span className="ml-4 text-white">{contract.question}</span>
+                )}
+              </div>
+              <ExtraContractActionsRow contract={contract} />
+            </div>
           </div>
 
           <Col className="mb-4 p-4 md:px-8 md:pb-8">
             <Col className="gap-3 sm:gap-4">
+              <div ref={titleRef}>
+                <Linkify
+                  className="text-primary-700 text-lg sm:text-2xl"
+                  text={contract.question}
+                />
+              </div>
+
               <div className="flex items-center justify-between">
                 <div className="text-ink-600 flex gap-4 text-sm">
                   <AuthorInfo contract={contract} />
@@ -345,14 +339,8 @@ export function ContractPageContent(props: {
                   </Tooltip>
                 </div>
 
-                <ExtraContractActionsRow contract={contract} />
+                <ContractLike contract={contract} />
               </div>
-
-              <Linkify
-                className="text-primary-700 text-lg sm:text-2xl"
-                text={contract.question}
-              />
-
               <ContractOverview
                 contract={contract}
                 bets={bets}
@@ -455,6 +443,7 @@ export function ContractPageContent(props: {
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
+                shareholderStats={shareholderStats}
               />
             </div>
           </Col>

@@ -7,7 +7,7 @@ import { FeedLiquidity } from '../feed/feed-liquidity'
 import { FreeResponseComments } from '../feed/feed-answer-comment-group'
 import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
 import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractBetsTable } from '../bet/bets-list'
 import { ControlledTabs } from '../layout/tabs'
 import { Col } from '../layout/col'
@@ -40,6 +40,7 @@ import { getOlderBets } from 'web/lib/supabase/bets'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
 import { QfTrades } from './qf-overview'
 import { BinaryUserPositionsTable } from 'web/components/contract/user-positions-table'
+import { ShareholderStats } from 'common/supabase/contract-metrics'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -53,6 +54,7 @@ export function ContractTabs(props: {
   setActiveIndex: (i: number) => void
   totalBets: number
   totalPositions: number
+  shareholderStats?: ShareholderStats
 }) {
   const {
     contract,
@@ -64,6 +66,7 @@ export function ContractTabs(props: {
     setActiveIndex,
     totalBets,
     userPositionsByOutcome,
+    shareholderStats,
   } = props
 
   const contractComments = useComments(contract.id) ?? props.comments
@@ -128,13 +131,15 @@ export function ContractTabs(props: {
         },
 
         totalBets > 0 &&
-          contract.outcomeType === 'BINARY' && {
+          contract.outcomeType === 'BINARY' &&
+          contract.mechanism === 'cpmm-1' && {
             title: positionsTitle,
             content: (
               <BinaryUserPositionsTable
                 positions={userPositionsByOutcome}
-                contractId={contract.id}
+                contract={contract as CPMMBinaryContract}
                 setTotalPositions={setTotalPositions}
+                shareholderStats={shareholderStats}
               />
             ),
           },

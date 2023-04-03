@@ -53,6 +53,7 @@ export function BetRow(props: {
         initialOutcome={outcome}
         open={betDialogOpen}
         setOpen={setBetDialogOpen}
+        trackingLocation="contract card"
       />
     </>
   )

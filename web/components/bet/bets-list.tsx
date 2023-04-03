@@ -153,7 +153,7 @@ export function BetsList(props: { user: User }) {
     if (!metricsByContract || !initialContracts) {
       return undefined
     }
-    // check if we have any contracts that don't have contractMEtrics, if so, add them in as getContractBetNullMetrics
+    // check if we have any contracts that don't have contractMetrics, if so, add them in as getContractBetNullMetrics
     const missingContracts = initialContracts.filter(
       (c) => !metricsByContract[c.id]
     )

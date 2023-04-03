@@ -19,6 +19,10 @@ service cloud.firestore {
       ]
     }
 
+     match /apr1-auction/{bid} {
+      allow read;
+    }
+
     match /stats/stats {
       allow read;
     }

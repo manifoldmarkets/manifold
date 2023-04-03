@@ -810,6 +810,7 @@ export function MultipleAvatarIcons(props: {
   return (
     <div
       onClick={(event) => {
+        if (relatedNotifications.length === 1) return
         event.preventDefault()
         setOpen(true)
       }}

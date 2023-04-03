@@ -12,7 +12,7 @@ const DAILY_QUEST_SCORE_IDS = ['currentBettingStreak', 'sharesToday']
 export const resetWeeklyQuestStats = functions
   .runWith({ timeoutSeconds: 540, memory: '1GB', secrets })
   // 12am midnight on Monday Pacific time
-  .pubsub.schedule(`0 0 * * 0`)
+  .pubsub.schedule(`0 0 * * 1`)
   .timeZone('America/Los_Angeles')
   .onRun(async () => {
     try {

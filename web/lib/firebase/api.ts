@@ -7,6 +7,7 @@ import { QfAddPoolReq } from 'web/pages/api/v0/qf/add-pool'
 import { QfResolveReq } from 'web/pages/api/v0/qf/resolve'
 import { PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
+import { Contract } from './contracts'
 export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params?: any) {
@@ -201,4 +202,12 @@ export function getPrivateContractBySlug(params: { contractSlug: string }) {
 
 export function getSupabaseToken() {
   return call(getApiUrl('getsupabasetoken'), 'GET')
+}
+
+export function updateUserEmbedding(params: { userId: string }) {
+  return call(getApiUrl('update-user-embedding'), 'POST', params)
+}
+
+export function createDebate(params: { topic1: string; topic2: string }) {
+  return call(getApiUrl('create-debate'), 'POST', params) as Promise<Contract>
 }

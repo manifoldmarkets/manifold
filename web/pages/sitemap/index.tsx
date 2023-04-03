@@ -4,6 +4,7 @@ import {
   ENV_CONFIG,
   GOOGLE_PLAY_APP_URL,
 } from 'common/envs/constants'
+import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import { useState } from 'react'
 import Masonry from 'react-masonry-css'
@@ -11,7 +12,6 @@ import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-co
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
-import { PrivacyAndTerms } from 'web/components/privacy-terms'
 import { SEO } from 'web/components/SEO'
 import { Card } from 'web/components/widgets/card'
 import { Title } from 'web/components/widgets/title'
@@ -109,6 +109,12 @@ export default function LabsPage() {
           />
 
           <LabCard
+            title="⚔️ Versus"
+            description="Create mana-battles between two players"
+            href="/versus"
+          />
+
+          <LabCard
             title="🔥 Swipe"
             description="Swipe-to-bet UI. Try via iOS/Android app."
             {...appCallback}
@@ -190,12 +196,22 @@ export default function LabsPage() {
         <Spacer h={8} />
 
         <Title>🧪 Labs</Title>
-        <div className="mb-4">Experimental projects at Manifold</div>
+        <div className="mb-4">Experimental or past projects at Manifold</div>
         <Masonry
           breakpointCols={{ default: 2, 768: 1 }}
           className="-ml-4 flex w-auto"
           columnClassName="pl-4 bg-clip-padding"
         >
+          <LabCard
+            title="🎴 Manifold: The Gambling"
+            description="Match each market to its creator"
+            href="/cards"
+          />
+          <LabCard
+            title="💰 Mana auction"
+            description={`A dollar auction but for ${formatMoney(10000)}`}
+            href="/mana-auction"
+          />
           <LabCard
             title="💭 Dream"
             description="Ask our AI to generate a custom image"
@@ -215,32 +231,6 @@ export default function LabsPage() {
         </Masonry>
 
         <Spacer h={8} />
-
-        <Title>⌛️ Past projects</Title>
-        <Masonry
-          breakpointCols={{ default: 2, 768: 1 }}
-          className="-ml-4 flex w-auto"
-          columnClassName="pl-4 bg-clip-padding"
-        >
-          <LabCard
-            title="🇺🇸 2022 US Midterm Elections"
-            description="Manifold's midterm forecast"
-            href="/midterms"
-          />
-
-          <LabCard
-            title="⚽️ World Cup"
-            description="2022 FIFA World Cup tournament"
-            href="/worldcup"
-          />
-
-          <LabCard
-            title="🏆 Tournaments"
-            description="Ongoing and past prediction tournaments"
-            href="/tournaments"
-          />
-        </Masonry>
-        <PrivacyAndTerms />
       </Col>
     </Page>
   )

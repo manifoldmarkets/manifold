@@ -224,7 +224,6 @@ export function BuyPanel(props: {
     } else {
       setOption(choice)
     }
-
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
     }
@@ -242,7 +241,6 @@ export function BuyPanel(props: {
 
     setError(undefined)
     setIsSubmitting(true)
-
     placeBet({
       outcome,
       amount: betAmount,

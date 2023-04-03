@@ -6,7 +6,11 @@ import {
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
 import { ContractMetrics } from 'common/calculate-metrics'
-import { getContractMetricsForContractId } from 'common/supabase/contract-metrics'
+import {
+  getContractMetricsForContractId,
+  getShareholderCountsForContractId,
+  ShareholderStats,
+} from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { partition } from 'lodash'
 import { useContractMetrics } from 'web/hooks/use-contract-metrics'
@@ -23,14 +27,18 @@ import clsx from 'clsx'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { SortRow } from 'web/components/contract/contract-tabs'
+import { CPMMBinaryContract } from 'common/contract'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
-    contractId: string
+    contract: CPMMBinaryContract
     positions: ContractMetricsByOutcome
     setTotalPositions: (count: number) => void
+    shareholderStats?: ShareholderStats
   }) {
-    const { contractId, setTotalPositions } = props
+    const { contract, setTotalPositions } = props
+    const contractId = contract.id
     const [page, setPage] = useState(0)
     const pageSize = 20
     const outcomes = ['YES', 'NO']
@@ -39,6 +47,10 @@ export const BinaryUserPositionsTable = memo(
     const [contractMetricsByProfit, setContractMetricsByProfit] = useState<
       ContractMetrics[] | undefined
     >()
+    const [shareholderStats, setShareholderStats] = useState<
+      ShareholderStats | undefined
+    >(props.shareholderStats)
+
     const [sortBy, setSortBy] = useState<'profit' | 'shares'>('shares')
 
     useEffect(() => {
@@ -66,7 +78,12 @@ export const BinaryUserPositionsTable = memo(
     useEffect(() => {
       // Let's use firebase here as supabase can be slightly out of date, leading to incorrect counts
       getTotalContractMetricsCount(contractId).then(setTotalPositions)
-    }, [positions, setTotalPositions, contractId])
+
+      // This still uses supabase
+      getShareholderCountsForContractId(contractId, db).then(
+        setShareholderStats
+      )
+    }, [positions, contractId])
 
     const visibleYesPositions = yesPositionsSorted.slice(
       page * pageSize,
@@ -80,6 +97,30 @@ export const BinaryUserPositionsTable = memo(
       yesPositionsSorted.length > noPositionsSorted.length
         ? yesPositionsSorted.length
         : noPositionsSorted.length
+
+    const getPositionsTitle = (outcome: 'YES' | 'NO') => {
+      return outcome === 'YES' ? (
+        <span>
+          <Tooltip
+            text={'Approximate count, refresh to update'}
+            placement={'top'}
+          >
+            {shareholderStats?.yesShareholders}{' '}
+          </Tooltip>
+          <YesLabel /> payouts
+        </span>
+      ) : (
+        <span>
+          <Tooltip
+            text={'Approximate count, refresh to update'}
+            placement={'top'}
+          >
+            {shareholderStats?.noShareholders}{' '}
+          </Tooltip>
+          <NoLabel /> payouts
+        </span>
+      )
+    }
 
     return (
       <Col className={'w-full'}>
@@ -102,9 +143,7 @@ export const BinaryUserPositionsTable = memo(
               {sortBy === 'profit' ? (
                 <span className={'text-ink-500'}>Profit</span>
               ) : (
-                <span>
-                  <YesLabel /> payouts
-                </span>
+                <span>{getPositionsTitle('YES')}</span>
               )}
             </Row>
             {visibleYesPositions.map((position) => {
@@ -130,9 +169,7 @@ export const BinaryUserPositionsTable = memo(
               {sortBy === 'profit' ? (
                 <span className={'text-ink-500'}>Loss</span>
               ) : (
-                <span>
-                  <NoLabel /> payouts
-                </span>
+                <span>{getPositionsTitle('NO')}</span>
               )}
             </Row>
             {visibleNoPositions.map((position) => {

@@ -200,3 +200,32 @@ export async function getContractMetricsForContractId(
   const { data } = await run(q)
   return data.map((d) => d.data) as ContractMetrics[]
 }
+
+export async function getShareholderCountsForContractId(
+  contractId: string,
+  db: SupabaseClient
+) {
+  const { count: noShareholders } = await run(
+    db
+      .from('user_contract_metrics')
+      .select('*', { head: true, count: 'exact' })
+      .eq('contract_id', contractId)
+      .eq(`data->hasNoShares`, true)
+  )
+
+  const { count: yesShareholders } = await run(
+    db
+      .from('user_contract_metrics')
+      .select('*', { head: true, count: 'exact' })
+      .eq('contract_id', contractId)
+      .eq(`data->hasYesShares`, true)
+  )
+
+  return {
+    yesShareholders,
+    noShareholders,
+  }
+}
+export type ShareholderStats = Awaited<
+  ReturnType<typeof getShareholderCountsForContractId>
+>

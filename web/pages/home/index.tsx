@@ -112,7 +112,9 @@ function MobileHome() {
         {isLoading && <LoadingIndicator />}
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
-          <MainContent />
+          <Col>
+            <MainContent />
+          </Col>
         </Col>
       </Col>
 

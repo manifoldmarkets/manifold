@@ -31,6 +31,7 @@ module.exports = {
       'i.imgur.com',
       'firebasestorage.googleapis.com',
       'storage.googleapis.com',
+      'picsum.photos',
     ],
   },
   async redirects() {

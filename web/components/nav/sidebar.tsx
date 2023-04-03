@@ -12,6 +12,7 @@ import {
   SunIcon,
   SparklesIcon,
   StarIcon,
+  ExclamationIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -134,10 +135,15 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         icon: TrophyIcon,
       },
       {
-        name: 'Ads',
-        icon: SpeakerphoneIcon,
-        href: '/ad',
+        name: 'Versus',
+        icon: ExclamationIcon,
+        href: '/versus',
       }
+      // {
+      //   name: 'Ads',
+      //   icon: SpeakerphoneIcon,
+      //   href: '/ad',
+      // }
     )
 
   return buildArray(
@@ -156,7 +162,13 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
+    {
+      name: 'Versus',
+      icon: ExclamationIcon,
+      href: '/versus',
+    },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
+
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
     {
