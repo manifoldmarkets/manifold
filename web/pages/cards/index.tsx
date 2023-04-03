@@ -115,7 +115,10 @@ export default function CardsPage() {
   }
 
   return (
-    <Page className={clsx('!max-w-7xl p-2', fancyFont.variable)}>
+    <Page
+      className={clsx('!max-w-7xl p-2', fancyFont.variable)}
+      mainClassName="!col-span-10"
+    >
       <Row className="justify-between">
         <Col>
           <h1 className="font-grenze-gotisch text-6xl">
