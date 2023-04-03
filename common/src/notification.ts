@@ -49,7 +49,7 @@ export type notification_source_types =
   | 'admin_message'
   | 'group'
   | 'user'
-  | 'bonus'
+  | 'bonus' // strictly unique bettor bonuses atm
   | 'challenge'
   | 'betting_streak_bonus'
   | 'loan'

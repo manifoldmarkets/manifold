@@ -7,10 +7,12 @@ import {
   Contract,
   FreeResponseContract,
   MultipleChoiceContract,
+  outcomeType,
   resolution,
 } from 'common/contract'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Tooltip } from './widgets/tooltip'
+import { Bet } from 'common/bet'
 
 export function OutcomeLabel(props: {
   contract: Contract
@@ -172,4 +174,29 @@ export function AnswerLabel(props: {
       <span className={clsx('break-anywhere', className)}>{truncated}</span>
     </Tooltip>
   )
+}
+
+export function BetOutcomeLabel(props: {
+  contractOutcomeType: outcomeType
+  bet: Bet
+  answerText?: string
+}) {
+  const { contractOutcomeType, bet, answerText } = props
+  if (contractOutcomeType === 'BINARY') {
+    return <BinaryOutcomeLabel outcome={bet.outcome as resolution} />
+  }
+  if (contractOutcomeType === 'PSEUDO_NUMERIC') {
+    return <PseudoNumericOutcomeLabel outcome={bet.outcome as resolution} />
+  }
+  if (
+    contractOutcomeType === 'FREE_RESPONSE' ||
+    contractOutcomeType === 'MULTIPLE_CHOICE'
+  ) {
+    return (
+      <span className={clsx('text-primary-700')}>
+        {answerText ?? bet.outcome}
+      </span>
+    )
+  }
+  return <span className={'text-primary-700'}>{bet.outcome}</span>
 }

@@ -790,7 +790,8 @@ export const createUniqueBettorBonusNotification = async (
   contract: Contract,
   amount: number,
   uniqueBettorIds: string[],
-  idempotencyKey: string
+  idempotencyKey: string,
+  bet: Bet
 ) => {
   const privateUser = await getPrivateUser(contractCreatorId)
   if (!privateUser) return
@@ -822,6 +823,14 @@ export const createUniqueBettorBonusNotification = async (
       sourceContractId: contract.id,
       sourceContractTitle: contract.question,
       sourceContractCreatorUsername: contract.creatorUsername,
+      data: removeUndefinedProps({
+        bet,
+        outcomeType: contract.outcomeType,
+        answerText:
+          contract.outcomeType === 'FREE_RESPONSE'
+            ? contract.answers.find((a) => a.id === bet.outcome)?.text
+            : undefined,
+      }),
     }
     await notificationRef.set(removeUndefinedProps(notification))
   }
