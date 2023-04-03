@@ -103,8 +103,7 @@ export const createuser = authEndpoint(async (req, auth) => {
     achievements: {},
     creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
     isBannedFromPosting: Boolean(
-      (deviceToken && bannedDeviceTokens.includes(deviceToken)) ||
-        bannedIpAddresses.includes(req.ip)
+      deviceToken && bannedDeviceTokens.includes(deviceToken)
     ),
   })
 
