@@ -100,7 +100,7 @@ export default function ContractPage(props: {
     return <Custom404 />
   }
   return (
-    <Page maxWidth="max-w-[1400px]">
+    <Page className="!max-w-[1400px]">
       {visibility == 'private' && (
         <PrivateContractPage contractSlug={contractSlug} />
       )}

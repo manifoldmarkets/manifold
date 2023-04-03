@@ -15,6 +15,14 @@ import { getContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { Contract } from 'common/contract'
 import { useRouter } from 'next/router'
+import { Grenze_Gotisch } from 'next/font/google'
+import clsx from 'clsx'
+
+const fancyFont = Grenze_Gotisch({
+  weight: ['300', '500', '700'],
+  variable: '--font-match-cards',
+  subsets: ['latin'],
+})
 
 const TOTAL_MARKETS = 5
 
@@ -107,7 +115,7 @@ export default function CardsPage() {
   }
 
   return (
-    <Page maxWidth="max-w-7xl p-2">
+    <Page className={clsx('!max-w-7xl p-2', fancyFont.variable)}>
       <Row className="justify-between">
         <Col>
           <h1 className="font-grenze-gotisch text-6xl">
