@@ -48,12 +48,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
 import { SiteLink } from '../widgets/site-link'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
-import {
-  classWarfareEnabled,
-  getAppropriateEmoji,
-  ShareholderStats,
-} from 'common/supabase/contract-metrics'
-import { APRIL_FOOLS_ENABLED } from 'common/envs/constants'
+
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
@@ -185,7 +180,6 @@ export function BuyPanel(props: {
   initialOutcome?: binaryOutcomes
   location?: string
   className?: string
-  shareholderStats?: ShareholderStats
 }) {
   const {
     contract,
@@ -198,46 +192,11 @@ export function BuyPanel(props: {
     initialOutcome,
     location = 'bet panel',
     className,
-    shareholderStats,
   } = props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
-  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement>()
-  const wareFareEnabled =
-    contract.mechanism === 'cpmm-1' &&
-    classWarfareEnabled(contract.prob, shareholderStats)
-
-  const audioFilesDir = '/mp3s/'
-  const playAppropriatePlaceBetAudio = (
-    bet: 'YES' | 'NO',
-    shareholderStats?: ShareholderStats
-  ) => {
-    if (!APRIL_FOOLS_ENABLED) return
-    if (!wareFareEnabled) {
-      const audio = new Audio(audioFilesDir + 'register.mp3')
-      if (currentAudio) currentAudio.pause()
-      audio.play()
-      setCurrentAudio(audio)
-      return
-    }
-    if (!shareholderStats) return
-    const bbAudioFiles = ['bb1.mp3', 'bb2.mp3', 'bb3.mp3', 'bb4.mp3', 'bb5.mp3']
-    const pcAudioFiles = ['pc1.mp3', 'pc2.mp3', 'pc3.mp3', 'pc4.mp3']
-    let fileName = ''
-    if (shareholderStats.peoplesChoice === bet) {
-      const randomIndex = Math.floor(Math.random() * pcAudioFiles.length)
-      fileName = pcAudioFiles[randomIndex]
-    } else {
-      const randomIndex = Math.floor(Math.random() * bbAudioFiles.length)
-      fileName = bbAudioFiles[randomIndex]
-    }
-    const audio = new Audio(audioFilesDir + fileName)
-    if (currentAudio) currentAudio.pause()
-    audio.play()
-    setCurrentAudio(audio)
-  }
 
   const outcome = option === 'LIMIT' ? undefined : option
   const seeLimit = option === 'LIMIT'
@@ -277,7 +236,6 @@ export function BuyPanel(props: {
 
     setError(undefined)
     setIsSubmitting(true)
-    outcome && playAppropriatePlaceBetAudio(outcome, shareholderStats)
     placeBet({
       outcome,
       amount: betAmount,
@@ -369,12 +327,6 @@ export function BuyPanel(props: {
             onOptionChoice(choice)
           }}
           isPseudoNumeric={isPseudoNumeric}
-          yesEmoji={
-            wareFareEnabled ? getAppropriateEmoji('YES', shareholderStats) : ''
-          }
-          noEmoji={
-            wareFareEnabled ? getAppropriateEmoji('NO', shareholderStats) : ''
-          }
         />
         <button
           className={clsx(
@@ -399,23 +351,6 @@ export function BuyPanel(props: {
           'rounded-lg px-4 py-2'
         )}
       >
-        {wareFareEnabled && (
-          <div className={'bg-canvas-100 rounded-md p-3 text-sm'}>
-            {outcome === shareholderStats?.peoplesChoice ? (
-              <span>
-                Great choice! This is the most popular bet on the market by the
-                little guy. You stand with the people
-                {getAppropriateEmoji(outcome, shareholderStats)}
-              </span>
-            ) : (
-              <span>
-                Refined selection! This is the most popular bet with the
-                rich-heads. You stand with the bourgeoisie
-                {getAppropriateEmoji(outcome, shareholderStats)}
-              </span>
-            )}
-          </div>
-        )}
         <Row className="text-ink-500 mt-2 mb-1 items-center justify-between text-left text-sm">
           Amount
         </Row>

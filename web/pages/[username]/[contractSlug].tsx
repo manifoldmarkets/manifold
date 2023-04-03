@@ -345,7 +345,6 @@ export function ContractPageContent(props: {
                 contract={contract}
                 bets={bets}
                 betPoints={betPoints}
-                shareholderStats={shareholderStats}
               />
             </Col>
 

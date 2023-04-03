@@ -14,7 +14,7 @@ import {
   getTopContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
 import {
-  getContractMetricSummaryStatsForContractId,
+  getShareholderCountsForContractId,
   getTotalContractMetrics,
 } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
@@ -22,7 +22,6 @@ import { getInitialProbability } from 'common/calculate'
 import { compressPoints, pointsToBase64 } from 'common/util/og'
 import { getUser } from 'web/lib/supabase/user'
 import { getRelatedContracts } from 'web/hooks/use-related-contracts'
-import { APRIL_FOOLS_ENABLED } from 'common/envs/constants'
 
 export async function getContractParams(contract: Contract) {
   const contractId = contract.id
@@ -65,8 +64,8 @@ export async function getContractParams(contract: Contract) {
     : []
 
   const shareholderStats =
-    APRIL_FOOLS_ENABLED && contract.outcomeType === 'BINARY'
-      ? await getContractMetricSummaryStatsForContractId(contractId, db)
+    contract.outcomeType === 'BINARY'
+      ? await getShareholderCountsForContractId(contractId, db)
       : undefined
 
   const totalPositions =

@@ -40,25 +40,17 @@ import { useEvent } from 'web/hooks/use-event'
 import { periodDurations } from 'web/lib/util/time'
 import { getDateRange } from '../charts/helpers'
 import { QfOverview } from './qf-overview'
-import { ShareholderStats } from 'common/supabase/contract-metrics'
 
 export const ContractOverview = memo(
   (props: {
     contract: Contract
     bets: Bet[]
     betPoints: HistoryPoint<Partial<Bet>>[]
-    shareholderStats?: ShareholderStats
   }) => {
-    const { betPoints, contract, bets, shareholderStats } = props
+    const { betPoints, contract, bets } = props
     switch (contract.outcomeType) {
       case 'BINARY':
-        return (
-          <BinaryOverview
-            betPoints={betPoints}
-            contract={contract}
-            shareholderStats={shareholderStats}
-          />
-        )
+        return <BinaryOverview betPoints={betPoints} contract={contract} />
       case 'NUMERIC':
         return <NumericOverview contract={contract} />
       case 'PSEUDO_NUMERIC':
@@ -93,9 +85,8 @@ const NumericOverview = (props: { contract: NumericContract }) => {
 const BinaryOverview = (props: {
   contract: BinaryContract
   betPoints: HistoryPoint<Partial<Bet>>[]
-  shareholderStats?: ShareholderStats
 }) => {
-  const { contract, betPoints, shareholderStats } = props
+  const { contract, betPoints } = props
   const user = useUser()
 
   const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
@@ -126,11 +117,7 @@ const BinaryOverview = (props: {
       </SizedContainer>
 
       {user && tradingAllowed(contract) && (
-        <SignedInBinaryMobileBetting
-          contract={contract}
-          user={user}
-          shareholderStats={shareholderStats}
-        />
+        <SignedInBinaryMobileBetting contract={contract} user={user} />
       )}
 
       {user === null && (
