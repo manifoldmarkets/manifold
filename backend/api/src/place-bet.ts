@@ -87,7 +87,9 @@ export const placebet = authEndpoint(async (req, auth) => {
       }
     > => {
       if (
-        (outcomeType == 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
+        (outcomeType == 'BINARY' ||
+          outcomeType === 'PSEUDO_NUMERIC' ||
+          outcomeType === 'STONK') &&
         mechanism == 'cpmm-1'
       ) {
         // eslint-disable-next-line prefer-const

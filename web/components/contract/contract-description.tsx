@@ -107,9 +107,11 @@ function ContractActions(props: {
       />
       <Row className="my-4 items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
-        <Button color={'gray'} size={'2xs'} onClick={toggleResolver}>
-          Resolve
-        </Button>
+        {contract.outcomeType !== 'STONK' && (
+          <Button color={'gray'} size={'2xs'} onClick={toggleResolver}>
+            Resolve
+          </Button>
+        )}
         <Button
           color="gray"
           size="2xs"

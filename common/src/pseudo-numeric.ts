@@ -10,7 +10,11 @@ export function formatNumericProbability(
 }
 
 export const getMappedValue = (contract: Contract, prob: number) => {
-  if (contract.outcomeType !== 'PSEUDO_NUMERIC') return prob
+  if (
+    contract.outcomeType !== 'PSEUDO_NUMERIC' &&
+    contract.outcomeType !== 'STONK'
+  )
+    return prob
 
   const { min, max, isLogScale } = contract
 

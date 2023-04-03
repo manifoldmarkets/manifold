@@ -96,12 +96,6 @@ const numericSchema = z.object({
   isLogScale: z.boolean().optional(),
 })
 
-const stonkSchema = z.object({
-  min: finite(),
-  max: finite(),
-  initialValue: finite(),
-})
-
 const multipleChoiceSchema = z.object({
   answers: z.string().trim().min(1).array().min(2),
 })
@@ -139,21 +133,12 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       )
     }
   }
-  if (outcomeType === 'STONK') {
-    let initialValue
-    ;({ min, max, initialValue } = validate(stonkSchema, body))
-    if (max - min <= 0.01 || initialValue <= min || initialValue >= max)
-      throw new APIError(400, 'Invalid range.')
 
-    initialProb = getPseudoProbability(initialValue, min, max, false) * 100
-
-    if (initialProb < 1 || initialProb > 99)
-      throw new APIError(
-        400,
-        `Initial value is too ${initialProb < 1 ? 'low' : 'high'}`
-      )
-  }
-  if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
+  if (
+    outcomeType === 'PSEUDO_NUMERIC' ||
+    outcomeType === 'NUMERIC' ||
+    outcomeType === 'STONK'
+  ) {
     let initialValue
     ;({ min, max, initialValue, isLogScale } = validate(numericSchema, body))
     if (max - min <= 0.01 || initialValue <= min || initialValue >= max)

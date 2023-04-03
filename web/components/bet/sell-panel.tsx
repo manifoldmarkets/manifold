@@ -10,6 +10,7 @@ import {
   formatPercent,
   formatWithCommas,
   formatMoney,
+  formatOutcomeLabel,
 } from 'common/util/format'
 import { sumBy } from 'lodash'
 import { useState } from 'react'
@@ -47,6 +48,7 @@ export function SellPanel(props: {
     )
     return probChange > 0.2 ? undefined : shares
   })
+  const [amountValue, setAmountValue] = useState<number | undefined>(0)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
@@ -112,6 +114,13 @@ export function SellPanel(props: {
     unfilledBets,
     balanceByUserId
   )
+  const { saleValue: totalSaleValue } = calculateCpmmSale(
+    contract,
+    shares,
+    sharesOutcome,
+    unfilledBets,
+    balanceByUserId
+  )
   const netProceeds = saleValue - loanPaid
   const profit = saleValue - costBasis
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -142,32 +151,59 @@ export function SellPanel(props: {
       }
     }
   }
+  const onStonkAmountChange = (amount: number | undefined) => {
+    setAmountValue(amount)
+    setAmount(((amount ?? 0) / totalSaleValue) * shares)
+
+    // Check for errors.
+    if (amount !== undefined) {
+      if (amount > shares) {
+        setError(`Maximum ${formatWithCommas(Math.floor(shares))} shares`)
+      } else {
+        setError(undefined)
+      }
+    }
+  }
 
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const isStonk = outcomeType === 'STONK'
 
   return (
     <>
-      <AmountInput
-        amount={
-          amount === undefined
-            ? undefined
-            : Math.round(amount) === 0
-            ? 0
-            : Math.floor(amount)
-        }
-        onChange={onAmountChange}
-        label="Qty"
-        error={error}
-        disabled={isSubmitting}
-        inputClassName="w-full ml-1"
-      />
+      {isStonk ? (
+        <AmountInput
+          amount={amountValue}
+          onChange={onStonkAmountChange}
+          label="Val"
+          error={error}
+          disabled={isSubmitting}
+          inputClassName="w-full ml-1"
+        />
+      ) : (
+        <AmountInput
+          amount={
+            amount === undefined
+              ? undefined
+              : Math.round(amount) === 0
+              ? 0
+              : Math.floor(amount)
+          }
+          onChange={onAmountChange}
+          label="Qty"
+          error={error}
+          disabled={isSubmitting}
+          inputClassName="w-full ml-1"
+        />
+      )}
 
       <Col className="mt-3 w-full gap-3 text-sm">
-        <Row className="text-ink-500 items-center justify-between gap-2">
-          Sale value
-          <span className="text-ink-700">{formatMoney(saleValue)}</span>
-        </Row>
+        {!isStonk && (
+          <Row className="text-ink-500 items-center justify-between gap-2">
+            Sale value
+            <span className="text-ink-700">{formatMoney(saleValue)}</span>
+          </Row>
+        )}
         {!isLoadPaid && (
           <Row className="text-ink-500  items-center justify-between gap-2">
             Loan repayment
@@ -182,7 +218,11 @@ export function SellPanel(props: {
         </Row>
         <Row className="items-center justify-between">
           <div className="text-ink-500">
-            {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+            {isPseudoNumeric
+              ? 'Estimated value'
+              : isStonk
+              ? 'Stonk price'
+              : 'Probability'}
           </div>
           <div>
             {getFormattedMappedValue(contract, initialProb)}
@@ -208,7 +248,14 @@ export function SellPanel(props: {
         disabled={!!betDisabled}
         size="xl"
         color="indigo"
-        actionLabel={`Sell ${formatWithCommas(sellQuantity)} shares`}
+        actionLabel={
+          isStonk
+            ? `Sell ${formatMoney(saleValue)} of ${formatOutcomeLabel(
+                contract,
+                sharesOutcome
+              )}`
+            : `Sell ${formatWithCommas(sellQuantity)} shares`
+        }
       />
 
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}

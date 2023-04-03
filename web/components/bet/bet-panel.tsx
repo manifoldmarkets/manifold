@@ -594,9 +594,6 @@ export function BuyStonkPanel(props: {
     formatPercent(resultProb) === formatPercent(initialProb)
 
   const probChange = Math.abs(resultProb - initialProb)
-  const currentPayout = newBet.shares
-  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
-  const currentReturnPercent = formatPercent(currentReturn)
 
   const rawDifference = Math.abs(
     getMappedValue(contract, resultProb) - getMappedValue(contract, initialProb)
@@ -666,7 +663,9 @@ export function BuyStonkPanel(props: {
               <div>{'Shares'}</div>
             </Col>
             <div>
-              <span className="whitespace-nowrap text-lg">{currentPayout}</span>
+              <span className="whitespace-nowrap text-lg">
+                {Math.floor(newBet.shares)}
+              </span>
             </div>
           </Col>
           <Col className="w-1/2 text-sm">
@@ -704,7 +703,9 @@ export function BuyStonkPanel(props: {
                     contract,
                     'YES'
                   )} or ${formatOutcomeLabel(contract, 'NO')}`
-                : 'Wager'
+                : outcome === 'NO'
+                ? 'Short'
+                : 'Long'
             }
           />
         )}

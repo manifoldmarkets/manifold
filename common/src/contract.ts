@@ -225,6 +225,7 @@ export type Stonk = {
   min: number
   max: number
   initialProbability: number
+  isLogScale: false
 }
 
 export type outcomeType = AnyOutcomeType['outcomeType']

@@ -96,14 +96,6 @@ export function NewContractPanel(props: {
       })
   }, [creator.id, groupId])
 
-  useEffect(() => {
-    if (outcomeType === 'STONK') {
-      setInitialValueString('1')
-      setMaxString('100')
-      setMinString('0')
-    }
-  }, [outcomeType])
-
   const ante = ANTES[outcomeType]
 
   // If params.closeTime is set, extract out the specified date and time
@@ -140,6 +132,17 @@ export function NewContractPanel(props: {
   const initialValue = initialValueString
     ? parseFloat(initialValueString)
     : undefined
+
+  useEffect(() => {
+    if (outcomeType === 'STONK') {
+      setInitialValueString('5000')
+      setMaxString('10000')
+      setMinString('0')
+      setIsLogScale(false)
+      setCloseDate(dayjs().add(1000, 'year').format('YYYY-MM-DD'))
+      setCloseHoursMinutes('23:59')
+    }
+  }, [outcomeType])
 
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')

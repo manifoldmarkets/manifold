@@ -49,7 +49,8 @@ export function BetsSummary(props: {
   const exampleOutcome = position < 0 ? 'NO' : 'YES'
 
   const isBinary = outcomeType === 'BINARY'
-  const prob = isBinary ? getProbability(contract) : 0
+  const isStonk = outcomeType === 'STONK'
+  const prob = contract.mechanism === 'cpmm-1' ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
 
   if (metrics.invested === 0 && metrics.profit === 0) return null
@@ -64,6 +65,14 @@ export function BetsSummary(props: {
               {formatMoney(payout)}{' '}
               <ProfitBadge profitPercent={profitPercent} />
             </div>
+          </Col>
+        ) : isStonk ? (
+          <Col className="hidden sm:inline">
+            <div className="text-ink-500 whitespace-nowrap text-sm">
+              Value
+              <InfoTooltip text="How much your position in the market is worth right now according to the current stonk price." />
+            </div>
+            <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
           </Col>
         ) : isBinary ? (
           <Col>

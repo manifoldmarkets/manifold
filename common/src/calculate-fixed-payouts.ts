@@ -38,7 +38,8 @@ function calculateFixedMktPayout(
 
   if (
     contract.outcomeType === 'BINARY' ||
-    contract.outcomeType === 'PSEUDO_NUMERIC'
+    contract.outcomeType === 'PSEUDO_NUMERIC' ||
+    contract.outcomeType === 'STONK'
   ) {
     const { resolutionProbability } = contract
     const p =
@@ -49,9 +50,6 @@ function calculateFixedMktPayout(
     const betP = outcome === 'YES' ? p : 1 - p
 
     return betP * shares
-  }
-  if (contract.outcomeType === 'STONK') {
-    return 0
   }
 
   const { resolutions, pool } = contract

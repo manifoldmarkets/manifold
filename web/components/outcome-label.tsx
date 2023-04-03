@@ -40,7 +40,7 @@ export function OutcomeLabel(props: {
     return <span>TODO Cert outcome label</span>
   }
   if (outcomeType === 'STONK') {
-    return <span>TODO Stonk outcome label</span>
+    return <StonkOutcomeLabel outcome={outcome as any} />
   }
 
   return (
@@ -67,6 +67,14 @@ export function PseudoNumericOutcomeLabel(props: { outcome: resolution }) {
 
   if (outcome === 'YES') return <HigherLabel />
   if (outcome === 'NO') return <LowerLabel />
+  if (outcome === 'MKT') return <ProbLabel />
+  return <CancelLabel />
+}
+export function StonkOutcomeLabel(props: { outcome: resolution }) {
+  const { outcome } = props
+
+  if (outcome === 'YES') return <LongLabel />
+  if (outcome === 'NO') return <ShortLabel />
   if (outcome === 'MKT') return <ProbLabel />
   return <CancelLabel />
 }
@@ -117,6 +125,14 @@ export function HigherLabel() {
 
 export function LowerLabel() {
   return <span className="text-scarlet-600">LOWER</span>
+}
+
+export function LongLabel() {
+  return <span className="text-teal-600">LONG</span>
+}
+
+export function ShortLabel() {
+  return <span className="text-scarlet-600">SHORT</span>
 }
 
 export function NoLabel() {

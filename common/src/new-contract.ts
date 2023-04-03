@@ -168,6 +168,7 @@ const getStonkCpmmProps = (
     outcomeType: 'STONK',
     min,
     max,
+    isLogScale: false,
   }
   return system
 }
