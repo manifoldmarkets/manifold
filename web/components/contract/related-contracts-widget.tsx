@@ -11,6 +11,7 @@ import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractStatusLabel } from './contracts-list-entry'
+import { useContract } from 'web/hooks/use-contracts'
 
 export const RelatedContractsList = memo(function RelatedContractsList(props: {
   contracts: Contract[]
@@ -66,7 +67,9 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
   contract: Contract
   onContractClick?: (contract: Contract) => void
 }) {
-  const { contract, onContractClick } = props
+  const { onContractClick } = props
+
+  const contract = useContract(props.contract.id) ?? props.contract
   const { creatorUsername, creatorAvatarUrl, question, creatorCreatedTime } =
     contract
 

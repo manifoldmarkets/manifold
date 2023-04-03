@@ -510,7 +510,7 @@ export function ContractCardNew(props: {
   const { className } = props
   const user = useUser()
 
-  const contract = props.contract
+  const contract = useContract(props.contract.id) ?? props.contract
   const {
     closeTime,
     isResolved,
