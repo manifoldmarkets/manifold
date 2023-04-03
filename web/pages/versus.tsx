@@ -246,7 +246,7 @@ function ContractCardVersus(props: { contract: Contract; className?: string }) {
 
           <Row className="items-center gap-2">
             <ClockIcon className="h-4 w-4" />
-            {(100 / minutesRemaining).toFixed(2)}% chance resolves next minute
+            Resolves within {Math.ceil(minutesRemaining / 60)} hours
           </Row>
 
           <Row
