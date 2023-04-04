@@ -1,4 +1,4 @@
-import { memo, ReactNode } from 'react'
+import { memo, ReactNode, useState } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -57,7 +57,8 @@ import { CommentsButton } from '../swipe/swipe-comments'
 import { BetRow } from '../bet/bet-row'
 import { fromNow } from 'web/lib/util/time'
 import Router from 'next/router'
-
+import { ENV_CONFIG } from 'common/envs/constants'
+import { animated, useSpring } from '@react-spring/web'
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
   showTime?: ShowTime
@@ -421,12 +422,15 @@ export function StonkPrice(props: {
   const { contract, className } = props
 
   const value = getMappedValue(contract, getProbability(contract))
-
+  const [initialProb] = useState(getProbability(contract))
+  const spring = useSpring({ val: value, from: { val: initialProb } })
   return (
     <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
-      <Tooltip text={value.toFixed(2)} placement="bottom">
-        {formatLargeNumber(value)}
-      </Tooltip>
+      {ENV_CONFIG.moneyMoniker}
+      <animated.div>
+        {spring.val.interpolate((val) => val.toFixed(2))}
+      </animated.div>
+      <div className="text-base font-light">per share</div>
     </Row>
   )
 }
