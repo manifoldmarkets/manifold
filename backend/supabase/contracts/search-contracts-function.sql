@@ -153,7 +153,7 @@ BEGIN -- Common WHERE clause
 IF groupId is not null
 and fuzzy then base_query := FORMAT(
   '
-      SELECT scored_contracts.data as contract_data
+      SELECT scored_contracts.data
       FROM (
         SELECT contracts_rbac.*,
                similarity(contracts_rbac.question, %L) AS similarity_score
@@ -169,8 +169,8 @@ and fuzzy then base_query := FORMAT(
 -- If full text search is enabled and is group search
 ELSIF groupId is not null then base_query := FORMAT(
   '
-SELECT contracts_rbac.data as contract_data
-FROM contracts_rbac join group_contracts on group_contracts.contract_id = scored_contracts.id,
+SELECT contracts_rbac.data
+FROM contracts_rbac join group_contracts on group_contracts.contract_id = contracts_rbac.id,
   websearch_to_tsquery('' english '', %L) query
       %s
 AND contracts_rbac.question_fts @@ query
@@ -182,7 +182,7 @@ AND group_contracts.group_id = %L',
 -- If fuzzy search is enabled
 ELSIF fuzzy THEN base_query := FORMAT(
   '
-      SELECT scored_contracts.data as contract_data
+      SELECT scored_contracts.data
       FROM (
         SELECT contracts_rbac.*,
                similarity(contracts_rbac.question, %L) AS similarity_score
@@ -196,7 +196,7 @@ ELSIF fuzzy THEN base_query := FORMAT(
 -- If full text search is enabled
 ELSE base_query := FORMAT(
   '
-      SELECT contracts_rbac.data as contract_data
+      SELECT contracts_rbac.data
       FROM contracts_rbac, websearch_to_tsquery(''english'', %L) query
       %s
       AND contracts_rbac.question_fts @@ query',
@@ -254,13 +254,13 @@ BEGIN sql_query := FORMAT(
           END DESC NULLS LAST,
         CASE %L
           WHEN ''score'' THEN popularity_score
-          WHEN ''daily-score'' THEN (contract_data->>''dailyScore'')::numeric
-          WHEN ''24-hour-vol'' THEN (contract_data->>''volume24Hours'')::numeric
-          WHEN ''liquidity'' THEN (contract_data->>''elasticity'')::numeric
-          WHEN ''last-updated'' THEN (dacontract_data->>''lastUpdatedTime'')::numeric
+          WHEN ''daily-score'' THEN (data->>''dailyScore'')::numeric
+          WHEN ''24-hour-vol'' THEN (data->>''volume24Hours'')::numeric
+          WHEN ''liquidity'' THEN (data->>''elasticity'')::numeric
+          WHEN ''last-updated'' THEN (data->>''lastUpdatedTime'')::numeric
           END DESC NULLS LAST,
         CASE %L
-          WHEN ''most-popular'' THEN (contract_data->>''uniqueBettorCount'')::integer
+          WHEN ''most-popular'' THEN (data->>''uniqueBettorCount'')::integer
           END DESC NULLS LAST,
         CASE %L
           WHEN ''newest'' THEN created_time
