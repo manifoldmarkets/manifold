@@ -519,7 +519,6 @@ export function ContractCardNew(props: {
     creatorUsername,
     creatorAvatarUrl,
     question,
-    description,
     coverImageUrl,
     outcomeType,
     mechanism,
@@ -540,10 +539,6 @@ export function ContractCardNew(props: {
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
-  const descriptionString =
-    typeof description === 'string'
-      ? description
-      : richTextToString(description)
 
   const showImage = !!coverImageUrl
 
@@ -647,7 +642,7 @@ export function ContractCardNew(props: {
           <div className="absolute inset-0 -z-10 transition-all group-hover:saturate-150">
             <Image
               fill
-              alt={descriptionString}
+              alt=""
               sizes="100vw"
               className="object-cover"
               src={coverImageUrl}
