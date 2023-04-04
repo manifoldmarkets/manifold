@@ -52,6 +52,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
 import { SiteLink } from '../widgets/site-link'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
+import { STONK_NO, STONK_YES } from 'common/stonk'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -331,8 +332,10 @@ export function BuyPanel(props: {
           onSelect={(choice) => {
             onOptionChoice(choice)
           }}
-          yesLabel={isPseudoNumeric ? 'HIGHER' : isStonk ? 'LONG' : undefined}
-          noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? 'SHORT' : undefined}
+          yesLabel={
+            isPseudoNumeric ? 'HIGHER' : isStonk ? STONK_YES : undefined
+          }
+          noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : undefined}
         />
         {!isStonk && (
           <button
