@@ -132,7 +132,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         name: 'Leaderboards',
         href: '/leaderboards',
         icon: TrophyIcon,
-      },
+      }
       // {
       //   name: 'Ads',
       //   icon: SpeakerphoneIcon,
