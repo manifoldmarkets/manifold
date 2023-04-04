@@ -39,6 +39,7 @@ import { getCloseDate } from 'shared/helpers/openai-utils'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
+import { STONK_INITIAL_PROB } from 'common/stonk'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -134,11 +135,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     }
   }
 
-  if (
-    outcomeType === 'PSEUDO_NUMERIC' ||
-    outcomeType === 'NUMERIC' ||
-    outcomeType === 'STONK'
-  ) {
+  if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
     let initialValue
     ;({ min, max, initialValue, isLogScale } = validate(numericSchema, body))
     if (max - min <= 0.01 || initialValue <= min || initialValue >= max)
@@ -153,6 +150,9 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
           `Initial value is too ${initialProb < 1 ? 'low' : 'high'}`
         )
       else throw new APIError(400, 'Invalid initial probability.')
+  }
+  if (outcomeType === 'STONK') {
+    initialProb = STONK_INITIAL_PROB
   }
 
   if (outcomeType === 'BINARY') {

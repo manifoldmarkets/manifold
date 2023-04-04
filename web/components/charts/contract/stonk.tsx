@@ -21,7 +21,7 @@ import {
 } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { STONK_GRAPH_COLOR } from 'common/stonk'
+import { STONK_GRAPH_COLOR, STONK_MAX, STONK_MIN } from 'common/stonk'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
@@ -79,7 +79,9 @@ export const StonkContractChart = (props: {
     color,
     onMouseOver,
   } = props
-  const { min, max } = contract
+  const min = STONK_MIN
+  const max = STONK_MAX
+
   const [start, end] = getDateRange(contract)
   const rangeStart = controlledStart ?? start
   const scaleP = useMemo(() => getScaleP(min, max), [min, max])

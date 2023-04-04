@@ -135,10 +135,6 @@ export function NewContractPanel(props: {
 
   useEffect(() => {
     if (outcomeType === 'STONK') {
-      setInitialValueString('5000')
-      setMaxString('10000')
-      setMinString('0')
-      setIsLogScale(false)
       setCloseDate(dayjs().add(1000, 'year').format('YYYY-MM-DD'))
       setCloseHoursMinutes('23:59')
     }

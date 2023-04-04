@@ -57,7 +57,7 @@ export function getNewContract(
     QUADRATIC_FUNDING: () => getQfProps(ante),
     CERT: () => getCertProps(ante),
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
-    STONK: () => getStonkCpmmProps(initialProb, ante, min, max),
+    STONK: () => getStonkCpmmProps(initialProb, ante),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -157,18 +157,10 @@ const getPseudoNumericCpmmProps = (
 
   return system
 }
-const getStonkCpmmProps = (
-  initialProb: number,
-  ante: number,
-  min: number,
-  max: number
-) => {
+const getStonkCpmmProps = (initialProb: number, ante: number) => {
   const system: CPMM & Stonk = {
     ...getBinaryCpmmProps(initialProb, ante),
     outcomeType: 'STONK',
-    min,
-    max,
-    isLogScale: false,
   }
   return system
 }

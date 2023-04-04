@@ -222,10 +222,7 @@ export type Numeric = {
 
 export type Stonk = {
   outcomeType: 'STONK'
-  min: number
-  max: number
   initialProbability: number
-  isLogScale: false
 }
 
 export type outcomeType = AnyOutcomeType['outcomeType']
