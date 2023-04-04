@@ -425,12 +425,12 @@ export function StonkPrice(props: {
   const [initialProb] = useState(getProbability(contract))
   const spring = useSpring({ val: value, from: { val: initialProb } })
   return (
-    <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
+    <Row className={clsx('items-baseline text-3xl', className)}>
       {ENV_CONFIG.moneyMoniker}
       <animated.div>
         {spring.val.interpolate((val) => val.toFixed(2))}
       </animated.div>
-      <div className="text-base font-light">per share</div>
+      <div className="ml-2 text-base font-light">per share</div>
     </Row>
   )
 }
