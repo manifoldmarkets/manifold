@@ -8,7 +8,6 @@ import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
 import { StonkContract } from 'common/contract'
-import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import {
   TooltipProps,
   getDateRange,
@@ -22,14 +21,11 @@ import {
 } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
+import { STONK_GRAPH_COLOR } from 'common/stonk'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
 const MARGIN_Y = MARGIN.top + MARGIN.bottom
-
-// mqp: note that we have an idiosyncratic version of 'log scale'
-// contracts. the values are stored "linearly" and can include zero.
-// as a result, we have to do some weird-looking stuff in this code
 
 const getScaleP = (min: number, max: number) => {
   return (p: number) => p * (max - min) + min
@@ -46,7 +42,7 @@ const getBetPoints = (
   }))
 }
 
-const PseudoNumericChartTooltip = (
+const StonkChartTooltip = (
   props: TooltipProps<Date, HistoryPoint<Partial<Bet>>>
 ) => {
   const { prev, x, xScale } = props
@@ -121,8 +117,8 @@ export const StonkContractChart = (props: {
       data={data}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
-      Tooltip={PseudoNumericChartTooltip}
-      color={color ?? NUMERIC_GRAPH_COLOR}
+      Tooltip={StonkChartTooltip}
+      color={color ?? STONK_GRAPH_COLOR}
     />
   )
 }
