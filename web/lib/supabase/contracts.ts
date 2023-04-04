@@ -118,39 +118,22 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
   return undefined
 }
 
-// export const getContracts = async (options: {
-//   limit: number
-//   beforeTime?: number
-//   order?: 'asc' | 'desc'
-// }) => {
-//   let q = selectJson(db, 'contracts')
-//   q = q.order('created_time', {
-//     ascending: options?.order === 'asc',
-//   } as any)
-//   if (options.beforeTime) {
-//     q = q.lt('created_time', millisToTs(options.beforeTime))
-//   }
-//   q = q.limit(options.limit)
-//   const { data } = await run(q)
-//   return data.map((r) => r.data)
-// }
-
 export async function searchContract(
   query: string,
   filter: filter,
-  sort: Sort
+  sort: Sort,
+  offset: number,
+  limit: number
 ) {
   const { data } = await db.rpc('search_contracts', {
     term: query,
     contract_filter: filter,
     contract_sort: sort,
+    offset_n: offset,
+    limit_n: limit,
+    fuzzy: true,
+    // groupId: 'UCnpxVUdLOZYgoMsDlHD',
   })
-  // const { data } = await db.rpc('search_contracts_fuzzy', {
-  //   term: query,
-  //   contract_filter: filter,
-  //   contract_sort: sort,
-  // })
-  console.log(data)
   if (data && data.length > 0) {
     return data.map((d) => (d as any).data) as Contract[]
   }

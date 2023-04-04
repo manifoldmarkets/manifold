@@ -1268,6 +1268,7 @@ export interface Database {
         Returns: {
           data: Json
           distance: number
+          relative_dist: number
           popularity_score: number
         }[]
       }
@@ -1461,16 +1462,65 @@ export interface Database {
           similarity: number
         }[]
       }
-      search_contracts: {
-        Args: {
-          term: string
-          contract_filter: string
-          contract_sort: string
-        }
-        Returns: {
-          data: Json
-        }[]
-      }
+      search_contracts:
+        | {
+            Args: {
+              term: string
+              contract_filter: string
+              contract_sort: string
+            }
+            Returns: {
+              data: Json
+            }[]
+          }
+        | {
+            Args: {
+              term: string
+              contract_filter: string
+              contract_sort: string
+              offset_n: number
+              limit_n: number
+            }
+            Returns: {
+              data: Json
+            }[]
+          }
+        | {
+            Args: {
+              term: string
+              contract_filter: string
+              contract_sort: string
+              offset_n: number
+              limit_n: number
+              fuzzy?: boolean
+            }
+            Returns: {
+              data: Json
+            }[]
+          }
+        | {
+            Args: {
+              term: string
+              contract_filter: string
+              contract_sort: string
+              offset_n: number
+              limit_n: number
+              fuzzy?: boolean
+              groupid?: string
+            }
+            Returns: {
+              data: Json
+            }[]
+          }
+        | {
+            Args: {
+              term: string
+              groupid?: string
+            }
+            Returns: {
+              data: Json
+            }[]
+          }
       search_contracts_by_group_slugs: {
         Args: {
           group_slugs: string[]
@@ -1487,6 +1537,20 @@ export interface Database {
           start: number
         }
         Returns: Json[]
+      }
+      search_contracts_combined: {
+        Args: {
+          term: string
+          contract_filter: string
+          contract_sort: string
+          offset_n: number
+          limit_n: number
+          fuzzy?: boolean
+          groupid?: string
+        }
+        Returns: {
+          data: Json
+        }[]
       }
       search_contracts_fuzzy: {
         Args: {

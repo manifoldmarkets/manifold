@@ -1,10 +1,10 @@
-import { SearchOptions } from '@algolia/client-search'
-import { useRouter } from 'next/router'
+import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { ContractsGrid } from './contract/contracts-grid'
-import { ShowTime } from './contract/contract-details'
-import { useEffect, useRef, useMemo, createContext, useContext } from 'react'
-import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { Group } from 'common/group'
+import { debounce, isEqual } from 'lodash'
+import { useRouter } from 'next/router'
+import { createContext, useContext, useEffect, useRef } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import {
   historyStore,
@@ -12,27 +12,22 @@ import {
   urlParamStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
+import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
+import { useUser } from 'web/hooks/use-user'
 import { track, trackCallback } from 'web/lib/service/analytics'
-import ContractSearchFirestore from 'web/pages/contract-search-firestore'
-import { debounce, isEqual } from 'lodash'
-import { Col } from './layout/col'
-import clsx from 'clsx'
+import { searchContract } from 'web/lib/supabase/contracts'
 import { safeLocalStorage } from 'web/lib/util/local'
-import {
-  getIndexName,
-  searchClient,
-  searchIndexName,
-} from 'web/lib/service/algolia'
+import { ShowTime } from './contract/contract-details'
+import { ContractsGrid } from './contract/contracts-grid'
+import { ContractsList } from './contract/contracts-list'
+import { groupRoleType } from './groups/group-member-modal'
+import { Col } from './layout/col'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
-import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
-import { groupRoleType } from './groups/group-member-modal'
-import { Group } from 'common/group'
-import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
-import { ContractsList } from './contract/contracts-list'
 import { SiteLink } from './widgets/site-link'
-import { useUser } from 'web/hooks/use-user'
-import { getCurrentFilter } from './search/contract-search-helpers'
+import { AdditionalFilter } from './contract-search'
+
+const CONTRACTS_PER_PAGE = 20
 
 export const SORTS = [
   { label: 'Relevance', value: 'relevance' },
@@ -54,18 +49,18 @@ export const PROB_SORTS = ['prob-descending', 'prob-ascending']
 
 export type filter = 'open' | 'closed' | 'resolved' | 'all'
 
-export type SearchParameters = {
+export type SupabaseSearchParameters = {
   query: string
   sort: Sort
-  openClosedFilter: 'open' | 'closed' | undefined
-  facetFilters: SearchOptions['facetFilters']
+  filter: filter
+  //   facetFilters: SearchOptions['facetFilters']
 }
 
-export type AdditionalFilter = {
+export type SupabaseAdditionalFilter = {
   creatorId?: string
   tag?: string
   excludeContractIds?: string[]
-  groupSlug?: string
+  groupId?: string
   facetFilters?: string[]
   nonQueryFacetFilters?: string[]
 }
@@ -74,10 +69,10 @@ const AsListContext = createContext({
   setAsList: (_asList: boolean) => {},
 })
 
-export function ContractSearch(props: {
+export function SupabaseContractSearch(props: {
   defaultSort?: Sort
   defaultFilter?: filter
-  additionalFilter?: AdditionalFilter
+  additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
@@ -119,17 +114,17 @@ export function ContractSearch(props: {
 
   const [state, setState] = usePersistentState(
     {
-      numPages: 1,
-      pages: [] as Contract[][],
+      contracts: [] as Contract[],
+      shouldLoadMore: true,
       showTime: null as ShowTime | null,
     },
     !persistPrefix
       ? undefined
-      : { key: `${persistPrefix}-search`, store: inMemoryStore() }
+      : { key: `${persistPrefix}-supabase-search`, store: inMemoryStore() }
   )
 
-  const searchParams = useRef<SearchParameters | null>(null)
-  const searchParamsStore = inMemoryStore<SearchParameters>()
+  const searchParams = useRef<SupabaseSearchParameters | null>(null)
+  const searchParamsStore = inMemoryStore<SupabaseSearchParameters>()
   const requestId = useRef(0)
   const [asList, setAsList] = usePersistentState(!listViewDisabled, {
     key: 'contract-search-as-list',
@@ -145,41 +140,39 @@ export function ContractSearch(props: {
     }
   }, [])
 
-  const searchIndex = useMemo(
-    () => searchClient.initIndex(searchIndexName),
-    [searchIndexName]
-  )
-
   const performQuery = useEvent(async (freshQuery?: boolean) => {
     if (searchParams.current == null) {
       return
     }
-    const { query, sort, openClosedFilter, facetFilters } = searchParams.current
+    const {
+      query,
+      sort,
+      filter,
+      // , facetFilters
+    } = searchParams.current
     const id = ++requestId.current
-    const requestedPage = freshQuery ? 0 : state.pages.length
-    if (freshQuery || requestedPage < state.numPages) {
-      const index =
-        sort === 'relevance'
-          ? searchIndex
-          : searchClient.initIndex(getIndexName(sort))
-      const numericFilters = [
-        openClosedFilter === 'open' ? `closeTime > ${Date.now()}` : '',
-        openClosedFilter === 'closed' ? `closeTime <= ${Date.now()}` : '',
-      ].filter((f) => f)
-      const results = await index.search(query, {
-        facetFilters,
-        numericFilters,
-        page: requestedPage,
-        hitsPerPage: 20,
-        advancedSyntax: true,
-      })
+    const offset = freshQuery ? 0 : state.contracts.length
+    if (freshQuery || state.shouldLoadMore) {
+      const results = await searchContract(
+        query,
+        filter,
+        sort,
+        offset,
+        CONTRACTS_PER_PAGE
+      )
       // if there's a more recent request, forget about this one
       if (id === requestId.current) {
-        const newPage = results.hits as any as Contract[]
+        const newContracts = results
         const showTime =
           sort === 'close-date' || sort === 'resolve-date' ? sort : null
-        const pages = freshQuery ? [newPage] : [...state.pages, newPage]
-        setState({ numPages: results.nbPages, pages, showTime })
+        const contracts = freshQuery
+          ? newContracts
+          : [...state.contracts, ...newContracts]
+        setState({
+          contracts,
+          showTime,
+          shouldLoadMore: newContracts.length == 20,
+        })
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
       }
     }
@@ -187,7 +180,7 @@ export function ContractSearch(props: {
 
   // Always do first query when loading search page, unless going back in history.
   const [firstQuery, setFirstQuery] = usePersistentState(true, {
-    key: `${persistPrefix}-first-query`,
+    key: `${persistPrefix}-supabase-first-query`,
     store: historyStore(),
   })
 
@@ -204,19 +197,15 @@ export function ContractSearch(props: {
     }, 100)
   ).current
 
-  const contracts = state.pages
-    .flat()
-    .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
-  const renderedContracts = state.pages.length === 0 ? undefined : contracts
-
-  if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
-    return <ContractSearchFirestore additionalFilter={additionalFilter} />
-  }
+  const contracts = state.contracts.filter(
+    (c) => !additionalFilter?.excludeContractIds?.includes(c.id)
+  )
+  const renderedContracts = state.contracts.length === 0 ? undefined : contracts
 
   return (
     <AsListContext.Provider value={{ asList, setAsList }}>
       <Col>
-        <ContractSearchControls
+        <SupabaseContractSearchControls
           className={headerClassName}
           defaultSort={defaultSort}
           defaultFilter={defaultFilter}
@@ -263,7 +252,7 @@ export function ContractSearch(props: {
   )
 }
 
-function ContractSearchControls(props: {
+function SupabaseContractSearchControls(props: {
   className?: string
   defaultSort?: Sort
   defaultFilter?: filter
@@ -271,7 +260,7 @@ function ContractSearchControls(props: {
   persistPrefix?: string
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
-  onSearchParametersChanged: (params: SearchParameters) => void
+  onSearchParametersChanged: (params: SupabaseSearchParameters) => void
   useQueryUrlParam?: boolean
   autoFocus?: boolean
   listViewDisabled?: boolean
@@ -338,35 +327,6 @@ function ContractSearchControls(props: {
     }
   }, [persistPrefix, query, sort, sortKey])
 
-  const additionalFilters = [
-    additionalFilter?.creatorId
-      ? `creatorId:${additionalFilter.creatorId}`
-      : '',
-    additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
-    additionalFilter?.groupSlug
-      ? `groupLinks.slug:${additionalFilter.groupSlug}`
-      : '',
-    ...(additionalFilter?.facetFilters ?? []),
-  ]
-  const facetFilters = [
-    ...additionalFilters,
-    ...(!query ? additionalFilter?.nonQueryFacetFilters ?? [] : []),
-    additionalFilter?.groupSlug
-      ? ''
-      : additionalFilter?.creatorId
-      ? additionalFilter?.creatorId == user?.id
-        ? ''
-        : 'visibility:-private'
-      : 'visibility:public',
-
-    filter === 'open' ? 'isResolved:false' : '',
-    filter === 'closed' ? 'isResolved:false' : '',
-    filter === 'resolved' ? 'isResolved:true' : '',
-  ].filter((f) => f)
-
-  const openClosedFilter =
-    filter === 'open' ? 'open' : filter === 'closed' ? 'closed' : undefined
-
   const updateQuery = (newQuery: string) => {
     setQuery(newQuery)
   }
@@ -387,10 +347,15 @@ function ContractSearchControls(props: {
     onSearchParametersChanged({
       query: query,
       sort: sort as Sort,
-      openClosedFilter: openClosedFilter,
-      facetFilters: facetFilters,
+      filter: filter as filter,
+      //   facetFilters: facetFilters,
     })
-  }, [query, sort, openClosedFilter, JSON.stringify(facetFilters)])
+  }, [
+    query,
+    sort,
+    filter,
+    // JSON.stringify(facetFilters)
+  ])
 
   return (
     <div
