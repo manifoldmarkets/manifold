@@ -251,13 +251,13 @@ create or replace function get_recommended_contracts_embeddings(uid text, n int,
     select *,
       row_number() over ( order by score desc ) as row_num
     from trending_contracts
-    where relative_dist < 0.075
+    where relative_dist < 0.05
     limit 1 + (n - (select count(*) from combined_new_closing_soon)) / 3
   ), trending_results2 as (
     select *,
      row_number() over ( order by score desc ) as row_num
     from trending_contracts
-    where relative_dist >= 0.075 and relative_dist < 0.20
+    where relative_dist >= 0.05 and relative_dist < 0.12
     limit 1 + (n - (select count(*) from combined_new_closing_soon)) / 3
   ), trending_results3 as (
     select *,
@@ -265,7 +265,7 @@ create or replace function get_recommended_contracts_embeddings(uid text, n int,
          order by score desc
      ) as row_num
     from trending_contracts
-    where relative_dist >= 0.20 and relative_dist < 0.40
+    where relative_dist >= 0.12 and relative_dist < 0.25
     limit 1 + (n - (select count(*) from combined_new_closing_soon)) / 3
   ), combined_trending as (
     select *, 1 as result_id from trending_results1
