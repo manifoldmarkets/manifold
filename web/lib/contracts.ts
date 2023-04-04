@@ -10,7 +10,7 @@ import { HistoryPoint } from 'web/components/charts/generic-charts'
 import { Bet } from 'common/bet'
 import { getAllComments } from 'web/lib/supabase/comments'
 import {
-  getBinaryContractUserContractMetrics,
+  getCPMMContractUserContractMetrics,
   getTopContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
 import {
@@ -26,9 +26,7 @@ import { getRelatedContracts } from 'web/hooks/use-related-contracts'
 export async function getContractParams(contract: Contract) {
   const contractId = contract.id
   const totalBets = await getTotalBetCount(contractId)
-  const shouldUseBetPoints =
-    contract.outcomeType === 'BINARY' ||
-    contract.outcomeType === 'PSEUDO_NUMERIC'
+  const shouldUseBetPoints = contract.mechanism === 'cpmm-1'
 
   // in original code, prioritize newer bets via descending order
   const bets = await getBets({
@@ -55,8 +53,8 @@ export async function getContractParams(contract: Contract) {
   const comments = await getAllComments(contractId, 100)
 
   const userPositionsByOutcome =
-    contract.outcomeType === 'BINARY'
-      ? await getBinaryContractUserContractMetrics(contractId, 100)
+    contract.mechanism === 'cpmm-1'
+      ? await getCPMMContractUserContractMetrics(contractId, 100)
       : {}
 
   const topContractMetrics = contract.resolution
@@ -64,12 +62,12 @@ export async function getContractParams(contract: Contract) {
     : []
 
   const shareholderStats =
-    contract.outcomeType === 'BINARY'
+    contract.mechanism === 'cpmm-1'
       ? await getShareholderCountsForContractId(contractId, db)
       : undefined
 
   const totalPositions =
-    contract.outcomeType === 'BINARY'
+    contract.mechanism === 'cpmm-1'
       ? await getTotalContractMetrics(contractId, db)
       : 0
 

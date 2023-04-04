@@ -17,7 +17,14 @@ import { useContractMetrics } from 'web/hooks/use-contract-metrics'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { NoLabel, YesLabel } from 'web/components/outcome-label'
+import {
+  HigherLabel,
+  BuyLabel,
+  LowerLabel,
+  NoLabel,
+  SellLabel,
+  YesLabel,
+} from 'web/components/outcome-label'
 import { formatMoney } from 'common/util/format'
 import { Pagination } from 'web/components/widgets/pagination'
 import { ContractMetric } from 'common/contract-metric'
@@ -27,12 +34,12 @@ import clsx from 'clsx'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { SortRow } from 'web/components/contract/contract-tabs'
-import { CPMMBinaryContract } from 'common/contract'
+import { CPMMContract } from 'common/contract'
 import { Tooltip } from 'web/components/widgets/tooltip'
 
 export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
-    contract: CPMMBinaryContract
+    contract: CPMMContract
     positions: ContractMetricsByOutcome
     setTotalPositions: (count: number) => void
     shareholderStats?: ShareholderStats
@@ -97,6 +104,9 @@ export const BinaryUserPositionsTable = memo(
       yesPositionsSorted.length > noPositionsSorted.length
         ? yesPositionsSorted.length
         : noPositionsSorted.length
+    const isBinary = contract.outcomeType === 'BINARY'
+    const isStonk = contract.outcomeType === 'STONK'
+    const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
     const getPositionsTitle = (outcome: 'YES' | 'NO') => {
       return outcome === 'YES' ? (
@@ -107,7 +117,21 @@ export const BinaryUserPositionsTable = memo(
           >
             {shareholderStats?.yesShareholders}{' '}
           </Tooltip>
-          <YesLabel /> payouts
+          {isBinary ? (
+            <>
+              <YesLabel /> payouts
+            </>
+          ) : isStonk ? (
+            <>
+              <BuyLabel /> bettors
+            </>
+          ) : isPseudoNumeric ? (
+            <>
+              <HigherLabel /> shareholders
+            </>
+          ) : (
+            <></>
+          )}
         </span>
       ) : (
         <span>
@@ -117,7 +141,21 @@ export const BinaryUserPositionsTable = memo(
           >
             {shareholderStats?.noShareholders}{' '}
           </Tooltip>
-          <NoLabel /> payouts
+          {isBinary ? (
+            <>
+              <NoLabel /> payouts
+            </>
+          ) : isStonk ? (
+            <>
+              <SellLabel /> bettors
+            </>
+          ) : isPseudoNumeric ? (
+            <>
+              <LowerLabel /> shareholders
+            </>
+          ) : (
+            <></>
+          )}{' '}
         </span>
       )
     }
@@ -157,7 +195,9 @@ export const BinaryUserPositionsTable = memo(
                   followedUsers={followedUsers}
                   numberToShow={
                     sortBy === 'shares'
-                      ? formatMoney(position.totalShares[outcome] ?? 0)
+                      ? isStonk
+                        ? formatMoney(position.payout ?? 0)
+                        : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
                 />
@@ -183,7 +223,9 @@ export const BinaryUserPositionsTable = memo(
                   followedUsers={followedUsers}
                   numberToShow={
                     sortBy === 'shares'
-                      ? formatMoney(position.totalShares[outcome] ?? 0)
+                      ? isStonk
+                        ? formatMoney(position.payout ?? 0)
+                        : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
                 />
