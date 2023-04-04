@@ -36,6 +36,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { SortRow } from 'web/components/contract/contract-tabs'
 import { CPMMContract } from 'common/contract'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { getProbability } from 'common/calculate'
 
 export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
@@ -45,6 +46,7 @@ export const BinaryUserPositionsTable = memo(
     shareholderStats?: ShareholderStats
   }) {
     const { contract, setTotalPositions } = props
+    const currentProb = getProbability(contract)
     const contractId = contract.id
     const [page, setPage] = useState(0)
     const pageSize = 20
@@ -160,6 +162,11 @@ export const BinaryUserPositionsTable = memo(
       )
     }
 
+    const getStonkDisplayValue = (shares: number, outcome: 'YES' | 'NO') => {
+      const value =
+        outcome === 'YES' ? shares * currentProb : shares * (1 - currentProb)
+      return formatMoney(value)
+    }
     return (
       <Col className={'w-full'}>
         <Row className={'mb-2 items-center justify-end gap-2'}>
@@ -196,7 +203,10 @@ export const BinaryUserPositionsTable = memo(
                   numberToShow={
                     sortBy === 'shares'
                       ? isStonk
-                        ? formatMoney(position.payout ?? 0)
+                        ? getStonkDisplayValue(
+                            position.totalShares[outcome] ?? 0,
+                            outcome
+                          )
                         : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
@@ -224,7 +234,10 @@ export const BinaryUserPositionsTable = memo(
                   numberToShow={
                     sortBy === 'shares'
                       ? isStonk
-                        ? formatMoney(position.payout ?? 0)
+                        ? getStonkDisplayValue(
+                            position.totalShares[outcome] ?? 0,
+                            outcome
+                          )
                         : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
