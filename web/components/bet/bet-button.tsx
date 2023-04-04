@@ -12,7 +12,7 @@ import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function SignedInBinaryMobileBetting(props: {
-  contract: BinaryContract | PseudoNumericContract
+  contract: BinaryContract | PseudoNumericContract | StonkContract
   user: User
 }) {
   const { contract, user } = props
@@ -34,35 +34,6 @@ export function SignedInBinaryMobileBetting(props: {
       />
       <SellRow
         contract={contract as CPMMBinaryContract}
-        user={user}
-        className={'border-ink-200 mt-2 rounded-md border-2 px-4 py-2'}
-      />
-    </Col>
-  )
-}
-export function SignedInStonkMobileBetting(props: {
-  contract: StonkContract
-  user: User
-}) {
-  const { contract, user } = props
-  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id
-  )
-
-  const isMobile = useIsMobile()
-
-  return (
-    <Col className="my-3 w-full px-1">
-      <BuyPanel
-        hidden={false}
-        contract={contract}
-        user={user}
-        unfilledBets={unfilledBets}
-        balanceByUserId={balanceByUserId}
-        mobileView={isMobile}
-      />
-      <SellRow
-        contract={contract}
         user={user}
         className={'border-ink-200 mt-2 rounded-md border-2 px-4 py-2'}
       />

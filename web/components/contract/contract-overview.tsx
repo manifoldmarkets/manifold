@@ -22,10 +22,7 @@ import {
   StonkPrice,
 } from './contract-card'
 import { Bet } from 'common/bet'
-import {
-  SignedInBinaryMobileBetting,
-  SignedInStonkMobileBetting,
-} from '../bet/bet-button'
+import { SignedInBinaryMobileBetting } from '../bet/bet-button'
 import {
   Contract,
   FreeResponseContract,
@@ -46,6 +43,8 @@ import { periodDurations } from 'web/lib/util/time'
 import { getDateRange } from '../charts/helpers'
 import { QfOverview } from './qf-overview'
 import { StonkContractChart } from '../charts/contract/stonk'
+import { STARTING_BALANCE } from 'common/economy'
+import { formatMoney } from 'common/util/format'
 
 export const ContractOverview = memo(
   (props: {
@@ -243,13 +242,17 @@ const StonkOverview = (props: {
       </SizedContainer>
 
       {user && tradingAllowed(contract) && (
-        <SignedInStonkMobileBetting contract={contract} user={user} />
+        <SignedInBinaryMobileBetting contract={contract} user={user} />
       )}
 
       {user === null && (
         <Col className="mt-1 w-full">
           <BetSignUpPrompt className="xl:self-center" size="xl" />
-          <PlayMoneyDisclaimer />
+          <PlayMoneyDisclaimer
+            text={`Get ${formatMoney(
+              STARTING_BALANCE
+            )} play money to bet on the stock`}
+          />
         </Col>
       )}
       {user === undefined && <div className="h-[72px] w-full" />}
