@@ -363,25 +363,3 @@ function EditableCloseDate(props: {
     </>
   )
 }
-
-export const ContractLike = (props: { contract: Contract }) => {
-  const { contract } = props
-  const user = useUser()
-  const privateUser = usePrivateUser()
-
-  return (
-    <LikeButton
-      contentId={contract.id}
-      contentCreatorId={contract.creatorId}
-      user={user}
-      contentType={'contract'}
-      totalLikes={contract.likedByUserCount ?? 0}
-      contract={contract}
-      contentText={contract.question}
-      className={clsx(
-        '-mr-2',
-        isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
-      )}
-    />
-  )
-}

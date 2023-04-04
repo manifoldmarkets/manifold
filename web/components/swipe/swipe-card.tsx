@@ -201,33 +201,29 @@ function CardActions(props: {
   const { user, contract, setIsModalOpen, className } = props
 
   return (
-    <Col
+    <div
       className={clsx(
-        'flex flex-col items-center justify-end gap-2',
+        'flex flex-col items-center justify-end gap-4',
         className
       )}
     >
-      <LikeButton
-        contentId={contract.id}
-        contentCreatorId={contract.creatorId}
-        user={user}
-        contentType={'contract'}
-        totalLikes={contract.likedByUserCount ?? 0}
-        contract={contract}
-        contentText={contract.question}
-        size={'xl'}
-        showTotalLikesUnder={true}
-        color={'white'}
-        className={'flex-col gap-2 !text-white drop-shadow-sm'}
-        isSwipe
-      />
+      <div className="flex flex-col items-center">
+        <LikeButton
+          contentId={contract.id}
+          contentCreatorId={contract.creatorId}
+          user={user}
+          contentType={'contract'}
+          totalLikes={contract.likedByUserCount ?? 0}
+          contract={contract}
+          contentText={contract.question}
+          size={'xl'}
+          showTotalLikesUnder={true}
+          color="white"
+          isSwipe
+        />
+      </div>
 
-      <SwipeComments
-        contract={contract}
-        setIsModalOpen={setIsModalOpen}
-        color="white"
-        size="xl"
-      />
-    </Col>
+      <SwipeComments contract={contract} setIsModalOpen={setIsModalOpen} />
+    </div>
   )
 }

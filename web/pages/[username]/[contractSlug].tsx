@@ -19,7 +19,6 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import {
   AuthorInfo,
   CloseOrResolveTime,
-  ContractLike,
   MarketGroups,
 } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
@@ -317,14 +316,9 @@ export function ContractPageContent(props: {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="text-ink-600 flex gap-4 text-sm">
+              <div className="text-ink-600 flex items-center justify-between text-sm">
+                <div className="flex gap-4">
                   <AuthorInfo contract={contract} />
-
-                  <CloseOrResolveTime
-                    contract={contract}
-                    editable={user?.id === creatorId}
-                  />
 
                   <Tooltip
                     text="Traders"
@@ -338,8 +332,10 @@ export function ContractPageContent(props: {
                     </Row>
                   </Tooltip>
                 </div>
-
-                <ContractLike contract={contract} />
+                <CloseOrResolveTime
+                  contract={contract}
+                  editable={user?.id === creatorId}
+                />
               </div>
               <ContractOverview
                 contract={contract}
