@@ -70,7 +70,7 @@ export function BetsSummary(props: {
           <Col className="hidden sm:inline">
             <div className="text-ink-500 whitespace-nowrap text-sm">
               Value
-              <InfoTooltip text="How much your position in the market is worth right now according to the current stonk price." />
+              <InfoTooltip text="How much your position in the market is worth right now according to the current stock price." />
             </div>
             <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
           </Col>

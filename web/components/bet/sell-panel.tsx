@@ -10,7 +10,6 @@ import {
   formatPercent,
   formatWithCommas,
   formatMoney,
-  formatOutcomeLabel,
 } from 'common/util/format'
 import { sumBy } from 'lodash'
 import { useState } from 'react'
@@ -48,7 +47,6 @@ export function SellPanel(props: {
     )
     return probChange > 0.2 ? undefined : shares
   })
-  const [amountValue, setAmountValue] = useState<number | undefined>(0)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
@@ -114,13 +112,7 @@ export function SellPanel(props: {
     unfilledBets,
     balanceByUserId
   )
-  const { saleValue: totalSaleValue } = calculateCpmmSale(
-    contract,
-    shares,
-    sharesOutcome,
-    unfilledBets,
-    balanceByUserId
-  )
+
   const netProceeds = saleValue - loanPaid
   const profit = saleValue - costBasis
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -151,20 +143,6 @@ export function SellPanel(props: {
       }
     }
   }
-  const onStonkAmountChange = (amount: number | undefined) => {
-    setAmountValue(amount)
-    if (totalSaleValue - (amount ?? 0) < 1) setAmount(shares)
-    else setAmount(((amount ?? 0) / totalSaleValue) * shares)
-
-    // Check for errors.
-    if (amount !== undefined) {
-      if (amount > shares) {
-        setError(`Maximum ${formatWithCommas(Math.floor(shares))} shares`)
-      } else {
-        setError(undefined)
-      }
-    }
-  }
 
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -172,31 +150,20 @@ export function SellPanel(props: {
 
   return (
     <>
-      {isStonk ? (
-        <AmountInput
-          amount={amountValue}
-          onChange={onStonkAmountChange}
-          label="Val"
-          error={error}
-          disabled={isSubmitting}
-          inputClassName="w-full ml-1"
-        />
-      ) : (
-        <AmountInput
-          amount={
-            amount === undefined
-              ? undefined
-              : Math.round(amount) === 0
-              ? 0
-              : Math.floor(amount)
-          }
-          onChange={onAmountChange}
-          label="Qty"
-          error={error}
-          disabled={isSubmitting}
-          inputClassName="w-full ml-1"
-        />
-      )}
+      <AmountInput
+        amount={
+          amount === undefined
+            ? undefined
+            : Math.round(amount) === 0
+            ? 0
+            : Math.floor(amount)
+        }
+        onChange={onAmountChange}
+        label="Qty"
+        error={error}
+        disabled={isSubmitting}
+        inputClassName="w-full ml-1"
+      />
 
       <Col className="mt-3 w-full gap-3 text-sm">
         {!isStonk && (
@@ -222,7 +189,7 @@ export function SellPanel(props: {
             {isPseudoNumeric
               ? 'Estimated value'
               : isStonk
-              ? 'Stonk price'
+              ? 'Stock value'
               : 'Probability'}
           </div>
           <div>
@@ -251,10 +218,7 @@ export function SellPanel(props: {
         color="indigo"
         actionLabel={
           isStonk
-            ? `Sell ${formatMoney(saleValue)} of ${formatOutcomeLabel(
-                contract,
-                sharesOutcome
-              )}`
+            ? `Sell ${formatMoney(saleValue)}`
             : `Sell ${formatWithCommas(sellQuantity)} shares`
         }
       />

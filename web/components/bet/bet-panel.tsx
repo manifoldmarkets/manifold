@@ -408,7 +408,7 @@ export function BuyPanel(props: {
                 {isPseudoNumeric
                   ? 'Estimated value'
                   : isStonk
-                  ? 'New stonk price'
+                  ? 'New stonk value'
                   : 'New probability'}
               </span>
               {!isPseudoNumeric && !isStonk && (
