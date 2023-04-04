@@ -189,7 +189,7 @@ export function SellPanel(props: {
             {isPseudoNumeric
               ? 'Estimated value'
               : isStonk
-              ? 'Stock value'
+              ? 'Stock price'
               : 'Probability'}
           </div>
           <div>
