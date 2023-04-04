@@ -127,12 +127,14 @@ export function LowerLabel() {
   return <span className="text-scarlet-600">LOWER</span>
 }
 
-export function BuyLabel() {
-  return <span className="text-teal-600">BUY</span>
+export function BuyLabel(props: { text?: string }) {
+  const { text } = props
+  return <span className="text-teal-600">{text ? text : 'BUY'}</span>
 }
 
-export function SellLabel() {
-  return <span className="text-scarlet-600">SELL</span>
+export function SellLabel(props: { text?: string }) {
+  const { text } = props
+  return <span className="text-scarlet-600">{text ? text : 'SELL'}</span>
 }
 
 export function NoLabel() {

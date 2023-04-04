@@ -123,7 +123,7 @@ export const BinaryUserPositionsTable = memo(
             </>
           ) : isStonk ? (
             <>
-              <BuyLabel /> bettors
+              <BuyLabel text={'BUYERS'} />
             </>
           ) : isPseudoNumeric ? (
             <>
@@ -147,7 +147,7 @@ export const BinaryUserPositionsTable = memo(
             </>
           ) : isStonk ? (
             <>
-              <SellLabel /> bettors
+              <SellLabel text={'SELLERS'} />
             </>
           ) : isPseudoNumeric ? (
             <>
