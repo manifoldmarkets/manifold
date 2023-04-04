@@ -73,8 +73,8 @@ export function PseudoNumericOutcomeLabel(props: { outcome: resolution }) {
 export function StonkOutcomeLabel(props: { outcome: resolution }) {
   const { outcome } = props
 
-  if (outcome === 'YES') return <LongLabel />
-  if (outcome === 'NO') return <ShortLabel />
+  if (outcome === 'YES') return <BuyLabel />
+  if (outcome === 'NO') return <SellLabel />
   if (outcome === 'MKT') return <ProbLabel />
   return <CancelLabel />
 }
@@ -127,12 +127,12 @@ export function LowerLabel() {
   return <span className="text-scarlet-600">LOWER</span>
 }
 
-export function LongLabel() {
-  return <span className="text-teal-600">LONG</span>
+export function BuyLabel() {
+  return <span className="text-teal-600">BUY</span>
 }
 
-export function ShortLabel() {
-  return <span className="text-scarlet-600">SHORT</span>
+export function SellLabel() {
+  return <span className="text-scarlet-600">SELL</span>
 }
 
 export function NoLabel() {

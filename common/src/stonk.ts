@@ -1,2 +1,2 @@
-export const STONK_YES = 'LONG'
-export const STONK_NO = 'SHORT'
+export const STONK_YES = 'BUY'
+export const STONK_NO = 'SELL'
