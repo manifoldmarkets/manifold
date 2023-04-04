@@ -51,7 +51,7 @@
 --     offset_n INTEGER,
 --     limit_n INTEGER,
 --     fuzzy BOOLEAN DEFAULT false,
---     groupId TEXT DEFAULT NULL
+--     group_id TEXT DEFAULT NULL
 --   ) RETURNS TABLE (data jsonb) AS $$
 -- DECLARE base_query TEXT;
 -- where_clause TEXT;
@@ -143,41 +143,42 @@ CREATE OR REPLACE FUNCTION search_contracts(
     offset_n INTEGER,
     limit_n INTEGER,
     fuzzy BOOLEAN DEFAULT false,
-    groupId TEXT DEFAULT NULL
+    group_id TEXT DEFAULT NULL
   ) RETURNS TABLE (data jsonb) AS $$
 DECLARE base_query TEXT;
 where_clause TEXT;
 sql_query TEXT;
 BEGIN -- Common WHERE clause
 -- If fuzzy search is enabled and is group search
-IF groupId is not null
+IF group_id is not null
 and fuzzy then base_query := FORMAT(
   '
-      SELECT scored_contracts.data
+      SELECT contractz.data
       FROM (
         SELECT contracts_rbac.*,
-               similarity(contracts_rbac.question, %L) AS similarity_score
-        FROM contracts_rbac
-      ) AS scored_contracts join group_contracts on group_contracts.contract_id = scored_contracts.id
+               similarity(contracts_rbac.question, %L) AS similarity_score,
+               group_contracts.group_id
+        FROM contracts_rbac join group_contracts on group_contracts.contract_id = contracts_rbac.id
+      ) AS contractz
       %s
-      AND scored_contracts.similarity_score > 0.1
+      AND contractz.similarity_score > 0.1
       AND group_contracts.group_id = %L',
   term,
   generate_where_query(contract_filter, contract_sort),
-  groupId
+  group_id
 );
 -- If full text search is enabled and is group search
-ELSIF groupId is not null then base_query := FORMAT(
+ELSIF group_id is not null then base_query := FORMAT(
   '
-SELECT contracts_rbac.data
-FROM contracts_rbac join group_contracts on group_contracts.contract_id = contracts_rbac.id,
+SELECT contractz.data
+FROM (select contracts_rbac.*, group_contracts.group_id from contracts_rbac join group_contracts on group_contracts.contract_id = contracts_rbac.id) as contractz,
   websearch_to_tsquery('' english '', %L) query
       %s
-AND contracts_rbac.question_fts @@ query
-AND group_contracts.group_id = %L',
+AND contractz.question_fts @@ query
+AND contractz.group_id = %L',
   term,
   generate_where_query(contract_filter, contract_sort),
-  groupId
+  group_id
 );
 -- If fuzzy search is enabled
 ELSIF fuzzy THEN base_query := FORMAT(
@@ -247,8 +248,7 @@ CREATE OR REPLACE FUNCTION generate_sort_query(
   ) RETURNS TEXT AS $$
 DECLARE sql_query TEXT;
 BEGIN sql_query := FORMAT(
-  '
-      ORDER BY
+  'ORDER BY
         CASE %L
           WHEN ''relevance'' THEN %s
           END DESC NULLS LAST,

@@ -125,15 +125,17 @@ export async function searchContract(
   offset: number,
   limit: number
 ) {
-  const { data } = await db.rpc('search_contracts', {
+  const { data, error } = await db.rpc('search_contracts', {
     term: query,
     contract_filter: filter,
     contract_sort: sort,
     offset_n: offset,
     limit_n: limit,
     fuzzy: true,
-    // groupId: 'UCnpxVUdLOZYgoMsDlHD',
+    group_id: 'UCnpxVUdLOZYgoMsDlHD',
   })
+
+  console.log(error)
   if (data && data.length > 0) {
     return data.map((d) => (d as any).data) as Contract[]
   }

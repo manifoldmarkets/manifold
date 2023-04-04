@@ -1069,6 +1069,22 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_sort_query: {
+        Args: {
+          contract_sort: string
+          fuzzy: boolean
+          offset_n: number
+          limit_n: number
+        }
+        Returns: string
+      }
+      generate_where_query: {
+        Args: {
+          contract_filter: string
+          contract_sort: string
+        }
+        Returns: string
+      }
       get_contract_metrics_for_contract: {
         Args: {
           contractid: string
@@ -1256,6 +1272,7 @@ export interface Database {
         Returns: {
           data: Json
           distance: number
+          relative_dist: number
           popularity_score: number
         }[]
       }
@@ -1287,7 +1304,7 @@ export interface Database {
           lim: number
           start: number
         }
-        Returns: Json[]
+        Returns: unknown
       }
       get_time: {
         Args: Record<PropertyKey, never>
@@ -1462,72 +1479,27 @@ export interface Database {
           similarity: number
         }[]
       }
-      search_contracts:
-        | {
-            Args: {
-              term: string
-              contract_filter: string
-              contract_sort: string
-            }
-            Returns: {
-              data: Json
-            }[]
-          }
-        | {
-            Args: {
-              term: string
-              contract_filter: string
-              contract_sort: string
-              offset_n: number
-              limit_n: number
-            }
-            Returns: {
-              data: Json
-            }[]
-          }
-        | {
-            Args: {
-              term: string
-              contract_filter: string
-              contract_sort: string
-              offset_n: number
-              limit_n: number
-              fuzzy?: boolean
-            }
-            Returns: {
-              data: Json
-            }[]
-          }
-        | {
-            Args: {
-              term: string
-              contract_filter: string
-              contract_sort: string
-              offset_n: number
-              limit_n: number
-              fuzzy?: boolean
-              groupid?: string
-            }
-            Returns: {
-              data: Json
-            }[]
-          }
-        | {
-            Args: {
-              term: string
-              groupid?: string
-            }
-            Returns: {
-              data: Json
-            }[]
-          }
+      search_contracts: {
+        Args: {
+          term: string
+          contract_filter: string
+          contract_sort: string
+          offset_n: number
+          limit_n: number
+          fuzzy?: boolean
+          groupid?: string
+        }
+        Returns: {
+          data: Json
+        }[]
+      }
       search_contracts_by_group_slugs: {
         Args: {
           group_slugs: string[]
           lim: number
           start: number
         }
-        Returns: Json[]
+        Returns: unknown
       }
       search_contracts_by_group_slugs_for_creator: {
         Args: {
@@ -1536,7 +1508,7 @@ export interface Database {
           lim: number
           start: number
         }
-        Returns: Json[]
+        Returns: unknown
       }
       search_contracts_combined: {
         Args: {
@@ -1562,6 +1534,18 @@ export interface Database {
           data: Json
         }[]
       }
+      search_contracts_test: {
+        Args: {
+          term: string
+          contract_filter: string
+          contract_sort: string
+          offset_n: number
+          limit_n: number
+          fuzzy?: boolean
+          groupid?: string
+        }
+        Returns: string
+      }
       set_limit: {
         Args: {
           "": number
@@ -1576,7 +1560,7 @@ export interface Database {
         Args: {
           "": string
         }
-        Returns: string[]
+        Returns: unknown
       }
       squared_distance: {
         Args: {
