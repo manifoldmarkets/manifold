@@ -19,7 +19,6 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import {
   AuthorInfo,
   CloseOrResolveTime,
-  ContractLike,
   MarketGroups,
 } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
@@ -100,7 +99,7 @@ export default function ContractPage(props: {
     return <Custom404 />
   }
   return (
-    <Page maxWidth="max-w-[1400px]">
+    <Page className="!max-w-[1400px]" mainClassName="!col-span-10">
       {visibility == 'private' && (
         <PrivateContractPage contractSlug={contractSlug} />
       )}
@@ -280,7 +279,7 @@ export function ContractPageContent(props: {
         >
           <div
             className={clsx(
-              'sticky  z-50 flex items-center',
+              'sticky z-50 flex items-end',
               !coverImageUrl ? 'bg-canvas-100 top-0' : 'top-[-92px] h-[140px]'
             )}
           >
@@ -320,14 +319,9 @@ export function ContractPageContent(props: {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="text-ink-600 flex gap-4 text-sm">
+              <div className="text-ink-600 flex items-center justify-between text-sm">
+                <div className="flex gap-4">
                   <AuthorInfo contract={contract} />
-
-                  <CloseOrResolveTime
-                    contract={contract}
-                    editable={user?.id === creatorId}
-                  />
 
                   <Tooltip
                     text="Traders"
@@ -341,8 +335,10 @@ export function ContractPageContent(props: {
                     </Row>
                   </Tooltip>
                 </div>
-
-                <ContractLike contract={contract} />
+                <CloseOrResolveTime
+                  contract={contract}
+                  editable={user?.id === creatorId}
+                />
               </div>
               <ContractOverview
                 contract={contract}

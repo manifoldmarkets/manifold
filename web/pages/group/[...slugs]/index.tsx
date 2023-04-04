@@ -130,7 +130,7 @@ export default function GroupPage(props: {
     return <Custom404 />
   }
   return (
-    <Page touchesTop={true}>
+    <Page mainClassName="!mt-0">
       {groupPrivacy == 'private' && <PrivateGroupPage slugs={slugs} />}
       {groupPrivacy != 'private' && groupParams && (
         <NonPrivateGroupPage groupParams={groupParams} />

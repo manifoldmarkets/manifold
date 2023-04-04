@@ -540,7 +540,6 @@ export function ContractCardNew(props: {
     creatorUsername,
     creatorAvatarUrl,
     question,
-    description,
     coverImageUrl,
     outcomeType,
     mechanism,
@@ -560,11 +559,7 @@ export function ContractCardNew(props: {
 
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
-  const textColor = isClosed && !isResolved ? 'text-ink-500' : 'text-ink-900'
-  const descriptionString =
-    typeof description === 'string'
-      ? description
-      : richTextToString(description)
+  const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
 
   const showImage = !!coverImageUrl
 
@@ -574,8 +569,8 @@ export function ContractCardNew(props: {
     <div
       className={clsx(
         'relative',
-        'border-ink-300 group my-2 flex cursor-pointer flex-col overflow-hidden rounded-xl border-[0.5px]',
-        'focus:bg-ink-400/20 lg:hover:bg-ink-400/20 outline-none transition-colors',
+        'border-ink-400 group my-2 flex cursor-pointer flex-col overflow-hidden rounded-xl border',
+        'hover:border-ink-500 focus:border-ink-500 outline-none transition-colors',
         className
       )}
       // we have other links inside this card like the username, so can't make the whole card a button or link
@@ -587,11 +582,13 @@ export function ContractCardNew(props: {
     >
       <Col
         className={clsx(
-          showImage ? 'bg-canvas-0/95' : 'bg-canvas-0/70',
-          'gap-2 py-2 px-4 backdrop-blur-sm'
+          showImage
+            ? 'bg-canvas-0/95 dark:bg-canvas-0/90 group-hover:bg-canvas-0/80 group-focus:bg-canvas-0/80'
+            : 'bg-canvas-0/70 group-hover:bg-canvas-0/50 group-focus:bg-canvas-0/50',
+          'gap-2 py-2 px-4 backdrop-blur-sm transition-colors'
         )}
       >
-        <Row className="text-ink-500 items-center gap-3 overflow-hidden text-sm">
+        <Row className="text-ink-600 items-center gap-3 overflow-hidden text-sm">
           <Row className="gap-2" onClick={(e) => e.stopPropagation()}>
             <Avatar
               username={creatorUsername}
@@ -601,7 +598,7 @@ export function ContractCardNew(props: {
             <UserLink
               name={creatorName}
               username={creatorUsername}
-              className="text-ink-500 h-[24px] text-sm"
+              className="text-ink-600 h-[24px] text-sm"
               createdTime={creatorCreatedTime}
             />
           </Row>
@@ -613,7 +610,7 @@ export function ContractCardNew(props: {
         <Link
           href={path}
           className={clsx(
-            'break-anywhere group-hover:text-primary-800 transition-color focus:text-primary-800 group-focus:text-primary-800 whitespace-normal font-medium outline-none',
+            'break-anywhere transition-color hover:text-primary-800 focus:text-primary-800 whitespace-normal font-medium outline-none',
             textColor
           )}
         >
@@ -663,10 +660,10 @@ export function ContractCardNew(props: {
       {showImage && (
         <>
           <div className="h-40" />
-          <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 -z-10 transition-all group-hover:saturate-150">
             <Image
               fill
-              alt={descriptionString}
+              alt=""
               sizes="100vw"
               className="object-cover"
               src={coverImageUrl}
@@ -729,10 +726,10 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className="border-ink-200 my-2 items-center gap-4 rounded border p-2 text-sm">
+    <Row className="bg-ink-200/50 my-2 items-center gap-4 rounded p-2 text-sm">
       <Row className="items-center gap-2">
         <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
-        <span className="text-ink-600 font-semibold">
+        <span className="text-ink-700 font-semibold">
           {maxSharesOutcome === 'YES'
             ? formatMoney(yesShares)
             : formatMoney(noShares)}{' '}
@@ -740,7 +737,7 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
       </Row>
       <Row className="ml-auto items-center gap-2">
         <div className="text-ink-500">Profit </div>
-        <div className={clsx('text-ink-600 font-semibold')}>
+        <div className={clsx('text-ink-700 font-semibold')}>
           {profit ? formatMoney(profit) : '--'}
         </div>
       </Row>

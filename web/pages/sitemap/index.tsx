@@ -117,7 +117,7 @@ export default function LabsPage() {
           <LabCard
             title="🔥 Swipe"
             description="Swipe-to-bet UI. Try via iOS/Android app."
-            {...appCallback}
+            {...(isNative ? { href: '/swipe' } : appCallback)}
           />
 
           <LabCard

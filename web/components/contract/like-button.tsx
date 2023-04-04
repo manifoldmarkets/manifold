@@ -21,7 +21,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 const LIKES_SHOWN = 3
 
 const ButtonReactionType = 'like' as ReactionTypes
-export type LikeButtonSizeType = 'md' | 'lg' | 'xl'
+export type LikeButtonSizeType = 'sm' | 'md' | 'xl'
 
 export const LikeButton = memo(function LikeButton(props: {
   contentId: string
@@ -122,12 +122,7 @@ export const LikeButton = memo(function LikeButton(props: {
         placement={'bottom'}
         noTap
         hasSafePolygon={showList}
-        className={clsx(
-          'flex flex-row items-center',
-          size === 'md' && 'px-2',
-          size === 'xl' && 'px-4',
-          className
-        )}
+        className={clsx('flex flex-row items-center')}
       >
         <button
           disabled={disabled}
@@ -135,7 +130,11 @@ export const LikeButton = memo(function LikeButton(props: {
             'transition-transform disabled:cursor-not-allowed',
             color === 'white' ? 'text-ink-0' : 'text-ink-500 ',
             totalLikes === 0 && !user && 'disabled:opacity-50',
-            !disabled && color === 'gray' ? 'hover:text-ink-600' : ''
+            !disabled && color === 'gray' ? 'hover:text-ink-600' : '',
+            size === 'sm' && 'px-2',
+            size === 'md' && 'px-2',
+            size === 'xl' && 'px-4',
+            className
           )}
           onClick={(e) => e.preventDefault()}
           {...likeLongPress}
@@ -148,9 +147,9 @@ export const LikeButton = memo(function LikeButton(props: {
                   'text-ink-0 absolute rounded-full text-center',
                   size === 'md' &&
                     '-bottom-1.5 -right-1.5 min-w-[15px] p-[1.5px] text-[10px] leading-3',
-                  size === 'xl' &&
-                    'bottom-0 right-0 min-w-[24px] p-0.5 text-sm',
-                  isSwipe && 'text-white'
+                  // size === 'xl' &&
+                  //   'bottom-0 right-0 min-w-[24px] p-0.5 text-sm',
+                  color === 'white' && 'text-white'
                 )}
               >
                 {totalLikes > 0 ? totalLikes : ''}
@@ -158,11 +157,12 @@ export const LikeButton = memo(function LikeButton(props: {
             )}
             <HeartIcon
               className={clsx(
+                size === 'sm' && 'h-4 w-4',
                 size === 'md' && 'h-6 w-6',
-                size === 'lg' && 'h-8 w-8',
                 size === 'xl' && 'h-12 w-12',
-                liked ? 'fill-pink-400 stroke-pink-400' : '',
-                isSwipe ? 'text-white disabled:opacity-50' : ''
+                liked
+                  ? 'fill-pink-400 stroke-pink-400'
+                  : color === 'white' && 'stroke-white-400 fill-white'
               )}
             />
           </div>
@@ -181,9 +181,8 @@ export const LikeButton = memo(function LikeButton(props: {
         <div
           className={clsx(
             'h-5 disabled:opacity-50',
-            size === 'xl' ? '-mt-3 text-lg' : 'text-sm',
-            color === 'white' ? 'text-ink-1000' : 'text-ink-500',
-            isSwipe && 'text-white'
+            size === 'xl' ? 'text-lg' : 'text-sm',
+            color === 'white' ? 'text-white' : 'text-ink-500'
           )}
         >
           {totalLikes > 0 ? totalLikes : ''}
