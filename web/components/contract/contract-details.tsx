@@ -193,10 +193,10 @@ function PublicMarketGroups(props: { contract: Contract }) {
         {user && (
           <button onClick={() => setOpen(true)}>
             {groupsToDisplay.length ? (
-              <DotsCircleHorizontalIcon className="text-ink-400 hover:text-ink-400/75 h-[20px]" />
+              <DotsCircleHorizontalIcon className="text-ink-400 hover:text-ink-400/75 h-6" />
             ) : (
-              <span className="bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-xs font-light">
-                <PlusIcon className="mr-1 h-3 w-3" /> Group
+              <span className="bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-sm font-light">
+                <PlusIcon className="mr-1 h-4 w-4" /> Group
               </span>
             )}
           </button>

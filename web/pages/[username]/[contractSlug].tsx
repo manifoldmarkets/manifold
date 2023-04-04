@@ -277,7 +277,7 @@ export function ContractPageContent(props: {
         >
           <div
             className={clsx(
-              'sticky  z-50 flex items-center',
+              'sticky z-50 flex items-end',
               !coverImageUrl ? 'bg-canvas-100 top-0' : 'top-[-92px] h-[140px]'
             )}
           >
