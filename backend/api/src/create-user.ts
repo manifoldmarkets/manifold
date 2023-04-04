@@ -86,6 +86,10 @@ export const createuser = authEndpoint(async (req, auth) => {
     [auth.uid, interestEmbedding, interestEmbedding]
   )
 
+  const ip = (req.headers['x-forwarded-for'] ??
+    req.socket.remoteAddress ??
+    req.ip) as string
+
   // Only undefined prop should be avatarUrl
   const user: User = removeUndefinedProps({
     id: auth.uid,
@@ -103,7 +107,8 @@ export const createuser = authEndpoint(async (req, auth) => {
     achievements: {},
     creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
     isBannedFromPosting: Boolean(
-      deviceToken && bannedDeviceTokens.includes(deviceToken)
+      (deviceToken && bannedDeviceTokens.includes(deviceToken)) ||
+        (ip && bannedIpAddresses.includes(ip))
     ),
   })
 
@@ -113,7 +118,7 @@ export const createuser = authEndpoint(async (req, auth) => {
   const privateUser: PrivateUser = {
     id: auth.uid,
     email,
-    initialIpAddress: req.ip,
+    initialIpAddress: ip,
     initialDeviceToken: deviceToken,
     notificationPreferences: getDefaultNotificationPreferences(),
     blockedUserIds: [],
@@ -126,7 +131,7 @@ export const createuser = authEndpoint(async (req, auth) => {
 
   await firestore.collection('private-users').doc(auth.uid).create(privateUser)
 
-  await track(auth.uid, 'create user', { username }, { ip: req.ip })
+  await track(auth.uid, 'create user', { username }, { ip })
 
   return { user, privateUser }
 })
@@ -159,4 +164,4 @@ function getStorageBucketId() {
 
 // Automatically ban users with these device tokens or ip addresses.
 const bannedDeviceTokens = ['fa807d664415', 'dcf208a11839', 'bbf18707c15d']
-const bannedIpAddresses = ['::ffff:169.254.1.1']
+const bannedIpAddresses: string[] = []
