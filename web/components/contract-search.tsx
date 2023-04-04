@@ -482,7 +482,7 @@ function SearchFilters(props: {
         <button
           type="button"
           onClick={() => setAsList(!asList)}
-          className="hover:bg-canvas-50 border-ink-300 text-ink-500 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 relative inline-flex h-full items-center rounded-md border px-2 py-1 text-sm font-medium shadow-sm focus:z-10 focus:outline-none focus:ring-1 sm:py-2"
+          className="hover:bg-canvas-50 border-ink-500 text-ink-500 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 relative inline-flex h-full items-center rounded-md border px-2 py-1 text-sm font-medium shadow-sm focus:z-10 focus:outline-none focus:ring-1 sm:py-2"
         >
           {asList ? (
             <ViewGridIcon className="h-5 w-5" aria-hidden="true" />

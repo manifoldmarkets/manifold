@@ -15,7 +15,7 @@ export const dailyStatsClass = 'text-lg py-1'
 
 // still not that pretty...
 export const unseenDailyStatsClass =
-  'px-1.5 transition-all shadow-lg shadow-primary-200 dark:shadow-canvas-100 bg-primary-50 dark:bg-primary-200/10 hover:shadow-md'
+  'px-1.5 transition-all shadow-lg !shadow-primary-200 dark:shadow-canvas-100 bg-primary-50 dark:bg-primary-200/10 hover:shadow-md'
 
 export function DailyStats(props: {
   user: User | null | undefined
