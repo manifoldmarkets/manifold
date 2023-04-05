@@ -42,7 +42,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '👥 Celebrities',
   ],
   '💼 Business': [
-    '📈 Stocks',
     '🪙 Crypto',
     '💵 Finance',
     '💰 Economics',
