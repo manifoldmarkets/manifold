@@ -20,12 +20,7 @@ export const WatchMarketModal = (props: {
           <span className={'ml-2'}>
             Watching a market means you'll receive notifications from activity
             on it. You automatically start watching a market if you comment on
-            it, bet on it, or click the
-            <EyeIcon
-              className={clsx('ml-1 inline h-6 w-6 align-top')}
-              aria-hidden="true"
-            />
-            ️ button.
+            it, bet on it, or click the watch button.
           </span>
           <span className={'text-primary-700'}>
             • What types of notifications will I receive?
