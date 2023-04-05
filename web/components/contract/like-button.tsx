@@ -129,7 +129,10 @@ export const LikeButton = memo(function LikeButton(props: {
           className={clsx(
             'transition-transform disabled:cursor-not-allowed',
             color === 'white' ? 'text-ink-0' : 'text-ink-500 ',
-            totalLikes === 0 && !user && 'disabled:opacity-50',
+            totalLikes === 0 &&
+              !user &&
+              color === 'gray' &&
+              'disabled:opacity-50',
             !disabled && color === 'gray' ? 'hover:text-ink-600' : '',
             size === 'sm' && 'px-2',
             size === 'md' && 'px-2',
@@ -162,7 +165,7 @@ export const LikeButton = memo(function LikeButton(props: {
                 size === 'xl' && 'h-12 w-12',
                 liked
                   ? 'fill-pink-400 stroke-pink-400'
-                  : color === 'white' && 'stroke-white-400 fill-white'
+                  : color === 'white' && 'fill-white stroke-white'
               )}
             />
           </div>

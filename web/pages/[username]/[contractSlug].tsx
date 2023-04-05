@@ -320,25 +320,24 @@ export function ContractPageContent(props: {
               </div>
 
               <div className="text-ink-600 flex items-center justify-between text-sm">
-                <div className="flex gap-4">
-                  <AuthorInfo contract={contract} />
+                <AuthorInfo contract={contract} />
 
+                <div className="flex gap-4">
                   <Tooltip
                     text="Traders"
                     placement="bottom"
                     noTap
-                    className="hidden flex-row sm:flex"
+                    className="flex flex-row items-center gap-1 font-light"
                   >
-                    <Row className={'shrink-0 items-center gap-1 font-light'}>
-                      <UserIcon className="text-ink-500 h-4 w-4" />
-                      <div>{uniqueBettorCount ?? 0}</div>
-                    </Row>
+                    <UserIcon className="text-ink-500 h-4 w-4" />
+                    <div>{uniqueBettorCount ?? 0}</div>
                   </Tooltip>
+
+                  <CloseOrResolveTime
+                    contract={contract}
+                    editable={user?.id === creatorId}
+                  />
                 </div>
-                <CloseOrResolveTime
-                  contract={contract}
-                  editable={user?.id === creatorId}
-                />
               </div>
               <ContractOverview
                 contract={contract}
