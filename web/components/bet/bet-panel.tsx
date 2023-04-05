@@ -392,11 +392,12 @@ export function BuyPanel(props: {
             </Col>
             <div>
               <span className="whitespace-nowrap text-lg">
-                {formatMoney(currentPayout)}
+                {isStonk || isPseudoNumeric
+                  ? Math.floor(currentPayout)
+                  : formatMoney(currentPayout)}
               </span>
               <span className="text-ink-500 pr-3 text-sm">
-                {' '}
-                +{currentReturnPercent}
+                {isStonk || isPseudoNumeric ? '' : ' +' + currentReturnPercent}
               </span>
             </div>
           </Col>
