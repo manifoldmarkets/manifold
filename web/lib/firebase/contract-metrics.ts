@@ -42,7 +42,7 @@ export function getUserContractMetricsQuery(
 // If you want shares sorted in descending order you have to make a new index for that outcome.
 // You can still get all users with contract-metrics and shares without the index and sort them afterwards
 // See use-contract-metrics.ts to extend this for more outcomes
-export async function getBinaryContractUserContractMetrics(
+export async function getCPMMContractUserContractMetrics(
   contractId: string,
   count: number
 ) {

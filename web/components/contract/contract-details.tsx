@@ -149,6 +149,9 @@ export function CloseOrResolveTime(props: {
 }) {
   const { contract, editable } = props
   const { resolutionTime, closeTime, isResolved } = contract
+  if (contract.outcomeType === 'STONK') {
+    return <></>
+  }
 
   if (!!closeTime || !!isResolved) {
     return (

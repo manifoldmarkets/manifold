@@ -1,4 +1,4 @@
-import { memo, ReactNode } from 'react'
+import { memo, ReactNode, useState } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -18,6 +18,7 @@ import {
   NumericContract,
   PseudoNumericContract,
   contractPath,
+  StonkContract,
 } from 'common/contract'
 import {
   BinaryContractOutcomeLabel,
@@ -56,7 +57,8 @@ import { CommentsButton } from '../swipe/swipe-comments'
 import { BetRow } from '../bet/bet-row'
 import { fromNow } from 'web/lib/util/time'
 import Router from 'next/router'
-
+import { ENV_CONFIG } from 'common/envs/constants'
+import { animated, useSpring } from '@react-spring/web'
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
   showTime?: ShowTime
@@ -410,6 +412,25 @@ export function PseudoNumericResolutionOrExpectation(props: {
           <div className="text-base font-light">expected</div>
         </>
       )}
+    </Row>
+  )
+}
+export function StonkPrice(props: {
+  contract: StonkContract
+  className?: string
+}) {
+  const { contract, className } = props
+
+  const value = getMappedValue(contract, getProbability(contract))
+  const [initialProb] = useState(getProbability(contract))
+  const spring = useSpring({ val: value, from: { val: initialProb } })
+  return (
+    <Row className={clsx('items-baseline text-3xl', className)}>
+      {ENV_CONFIG.moneyMoniker}
+      <animated.div>
+        {spring.val.interpolate((val) => val.toFixed(2))}
+      </animated.div>
+      <div className="ml-2 text-base font-light">per share</div>
     </Row>
   )
 }

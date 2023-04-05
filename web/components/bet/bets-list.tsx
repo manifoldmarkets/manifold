@@ -25,7 +25,12 @@ import {
   getOutcomeProbability,
   resolvedPayout,
 } from 'common/calculate'
-import { DPMContract, NumericContract, contractPath } from 'common/contract'
+import {
+  DPMContract,
+  NumericContract,
+  contractPath,
+  CPMMBinaryContract,
+} from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
 import { LimitBet } from 'common/bet'
@@ -461,7 +466,7 @@ function ContractBets(props: {
             contract.outcomeType === 'BINARY' && (
               <SellRow
                 className="mt-4 items-start"
-                contract={contract}
+                contract={contract as CPMMBinaryContract}
                 user={user}
                 showTweet
               />

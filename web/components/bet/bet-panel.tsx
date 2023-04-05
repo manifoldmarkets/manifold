@@ -5,7 +5,11 @@ import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
 
 import { useUser } from 'web/hooks/use-user'
-import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  CPMMBinaryContract,
+  PseudoNumericContract,
+  StonkContract,
+} from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
@@ -48,6 +52,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
 import { SiteLink } from '../widgets/site-link'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
+import { STONK_NO, STONK_YES } from 'common/stonk'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -170,7 +175,7 @@ export function SimpleBetPanel(props: {
 export type binaryOutcomes = 'YES' | 'NO' | undefined
 
 export function BuyPanel(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
@@ -196,6 +201,7 @@ export function BuyPanel(props: {
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+  const isStonk = contract.outcomeType === 'STONK'
   const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
 
   const outcome = option === 'LIMIT' ? undefined : option
@@ -326,19 +332,24 @@ export function BuyPanel(props: {
           onSelect={(choice) => {
             onOptionChoice(choice)
           }}
-          isPseudoNumeric={isPseudoNumeric}
+          yesLabel={
+            isPseudoNumeric ? 'HIGHER' : isStonk ? STONK_YES : undefined
+          }
+          noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : undefined}
         />
-        <button
-          className={clsx(
-            'inline-flex items-center justify-center rounded-3xl border-2 p-2',
-            seeLimit
-              ? 'border-indigo-500 bg-indigo-500 text-white'
-              : 'bg-canvas-0 border-indigo-500 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-500/10 hover:text-indigo-500'
-          )}
-          onClick={() => onOptionChoice('LIMIT')}
-        >
-          <div className="h-6 w-6 text-center">%</div>
-        </button>
+        {!isStonk && (
+          <button
+            className={clsx(
+              'inline-flex items-center justify-center rounded-3xl border-2 p-2',
+              seeLimit
+                ? 'border-indigo-500 bg-indigo-500 text-white'
+                : 'bg-canvas-0 border-indigo-500 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-500/10 hover:text-indigo-500'
+            )}
+            onClick={() => onOptionChoice('LIMIT')}
+          >
+            <div className="h-6 w-6 text-center">%</div>
+          </button>
+        )}
       </Row>
 
       <Col
@@ -372,7 +383,13 @@ export function BuyPanel(props: {
           <Col className="w-1/2 text-sm">
             <Col className="text-ink-500 flex-nowrap whitespace-nowrap text-sm">
               <div>
-                {isPseudoNumeric ? 'Shares' : <>Payout if {outcome ?? 'YES'}</>}
+                {isPseudoNumeric ? (
+                  'Shares'
+                ) : isStonk ? (
+                  'Max payout'
+                ) : (
+                  <>Payout if {outcome ?? 'YES'}</>
+                )}
               </div>
             </Col>
             <div>
@@ -388,9 +405,13 @@ export function BuyPanel(props: {
           <Col className="w-1/2 text-sm">
             <Row>
               <span className="text-ink-500 whitespace-nowrap text-sm">
-                {isPseudoNumeric ? 'Estimated value' : 'New probability'}
+                {isPseudoNumeric
+                  ? 'Estimated value'
+                  : isStonk
+                  ? 'New stock price'
+                  : 'New probability'}
               </span>
-              {!isPseudoNumeric && (
+              {!isPseudoNumeric && !isStonk && (
                 <InfoTooltip
                   text={`The probability of YES after your ${SINGULAR_BET}`}
                   className="ml-1"
@@ -440,6 +461,8 @@ export function BuyPanel(props: {
                     contract,
                     'YES'
                   )} or ${formatOutcomeLabel(contract, 'NO')}`
+                : isStonk
+                ? 'Bet'
                 : 'Wager'
             }
           />
@@ -470,7 +493,7 @@ export function BuyPanel(props: {
 }
 
 function LimitOrderPanel(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }

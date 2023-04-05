@@ -584,9 +584,9 @@ function getProb(contract: Contract) {
     ? resolutionProbability
     : resolution
     ? 1
-    : outcomeType === 'BINARY'
-    ? getProbability(contract)
-    : outcomeType === 'PSEUDO_NUMERIC'
+    : outcomeType === 'BINARY' ||
+      outcomeType === 'PSEUDO_NUMERIC' ||
+      outcomeType === 'STONK'
     ? getProbability(contract)
     : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
     ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')

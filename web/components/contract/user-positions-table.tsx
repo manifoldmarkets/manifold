@@ -17,7 +17,14 @@ import { useContractMetrics } from 'web/hooks/use-contract-metrics'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { NoLabel, YesLabel } from 'web/components/outcome-label'
+import {
+  HigherLabel,
+  BuyLabel,
+  LowerLabel,
+  NoLabel,
+  SellLabel,
+  YesLabel,
+} from 'web/components/outcome-label'
 import { formatMoney } from 'common/util/format'
 import { Pagination } from 'web/components/widgets/pagination'
 import { ContractMetric } from 'common/contract-metric'
@@ -27,17 +34,19 @@ import clsx from 'clsx'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { SortRow } from 'web/components/contract/contract-tabs'
-import { CPMMBinaryContract } from 'common/contract'
+import { CPMMContract } from 'common/contract'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { getProbability } from 'common/calculate'
 
 export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
-    contract: CPMMBinaryContract
+    contract: CPMMContract
     positions: ContractMetricsByOutcome
     setTotalPositions: (count: number) => void
     shareholderStats?: ShareholderStats
   }) {
     const { contract, setTotalPositions } = props
+    const currentProb = getProbability(contract)
     const contractId = contract.id
     const [page, setPage] = useState(0)
     const pageSize = 20
@@ -97,6 +106,9 @@ export const BinaryUserPositionsTable = memo(
       yesPositionsSorted.length > noPositionsSorted.length
         ? yesPositionsSorted.length
         : noPositionsSorted.length
+    const isBinary = contract.outcomeType === 'BINARY'
+    const isStonk = contract.outcomeType === 'STONK'
+    const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
     const getPositionsTitle = (outcome: 'YES' | 'NO') => {
       return outcome === 'YES' ? (
@@ -107,7 +119,21 @@ export const BinaryUserPositionsTable = memo(
           >
             {shareholderStats?.yesShareholders}{' '}
           </Tooltip>
-          <YesLabel /> payouts
+          {isBinary ? (
+            <>
+              <YesLabel /> payouts
+            </>
+          ) : isStonk ? (
+            <>
+              <BuyLabel text={'BUYERS'} />
+            </>
+          ) : isPseudoNumeric ? (
+            <>
+              <HigherLabel /> shareholders
+            </>
+          ) : (
+            <></>
+          )}
         </span>
       ) : (
         <span>
@@ -117,11 +143,30 @@ export const BinaryUserPositionsTable = memo(
           >
             {shareholderStats?.noShareholders}{' '}
           </Tooltip>
-          <NoLabel /> payouts
+          {isBinary ? (
+            <>
+              <NoLabel /> payouts
+            </>
+          ) : isStonk ? (
+            <>
+              <SellLabel text={'SELLERS'} />
+            </>
+          ) : isPseudoNumeric ? (
+            <>
+              <LowerLabel /> shareholders
+            </>
+          ) : (
+            <></>
+          )}{' '}
         </span>
       )
     }
 
+    const getStonkDisplayValue = (shares: number, outcome: 'YES' | 'NO') => {
+      const value =
+        outcome === 'YES' ? shares * currentProb : shares * (1 - currentProb)
+      return formatMoney(value)
+    }
     return (
       <Col className={'w-full'}>
         <Row className={'mb-2 items-center justify-end gap-2'}>
@@ -157,7 +202,12 @@ export const BinaryUserPositionsTable = memo(
                   followedUsers={followedUsers}
                   numberToShow={
                     sortBy === 'shares'
-                      ? formatMoney(position.totalShares[outcome] ?? 0)
+                      ? isStonk
+                        ? getStonkDisplayValue(
+                            position.totalShares[outcome] ?? 0,
+                            outcome
+                          )
+                        : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
                 />
@@ -183,7 +233,12 @@ export const BinaryUserPositionsTable = memo(
                   followedUsers={followedUsers}
                   numberToShow={
                     sortBy === 'shares'
-                      ? formatMoney(position.totalShares[outcome] ?? 0)
+                      ? isStonk
+                        ? getStonkDisplayValue(
+                            position.totalShares[outcome] ?? 0,
+                            outcome
+                          )
+                        : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
                 />

@@ -1,8 +1,4 @@
-import {
-  BinaryContract,
-  CPMMBinaryContract,
-  PseudoNumericContract,
-} from 'common/contract'
+import { CPMMContract } from 'common/contract'
 import { User } from 'common/user'
 import { getContractBetMetrics } from 'common/calculate'
 import { useState } from 'react'
@@ -21,12 +17,13 @@ import { SellPanel } from './sell-panel'
 import { TweetButton, getPositionTweet } from '../buttons/tweet-button'
 
 export function SellRow(props: {
-  contract: BinaryContract | PseudoNumericContract
+  contract: CPMMContract
   user: User | null | undefined
   className?: string
   showTweet?: boolean
 }) {
   const { className, contract, user, showTweet } = props
+  const isStonk = contract.outcomeType === 'STONK'
 
   const userBets = useUserContractBets(user?.id, contract.id)
   const [showSellModal, setShowSellModal] = useState(false)
@@ -39,7 +36,11 @@ export function SellRow(props: {
       <Col className={className}>
         <Row className="items-center justify-between gap-4">
           <div>
-            You'll get {formatMoney(shares)} on{' '}
+            {isStonk ? (
+              <>You have {Math.floor(shares)} shares of </>
+            ) : (
+              <>You'll get {formatMoney(shares)} on </>
+            )}
             <OutcomeLabel
               outcome={sharesOutcome}
               contract={contract}
@@ -86,7 +87,7 @@ export function SellRow(props: {
 
 function SellSharesModal(props: {
   className?: string
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'
@@ -102,6 +103,7 @@ function SellSharesModal(props: {
     user,
     setOpen,
   } = props
+  const isStonk = contract.outcomeType === 'STONK'
 
   return (
     <Modal open={true} setOpen={setOpen}>
@@ -109,8 +111,14 @@ function SellSharesModal(props: {
         <Title>Sell position</Title>
 
         <div className="mb-6">
-          You have {formatWithCommas(shares)} shares worth {formatMoney(shares)}{' '}
-          if this market resolves{' '}
+          {isStonk ? (
+            <>You have {formatWithCommas(shares)} shares of </>
+          ) : (
+            <>
+              You have {formatWithCommas(shares)} shares worth{' '}
+              {formatMoney(shares)} if this market resolves{' '}
+            </>
+          )}
           <OutcomeLabel
             outcome={sharesOutcome}
             contract={contract}

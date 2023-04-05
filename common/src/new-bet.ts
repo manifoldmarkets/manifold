@@ -21,6 +21,7 @@ import {
   DPMContract,
   NumericContract,
   PseudoNumericContract,
+  StonkContract,
 } from './contract'
 import { noFees } from './fees'
 import { addObjects, removeUndefinedProps } from './util/object'
@@ -217,7 +218,7 @@ export const computeFills = (
 export const getBinaryCpmmBetInfo = (
   outcome: 'YES' | 'NO',
   betAmount: number,
-  contract: CPMMBinaryContract | PseudoNumericContract,
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract,
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number }
@@ -274,7 +275,7 @@ export const getBinaryCpmmBetInfo = (
 export const getBinaryBetStats = (
   outcome: 'YES' | 'NO',
   betAmount: number,
-  contract: CPMMBinaryContract | PseudoNumericContract,
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract,
   limitProb: number,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number }

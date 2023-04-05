@@ -213,7 +213,10 @@ export function ContractPageContent(props: {
   const isClosed = closeTime && closeTime < Date.now()
 
   const [showResolver, setShowResolver] = useState(
-    (isCreator || isAdmin) && !isResolved && (closeTime ?? 0) < Date.now()
+    (isCreator || isAdmin) &&
+      !isResolved &&
+      (closeTime ?? 0) < Date.now() &&
+      outcomeType !== 'STONK'
   )
 
   const allowTrade = tradingAllowed(contract)

@@ -3,6 +3,7 @@ import {
   BinaryContract,
   CPMMBinaryContract,
   PseudoNumericContract,
+  StonkContract,
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { User } from 'web/lib/firebase/users'
@@ -11,7 +12,7 @@ import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function SignedInBinaryMobileBetting(props: {
-  contract: BinaryContract | PseudoNumericContract
+  contract: BinaryContract | PseudoNumericContract | StonkContract
   user: User
 }) {
   const { contract, user } = props
@@ -32,7 +33,7 @@ export function SignedInBinaryMobileBetting(props: {
         mobileView={isMobile}
       />
       <SellRow
-        contract={contract}
+        contract={contract as CPMMBinaryContract}
         user={user}
         className={'border-ink-200 mt-2 rounded-md border-2 px-4 py-2'}
       />

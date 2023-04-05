@@ -39,6 +39,7 @@ import { getCloseDate } from 'shared/helpers/openai-utils'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
+import { STONK_INITIAL_PROB } from 'common/stonk'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -149,6 +150,9 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
           `Initial value is too ${initialProb < 1 ? 'low' : 'high'}`
         )
       else throw new APIError(400, 'Invalid initial probability.')
+  }
+  if (outcomeType === 'STONK') {
+    initialProb = STONK_INITIAL_PROB
   }
 
   if (outcomeType === 'BINARY') {
@@ -319,7 +323,11 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
   const providerId = userId
 
-  if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
+  if (
+    outcomeType === 'BINARY' ||
+    outcomeType === 'PSEUDO_NUMERIC' ||
+    outcomeType === 'STONK'
+  ) {
     const liquidityDoc = firestore
       .collection(`contracts/${contract.id}/liquidity`)
       .doc()

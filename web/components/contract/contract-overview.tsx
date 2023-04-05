@@ -19,6 +19,7 @@ import {
   FreeResponseResolutionOrChance,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
+  StonkPrice,
 } from './contract-card'
 import { Bet } from 'common/bet'
 import { SignedInBinaryMobileBetting } from '../bet/bet-button'
@@ -29,6 +30,7 @@ import {
   NumericContract,
   PseudoNumericContract,
   BinaryContract,
+  CPMMStonkContract,
 } from 'common/contract'
 import { SizedContainer } from 'web/components/sized-container'
 import { CertOverview } from './cert-overview'
@@ -40,6 +42,9 @@ import { useEvent } from 'web/hooks/use-event'
 import { periodDurations } from 'web/lib/util/time'
 import { getDateRange } from '../charts/helpers'
 import { QfOverview } from './qf-overview'
+import { StonkContractChart } from '../charts/contract/stonk'
+import { STARTING_BALANCE } from 'common/economy'
+import { formatMoney } from 'common/util/format'
 
 export const ContractOverview = memo(
   (props: {
@@ -64,6 +69,8 @@ export const ContractOverview = memo(
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
         return <ChoiceOverview contract={contract} bets={bets} />
+      case 'STONK':
+        return <StonkOverview contract={contract} betPoints={betPoints} />
     }
   }
 )
@@ -195,6 +202,57 @@ const PseudoNumericOverview = (props: {
         <Col className="mt-1 w-full">
           <BetSignUpPrompt className="xl:self-center" size="xl" />
           <PlayMoneyDisclaimer />
+        </Col>
+      )}
+      {user === undefined && <div className="h-[72px] w-full" />}
+    </>
+  )
+}
+const StonkOverview = (props: {
+  contract: CPMMStonkContract
+  betPoints: HistoryPoint<Partial<Bet>>[]
+}) => {
+  const { contract, betPoints } = props
+  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
+    useTimePicker(contract)
+  const user = useUser()
+
+  return (
+    <>
+      <Row className="items-end justify-between gap-4">
+        <StonkPrice contract={contract} />
+        <TimeRangePicker
+          currentTimePeriod={currentTimePeriod}
+          setCurrentTimePeriod={setTimePeriod}
+          maxRange={maxRange}
+          color="indigo"
+        />
+      </Row>
+      <SizedContainer fullHeight={250} mobileHeight={150}>
+        {(w, h) => (
+          <StonkContractChart
+            width={w}
+            height={h}
+            betPoints={betPoints}
+            viewScaleProps={viewScale}
+            controlledStart={start}
+            contract={contract}
+          />
+        )}
+      </SizedContainer>
+
+      {user && tradingAllowed(contract) && (
+        <SignedInBinaryMobileBetting contract={contract} user={user} />
+      )}
+
+      {user === null && (
+        <Col className="mt-1 w-full">
+          <BetSignUpPrompt className="xl:self-center" size="xl" />
+          <PlayMoneyDisclaimer
+            text={`Get ${formatMoney(
+              STARTING_BALANCE
+            )} play money to bet on the stock`}
+          />
         </Col>
       )}
       {user === undefined && <div className="h-[72px] w-full" />}

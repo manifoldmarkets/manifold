@@ -1,16 +1,24 @@
-import { Contract, PseudoNumericContract } from './contract'
+import { Contract, PseudoNumericContract, StonkContract } from './contract'
 import { formatLargeNumber, formatPercent } from './util/format'
+import { STONK_MAX, STONK_MIN } from 'common/stonk'
 
 export function formatNumericProbability(
   p: number,
-  contract: PseudoNumericContract
+  contract: PseudoNumericContract | StonkContract
 ) {
   const value = getMappedValue(contract, p)
   return formatLargeNumber(value)
 }
 
 export const getMappedValue = (contract: Contract, prob: number) => {
-  if (contract.outcomeType !== 'PSEUDO_NUMERIC') return prob
+  if (
+    contract.outcomeType !== 'PSEUDO_NUMERIC' &&
+    contract.outcomeType !== 'STONK'
+  )
+    return prob
+
+  if (contract.outcomeType === 'STONK')
+    return prob * (STONK_MAX - STONK_MIN) + STONK_MIN
 
   const { min, max, isLogScale } = contract
 
@@ -23,7 +31,9 @@ export const getMappedValue = (contract: Contract, prob: number) => {
 }
 
 export const getFormattedMappedValue = (contract: Contract, prob: number) => {
-  if (contract.outcomeType !== 'PSEUDO_NUMERIC') return formatPercent(prob)
+  const { outcomeType } = contract
+  if (outcomeType !== 'PSEUDO_NUMERIC' && outcomeType !== 'STONK')
+    return formatPercent(prob)
 
   const value = getMappedValue(contract, prob)
   return formatLargeNumber(value)

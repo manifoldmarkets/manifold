@@ -131,7 +131,6 @@ export function ContractTabs(props: {
         },
 
         totalBets > 0 &&
-          contract.outcomeType === 'BINARY' &&
           contract.mechanism === 'cpmm-1' && {
             title: positionsTitle,
             content: (

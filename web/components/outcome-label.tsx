@@ -39,6 +39,9 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'CERT' || outcomeType === 'QUADRATIC_FUNDING') {
     return <span>TODO Cert outcome label</span>
   }
+  if (outcomeType === 'STONK') {
+    return <StonkOutcomeLabel outcome={outcome as any} />
+  }
 
   return (
     <FreeResponseOutcomeLabel
@@ -64,6 +67,14 @@ export function PseudoNumericOutcomeLabel(props: { outcome: resolution }) {
 
   if (outcome === 'YES') return <HigherLabel />
   if (outcome === 'NO') return <LowerLabel />
+  if (outcome === 'MKT') return <ProbLabel />
+  return <CancelLabel />
+}
+export function StonkOutcomeLabel(props: { outcome: resolution }) {
+  const { outcome } = props
+
+  if (outcome === 'YES') return <BuyLabel />
+  if (outcome === 'NO') return <SellLabel />
   if (outcome === 'MKT') return <ProbLabel />
   return <CancelLabel />
 }
@@ -114,6 +125,16 @@ export function HigherLabel() {
 
 export function LowerLabel() {
   return <span className="text-scarlet-600">LOWER</span>
+}
+
+export function BuyLabel(props: { text?: string }) {
+  const { text } = props
+  return <span className="text-teal-600">{text ? text : 'BUY'}</span>
+}
+
+export function SellLabel(props: { text?: string }) {
+  const { text } = props
+  return <span className="text-scarlet-600">{text ? text : 'SELL'}</span>
 }
 
 export function NoLabel() {
