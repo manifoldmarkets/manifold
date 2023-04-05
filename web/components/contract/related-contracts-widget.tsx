@@ -34,15 +34,13 @@ export const RelatedContractsList = memo(function RelatedContractsList(props: {
     <Col className={clsx(className, 'flex-1')}>
       <h2 className={clsx('text-ink-600 mb-2 text-xl')}>Related markets</h2>
       <Col className="divide-ink-300 divide-y-[0.5px]">
-        {contracts
-          .filter((c) => c.coverImageUrl)
-          .map((contract) => (
-            <RelatedContractCard
-              contract={contract}
-              key={contract.id}
-              onContractClick={onContractClick}
-            />
-          ))}
+        {contracts.map((contract) => (
+          <RelatedContractCard
+            contract={contract}
+            key={contract.id}
+            onContractClick={onContractClick}
+          />
+        ))}
       </Col>
 
       <div className="relative">
