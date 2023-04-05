@@ -17,6 +17,7 @@ import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { createCommentOnPost } from 'web/lib/firebase/comments'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 
 export function PostCommentThread(props: {
   post: Post
@@ -122,7 +123,7 @@ export function PostCommentItem(props: {
 
   useEffect(() => {
     if (highlighted && commentRef.current) {
-      commentRef.current.scrollIntoView(true)
+      scrollIntoViewCentered(commentRef.current)
     }
   }, [highlighted, commentRef.current?.id])
 

@@ -35,6 +35,7 @@ import { richTextToString } from 'common/util/parse'
 import { buildArray } from 'common/util/array'
 import { hideComment } from 'web/lib/firebase/api'
 import { useAdmin } from 'web/hooks/use-admin'
+import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -127,7 +128,7 @@ export const FeedComment = memo(function FeedComment(props: {
 
   useEffect(() => {
     if (highlighted && commentRef.current) {
-      commentRef.current.scrollIntoView(true)
+      scrollIntoViewCentered(commentRef.current)
     }
   }, [highlighted])
 
@@ -188,7 +189,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
 
   useEffect(() => {
     if (highlighted && commentRef.current) {
-      commentRef.current.scrollIntoView(true)
+      scrollIntoViewCentered(commentRef.current)
     }
   }, [highlighted])
 
