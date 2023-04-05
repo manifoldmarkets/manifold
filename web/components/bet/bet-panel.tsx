@@ -383,10 +383,8 @@ export function BuyPanel(props: {
           <Col className="w-1/2 text-sm">
             <Col className="text-ink-500 flex-nowrap whitespace-nowrap text-sm">
               <div>
-                {isPseudoNumeric ? (
+                {isPseudoNumeric || isStonk ? (
                   'Shares'
-                ) : isStonk ? (
-                  'Max payout'
                 ) : (
                   <>Payout if {outcome ?? 'YES'}</>
                 )}
