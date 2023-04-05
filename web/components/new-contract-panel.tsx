@@ -244,23 +244,22 @@ export function NewContractPanel(props: {
 
   return (
     <div className={clsx(className, 'text-ink-1000')}>
-      {outcomeType === 'STONK' && (
-        <Col className="">
-          <label className="px-1 pt-2 pb-3">
-            Name<span className={'text-scarlet-500'}>*</span>
-          </label>
+      <Col>
+        {outcomeType === 'STONK' ? (
+          <div className="flex w-full flex-col">
+            <label className="px-1 pt-2 pb-3">
+              Stock name<span className={'text-scarlet-500'}>*</span>
+            </label>
 
-          <Input
-            placeholder="e.g. Destiny Stonk"
-            autoFocus
-            maxLength={MAX_QUESTION_LENGTH}
-            value={question}
-            onChange={(e) => setQuestion(e.target.value || '')}
-          />
-        </Col>
-      )}
-      {outcomeType !== 'STONK' && (
-        <Col>
+            <Input
+              placeholder="e.g. Destiny Stock"
+              autoFocus
+              maxLength={MAX_QUESTION_LENGTH}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value || '')}
+            />
+          </div>
+        ) : (
           <div className="flex w-full flex-col">
             <label className="px-1 pt-2 pb-3">
               Question<span className={'text-scarlet-500'}>*</span>
@@ -274,33 +273,15 @@ export function NewContractPanel(props: {
               onChange={(e) => setQuestion(e.target.value || '')}
             />
           </div>
-          <Spacer h={6} />
-          <div className="mb-1 flex flex-col items-start gap-1">
-            <label className="gap-2 px-1 py-2">
-              <span className="mb-1">Description</span>
-            </label>
-            <TextEditor editor={editor} />
-          </div>
-          <Spacer h={6} />
-          {!fromGroup && visibility != 'private' && (
-            <>
-              <Row className={'items-end gap-x-2'}>
-                <GroupSelector
-                  selectedGroup={selectedGroup}
-                  setSelectedGroup={setSelectedGroup}
-                  options={{ showSelector: true, showLabel: true }}
-                  isContractCreator={true}
-                />
-                {selectedGroup && (
-                  <a target="_blank" href={groupPath(selectedGroup.slug)}>
-                    <ExternalLinkIcon className=" text-ink-500 ml-1 mb-3 h-5 w-5" />
-                  </a>
-                )}
-              </Row>
-            </>
-          )}
-        </Col>
-      )}
+        )}
+        <Spacer h={6} />
+        <div className="mb-1 flex flex-col items-start gap-1">
+          <label className="gap-2 px-1 py-2">
+            <span className="mb-1">Description</span>
+          </label>
+          <TextEditor editor={editor} />
+        </div>
+      </Col>
 
       {hideOptions ? (
         <Row className="mt-4 justify-end">
@@ -333,10 +314,10 @@ export function NewContractPanel(props: {
               }}
               choicesMap={{
                 'Yes\xa0/ No': 'BINARY', // non-breaking space
+                Stock: 'STONK',
                 'Multi choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
-                Stock: 'STONK',
                 // 'Quadratic Funding': 'QUADRATIC_FUNDING',
                 // Only show cert option in dev, for now
                 ...(ENV !== 'PROD' ? { Cert: 'CERT' } : {}),
@@ -434,6 +415,26 @@ export function NewContractPanel(props: {
               </div>
             </>
           )}
+
+          {!fromGroup && visibility != 'private' && (
+            <>
+              <Row className={'items-end gap-x-2'}>
+                <GroupSelector
+                  selectedGroup={selectedGroup}
+                  setSelectedGroup={setSelectedGroup}
+                  options={{ showSelector: true, showLabel: true }}
+                  isContractCreator={true}
+                />
+                {selectedGroup && (
+                  <a target="_blank" href={groupPath(selectedGroup.slug)}>
+                    <ExternalLinkIcon className=" text-ink-500 ml-1 mb-3 h-5 w-5" />
+                  </a>
+                )}
+              </Row>
+              <Spacer h={6} />
+            </>
+          )}
+
           {outcomeType !== 'STONK' && (
             <div className="mb-1 flex flex-col items-start">
               <label className="mb-1 gap-2 px-1 py-2">
