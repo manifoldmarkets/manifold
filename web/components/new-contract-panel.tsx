@@ -42,6 +42,7 @@ import WaitingForSupabaseButton from './contract/waiting-for-supabase-button'
 import { Col } from './layout/col'
 import { generateJSON } from '@tiptap/core'
 import { extensions } from 'common/util/parse'
+import { STONK_NO, STONK_YES } from 'common/stonk'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -142,7 +143,7 @@ export function NewContractPanel(props: {
         editor?.commands.setContent(
           generateJSON(
             `<div>
-            Buy: good<br/>Sell: bad<br/>Market trades based on sentiment & never
+            ${STONK_YES}: good<br/>${STONK_NO}: bad<br/>Market trades based on sentiment & never
             resolves.
           </div>`,
             extensions

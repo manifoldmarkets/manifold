@@ -22,7 +22,7 @@ import {
   BuyLabel,
   LowerLabel,
   NoLabel,
-  SellLabel,
+  ShortLabel,
   YesLabel,
 } from 'web/components/outcome-label'
 import { formatMoney } from 'common/util/format'
@@ -125,7 +125,7 @@ export const BinaryUserPositionsTable = memo(
             </>
           ) : isStonk ? (
             <>
-              <BuyLabel text={'BUYERS'} />
+              <BuyLabel /> shareholders
             </>
           ) : isPseudoNumeric ? (
             <>
@@ -149,7 +149,7 @@ export const BinaryUserPositionsTable = memo(
             </>
           ) : isStonk ? (
             <>
-              <SellLabel text={'SELLERS'} />
+              <ShortLabel /> shareholders
             </>
           ) : isPseudoNumeric ? (
             <>

@@ -13,6 +13,7 @@ import {
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Tooltip } from './widgets/tooltip'
 import { Bet } from 'common/bet'
+import { STONK_NO, STONK_YES } from 'common/stonk'
 
 export function OutcomeLabel(props: {
   contract: Contract
@@ -74,7 +75,7 @@ export function StonkOutcomeLabel(props: { outcome: resolution }) {
   const { outcome } = props
 
   if (outcome === 'YES') return <BuyLabel />
-  if (outcome === 'NO') return <SellLabel />
+  if (outcome === 'NO') return <ShortLabel />
   if (outcome === 'MKT') return <ProbLabel />
   return <CancelLabel />
 }
@@ -127,14 +128,12 @@ export function LowerLabel() {
   return <span className="text-scarlet-600">LOWER</span>
 }
 
-export function BuyLabel(props: { text?: string }) {
-  const { text } = props
-  return <span className="text-teal-600">{text ? text : 'BUY'}</span>
+export function BuyLabel() {
+  return <span className="text-teal-600">{STONK_YES}</span>
 }
 
-export function SellLabel(props: { text?: string }) {
-  const { text } = props
-  return <span className="text-scarlet-600">{text ? text : 'SELL'}</span>
+export function ShortLabel() {
+  return <span className="text-scarlet-600">{STONK_NO}</span>
 }
 
 export function NoLabel() {
