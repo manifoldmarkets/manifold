@@ -17,6 +17,7 @@ import {
   NumericContract,
   PseudoNumericContract,
   resolution,
+  StonkContract,
 } from 'common/contract'
 import {
   formatLargeNumber,
@@ -52,11 +53,12 @@ import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import { floor } from 'lodash'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 const BET_SIZE = 10
 
 export function QuickBet(props: {
-  contract: BinaryContract | PseudoNumericContract
+  contract: BinaryContract | PseudoNumericContract | StonkContract
   user?: User | null
   className?: string
 }) {
@@ -70,7 +72,7 @@ export function QuickBet(props: {
 }
 
 export function SignedOutQuickBet(props: {
-  contract: BinaryContract | PseudoNumericContract
+  contract: BinaryContract | PseudoNumericContract | StonkContract
   className?: string
 }) {
   const { contract, className } = props
@@ -119,7 +121,7 @@ export function SignedOutQuickBet(props: {
 }
 
 function SignedInQuickBet(props: {
-  contract: BinaryContract | PseudoNumericContract
+  contract: BinaryContract | PseudoNumericContract | StonkContract
   user: User
   className?: string
 }) {
@@ -374,7 +376,11 @@ function QuickBetAmount(props: {
 function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
   const { outcomeType } = contract
 
-  if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
+  if (
+    outcomeType === 'BINARY' ||
+    outcomeType === 'PSEUDO_NUMERIC' ||
+    outcomeType === 'STONK'
+  ) {
     return direction === 'UP' ? 'YES' : 'NO'
   }
   if (outcomeType === 'FREE_RESPONSE') {
@@ -404,7 +410,8 @@ export function QuickOutcomeView(props: {
   if (
     outcomeType == 'BINARY' ||
     outcomeType == 'NUMERIC' ||
-    outcomeType == 'PSEUDO_NUMERIC'
+    outcomeType == 'PSEUDO_NUMERIC' ||
+    outcomeType == 'STONK'
   ) {
     return (
       <div
@@ -424,7 +431,8 @@ export function QuickOutcomeView(props: {
         <div
           className={`absolute inset-0 flex items-center justify-center gap-1 text-lg font-semibold ${textColor}`}
         >
-          {cardText(contract, isMobile ? undefined : previewProb)}
+          {(outcomeType === 'STONK' ? ENV_CONFIG.moneyMoniker : '') +
+            cardText(contract, isMobile ? undefined : previewProb)}
         </div>
       </div>
     )
@@ -470,6 +478,7 @@ function cardText(contract: Contract, previewProb?: number) {
   switch (outcomeType) {
     case 'BINARY':
       return getBinaryProbPercent(contract)
+    case 'STONK':
     case 'PSEUDO_NUMERIC':
       return formatNumericProbability(getProbability(contract), contract)
     case 'NUMERIC':

@@ -59,6 +59,7 @@ import { fromNow } from 'web/lib/util/time'
 import Router from 'next/router'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { animated, useSpring } from '@react-spring/web'
+import { STONK_NO, STONK_YES } from 'common/stonk'
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
   showTime?: ShowTime
@@ -127,7 +128,9 @@ export const ContractCard = memo(function ContractCard(props: {
 
   const showBinaryQuickBet =
     !marketClosed &&
-    (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
+    (outcomeType === 'BINARY' ||
+      outcomeType === 'PSEUDO_NUMERIC' ||
+      outcomeType === 'STONK') &&
     !hideQuickBet
 
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
@@ -233,7 +236,9 @@ export const ContractCard = memo(function ContractCard(props: {
           />
 
           {!isNew &&
-            (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
+            (outcomeType === 'BINARY' ||
+              outcomeType === 'PSEUDO_NUMERIC' ||
+              outcomeType === 'STONK') && (
               <Tooltip text={'Daily price change'} className={'z-10'}>
                 <ProbOrNumericChange
                   className="py-2 px-2"
@@ -483,11 +488,20 @@ function LoadedMetricsFooter(props: {
   const { YES: yesShares, NO: noShares } = totalShares
   const dailyProfit = from ? from.day.profit : 0
   const profit = showDailyProfit ? dailyProfit : metrics.profit
+  const { outcomeType } = contract
 
   const yesOutcomeLabel =
-    contract.outcomeType === 'PSEUDO_NUMERIC' ? 'HIGHER' : 'YES'
+    outcomeType === 'PSEUDO_NUMERIC'
+      ? 'HIGHER'
+      : outcomeType === 'STONK'
+      ? STONK_YES
+      : 'YES'
   const noOutcomeLabel =
-    contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
+    outcomeType === 'PSEUDO_NUMERIC'
+      ? 'LOWER'
+      : outcomeType === 'STONK'
+      ? STONK_NO
+      : 'NO'
 
   return (
     <div className="bg-ink-100 columns-2 items-center gap-4 rounded-b-[7px] px-4 pt-1 pb-2 text-sm">
