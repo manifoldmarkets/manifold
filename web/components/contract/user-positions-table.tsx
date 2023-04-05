@@ -162,10 +162,8 @@ export const BinaryUserPositionsTable = memo(
       )
     }
 
-    const getStonkDisplayValue = (shares: number, outcome: 'YES' | 'NO') => {
-      const value =
-        outcome === 'YES' ? shares * currentProb : shares * (1 - currentProb)
-      return formatMoney(value)
+    const getStonkDisplayValue = (shares: number) => {
+      return Math.floor(shares).toString()
     }
     return (
       <Col className={'w-full'}>
@@ -204,8 +202,7 @@ export const BinaryUserPositionsTable = memo(
                     sortBy === 'shares'
                       ? isStonk
                         ? getStonkDisplayValue(
-                            position.totalShares[outcome] ?? 0,
-                            outcome
+                            position.totalShares[outcome] ?? 0
                           )
                         : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
@@ -235,8 +232,7 @@ export const BinaryUserPositionsTable = memo(
                     sortBy === 'shares'
                       ? isStonk
                         ? getStonkDisplayValue(
-                            position.totalShares[outcome] ?? 0,
-                            outcome
+                            position.totalShares[outcome] ?? 0
                           )
                         : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
