@@ -40,6 +40,8 @@ import { QfExplainer } from './contract/qf-overview'
 import { Contract } from 'common/contract'
 import WaitingForSupabaseButton from './contract/waiting-for-supabase-button'
 import { Col } from './layout/col'
+import { generateJSON } from '@tiptap/core'
+import { extensions } from 'common/util/parse'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -136,6 +138,17 @@ export function NewContractPanel(props: {
   useEffect(() => {
     if (outcomeType === 'STONK') {
       setCloseDate(dayjs().add(1000, 'year').format('YYYY-MM-DD'))
+      if (editor?.isEmpty) {
+        editor?.commands.setContent(
+          generateJSON(
+            `<div>
+            Buy: good<br/>Sell: bad<br/>Market trades based on sentiment & never
+            resolves.
+          </div>`,
+            extensions
+          )
+        )
+      }
       setCloseHoursMinutes('23:59')
     }
   }, [outcomeType])
@@ -305,7 +318,8 @@ export function NewContractPanel(props: {
                     PSEUDO_NUMERIC:
                       '[EXPERIMENTAL] Predict the value of a number.',
                     CERT: '[EXPERIMENTAL] Tradeable shares of a stock.',
-                    STONK: 'Tradeable shares of a stock.',
+                    STONK:
+                      'Tradeable shares of a stock based on sentiment. Never resolves.',
                     // QUADRATIC_FUNDING: '',
                     // '[EXPERIMENTAL] Radically fund projects. ',
                   }[choice] ?? ''
