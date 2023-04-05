@@ -13,7 +13,7 @@ module.exports = {
       { ...defaultTheme.fontFamily },
       {
         'major-mono': ['var(--font-logo)', 'monospace'],
-        'readex-pro': ['icomoon', 'var(--font-main)', 'emoji', 'sans-serif'],
+        'readex-pro': ['icomoon', 'Helvetica', 'emoji', 'sans-serif'],
         'grenze-gotisch': ['var(--font-match-cards)', 'cursive'], // just for match card game
       }
     ),

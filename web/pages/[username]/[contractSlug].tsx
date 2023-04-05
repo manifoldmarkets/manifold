@@ -59,6 +59,7 @@ import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/contracts'
+import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -242,7 +243,7 @@ export function ContractPageContent(props: {
   const onAnswerCommentClick = useEvent((answer: Answer) => {
     setAnswerResponse(answer)
     if (tabsContainerRef.current) {
-      tabsContainerRef.current.scrollIntoView({ behavior: 'smooth' })
+      scrollIntoViewCentered(tabsContainerRef.current)
       setActiveTabIndex(0)
     } else {
       console.error('no ref to scroll to')

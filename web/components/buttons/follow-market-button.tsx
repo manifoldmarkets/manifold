@@ -13,7 +13,6 @@ import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { useState } from 'react'
-import { Tooltip } from '../widgets/tooltip'
 import { Row } from 'web/components/layout/row'
 
 export const FollowMarketButton = (props: {
@@ -27,49 +26,42 @@ export const FollowMarketButton = (props: {
   const watching = followers?.includes(user?.id ?? 'nope')
 
   return (
-    <Tooltip
-      text={watching ? 'Unfollow' : 'Follow'}
-      placement="bottom"
-      noTap
-      noFade
+    <Button
+      size="sm"
+      onClick={async () => {
+        if (!user) return firebaseLogin()
+        if (followers?.includes(user.id)) {
+          unfollowMarket(contract.id, contract.slug, user)
+        } else {
+          followMarket(contract.id, contract.slug, user)
+        }
+        if (!user.hasSeenContractFollowModal) {
+          await updateUser(user.id, {
+            hasSeenContractFollowModal: true,
+          })
+          setOpen(true)
+        }
+      }}
     >
-      <Button
-        size="sm"
-        onClick={async () => {
-          if (!user) return firebaseLogin()
-          if (followers?.includes(user.id)) {
-            unfollowMarket(contract.id, contract.slug, user)
-          } else {
-            followMarket(contract.id, contract.slug, user)
-          }
-          if (!user.hasSeenContractFollowModal) {
-            await updateUser(user.id, {
-              hasSeenContractFollowModal: true,
-            })
-            setOpen(true)
-          }
-        }}
-      >
-        {watching ? (
-          <Row className={'items-center gap-x-2 sm:flex-row'}>
-            <EyeOffIcon className={clsx('h-5 w-5')} aria-hidden="true" />
-            Unfollow
-          </Row>
-        ) : (
-          <Row className={'items-center gap-x-2 sm:flex-row'}>
-            <EyeIcon className={clsx('h-5 w-5')} aria-hidden="true" />
-            Follow
-          </Row>
-        )}
-        <WatchMarketModal
-          open={open}
-          setOpen={setOpen}
-          title={`You ${
-            followers?.includes(user?.id ?? 'nope') ? 'watched' : 'unwatched'
-          } a question!`}
-        />
-      </Button>
-    </Tooltip>
+      {watching ? (
+        <Row className={'items-center gap-x-2 sm:flex-row'}>
+          <EyeOffIcon className={clsx('h-5 w-5')} aria-hidden="true" />
+          Unwatch
+        </Row>
+      ) : (
+        <Row className={'items-center gap-x-2 sm:flex-row'}>
+          <EyeIcon className={clsx('h-5 w-5')} aria-hidden="true" />
+          Watch
+        </Row>
+      )}
+      <WatchMarketModal
+        open={open}
+        setOpen={setOpen}
+        title={`You ${
+          followers?.includes(user?.id ?? 'nope') ? 'watched' : 'unwatched'
+        } a question!`}
+      />
+    </Button>
   )
 }
 
