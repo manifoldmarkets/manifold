@@ -583,8 +583,8 @@ export function ContractCardNew(props: {
     <div
       className={clsx(
         'relative',
-        'border-ink-400 group my-2 flex cursor-pointer flex-col overflow-hidden rounded-xl border',
-        'hover:border-ink-500 focus:border-ink-500 outline-none transition-colors',
+        'border-ink-200 group my-2 flex cursor-pointer flex-col overflow-hidden rounded-xl border',
+        'hover:border-ink-400 focus:border-ink-400 outline-none transition-colors',
         className
       )}
       // we have other links inside this card like the username, so can't make the whole card a button or link
@@ -594,14 +594,7 @@ export function ContractCardNew(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Col
-        className={clsx(
-          showImage
-            ? 'bg-canvas-0/95 dark:bg-canvas-0/90 group-hover:bg-canvas-0/80 group-focus:bg-canvas-0/80'
-            : 'bg-canvas-0/70 group-hover:bg-canvas-0/50 group-focus:bg-canvas-0/50',
-          'gap-2 py-2 px-4 transition-colors sm:backdrop-blur-sm'
-        )}
-      >
+      <Col className={clsx('bg-canvas-0', 'gap-2 py-2 px-4 transition-colors')}>
         <Row className="text-ink-600 items-center gap-3 overflow-hidden text-sm">
           <Row className="gap-2" onClick={(e) => e.stopPropagation()}>
             <Avatar
@@ -624,7 +617,7 @@ export function ContractCardNew(props: {
         <Link
           href={path}
           className={clsx(
-            'break-anywhere transition-color hover:text-primary-800 focus:text-primary-800 whitespace-normal font-medium outline-none',
+            'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
             textColor
           )}
         >
