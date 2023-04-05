@@ -54,7 +54,8 @@ export function FeedCommentThread(props: {
     if (router.isReady) {
       const parts = router.asPath.split('#')
       if (parts.length > 1 && parts[1] != null) {
-        setHighlightedId(parts[1])
+        const commentId = parts[1].replaceAll(commentIdPrefix, '')
+        setHighlightedId(commentId)
       } else {
         setHighlightedId(undefined)
       }
@@ -434,8 +435,12 @@ export function FeedCommentHeader(props: {
         prefix={contract.creatorUsername}
         slug={contract.slug}
         createdTime={createdTime}
-        elementId={comment.id}
+        elementId={`${commentIdPrefix}${comment.id}`}
       />
     </span>
   )
 }
+
+// Link to comments with a prefix, so that browser won't automatically scroll to the comment.
+// Leaves us free to scroll the element how we like (e.g. centered and after loading).
+const commentIdPrefix = 'comment-'
