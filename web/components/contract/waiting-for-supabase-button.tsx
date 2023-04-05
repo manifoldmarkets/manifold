@@ -19,7 +19,7 @@ export default function WaitingForSupabaseButton(props: {
   async function fetchContract() {
     const newContract = await getContract(contractId)
     if (newContract) {
-      router.replace(contractPath(newContract as Contract)).catch((e) => {
+      router.push(contractPath(newContract as Contract)).catch((e) => {
         console.log(e)
       })
     } else {
