@@ -22,9 +22,8 @@ import { getHighlightClass } from './notification-helpers'
 
 export default function NotificationDropdown(props: {
   notification: Notification
-  highlighted: boolean
 }) {
-  const { notification, highlighted } = props
+  const { notification } = props
   const notificationDropdownItems = useNotificationDropdownItems(notification)
 
   if (notificationDropdownItems.length > 0) {
@@ -33,10 +32,7 @@ export default function NotificationDropdown(props: {
         Items={notificationDropdownItems}
         Icon={
           <DotsVerticalIcon
-            className={clsx(
-              'my-1 h-4 w-4 md:invisible md:group-hover:visible',
-              getHighlightClass(highlighted)
-            )}
+            className={clsx('my-1 h-4 w-4 md:invisible md:group-hover:visible')}
           />
         }
         menuWidth="w-52"
