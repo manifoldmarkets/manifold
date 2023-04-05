@@ -9,6 +9,7 @@ import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './widgets/loading-indicator'
+import { SupabaseContractSearch } from './supabase-search'
 
 export function SelectMarketsModal(props: {
   title: string
@@ -90,7 +91,7 @@ export function SelectMarkets(props: {
           <LoadingIndicator />
         </div>
       )}
-      <ContractSearch
+      <SupabaseContractSearch
         hideOrderSelector
         onContractClick={addContract}
         cardUIOptions={{

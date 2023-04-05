@@ -48,6 +48,7 @@ import { listPosts } from 'web/lib/firebase/posts'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { getPost } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
+import { SupabaseContractSearch } from 'web/components/supabase-search'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
@@ -309,10 +310,10 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
             {
               title: 'Markets',
               content: (
-                <ContractSearch
+                <SupabaseContractSearch
                   defaultFilter="all"
                   additionalFilter={{
-                    groupSlug: group.slug,
+                    groupId: group.id,
                     facetFilters: [
                       ...getUsersBlockFacetFilters(privateUser, true),
                       contractVisibilityFilter,

@@ -9,6 +9,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { formatWithCommas } from 'common/util/format'
 import { getUnresolvedContractsCount } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
+import { SupabaseContractSearch } from '../supabase-search'
 
 export function UserContractsList(props: { creator: User }) {
   const { creator } = props
@@ -84,7 +85,7 @@ export function UserContractsList(props: { creator: User }) {
           }
         />
       </Row>
-      <ContractSearch
+      <SupabaseContractSearch
         defaultFilter="all"
         defaultSort="newest"
         additionalFilter={{

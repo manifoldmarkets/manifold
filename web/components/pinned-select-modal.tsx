@@ -14,6 +14,7 @@ import { GroupCard } from 'web/pages/groups'
 import { Input } from './widgets/input'
 import { debounce } from 'lodash'
 import { searchInAny } from 'common/util/parse'
+import { SupabaseContractSearch } from './supabase-search'
 
 export function PinnedSelectModal(props: {
   title: string
@@ -141,7 +142,7 @@ export function PinnedSelectModal(props: {
 
         {selectedTab === 'contracts' ? (
           <div className="grow overflow-y-auto px-2 sm:px-8">
-            <ContractSearch
+            <SupabaseContractSearch
               hideOrderSelector
               onContractClick={selectContract}
               cardUIOptions={{

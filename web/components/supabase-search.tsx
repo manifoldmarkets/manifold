@@ -163,6 +163,7 @@ export function SupabaseContractSearch(props: {
     } = searchParams.current
     const id = ++requestId.current
     const offset = freshQuery ? 0 : state.contracts.length
+    console.log('freshQuery', freshQuery)
     if (freshQuery || state.shouldLoadMore) {
       const results = await searchContract({
         state,
@@ -258,7 +259,9 @@ export function SupabaseContractSearch(props: {
           />
         ) : (
           <ContractsGrid
-            key={state.contracts.length}
+            key={
+              searchParams.current?.filter ?? '' + searchParams.current?.sort
+            }
             contracts={renderedContracts}
             showTime={state.showTime ?? undefined}
             onContractClick={onContractClick}
