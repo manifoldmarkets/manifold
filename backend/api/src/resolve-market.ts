@@ -63,7 +63,10 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
   if (!contractSnap.exists)
     throw new APIError(404, 'No contract exists with the provided ID')
   const contract = contractSnap.data() as Contract
-  const { creatorId } = contract
+  const { creatorId, outcomeType } = contract
+  if (outcomeType === 'STONK') {
+    throw new APIError(400, 'STONK contracts cannot be resolved')
+  }
   const firebaseUser = await admin.auth().getUser(auth.uid)
 
   const resolutionParams = getResolutionParams(contract, req.body)
