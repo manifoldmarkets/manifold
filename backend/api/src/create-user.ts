@@ -164,4 +164,7 @@ function getStorageBucketId() {
 
 // Automatically ban users with these device tokens or ip addresses.
 const bannedDeviceTokens = ['fa807d664415', 'dcf208a11839', 'bbf18707c15d']
-const bannedIpAddresses: string[] = ['24.176.214.250']
+const bannedIpAddresses: string[] = [
+  '24.176.214.250',
+  '2607:fb90:bd95:dbcd:ac39:6c97:4e35:3fed',
+]
