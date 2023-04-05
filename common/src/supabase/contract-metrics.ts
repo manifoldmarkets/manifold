@@ -2,7 +2,7 @@ import { chunk, Dictionary, flatMap, groupBy, uniqBy } from 'lodash'
 import { run, selectFrom, selectJson, SupabaseClient } from './utils'
 import { ContractMetrics } from '../calculate-metrics'
 import { getContracts } from './contracts'
-import { Contract, CPMMBinaryContract } from '../contract'
+import { Contract, CPMMContract } from '../contract'
 import { ContractMetric } from 'common/contract-metric'
 
 export async function getUserContractMetrics(
@@ -49,7 +49,7 @@ export async function getUserContractMetricsByProfitWithContracts(
   const contracts = (await getContracts(
     cms.map((cm) => cm.contractId),
     db
-  )) as CPMMBinaryContract[]
+  )) as CPMMContract[]
   return {
     metrics: cms,
     contracts,

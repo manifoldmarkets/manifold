@@ -6,7 +6,7 @@ import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { ContractMetrics } from 'common/calculate-metrics'
-import { CPMMBinaryContract, CPMMContract } from 'common/contract'
+import { CPMMContract } from 'common/contract'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -46,7 +46,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
   }, [user])
 
   const [data, setData] = usePersistentRevalidatedState<
-    { metrics: ContractMetrics[]; contracts: CPMMBinaryContract[] } | undefined
+    { metrics: ContractMetrics[]; contracts: CPMMContract[] } | undefined
   >(
     undefined,
     {
@@ -268,7 +268,7 @@ export function ProfitChangeTable(props: {
           columns={[
             {
               name: columnHeader('Market'),
-              formatter: (c: CPMMBinaryContract) => marketRow(c),
+              formatter: (c: CPMMContract) => marketRow(c),
               id: 'market',
             },
             {
