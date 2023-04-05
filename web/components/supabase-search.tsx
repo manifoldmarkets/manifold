@@ -4,7 +4,7 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { debounce, isEqual } from 'lodash'
 import { useRouter } from 'next/router'
-import { createContext, useContext, useEffect, useRef } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import {
   historyStore,
@@ -70,7 +70,7 @@ const AsListContext = createContext({
 })
 
 export type stateType = {
-  contracts: Contract[]
+  contracts: Contract[] | undefined
   fuzzyContractOffset: number
   shouldLoadMore: boolean
   showTime: ShowTime | null
@@ -119,9 +119,9 @@ export function SupabaseContractSearch(props: {
     listViewDisabled,
   } = props
 
-  const [state, setState] = usePersistentState(
+  const [state, setState] = usePersistentState<stateType>(
     {
-      contracts: [] as Contract[],
+      contracts: undefined,
       fuzzyContractOffset: 0,
       shouldLoadMore: true,
       showTime: null as ShowTime | null,
@@ -130,7 +130,6 @@ export function SupabaseContractSearch(props: {
       ? undefined
       : { key: `${persistPrefix}-supabase-search`, store: inMemoryStore() }
   )
-
   const searchParams = useRef<SupabaseSearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SupabaseSearchParameters>()
   const requestId = useRef(0)
@@ -139,9 +138,6 @@ export function SupabaseContractSearch(props: {
     store: inMemoryStore(),
   })
 
-  useEffect(() => {
-    console.log('state', state)
-  }, [state])
   useSafeLayoutEffect(() => {
     if (persistPrefix) {
       const params = searchParamsStore.get(`${persistPrefix}-params`)
@@ -162,8 +158,7 @@ export function SupabaseContractSearch(props: {
       // , facetFilters
     } = searchParams.current
     const id = ++requestId.current
-    const offset = freshQuery ? 0 : state.contracts.length
-    console.log('freshQuery', freshQuery)
+    const offset = freshQuery ? 0 : state.contracts ? state.contracts.length : 0
     if (freshQuery || state.shouldLoadMore) {
       const results = await searchContract({
         state,
@@ -179,11 +174,14 @@ export function SupabaseContractSearch(props: {
       if (id === requestId.current) {
         const fuzzyOffset = results.fuzzyOffset
         const newContracts = results.data
+        console.log('newContracts', newContracts)
         const showTime =
           sort === 'close-date' || sort === 'resolve-date' ? sort : null
-        const contracts = freshQuery
-          ? newContracts
-          : [...state.contracts, ...newContracts]
+        const contracts =
+          freshQuery || !state.contracts
+            ? newContracts
+            : [...state.contracts, ...newContracts]
+        console.log('contracts', contracts, freshQuery)
         setState({
           ...state,
           fuzzyContractOffset: fuzzyOffset,
@@ -215,10 +213,11 @@ export function SupabaseContractSearch(props: {
     }, 100)
   ).current
 
-  const contracts = state.contracts.filter(
-    (c) => !additionalFilter?.excludeContractIds?.includes(c.id)
-  )
-  const renderedContracts = state.contracts.length === 0 ? undefined : contracts
+  const contracts = state.contracts
+    ? state.contracts.filter(
+        (c) => !additionalFilter?.excludeContractIds?.includes(c.id)
+      )
+    : undefined
 
   return (
     <AsListContext.Provider value={{ asList, setAsList }}>
@@ -236,7 +235,7 @@ export function SupabaseContractSearch(props: {
           autoFocus={autoFocus}
           listViewDisabled={listViewDisabled}
         />
-        {renderedContracts && renderedContracts.length === 0 ? (
+        {contracts && contracts.length === 0 ? (
           profile ? (
             <p className="text-ink-500 mx-2">No markets found</p>
           ) : (
@@ -250,9 +249,11 @@ export function SupabaseContractSearch(props: {
         ) : asList ? (
           <ContractsList
             key={
-              searchParams.current?.filter ?? '' + searchParams.current?.sort
+              searchParams.current?.query ??
+              '' + searchParams.current?.filter ??
+              '' + searchParams.current?.sort
             }
-            contracts={renderedContracts}
+            contracts={contracts}
             loadMore={performQuery}
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
@@ -260,9 +261,11 @@ export function SupabaseContractSearch(props: {
         ) : (
           <ContractsGrid
             key={
-              searchParams.current?.filter ?? '' + searchParams.current?.sort
+              searchParams.current?.query ??
+              '' + searchParams.current?.filter ??
+              '' + searchParams.current?.sort
             }
-            contracts={renderedContracts}
+            contracts={contracts}
             showTime={state.showTime ?? undefined}
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}

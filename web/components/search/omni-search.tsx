@@ -17,6 +17,7 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { defaultPages, PageData, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
+import { searchContract } from 'web/lib/supabase/contracts'
 
 export interface Option {
   id: string
@@ -119,14 +120,32 @@ const Results = (props: { query: string }) => {
     Promise.all([
       searchUsers(search, userHitLimit),
       searchGroups(search, groupHitLimit),
-      searchContracts(search, marketHitLimit),
-    ]).then(([userHits, groupHits, marketHits]) => {
-      if (thisNonce === nonce.current) {
-        const pageHits = prefix ? [] : searchPages(search, 2)
-        setSearchResults({ pageHits, userHits, groupHits, marketHits })
-        setLoading(false)
+      searchContract({
+        state: {
+          contracts: undefined,
+          fuzzyContractOffset: 0,
+          shouldLoadMore: false,
+          showTime: null,
+        },
+        query: search,
+        filter: 'all',
+        sort: 'most-popular',
+        offset: 0,
+        limit: marketHitLimit,
+      }),
+    ]).then(
+      ([
+        userHits,
+        groupHits,
+        { fuzzyOffset: _fuzzyOffset, data: marketHits },
+      ]) => {
+        if (thisNonce === nonce.current) {
+          const pageHits = prefix ? [] : searchPages(search, 2)
+          setSearchResults({ pageHits, userHits, groupHits, marketHits })
+          setLoading(false)
+        }
       }
-    })
+    )
   }, [search, groupHitLimit, marketHitLimit, userHitLimit, prefix])
 
   if (loading) {

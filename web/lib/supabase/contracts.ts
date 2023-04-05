@@ -172,7 +172,7 @@ export async function searchContract(props: {
     contract_sort: sort,
     offset_n: offset,
     limit_n: limit,
-    fuzzy: true,
+    fuzzy: false,
     group_id: group_id,
     creator_id: creator_id,
   })
