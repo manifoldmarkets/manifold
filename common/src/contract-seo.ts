@@ -36,7 +36,7 @@ export const getContractOGProps = (
       : undefined
 
   const numericValue =
-    outcomeType === 'PSEUDO_NUMERIC'
+    outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'STONK'
       ? getFormattedMappedValue(contract, getDisplayProbability(contract))
       : undefined
 
