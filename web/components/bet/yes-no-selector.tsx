@@ -9,70 +9,46 @@ export function YesNoSelector(props: {
   onSelect: (selected: 'YES' | 'NO') => void
   className?: string
   btnClassName?: string
-  replaceYesButton?: React.ReactNode
-  replaceNoButton?: React.ReactNode
-  isPseudoNumeric?: boolean
-  yesEmoji?: string
-  noEmoji?: string
+  yesLabel?: string
+  noLabel?: string
 }) {
-  const {
-    selected,
-    onSelect,
-    className,
-    btnClassName,
-    replaceNoButton,
-    replaceYesButton,
-    isPseudoNumeric,
-    yesEmoji,
-    noEmoji,
-  } = props
+  const { selected, onSelect, className, btnClassName, yesLabel, noLabel } =
+    props
 
   const commonClassNames =
     'inline-flex items-center justify-center rounded-3xl border-2 p-2'
 
   return (
     <Row className={clsx('space-x-3', className)}>
-      {replaceYesButton ? (
-        replaceYesButton
-      ) : (
-        <button
-          className={clsx(
-            commonClassNames,
-            selected == 'YES'
-              ? 'border-teal-500 bg-teal-500 text-white'
-              : selected == 'NO'
-              ? 'border-ink-300 text-ink-300 bg-canvas-0 hover:border-teal-500 hover:text-teal-500'
-              : 'bg-canvas-0 border-teal-500 text-teal-500 hover:bg-teal-500/10',
-            btnClassName
-          )}
-          onClick={() => onSelect('YES')}
-        >
-          {yesEmoji}
-          {isPseudoNumeric ? 'HIGHER' : 'YES'}
-          {yesEmoji}
-        </button>
-      )}
+      <button
+        className={clsx(
+          commonClassNames,
+          selected == 'YES'
+            ? 'border-teal-500 bg-teal-500 text-white'
+            : selected == 'NO'
+            ? 'border-ink-300 text-ink-300 bg-canvas-0 hover:border-teal-500 hover:text-teal-500'
+            : 'bg-canvas-0 border-teal-500 text-teal-500 hover:bg-teal-500/10',
+          btnClassName
+        )}
+        onClick={() => onSelect('YES')}
+      >
+        {yesLabel ? yesLabel : 'YES'}
+      </button>
 
-      {replaceNoButton ? (
-        replaceNoButton
-      ) : (
-        <button
-          className={clsx(
-            commonClassNames,
-            selected == 'NO'
-              ? 'border-scarlet-300 bg-scarlet-300 text-white'
-              : selected == 'YES'
-              ? 'hover:border-scarlet-300 hover:text-scarlet-300 border-ink-300 text-ink-300 bg-canvas-0'
-              : 'border-scarlet-300 text-scarlet-300 bg-canvas-0 hover:bg-red-500/10',
-            btnClassName
-          )}
-          onClick={() => onSelect('NO')}
-        >
-          {noEmoji}
-          {isPseudoNumeric ? 'LOWER' : 'NO'}
-          {noEmoji}
-        </button>
-      )}
+      <button
+        className={clsx(
+          commonClassNames,
+          selected == 'NO'
+            ? 'border-scarlet-300 bg-scarlet-300 text-white'
+            : selected == 'YES'
+            ? 'hover:border-scarlet-300 hover:text-scarlet-300 border-ink-300 text-ink-300 bg-canvas-0'
+            : 'border-scarlet-300 text-scarlet-300 bg-canvas-0 hover:bg-red-500/10',
+          btnClassName
+        )}
+        onClick={() => onSelect('NO')}
+      >
+        {noLabel ? noLabel : 'NO'}
+      </button>
     </Row>
   )
 }

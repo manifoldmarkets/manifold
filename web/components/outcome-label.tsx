@@ -7,10 +7,13 @@ import {
   Contract,
   FreeResponseContract,
   MultipleChoiceContract,
+  outcomeType,
   resolution,
 } from 'common/contract'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Tooltip } from './widgets/tooltip'
+import { Bet } from 'common/bet'
+import { STONK_NO, STONK_YES } from 'common/stonk'
 
 export function OutcomeLabel(props: {
   contract: Contract
@@ -37,6 +40,9 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'CERT' || outcomeType === 'QUADRATIC_FUNDING') {
     return <span>TODO Cert outcome label</span>
   }
+  if (outcomeType === 'STONK') {
+    return <StonkOutcomeLabel outcome={outcome as any} />
+  }
 
   return (
     <FreeResponseOutcomeLabel
@@ -62,6 +68,14 @@ export function PseudoNumericOutcomeLabel(props: { outcome: resolution }) {
 
   if (outcome === 'YES') return <HigherLabel />
   if (outcome === 'NO') return <LowerLabel />
+  if (outcome === 'MKT') return <ProbLabel />
+  return <CancelLabel />
+}
+export function StonkOutcomeLabel(props: { outcome: resolution }) {
+  const { outcome } = props
+
+  if (outcome === 'YES') return <BuyLabel />
+  if (outcome === 'NO') return <ShortLabel />
   if (outcome === 'MKT') return <ProbLabel />
   return <CancelLabel />
 }
@@ -112,6 +126,14 @@ export function HigherLabel() {
 
 export function LowerLabel() {
   return <span className="text-scarlet-600">LOWER</span>
+}
+
+export function BuyLabel() {
+  return <span className="text-teal-600">{STONK_YES}</span>
+}
+
+export function ShortLabel() {
+  return <span className="text-scarlet-600">{STONK_NO}</span>
 }
 
 export function NoLabel() {
@@ -172,4 +194,29 @@ export function AnswerLabel(props: {
       <span className={clsx('break-anywhere', className)}>{truncated}</span>
     </Tooltip>
   )
+}
+
+export function BetOutcomeLabel(props: {
+  contractOutcomeType: outcomeType
+  bet: Bet
+  answerText?: string
+}) {
+  const { contractOutcomeType, bet, answerText } = props
+  if (contractOutcomeType === 'BINARY') {
+    return <BinaryOutcomeLabel outcome={bet.outcome as resolution} />
+  }
+  if (contractOutcomeType === 'PSEUDO_NUMERIC') {
+    return <PseudoNumericOutcomeLabel outcome={bet.outcome as resolution} />
+  }
+  if (
+    contractOutcomeType === 'FREE_RESPONSE' ||
+    contractOutcomeType === 'MULTIPLE_CHOICE'
+  ) {
+    return (
+      <span className={clsx('text-primary-700')}>
+        {answerText ?? bet.outcome}
+      </span>
+    )
+  }
+  return <span className={'text-primary-700'}>{bet.outcome}</span>
 }

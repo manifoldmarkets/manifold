@@ -15,6 +15,23 @@ import { SearchProvider } from 'web/components/search/search-context'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
+import { Major_Mono_Display, Readex_Pro } from 'next/font/google'
+import clsx from 'clsx'
+
+// See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
+// and if you add a font, you must add it to tailwind config as well for it to work.
+
+const logoFont = Major_Mono_Display({
+  weight: ['400'],
+  variable: '--font-logo',
+  subsets: ['latin'],
+})
+
+const mainFont = Readex_Pro({
+  weight: ['300', '400', '600', '700'],
+  variable: '--font-main',
+  subsets: ['latin-ext'],
+})
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -98,17 +115,29 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           title="Manifold Markets"
         />
       </Head>
-      <AuthProvider serverUser={pageProps.auth}>
-        <DarkModeProvider>
-          <NativeMessageListener />
-          <QueryClientProvider client={queryClient}>
-            <SearchProvider>
-              <Welcome />
-              <Component {...pageProps} />
-            </SearchProvider>
-          </QueryClientProvider>
-        </DarkModeProvider>
-      </AuthProvider>
+      <div
+        className={clsx(
+          'font-readex-pro contents font-normal',
+          logoFont.variable,
+          mainFont.variable
+        )}
+      >
+        <AuthProvider serverUser={pageProps.auth}>
+          <DarkModeProvider>
+            <NativeMessageListener />
+            <QueryClientProvider client={queryClient}>
+              <SearchProvider>
+                <Welcome />
+                <Component {...pageProps} />
+              </SearchProvider>
+            </QueryClientProvider>
+          </DarkModeProvider>
+        </AuthProvider>
+        {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
+        <div id="headlessui-portal-root">
+          <div />
+        </div>
+      </div>
       <Analytics />
       <Script
         src="https://analytics.umami.is/script.js"

@@ -13,8 +13,9 @@ export function BetDialog(props: {
   initialOutcome: binaryOutcomes
   open: boolean
   setOpen: (open: boolean) => void
+  trackingLocation: string
 }) {
-  const { contract, initialOutcome, open, setOpen } = props
+  const { contract, initialOutcome, open, setOpen, trackingLocation } = props
   const user = useUser()
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     contract.id
@@ -42,7 +43,7 @@ export function BetDialog(props: {
           hidden={false}
           initialOutcome={initialOutcome}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
-          location="contract card"
+          location={trackingLocation}
         />
       </Col>
     </Modal>

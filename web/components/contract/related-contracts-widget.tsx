@@ -11,6 +11,7 @@ import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractStatusLabel } from './contracts-list-entry'
+import { useContract } from 'web/hooks/use-contracts'
 
 export const RelatedContractsList = memo(function RelatedContractsList(props: {
   contracts: Contract[]
@@ -33,15 +34,13 @@ export const RelatedContractsList = memo(function RelatedContractsList(props: {
     <Col className={clsx(className, 'flex-1')}>
       <h2 className={clsx('text-ink-600 mb-2 text-xl')}>Related markets</h2>
       <Col className="divide-ink-300 divide-y-[0.5px]">
-        {contracts
-          .filter((c) => c.coverImageUrl)
-          .map((contract) => (
-            <RelatedContractCard
-              contract={contract}
-              key={contract.id}
-              onContractClick={onContractClick}
-            />
-          ))}
+        {contracts.map((contract) => (
+          <RelatedContractCard
+            contract={contract}
+            key={contract.id}
+            onContractClick={onContractClick}
+          />
+        ))}
       </Col>
 
       <div className="relative">
@@ -66,7 +65,9 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
   contract: Contract
   onContractClick?: (contract: Contract) => void
 }) {
-  const { contract, onContractClick } = props
+  const { onContractClick } = props
+
+  const contract = useContract(props.contract.id) ?? props.contract
   const { creatorUsername, creatorAvatarUrl, question, creatorCreatedTime } =
     contract
 

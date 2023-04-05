@@ -23,7 +23,6 @@ export type EnvConfig = {
   nounBet?: string // e.g. 'prediction'
   verbPastBet?: string // e.g. 'predicted'
   faviconPath?: string // Should be a file in /public
-  navbarLogoPath?: string
   newQuestionPlaceholders: string[]
   expoConfig?: {
     iosClientId?: string
@@ -100,7 +99,6 @@ export const PROD_CONFIG: EnvConfig = {
   bettor: 'trader',
   verbPastBet: 'traded',
   nounBet: 'trade',
-  navbarLogoPath: '',
   faviconPath: '/favicon.ico',
   newQuestionPlaceholders: [
     'Will anyone I know get engaged this year?',

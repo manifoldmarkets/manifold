@@ -2,11 +2,7 @@ import { APIError } from 'common/api'
 import { Bet, LimitBet } from 'common/bet'
 import { getContractBetMetrics, getProbability } from 'common/calculate'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
-import {
-  CPMMBinaryContract,
-  PseudoNumericContract,
-  CPMMContract,
-} from 'common/contract'
+import { CPMMContract } from 'common/contract'
 import { getMappedValue, getFormattedMappedValue } from 'common/pseudo-numeric'
 import { User } from 'common/user'
 import {
@@ -27,7 +23,7 @@ import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
 
 export function SellPanel(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'
@@ -116,6 +112,7 @@ export function SellPanel(props: {
     unfilledBets,
     balanceByUserId
   )
+
   const netProceeds = saleValue - loanPaid
   const profit = saleValue - costBasis
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -149,6 +146,7 @@ export function SellPanel(props: {
 
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const isStonk = outcomeType === 'STONK'
 
   return (
     <>
@@ -168,10 +166,12 @@ export function SellPanel(props: {
       />
 
       <Col className="mt-3 w-full gap-3 text-sm">
-        <Row className="text-ink-500 items-center justify-between gap-2">
-          Sale value
-          <span className="text-ink-700">{formatMoney(saleValue)}</span>
-        </Row>
+        {!isStonk && (
+          <Row className="text-ink-500 items-center justify-between gap-2">
+            Sale value
+            <span className="text-ink-700">{formatMoney(saleValue)}</span>
+          </Row>
+        )}
         {!isLoadPaid && (
           <Row className="text-ink-500  items-center justify-between gap-2">
             Loan repayment
@@ -186,7 +186,11 @@ export function SellPanel(props: {
         </Row>
         <Row className="items-center justify-between">
           <div className="text-ink-500">
-            {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+            {isPseudoNumeric
+              ? 'Estimated value'
+              : isStonk
+              ? 'Stock price'
+              : 'Probability'}
           </div>
           <div>
             {getFormattedMappedValue(contract, initialProb)}
@@ -212,7 +216,11 @@ export function SellPanel(props: {
         disabled={!!betDisabled}
         size="xl"
         color="indigo"
-        actionLabel={`Sell ${formatWithCommas(sellQuantity)} shares`}
+        actionLabel={
+          isStonk
+            ? `Sell ${formatMoney(saleValue)}`
+            : `Sell ${formatWithCommas(sellQuantity)} shares`
+        }
       />
 
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}

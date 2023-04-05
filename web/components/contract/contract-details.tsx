@@ -15,7 +15,7 @@ import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../widgets/avatar'
 import { useState } from 'react'
-import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -31,7 +31,6 @@ import { GroupLink, groupPath } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
-import { LikeButton } from './like-button'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -150,6 +149,9 @@ export function CloseOrResolveTime(props: {
 }) {
   const { contract, editable } = props
   const { resolutionTime, closeTime, isResolved } = contract
+  if (contract.outcomeType === 'STONK') {
+    return <></>
+  }
 
   if (!!closeTime || !!isResolved) {
     return (
@@ -193,10 +195,10 @@ function PublicMarketGroups(props: { contract: Contract }) {
         {user && (
           <button onClick={() => setOpen(true)}>
             {groupsToDisplay.length ? (
-              <DotsCircleHorizontalIcon className="text-ink-400 hover:text-ink-400/75 h-[20px]" />
+              <DotsCircleHorizontalIcon className="text-ink-400 hover:text-ink-400/75 h-6" />
             ) : (
-              <span className="bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-xs font-light">
-                <PlusIcon className="mr-1 h-3 w-3" /> Group
+              <span className="bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-sm font-light">
+                <PlusIcon className="mr-1 h-4 w-4" /> Group
               </span>
             )}
           </button>
@@ -344,44 +346,18 @@ function EditableCloseDate(props: {
           time={closeTime}
           placement="bottom-start"
           noTap
+          className="flex items-center"
         >
-          <Row>
-            {dayjs().isBefore(closeTime) ? (
-              <ClockIcon className="mr-1 flex h-5 w-5" />
-            ) : (
-              'closed'
-            )}{' '}
-            {isSameDay
-              ? fromNow(closeTime)
-              : isSameYear || isSoon
-              ? dayJsCloseTime.format('MMM D')
-              : dayJsCloseTime.format('YYYY')}
-          </Row>
+          <ClockIcon className="mr-1 h-4 w-4" />
+          {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}{' '}
+          {isSameDay
+            ? fromNow(closeTime)
+            : isSameYear || isSoon
+            ? dayJsCloseTime.format('MMM D')
+            : dayJsCloseTime.format('YYYY')}
         </DateTimeTooltip>
         {editable && <PencilIcon className="h-4 w-4" />}
       </Row>
     </>
-  )
-}
-
-export const ContractLike = (props: { contract: Contract }) => {
-  const { contract } = props
-  const user = useUser()
-  const privateUser = usePrivateUser()
-
-  return (
-    <LikeButton
-      contentId={contract.id}
-      contentCreatorId={contract.creatorId}
-      user={user}
-      contentType={'contract'}
-      totalLikes={contract.likedByUserCount ?? 0}
-      contract={contract}
-      contentText={contract.question}
-      className={clsx(
-        '-mr-2',
-        isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
-      )}
-    />
   )
 }

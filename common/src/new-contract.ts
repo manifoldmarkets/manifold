@@ -12,6 +12,7 @@ import {
   outcomeType,
   PseudoNumeric,
   QuadraticFunding,
+  Stonk,
   Uniswap2,
   visibility,
 } from './contract'
@@ -56,6 +57,7 @@ export function getNewContract(
     QUADRATIC_FUNDING: () => getQfProps(ante),
     CERT: () => getCertProps(ante),
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
+    STONK: () => getStonkCpmmProps(initialProb, ante),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -153,6 +155,13 @@ const getPseudoNumericCpmmProps = (
     isLogScale,
   }
 
+  return system
+}
+const getStonkCpmmProps = (initialProb: number, ante: number) => {
+  const system: CPMM & Stonk = {
+    ...getBinaryCpmmProps(initialProb, ante),
+    outcomeType: 'STONK',
+  }
   return system
 }
 

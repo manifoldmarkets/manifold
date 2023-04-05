@@ -12,8 +12,9 @@ module.exports = {
     fontFamily: Object.assign(
       { ...defaultTheme.fontFamily },
       {
-        'major-mono': ['Major Mono Display', 'monospace'],
-        'readex-pro': ['Readex Pro', 'icomoon', 'emoji', 'sans-serif'],
+        'major-mono': ['var(--font-logo)', 'monospace'],
+        'readex-pro': ['icomoon', 'Helvetica', 'emoji', 'sans-serif'],
+        'grenze-gotisch': ['var(--font-match-cards)', 'cursive'], // just for match card game
       }
     ),
     extend: {

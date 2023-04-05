@@ -7,6 +7,7 @@ import {
   Notification,
   NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
+  UniqueBettorData,
 } from 'common/notification'
 import { PrivateUser, User } from 'common/user'
 import { Contract } from 'common/contract'
@@ -790,7 +791,8 @@ export const createUniqueBettorBonusNotification = async (
   contract: Contract,
   amount: number,
   uniqueBettorIds: string[],
-  idempotencyKey: string
+  idempotencyKey: string,
+  bet: Bet
 ) => {
   const privateUser = await getPrivateUser(contractCreatorId)
   if (!privateUser) return
@@ -799,9 +801,19 @@ export const createUniqueBettorBonusNotification = async (
     'unique_bettors_on_your_contract'
   )
   if (sendToBrowser) {
+    const { outcomeType } = contract
     const notificationRef = firestore
       .collection(`/users/${contractCreatorId}/notifications`)
       .doc(idempotencyKey)
+    const pseudoNumericData =
+      outcomeType === 'PSEUDO_NUMERIC'
+        ? {
+            min: contract.min,
+            max: contract.max,
+            isLogScale: contract.isLogScale,
+          }
+        : {}
+
     const notification: Notification = {
       id: idempotencyKey,
       userId: contractCreatorId,
@@ -822,6 +834,15 @@ export const createUniqueBettorBonusNotification = async (
       sourceContractId: contract.id,
       sourceContractTitle: contract.question,
       sourceContractCreatorUsername: contract.creatorUsername,
+      data: removeUndefinedProps({
+        bet,
+        answerText:
+          outcomeType === 'FREE_RESPONSE'
+            ? contract.answers.find((a) => a.id === bet.outcome)?.text
+            : undefined,
+        outcomeType,
+        ...pseudoNumericData,
+      } as UniqueBettorData),
     }
     await notificationRef.set(removeUndefinedProps(notification))
   }

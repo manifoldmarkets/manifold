@@ -3,8 +3,6 @@ import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
 import { THEOREMONE_CONFIG } from './theoremone'
 
-export const APRIL_FOOLS_ENABLED = false
-
 export const BACKGROUND_COLOR = 'bg-canvas-50'
 export const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
 
@@ -134,6 +132,11 @@ export const CHECK_USERNAMES = [
   'BoltonBailey',
   'MatthewBarnett',
   'JacyAnthis',
+  'Gabrielle',
+  'CGPGrey',
+  'KatjaGrace',
+  'AndrewG',
+  'AmmonLam',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -175,3 +178,5 @@ export const EXTERNAL_REDIRECTS = ['/umami']
 export const DISCORD_INVITE_LINK = 'https://discord.com/invite/eHQBNBqXuh'
 export const DISCORD_BOT_INVITE_LINK =
   'https://discord.com/api/oauth2/authorize?client_id=1074829857537663098&permissions=328565385280&scope=bot%20applications.commands'
+
+export const YES_GRAPH_COLOR = '#11b981'

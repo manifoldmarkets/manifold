@@ -18,8 +18,9 @@ export function ContractStatusLabel(props: {
 }) {
   const { contract, chanceLabel } = props
   const probTextColor = getTextColor(contract)
+  const { outcomeType } = contract
 
-  switch (contract.outcomeType) {
+  switch (outcomeType) {
     case 'BINARY': {
       return contract.resolution ? (
         <BinaryContractOutcomeLabel
@@ -35,6 +36,7 @@ export function ContractStatusLabel(props: {
         </span>
       )
     }
+    case 'STONK':
     case 'PSEUDO_NUMERIC': {
       const val = getDisplayProbability(contract)
       return (

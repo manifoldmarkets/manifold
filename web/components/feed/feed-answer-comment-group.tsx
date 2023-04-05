@@ -17,6 +17,7 @@ import { Dictionary, sortBy } from 'lodash'
 import { getAnswerColor } from '../answers/answers-panel'
 import Curve from 'web/public/custom-components/curve'
 import { useChartAnswers } from '../charts/contract/choice'
+import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 
 export function CommentsAnswer(props: {
   answer: Answer
@@ -39,7 +40,7 @@ export function CommentsAnswer(props: {
 
   useEffect(() => {
     if (highlighted && answerRef.current) {
-      answerRef.current.scrollIntoView(true)
+      scrollIntoViewCentered(answerRef.current)
     }
   }, [highlighted])
 

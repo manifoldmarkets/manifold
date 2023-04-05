@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChatIcon } from '@heroicons/react/outline'
+import { ChatIcon as ChatIconSolid } from '@heroicons/react/solid'
 import clsx from 'clsx'
-
 import { Contract } from 'common/contract'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Col } from '../layout/col'
@@ -16,10 +16,8 @@ import { User } from 'common/user'
 export function SwipeComments(props: {
   contract: Contract
   setIsModalOpen: (open: boolean) => void
-  color: 'gray' | 'white'
-  size?: 'md' | 'lg' | 'xl'
 }) {
-  const { contract, setIsModalOpen, color, size } = props
+  const { contract, setIsModalOpen } = props
   const [open, setOpen] = useState(false)
   const setAllOpen = (open: boolean) => {
     setOpen(open)
@@ -30,27 +28,14 @@ export function SwipeComments(props: {
 
   return (
     <button
-      className={clsx(
-        'hover:text-gray-600 disabled:opacity-50',
-        color === 'white' ? 'text-white' : 'text-gray-500'
-      )}
+      className={clsx('text-white active:text-gray-400 disabled:opacity-50')}
       onClick={withTracking(() => setAllOpen(true), 'view swipe comments', {
         contractId: contract.id,
       })}
     >
-      <Col className="relative gap-1">
-        <ChatIcon
-          className={clsx(
-            size === 'xl' ? 'h-12 w-12' : size === 'lg' ? 'h-8 w-8' : 'h-5 w-5'
-          )}
-        />
-        <div
-          className={clsx(
-            'mx-auto -mt-1 h-6 disabled:opacity-50',
-            size === 'xl' ? 'text-lg' : size === 'md' ? 'text-xs' : '',
-            color === 'white' ? 'text-white' : 'text-gray-500'
-          )}
-        >
+      <Col>
+        <ChatIconSolid className="h-12 w-12" />
+        <div className="mx-auto h-5 text-lg">
           {comments.length > 0 && comments.length}
         </div>
       </Col>

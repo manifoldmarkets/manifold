@@ -126,22 +126,23 @@ export function UserBadge(props: {
   marketCreator?: boolean
 }) {
   const { username, fresh, marketCreator } = props
+  const badges = []
   if (BOT_USERNAMES.includes(username)) {
-    return <BotBadge />
+    badges.push(<BotBadge />)
   }
   if (CORE_USERNAMES.includes(username)) {
-    return <CoreBadge />
+    badges.push(<CoreBadge />)
   }
   if (CHECK_USERNAMES.includes(username)) {
-    return <CheckBadge />
+    badges.push(<CheckBadge />)
   }
   if (fresh) {
-    return <FreshBadge />
+    badges.push(<FreshBadge />)
   }
   if (marketCreator) {
-    return <MarketCreatorBadge />
+    badges.push(<MarketCreatorBadge />)
   }
-  return null
+  return <>{badges}</>
 }
 
 // Show a special checkmark next to Core team members

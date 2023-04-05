@@ -7,9 +7,8 @@ import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
 import { ContractMetrics } from 'common/calculate-metrics'
 import {
-  classWarfareEnabled,
-  getAppropriateEmoji,
   getContractMetricsForContractId,
+  getShareholderCountsForContractId,
   ShareholderStats,
 } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
@@ -18,7 +17,14 @@ import { useContractMetrics } from 'web/hooks/use-contract-metrics'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { NoLabel, YesLabel } from 'web/components/outcome-label'
+import {
+  HigherLabel,
+  BuyLabel,
+  LowerLabel,
+  NoLabel,
+  ShortLabel,
+  YesLabel,
+} from 'web/components/outcome-label'
 import { formatMoney } from 'common/util/format'
 import { Pagination } from 'web/components/widgets/pagination'
 import { ContractMetric } from 'common/contract-metric'
@@ -28,16 +34,19 @@ import clsx from 'clsx'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { SortRow } from 'web/components/contract/contract-tabs'
-import { CPMMBinaryContract } from 'common/contract'
+import { CPMMContract } from 'common/contract'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { getProbability } from 'common/calculate'
 
 export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
-    contract: CPMMBinaryContract
+    contract: CPMMContract
     positions: ContractMetricsByOutcome
     setTotalPositions: (count: number) => void
     shareholderStats?: ShareholderStats
   }) {
-    const { contract, setTotalPositions, shareholderStats } = props
+    const { contract, setTotalPositions } = props
+    const currentProb = getProbability(contract)
     const contractId = contract.id
     const [page, setPage] = useState(0)
     const pageSize = 20
@@ -47,6 +56,10 @@ export const BinaryUserPositionsTable = memo(
     const [contractMetricsByProfit, setContractMetricsByProfit] = useState<
       ContractMetrics[] | undefined
     >()
+    const [shareholderStats, setShareholderStats] = useState<
+      ShareholderStats | undefined
+    >(props.shareholderStats)
+
     const [sortBy, setSortBy] = useState<'profit' | 'shares'>('shares')
 
     useEffect(() => {
@@ -74,7 +87,12 @@ export const BinaryUserPositionsTable = memo(
     useEffect(() => {
       // Let's use firebase here as supabase can be slightly out of date, leading to incorrect counts
       getTotalContractMetricsCount(contractId).then(setTotalPositions)
-    }, [positions, setTotalPositions, contractId])
+
+      // This still uses supabase
+      getShareholderCountsForContractId(contractId, db).then(
+        setShareholderStats
+      )
+    }, [positions, contractId])
 
     const visibleYesPositions = yesPositionsSorted.slice(
       page * pageSize,
@@ -88,44 +106,65 @@ export const BinaryUserPositionsTable = memo(
       yesPositionsSorted.length > noPositionsSorted.length
         ? yesPositionsSorted.length
         : noPositionsSorted.length
-
-    const wareFareEnabled = classWarfareEnabled(contract.prob, shareholderStats)
+    const isBinary = contract.outcomeType === 'BINARY'
+    const isStonk = contract.outcomeType === 'STONK'
+    const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
     const getPositionsTitle = (outcome: 'YES' | 'NO') => {
-      if (!wareFareEnabled) {
-        return outcome === 'YES' ? (
-          <span>
-            <YesLabel /> payouts
-          </span>
-        ) : (
-          <span>
-            <NoLabel /> payouts
-          </span>
-        )
-      }
-      const peoplesChoice = shareholderStats?.peoplesChoice
-      if (outcome === peoplesChoice) {
-        return (
-          <span>
-            {getAppropriateEmoji(outcome, shareholderStats)}
-            {outcome === 'YES'
-              ? shareholderStats?.yesShareholders
-              : shareholderStats?.noShareholders}{' '}
-            strong hold {outcome === 'YES' ? <YesLabel /> : <NoLabel />}
-            {getAppropriateEmoji(outcome, shareholderStats)}
-          </span>
-        )
-      }
-      return (
+      return outcome === 'YES' ? (
         <span>
-          {getAppropriateEmoji(outcome, shareholderStats)}
-          {shareholderStats?.noShareholders} aristocrats' butlers hold{' '}
-          {outcome === 'YES' ? <YesLabel /> : <NoLabel />}
-          {getAppropriateEmoji(outcome, shareholderStats)}
+          <Tooltip
+            text={'Approximate count, refresh to update'}
+            placement={'top'}
+          >
+            {shareholderStats?.yesShareholders}{' '}
+          </Tooltip>
+          {isBinary ? (
+            <>
+              <YesLabel /> payouts
+            </>
+          ) : isStonk ? (
+            <>
+              <BuyLabel /> shareholders
+            </>
+          ) : isPseudoNumeric ? (
+            <>
+              <HigherLabel /> shareholders
+            </>
+          ) : (
+            <></>
+          )}
+        </span>
+      ) : (
+        <span>
+          <Tooltip
+            text={'Approximate count, refresh to update'}
+            placement={'top'}
+          >
+            {shareholderStats?.noShareholders}{' '}
+          </Tooltip>
+          {isBinary ? (
+            <>
+              <NoLabel /> payouts
+            </>
+          ) : isStonk ? (
+            <>
+              <ShortLabel /> shareholders
+            </>
+          ) : isPseudoNumeric ? (
+            <>
+              <LowerLabel /> shareholders
+            </>
+          ) : (
+            <></>
+          )}{' '}
         </span>
       )
     }
 
+    const getStonkDisplayValue = (shares: number) => {
+      return Math.floor(shares).toString()
+    }
     return (
       <Col className={'w-full'}>
         <Row className={'mb-2 items-center justify-end gap-2'}>
@@ -161,7 +200,11 @@ export const BinaryUserPositionsTable = memo(
                   followedUsers={followedUsers}
                   numberToShow={
                     sortBy === 'shares'
-                      ? formatMoney(position.totalShares[outcome] ?? 0)
+                      ? isStonk
+                        ? getStonkDisplayValue(
+                            position.totalShares[outcome] ?? 0
+                          )
+                        : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
                 />
@@ -187,7 +230,11 @@ export const BinaryUserPositionsTable = memo(
                   followedUsers={followedUsers}
                   numberToShow={
                     sortBy === 'shares'
-                      ? formatMoney(position.totalShares[outcome] ?? 0)
+                      ? isStonk
+                        ? getStonkDisplayValue(
+                            position.totalShares[outcome] ?? 0
+                          )
+                        : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
                 />

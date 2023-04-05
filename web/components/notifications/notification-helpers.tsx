@@ -15,7 +15,7 @@ import NotificationDropdown from './notification-dropdown'
 import { groupBy } from 'lodash'
 
 const notification_base_style =
-  'relative cursor-pointer text-sm bg-inherit rounded-lg transition-colors'
+  'relative cursor-pointer text-sm transition-colors'
 export const NESTED_NOTIFICATION_STYLE = clsx(
   notification_base_style,
   'hover:bg-primary-50 p-2'
@@ -209,36 +209,17 @@ export function NotificationFrame(props: {
     </>
   )
 
-  const frameEnd = (
-    <Row>
-      <Col
-        className={clsx(
-          'text-ink-500 group-hover:text-ink-900 justify-start transition-colors'
-        )}
-      >
-        <NotificationDropdown
-          notification={notification}
-          highlighted={highlighted}
-        />
-      </Col>
-      <Col className="w-4">
-        {highlighted && (
-          <div className="bg-highlight-blue mx-auto my-auto h-3 w-3 rounded-full" />
-        )}
-      </Col>
-    </Row>
-  )
-
   return (
     <Row
       className={clsx(
         'group relative',
-        isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE
+        isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE,
+        getHighlightClass(highlighted)
       )}
     >
       {customBackground}
       {link && (
-        <Col className={clsx(getHighlightClass(highlighted), 'w-full')}>
+        <Col className={'w-full'}>
           <SiteLink
             href={link}
             className={clsx('flex w-full flex-col')}
@@ -254,7 +235,7 @@ export function NotificationFrame(props: {
       )}
       {!link && (
         <Col
-          className={clsx('w-full', getHighlightClass(highlighted))}
+          className={'w-full'}
           onClick={() => {
             if (highlighted) {
               setHighlighted(false)
@@ -267,7 +248,16 @@ export function NotificationFrame(props: {
           {frameObject}
         </Col>
       )}
-      {frameEnd}
+
+      {/* frame end */}
+      <div className="self-start">
+        <NotificationDropdown notification={notification} />
+      </div>
+      <div className="-mr-2 flex w-4 items-center justify-center">
+        {highlighted && (
+          <div className="bg-highlight-blue h-3 w-3 rounded-full" />
+        )}
+      </div>
     </Row>
   )
 }
@@ -278,6 +268,7 @@ export function ParentNotificationHeader(props: {
 }) {
   const { header, highlighted } = props
   const highlightedClass = getHighlightClass(highlighted)
+
   return (
     <Row className={clsx('text-ink-900 mx-2 items-center justify-start')}>
       <div className={clsx(highlightedClass, 'line-clamp-3')}>{header}</div>

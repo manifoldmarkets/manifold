@@ -1,4 +1,4 @@
-import { memo, ReactNode } from 'react'
+import { memo, ReactNode, useState } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -18,6 +18,7 @@ import {
   NumericContract,
   PseudoNumericContract,
   contractPath,
+  StonkContract,
 } from 'common/contract'
 import {
   BinaryContractOutcomeLabel,
@@ -56,7 +57,9 @@ import { CommentsButton } from '../swipe/swipe-comments'
 import { BetRow } from '../bet/bet-row'
 import { fromNow } from 'web/lib/util/time'
 import Router from 'next/router'
-
+import { ENV_CONFIG } from 'common/envs/constants'
+import { animated, useSpring } from '@react-spring/web'
+import { STONK_NO, STONK_YES } from 'common/stonk'
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
   showTime?: ShowTime
@@ -125,7 +128,9 @@ export const ContractCard = memo(function ContractCard(props: {
 
   const showBinaryQuickBet =
     !marketClosed &&
-    (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
+    (outcomeType === 'BINARY' ||
+      outcomeType === 'PSEUDO_NUMERIC' ||
+      outcomeType === 'STONK') &&
     !hideQuickBet
 
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
@@ -231,7 +236,9 @@ export const ContractCard = memo(function ContractCard(props: {
           />
 
           {!isNew &&
-            (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
+            (outcomeType === 'BINARY' ||
+              outcomeType === 'PSEUDO_NUMERIC' ||
+              outcomeType === 'STONK') && (
               <Tooltip text={'Daily price change'} className={'z-10'}>
                 <ProbOrNumericChange
                   className="py-2 px-2"
@@ -413,6 +420,25 @@ export function PseudoNumericResolutionOrExpectation(props: {
     </Row>
   )
 }
+export function StonkPrice(props: {
+  contract: StonkContract
+  className?: string
+}) {
+  const { contract, className } = props
+
+  const value = getMappedValue(contract, getProbability(contract))
+  const [initialProb] = useState(getProbability(contract))
+  const spring = useSpring({ val: value, from: { val: initialProb } })
+  return (
+    <Row className={clsx('items-baseline text-3xl', className)}>
+      {ENV_CONFIG.moneyMoniker}
+      <animated.div>
+        {spring.val.interpolate((val) => val.toFixed(2))}
+      </animated.div>
+      <div className="ml-2 text-base font-light">per share</div>
+    </Row>
+  )
+}
 
 export const ContractCardWithPosition = memo(function ContractCardWithPosition(
   props: {
@@ -462,11 +488,20 @@ function LoadedMetricsFooter(props: {
   const { YES: yesShares, NO: noShares } = totalShares
   const dailyProfit = from ? from.day.profit : 0
   const profit = showDailyProfit ? dailyProfit : metrics.profit
+  const { outcomeType } = contract
 
   const yesOutcomeLabel =
-    contract.outcomeType === 'PSEUDO_NUMERIC' ? 'HIGHER' : 'YES'
+    outcomeType === 'PSEUDO_NUMERIC'
+      ? 'HIGHER'
+      : outcomeType === 'STONK'
+      ? STONK_YES
+      : 'YES'
   const noOutcomeLabel =
-    contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
+    outcomeType === 'PSEUDO_NUMERIC'
+      ? 'LOWER'
+      : outcomeType === 'STONK'
+      ? STONK_NO
+      : 'NO'
 
   return (
     <div className="bg-ink-100 columns-2 items-center gap-4 rounded-b-[7px] px-4 pt-1 pb-2 text-sm">
@@ -510,7 +545,7 @@ export function ContractCardNew(props: {
   const { className } = props
   const user = useUser()
 
-  const contract = props.contract
+  const contract = useContract(props.contract.id) ?? props.contract
   const {
     closeTime,
     isResolved,
@@ -519,7 +554,6 @@ export function ContractCardNew(props: {
     creatorUsername,
     creatorAvatarUrl,
     question,
-    description,
     coverImageUrl,
     outcomeType,
     mechanism,
@@ -539,11 +573,7 @@ export function ContractCardNew(props: {
 
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
-  const textColor = isClosed && !isResolved ? 'text-ink-500' : 'text-ink-900'
-  const descriptionString =
-    typeof description === 'string'
-      ? description
-      : richTextToString(description)
+  const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
 
   const showImage = !!coverImageUrl
 
@@ -553,8 +583,8 @@ export function ContractCardNew(props: {
     <div
       className={clsx(
         'relative',
-        'border-ink-300 group my-2 flex cursor-pointer flex-col overflow-hidden rounded-xl border-[0.5px]',
-        'focus:bg-ink-400/20 lg:hover:bg-ink-400/20 outline-none transition-colors',
+        'border-ink-200 group my-2 flex cursor-pointer flex-col overflow-hidden rounded-xl border',
+        'hover:border-ink-400 focus:border-ink-400 outline-none transition-colors',
         className
       )}
       // we have other links inside this card like the username, so can't make the whole card a button or link
@@ -564,13 +594,8 @@ export function ContractCardNew(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Col
-        className={clsx(
-          showImage ? 'bg-canvas-0/95' : 'bg-canvas-0/70',
-          'gap-2 py-2 px-4 backdrop-blur-sm'
-        )}
-      >
-        <Row className="text-ink-500 items-center gap-3 overflow-hidden text-sm">
+      <Col className={clsx('bg-canvas-0', 'gap-2 py-2 px-4 transition-colors')}>
+        <Row className="text-ink-600 items-center gap-3 overflow-hidden text-sm">
           <Row className="gap-2" onClick={(e) => e.stopPropagation()}>
             <Avatar
               username={creatorUsername}
@@ -580,7 +605,7 @@ export function ContractCardNew(props: {
             <UserLink
               name={creatorName}
               username={creatorUsername}
-              className="text-ink-500 h-[24px] text-sm"
+              className="text-ink-600 h-[24px] text-sm"
               createdTime={creatorCreatedTime}
             />
           </Row>
@@ -592,7 +617,7 @@ export function ContractCardNew(props: {
         <Link
           href={path}
           className={clsx(
-            'break-anywhere group-hover:text-primary-800 transition-color focus:text-primary-800 group-focus:text-primary-800 whitespace-normal font-medium outline-none',
+            'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
             textColor
           )}
         >
@@ -642,10 +667,10 @@ export function ContractCardNew(props: {
       {showImage && (
         <>
           <div className="h-40" />
-          <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 -z-10 transition-all group-hover:saturate-150">
             <Image
               fill
-              alt={descriptionString}
+              alt=""
               sizes="100vw"
               className="object-cover"
               src={coverImageUrl}
@@ -708,10 +733,10 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className="border-ink-200 my-2 items-center gap-4 rounded border p-2 text-sm">
+    <Row className="bg-ink-200/50 my-2 items-center gap-4 rounded p-2 text-sm">
       <Row className="items-center gap-2">
         <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
-        <span className="text-ink-600 font-semibold">
+        <span className="text-ink-700 font-semibold">
           {maxSharesOutcome === 'YES'
             ? formatMoney(yesShares)
             : formatMoney(noShares)}{' '}
@@ -719,7 +744,7 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
       </Row>
       <Row className="ml-auto items-center gap-2">
         <div className="text-ink-500">Profit </div>
-        <div className={clsx('text-ink-600 font-semibold')}>
+        <div className={clsx('text-ink-700 font-semibold')}>
           {profit ? formatMoney(profit) : '--'}
         </div>
       </Row>

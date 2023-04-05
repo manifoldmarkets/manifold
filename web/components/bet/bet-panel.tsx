@@ -5,7 +5,11 @@ import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
 
 import { useUser } from 'web/hooks/use-user'
-import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  CPMMBinaryContract,
+  PseudoNumericContract,
+  StonkContract,
+} from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
@@ -48,11 +52,8 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
 import { SiteLink } from '../widgets/site-link'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
-import {
-  classWarfareEnabled,
-  getAppropriateEmoji,
-  ShareholderStats,
-} from 'common/supabase/contract-metrics'
+import { STONK_NO, STONK_YES } from 'common/stonk'
+
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
@@ -174,7 +175,7 @@ export function SimpleBetPanel(props: {
 export type binaryOutcomes = 'YES' | 'NO' | undefined
 
 export function BuyPanel(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
@@ -184,7 +185,6 @@ export function BuyPanel(props: {
   initialOutcome?: binaryOutcomes
   location?: string
   className?: string
-  shareholderStats?: ShareholderStats
 }) {
   const {
     contract,
@@ -197,39 +197,12 @@ export function BuyPanel(props: {
     initialOutcome,
     location = 'bet panel',
     className,
-    shareholderStats,
   } = props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+  const isStonk = contract.outcomeType === 'STONK'
   const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
-  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement>()
-  const wareFareEnabled =
-    contract.mechanism === 'cpmm-1' &&
-    classWarfareEnabled(contract.prob, shareholderStats)
-
-  const playAppropriateAudio = (
-    bet: 'YES' | 'NO',
-    shareholderStats?: ShareholderStats
-  ) => {
-    if (!shareholderStats || !wareFareEnabled) return
-    const bbAudioFiles = ['bb1.mp3', 'bb2.mp3', 'bb3.mp3', 'bb4.mp3', 'bb5.mp3']
-    const pcAudioFiles = ['pc1.mp3', 'pc2.mp3', 'pc3.mp3', 'pc4.mp3']
-    let fileName = ''
-    if (shareholderStats.peoplesChoice === bet) {
-      const randomIndex = Math.floor(Math.random() * pcAudioFiles.length)
-      fileName = pcAudioFiles[randomIndex]
-    } else {
-      const randomIndex = Math.floor(Math.random() * bbAudioFiles.length)
-      fileName = bbAudioFiles[randomIndex]
-    }
-    if (currentAudio) currentAudio.pause()
-
-    const prefix = '/mp3s/'
-    const audio = new Audio(prefix + fileName)
-    audio.play()
-    setCurrentAudio(audio)
-  }
 
   const outcome = option === 'LIMIT' ? undefined : option
   const seeLimit = option === 'LIMIT'
@@ -252,7 +225,6 @@ export function BuyPanel(props: {
     } else {
       setOption(choice)
     }
-
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
     }
@@ -270,9 +242,6 @@ export function BuyPanel(props: {
 
     setError(undefined)
     setIsSubmitting(true)
-    outcome &&
-      wareFareEnabled &&
-      playAppropriateAudio(outcome, shareholderStats)
     placeBet({
       outcome,
       amount: betAmount,
@@ -363,25 +332,24 @@ export function BuyPanel(props: {
           onSelect={(choice) => {
             onOptionChoice(choice)
           }}
-          isPseudoNumeric={isPseudoNumeric}
-          yesEmoji={
-            wareFareEnabled ? getAppropriateEmoji('YES', shareholderStats) : ''
+          yesLabel={
+            isPseudoNumeric ? 'HIGHER' : isStonk ? STONK_YES : undefined
           }
-          noEmoji={
-            wareFareEnabled ? getAppropriateEmoji('NO', shareholderStats) : ''
-          }
+          noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : undefined}
         />
-        <button
-          className={clsx(
-            'inline-flex items-center justify-center rounded-3xl border-2 p-2',
-            seeLimit
-              ? 'border-indigo-500 bg-indigo-500 text-white'
-              : 'bg-canvas-0 border-indigo-500 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-500/10 hover:text-indigo-500'
-          )}
-          onClick={() => onOptionChoice('LIMIT')}
-        >
-          <div className="h-6 w-6 text-center">%</div>
-        </button>
+        {!isStonk && (
+          <button
+            className={clsx(
+              'inline-flex items-center justify-center rounded-3xl border-2 p-2',
+              seeLimit
+                ? 'border-indigo-500 bg-indigo-500 text-white'
+                : 'bg-canvas-0 border-indigo-500 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-500/10 hover:text-indigo-500'
+            )}
+            onClick={() => onOptionChoice('LIMIT')}
+          >
+            <div className="h-6 w-6 text-center">%</div>
+          </button>
+        )}
       </Row>
 
       <Col
@@ -394,23 +362,6 @@ export function BuyPanel(props: {
           'rounded-lg px-4 py-2'
         )}
       >
-        {wareFareEnabled && (
-          <div className={'bg-canvas-100 rounded-md p-3 text-sm'}>
-            {outcome === shareholderStats?.peoplesChoice ? (
-              <span>
-                Great choice! This is the most popular bet on the market by the
-                little guy. You stand with the people
-                {getAppropriateEmoji(outcome, shareholderStats)}
-              </span>
-            ) : (
-              <span>
-                Refined selection! This is the most popular bet with the
-                rich-heads. You stand with the bourgeoisie
-                {getAppropriateEmoji(outcome, shareholderStats)}
-              </span>
-            )}
-          </div>
-        )}
         <Row className="text-ink-500 mt-2 mb-1 items-center justify-between text-left text-sm">
           Amount
         </Row>
@@ -432,25 +383,34 @@ export function BuyPanel(props: {
           <Col className="w-1/2 text-sm">
             <Col className="text-ink-500 flex-nowrap whitespace-nowrap text-sm">
               <div>
-                {isPseudoNumeric ? 'Shares' : <>Payout if {outcome ?? 'YES'}</>}
+                {isPseudoNumeric || isStonk ? (
+                  'Shares'
+                ) : (
+                  <>Payout if {outcome ?? 'YES'}</>
+                )}
               </div>
             </Col>
             <div>
               <span className="whitespace-nowrap text-lg">
-                {formatMoney(currentPayout)}
+                {isStonk || isPseudoNumeric
+                  ? Math.floor(currentPayout)
+                  : formatMoney(currentPayout)}
               </span>
               <span className="text-ink-500 pr-3 text-sm">
-                {' '}
-                +{currentReturnPercent}
+                {isStonk || isPseudoNumeric ? '' : ' +' + currentReturnPercent}
               </span>
             </div>
           </Col>
           <Col className="w-1/2 text-sm">
             <Row>
               <span className="text-ink-500 whitespace-nowrap text-sm">
-                {isPseudoNumeric ? 'Estimated value' : 'New probability'}
+                {isPseudoNumeric
+                  ? 'Estimated value'
+                  : isStonk
+                  ? 'New stock price'
+                  : 'New probability'}
               </span>
-              {!isPseudoNumeric && (
+              {!isPseudoNumeric && !isStonk && (
                 <InfoTooltip
                   text={`The probability of YES after your ${SINGULAR_BET}`}
                   className="ml-1"
@@ -500,6 +460,8 @@ export function BuyPanel(props: {
                     contract,
                     'YES'
                   )} or ${formatOutcomeLabel(contract, 'NO')}`
+                : isStonk
+                ? 'Bet'
                 : 'Wager'
             }
           />
@@ -530,7 +492,7 @@ export function BuyPanel(props: {
 }
 
 function LimitOrderPanel(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }

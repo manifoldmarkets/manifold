@@ -2,14 +2,14 @@ import {
   BETTING_STREAK_BONUS_MAX,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
-import { getSourceUrl, Notification } from 'common/notification'
-import { formatMoney } from 'common/util/format'
-import { groupBy, uniqBy } from 'lodash'
-import { useState } from 'react'
 import {
-  MultiUserLinkInfo,
-  MultiUserTransactionModal,
-} from 'web/components/multi-user-transaction-link'
+  getSourceUrl,
+  Notification,
+  UniqueBettorData,
+} from 'common/notification'
+import { formatMoney } from 'common/util/format'
+import { groupBy } from 'lodash'
+import { useState } from 'react'
 
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
@@ -29,6 +29,12 @@ import {
 import { QuestRewardTxn } from 'common/txn'
 import { QUEST_DETAILS } from 'common/quest'
 import { QuestsModal } from '../quests-or-streak'
+import { Modal } from 'web/components/layout/modal'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { Avatar } from 'web/components/widgets/avatar'
+import { BetOutcomeLabel } from 'web/components/outcome-label'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -55,30 +61,12 @@ export function combineAndSumIncomeNotifications(
       notificationsForSourceTitle.forEach(
         (notification) => (sum = parseInt(notification.sourceText) + sum)
       )
-      const uniqueUsers = uniqBy(
-        notificationsForSourceTitle.map((notification) => {
-          let sum = 0
-          notificationsForSourceTitle
-            .filter(
-              (n) => n.sourceUserUsername === notification.sourceUserUsername
-            )
-            .forEach((n) => (sum = parseInt(n.sourceText) + sum))
-          return {
-            name: notification.sourceUserName,
-            username: notification.sourceUserUsername,
-            avatarUrl: notification.sourceUserAvatarUrl,
-            amount: sum,
-          } as MultiUserLinkInfo
-        }),
-        (n) => n.username
-      )
 
       const newNotification = {
         ...notificationsForSourceTitle[0],
         sourceText: sum.toString(),
         sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
         data: {
-          uniqueUsers,
           relatedNotifications: notificationsForSourceTitle,
         },
       }
@@ -96,17 +84,9 @@ export function IncomeNotificationItem(props: {
   const { notification, highlighted, setHighlighted } = props
   const { sourceType } = notification
 
-  if (sourceType === 'tip' || sourceType === 'tip_and_like') {
+  if (sourceType === 'bonus') {
     return (
-      <TipIncomeNotification
-        notification={notification}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (sourceType === 'bonus') {
-    return (
-      <BonusIncomeNotification
+      <UniqueBettorBonusIncomeNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
@@ -155,59 +135,13 @@ export function IncomeNotificationItem(props: {
   } else return <></>
 }
 
-export function TipIncomeNotification(props: {
+export function UniqueBettorBonusIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
 }) {
   const { notification, highlighted, setHighlighted } = props
-  const { sourceUserName } = notification
-  const [open, setOpen] = useState(false)
-  const userLinks: MultiUserLinkInfo[] = notification.data?.uniqueUsers ?? []
-  const multipleTips = userLinks.length > 1
-  const tippersText = multipleTips
-    ? `${sourceUserName} & ${userLinks.length - 1} other${
-        userLinks.length - 1 > 1 ? 's' : ''
-      }`
-    : sourceUserName
-    ? sourceUserName
-    : 'some users'
-  return (
-    <NotificationFrame
-      notification={notification}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      isChildOfGroup={true}
-      icon={
-        <AvatarNotificationIcon notification={notification} symbol={'💰'} />
-      }
-      onClick={() => setOpen(true)}
-    >
-      <span className="line-clamp-3">
-        <IncomeNotificationLabel notification={notification} />{' '}
-        {tippersText && <PrimaryNotificationLink text={tippersText} />} tipped
-        you on <QuestionOrGroupLink notification={notification} />
-      </span>
-      <MultiUserTransactionModal
-        userInfos={userLinks}
-        modalLabel={'Who tipped you'}
-        open={open}
-        setOpen={setOpen}
-      />
-    </NotificationFrame>
-  )
-}
-
-export function BonusIncomeNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
-}) {
-  const { notification, highlighted, setHighlighted } = props
-  const { sourceText, data } = notification
-  const userLinks: MultiUserLinkInfo[] = data?.uniqueUsers ?? [
-    { ...notification, sum: parseInt(sourceText) },
-  ]
+  const { sourceText } = notification
   const [open, setOpen] = useState(false)
   return (
     <NotificationFrame
@@ -221,6 +155,16 @@ export function BonusIncomeNotification(props: {
           symbol={'🎁'}
           setOpen={setOpen}
         />
+      }
+      subtitle={
+        notification.data?.bet &&
+        notification.data?.outcomeType && (
+          <div className={'ml-0.5'}>
+            <BettorStatusLabel
+              uniqueBettorData={notification.data as UniqueBettorData}
+            />
+          </div>
+        )
       }
       link={getSourceUrl(notification)}
     >
@@ -237,8 +181,8 @@ export function BonusIncomeNotification(props: {
         />{' '}
         on <QuestionOrGroupLink notification={notification} />
       </span>
-      <MultiUserTransactionModal
-        userInfos={userLinks}
+      <MultiUserNotificationModal
+        notification={notification}
         modalLabel={'Unique traders'}
         open={open}
         setOpen={setOpen}
@@ -429,5 +373,83 @@ function IncomeNotificationLabel(props: { notification: Notification }) {
     <span className="text-teal-600">{formatMoney(parseInt(sourceText))}</span>
   ) : (
     <div />
+  )
+}
+
+const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
+  const { bet, outcomeType, answerText } = props.uniqueBettorData
+  const { amount } = bet
+  const showProb =
+    (outcomeType === 'PSEUDO_NUMERIC' &&
+      props.uniqueBettorData.max !== undefined) ||
+    outcomeType !== 'PSEUDO_NUMERIC'
+  return (
+    <Row className={'line-clamp-1 '}>
+      <span className="text-ink-600">{formatMoney(amount)}</span> on{' '}
+      <BetOutcomeLabel
+        bet={bet}
+        contractOutcomeType={outcomeType}
+        answerText={answerText}
+      />{' '}
+      {showProb &&
+        `(${getFormattedMappedValue(
+          props.uniqueBettorData as any,
+          bet.probAfter
+        )})`}
+    </Row>
+  )
+}
+
+function MultiUserNotificationModal(props: {
+  notification: Notification
+  modalLabel: string
+  open: boolean
+  setOpen: (open: boolean) => void
+  short?: boolean
+}) {
+  const { notification, modalLabel, open, setOpen, short } = props
+  const relatedNotifications = notification.data?.relatedNotifications as
+    | Notification[]
+    | undefined
+
+  return (
+    <Modal open={open} setOpen={setOpen} size={'md'}>
+      <Col className="bg-canvas-0 text-ink-1000 relative items-start gap-4 rounded-md p-6">
+        <span className={'sticky top-0 text-xl'}>{modalLabel}</span>
+        {(relatedNotifications?.length ?? 0) > 0 ? (
+          <Col className="max-h-96 w-full gap-4 overflow-y-auto">
+            {relatedNotifications?.map((notif) => (
+              <Row
+                key={notif.sourceUserUsername + 'list'}
+                className="w-full items-center gap-1"
+              >
+                {notif.sourceText && (
+                  <span className="min-w-[3.5rem] text-teal-500">
+                    +{formatMoney(parseInt(notif.sourceText))}
+                  </span>
+                )}
+                <Avatar
+                  username={notif.sourceUserUsername}
+                  avatarUrl={notif.sourceUserAvatarUrl}
+                  size={'sm'}
+                />
+                <UserLink
+                  name={notif.sourceUserName}
+                  username={notif.sourceUserUsername}
+                  short={short}
+                />
+                {notif.data?.bet && notif.data?.outcomeType && (
+                  <BettorStatusLabel
+                    uniqueBettorData={notif.data as UniqueBettorData}
+                  />
+                )}
+              </Row>
+            ))}
+          </Col>
+        ) : (
+          <div>No one yet...</div>
+        )}
+      </Col>
+    </Modal>
   )
 }
