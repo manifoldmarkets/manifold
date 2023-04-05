@@ -96,7 +96,15 @@ export default function ContractPage(props: {
 }) {
   const { visibility, contractSlug, contractParams } = props
   if (!visibility) {
-    return <Custom404 />
+    return (
+      <Custom404
+        customText={`There was no visibility parameter detected for your market
+      \nvisibility: ${visibility}
+      \nslug: ${contractSlug}
+      \ncontractParams: ${JSON.stringify(contractParams)}
+      `}
+      />
+    )
   }
   return (
     <Page className="!max-w-[1400px]" mainClassName="!col-span-10">
@@ -120,7 +128,7 @@ export function NonPrivateContractPage(props: {
     return <ContractEmbedPage contract={contract} historyData={historyData} />
   }
   if (!contract) {
-    return <Custom404 />
+    return <Custom404 customText="Unable to fetch market" />
   } else
     return (
       <>
