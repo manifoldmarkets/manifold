@@ -13,7 +13,6 @@ import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { useState } from 'react'
-import { Tooltip } from '../widgets/tooltip'
 import { Row } from 'web/components/layout/row'
 
 export const FollowMarketButton = (props: {
