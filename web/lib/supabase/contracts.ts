@@ -8,6 +8,12 @@ import {
 import { filterDefined } from 'common/util/array'
 import { adminDb, db } from './db'
 import { filter, Sort } from 'web/components/contract-search'
+import { stateType } from 'web/components/supabase-search'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { ShowTime } from 'web/components/contract/contract-details'
 
 export async function getContractIds(contractIds: string[]) {
   const { data } = await run(
@@ -118,15 +124,48 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
   return undefined
 }
 
-export async function searchContract(
-  query: string,
-  filter: filter,
-  sort: Sort,
-  offset: number,
-  limit: number,
-  group_id?: string,
+export async function searchContract(props: {
+  state: stateType
+  query: string
+  filter: filter
+  sort: Sort
+  offset: number
+  limit: number
+  group_id?: string
   creator_id?: string
-) {
+}) {
+  const { state, query, filter, sort, offset, limit, group_id, creator_id } =
+    props
+
+  if (!query || query.length == 0) {
+    const { data, error } = await db.rpc('empty_search_contracts', {
+      contract_filter: filter,
+      contract_sort: sort,
+      offset_n: offset,
+      limit_n: limit,
+      group_id: group_id,
+      creator_id: creator_id,
+    })
+    if (data && data.length > 0) {
+      return {
+        fuzzyOffset: 0,
+        data: data.map((d) => (d as any).data) as Contract[],
+      }
+    }
+  }
+  if (state.fuzzyContractOffset > 0) {
+    console.log('fuzzy')
+    return searchContractFuzzy({
+      state,
+      query,
+      filter,
+      sort,
+      limit,
+      group_id,
+      creator_id,
+    })
+  }
+  console.log('regular')
   const { data, error } = await db.rpc('search_contracts', {
     term: query,
     contract_filter: filter,
@@ -138,9 +177,64 @@ export async function searchContract(
     creator_id: creator_id,
   })
 
-  console.log(error)
-  if (data && data.length > 0) {
-    return data.map((d) => (d as any).data) as Contract[]
+  if (data) {
+    console.log('textlength', data.length)
+    const textData = data.map((d) => (d as any).data) as Contract[]
+    if (data.length == 20) {
+      return { fuzzyOffset: 0, data: textData }
+    } else {
+      const fuzzyData = await searchContractFuzzy({
+        state,
+        query,
+        filter,
+        sort,
+        limit: limit - data.length,
+        group_id,
+        creator_id,
+      })
+      return {
+        // fuzzyOffset: fuzzyData.fuzzyOffset,
+        fuzzyOffset: 0,
+        data: textData.concat(fuzzyData.data),
+      }
+    }
   }
-  return []
+  return { fuzzyOffset: 0, data: [] }
+}
+
+export async function searchContractFuzzy(props: {
+  state: stateType
+  query: string
+  filter: filter
+  sort: Sort
+  limit: number
+  group_id?: string
+  creator_id?: string
+}) {
+  const { state, query, filter, sort, limit, group_id, creator_id } = props
+  const { data, error } = await db.rpc('search_contracts', {
+    term: query,
+    contract_filter: filter,
+    contract_sort: sort,
+    offset_n: state.fuzzyContractOffset,
+    limit_n: limit,
+    fuzzy: true,
+    group_id: group_id,
+    creator_id: creator_id,
+  })
+  console.log('fuzzyPartition', state.fuzzyContractOffset, '\nlimit', limit)
+  if (data && data.length > 0) {
+    console.log(
+      'fuzzyData',
+      data.length,
+      '\nfuzzyOffset',
+      state.fuzzyContractOffset
+    )
+    return {
+      // fuzzyOffset: state.fuzzyContractOffset + data.length,
+      fuzzyOffset: 0,
+      data: data.map((d) => (d as any).data) as Contract[],
+    }
+  }
+  return { fuzzyOffset: 0, data: [] }
 }

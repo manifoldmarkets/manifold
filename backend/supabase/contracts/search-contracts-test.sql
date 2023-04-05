@@ -5,7 +5,8 @@ CREATE OR REPLACE FUNCTION search_contracts_test(
     offset_n INTEGER,
     limit_n INTEGER,
     fuzzy BOOLEAN DEFAULT false,
-    groupId TEXT DEFAULT NULL
+    group_id TEXT DEFAULT NULL,
+    creator_id TEXT DEFAULT NULL
   ) RETURNS TEXT AS $$
 DECLARE base_query TEXT;
 where_clause TEXT;
@@ -45,14 +46,14 @@ AND contractz.group_id = %L',
 -- If fuzzy search is enabled
 ELSIF fuzzy THEN base_query := FORMAT(
   '
-      SELECT scored_contracts.data
+      SELECT contractz.data
       FROM (
         SELECT contracts_rbac.*,
                similarity(contracts_rbac.question, %L) AS similarity_score
         FROM contracts_rbac
-      ) AS scored_contracts
+      ) AS contractz
       %s
-      AND scored_contracts.similarity_score > 0.1',
+      AND contractz.similarity_score > 0.1',
   term,
   generate_where_query(contract_filter, contract_sort, creator_id)
 );

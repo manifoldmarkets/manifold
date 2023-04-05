@@ -69,6 +69,13 @@ const AsListContext = createContext({
   setAsList: (_asList: boolean) => {},
 })
 
+export type stateType = {
+  contracts: Contract[]
+  fuzzyContractOffset: number
+  shouldLoadMore: boolean
+  showTime: ShowTime | null
+}
+
 export function SupabaseContractSearch(props: {
   defaultSort?: Sort
   defaultFilter?: filter
@@ -115,6 +122,7 @@ export function SupabaseContractSearch(props: {
   const [state, setState] = usePersistentState(
     {
       contracts: [] as Contract[],
+      fuzzyContractOffset: 0,
       shouldLoadMore: true,
       showTime: null as ShowTime | null,
     },
@@ -131,6 +139,9 @@ export function SupabaseContractSearch(props: {
     store: inMemoryStore(),
   })
 
+  useEffect(() => {
+    console.log('state', state)
+  }, [state])
   useSafeLayoutEffect(() => {
     if (persistPrefix) {
       const params = searchParamsStore.get(`${persistPrefix}-params`)
@@ -153,22 +164,28 @@ export function SupabaseContractSearch(props: {
     const id = ++requestId.current
     const offset = freshQuery ? 0 : state.contracts.length
     if (freshQuery || state.shouldLoadMore) {
-      const results = await searchContract(
+      const results = await searchContract({
+        state,
         query,
         filter,
         sort,
         offset,
-        CONTRACTS_PER_PAGE
-      )
+        limit: CONTRACTS_PER_PAGE,
+        group_id: additionalFilter?.groupId,
+        creator_id: additionalFilter?.creatorId,
+      })
       // if there's a more recent request, forget about this one
       if (id === requestId.current) {
-        const newContracts = results
+        const fuzzyOffset = results.fuzzyOffset
+        const newContracts = results.data
         const showTime =
           sort === 'close-date' || sort === 'resolve-date' ? sort : null
         const contracts = freshQuery
           ? newContracts
           : [...state.contracts, ...newContracts]
         setState({
+          ...state,
+          fuzzyContractOffset: fuzzyOffset,
           contracts,
           showTime,
           shouldLoadMore: newContracts.length == 20,
@@ -231,6 +248,9 @@ export function SupabaseContractSearch(props: {
           )
         ) : asList ? (
           <ContractsList
+            key={
+              searchParams.current?.filter ?? '' + searchParams.current?.sort
+            }
             contracts={renderedContracts}
             loadMore={performQuery}
             onContractClick={onContractClick}
@@ -238,6 +258,7 @@ export function SupabaseContractSearch(props: {
           />
         ) : (
           <ContractsGrid
+            key={state.contracts.length}
             contracts={renderedContracts}
             showTime={state.showTime ?? undefined}
             onContractClick={onContractClick}
