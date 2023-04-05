@@ -585,7 +585,7 @@ export function ContractCardNew(props: {
           showImage
             ? 'bg-canvas-0/95 dark:bg-canvas-0/90 group-hover:bg-canvas-0/80 group-focus:bg-canvas-0/80'
             : 'bg-canvas-0/70 group-hover:bg-canvas-0/50 group-focus:bg-canvas-0/50',
-          'gap-2 py-2 px-4 backdrop-blur-sm transition-colors'
+          'gap-2 py-2 px-4 transition-colors sm:backdrop-blur-sm'
         )}
       >
         <Row className="text-ink-600 items-center gap-3 overflow-hidden text-sm">
