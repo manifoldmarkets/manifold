@@ -18,7 +18,7 @@ export default function Find() {
   return (
     <Page>
       <OmniSearch
-        inputClassName="sticky top-0 left-0 right-0"
+        inputClassName="sticky top-0 left-0 right-0 !rounded-full !border !border-ink-400"
         query={query}
         setQuery={setQuery}
       />
