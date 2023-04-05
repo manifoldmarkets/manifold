@@ -1487,7 +1487,7 @@ export interface Database {
           offset_n: number
           limit_n: number
           fuzzy?: boolean
-          groupid?: string
+          group_id?: string
         }
         Returns: {
           data: Json

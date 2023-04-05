@@ -143,7 +143,8 @@ CREATE OR REPLACE FUNCTION search_contracts(
     offset_n INTEGER,
     limit_n INTEGER,
     fuzzy BOOLEAN DEFAULT false,
-    group_id TEXT DEFAULT NULL
+    group_id TEXT DEFAULT NULL,
+    creator_id TEXT DEFAULT NULL
   ) RETURNS TABLE (data jsonb) AS $$
 DECLARE base_query TEXT;
 where_clause TEXT;
@@ -162,9 +163,9 @@ and fuzzy then base_query := FORMAT(
       ) AS contractz
       %s
       AND contractz.similarity_score > 0.1
-      AND group_contracts.group_id = %L',
+      AND contractz.group_id = %L',
   term,
-  generate_where_query(contract_filter, contract_sort),
+  generate_where_query(contract_filter, contract_sort, creator_id),
   group_id
 );
 -- If full text search is enabled and is group search
@@ -177,7 +178,7 @@ FROM (select contracts_rbac.*, group_contracts.group_id from contracts_rbac join
 AND contractz.question_fts @@ query
 AND contractz.group_id = %L',
   term,
-  generate_where_query(contract_filter, contract_sort),
+  generate_where_query(contract_filter, contract_sort, creator_id),
   group_id
 );
 -- If fuzzy search is enabled
@@ -192,7 +193,7 @@ ELSIF fuzzy THEN base_query := FORMAT(
       %s
       AND scored_contracts.similarity_score > 0.1',
   term,
-  generate_where_query(contract_filter, contract_sort)
+  generate_where_query(contract_filter, contract_sort, creator_id)
 );
 -- If full text search is enabled
 ELSE base_query := FORMAT(
@@ -202,7 +203,7 @@ ELSE base_query := FORMAT(
       %s
       AND contracts_rbac.question_fts @@ query',
   term,
-  generate_where_query(contract_filter, contract_sort)
+  generate_where_query(contract_filter, contract_sort, creator_id)
 );
 END IF;
 sql_query := FORMAT(
@@ -218,7 +219,8 @@ $$ LANGUAGE plpgsql;
 -- generates where and filter part of search query
 CREATE OR REPLACE FUNCTION generate_where_query(
     contract_filter TEXT,
-    contract_sort TEXT
+    contract_sort TEXT,
+    creator_id TEXT DEFAULT NULL
   ) RETURNS TEXT AS $$
 DECLARE where_clause TEXT;
 BEGIN where_clause := FORMAT(
@@ -228,13 +230,22 @@ BEGIN where_clause := FORMAT(
     OR (%L = ''resolved'' AND resolution_time IS NOT NULL)
     OR (%L = ''all'')
   )
-  AND (%L != ''close-date'' OR (%L = ''close-date'' AND close_time > NOW()))',
+  AND (%L != ''close-date'' OR (%L = ''close-date'' AND close_time > NOW()))
+  AND (
+  %L IS NULL
+  OR (
+    creator_id = %L
+  )
+)
+  ',
   contract_filter,
   contract_filter,
   contract_filter,
   contract_filter,
   contract_sort,
-  contract_sort
+  contract_sort,
+  creator_id,
+  creator_id
 );
 RETURN where_clause;
 END;

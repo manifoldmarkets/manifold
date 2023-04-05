@@ -123,7 +123,9 @@ export async function searchContract(
   filter: filter,
   sort: Sort,
   offset: number,
-  limit: number
+  limit: number,
+  group_id?: string,
+  creator_id?: string
 ) {
   const { data, error } = await db.rpc('search_contracts', {
     term: query,
@@ -132,7 +134,8 @@ export async function searchContract(
     offset_n: offset,
     limit_n: limit,
     fuzzy: true,
-    group_id: 'UCnpxVUdLOZYgoMsDlHD',
+    group_id: group_id,
+    creator_id: creator_id,
   })
 
   console.log(error)
