@@ -45,6 +45,7 @@ import { QfOverview } from './qf-overview'
 import { StonkContractChart } from '../charts/contract/stonk'
 import { STARTING_BALANCE } from 'common/economy'
 import { formatMoney } from 'common/util/format'
+import { YES_GRAPH_COLOR } from 'common/envs/constants'
 
 export const ContractOverview = memo(
   (props: {
@@ -225,7 +226,7 @@ const StonkOverview = (props: {
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setTimePeriod}
           maxRange={maxRange}
-          color="indigo"
+          color="green"
         />
       </Row>
       <SizedContainer fullHeight={250} mobileHeight={150}>
@@ -237,6 +238,7 @@ const StonkOverview = (props: {
             viewScaleProps={viewScale}
             controlledStart={start}
             contract={contract}
+            color={YES_GRAPH_COLOR}
           />
         )}
       </SizedContainer>

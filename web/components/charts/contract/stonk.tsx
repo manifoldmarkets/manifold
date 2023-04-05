@@ -21,7 +21,8 @@ import {
 } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { STONK_GRAPH_COLOR, STONK_MAX, STONK_MIN } from 'common/stonk'
+import { STONK_MAX, STONK_MIN } from 'common/stonk'
+import { YES_GRAPH_COLOR } from 'common/envs/constants'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
@@ -120,7 +121,7 @@ export const StonkContractChart = (props: {
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={StonkChartTooltip}
-      color={color ?? STONK_GRAPH_COLOR}
+      color={color ?? YES_GRAPH_COLOR}
     />
   )
 }
