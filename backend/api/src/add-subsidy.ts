@@ -27,12 +27,8 @@ export const addsubsidy = authEndpoint(async (req, auth) => {
     const contractSnap = await transaction.get(contractDoc)
     if (!contractSnap.exists) throw new APIError(400, 'Invalid contract')
     const contract = contractSnap.data() as Contract
-    if (
-      contract.mechanism !== 'cpmm-1' ||
-      (contract.outcomeType !== 'BINARY' &&
-        contract.outcomeType !== 'PSEUDO_NUMERIC')
-    )
-      throw new APIError(400, 'Invalid contract')
+    if (contract.mechanism !== 'cpmm-1')
+      throw new APIError(400, 'Invalid contract, only cpmm-1 is supported')
 
     const { closeTime } = contract
     if (closeTime && Date.now() > closeTime)
