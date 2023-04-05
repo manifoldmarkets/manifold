@@ -18,7 +18,6 @@ import {
   getUsersSavedPreference,
   notificationIsNecessary,
 } from '../notification-settings'
-import { getHighlightClass } from './notification-helpers'
 
 export default function NotificationDropdown(props: {
   notification: Notification
