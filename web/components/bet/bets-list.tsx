@@ -31,7 +31,7 @@ import {
   contractPath,
   CPMMBinaryContract,
 } from 'common/contract'
-import { formatNumericProbability } from 'common/pseudo-numeric'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
 import { LimitBet } from 'common/bet'
 import { Pagination } from '../widgets/pagination'
@@ -540,6 +540,7 @@ export function ContractBetsTable(props: {
   const isDPM = mechanism === 'dpm-2'
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const isStonk = outcomeType === 'STONK'
 
   return (
     <div className="overflow-x-auto">
@@ -590,7 +591,13 @@ export function ContractBetsTable(props: {
             )}
             {isDPM && !isResolved && <th>Payout if chosen</th>}
             <th>Shares</th>
-            {!isPseudoNumeric && <th>Probability</th>}
+            {isPseudoNumeric ? (
+              <th>Value</th>
+            ) : isStonk ? (
+              <th>Stock price</th>
+            ) : (
+              <th>Probability</th>
+            )}
             <th>Date</th>
           </tr>
         </thead>
@@ -638,6 +645,7 @@ function BetRow(props: {
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isDPM = mechanism === 'dpm-2'
+  const isStonk = outcomeType === 'STONK'
 
   const dpmPayout = (() => {
     if (!isDPM) return 0
@@ -706,8 +714,6 @@ function BetRow(props: {
             truncate="short"
           />
         )}
-        {isPseudoNumeric &&
-          ' than ' + formatNumericProbability(bet.probAfter, contract)}
       </td>
       <td>
         {formatMoney(Math.abs(amount))}
@@ -716,17 +722,23 @@ function BetRow(props: {
       {isDPM && !isNumeric && <td>{saleDisplay}</td>}
       {isDPM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>{formatWithCommas(sharesOrShortSellShares)}</td>
-      {!isPseudoNumeric && (
-        <td>
-          {outcomeType === 'FREE_RESPONSE' || hadPoolMatch ? (
+
+      <td>
+        {outcomeType === 'FREE_RESPONSE' || hadPoolMatch ? (
+          isStonk || isPseudoNumeric ? (
+            <>
+              {getFormattedMappedValue(contract, probBefore)} →{' '}
+              {getFormattedMappedValue(contract, probAfter)}
+            </>
+          ) : (
             <>
               {formatPercent(probBefore)} → {formatPercent(probAfter)}
             </>
-          ) : (
-            formatPercent(bet.limitProb ?? 0)
-          )}
-        </td>
-      )}
+          )
+        ) : (
+          formatPercent(bet.limitProb ?? 0)
+        )}
+      </td>
       <td>{formatTimeShort(createdTime)}</td>
     </tr>
   )
