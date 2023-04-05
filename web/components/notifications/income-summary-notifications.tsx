@@ -2,7 +2,11 @@ import {
   BETTING_STREAK_BONUS_MAX,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
-import { getSourceUrl, Notification } from 'common/notification'
+import {
+  getSourceUrl,
+  Notification,
+  UniqueBettorData,
+} from 'common/notification'
 import { formatMoney } from 'common/util/format'
 import { groupBy } from 'lodash'
 import { useState } from 'react'
@@ -29,9 +33,8 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { Bet } from 'common/bet'
 import { BetOutcomeLabel } from 'web/components/outcome-label'
-import { outcomeType } from 'common/contract'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -158,9 +161,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
         notification.data?.outcomeType && (
           <div className={'ml-0.5'}>
             <BettorStatusLabel
-              bet={notification.data.bet}
-              contractOutcomeType={notification.data.outcomeType}
-              answerText={notification.data.answerText}
+              uniqueBettorData={notification.data as UniqueBettorData}
             />
           </div>
         )
@@ -375,21 +376,26 @@ function IncomeNotificationLabel(props: { notification: Notification }) {
   )
 }
 
-const BettorStatusLabel = (props: {
-  bet: Bet
-  contractOutcomeType: outcomeType
-  answerText?: string
-}) => {
-  const { bet, contractOutcomeType, answerText } = props
+const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
+  const { bet, outcomeType, answerText } = props.uniqueBettorData
   const { amount } = bet
+  const showProb =
+    (outcomeType === 'PSEUDO_NUMERIC' &&
+      props.uniqueBettorData.max !== undefined) ||
+    outcomeType !== 'PSEUDO_NUMERIC'
   return (
     <Row className={'line-clamp-1 '}>
       <span className="text-ink-600">{formatMoney(amount)}</span> on{' '}
       <BetOutcomeLabel
         bet={bet}
-        contractOutcomeType={contractOutcomeType}
+        contractOutcomeType={outcomeType}
         answerText={answerText}
-      />
+      />{' '}
+      {showProb &&
+        `(${getFormattedMappedValue(
+          props.uniqueBettorData as any,
+          bet.probAfter
+        )})`}
     </Row>
   )
 }
@@ -434,9 +440,7 @@ function MultiUserNotificationModal(props: {
                 />
                 {notif.data?.bet && notif.data?.outcomeType && (
                   <BettorStatusLabel
-                    bet={notif.data.bet}
-                    contractOutcomeType={notif.data.outcomeType}
-                    answerText={notif.data.answerText}
+                    uniqueBettorData={notif.data as UniqueBettorData}
                   />
                 )}
               </Row>

@@ -2,6 +2,7 @@ import { outcomeType } from 'common/contract'
 import { groupPath } from './group'
 import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
+import { Bet } from 'common/bet'
 
 export type Notification = {
   id: string
@@ -307,6 +308,15 @@ export type ContractResolutionData = {
   profitRank?: number
   totalShareholders?: number
   profit?: number
+}
+
+export type UniqueBettorData = {
+  bet: Bet
+  outcomeType: outcomeType
+  answerText?: string
+  min?: number
+  max?: number
+  isLogScale?: boolean
 }
 
 export function getSourceIdForLinkComponent(
