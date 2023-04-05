@@ -4,13 +4,9 @@ import { HOUR_MS } from 'common/util/time'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
-import {
-  formatMoney,
-  formatPercent,
-  shortFormatNumber,
-} from 'common/util/format'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { ContractMetrics } from 'common/calculate-metrics'
-import { CPMMBinaryContract } from 'common/contract'
+import { CPMMContract } from 'common/contract'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -31,6 +27,7 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
 import { useHasSeen } from 'web/hooks/use-has-seen'
 import { InfoTooltip } from './widgets/info-tooltip'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
@@ -49,7 +46,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
   }, [user])
 
   const [data, setData] = usePersistentRevalidatedState<
-    { metrics: ContractMetrics[]; contracts: CPMMBinaryContract[] } | undefined
+    { metrics: ContractMetrics[]; contracts: CPMMContract[] } | undefined
   >(
     undefined,
     {
@@ -127,7 +124,7 @@ function DailyProfitModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   metrics?: ContractMetrics[]
-  contracts?: CPMMBinaryContract[]
+  contracts?: CPMMContract[]
   dailyProfit: number
   balance: number
 }) {
@@ -182,7 +179,7 @@ function DailyProfitModal(props: {
 }
 
 export function ProfitChangeTable(props: {
-  contracts: CPMMBinaryContract[]
+  contracts: CPMMContract[]
   metrics: ContractMetrics[]
   from: 'day' | 'week' | 'month'
   rowsPerSection: number
@@ -226,19 +223,21 @@ export function ProfitChangeTable(props: {
       </div>
     )
 
-  const marketRow = (c: CPMMBinaryContract) =>
-    r(
+  const marketRow = (c: CPMMContract) => {
+    const change = getFormattedMappedValue(c, c.probChanges[from]).replace(
+      '%',
+      ''
+    )
+    return r(
       <div className={'ml-2'}>
         <ContractMention
           contract={c}
-          probChange={
-            (c.probChanges[from] > 0 ? '+' : '') +
-            formatPercent(c.probChanges[from]).replace('%', '')
-          }
+          probChange={(c.probChanges[from] > 0 ? '+' : '') + change}
           className={'line-clamp-6 sm:line-clamp-4 !whitespace-normal'}
         />
       </div>
     )
+  }
 
   const columnHeader = (text: string) =>
     r(<Row className={'text-ink-600 mx-2 items-center gap-2'}>{text}</Row>)
@@ -269,7 +268,7 @@ export function ProfitChangeTable(props: {
           columns={[
             {
               name: columnHeader('Market'),
-              formatter: (c: CPMMBinaryContract) => marketRow(c),
+              formatter: (c: CPMMContract) => marketRow(c),
               id: 'market',
             },
             {

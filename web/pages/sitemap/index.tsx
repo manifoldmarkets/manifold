@@ -4,6 +4,7 @@ import {
   ENV_CONFIG,
   GOOGLE_PLAY_APP_URL,
 } from 'common/envs/constants'
+import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import { useState } from 'react'
 import Masonry from 'react-masonry-css'
@@ -108,9 +109,15 @@ export default function LabsPage() {
           />
 
           <LabCard
+            title="⚔️ Versus"
+            description="Create mana-battles between two players"
+            href="/versus"
+          />
+
+          <LabCard
             title="🔥 Swipe"
             description="Swipe-to-bet UI. Try via iOS/Android app."
-            {...appCallback}
+            {...(isNative ? { href: '/swipe' } : appCallback)}
           />
 
           <LabCard
@@ -189,12 +196,22 @@ export default function LabsPage() {
         <Spacer h={8} />
 
         <Title>🧪 Labs</Title>
-        <div className="mb-4">Experimental projects at Manifold</div>
+        <div className="mb-4">Experimental or past projects at Manifold</div>
         <Masonry
           breakpointCols={{ default: 2, 768: 1 }}
           className="-ml-4 flex w-auto"
           columnClassName="pl-4 bg-clip-padding"
         >
+          <LabCard
+            title="🎴 Manifold: The Gambling"
+            description="Match each market to its creator"
+            href="/cards"
+          />
+          <LabCard
+            title="💰 Mana auction"
+            description={`A dollar auction but for ${formatMoney(10000)}`}
+            href="/mana-auction"
+          />
           <LabCard
             title="💭 Dream"
             description="Ask our AI to generate a custom image"

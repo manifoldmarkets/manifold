@@ -169,7 +169,7 @@ export function TextEditor(props: {
 
   return (
     // matches input styling
-    <div className="border-ink-300 bg-canvas-0 focus-within:border-primary-500 focus-within:ring-primary-500 w-full overflow-hidden rounded-lg border shadow-sm transition-colors focus-within:ring-1">
+    <div className="border-ink-500 bg-canvas-0 focus-within:border-primary-500 focus-within:ring-primary-500 w-full overflow-hidden rounded-lg border shadow-sm transition-colors focus-within:ring-1">
       <FloatingFormatMenu editor={editor} advanced={!simple} />
       <div
         className={clsx(

@@ -19,6 +19,7 @@ import {
   FreeResponseResolutionOrChance,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
+  StonkPrice,
 } from './contract-card'
 import { Bet } from 'common/bet'
 import { SignedInBinaryMobileBetting } from '../bet/bet-button'
@@ -29,6 +30,7 @@ import {
   NumericContract,
   PseudoNumericContract,
   BinaryContract,
+  CPMMStonkContract,
 } from 'common/contract'
 import { SizedContainer } from 'web/components/sized-container'
 import { CertOverview } from './cert-overview'
@@ -40,25 +42,21 @@ import { useEvent } from 'web/hooks/use-event'
 import { periodDurations } from 'web/lib/util/time'
 import { getDateRange } from '../charts/helpers'
 import { QfOverview } from './qf-overview'
-import { ShareholderStats } from 'common/supabase/contract-metrics'
+import { StonkContractChart } from '../charts/contract/stonk'
+import { STARTING_BALANCE } from 'common/economy'
+import { formatMoney } from 'common/util/format'
+import { YES_GRAPH_COLOR } from 'common/envs/constants'
 
 export const ContractOverview = memo(
   (props: {
     contract: Contract
     bets: Bet[]
     betPoints: HistoryPoint<Partial<Bet>>[]
-    shareholderStats?: ShareholderStats
   }) => {
-    const { betPoints, contract, bets, shareholderStats } = props
+    const { betPoints, contract, bets } = props
     switch (contract.outcomeType) {
       case 'BINARY':
-        return (
-          <BinaryOverview
-            betPoints={betPoints}
-            contract={contract}
-            shareholderStats={shareholderStats}
-          />
-        )
+        return <BinaryOverview betPoints={betPoints} contract={contract} />
       case 'NUMERIC':
         return <NumericOverview contract={contract} />
       case 'PSEUDO_NUMERIC':
@@ -72,6 +70,8 @@ export const ContractOverview = memo(
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
         return <ChoiceOverview contract={contract} bets={bets} />
+      case 'STONK':
+        return <StonkOverview contract={contract} betPoints={betPoints} />
     }
   }
 )
@@ -93,9 +93,8 @@ const NumericOverview = (props: { contract: NumericContract }) => {
 const BinaryOverview = (props: {
   contract: BinaryContract
   betPoints: HistoryPoint<Partial<Bet>>[]
-  shareholderStats?: ShareholderStats
 }) => {
-  const { contract, betPoints, shareholderStats } = props
+  const { contract, betPoints } = props
   const user = useUser()
 
   const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
@@ -126,11 +125,7 @@ const BinaryOverview = (props: {
       </SizedContainer>
 
       {user && tradingAllowed(contract) && (
-        <SignedInBinaryMobileBetting
-          contract={contract}
-          user={user}
-          shareholderStats={shareholderStats}
-        />
+        <SignedInBinaryMobileBetting contract={contract} user={user} />
       )}
 
       {user === null && (
@@ -208,6 +203,58 @@ const PseudoNumericOverview = (props: {
         <Col className="mt-1 w-full">
           <BetSignUpPrompt className="xl:self-center" size="xl" />
           <PlayMoneyDisclaimer />
+        </Col>
+      )}
+      {user === undefined && <div className="h-[72px] w-full" />}
+    </>
+  )
+}
+const StonkOverview = (props: {
+  contract: CPMMStonkContract
+  betPoints: HistoryPoint<Partial<Bet>>[]
+}) => {
+  const { contract, betPoints } = props
+  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
+    useTimePicker(contract)
+  const user = useUser()
+
+  return (
+    <>
+      <Row className="items-end justify-between gap-4">
+        <StonkPrice contract={contract} />
+        <TimeRangePicker
+          currentTimePeriod={currentTimePeriod}
+          setCurrentTimePeriod={setTimePeriod}
+          maxRange={maxRange}
+          color="green"
+        />
+      </Row>
+      <SizedContainer fullHeight={250} mobileHeight={150}>
+        {(w, h) => (
+          <StonkContractChart
+            width={w}
+            height={h}
+            betPoints={betPoints}
+            viewScaleProps={viewScale}
+            controlledStart={start}
+            contract={contract}
+            color={YES_GRAPH_COLOR}
+          />
+        )}
+      </SizedContainer>
+
+      {user && tradingAllowed(contract) && (
+        <SignedInBinaryMobileBetting contract={contract} user={user} />
+      )}
+
+      {user === null && (
+        <Col className="mt-1 w-full">
+          <BetSignUpPrompt className="xl:self-center" size="xl" />
+          <PlayMoneyDisclaimer
+            text={`Get ${formatMoney(
+              STARTING_BALANCE
+            )} play money to bet on the stock`}
+          />
         </Col>
       )}
       {user === undefined && <div className="h-[72px] w-full" />}

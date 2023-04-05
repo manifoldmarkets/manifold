@@ -46,6 +46,8 @@ import { redeemad } from './redeem-ad-reward'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
+import { createDebate } from './create-debate'
+import { auctionbid } from './auction-bid'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -84,6 +86,7 @@ app.get('/health', ...apiRoute(health))
 app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 
+app.post('/auctionbid', ...apiRoute(auctionbid))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
@@ -116,6 +119,7 @@ app.post('/getprivatecontractbyslug', ...apiRoute(getprivatecontractbyslug))
 app.post('/redeemad', ...apiRoute(redeemad))
 app.post('/completequest', ...apiRoute(completequest))
 app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
+app.post('/create-debate', ...apiRoute(createDebate))
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)

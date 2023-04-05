@@ -156,6 +156,9 @@ const toDisplayResolution = (
           contract
         )
   }
+  if (contract.outcomeType === 'STONK') {
+    return formatNumericProbability(getProbability(contract), contract)
+  }
 
   if (resolution === 'MKT' && resolutions) return 'MULTI'
   if (resolution === 'CANCEL') return 'N/A'

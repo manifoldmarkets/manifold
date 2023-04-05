@@ -39,6 +39,10 @@ import { QfExplainer } from './contract/qf-overview'
 
 import { Contract } from 'common/contract'
 import WaitingForSupabaseButton from './contract/waiting-for-supabase-button'
+import { Col } from './layout/col'
+import { generateJSON } from '@tiptap/core'
+import { extensions } from 'common/util/parse'
+import { STONK_NO, STONK_YES } from 'common/stonk'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -132,6 +136,24 @@ export function NewContractPanel(props: {
     ? parseFloat(initialValueString)
     : undefined
 
+  useEffect(() => {
+    if (outcomeType === 'STONK') {
+      setCloseDate(dayjs().add(1000, 'year').format('YYYY-MM-DD'))
+      if (editor?.isEmpty) {
+        editor?.commands.setContent(
+          generateJSON(
+            `<div>
+            ${STONK_YES}: good<br/>${STONK_NO}: bad<br/>Market trades based on sentiment & never
+            resolves.
+          </div>`,
+            extensions
+          )
+        )
+      }
+      setCloseHoursMinutes('23:59')
+    }
+  }, [outcomeType])
+
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
@@ -224,55 +246,56 @@ export function NewContractPanel(props: {
     }
   }
 
-  const BONUS_OUTCOME_TYPES = [
+  const BONUS_OUTCOME_TYPES: outcomeType[] = [
     'BINARY',
     'FREE_RESPONSE',
     'MULTIPLE_CHOICE',
     'PSEUDO_NUMERIC',
+    'STONK',
   ]
 
   const [hideOptions, setHideOptions] = useState(true)
 
   return (
     <div className={clsx(className, 'text-ink-1000')}>
-      <div className="flex w-full flex-col">
-        <label className="px-1 pt-2 pb-3">
-          Question<span className={'text-scarlet-500'}>*</span>
-        </label>
+      <Col>
+        {outcomeType === 'STONK' ? (
+          <div className="flex w-full flex-col">
+            <label className="px-1 pt-2 pb-3">
+              Stock name<span className={'text-scarlet-500'}>*</span>
+            </label>
 
-        <ExpandingInput
-          placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
-          autoFocus
-          maxLength={MAX_QUESTION_LENGTH}
-          value={question}
-          onChange={(e) => setQuestion(e.target.value || '')}
-        />
-      </div>
-      <Spacer h={6} />
-      <div className="mb-1 flex flex-col items-start gap-1">
-        <label className="gap-2 px-1 py-2">
-          <span className="mb-1">Description</span>
-        </label>
-        <TextEditor editor={editor} />
-      </div>
-      <Spacer h={6} />
-      {!fromGroup && visibility != 'private' && (
-        <>
-          <Row className={'items-end gap-x-2'}>
-            <GroupSelector
-              selectedGroup={selectedGroup}
-              setSelectedGroup={setSelectedGroup}
-              options={{ showSelector: true, showLabel: true }}
-              isContractCreator={true}
+            <Input
+              placeholder="e.g. Destiny Stock"
+              autoFocus
+              maxLength={MAX_QUESTION_LENGTH}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value || '')}
             />
-            {selectedGroup && (
-              <a target="_blank" href={groupPath(selectedGroup.slug)}>
-                <ExternalLinkIcon className=" text-ink-500 ml-1 mb-3 h-5 w-5" />
-              </a>
-            )}
-          </Row>
-        </>
-      )}
+          </div>
+        ) : (
+          <div className="flex w-full flex-col">
+            <label className="px-1 pt-2 pb-3">
+              Question<span className={'text-scarlet-500'}>*</span>
+            </label>
+
+            <ExpandingInput
+              placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
+              autoFocus
+              maxLength={MAX_QUESTION_LENGTH}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value || '')}
+            />
+          </div>
+        )}
+        <Spacer h={6} />
+        <div className="mb-1 flex flex-col items-start gap-1">
+          <label className="gap-2 px-1 py-2">
+            <span className="mb-1">Description</span>
+          </label>
+          <TextEditor editor={editor} />
+        </div>
+      </Col>
 
       {hideOptions ? (
         <Row className="mt-4 justify-end">
@@ -296,6 +319,8 @@ export function NewContractPanel(props: {
                     PSEUDO_NUMERIC:
                       '[EXPERIMENTAL] Predict the value of a number.',
                     CERT: '[EXPERIMENTAL] Tradeable shares of a stock.',
+                    STONK:
+                      'Tradeable shares of a stock based on sentiment. Never resolves.',
                     // QUADRATIC_FUNDING: '',
                     // '[EXPERIMENTAL] Radically fund projects. ',
                   }[choice] ?? ''
@@ -304,6 +329,7 @@ export function NewContractPanel(props: {
               }}
               choicesMap={{
                 'Yes\xa0/ No': 'BINARY', // non-breaking space
+                Stock: 'STONK',
                 'Multi choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
@@ -404,55 +430,80 @@ export function NewContractPanel(props: {
               </div>
             </>
           )}
-          <div className="mb-1 flex flex-col items-start">
-            <label className="mb-1 gap-2 px-1 py-2">
-              <span>Question closes in </span>
-              <InfoTooltip text="Trading will be halted after this time (local timezone)." />
-            </label>
-            <Row className={'w-full items-center gap-2'}>
-              <ChoicesToggleGroup
-                currentChoice={dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')}
-                setChoice={(choice) => {
-                  setCloseDateInDays(choice as number)
 
-                  if (!closeHoursMinutes) {
-                    setCloseHoursMinutes(initTime)
-                  }
-                }}
-                choicesMap={{
-                  'A day': 1,
-                  'A week': 7,
-                  '30 days': 30,
-                  'This year': daysLeftInTheYear,
-                }}
-                disabled={isSubmitting}
-                className={'col-span-4 sm:col-span-2'}
-              />
-            </Row>
-            <Row className="mt-4 gap-2">
-              <Input
-                type={'date'}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => {
-                  setCloseDate(e.target.value)
-                  if (!closeHoursMinutes) {
-                    setCloseHoursMinutes(initTime)
-                  }
-                }}
-                min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
-                disabled={isSubmitting}
-                value={closeDate}
-              />
-              <Input
-                type={'time'}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setCloseHoursMinutes(e.target.value)}
-                min={'00:00'}
-                disabled={isSubmitting}
-                value={closeHoursMinutes}
-              />
-            </Row>
-          </div>
+          {!fromGroup && visibility != 'private' && (
+            <>
+              <Row className={'items-end gap-x-2'}>
+                <GroupSelector
+                  selectedGroup={selectedGroup}
+                  setSelectedGroup={setSelectedGroup}
+                  options={{ showSelector: true, showLabel: true }}
+                  isContractCreator={true}
+                />
+                {selectedGroup && (
+                  <a target="_blank" href={groupPath(selectedGroup.slug)}>
+                    <ExternalLinkIcon className=" text-ink-500 ml-1 mb-3 h-5 w-5" />
+                  </a>
+                )}
+              </Row>
+              <Spacer h={6} />
+            </>
+          )}
+
+          {outcomeType !== 'STONK' && (
+            <div className="mb-1 flex flex-col items-start">
+              <label className="mb-1 gap-2 px-1 py-2">
+                <span>Question closes in </span>
+                <InfoTooltip text="Trading will be halted after this time (local timezone)." />
+              </label>
+              <Row className={'w-full items-center gap-2'}>
+                <ChoicesToggleGroup
+                  currentChoice={dayjs(`${closeDate}T23:59`).diff(
+                    dayjs(),
+                    'day'
+                  )}
+                  setChoice={(choice) => {
+                    setCloseDateInDays(choice as number)
+
+                    if (!closeHoursMinutes) {
+                      setCloseHoursMinutes(initTime)
+                    }
+                  }}
+                  choicesMap={{
+                    'A day': 1,
+                    'A week': 7,
+                    '30 days': 30,
+                    'This year': daysLeftInTheYear,
+                  }}
+                  disabled={isSubmitting}
+                  className={'col-span-4 sm:col-span-2'}
+                />
+              </Row>
+              <Row className="mt-4 gap-2">
+                <Input
+                  type={'date'}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => {
+                    setCloseDate(e.target.value)
+                    if (!closeHoursMinutes) {
+                      setCloseHoursMinutes(initTime)
+                    }
+                  }}
+                  min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
+                  disabled={isSubmitting}
+                  value={closeDate}
+                />
+                <Input
+                  type={'time'}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => setCloseHoursMinutes(e.target.value)}
+                  min={'00:00'}
+                  disabled={isSubmitting}
+                  value={closeHoursMinutes}
+                />
+              </Row>
+            </div>
+          )}
           {visibility != 'private' && (
             <>
               <Spacer h={6} />

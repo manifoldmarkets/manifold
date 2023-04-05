@@ -38,7 +38,8 @@ function calculateFixedMktPayout(
 
   if (
     contract.outcomeType === 'BINARY' ||
-    contract.outcomeType === 'PSEUDO_NUMERIC'
+    contract.outcomeType === 'PSEUDO_NUMERIC' ||
+    contract.outcomeType === 'STONK'
   ) {
     const { resolutionProbability } = contract
     const p =

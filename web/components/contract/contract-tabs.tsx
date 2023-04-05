@@ -40,10 +40,7 @@ import { getOlderBets } from 'web/lib/supabase/bets'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
 import { QfTrades } from './qf-overview'
 import { BinaryUserPositionsTable } from 'web/components/contract/user-positions-table'
-import {
-  classWarfareEnabled,
-  ShareholderStats,
-} from 'common/supabase/contract-metrics'
+import { ShareholderStats } from 'common/supabase/contract-metrics'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -109,11 +106,7 @@ export function ContractTabs(props: {
     (visibleUserBets.length === 0 ? '' : `${visibleUserBets.length} `) +
     (isMobile ? 'You' : 'Your Trades')
 
-  const positionsTitle =
-    contract.mechanism === 'cpmm-1' &&
-    classWarfareEnabled(contract.prob, shareholderStats)
-      ? 'Class Warfare'
-      : shortFormatNumber(totalPositions) + ' Positions'
+  const positionsTitle = shortFormatNumber(totalPositions) + ' Positions'
 
   return (
     <ControlledTabs
@@ -138,7 +131,6 @@ export function ContractTabs(props: {
         },
 
         totalBets > 0 &&
-          contract.outcomeType === 'BINARY' &&
           contract.mechanism === 'cpmm-1' && {
             title: positionsTitle,
             content: (

@@ -21,6 +21,7 @@ import {
 } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
+import { YES_GRAPH_COLOR } from 'common/envs/constants'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 
@@ -96,7 +97,7 @@ export const BinaryContractChart = (props: {
       viewScaleProps={viewScaleProps}
       yKind="percent"
       data={data}
-      color={color ?? '#11b981'}
+      color={color ?? YES_GRAPH_COLOR}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={BinaryChartTooltip}

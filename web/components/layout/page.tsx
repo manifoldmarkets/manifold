@@ -10,18 +10,11 @@ export function Page(props: {
   rightSidebar?: ReactNode
   className?: string
   children?: ReactNode
-  touchesTop?: boolean
   hideSidebar?: boolean
-  maxWidth?: string
+  mainClassName?: string
 }) {
-  const {
-    children,
-    rightSidebar,
-    className,
-    touchesTop,
-    hideSidebar,
-    maxWidth,
-  } = props
+  const { children, rightSidebar, className, hideSidebar, mainClassName } =
+    props
 
   const isMobile = useIsMobile()
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
@@ -32,8 +25,7 @@ export function Page(props: {
         className={clsx(
           className,
           bottomBarPadding,
-          'text-ink-1000 mx-auto min-h-screen w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:gap-x-8',
-          maxWidth ? maxWidth : 'xl:max-w-7xl'
+          'text-ink-1000 mx-auto min-h-screen w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:max-w-7xl xl:gap-x-8'
         )}
       >
         <Toaster
@@ -51,13 +43,9 @@ export function Page(props: {
         <Col className="flex-1 lg:col-span-8 xl:contents">
           <main
             className={clsx(
-              'flex flex-1 flex-col',
-              touchesTop ? '' : 'lg:mt-6',
-              maxWidth
-                ? 'col-span-10'
-                : rightSidebar
-                ? 'col-span-7'
-                : 'col-span-8'
+              'flex flex-1 flex-col lg:mt-6',
+              rightSidebar ? 'col-span-7' : 'col-span-8',
+              mainClassName
             )}
           >
             {children}

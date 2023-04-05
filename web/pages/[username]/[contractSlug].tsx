@@ -19,7 +19,6 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import {
   AuthorInfo,
   CloseOrResolveTime,
-  ContractLike,
   MarketGroups,
 } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
@@ -100,7 +99,7 @@ export default function ContractPage(props: {
     return <Custom404 />
   }
   return (
-    <Page maxWidth="max-w-[1400px]">
+    <Page className="!max-w-[1400px]" mainClassName="!col-span-10">
       {visibility == 'private' && (
         <PrivateContractPage contractSlug={contractSlug} />
       )}
@@ -214,7 +213,10 @@ export function ContractPageContent(props: {
   const isClosed = closeTime && closeTime < Date.now()
 
   const [showResolver, setShowResolver] = useState(
-    (isCreator || isAdmin) && !isResolved && (closeTime ?? 0) < Date.now()
+    (isCreator || isAdmin) &&
+      !isResolved &&
+      (closeTime ?? 0) < Date.now() &&
+      outcomeType !== 'STONK'
   )
 
   const allowTrade = tradingAllowed(contract)
@@ -277,7 +279,7 @@ export function ContractPageContent(props: {
         >
           <div
             className={clsx(
-              'sticky  z-50 flex items-center',
+              'sticky z-50 flex items-end',
               !coverImageUrl ? 'bg-canvas-100 top-0' : 'top-[-92px] h-[140px]'
             )}
           >
@@ -317,35 +319,30 @@ export function ContractPageContent(props: {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="text-ink-600 flex gap-4 text-sm">
-                  <AuthorInfo contract={contract} />
+              <div className="text-ink-600 flex items-center justify-between text-sm">
+                <AuthorInfo contract={contract} />
+
+                <div className="flex gap-4">
+                  <Tooltip
+                    text="Traders"
+                    placement="bottom"
+                    noTap
+                    className="flex flex-row items-center gap-1 font-light"
+                  >
+                    <UserIcon className="text-ink-500 h-4 w-4" />
+                    <div>{uniqueBettorCount ?? 0}</div>
+                  </Tooltip>
 
                   <CloseOrResolveTime
                     contract={contract}
                     editable={user?.id === creatorId}
                   />
-
-                  <Tooltip
-                    text="Traders"
-                    placement="bottom"
-                    noTap
-                    className="hidden flex-row sm:flex"
-                  >
-                    <Row className={'shrink-0 items-center gap-1 font-light'}>
-                      <UserIcon className="text-ink-500 h-4 w-4" />
-                      <div>{uniqueBettorCount ?? 0}</div>
-                    </Row>
-                  </Tooltip>
                 </div>
-
-                <ContractLike contract={contract} />
               </div>
               <ContractOverview
                 contract={contract}
                 bets={bets}
                 betPoints={betPoints}
-                shareholderStats={shareholderStats}
               />
             </Col>
 

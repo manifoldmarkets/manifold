@@ -731,6 +731,12 @@ Closes a market on behalf of the authorized user.
 
 - `closeTime`: Optional. Milliseconds since the epoch to close the market at. If not provided, the market will be closed immediately. Cannot provide close time in the past.
 
+### `POST /v0/market/[marketId]/group`
+
+Add a market to a group.
+
+- `groupId`: Required. Id of the group. Must be admin/moderator/creator of group if curated/private. Must be market creator or trustworthyish if group is public.
+
 ### `POST /v0/market/[marketId]/resolve`
 
 Resolves a market on behalf of the authorized user.
@@ -920,6 +926,7 @@ Requires no authorization.
   </details>
 
 ## Changelog
+- 2023-04-03: Add `/market/[marketId]/group` POST endpoint.
 - 2023-03-21: Add `/market/[marketId]/positions` and `/search-markets` endpoints
 - 2022-11-22: Update /market GET to remove `bets` and `comments`
 - 2022-10-17: Update /market POST to allow `visibility` and `groupId`; mark `closeTime` as optional; remove `tags`

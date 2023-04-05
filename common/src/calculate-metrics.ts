@@ -1,13 +1,7 @@
 import { Dictionary, partition, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetrics } from './calculate'
 import { Bet, LimitBet } from './bet'
-import {
-  Contract,
-  CPMM2Contract,
-  CPMMBinaryContract,
-  CPMMContract,
-  DPMContract,
-} from './contract'
+import { Contract, CPMM2Contract, CPMMContract, DPMContract } from './contract'
 import { User } from './user'
 import { DAY_MS } from './util/time'
 import { getBinaryCpmmBetInfo, getNewMultiBetInfo } from './new-bet'
@@ -245,7 +239,7 @@ export const calculateUserMetrics = (
   const current = getContractBetMetrics(contract, bets)
 
   let periodMetrics
-  if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
+  if (contract.mechanism === 'cpmm-1') {
     const periods = ['day', 'week', 'month'] as const
     periodMetrics = Object.fromEntries(
       periods.map((period) => [
@@ -269,7 +263,7 @@ export const calculateUserMetrics = (
 export type ContractMetrics = ContractMetric
 
 const calculatePeriodProfit = (
-  contract: CPMMBinaryContract,
+  contract: CPMMContract,
   bets: Bet[],
   period: 'day' | 'week' | 'month'
 ) => {
