@@ -211,3 +211,12 @@ export function updateUserEmbedding(params: { userId: string }) {
 export function createDebate(params: { topic1: string; topic2: string }) {
   return call(getApiUrl('create-debate'), 'POST', params) as Promise<Contract>
 }
+
+export function createCommentOnContract(params: {
+  contractId: string
+  content: JSONContent
+  replyToCommentId?: string
+  replyToAnswerId?: string
+}) {
+  return call(getApiUrl('createcomment'), 'POST', params)
+}

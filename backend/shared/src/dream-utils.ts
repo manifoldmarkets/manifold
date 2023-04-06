@@ -1,6 +1,6 @@
 import { DOMAIN } from 'common/envs/constants'
 const MODIFIERS =
-  '8k, beautiful, illustration, trending on art station, picture of the day, epic composition, without any text in the picture'
+  '8k, beautiful, illustration, trending on art station, picture of the day, epic composition'
 export const dreamWithDefaultParams = async (input: string) => {
   try {
     const API_KEY = process.env.DREAM_KEY

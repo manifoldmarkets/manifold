@@ -7,11 +7,14 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { useState } from 'react'
 import { AddFundsModal } from '../add-funds-modal'
 import { PlusIcon } from '@heroicons/react/outline'
+import { animated } from '@react-spring/web'
+import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 
 export function ProfileSummary(props: { user: User }) {
   const { user } = props
 
   const [buyModalOpen, setBuyModalOpen] = useState(false)
+  const balance = useAnimatedNumber(user.balance)
 
   return (
     <Link
@@ -23,7 +26,11 @@ export function ProfileSummary(props: { user: User }) {
       <div className="truncate">
         <div>{user.name}</div>
         <div className="flex items-center text-sm">
-          <span className="mr-2">{formatMoney(Math.floor(user.balance))}</span>
+          <span className="mr-2">
+            <animated.div>
+              {balance.interpolate((b) => formatMoney(b))}
+            </animated.div>
+          </span>
           <button
             className="hover:bg-ink-300 rounded-md p-1 ring-[1.5px] ring-inset ring-current"
             onClick={(e) => {

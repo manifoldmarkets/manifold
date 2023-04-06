@@ -32,46 +32,6 @@ export type { Comment }
 
 export const MAX_COMMENT_LENGTH = 10000
 
-export async function createCommentOnContract(
-  contractId: string,
-  content: JSONContent,
-  user: User,
-  answerOutcome?: string,
-  replyToCommentId?: string
-) {
-  const ref = doc(getCommentsCollection(contractId))
-  const onContract = {
-    commentType: 'contract',
-    contractId,
-    answerOutcome,
-  } as OnContract
-  return await createComment(
-    contractId,
-    onContract,
-    content,
-    user,
-    ref,
-    replyToCommentId
-  )
-}
-export async function createCommentOnGroup(
-  groupId: string,
-  content: JSONContent,
-  user: User,
-  replyToCommentId?: string
-) {
-  const ref = doc(getCommentsOnGroupCollection(groupId))
-  const onGroup = { commentType: 'group', groupId: groupId } as OnGroup
-  return await createComment(
-    groupId,
-    onGroup,
-    content,
-    user,
-    ref,
-    replyToCommentId
-  )
-}
-
 export async function createCommentOnPost(
   postId: string,
   content: JSONContent,
