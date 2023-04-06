@@ -38,6 +38,7 @@ import { Reaction } from 'common/reaction'
 import { GroupMember } from 'common/group-member'
 import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
+import { getMoneyNumber } from 'common/util/format'
 
 const firestore = admin.firestore()
 
@@ -1092,13 +1093,35 @@ export const createContractResolvedNotifications = async (
 
     if (sendToMobile) {
       const notification = constructNotification(userId, reason)
+      const {
+        userPayout,
+        profitRank,
+        profit,
+        userInvestment,
+        totalShareholders,
+      } = notification.data as ContractResolutionData
+      const betterThan = (totalShareholders ?? 0) - (profitRank ?? 0)
+      const comparison =
+        profitRank && totalShareholders && betterThan > 0
+          ? `, outperforming ${betterThan} other${betterThan > 1 ? 's' : ''}!`
+          : '.'
+      const profitPercent = profit
+        ? Math.round(profit / (userPayout + profit))
+        : 0
+      const profitString = ` You made M${getMoneyNumber(
+        userPayout
+      )} (+${profitPercent}%)`
+      const lossString = ` You lost M${getMoneyNumber(userInvestment)}`
       await createPushNotification(
         notification,
         privateUser,
         contract.question.length > 50
           ? contract.question.slice(0, 50) + '...'
           : contract.question,
-        `Resolved: ${resolutionText}`
+        `Resolved: ${resolutionText}.` +
+          (userInvestment === 0
+            ? ''
+            : (userPayout === 0 ? lossString : profitString) + comparison)
       )
     }
   }
