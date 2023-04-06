@@ -40,7 +40,6 @@ export default function Search() {
               ...(shouldFilterDestiny ? DESTINY_GROUP_SLUGS : []),
             ],
             excludeUserIds: privateUser?.blockedUserIds,
-            // nonQueryFacetFilters: destinyFilters,
           }}
           isWholePage
         />
