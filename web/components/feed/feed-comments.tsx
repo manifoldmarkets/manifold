@@ -1,6 +1,5 @@
 import React, { memo, ReactNode, useEffect, useRef, useState } from 'react'
 import { Editor } from '@tiptap/react'
-import { useRouter } from 'next/router'
 import clsx from 'clsx'
 
 import { ContractComment } from 'common/comment'
@@ -36,6 +35,7 @@ import { buildArray } from 'common/util/array'
 import { hideComment } from 'web/lib/firebase/api'
 import { useAdmin } from 'web/hooks/use-admin'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
+import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -47,19 +47,8 @@ export function FeedCommentThread(props: {
   const { contract, threadComments, parentComment } = props
   const [replyTo, setReplyTo] = useState<ReplyTo>()
   const [seeReplies, setSeeReplies] = useState(true)
-  const [highlightedId, setHighlightedId] = useState<string>()
 
-  const router = useRouter()
-  useEffect(() => {
-    if (router.isReady) {
-      const parts = router.asPath.split('#')
-      if (parts.length > 1 && parts[1] != null) {
-        setHighlightedId(parts[1])
-      } else {
-        setHighlightedId(undefined)
-      }
-    }
-  }, [router.isReady, router.asPath])
+  const idInUrl = useHashInUrl()
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const onSubmitComment = useEvent(() => setReplyTo(undefined))
@@ -73,7 +62,7 @@ export function FeedCommentThread(props: {
         key={parentComment.id}
         contract={contract}
         comment={parentComment}
-        highlighted={highlightedId === parentComment.id}
+        highlighted={idInUrl === parentComment.id}
         showLike={true}
         seeReplies={seeReplies}
         numComments={threadComments.length}
@@ -86,7 +75,7 @@ export function FeedCommentThread(props: {
             key={comment.id}
             contract={contract}
             comment={comment}
-            highlighted={highlightedId === comment.id}
+            highlighted={idInUrl === comment.id}
             showLike={true}
             onReplyClick={onReplyClick}
           />
@@ -135,7 +124,6 @@ export const FeedComment = memo(function FeedComment(props: {
   return (
     <Row
       ref={commentRef}
-      id={comment.id}
       className={clsx(
         className ? className : 'ml-9 gap-2',
         highlighted ? 'bg-primary-50' : ''
