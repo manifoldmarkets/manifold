@@ -131,7 +131,7 @@ export default function GroupPage(props: {
     return <Custom404 />
   }
   return (
-    <Page mainClassName="!mt-0">
+    <Page key={`group-${slugs[0]}`} mainClassName="!mt-0">
       {groupPrivacy == 'private' && <PrivateGroupPage slugs={slugs} />}
       {groupPrivacy != 'private' && groupParams && (
         <NonPrivateGroupPage groupParams={groupParams} />
