@@ -58,12 +58,13 @@ export const createcomment = authEndpoint(async (req, auth) => {
   const creator = await getUser(auth.uid)
   const contract = await getContract(contractId)
 
-  if (!creator) {
+  if (!creator)
     throw new APIError(400, 'No user exists with the authenticated user ID.')
-  }
-  if (!contract) {
+  if (creator.isBannedFromPosting)
+    throw new APIError(400, 'User banned from commented.')
+
+  if (!contract)
     throw new APIError(400, 'No contract exists with the given ID.')
-  }
 
   let contentJson = null
   if (content) {
