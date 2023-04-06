@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
+import { Request } from 'express'
 
 import { PrivateUser, User } from 'common/user'
 import { getUser, getUserByUsername } from 'shared/utils'
@@ -86,9 +87,7 @@ export const createuser = authEndpoint(async (req, auth) => {
     [auth.uid, interestEmbedding, interestEmbedding]
   )
 
-  const ip = (req.headers['x-forwarded-for'] ??
-    req.socket.remoteAddress ??
-    req.ip) as string
+  const ip = getIp(req)
 
   // Only undefined prop should be avatarUrl
   const user: User = removeUndefinedProps({
@@ -160,6 +159,13 @@ function getStorageBucketId() {
   return isProd()
     ? PROD_CONFIG.firebaseConfig.storageBucket
     : DEV_CONFIG.firebaseConfig.storageBucket
+}
+
+const getIp = (req: Request) => {
+  const xForwarded = req.headers['x-forwarded-for']
+  const xForwardedIp = Array.isArray(xForwarded) ? xForwarded[0] : xForwarded
+
+  return xForwardedIp ?? req.socket.remoteAddress ?? req.ip
 }
 
 // Automatically ban users with these device tokens or ip addresses.
