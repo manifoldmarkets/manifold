@@ -1,11 +1,15 @@
-import { memo, useEffect, useMemo, useState } from 'react'
+import React, { memo, useEffect, useMemo, useState } from 'react'
 import { groupBy, last, sortBy } from 'lodash'
 
 import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { FreeResponseComments } from '../feed/feed-answer-comment-group'
-import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
+import {
+  COMMENT_ID_PREFIX,
+  ContractCommentInput,
+  FeedCommentThread,
+} from '../feed/feed-comments'
 import { Bet } from 'common/bet'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractBetsTable } from '../bet/bets-list'
@@ -41,6 +45,9 @@ import { getTotalBetCount } from 'web/lib/firebase/bets'
 import { QfTrades } from './qf-overview'
 import { BinaryUserPositionsTable } from 'web/components/contract/user-positions-table'
 import { ShareholderStats } from 'common/supabase/contract-metrics'
+import { useHashInUrl } from 'web/hooks/use-hash-in-url'
+import { useEvent } from 'web/hooks/use-event'
+import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -68,22 +75,20 @@ export function ContractTabs(props: {
     userPositionsByOutcome,
     shareholderStats,
   } = props
-
-  const contractComments = useComments(contract.id) ?? props.comments
   const comments = useMemo(
     () =>
-      contractComments.filter(
+      props.comments.filter(
         (comment) => !blockedUserIds.includes(comment.userId)
       ),
-    [contractComments, blockedUserIds]
+    [props.comments, blockedUserIds]
   )
-
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
+  const [totalComments, setTotalComments] = useState(comments.length)
 
   const commentTitle =
-    comments.length === 0
+    totalComments === 0
       ? 'Comments'
-      : `${shortFormatNumber(comments.length)} Comments`
+      : `${shortFormatNumber(totalComments)} Comments`
 
   const user = useUser()
   const userBets =
@@ -117,12 +122,13 @@ export function ContractTabs(props: {
         setActiveIndex(i)
       }}
       tabs={buildArray(
-        (comments.length > 0 || user) && {
+        {
           title: commentTitle,
           content: (
             <CommentsTabContent
               contract={contract}
               comments={comments}
+              setCommentsLength={setTotalComments}
               answerResponse={answerResponse}
               onCancelAnswerResponse={onCancelAnswerResponse}
               blockedUserIds={blockedUserIds}
@@ -172,56 +178,76 @@ export function ContractTabs(props: {
   )
 }
 
+const DEFAULT_PARENT_COMMENTS_TO_RENDER = 40
+const LOAD_MORE = 20
 export const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
   comments: ContractComment[]
-  answerResponse?: Answer
-  onCancelAnswerResponse?: () => void
   blockedUserIds: string[]
+  setCommentsLength?: (length: number) => void
+  onCancelAnswerResponse?: () => void
+  answerResponse?: Answer
 }) {
-  const { contract, answerResponse, onCancelAnswerResponse, blockedUserIds } =
-    props
+  const {
+    contract,
+    answerResponse,
+    onCancelAnswerResponse,
+    blockedUserIds,
+    setCommentsLength,
+  } = props
   const comments = (useComments(contract.id) ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)
   )
+  const [parentCommentsToRender, setParentCommentsToRender] = useState(
+    DEFAULT_PARENT_COMMENTS_TO_RENDER
+  )
+  const hashInUrl = useHashInUrl(COMMENT_ID_PREFIX)
+  useEffect(() => {
+    if (hashInUrl && comments.some((c) => c.id === hashInUrl)) {
+      setParentCommentsToRender(comments.length)
+    }
+    setCommentsLength?.(comments.length)
+  }, [hashInUrl, comments.length])
 
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
     key: `comments-sort-${contract.id}`,
     store: inMemoryStore(),
   })
   const user = useUser()
-
-  if (comments == null) {
-    return <LoadingIndicator />
-  }
-
   const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const shouldBeNewestFirst = (c: ContractComment) =>
     c.replyToCommentId == undefined
 
-  // TODO: links to comments are broken because tips load after render and
-  //  comments will reorganize themselves if there are tips/bounties awarded
-  const sortedComments = sortBy(comments, [
-    sort === 'Best'
-      ? (c) =>
-          // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-          likes &&
-          c.createdTime > Date.now() - 10 * MINUTE_MS &&
-          c.userId === user?.id &&
-          shouldBeNewestFirst(c)
-            ? -Infinity
-            : -(c?.likes ?? 0)
-      : (c) => c,
-    (c) => (!shouldBeNewestFirst(c) ? c.createdTime : -c.createdTime),
-  ])
-
-  const commentsByParent = groupBy(
-    sortedComments,
-    (c) => c.replyToCommentId ?? '_'
+  const sortedComments = useMemo(
+    () =>
+      sortBy(comments, [
+        sort === 'Best'
+          ? (c) =>
+              // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+              likes &&
+              c.createdTime > Date.now() - 10 * MINUTE_MS &&
+              c.userId === user?.id &&
+              shouldBeNewestFirst(c)
+                ? -Infinity
+                : -(c?.likes ?? 0)
+          : (c) => c,
+        (c) => (!shouldBeNewestFirst(c) ? c.createdTime : -c.createdTime),
+      ]),
+    [comments.length, sort, likes, user?.id]
   )
-  const topLevelComments = commentsByParent['_'] ?? []
+
+  const commentsByParent = useMemo(
+    () => groupBy(sortedComments, (c) => c.replyToCommentId ?? '_'),
+    [sortedComments.length]
+  )
+  const parentComments = commentsByParent['_'] ?? []
+
+  const loadMore = () => setParentCommentsToRender((prev) => prev + LOAD_MORE)
+  const onVisibilityUpdated = useEvent((visible: boolean) => {
+    if (visible) loadMore()
+  })
 
   return (
     <>
@@ -246,22 +272,25 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           contract={contract}
           answerResponse={answerResponse}
           onCancelAnswerResponse={onCancelAnswerResponse}
-          topLevelComments={topLevelComments}
+          topLevelComments={parentComments.slice(0, parentCommentsToRender)}
           commentsByParent={commentsByParent}
         />
       )}
       {contract.outcomeType !== 'FREE_RESPONSE' &&
-        topLevelComments.map((parent) => (
-          <FeedCommentThread
-            key={parent.id}
-            contract={contract}
-            parentComment={parent}
-            threadComments={sortBy(
-              commentsByParent[parent.id] ?? [],
-              (c) => c.createdTime
-            )}
-          />
-        ))}
+        parentComments
+          .slice(0, parentCommentsToRender)
+          .map((parent, index) => (
+            <FeedCommentThread
+              key={parent.id}
+              contract={contract}
+              parentComment={parent}
+              threadComments={commentsByParent[parent.id] ?? []}
+            />
+          ))}
+      <VisibilityObserver
+        onVisibilityUpdated={onVisibilityUpdated}
+        className="pointer-events-none absolute bottom-0 h-[75vh] w-full select-none"
+      />
     </>
   )
 })

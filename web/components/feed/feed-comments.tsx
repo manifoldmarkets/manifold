@@ -1,6 +1,5 @@
 import React, { memo, ReactNode, useEffect, useRef, useState } from 'react'
 import { Editor } from '@tiptap/react'
-import { useRouter } from 'next/router'
 import clsx from 'clsx'
 
 import { ContractComment } from 'common/comment'
@@ -36,6 +35,10 @@ import { buildArray } from 'common/util/array'
 import { hideComment } from 'web/lib/firebase/api'
 import { useAdmin } from 'web/hooks/use-admin'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
+import { useHashInUrl } from 'web/hooks/use-hash-in-url'
+// Link to comments with a prefix, so that browser won't automatically scroll to the comment.
+// Leaves us free to scroll the element how we like (e.g. centered and after loading).
+export const COMMENT_ID_PREFIX = 'comment-'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -47,20 +50,8 @@ export function FeedCommentThread(props: {
   const { contract, threadComments, parentComment } = props
   const [replyTo, setReplyTo] = useState<ReplyTo>()
   const [seeReplies, setSeeReplies] = useState(true)
-  const [highlightedId, setHighlightedId] = useState<string>()
 
-  const router = useRouter()
-  useEffect(() => {
-    if (router.isReady) {
-      const parts = router.asPath.split('#')
-      if (parts.length > 1 && parts[1] != null) {
-        const commentId = parts[1].replaceAll(commentIdPrefix, '')
-        setHighlightedId(commentId)
-      } else {
-        setHighlightedId(undefined)
-      }
-    }
-  }, [router.isReady, router.asPath])
+  const idInUrl = useHashInUrl(COMMENT_ID_PREFIX)
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const onSubmitComment = useEvent(() => setReplyTo(undefined))
@@ -74,7 +65,7 @@ export function FeedCommentThread(props: {
         key={parentComment.id}
         contract={contract}
         comment={parentComment}
-        highlighted={highlightedId === parentComment.id}
+        highlighted={idInUrl === parentComment.id}
         showLike={true}
         seeReplies={seeReplies}
         numComments={threadComments.length}
@@ -87,7 +78,7 @@ export function FeedCommentThread(props: {
             key={comment.id}
             contract={contract}
             comment={comment}
-            highlighted={highlightedId === comment.id}
+            highlighted={idInUrl === comment.id}
             showLike={true}
             onReplyClick={onReplyClick}
           />
@@ -435,12 +426,8 @@ export function FeedCommentHeader(props: {
         prefix={contract.creatorUsername}
         slug={contract.slug}
         createdTime={createdTime}
-        elementId={`${commentIdPrefix}${comment.id}`}
+        elementId={`${COMMENT_ID_PREFIX}${comment.id}`}
       />
     </span>
   )
 }
-
-// Link to comments with a prefix, so that browser won't automatically scroll to the comment.
-// Leaves us free to scroll the element how we like (e.g. centered and after loading).
-const commentIdPrefix = 'comment-'
