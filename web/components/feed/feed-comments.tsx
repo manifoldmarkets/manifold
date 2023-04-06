@@ -36,9 +36,6 @@ import { hideComment } from 'web/lib/firebase/api'
 import { useAdmin } from 'web/hooks/use-admin'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
-// Link to comments with a prefix, so that browser won't automatically scroll to the comment.
-// Leaves us free to scroll the element how we like (e.g. centered and after loading).
-export const COMMENT_ID_PREFIX = 'comment-'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -51,7 +48,7 @@ export function FeedCommentThread(props: {
   const [replyTo, setReplyTo] = useState<ReplyTo>()
   const [seeReplies, setSeeReplies] = useState(true)
 
-  const idInUrl = useHashInUrl(COMMENT_ID_PREFIX)
+  const idInUrl = useHashInUrl()
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const onSubmitComment = useEvent(() => setReplyTo(undefined))
@@ -127,7 +124,6 @@ export const FeedComment = memo(function FeedComment(props: {
   return (
     <Row
       ref={commentRef}
-      id={comment.id}
       className={clsx(
         className ? className : 'ml-9 gap-2',
         highlighted ? 'bg-primary-50' : ''
@@ -426,7 +422,7 @@ export function FeedCommentHeader(props: {
         prefix={contract.creatorUsername}
         slug={contract.slug}
         createdTime={createdTime}
-        elementId={`${COMMENT_ID_PREFIX}${comment.id}`}
+        elementId={comment.id}
       />
     </span>
   )

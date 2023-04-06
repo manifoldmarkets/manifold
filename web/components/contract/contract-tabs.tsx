@@ -5,11 +5,7 @@ import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { FreeResponseComments } from '../feed/feed-answer-comment-group'
-import {
-  COMMENT_ID_PREFIX,
-  ContractCommentInput,
-  FeedCommentThread,
-} from '../feed/feed-comments'
+import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
 import { Bet } from 'common/bet'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractBetsTable } from '../bet/bets-list'
@@ -201,7 +197,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     DEFAULT_PARENT_COMMENTS_TO_RENDER
   )
-  const hashInUrl = useHashInUrl(COMMENT_ID_PREFIX)
+  const hashInUrl = useHashInUrl()
   useEffect(() => {
     if (hashInUrl && comments.some((c) => c.id === hashInUrl)) {
       setParentCommentsToRender(comments.length)
@@ -279,7 +275,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       {contract.outcomeType !== 'FREE_RESPONSE' &&
         parentComments
           .slice(0, parentCommentsToRender)
-          .map((parent, index) => (
+          .map((parent) => (
             <FeedCommentThread
               key={parent.id}
               contract={contract}
