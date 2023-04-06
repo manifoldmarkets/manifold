@@ -337,7 +337,7 @@ export function ContractPageContent(props: {
                     text="Traders"
                     placement="bottom"
                     noTap
-                    className="flex flex-row items-center gap-1 font-light"
+                    className="flex flex-row items-center gap-1"
                   >
                     <UserIcon className="text-ink-500 h-4 w-4" />
                     <div>{uniqueBettorCount ?? 0}</div>

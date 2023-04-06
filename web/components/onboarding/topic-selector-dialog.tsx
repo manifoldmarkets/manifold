@@ -41,7 +41,7 @@ export function TopicSelectorDialog() {
 
   return (
     <Modal open={true} setOpen={() => {}}>
-      <Col className="bg-canvas-0 h-[42rem] rounded-md px-8 py-6 text-sm font-light md:text-base">
+      <Col className="bg-canvas-0 h-[42rem] rounded-md px-8 py-6 text-sm md:text-base">
         <span
           className={'text-primary-700 mb-2 text-2xl'}
           children="What interests you?"
