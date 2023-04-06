@@ -1,18 +1,21 @@
 import { ContractMetrics } from 'common/calculate-metrics'
 import { Contract } from 'common/contract'
+import { usePersistentState, storageStore } from './use-persistent-state'
 import { useUser, useUserContractMetrics } from './use-user'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { usePersistentLocalState } from './use-persistent-local-state'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export const useSavedContractMetrics = (contract: Contract) => {
   const user = useUser()
   const contractMetrics = contract
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useUserContractMetrics(user?.id, contract.id)
+    ? useUserContractMetrics(user?.id, contract.id)
     : null
-  const [savedMetrics, setSavedMetrics] = usePersistentLocalState<
+  const [savedMetrics, setSavedMetrics] = usePersistentState<
     ContractMetrics | undefined
-  >(undefined, `contract-metrics-${contract.id}`)
+  >(undefined, {
+    key: `contract-metrics-${contract.id}`,
+    store: storageStore(safeLocalStorage),
+  })
 
   const metrics =
     contractMetrics || savedMetrics
