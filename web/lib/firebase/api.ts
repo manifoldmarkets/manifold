@@ -33,6 +33,10 @@ export async function call(url: string, method: string, params?: any) {
   })
 }
 
+export function callApi(apiEndpoint: string, params?: any, method = 'POST') {
+  return call(getApiUrl(apiEndpoint), method, params)
+}
+
 export function createAnswer(params: any) {
   return call(getApiUrl('createanswer'), 'POST', params)
 }

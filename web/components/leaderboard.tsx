@@ -8,7 +8,7 @@ interface LeaderboardEntry {
   username: string
   name: string
   avatarUrl?: string
-  rank?: number
+  rank?: number | null
 }
 
 export function Leaderboard<T extends LeaderboardEntry>(props: {

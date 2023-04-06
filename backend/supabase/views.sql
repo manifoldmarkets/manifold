@@ -120,4 +120,28 @@ WHERE groups.data->>'privacyStatus' <> 'private'
           )
       )
     )
-  )
+  );
+
+
+
+CREATE VIEW user_referrals AS
+SELECT
+    id,
+    data,
+    total_referrals,
+    RANK() OVER (ORDER BY total_referrals DESC) AS rank
+FROM
+    (SELECT
+         referrer.id AS id,
+         referrer.data AS data,
+         COUNT(*) AS total_referrals
+     FROM
+         users AS referred
+             JOIN
+         users AS referrer ON referrer.data->>'id' = referred.data->>'referredByUserId'
+     WHERE
+             referred.data->>'referredByUserId' IS NOT NULL
+     GROUP BY
+         referrer.id) subquery
+ORDER BY
+    total_referrals DESC;

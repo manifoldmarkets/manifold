@@ -364,7 +364,7 @@ function QuickBetAmount(props: {
   return (
     <span
       className={clsx(
-        'text-primary-600 my-auto text-sm font-light transition-opacity',
+        'text-primary-600 font my-auto text-sm transition-opacity',
         shouldFocus ? 'opacity-100' : 'opacity-0'
       )}
     >

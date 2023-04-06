@@ -78,7 +78,7 @@ export default function Welcome() {
 
   return (
     <Modal open={open} setOpen={close}>
-      <Col className="bg-canvas-0 place-content-between rounded-md px-8 py-6 text-sm font-light md:text-lg">
+      <Col className="bg-canvas-0 place-content-between rounded-md px-8 py-6 text-sm md:text-lg">
         {availablePages[page]}
         <Col>
           <Row className="mt-2 justify-between">
