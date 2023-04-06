@@ -1,19 +1,14 @@
-import { CPMMContract, visibility, Contract } from 'common/contract'
+import { CPMMContract, Contract, visibility } from 'common/contract'
 import {
+  SupabaseClient,
   millisToTs,
   run,
   selectJson,
-  SupabaseClient,
 } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
-import { adminDb, db } from './db'
-import { filter, Sort } from 'web/components/contract-search'
+import { Sort, filter } from 'web/components/contract-search'
 import { stateType } from 'web/components/supabase-search'
-import {
-  inMemoryStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { ShowTime } from 'web/components/contract/contract-details'
+import { adminDb, db } from './db'
 
 export async function getContractIds(contractIds: string[]) {
   const { data } = await run(
@@ -154,8 +149,7 @@ export async function searchContract(props: {
     }
   }
   if (state.fuzzyContractOffset > 0) {
-    console.log('fuzzy')
-    return searchContractFuzzy({
+    const contractFuzzy = searchContractFuzzy({
       state,
       query,
       filter,
@@ -164,8 +158,8 @@ export async function searchContract(props: {
       group_id,
       creator_id,
     })
+    return contractFuzzy
   }
-  console.log('regular')
   const { data, error } = await db.rpc('search_contracts', {
     term: query,
     contract_filter: filter,
@@ -178,7 +172,6 @@ export async function searchContract(props: {
   })
 
   if (data) {
-    console.log('textlength', data.length)
     const textData = data.map((d) => (d as any).data) as Contract[]
     if (data.length == 20) {
       return { fuzzyOffset: 0, data: textData }
@@ -193,8 +186,7 @@ export async function searchContract(props: {
         creator_id,
       })
       return {
-        // fuzzyOffset: fuzzyData.fuzzyOffset,
-        fuzzyOffset: 0,
+        fuzzyOffset: fuzzyData.fuzzyOffset,
         data: textData.concat(fuzzyData.data),
       }
     }
@@ -224,8 +216,7 @@ export async function searchContractFuzzy(props: {
   })
   if (data && data.length > 0) {
     return {
-      // fuzzyOffset: state.fuzzyContractOffset + data.length,
-      fuzzyOffset: 0,
+      fuzzyOffset: data.length,
       data: data.map((d) => (d as any).data) as Contract[],
     }
   }

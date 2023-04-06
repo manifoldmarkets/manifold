@@ -2,9 +2,9 @@ import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
-import { debounce, isEqual } from 'lodash'
+import { debounce, isEqual, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import {
   historyStore,
@@ -25,7 +25,6 @@ import { Col } from './layout/col'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { SiteLink } from './widgets/site-link'
-import { AdditionalFilter } from './contract-search'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -54,6 +53,17 @@ export type SupabaseSearchParameters = {
   sort: Sort
   filter: filter
   //   facetFilters: SearchOptions['facetFilters']
+}
+
+function getShowTime(sort: Sort) {
+  return sort === 'close-date' || sort === 'resolve-date' ? sort : null
+}
+
+export const INITIAL_STATE = {
+  contracts: undefined,
+  fuzzyContractOffset: 0,
+  shouldLoadMore: true,
+  showTime: null as ShowTime | null,
 }
 
 export type SupabaseAdditionalFilter = {
@@ -122,20 +132,16 @@ export function SupabaseContractSearch(props: {
     listViewDisabled,
   } = props
 
-  console.log(persistPrefix, additionalFilter?.excludeContractIds)
   const [state, setState] = usePersistentState<stateType>(
-    {
-      contracts: undefined,
-      fuzzyContractOffset: 0,
-      shouldLoadMore: true,
-      showTime: null as ShowTime | null,
-    },
+    INITIAL_STATE,
     !persistPrefix
       ? undefined
       : { key: `${persistPrefix}-supabase-search`, store: inMemoryStore() }
   )
+  const loadMoreContracts = () => {
+    performQuery(() => state)()
+  }
 
-  console.log(state)
   const searchParams = useRef<SupabaseSearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SupabaseSearchParameters>()
   const requestId = useRef(0)
@@ -153,49 +159,54 @@ export function SupabaseContractSearch(props: {
     }
   }, [])
 
-  const performQuery = useEvent(async (freshQuery?: boolean) => {
+  const performQuery = useEvent((getState) => async (freshQuery?: boolean) => {
+    const currentState = getState()
     if (searchParams.current == null) {
       return
     }
-    const {
-      query,
-      sort,
-      filter,
-      // , facetFilters
-    } = searchParams.current
+    const { query, sort, filter } = searchParams.current
     const id = ++requestId.current
-    const offset = freshQuery ? 0 : state.contracts ? state.contracts.length : 0
-    if (freshQuery || state.shouldLoadMore) {
+    const offset = freshQuery
+      ? 0
+      : currentState.contracts
+      ? currentState.contracts.length
+      : 0
+    if (freshQuery || currentState.shouldLoadMore) {
       const results = await searchContract({
-        state,
+        state: currentState,
         query,
         filter,
         sort,
-        offset,
+        offset: offset,
         limit: CONTRACTS_PER_PAGE,
         group_id: additionalFilter?.groupId,
         creator_id: additionalFilter?.creatorId,
       })
-      // if there's a more recent request, forget about this one
+
       if (id === requestId.current) {
-        const fuzzyOffset = results.fuzzyOffset
         const newContracts = results.data
-        console.log('newContracts', newContracts)
-        console.log('freshQuery', freshQuery)
-        const showTime =
-          sort === 'close-date' || sort === 'resolve-date' ? sort : null
-        const contracts = freshQuery
+        const showTime = getShowTime(sort)
+
+        const freshContracts = freshQuery
           ? newContracts
-          : [...(state.contracts ? state.contracts : []), ...newContracts]
+          : [
+              ...(currentState.contracts ? currentState.contracts : []),
+              ...newContracts,
+            ]
+
+        const newFuzzyContractOffset =
+          results.fuzzyOffset + currentState.fuzzyContractOffset
+
         setState({
-          // ...state,
-          fuzzyContractOffset: fuzzyOffset,
-          contracts: contracts,
+          fuzzyContractOffset: newFuzzyContractOffset,
+          contracts: freshContracts,
           showTime: showTime,
-          shouldLoadMore: newContracts.length == 20,
+          shouldLoadMore: newContracts.length === 20,
         })
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
       }
+
+      // Rest of the function
     }
   })
 
@@ -213,21 +224,25 @@ export function SupabaseContractSearch(props: {
           searchParamsStore.set(`${persistPrefix}-params`, params)
         }
         searchParams.current = params
-        performQuery(true)
+        setState({ ...INITIAL_STATE, showTime: getShowTime(params.sort) })
+        performQuery(() => state)(true)
       }
     }, 100)
   ).current
 
   const contracts = state.contracts
-    ? state.contracts.filter((c) => {
-        return (
-          !additionalFilter?.excludeContractIds?.includes(c.id) &&
-          !additionalFilter?.excludeGroupSlugs?.some((slug) =>
-            c.groupSlugs?.includes(slug)
-          ) &&
-          !additionalFilter?.excludeUserIds?.includes(c.creatorId)
-        )
-      })
+    ? uniqBy(
+        state.contracts.filter((c) => {
+          return (
+            !additionalFilter?.excludeContractIds?.includes(c.id) &&
+            !additionalFilter?.excludeGroupSlugs?.some((slug) =>
+              c.groupSlugs?.includes(slug)
+            ) &&
+            !additionalFilter?.excludeUserIds?.includes(c.creatorId)
+          )
+        }),
+        'id'
+      )
     : undefined
 
   return (
@@ -260,28 +275,30 @@ export function SupabaseContractSearch(props: {
         ) : asList ? (
           <ContractsList
             key={
-              '' + searchParams.current?.query ??
+              searchParams.current?.query ??
               '' + searchParams.current?.filter ??
-              '' + searchParams.current?.sort
+              '' + searchParams.current?.sort ??
+              ''
             }
             contracts={contracts}
-            loadMore={performQuery}
+            loadMore={loadMoreContracts}
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
           />
         ) : (
           <ContractsGrid
             key={
-              '' + searchParams.current?.query ??
+              searchParams.current?.query ??
               '' + searchParams.current?.filter ??
-              '' + searchParams.current?.sort
+              '' + searchParams.current?.sort ??
+              ''
             }
             contracts={contracts}
             showTime={state.showTime ?? undefined}
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
             cardUIOptions={cardUIOptions}
-            loadMore={performQuery}
+            loadMore={loadMoreContracts}
             fromGroupProps={fromGroupProps}
           />
         )}
@@ -386,14 +403,8 @@ function SupabaseContractSearchControls(props: {
       query: query,
       sort: sort as Sort,
       filter: filter as filter,
-      //   facetFilters: facetFilters,
     })
-  }, [
-    query,
-    sort,
-    filter,
-    // JSON.stringify(facetFilters)
-  ])
+  }, [query, sort, filter])
 
   return (
     <div
