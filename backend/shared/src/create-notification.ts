@@ -1105,7 +1105,7 @@ export const createContractResolvedNotifications = async (
         profitRank && totalShareholders && betterThan > 0
           ? `, outperforming ${betterThan} other${betterThan > 1 ? 's' : ''}!`
           : '.'
-      const profit = userPayout - userInvestment
+      const profit = Math.round(userPayout - userInvestment)
       const profitPercent = Math.round(profit / (userPayout + profit))
 
       const profitString = ` You made M${getMoneyNumber(
