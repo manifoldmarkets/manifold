@@ -291,10 +291,12 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               threadComments={commentsByParent[parent.id] ?? []}
             />
           ))}
-      <VisibilityObserver
-        onVisibilityUpdated={onVisibilityUpdated}
-        className="pointer-events-none absolute bottom-0 h-[75vh] w-full select-none"
-      />
+      <div className="relative w-full">
+        <VisibilityObserver
+          onVisibilityUpdated={onVisibilityUpdated}
+          className="pointer-events-none absolute bottom-0 h-[75vh]"
+        />
+      </div>
     </>
   )
 })
