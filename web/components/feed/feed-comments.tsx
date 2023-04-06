@@ -14,7 +14,6 @@ import {
   copyLinkToComment,
 } from 'web/components/feed/copy-link-date-time'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { createCommentOnContract } from 'web/lib/firebase/comments'
 import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
 import { useEvent } from 'web/hooks/use-event'
@@ -32,7 +31,7 @@ import { EyeOffIcon, FlagIcon } from '@heroicons/react/outline'
 import { LikeButton } from 'web/components/contract/like-button'
 import { richTextToString } from 'common/util/parse'
 import { buildArray } from 'common/util/array'
-import { hideComment } from 'web/lib/firebase/api'
+import { createCommentOnContract, hideComment } from 'web/lib/firebase/api'
 import { useAdmin } from 'web/hooks/use-admin'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
@@ -344,34 +343,33 @@ function CommentStatus(props: {
 export function ContractCommentInput(props: {
   contract: Contract
   className?: string
-  parentAnswerOutcome?: string | undefined
+  replyToAnswerId?: string
   replyTo?: ReplyTo
   parentCommentId?: string
   onSubmitComment?: () => void
 }) {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const { contract, parentAnswerOutcome, parentCommentId, replyTo, className } =
+  const { contract, replyToAnswerId, parentCommentId, replyTo, className } =
     props
   async function onSubmitComment(editor: Editor) {
     if (!user) {
       track('sign in to comment')
       return await firebaseLogin()
     }
-    await createCommentOnContract(
-      contract.id,
-      editor.getJSON(),
-      user,
-      parentAnswerOutcome,
-      parentCommentId
-    )
+    await createCommentOnContract({
+      contractId: contract.id,
+      content: editor.getJSON(),
+      replyToAnswerId: replyToAnswerId,
+      replyToCommentId: parentCommentId,
+    })
     props.onSubmitComment?.()
   }
 
   return (
     <CommentInput
       replyTo={replyTo}
-      parentAnswerOutcome={parentAnswerOutcome}
+      parentAnswerOutcome={replyToAnswerId}
       parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
       pageId={contract.id}

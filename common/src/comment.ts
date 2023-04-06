@@ -28,7 +28,7 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
 export type OnContract = {
   commentType: 'contract'
   contractId: string
-  answerOutcome?: string
+  answerOutcome?: string // reply to answer.id
   betId?: string
 
   // denormalized from contract

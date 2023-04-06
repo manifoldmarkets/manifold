@@ -96,11 +96,6 @@ export const onCreateCommentOnContract = functions
     if (!contract)
       throw new Error('Could not find contract corresponding with comment')
 
-    await change.ref.update({
-      contractSlug: contract.slug,
-      contractQuestion: contract.question,
-    })
-
     await revalidateStaticProps(contractPath(contract))
 
     const comment = change.data() as ContractComment
