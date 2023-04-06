@@ -72,7 +72,7 @@ export function getSeoDescription(contract: Contract) {
   const stringDesc = typeof desc === 'string' ? desc : richTextToString(desc)
 
   const prefix = resolution
-    ? `Resolved ${resolution}. `
+    ? `Resolved ${getResolvedValue(contract) || resolution}. `
     : contract.outcomeType === 'BINARY'
     ? `${formatPercent(getDisplayProbability(contract))} chance. `
     : contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -83,4 +83,22 @@ export function getSeoDescription(contract: Contract) {
     : ''
 
   return prefix + stringDesc
+}
+
+function getResolvedValue(contract: Contract) {
+  if (contract.resolution === 'MKT') {
+    if (
+      contract.outcomeType === 'BINARY' &&
+      contract.resolutionProbability != undefined
+    ) {
+      return formatPercent(contract.resolutionProbability)
+    }
+    if (
+      contract.outcomeType === 'PSEUDO_NUMERIC' &&
+      contract.resolutionValue != undefined
+    ) {
+      return contract.resolutionValue
+    }
+  }
+  return null
 }

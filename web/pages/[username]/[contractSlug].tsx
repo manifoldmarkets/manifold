@@ -300,6 +300,7 @@ export function ContractPageContent(props: {
                   sizes="100vw"
                   className="object-cover"
                   src={coverImageUrl}
+                  priority={true}
                 />
               </div>
             )}
