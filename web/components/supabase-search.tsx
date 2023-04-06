@@ -58,12 +58,15 @@ export type SupabaseSearchParameters = {
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
-  tag?: string
-  excludeContractIds?: string[]
   groupId?: string
-  facetFilters?: string[]
+  tag?: string
+  groupSlug?: string
+  excludeContractIds?: string[]
+  excludeGroupSlugs?: string[]
+  excludeUserIds?: string[]
   nonQueryFacetFilters?: string[]
 }
+
 const AsListContext = createContext({
   asList: false,
   setAsList: (_asList: boolean) => {},
@@ -119,6 +122,7 @@ export function SupabaseContractSearch(props: {
     listViewDisabled,
   } = props
 
+  console.log(persistPrefix, additionalFilter?.excludeContractIds)
   const [state, setState] = usePersistentState<stateType>(
     {
       contracts: undefined,
@@ -130,6 +134,8 @@ export function SupabaseContractSearch(props: {
       ? undefined
       : { key: `${persistPrefix}-supabase-search`, store: inMemoryStore() }
   )
+
+  console.log(state)
   const searchParams = useRef<SupabaseSearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SupabaseSearchParameters>()
   const requestId = useRef(0)
@@ -175,18 +181,17 @@ export function SupabaseContractSearch(props: {
         const fuzzyOffset = results.fuzzyOffset
         const newContracts = results.data
         console.log('newContracts', newContracts)
+        console.log('freshQuery', freshQuery)
         const showTime =
           sort === 'close-date' || sort === 'resolve-date' ? sort : null
-        const contracts =
-          freshQuery || !state.contracts
-            ? newContracts
-            : [...state.contracts, ...newContracts]
-        console.log('contracts', contracts, freshQuery)
+        const contracts = freshQuery
+          ? newContracts
+          : [...(state.contracts ? state.contracts : []), ...newContracts]
         setState({
-          ...state,
+          // ...state,
           fuzzyContractOffset: fuzzyOffset,
-          contracts,
-          showTime,
+          contracts: contracts,
+          showTime: showTime,
           shouldLoadMore: newContracts.length == 20,
         })
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
@@ -214,9 +219,15 @@ export function SupabaseContractSearch(props: {
   ).current
 
   const contracts = state.contracts
-    ? state.contracts.filter(
-        (c) => !additionalFilter?.excludeContractIds?.includes(c.id)
-      )
+    ? state.contracts.filter((c) => {
+        return (
+          !additionalFilter?.excludeContractIds?.includes(c.id) &&
+          !additionalFilter?.excludeGroupSlugs?.some((slug) =>
+            c.groupSlugs?.includes(slug)
+          ) &&
+          !additionalFilter?.excludeUserIds?.includes(c.creatorId)
+        )
+      })
     : undefined
 
   return (
@@ -249,7 +260,7 @@ export function SupabaseContractSearch(props: {
         ) : asList ? (
           <ContractsList
             key={
-              searchParams.current?.query ??
+              '' + searchParams.current?.query ??
               '' + searchParams.current?.filter ??
               '' + searchParams.current?.sort
             }
@@ -261,7 +272,7 @@ export function SupabaseContractSearch(props: {
         ) : (
           <ContractsGrid
             key={
-              searchParams.current?.query ??
+              '' + searchParams.current?.query ??
               '' + searchParams.current?.filter ??
               '' + searchParams.current?.sort
             }
@@ -283,7 +294,7 @@ function SupabaseContractSearchControls(props: {
   className?: string
   defaultSort?: Sort
   defaultFilter?: filter
-  additionalFilter?: AdditionalFilter
+  additionalFilter?: SupabaseAdditionalFilter
   persistPrefix?: string
   hideOrderSelector?: boolean
   includeProbSorts?: boolean

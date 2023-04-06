@@ -31,6 +31,7 @@ export default function Search() {
     ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
     : []
 
+  console.log('SHOULD FILTER', shouldFilterDestiny)
   return (
     <Page>
       <Col className="mx-auto w-full p-2">
@@ -39,8 +40,13 @@ export default function Search() {
           persistPrefix="search"
           autoFocus={autoFocus}
           additionalFilter={{
-            facetFilters: getUsersBlockFacetFilters(privateUser),
-            nonQueryFacetFilters: destinyFilters,
+            excludeContractIds: privateUser?.blockedContractIds,
+            excludeGroupSlugs: [
+              ...(privateUser?.blockedGroupSlugs ?? []),
+              ...(shouldFilterDestiny ? DESTINY_GROUP_SLUGS : []),
+            ],
+            excludeUserIds: privateUser?.blockedUserIds,
+            // nonQueryFacetFilters: destinyFilters,
           }}
           isWholePage
         />

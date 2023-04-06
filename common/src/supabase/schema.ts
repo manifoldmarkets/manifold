@@ -1082,20 +1082,13 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      generate_empty_sort_query: {
-        Args: {
-          contract_sort: string
-          offset_n: number
-          limit_n: number
-        }
-        Returns: string
-      }
       generate_sort_query: {
         Args: {
           contract_sort: string
           fuzzy: boolean
           offset_n: number
           limit_n: number
+          empty_query?: boolean
         }
         Returns: string
       }
@@ -1547,16 +1540,6 @@ export interface Database {
           data: Json
         }[]
       }
-      search_contracts_fuzzy: {
-        Args: {
-          term: string
-          contract_filter: string
-          contract_sort: string
-        }
-        Returns: {
-          data: Json
-        }[]
-      }
       search_contracts_test: {
         Args: {
           term: string
@@ -1592,6 +1575,17 @@ export interface Database {
           row2: unknown
         }
         Returns: number
+      }
+      test_empty_search_contracts: {
+        Args: {
+          contract_filter: string
+          contract_sort: string
+          offset_n: number
+          limit_n: number
+          group_id?: string
+          creator_id?: string
+        }
+        Returns: string
       }
       to_jsonb: {
         Args: {

@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { useState } from 'react'
+import { createContext, useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
 import { Button } from './buttons/button'
@@ -9,7 +9,15 @@ import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './widgets/loading-indicator'
-import { SupabaseContractSearch } from './supabase-search'
+import {
+  SupabaseAdditionalFilter,
+  SupabaseContractSearch,
+} from './supabase-search'
+
+const AsListContext = createContext({
+  asList: false,
+  setAsList: (_asList: boolean) => {},
+})
 
 export function SelectMarketsModal(props: {
   title: string
@@ -53,7 +61,7 @@ export function SelectMarkets(props: {
   contractSearchOptions?: Partial<Parameters<typeof ContractSearch>[0]>
   setOpen: (open: boolean) => void
   className?: string
-  additionalFilter?: AdditionalFilter
+  additionalFilter?: SupabaseAdditionalFilter
   headerClassName?: string
 }) {
   const {
@@ -101,8 +109,12 @@ export function SelectMarkets(props: {
         }}
         highlightContractIds={contracts.map((c) => c.id)}
         additionalFilter={{
-          excludeContractIds: additionalFilter?.excludeContractIds,
-          facetFilters: getUsersBlockFacetFilters(privateUser),
+          excludeContractIds: [
+            ...(additionalFilter?.excludeContractIds ?? []),
+            ...(privateUser?.blockedContractIds ?? []),
+          ],
+          excludeGroupSlugs: privateUser?.blockedGroupSlugs,
+          excludeUserIds: privateUser?.blockedUserIds,
         }}
         headerClassName={clsx('bg-canvas-0', headerClassName)}
         {...contractSearchOptions}

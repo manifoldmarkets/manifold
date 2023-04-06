@@ -216,10 +216,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   }
 
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
-  const contractVisibilityFilter =
-    group.privacyStatus == 'private'
-      ? 'visibility:private'
-      : 'visibility:public'
   return (
     <>
       <AddContractButton
@@ -314,10 +310,9 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                   defaultFilter="all"
                   additionalFilter={{
                     groupId: group.id,
-                    facetFilters: [
-                      ...getUsersBlockFacetFilters(privateUser, true),
-                      contractVisibilityFilter,
-                    ],
+                    excludeContractIds: privateUser?.blockedContractIds,
+                    excludeGroupSlugs: privateUser?.blockedGroupSlugs ?? [],
+                    excludeUserIds: privateUser?.blockedUserIds,
                   }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts

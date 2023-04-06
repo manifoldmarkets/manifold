@@ -222,14 +222,7 @@ export async function searchContractFuzzy(props: {
     group_id: group_id,
     creator_id: creator_id,
   })
-  console.log('fuzzyPartition', state.fuzzyContractOffset, '\nlimit', limit)
   if (data && data.length > 0) {
-    console.log(
-      'fuzzyData',
-      data.length,
-      '\nfuzzyOffset',
-      state.fuzzyContractOffset
-    )
     return {
       // fuzzyOffset: state.fuzzyContractOffset + data.length,
       fuzzyOffset: 0,
