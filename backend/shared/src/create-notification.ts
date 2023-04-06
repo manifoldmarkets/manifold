@@ -1096,7 +1096,7 @@ export const createContractResolvedNotifications = async (
       const {
         userPayout,
         profitRank,
-        profit,
+
         userInvestment,
         totalShareholders,
       } = notification.data as ContractResolutionData
@@ -1105,11 +1105,11 @@ export const createContractResolvedNotifications = async (
         profitRank && totalShareholders && betterThan > 0
           ? `, outperforming ${betterThan} other${betterThan > 1 ? 's' : ''}!`
           : '.'
-      const profitPercent = profit
-        ? Math.round(profit / (userPayout + profit))
-        : 0
+      const profit = userPayout - userInvestment
+      const profitPercent = Math.round(profit / (userPayout + profit))
+
       const profitString = ` You made M${getMoneyNumber(
-        userPayout
+        profit
       )} (+${profitPercent}%)`
       const lossString = ` You lost M${getMoneyNumber(userInvestment)}`
       await createPushNotification(
