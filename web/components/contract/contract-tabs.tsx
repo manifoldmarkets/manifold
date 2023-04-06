@@ -197,13 +197,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     DEFAULT_PARENT_COMMENTS_TO_RENDER
   )
-  const hashInUrl = useHashInUrl()
-  useEffect(() => {
-    if (hashInUrl && comments.some((c) => c.id === hashInUrl)) {
-      setParentCommentsToRender(comments.length)
-    }
-    setCommentsLength?.(comments.length)
-  }, [hashInUrl, comments.length])
 
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
     key: `comments-sort-${contract.id}`,
@@ -239,6 +232,21 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     [sortedComments.length]
   )
   const parentComments = commentsByParent['_'] ?? []
+  const visibleCommentIds = useMemo(
+    () =>
+      parentComments
+        .map((c) => [c.id, ...(commentsByParent[c.id] ?? []).map((c) => c.id)])
+        .flat(),
+    [comments.length]
+  )
+  const hashInUrl = useHashInUrl()
+  useEffect(() => {
+    if (hashInUrl && comments.some((c) => c.id === hashInUrl)) {
+      const currentlyVisible = visibleCommentIds.includes(hashInUrl)
+      if (!currentlyVisible) setParentCommentsToRender(comments.length)
+    }
+    setCommentsLength?.(comments.length)
+  }, [hashInUrl, comments.length])
 
   const loadMore = () => setParentCommentsToRender((prev) => prev + LOAD_MORE)
   const onVisibilityUpdated = useEvent((visible: boolean) => {
