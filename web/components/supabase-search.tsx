@@ -13,7 +13,6 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
-import { useUser } from 'web/hooks/use-user'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import { searchContract } from 'web/lib/supabase/contracts'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -252,7 +251,6 @@ export function SupabaseContractSearch(props: {
           className={headerClassName}
           defaultSort={defaultSort}
           defaultFilter={defaultFilter}
-          additionalFilter={additionalFilter}
           persistPrefix={persistPrefix}
           hideOrderSelector={hideOrderSelector}
           useQueryUrlParam={isWholePage}
@@ -311,7 +309,6 @@ function SupabaseContractSearchControls(props: {
   className?: string
   defaultSort?: Sort
   defaultFilter?: filter
-  additionalFilter?: SupabaseAdditionalFilter
   persistPrefix?: string
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
@@ -324,7 +321,6 @@ function SupabaseContractSearchControls(props: {
     className,
     defaultSort = 'relevance',
     defaultFilter = 'open',
-    additionalFilter,
     persistPrefix,
     hideOrderSelector,
     onSearchParametersChanged,
@@ -333,8 +329,6 @@ function SupabaseContractSearchControls(props: {
     includeProbSorts,
     listViewDisabled,
   } = props
-
-  const user = useUser()
 
   const router = useRouter()
   const [query, setQuery] = usePersistentState(

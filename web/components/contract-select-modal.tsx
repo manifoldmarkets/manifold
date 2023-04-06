@@ -1,23 +1,17 @@
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { createContext, useState } from 'react'
+import { useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
 import { Button } from './buttons/button'
-import { AdditionalFilter, ContractSearch } from './contract-search'
+import { ContractSearch } from './contract-search'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
-import { LoadingIndicator } from './widgets/loading-indicator'
 import {
   SupabaseAdditionalFilter,
   SupabaseContractSearch,
 } from './supabase-search'
-
-const AsListContext = createContext({
-  asList: false,
-  setAsList: (_asList: boolean) => {},
-})
+import { LoadingIndicator } from './widgets/loading-indicator'
 
 export function SelectMarketsModal(props: {
   title: string

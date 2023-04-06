@@ -133,7 +133,7 @@ export async function searchContract(props: {
     props
 
   if (!query || query.length == 0) {
-    const { data, error } = await db.rpc('empty_search_contracts', {
+    const { data } = await db.rpc('empty_search_contracts', {
       contract_filter: filter,
       contract_sort: sort,
       offset_n: offset,
@@ -160,7 +160,7 @@ export async function searchContract(props: {
     })
     return contractFuzzy
   }
-  const { data, error } = await db.rpc('search_contracts', {
+  const { data } = await db.rpc('search_contracts', {
     term: query,
     contract_filter: filter,
     contract_sort: sort,
@@ -204,7 +204,7 @@ export async function searchContractFuzzy(props: {
   creator_id?: string
 }) {
   const { state, query, filter, sort, limit, group_id, creator_id } = props
-  const { data, error } = await db.rpc('search_contracts', {
+  const { data } = await db.rpc('search_contracts', {
     term: query,
     contract_filter: filter,
     contract_sort: sort,

@@ -1,10 +1,12 @@
 import { SearchOptions } from '@algolia/client-search'
-import { useRouter } from 'next/router'
+import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { ContractsGrid } from './contract/contracts-grid'
-import { ShowTime } from './contract/contract-details'
-import { useEffect, useRef, useMemo, createContext, useContext } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { Group } from 'common/group'
+import { debounce, isEqual } from 'lodash'
+import { useRouter } from 'next/router'
+import { createContext, useContext, useEffect, useMemo, useRef } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import {
   historyStore,
@@ -12,27 +14,24 @@ import {
   urlParamStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { track, trackCallback } from 'web/lib/service/analytics'
-import ContractSearchFirestore from 'web/pages/contract-search-firestore'
-import { debounce, isEqual } from 'lodash'
-import { Col } from './layout/col'
-import clsx from 'clsx'
-import { safeLocalStorage } from 'web/lib/util/local'
+import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
+import { useUser } from 'web/hooks/use-user'
 import {
   getIndexName,
   searchClient,
   searchIndexName,
 } from 'web/lib/service/algolia'
+import { track, trackCallback } from 'web/lib/service/analytics'
+import { safeLocalStorage } from 'web/lib/util/local'
+import ContractSearchFirestore from 'web/pages/contract-search-firestore'
+import { ShowTime } from './contract/contract-details'
+import { ContractsGrid } from './contract/contracts-grid'
+import { ContractsList } from './contract/contracts-list'
+import { groupRoleType } from './groups/group-member-modal'
+import { Col } from './layout/col'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
-import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
-import { groupRoleType } from './groups/group-member-modal'
-import { Group } from 'common/group'
-import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
-import { ContractsList } from './contract/contracts-list'
 import { SiteLink } from './widgets/site-link'
-import { useUser } from 'web/hooks/use-user'
-import { getCurrentFilter } from './search/contract-search-helpers'
 
 export const SORTS = [
   { label: 'Relevance', value: 'relevance' },

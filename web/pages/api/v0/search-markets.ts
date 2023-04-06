@@ -1,7 +1,6 @@
 import { FullMarket, toFullMarket } from 'common/api-market-types'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { searchContracts } from 'web/lib/service/algolia'
+import { CORS_UNRESTRICTED, applyCorsHeaders } from 'web/lib/api/cors'
 import { searchContract } from 'web/lib/supabase/contracts'
 import { ApiError } from 'web/pages/api/v0/_types'
 
