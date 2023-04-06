@@ -15,7 +15,7 @@ import { SearchProvider } from 'web/components/search/search-context'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
-import { Major_Mono_Display, Figtree, Roboto } from 'next/font/google'
+import { Major_Mono_Display, Figtree } from 'next/font/google'
 import clsx from 'clsx'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
