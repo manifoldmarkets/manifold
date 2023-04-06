@@ -198,7 +198,7 @@ export default function Leaderboards(props: {
     <Page>
       <SEO
         title="Leaderboards"
-        description={`Manifold's leaderboards show the top ${BETTORS} and market creators.`}
+        description={`Manifold's leaderboards show the top ${BETTORS}, market creators, and referrers.`}
         url="/leaderboards"
       />
       <Col className="mb-4 p-2">
