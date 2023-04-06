@@ -14,7 +14,7 @@ export function ProfileSummary(props: { user: User }) {
   const { user } = props
 
   const [buyModalOpen, setBuyModalOpen] = useState(false)
-  const val = useAnimatedNumber(user.balance)
+  const balance = useAnimatedNumber(user.balance)
 
   return (
     <Link
@@ -28,7 +28,7 @@ export function ProfileSummary(props: { user: User }) {
         <div className="flex items-center text-sm">
           <span className="mr-2">
             <animated.div>
-              {val.interpolate((v) => formatMoney(v))}
+              {balance.interpolate((b) => formatMoney(b))}
             </animated.div>
           </span>
           <button

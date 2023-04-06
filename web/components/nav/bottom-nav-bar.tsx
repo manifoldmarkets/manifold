@@ -128,7 +128,7 @@ function NavBarItem(props: {
   const { item, currentPage, children, user } = props
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
   const [touched, setTouched] = useState(false)
-  const val = useAnimatedNumber(user?.balance ?? 0)
+  const balance = useAnimatedNumber(user?.balance ?? 0)
   if (item.name === 'Profile' && user) {
     return (
       <Link
@@ -151,7 +151,9 @@ function NavBarItem(props: {
               noLink
             />
           </div>
-          <animated.div>{val.interpolate((v) => formatMoney(v))}</animated.div>
+          <animated.div>
+            {balance.interpolate((b) => formatMoney(b))}
+          </animated.div>
         </Col>
       </Link>
     )
