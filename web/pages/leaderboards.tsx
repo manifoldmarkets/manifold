@@ -13,7 +13,7 @@ import {
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { Title } from 'web/components/widgets/title'
-import { Tabs } from 'web/components/layout/tabs'
+import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
@@ -206,7 +206,7 @@ export default function Leaderboards(props: {
           Leaderboards <InfoTooltip text="Updated every 15 minutes" />
         </Title>
 
-        <Tabs
+        <QueryUncontrolledTabs
           className="mb-4"
           currentPageForAnalytics={'leaderboards'}
           defaultIndex={1}
