@@ -14,13 +14,6 @@ import {
 } from 'web/components/charts/generic-charts'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
-import {
-  BinaryResolutionOrChance,
-  FreeResponseResolutionOrChance,
-  NumericResolutionOrExpectation,
-  PseudoNumericResolutionOrExpectation,
-  StonkPrice,
-} from './contract-card'
 import { Bet } from 'common/bet'
 import { SignedInBinaryMobileBetting } from '../bet/bet-button'
 import {
@@ -46,6 +39,13 @@ import { StonkContractChart } from '../charts/contract/stonk'
 import { STARTING_BALANCE } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
+import {
+  BinaryResolutionOrChance,
+  FreeResponseResolution,
+  NumericResolutionOrExpectation,
+  PseudoNumericResolutionOrExpectation,
+  StonkPrice,
+} from 'web/components/contract/contract-price'
 
 export const ContractOverview = memo(
   (props: {
@@ -147,7 +147,7 @@ const ChoiceOverview = (props: {
 
   return (
     <>
-      <FreeResponseResolutionOrChance contract={contract} />
+      <FreeResponseResolution contract={contract} />
       <SizedContainer fullHeight={350} mobileHeight={250}>
         {(w, h) => (
           <ChoiceContractChart
