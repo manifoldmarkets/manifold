@@ -71,7 +71,7 @@ export function SwipeBetPanel(props: {
           }}
         >
           <Col>
-            <div className="text-xs font-light">Bet</div>
+            <div className="text-xs">Bet</div>
             <div>NO</div>
           </Col>
         </button>
@@ -136,7 +136,7 @@ export function SwipeBetPanel(props: {
           }}
         >
           <Col>
-            <div className="text-xs font-light">Bet</div>
+            <div className="text-xs">Bet</div>
             <div>YES</div>
           </Col>
         </button>

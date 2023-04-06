@@ -38,7 +38,7 @@ export function BinaryResolutionOrChance(props: {
     <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
       {resolution ? (
         <>
-          <div className={clsx('text-base font-light')}>
+          <div className={clsx('text-base')}>
             Resolved
             {resolution === 'MKT' && ' as '}
           </div>
@@ -54,7 +54,7 @@ export function BinaryResolutionOrChance(props: {
               {spring.interpolate((val) => formatPercent(val))}
             </animated.div>
           </div>
-          <div className={clsx(textColor, 'text-base font-light')}>chance</div>
+          <div className={clsx(textColor, 'text-base')}>chance</div>
         </>
       )}
     </Row>
@@ -70,7 +70,7 @@ export function FreeResponseResolution(props: {
 
   return (
     <Row className="gap-2 text-3xl">
-      <div className={clsx('text-base font-light')}>Resolved</div>
+      <div className={clsx('text-base')}>Resolved</div>
 
       <FreeResponseOutcomeLabel
         contract={contract}
@@ -93,7 +93,7 @@ export function NumericResolutionOrExpectation(props: {
   // All distributional numeric markets are resolved now
   return (
     <Row className="items-baseline gap-2 text-3xl">
-      <div className={clsx('text-base font-light')}>Resolved</div>
+      <div className={clsx('text-base')}>Resolved</div>
       {resolution === 'CANCEL' ? (
         <CancelLabel />
       ) : (
@@ -121,7 +121,7 @@ export function PseudoNumericResolutionOrExpectation(props: {
     <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
       {resolution ? (
         <>
-          <div className="text-base font-light">Resolved</div>
+          <div className="text-base">Resolved</div>
           {resolution === 'CANCEL' ? (
             <CancelLabel />
           ) : (
@@ -139,7 +139,7 @@ export function PseudoNumericResolutionOrExpectation(props: {
               {spring.interpolate((val) => formatLargeNumber(val))}
             </animated.div>
           </Tooltip>
-          <div className="text-base font-light">expected</div>
+          <div className="text-base">expected</div>
         </>
       )}
     </Row>
