@@ -1023,7 +1023,7 @@ export const createNewContractNotification = async (
 
 export const createContractResolvedNotifications = async (
   contract: Contract,
-  creator: User,
+  resolver: User,
   outcome: string,
   probabilityInt: number | undefined,
   resolutionValue: number | undefined,
@@ -1083,9 +1083,9 @@ export const createContractResolvedNotifications = async (
       sourceType: 'contract',
       sourceUpdateType: 'resolved',
       sourceContractId: contract.id,
-      sourceUserName: creator.name,
-      sourceUserUsername: creator.username,
-      sourceUserAvatarUrl: creator.avatarUrl,
+      sourceUserName: resolver.name,
+      sourceUserUsername: resolver.username,
+      sourceUserAvatarUrl: resolver.avatarUrl,
       sourceText: resolutionText,
       sourceContractCreatorUsername: contract.creatorUsername,
       sourceContractTitle: contract.question,
@@ -1136,7 +1136,7 @@ export const createContractResolvedNotifications = async (
         privateUser,
         userIdToContractMetrics?.[userId]?.invested ?? 0,
         userPayouts[userId] ?? 0,
-        creator,
+        resolver,
         creatorPayout,
         contract,
         outcome,
@@ -1188,7 +1188,7 @@ export const createContractResolvedNotifications = async (
   // bc market resolutions changes their profits, and they'll likely want to know, esp. if NA resolution
   const usersToNotify = uniq(
     [...contractFollowersIds, ...Object.keys(userPayouts)].filter(
-      (id) => id !== creator.id
+      (id) => id !== resolver.id
     )
   )
 

@@ -87,7 +87,11 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
   if (!creator) throw new APIError(500, 'Creator not found')
 
   const resolutionParams = getResolutionParams(contract, req.body)
-  return await resolveMarketHelper(contract, creator, resolutionParams)
+  return await resolveMarketHelper(
+    contract,
+    caller ?? creator,
+    resolutionParams
+  )
 })
 
 function getResolutionParams(contract: Contract, body: string) {
