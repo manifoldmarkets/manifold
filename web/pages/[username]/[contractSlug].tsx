@@ -365,7 +365,7 @@ export function ContractPageContent(props: {
               resolution === 'CANCEL' &&
               (!uniqueBettorCount || uniqueBettorCount < 10) && (
                 <DeleteMarketButton
-                  className="self-end"
+                  className="mt-4 self-end"
                   contractId={contract.id}
                 />
               )}
