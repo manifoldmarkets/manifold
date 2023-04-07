@@ -1106,7 +1106,7 @@ export const createContractResolvedNotifications = async (
           ? `, outperforming ${betterThan} other${betterThan > 1 ? 's' : ''}!`
           : '.'
       const profit = Math.round(userPayout - userInvestment)
-      const profitPercent = Math.round(profit / (userPayout + profit))
+      const profitPercent = Math.round((profit / userInvestment) * 100)
 
       const profitString = ` You made M${getMoneyNumber(
         profit
@@ -1119,7 +1119,7 @@ export const createContractResolvedNotifications = async (
           ? contract.question.slice(0, 50) + '...'
           : contract.question,
         `Resolved: ${resolutionText}.` +
-          (userInvestment === 0
+          (userInvestment === 0 || outcome === 'CANCEL'
             ? ''
             : (userPayout === 0 ? lossString : profitString) + comparison)
       )
