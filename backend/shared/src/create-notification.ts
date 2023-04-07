@@ -1024,6 +1024,7 @@ export const createNewContractNotification = async (
 export const createContractResolvedNotifications = async (
   contract: Contract,
   resolver: User,
+  creator: User,
   outcome: string,
   probabilityInt: number | undefined,
   resolutionValue: number | undefined,
@@ -1136,7 +1137,7 @@ export const createContractResolvedNotifications = async (
         privateUser,
         userIdToContractMetrics?.[userId]?.invested ?? 0,
         userPayouts[userId] ?? 0,
-        resolver,
+        creator,
         creatorPayout,
         contract,
         outcome,

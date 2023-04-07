@@ -90,6 +90,7 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
   return await resolveMarketHelper(
     contract,
     caller ?? creator,
+    creator,
     resolutionParams
   )
 })
