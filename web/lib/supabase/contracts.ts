@@ -6,10 +6,10 @@ import {
   selectJson,
 } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
-import { Sort, filter } from 'web/components/contract-search'
+import { Sort, filter } from 'web/components/supabase-search'
 import { stateType } from 'web/components/supabase-search'
-import { adminDb, db } from './db'
 import { supabaseSearchContracts } from '../firebase/api'
+import { adminDb, db } from './db'
 
 export async function getContractIds(contractIds: string[]) {
   const { data } = await run(
@@ -142,7 +142,7 @@ export async function searchContract(props: {
       limit: limit,
       groupId: group_id,
       creatorId: creator_id,
-    }).finally(() => console.log('FINALLY'))
+    })
     if (contracts) {
       return {
         fuzzyOffset: 0,

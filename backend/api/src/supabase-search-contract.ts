@@ -31,8 +31,6 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       creatorId: creatorId,
       uid: auth?.uid,
     })
-
-    console.log('REALLY IN SEARCH CONTRACTS', searchMarketSQL)
     const contracts = await pg.map(
       searchMarketSQL,
       [],
@@ -56,7 +54,6 @@ function getSearchContractSQL(contractInput: {
 }) {
   const { term, filter, sort, offset, limit, fuzzy, groupId, creatorId, uid } =
     contractInput
-  console.log(term, limit, offset)
   let query = ''
   const emptyTerm = term.length === 0
   const whereSQL = getSearchContractWhereSQL(filter, sort, creatorId, uid)

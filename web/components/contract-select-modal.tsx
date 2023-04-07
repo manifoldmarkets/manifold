@@ -3,7 +3,6 @@ import { Contract } from 'common/contract'
 import { useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { Button } from './buttons/button'
-import { ContractSearch } from './contract-search'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
@@ -20,7 +19,7 @@ export function SelectMarketsModal(props: {
   setOpen: (open: boolean) => void
   submitLabel: (length: number) => string
   onSubmit: (contracts: Contract[]) => void | Promise<void>
-  contractSearchOptions?: Partial<Parameters<typeof ContractSearch>[0]>
+  contractSearchOptions?: Partial<Parameters<typeof SupabaseContractSearch>[0]>
 }) {
   const {
     title,
@@ -52,7 +51,7 @@ export function SelectMarketsModal(props: {
 export function SelectMarkets(props: {
   submitLabel: (length: number) => string
   onSubmit: (contracts: Contract[]) => void | Promise<void>
-  contractSearchOptions?: Partial<Parameters<typeof ContractSearch>[0]>
+  contractSearchOptions?: Partial<Parameters<typeof SupabaseContractSearch>[0]>
   setOpen: (open: boolean) => void
   className?: string
   additionalFilter?: SupabaseAdditionalFilter

@@ -4,7 +4,6 @@ import { Post } from 'common/post'
 import { useState } from 'react'
 import { Button } from './buttons/button'
 import { PillButton } from './buttons/pill-button'
-import { ContractSearch } from './contract-search'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
@@ -24,7 +23,7 @@ export function PinnedSelectModal(props: {
   onSubmit: (
     selectedItems: { itemId: string; type: string }[]
   ) => void | Promise<void>
-  contractSearchOptions?: Partial<Parameters<typeof ContractSearch>[0]>
+  contractSearchOptions?: Partial<Parameters<typeof SupabaseContractSearch>[0]>
   posts: Post[]
   groups?: Group[]
   group?: Group
