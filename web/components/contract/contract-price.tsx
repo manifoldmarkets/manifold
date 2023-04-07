@@ -51,7 +51,7 @@ export function BinaryResolutionOrChance(props: {
         <>
           <div className={textColor}>
             <animated.div>
-              {spring.interpolate((val) => formatPercent(val))}
+              {spring.to((val) => formatPercent(val))}
             </animated.div>
           </div>
           <div className={clsx(textColor, 'text-base')}>chance</div>
@@ -136,7 +136,7 @@ export function PseudoNumericResolutionOrExpectation(props: {
         <>
           <Tooltip text={value.toFixed(2)} placement="bottom">
             <animated.div>
-              {spring.interpolate((val) => formatLargeNumber(val))}
+              {spring.to((val) => formatLargeNumber(val))}
             </animated.div>
           </Tooltip>
           <div className="text-base">expected</div>
@@ -158,9 +158,7 @@ export function StonkPrice(props: {
     <Row className={clsx('text-ink-1000 items-baseline text-3xl', className)}>
       <Row>
         {ENV_CONFIG.moneyMoniker}
-        <animated.div>
-          {spring.interpolate((val) => val.toFixed(2))}
-        </animated.div>
+        <animated.div>{spring.to((val) => val.toFixed(2))}</animated.div>
       </Row>
       <div className="ml-2 text-base">per share</div>
     </Row>

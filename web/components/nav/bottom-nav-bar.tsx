@@ -151,9 +151,7 @@ function NavBarItem(props: {
               noLink
             />
           </div>
-          <animated.div>
-            {balance.interpolate((b) => formatMoney(b))}
-          </animated.div>
+          <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
         </Col>
       </Link>
     )
