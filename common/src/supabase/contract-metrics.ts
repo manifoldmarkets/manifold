@@ -183,7 +183,7 @@ export async function getContractMetricsForContractId(
       .select('*')
       .eq('contract_id', contractId)
       .eq(`data->hasNoShares`, true)
-      .order(`data->totalShares->NO` as any, { ascending: false })
+      .order(`data->totalShares->NO` as any, { ascending: true })
 
     q = q
       .eq(`data->hasYesShares`, true)
