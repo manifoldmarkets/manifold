@@ -69,14 +69,15 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
   }
   const firebaseUser = await admin.auth().getUser(auth.uid)
   const caller = await getUser(auth.uid)
-
-  const resolutionParams = getResolutionParams(contract, req.body)
+  
+  const isClosed = contract.closeTime && contract.closeTime < Date.now()
+  const trustworthyResolvable = isTrustworthy(caller?.username) && isClosed
 
   if (
     creatorId !== auth.uid &&
     !isManifoldId(auth.uid) &&
     !isAdmin(firebaseUser.email) &&
-    !isTrustworthy(caller?.username)
+    !trustworthyResolvable
   )
     throw new APIError(403, 'User is not creator of contract')
 
@@ -85,6 +86,7 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
   const creator = await getUser(creatorId)
   if (!creator) throw new APIError(500, 'Creator not found')
 
+  const resolutionParams = getResolutionParams(contract, req.body)
   return await resolveMarketHelper(contract, creator, resolutionParams)
 })
 

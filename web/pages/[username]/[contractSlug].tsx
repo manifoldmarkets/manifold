@@ -223,7 +223,7 @@ export function ContractPageContent(props: {
   const trustworthy = isTrustworthy(user?.username)
 
   const [showResolver, setShowResolver] = useState(
-    (isCreator || isAdmin || trustworthy) &&
+    (isCreator || isAdmin || (trustworthy && isClosed)) &&
       !isResolved &&
       (closeTime ?? 0) < Date.now() &&
       outcomeType !== 'STONK'
