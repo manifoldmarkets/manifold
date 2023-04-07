@@ -1107,7 +1107,6 @@ export const createContractResolvedNotifications = async (
           : '.'
       const profit = Math.round(userPayout - userInvestment)
       const profitPercent = Math.round((profit / userInvestment) * 100)
-
       const profitString = ` You made M${getMoneyNumber(
         profit
       )} (+${profitPercent}%)`
@@ -1121,7 +1120,7 @@ export const createContractResolvedNotifications = async (
         `Resolved: ${resolutionText}.` +
           (userInvestment === 0 || outcome === 'CANCEL'
             ? ''
-            : (userPayout === 0 ? lossString : profitString) + comparison)
+            : (profit > 0 ? profitString : lossString) + comparison)
       )
     }
   }
