@@ -5,10 +5,16 @@ create or replace view public_open_contracts as (
       and visibility = 'public'
       and close_time > now() + interval '10 minutes'
   );
+create or replace view public_contracts as (
+    select *
+    from contracts
+    where visibility = 'public'
+    );
 create or replace view listed_open_contracts as (
     select *
     from contracts
     where resolution_time is null
+--    row level security prevents the 'private' contracts from being returned
       and visibility != 'unlisted'
       and close_time > now() + interval '10 minutes'
   );

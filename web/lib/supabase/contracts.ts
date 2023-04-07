@@ -24,12 +24,13 @@ export const getContract = async (id: string) => {
   return data && data.length > 0 ? (data[0].data as Contract) : null
 }
 
+// Only fetches contracts with 'public' visibility
 export const getContracts = async (options: {
   limit: number
   beforeTime?: number
   order?: 'asc' | 'desc'
 }) => {
-  let q = selectJson(db, 'contracts')
+  let q = selectJson(db, 'public_contracts')
   q = q.order('created_time', {
     ascending: options?.order === 'asc',
   } as any)
