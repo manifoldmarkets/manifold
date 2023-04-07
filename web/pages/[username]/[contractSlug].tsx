@@ -55,7 +55,6 @@ import { BetFilter } from 'web/lib/firebase/bets'
 import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import {
   Contract,
-  deleteContract,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
@@ -64,7 +63,7 @@ import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/contracts'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import { Button } from 'web/components/buttons/button'
+import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -79,8 +78,10 @@ export async function getStaticProps(ctx: {
 }) {
   const { contractSlug } = ctx.params
   const contract = (await getContractFromSlug(contractSlug, 'admin')) ?? null
+
   // No contract found
-  if (contract === null) return { props: { contractSlug, visibility: null } }
+  if (contract === null || contract.deleted)
+    return { props: { contractSlug, visibility: null } }
 
   // Private markets
   const { visibility } = contract
@@ -417,16 +418,7 @@ export function ContractPageContent(props: {
               isResolved &&
               resolution === 'CANCEL' &&
               (!uniqueBettorCount || uniqueBettorCount < 10) && (
-                <Button
-                  className="self-start"
-                  onClick={() =>
-                    deleteContract(contract.id).then(() =>
-                      window.location.reload()
-                    )
-                  }
-                >
-                  Delete market
-                </Button>
+                <DeleteMarketButton contractId={contract.id} />
               )}
             {isCreator && !isResolved && !isClosed && (
               <>

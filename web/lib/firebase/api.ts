@@ -224,3 +224,9 @@ export function createCommentOnContract(params: {
 }) {
   return call(getApiUrl('createcomment'), 'POST', params)
 }
+
+export function deleteMarket(params: { contractId: string }) {
+  return call(getApiUrl('delete-market'), 'POST', params) as Promise<{
+    status: 'success'
+  }>
+}

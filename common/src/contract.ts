@@ -67,6 +67,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   lastBetTime?: number
   lastCommentTime?: number
   closeTime?: number // When no more trading is allowed
+  deleted?: boolean // If true, don't show market anywhere.
 
   isResolved: boolean
   resolutionTime?: number // When the contract creator resolved the market
