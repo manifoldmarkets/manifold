@@ -48,6 +48,7 @@ import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
 import { createDebate } from './create-debate'
 import { auctionbid } from './auction-bid'
+import { supabasesearchcontracts } from './supabase-search-contract'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -121,6 +122,7 @@ app.post('/completequest', ...apiRoute(completequest))
 app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
 app.post('/create-debate', ...apiRoute(createDebate))
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
+app.post('/supabasesearchcontracts',...apiRoute(supabasesearchcontracts))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)
 app.post(
@@ -128,4 +130,4 @@ app.post(
   allowCors,
   express.raw({ type: '*/*' }),
   stripewebhook
-)
+))

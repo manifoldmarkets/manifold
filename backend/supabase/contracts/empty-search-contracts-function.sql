@@ -32,53 +32,9 @@ END IF;
 sql_query := FORMAT(
   ' %s %s ',
   base_query,
-  generate_empty_sort_query(contract_sort, offset_n, limit_n)
+  generate_sort_query(contract_sort, offset_n, limit_n, true)
 );
 RETURN QUERY EXECUTE sql_query;
 END;
 $$ LANGUAGE plpgsql;
 -- generates latter half of search query
-CREATE OR REPLACE FUNCTION generate_empty_sort_query(
-    contract_sort TEXT,
-    offset_n INTEGER,
-    limit_n INTEGER
-  ) RETURNS TEXT AS $$
-DECLARE sql_query TEXT;
-BEGIN sql_query := FORMAT(
-  '
-  ORDER BY CASE
-      %L
-      WHEN '' relevance '' THEN popularity_score
-    END DESC NULLS LAST,
-    CASE
-      %L
-      WHEN '' score '' THEN popularity_score
-      WHEN '' daily - score '' THEN (data->>'' dailyScore '')::numeric
-      WHEN '' 24 - hour - vol '' THEN (data->>'' volume24Hours '')::numeric
-      WHEN '' liquidity '' THEN (data->>'' elasticity '')::numeric
-      WHEN '' last - updated '' THEN (data->>'' lastUpdatedTime '')::numeric
-    END DESC NULLS LAST,
-    CASE
-      %L
-      WHEN '' most - popular '' THEN (data->>'' uniqueBettorCount '')::integer
-    END DESC NULLS LAST,
-    CASE
-      %L
-      WHEN '' newest '' THEN created_time
-      WHEN '' resolve - date '' THEN resolution_time
-    END DESC NULLS LAST,
-    CASE
-      WHEN %L = '' close - date '' THEN close_time
-    END ASC NULLS LAST OFFSET %s
-  LIMIT %s ',
-  contract_sort,
-  contract_sort,
-  contract_sort,
-  contract_sort,
-  contract_sort,
-  offset_n,
-  limit_n
-);
-RETURN sql_query;
-END;
-$$ LANGUAGE plpgsql;
