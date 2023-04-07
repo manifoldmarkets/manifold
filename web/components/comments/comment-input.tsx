@@ -131,7 +131,7 @@ export function AnswerCommentInput(props: {
         <div className="relative w-full pt-1">
           <ContractCommentInput
             contract={contract}
-            parentAnswerOutcome={answerResponse.number.toString()}
+            replyToAnswerId={answerResponse.id}
             replyTo={replyTo}
             onSubmitComment={onCancelAnswerResponse}
           />

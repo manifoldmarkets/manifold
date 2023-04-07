@@ -25,6 +25,8 @@ import { Col } from '../layout/col'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { isIOS } from 'web/lib/util/device'
 import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
+import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { animated } from '@react-spring/web'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -126,6 +128,7 @@ function NavBarItem(props: {
   const { item, currentPage, children, user } = props
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
   const [touched, setTouched] = useState(false)
+  const balance = useAnimatedNumber(user?.balance ?? 0)
   if (item.name === 'Profile' && user) {
     return (
       <Link
@@ -148,7 +151,7 @@ function NavBarItem(props: {
               noLink
             />
           </div>
-          {formatMoney(user.balance)}
+          <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
         </Col>
       </Link>
     )

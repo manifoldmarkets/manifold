@@ -15,7 +15,7 @@ import { SearchProvider } from 'web/components/search/search-context'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
-import { Major_Mono_Display, Readex_Pro } from 'next/font/google'
+import { Major_Mono_Display, Figtree } from 'next/font/google'
 import clsx from 'clsx'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
@@ -27,10 +27,10 @@ const logoFont = Major_Mono_Display({
   subsets: ['latin'],
 })
 
-const mainFont = Readex_Pro({
-  weight: ['300', '400', '600', '700'],
+const mainFont = Figtree({
+  weight: ['300', '400', '500', '600', '700'],
   variable: '--font-main',
-  subsets: ['latin-ext'],
+  subsets: ['latin'],
 })
 
 function firstLine(msg: string) {
@@ -117,7 +117,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
       </Head>
       <div
         className={clsx(
-          'font-readex-pro contents font-normal',
+          'font-figtree contents font-normal',
           logoFont.variable,
           mainFont.variable
         )}

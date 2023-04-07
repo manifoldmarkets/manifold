@@ -249,6 +249,9 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
     const user = userDoc.data() as User
 
+    if (user.isBannedFromPosting)
+      throw new APIError(400, 'User banned from creating markets.')
+
     if (ante > user.balance)
       throw new APIError(400, `Balance must be at least ${ante}.`)
 

@@ -28,6 +28,8 @@ import { db } from 'web/lib/supabase/db'
 import { useHasSeen } from 'web/hooks/use-has-seen'
 import { InfoTooltip } from './widgets/info-tooltip'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { animated } from '@react-spring/web'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
@@ -72,6 +74,8 @@ export const DailyProfit = memo(function DailyProfit(props: {
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
       useHasSeen(user, [DAILY_PROFIT_CLICK_EVENT], 'day')
     : [true, () => {}]
+  const balance = useAnimatedNumber(user?.balance ?? 0)
+
   if (!user) return <div />
 
   return (
@@ -89,7 +93,9 @@ export const DailyProfit = memo(function DailyProfit(props: {
       >
         <Row>
           <Col className="justify-start">
-            <div className={clsx()}>{formatMoney(user.balance)}</div>
+            <div>
+              <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
+            </div>
             <div className="text-ink-600 text-sm ">Balance</div>
           </Col>
 

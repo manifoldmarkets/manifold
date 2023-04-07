@@ -155,7 +155,7 @@ export function CloseOrResolveTime(props: {
 
   if (!!closeTime || !!isResolved) {
     return (
-      <Row className="select-none items-center font-light">
+      <Row className="select-none items-center">
         {isResolved && resolutionTime && (
           <DateTimeTooltip
             className="whitespace-nowrap"
@@ -197,7 +197,7 @@ function PublicMarketGroups(props: { contract: Contract }) {
             {groupsToDisplay.length ? (
               <DotsCircleHorizontalIcon className="text-ink-400 hover:text-ink-400/75 h-6" />
             ) : (
-              <span className="bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-sm font-light">
+              <span className="bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-sm">
                 <PlusIcon className="mr-1 h-4 w-4" /> Group
               </span>
             )}
@@ -227,7 +227,7 @@ function GroupDisplay(props: {
     <Link prefetch={false} href={groupPath(groupToDisplay.slug)} legacyBehavior>
       <a
         className={clsx(
-          'w-fit max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-sm font-light sm:max-w-[250px]',
+          'w-fit max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-sm sm:max-w-[250px]',
           isPrivate
             ? 'text-ink-1000 bg-indigo-200 dark:bg-indigo-700'
             : 'bg-ink-400 text-ink-0'

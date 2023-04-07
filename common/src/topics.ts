@@ -3,8 +3,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🤖 AI',
     '🪙 Crypto',
     '🌍🌡️ Climate',
-    '🏃 Health',
-    '🏥 Medicine',
     '🧬 Biotech',
     '💻 Programming',
     '🔬 Science',
@@ -46,7 +44,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '💵 Finance',
     '💰 Economics',
     '🚀 Startups',
-    '👔 Careers',
     '🚘 Elon musk',
   ],
 
@@ -72,6 +69,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🌍 Middle East',
   ],
   '👥 Communities': [
+    '🤓 CGP Gray',
     '📜 ACX',
     '💗 Effective Altruism',
     '🎮 Destiny.gg',
@@ -81,6 +79,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
 }
 
 const GROUP_IDs: { [key: string]: string } = {
+  'CGP Gray': 'yXIziLaaVxHFOPG1aMrJ',
   Politics: 'UCnpxVUdLOZYgoMsDlHD',
   Technology: 'IlzY3moWwOcpsVZXCVej',
   Science: 'XMhZ5LbQoLMZiOpQJRnj',

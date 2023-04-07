@@ -107,7 +107,7 @@ export function GroupSelector(props: {
                       )}
                       <span className={clsx('ml-5 mt-1 block truncate', selected && 'font-semibold')}>
                         {group.name}
-                        <p className="text-ink-400 text-xs font-light italic">{group.slug}</p>
+                        <p className="text-ink-400 text-xs italic">{group.slug}</p>
                       </span>
                     </>
                   )}

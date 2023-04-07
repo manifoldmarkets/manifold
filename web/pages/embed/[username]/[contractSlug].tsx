@@ -2,12 +2,7 @@ import { Bet } from 'common/bet'
 import { Contract, contractPath } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useEffect } from 'react'
-import {
-  BinaryResolutionOrChance,
-  ContractCard,
-  NumericResolutionOrExpectation,
-  PseudoNumericResolutionOrExpectation,
-} from 'web/components/contract/contract-card'
+import { ContractCard } from 'web/components/contract/contract-card'
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import {
   BinaryContractChart,
@@ -34,6 +29,13 @@ import { getBets, getBetFields } from 'web/lib/supabase/bets'
 import { NoSEO } from 'web/components/NoSEO'
 import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
 import { useIsDarkMode } from 'web/hooks/dark-mode-context'
+import { StonkContractChart } from 'web/components/charts/contract/stonk'
+import {
+  BinaryResolutionOrChance,
+  NumericResolutionOrExpectation,
+  PseudoNumericResolutionOrExpectation,
+  StonkPrice,
+} from 'web/components/contract/contract-price'
 
 type HistoryData = { bets?: Bet[]; points?: HistoryPoint<Partial<Bet>>[] }
 
@@ -180,6 +182,15 @@ const ContractChart = (props: {
       )
     case 'NUMERIC':
       return <NumericContractChart {...rest} contract={contract} />
+    case 'STONK':
+      return (
+        <StonkContractChart
+          {...rest}
+          betPoints={data?.points ?? []}
+          viewScaleProps={viewScale}
+          contract={contract}
+        />
+      )
     default:
       throw new Error('Contract outcome type not supported for chart')
   }
@@ -237,6 +248,9 @@ function ContractSmolView(props: {
 
         {outcomeType === 'NUMERIC' && (
           <NumericResolutionOrExpectation contract={contract} />
+        )}
+        {outcomeType === 'STONK' && (
+          <StonkPrice className="!flex-col !gap-0" contract={contract} />
         )}
       </Row>
       <Details contract={contract} />

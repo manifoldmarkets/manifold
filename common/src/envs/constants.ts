@@ -29,6 +29,13 @@ export function isAdmin(email?: string) {
   return ENV_CONFIG.adminEmails.includes(email)
 }
 
+export function isTrustworthy(username?: string) {
+  if (!username) {
+    return false
+  }
+  return CORE_USERNAMES.includes(username)
+}
+
 export function isManifoldId(userId: string) {
   return userId === 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2'
 }
@@ -83,6 +90,7 @@ export const BOT_USERNAMES = [
   'Bot',
   'Catnee',
   'Mason',
+  'VersusBot',
 ]
 
 export const CORE_USERNAMES = [

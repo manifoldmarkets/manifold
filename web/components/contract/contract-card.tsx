@@ -1,4 +1,4 @@
-import { memo, ReactNode, useState } from 'react'
+import { memo, ReactNode } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -6,34 +6,13 @@ import { ClockIcon, StarIcon, UserIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
 
 import { Row } from '../layout/row'
-import { formatLargeNumber, formatMoney } from 'common/util/format'
-import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
+import { formatMoney } from 'common/util/format'
 import { Col } from '../layout/col'
-import {
-  BinaryContract,
-  Contract,
-  CPMMContract,
-  FreeResponseContract,
-  MultipleChoiceContract,
-  NumericContract,
-  PseudoNumericContract,
-  contractPath,
-  StonkContract,
-} from 'common/contract'
-import {
-  BinaryContractOutcomeLabel,
-  CancelLabel,
-  FreeResponseOutcomeLabel,
-  NumericValueLabel,
-} from '../outcome-label'
-import { getProbability } from 'common/calculate'
+import { Contract, contractPath, CPMMContract } from 'common/contract'
 import { MiscDetails, ShowTime } from './contract-details'
-import { getValueFromBucket } from 'common/calculate-dpm'
-import { getTextColor, QuickBet, QuickOutcomeView } from '../bet/quick-bet'
+import { QuickBet, QuickOutcomeView } from '../bet/quick-bet'
 import { useUser } from 'web/hooks/use-user'
-import { track } from 'web/lib/service/analytics'
-import { trackCallback } from 'web/lib/service/analytics'
-import { getMappedValue } from 'common/pseudo-numeric'
+import { track, trackCallback } from 'web/lib/service/analytics'
 import { Tooltip } from '../widgets/tooltip'
 import { Card } from '../widgets/card'
 import { useContract } from 'web/hooks/use-contracts'
@@ -57,9 +36,8 @@ import { CommentsButton } from '../swipe/swipe-comments'
 import { BetRow } from '../bet/bet-row'
 import { fromNow } from 'web/lib/util/time'
 import Router from 'next/router'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { animated, useSpring } from '@react-spring/web'
 import { STONK_NO, STONK_YES } from 'common/stonk'
+
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
   showTime?: ShowTime
@@ -300,142 +278,6 @@ function DescriptionRow(props: { description: string | JSONContent }) {
       <div className="break-anywhere line-clamp-6 text-sm font-thin">
         {descriptionString}
       </div>
-    </Row>
-  )
-}
-
-// TODO: move the "resolution or chance" components out of this file
-
-export function BinaryResolutionOrChance(props: {
-  contract: BinaryContract
-  className?: string
-}) {
-  const { contract, className } = props
-  const { resolution } = contract
-  const textColor = getTextColor(contract)
-
-  const prob = getBinaryProbPercent(contract)
-
-  return (
-    <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
-      {resolution ? (
-        <>
-          <div className={clsx('text-base font-light')}>
-            Resolved
-            {resolution === 'MKT' && ' as '}
-          </div>
-          <BinaryContractOutcomeLabel
-            contract={contract}
-            resolution={resolution}
-          />
-        </>
-      ) : (
-        <>
-          <div className={textColor}>{prob}</div>
-          <div className={clsx(textColor, 'text-base font-light')}>chance</div>
-        </>
-      )}
-    </Row>
-  )
-}
-
-export function FreeResponseResolutionOrChance(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
-}) {
-  const { contract } = props
-  const { resolution } = contract
-  if (!(resolution === 'CANCEL' || resolution === 'MKT')) return null
-
-  return (
-    <Row className="gap-2 text-3xl">
-      <div className={clsx('text-base font-light')}>Resolved</div>
-
-      <FreeResponseOutcomeLabel
-        contract={contract}
-        resolution={resolution}
-        truncate="none"
-      />
-    </Row>
-  )
-}
-
-export function NumericResolutionOrExpectation(props: {
-  contract: NumericContract
-}) {
-  const { contract } = props
-  const { resolution } = contract
-
-  const resolutionValue =
-    contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)
-
-  // All distributional numeric markets are resolved now
-  return (
-    <Row className="items-baseline gap-2 text-3xl">
-      <div className={clsx('text-base font-light')}>Resolved</div>
-      {resolution === 'CANCEL' ? (
-        <CancelLabel />
-      ) : (
-        <NumericValueLabel value={resolutionValue} />
-      )}
-    </Row>
-  )
-}
-
-export function PseudoNumericResolutionOrExpectation(props: {
-  contract: PseudoNumericContract
-  className?: string
-}) {
-  const { contract, className } = props
-  const { resolution, resolutionValue, resolutionProbability } = contract
-
-  const value = resolution
-    ? resolutionValue
-      ? resolutionValue
-      : getMappedValue(contract, resolutionProbability ?? 0)
-    : getMappedValue(contract, getProbability(contract))
-
-  return (
-    <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
-      {resolution ? (
-        <>
-          <div className="text-base font-light">Resolved</div>
-          {resolution === 'CANCEL' ? (
-            <CancelLabel />
-          ) : (
-            <>
-              <Tooltip text={value.toFixed(2)} placement="bottom">
-                <NumericValueLabel value={value} />
-              </Tooltip>
-            </>
-          )}
-        </>
-      ) : (
-        <>
-          <Tooltip text={value.toFixed(2)} placement="bottom">
-            {formatLargeNumber(value)}
-          </Tooltip>
-          <div className="text-base font-light">expected</div>
-        </>
-      )}
-    </Row>
-  )
-}
-export function StonkPrice(props: {
-  contract: StonkContract
-  className?: string
-}) {
-  const { contract, className } = props
-
-  const value = getMappedValue(contract, getProbability(contract))
-  const [initialProb] = useState(getProbability(contract))
-  const spring = useSpring({ val: value, from: { val: initialProb } })
-  return (
-    <Row className={clsx('items-baseline text-3xl', className)}>
-      {ENV_CONFIG.moneyMoniker}
-      <animated.div>
-        {spring.val.interpolate((val) => val.toFixed(2))}
-      </animated.div>
-      <div className="ml-2 text-base font-light">per share</div>
     </Row>
   )
 }

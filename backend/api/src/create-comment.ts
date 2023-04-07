@@ -6,6 +6,7 @@ import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
 import { removeUndefinedProps } from 'common/util/object'
 import { marked } from 'marked'
+import { Comment } from 'common/comment'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -35,6 +36,8 @@ const postSchema = z.object({
   content: contentSchema.optional(),
   html: z.string().optional(),
   markdown: z.string().optional(),
+  replyToCommentId: z.string().optional(),
+  replyToAnswerId: z.string().optional(),
 })
 
 const MAX_COMMENT_JSON_LENGTH = 20000
@@ -43,17 +46,25 @@ const MAX_COMMENT_JSON_LENGTH = 20000
 // Replies, posts, chats are not supported yet.
 export const createcomment = authEndpoint(async (req, auth) => {
   const firestore = admin.firestore()
-  const { contractId, content, html, markdown } = validate(postSchema, req.body)
+  const {
+    contractId,
+    content,
+    html,
+    markdown,
+    replyToCommentId,
+    replyToAnswerId,
+  } = validate(postSchema, req.body)
 
   const creator = await getUser(auth.uid)
   const contract = await getContract(contractId)
 
-  if (!creator) {
+  if (!creator)
     throw new APIError(400, 'No user exists with the authenticated user ID.')
-  }
-  if (!contract) {
+  if (creator.isBannedFromPosting)
+    throw new APIError(400, 'User banned from commented.')
+
+  if (!contract)
     throw new APIError(400, 'No contract exists with the given ID.')
-  }
 
   let contentJson = null
   if (content) {
@@ -93,7 +104,9 @@ export const createcomment = authEndpoint(async (req, auth) => {
     contractId: contractId,
     contractSlug: contract.slug,
     contractQuestion: contract.question,
-  })
+    replyToCommentId: replyToCommentId,
+    answerOutcome: replyToAnswerId,
+  } as Comment)
 
   await ref.set(comment)
 

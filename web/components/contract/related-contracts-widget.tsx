@@ -51,12 +51,6 @@ export const RelatedContractsList = memo(function RelatedContractsList(props: {
           />
         )}
       </div>
-      {loadMore && (
-        <VisibilityObserver
-          onVisibilityUpdated={onVisibilityUpdated}
-          className="pointer-events-none w-full flex-1 select-none"
-        />
-      )}
     </Col>
   )
 })

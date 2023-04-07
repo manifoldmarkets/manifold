@@ -34,6 +34,10 @@ export async function call(url: string, method: string, params?: any) {
   })
 }
 
+export function callApi(apiEndpoint: string, params?: any, method = 'POST') {
+  return call(getApiUrl(apiEndpoint), method, params)
+}
+
 export function createAnswer(params: any) {
   return call(getApiUrl('createanswer'), 'POST', params)
 }
@@ -211,6 +215,15 @@ export function updateUserEmbedding(params: { userId: string }) {
 
 export function createDebate(params: { topic1: string; topic2: string }) {
   return call(getApiUrl('create-debate'), 'POST', params) as Promise<Contract>
+}
+
+export function createCommentOnContract(params: {
+  contractId: string
+  content: JSONContent
+  replyToCommentId?: string
+  replyToAnswerId?: string
+}) {
+  return call(getApiUrl('createcomment'), 'POST', params)
 }
 
 export function supabaseSearchContracts(params: {

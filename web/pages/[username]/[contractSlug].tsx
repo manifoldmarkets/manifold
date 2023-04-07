@@ -4,7 +4,7 @@ import { Answer } from 'common/answer'
 import { visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
-import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
 import { first } from 'lodash'
 import Head from 'next/head'
@@ -220,9 +220,10 @@ export function ContractPageContent(props: {
   const isAdmin = useAdmin()
   const isCreator = creatorId === user?.id
   const isClosed = closeTime && closeTime < Date.now()
+  const trustworthy = isTrustworthy(user?.username)
 
   const [showResolver, setShowResolver] = useState(
-    (isCreator || isAdmin) &&
+    (isCreator || isAdmin || trustworthy) &&
       !isResolved &&
       (closeTime ?? 0) < Date.now() &&
       outcomeType !== 'STONK'
@@ -337,7 +338,7 @@ export function ContractPageContent(props: {
                     text="Traders"
                     placement="bottom"
                     noTap
-                    className="flex flex-row items-center gap-1 font-light"
+                    className="flex flex-row items-center gap-1"
                   >
                     <UserIcon className="text-ink-500 h-4 w-4" />
                     <div>{uniqueBettorCount ?? 0}</div>
@@ -378,7 +379,7 @@ export function ContractPageContent(props: {
                 />
               ) : outcomeType === 'BINARY' ? (
                 <ResolutionPanel
-                  isAdmin={!!isAdmin}
+                  isAdmin={isAdmin || trustworthy}
                   creator={user}
                   isCreator={!isAdmin}
                   contract={contract}

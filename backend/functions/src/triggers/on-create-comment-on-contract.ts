@@ -19,39 +19,35 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import { secrets } from 'shared/secrets'
+import { HOUR_MS } from 'common/util/time'
 
 const firestore = admin.firestore()
 
-function getMostRecentCommentableBet(
-  before: number,
+export function getMostRecentCommentableBet(
+  commentCreatedTime: number,
   betsByCurrentUser: Bet[],
   commentsByCurrentUser: ContractComment[],
   answerOutcome?: string
 ) {
-  let sortedBetsByCurrentUser = betsByCurrentUser.sort(
-    (a, b) => b.createdTime - a.createdTime
-  )
-  if (answerOutcome) {
-    sortedBetsByCurrentUser = sortedBetsByCurrentUser.slice(0, 1)
-  }
-  return sortedBetsByCurrentUser
-    .filter((bet) => {
-      const { createdTime, isRedemption } = bet
-      // You can comment on bets posted in the last hour
-      const commentable = !isRedemption && before - createdTime < 60 * 60 * 1000
-      const alreadyCommented = commentsByCurrentUser.some(
-        (comment) => comment.createdTime > bet.createdTime
-      )
-      if (commentable && !alreadyCommented) {
-        if (!answerOutcome) return true
-        return answerOutcome === bet.outcome
-      }
-      return false
-    })
-    .pop()
+  const mostRecentCommentedOnBet = commentsByCurrentUser
+    .filter((c) => c.betId)
+    .sort((a, b) => b.createdTime - a.createdTime)[0]
+  const cutoffTime = mostRecentCommentedOnBet
+    ? mostRecentCommentedOnBet.createdTime
+    : commentCreatedTime - HOUR_MS
+  const mostRecentCommentableBets = betsByCurrentUser
+    .sort((a, b) => b.createdTime - a.createdTime)
+    .filter(
+      (bet) =>
+        !bet.isRedemption &&
+        (answerOutcome ? bet.outcome === answerOutcome : true) &&
+        bet.createdTime > cutoffTime &&
+        !commentsByCurrentUser.some((comment) => comment.betId === bet.id)
+    )
+  return mostRecentCommentableBets[0]
 }
 
-async function getPriorUserComments(
+export async function getPriorUserComments(
   contractId: string,
   userId: string,
   before: number
@@ -66,7 +62,7 @@ async function getPriorUserComments(
   return priorCommentsQuery.docs.map((d) => d.data() as ContractComment)
 }
 
-async function getPriorContractBets(
+export async function getPriorContractBets(
   contractId: string,
   userId: string,
   before: number
@@ -95,11 +91,6 @@ export const onCreateCommentOnContract = functions
     const contract = await getContract(contractId)
     if (!contract)
       throw new Error('Could not find contract corresponding with comment')
-
-    await change.ref.update({
-      contractSlug: contract.slug,
-      contractQuestion: contract.question,
-    })
 
     await revalidateStaticProps(contractPath(contract))
 
