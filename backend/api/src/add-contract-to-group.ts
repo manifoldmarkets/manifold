@@ -1,5 +1,10 @@
 import { Contract } from 'common/contract'
-import { CHECK_USERNAMES, isAdmin, isManifoldId } from 'common/envs/constants'
+import {
+  CHECK_USERNAMES,
+  isAdmin,
+  isManifoldId,
+  isTrustworthy,
+} from 'common/envs/constants'
 import { Group, GroupLink } from 'common/group'
 import { GroupMember } from 'common/group-member'
 import * as admin from 'firebase-admin'
@@ -73,7 +78,7 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
         userGroupRole: groupMember
           ? (groupMember.role as 'admin' | 'moderator')
           : undefined,
-        isTrustworthy: CHECK_USERNAMES.includes(user?.username ?? '_'),
+        isTrustworthy: isTrustworthy(user?.username),
       })
     ) {
       throw new APIError(
