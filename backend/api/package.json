@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "build": "yarn compile && yarn --cwd=../../common alias && yarn --cwd=../shared alias && yarn alias && yarn dist",
-    "dev": "nodemon -r tsconfig-paths/register --watch src -e ts --watch ../../common/src --watch ../shared/src --exec \"yarn build && node lib/serve.js\"",
+    "dev": "nodemon -r tsconfig-paths/register --watch src -e ts --watch ../../common/src --watch ../shared/src --exec \"yarn build && node --inspect-brk lib/serve.js\"",
     "dist": "yarn dist:prepare && yarn dist:copy",
     "dist:prepare": "rm -rf dist && mkdir -p dist/common/lib dist/backend/shared/lib dist/backend/api/lib",
     "dist:copy": "cp -R ../../common/lib/* dist/common/lib && cp -R ../shared/lib/* dist/backend/shared/lib && cp -R ./lib/* dist/backend/api/lib && cp ../../yarn.lock dist && cp package.json dist",
