@@ -14,9 +14,7 @@ let amplitudeLib: ReturnType<typeof loadAmplitude> | undefined
 const initAmplitude = async () => {
   if (amplitudeLib == null) {
     const amplitude = await (amplitudeLib = loadAmplitude())
-    amplitude.init(ENV_CONFIG.amplitudeApiKey ?? '', undefined, {
-      includeReferrer: true,
-    })
+    amplitude.init(ENV_CONFIG.amplitudeApiKey ?? '', undefined)
     return amplitude
   } else {
     return await amplitudeLib
