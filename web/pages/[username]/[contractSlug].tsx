@@ -53,13 +53,17 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { BetFilter } from 'web/lib/firebase/bets'
 import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
-import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
+import {
+  Contract,
+  tradingAllowed,
+} from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/contracts'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
+import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -74,8 +78,10 @@ export async function getStaticProps(ctx: {
 }) {
   const { contractSlug } = ctx.params
   const contract = (await getContractFromSlug(contractSlug, 'admin')) ?? null
+
   // No contract found
-  if (contract === null) return { props: { contractSlug, visibility: null } }
+  if (contract === null || contract.deleted)
+    return { props: { contractSlug, visibility: null } }
 
   // Private markets
   const { visibility } = contract
@@ -356,6 +362,13 @@ export function ContractPageContent(props: {
                 betPoints={betPoints}
               />
             </Col>
+
+            {isCreator &&
+              isResolved &&
+              resolution === 'CANCEL' &&
+              (!uniqueBettorCount || uniqueBettorCount < 10) && (
+                <DeleteMarketButton className="self-end" contractId={contract.id} />
+              )}
 
             <ContractDescription
               className="mt-2 xl:mt-6"

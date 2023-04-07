@@ -348,6 +348,7 @@ function ContractSearchControls(props: {
     ...(additionalFilter?.facetFilters ?? []),
   ]
   const facetFilters = [
+    'deleted:-true',
     ...additionalFilters,
     ...(!query ? additionalFilter?.nonQueryFacetFilters ?? [] : []),
     additionalFilter?.groupSlug
