@@ -40,9 +40,6 @@ export async function maybeAuthedCall(
   params?: any
 ) {
   const user = auth.currentUser
-  // if (user == null) {
-  //   throw new Error('Must be signed in to make API calls.')
-  // }
   const token = await user?.getIdToken()
   const req = new Request(url, {
     headers: {
