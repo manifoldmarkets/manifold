@@ -29,10 +29,14 @@ export function ContractDescription(props: {
   className?: string
 }) {
   const { contract, className, toggleResolver } = props
+  const { creatorId, closeTime } = contract
+
   const isAdmin = useAdmin()
   const user = useUser()
-  const isCreator = user?.id === contract.creatorId
-  const trustworthy = isTrustworthy(user?.username)
+  const isCreator = user?.id === creatorId
+  const isClosed = !!(closeTime && closeTime < Date.now())
+  const trustworthy = isTrustworthy(user?.username) && isClosed
+
   const showContractActions =
     user &&
     (isCreator || isAdmin || trustworthy) &&
