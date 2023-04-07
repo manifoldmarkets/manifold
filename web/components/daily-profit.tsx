@@ -95,7 +95,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
           <Col className="justify-start">
             <div>
               <animated.div>
-                {balance.interpolate((b) => formatMoney(b))}
+                {balance.to((b) => formatMoney(b))}
               </animated.div>
             </div>
             <div className="text-ink-600 text-sm ">Balance</div>

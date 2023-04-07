@@ -28,7 +28,7 @@ export function ProfileSummary(props: { user: User }) {
         <div className="flex items-center text-sm">
           <span className="mr-2">
             <animated.div>
-              {balance.interpolate((b) => formatMoney(b))}
+              {balance.to((b) => formatMoney(b))}
             </animated.div>
           </span>
           <button
