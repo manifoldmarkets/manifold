@@ -83,6 +83,7 @@ export const BOT_USERNAMES = [
   'Bot',
   'Catnee',
   'Mason',
+  'VersusBot',
 ]
 
 export const CORE_USERNAMES = [
