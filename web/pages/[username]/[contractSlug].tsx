@@ -363,6 +363,13 @@ export function ContractPageContent(props: {
               />
             </Col>
 
+            {isCreator &&
+              isResolved &&
+              resolution === 'CANCEL' &&
+              (!uniqueBettorCount || uniqueBettorCount < 10) && (
+                <DeleteMarketButton className="self-end" contractId={contract.id} />
+              )}
+
             <ContractDescription
               className="mt-2 xl:mt-6"
               contract={contract}
@@ -414,12 +421,6 @@ export function ContractPageContent(props: {
               />
             )}
 
-            {isCreator &&
-              isResolved &&
-              resolution === 'CANCEL' &&
-              (!uniqueBettorCount || uniqueBettorCount < 10) && (
-                <DeleteMarketButton contractId={contract.id} />
-              )}
             {isCreator && !isResolved && !isClosed && (
               <>
                 {showResolver && <Spacer h={4} />}

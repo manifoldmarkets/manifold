@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { deleteMarket } from 'web/lib/firebase/api'
 import { Button } from './button'
 
@@ -7,12 +8,18 @@ export const DeleteMarketButton = (props: {
 }) => {
   const { contractId, className } = props
 
+  const [loading, setLoading] = useState(false)
+
   return (
     <Button
       className={className}
-      onClick={() =>
+      color="red"
+      loading={loading}
+      disabled={loading}
+      onClick={() => {
+        setLoading(true)
         deleteMarket({ contractId }).then(() => window.location.reload())
-      }
+      }}
     >
       Delete market
     </Button>
