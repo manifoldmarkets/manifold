@@ -25,6 +25,7 @@ import { floatingEqual } from 'common/util/math'
 import { redeemShares } from './redeem-shares'
 import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
+import { createLimitBetCanceledNotification } from 'shared/create-notification'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -205,12 +206,12 @@ export const placebet = authEndpoint(async (req, auth) => {
       log(`Updated contract ${contract.slug} properties - auth ${auth.uid}.`)
     }
 
-    return { contract, betId: betDoc.id, makers, newBet }
+    return { contract, betId: betDoc.id, makers, newBet, ordersToCancel, user }
   })
 
   log(`Main transaction finished - auth ${auth.uid}.`)
 
-  const { contract, newBet, makers } = result
+  const { contract, newBet, makers, ordersToCancel, user } = result
   const { mechanism } = contract
 
   if (
@@ -223,6 +224,19 @@ export const placebet = authEndpoint(async (req, auth) => {
     ])
     await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
     log(`Share redemption transaction finished - auth ${auth.uid}.`)
+  }
+  if (ordersToCancel) {
+    await Promise.all(
+      ordersToCancel.map((order) => {
+        createLimitBetCanceledNotification(
+          user,
+          order.userId,
+          order,
+          makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
+          contract
+        )
+      })
+    )
   }
 
   return { ...newBet, betId: result.betId }

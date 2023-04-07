@@ -603,8 +603,61 @@ export const createBetFillNotification = async (
     } as BetFillData,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
+}
 
-  // maybe TODO: send email notification to bet creator
+export const createLimitBetCanceledNotification = async (
+  fromUser: User,
+  toUserId: string,
+  limitBet: LimitBet,
+  fillAmount: number,
+  contract: Contract
+) => {
+  const privateUser = await getPrivateUser(toUserId)
+  if (!privateUser) return
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    'bet_fill'
+  )
+  if (!sendToBrowser) return
+
+  const remainingAmount =
+    limitBet.orderAmount -
+    (sum(limitBet.fills.map((f) => f.amount)) + fillAmount)
+  const limitAt =
+    contract.outcomeType === 'PSEUDO_NUMERIC'
+      ? limitBet.limitProb * (contract.max - contract.min) + contract.min
+      : Math.round(limitBet.limitProb * 100) + '%'
+
+  const notificationRef = firestore
+    .collection(`/users/${toUserId}/notifications`)
+    .doc()
+  const notification: Notification = {
+    id: notificationRef.id,
+    userId: toUserId,
+    reason: 'limit_order_cancelled',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: limitBet.id,
+    sourceType: 'bet',
+    sourceUpdateType: 'updated',
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceText: remainingAmount.toString(),
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractTitle: contract.question,
+    sourceContractSlug: contract.slug,
+    sourceContractId: contract.id,
+    data: {
+      creatorOutcome: limitBet.outcome,
+      probability: limitBet.limitProb,
+      limitOrderTotal: limitBet.orderAmount,
+      limitOrderRemaining: remainingAmount,
+      limitAt: limitAt.toString(),
+      outcomeType: contract.outcomeType,
+    } as BetFillData,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
 }
 
 export const createReferralNotification = async (
