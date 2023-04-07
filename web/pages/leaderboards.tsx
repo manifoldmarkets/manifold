@@ -157,7 +157,7 @@ export default function Leaderboards(props: {
             entries={topTraderEntries}
             columns={[
               {
-                header: 'Total profit',
+                header: 'Profit',
                 renderCell: (user) => formatMoney(user.profitCached[period]),
               },
             ]}
@@ -184,13 +184,13 @@ export default function Leaderboards(props: {
               entries={topReferrals}
               columns={[
                 {
-                  header: 'Total referrals',
+                  header: 'Referrals',
                   renderCell: (user) => user.totalReferrals,
                 },
                 {
                   header: (
                     <span>
-                      Total profit
+                      Referred profits
                       <InfoTooltip
                         text={'Total profit earned by referred users'}
                       />
