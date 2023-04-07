@@ -53,10 +53,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { BetFilter } from 'web/lib/firebase/bets'
 import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
-import {
-  Contract,
-  tradingAllowed,
-} from 'web/lib/firebase/contracts'
+import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import Custom404 from '../404'
@@ -367,7 +364,10 @@ export function ContractPageContent(props: {
               isResolved &&
               resolution === 'CANCEL' &&
               (!uniqueBettorCount || uniqueBettorCount < 10) && (
-                <DeleteMarketButton className="self-end" contractId={contract.id} />
+                <DeleteMarketButton
+                  className="self-end"
+                  contractId={contract.id}
+                />
               )}
 
             <ContractDescription
