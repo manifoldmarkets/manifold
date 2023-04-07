@@ -158,9 +158,7 @@ export function StonkPrice(props: {
     <Row className={clsx('text-ink-1000 items-baseline text-3xl', className)}>
       <Row>
         {ENV_CONFIG.moneyMoniker}
-        <animated.div>
-          {spring.to((val) => val.toFixed(2))}
-        </animated.div>
+        <animated.div>{spring.to((val) => val.toFixed(2))}</animated.div>
       </Row>
       <div className="ml-2 text-base">per share</div>
     </Row>

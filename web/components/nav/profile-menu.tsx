@@ -27,9 +27,7 @@ export function ProfileSummary(props: { user: User }) {
         <div>{user.name}</div>
         <div className="flex items-center text-sm">
           <span className="mr-2">
-            <animated.div>
-              {balance.to((b) => formatMoney(b))}
-            </animated.div>
+            <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
           </span>
           <button
             className="hover:bg-ink-300 rounded-md p-1 ring-[1.5px] ring-inset ring-current"
