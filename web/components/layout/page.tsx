@@ -5,6 +5,8 @@ import Sidebar from '../nav/sidebar'
 import { Toaster } from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Col } from './col'
+import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
+import { useABTest } from 'web/hooks/use-ab-test'
 
 export function Page(props: {
   rightSidebar?: ReactNode
@@ -16,11 +18,20 @@ export function Page(props: {
   const { children, rightSidebar, className, hideSidebar, mainClassName } =
     props
 
+  const variant = useABTest('sign in button style', {
+    oldStyle: 'oldStyle',
+    oneTap: 'oneTap',
+  } as const)
+
   const isMobile = useIsMobile()
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
   const TOAST_BOTTOM_PADDING = isMobile ? 70 : 20
   return (
     <>
+      {variant === 'oneTap' && (
+        <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
+      )}
+
       <Col
         className={clsx(
           className,
