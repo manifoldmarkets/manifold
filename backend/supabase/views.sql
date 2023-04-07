@@ -104,7 +104,7 @@ WHERE contracts.visibility = 'public'
     and (
       can_access_private_contract(contracts.id, firebase_uid())
     )
-  )
+  );
 CREATE OR REPLACE VIEW groups_rbac AS
 SELECT *
 FROM groups
@@ -122,8 +122,6 @@ WHERE groups.data->>'privacyStatus' <> 'private'
     )
   );
 
-
-
 CREATE VIEW user_referrals AS
 SELECT
     id,
@@ -135,6 +133,30 @@ FROM
          referrer.id AS id,
          referrer.data AS data,
          COUNT(*) AS total_referrals
+     FROM
+         users AS referred
+             JOIN
+         users AS referrer ON referrer.data->>'id' = referred.data->>'referredByUserId'
+     WHERE
+             referred.data->>'referredByUserId' IS NOT NULL
+     GROUP BY
+         referrer.id) subquery
+ORDER BY
+    total_referrals DESC;
+
+CREATE VIEW user_referrals_profit AS
+SELECT
+    id,
+    data,
+    total_referrals,
+    total_referred_profit,
+    RANK() OVER (ORDER BY total_referrals DESC) AS rank
+FROM
+    (SELECT
+         referrer.id AS id,
+         referrer.data AS data,
+         COUNT(*) AS total_referrals,
+         SUM((referred.data->'profitCached'->>'allTime')::numeric) AS total_referred_profit
      FROM
          users AS referred
              JOIN

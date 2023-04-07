@@ -1006,6 +1006,15 @@ export interface Database {
           rank: number | null
         }
       }
+      user_referrals_profit: {
+        Row: {
+          id: string | null
+          data: Json | null
+          total_referrals: number | null
+          total_referred_profit: number | null
+          rank: number | null
+        }
+      }
       user_trending_contract: {
         Row: {
           close_time: string | null

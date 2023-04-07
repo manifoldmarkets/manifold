@@ -19,7 +19,10 @@ import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { getReferrerRank, getTopReferrals } from 'common/supabase/referrals'
+import {
+  getUserReferralsInfo,
+  getTopReferrals,
+} from 'common/supabase/referrals'
 import { db } from 'web/lib/supabase/db'
 
 export async function getStaticProps() {
@@ -73,7 +76,8 @@ export default function Leaderboards(props: {
   const [myRanks, setMyRanks] = useState<
     Record<Period, ranking | undefined> | undefined
   >()
-  const [totalReferrals, setTotalReferrals] = useState<number>(0)
+  const [userReferralInfo, setUserReferralInfo] =
+    useState<Awaited<ReturnType<typeof getUserReferralsInfo>>>()
 
   const user = useUser()
 
@@ -93,10 +97,9 @@ export default function Leaderboards(props: {
           rankings.tradersRank = await getCreatorRank(myTraders, period)
         }
         if (period === 'allTime') {
-          const referrerInfo = await getReferrerRank(user.id, db)
-          rankings.referralsRank =
-            referrerInfo?.rank ?? referrerInfo.fallbackRank
-          setTotalReferrals(referrerInfo?.total_referrals ?? 0)
+          const referrerInfo = await getUserReferralsInfo(user.id, db)
+          setUserReferralInfo(referrerInfo)
+          rankings.referralsRank = referrerInfo.rank
         }
         return rankings
       })
@@ -107,7 +110,7 @@ export default function Leaderboards(props: {
 
   const { topReferrals } = props
 
-  const LeaderboardWithPeriod = (period: Period, myRank?: ranking) => {
+  const LeaderboardWithPeriod = (period: Period, myRankForPeriod?: ranking) => {
     const { topTraders, topCreators } = props[period]
 
     const user = useUser()
@@ -119,27 +122,29 @@ export default function Leaderboards(props: {
       ...user,
       rank: i + 1,
     }))
-    if (user && myRank != null) {
+    if (user && myRankForPeriod != null) {
       if (
-        myRank.profitRank != null &&
+        myRankForPeriod.profitRank != null &&
         !topTraderEntries.find((x) => x.id === user.id)
       ) {
-        topTraderEntries.push({ ...user, rank: myRank.profitRank })
+        topTraderEntries.push({ ...user, rank: myRankForPeriod.profitRank })
       }
       if (
-        myRank.tradersRank != null &&
+        myRankForPeriod.tradersRank != null &&
         !topCreatorEntries.find((x) => x.id === user.id)
       ) {
-        topCreatorEntries.push({ ...user, rank: myRank.tradersRank })
+        topCreatorEntries.push({ ...user, rank: myRankForPeriod.tradersRank })
       }
+      // Currently only set for allTime
       if (
-        myRank.referralsRank != null &&
+        myRankForPeriod.referralsRank != null &&
         !topReferrals.find((x) => x.id === user.id)
       ) {
         topReferrals.push({
           ...user,
-          rank: myRank.referralsRank,
-          totalReferrals: totalReferrals,
+          rank: myRankForPeriod.referralsRank,
+          totalReferrals: userReferralInfo?.total_referrals ?? 0,
+          totalReferredProfit: userReferralInfo?.total_referred_profit ?? 0,
         })
       }
     }
@@ -173,7 +178,7 @@ export default function Leaderboards(props: {
           />
         </Col>
         {period === 'allTime' ? (
-          <Col className="mx-4 my-10 items-center gap-10 lg:mx-0 lg:w-[27rem] lg:flex-row">
+          <Col className="mx-4 my-10 items-center gap-10 lg:mx-0 lg:w-[35rem] lg:flex-row">
             <Leaderboard
               title="🏅 Top Referrers"
               entries={topReferrals}
@@ -181,6 +186,18 @@ export default function Leaderboards(props: {
                 {
                   header: 'Total referrals',
                   renderCell: (user) => user.totalReferrals,
+                },
+                {
+                  header: (
+                    <span>
+                      Total profit
+                      <InfoTooltip
+                        text={'Total profit earned by referred users'}
+                      />
+                    </span>
+                  ),
+                  renderCell: (user) =>
+                    formatMoney(user.totalReferredProfit ?? 0),
                 },
               ]}
               highlightUsername={user?.username}
