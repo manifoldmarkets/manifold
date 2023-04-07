@@ -6,7 +6,7 @@ import { PrivateUser } from 'common/user'
 import { APIError } from 'common/api'
 export { APIError } from 'common/api'
 
-type Json = Record<string, unknown>
+export type Json = Record<string, unknown>
 export type Handler<T> = (req: Request) => Promise<T>
 export type JsonHandler<T extends Json> = Handler<T>
 export type AuthedHandler<T extends Json> = (

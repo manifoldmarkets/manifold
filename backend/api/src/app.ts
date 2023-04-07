@@ -122,7 +122,7 @@ app.post('/completequest', ...apiRoute(completequest))
 app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
 app.post('/create-debate', ...apiRoute(createDebate))
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
-app.post('/supabasesearchcontracts',...apiRoute(supabasesearchcontracts))
+app.post('/supabasesearchcontracts', ...apiRoute(supabasesearchcontracts))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)
 app.post(
@@ -130,4 +130,4 @@ app.post(
   allowCors,
   express.raw({ type: '*/*' }),
   stripewebhook
-))
+)

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { filter, Sort } from '../../../web/components/contract-search'
-import { authEndpoint, validate } from './helpers'
+import { authEndpoint, Json, validate } from './helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
 
@@ -30,11 +30,10 @@ export const supabasesearchcontracts = authEndpoint(async (req, auth) => {
     creatorId: creatorId,
     uid: auth.uid,
   })
-  console.log(searchMarketSQL)
 
   const contracts = await pg.map(searchMarketSQL, [], (r) => r.data as Contract)
 
-  return contracts ?? []
+  return (contracts as unknown as Json) ?? ([] as unknown as Json)
 })
 
 function getSearchContractSQL(contractInput: {
