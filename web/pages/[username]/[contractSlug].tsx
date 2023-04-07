@@ -219,7 +219,7 @@ export function ContractPageContent(props: {
 
   const isAdmin = useAdmin()
   const isCreator = creatorId === user?.id
-  const isClosed = closeTime && closeTime < Date.now()
+  const isClosed = !!(closeTime && closeTime < Date.now())
   const trustworthy = isTrustworthy(user?.username)
 
   const [showResolver, setShowResolver] = useState(

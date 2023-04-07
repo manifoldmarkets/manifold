@@ -69,8 +69,8 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
   }
   const firebaseUser = await admin.auth().getUser(auth.uid)
   const caller = await getUser(auth.uid)
-  
-  const isClosed = contract.closeTime && contract.closeTime < Date.now()
+
+  const isClosed = !!(contract.closeTime && contract.closeTime < Date.now())
   const trustworthyResolvable = isTrustworthy(caller?.username) && isClosed
 
   if (
