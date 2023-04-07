@@ -40,6 +40,8 @@ export const deleteMarket = authEndpoint(async (req, auth) => {
 
   await contractDoc.update({ deleted: true })
 
+  // Note: Wait for 3 seconds to allow the contract to replicated to supabase.
+  await new Promise((resolve) => setTimeout(resolve, 3000))
   await revalidateStaticProps(contractPath(contract))
 
   console.log('contract ', contractId, 'deleted')
