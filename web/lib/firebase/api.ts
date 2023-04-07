@@ -34,6 +34,33 @@ export async function call(url: string, method: string, params?: any) {
   })
 }
 
+export async function maybeAuthedCall(
+  url: string,
+  method: string,
+  params?: any
+) {
+  const user = auth.currentUser
+  // if (user == null) {
+  //   throw new Error('Must be signed in to make API calls.')
+  // }
+  const token = await user?.getIdToken()
+  const req = new Request(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    method: method,
+    body: params != null ? JSON.stringify(params) : undefined,
+  })
+  return await fetch(req).then(async (resp) => {
+    const json = (await resp.json()) as { [k: string]: any }
+    if (!resp.ok) {
+      throw new APIError(resp.status, json?.message, json?.details)
+    }
+    return json
+  })
+}
+
 export function callApi(apiEndpoint: string, params?: any, method = 'POST') {
   return call(getApiUrl(apiEndpoint), method, params)
 }
@@ -236,5 +263,5 @@ export function supabaseSearchContracts(params: {
   groupId?: string
   creatorId?: string
 }) {
-  return call(getApiUrl('supabasesearchcontracts'), 'POST', params)
+  return maybeAuthedCall(getApiUrl('supabasesearchcontracts'), 'POST', params)
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { filter, Sort } from '../../../web/components/contract-search'
-import { authEndpoint, Json, validate } from './helpers'
+// import { filter, Sort } from '../../../web/components/contract-search'
+import { authEndpoint, Json, MaybeAuthedEndpoint, validate } from './helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
 
@@ -10,36 +10,43 @@ const bodySchema = z.object({
   sort: z.string(),
   offset: z.number().gte(0),
   limit: z.number().gt(0),
-  fuzzy: z.boolean(),
+  fuzzy: z.boolean().optional(),
   groupId: z.string().optional(),
   creatorId: z.string().optional(),
 })
 
-export const supabasesearchcontracts = authEndpoint(async (req, auth) => {
-  const { term, filter, sort, offset, limit, fuzzy, groupId, creatorId } =
-    validate(bodySchema, req.body)
-  const pg = createSupabaseDirectClient()
-  const searchMarketSQL = getSearchContractSQL({
-    term: term,
-    filter: filter,
-    sort: sort,
-    offset: offset,
-    limit: limit,
-    fuzzy: fuzzy,
-    groupId: groupId,
-    creatorId: creatorId,
-    uid: auth.uid,
-  })
+export const supabasesearchcontracts = MaybeAuthedEndpoint(
+  async (req, auth) => {
+    const { term, filter, sort, offset, limit, fuzzy, groupId, creatorId } =
+      validate(bodySchema, req.body)
+    const pg = createSupabaseDirectClient()
+    const searchMarketSQL = getSearchContractSQL({
+      term: term,
+      filter: filter,
+      sort: sort,
+      offset: offset,
+      limit: limit,
+      fuzzy: fuzzy,
+      groupId: groupId,
+      creatorId: creatorId,
+      uid: auth?.uid,
+    })
 
-  const contracts = await pg.map(searchMarketSQL, [], (r) => r.data as Contract)
+    console.log('REALLY IN SEARCH CONTRACTS', searchMarketSQL)
+    const contracts = await pg.map(
+      searchMarketSQL,
+      [],
+      (r) => r.data as Contract
+    )
 
-  return (contracts as unknown as Json) ?? ([] as unknown as Json)
-})
+    return (contracts as unknown as Json) ?? ([] as unknown as Json)
+  }
+)
 
 function getSearchContractSQL(contractInput: {
   term: string
-  filter: filter
-  sort: Sort
+  filter: string
+  sort: string
   offset: number
   limit: number
   fuzzy?: boolean
@@ -58,11 +65,11 @@ function getSearchContractSQL(contractInput: {
       query = `
         SELECT contractz.data
         FROM (
-          select contracts_rbac.*, 
+          select contracts.*, 
           group_contracts.group_id 
-          from contracts_rbac 
+          from contracts 
           join group_contracts 
-          on group_contracts.contract_id = contracts_rbac.id) 
+          on group_contracts.contract_id = contracts.id) 
         as contractz
         ${whereSQL}
         AND contractz.group_id = '${groupId}'`
@@ -75,9 +82,9 @@ function getSearchContractSQL(contractInput: {
             SELECT contracts.*,
                 similarity(contracts.question, '${term}') AS similarity_score,
                 group_contracts.group_id
-            FROM contracts_rbac 
+            FROM contracts 
             join group_contracts 
-            on group_contracts.contract_id = contracts_rbac.id
+            on group_contracts.contract_id = contracts.id
         ) AS contractz
       ${whereSQL}
       AND contractz.similarity_score > 0.1
@@ -87,9 +94,9 @@ function getSearchContractSQL(contractInput: {
       query = `
         SELECT contractz.data
         FROM (
-            select contracts_rbac.*, group_contracts.group_id 
-            from contracts_rbac 
-            join group_contracts on group_contracts.contract_id = contracts_rbac.id
+            select contracts.*, group_contracts.group_id 
+            from contracts 
+            join group_contracts on group_contracts.contract_id = contracts.id
         ) as contractz,
         websearch_to_tsquery(' english ', '${term}') query
             ${whereSQL}
@@ -106,18 +113,18 @@ function getSearchContractSQL(contractInput: {
       query = `
       SELECT contractz.data
       FROM (
-        SELECT contracts_rbac.*,
-               similarity(contracts_rbac.question, '${term}') AS similarity_score
-        FROM contracts_rbac
+        SELECT contracts.*,
+               similarity(contracts.question, '${term}') AS similarity_score
+        FROM contracts
       ) AS contractz
       ${whereSQL}
       AND contractz.similarity_score > 0.1`
     } else {
       query = `
-      SELECT contracts_rbac.data
-      FROM contracts_rbac, websearch_to_tsquery('english',  '${term}') query
+      SELECT contracts.data
+      FROM contracts, websearch_to_tsquery('english',  '${term}') query
          ${whereSQL}
-      AND contracts_rbac.question_fts @@ query`
+      AND contracts.question_fts @@ query`
     }
   }
   return (
@@ -130,38 +137,39 @@ function getSearchContractSQL(contractInput: {
 }
 
 function getSearchContractWhereSQL(
-  filter: filter,
-  sort: Sort,
+  filter: string,
+  sort: string,
   creatorId: string | undefined,
   uid: string | undefined
 ) {
-  type FilterSQL = Record<filter, string>
+  type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
-    open: 'resolution_time IS NULL',
+    open: 'resolution_time IS NULL AND close_time > NOW()',
     closed: 'close_time < NOW() AND resolution_time IS NULL',
     resolved: 'resolution_time IS NOT NULL',
     all: 'true',
   }
 
   const sortFilter = sort == 'close-date' ? 'AND close_time > NOW()' : ''
-  const privateGroupSQL = `OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))`
+  const otherVisibilitySQL = `
+  OR (visibility = 'unlisted' AND creator_id='${uid}') 
+  OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))`
 
   return `
   WHERE (
    ${filterSQL[filter]}
   )
   ${sortFilter}
-  AND (visibility <> 'private' ${uid ? privateGroupSQL : ''}
-  ${creatorId ? `and creator_id = '${creatorId}'` : ''}
-  )`
+  AND (visibility = 'public' ${uid ? otherVisibilitySQL : ''})
+   ${creatorId ? `and creator_id = '${creatorId}'` : ''}`
 }
 
 function getSearchContractSortSQL(
-  sort: Sort,
+  sort: string,
   fuzzy: boolean | undefined,
   empty: boolean
 ) {
-  type SortFields = Record<Sort, string>
+  type SortFields = Record<string, string>
   const sortFields: SortFields = {
     relevance: empty
       ? 'popularity_score'

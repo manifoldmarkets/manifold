@@ -134,20 +134,6 @@ export async function searchContract(props: {
     props
 
   if (!query || query.length == 0) {
-    // const { data } = await db.rpc('empty_search_contracts', {
-    //   contract_filter: filter,
-    //   contract_sort: sort,
-    //   offset_n: offset,
-    //   limit_n: limit,
-    //   group_id: group_id,
-    //   creator_id: creator_id,
-    // })
-    // if (data && data.length > 0) {
-    //   return {
-    //     fuzzyOffset: 0,
-    //     data: data.map((d) => (d as any).data) as Contract[],
-    //   }
-    // }
     const contracts = await supabaseSearchContracts({
       term: '',
       filter: filter,
@@ -156,7 +142,7 @@ export async function searchContract(props: {
       limit: limit,
       groupId: group_id,
       creatorId: creator_id,
-    })
+    }).finally(() => console.log('FINALLY'))
     if (contracts) {
       return {
         fuzzyOffset: 0,
@@ -176,16 +162,6 @@ export async function searchContract(props: {
     })
     return contractFuzzy
   }
-  // const { data } = await db.rpc('search_contracts', {
-  //   term: query,
-  //   contract_filter: filter,
-  //   contract_sort: sort,
-  //   offset_n: offset,
-  //   limit_n: limit,
-  //   fuzzy: false,
-  //   group_id: group_id,
-  //   creator_id: creator_id,
-  // })
 
   const contracts = await supabaseSearchContracts({
     term: query,
@@ -198,7 +174,6 @@ export async function searchContract(props: {
     creatorId: creator_id,
   })
   if (contracts) {
-    // const textData = data.map((d) => (d as any).data) as Contract[]
     if (contracts.length == 20) {
       return { fuzzyOffset: 0, data: contracts }
     } else {
@@ -230,16 +205,6 @@ export async function searchContractFuzzy(props: {
   creator_id?: string
 }) {
   const { state, query, filter, sort, limit, group_id, creator_id } = props
-  // const { data } = await db.rpc('search_contracts', {
-  //   term: query,
-  //   contract_filter: filter,
-  //   contract_sort: sort,
-  //   offset_n: state.fuzzyContractOffset,
-  //   limit_n: limit,
-  //   fuzzy: true,
-  //   group_id: group_id,
-  //   creator_id: creator_id,
-  // })
   const contracts = await supabaseSearchContracts({
     term: query,
     filter: filter,

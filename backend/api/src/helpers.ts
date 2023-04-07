@@ -13,6 +13,10 @@ export type AuthedHandler<T extends Json> = (
   req: Request,
   user: AuthedUser
 ) => Promise<T>
+export type MaybeAuthedHandler<T extends Json> = (
+  req: Request,
+  user?: AuthedUser
+) => Promise<T>
 
 export type AuthedUser = {
   uid: string
@@ -115,6 +119,22 @@ export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
     try {
       const authedUser = await lookupUser(await parseCredentials(req))
       res.status(200).json(await fn(req, authedUser))
+    } catch (e) {
+      next(e)
+    }
+  }
+}
+export const MaybeAuthedEndpoint = <T extends Json>(
+  fn: MaybeAuthedHandler<T>
+) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    let authUser: AuthedUser | undefined = undefined
+    try {
+      authUser = await lookupUser(await parseCredentials(req))
+    } catch {}
+
+    try {
+      res.status(200).json(await fn(req, authUser))
     } catch (e) {
       next(e)
     }
