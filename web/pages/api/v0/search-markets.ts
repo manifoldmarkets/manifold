@@ -1,4 +1,5 @@
 import { FullMarket, toFullMarket } from 'common/api-market-types'
+import { Contract } from 'common/contract'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { CORS_UNRESTRICTED, applyCorsHeaders } from 'web/lib/api/cors'
 import { searchContract } from 'web/lib/supabase/contracts'

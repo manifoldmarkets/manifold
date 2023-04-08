@@ -93,6 +93,7 @@ export function SelectMarkets(props: {
         </div>
       )}
       <SupabaseContractSearch
+        persistPrefix="contract-select-modal"
         hideOrderSelector
         onContractClick={addContract}
         cardUIOptions={{
