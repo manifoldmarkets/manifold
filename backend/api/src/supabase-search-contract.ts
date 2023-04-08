@@ -1,8 +1,7 @@
-import { z } from 'zod'
-// import { filter, Sort } from '../../../web/components/contract-search'
-import { authEndpoint, Json, MaybeAuthedEndpoint, validate } from './helpers'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { z } from 'zod'
+import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   term: z.string(),
