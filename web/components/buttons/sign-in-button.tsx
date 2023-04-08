@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from './button'
 
-export const SignInButton = (props: { className?: string }) => {
+export const SignInButton = () => {
   const router = useRouter()
 
   return (

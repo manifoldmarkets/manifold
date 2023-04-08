@@ -48,11 +48,8 @@ import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
 import { createDebate } from './create-debate'
 import { auctionbid } from './auction-bid'
-<<<<<<< HEAD
 import { supabasesearchcontracts } from './supabase-search-contract'
-=======
 import { deleteMarket } from './delete-market'
->>>>>>> main
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],

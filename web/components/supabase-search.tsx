@@ -4,8 +4,9 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { debounce, isEqual, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef } from 'react'
 import { useEvent } from 'web/hooks/use-event'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import {
   historyStore,
   inMemoryStore,
@@ -24,7 +25,6 @@ import { Col } from './layout/col'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { SiteLink } from './widgets/site-link'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -88,6 +88,7 @@ export type stateType = {
 }
 
 export function SupabaseContractSearch(props: {
+  persistPrefix: string
   defaultSort?: Sort
   defaultFilter?: filter
   additionalFilter?: SupabaseAdditionalFilter
@@ -100,7 +101,6 @@ export function SupabaseContractSearch(props: {
     noLinkAvatar?: boolean
   }
   headerClassName?: string
-  persistPrefix?: string
   isWholePage?: boolean
   includeProbSorts?: boolean
   autoFocus?: boolean
@@ -130,12 +130,11 @@ export function SupabaseContractSearch(props: {
     listViewDisabled,
   } = props
 
-  const [state, setState] = persistPrefix
-    ? usePersistentInMemoryState<stateType>(
-        INITIAL_STATE,
-        `${persistPrefix}-supabase-search`
-      )
-    : useState<stateType>(INITIAL_STATE)
+  const [state, setState] = usePersistentInMemoryState<stateType>(
+    INITIAL_STATE,
+    `${persistPrefix}-supabase-search`
+  )
+
   const loadMoreContracts = () => {
     performQuery(() => state)()
   }
@@ -149,11 +148,9 @@ export function SupabaseContractSearch(props: {
   )
 
   useSafeLayoutEffect(() => {
-    if (persistPrefix) {
-      const params = searchParamsStore.get(`${persistPrefix}-params`)
-      if (params !== undefined) {
-        searchParams.current = params
-      }
+    const params = searchParamsStore.get(`${persistPrefix}-params`)
+    if (params !== undefined) {
+      searchParams.current = params
     }
   }, [])
 
