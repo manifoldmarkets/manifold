@@ -79,6 +79,7 @@ export type notification_reason_types =
   | 'unique_bettors_on_your_contract'
   | 'tip_received'
   | 'bet_fill'
+  | 'limit_order_cancelled'
   | 'user_joined_from_your_group_invite'
   | 'challenge_accepted'
   | 'betting_streak_incremented'

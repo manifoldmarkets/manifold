@@ -52,7 +52,7 @@ export async function doResolveDebates() {
     const creator = await getUser(contract.creatorId)
     if (creator) {
       const prob = getProbability(contract as CPMMBinaryContract)
-      await resolveMarketHelper(contract, creator, {
+      await resolveMarketHelper(contract, creator, creator, {
         outcome: 'MKT',
         probabilityInt: Math.round(prob * 100),
         value: undefined,

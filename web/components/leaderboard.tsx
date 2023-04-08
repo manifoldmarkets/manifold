@@ -3,6 +3,7 @@ import { Table } from './widgets/table'
 import { Title } from './widgets/title'
 import { sortBy } from 'lodash'
 import { UserAvatarAndBadge } from './widgets/user-link'
+import { ReactNode } from 'react'
 
 interface LeaderboardEntry {
   username: string
@@ -15,7 +16,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
   title: string
   entries: T[]
   columns: {
-    header: string
+    header: string | ReactNode
     renderCell: (entry: T) => any
   }[]
   className?: string
@@ -46,8 +47,8 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
               <tr>
                 <th>#</th>
                 <th>Name</th>
-                {columns.map((column) => (
-                  <th key={column.header}>{column.header}</th>
+                {columns.map((column, index) => (
+                  <th key={index}>{column.header}</th>
                 ))}
               </tr>
             </thead>
@@ -75,8 +76,8 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                       avatarUrl={entry.avatarUrl}
                     />
                   </td>
-                  {columns.map((column) => (
-                    <td key={column.header}>{column.renderCell(entry)}</td>
+                  {columns.map((column, index) => (
+                    <td key={index}>{column.renderCell(entry)}</td>
                   ))}
                 </tr>
               ))}

@@ -148,6 +148,8 @@ service cloud.firestore {
                                                                  .hasOnly(['description', 'closeTime', 'question', 'visibility', 'unlistedById'])
                        && resource.data.creatorId == request.auth.uid;
       allow update: if isAdmin();
+      allow delete: if request.resource.data.creatorId == request.auth.uid || isAdmin();
+
           match /comments/{commentId} {
             allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data);
           }

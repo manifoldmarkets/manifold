@@ -17,25 +17,28 @@ export async function getReferralCount(
 }
 
 export async function getTopReferrals(db: SupabaseClient) {
-  const { data } = await run(db.from('user_referrals').select('*').limit(20))
+  const { data } = await run(
+    db.from('user_referrals_profit').select('*').limit(20)
+  )
   const users = data.map((r) => ({
     totalReferrals: r.total_referrals,
     rank: r.rank,
+    totalReferredProfit: r.total_referred_profit,
     ...(r.data as User),
   }))
   return users
 }
-export async function getReferrerRank(userId: string, db: SupabaseClient) {
+export async function getUserReferralsInfo(userId: string, db: SupabaseClient) {
   const { data } = await run(
-    db.from('user_referrals').select('*').eq('id', userId)
+    db.from('user_referrals_profit').select('*').eq('id', userId)
   )
-  let rank = 0
+  let fallbackRank = 0
   if (data.length === 0) {
     const { count } = await db
       .from('user_referrals')
       .select('*', { head: true, count: 'exact' })
-    rank = (count ?? Infinity) + 1
+    fallbackRank = (count ?? Infinity) + 1
   }
 
-  return { ...data[0], fallbackRank: rank }
+  return { ...data[0], rank: data[0]?.rank ?? fallbackRank }
 }

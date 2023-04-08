@@ -1,6 +1,5 @@
-import { getDeviceId } from '@amplitude/analytics-browser'
 import { useEffect, useState } from 'react'
-import { track } from 'web/lib/service/analytics'
+import { initAmplitude, track } from 'web/lib/service/analytics'
 
 const TEST_CACHE: any = {}
 
@@ -12,20 +11,22 @@ export const useABTest = <T>(
   const [variant, setVariant] = useState<T | undefined>(undefined)
 
   useEffect(() => {
-    const deviceId = getDeviceId()
-    const hash = cyrb128(deviceId + testName)[0]
+    initAmplitude().then((amplitude) => {
+      const deviceId = amplitude.getDeviceId()
+      const hash = cyrb128(deviceId + testName)[0]
 
-    const keys = Object.keys(variants)
-    const key = keys[hash % keys.length]
+      const keys = Object.keys(variants)
+      const key = keys[hash % keys.length]
 
-    setVariant(variants[key])
+      setVariant(variants[key])
 
-    // only track once per user session
-    if (!TEST_CACHE[testName]) {
-      TEST_CACHE[testName] = true
+      // only track once per user session
+      if (!TEST_CACHE[testName]) {
+        TEST_CACHE[testName] = true
 
-      track(testName, { ...trackingProperties, variant: key })
-    }
+        track(testName, { ...trackingProperties, variant: key })
+      }
+    })
   }, [testName, trackingProperties, variants])
 
   return variant

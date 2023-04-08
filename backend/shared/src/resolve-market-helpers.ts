@@ -37,6 +37,7 @@ export type ResolutionParams = {
 
 export const resolveMarketHelper = async (
   unresolvedContract: Contract,
+  resolver: User,
   creator: User,
   { value, resolutions, probabilityInt, outcome }: ResolutionParams
 ) => {
@@ -100,6 +101,7 @@ export const resolveMarketHelper = async (
 
   await createContractResolvedNotifications(
     contract,
+    resolver,
     creator,
     outcome,
     probabilityInt,
