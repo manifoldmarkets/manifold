@@ -60,6 +60,7 @@ import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/contracts'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
+import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -74,8 +75,10 @@ export async function getStaticProps(ctx: {
 }) {
   const { contractSlug } = ctx.params
   const contract = (await getContractFromSlug(contractSlug, 'admin')) ?? null
+
   // No contract found
-  if (contract === null) return { props: { contractSlug, visibility: null } }
+  if (contract === null || contract.deleted)
+    return { props: { contractSlug, visibility: null } }
 
   // Private markets
   const { visibility } = contract
@@ -219,11 +222,11 @@ export function ContractPageContent(props: {
 
   const isAdmin = useAdmin()
   const isCreator = creatorId === user?.id
-  const isClosed = closeTime && closeTime < Date.now()
+  const isClosed = !!(closeTime && closeTime < Date.now())
   const trustworthy = isTrustworthy(user?.username)
 
   const [showResolver, setShowResolver] = useState(
-    (isCreator || isAdmin || trustworthy) &&
+    (isCreator || isAdmin || (trustworthy && isClosed)) &&
       !isResolved &&
       (closeTime ?? 0) < Date.now() &&
       outcomeType !== 'STONK'
@@ -356,6 +359,16 @@ export function ContractPageContent(props: {
                 betPoints={betPoints}
               />
             </Col>
+
+            {isCreator &&
+              isResolved &&
+              resolution === 'CANCEL' &&
+              (!uniqueBettorCount || uniqueBettorCount < 10) && (
+                <DeleteMarketButton
+                  className="mt-4 self-end"
+                  contractId={contract.id}
+                />
+              )}
 
             <ContractDescription
               className="mt-2 xl:mt-6"

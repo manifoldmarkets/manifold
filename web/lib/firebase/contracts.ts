@@ -80,10 +80,6 @@ export async function getContractFromSlug(slug: string) {
   return snapshot.empty ? undefined : snapshot.docs[0].data()
 }
 
-export async function deleteContract(contractId: string) {
-  await deleteDoc(doc(contracts, contractId))
-}
-
 export const tournamentContractsByGroupSlugQuery = (slug: string) =>
   query(
     contracts,

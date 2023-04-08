@@ -24,7 +24,12 @@ import {
   VISIBILITIES,
 } from 'common/contract'
 import { ANTES } from 'common/economy'
-import { CHECK_USERNAMES, isAdmin, isManifoldId } from 'common/envs/constants'
+import {
+  CHECK_USERNAMES,
+  isAdmin,
+  isManifoldId,
+  isTrustworthy,
+} from 'common/envs/constants'
 import { Group, GroupLink, MAX_ID_LENGTH } from 'common/group'
 import { getNewContract } from 'common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from 'common/numeric-constants'
@@ -209,7 +214,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
         group: group,
         isMarketCreator: true,
         isManifoldAdmin: isManifoldId(auth.uid) || isAdmin(firebaseUser.email),
-        isTrustworthy: CHECK_USERNAMES.includes(user?.username ?? '_'),
+        isTrustworthy: isTrustworthy(user?.username),
         userGroupRole: groupMemberRole,
       })
     ) {

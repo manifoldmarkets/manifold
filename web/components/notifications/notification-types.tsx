@@ -64,6 +64,15 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (reason === 'limit_order_cancelled') {
+    return (
+      <LimitOrderCancelledNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (sourceType === 'contract') {
     if (sourceUpdateType === 'resolved') {
       return (
@@ -218,6 +227,67 @@ export function NotificationItem(props: {
   )
 }
 
+function LimitOrderCancelledNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceText, data, sourceContractTitle } = notification
+  const {
+    creatorOutcome,
+    probability,
+    limitAt: dataLimitAt,
+    outcomeType,
+  } = (data as BetFillData) ?? {}
+  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'))
+  const limitAt =
+    dataLimitAt !== undefined
+      ? dataLimitAt
+      : Math.round(probability * 100) + '%'
+
+  const outcome =
+    outcomeType === 'PSEUDO_NUMERIC'
+      ? creatorOutcome === 'YES'
+        ? ' HIGHER'
+        : ' LOWER'
+      : creatorOutcome
+  const color =
+    creatorOutcome === 'YES'
+      ? 'text-teal-600'
+      : creatorOutcome === 'NO'
+      ? 'text-scarlet-600'
+      : 'text-blue-600'
+  const description = (
+    <span>
+      Your<span className={clsx('mx-1', color)}>{outcome}</span>
+      limit order for {amountRemaining} at {limitAt} was cancelled due to
+      insufficient funds.
+    </span>
+  )
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'🚫'} />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        {description}
+        {!isChildOfGroup && (
+          <span>
+            on <PrimaryNotificationLink text={sourceContractTitle} />
+          </span>
+        )}
+      </div>
+    </NotificationFrame>
+  )
+}
 function BetFillNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -283,13 +353,9 @@ function BetFillNotification(props: {
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       icon={
-        <NotificationIcon
+        <AvatarNotificationIcon
+          notification={notification}
           symbol={creatorOutcome === 'NO' ? '👇' : '☝️'}
-          symbolBackgroundClass={
-            creatorOutcome === 'NO'
-              ? 'bg-gradient-to-br from-scarlet-600 to-scarlet-300'
-              : 'bg-gradient-to-br from-teal-600 to-teal-300'
-          }
         />
       }
       subtitle={subtitle}

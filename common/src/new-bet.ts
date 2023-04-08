@@ -3,10 +3,10 @@ import { sortBy, sum, sumBy } from 'lodash'
 import { Bet, fill, LimitBet, NumericBet } from './bet'
 import {
   calculateDpmShares,
-  getDpmProbability,
-  getDpmOutcomeProbability,
-  getNumericBets,
   calculateNumericDpmShares,
+  getDpmOutcomeProbability,
+  getDpmProbability,
+  getNumericBets,
 } from './calculate-dpm'
 import {
   calculateCpmmAmountToProb,
@@ -51,7 +51,8 @@ const computeFill = (
   outcome: 'YES' | 'NO',
   limitProb: number | undefined,
   cpmmState: CpmmState,
-  matchedBet: LimitBet | undefined
+  matchedBet: LimitBet | undefined,
+  matchedBetUserBalance: number | undefined
 ) => {
   const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
@@ -113,11 +114,15 @@ const computeFill = (
   }
 
   // Fill from matchedBet.
-  const matchRemaining = matchedBet.orderAmount - matchedBet.amount
+  const amountRemaining = matchedBet.orderAmount - matchedBet.amount
+  const amountToFill = Math.min(
+    amountRemaining,
+    matchedBetUserBalance ?? amountRemaining
+  )
   const shares = Math.min(
     amount /
       (outcome === 'YES' ? matchedBet.limitProb : 1 - matchedBet.limitProb),
-    matchRemaining /
+    amountToFill /
       (outcome === 'YES' ? 1 - matchedBet.limitProb : matchedBet.limitProb)
   )
 
@@ -179,7 +184,14 @@ export const computeFills = (
   let i = 0
   while (true) {
     const matchedBet: LimitBet | undefined = sortedBets[i]
-    const fill = computeFill(amount, outcome, limitProb, cpmmState, matchedBet)
+    const fill = computeFill(
+      amount,
+      outcome,
+      limitProb,
+      cpmmState,
+      matchedBet,
+      currentBalanceByUserId[matchedBet?.userId ?? '']
+    )
     if (!fill) break
 
     const { taker, maker } = fill
@@ -194,14 +206,14 @@ export const computeFills = (
       i++
       const { userId } = maker.bet
       const makerBalance = currentBalanceByUserId[userId]
-
-      if (floatingGreaterEqual(makerBalance, maker.amount)) {
+      if (floatingGreaterEqual(maker.amount, 0)) {
         currentBalanceByUserId[userId] = makerBalance - maker.amount
-      } else {
-        // Insufficient balance. Cancel maker bet.
-        ordersToCancel.push(maker.bet)
-        continue
       }
+      if (floatingEqual(currentBalanceByUserId[userId], 0)) {
+        // Now they've insufficient balance. Cancel maker bet.
+        ordersToCancel.push(maker.bet)
+      }
+      if (floatingEqual(maker.amount, 0)) continue
 
       takers.push(taker)
       makers.push(maker)

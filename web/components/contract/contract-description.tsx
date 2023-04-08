@@ -21,6 +21,7 @@ import { Editor, Content as ContentType } from '@tiptap/react'
 import { insertContent } from '../editor/utils'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { CollapsibleContent } from '../widgets/collapsible-content'
+import { isTrustworthy } from 'common/envs/constants'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -28,19 +29,27 @@ export function ContractDescription(props: {
   className?: string
 }) {
   const { contract, className, toggleResolver } = props
+  const { creatorId, closeTime } = contract
+
   const isAdmin = useAdmin()
   const user = useUser()
-  const isCreator = user?.id === contract.creatorId
+  const isCreator = user?.id === creatorId
+  const isClosed = !!(closeTime && closeTime < Date.now())
+  const trustworthy = isTrustworthy(user?.username) && isClosed
+
+  const showContractActions =
+    user &&
+    (isCreator || isAdmin || trustworthy) &&
+    !contract.isResolved &&
+    toggleResolver
 
   return (
     <div className={clsx('text-ink-700', className)}>
-      {user &&
-      (isCreator || isAdmin) &&
-      !contract.isResolved &&
-      toggleResolver ? (
+      {showContractActions ? (
         <ContractActions
           contract={contract}
-          isAdmin={isAdmin && !isCreator}
+          isOnlyAdmin={isAdmin && !isCreator}
+          isOnlyTrustworthy={trustworthy && !isCreator}
           toggleResolver={toggleResolver}
         />
       ) : (
@@ -59,10 +68,11 @@ function editTimestamp() {
 
 function ContractActions(props: {
   contract: Contract
-  isAdmin?: boolean
+  isOnlyAdmin?: boolean
+  isOnlyTrustworthy?: boolean
   toggleResolver: () => void
 }) {
-  const { contract, isAdmin, toggleResolver } = props
+  const { contract, isOnlyAdmin, isOnlyTrustworthy, toggleResolver } = props
 
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
@@ -106,25 +116,29 @@ function ContractActions(props: {
         stateKey={`isCollapsed-contract-${contract.id}`}
       />
       <Row className="my-4 items-center gap-2 text-xs">
-        {isAdmin && 'Admin '}
+        {isOnlyAdmin && 'Admin '}
         {contract.outcomeType !== 'STONK' && (
           <Button color={'gray'} size={'2xs'} onClick={toggleResolver}>
             Resolve
           </Button>
         )}
-        <Button
-          color="gray"
-          size="2xs"
-          onClick={() => {
-            setEditing(true)
-            editor?.commands.focus('end')
-          }}
-        >
-          Edit description
-        </Button>
-        <Button color="gray" size="2xs" onClick={() => setEditingQ(true)}>
-          Edit question
-        </Button>
+        {!isOnlyTrustworthy && (
+          <>
+            <Button
+              color="gray"
+              size="2xs"
+              onClick={() => {
+                setEditing(true)
+                editor?.commands.focus('end')
+              }}
+            >
+              Edit description
+            </Button>
+            <Button color="gray" size="2xs" onClick={() => setEditingQ(true)}>
+              Edit question
+            </Button>
+          </>
+        )}
       </Row>
       <EditQuestion
         contract={contract}

@@ -867,6 +867,62 @@ export interface Database {
           fs_updated_time: string | null
         }
       }
+      public_contracts: {
+        Row: {
+          close_time: string | null
+          created_time: string | null
+          creator_id: string | null
+          data: Json | null
+          fs_updated_time: string | null
+          id: string | null
+          mechanism: string | null
+          outcome_type: string | null
+          popularity_score: number | null
+          question: string | null
+          question_fts: unknown | null
+          resolution: string | null
+          resolution_probability: number | null
+          resolution_time: string | null
+          slug: string | null
+          visibility: string | null
+        }
+        Insert: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          popularity_score?: number | null
+          question?: string | null
+          question_fts?: unknown | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          popularity_score?: number | null
+          question?: string | null
+          question_fts?: unknown | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
+        }
+      }
       public_open_contracts: {
         Row: {
           close_time: string | null
@@ -1003,6 +1059,15 @@ export interface Database {
           id: string | null
           data: Json | null
           total_referrals: number | null
+          rank: number | null
+        }
+      }
+      user_referrals_profit: {
+        Row: {
+          id: string | null
+          data: Json | null
+          total_referrals: number | null
+          total_referred_profit: number | null
           rank: number | null
         }
       }

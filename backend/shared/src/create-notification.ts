@@ -603,8 +603,61 @@ export const createBetFillNotification = async (
     } as BetFillData,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
+}
 
-  // maybe TODO: send email notification to bet creator
+export const createLimitBetCanceledNotification = async (
+  fromUser: User,
+  toUserId: string,
+  limitBet: LimitBet,
+  fillAmount: number,
+  contract: Contract
+) => {
+  const privateUser = await getPrivateUser(toUserId)
+  if (!privateUser) return
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    'bet_fill'
+  )
+  if (!sendToBrowser) return
+
+  const remainingAmount =
+    limitBet.orderAmount -
+    (sum(limitBet.fills.map((f) => f.amount)) + fillAmount)
+  const limitAt =
+    contract.outcomeType === 'PSEUDO_NUMERIC'
+      ? limitBet.limitProb * (contract.max - contract.min) + contract.min
+      : Math.round(limitBet.limitProb * 100) + '%'
+
+  const notificationRef = firestore
+    .collection(`/users/${toUserId}/notifications`)
+    .doc()
+  const notification: Notification = {
+    id: notificationRef.id,
+    userId: toUserId,
+    reason: 'limit_order_cancelled',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: limitBet.id,
+    sourceType: 'bet',
+    sourceUpdateType: 'updated',
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceText: remainingAmount.toString(),
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractTitle: contract.question,
+    sourceContractSlug: contract.slug,
+    sourceContractId: contract.id,
+    data: {
+      creatorOutcome: limitBet.outcome,
+      probability: limitBet.limitProb,
+      limitOrderTotal: limitBet.orderAmount,
+      limitOrderRemaining: remainingAmount,
+      limitAt: limitAt.toString(),
+      outcomeType: contract.outcomeType,
+    } as BetFillData,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
 }
 
 export const createReferralNotification = async (
@@ -970,6 +1023,7 @@ export const createNewContractNotification = async (
 
 export const createContractResolvedNotifications = async (
   contract: Contract,
+  resolver: User,
   creator: User,
   outcome: string,
   probabilityInt: number | undefined,
@@ -1030,9 +1084,9 @@ export const createContractResolvedNotifications = async (
       sourceType: 'contract',
       sourceUpdateType: 'resolved',
       sourceContractId: contract.id,
-      sourceUserName: creator.name,
-      sourceUserUsername: creator.username,
-      sourceUserAvatarUrl: creator.avatarUrl,
+      sourceUserName: resolver.name,
+      sourceUserUsername: resolver.username,
+      sourceUserAvatarUrl: resolver.avatarUrl,
       sourceText: resolutionText,
       sourceContractCreatorUsername: contract.creatorUsername,
       sourceContractTitle: contract.question,
@@ -1106,12 +1160,11 @@ export const createContractResolvedNotifications = async (
           ? `, outperforming ${betterThan} other${betterThan > 1 ? 's' : ''}!`
           : '.'
       const profit = Math.round(userPayout - userInvestment)
-      const profitPercent = Math.round(profit / (userPayout + profit))
-
+      const profitPercent = Math.round((profit / userInvestment) * 100)
       const profitString = ` You made M${getMoneyNumber(
         profit
       )} (+${profitPercent}%)`
-      const lossString = ` You lost M${getMoneyNumber(userInvestment)}`
+      const lossString = ` You lost M${getMoneyNumber(-profit)}`
       await createPushNotification(
         notification,
         privateUser,
@@ -1119,9 +1172,9 @@ export const createContractResolvedNotifications = async (
           ? contract.question.slice(0, 50) + '...'
           : contract.question,
         `Resolved: ${resolutionText}.` +
-          (userInvestment === 0
+          (userInvestment === 0 || outcome === 'CANCEL'
             ? ''
-            : (userPayout === 0 ? lossString : profitString) + comparison)
+            : (profit > 0 ? profitString : lossString) + comparison)
       )
     }
   }
@@ -1136,7 +1189,7 @@ export const createContractResolvedNotifications = async (
   // bc market resolutions changes their profits, and they'll likely want to know, esp. if NA resolution
   const usersToNotify = uniq(
     [...contractFollowersIds, ...Object.keys(userPayouts)].filter(
-      (id) => id !== creator.id
+      (id) => id !== resolver.id
     )
   )
 

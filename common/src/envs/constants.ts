@@ -21,7 +21,8 @@ export function isWhitelisted(email?: string) {
   return email && (email.endsWith(ENV_CONFIG.whitelistEmail) || isAdmin(email))
 }
 
-// TODO: Before open sourcing, we should turn these into env vars
+// Note: Checking for admin or trustworthy permissions is kind of a code mess
+// atm; should pull this into an enum inside the user object?
 export function isAdmin(email?: string) {
   if (!email) {
     return false
@@ -33,7 +34,7 @@ export function isTrustworthy(username?: string) {
   if (!username) {
     return false
   }
-  return CORE_USERNAMES.includes(username)
+  return CHECK_USERNAMES.includes(username)
 }
 
 export function isManifoldId(userId: string) {

@@ -28,7 +28,6 @@ import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { LogoSEO } from 'web/components/LogoSEO'
 import { db } from 'web/lib/supabase/db'
 import { PrivacyAndTerms } from 'web/components/privacy-terms'
-import { GoogleSignInButton } from 'web/components/buttons/sign-in-button'
 
 const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
@@ -71,14 +70,12 @@ export default function Home(props: {
               >
                 Get app
               </Button>
-              {/* TODO: delete this and add back buttons after google approves the site */}
-              <GoogleSignInButton onClick={firebaseLogin} />
-              {/* <Button color="gray-white" size="xs" onClick={firebaseLogin}>
+              <Button color="gray-white" size="xs" onClick={firebaseLogin}>
                 Sign in
-              </Button> */}
-              {/* <Button color="indigo" size="xs" onClick={firebaseLogin}>
+              </Button>
+              <Button color="indigo" size="xs" onClick={firebaseLogin}>
                 Sign up
-              </Button> */}
+              </Button>
 
               <MobileAppsQRCodeDialog
                 isModalOpen={isModalOpen}
