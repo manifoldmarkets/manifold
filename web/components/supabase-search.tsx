@@ -4,7 +4,7 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { debounce, isEqual, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
-import { createContext, useContext, useEffect, useRef } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import {
   historyStore,
@@ -24,6 +24,7 @@ import { Col } from './layout/col'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { SiteLink } from './widgets/site-link'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -56,7 +57,7 @@ function getShowTime(sort: Sort) {
   return sort === 'close-date' || sort === 'resolve-date' ? sort : null
 }
 
-export const INITIAL_STATE = {
+export const INITIAL_STATE: stateType = {
   contracts: undefined,
   fuzzyContractOffset: 0,
   shouldLoadMore: true,
@@ -129,12 +130,12 @@ export function SupabaseContractSearch(props: {
     listViewDisabled,
   } = props
 
-  const [state, setState] = usePersistentState<stateType>(
-    INITIAL_STATE,
-    !persistPrefix
-      ? undefined
-      : { key: `${persistPrefix}-supabase-search`, store: inMemoryStore() }
-  )
+  const [state, setState] = persistPrefix
+    ? usePersistentInMemoryState<stateType>(
+        INITIAL_STATE,
+        `${persistPrefix}-supabase-search`
+      )
+    : useState<stateType>(INITIAL_STATE)
   const loadMoreContracts = () => {
     performQuery(() => state)()
   }
@@ -142,10 +143,10 @@ export function SupabaseContractSearch(props: {
   const searchParams = useRef<SupabaseSearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SupabaseSearchParameters>()
   const requestId = useRef(0)
-  const [asList, setAsList] = usePersistentState(!listViewDisabled, {
-    key: 'contract-search-as-list',
-    store: inMemoryStore(),
-  })
+  const [asList, setAsList] = usePersistentInMemoryState(
+    !listViewDisabled,
+    'contract-search-as-list'
+  )
 
   useSafeLayoutEffect(() => {
     if (persistPrefix) {
@@ -202,8 +203,6 @@ export function SupabaseContractSearch(props: {
         })
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
       }
-
-      // Rest of the function
     }
   })
 

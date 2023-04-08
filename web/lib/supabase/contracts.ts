@@ -133,7 +133,7 @@ export async function searchContract(props: {
   const { state, query, filter, sort, offset, limit, group_id, creator_id } =
     props
 
-  if (!query || query.length == 0) {
+  if (!query) {
     const contracts = await supabaseSearchContracts({
       term: '',
       filter: filter,
