@@ -92,6 +92,8 @@ export const BOT_USERNAMES = [
   'Catnee',
   'Mason',
   'VersusBot',
+  'GPT4',
+  'EntropyBot',
 ]
 
 export const CORE_USERNAMES = [
