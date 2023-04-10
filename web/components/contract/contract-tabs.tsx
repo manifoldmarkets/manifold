@@ -224,12 +224,12 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           : (c) => c,
         (c) => (!shouldBeNewestFirst(c) ? c.createdTime : -c.createdTime),
       ]),
-    [comments.length, sort, likes, user?.id]
+    [comments, sort, likes, user?.id]
   )
 
   const commentsByParent = useMemo(
     () => groupBy(sortedComments, (c) => c.replyToCommentId ?? '_'),
-    [sortedComments.length]
+    [sortedComments]
   )
   const parentComments = commentsByParent['_'] ?? []
   const visibleCommentIds = useMemo(
