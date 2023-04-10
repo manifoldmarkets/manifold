@@ -103,15 +103,12 @@ export default function ContractPage(props: {
 }) {
   const { visibility, contractSlug, contractParams } = props
   if (!visibility) {
-    return (
-      <Custom404
-        customText={`There was no visibility parameter detected for your market
+    console.log(`There was no visibility parameter detected for your market
       \nvisibility: ${visibility}
       \nslug: ${contractSlug}
       \ncontractParams: ${JSON.stringify(contractParams)}
-      `}
-      />
-    )
+      `)
+    return <Custom404 />
   }
   return (
     <Page className="!max-w-[1400px]" mainClassName="!col-span-10">
