@@ -32,9 +32,12 @@ export function getMostRecentCommentableBet(
   const mostRecentCommentedOnBet = commentsByCurrentUser
     .filter((c) => c.betId)
     .sort((a, b) => b.createdTime - a.createdTime)[0]
-  const cutoffTime = mostRecentCommentedOnBet
-    ? mostRecentCommentedOnBet.createdTime
-    : commentCreatedTime - HOUR_MS
+  const oneHourAgo = commentCreatedTime - HOUR_MS
+  const cutoffTime =
+    mostRecentCommentedOnBet &&
+    mostRecentCommentedOnBet.createdTime > oneHourAgo
+      ? mostRecentCommentedOnBet.createdTime
+      : oneHourAgo
   const mostRecentCommentableBets = betsByCurrentUser
     .sort((a, b) => b.createdTime - a.createdTime)
     .filter(
