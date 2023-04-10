@@ -241,7 +241,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
   const hashInUrl = useHashInUrl()
   useEffect(() => {
-    if (hashInUrl && comments.some((c) => c.id === hashInUrl)) {
+    if (hashInUrl) {
       const currentlyVisible = visibleCommentIds.includes(hashInUrl)
       if (!currentlyVisible) setParentCommentsToRender(comments.length)
     }
