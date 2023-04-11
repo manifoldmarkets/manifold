@@ -6,9 +6,10 @@ import { SiteLink } from '../widgets/site-link'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import { ContractCardNew } from './contract-card'
 
-export function ContractsFeed() {
+export function ContractsFeed(props: { topic?: string }) {
+  const { topic } = props
   const user = useUser()
-  const { contracts, loadMore } = useFeed(user, 'feed')
+  const { contracts, loadMore } = useFeed(user, 'feed', { topic })
 
   if (!contracts) return <LoadingIndicator />
 

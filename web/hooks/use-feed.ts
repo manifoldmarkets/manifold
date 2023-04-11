@@ -1,13 +1,13 @@
 import { uniqBy } from 'lodash'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import { useEffect } from 'react'
-import { usePersistentState, inMemoryStore } from './use-persistent-state'
+import { useEffect, useRef, useState } from 'react'
 import { buildArray } from 'common/util/array'
 import { usePrivateUser } from './use-user'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { useEvent } from './use-event'
 import { db } from 'web/lib/supabase/db'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 const PAGE_SIZE = 20
 
@@ -16,41 +16,73 @@ export const useFeed = (
   key: string,
   options?: {
     binaryOnly?: boolean
+    topic?: string
   }
 ) => {
-  const [savedContracts, setSavedContracts] = usePersistentState<
+  const { topic } = options ?? {}
+  const [savedContracts, setSavedContracts] = usePersistentInMemoryState<
     Contract[] | undefined
-  >(undefined, {
-    key: `recommended-contracts-${user?.id}-${key}`,
-    store: inMemoryStore(),
-  })
+  >(undefined, `recommended-contracts-${user?.id}-${key}`)
 
   const privateUser = usePrivateUser()
   const userId = user?.id
 
+  const lastTopicRef = useRef(topic)
+  const requestIdRef = useRef(0)
+
   const loadMore = useEvent(() => {
     if (userId) {
-      db.rpc('get_recommended_contracts_embeddings', {
-        uid: userId,
-        n: PAGE_SIZE,
-        excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
-      }).then((res) => {
+      requestIdRef.current++
+      const requestId = requestIdRef.current
+      const promise = topic
+        ? db.rpc('get_recommended_contracts_embeddings_topic', {
+            uid: userId,
+            p_topic: topic,
+            n: PAGE_SIZE,
+            excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
+          })
+        : db.rpc('get_recommended_contracts_embeddings', {
+            uid: userId,
+            n: PAGE_SIZE,
+            excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
+          })
+
+      promise.then((res) => {
+        if (requestIdRef.current !== requestId) return
         if (res.data) {
-          const newContracts =
-            (res.data as any).map(
-              (row: any) => row.data as Contract | undefined
-            ) ?? []
-          setSavedContracts((contracts) =>
-            uniqBy(buildArray(contracts, newContracts), (c) => c.id)
+          const newContracts = (res.data as any[]).map(
+            (row) => row.data as Contract
           )
+          if (topic)
+            console.log(
+              'found',
+              newContracts.length,
+              'contracts with topic',
+              topic,
+              newContracts.map((c) => c.question)
+            )
+          if (lastTopicRef.current !== topic) {
+            setSavedContracts(uniqBy(newContracts, (c) => c.id))
+          } else {
+            setSavedContracts(
+              uniqBy(buildArray(savedContracts, newContracts), (c) => c.id)
+            )
+          }
+          lastTopicRef.current = topic
         }
       })
     }
   })
 
+  const [firstTopic] = useState(topic)
+
   useEffect(() => {
+    if (topic === firstTopic && savedContracts?.length) {
+      return
+    }
+
     loadMore()
-  }, [loadMore])
+  }, [loadMore, topic])
 
   const filteredContracts = savedContracts?.filter(
     (c) =>

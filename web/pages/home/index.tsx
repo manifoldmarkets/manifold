@@ -32,6 +32,7 @@ import { ContractCardNew } from 'web/components/contract/contract-card'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { TopicSearch } from 'web/components/search/topic-search'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -211,10 +212,12 @@ const YourFeedSection = memo(function YourFeedSection(props: {
   className?: string
 }) {
   const { className } = props
+  const [topic, setTopic] = usePersistentInMemoryState('', 'your-feed-topic')
+
   return (
-    <Col className={className}>
-      {/* <HomeSectionHeader label={'Your feed'} icon={'📖'} /> */}
-      <ContractsFeed />
+    <Col className={clsx(className, 'gap-2')}>
+      <TopicSearch onSetTopic={setTopic} initialTopic={topic} />
+      <ContractsFeed topic={topic} />
     </Col>
   )
 })
