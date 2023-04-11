@@ -224,12 +224,12 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           : (c) => c,
         (c) => (!shouldBeNewestFirst(c) ? c.createdTime : -c.createdTime),
       ]),
-    [comments.length, sort, likes, user?.id]
+    [comments, sort, likes, user?.id]
   )
 
   const commentsByParent = useMemo(
     () => groupBy(sortedComments, (c) => c.replyToCommentId ?? '_'),
-    [sortedComments.length]
+    [sortedComments]
   )
   const parentComments = commentsByParent['_'] ?? []
   const visibleCommentIds = useMemo(
@@ -241,7 +241,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
   const hashInUrl = useHashInUrl()
   useEffect(() => {
-    if (hashInUrl && comments.some((c) => c.id === hashInUrl)) {
+    if (hashInUrl) {
       const currentlyVisible = visibleCommentIds.includes(hashInUrl)
       if (!currentlyVisible) setParentCommentsToRender(comments.length)
     }

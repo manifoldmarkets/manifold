@@ -13,7 +13,7 @@ import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 import { AUTH_COOKIE_NAME, TEN_YEARS_SECS } from 'common/envs/constants'
-import { setCookie } from 'web/lib/util/cookie'
+import { getCookie, setCookie } from 'web/lib/util/cookie'
 import { UserAndPrivateUser } from 'common/user'
 import { nativePassUsers, nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -38,8 +38,16 @@ const ensureDeviceToken = () => {
   return deviceToken
 }
 const getAdminToken = () => {
-  const deviceToken = safeLocalStorage?.getItem('TEST_CREATE_USER_KEY')
-  return deviceToken ?? ''
+  const key = 'TEST_CREATE_USER_KEY'
+  const cookie = getCookie(key)
+  if (cookie) return cookie
+
+  // For our convenience. If there's a token in local storage, set it as a cookie
+  const localStorageToken = safeLocalStorage?.getItem(key)
+  if (localStorageToken) {
+    setCookie(key, localStorageToken)
+  }
+  return localStorageToken ?? ''
 }
 
 const stripUserData = (user: object) => {
@@ -55,13 +63,12 @@ const stripUserData = (user: object) => {
 
 export const setUserCookie = (data: object | undefined) => {
   const stripped = data ? stripUserData(data) : ''
-  const cookie = setCookie(AUTH_COOKIE_NAME, stripped, [
+  setCookie(AUTH_COOKIE_NAME, stripped, [
     ['path', '/'],
     ['max-age', (data === undefined ? 0 : TEN_YEARS_SECS).toString()],
     ['samesite', 'lax'],
     ['secure'],
   ])
-  document.cookie = cookie
 }
 
 export const AuthContext = createContext<AuthUser>(undefined)
@@ -140,6 +147,7 @@ export function AuthProvider(props: {
           setUserCookie(undefined)
           setAuthUser(null)
           nativeSignOut()
+          localStorage.clear()
         }
       },
       (e) => {

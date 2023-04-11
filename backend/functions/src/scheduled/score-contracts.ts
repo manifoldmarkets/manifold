@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { Query } from 'firebase-admin/firestore'
+import { clamp } from 'lodash'
 
 import { Contract } from 'common/contract'
 import { loadPaginated, log } from 'shared/utils'
@@ -28,6 +29,8 @@ export const scoreContracts = functions
 const firestore = admin.firestore()
 
 export async function scoreContractsInternal() {
+  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
   const now = Date.now()
   const hourAgo = now - HOUR_MS
   const dayAgo = now - DAY_MS
@@ -38,20 +41,19 @@ export async function scoreContractsInternal() {
       .where('lastUpdatedTime', '>', hourAgo) as Query<Contract>
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
-  const previouslyActiveContractsSnap = await firestore
-    .collection('contracts')
-    .where('popularityScore', '>', 0)
-    .get()
+  const previouslyActiveContractsData = await db
+    .from('contracts')
+    .select('data')
+    .or('data->>dailyScore.gt.0,popularity_score.gt.0')
+
   const activeContractIds = activeContracts.map((c) => c.id)
-  const previouslyActiveContracts = previouslyActiveContractsSnap.docs
-    .map((doc) => doc.data() as Contract)
+  const previouslyActiveContracts = (previouslyActiveContractsData.data ?? [])
+    .map((row) => row.data as Contract)
     .filter((c) => !activeContractIds.includes(c.id))
 
   const contracts = activeContracts.concat(previouslyActiveContracts)
   log(`Found ${contracts.length} contracts to score`)
 
-  const db = createSupabaseClient()
-  const pg = createSupabaseDirectClient()
   const contractScoreUpdates: {
     contract_id: string
     freshness_score: number
@@ -79,8 +81,9 @@ export async function scoreContractsInternal() {
       !wasCreatedToday
     ) {
       const { prob, probChanges } = contract
-      let logOddsChange = Math.abs(logit(prob + probChanges.day) - logit(prob))
-      if (isNaN(logOddsChange)) logOddsChange = 1
+      const yesterdayProb = clamp(prob + probChanges.day, 0.01, 0.99)
+      const todayProb = clamp(prob, 0.01, 0.99)
+      const logOddsChange = Math.abs(logit(yesterdayProb) - logit(todayProb))
       dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
     }
 

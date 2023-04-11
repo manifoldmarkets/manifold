@@ -640,8 +640,8 @@ Parameters:
   answer. For numeric markets, this is a string representing the target bucket,
   and an additional `value` parameter is required which is a number representing
   the target value. (Bet on numeric markets at your own peril.)
-- `limitProb`: Optional. A number between `0.001` and `0.999` inclusive representing
-  the limit probability for your bet (i.e. 0.1% to 99.9% — multiply by 100 for the
+- `limitProb`: Optional. A number between `0.01` and `0.99` inclusive representing
+  the limit probability for your bet (i.e. 1% to 99% — multiply by 100 for the
   probability percentage).
   The bet will execute immediately in the direction of `outcome`, but not beyond this
   specified limit. If not all the bet is filled, the bet will remain as an open offer

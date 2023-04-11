@@ -128,19 +128,19 @@ export function UserBadge(props: {
   const { username, fresh, marketCreator } = props
   const badges = []
   if (BOT_USERNAMES.includes(username)) {
-    badges.push(<BotBadge />)
+    badges.push(<BotBadge key="bot" />)
   }
   if (CORE_USERNAMES.includes(username)) {
-    badges.push(<CoreBadge />)
+    badges.push(<CoreBadge key="core" />)
   }
   if (CHECK_USERNAMES.includes(username)) {
-    badges.push(<CheckBadge />)
+    badges.push(<CheckBadge key="check" />)
   }
   if (fresh) {
-    badges.push(<FreshBadge />)
+    badges.push(<FreshBadge key="fresh" />)
   }
   if (marketCreator) {
-    badges.push(<MarketCreatorBadge />)
+    badges.push(<MarketCreatorBadge key="creator" />)
   }
   return <>{badges}</>
 }

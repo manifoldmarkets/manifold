@@ -487,6 +487,14 @@ export function BuyPanel(props: {
           />
         </>
       )}
+      {/* Stonks don't allow limit orders but users may have them from before the conversion*/}
+      {isStonk && unfilledBets.length > 0 && (
+        <YourOrders
+          className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
+          contract={contract}
+          bets={unfilledBets as LimitBet[]}
+        />
+      )}
     </Col>
   )
 }
