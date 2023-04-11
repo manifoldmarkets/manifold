@@ -35,7 +35,6 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-menu'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
-import RectangleGroupIcon from 'web/lib/icons/reactangle-group-icon'
 
 export default function Sidebar(props: {
   className?: string
@@ -133,12 +132,12 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         name: 'Leaderboards',
         href: '/leaderboards',
         icon: TrophyIcon,
-      },
-      {
-        name: 'Market groups',
-        icon: RectangleGroupIcon,
-        href: '/groups',
       }
+      // {
+      //   name: 'Ads',
+      //   icon: SpeakerphoneIcon,
+      //   href: '/ad',
+      // }
     )
 
   return buildArray(
@@ -165,11 +164,6 @@ const getMobileNav = (toggleModal: () => void) => {
       name: `Ads - earn ${formatMoney(5)} per view!`,
       icon: SpeakerphoneIcon,
       href: '/ad',
-    },
-    {
-      name: 'Market groups',
-      icon: RectangleGroupIcon,
-      href: '/groups',
     }
   )
 }
