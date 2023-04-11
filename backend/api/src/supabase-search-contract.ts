@@ -203,13 +203,5 @@ function getSearchContractSortSQL(
   }
 
   const ASCDESC = sort === 'close-date' ? 'ASC' : 'DESC'
-  const fieldsWithNull = [
-    // 'daily-score',
-    'most-popular',
-    'last-updated',
-    'liquidity',
-  ]
-  return `ORDER BY ${sortFields[sort]} ${ASCDESC} ${
-    fieldsWithNull.includes(sort) ? 'NULLS LAST' : ''
-  }`
+  return `ORDER BY ${sortFields[sort]} ${ASCDESC}`
 }

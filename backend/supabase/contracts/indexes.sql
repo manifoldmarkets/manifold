@@ -13,6 +13,6 @@ create index if not exists contracts_volume_24_hours on contracts (
 create index if not exists contracts_elasticity on contracts (((data->>'elasticity')::numeric) desc);
 create index if not exists contracts_last_updated_time on contracts (((data->>'lastUpdatedTime')::numeric) desc);
 create index if not exists contracts_unique_bettor_count on contracts (((data->>'uniqueBettorCount')::integer) desc);
-create index if not exists contracts_resolution_time on contracts (resolution_time desc);
+create index if not exists contracts_resolution_time on contracts (resolution_time desc nulls last);
 create index if not exists contracts_visibility_public ON contracts (id)
 where visibility = 'public';
