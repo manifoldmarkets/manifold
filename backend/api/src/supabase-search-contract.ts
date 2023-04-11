@@ -3,19 +3,38 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 
+const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
+
 const bodySchema = z.object({
   term: z.string(),
-  filter: z.string(),
-  sort: z.string(),
+  filter: z.union([
+    z.literal('open'),
+    z.literal('closed'),
+    z.literal('resolved'),
+    z.literal('all'),
+  ]),
+  sort: z.union([
+    z.literal('relevance'),
+    z.literal('newest'),
+    z.literal('score'),
+    z.literal('daily-score'),
+    z.literal('24-hour-vol'),
+    z.literal('most-popular'),
+    z.literal('liquidity'),
+    z.literal('last-updated'),
+    z.literal('close-date'),
+    z.literal('resolve-date'),
+  ]),
   offset: z.number().gte(0),
   limit: z.number().gt(0),
   fuzzy: z.boolean().optional(),
-  groupId: z.string().optional(),
-  creatorId: z.string().optional(),
+  groupId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
+  creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
 })
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
+    const uid = auth?.uid ?? undefined
     const { term, filter, sort, offset, limit, fuzzy, groupId, creatorId } =
       validate(bodySchema, req.body)
     const pg = createSupabaseDirectClient()
@@ -30,9 +49,10 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       creatorId: creatorId,
       uid: auth?.uid,
     })
+    console.log(searchMarketSQL)
     const contracts = await pg.map(
       searchMarketSQL,
-      [],
+      [term],
       (r) => r.data as Contract
     )
     return (contracts as unknown as Json) ?? ([] as unknown as Json)
@@ -75,7 +95,7 @@ function getSearchContractSQL(contractInput: {
         SELECT contractz.data
         FROM (
             SELECT contracts.*,
-                similarity(contracts.question, '${term}') AS similarity_score,
+                similarity(contracts.question, $1) AS similarity_score,
                 group_contracts.group_id
             FROM contracts 
             join group_contracts 
@@ -93,7 +113,7 @@ function getSearchContractSQL(contractInput: {
             from contracts 
             join group_contracts on group_contracts.contract_id = contracts.id
         ) as contractz,
-        websearch_to_tsquery(' english ', '${term}') query
+        websearch_to_tsquery(' english ', $1) query
             ${whereSQL}
         AND contractz.question_fts @@ query
         AND contractz.group_id = '${groupId}'`
@@ -109,7 +129,7 @@ function getSearchContractSQL(contractInput: {
       SELECT contractz.data
       FROM (
         SELECT contracts.*,
-               similarity(contracts.question, '${term}') AS similarity_score
+               similarity(contracts.question, $1) AS similarity_score
         FROM contracts
       ) AS contractz
       ${whereSQL}
@@ -117,7 +137,7 @@ function getSearchContractSQL(contractInput: {
     } else {
       query = `
       SELECT contracts.data
-      FROM contracts, websearch_to_tsquery('english',  '${term}') query
+      FROM contracts, websearch_to_tsquery('english',  $1) query
          ${whereSQL}
       AND contracts.question_fts @@ query`
     }
@@ -183,5 +203,13 @@ function getSearchContractSortSQL(
   }
 
   const ASCDESC = sort === 'close-date' ? 'ASC' : 'DESC'
-  return `ORDER BY ${sortFields[sort]} ${ASCDESC} NULLS LAST`
+  const fieldsWithNull = [
+    // 'daily-score',
+    'most-popular',
+    'last-updated',
+    'liquidity',
+  ]
+  return `ORDER BY ${sortFields[sort]} ${ASCDESC} ${
+    fieldsWithNull.includes(sort) ? 'NULLS LAST' : ''
+  }`
 }

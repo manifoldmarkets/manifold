@@ -80,6 +80,7 @@ export function getNewContract(
     isResolved: false,
     createdTime,
     closeTime,
+    dailyScore: 0,
 
     volume: 0,
     volume24Hours: 0,

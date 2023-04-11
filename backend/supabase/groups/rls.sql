@@ -1,4 +1,4 @@
-DROP policy IF EXISTS "Enable read access for admin" ON public.groups;
+supDROP policy IF EXISTS "Enable read access for admin" ON public.groups;
 
 CREATE POLICY "Enable read access for admin" ON public.groups FOR
 SELECT

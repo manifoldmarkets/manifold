@@ -72,7 +72,7 @@ export async function scoreContractsInternal() {
     const freshnessScore = 1 + Math.log(1 + popularityScore)
     const wasCreatedToday = contract.createdTime > dayAgo
 
-    let dailyScore: number | undefined
+    let dailyScore = 0
     if (
       contract.outcomeType === 'BINARY' &&
       contract.mechanism === 'cpmm-1' &&

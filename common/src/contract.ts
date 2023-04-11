@@ -91,7 +91,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   uniqueBettors30Days?: number
 
   popularityScore?: number
-  dailyScore?: number
+  dailyScore: number
   likedByUserCount?: number
   flaggedByUsernames?: string[] // Deprecated as of 2023-01-05
   unlistedById?: string
