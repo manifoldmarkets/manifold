@@ -97,9 +97,10 @@ export default async function handler(
       }
 
       if (top) {
-        topSlice = contractMetrics.slice(0, top)
-        if (noSharesIndex !== -1) {
+        if (noSharesIndex !== -1 && noSharesIndex < top) {
           topSlice = contractMetrics.slice(0, noSharesIndex)
+        } else {
+          topSlice = contractMetrics.slice(0, top)
         }
       }
     }
