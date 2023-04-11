@@ -37,7 +37,7 @@ import {
   webToNativeMessage,
 } from 'common/src/native-message'
 import {
-  handleWebviewCrash,
+  handleWebviewKilled,
   sharedWebViewProps,
   handleWebviewError,
   handleRenderError,
@@ -108,7 +108,7 @@ const App = () => {
 
   // Url management
   const [urlToLoad, setUrlToLoad] = useState<string>(
-    baseUri + '/home' + nativeQuery
+    baseUri + 'home' + nativeQuery
   )
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
@@ -120,7 +120,7 @@ const App = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>('light')
 
   const setEndpointWithNativeQuery = (endpoint?: string) => {
-    const newUrl = baseUri + (endpoint ?? '/home') + nativeQuery
+    const newUrl = baseUri + (endpoint ?? 'home') + nativeQuery
     log('Setting new url:', newUrl)
     // React native doesn't come with Url, so we may want to use a library
     setUrlToLoad(newUrl)
@@ -421,9 +421,14 @@ const App = () => {
     )
   }
 
-  const resetWebViewStatus = () => {
+  const resetWebView = () => {
     setHasLoadedWebView(false)
     setListeningToNative(false)
+    setEndpointWithNativeQuery()
+    setTimeout(() => {
+      log('Reloading webview, webview.current:', webview.current)
+      webview.current?.reload()
+    }, 100)
   }
 
   const webViewAndUserLoaded = hasLoadedWebView && fbUser
@@ -484,9 +489,7 @@ const App = () => {
             }}
             source={{ uri: urlToLoad }}
             ref={webview}
-            onError={(e) =>
-              handleWebviewError(e, () => setEndpointWithNativeQuery())
-            }
+            onError={(e) => handleWebviewError(e, resetWebView)}
             renderError={(e) => handleRenderError(e, width, height)}
             // On navigation state change changes on every url change
             onNavigationStateChange={(navState) => {
@@ -499,11 +502,9 @@ const App = () => {
                 webview.current?.stopLoading()
               }
             }}
-            onRenderProcessGone={(e) =>
-              handleWebviewCrash(webview, e, resetWebViewStatus)
-            }
+            onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
             onContentProcessDidTerminate={(e) =>
-              handleWebviewCrash(webview, e, resetWebViewStatus)
+              handleWebviewKilled(e, resetWebView)
             }
             onMessage={async (m) => {
               try {
@@ -515,7 +516,7 @@ const App = () => {
           />
         </View>
       </SafeAreaView>
-      <ExportLogsButton />
+      {/*<ExportLogsButton />*/}
     </>
   )
 }
