@@ -1,14 +1,14 @@
-import { User } from 'common/user'
-import { ReactNode, useEffect, useState } from 'react'
-import { getCreatorRank, getTotalContractCreated } from 'web/lib/firebase/users'
-import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
-import { Row } from 'web/components/layout/row'
-import { ContractSearch } from 'web/components/contract-search'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { formatWithCommas } from 'common/util/format'
 import { getUnresolvedContractsCount } from 'common/supabase/contracts'
+import { User } from 'common/user'
+import { formatWithCommas } from 'common/util/format'
+import { ReactNode, useEffect, useState } from 'react'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { getCreatorRank, getTotalContractCreated } from 'web/lib/firebase/users'
 import { db } from 'web/lib/supabase/db'
+import { SupabaseContractSearch } from '../supabase-search'
 
 export function UserContractsList(props: { creator: User }) {
   const { creator } = props
@@ -84,7 +84,7 @@ export function UserContractsList(props: { creator: User }) {
           }
         />
       </Row>
-      <ContractSearch
+      <SupabaseContractSearch
         defaultFilter="all"
         defaultSort="newest"
         additionalFilter={{

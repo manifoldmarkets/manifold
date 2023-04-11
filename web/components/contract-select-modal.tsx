@@ -2,12 +2,14 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
 import { Button } from './buttons/button'
-import { AdditionalFilter, ContractSearch } from './contract-search'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
+import {
+  SupabaseAdditionalFilter,
+  SupabaseContractSearch,
+} from './supabase-search'
 import { LoadingIndicator } from './widgets/loading-indicator'
 
 export function SelectMarketsModal(props: {
@@ -17,7 +19,7 @@ export function SelectMarketsModal(props: {
   setOpen: (open: boolean) => void
   submitLabel: (length: number) => string
   onSubmit: (contracts: Contract[]) => void | Promise<void>
-  contractSearchOptions?: Partial<Parameters<typeof ContractSearch>[0]>
+  contractSearchOptions?: Partial<Parameters<typeof SupabaseContractSearch>[0]>
 }) {
   const {
     title,
@@ -49,10 +51,10 @@ export function SelectMarketsModal(props: {
 export function SelectMarkets(props: {
   submitLabel: (length: number) => string
   onSubmit: (contracts: Contract[]) => void | Promise<void>
-  contractSearchOptions?: Partial<Parameters<typeof ContractSearch>[0]>
+  contractSearchOptions?: Partial<Parameters<typeof SupabaseContractSearch>[0]>
   setOpen: (open: boolean) => void
   className?: string
-  additionalFilter?: AdditionalFilter
+  additionalFilter?: SupabaseAdditionalFilter
   headerClassName?: string
 }) {
   const {
@@ -90,7 +92,8 @@ export function SelectMarkets(props: {
           <LoadingIndicator />
         </div>
       )}
-      <ContractSearch
+      <SupabaseContractSearch
+        persistPrefix="contract-select-modal"
         hideOrderSelector
         onContractClick={addContract}
         cardUIOptions={{
@@ -100,8 +103,12 @@ export function SelectMarkets(props: {
         }}
         highlightContractIds={contracts.map((c) => c.id)}
         additionalFilter={{
-          excludeContractIds: additionalFilter?.excludeContractIds,
-          facetFilters: getUsersBlockFacetFilters(privateUser),
+          excludeContractIds: [
+            ...(additionalFilter?.excludeContractIds ?? []),
+            ...(privateUser?.blockedContractIds ?? []),
+          ],
+          excludeGroupSlugs: privateUser?.blockedGroupSlugs,
+          excludeUserIds: privateUser?.blockedUserIds,
         }}
         headerClassName={clsx('bg-canvas-0', headerClassName)}
         {...contractSearchOptions}

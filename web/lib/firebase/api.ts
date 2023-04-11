@@ -9,6 +9,7 @@ import { PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
 export { APIError } from 'common/api'
+import { filter, Sort } from '../../components/supabase-search'
 
 export async function call(url: string, method: string, params?: any) {
   const user = auth.currentUser
@@ -16,6 +17,30 @@ export async function call(url: string, method: string, params?: any) {
     throw new Error('Must be signed in to make API calls.')
   }
   const token = await user.getIdToken()
+  const req = new Request(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    method: method,
+    body: params != null ? JSON.stringify(params) : undefined,
+  })
+  return await fetch(req).then(async (resp) => {
+    const json = (await resp.json()) as { [k: string]: any }
+    if (!resp.ok) {
+      throw new APIError(resp.status, json?.message, json?.details)
+    }
+    return json
+  })
+}
+
+export async function maybeAuthedCall(
+  url: string,
+  method: string,
+  params?: any
+) {
+  const user = auth.currentUser
+  const token = await user?.getIdToken()
   const req = new Request(url, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -223,6 +248,19 @@ export function createCommentOnContract(params: {
   replyToAnswerId?: string
 }) {
   return call(getApiUrl('createcomment'), 'POST', params)
+}
+
+export function supabaseSearchContracts(params: {
+  term: string
+  filter: filter
+  sort: Sort
+  offset: number
+  limit: number
+  fuzzy?: boolean
+  groupId?: string
+  creatorId?: string
+}) {
+  return maybeAuthedCall(getApiUrl('supabasesearchcontracts'), 'POST', params)
 }
 
 export function deleteMarket(params: { contractId: string }) {

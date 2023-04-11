@@ -7,15 +7,15 @@ import { ReactNode, useEffect, useRef, useState } from 'react'
 import { useMemberGroupIds } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { useYourRecentContracts } from 'web/hooks/use-your-daily-changed-contracts'
-import { searchContracts } from 'web/lib/service/algolia'
+import { searchContract } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
-import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
+import { UserSearchResult, searchUsers } from 'web/lib/supabase/users'
 import { ContractStatusLabel } from '../contract/contracts-list-entry'
 import { JoinOrLeaveGroupButton } from '../groups/groups-button'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { defaultPages, PageData, searchPages } from './query-pages'
+import { PageData, defaultPages, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
 
 export interface Option {
@@ -119,8 +119,20 @@ const Results = (props: { query: string }) => {
     Promise.all([
       searchUsers(search, userHitLimit),
       searchGroups(search, groupHitLimit),
-      searchContracts(search, marketHitLimit),
-    ]).then(([userHits, groupHits, marketHits]) => {
+      searchContract({
+        state: {
+          contracts: undefined,
+          fuzzyContractOffset: 0,
+          shouldLoadMore: false,
+          showTime: null,
+        },
+        query: search,
+        filter: 'all',
+        sort: 'most-popular',
+        offset: 0,
+        limit: marketHitLimit,
+      }),
+    ]).then(([userHits, groupHits, { data: marketHits }]) => {
       if (thisNonce === nonce.current) {
         const pageHits = prefix ? [] : searchPages(search, 2)
         setSearchResults({ pageHits, userHits, groupHits, marketHits })

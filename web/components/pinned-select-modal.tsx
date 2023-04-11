@@ -4,7 +4,6 @@ import { Post } from 'common/post'
 import { useState } from 'react'
 import { Button } from './buttons/button'
 import { PillButton } from './buttons/pill-button'
-import { ContractSearch } from './contract-search'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
@@ -14,6 +13,7 @@ import { GroupCard } from 'web/pages/groups'
 import { Input } from './widgets/input'
 import { debounce } from 'lodash'
 import { searchInAny } from 'common/util/parse'
+import { SupabaseContractSearch } from './supabase-search'
 
 export function PinnedSelectModal(props: {
   title: string
@@ -23,7 +23,7 @@ export function PinnedSelectModal(props: {
   onSubmit: (
     selectedItems: { itemId: string; type: string }[]
   ) => void | Promise<void>
-  contractSearchOptions?: Partial<Parameters<typeof ContractSearch>[0]>
+  contractSearchOptions?: Partial<Parameters<typeof SupabaseContractSearch>[0]>
   posts: Post[]
   groups?: Group[]
   group?: Group
@@ -141,7 +141,7 @@ export function PinnedSelectModal(props: {
 
         {selectedTab === 'contracts' ? (
           <div className="grow overflow-y-auto px-2 sm:px-8">
-            <ContractSearch
+            <SupabaseContractSearch
               hideOrderSelector
               onContractClick={selectContract}
               cardUIOptions={{
@@ -151,7 +151,7 @@ export function PinnedSelectModal(props: {
               }}
               highlightContractIds={[selectedItem?.itemId ?? '']}
               additionalFilter={group ? { groupSlug: group.slug } : undefined}
-              persistPrefix={group ? `group-${group.slug}` : undefined}
+              persistPrefix={group ? `group-${group.slug}` : `pinned-modal`}
               headerClassName="bg-ink-1000"
               {...contractSearchOptions}
             />

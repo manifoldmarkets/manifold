@@ -8,7 +8,7 @@ import { Row } from 'web/components/layout/row'
 import { Leaderboard } from 'web/components/leaderboard'
 import { SEO } from 'web/components/SEO'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { getUsersBlockFacetFilters, User } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import Custom404, { Custom404Content } from '../../404'
 
 import { ArrowLeftIcon } from '@heroicons/react/solid'
@@ -17,7 +17,6 @@ import { GroupComment } from 'common/comment'
 import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { BETTORS, PrivateUser } from 'common/user'
-import { ContractSearch } from 'web/components/contract-search'
 import { AddContractButton } from 'web/components/groups/add-contract-to-group-button'
 import { GroupAboutSection } from 'web/components/groups/group-about-section'
 import BannerImage from 'web/components/groups/group-banner-image'
@@ -33,6 +32,7 @@ import {
 } from 'web/components/groups/private-group'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
+import { SupabaseContractSearch } from 'web/components/supabase-search'
 import { useAdmin } from 'web/hooks/use-admin'
 import {
   useGroupCreator,
@@ -130,7 +130,7 @@ export default function GroupPage(props: {
     return <Custom404 />
   }
   return (
-    <Page mainClassName="!mt-0">
+    <Page key={`group-${slugs[0]}`} mainClassName="!mt-0">
       {groupPrivacy == 'private' && <PrivateGroupPage slugs={slugs} />}
       {groupPrivacy != 'private' && groupParams && (
         <NonPrivateGroupPage groupParams={groupParams} />
@@ -215,10 +215,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   }
 
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
-  const contractVisibilityFilter =
-    group.privacyStatus == 'private'
-      ? 'visibility:private'
-      : 'visibility:public'
   return (
     <>
       <AddContractButton
@@ -309,14 +305,13 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
             {
               title: 'Markets',
               content: (
-                <ContractSearch
+                <SupabaseContractSearch
                   defaultFilter="all"
                   additionalFilter={{
-                    groupSlug: group.slug,
-                    facetFilters: [
-                      ...getUsersBlockFacetFilters(privateUser, true),
-                      contractVisibilityFilter,
-                    ],
+                    groupId: group.id,
+                    excludeContractIds: privateUser?.blockedContractIds,
+                    excludeGroupSlugs: privateUser?.blockedGroupSlugs ?? [],
+                    excludeUserIds: privateUser?.blockedUserIds,
                   }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts

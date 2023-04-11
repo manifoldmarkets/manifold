@@ -1,11 +1,14 @@
-import { CPMMContract, visibility, Contract } from 'common/contract'
+import { CPMMContract, Contract, visibility } from 'common/contract'
 import {
+  SupabaseClient,
   millisToTs,
   run,
   selectJson,
-  SupabaseClient,
 } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
+import { Sort, filter } from 'web/components/supabase-search'
+import { stateType } from 'web/components/supabase-search'
+import { supabaseSearchContracts } from '../firebase/api'
 import { adminDb, db } from './db'
 
 export async function getContractIds(contractIds: string[]) {
@@ -118,17 +121,106 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
   return undefined
 }
 
-export async function searchContract(query: string) {
-  const { data } = await run(
-    db
-      .from('contracts')
-      .select('data')
-      .textSearch('question', `${query}`)
-      .limit(10)
-  )
-  if (data && data.length > 0) {
-    return data.map((d) => d.data as Contract)
-  } else {
-    return []
+export async function searchContract(props: {
+  state: stateType
+  query: string
+  filter: filter
+  sort: Sort
+  offset: number
+  limit: number
+  group_id?: string
+  creator_id?: string
+}) {
+  const { state, query, filter, sort, offset, limit, group_id, creator_id } =
+    props
+
+  if (!query) {
+    const contracts = await supabaseSearchContracts({
+      term: '',
+      filter: filter,
+      sort: sort,
+      offset: offset,
+      limit: limit,
+      groupId: group_id,
+      creatorId: creator_id,
+    })
+    if (contracts) {
+      return {
+        fuzzyOffset: 0,
+        data: contracts,
+      }
+    }
   }
+  if (state.fuzzyContractOffset > 0) {
+    const contractFuzzy = searchContractFuzzy({
+      state,
+      query,
+      filter,
+      sort,
+      limit,
+      group_id,
+      creator_id,
+    })
+    return contractFuzzy
+  }
+
+  const contracts = await supabaseSearchContracts({
+    term: query,
+    filter: filter,
+    sort: sort,
+    offset: offset,
+    limit: limit,
+    fuzzy: false,
+    groupId: group_id,
+    creatorId: creator_id,
+  })
+  if (contracts) {
+    if (contracts.length == 20) {
+      return { fuzzyOffset: 0, data: contracts }
+    } else {
+      const fuzzyData = await searchContractFuzzy({
+        state,
+        query,
+        filter,
+        sort,
+        limit: limit - contracts.length,
+        group_id,
+        creator_id,
+      })
+      return {
+        fuzzyOffset: fuzzyData.fuzzyOffset,
+        data: contracts.concat(fuzzyData.data),
+      }
+    }
+  }
+  return { fuzzyOffset: 0, data: [] }
+}
+
+export async function searchContractFuzzy(props: {
+  state: stateType
+  query: string
+  filter: filter
+  sort: Sort
+  limit: number
+  group_id?: string
+  creator_id?: string
+}) {
+  const { state, query, filter, sort, limit, group_id, creator_id } = props
+  const contracts = await supabaseSearchContracts({
+    term: query,
+    filter: filter,
+    sort: sort,
+    offset: state.fuzzyContractOffset,
+    limit: limit,
+    fuzzy: true,
+    groupId: group_id,
+    creatorId: creator_id,
+  })
+  if (contracts) {
+    return {
+      fuzzyOffset: contracts.length,
+      data: contracts,
+    }
+  }
+  return { fuzzyOffset: 0, data: [] }
 }

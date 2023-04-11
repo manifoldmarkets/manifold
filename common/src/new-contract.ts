@@ -80,6 +80,10 @@ export function getNewContract(
     isResolved: false,
     createdTime,
     closeTime,
+    dailyScore: 0,
+    popularityScore: 0,
+    uniqueBettorCount: 0,
+    lastUpdatedTime: createdTime,
 
     volume: 0,
     volume24Hours: 0,
