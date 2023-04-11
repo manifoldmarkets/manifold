@@ -733,7 +733,7 @@ Closes a market on behalf of the authorized user.
 
 ### `POST /v0/market/[marketId]/group`
 
-Add a market to a group.
+Add or remove a market to/from a group.
 
 - `groupId`: Required. Id of the group. Must be admin/moderator/creator of group if curated/private. Must be market creator or trustworthyish if group is public.
 - `remove`: Optional. Set to `true` to remove the market from the group.
