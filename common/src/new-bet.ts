@@ -115,9 +115,13 @@ const computeFill = (
 
   // Fill from matchedBet.
   const amountRemaining = matchedBet.orderAmount - matchedBet.amount
+  const matchableUserBalance =
+    matchedBetUserBalance && matchedBetUserBalance < 0
+      ? 0
+      : matchedBetUserBalance
   const amountToFill = Math.min(
     amountRemaining,
-    matchedBetUserBalance ?? amountRemaining
+    matchableUserBalance ?? amountRemaining
   )
   const shares = Math.min(
     amount /

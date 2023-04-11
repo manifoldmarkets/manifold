@@ -1,7 +1,7 @@
 import { IncomingMessage, ServerResponse } from 'http'
 import { User as FirebaseUser } from 'firebase/auth'
 import { AUTH_COOKIE_NAME } from 'common/envs/constants'
-import { getCookies } from 'web/lib/util/cookie'
+import { getCookiesFromString } from 'web/lib/util/cookie'
 import {
   GetServerSideProps,
   GetServerSidePropsContext,
@@ -19,7 +19,9 @@ type RequestContext = {
 }
 
 export const authenticateOnServer = async (ctx: RequestContext) => {
-  const user = getCookies(ctx.req.headers.cookie ?? '')[AUTH_COOKIE_NAME]
+  const user = getCookiesFromString(ctx.req.headers.cookie ?? '')[
+    AUTH_COOKIE_NAME
+  ]
   if (user == null) {
     console.debug('User is unauthenticated.')
     return null

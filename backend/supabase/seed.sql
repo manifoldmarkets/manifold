@@ -457,7 +457,7 @@ create policy "public read" on contract_embeddings for
 select using (true);
 drop policy if exists "admin write access" on contract_embeddings;
 create policy "admin write access" on contract_embeddings as PERMISSIVE FOR ALL to service_role;
-SET ivfflat.probes = 5;
+SET ivfflat.probes = 7;
 create index if not exists contract_embeddings_embedding on contract_embeddings
   using ivfflat (embedding vector_cosine_ops)
   with (lists = 100);

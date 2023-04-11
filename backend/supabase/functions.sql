@@ -212,7 +212,14 @@ create or replace function get_recommended_contracts_embeddings(uid text, n int,
    limit 2000
   ), available_contracts as (
     select *,
-      log(coalesce(popularity_score, 0) + 2) / (relative_dist + 0.1) as score
+    (case
+       when close_time <= NOW() + interval '1 day' then 1
+      when close_time <= NOW() + interval '1 week' then .9
+      when close_time <= NOW() + interval '1 month' then 0.75
+      when close_time <= NOW() + interval '3 months' then 0.5
+      when close_time <= NOW() + interval '1 year' then 0.33
+      else 0.25
+    end) * log(coalesce(popularity_score, 0) + 2) / (relative_dist + 0.1) as score
     from available_contracts_unscored
   ), new_contracts as (
     select *,
