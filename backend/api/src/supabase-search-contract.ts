@@ -39,14 +39,14 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       validate(bodySchema, req.body)
     const pg = createSupabaseDirectClient()
     const searchMarketSQL = getSearchContractSQL({
-      term: term,
-      filter: filter,
-      sort: sort,
-      offset: offset,
-      limit: limit,
-      fuzzy: fuzzy,
-      groupId: groupId,
-      creatorId: creatorId,
+      term,
+      filter,
+      sort,
+      offset,
+      limit,
+      fuzzy,
+      groupId,
+      creatorId,
       uid: auth?.uid,
     })
     console.log(searchMarketSQL)
