@@ -17,6 +17,7 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { PageData, defaultPages, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
+import { uniqBy } from 'lodash'
 
 export interface Option {
   id: string
@@ -135,7 +136,13 @@ const Results = (props: { query: string }) => {
     ]).then(([userHits, groupHits, { data: marketHits }]) => {
       if (thisNonce === nonce.current) {
         const pageHits = prefix ? [] : searchPages(search, 2)
-        setSearchResults({ pageHits, userHits, groupHits, marketHits })
+        const uniqueMarketHits = uniqBy<Contract>(marketHits, 'id')
+        setSearchResults({
+          pageHits,
+          userHits,
+          groupHits,
+          marketHits: uniqueMarketHits,
+        })
         setLoading(false)
       }
     })
