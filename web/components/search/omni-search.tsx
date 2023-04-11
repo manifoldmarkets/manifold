@@ -55,7 +55,7 @@ export const OmniSearch = (props: {
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search markets, users, & groups"
         className={clsx(
-          '!border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
+          'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
           inputClassName
         )}
       />
