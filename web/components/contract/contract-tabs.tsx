@@ -331,7 +331,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const items = [
     ...bets.map((bet) => ({
       type: 'bet' as const,
-      id: bet.id + '-' + bet.createdTime,
+      id: 'bets-tab-' + bet.id + '-' + (bet.isSold ?? 'false'),
       bet,
     })),
     ...visibleLps.map((lp) => ({
