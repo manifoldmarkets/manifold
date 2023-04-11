@@ -4,12 +4,19 @@ import { Configuration, OpenAIApi } from 'openai'
 
 import { filterTopGroups, Group } from 'common/group'
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+export const initOpenAIApi = () => {
+  const configuration = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
 
-const openai = new OpenAIApi(configuration)
+  return new OpenAIApi(configuration)
+}
+
+let openai: OpenAIApi | undefined
+
 export const generateEmbeddings = async (question: string) => {
+  if (!openai) openai = initOpenAIApi()
+
   let response
   try {
     response = await openai.createEmbedding({
@@ -31,6 +38,8 @@ export const generateEmbeddings = async (question: string) => {
 }
 
 export const getGroupForMarket = async (question: string) => {
+  if (!openai) openai = initOpenAIApi()
+
   const groups = await getGroups()
 
   const groupsList = groups.map((g) => g.name).join('\n')
@@ -68,6 +77,8 @@ export const getGroupForMarket = async (question: string) => {
 }
 
 export const getCloseDate = async (question: string) => {
+  if (!openai) openai = initOpenAIApi()
+
   const now = dayjs().format('M/D/YYYY h:mm a')
 
   let response
@@ -102,6 +113,8 @@ export const getCloseDate = async (question: string) => {
 }
 
 export const getImagePrompt = async (question: string) => {
+  if (!openai) openai = initOpenAIApi()
+
   let response
   try {
     response = await openai.createCompletion({
