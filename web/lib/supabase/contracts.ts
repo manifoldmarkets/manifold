@@ -134,6 +134,13 @@ export async function searchContract(props: {
   const { state, query, filter, sort, offset, limit, group_id, creator_id } =
     props
 
+  if (limit === 0) {
+    return {
+      fuzzyOffset: 0,
+      data: {},
+    }
+  }
+
   if (!query) {
     const contracts = await supabaseSearchContracts({
       term: '',
