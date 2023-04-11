@@ -124,7 +124,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   visibility: visibility;
 
   createdTime: number; // Milliseconds since epoch
-  lastUpdatedTime?: number; // Updated on new bet or comment
+  lastUpdatedTime: number; // Updated on new bet or comment
   lastBetTime?: number;
   lastCommentTime?: number;
   closeTime?: number; // When no more trading is allowed
@@ -145,9 +145,9 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   groupSlugs?: string[];
   groupLinks?: GroupLink[];
   uniqueBettorIds?: string[];
-  uniqueBettorCount?: number;
-  popularityScore?: number;
-  dailyScore?: number;
+  uniqueBettorCount: number;
+  popularityScore: number;
+  dailyScore: number;
   followerCount?: number;
   featuredOnHomeRank?: number;
   likedByUserIds?: string[];

@@ -63,7 +63,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   visibility: visibility
 
   createdTime: number // Milliseconds since epoch
-  lastUpdatedTime?: number // Updated on new bet or comment
+  lastUpdatedTime: number // Updated on new bet or comment
   lastBetTime?: number
   lastCommentTime?: number
   closeTime?: number // When no more trading is allowed
@@ -85,13 +85,13 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   groupSlugs?: string[]
   groupLinks?: GroupLink[]
   uniqueBettorIds?: string[]
-  uniqueBettorCount?: number
+  uniqueBettorCount: number
   uniqueBettors24Hours?: number
   uniqueBettors7Days?: number
   uniqueBettors30Days?: number
 
-  popularityScore?: number
-  dailyScore?: number
+  popularityScore: number
+  dailyScore: number
   likedByUserCount?: number
   flaggedByUsernames?: string[] // Deprecated as of 2023-01-05
   unlistedById?: string

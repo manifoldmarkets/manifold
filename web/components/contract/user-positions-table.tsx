@@ -1,42 +1,41 @@
-import { memo, useEffect, useMemo, useState } from 'react'
-import {
-  ContractMetricsByOutcome,
-  getTotalContractMetricsCount,
-} from 'web/lib/firebase/contract-metrics'
-import { useUser } from 'web/hooks/use-user'
-import { useFollows } from 'web/hooks/use-follows'
+import clsx from 'clsx'
 import { ContractMetrics } from 'common/calculate-metrics'
+import { CPMMContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import {
+  ShareholderStats,
   getContractMetricsForContractId,
   getShareholderCountsForContractId,
-  ShareholderStats,
 } from 'common/supabase/contract-metrics'
-import { db } from 'web/lib/supabase/db'
+import { User } from 'common/user'
+import { formatMoney } from 'common/util/format'
 import { partition } from 'lodash'
-import { useContractMetrics } from 'web/hooks/use-contract-metrics'
+import { memo, useEffect, useMemo, useState } from 'react'
+import { SortRow } from 'web/components/contract/contract-tabs'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import {
-  HigherLabel,
   BuyLabel,
+  HigherLabel,
   LowerLabel,
   NoLabel,
   ShortLabel,
   YesLabel,
 } from 'web/components/outcome-label'
-import { formatMoney } from 'common/util/format'
-import { Pagination } from 'web/components/widgets/pagination'
-import { ContractMetric } from 'common/contract-metric'
-import { User } from 'common/user'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import clsx from 'clsx'
 import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
-import { SortRow } from 'web/components/contract/contract-tabs'
-import { CPMMContract } from 'common/contract'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { getProbability } from 'common/calculate'
+import { UserLink } from 'web/components/widgets/user-link'
+import { useContractMetrics } from 'web/hooks/use-contract-metrics'
+import { useFollows } from 'web/hooks/use-follows'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useUser } from 'web/hooks/use-user'
+import {
+  ContractMetricsByOutcome,
+  getTotalContractMetricsCount,
+} from 'web/lib/firebase/contract-metrics'
+import { db } from 'web/lib/supabase/db'
 
 export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
@@ -46,7 +45,6 @@ export const BinaryUserPositionsTable = memo(
     shareholderStats?: ShareholderStats
   }) {
     const { contract, setTotalPositions } = props
-    const currentProb = getProbability(contract)
     const contractId = contract.id
     const [page, setPage] = useState(0)
     const pageSize = 20

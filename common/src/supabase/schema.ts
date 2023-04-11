@@ -1056,19 +1056,19 @@ export interface Database {
       }
       user_referrals: {
         Row: {
-          id: string | null
           data: Json | null
-          total_referrals: number | null
+          id: string | null
           rank: number | null
+          total_referrals: number | null
         }
       }
       user_referrals_profit: {
         Row: {
-          id: string | null
           data: Json | null
+          id: string | null
+          rank: number | null
           total_referrals: number | null
           total_referred_profit: number | null
-          rank: number | null
         }
       }
       user_trending_contract: {
@@ -1235,7 +1235,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database['public']['CompositeTypes']['table_spec']
+        Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_open_limit_bets_with_contracts: {
         Args: {
@@ -1329,6 +1329,7 @@ export interface Database {
         Returns: {
           data: Json
           distance: number
+          relative_dist: number
           popularity_score: number
         }[]
       }
@@ -1341,6 +1342,7 @@ export interface Database {
         Returns: {
           data: Json
           distance: number
+          relative_dist: number
           popularity_score: number
         }[]
       }
@@ -1359,7 +1361,7 @@ export interface Database {
           lim: number
           start: number
         }
-        Returns: Json[]
+        Returns: unknown
       }
       get_time: {
         Args: Record<PropertyKey, never>
@@ -1435,31 +1437,31 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -1475,7 +1477,7 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -1540,7 +1542,7 @@ export interface Database {
           lim: number
           start: number
         }
-        Returns: Json[]
+        Returns: unknown
       }
       search_contracts_by_group_slugs_for_creator: {
         Args: {
@@ -1549,11 +1551,38 @@ export interface Database {
           lim: number
           start: number
         }
-        Returns: Json[]
+        Returns: unknown
+      }
+      search_contracts_combined: {
+        Args: {
+          term: string
+          contract_filter: string
+          contract_sort: string
+          offset_n: number
+          limit_n: number
+          fuzzy?: boolean
+          groupid?: string
+        }
+        Returns: {
+          data: Json
+        }[]
+      }
+      search_contracts_test: {
+        Args: {
+          term: string
+          contract_filter: string
+          contract_sort: string
+          offset_n: number
+          limit_n: number
+          fuzzy?: boolean
+          group_id?: string
+          creator_id?: string
+        }
+        Returns: string
       }
       set_limit: {
         Args: {
-          '': number
+          "": number
         }
         Returns: number
       }
@@ -1563,9 +1592,9 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          '': string
+          "": string
         }
-        Returns: string[]
+        Returns: unknown
       }
       squared_distance: {
         Args: {
@@ -1574,9 +1603,33 @@ export interface Database {
         }
         Returns: number
       }
+      test_empty_search_contracts: {
+        Args: {
+          contract_filter: string
+          contract_sort: string
+          offset_n: number
+          limit_n: number
+          group_id?: string
+          creator_id?: string
+        }
+        Returns: string
+      }
+      test_search_contracts: {
+        Args: {
+          term: string
+          contract_filter: string
+          contract_sort: string
+          offset_n: number
+          limit_n: number
+          fuzzy?: boolean
+          group_id?: string
+          creator_id?: string
+        }
+        Returns: string
+      }
       to_jsonb: {
         Args: {
-          '': Json
+          "": Json
         }
         Returns: Json
       }
@@ -1595,37 +1648,37 @@ export interface Database {
           }
       vector_avg: {
         Args: {
-          '': number[]
+          "": number[]
         }
         Returns: unknown
       }
       vector_dims: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          '': unknown[]
+          "": unknown[]
         }
         Returns: number
       }

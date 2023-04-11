@@ -1,14 +1,13 @@
-import { Page } from 'web/components/layout/page'
+import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import { useRouter } from 'next/router'
 import { Col } from 'web/components/layout/col'
-import { ContractSearch } from 'web/components/contract-search'
+import { Page } from 'web/components/layout/page'
+import { SupabaseContractSearch } from 'web/components/supabase-search'
+import { Title } from 'web/components/widgets/title'
+import { useMemberGroupsSubscription } from 'web/hooks/use-group'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { useRouter } from 'next/router'
-import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
-import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
-import { useMemberGroupsSubscription } from 'web/hooks/use-group'
-import { Title } from 'web/components/widgets/title'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export default function Search() {
   const user = useUser()
@@ -26,20 +25,21 @@ export default function Search() {
   const shouldFilterDestiny = !followedGroups?.find((g) =>
     DESTINY_GROUP_SLUGS.includes(g.slug)
   )
-  const destinyFilters = shouldFilterDestiny
-    ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
-    : []
 
   return (
     <Page>
       <Col className="mx-auto w-full p-2">
         <Title className="hidden lg:flex">Markets</Title>
-        <ContractSearch
+        <SupabaseContractSearch
           persistPrefix="search"
           autoFocus={autoFocus}
           additionalFilter={{
-            facetFilters: getUsersBlockFacetFilters(privateUser),
-            nonQueryFacetFilters: destinyFilters,
+            excludeContractIds: privateUser?.blockedContractIds,
+            excludeGroupSlugs: [
+              ...(privateUser?.blockedGroupSlugs ?? []),
+              ...(shouldFilterDestiny ? DESTINY_GROUP_SLUGS : []),
+            ],
+            excludeUserIds: privateUser?.blockedUserIds,
           }}
           isWholePage
         />

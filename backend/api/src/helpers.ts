@@ -6,12 +6,16 @@ import { PrivateUser } from 'common/user'
 import { APIError } from 'common/api'
 export { APIError } from 'common/api'
 
-type Json = Record<string, unknown>
+export type Json = Record<string, unknown>
 export type Handler<T> = (req: Request) => Promise<T>
 export type JsonHandler<T extends Json> = Handler<T>
 export type AuthedHandler<T extends Json> = (
   req: Request,
   user: AuthedUser
+) => Promise<T>
+export type MaybeAuthedHandler<T extends Json> = (
+  req: Request,
+  user?: AuthedUser
 ) => Promise<T>
 
 export type AuthedUser = {
@@ -115,6 +119,22 @@ export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
     try {
       const authedUser = await lookupUser(await parseCredentials(req))
       res.status(200).json(await fn(req, authedUser))
+    } catch (e) {
+      next(e)
+    }
+  }
+}
+export const MaybeAuthedEndpoint = <T extends Json>(
+  fn: MaybeAuthedHandler<T>
+) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    let authUser: AuthedUser | undefined = undefined
+    try {
+      authUser = await lookupUser(await parseCredentials(req))
+    } catch {}
+
+    try {
+      res.status(200).json(await fn(req, authUser))
     } catch (e) {
       next(e)
     }
