@@ -40,7 +40,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
       <CopyLinkButton
         url={getShareUrl(contract, user?.username)}
         linkIconOnlyProps={{
-          tooltip: 'Copy link to market',
+          tooltip: 'Copy market share link',
           //TODO: less spaghetti way of styling the button and icon
           className:
             'rounded-full bg-black/60 !p-2 !text-white hover:bg-black/80 [&_svg]:h-4 [&_svg]:w-4',
