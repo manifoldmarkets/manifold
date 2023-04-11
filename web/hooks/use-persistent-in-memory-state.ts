@@ -1,10 +1,13 @@
 import { safeJsonParse } from 'common/util/json'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useStateCheckEquality } from './use-state-check-equality'
 
 const store: { [key: string]: any } = {}
 
 export const usePersistentInMemoryState = <T>(initialValue: T, key: string) => {
-  const [state, setState] = useState<T>(initialValue)
+  const [state, setState] = useStateCheckEquality<T>(
+    safeJsonParse(store[key]) ?? initialValue
+  )
 
   useEffect(() => {
     const storedValue = safeJsonParse(store[key]) ?? initialValue
