@@ -33,18 +33,15 @@ export const sharedWebViewProps: WebViewProps = {
   injectedJavaScript: PREVENT_ZOOM_SET_NATIVE,
 }
 
-export const handleWebviewCrash = (
-  webview: RefObject<WebView>,
+export const handleWebviewKilled = (
   syntheticEvent: WebViewTerminatedEvent | WebViewRenderProcessGoneEvent,
   callback: () => void
 ) => {
-  const { nativeEvent } = syntheticEvent
   log(
     `Content process terminated, reloading ${Platform.OS}. Error:`,
-    nativeEvent
+    syntheticEvent.nativeEvent
   )
   callback()
-  webview.current?.reload()
 }
 
 export const handleWebviewError = (
@@ -52,7 +49,6 @@ export const handleWebviewError = (
   callback: () => void
 ) => {
   const { nativeEvent } = e
-  log('Webview error', e)
   log('Webview error native event', nativeEvent)
   Sentry.Native.captureException(nativeEvent.description, {
     extra: {

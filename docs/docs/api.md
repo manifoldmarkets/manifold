@@ -8,6 +8,7 @@ If you have questions, come chat with us on [Discord](https://discord.com/invite
 
 :::
 
+
 ## General notes
 
 Some APIs are not associated with any particular user. Other APIs require authentication.
@@ -31,6 +32,12 @@ one property per parameter if they are POST requests.
 API responses should always either have a body with a JSON result object (if
 the response was a 200) or with a JSON object representing an error (if the
 response was a 4xx or 5xx.)
+
+## Usage Guidelines
+
+Feel free to use the API for any purpose you'd like. We ask that you:
+- Keep your bets to less than 10 per minute, amortized (transient spikes of over 10/min are okay).
+- Keep your reads to less than 100 per second.
 
 ## Endpoints
 
