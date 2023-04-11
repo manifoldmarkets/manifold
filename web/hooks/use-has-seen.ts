@@ -21,7 +21,7 @@ export const useHasSeen = (
       startMs = today.getTime()
       endMs = startMs + DAY_MS
     } else if (timePeriod === 'week') {
-      startMs = dayjs().startOf('week').valueOf()
+      startMs = dayjs().startOf('week').add(1, 'day').valueOf()
       endMs = startMs + DAY_MS * 7
     }
     getUserEventsCount(user.id, eventNames, startMs, endMs, db).then((count) =>

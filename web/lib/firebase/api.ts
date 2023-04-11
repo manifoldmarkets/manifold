@@ -268,3 +268,9 @@ export function deleteMarket(params: { contractId: string }) {
     status: 'success'
   }>
 }
+
+export function saveTopic(params: { topic: string }) {
+  return call(getApiUrl('save-topic'), 'POST', params) as Promise<{
+    status: 'success'
+  }>
+}

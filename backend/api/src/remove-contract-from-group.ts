@@ -1,10 +1,12 @@
 import { Contract } from 'common/contract'
-import { isAdmin, isManifoldId } from 'common/envs/constants'
+import { isAdmin, isManifoldId, isTrustworthy } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { GroupMember } from 'common/group-member'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
+import { canUserAddGroupToMarket } from 'api/add-contract-to-group'
+import { getUser } from 'shared/utils'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -40,6 +42,7 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
     const group = groupSnap.data() as Group
     const contract = contractSnap.data() as Contract
     const firebaseUser = await admin.auth().getUser(auth.uid)
+    const user = await getUser(auth.uid)
 
     if (group.privacyStatus == 'private' || contract.visibility == 'private') {
       throw new APIError(
@@ -47,33 +50,24 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
         'You can not remove a private market from a private group!'
       )
     }
-
-    // checks if have permission to add a contract to the group
     if (
-      // if user is not admin or contract creator
-      !isManifoldId(auth.uid) &&
-      !isAdmin(firebaseUser.email) &&
-      contract.creatorId != auth.uid
+      !canUserAddGroupToMarket({
+        userId: auth.uid,
+        group: group,
+        isMarketCreator: contract.creatorId === auth.uid,
+        isManifoldAdmin: isManifoldId(auth.uid) || isAdmin(firebaseUser.email),
+        userGroupRole: groupMember
+          ? (groupMember.role as 'admin' | 'moderator')
+          : undefined,
+        isTrustworthy: isTrustworthy(user?.username),
+      })
     ) {
-      if (!groupMember) {
-        // checks if is manifold admin (therefore does not have to be a group member)
-        throw new APIError(
-          400,
-          'User is not a member of the group, therefore can not remove any markets'
-        )
-      } else {
-        // must either be admin, moderator or owner of contract to add to group
-        if (
-          group.creatorId !== auth.uid &&
-          groupMember.role !== 'admin' &&
-          groupMember.role !== 'moderator'
-        )
-          throw new APIError(
-            400,
-            'User does not have permission to remove this market from group'
-          )
-      }
+      throw new APIError(
+        400,
+        `User does not have permission to remove this market from group "${group.name}".`
+      )
     }
+
     if (!contract.groupLinks || !contract.groupSlugs) {
       throw new APIError(400, 'This group does not have any markets to remove')
     }

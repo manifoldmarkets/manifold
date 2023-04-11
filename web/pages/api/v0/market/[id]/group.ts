@@ -17,8 +17,14 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   const contractId = id as string
   if (req.body) req.body.contractId = contractId
   try {
-    const backendRes = await fetchBackend(req, 'addcontracttogroup')
-    await forwardResponse(res, backendRes)
+    if (!req.body.remove) {
+      const backendRes = await fetchBackend(req, 'addcontracttogroup')
+      await forwardResponse(res, backendRes)
+    }
+    if (req.body.remove) {
+      const backendRes = await fetchBackend(req, 'removecontractfromgroup')
+      await forwardResponse(res, backendRes)
+    }
   } catch (err) {
     console.error('Error talking to cloud function: ', err)
     res.status(500).json({ message: 'Error communicating with backend.' })

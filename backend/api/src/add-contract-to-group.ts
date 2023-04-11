@@ -1,15 +1,11 @@
-import { Contract } from 'common/contract'
-import {
-  CHECK_USERNAMES,
-  isAdmin,
-  isManifoldId,
-  isTrustworthy,
-} from 'common/envs/constants'
-import { Group, GroupLink } from 'common/group'
-import { GroupMember } from 'common/group-member'
 import * as admin from 'firebase-admin'
 import { uniq } from 'lodash'
 import { z } from 'zod'
+
+import { Contract } from 'common/contract'
+import { isAdmin, isManifoldId, isTrustworthy } from 'common/envs/constants'
+import { Group, GroupLink } from 'common/group'
+import { GroupMember } from 'common/group-member'
 import { APIError, authEndpoint, validate } from './helpers'
 import { getUser } from 'shared/utils'
 

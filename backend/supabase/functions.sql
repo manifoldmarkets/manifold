@@ -158,20 +158,38 @@ create or replace function get_recommended_contracts_embeddings(uid text, n int,
   popularity_score numeric
 ) immutable parallel safe language sql as $$
   with user_embedding as (
-    select interest_embedding
-    from user_embeddings
+    select interest_embedding from user_embeddings
     where user_id = uid
-  ), available_contracts_unscored as (
+  )
+  select * from get_recommended_contracts_embeddings_from(
+    uid, (select interest_embedding from user_embedding), n, excluded_contract_ids)
+$$;
+
+create or replace function get_recommended_contracts_embeddings_topic(uid text, p_topic text, n int, excluded_contract_ids text []) returns table (
+  data jsonb,
+  distance numeric,
+  relative_dist numeric,
+  popularity_score numeric
+) immutable parallel safe language sql as $$
+  with topic_embedding as (
+    select embedding from topic_embeddings
+    where topic_embeddings.topic = p_topic
+  )
+  select * from get_recommended_contracts_embeddings_from(
+      uid, (select embedding from topic_embedding), n, excluded_contract_ids)
+$$;
+
+create or replace function get_recommended_contracts_embeddings_from(uid text, p_embedding vector, n int, excluded_contract_ids text []) returns table (
+  data jsonb,
+  distance numeric,
+  relative_dist numeric,
+  popularity_score numeric
+) immutable parallel safe language sql as $$
+  with available_contracts_unscored as (
     select contract_id,
-    (
-      select interest_embedding
-      from user_embedding
-    ) <=> ce.embedding as distance,
-           (row_number() over (order by (
-      select interest_embedding
-      from user_embedding
-    ) <=> ce.embedding))
-             / 2000.0 as relative_dist,
+      p_embedding <=> ce.embedding as distance,
+      (row_number() over (order by p_embedding <=> ce.embedding))
+        / 2000.0 as relative_dist,
     lpc.popularity_score,
     lpc.created_time,
     lpc.close_time
@@ -203,10 +221,7 @@ create or replace function get_recommended_contracts_embeddings(uid text, n int,
        and user_events.data->>'contractId' = contract_id
        and (user_events.data->'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
    )
-    order by (
-      select interest_embedding
-      from user_embedding
-    ) <=> ce.embedding
+    order by p_embedding <=> ce.embedding
     -- Find many that are close to your interests
     -- so that among them we can filter for new, closing soon, and trending.
    limit 2000

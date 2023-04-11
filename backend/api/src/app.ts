@@ -50,6 +50,7 @@ import { createDebate } from './create-debate'
 import { auctionbid } from './auction-bid'
 import { supabasesearchcontracts } from './supabase-search-contract'
 import { deleteMarket } from './delete-market'
+import { saveTopic } from './save-topic'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -125,6 +126,7 @@ app.post('/create-debate', ...apiRoute(createDebate))
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
 app.post('/supabasesearchcontracts', ...apiRoute(supabasesearchcontracts))
 app.post('/delete-market', ...apiRoute(deleteMarket))
+app.post('/save-topic', ...apiRoute(saveTopic))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)
 app.post(

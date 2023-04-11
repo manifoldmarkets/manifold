@@ -1333,6 +1333,34 @@ export interface Database {
           popularity_score: number
         }[]
       }
+      get_recommended_contracts_embeddings_from: {
+        Args: {
+          uid: string
+          p_embedding: string
+          n: number
+          excluded_contract_ids: string[]
+        }
+        Returns: {
+          data: Json
+          distance: number
+          relative_dist: number
+          popularity_score: number
+        }[]
+      }
+      get_recommended_contracts_embeddings_topic: {
+        Args: {
+          uid: string
+          p_topic: string
+          n: number
+          excluded_contract_ids: string[]
+        }
+        Returns: {
+          data: Json
+          distance: number
+          relative_dist: number
+          popularity_score: number
+        }[]
+      }
       get_recommended_contracts_embeddings2: {
         Args: {
           uid: string

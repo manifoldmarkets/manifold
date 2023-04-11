@@ -40,11 +40,14 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
   const [scheme, payload] = authParts
   switch (scheme) {
     case 'Bearer':
+      if (payload === 'undefined') {
+        throw new APIError(403, 'Firebase JWT payload undefined.')
+      }
       try {
         return { kind: 'jwt', data: await auth.verifyIdToken(payload) }
       } catch (err) {
         // This is somewhat suspicious, so get it into the firebase console
-        console.error('Error verifying Firebase JWT: ', err)
+        console.error('Error verifying Firebase JWT: ', err, scheme, payload)
         throw new APIError(403, 'Error validating token.')
       }
     case 'Key':
