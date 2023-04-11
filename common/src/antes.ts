@@ -96,6 +96,7 @@ export function getMultipleChoiceAntes(
     isRedemption: false,
     isChallenge: false,
     fees: noFees,
+    visibility: contract.visibility,
   }))
 
   const { username, name, avatarUrl } = creator
@@ -140,6 +141,7 @@ export function getAnteBets(
     isAnte: true,
     isRedemption: false,
     isChallenge: false,
+    visibility: contract.visibility,
   }
 
   const noBet: NormalizedBet = {
@@ -156,6 +158,7 @@ export function getAnteBets(
     isAnte: true,
     isRedemption: false,
     isChallenge: false,
+    visibility: contract.visibility,
   }
 
   return { yesBet, noBet }
@@ -186,6 +189,7 @@ export function getFreeAnswerAnte(
     isAnte: true,
     isRedemption: false,
     isChallenge: false,
+    visibility: contract.visibility,
   }
 
   return anteBet
@@ -227,6 +231,7 @@ export function getNumericAnte(
     isAnte: true,
     isRedemption: false,
     isChallenge: false,
+    visibility: contract.visibility,
   }
 
   return anteBet
