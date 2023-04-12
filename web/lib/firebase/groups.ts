@@ -25,6 +25,7 @@ import {
   listenForValue,
   listenForValues,
 } from './utils'
+import { track, withTracking } from '../service/analytics'
 
 export const groups = coll<Group>('groups')
 export const groupMembers = (groupId: string) =>
@@ -171,10 +172,15 @@ export async function joinGroup(
 ): Promise<void> {
   // create a new member document in groupMembers collection
   const memberDoc = doc(groupMembers(groupId), userId)
-  return await setDoc(memberDoc, {
+
+  const promise = setDoc(memberDoc, {
     userId,
     createdTime: Date.now(),
   })
+
+  track('join group', { groupId })
+
+  await promise
 }
 
 export async function leaveGroup(

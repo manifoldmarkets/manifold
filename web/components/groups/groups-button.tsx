@@ -203,13 +203,11 @@ export function JoinOrLeaveGroupButton(props: {
       }, 'leave group')
     : firebaseLogin
   const follow = user
-    ? withTracking(() => {
-        joinGroup(group.id, user.id)
-          .then(() => setIsMember(true))
-          .catch(() => {
-            toast.error('Failed to follow group')
-          })
-      }, 'join group')
+    ? joinGroup(group.id, user.id)
+        .then(() => setIsMember(true))
+        .catch(() => {
+          toast.error('Failed to follow group')
+        })
     : firebaseLogin
 
   if (isMember) {
