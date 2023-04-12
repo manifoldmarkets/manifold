@@ -14,8 +14,7 @@ async function main() {
     .get()
   const privateUsers = userSnap.docs.map((doc) => doc.data() as PrivateUser)
   console.log('Loaded', privateUsers.length, 'users')
-  const betCutoff = Date.now() - 10 * DAY_MS
-  const createdCutoff = Date.now() - 15 * DAY_MS
+  const createdCutoff = Date.now() - 13 * DAY_MS
   const csv = await Promise.all(
     privateUsers.map(async (privateUser: PrivateUser) => {
       if (!privateUser.email) return ''
@@ -23,7 +22,7 @@ async function main() {
       if (!user) return ''
       const lastBetTime = user.lastBetTime ?? 0
       const createdTime = user.createdTime
-      if (lastBetTime < betCutoff || createdTime < createdCutoff) return ''
+      if (lastBetTime > 0 || createdTime < createdCutoff) return ''
       return `${user.name}, ${privateUser.email},\n`
     })
   )
