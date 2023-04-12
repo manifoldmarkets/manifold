@@ -575,7 +575,7 @@ Lists all users, ordered by creation date descending.
 
 Parameters:
 
-- `limit`: Optional. How many users to return. The maximum and the default are 1000.
+- `limit`: Optional. How many users to return. The maximum is 1000 and the default is 500.
 - `before`: Optional. The ID of the user before which the list will start. For
   example, if you ask for the most recent 10 users, and then perform a second
   query for 10 more users with `before=[the id of the 10th user]`, you will

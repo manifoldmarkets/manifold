@@ -57,7 +57,7 @@ export default async function handler(
     const beforeTime = await getBeforeTime(params)
     const contracts = await getContracts({ limit, beforeTime })
     // Serve from Vercel cache, then update. see https://vercel.com/docs/concepts/functions/edge-caching
-    res.setHeader('Cache-Control', marketCacheStrategy)
+    res.setHeader('Cache-Control', 's-maxage=45, stale-while-revalidate=45')
     res.status(200).json(contracts.map(toLiteMarket))
   } catch (e) {
     res.status(400).json({
