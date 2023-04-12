@@ -77,8 +77,11 @@ export const BinaryUserPositionsTable = memo(
       return [positiveProfitPositions, negativeProfitPositions.reverse()]
     }, [contractMetricsByProfit])
 
+    const [livePositionsLimit, setLivePositionsLimit] = useState(100)
     const positions =
-      useContractMetrics(contractId, 100, outcomes) ?? props.positions
+      useContractMetrics(contractId, livePositionsLimit, outcomes) ??
+      props.positions
+
     const yesPositionsSorted =
       sortBy === 'shares' ? positions.YES ?? [] : positiveProfitPositions
     const noPositionsSorted =
@@ -105,6 +108,14 @@ export const BinaryUserPositionsTable = memo(
       yesPositionsSorted.length > noPositionsSorted.length
         ? yesPositionsSorted.length
         : noPositionsSorted.length
+
+    useEffect(() => {
+      // TODO: we should switch to using supabase realtime subscription for this
+      if (page === largestColumnLength / pageSize - 1) {
+        setLivePositionsLimit((livePositionsLimit) => livePositionsLimit + 100)
+      }
+    }, [page, largestColumnLength])
+
     const isBinary = contract.outcomeType === 'BINARY'
     const isStonk = contract.outcomeType === 'STONK'
     const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
