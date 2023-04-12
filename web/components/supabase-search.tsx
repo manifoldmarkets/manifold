@@ -179,7 +179,7 @@ export function SupabaseContractSearch(props: {
       })
 
       if (id === requestId.current) {
-        const newContracts = results.data
+        const newContracts: Contract[] = results.data
         const showTime = getShowTime(sort)
 
         const freshContracts = freshQuery
@@ -189,12 +189,18 @@ export function SupabaseContractSearch(props: {
               ...newContracts,
             ]
 
+        // TODO: When `deleted` is a native supabase column, filter
+        // out deleted contracts in backend.
+        const freshContractsWithoutDeleted = freshContracts.filter(
+          (contract) => !contract.deleted
+        )
+
         const newFuzzyContractOffset =
           results.fuzzyOffset + currentState.fuzzyContractOffset
 
         setState({
           fuzzyContractOffset: newFuzzyContractOffset,
-          contracts: freshContracts,
+          contracts: freshContractsWithoutDeleted,
           showTime: showTime,
           shouldLoadMore: newContracts.length === 20,
         })
