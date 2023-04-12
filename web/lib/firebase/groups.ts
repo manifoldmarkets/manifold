@@ -25,7 +25,7 @@ import {
   listenForValue,
   listenForValues,
 } from './utils'
-import { track, withTracking } from '../service/analytics'
+import { track } from '../service/analytics'
 
 export const groups = coll<Group>('groups')
 export const groupMembers = (groupId: string) =>
