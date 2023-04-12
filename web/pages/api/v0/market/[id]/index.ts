@@ -3,8 +3,8 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { ApiError } from '../../_types'
-import { marketCacheStrategy } from '../../markets'
 
+export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<FullMarket | ApiError>

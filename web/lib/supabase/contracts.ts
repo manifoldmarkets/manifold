@@ -9,7 +9,7 @@ import { filterDefined } from 'common/util/array'
 import { Sort, filter } from 'web/components/supabase-search'
 import { stateType } from 'web/components/supabase-search'
 import { supabaseSearchContracts } from '../firebase/api'
-import { adminDb, db } from './db'
+import { db } from './db'
 
 export async function getContractIds(contractIds: string[]) {
   const { data } = await run(
@@ -97,11 +97,10 @@ export async function getYourTrendingContracts(
 
 export async function getContractFromSlug(
   contractSlug: string,
-  permission?: 'admin'
+  db: SupabaseClient
 ) {
-  const client = permission == 'admin' ? adminDb : db
   const { data: contract } = await run(
-    client.from('contracts').select('data').eq('slug', contractSlug)
+    db.from('contracts').select('data').eq('slug', contractSlug)
   )
   if (contract && contract.length > 0) {
     return (contract[0] as unknown as { data: Contract }).data
@@ -133,6 +132,13 @@ export async function searchContract(props: {
 }) {
   const { state, query, filter, sort, offset, limit, group_id, creator_id } =
     props
+
+  if (limit === 0) {
+    return {
+      fuzzyOffset: 0,
+      data: {},
+    }
+  }
 
   if (!query) {
     const contracts = await supabaseSearchContracts({

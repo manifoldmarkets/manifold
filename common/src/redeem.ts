@@ -1,7 +1,7 @@
 import { mapValues, max, min, partition, sumBy } from 'lodash'
 
 import { Bet } from './bet'
-import { CPMM2Contract, CPMMContract } from './contract'
+import { CPMM2Contract, CPMMContract, Contract } from './contract'
 import { noFees } from './fees'
 import { CandidateBet } from './new-bet'
 import { addObjects } from './util/object'
@@ -62,14 +62,14 @@ export const getRedeemableAmount = (
 }
 
 export const getRedemptionBets = (
-  contractId: string,
+  contract: Contract,
   shares: number,
   loanPayment: number,
   prob: number
 ) => {
   const createdTime = Date.now()
   const yesBet: CandidateBet = {
-    contractId: contractId,
+    contractId: contract.id,
     amount: prob * -shares,
     shares: -shares,
     loanAmount: loanPayment ? -loanPayment / 2 : 0,
@@ -81,9 +81,10 @@ export const getRedemptionBets = (
     isAnte: false,
     isRedemption: true,
     isChallenge: false,
+    visibility: contract.visibility,
   }
   const noBet: CandidateBet = {
-    contractId: contractId,
+    contractId: contract.id,
     amount: (1 - prob) * -shares,
     shares: -shares,
     loanAmount: loanPayment ? -loanPayment / 2 : 0,
@@ -95,12 +96,13 @@ export const getRedemptionBets = (
     isAnte: false,
     isRedemption: true,
     isChallenge: false,
+    visibility: contract.visibility,
   }
   return [yesBet, noBet]
 }
 
 export const getRedemptionBetMulti = (
-  contractId: string,
+  contract: Contract,
   shares: number,
   loanPayment: number,
   probsByOutcome: Record<string, number>
@@ -110,7 +112,7 @@ export const getRedemptionBetMulti = (
   const createdTime = Date.now()
 
   const redemptionBet: CandidateBet = {
-    contractId,
+    contractId: contract.id,
     amount: -shares,
     shares: -shares,
     loanAmount: loanPayment ? -loanPayment : 0,
@@ -123,6 +125,7 @@ export const getRedemptionBetMulti = (
     isRedemption: true,
     isChallenge: false,
     fees: noFees,
+    visibility: contract.visibility,
   }
   return redemptionBet
 }

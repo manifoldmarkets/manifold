@@ -38,7 +38,7 @@ export default async function handler(
 
   try {
     const users = await listAllUsers(limit, before)
-    res.setHeader('Cache-Control', 'max-age=0')
+    res.setHeader('Cache-Control', 's-maxage=45, stale-while-revalidate=45')
     res.status(200).json(users.map(toLiteUser))
   } catch (e) {
     res.status(400).json({

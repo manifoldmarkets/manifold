@@ -41,7 +41,7 @@ export const redeemShares = async (
     if (mechanism === 'cpmm-1') {
       const lastProb = maxBy(bets, (b) => b.createdTime)?.probAfter as number
       const [yesBet, noBet] = getRedemptionBets(
-        contractId,
+        contract,
         shares,
         loanPayment,
         lastProb
@@ -53,7 +53,7 @@ export const redeemShares = async (
       trans.create(noDoc, { id: noDoc.id, userId, ...noBet })
     } else {
       const bet = getRedemptionBetMulti(
-        contractId,
+        contract,
         shares,
         loanPayment,
         poolToProbs(contract.pool)

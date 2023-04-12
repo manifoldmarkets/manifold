@@ -1,3 +1,4 @@
+import { visibility } from './contract'
 import { Fees } from './fees'
 
 export type Bet = {
@@ -28,6 +29,7 @@ export type Bet = {
   isAnte: boolean
   isRedemption: boolean
   isChallenge: boolean
+  visibility: visibility
   challengeSlug?: string
 
   // Props for bets in DPM contract below.

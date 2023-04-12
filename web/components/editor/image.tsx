@@ -19,6 +19,7 @@ function ExpandingImage(props: { src: string; alt?: string; title?: string }) {
       {...props}
       onClick={() => setExpanded((expanded) => !expanded)}
       className={clsx('cursor-pointer', !expanded && 'max-h-32')}
+      height={expanded ? undefined : 128}
     />
   )
 }

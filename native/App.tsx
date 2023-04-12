@@ -446,7 +446,7 @@ const App = () => {
       display: webViewAndUserLoaded ? 'flex' : 'none',
       overflow: 'hidden',
       marginTop: isIOS ? 0 : RNStatusBar.currentHeight ?? 0,
-      marginBottom: !isIOS ? 10 : 0,
+      marginBottom: 0,
     },
   })
 
@@ -498,8 +498,8 @@ const App = () => {
                 !url.startsWith(baseUri) ||
                 EXTERNAL_REDIRECTS.some((u) => url.endsWith(u))
               ) {
-                WebBrowser.openBrowserAsync(url)
                 webview.current?.stopLoading()
+                WebBrowser.openBrowserAsync(url)
               }
             }}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}

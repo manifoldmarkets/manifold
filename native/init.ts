@@ -18,7 +18,7 @@ if (Device.isDevice) {
   Sentry.init({
     dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.sentry.io/4504040585494528',
     enableInExpoDevelopment: true,
-    debug: true, // If `true`, Sentry will try to print out useful debugging information if something goes wrong with sending the event. Set it to `false` in production
+    debug: ENV !== 'PROD', // If `true`, Sentry will try to print out useful debugging information if something goes wrong with sending the event. Set it to `false` in production
   })
   Notifications.setNotificationHandler({
     handleNotification: async () => ({

@@ -32,6 +32,7 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
   const memberGroupIds = useMemberGroupIds(user) || []
 
   const [query, setQuery] = useState('')
+
   const searchedGroups = useGroupSearchResults(query, 50)
 
   const groups = query !== '' ? searchedGroups : props.groups

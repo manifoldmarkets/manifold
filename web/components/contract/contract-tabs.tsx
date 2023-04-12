@@ -174,7 +174,7 @@ export function ContractTabs(props: {
   )
 }
 
-const DEFAULT_PARENT_COMMENTS_TO_RENDER = 40
+const DEFAULT_PARENT_COMMENTS_TO_RENDER = 15
 const LOAD_MORE = 20
 export const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract

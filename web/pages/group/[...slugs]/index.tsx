@@ -48,6 +48,7 @@ import { listPosts } from 'web/lib/firebase/posts'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { getPost } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
+import { initSupabaseClient } from 'web/lib/supabase/db'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
@@ -65,7 +66,8 @@ type GroupParams = {
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
   const groupSlug = slugs[0]
-  const group = await getGroupFromSlug(groupSlug, 'admin')
+  const db = initSupabaseClient('admin')
+  const group = await getGroupFromSlug(groupSlug, db)
   if (!group) {
     return {
       props: {

@@ -20,3 +20,4 @@ ios/Manifold.xcodeproj/project.pbxproj
 /google-services.json
 # macOS
 .DS_Store
+sentry.properties

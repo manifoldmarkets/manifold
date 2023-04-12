@@ -1,6 +1,11 @@
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { Group } from 'common/group'
-import { run, selectFrom } from 'common/supabase/utils'
+import {
+  run,
+  selectFrom,
+  selectJson,
+  SupabaseClient,
+} from 'common/supabase/utils'
 import { db } from './db'
 export type SearchGroupInfo = Pick<
   Group,
@@ -34,28 +39,21 @@ export async function searchGroups(prompt: string, limit: number) {
   return (await run(query)).data
 }
 
-export async function getMemberGroups(userId: string) {
-  const groupIds = await getMemberGroupIds(userId)
-  const query = selectFrom(
-    db,
-    'groups',
-    'id',
-    'name',
-    'about',
-    'slug',
-    'totalMembers',
-    'totalContracts',
-    'privacyStatus'
-  ).in(
+export async function getMemberGroups(userId: string, db: SupabaseClient) {
+  const groupIds = await getMemberGroupIds(userId, db)
+  const query = selectJson(db, 'groups').in(
     'id',
     groupIds.map((d: { group_id: string }) => d.group_id)
   )
 
-  return (await run(query)).data
+  return (await run(query)).data.map((d) => d.data as Group)
 }
 
-export async function getShouldBlockDestiny(userId: string) {
-  const groupIds = await getMemberGroupIds(userId)
+export async function getShouldBlockDestiny(
+  userId: string,
+  db: SupabaseClient
+) {
+  const groupIds = await getMemberGroupIds(userId, db)
   const query = selectFrom(db, 'groups', 'id', 'slug')
     .in(
       'id',
@@ -65,7 +63,7 @@ export async function getShouldBlockDestiny(userId: string) {
   return (await run(query)).data.length === 0
 }
 
-export async function getMemberGroupIds(userId: string) {
+export async function getMemberGroupIds(userId: string, db: SupabaseClient) {
   const { data: groupIds } = await run(
     db.from('group_members').select('group_id').eq('member_id', userId)
   )
@@ -136,5 +134,5 @@ export async function getPublicGroups() {
       .order('data->>name')
   )
 
-  return groupThings.data
+  return groupThings.data.map((d: { data: any }) => d.data as Group)
 }
