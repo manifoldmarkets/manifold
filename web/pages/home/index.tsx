@@ -215,7 +215,7 @@ const YourFeedSection = memo(function YourFeedSection(props: {
   const [topic, setTopic] = usePersistentInMemoryState('', 'your-feed-topic')
 
   return (
-    <Col className={clsx(className, 'gap-2')}>
+    <Col className={className}>
       <TopicSelector onSetTopic={setTopic} topic={topic} />
       <ContractsFeed topic={topic} />
     </Col>
