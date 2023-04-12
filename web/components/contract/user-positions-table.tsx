@@ -124,11 +124,11 @@ export const BinaryUserPositionsTable = memo(
             </>
           ) : isStonk ? (
             <>
-              <BuyLabel /> holders
+              <BuyLabel /> positions
             </>
           ) : isPseudoNumeric ? (
             <>
-              <HigherLabel /> holders
+              <HigherLabel /> positions
             </>
           ) : (
             <></>
@@ -148,11 +148,11 @@ export const BinaryUserPositionsTable = memo(
             </>
           ) : isStonk ? (
             <>
-              <ShortLabel /> holders
+              <ShortLabel /> positions
             </>
           ) : isPseudoNumeric ? (
             <>
-              <LowerLabel /> holders
+              <LowerLabel /> positions
             </>
           ) : (
             <></>
