@@ -38,7 +38,7 @@ export function SellRow(props: {
         <Row className="items-center justify-between gap-4">
           <div>
             {isStonk ? (
-              <>You have {getStonkShares(shares)} shares of </>
+              <>You have {getStonkShares(contract, shares)} shares of </>
             ) : (
               <>You'll get {formatMoney(shares)} on </>
             )}
@@ -113,7 +113,7 @@ function SellSharesModal(props: {
 
         <div className="mb-6">
           {isStonk ? (
-            <>You have {getStonkShares(shares)} shares of </>
+            <>You have {getStonkShares(contract, shares)} shares of </>
           ) : (
             <>
               You have {formatWithCommas(shares)} shares worth{' '}

@@ -55,11 +55,13 @@ export function SellPanel(props: {
     return probChange > 0.2
       ? undefined
       : isStonk
-      ? getStonkShares(shares ?? 0)
+      ? getStonkShares(contract, shares ?? 0)
       : shares
   })
   const [amount, setAmount] = useState<number | undefined>(
-    isStonk ? getSharesFromStonkShares(displayAmount ?? 0) : displayAmount
+    isStonk
+      ? getSharesFromStonkShares(contract, displayAmount ?? 0)
+      : displayAmount
   )
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -148,7 +150,7 @@ export function SellPanel(props: {
   const onAmountChange = (displayAmount: number | undefined) => {
     setDisplayAmount(displayAmount)
     const realAmount = isStonk
-      ? getSharesFromStonkShares(displayAmount ?? 0)
+      ? getSharesFromStonkShares(contract, displayAmount ?? 0)
       : displayAmount
     setAmount(realAmount)
 
@@ -187,7 +189,9 @@ export function SellPanel(props: {
               'text-ink-500 hover:bg-ink-200'
             )}
             onClick={() =>
-              onAmountChange(isStonk ? getStonkShares(shares) : shares)
+              onAmountChange(
+                isStonk ? getStonkShares(contract, shares) : shares
+              )
             }
           >
             Max

@@ -393,7 +393,7 @@ export function BuyPanel(props: {
             <div>
               <span className="whitespace-nowrap text-lg">
                 {isStonk
-                  ? getStonkShares(currentPayout)
+                  ? getStonkShares(contract, currentPayout)
                   : isPseudoNumeric
                   ? Math.floor(currentPayout)
                   : formatMoney(currentPayout)}

@@ -724,7 +724,7 @@ function BetRow(props: {
       {isDPM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>
         {isStonk
-          ? getStonkShares(sharesOrShortSellShares)
+          ? getStonkShares(contract, sharesOrShortSellShares)
           : formatWithCommas(sharesOrShortSellShares)}
       </td>
 
