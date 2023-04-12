@@ -11,6 +11,7 @@ import { Avatar } from '../widgets/avatar'
 import { ContractMinibar } from '../charts/minibar'
 import { useContract } from 'web/hooks/use-contracts'
 import { formatPercentShort } from 'common/util/format'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function ContractStatusLabel(props: {
   contract: Contract
@@ -36,7 +37,14 @@ export function ContractStatusLabel(props: {
         </span>
       )
     }
-    case 'STONK':
+    case 'STONK': {
+      const val = getDisplayProbability(contract)
+      return (
+        <span className={probTextColor}>
+          {ENV_CONFIG.moneyMoniker + getFormattedMappedValue(contract, val)}
+        </span>
+      )
+    }
     case 'PSEUDO_NUMERIC': {
       const val = getDisplayProbability(contract)
       return (

@@ -36,6 +36,7 @@ import {
   getTotalContractMetricsCount,
 } from 'web/lib/firebase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
+import { getStonkShares } from 'common/stonk'
 
 export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
@@ -123,11 +124,11 @@ export const BinaryUserPositionsTable = memo(
             </>
           ) : isStonk ? (
             <>
-              <BuyLabel /> shareholders
+              <BuyLabel /> holders
             </>
           ) : isPseudoNumeric ? (
             <>
-              <HigherLabel /> shareholders
+              <HigherLabel /> holders
             </>
           ) : (
             <></>
@@ -147,11 +148,11 @@ export const BinaryUserPositionsTable = memo(
             </>
           ) : isStonk ? (
             <>
-              <ShortLabel /> shareholders
+              <ShortLabel /> holders
             </>
           ) : isPseudoNumeric ? (
             <>
-              <LowerLabel /> shareholders
+              <LowerLabel /> holders
             </>
           ) : (
             <></>
@@ -160,9 +161,6 @@ export const BinaryUserPositionsTable = memo(
       )
     }
 
-    const getStonkDisplayValue = (shares: number) => {
-      return Math.floor(shares).toString()
-    }
     return (
       <Col className={'w-full'}>
         <Row className={'mb-2 items-center justify-end gap-2'}>
@@ -199,9 +197,9 @@ export const BinaryUserPositionsTable = memo(
                   numberToShow={
                     sortBy === 'shares'
                       ? isStonk
-                        ? getStonkDisplayValue(
+                        ? getStonkShares(
                             position.totalShares[outcome] ?? 0
-                          )
+                          ).toString()
                         : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
@@ -229,9 +227,9 @@ export const BinaryUserPositionsTable = memo(
                   numberToShow={
                     sortBy === 'shares'
                       ? isStonk
-                        ? getStonkDisplayValue(
+                        ? getStonkShares(
                             position.totalShares[outcome] ?? 0
-                          )
+                          ).toString()
                         : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }

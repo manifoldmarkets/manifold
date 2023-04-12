@@ -1,6 +1,6 @@
 import { Contract, PseudoNumericContract, StonkContract } from './contract'
 import { formatLargeNumber, formatPercent } from './util/format'
-import { STONK_MAX, STONK_MIN } from 'common/stonk'
+import { getStonkPriceAtProb } from 'common/stonk'
 
 export function formatNumericProbability(
   p: number,
@@ -18,7 +18,7 @@ export const getMappedValue = (contract: Contract, prob: number) => {
     return prob
 
   if (contract.outcomeType === 'STONK')
-    return prob * (STONK_MAX - STONK_MIN) + STONK_MIN
+    return getStonkPriceAtProb(contract as StonkContract, prob)
 
   const { min, max, isLogScale } = contract
 

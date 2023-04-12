@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { useEffect, useState } from 'react'
+import React, { ReactNode, useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Col } from '../layout/col'
@@ -21,7 +21,8 @@ export function AmountInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
-  quickAddClassName?: string
+  quickAddMoreButton?: ReactNode
+  allowFloat?: boolean
 }) {
   const {
     amount,
@@ -32,10 +33,14 @@ export function AmountInput(props: {
     className,
     inputClassName,
     inputRef,
-    quickAddClassName,
+    quickAddMoreButton,
+    allowFloat,
   } = props
 
-  const parse = (str: string) => parseInt(str.replace(/\D/g, ''))
+  const parse = (str: string) =>
+    !allowFloat
+      ? parseInt(str.replace(/\D/g, ''))
+      : parseFloat(str.replace(/[^0-9.]/g, ''))
 
   const onAmountChange = (str: string) => {
     const amount = parse(str)
@@ -54,9 +59,9 @@ export function AmountInput(props: {
             <Input
               className={clsx('pl-9 !text-lg', inputClassName)}
               ref={inputRef}
-              type="text"
-              pattern="[0-9]*"
-              inputMode="numeric"
+              type={allowFloat ? 'number' : 'text'}
+              inputMode={allowFloat ? 'decimal' : 'numeric'}
+              step={allowFloat ? 'any' : '1'}
               placeholder="0"
               maxLength={6}
               value={amount ?? ''}
@@ -71,24 +76,15 @@ export function AmountInput(props: {
                 }
               }}
             />
-            {quickAddClassName && (
-              <button
-                className={clsx(
-                  'absolute right-px top-px bottom-px rounded-r-md px-2.5 transition-colors',
-                  quickAddClassName
-                )}
-                onClick={() => onChange((amount ?? 0) + 10)}
-              >
-                +10
-              </button>
-            )}
+            {quickAddMoreButton}
           </div>
         </label>
       </Col>
     </>
   )
 }
-
+export const quickAddMoreButtonClassName =
+  'absolute right-px top-px bottom-px rounded-r-md px-2.5 transition-colors'
 export function BuyAmountInput(props: {
   amount: number | undefined
   onChange: (newAmount: number | undefined) => void
@@ -162,12 +158,20 @@ export function BuyAmountInput(props: {
             className={className}
             inputClassName={clsx('pr-12', inputClassName)}
             inputRef={inputRef}
-            quickAddClassName={
-              binaryOutcome === 'YES'
-                ? 'text-teal-500 hover:bg-teal-100'
-                : binaryOutcome === 'NO'
-                ? 'text-scarlet-300 hover:bg-scarlet-50'
-                : 'text-ink-500 hover:bg-ink-200'
+            quickAddMoreButton={
+              <button
+                className={clsx(
+                  quickAddMoreButtonClassName,
+                  binaryOutcome === 'YES'
+                    ? 'text-teal-500 hover:bg-teal-100'
+                    : binaryOutcome === 'NO'
+                    ? 'text-scarlet-300 hover:bg-scarlet-50'
+                    : 'text-ink-500 hover:bg-ink-200'
+                )}
+                onClick={() => onChange((amount ?? 0) + 10)}
+              >
+                +10
+              </button>
             }
           />
           {show && (

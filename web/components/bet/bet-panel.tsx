@@ -52,7 +52,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
 import { SiteLink } from '../widgets/site-link'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
-import { STONK_NO, STONK_YES } from 'common/stonk'
+import { getStonkShares, STONK_NO, STONK_YES } from 'common/stonk'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -392,7 +392,9 @@ export function BuyPanel(props: {
             </Col>
             <div>
               <span className="whitespace-nowrap text-lg">
-                {isStonk || isPseudoNumeric
+                {isStonk
+                  ? getStonkShares(currentPayout)
+                  : isPseudoNumeric
                   ? Math.floor(currentPayout)
                   : formatMoney(currentPayout)}
               </span>

@@ -12,7 +12,7 @@ import {
   formatMoney,
 } from 'common/util/format'
 import { sumBy } from 'lodash'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { sellShares } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
@@ -20,7 +20,12 @@ import { WarningConfirmationButton } from '../buttons/warning-confirmation-butto
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
-import { AmountInput } from '../widgets/amount-input'
+import {
+  AmountInput,
+  quickAddMoreButtonClassName,
+} from '../widgets/amount-input'
+import { getSharesFromStonkShares, getStonkShares } from 'common/stonk'
+import clsx from 'clsx'
 
 export function SellPanel(props: {
   contract: CPMMContract
@@ -32,12 +37,14 @@ export function SellPanel(props: {
 }) {
   const { contract, shares, sharesOutcome, userBets, user, onSellSuccess } =
     props
+  const { outcomeType } = contract
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const isStonk = outcomeType === 'STONK'
 
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     contract.id
   )
-
-  const [amount, setAmount] = useState<number | undefined>(() => {
+  const [displayAmount, setDisplayAmount] = useState<number | undefined>(() => {
     const probChange = getSaleProbChange(
       contract,
       shares,
@@ -45,8 +52,15 @@ export function SellPanel(props: {
       unfilledBets,
       balanceByUserId
     )
-    return probChange > 0.2 ? undefined : shares
+    return probChange > 0.2
+      ? undefined
+      : isStonk
+      ? getStonkShares(shares ?? 0)
+      : shares
   })
+  const [amount, setAmount] = useState<number | undefined>(
+    isStonk ? getSharesFromStonkShares(displayAmount ?? 0) : displayAmount
+  )
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
@@ -131,12 +145,16 @@ export function SellPanel(props: {
       ? `Are you sure you want to move the market by ${displayedDifference}?`
       : undefined
 
-  const onAmountChange = (amount: number | undefined) => {
-    setAmount(amount)
+  const onAmountChange = (displayAmount: number | undefined) => {
+    setDisplayAmount(displayAmount)
+    const realAmount = isStonk
+      ? getSharesFromStonkShares(displayAmount ?? 0)
+      : displayAmount
+    setAmount(realAmount)
 
     // Check for errors.
-    if (amount !== undefined) {
-      if (amount > shares) {
+    if (realAmount !== undefined) {
+      if (realAmount > shares) {
         setError(`Maximum ${formatWithCommas(Math.floor(shares))} shares`)
       } else {
         setError(undefined)
@@ -144,25 +162,37 @@ export function SellPanel(props: {
     }
   }
 
-  const { outcomeType } = contract
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const isStonk = outcomeType === 'STONK'
-
   return (
     <>
       <AmountInput
         amount={
-          amount === undefined
+          displayAmount === undefined
             ? undefined
-            : Math.round(amount) === 0
+            : isStonk
+            ? displayAmount
+            : Math.round(displayAmount) === 0
             ? 0
-            : Math.floor(amount)
+            : Math.floor(displayAmount)
         }
+        allowFloat={isStonk}
         onChange={onAmountChange}
         label="Qty"
         error={error}
         disabled={isSubmitting}
         inputClassName="w-full ml-1"
+        quickAddMoreButton={
+          <button
+            className={clsx(
+              quickAddMoreButtonClassName,
+              'text-ink-500 hover:bg-ink-200'
+            )}
+            onClick={() =>
+              onAmountChange(isStonk ? getStonkShares(shares) : shares)
+            }
+          >
+            Max
+          </button>
+        }
       />
 
       <Col className="mt-3 w-full gap-3 text-sm">
@@ -244,7 +274,5 @@ const getSaleProbChange = (
     balanceByUserId
   )
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
-  return Math.abs(
-    getMappedValue(contract, resultProb) - getMappedValue(contract, initialProb)
-  )
+  return Math.abs(resultProb - initialProb)
 }
