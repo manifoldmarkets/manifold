@@ -233,13 +233,17 @@ export function JoinOrLeaveGroupButton(props: {
 
   if (isMobile) {
     return (
-      <button className={className} onClick={() => follow} disabled={disabled}>
+      <button
+        className={className}
+        onClick={() => follow()}
+        disabled={disabled}
+      >
         <UserAddIcon className={clsx('h-5 w-5', groupButtonClass)} />
       </button>
     )
   }
   return (
-    <Button color="indigo" className={className} onClick={() => follow}>
+    <Button color="indigo" className={className} onClick={() => follow()}>
       <Row className="gap-1">
         <UserAddIcon className="h-5 w-5" />
         Join
