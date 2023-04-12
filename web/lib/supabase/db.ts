@@ -4,16 +4,18 @@ import { ENV, ENV_CONFIG } from 'common/envs/constants'
 let currentToken: string | undefined
 
 export function initSupabaseClient(permission: 'admin' | 'client') {
+  // Init should explicitly fail if requested key is not present
   const key =
-    permission == 'admin'
-      ? ENV == 'DEV' && process.env.DEV_ADMIN_SUPABASE_KEY
-        ? process.env.DEV_ADMIN_SUPABASE_KEY
-        : ENV == 'PROD' && process.env.PROD_ADMIN_SUPABASE_KEY
-        ? process.env.PROD_ADMIN_SUPABASE_KEY
-        : ENV_CONFIG.supabaseAnonKey
+    permission == 'admin' && ENV == 'DEV'
+      ? process.env.DEV_ADMIN_SUPABASE_KEY
+      : permission == 'admin' && ENV == 'PROD'
+      ? process.env.PROD_ADMIN_SUPABASE_KEY
       : ENV_CONFIG.supabaseAnonKey
   if (!ENV_CONFIG.supabaseInstanceId || !key) {
-    throw new Error("No Supabase config present; Supabase stuff won't work.")
+    throw new Error(
+      "Supabase key not found. Supabase stuff won't work. Requested: " +
+        permission
+    )
   }
   return createClient(ENV_CONFIG.supabaseInstanceId, key)
 }
@@ -32,4 +34,3 @@ export function updateSupabaseAuth(token?: string) {
 }
 
 export const db = initSupabaseClient('client')
-export const adminDb = initSupabaseClient('admin')

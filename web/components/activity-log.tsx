@@ -31,6 +31,7 @@ import { Avatar } from './widgets/avatar'
 import { Content } from './widgets/editor'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
+import { db } from 'web/lib/supabase/db'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
@@ -57,7 +58,7 @@ export function ActivityLog(props: {
       shouldBlockDestiny && DESTINY_GROUP_SLUGS
     )
 
-    Promise.all(blockedGroupSlugs.map((slug) => getGroupFromSlug(slug)))
+    Promise.all(blockedGroupSlugs.map((slug) => getGroupFromSlug(slug, db)))
       .then((groups) =>
         Promise.all(filterDefined(groups).map((g) => getGroupContractIds(g.id)))
       )

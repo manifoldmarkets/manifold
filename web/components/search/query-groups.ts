@@ -9,7 +9,7 @@ export function useGroupSearchResults(query: string, limit: number) {
     () =>
       debounce(async (query: string) => {
         searchGroups(query, limit).then(setResults)
-      }, 100),
+      }, 50),
     [limit]
   )
 

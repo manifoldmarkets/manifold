@@ -15,6 +15,7 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { listenForValue } from 'web/lib/firebase/utils'
 import { PrivateUser } from 'common/user'
 import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
+import { db } from 'web/lib/supabase/db'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -135,7 +136,7 @@ export const useShouldBlockDestiny = (userId: string | undefined) => {
 
   useEffect(() => {
     if (userId) {
-      getShouldBlockDestiny(userId).then((result) =>
+      getShouldBlockDestiny(userId, db).then((result) =>
         setShouldBlockDestiny(result)
       )
     } else {

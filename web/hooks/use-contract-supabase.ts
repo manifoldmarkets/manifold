@@ -29,7 +29,7 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
 
   useEffect(() => {
     if (contractSlug) {
-      getContractFromSlug(contractSlug).then((result) => {
+      getContractFromSlug(contractSlug, db).then((result) => {
         setContract(result)
       })
     }

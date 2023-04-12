@@ -1,9 +1,9 @@
 import { Group, PrivacyStatusType } from 'common/group'
-import { run } from 'common/supabase/utils'
+import { run, SupabaseClient } from 'common/supabase/utils'
 import { uniqBy } from 'lodash'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 import { User } from '../firebase/users'
-import { adminDb, db, initSupabaseClient } from './db'
+import { db, initSupabaseClient } from './db'
 
 // functions called for one group
 export async function getNumGroupMembers(groupId: string) {
@@ -139,14 +139,11 @@ export async function getGroupPrivacyBySlug(
     .privacyStatus
 }
 
-export async function getGroupFromSlug(
-  groupSlug: string,
-  permission?: 'admin'
-) {
-  const client = permission == 'admin' ? adminDb : db
+export async function getGroupFromSlug(groupSlug: string, db: SupabaseClient) {
   const { data: group } = await run(
-    client.from('groups').select('data').contains('data', { slug: groupSlug })
+    db.from('groups').select('data').contains('data', { slug: groupSlug })
   )
+
   if (group && group.length > 0) {
     return group[0].data as Group
   }
