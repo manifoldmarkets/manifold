@@ -174,9 +174,16 @@ create or replace function get_recommended_contracts_embeddings_topic(uid text, 
   with topic_embedding as (
     select embedding from topic_embeddings
     where topic_embeddings.topic = p_topic
+  ), not_chosen_embedding as (
+    select avg(embedding) as average
+    from topic_embeddings
+    where topic != p_topic
+  ), embedding as (
+    select (topic_embedding.embedding - not_chosen.average) as average
+    from topic_embedding, not_chosen_embedding as not_chosen
   )
   select * from get_recommended_contracts_embeddings_from(
-      uid, (select embedding from topic_embedding), n, excluded_contract_ids)
+      uid, (select average from embedding), n, excluded_contract_ids)
 $$;
 
 create or replace function get_recommended_contracts_embeddings_from(uid text, p_embedding vector, n int, excluded_contract_ids text []) returns table (

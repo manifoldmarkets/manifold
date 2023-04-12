@@ -32,6 +32,7 @@ import { ContractCardNew } from 'web/components/contract/contract-card'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { TopicSelector } from 'web/components/topic-selector'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -211,10 +212,11 @@ const YourFeedSection = memo(function YourFeedSection(props: {
   className?: string
 }) {
   const { className } = props
-  const [topic, _setTopic] = usePersistentInMemoryState('', 'your-feed-topic')
+  const [topic, setTopic] = usePersistentInMemoryState('', 'your-feed-topic')
 
   return (
     <Col className={clsx(className, 'gap-2')}>
+      <TopicSelector onSetTopic={setTopic} topic={topic} />
       <ContractsFeed topic={topic} />
     </Col>
   )
@@ -231,8 +233,8 @@ const MainContent = () => {
       <ChoicesToggleGroup
         className="mb-2 border-0"
         choicesMap={{
-          'For you': 0,
-          'Live feed': 1,
+          Feed: 0,
+          Live: 1,
         }}
         currentChoice={section}
         setChoice={setSection as any}

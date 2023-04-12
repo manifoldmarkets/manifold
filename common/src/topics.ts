@@ -182,7 +182,7 @@ const GROUP_IDs: { [key: string]: string } = {
   'GPT-4 speculation': 'SWiC5KtQnc48oWmaoAZA',
 }
 
-const cleanTopic = (topic: string) =>
+export const cleanTopic = (topic: string) =>
   topic
     // eslint-disable-next-line no-control-regex
     .replace(/[^\x00-\x7F]/g, '')
