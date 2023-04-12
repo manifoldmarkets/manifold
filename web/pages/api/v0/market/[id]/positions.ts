@@ -93,7 +93,10 @@ export default async function handler(
         (cm) => cm.hasNoShares === true
       )
       if (bottom && noSharesIndex !== -1) {
-          bottomSlice = contractMetrics.slice(noSharesIndex, noSharesIndex + bottom)
+        bottomSlice = contractMetrics.slice(
+          noSharesIndex,
+          noSharesIndex + bottom
+        )
       }
 
       if (top) {
@@ -106,12 +109,7 @@ export default async function handler(
     }
     return res
       .status(200)
-      .json(
-        uniqBy(
-          topSlice.concat(bottomSlice),
-          (cm) => cm.userId
-        )
-      )
+      .json(uniqBy(topSlice.concat(bottomSlice), (cm) => cm.userId))
   } catch (e) {
     console.error(e)
     res.status(500).json({ error: 'Error getting contract metrics' })
