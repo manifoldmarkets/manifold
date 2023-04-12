@@ -89,9 +89,8 @@ export default async function handler(
     } else if (order === 'shares') {
       // Both YES and NO are sorted descending by shares, so we need to
       // find the first NO share index and slice from there
-      const noSharesIndex = contractMetrics.findIndex(
-        (cm) => cm.hasNoShares === true
-      )
+      const noSharesIndex = contractMetrics.findIndex((cm) => cm.hasNoShares)
+
       if (bottom && noSharesIndex !== -1) {
         bottomSlice = contractMetrics.slice(
           noSharesIndex,
