@@ -7,8 +7,6 @@ import { z } from 'zod'
 import { validate } from './_validate'
 import { getContract, getContracts } from 'web/lib/supabase/contracts'
 
-export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
-
 const queryParams = z
   .object({
     limit: z

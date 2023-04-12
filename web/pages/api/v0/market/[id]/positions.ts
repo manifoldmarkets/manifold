@@ -11,7 +11,7 @@ import { db } from 'web/lib/supabase/db'
 import { validate } from 'web/pages/api/v0/_validate'
 import { z } from 'zod'
 import { ApiError, ValidationError } from '../../_types'
-import { marketCacheStrategy } from '../../markets'
+import { marketCacheStrategy } from 'web/pages/api/v0/market/[id]/index'
 
 const queryParams = z.object({
   id: z.string(),

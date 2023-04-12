@@ -2,7 +2,7 @@ import { toLiteMarket } from 'common/api-market-types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { listGroupContracts } from 'web/lib/firebase/groups'
-import { marketCacheStrategy } from '../../../markets'
+import { marketCacheStrategy } from 'web/pages/api/v0/market/[id]'
 
 export default async function handler(
   req: NextApiRequest,
