@@ -46,25 +46,35 @@ export const OmniSearch = (props: {
       }}
       className={clsx('bg-canvas-0 relative flex flex-col', className)}
     >
-      <Combobox.Input
-        autoFocus
-        value={query}
-        onKeyDown={(e: any) => {
-          if (e.key === 'Escape') setOpen?.(false)
-        }}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search markets, users, & groups"
-        className={clsx(
-          'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
-          inputClassName
-        )}
-      />
-      <Combobox.Options
-        static
-        className="text-ink-700 flex flex-col overflow-y-auto px-2"
-      >
-        {query ? <Results query={query} /> : <DefaultResults />}
-      </Combobox.Options>
+      {({ activeOption }) => (
+        <>
+          <Combobox.Input
+            autoFocus
+            value={query}
+            onKeyDown={(e: any) => {
+              if (e.key === 'Escape') setOpen?.(false)
+              if (e.key === 'Enter' && !activeOption) {
+                router.push(marketSearchSlug(query))
+                setOpen?.(false)
+                onSelect?.()
+              }
+            }}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search markets, users, & groups"
+            enterKeyHint="search"
+            className={clsx(
+              'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
+              inputClassName
+            )}
+          />
+          <Combobox.Options
+            static
+            className="text-ink-700 flex flex-col overflow-y-auto px-2"
+          >
+            {query ? <Results query={query} /> : <DefaultResults />}
+          </Combobox.Options>
+        </>
+      )}
     </Combobox>
   )
 }
@@ -317,14 +327,12 @@ const PageResults = (props: { pages: PageData[] }) => {
   )
 }
 
+const marketSearchSlug = (query: string) =>
+  `/markets?s=relevance&f=all&q=${encodeURIComponent(query)}`
+
 const MoreMarketResults = (props: { search: string }) => {
   return (
-    <ResultOption
-      value={{
-        id: 'more',
-        slug: `/search?s=relevance&f=all&q=${encodeURIComponent(props.search)}`,
-      }}
-    >
+    <ResultOption value={{ id: 'more', slug: marketSearchSlug(props.search) }}>
       <div className="flex items-center text-sm">
         <SearchIcon className="mr-3 h-5 w-5" />
         Browse all markets for
