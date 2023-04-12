@@ -273,6 +273,7 @@ export const getBinaryCpmmBetInfo = (
     isAnte: false,
     isRedemption: false,
     isChallenge: false,
+    visibility: contract.visibility,
   })
 
   const { liquidityFee } = totalFees
@@ -360,6 +361,7 @@ export const getNewBinaryDpmBetInfo = (
     isAnte: false,
     isRedemption: false,
     isChallenge: false,
+    visibility: contract.visibility,
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }
@@ -399,6 +401,7 @@ export const getNewMultiBetInfo = (
     isAnte: false,
     isRedemption: false,
     isChallenge: false,
+    visibility: contract.visibility,
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }
@@ -439,6 +442,7 @@ export const getNewMultiCpmmBetInfo = (
     isAnte: false,
     isRedemption: false,
     isChallenge: false,
+    visibility: contract.visibility,
   })
 
   return { newBet, newPool }
@@ -485,6 +489,7 @@ export const getNumericBetsInfo = (
     isAnte: false,
     isRedemption: false,
     isChallenge: false,
+    visibility: contract.visibility,
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }

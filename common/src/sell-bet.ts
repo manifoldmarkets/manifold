@@ -71,6 +71,7 @@ export const getSellBetInfo = (bet: Bet, contract: DPMContract) => {
     isAnte: false,
     isRedemption: false,
     isChallenge: false,
+    visibility: contract.visibility,
   }
 
   return {
@@ -128,6 +129,7 @@ export const getCpmmSellBetInfo = (
     isAnte: false,
     isRedemption: false,
     isChallenge: false,
+    visibility: contract.visibility,
   }
 
   return {
