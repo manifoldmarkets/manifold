@@ -72,25 +72,46 @@ export default async function handler(
       db,
       order ? (order as 'profit' | 'shares') : undefined
     )
-
-    if (top && !bottom) {
-      return res.status(200).json(contractMetrics.slice(0, top))
-    } else if (bottom && !top) {
-      return res.status(200).json(contractMetrics.slice(-bottom))
-    } else if (top && bottom) {
-      return res
-        .status(200)
-        .json(
-          uniqBy(
-            contractMetrics
-              .slice(0, top)
-              .concat(contractMetrics.slice(-bottom)),
-            (cm) => cm.userId
-          )
-        )
+    if (!top && !bottom) {
+      return res.status(200).json(contractMetrics)
     }
 
-    return res.status(200).json(contractMetrics)
+    // Get at most `top + bottom` positions
+    let topSlice: ContractMetric[] = []
+    let bottomSlice: ContractMetric[] = []
+    if (order === 'profit') {
+      if (bottom) {
+        bottomSlice = contractMetrics.slice(-bottom)
+      }
+      if (top) {
+        topSlice = contractMetrics.slice(0, top)
+      }
+    } else if (order === 'shares') {
+      // Both YES and NO are sorted descending by shares, so we need to
+      // find the first NO share index and slice from there
+      const noSharesIndex = contractMetrics.findIndex(
+        (cm) => cm.hasNoShares === true
+      )
+      if (bottom && noSharesIndex !== -1) {
+          bottomSlice = contractMetrics.slice(noSharesIndex, noSharesIndex + bottom)
+      }
+
+      if (top) {
+        if (noSharesIndex !== -1 && noSharesIndex < top) {
+          topSlice = contractMetrics.slice(0, noSharesIndex)
+        } else {
+          topSlice = contractMetrics.slice(0, top)
+        }
+      }
+    }
+    return res
+      .status(200)
+      .json(
+        uniqBy(
+          topSlice.concat(bottomSlice),
+          (cm) => cm.userId
+        )
+      )
   } catch (e) {
     console.error(e)
     res.status(500).json({ error: 'Error getting contract metrics' })
