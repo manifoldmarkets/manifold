@@ -5,7 +5,6 @@ import {
   HomeIcon,
   LogoutIcon,
   ScaleIcon,
-  SearchIcon,
   MapIcon,
   MoonIcon,
   SpeakerphoneIcon,
