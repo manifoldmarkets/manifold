@@ -5,7 +5,11 @@ import { Contract, CPMMContract } from 'common/contract'
 import { BACKGROUND_COLOR } from 'common/envs/constants'
 import Router from 'next/router'
 import { memo, ReactNode } from 'react'
-import { ActivityLog } from 'web/components/activity-log'
+import {
+  ActivityLog,
+  LivePillOptions,
+  pill_options,
+} from 'web/components/activity-log'
 import { DailyStats } from 'web/components/daily-stats'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -29,10 +33,10 @@ import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-c
 import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { ContractCardNew } from 'web/components/contract/contract-card'
-import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { TopicSelector } from 'web/components/topic-selector'
+import ShortToggle from 'web/components/widgets/short-toggle'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -198,51 +202,58 @@ const YourDailyUpdates = memo(function YourDailyUpdates(props: {
   )
 })
 
-const LiveSection = memo(function LiveSection(props: { className?: string }) {
-  const { className } = props
+const LiveSection = memo(function LiveSection(props: {
+  pill: pill_options
+  className?: string
+}) {
+  const { pill, className } = props
   return (
     <Col className={clsx('relative mt-4', className)}>
-      <ActivityLog count={30} showPills />
+      <ActivityLog count={30} pill={pill} />
       <div className="from-canvas-50 pointer-events-none absolute bottom-0 h-5 w-full select-none bg-gradient-to-t to-transparent" />
     </Col>
   )
 })
 
 const YourFeedSection = memo(function YourFeedSection(props: {
+  topic: string
   className?: string
 }) {
-  const { className } = props
-  const [topic, setTopic] = usePersistentInMemoryState('', 'your-feed-topic')
+  const { topic, className } = props
 
   return (
     <Col className={className}>
-      <TopicSelector onSetTopic={setTopic} topic={topic} />
       <ContractsFeed topic={topic} />
     </Col>
   )
 })
 
 const MainContent = () => {
-  const [section, setSection] = usePersistentInMemoryState(
-    0,
-    'main-content-section'
+  const [isLive, setIsLive] = usePersistentInMemoryState(
+    false,
+    'main-content-section-is-live'
+  )
+  const [topic, setTopic] = usePersistentInMemoryState('', 'your-feed-topic')
+  const [pill, setPill] = usePersistentInMemoryState<pill_options>(
+    'all',
+    'live-pill'
   )
 
   return (
     <Col>
-      <ChoicesToggleGroup
-        className="mb-2 border-0"
-        choicesMap={{
-          Feed: 0,
-          Live: 1,
-        }}
-        currentChoice={section}
-        setChoice={setSection as any}
-        color="indigo"
-      />
-
-      <YourFeedSection className={clsx(section === 0 ? '' : 'hidden')} />
-      <LiveSection className={clsx(section === 1 ? '' : 'hidden')} />
+      <Row className="h-[48px] items-center justify-between">
+        {isLive ? (
+          <LivePillOptions pill={pill} setPill={setPill} />
+        ) : (
+          <TopicSelector onSetTopic={setTopic} topic={topic} />
+        )}
+        <Row className="items-center gap-3">
+          Live
+          <ShortToggle on={isLive} setOn={setIsLive} />
+        </Row>
+      </Row>
+      <YourFeedSection topic={topic} className={clsx(isLive ? 'hidden' : '')} />
+      <LiveSection className={clsx(isLive ? '' : 'hidden')} pill={pill} />
     </Col>
   )
 }
