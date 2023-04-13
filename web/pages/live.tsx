@@ -26,7 +26,6 @@ export default function LivePage() {
           <ActivityLog count={30} pill={pill} />
         </Col>
       </Col>
-      
     </Page>
   )
 }
