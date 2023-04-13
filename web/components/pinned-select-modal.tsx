@@ -9,10 +9,8 @@ import { Modal } from './layout/modal'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { PostCardList } from './posts/post-card'
-import { GroupCard } from 'web/pages/groups'
 import { Input } from './widgets/input'
 import { debounce } from 'lodash'
-import { searchInAny } from 'common/util/parse'
 import { SupabaseContractSearch } from './supabase-search'
 
 export function PinnedSelectModal(props: {
@@ -181,10 +179,9 @@ export function PinnedSelectModal(props: {
                     value={groupsQuery}
                     className="mb-4 w-full"
                   />
-                  {groups
-                    .filter((g) =>
-                      searchInAny(groupsQuery, g.name, g.about || '')
-                    )
+                  TODO: reimplement pinning groups
+                  {/* {groups
+                    .filter((g) => searchInAny(groupsQuery, g.name))
                     .map((group) => (
                       <GroupCard
                         key={group.id}
@@ -192,7 +189,7 @@ export function PinnedSelectModal(props: {
                         group={group}
                         onGroupClick={selectGroup}
                       />
-                    ))}
+                    ))} */}
                 </Col>
               </div>
             </>
