@@ -1,7 +1,7 @@
 import { PencilAltIcon, SwitchHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 
-import { Contract, CPMMContract } from 'common/contract'
+import { CPMMContract } from 'common/contract'
 import { BACKGROUND_COLOR } from 'common/envs/constants'
 import Router from 'next/router'
 import { memo, ReactNode } from 'react'
@@ -32,7 +32,6 @@ import { getIsNative } from 'web/lib/native/is-native'
 import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
-import { ContractCardNew } from 'web/components/contract/contract-card'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { TopicSelector } from 'web/components/topic-selector'
@@ -262,17 +261,3 @@ const MainContent = () => {
     </Col>
   )
 }
-
-export const ContractsSection = memo(function ContractsSection(props: {
-  contracts: Contract[]
-  className?: string
-}) {
-  const { contracts, className } = props
-  return (
-    <Col className={clsx('max-w-2xl', className)}>
-      {contracts.map((contract) => (
-        <ContractCardNew key={contract.id} contract={contract} />
-      ))}
-    </Col>
-  )
-})
