@@ -58,7 +58,7 @@ export default function Home() {
 function HomeDashboard() {
   const user = useUser()
 
-  const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id)
+  const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
 
   const isLoading = !dailyChangedContracts
 
@@ -85,7 +85,7 @@ function MobileHome() {
   const user = useUser()
   const { showSwipe, toggleView, isNative } = useViewToggle()
 
-  const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id)
+  const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
 
   const isLoading = !dailyChangedContracts
 
