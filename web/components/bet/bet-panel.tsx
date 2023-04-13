@@ -309,16 +309,21 @@ export function BuyPanel(props: {
 
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
 
-  const warning =
+  // warnings
+  const highBankrollSpend =
     (betAmount ?? 0) >= 100 && bankrollFraction >= 0.5 && bankrollFraction <= 1
-      ? `You might not want to spend ${formatPercent(
-          bankrollFraction
-        )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
-          user?.balance ?? 0
-        )}`
-      : (betAmount ?? 0) > 10 && probChange > 0.299 && bankrollFraction <= 1
-      ? `Are you sure you want to move the market by ${displayedDifference}?`
-      : undefined
+  const highProbMove =
+    (betAmount ?? 0) > 10 && probChange > 0.299 && bankrollFraction <= 1
+
+  const warning = highBankrollSpend
+    ? `You might not want to spend ${formatPercent(
+        bankrollFraction
+      )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
+        user?.balance ?? 0
+      )}`
+    : highProbMove
+    ? `Are you sure you want to move the market by ${displayedDifference}?`
+    : undefined
 
   const displayError = !!outcome
 
@@ -426,7 +431,12 @@ export function BuyPanel(props: {
             ) : (
               <div className="text-lg">
                 {getFormattedMappedValue(contract, resultProb)}
-                <span className={clsx('text-ink-500 text-sm')}>
+                <span
+                  className={clsx(
+                    'text-sm',
+                    highProbMove ? 'text-warning' : 'text-ink-500'
+                  )}
+                >
                   {isPseudoNumeric ? (
                     <></>
                   ) : (
