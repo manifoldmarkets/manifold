@@ -156,7 +156,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 // No sidebar when signed out
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
-    { name: 'Search', href: '/find', icon: SearchIcon },
+    { name: 'Markets', href: '/markets', icon: ScaleIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
 
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
