@@ -179,8 +179,10 @@ const Results = (props: { query: string }) => {
   return (
     <>
       {marketHits.length > 0 && <MoreMarketResults search={search} />}
+      {userHits.length > 0 && <MoreUserResults search={search} />}
       <PageResults pages={pageHits} />
       <UserResults users={userHits} />
+
       <GroupResults groups={groupHits} />
       <MarketResults markets={marketHits} />
     </>
@@ -281,6 +283,22 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
         </ResultOption>
       ))}
     </>
+  )
+}
+const MoreUserResults = (props: { search: string }) => {
+  return (
+    <ResultOption
+      value={{
+        id: 'more',
+        slug: `/users?search=${encodeURIComponent(props.search)}`,
+      }}
+    >
+      <div className="flex items-center text-sm">
+        <SearchIcon className="mr-3 h-5 w-5" />
+        Browse all users for
+        <span className="ml-1 italic">"{props.search}"</span>
+      </div>
+    </ResultOption>
   )
 }
 

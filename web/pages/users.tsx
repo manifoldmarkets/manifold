@@ -1,7 +1,7 @@
 import { Title } from 'web/components/widgets/title'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Input } from 'web/components/widgets/input'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUsersSupabase } from 'web/hooks/use-users'
 import { UserSearchResult } from 'web/lib/supabase/users'
@@ -16,14 +16,30 @@ import { firebaseLogin, follow, unfollow } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
+import { useRouter } from 'next/router'
 
 export default function Users() {
-  const [query, setQuery] = useState('')
+  const router = useRouter()
+  const { search } = router.query
+
+  const [query, setQuery] = useState(search || '')
   const isMobile = useIsMobile()
   const [limit, setLimit] = useState(25)
   const users = useUsersSupabase(query, limit)
   const currentUser = useUser()
   const myFollowedIds = useFollows(currentUser?.id)
+
+  useEffect(() => {
+    const searchQuery = router.query.search
+    if (searchQuery) {
+      setQuery(searchQuery.toString())
+    }
+  }, [router.query.search])
+
+  const handleQueryChange = (e) => {
+    setQuery(e.target.value)
+    setLimit(25) // Reset limit when query changes
+  }
 
   return (
     <Page>
@@ -33,7 +49,7 @@ export default function Users() {
           type="text"
           inputMode="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={handleQueryChange}
           onBlur={trackCallback('search users', { query: query })}
           placeholder="Find users"
           className="w-full"
@@ -83,6 +99,7 @@ const UserListEntry = (props: {
               {user.followerCountCached} followers
             </span>
           </Col>
+
           <FollowButton
             isFollowing={isFollowing}
             size={'xs'}
@@ -103,3 +120,5 @@ const UserListEntry = (props: {
     </Row>
   )
 }
+
+UserListEntry.displayName = 'UserListEntry'
