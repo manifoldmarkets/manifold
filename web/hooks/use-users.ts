@@ -45,11 +45,15 @@ export const useDiscoverUsers = (userId: string | null | undefined) => {
   return discoverUserIds
 }
 
-export const useUsersSupabase = (query: string, limit: number) => {
+export const useUsersSupabase = (
+  query: string,
+  limit: number,
+  extraUserFields?: (keyof User)[]
+) => {
   const [users, setUsers] = useState<UserSearchResult[] | undefined>(undefined)
 
   const debouncedSearchUsers = debounce((query, limit) => {
-    searchUsers(query, limit, ['bio', 'followerCountCached']).then(setUsers)
+    searchUsers(query, limit, extraUserFields).then(setUsers)
   }, 200)
   useEffect(() => {
     debouncedSearchUsers(query, limit)
