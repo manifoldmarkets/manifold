@@ -253,7 +253,10 @@ function GroupPills(props: {
   )
 }
 
-function SingleGroupInfo(props: { group: Group; children?: ReactNode }) {
+function SingleGroupInfo(props: {
+  group: SearchGroupInfo
+  children?: ReactNode
+}) {
   const { group, children } = props
 
   const trendingMutate = useMutation(() =>
@@ -298,14 +301,6 @@ function SingleGroupInfo(props: { group: Group; children?: ReactNode }) {
     </div>
   )
 }
-
-function GroupMembersList(props: { group: Group }) {
-  const { group } = props
-  const { totalMembers } = group
-  if (totalMembers <= 1) return <div />
-  return <span className="text-ink-700">{totalMembers} followers</span>
-}
-
 export function GroupLinkItem(props: {
   group: { slug: string; name: string }
   className?: string
