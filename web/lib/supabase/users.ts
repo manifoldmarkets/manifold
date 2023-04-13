@@ -1,13 +1,20 @@
 import { db } from './db'
 import { run, selectFrom } from 'common/supabase/utils'
 import { uniqBy } from 'lodash'
+import { User } from 'common/user'
 
 export type UserSearchResult = Awaited<ReturnType<typeof searchUsers>>[number]
 
-export async function searchUsers(prompt: string, limit: number) {
+export async function searchUsers(
+  prompt: string,
+  limit: number,
+  extraFields?: (keyof User)[]
+) {
+  const defaultFields: (keyof User)[] = ['id', 'name', 'username', 'avatarUrl']
+  const fields = [...defaultFields, ...(extraFields ?? [])]
   if (prompt === '') {
     const { data } = await run(
-      selectFrom(db, 'users', 'id', 'name', 'username', 'avatarUrl')
+      selectFrom(db, 'users', ...fields)
         .order('data->followerCountCached', { ascending: false } as any)
         .limit(limit)
     )
@@ -17,13 +24,13 @@ export async function searchUsers(prompt: string, limit: number) {
   const [{ data: exactData }, { data: prefixData }, { data: containsData }] =
     await Promise.all([
       run(
-        selectFrom(db, 'users', 'id', 'name', 'username', 'avatarUrl')
+        selectFrom(db, 'users', ...fields)
           .or(`data->>username.ilike.${prompt},data->>name.ilike.${prompt}`)
           .order('data->followerCountCached', { ascending: false } as any)
           .limit(limit)
       ),
       run(
-        selectFrom(db, 'users', 'id', 'name', 'username', 'avatarUrl')
+        selectFrom(db, 'users', ...fields)
           .or(`data->>username.ilike.${prompt}%,data->>name.ilike.${prompt}%`)
           .order('data->lastBetTime', {
             ascending: false,
@@ -32,7 +39,7 @@ export async function searchUsers(prompt: string, limit: number) {
           .limit(limit)
       ),
       run(
-        selectFrom(db, 'users', 'id', 'name', 'username', 'avatarUrl')
+        selectFrom(db, 'users', ...fields)
           .or(`data->>username.ilike.%${prompt}%,data->>name.ilike.%${prompt}%`)
           .order('data->lastBetTime', {
             ascending: false,
