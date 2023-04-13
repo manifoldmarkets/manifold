@@ -32,6 +32,7 @@ import { Content } from './widgets/editor'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 import { db } from 'web/lib/supabase/db'
+import { track } from 'web/lib/service/analytics'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
@@ -203,28 +204,37 @@ export const LivePillOptions = (props: {
 }) => {
   const { pill, setPill } = props
 
+  const selectPill = (pill: pill_options) => {
+    setPill(pill)
+    track('select live feed pill', { pill })
+  }
+
   return (
     <Row className="mx-2 gap-2 sm:mx-0">
-      <PillButton selected={pill === 'all'} onSelect={() => setPill('all')} xs>
+      <PillButton
+        selected={pill === 'all'}
+        onSelect={() => selectPill('all')}
+        xs
+      >
         All
       </PillButton>
       <PillButton
         selected={pill === 'markets'}
-        onSelect={() => setPill('markets')}
+        onSelect={() => selectPill('markets')}
         xs
       >
         Markets
       </PillButton>
       <PillButton
         selected={pill === 'comments'}
-        onSelect={() => setPill('comments')}
+        onSelect={() => selectPill('comments')}
         xs
       >
         Comments
       </PillButton>
       <PillButton
         selected={pill === 'trades'}
-        onSelect={() => setPill('trades')}
+        onSelect={() => selectPill('trades')}
         xs
       >
         Trades

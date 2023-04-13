@@ -239,6 +239,11 @@ const MainContent = () => {
     'live-pill'
   )
 
+  const selectLive = (on: boolean) => {
+    setIsLive(on)
+    track('select live', { on })
+  }
+
   return (
     <Col>
       <Row className="h-[48px] items-center justify-between">
@@ -249,7 +254,7 @@ const MainContent = () => {
         )}
         <Row className="items-center gap-3">
           Live
-          <ShortToggle on={isLive} setOn={setIsLive} />
+          <ShortToggle on={isLive} setOn={selectLive} />
         </Row>
       </Row>
       <YourFeedSection topic={topic} className={clsx(isLive ? 'hidden' : '')} />
