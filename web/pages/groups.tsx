@@ -136,13 +136,13 @@ function Community(props: {
   return (
     <div
       className={clsx(
-        'bg-canvas-0 cursor mb-2 rounded-lg p-4',
+        'bg-canvas-0 cursor hover:bg-canvas-100 mb-2 rounded-lg p-4',
         selected ? 'border-primary-200' : 'cursor-pointer',
         className
       )}
       onClick={onClick}
     >
-      <div className="flex flex-wrap items-baseline">
+      <div className="flex flex-wrap items-baseline justify-between">
         <div className="mr-4 min-w-[120px] text-xl">{name}</div>
         <div className="text-ink-700">{description}</div>
       </div>
@@ -218,7 +218,7 @@ function GroupPills(props: {
   return (
     <>
       {groups.length > 1 && (
-        <div className="mt-2 flex flex-wrap gap-1">
+        <div className="mt-6 flex flex-wrap gap-1">
           {groups.map((group) => (
             <div
               key={group.id}
