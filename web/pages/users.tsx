@@ -25,7 +25,7 @@ export default function Users() {
   const [query, setQuery] = useState(search || '')
   const isMobile = useIsMobile()
   const [limit, setLimit] = useState(25)
-  const users = useUsersSupabase(query, limit)
+  const users = useUsersSupabase(query.toString(), limit)
   const currentUser = useUser()
   const myFollowedIds = useFollows(currentUser?.id)
 
@@ -36,7 +36,7 @@ export default function Users() {
     }
   }, [router.query.search])
 
-  const handleQueryChange = (e) => {
+  const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value)
     setLimit(25) // Reset limit when query changes
   }
