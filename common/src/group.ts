@@ -106,7 +106,7 @@ export const GroupsByTopic = {
     'politics-default',
     'world-default',
     'culture-default',
-    'sports-default',
+    // 'sports-default',
   ],
   destiny: ['destinygg', 'destinygg-stocks', 'daliban-hq'],
   rat: ['effective-altruism', 'sf-bay-rationalists', 'nuclear-risk', 'acx'],
@@ -121,4 +121,3 @@ export const GroupsByTopic = {
   ponzi: ['fun', 'selfresolving', 'whale-watching', 'permanent markets'],
   grey: ['cgp-grey'],
 }
-
