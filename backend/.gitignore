@@ -12,3 +12,4 @@ firestore_export*
 
 tsconfig.tsbuildinfo
 *emails.csv
+*.csv
