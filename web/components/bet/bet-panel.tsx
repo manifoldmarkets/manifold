@@ -367,9 +367,7 @@ export function BuyPanel(props: {
           'rounded-lg px-4 py-2'
         )}
       >
-        <Row className="text-ink-500 mt-2 mb-1 items-center justify-between text-left text-sm">
-          Amount
-        </Row>
+        <div className="text-ink-800 mt-2 mb-1 text-sm">Amount</div>
 
         <BuyAmountInput
           inputClassName="w-full max-w-none"
@@ -386,7 +384,7 @@ export function BuyPanel(props: {
 
         <Row className="mt-8 w-full">
           <Col className="w-1/2 text-sm">
-            <Col className="text-ink-500 flex-nowrap whitespace-nowrap text-sm">
+            <Col className="text-ink-800 flex-nowrap whitespace-nowrap text-sm">
               <div>
                 {isPseudoNumeric || isStonk ? (
                   'Shares'
@@ -396,7 +394,7 @@ export function BuyPanel(props: {
               </div>
             </Col>
             <div>
-              <span className="whitespace-nowrap text-lg">
+              <span className="whitespace-nowrap text-lg font-semibold">
                 {isStonk
                   ? getStonkShares(contract, currentPayout)
                   : isPseudoNumeric
@@ -410,7 +408,7 @@ export function BuyPanel(props: {
           </Col>
           <Col className="w-1/2 text-sm">
             <Row>
-              <span className="text-ink-500 whitespace-nowrap text-sm">
+              <span className="text-ink-800 whitespace-nowrap text-sm">
                 {isPseudoNumeric
                   ? 'Estimated value'
                   : isStonk
@@ -425,16 +423,18 @@ export function BuyPanel(props: {
               )}
             </Row>
             {probStayedSame ? (
-              <div className="text-lg">
+              <div className="text-lg font-semibold">
                 {getFormattedMappedValue(contract, initialProb)}
               </div>
             ) : (
-              <div className="text-lg">
-                {getFormattedMappedValue(contract, resultProb)}
+              <div>
+                <span className="text-lg font-semibold">
+                  {getFormattedMappedValue(contract, resultProb)}
+                </span>
                 <span
                   className={clsx(
                     'text-sm',
-                    highProbMove ? 'text-warning' : 'text-ink-500'
+                    highProbMove ? 'text-warning font-semibold' : 'text-ink-500'
                   )}
                 >
                   {isPseudoNumeric ? (
@@ -719,7 +719,7 @@ function LimitOrderPanel(props: {
       </Row>
       <Row className="mt-1 mb-4 gap-4">
         <Col className="gap-2">
-          <div className="text-ink-500 text-sm">
+          <div className="text-ink-800 text-sm">
             Buy {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
           </div>
           <ProbabilityOrNumericInput
@@ -732,7 +732,7 @@ function LimitOrderPanel(props: {
         </Col>
 
         <Col className="gap-2">
-          <div className="text-ink-500 text-sm">
+          <div className="text-ink-800 text-sm">
             Buy {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
           </div>
           <ProbabilityOrNumericInput
@@ -775,11 +775,9 @@ function LimitOrderPanel(props: {
         </div>
       )}
 
-      <Row className="text-ink-500 mt-1 mb-3 justify-between text-left text-sm">
-        <span>
-          Max amount<span className="text-scarlet-500 ml-1">*</span>
-        </span>
-      </Row>
+      <span className="text-ink-800 mt-1 mb-2 text-sm">
+        Max amount<span className="text-scarlet-500 ml-0.5">*</span>
+      </span>
 
       <BuyAmountInput
         inputClassName="w-full max-w-none"
