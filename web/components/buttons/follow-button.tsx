@@ -5,14 +5,16 @@ import { useFollows } from 'web/hooks/use-follows'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { follow, unfollow } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
-import { Button } from './button'
+import { Button, SizeType } from './button'
 
 export function FollowButton(props: {
   isFollowing: boolean | undefined
   onFollow: () => void
   onUnfollow: () => void
+  size?: SizeType
+  className?: string
 }) {
-  const { isFollowing, onFollow, onUnfollow } = props
+  const { isFollowing, className, onFollow, onUnfollow, size } = props
 
   const user = useUser()
 
@@ -21,9 +23,9 @@ export function FollowButton(props: {
   if (isFollowing) {
     return (
       <Button
-        size="sm"
-        color="dark-gray"
-        className="my-auto"
+        size={size ?? 'sm'}
+        color="gray-outline"
+        className={clsx('my-auto', className)}
         onClick={withTracking(onUnfollow, 'unfollow')}
       >
         Following
@@ -33,9 +35,9 @@ export function FollowButton(props: {
 
   return (
     <Button
-      size="sm"
+      size={size ?? 'sm'}
       color="indigo"
-      className="my-auto"
+      className={clsx('my-auto', className)}
       onClick={withTracking(onFollow, 'follow')}
     >
       Follow

@@ -109,6 +109,12 @@ export default function LabsPage() {
           />
 
           <LabCard
+            title="👥 Users"
+            description="Find your friends or other people on Manifold"
+            href="/users"
+          />
+
+          <LabCard
             title="⚔️ Versus"
             description="Create mana-battles between two players"
             href="/versus"

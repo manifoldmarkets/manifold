@@ -44,6 +44,7 @@ const pages: PageData[] = [
     slug: '/markets?s=resolve-date&f=resolved',
     keywords: ['recently resolved'],
   },
+  { label: 'Users', slug: '/users' },
 ]
 
 export function searchPages(query: string, limit: number) {
@@ -66,4 +67,5 @@ export const defaultPages = [
   pagesByLabel['Newest'],
   pagesByLabel['Daily Changed'],
   pagesByLabel['Trending'],
+  pagesByLabel['Users'],
 ]

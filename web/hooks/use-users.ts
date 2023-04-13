@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { PrivateUser, User } from 'common/user'
-import { groupBy, sortBy } from 'lodash'
+import { debounce, groupBy, sortBy } from 'lodash'
 import { getUserBetContracts } from 'web/lib/firebase/contracts'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { DocumentData } from 'firebase/firestore'
 import { users, privateUsers } from 'web/lib/firebase/users'
+import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 
 export const useUsers = () => {
   const result = useFirestoreQueryData<DocumentData, User[]>(['users'], users, {
@@ -42,4 +43,18 @@ export const useDiscoverUsers = (userId: string | null | undefined) => {
   }, [userId])
 
   return discoverUserIds
+}
+
+export const useUsersSupabase = (query: string, limit: number) => {
+  const [users, setUsers] = useState<UserSearchResult[] | undefined>(undefined)
+
+  const debouncedSearchUsers = debounce((query, limit) => {
+    searchUsers(query, limit, ['bio', 'followerCountCached']).then(setUsers)
+  }, 200)
+  useEffect(() => {
+    debouncedSearchUsers(query, limit)
+    return () => debouncedSearchUsers.cancel()
+  }, [query, limit])
+
+  return users
 }
