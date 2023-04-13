@@ -135,7 +135,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         icon: TrophyIcon,
       },
       {
-        name: 'Market groups',
+        name: 'Groups',
         icon: RectangleGroupIcon,
         href: '/groups',
       }
@@ -167,7 +167,7 @@ const getMobileNav = (toggleModal: () => void) => {
       href: '/ad',
     },
     {
-      name: 'Market groups',
+      name: 'Groups',
       icon: RectangleGroupIcon,
       href: '/groups',
     }
