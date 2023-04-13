@@ -15,7 +15,7 @@ import { SearchProvider } from 'web/components/search/search-context'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
-import { Major_Mono_Display, Figtree } from 'next/font/google'
+import { Major_Mono_Display, Figtree, Josefin_Slab } from 'next/font/google'
 import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
 import clsx from 'clsx'
 
@@ -32,6 +32,11 @@ const mainFont = Figtree({
   weight: ['300', '400', '500', '600', '700'],
   variable: '--font-main',
   subsets: ['latin'],
+})
+
+const josefin = Josefin_Slab({
+  subsets: ['latin'],
+  variable: '--font-josefin-slab',
 })
 
 function firstLine(msg: string) {
@@ -120,7 +125,8 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         className={clsx(
           'font-figtree contents font-normal',
           logoFont.variable,
-          mainFont.variable
+          mainFont.variable,
+          josefin.variable
         )}
       >
         <AuthProvider serverUser={pageProps.auth}>

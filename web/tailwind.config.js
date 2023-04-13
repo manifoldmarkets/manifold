@@ -14,6 +14,7 @@ module.exports = {
       {
         'major-mono': ['var(--font-logo)', 'monospace'],
         figtree: ['icomoon', 'var(--font-main)', 'emoji', 'sans-serif'],
+        'josefin-slab': ['var(--font-josefin-slab)', 'serif'],
         'grenze-gotisch': ['var(--font-match-cards)', 'cursive'], // just for match card game
       }
     ),

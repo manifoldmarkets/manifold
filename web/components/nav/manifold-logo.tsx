@@ -3,9 +3,10 @@ import clsx from 'clsx'
 
 import { useUser } from 'web/hooks/use-user'
 import { useIsDarkMode } from 'web/hooks/dark-mode-context'
+import Image from 'next/image'
 
 export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
-  const { className, twoLine } = props
+  const { className } = props
   const isDarkMode = useIsDarkMode()
 
   const user = useUser()
@@ -14,28 +15,20 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
     <Link
       href={user ? '/home' : '/'}
       className={clsx(
-        'group flex shrink-0 flex-row items-center gap-4',
+        'group flex min-w-[200px] flex-row items-center gap-1',
         className
       )}
     >
-      <img
+      <Image
         className="transition-all group-hover:rotate-12"
         src={isDarkMode ? '/logo-white.svg' : '/logo.svg'}
-        width={45}
-        height={45}
+        width={55}
+        height={55}
         alt=""
       />
-      {twoLine ? (
-        <div className="font-major-mono text-ink-900 mt-1 text-lg lowercase">
-          Manifold
-          <br />
-          Markets
-        </div>
-      ) : (
-        <div className="font-major-mono text-ink-900 mt-2 text-2xl lowercase md:whitespace-nowrap">
-          Manifold Markets
-        </div>
-      )}
+      <div className="font-josefin-slab text-ink-900 mt-3 bg-gradient-to-r from-indigo-700 to-blue-600 bg-clip-text text-3xl font-[600] text-transparent">
+        Manifold
+      </div>
     </Link>
   )
 }
