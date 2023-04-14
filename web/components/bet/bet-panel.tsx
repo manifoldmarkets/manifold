@@ -53,6 +53,9 @@ import { SINGULAR_BET } from 'common/user'
 import { SiteLink } from '../widgets/site-link'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
 import { getStonkShares, STONK_NO, STONK_YES } from 'common/stonk'
+import { Input } from 'web/components/widgets/input'
+import { DAY_MS, MINUTE_MS } from 'common/util/time'
+import dayjs from 'dayjs'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -540,6 +543,17 @@ function LimitOrderPanel(props: {
   const [highLimitProb, setHighLimitProb] = useState<number | undefined>()
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  // Expiring orders
+  const [addExpiration, setAddExpiration] = useState(false)
+  const timeInMs = Number(Date.now() + DAY_MS * 7)
+  const initDate = dayjs(timeInMs).format('YYYY-MM-DD')
+  const initTime = dayjs(timeInMs).format('HH:mm')
+  const [expirationDate, setExpirationDate] = useState<string>(initDate)
+  const [expirationHoursMinutes, setExpirationHoursMinutes] =
+    useState<string>(initTime)
+  const expiresAt = addExpiration
+    ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
+    : undefined
 
   const rangeError =
     lowLimitProb !== undefined &&
@@ -603,12 +617,14 @@ function LimitOrderPanel(props: {
             amount: yesAmount,
             limitProb: yesLimitProb,
             contractId: contract.id,
+            expiresAt,
           }),
           placeBet({
             outcome: 'NO',
             amount: noAmount,
             limitProb: noLimitProb,
             contractId: contract.id,
+            expiresAt,
           }),
         ])
       : placeBet({
@@ -616,6 +632,7 @@ function LimitOrderPanel(props: {
           amount: betAmount,
           contractId: contract.id,
           limitProb: hasYesLimitBet ? yesLimitProb : noLimitProb,
+          expiresAt,
         })
 
     betsPromise
@@ -789,8 +806,40 @@ function LimitOrderPanel(props: {
         sliderOptions={{ show: true, wrap: false }}
         showBalance
       />
+      <Button
+        className={'mt-2'}
+        onClick={() => setAddExpiration(!addExpiration)}
+        color={'gray-white'}
+      >
+        {addExpiration ? 'Remove expiration date' : 'Add expiration date'}
+      </Button>
+      {addExpiration && (
+        <Row className="mt-4 gap-2">
+          <Input
+            type={'date'}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              setExpirationDate(e.target.value)
+              if (!expirationHoursMinutes) {
+                setExpirationHoursMinutes(initTime)
+              }
+            }}
+            min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
+            disabled={isSubmitting}
+            value={expirationDate}
+          />
+          <Input
+            type={'time'}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setExpirationHoursMinutes(e.target.value)}
+            min={'00:00'}
+            disabled={isSubmitting}
+            value={expirationHoursMinutes}
+          />
+        </Row>
+      )}
 
-      <Col className="mt-8 w-full gap-3">
+      <Col className="mt-2 w-full gap-3">
         {(hasTwoBets || (hasYesLimitBet && yesBet.amount !== 0)) && (
           <Row className="items-center justify-between gap-2 text-sm">
             <div className="text-ink-500 whitespace-nowrap">

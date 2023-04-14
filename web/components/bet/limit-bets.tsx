@@ -89,19 +89,22 @@ export function OrderTable(props: {
               <th>Outcome</th>
               <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
               <th>Amount</th>
-              {isYou && limitBets.length > 1 && (
-                <th>
-                  <Button
-                    loading={isCancelling}
-                    size={'2xs'}
-                    color={'gray-outline'}
-                    onClick={onCancel}
-                    className={'whitespace-normal'}
-                  >
-                    Cancel all
-                  </Button>
-                </th>
-              )}
+              <th>
+                <Row className={'mt-1 justify-between gap-1 sm:justify-start'}>
+                  Expires
+                  {isYou && limitBets.length > 1 && (
+                    <Button
+                      loading={isCancelling}
+                      size={'2xs'}
+                      color={'gray-outline'}
+                      onClick={onCancel}
+                      className={'ml-1 whitespace-normal'}
+                    >
+                      Cancel all
+                    </Button>
+                  )}
+                </Row>
+              </th>
             </tr>
           )}
         </thead>
@@ -173,18 +176,34 @@ function OrderRow(props: {
           : formatPercent(limitProb)}
       </td>
       <td>{formatMoney(orderAmount - amount)}</td>
-      {isYou && (
-        <td>
-          <Button
-            loading={isCancelling}
-            size="2xs"
-            color="gray-outline"
-            onClick={onCancel}
-          >
-            Cancel
-          </Button>
-        </td>
-      )}
+      <td>
+        <Row className={'justify-between gap-1 sm:justify-start'}>
+          <Col className={'sm:flex-row sm:gap-1'}>
+            <span>
+              {bet.expiresAt
+                ? new Date(bet.expiresAt).toLocaleDateString()
+                : 'Never'}
+            </span>
+            <span>
+              {bet.expiresAt
+                ? new Date(bet.expiresAt).toLocaleTimeString()
+                : ''}
+            </span>
+          </Col>
+          {isYou && (
+            <div>
+              <Button
+                loading={isCancelling}
+                size="2xs"
+                color="gray-outline"
+                onClick={onCancel}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </Row>
+      </td>
     </tr>
   )
 }

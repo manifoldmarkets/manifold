@@ -35,6 +35,7 @@ const bodySchema = z.object({
 const binarySchema = z.object({
   outcome: z.enum(['YES', 'NO']),
   limitProb: z.number().gte(0).lte(1).optional(),
+  expiresAt: z.number().optional(),
 })
 
 const freeResponseSchema = z.object({
@@ -94,7 +95,7 @@ export const placebet = authEndpoint(async (req, auth) => {
         mechanism == 'cpmm-1'
       ) {
         // eslint-disable-next-line prefer-const
-        let { outcome, limitProb } = validate(binarySchema, req.body)
+        let { outcome, limitProb, expiresAt } = validate(binarySchema, req.body)
 
         if (limitProb !== undefined && outcomeType === 'BINARY') {
           const isRounded = floatingEqual(
@@ -122,7 +123,8 @@ export const placebet = authEndpoint(async (req, auth) => {
           contract,
           limitProb,
           unfilledBets,
-          balanceByUserId
+          balanceByUserId,
+          expiresAt
         )
       } else if (outcomeType === 'MULTIPLE_CHOICE' && mechanism === 'cpmm-2') {
         const { outcome, shortSell } = validate(freeResponseSchema, req.body)

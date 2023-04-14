@@ -2,15 +2,12 @@ import { getServiceAccountCredentials, initAdmin } from 'shared/init-admin'
 initAdmin()
 import { loadSecretsToEnv } from 'shared/secrets'
 
-import { getTopReferrals } from 'common/supabase/referrals'
-import { createSupabaseClient } from 'shared/supabase/init'
+import { expireLimitOrders } from 'functions/scheduled/expire-limit-orders'
 
 async function testScheduledFunction() {
   const credentials = getServiceAccountCredentials()
   await loadSecretsToEnv(credentials)
-  const db = createSupabaseClient()
-  const refs = await getTopReferrals(db)
-  console.log(refs)
+  await expireLimitOrders()
   // await getReferralCount('AJwLWoo3xue32XIiAVrL5SyR1WB2', 0, db)
   // try {
   //   // await resetDailyQuestStatsInternal()

@@ -164,9 +164,13 @@ export const computeFills = (
   if (isNaN(limitProb ?? 0)) {
     throw new Error('Invalid limitProb: ${limitProb}')
   }
+  const now = Date.now()
 
   const sortedBets = sortBy(
-    unfilledBets.filter((bet) => bet.outcome !== outcome),
+    unfilledBets.filter(
+      (bet) =>
+        bet.outcome !== outcome && (bet.expiresAt ? bet.expiresAt > now : true)
+    ),
     (bet) => (outcome === 'YES' ? bet.limitProb : -bet.limitProb),
     (bet) => bet.createdTime
   )
@@ -237,7 +241,8 @@ export const getBinaryCpmmBetInfo = (
   contract: CPMMBinaryContract | PseudoNumericContract | StonkContract,
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
+  balanceByUserId: { [userId: string]: number },
+  expiresAt?: number
 ) => {
   const { pool, p } = contract
   const { takers, makers, cpmmState, totalFees, ordersToCancel } = computeFills(
@@ -274,6 +279,7 @@ export const getBinaryCpmmBetInfo = (
     isRedemption: false,
     isChallenge: false,
     visibility: contract.visibility,
+    expiresAt,
   })
 
   const { liquidityFee } = totalFees
