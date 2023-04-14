@@ -176,21 +176,21 @@ function OrderRow(props: {
           : formatPercent(limitProb)}
       </td>
       <td>{formatMoney(orderAmount - amount)}</td>
-      <td>
-        <Row className={'justify-between gap-1 sm:justify-start'}>
-          <Col className={'sm:flex-row sm:gap-1'}>
-            <span>
-              {bet.expiresAt
-                ? new Date(bet.expiresAt).toLocaleDateString()
-                : 'Never'}
-            </span>
-            <span>
-              {bet.expiresAt
-                ? new Date(bet.expiresAt).toLocaleTimeString()
-                : ''}
-            </span>
-          </Col>
-          {isYou && (
+      {isYou && (
+        <td>
+          <Row className={'justify-between gap-1 sm:justify-start'}>
+            <Col className={'sm:flex-row sm:gap-1'}>
+              <span>
+                {bet.expiresAt
+                  ? new Date(bet.expiresAt).toLocaleDateString()
+                  : 'Never'}
+              </span>
+              <span>
+                {bet.expiresAt
+                  ? new Date(bet.expiresAt).toLocaleTimeString()
+                  : ''}
+              </span>
+            </Col>
             <div>
               <Button
                 loading={isCancelling}
@@ -201,9 +201,9 @@ function OrderRow(props: {
                 Cancel
               </Button>
             </div>
-          )}
-        </Row>
-      </td>
+          </Row>
+        </td>
+      )}
     </tr>
   )
 }
