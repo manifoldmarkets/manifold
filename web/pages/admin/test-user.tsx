@@ -6,15 +6,26 @@ import { Title } from 'web/components/widgets/title'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
 import { randomString } from 'common/util/random'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { getCookie } from 'web/lib/util/cookie'
 
 export default function TestUser() {
   useRedirectIfSignedIn()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [createUserKey, setCreateUserKey] = usePersistentLocalState(
+    '',
+    'TEST_CREATE_USER_KEY'
+  )
+
   useEffect(() => {
     setEmail('manifoldTestNewUser+' + randomString() + '@gmail.com')
     setPassword(randomString())
+    const key = 'TEST_CREATE_USER_KEY'
+    const cookie = getCookie(key)
+    if (cookie) setCreateUserKey(cookie.replace(/"/g, ''))
   }, [])
 
   const [submitting, setSubmitting] = useState(false)
@@ -36,24 +47,29 @@ export default function TestUser() {
   }
 
   return (
-    <Col className={'items-center justify-items-center gap-1'}>
+    <Col className={'text-ink-600 items-center justify-items-center gap-1'}>
       <Title>Test New User Creation</Title>
       <Row className={'text-ink-600 text-sm'}>
-        Prerequisite: Set TEST_CREATE_USER_KEY to the{' '}
+        Set TEST_CREATE_USER_KEY to{' '}
         <a
           className={'text-primary-700 mx-1'}
           href={
             'https://www.notion.so/manifoldmarkets/Passwords-f460a845ed6d47fc9ea353699adf7c5f?pvs=4#8a11d580b85449a2bba6e400cda8a4c6'
           }
         >
-          proper value
+          the proper value
         </a>{' '}
-        in local storage
       </Row>
+      <ExpandingInput
+        value={createUserKey}
+        onChange={(e) => setCreateUserKey(e.target.value)}
+        className={'w-80'}
+        rows={5}
+      />
       Email
-      <Row className={'text-ink-600'}>{email}</Row>
+      <Row className={'text-ink-500'}>{email}</Row>
       Password
-      <Row className={'text-ink-600'}>{password}</Row>
+      <Row className={'text-ink-500'}>{password}</Row>
       <Button loading={submitting} className={'mt-2'} onClick={create}>
         Submit
       </Button>
