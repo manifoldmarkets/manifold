@@ -1,4 +1,12 @@
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
+  '👥 Communities': [
+    '🤓 CGP Grey',
+    // '📜 ACX',
+    '💗 Effective Altruism',
+    '🎮 Destiny.gg',
+    // '🦔 Proofniks',
+    // '🎰 Wall Street Bets',
+  ],
   '💻 Technology': [
     '🤖 AI',
     '🪙 Crypto',
@@ -54,14 +62,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🌍 Europe',
     '🌎 Latin America',
     '🌍 Middle East',
-  ],
-  '👥 Communities': [
-    '🤓 CGP Grey',
-    // '📜 ACX',
-    '💗 Effective Altruism',
-    '🎮 Destiny.gg',
-    // '🦔 Proofniks',
-    // '🎰 Wall Street Bets',
   ],
 }
 
