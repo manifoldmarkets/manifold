@@ -5,9 +5,7 @@ import clsx from 'clsx'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import {
-  LoadMoreUntilNotVisible,
-} from '../widgets/visibility-observer'
+import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { useIsClient } from 'web/hooks/use-is-client'
