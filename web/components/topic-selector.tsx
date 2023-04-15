@@ -1,4 +1,4 @@
-import { sortBy, uniq } from 'lodash'
+import { uniq } from 'lodash'
 import { cleanTopic, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { Select } from './widgets/select'
 import { track } from 'web/lib/service/analytics'
@@ -8,10 +8,7 @@ export function TopicSelector(props: {
   onSetTopic: (topic: string) => void
 }) {
   const { topic, onSetTopic } = props
-  const uniqueTopics = uniq(Object.values(TOPICS_TO_SUBTOPICS).flat())
-  const topics = sortBy(uniqueTopics, (topic) =>
-    cleanTopic(topic).toLowerCase()
-  )
+  const subtopics = uniq(Object.values(TOPICS_TO_SUBTOPICS).flat())
 
   const selectTopic = (topic: string) => {
     onSetTopic(topic)
@@ -25,7 +22,7 @@ export function TopicSelector(props: {
       onChange={(e) => selectTopic(e.target.value)}
     >
       <option value="">🖤 For you</option>
-      {topics.map((subtopic) => (
+      {subtopics.map((subtopic) => (
         <option key={subtopic} value={cleanTopic(subtopic)}>
           {subtopic}
         </option>
