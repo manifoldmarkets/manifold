@@ -136,7 +136,7 @@ export function SupabaseContractSearch(props: {
   )
 
   const loadMoreContracts = () => {
-    performQuery(() => state)()
+    return performQuery(() => state)()
   }
 
   const searchParams = useRef<SupabaseSearchParameters | null>(null)
@@ -157,7 +157,7 @@ export function SupabaseContractSearch(props: {
   const performQuery = useEvent((getState) => async (freshQuery?: boolean) => {
     const currentState = getState()
     if (searchParams.current == null) {
-      return
+      return false
     }
     const { query, sort, filter } = searchParams.current
     const id = ++requestId.current
@@ -198,15 +198,20 @@ export function SupabaseContractSearch(props: {
         const newFuzzyContractOffset =
           results.fuzzyOffset + currentState.fuzzyContractOffset
 
+        const shouldLoadMore = newContracts.length === CONTRACTS_PER_PAGE
+
         setState({
           fuzzyContractOffset: newFuzzyContractOffset,
           contracts: freshContractsWithoutDeleted,
           showTime: showTime,
-          shouldLoadMore: newContracts.length === 20,
+          shouldLoadMore,
         })
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
+
+        return shouldLoadMore
       }
     }
+    return false
   })
 
   // Always do first query when loading search page, unless going back in history.

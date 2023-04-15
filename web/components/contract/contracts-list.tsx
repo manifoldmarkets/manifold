@@ -9,8 +9,8 @@ import {
 import { Contract } from 'common/contract'
 import { ContractCard } from './contract-card'
 import { Col } from '../layout/col'
-import { VisibilityObserver } from '../widgets/visibility-observer'
-import { useCallback, useState } from 'react'
+import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
+import { useState } from 'react'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ContractsListEntry } from './contracts-list-entry'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -19,21 +19,13 @@ const contractListEntryHighlightClass =
   'bg-gradient-to-b from-primary-100 via-ink-0to-ink-0outline outline-2 outline-primary-400'
 export function ContractsList(props: {
   contracts: Contract[] | undefined
-  loadMore?: () => void
+  loadMore?: () => Promise<boolean>
   onContractClick?: (contract: Contract) => void
   highlightContractIds?: string[]
   skinny?: boolean
 }) {
   const { contracts, loadMore, onContractClick, highlightContractIds, skinny } =
     props
-  const onVisibilityUpdated = useCallback(
-    (visible: boolean) => {
-      if (visible && loadMore) {
-        loadMore()
-      }
-    },
-    [loadMore]
-  )
 
   const isMobile = useIsMobile()
 
@@ -68,8 +60,8 @@ export function ContractsList(props: {
       )}
 
       {loadMore && (
-        <VisibilityObserver
-          onVisibilityUpdated={onVisibilityUpdated}
+        <LoadMoreUntilNotVisible
+          loadMore={loadMore}
           className="relative -top-96 h-1"
         />
       )}
