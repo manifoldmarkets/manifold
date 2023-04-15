@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { uniq } from 'lodash'
+import { noop, uniq } from 'lodash'
 
 import { Col } from 'web/components/layout/col'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
@@ -7,7 +7,6 @@ import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
-import { Row } from 'web/components/layout/row'
 import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { db } from 'web/lib/supabase/db'
 import { updateUserEmbedding } from 'web/lib/firebase/api'
@@ -40,57 +39,56 @@ export function TopicSelectorDialog() {
   }
 
   return (
-    <Modal open={true} setOpen={() => {}}>
-      <Col className="bg-canvas-0 h-[32rem] rounded-md px-8 py-6 text-sm md:text-base">
-        <span
-          className={'text-primary-700 mb-2 text-2xl'}
-          children="What interests you?"
-        />
-        <p className="mb-4">
-          Select a few topics you're interested in to personalize your Manifold
-          experience.
-        </p>
-
-        <div className="scrollbar-hide h-full items-start overflow-x-auto">
-          {Object.keys(TOPICS_TO_SUBTOPICS).map((topic) => (
-            <Col className="mb-4" key={topic + '-section'}>
-              <span className={'text-primary-700 mb-2 text-lg'}>{topic}</span>
-
-              <div className="ml-4">
-                {getSubtopics(topic).map(
-                  ([subtopicWithEmoji, subtopic, groupId]) => (
-                    <PillButton
-                      key={subtopic}
-                      selected={selectedTopics.includes(subtopic)}
-                      onSelect={() => {
-                        if (selectedTopics.includes(subtopic)) {
-                          setSelectedTopics(
-                            selectedTopics.filter((t) => t !== subtopic)
-                          )
-                          if (topic === '👥 Communities' && groupId && user)
-                            leaveGroup(groupId, user.id)
-                        } else {
-                          setSelectedTopics(uniq([...selectedTopics, subtopic]))
-                          if (topic === '👥 Communities' && groupId && user)
-                            joinGroup(groupId, user.id)
-                        }
-                      }}
-                      className="bg-ink-100 mr-1 mb-2 max-w-[16rem] truncate"
-                    >
-                      {subtopicWithEmoji}
-                    </PillButton>
-                  )
-                )}
-              </div>
-            </Col>
-          ))}
+    <Modal
+      open={true}
+      setOpen={noop}
+      className="bg-canvas-0 overflow-hidden rounded-md"
+    >
+      <Col className="h-[32rem] overflow-y-auto">
+        <div className="bg-canvas-0 sticky top-0 py-4 px-6">
+          <p className="text-primary-700 mb-2 text-2xl">What interests you?</p>
+          <p>Select a few topics to personalize your feed</p>
         </div>
 
-        <Row className={'justify-end'}>
-          <Button onClick={recomputeEmbeddingsAndReload} loading={isLoading}>
-            Done
-          </Button>
-        </Row>
+        {Object.keys(TOPICS_TO_SUBTOPICS).map((topic) => (
+          <div className="mb-4 px-5" key={topic + '-section'}>
+            <div className="text-primary-700 mb-2 ml-1 text-lg">{topic}</div>
+
+            <div className="flex flex-wrap gap-x-1 gap-y-2">
+              {getSubtopics(topic).map(
+                ([subtopicWithEmoji, subtopic, groupId]) => (
+                  <PillButton
+                    key={subtopic}
+                    selected={selectedTopics.includes(subtopic)}
+                    onSelect={() => {
+                      if (selectedTopics.includes(subtopic)) {
+                        setSelectedTopics(
+                          selectedTopics.filter((t) => t !== subtopic)
+                        )
+                        if (topic === '👥 Communities' && groupId && user)
+                          leaveGroup(groupId, user.id)
+                      } else {
+                        setSelectedTopics(uniq([...selectedTopics, subtopic]))
+                        if (topic === '👥 Communities' && groupId && user)
+                          joinGroup(groupId, user.id)
+                      }
+                    }}
+                  >
+                    {subtopicWithEmoji}
+                  </PillButton>
+                )
+              )}
+            </div>
+          </div>
+        ))}
+
+        <div className="from-canvas-0 pointer-events-none sticky bottom-0 bg-gradient-to-t to-transparent text-right">
+          <span className="pointer-events-auto ml-auto inline-flex p-6 pt-2">
+            <Button onClick={recomputeEmbeddingsAndReload} loading={isLoading}>
+              Done
+            </Button>
+          </span>
+        </div>
       </Col>
     </Modal>
   )
