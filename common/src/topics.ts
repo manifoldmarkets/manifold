@@ -10,7 +10,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '☢️ Nuclear',
     '🚀 Space',
   ],
-  '🗳️ Politics': ['🙋 2024 US Elections', '🟠 Trump', '🇺🇸 US Politics'],
+  '🗳️ US Politics': ['🙋 2024 US Elections', '🟠 Trump', '🇺🇸 US Politics'],
   '🏟️ Sports': [
     '🏀 Basketball',
     '🏈 NFL',
@@ -18,8 +18,9 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '⚽ Soccer',
     '♟️ Chess',
     '🏎️ Racing',
+    '🏅 Sports',
   ],
-  '🍿 Culture': [
+  '🍿 Media': [
     '🎬 Movies',
     '📺 TV Shows',
     '🎮 Gaming',
@@ -177,17 +178,14 @@ export const cleanTopic = (topic: string) =>
 const topicsToIgnore = ['Communities', 'Knowledge']
 
 export const getSubtopics = (topic: string) =>
-  TOPICS_TO_SUBTOPICS[topic]
-    .concat(topic)
-    .map(
-      (subtopicWithEmoji) =>
-        [
-          subtopicWithEmoji,
-          cleanTopic(subtopicWithEmoji),
-          GROUP_IDs[cleanTopic(subtopicWithEmoji)],
-        ] as const
-    )
-    .filter(([, subtopic]) => !topicsToIgnore.includes(subtopic))
+  TOPICS_TO_SUBTOPICS[topic].map(
+    (subtopicWithEmoji) =>
+      [
+        subtopicWithEmoji,
+        cleanTopic(subtopicWithEmoji),
+        GROUP_IDs[cleanTopic(subtopicWithEmoji)],
+      ] as const
+  )
 
 export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
   .flatMap(getSubtopics)
