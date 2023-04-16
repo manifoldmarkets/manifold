@@ -34,7 +34,6 @@ import { track } from 'web/lib/service/analytics'
 import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { shortFormatNumber } from 'common/util/format'
-import { useBets } from 'web/hooks/use-bets'
 import { CertInfo, CertTrades } from './cert-overview'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
@@ -44,6 +43,7 @@ import { ShareholderStats } from 'common/supabase/contract-metrics'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { useEvent } from 'web/hooks/use-event'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
+import { useBets } from 'web/hooks/use-bets-supabase'
 
 export function ContractTabs(props: {
   contract: Contract

@@ -77,7 +77,6 @@ where is_valid_contract(contracts)
     where w = contract_id
   )
 limit count $$;
-
 create or replace function get_recommended_contract_set(uid text, n int, excluded_contract_ids text []) returns table (data jsonb, score real) immutable parallel safe language sql as $$ with recommendation_scores as materialized (
     select contract_id,
       score
@@ -150,104 +149,135 @@ return query (
 );
 end if;
 end $$;
-
 create or replace function get_recommended_contracts_embeddings(uid text, n int, excluded_contract_ids text []) returns table (
-  data jsonb,
-  distance numeric,
-  relative_dist numeric,
-  popularity_score numeric
-) immutable parallel safe language sql as $$
-  with user_embedding as (
-    select interest_embedding from user_embeddings
+    data jsonb,
+    distance numeric,
+    relative_dist numeric,
+    popularity_score numeric
+  ) immutable parallel safe language sql as $$ with user_embedding as (
+    select interest_embedding
+    from user_embeddings
     where user_id = uid
   )
-  select * from get_recommended_contracts_embeddings_from(
-    uid, (select interest_embedding from user_embedding), n, excluded_contract_ids, 0.25)
-$$;
-
-create or replace function get_recommended_contracts_embeddings_topic(uid text, p_topic text, n int, excluded_contract_ids text []) returns table (
-  data jsonb,
-  distance numeric,
-  relative_dist numeric,
-  popularity_score numeric
-) immutable parallel safe language sql as $$
-  with topic_embedding as (
-    select embedding from topic_embeddings
+select *
+from get_recommended_contracts_embeddings_from(
+    uid,
+    (
+      select interest_embedding
+      from user_embedding
+    ),
+    n,
+    excluded_contract_ids,
+    0.25
+  ) $$;
+create or replace function get_recommended_contracts_embeddings_topic(
+    uid text,
+    p_topic text,
+    n int,
+    excluded_contract_ids text []
+  ) returns table (
+    data jsonb,
+    distance numeric,
+    relative_dist numeric,
+    popularity_score numeric
+  ) immutable parallel safe language sql as $$ with topic_embedding as (
+    select embedding
+    from topic_embeddings
     where topic_embeddings.topic = p_topic
-  ), not_chosen_embedding as (
+  ),
+  not_chosen_embedding as (
     select avg(embedding) as average
     from topic_embeddings
     where topic != p_topic
-  ), embedding as (
+  ),
+  embedding as (
     select (topic_embedding.embedding - not_chosen.average) as average
-    from topic_embedding, not_chosen_embedding as not_chosen
+    from topic_embedding,
+      not_chosen_embedding as not_chosen
   )
-  select * from get_recommended_contracts_embeddings_from2(
-      uid, (select average from embedding), n, excluded_contract_ids, 0.10)
-$$;
-
-create or replace function get_recommended_contracts_embeddings_from(uid text, p_embedding vector, n int, excluded_contract_ids text [], max_dist numeric) returns table (
-  data jsonb,
-  distance numeric,
-  relative_dist numeric,
-  popularity_score numeric
-) immutable parallel safe language sql as $$
-  with available_contracts_unscored as (
+select *
+from get_recommended_contracts_embeddings_from2(
+    uid,
+    (
+      select average
+      from embedding
+    ),
+    n,
+    excluded_contract_ids,
+    0.10
+  ) $$;
+create or replace function get_recommended_contracts_embeddings_from(
+    uid text,
+    p_embedding vector,
+    n int,
+    excluded_contract_ids text [],
+    max_dist numeric
+  ) returns table (
+    data jsonb,
+    distance numeric,
+    relative_dist numeric,
+    popularity_score numeric
+  ) immutable parallel safe language sql as $$ with available_contracts_unscored as (
     select contract_id,
       p_embedding <=> ce.embedding as distance,
-      (row_number() over (order by p_embedding <=> ce.embedding))
-        / 2000.0 as relative_dist,
-    lpc.popularity_score,
-    lpc.created_time,
-    lpc.close_time
+      (
+        row_number() over (
+          order by p_embedding <=> ce.embedding
+        )
+      ) / 2000.0 as relative_dist,
+      lpc.popularity_score,
+      lpc.created_time,
+      lpc.close_time
     from contract_embeddings as ce
-    join listed_open_contracts lpc on lpc.id = contract_id
+      join listed_open_contracts lpc on lpc.id = contract_id
     where not exists (
-      select 1
-      from unnest(excluded_contract_ids) as w
-      where w = contract_id
-    ) -- That has not been viewed.
-   and not exists (
-     select 1
-     from user_events
-     where user_events.user_id = uid
-       and user_events.data->>'name' = 'view market'
-       and user_events.data->>'contractId' = contract_id
-   ) -- That has not been swiped on.
-   and not exists(
-     select 1
-     from user_seen_markets
-     where user_seen_markets.user_id = uid
-       and user_seen_markets.contract_id = ce.contract_id
-   ) -- That has not been viewed as a card recently.
-   and not exists(
-     select 1
-     from user_events
-     where user_events.user_id = uid
-       and user_events.data->>'name' = 'view market card'
-       and user_events.data->>'contractId' = contract_id
-       and (user_events.data->'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
-   )
-    order by p_embedding <=> ce.embedding
-    -- Find many that are close to your interests
-    -- so that among them we can filter for new, closing soon, and trending.
-   limit 2000
+        select 1
+        from unnest(excluded_contract_ids) as w
+        where w = contract_id
+      ) -- That has not been viewed.
+      and not exists (
+        select 1
+        from user_events
+        where user_events.user_id = uid
+          and user_events.data->>'name' = 'view market'
+          and user_events.data->>'contractId' = contract_id
+      ) -- That has not been swiped on.
+      and not exists(
+        select 1
+        from user_seen_markets
+        where user_seen_markets.user_id = uid
+          and user_seen_markets.contract_id = ce.contract_id
+      ) -- That has not been viewed as a card recently.
+      and not exists(
+        select 1
+        from user_events
+        where user_events.user_id = uid
+          and user_events.data->>'name' = 'view market card'
+          and user_events.data->>'contractId' = contract_id
+          and (user_events.data->'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
+      )
+    order by p_embedding <=> ce.embedding -- Find many that are close to your interests
+      -- so that among them we can filter for new, closing soon, and trending.
+    limit 2000
   ), available_contracts as (
     select *,
-    (case
-       when close_time <= NOW() + interval '1 day' then 1
-      when close_time <= NOW() + interval '1 week' then .9
-      when close_time <= NOW() + interval '1 month' then 0.75
-      when close_time <= NOW() + interval '3 months' then 0.5
-      when close_time <= NOW() + interval '1 year' then 0.33
-      else 0.25
-    end) * log(coalesce(popularity_score, 0) + 2) / (relative_dist + 0.1) as score
+      (
+        case
+          when close_time <= NOW() + interval '1 day' then 1
+          when close_time <= NOW() + interval '1 week' then.9
+          when close_time <= NOW() + interval '1 month' then 0.75
+          when close_time <= NOW() + interval '3 months' then 0.5
+          when close_time <= NOW() + interval '1 year' then 0.33
+          else 0.25
+        end
+      ) * log(coalesce(popularity_score, 0) + 2) / (relative_dist + 0.1) as score
     from available_contracts_unscored
-  ), new_contracts as (
+  ),
+  new_contracts as (
     select *,
-     row_number() over (
-       order by score desc
-       ) as row_num
+      row_number() over (
+        order by score desc
+      ) as row_num
     from available_contracts
     where created_time > (now() - interval '1 day')
       and close_time > (now() + interval '1 day')
@@ -256,20 +286,26 @@ create or replace function get_recommended_contracts_embeddings_from(uid text, p
     limit n / 5
   ), closing_soon_contracts as (
     select *,
-      row_number() over ( order by score desc ) as row_num
+      row_number() over (
+        order by score desc
+      ) as row_num
     from available_contracts
-      where close_time < (now() + interval '1 day')
-    and relative_dist < max_dist
+    where close_time < (now() + interval '1 day')
+      and relative_dist < max_dist
     order by score desc
     limit n / 5
   ), combined_new_closing_soon as (
-    select *, 1 as result_id
+    select *,
+      1 as result_id
     from new_contracts
     union all
-    select *, 2 as result_id
+    select *,
+      2 as result_id
     from closing_soon_contracts
-    order by row_num, result_id
-  ), trending_contracts as (
+    order by row_num,
+      result_id
+  ),
+  trending_contracts as (
     select *
     from available_contracts
     where created_time < (now() - interval '1 day')
@@ -278,50 +314,88 @@ create or replace function get_recommended_contracts_embeddings_from(uid text, p
   ),
   trending_results1 as (
     select *,
-      row_number() over ( order by score desc ) as row_num
+      row_number() over (
+        order by score desc
+      ) as row_num
     from trending_contracts
     where relative_dist < max_dist / 4
-    limit 1 + (n - (select count(*) from combined_new_closing_soon)) / 3
-  ), trending_results2 as (
+    limit 1 + (
+        n - (
+          select count(*)
+          from combined_new_closing_soon
+        )
+      ) / 3
+  ),
+  trending_results2 as (
     select *,
-     row_number() over ( order by score desc ) as row_num
+      row_number() over (
+        order by score desc
+      ) as row_num
     from trending_contracts
-    where relative_dist >= max_dist / 4 and relative_dist < max_dist / 2
-    limit 1 + (n - (select count(*) from combined_new_closing_soon)) / 3
-  ), trending_results3 as (
+    where relative_dist >= max_dist / 4
+      and relative_dist < max_dist / 2
+    limit 1 + (
+        n - (
+          select count(*)
+          from combined_new_closing_soon
+        )
+      ) / 3
+  ),
+  trending_results3 as (
     select *,
-     row_number() over (
-         order by score desc
-     ) as row_num
+      row_number() over (
+        order by score desc
+      ) as row_num
     from trending_contracts
-    where relative_dist >= max_dist / 2 and relative_dist < max_dist
-    limit 1 + (n - (select count(*) from combined_new_closing_soon)) / 3
-  ), combined_trending as (
-    select *, 1 as result_id from trending_results1
+    where relative_dist >= max_dist / 2
+      and relative_dist < max_dist
+    limit 1 + (
+        n - (
+          select count(*)
+          from combined_new_closing_soon
+        )
+      ) / 3
+  ),
+  combined_trending as (
+    select *,
+      1 as result_id
+    from trending_results1
     union all
-    select *, 2 as result_id from trending_results2
+    select *,
+      2 as result_id
+    from trending_results2
     union all
-    select *, 3 as result_id from trending_results3
-    order by row_num, result_id
-  ), combined_results as (
+    select *,
+      3 as result_id
+    from trending_results3
+    order by row_num,
+      result_id
+  ),
+  combined_results as (
     select *,
       1 as result_id2,
-      row_number() over ( order by row_num, result_id ) as row_num2
+      row_number() over (
+        order by row_num,
+          result_id
+      ) as row_num2
     from combined_trending
     union all
     select *,
       2 as result_id2,
-      row_number() over ( order by row_num, result_id ) as row_num2
+      row_number() over (
+        order by row_num,
+          result_id
+      ) as row_num2
     from combined_new_closing_soon
-    order by row_num2, result_id2
+    order by row_num2,
+      result_id2
   )
-  select data,
-     distance,
-     relative_dist,
-     combined_results.popularity_score
-  from combined_results
-    join contracts on contracts.id = combined_results.contract_id $$;
-
+select data,
+  distance,
+  relative_dist,
+  combined_results.popularity_score
+from combined_results
+  join contracts on contracts.id = combined_results.contract_id $$;
 create or replace function get_cpmm_pool_prob(pool jsonb, p numeric) returns numeric language plpgsql immutable parallel safe as $$
 declare p_no numeric := (pool->>'NO')::numeric;
 p_yes numeric := (pool->>'YES')::numeric;
@@ -410,7 +484,7 @@ select ucm.contract_id,
   ucm.data as metrics,
   c.data as contract
 from user_contract_metrics as ucm
-  join contracts as c on c.id = ucm.contract_id
+  join contracts_rbac as c on c.id = ucm.contract_id
 where ucm.user_id = uid
   and ucm.data->'lastBetTime' is not null
 order by ((ucm.data)->'lastBetTime')::bigint desc offset start
@@ -597,42 +671,46 @@ FROM search_contract_embeddings(
     match_count + 10
   )
   join contracts on contract_id = contracts.id
-  where contract_id != input_contract_id
+where contract_id != input_contract_id
   and resolution_time is null
-  order by similarity * similarity * log(popularity_score + 100) desc
-  limit match_count;
+order by similarity * similarity * log(popularity_score + 100) desc
+limit match_count;
 $$;
-
-create or replace function save_user_topics(p_user_id text, p_topics text[])
-returns void
-language sql
-as $$
-  with chosen_embedding as (
+create or replace function save_user_topics(p_user_id text, p_topics text []) returns void language sql as $$ with chosen_embedding as (
     select avg(embedding) as average
     from topic_embeddings
     where topic = any(p_topics)
-  ), not_chosen_embedding as (
+  ),
+  not_chosen_embedding as (
     select avg(embedding) as average
     from topic_embeddings
-    where topic not in (select unnest(p_topics))
-  ), topic_embedding as (
+    where topic not in (
+        select unnest(p_topics)
+      )
+  ),
+  topic_embedding as (
     select (chosen.average - not_chosen.average) as average
-    from chosen_embedding as chosen, not_chosen_embedding as not_chosen
+    from chosen_embedding as chosen,
+      not_chosen_embedding as not_chosen
   )
-  insert into user_topics (user_id, topics, topic_embedding)
-  values (p_user_id, p_topics, (select average from topic_embedding))
-  on conflict (user_id)
-  do update set
-    topics = excluded.topics,
-    topic_embedding = excluded.topic_embedding;
+insert into user_topics (user_id, topics, topic_embedding)
+values (
+    p_user_id,
+    p_topics,
+    (
+      select average
+      from topic_embedding
+    )
+  ) on conflict (user_id) do
+update
+set topics = excluded.topics,
+  topic_embedding = excluded.topic_embedding;
 $$;
-
-create or replace function firebase_uid()
-  returns text
-  language sql
-  stable parallel safe
-as $$
-  select nullif(current_setting('request.jwt.claims', true)::json->>'sub', '')::text;
+create or replace function firebase_uid() returns text language sql stable parallel safe as $$
+select nullif(
+    current_setting('request.jwt.claims', true)::json->>'sub',
+    ''
+  )::text;
 $$;
 create or replace function firebase_uid() returns text language sql stable parallel safe as $$
 select nullif(
