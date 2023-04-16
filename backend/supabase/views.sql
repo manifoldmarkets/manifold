@@ -165,26 +165,9 @@ FROM (
   ) subquery
 ORDER BY total_referrals DESC;
 create view public.contract_bets_rbac as
-select contracts.visibility,
-  contract_bets.contract_id,
-  contract_bets.bet_id,
-  contract_bets.data,
-  contract_bets.fs_updated_time
-from contracts
-  join contract_bets on contracts.id = contract_bets.contract_id
-where contracts.visibility = 'public'::text
-  or contracts.visibility = 'unlisted'::text
-  or contracts.visibility = 'private'::text
-  and can_access_private_contract (contract_bets.contract_id, firebase_uid ());
-create view public.contract_bets_rbac_no_join as
-select contracts.visibility,
-  contract_bets.contract_id,
-  contract_bets.bet_id,
-  contract_bets.data,
-  contract_bets.fs_updated_time
-from contracts
-  join contract_bets on contracts.id = contract_bets.contract_id
-where contracts.visibility = 'public'::text
-  or contracts.visibility = 'unlisted'::text
-  or contracts.visibility = 'private'::text
-  and can_access_private_contract (contract_bets.contract_id, firebase_uid ());
+select *
+from contract_bets
+where NOT data @> '{"visibility": "private"}'
+  OR (
+    can_access_private_contract(contract_id, firebase_uid())
+  )
