@@ -17,6 +17,10 @@ export async function runTxn(
 ) {
   const { amount, fromId, toId, toType } = data
 
+  if (!isFinite(amount) || amount <= 0) {
+    return { status: 'error', message: 'Invalid amount' }
+  }
+
   const fromDoc = firestore.doc(`users/${fromId}`)
   const fromSnap = await fbTransaction.get(fromDoc)
   if (!fromSnap.exists) {
