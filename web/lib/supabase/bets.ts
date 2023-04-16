@@ -43,7 +43,7 @@ export const getBetFields = async <T extends (keyof Bet)[]>(
   fields: T,
   options?: BetFilter
 ) => {
-  let q = selectFrom(db, 'contract_bets_rbac', ...fields)
+  let q = selectFrom(db, 'contract_bets', ...fields)
   q = q.order('data->>createdTime', {
     ascending: options?.order === 'asc',
   } as any)

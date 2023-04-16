@@ -73,17 +73,17 @@ export interface Database {
         Row: {
           contract_id: string
           created_at: string
-          embedding: unknown
+          embedding: string
         }
         Insert: {
           contract_id: string
           created_at?: string
-          embedding: unknown
+          embedding: string
         }
         Update: {
           contract_id?: string
           created_at?: string
-          embedding?: unknown
+          embedding?: string
         }
       }
       contract_follows: {
@@ -420,17 +420,17 @@ export interface Database {
       topic_embeddings: {
         Row: {
           created_at: string
-          embedding: unknown
+          embedding: string
           topic: string
         }
         Insert: {
           created_at?: string
-          embedding: unknown
+          embedding: string
           topic: string
         }
         Update: {
           created_at?: string
-          embedding?: unknown
+          embedding?: string
           topic?: string
         }
       }
@@ -474,20 +474,20 @@ export interface Database {
       user_embeddings: {
         Row: {
           created_at: string
-          interest_embedding: unknown
-          pre_signup_interest_embedding: unknown | null
+          interest_embedding: string
+          pre_signup_interest_embedding: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
-          interest_embedding: unknown
-          pre_signup_interest_embedding?: unknown | null
+          interest_embedding: string
+          pre_signup_interest_embedding?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
-          interest_embedding?: unknown
-          pre_signup_interest_embedding?: unknown | null
+          interest_embedding?: string
+          pre_signup_interest_embedding?: string | null
           user_id?: string
         }
       }
@@ -646,19 +646,19 @@ export interface Database {
       user_topics: {
         Row: {
           created_at: string
-          topic_embedding: unknown
+          topic_embedding: string
           topics: string[]
           user_id: string
         }
         Insert: {
           created_at?: string
-          topic_embedding: unknown
+          topic_embedding: string
           topics: string[]
           user_id: string
         }
         Update: {
           created_at?: string
-          topic_embedding?: unknown
+          topic_embedding?: string
           topics?: string[]
           user_id?: string
         }
@@ -682,6 +682,26 @@ export interface Database {
       }
     }
     Views: {
+      contract_bets_rbac: {
+        Row: {
+          bet_id: string | null
+          contract_id: string | null
+          data: Json | null
+          fs_updated_time: string | null
+        }
+        Insert: {
+          bet_id?: string | null
+          contract_id?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
+        }
+        Update: {
+          bet_id?: string | null
+          contract_id?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
+        }
+      }
       contract_distance: {
         Row: {
           distance: number | null
@@ -1176,6 +1196,7 @@ export interface Database {
             Args: {
               uid: string
               count: number
+              start: number
             }
             Returns: {
               contract_id: string
@@ -1187,7 +1208,6 @@ export interface Database {
             Args: {
               uid: string
               count: number
-              start: number
             }
             Returns: {
               contract_id: string
@@ -1238,6 +1258,17 @@ export interface Database {
         Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_open_limit_bets_with_contracts: {
+        Args: {
+          uid: string
+          count: number
+        }
+        Returns: {
+          contract_id: string
+          bets: Json[]
+          contract: Json
+        }[]
+      }
+      get_open_limit_bets_with_contracts_rls: {
         Args: {
           uid: string
           count: number
@@ -1333,10 +1364,55 @@ export interface Database {
           popularity_score: number
         }[]
       }
-      get_recommended_contracts_embeddings_from: {
+      get_recommended_contracts_embeddings_from:
+        | {
+            Args: {
+              uid: string
+              p_embedding: string
+              n: number
+              excluded_contract_ids: string[]
+            }
+            Returns: {
+              data: Json
+              distance: number
+              relative_dist: number
+              popularity_score: number
+            }[]
+          }
+        | {
+            Args: {
+              uid: string
+              p_embedding: string
+              n: number
+              excluded_contract_ids: string[]
+              max_dist: number
+            }
+            Returns: {
+              data: Json
+              distance: number
+              relative_dist: number
+              popularity_score: number
+            }[]
+          }
+      get_recommended_contracts_embeddings_from2: {
         Args: {
           uid: string
           p_embedding: string
+          n: number
+          excluded_contract_ids: string[]
+          max_dist: number
+        }
+        Returns: {
+          data: Json
+          distance: number
+          relative_dist: number
+          popularity_score: number
+        }[]
+      }
+      get_recommended_contracts_embeddings_topic: {
+        Args: {
+          uid: string
+          p_topic: string
           n: number
           excluded_contract_ids: string[]
         }
@@ -1347,7 +1423,7 @@ export interface Database {
           popularity_score: number
         }[]
       }
-      get_recommended_contracts_embeddings_topic: {
+      get_recommended_contracts_embeddings_topic2: {
         Args: {
           uid: string
           p_topic: string
@@ -1555,7 +1631,7 @@ export interface Database {
       }
       search_contract_embeddings: {
         Args: {
-          query_embedding: unknown
+          query_embedding: string
           similarity_threshold: number
           match_count: number
         }
@@ -1678,29 +1754,29 @@ export interface Database {
         Args: {
           "": number[]
         }
-        Returns: unknown
+        Returns: string
       }
       vector_dims: {
         Args: {
-          "": unknown
+          "": string
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          "": unknown
+          "": string
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          "": unknown
+          "": string
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          "": unknown
+          "": string
         }
         Returns: string
       }
