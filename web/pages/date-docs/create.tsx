@@ -63,6 +63,7 @@ export default function CreateDateDocPage() {
       birthday: birthdayTime,
       type: 'date-doc',
       question: createMarket ? question : undefined,
+      visibility: 'public',
     })
 
     const result = await createPost(newPost)

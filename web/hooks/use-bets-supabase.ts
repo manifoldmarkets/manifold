@@ -70,19 +70,12 @@ function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
   return shouldBeFiltered
 }
 
-export function useBets(contractId: string, limit: number) {
+export function useBets(options?: BetFilter) {
   const [bets, setBets] = useState<Bet[]>([])
 
   useEffect(() => {
-    if (contractId) {
-      getBets({
-        contractId,
-        ...CONTRACT_BET_FILTER,
-        limit,
-        order: 'desc',
-      }).then((result) => setBets(result))
-    }
-  }, [contractId])
+    getBets(options).then((result) => setBets(result))
+  }, [])
 
   return bets
 }

@@ -9,12 +9,11 @@ create or replace view public_contracts as (
     select *
     from contracts
     where visibility = 'public'
-    );
+  );
 create or replace view listed_open_contracts as (
     select *
     from contracts
-    where resolution_time is null
---    row level security prevents the 'private' contracts from being returned
+    where resolution_time is null --    row level security prevents the 'private' contracts from being returned
       and visibility != 'unlisted'
       and close_time > now() + interval '10 minutes'
   );
@@ -127,49 +126,41 @@ WHERE groups.data->>'privacyStatus' <> 'private'
       )
     )
   );
-
 CREATE VIEW user_referrals AS
-SELECT
-    id,
-    data,
-    total_referrals,
-    RANK() OVER (ORDER BY total_referrals DESC) AS rank
-FROM
-    (SELECT
-         referrer.id AS id,
-         referrer.data AS data,
-         COUNT(*) AS total_referrals
-     FROM
-         users AS referred
-             JOIN
-         users AS referrer ON referrer.data->>'id' = referred.data->>'referredByUserId'
-     WHERE
-             referred.data->>'referredByUserId' IS NOT NULL
-     GROUP BY
-         referrer.id) subquery
-ORDER BY
-    total_referrals DESC;
-
+SELECT id,
+  data,
+  total_referrals,
+  RANK() OVER (
+    ORDER BY total_referrals DESC
+  ) AS rank
+FROM (
+    SELECT referrer.id AS id,
+      referrer.data AS data,
+      COUNT(*) AS total_referrals
+    FROM users AS referred
+      JOIN users AS referrer ON referrer.data->>'id' = referred.data->>'referredByUserId'
+    WHERE referred.data->>'referredByUserId' IS NOT NULL
+    GROUP BY referrer.id
+  ) subquery
+ORDER BY total_referrals DESC;
 CREATE VIEW user_referrals_profit AS
-SELECT
-    id,
-    data,
-    total_referrals,
-    total_referred_profit,
-    RANK() OVER (ORDER BY total_referrals DESC) AS rank
-FROM
-    (SELECT
-         referrer.id AS id,
-         referrer.data AS data,
-         COUNT(*) AS total_referrals,
-         SUM((referred.data->'profitCached'->>'allTime')::numeric) AS total_referred_profit
-     FROM
-         users AS referred
-             JOIN
-         users AS referrer ON referrer.data->>'id' = referred.data->>'referredByUserId'
-     WHERE
-             referred.data->>'referredByUserId' IS NOT NULL
-     GROUP BY
-         referrer.id) subquery
-ORDER BY
-    total_referrals DESC;
+SELECT id,
+  data,
+  total_referrals,
+  total_referred_profit,
+  RANK() OVER (
+    ORDER BY total_referrals DESC
+  ) AS rank
+FROM (
+    SELECT referrer.id AS id,
+      referrer.data AS data,
+      COUNT(*) AS total_referrals,
+      SUM(
+        (referred.data->'profitCached'->>'allTime')::numeric
+      ) AS total_referred_profit
+    FROM users AS referred
+      JOIN users AS referrer ON referrer.data->>'id' = referred.data->>'referredByUserId'
+    WHERE referred.data->>'referredByUserId' IS NOT NULL
+    GROUP BY referrer.id
+  ) subquery
+ORDER BY total_referrals DESC;
