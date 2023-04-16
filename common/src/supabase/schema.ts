@@ -73,17 +73,17 @@ export interface Database {
         Row: {
           contract_id: string
           created_at: string
-          embedding: string
+          embedding: unknown
         }
         Insert: {
           contract_id: string
           created_at?: string
-          embedding: string
+          embedding: unknown
         }
         Update: {
           contract_id?: string
           created_at?: string
-          embedding?: string
+          embedding?: unknown
         }
       }
       contract_follows: {
