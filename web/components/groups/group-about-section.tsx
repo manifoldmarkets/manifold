@@ -84,6 +84,7 @@ export async function savePost(
     title: group.name,
     content: editor.getJSON(),
     isGroupAboutPost: true,
+    groupId: group.id,
   }
 
   if (!post) {
