@@ -372,6 +372,12 @@ function ContractBets(props: {
 
   // Hide bets before 06-01-2022 if this isn't your own profile
   const hideBetsBefore = isYourBets ? 0 : JUNE_1_2022
+  // const bets = useBets({
+  //   contractId: contract.id,
+  //   userId,
+  //   afterTime: hideBetsBefore,
+  // })
+
   const bets = useBets({
     contractId: contract.id,
     userId,

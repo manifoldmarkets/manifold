@@ -130,6 +130,7 @@ export const createpost = authEndpoint(async (req, auth) => {
     // init current funds
     funds = cost
   }
+  console.log('groupId', groupId)
 
   const post: Post = removeUndefinedProps({
     ...otherProps,
@@ -146,6 +147,8 @@ export const createpost = authEndpoint(async (req, auth) => {
     creatorUsername: creator.username,
     creatorAvatarUrl: creator.avatarUrl,
     itemType: 'post',
+    visibility: 'public',
+    groupId,
   })
 
   await postRef.create(post)
@@ -158,6 +161,10 @@ export const createpost = authEndpoint(async (req, auth) => {
         const postIds = groupData.postIds ?? []
         postIds.push(postRef.id)
         await groupRef.update({ postIds })
+        await postRef.update({
+          visibility:
+            groupData.privacyStatus == 'private' ? 'private' : 'public',
+        })
       }
     }
   }
