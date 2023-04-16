@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { BetFilter } from 'web/lib/firebase/bets'
 import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
-import { CONTRACT_BET_FILTER } from 'web/pages/[username]/[contractSlug]'
 
 export function useRealtimeBets(limit: number, options?: BetFilter) {
   const [bets, setBets] = useState<Bet[]>([])
