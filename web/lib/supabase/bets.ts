@@ -13,7 +13,7 @@ export async function getOlderBets(
   beforeTime: number,
   limit: number
 ) {
-  const query = selectJson(db, 'contract_bets_rbac')
+  const query = selectJson(db, 'contract_bets')
     .eq('contract_id', contractId)
     .lt('data->>createdTime', beforeTime)
     .order('data->>createdTime', { ascending: false } as any)
@@ -24,13 +24,13 @@ export async function getOlderBets(
 }
 
 export const getBet = async (id: string) => {
-  const q = selectJson(db, 'contract_bets_rbac').eq('bet_id', id)
+  const q = selectJson(db, 'contract_bets').eq('bet_id', id)
   const { data } = await run(q)
   return data.length > 0 ? data[0].data : null
 }
 
 export const getBets = async (options?: BetFilter) => {
-  let q = selectJson(db, 'contract_bets_rbac')
+  let q = selectJson(db, 'contract_bets')
   q = q.order('data->>createdTime', {
     ascending: options?.order === 'asc',
   } as any)
@@ -143,7 +143,7 @@ export const useRecentlyBetOnContracts = (userId: string) => {
 export async function getTotalBetCount(contractId: string) {
   const { count } = await run(
     db
-      .from('contract_bets_rbac')
+      .from('contract_bets')
       .select('*', { head: true, count: 'exact' })
       .eq('contract_id', contractId)
       .eq('data->>isChallenge', false)
