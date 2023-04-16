@@ -85,7 +85,7 @@ export function PostCommentInput(props: {
       track('sign in to comment')
       return await firebaseLogin()
     }
-    await createCommentOnPost(post.id, editor.getJSON(), user, parentCommentId)
+    await createCommentOnPost(post, editor.getJSON(), user, parentCommentId)
     props.onSubmitComment?.()
   }
 

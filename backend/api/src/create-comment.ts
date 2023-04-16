@@ -106,6 +106,7 @@ export const createcomment = authEndpoint(async (req, auth) => {
     contractQuestion: contract.question,
     replyToCommentId: replyToCommentId,
     answerOutcome: replyToAnswerId,
+    visibility: contract.visibility,
   } as Comment)
 
   await ref.set(comment)
