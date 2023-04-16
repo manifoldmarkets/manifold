@@ -474,20 +474,20 @@ export interface Database {
       user_embeddings: {
         Row: {
           created_at: string
-          interest_embedding: string
-          pre_signup_interest_embedding: string | null
+          interest_embedding: unknown
+          pre_signup_interest_embedding: unknown | null
           user_id: string
         }
         Insert: {
           created_at?: string
-          interest_embedding: string
-          pre_signup_interest_embedding?: string | null
+          interest_embedding: unknown
+          pre_signup_interest_embedding?: unknown | null
           user_id: string
         }
         Update: {
           created_at?: string
-          interest_embedding?: string
-          pre_signup_interest_embedding?: string | null
+          interest_embedding?: unknown
+          pre_signup_interest_embedding?: unknown | null
           user_id?: string
         }
       }
@@ -646,19 +646,19 @@ export interface Database {
       user_topics: {
         Row: {
           created_at: string
-          topic_embedding: string
+          topic_embedding: unknown
           topics: string[]
           user_id: string
         }
         Insert: {
           created_at?: string
-          topic_embedding: string
+          topic_embedding: unknown
           topics: string[]
           user_id: string
         }
         Update: {
           created_at?: string
-          topic_embedding?: string
+          topic_embedding?: unknown
           topics?: string[]
           user_id?: string
         }
@@ -1631,7 +1631,7 @@ export interface Database {
       }
       search_contract_embeddings: {
         Args: {
-          query_embedding: string
+          query_embedding: unknown
           similarity_threshold: number
           match_count: number
         }
@@ -1754,29 +1754,29 @@ export interface Database {
         Args: {
           '': number[]
         }
-        Returns: string
+        Returns: unknown
       }
       vector_dims: {
         Args: {
-          '': string
+          '': unknown
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          '': string
+          '': unknown
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          '': string
+          '': unknown
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          '': string
+          '': unknown
         }
         Returns: string
       }
