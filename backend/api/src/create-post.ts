@@ -130,7 +130,6 @@ export const createpost = authEndpoint(async (req, auth) => {
     // init current funds
     funds = cost
   }
-  console.log('groupId', groupId)
 
   const post: Post = removeUndefinedProps({
     ...otherProps,
