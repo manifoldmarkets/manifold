@@ -53,14 +53,6 @@ export const useFeed = (
           const newContracts = (res.data as any[]).map(
             (row) => row.data as Contract
           )
-          if (topic)
-            console.log(
-              'found',
-              newContracts.length,
-              'contracts with topic',
-              topic,
-              newContracts.map((c) => c.question)
-            )
           if (lastTopicRef.current !== topic) {
             setSavedContracts(uniqBy(newContracts, (c) => c.id))
           } else {
@@ -75,11 +67,17 @@ export const useFeed = (
   })
 
   const [firstTopic] = useState(topic)
+  const topicWasChanged = useRef(false)
 
   useEffect(() => {
-    if (topic === firstTopic && savedContracts?.length) {
+    if (
+      topic === firstTopic &&
+      savedContracts?.length &&
+      !topicWasChanged.current
+    ) {
       return
     }
+    topicWasChanged.current = true
 
     loadMore()
   }, [loadMore, topic])

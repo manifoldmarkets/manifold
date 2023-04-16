@@ -3,10 +3,9 @@ import Link from 'next/link'
 import { memo } from 'react'
 import clsx from 'clsx'
 
-import { useEvent } from 'web/hooks/use-event'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { VisibilityObserver } from '../widgets/visibility-observer'
+import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { useIsClient } from 'web/hooks/use-is-client'
@@ -15,17 +14,11 @@ import { useContract } from 'web/hooks/use-contracts'
 
 export const RelatedContractsList = memo(function RelatedContractsList(props: {
   contracts: Contract[]
-  loadMore?: () => Promise<void>
+  loadMore?: () => Promise<boolean>
   onContractClick?: (contract: Contract) => void
   className?: string
 }) {
   const { contracts, loadMore, onContractClick, className } = props
-  const onVisibilityUpdated = useEvent((visible: boolean) => {
-    if (visible && loadMore) {
-      loadMore()
-    }
-  })
-
   if (contracts.length === 0) {
     return null
   }
@@ -45,9 +38,9 @@ export const RelatedContractsList = memo(function RelatedContractsList(props: {
 
       <div className="relative">
         {loadMore && (
-          <VisibilityObserver
-            onVisibilityUpdated={onVisibilityUpdated}
+          <LoadMoreUntilNotVisible
             className="pointer-events-none absolute bottom-0 h-[75vh] w-full select-none"
+            loadMore={loadMore}
           />
         )}
       </div>

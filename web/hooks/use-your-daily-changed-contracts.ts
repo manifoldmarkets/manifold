@@ -33,7 +33,8 @@ export function useYourRecentContracts(
 
 export function useYourDailyChangedContracts(
   db: SupabaseClient,
-  userId: string | null | undefined
+  userId: string | null | undefined,
+  count: number
 ) {
   const [contracts, setContracts] = usePersistentState<
     CPMMContract[] | undefined
@@ -45,11 +46,11 @@ export function useYourDailyChangedContracts(
   useEffect(() => {
     if (!userId) return
 
-    getYourDailyChangedContracts(db, userId, 7).then((contracts) => {
+    getYourDailyChangedContracts(db, userId, count).then((contracts) => {
       if (!contracts) setContracts([])
       else setContracts(contracts)
     })
-  }, [userId])
+  }, [userId, count])
 
   return contracts
 }

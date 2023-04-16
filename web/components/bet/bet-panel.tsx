@@ -52,7 +52,10 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
 import { SiteLink } from '../widgets/site-link'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
-import { STONK_NO, STONK_YES } from 'common/stonk'
+import { getStonkShares, STONK_NO, STONK_YES } from 'common/stonk'
+import { Input } from 'web/components/widgets/input'
+import { DAY_MS, MINUTE_MS } from 'common/util/time'
+import dayjs from 'dayjs'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -309,16 +312,21 @@ export function BuyPanel(props: {
 
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
 
-  const warning =
+  // warnings
+  const highBankrollSpend =
     (betAmount ?? 0) >= 100 && bankrollFraction >= 0.5 && bankrollFraction <= 1
-      ? `You might not want to spend ${formatPercent(
-          bankrollFraction
-        )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
-          user?.balance ?? 0
-        )}`
-      : (betAmount ?? 0) > 10 && probChange > 0.299 && bankrollFraction <= 1
-      ? `Are you sure you want to move the market by ${displayedDifference}?`
-      : undefined
+  const highProbMove =
+    (betAmount ?? 0) > 10 && probChange > 0.299 && bankrollFraction <= 1
+
+  const warning = highBankrollSpend
+    ? `You might not want to spend ${formatPercent(
+        bankrollFraction
+      )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
+        user?.balance ?? 0
+      )}`
+    : highProbMove
+    ? `Are you sure you want to move the market by ${displayedDifference}?`
+    : undefined
 
   const displayError = !!outcome
 
@@ -362,9 +370,7 @@ export function BuyPanel(props: {
           'rounded-lg px-4 py-2'
         )}
       >
-        <Row className="text-ink-500 mt-2 mb-1 items-center justify-between text-left text-sm">
-          Amount
-        </Row>
+        <div className="text-ink-800 mt-2 mb-1 text-sm">Amount</div>
 
         <BuyAmountInput
           inputClassName="w-full max-w-none"
@@ -381,7 +387,7 @@ export function BuyPanel(props: {
 
         <Row className="mt-8 w-full">
           <Col className="w-1/2 text-sm">
-            <Col className="text-ink-500 flex-nowrap whitespace-nowrap text-sm">
+            <Col className="text-ink-800 flex-nowrap whitespace-nowrap text-sm">
               <div>
                 {isPseudoNumeric || isStonk ? (
                   'Shares'
@@ -391,8 +397,10 @@ export function BuyPanel(props: {
               </div>
             </Col>
             <div>
-              <span className="whitespace-nowrap text-lg">
-                {isStonk || isPseudoNumeric
+              <span className="whitespace-nowrap text-lg font-semibold">
+                {isStonk
+                  ? getStonkShares(contract, currentPayout)
+                  : isPseudoNumeric
                   ? Math.floor(currentPayout)
                   : formatMoney(currentPayout)}
               </span>
@@ -403,7 +411,7 @@ export function BuyPanel(props: {
           </Col>
           <Col className="w-1/2 text-sm">
             <Row>
-              <span className="text-ink-500 whitespace-nowrap text-sm">
+              <span className="text-ink-800 whitespace-nowrap text-sm">
                 {isPseudoNumeric
                   ? 'Estimated value'
                   : isStonk
@@ -418,13 +426,20 @@ export function BuyPanel(props: {
               )}
             </Row>
             {probStayedSame ? (
-              <div className="text-lg">
+              <div className="text-lg font-semibold">
                 {getFormattedMappedValue(contract, initialProb)}
               </div>
             ) : (
-              <div className="text-lg">
-                {getFormattedMappedValue(contract, resultProb)}
-                <span className={clsx('text-ink-500 text-sm')}>
+              <div>
+                <span className="text-lg font-semibold">
+                  {getFormattedMappedValue(contract, resultProb)}
+                </span>
+                <span
+                  className={clsx(
+                    'text-sm',
+                    highProbMove ? 'text-warning font-semibold' : 'text-ink-500'
+                  )}
+                >
                   {isPseudoNumeric ? (
                     <></>
                   ) : (
@@ -528,6 +543,17 @@ function LimitOrderPanel(props: {
   const [highLimitProb, setHighLimitProb] = useState<number | undefined>()
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  // Expiring orders
+  const [addExpiration, setAddExpiration] = useState(false)
+  const timeInMs = Number(Date.now() + DAY_MS * 7)
+  const initDate = dayjs(timeInMs).format('YYYY-MM-DD')
+  const initTime = dayjs(timeInMs).format('HH:mm')
+  const [expirationDate, setExpirationDate] = useState<string>(initDate)
+  const [expirationHoursMinutes, setExpirationHoursMinutes] =
+    useState<string>(initTime)
+  const expiresAt = addExpiration
+    ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
+    : undefined
 
   const rangeError =
     lowLimitProb !== undefined &&
@@ -591,12 +617,14 @@ function LimitOrderPanel(props: {
             amount: yesAmount,
             limitProb: yesLimitProb,
             contractId: contract.id,
+            expiresAt,
           }),
           placeBet({
             outcome: 'NO',
             amount: noAmount,
             limitProb: noLimitProb,
             contractId: contract.id,
+            expiresAt,
           }),
         ])
       : placeBet({
@@ -604,6 +632,7 @@ function LimitOrderPanel(props: {
           amount: betAmount,
           contractId: contract.id,
           limitProb: hasYesLimitBet ? yesLimitProb : noLimitProb,
+          expiresAt,
         })
 
     betsPromise
@@ -707,7 +736,7 @@ function LimitOrderPanel(props: {
       </Row>
       <Row className="mt-1 mb-4 gap-4">
         <Col className="gap-2">
-          <div className="text-ink-500 text-sm">
+          <div className="text-ink-800 text-sm">
             Buy {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
           </div>
           <ProbabilityOrNumericInput
@@ -720,7 +749,7 @@ function LimitOrderPanel(props: {
         </Col>
 
         <Col className="gap-2">
-          <div className="text-ink-500 text-sm">
+          <div className="text-ink-800 text-sm">
             Buy {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
           </div>
           <ProbabilityOrNumericInput
@@ -763,11 +792,9 @@ function LimitOrderPanel(props: {
         </div>
       )}
 
-      <Row className="text-ink-500 mt-1 mb-3 justify-between text-left text-sm">
-        <span>
-          Max amount<span className="text-scarlet-500 ml-1">*</span>
-        </span>
-      </Row>
+      <span className="text-ink-800 mt-1 mb-2 text-sm">
+        Max amount<span className="text-scarlet-500 ml-0.5">*</span>
+      </span>
 
       <BuyAmountInput
         inputClassName="w-full max-w-none"
@@ -779,8 +806,40 @@ function LimitOrderPanel(props: {
         sliderOptions={{ show: true, wrap: false }}
         showBalance
       />
+      <Button
+        className={'mt-2'}
+        onClick={() => setAddExpiration(!addExpiration)}
+        color={'gray-white'}
+      >
+        {addExpiration ? 'Remove expiration date' : 'Add expiration date'}
+      </Button>
+      {addExpiration && (
+        <Row className="mt-4 gap-2">
+          <Input
+            type={'date'}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              setExpirationDate(e.target.value)
+              if (!expirationHoursMinutes) {
+                setExpirationHoursMinutes(initTime)
+              }
+            }}
+            min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
+            disabled={isSubmitting}
+            value={expirationDate}
+          />
+          <Input
+            type={'time'}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setExpirationHoursMinutes(e.target.value)}
+            min={'00:00'}
+            disabled={isSubmitting}
+            value={expirationHoursMinutes}
+          />
+        </Row>
+      )}
 
-      <Col className="mt-8 w-full gap-3">
+      <Col className="mt-2 w-full gap-3">
         {(hasTwoBets || (hasYesLimitBet && yesBet.amount !== 0)) && (
           <Row className="items-center justify-between gap-2 text-sm">
             <div className="text-ink-500 whitespace-nowrap">

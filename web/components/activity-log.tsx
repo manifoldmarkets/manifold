@@ -4,7 +4,7 @@ import { Contract } from 'common/contract'
 import { BOT_USERNAMES, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
 import { groupBy, keyBy, partition, range, sortBy, uniq } from 'lodash'
-import { memo, useEffect, useState } from 'react'
+import { ReactNode, memo, useEffect } from 'react'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
 import {
@@ -32,15 +32,17 @@ import { Content } from './widgets/editor'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 import { db } from 'web/lib/supabase/db'
+import { track } from 'web/lib/service/analytics'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
 export function ActivityLog(props: {
   count: number
-  showPills: boolean
+  pill: pill_options
+  rightPanel?: ReactNode
   className?: string
 }) {
-  const { count, showPills, className } = props
+  const { count, pill, className } = props
 
   const privateUser = usePrivateUser()
   const user = useUser()
@@ -95,10 +97,6 @@ export function ActivityLog(props: {
       !blockedContractIds.includes(c.id) &&
       !blockedUserIds.includes(c.creatorId) &&
       c.visibility === 'public'
-  )
-
-  const [pill, setPill] = useState<'all' | 'markets' | 'comments' | 'trades'>(
-    'all'
   )
 
   const allContracts = useContracts(
@@ -164,38 +162,6 @@ export function ActivityLog(props: {
 
   return (
     <Col className={clsx('gap-4', className)}>
-      {showPills && (
-        <Row className="mx-2 gap-2 sm:mx-0">
-          <PillButton
-            selected={pill === 'all'}
-            onSelect={() => setPill('all')}
-            xs
-          >
-            All
-          </PillButton>
-          <PillButton
-            selected={pill === 'markets'}
-            onSelect={() => setPill('markets')}
-            xs
-          >
-            Markets
-          </PillButton>
-          <PillButton
-            selected={pill === 'comments'}
-            onSelect={() => setPill('comments')}
-            xs
-          >
-            Comments
-          </PillButton>
-          <PillButton
-            selected={pill === 'trades'}
-            onSelect={() => setPill('trades')}
-            xs
-          >
-            Trades
-          </PillButton>
-        </Row>
-      )}
       {!allLoaded && <LoadingIndicator />}
       {allLoaded && (
         <Col className="border-ink-400 divide-ink-400 divide-y-[0.5px] rounded-sm border-[0.5px]">
@@ -228,6 +194,52 @@ export function ActivityLog(props: {
         </Col>
       )}
     </Col>
+  )
+}
+
+export type pill_options = 'all' | 'markets' | 'comments' | 'trades'
+export const LivePillOptions = (props: {
+  pill: pill_options
+  setPill: (pill: pill_options) => void
+}) => {
+  const { pill, setPill } = props
+
+  const selectPill = (pill: pill_options) => {
+    setPill(pill)
+    track('select live feed pill', { pill })
+  }
+
+  return (
+    <Row className="mx-2 gap-2 sm:mx-0">
+      <PillButton
+        selected={pill === 'all'}
+        onSelect={() => selectPill('all')}
+        xs
+      >
+        All
+      </PillButton>
+      <PillButton
+        selected={pill === 'markets'}
+        onSelect={() => selectPill('markets')}
+        xs
+      >
+        Markets
+      </PillButton>
+      <PillButton
+        selected={pill === 'comments'}
+        onSelect={() => selectPill('comments')}
+        xs
+      >
+        Comments
+      </PillButton>
+      <PillButton
+        selected={pill === 'trades'}
+        onSelect={() => selectPill('trades')}
+        xs
+      >
+        Trades
+      </PillButton>
+    </Row>
   )
 }
 export const MarketCreatedLog = (props: { contract: Contract }) => {

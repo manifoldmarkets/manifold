@@ -1,4 +1,8 @@
 import { User } from './user'
+import { last } from 'lodash'
+import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { DAY_MS } from 'common/util/time'
+import { SupabaseClient } from 'common/supabase/utils'
 
 export type Manalink = {
   // The link to send: https://manifold.markets/send/{slug}
@@ -36,11 +40,17 @@ export type Claim = {
   claimedTime: number
 }
 
-export function canCreateManalink(user: User) {
+export async function canCreateManalink(user: User, db: SupabaseClient) {
   const oneWeekAgo = Date.now() - 1000 * 60 * 60 * 24 * 7
+  const portfolioHistory = last(
+    await getPortfolioHistory(user.id, Date.now() - DAY_MS, db)
+  )
 
   return (
     user.createdTime < oneWeekAgo &&
-    (user.balance > 1000 || user.profitCached.allTime > 500)
+    (user.balance > 1000 ||
+      user.profitCached.allTime > 500 ||
+      (portfolioHistory?.investmentValue ?? 0) > 500 ||
+      user.creatorTraders.allTime > 10)
   )
 }

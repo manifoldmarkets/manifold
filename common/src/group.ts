@@ -97,3 +97,27 @@ export function groupPath(
 ) {
   return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }
+
+export const GroupsByTopic = {
+  default: [
+    'economics-default',
+    'technology-default',
+    'science-default',
+    'politics-default',
+    'world-default',
+    'culture-default',
+    // 'sports-default',
+  ],
+  destiny: ['destinygg', 'destinygg-stocks', 'daliban-hq'],
+  rat: ['effective-altruism', 'sf-bay-rationalists', 'nuclear-risk', 'acx'],
+  ai: [
+    'ai',
+    'technical-ai-timelines',
+    'ai-safety',
+    'ai-impacts',
+    'ai-alignment',
+    'gpt4-speculation',
+  ],
+  ponzi: ['fun', 'selfresolving', 'whale-watching', 'permanent markets'],
+  grey: ['cgp-grey'],
+}

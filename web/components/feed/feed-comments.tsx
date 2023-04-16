@@ -35,6 +35,7 @@ import { createCommentOnContract, hideComment } from 'web/lib/firebase/api'
 import { useAdmin } from 'web/hooks/use-admin'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -309,6 +310,7 @@ function CommentStatus(props: {
 }) {
   const { contract, comment } = props
   const { resolutionTime, resolution } = contract
+  const isStonk = contract.outcomeType === 'STONK'
   const {
     commenterPositionProb: prob,
     commenterPositionOutcome,
@@ -326,14 +328,16 @@ function CommentStatus(props: {
   )
     return (
       <>
-        {resolution ? 'predicted ' : `is predicting `}
+        {resolution
+          ? 'predicted '
+          : `is ${isStonk ? 'holding' : 'predicting'} `}
         <OutcomeLabel
           outcome={commenterPositionOutcome}
           contract={contract}
           truncate="short"
         />
         {(resolutionTime ? resolutionTime > createdTime : true) &&
-          ' at ' + Math.round((prob > 1 ? prob / 100 : prob) * 100) + '%'}
+          ' at ' + getFormattedMappedValue(contract, prob)}
       </>
     )
 

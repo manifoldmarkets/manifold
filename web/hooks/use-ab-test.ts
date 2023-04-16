@@ -13,6 +13,8 @@ export const useABTest = <T>(
   useEffect(() => {
     initAmplitude().then((amplitude) => {
       const deviceId = amplitude.getDeviceId()
+      if (!deviceId) return
+
       const hash = cyrb128(deviceId + testName)[0]
 
       const keys = Object.keys(variants)

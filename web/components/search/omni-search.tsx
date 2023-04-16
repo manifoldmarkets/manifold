@@ -1,5 +1,5 @@
 import { Combobox } from '@headlessui/react'
-import { SearchIcon, SparklesIcon, UsersIcon } from '@heroicons/react/solid'
+import { SparklesIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { useRouter } from 'next/router'
@@ -18,6 +18,8 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { PageData, defaultPages, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
 import { uniqBy } from 'lodash'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
+import { SiteLink } from 'web/components/widgets/site-link'
 
 export interface Option {
   id: string
@@ -46,25 +48,35 @@ export const OmniSearch = (props: {
       }}
       className={clsx('bg-canvas-0 relative flex flex-col', className)}
     >
-      <Combobox.Input
-        autoFocus
-        value={query}
-        onKeyDown={(e: any) => {
-          if (e.key === 'Escape') setOpen?.(false)
-        }}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search markets, users, & groups"
-        className={clsx(
-          'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
-          inputClassName
-        )}
-      />
-      <Combobox.Options
-        static
-        className="text-ink-700 flex flex-col overflow-y-auto px-2"
-      >
-        {query ? <Results query={query} /> : <DefaultResults />}
-      </Combobox.Options>
+      {({ activeOption }) => (
+        <>
+          <Combobox.Input
+            autoFocus
+            value={query}
+            onKeyDown={(e: any) => {
+              if (e.key === 'Escape') setOpen?.(false)
+              if (e.key === 'Enter' && !activeOption) {
+                router.push(marketSearchSlug(query))
+                setOpen?.(false)
+                onSelect?.()
+              }
+            }}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search markets, users, & groups"
+            enterKeyHint="search"
+            className={clsx(
+              'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
+              inputClassName
+            )}
+          />
+          <Combobox.Options
+            static
+            className="text-ink-700 flex flex-col overflow-y-auto px-2"
+          >
+            {query ? <Results query={query} /> : <DefaultResults />}
+          </Combobox.Options>
+        </>
+      )}
     </Combobox>
   )
 }
@@ -168,18 +180,28 @@ const Results = (props: { query: string }) => {
 
   return (
     <>
-      {marketHits.length > 0 && <MoreMarketResults search={search} />}
       <PageResults pages={pageHits} />
-      <UserResults users={userHits} />
-      <GroupResults groups={groupHits} />
-      <MarketResults markets={marketHits} />
+      <UserResults users={userHits} search={search} />
+
+      <GroupResults groups={groupHits} search={search} />
+      <MarketResults markets={marketHits} search={search} />
     </>
   )
 }
 
-const SectionTitle = (props: { children: ReactNode }) => (
-  <h2 className="text-ink-500 mt-2 mb-1 px-1 text-sm">{props.children}</h2>
-)
+const SectionTitle = (props: { children: ReactNode; link?: string }) => {
+  const { children, link } = props
+  return (
+    <h2 className="text-ink-500 mt-2 mb-1 px-1">
+      <SiteLink href={link}>
+        {children}
+        {link && (
+          <ExternalLinkIcon className="ml-1 inline h-4 w-4 align-middle" />
+        )}
+      </SiteLink>
+    </h2>
+  )
+}
 
 const ResultOption = (props: { value: Option; children: ReactNode }) => {
   const { value, children } = props
@@ -218,13 +240,15 @@ const ResultOption = (props: { value: Option; children: ReactNode }) => {
   )
 }
 
-const MarketResults = (props: { markets: Contract[] }) => {
+const MarketResults = (props: { markets: Contract[]; search?: string }) => {
   const markets = props.markets
   if (!markets.length) return null
 
   return (
     <>
-      <SectionTitle>Markets</SectionTitle>
+      <SectionTitle link={marketSearchSlug(props.search ?? '')}>
+        Markets
+      </SectionTitle>
       {props.markets.map((market) => (
         <ResultOption
           value={{
@@ -249,11 +273,15 @@ const MarketResults = (props: { markets: Contract[] }) => {
   )
 }
 
-const UserResults = (props: { users: UserSearchResult[] }) => {
+const UserResults = (props: { users: UserSearchResult[]; search?: string }) => {
   if (!props.users.length) return null
   return (
     <>
-      <SectionTitle>Users</SectionTitle>
+      <SectionTitle
+        link={`/users?search=${encodeURIComponent(props.search ?? '')}`}
+      >
+        Users
+      </SectionTitle>
       {props.users.map(({ id, name, username, avatarUrl }) => (
         <ResultOption value={{ id, slug: `/${username}` }}>
           <div className="flex items-center gap-2">
@@ -274,14 +302,19 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
   )
 }
 
-const GroupResults = (props: { groups: SearchGroupInfo[] }) => {
+const GroupResults = (props: {
+  groups: SearchGroupInfo[]
+  search?: string
+}) => {
   const me = useUser()
   const myGroups = useMemberGroupIds(me) || []
-
+  const { search } = props
   if (!props.groups.length) return null
   return (
     <>
-      <SectionTitle>Groups</SectionTitle>
+      <SectionTitle link={`/groups?search=${encodeURIComponent(search ?? '')}`}>
+        Groups
+      </SectionTitle>
       {props.groups.map((group) => (
         <ResultOption value={{ id: group.id, slug: `/group/${group.slug}` }}>
           <div className="flex items-center gap-3">
@@ -317,19 +350,5 @@ const PageResults = (props: { pages: PageData[] }) => {
   )
 }
 
-const MoreMarketResults = (props: { search: string }) => {
-  return (
-    <ResultOption
-      value={{
-        id: 'more',
-        slug: `/search?s=relevance&f=all&q=${encodeURIComponent(props.search)}`,
-      }}
-    >
-      <div className="flex items-center text-sm">
-        <SearchIcon className="mr-3 h-5 w-5" />
-        Browse all markets for
-        <span className="ml-1 italic">"{props.search}"</span>
-      </div>
-    </ResultOption>
-  )
-}
+const marketSearchSlug = (query: string) =>
+  `/markets?s=relevance&f=all&q=${encodeURIComponent(query)}`

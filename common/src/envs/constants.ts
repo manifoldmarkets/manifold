@@ -135,7 +135,7 @@ export const CHECK_USERNAMES = [
   'dglid',
   'yaboi69',
   'TheSkeward',
-  'Duncan',
+  'Duncn',
   'a',
   'NuñoSempere',
   'CarsonGale',
