@@ -34,3 +34,4 @@ export function updateSupabaseAuth(token?: string) {
 }
 
 export const db = initSupabaseClient('client')
+export const adminDb = initSupabaseClient('admin')
