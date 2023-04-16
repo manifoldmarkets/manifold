@@ -27,25 +27,28 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { JSONContent } from '@tiptap/react'
 import { track } from '../service/analytics'
+import { Post } from 'common/post'
+import { visibility } from 'common/contract'
 
 export type { Comment }
 
 export const MAX_COMMENT_LENGTH = 10000
 
 export async function createCommentOnPost(
-  postId: string,
+  post: Post,
   content: JSONContent,
   user: User,
   replyToCommentId?: string
 ) {
-  const ref = doc(getCommentsOnPostCollection(postId))
-  const onPost = { postId: postId, commentType: 'post' } as OnPost
+  const ref = doc(getCommentsOnPostCollection(post.id))
+  const onPost = { postId: post.id, commentType: 'post' } as OnPost
   return await createComment(
-    postId,
+    post.id,
     onPost,
     content,
     user,
     ref,
+    post.visibility == 'private' ? 'private' : 'public',
     replyToCommentId
   )
 }
@@ -56,6 +59,7 @@ async function createComment(
   content: JSONContent,
   user: User,
   ref: DocumentReference<DocumentData>,
+  visibility: visibility,
   replyToCommentId?: string
 ) {
   const comment = removeUndefinedProps({
@@ -67,6 +71,7 @@ async function createComment(
     userUsername: user.username,
     userAvatarUrl: user.avatarUrl,
     replyToCommentId: replyToCommentId,
+    visibility: visibility,
     ...extraFields,
   })
   track(
