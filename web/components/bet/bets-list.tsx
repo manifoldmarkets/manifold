@@ -53,7 +53,6 @@ import {
 import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { buildArray } from 'common/util/array'
-import { useBets } from 'web/hooks/use-bets'
 import { formatTimeShort } from 'web/lib/util/time'
 import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
 import { Input } from 'web/components/widgets/input'
@@ -61,6 +60,7 @@ import { searchInAny } from 'common/util/parse'
 import { useContract } from 'web/hooks/use-contracts'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { db } from 'web/lib/supabase/db'
+import { useBets } from 'web/hooks/use-bets-supabase'
 
 type BetSort =
   | 'newest'
@@ -370,13 +370,7 @@ function ContractBets(props: {
 
   const user = useUser()
 
-  // Hide bets before 06-01-2022 if this isn't your own profile
   const hideBetsBefore = isYourBets ? 0 : JUNE_1_2022
-  // const bets = useBets({
-  //   contractId: contract.id,
-  //   userId,
-  //   afterTime: hideBetsBefore,
-  // })
 
   const bets = useBets({
     contractId: contract.id,
