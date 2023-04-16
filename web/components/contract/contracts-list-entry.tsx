@@ -11,6 +11,9 @@ import { Avatar } from '../widgets/avatar'
 import { ContractMinibar } from '../charts/minibar'
 import { useContract } from 'web/hooks/use-contracts'
 import { formatPercentShort } from 'common/util/format'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { getStonkPriceMax } from 'common/stonk'
+import { Tooltip } from '../widgets/tooltip'
 
 export function ContractStatusLabel(props: {
   contract: Contract
@@ -36,7 +39,18 @@ export function ContractStatusLabel(props: {
         </span>
       )
     }
-    case 'STONK':
+    case 'STONK': {
+      const val = getDisplayProbability(contract)
+      return (
+        <Tooltip
+          text={`of ${ENV_CONFIG.moneyMoniker + getStonkPriceMax(contract)}`}
+        >
+          <span className={probTextColor}>
+            {ENV_CONFIG.moneyMoniker + getFormattedMappedValue(contract, val)}
+          </span>
+        </Tooltip>
+      )
+    }
     case 'PSEUDO_NUMERIC': {
       const val = getDisplayProbability(contract)
       return (

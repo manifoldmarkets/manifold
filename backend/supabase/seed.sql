@@ -270,6 +270,14 @@ create index if not exists contract_bets_user_outstanding_limit_orders on contra
   ((data->'isFilled')::boolean),
   ((data->'isCancelled')::boolean)
 );
+create index if not exists contract_bets_unexpired_limit_orders on contract_bets (
+  (data->>'expiresAt' is not null),
+  ((data->>'isFilled')),
+  ((data->>'isCancelled')),
+  ((data->>'isAnte')),
+  ((data->>'isRedemption')),
+  ((data->>'expiresAt'))
+);
 alter table contract_bets cluster on contract_bets_created_time;
 create table if not exists contract_comments (
   contract_id text not null,

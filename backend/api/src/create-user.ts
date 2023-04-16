@@ -179,4 +179,5 @@ const bannedIpAddresses: string[] = [
   '24.176.214.250',
   '2607:fb90:bd95:dbcd:ac39:6c97:4e35:3fed',
   '2607:fb91:389:ddd0:ac39:8397:4e57:f060',
+  '2607:fb90:ed9a:4c8f:ac39:cf57:4edd:4027',
 ]

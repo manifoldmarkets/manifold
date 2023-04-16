@@ -1,18 +1,17 @@
+import clsx from 'clsx'
+import Masonry from 'react-masonry-css'
 import { Contract } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { ContractCard, ContractMetricsFooter } from './contract-card'
 import { ShowTime } from './contract-details'
-import { useCallback } from 'react'
-import clsx from 'clsx'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { VisibilityObserver } from '../widgets/visibility-observer'
-import Masonry from 'react-masonry-css'
+import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { Group } from 'common/group'
 import { groupRoleType } from '../groups/group-member-modal'
 
 export function ContractsGrid(props: {
   contracts: Contract[] | undefined
-  loadMore?: () => void
+  loadMore?: () => Promise<boolean>
   showTime?: ShowTime
   onContractClick?: (contract: Contract) => void
   cardUIOptions?: {
@@ -43,15 +42,6 @@ export function ContractsGrid(props: {
     fromGroupProps,
   } = props
   const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
-  const onVisibilityUpdated = useCallback(
-    (visible: boolean) => {
-      if (visible && loadMore) {
-        loadMore()
-      }
-    },
-    [loadMore]
-  )
-
   if (contracts === undefined) {
     return <LoadingIndicator />
   }
@@ -105,8 +95,8 @@ export function ContractsGrid(props: {
         ))}
       </Masonry>
       {loadMore && (
-        <VisibilityObserver
-          onVisibilityUpdated={onVisibilityUpdated}
+        <LoadMoreUntilNotVisible
+          loadMore={loadMore}
           className="relative -top-96 h-1"
         />
       )}

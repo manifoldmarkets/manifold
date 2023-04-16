@@ -5,6 +5,7 @@ import { User } from 'common/user'
 import { canCreateManalink, Manalink } from 'common/manalink'
 import { APIError, authEndpoint, validate } from './helpers'
 import { runTxn, TxnData } from 'shared/run-txn'
+import { createSupabaseClient } from 'shared/supabase/init'
 
 const bodySchema = z.object({
   slug: z.string(),
@@ -37,8 +38,10 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       throw new APIError(500, `User ${fromId} not found`)
     }
     const fromUser = fromSnap.data() as User
+    const db = createSupabaseClient()
 
-    if (!canCreateManalink(fromUser)) {
+    const canCreate = await canCreateManalink(fromUser, db)
+    if (!canCreate) {
       throw new APIError(
         400,
         `@${fromUser.username} is not authorized to create manalinks.`

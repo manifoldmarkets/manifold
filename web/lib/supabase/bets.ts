@@ -129,6 +129,7 @@ export const useRecentlyBetOnContracts = (userId: string) => {
       savedContracts?.length ?? 0
     )
     setSavedContracts((prev) => (prev ? [...prev, ...contracts] : contracts))
+    return contracts.length > 0
   }, [userId])
   useEffect(() => {
     // Don't fire multiple times on load so that we lose the proper count

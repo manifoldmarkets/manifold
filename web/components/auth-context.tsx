@@ -40,14 +40,14 @@ const ensureDeviceToken = () => {
 const getAdminToken = () => {
   const key = 'TEST_CREATE_USER_KEY'
   const cookie = getCookie(key)
-  if (cookie) return cookie
+  if (cookie) return cookie.replace(/"/g, '')
 
   // For our convenience. If there's a token in local storage, set it as a cookie
   const localStorageToken = safeLocalStorage?.getItem(key)
   if (localStorageToken) {
-    setCookie(key, localStorageToken)
+    setCookie(key, localStorageToken.replace(/"/g, ''))
   }
-  return localStorageToken ?? ''
+  return localStorageToken?.replace(/"/g, '') ?? ''
 }
 
 const stripUserData = (user: object) => {

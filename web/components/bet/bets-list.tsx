@@ -61,6 +61,7 @@ import { useContract } from 'web/hooks/use-contracts'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { db } from 'web/lib/supabase/db'
 import { useBets } from 'web/hooks/use-bets-supabase'
+import { getStonkShares } from 'common/stonk'
 
 type BetSort =
   | 'newest'
@@ -721,7 +722,11 @@ function BetRow(props: {
       </td>
       {isDPM && !isNumeric && <td>{saleDisplay}</td>}
       {isDPM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
-      <td>{formatWithCommas(sharesOrShortSellShares)}</td>
+      <td>
+        {isStonk
+          ? getStonkShares(contract, sharesOrShortSellShares)
+          : formatWithCommas(sharesOrShortSellShares)}
+      </td>
 
       <td>
         {outcomeType === 'FREE_RESPONSE' || hadPoolMatch ? (

@@ -167,7 +167,8 @@ from get_recommended_contracts_embeddings_from(
       from user_embedding
     ),
     n,
-    excluded_contract_ids
+    excluded_contract_ids,
+    0.25
   ) $$;
 create or replace function get_recommended_contracts_embeddings_topic(
     uid text,
@@ -183,22 +184,34 @@ create or replace function get_recommended_contracts_embeddings_topic(
     select embedding
     from topic_embeddings
     where topic_embeddings.topic = p_topic
+  ),
+  not_chosen_embedding as (
+    select avg(embedding) as average
+    from topic_embeddings
+    where topic != p_topic
+  ),
+  embedding as (
+    select (topic_embedding.embedding - not_chosen.average) as average
+    from topic_embedding,
+      not_chosen_embedding as not_chosen
   )
 select *
-from get_recommended_contracts_embeddings_from(
+from get_recommended_contracts_embeddings_from2(
     uid,
     (
-      select embedding
-      from topic_embedding
+      select average
+      from embedding
     ),
     n,
-    excluded_contract_ids
+    excluded_contract_ids,
+    0.10
   ) $$;
 create or replace function get_recommended_contracts_embeddings_from(
     uid text,
     p_embedding vector,
     n int,
-    excluded_contract_ids text []
+    excluded_contract_ids text [],
+    max_dist numeric
   ) returns table (
     data jsonb,
     distance numeric,
@@ -268,7 +281,7 @@ create or replace function get_recommended_contracts_embeddings_from(
     from available_contracts
     where created_time > (now() - interval '1 day')
       and close_time > (now() + interval '1 day')
-      and relative_dist < 0.25
+      and relative_dist < max_dist
     order by score desc
     limit n / 5
   ), closing_soon_contracts as (
@@ -278,7 +291,7 @@ create or replace function get_recommended_contracts_embeddings_from(
       ) as row_num
     from available_contracts
     where close_time < (now() + interval '1 day')
-      and relative_dist < 0.25
+      and relative_dist < max_dist
     order by score desc
     limit n / 5
   ), combined_new_closing_soon as (
@@ -305,7 +318,7 @@ create or replace function get_recommended_contracts_embeddings_from(
         order by score desc
       ) as row_num
     from trending_contracts
-    where relative_dist < 0.05
+    where relative_dist < max_dist / 4
     limit 1 + (
         n - (
           select count(*)
@@ -319,8 +332,8 @@ create or replace function get_recommended_contracts_embeddings_from(
         order by score desc
       ) as row_num
     from trending_contracts
-    where relative_dist >= 0.05
-      and relative_dist < 0.12
+    where relative_dist >= max_dist / 4
+      and relative_dist < max_dist / 2
     limit 1 + (
         n - (
           select count(*)
@@ -334,8 +347,8 @@ create or replace function get_recommended_contracts_embeddings_from(
         order by score desc
       ) as row_num
     from trending_contracts
-    where relative_dist >= 0.12
-      and relative_dist < 0.25
+    where relative_dist >= max_dist / 2
+      and relative_dist < max_dist
     limit 1 + (
         n - (
           select count(*)

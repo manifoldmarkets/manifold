@@ -5,7 +5,6 @@ import {
   HomeIcon,
   LogoutIcon,
   ScaleIcon,
-  SearchIcon,
   MapIcon,
   MoonIcon,
   SpeakerphoneIcon,
@@ -81,7 +80,7 @@ export default function Sidebar(props: {
 
       {user && !isMobile && <ProfileSummary user={user} />}
 
-      {user && !isMobile && <SearchButton className="mb-5" />}
+      {!isMobile && <SearchButton className="mb-5" />}
 
       <div className="mb-4 flex flex-col gap-1">
         {navOptions.map((item) => (
@@ -135,7 +134,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         icon: TrophyIcon,
       },
       {
-        name: 'Market groups',
+        name: 'Groups',
         icon: RectangleGroupIcon,
         href: '/groups',
       }
@@ -156,7 +155,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 // No sidebar when signed out
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
-    { name: 'Search', href: '/find', icon: SearchIcon },
+    { name: 'Markets', href: '/markets', icon: ScaleIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
 
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
@@ -167,7 +166,7 @@ const getMobileNav = (toggleModal: () => void) => {
       href: '/ad',
     },
     {
-      name: 'Market groups',
+      name: 'Groups',
       icon: RectangleGroupIcon,
       href: '/groups',
     }

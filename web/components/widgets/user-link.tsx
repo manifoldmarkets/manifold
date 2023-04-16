@@ -104,7 +104,7 @@ export function UserLink(props: {
 
 function BotBadge() {
   return (
-    <span className="bg-ink-100 text-ink-800 ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium">
+    <span className="bg-ink-100 text-ink-800 ml-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium">
       Bot
     </span>
   )

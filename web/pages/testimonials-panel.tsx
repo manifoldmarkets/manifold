@@ -38,7 +38,7 @@ export default function TestimonialsPanel() {
     <>
       <div
         className={clsx(
-          'mt-8 flex h-96 w-full flex-col overflow-hidden drop-shadow-sm sm:mt-4 sm:h-64 sm:flex-row'
+          'flex h-96 w-full flex-col overflow-hidden drop-shadow-sm sm:mt-4 sm:h-64 sm:flex-row'
         )}
       >
         <div

@@ -1,56 +1,91 @@
+import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Group, groupPath } from 'common/group'
+import { Group, groupPath, GroupsByTopic } from 'common/group'
 import Link from 'next/link'
-import { useState } from 'react'
-import { FeaturedPill } from 'web/components/contract/contract-card'
+import { ReactNode, useEffect, useState } from 'react'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { Tabs } from 'web/components/layout/tabs'
 import { useGroupSearchResults } from 'web/components/search/query-groups'
 import { SEO } from 'web/components/SEO'
-import { Avatar } from 'web/components/widgets/avatar'
-import { Card } from 'web/components/widgets/card'
 import { Input } from 'web/components/widgets/input'
 import { SiteLink } from 'web/components/widgets/site-link'
+import { Title } from 'web/components/widgets/title'
 import { useMemberGroupIds } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
-import { track } from 'web/lib/service/analytics'
 import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
+import { searchContract } from 'web/lib/supabase/contracts'
+import { useMutation } from 'react-query'
+import { Contract } from 'common/contract'
+import { ContractsListEntry } from 'web/components/contract/contracts-list-entry'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Subtitle } from 'web/components/widgets/subtitle'
+
+// TODO use trending groups
 
 export const getStaticProps = async () => {
-  const groups = await searchGroups('', 100).catch((_) => [])
+  const groups = await searchGroups('', 200).catch((_) => [])
 
   return { props: { groups }, revalidate: 60 }
 }
 
 export default function Groups(props: { groups: SearchGroupInfo[] }) {
   const user = useUser()
-  const memberGroupIds = useMemberGroupIds(user) || []
 
   const [query, setQuery] = useState('')
 
-  const searchedGroups = useGroupSearchResults(query, 50)
+  const communities = [
+    {
+      name: '🎮 Destiny.gg',
+      description: 'gamers betting on "stocks" for streamers',
+      slugs: GroupsByTopic.destiny,
+    },
+    {
+      name: '💡 EA & Rationality',
+      description: 'nerds with a math-based life philosophy',
+      slugs: GroupsByTopic.rat,
+    },
+    {
+      name: '🤓 CGP Grey',
+      description: 'youtuber for econ, gov, history...',
+      slugs: GroupsByTopic.grey,
+    },
+    {
+      name: '🤖 AI',
+      description: 'robots taking over, soon-ish',
+      slugs: GroupsByTopic.ai,
+    },
+    {
+      name: '🎲 Fun',
+      description: 'degens gambling on manifold',
+      slugs: GroupsByTopic.ponzi,
+    },
+  ]
 
-  const groups = query !== '' ? searchedGroups : props.groups
+  const allSpecialGroups = Object.values(GroupsByTopic).flat()
+  const otherGroups = props.groups.filter(
+    (g) => !allSpecialGroups.includes(g.slug)
+  )
+
+  const searchedGroups = useGroupSearchResults(query, 50)
+  const groups = query !== '' ? searchedGroups : otherGroups
+
+  const [selectedCommunity, setSelected] = useState<number>()
 
   return (
     <Page>
       <SEO
         title="Groups"
-        description="Manifold Groups are communities centered around a collection of prediction markets. Discuss and compete on questions with your friends."
+        description="Topics and communities centered prediction markets."
         url="/groups"
       />
       <Col className="items-center">
         <Col className="w-full max-w-2xl px-4 sm:px-2">
-          <Row className="items-center justify-between">
-            <div className="mt-3 sm:mt-0">
-              Discover groups of markets and follow them to customize your
-              recommendations.
-            </div>
+          <Row className="items-start justify-between">
+            <Title>Groups</Title>
             {user && (
               <CreateGroupButton
                 user={user}
@@ -59,175 +94,213 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
               />
             )}
           </Row>
+          <Subtitle>Top Communities</Subtitle>
+          {communities.map((c, i) => (
+            <Community
+              name={c.name}
+              description={c.description}
+              selected={i === selectedCommunity}
+              onClick={() => setSelected(i)}
+              groups={props.groups.filter((g) => c.slugs?.includes(g.slug))}
+            />
+          ))}
+          <Subtitle>Discover Groups</Subtitle>
 
-          <Tabs
-            className="mb-4"
-            currentPageForAnalytics={'groups'}
-            tabs={[
-              {
-                title: 'All',
-                content: (
-                  <Col>
-                    <Input
-                      type="text"
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Search groups"
-                      value={query}
-                      className="mb-4 w-full"
-                    />
-
-                    <div className="grid grid-cols-1 flex-wrap justify-center gap-4 sm:grid-cols-2">
-                      {groups.map((group) => (
-                        <GroupCard
-                          key={group.id}
-                          group={group as Group}
-                          user={user}
-                          isMember={memberGroupIds.includes(group.id)}
-                        />
-                      ))}
-                    </div>
-                  </Col>
-                ),
-              },
-              ...(user
-                ? [
-                    {
-                      title: 'My Groups',
-                      content: (
-                        <Col>
-                          <Input
-                            type="text"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search your groups"
-                            className="mb-4 w-full"
-                          />
-
-                          <div className="grid grid-cols-1 flex-wrap justify-center gap-4 sm:grid-cols-2">
-                            {groups
-                              .filter((match) =>
-                                memberGroupIds.includes(match.id)
-                              )
-                              .map((group) => (
-                                <GroupCard
-                                  key={group.id}
-                                  group={group as Group}
-                                  user={user}
-                                  isMember={memberGroupIds.includes(group.id)}
-                                />
-                              ))}
-                          </div>
-                        </Col>
-                      ),
-                    },
-                  ]
-                : []),
-            ]}
+          <Input
+            type="text"
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search groups"
+            value={query}
+            className="mb-4 w-full"
           />
+
+          <div className="grid grid-cols-1">
+            <GroupSearchResult groups={groups} />
+          </div>
         </Col>
       </Col>
     </Page>
   )
 }
 
-export function GroupCard(props: {
-  group: Group
-  creator?: User | null | undefined
-  user?: User | undefined | null
-  isMember?: boolean
+function Community(props: {
+  name: string
+  description: string
+  selected: boolean
+  onClick: () => void
+  groups: SearchGroupInfo[]
   className?: string
-  onGroupClick?: (group: Group) => void
-  highlightCards?: string[]
-  pinned?: boolean
 }) {
-  const {
-    group,
-    creator,
-    user,
-    isMember,
-    className,
-    onGroupClick,
-    highlightCards,
-    pinned,
-  } = props
+  const { name, description, selected, onClick, groups, className } = props
+
   return (
-    <Card
+    <div
       className={clsx(
-        'hover:bg-ink-100 bg-canvas-0 relative min-w-[20rem] gap-1 rounded-xl  p-6',
-        className,
-        highlightCards?.includes(group.id) &&
-          '!bg-primary-100 outline-primary-500 outline outline-2'
+        'bg-canvas-0 cursor hover:bg-canvas-100 mb-2 rounded-lg p-4',
+        selected ? 'border-primary-200' : 'cursor-pointer',
+        className
       )}
-      onClick={(e) => {
-        if (!onGroupClick) return
-        // Let the browser handle the link click (opens in new tab).
-        if (e.ctrlKey || e.metaKey) return
-
-        e.preventDefault()
-        track('select group card'),
-          {
-            slug: group.slug,
-            postId: group.id,
-          }
-        onGroupClick(group)
-      }}
+      onClick={onClick}
     >
-      <Link
-        className={onGroupClick ? 'pointer-events-none' : ''}
-        href={groupPath(group.slug)}
-      >
-        <div>
-          {creator != null && (
-            <Avatar
-              className={'absolute top-2 right-2 z-10'}
-              username={creator?.username}
-              avatarUrl={creator?.avatarUrl}
-              noLink={false}
-              size={12}
-            />
-          )}
-        </div>
-
-        <Row className="items-center justify-between gap-2">
-          <span className="text-xl">{group.name}</span>
-          {pinned && (
-            <Row>
-              <FeaturedPill />
-            </Row>
-          )}
-        </Row>
-        <Row className="text-ink-500 text-sm">
-          <GroupMembersList group={group} />
-        </Row>
-        <Row>
-          <div className="text-ink-500 text-sm">{group.about}</div>
-        </Row>
-      </Link>
-      {isMember != null && user != null && (
-        <Row className={'z-10 mt-2 w-full justify-end'}>
-          <JoinOrLeaveGroupButton
-            group={group}
-            className={'z-10 w-24'}
-            user={user}
-            isMember={isMember}
-          />
-        </Row>
-      )}
-    </Card>
-  )
-}
-
-export function GroupMembersList(props: { group: Group }) {
-  const { group } = props
-  const { totalMembers } = group
-  if (totalMembers === 1) return <div />
-  return (
-    <div className="text-ink-700 flex flex-wrap gap-1">
-      <span>{totalMembers} followers</span>
+      <div className="flex flex-wrap items-baseline justify-between">
+        <div className="mr-4 min-w-[120px] text-xl">{name}</div>
+        <div className="text-ink-700">{description}</div>
+      </div>
+      {selected && <GroupPills groups={groups} autoselect />}
     </div>
   )
 }
 
+function GroupSearchResult(props: { groups: SearchGroupInfo[] }) {
+  const user = useUser()
+  const myGroupsIds = useMemberGroupIds(user)
+  return (
+    <>
+      {props.groups.map((group) => (
+        <GroupLine
+          key={group.id}
+          group={group as Group}
+          user={user}
+          isMember={!!myGroupsIds?.includes(group.id)}
+        />
+      ))}
+    </>
+  )
+}
+
+function GroupLine(props: {
+  group: Group
+  isMember: boolean
+  user: User | undefined | null
+}) {
+  const { group, isMember, user } = props
+
+  const [show, setShow] = useState(false)
+
+  return (
+    <div
+      className={clsx(show ? 'bg-canvas-0' : 'hover:bg-canvas-0', 'rounded-md')}
+    >
+      <div
+        className="flex cursor-pointer items-center justify-between p-2"
+        onClick={() => setShow((shown: boolean) => !shown)}
+      >
+        {group.name}
+        <div className="flex gap-4">
+          <span className="flex items-center">
+            <UsersIcon className="mr-1 h-4 w-4" />
+            {group.totalMembers}
+          </span>
+          <JoinOrLeaveGroupButton
+            group={group}
+            user={user}
+            isMember={isMember}
+            className="w-[80px] !px-0 !py-1"
+          />
+        </div>
+      </div>
+      {show && <SingleGroupInfo group={group} />}
+    </div>
+  )
+}
+
+function GroupPills(props: {
+  groups: SearchGroupInfo[]
+  autoselect?: boolean
+}) {
+  const { groups, autoselect } = props
+  const user = useUser()
+  const myGroupsIds = useMemberGroupIds(user)
+  const [selected, setSelected] = useState<SearchGroupInfo | null>(
+    autoselect ? groups[0] : null
+  )
+
+  return (
+    <>
+      {groups.length > 1 && (
+        <div className="mt-6 flex flex-wrap gap-1">
+          {groups.map((group) => (
+            <div
+              key={group.id}
+              className={clsx(
+                selected?.id === group.id
+                  ? 'bg-primary-200'
+                  : 'bg-ink-200 hover:bg-ink-300',
+                'cursor-pointer rounded-full px-3 py-1'
+              )}
+              onClick={() => setSelected(group)}
+            >
+              {group.name}
+            </div>
+          ))}
+        </div>
+      )}
+      {selected && (
+        <SingleGroupInfo key={selected.id} group={selected}>
+          <span className="text-ink-700 flex items-center">
+            <UsersIcon className="mr-1 h-4 w-4" />
+            {selected.totalMembers}
+          </span>
+          <JoinOrLeaveGroupButton
+            group={selected}
+            user={user}
+            isMember={myGroupsIds?.includes(selected.id)}
+            className="w-[80px] !px-0 !py-1"
+          />
+        </SingleGroupInfo>
+      )}
+    </>
+  )
+}
+
+function SingleGroupInfo(props: {
+  group: SearchGroupInfo
+  children?: ReactNode
+}) {
+  const { group, children } = props
+
+  const trendingMutate = useMutation(() =>
+    searchContract({
+      state: {
+        contracts: undefined,
+        fuzzyContractOffset: 0,
+        shouldLoadMore: false,
+        showTime: null,
+      },
+      query: '',
+      filter: 'open',
+      sort: 'score',
+      group_id: group.id,
+      offset: 0,
+      limit: 5,
+    })
+  )
+  useEffect(trendingMutate.mutate, [])
+
+  return (
+    <div className="bg-canvas-0 border-ink-300 mt-1 flex flex-col rounded">
+      {trendingMutate.isLoading && (
+        <div className="flex h-[200px] items-center justify-center">
+          <LoadingIndicator />
+        </div>
+      )}
+      {trendingMutate.data &&
+        trendingMutate.data.data.map((c: Contract) => (
+          <ContractsListEntry contract={c} />
+        ))}
+
+      <div className={clsx('flex items-center justify-between gap-4 p-2')}>
+        <Link
+          href={groupPath(group.slug)}
+          className="text-primary-700 hover:underline"
+        >
+          All {group.totalContracts} markets
+        </Link>
+        <div className="flex gap-4">{children}</div>
+      </div>
+    </div>
+  )
+}
 export function GroupLinkItem(props: {
   group: { slug: string; name: string }
   className?: string

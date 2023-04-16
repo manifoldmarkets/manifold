@@ -60,6 +60,7 @@ type LimitProps = {
   // I.e. A limit order could be filled by partially matching with several bets.
   // Non-limit orders can also be filled by matching with multiple limit orders.
   fills: fill[]
+  expiresAt?: number // ms since epoch.
 }
 
 export type fill = {

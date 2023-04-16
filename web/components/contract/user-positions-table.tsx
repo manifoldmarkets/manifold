@@ -36,6 +36,7 @@ import {
   getTotalContractMetricsCount,
 } from 'web/lib/firebase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
+import { getStonkShares } from 'common/stonk'
 
 export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
@@ -76,8 +77,11 @@ export const BinaryUserPositionsTable = memo(
       return [positiveProfitPositions, negativeProfitPositions.reverse()]
     }, [contractMetricsByProfit])
 
+    const [livePositionsLimit, setLivePositionsLimit] = useState(100)
     const positions =
-      useContractMetrics(contractId, 100, outcomes) ?? props.positions
+      useContractMetrics(contractId, livePositionsLimit, outcomes) ??
+      props.positions
+
     const yesPositionsSorted =
       sortBy === 'shares' ? positions.YES ?? [] : positiveProfitPositions
     const noPositionsSorted =
@@ -104,6 +108,14 @@ export const BinaryUserPositionsTable = memo(
       yesPositionsSorted.length > noPositionsSorted.length
         ? yesPositionsSorted.length
         : noPositionsSorted.length
+
+    useEffect(() => {
+      // TODO: we should switch to using supabase realtime subscription for this
+      if (page === largestColumnLength / pageSize - 1) {
+        setLivePositionsLimit((livePositionsLimit) => livePositionsLimit + 100)
+      }
+    }, [page, largestColumnLength])
+
     const isBinary = contract.outcomeType === 'BINARY'
     const isStonk = contract.outcomeType === 'STONK'
     const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -123,11 +135,11 @@ export const BinaryUserPositionsTable = memo(
             </>
           ) : isStonk ? (
             <>
-              <BuyLabel /> shareholders
+              <BuyLabel /> positions
             </>
           ) : isPseudoNumeric ? (
             <>
-              <HigherLabel /> shareholders
+              <HigherLabel /> positions
             </>
           ) : (
             <></>
@@ -147,11 +159,11 @@ export const BinaryUserPositionsTable = memo(
             </>
           ) : isStonk ? (
             <>
-              <ShortLabel /> shareholders
+              <ShortLabel /> positions
             </>
           ) : isPseudoNumeric ? (
             <>
-              <LowerLabel /> shareholders
+              <LowerLabel /> positions
             </>
           ) : (
             <></>
@@ -160,9 +172,6 @@ export const BinaryUserPositionsTable = memo(
       )
     }
 
-    const getStonkDisplayValue = (shares: number) => {
-      return Math.floor(shares).toString()
-    }
     return (
       <Col className={'w-full'}>
         <Row className={'mb-2 items-center justify-end gap-2'}>
@@ -199,9 +208,10 @@ export const BinaryUserPositionsTable = memo(
                   numberToShow={
                     sortBy === 'shares'
                       ? isStonk
-                        ? getStonkDisplayValue(
+                        ? getStonkShares(
+                            contract,
                             position.totalShares[outcome] ?? 0
-                          )
+                          ).toString()
                         : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
@@ -229,9 +239,10 @@ export const BinaryUserPositionsTable = memo(
                   numberToShow={
                     sortBy === 'shares'
                       ? isStonk
-                        ? getStonkDisplayValue(
+                        ? getStonkShares(
+                            contract,
                             position.totalShares[outcome] ?? 0
-                          )
+                          ).toString()
                         : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }

@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, memo, useEffect, useState } from 'react'
 import Router from 'next/router'
 import { ChartBarIcon } from '@heroicons/react/solid'
 import Link from 'next/link'
@@ -8,7 +8,6 @@ import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
-import { ContractsSection } from './home'
 import {
   DESTINY_GROUP_SLUGS,
   ENV_CONFIG,
@@ -28,16 +27,21 @@ import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { LogoSEO } from 'web/components/LogoSEO'
 import { db } from 'web/lib/supabase/db'
 import { PrivacyAndTerms } from 'web/components/privacy-terms'
+import clsx from 'clsx'
+import { ContractCardNew } from 'web/components/contract/contract-card'
 
-const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
+const excludedGroupSlugs = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db.from('trending_contracts').select('data').limit(20)
   const contracts = (data ?? []).map((d) => d.data) as Contract[]
 
-  const trendingContracts = contracts.filter(
-    (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug))
-  )
+  const trendingContracts = contracts
+    .filter(
+      (c) => !c.groupSlugs?.some((slug) => excludedGroupSlugs.includes(slug))
+    )
+    .filter((c) => c.coverImageUrl)
+    .slice(0, 3)
 
   return {
     props: { trendingContracts },
@@ -109,10 +113,7 @@ export default function Home(props: {
           </Row>
         </Col>
 
-        <ContractsSection
-          className="self-center"
-          contracts={trendingContracts}
-        />
+        <ContractsSection contracts={trendingContracts} />
 
         <TestimonialsPanel />
 
@@ -254,3 +255,17 @@ const useRedirectAfterLogin = () => {
     }
   }, [user])
 }
+
+const ContractsSection = memo(function ContractsSection(props: {
+  contracts: Contract[]
+  className?: string
+}) {
+  const { contracts, className } = props
+  return (
+    <Col className={clsx('max-w-2xl', className)}>
+      {contracts.map((contract) => (
+        <ContractCardNew key={contract.id} contract={contract} />
+      ))}
+    </Col>
+  )
+})

@@ -19,6 +19,8 @@ export const useRelatedMarkets = (
   const groupsPage = useRef(0)
   const creatorPage = useRef(0)
   const privateUser = usePrivateUser()
+  let hasLoadedMoreContracts = false
+
   const loadMore = useEvent(async () => {
     const setContracts = (
       contracts: Contract[],
@@ -27,9 +29,13 @@ export const useRelatedMarkets = (
       setSavedContracts((sc) => {
         const newContracts = uniqBy(buildArray(sc, contracts), (c) => c.id)
         page.current += 1
-        return newContracts.filter(
+        const filteredContracts = newContracts.filter(
           (c) => !isContractBlocked(privateUser, c) && c.id !== contract.id
         )
+        if (filteredContracts.length > sc.length) {
+          hasLoadedMoreContracts = true
+        }
+        return filteredContracts
       })
     }
 
@@ -58,6 +64,7 @@ export const useRelatedMarkets = (
       // const contracts = await getRelatedContracts(contract, RELATED_PAGE_SIZE)
       // setContracts(contracts, relatedPage)
     }
+    return hasLoadedMoreContracts
   })
 
   useEffect(() => {

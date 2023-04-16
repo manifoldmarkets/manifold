@@ -22,6 +22,10 @@ export function MoreOptionsUserButton(props: { user: User }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const isAdmin = useAdmin()
   if (!currentUser || currentUser.id === userId) return null
+  const createdTime = new Date(user.createdTime).toLocaleDateString('en-us', {
+    year: 'numeric',
+    month: 'short',
+  })
 
   return (
     <>
@@ -48,6 +52,7 @@ export function MoreOptionsUserButton(props: { user: User }) {
               </Button>
             )}
           </Title>
+          <span className={'ml-1 text-sm'}> joined {createdTime}</span>
           {isAdmin && (
             <Row className={'px-1'}>
               <span>

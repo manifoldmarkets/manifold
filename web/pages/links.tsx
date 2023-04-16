@@ -27,12 +27,13 @@ import {
   toInfo,
 } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/widgets/pagination'
-import { canCreateManalink, Manalink } from 'common/manalink'
+import { Manalink } from 'common/manalink'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { UserLink } from 'web/components/widgets/user-link'
 import { ENV_CONFIG } from 'common/envs/constants'
 import ShortToggle from 'web/components/widgets/short-toggle'
+import { useCanCreateManalink } from 'web/hooks/use-can-create-manalink'
 
 const LINKS_PER_PAGE = 24
 
@@ -53,8 +54,7 @@ export default function LinkPage(props: { auth: { user: User } }) {
   const displayedLinks = showDisabled
     ? links
     : links.filter((l) => !linkClaimed(toInfo(l)))
-
-  const authorized = canCreateManalink(user)
+  const authorized = useCanCreateManalink(user)
 
   return (
     <Page>
