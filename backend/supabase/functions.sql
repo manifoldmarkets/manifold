@@ -517,7 +517,7 @@ from (
         data
         order by (data->>'createdTime') desc
       ) as data
-    from contract_bets
+    from contract_bets_rbac
     where (data->>'userId') = uid
       and (data->>'amount')::real != 0
     group by contract_id
