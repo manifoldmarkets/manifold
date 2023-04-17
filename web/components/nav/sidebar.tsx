@@ -11,6 +11,7 @@ import {
   SunIcon,
   SparklesIcon,
   StarIcon,
+  UserGroupIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -34,7 +35,6 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-menu'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
-import RectangleGroupIcon from 'web/lib/icons/reactangle-group-icon'
 
 export default function Sidebar(props: {
   className?: string
@@ -135,7 +135,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
       },
       {
         name: 'Groups',
-        icon: RectangleGroupIcon,
+        icon: UserGroupIcon,
         href: '/groups',
       }
     )
@@ -167,7 +167,7 @@ const getMobileNav = (toggleModal: () => void) => {
     },
     {
       name: 'Groups',
-      icon: RectangleGroupIcon,
+      icon: UserGroupIcon,
       href: '/groups',
     }
   )
