@@ -2,7 +2,7 @@ import { Contract, contractPath } from 'common/contract'
 import { debounce } from 'lodash'
 import { NextRouter, useRouter } from 'next/router'
 import { useEffect, useRef } from 'react'
-import { getContract, getContractWithFields } from 'web/lib/supabase/contracts'
+import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { LOADING_PING_INTERVAL } from 'web/pages/group/loading/[groupId]'
 import { Button } from '../buttons/button'
 
