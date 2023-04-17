@@ -113,7 +113,10 @@ export default function Home(props: {
           </Row>
         </Col>
 
-        <ContractsSection contracts={trendingContracts} />
+        <ContractsSection
+          contracts={trendingContracts}
+          className="w-full self-center"
+        />
 
         <TestimonialsPanel />
 
