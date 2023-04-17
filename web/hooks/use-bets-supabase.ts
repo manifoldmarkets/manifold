@@ -29,7 +29,13 @@ export function useRealtimeBets(options?: BetFilter) {
   }, [])
 
   useEffect(() => {
-    const channel = db.channel(`live-bets-${options?.contractId ?? 'all'}`)
+    const channel = db.channel(
+      `live-bets-${
+        options?.contractId ? '-contract-' + options?.contractId + '-' : ''
+      } 
+      ${options?.userId ? '-user-' + options?.userId + '-' : ''} 
+      }`
+    )
     channel.on(
       'postgres_changes',
       {

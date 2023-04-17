@@ -88,13 +88,13 @@ export function ContractTabs(props: {
       : `${shortFormatNumber(totalComments)} Comments`
 
   const user = useUser()
-  const userBets =
-    useRealtimeBets({
-      contractId: contract.id,
-      userId: user?.id ?? '_',
-      filterAntes: true,
-    }) ?? []
+  const userBets = useRealtimeBets({
+    contractId: contract.id,
+    userId: user?.id ?? '_',
+    filterAntes: true,
+  })
 
+  console.log(userBets, user?.id)
   const betsTitle =
     totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`
 
