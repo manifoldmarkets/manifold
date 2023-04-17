@@ -68,7 +68,6 @@ export function NewContractPanel(props: {
   className?: string
 }) {
   const { creator, params, fromGroup, className } = props
-
   const {
     question,
     setQuestion,
@@ -362,7 +361,7 @@ export function NewContractPanel(props: {
               </Row>
             </div>
           )}
-          {visibility != 'private' && (
+          {params?.visibility != 'private' && (
             <>
               <Spacer h={6} />
               <Row className="items-center gap-2">
@@ -484,13 +483,14 @@ const useNewContract = (
     !!params?.isLogScale,
     'new-is-log-scale'
   )
+
   const [initialValueString, setInitialValueString] = usePersistentLocalState(
     params?.initValue,
     'new-init-value'
   )
   const [visibility, setVisibility] = usePersistentLocalState<visibility>(
     (params?.visibility as visibility) ?? 'public',
-    'new-visibility'
+    `new-visibility${'-' + params?.groupId ?? ''}`
   )
   const [newContract, setNewContract] = useState<Contract | undefined>(
     undefined
@@ -620,7 +620,7 @@ const useNewContract = (
     setCloseDate(undefined)
     setCloseHoursMinutes(undefined)
     setSelectedGroup(undefined)
-    setVisibility('public')
+    setVisibility((params?.visibility as visibility) ?? 'public')
     setAnswers(['', '', ''])
     setMinString('')
     setMaxString('')
