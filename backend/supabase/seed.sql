@@ -154,6 +154,20 @@ create policy "public read" on user_seen_markets for
 select using (true);
 create index if not exists user_seen_markets_data_gin on user_seen_markets using GIN (data);
 alter table user_seen_markets cluster on user_seen_markets_pkey;
+
+create table if not exists user_notifications (
+  user_id text not null,
+  notification_id text not null,
+  data jsonb not null,
+  fs_updated_time timestamp not null,
+  primary key(user_id, notification_id)
+);
+alter table user_notifications enable row level security;
+drop policy if exists "public read" on user_notifications;
+create policy "public read" on user_notifications for select using (true);
+create index if not exists user_notifications_data_gin on user_notifications using GIN (data);
+alter table user_notifications cluster on user_notifications_pkey;
+
 create table if not exists contracts (
   id text not null primary key,
   slug text,
@@ -400,6 +414,20 @@ create policy "public read" on posts for
 select using (true);
 create index if not exists posts_data_gin on posts using GIN (data);
 alter table posts cluster on posts_pkey;
+
+create table if not exists post_comments (
+  post_id text not null,
+  comment_id text not null,
+  data jsonb not null,
+  fs_updated_time timestamp not null,
+  primary key(post_id, comment_id)
+);
+alter table post_comments enable row level security;
+drop policy if exists "public read" on post_comments;
+create policy "public read" on post_comments for select using (true);
+create index if not exists post_comments_data_gin on post_comments using GIN (data);
+alter table post_comments cluster on post_comments_pkey;
+
 create table if not exists test (
   id text not null primary key,
   data jsonb not null,
@@ -552,6 +580,7 @@ create or replace function get_document_table_spec(table_id text) returns table_
     table_id
     when 'users' then cast((null, 'id') as table_spec)
     when 'user_follows' then cast(('user_id', 'follow_id') as table_spec)
+    when 'user_notifications' then cast(('user_id', 'notification_id') as table_spec)
     when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
     when 'user_events' then cast(('user_id', 'event_id') as table_spec)
     when 'user_seen_markets' then cast(('user_id', 'contract_id') as table_spec)
@@ -567,6 +596,7 @@ create or replace function get_document_table_spec(table_id text) returns table_
     when 'txns' then cast((null, 'id') as table_spec)
     when 'manalinks' then cast((null, 'id') as table_spec)
     when 'posts' then cast((null, 'id') as table_spec)
+    when 'post_comments' then cast(('post_id', 'comment_id') as table_spec)
     when 'test' then cast((null, 'id') as table_spec)
     when 'user_contract_metrics' then cast(('user_id', 'contract_id') as table_spec)
     else null
