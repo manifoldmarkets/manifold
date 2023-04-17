@@ -27,6 +27,19 @@ export const getContract = async (id: string) => {
   return data && data.length > 0 ? (data[0].data as Contract) : null
 }
 
+export const getContractWithFields = async (id: string) => {
+  const { data } = await run(db.from('contracts').select('*').eq('id', id))
+  if (data && data.length > 0) {
+    const result = data[0]
+    return {
+      ...(result.data as Contract),
+      visibility: result.visibility,
+      slug: result.slug,
+    }
+  } else {
+    return null
+  }
+}
 // Only fetches contracts with 'public' visibility
 export const getContracts = async (options: {
   limit: number
