@@ -39,9 +39,9 @@ create index if not exists users_data_gin on users using GIN (data);
 create index if not exists users_name_gin on users using GIN ((data->>'name') gin_trgm_ops);
 create index if not exists users_username_gin on users using GIN ((data->>'username') gin_trgm_ops);
 create index if not exists users_follower_count_cached on users ((to_jsonb(data->'followerCountCached')) desc);
-create index if not exists user_referrals_idx on users ((data->>'referredByUserId'))
-where data->>'referredByUserId' is not null;
+create index if not exists user_referrals_idx on users ((data->>'referredByUserId')) where data->>'referredByUserId' is not null;
 create index if not exists user_profit_cached_all_time_idx on users (((data->'profitCached'->>'allTime')::numeric));
+
 alter table users cluster on users_pkey;
 create table if not exists user_portfolio_history (
   user_id text not null,
@@ -154,6 +154,7 @@ create policy "public read" on user_seen_markets for
 select using (true);
 create index if not exists user_seen_markets_data_gin on user_seen_markets using GIN (data);
 alter table user_seen_markets cluster on user_seen_markets_pkey;
+
 create table if not exists user_notifications (
   user_id text not null,
   notification_id text not null,
@@ -163,10 +164,10 @@ create table if not exists user_notifications (
 );
 alter table user_notifications enable row level security;
 drop policy if exists "public read" on user_notifications;
-create policy "public read" on user_notifications for
-select using (true);
+create policy "public read" on user_notifications for select using (true);
 create index if not exists user_notifications_data_gin on user_notifications using GIN (data);
 alter table user_notifications cluster on user_notifications_pkey;
+
 create table if not exists contracts (
   id text not null primary key,
   slug text,
@@ -413,6 +414,7 @@ create policy "public read" on posts for
 select using (true);
 create index if not exists posts_data_gin on posts using GIN (data);
 alter table posts cluster on posts_pkey;
+
 create table if not exists post_comments (
   post_id text not null,
   comment_id text not null,
@@ -422,10 +424,10 @@ create table if not exists post_comments (
 );
 alter table post_comments enable row level security;
 drop policy if exists "public read" on post_comments;
-create policy "public read" on post_comments for
-select using (true);
+create policy "public read" on post_comments for select using (true);
 create index if not exists post_comments_data_gin on post_comments using GIN (data);
 alter table post_comments cluster on post_comments_pkey;
+
 create table if not exists test (
   id text not null primary key,
   data jsonb not null,
@@ -468,10 +470,10 @@ drop policy if exists "admin write access" on contract_recommendation_features;
 create policy "admin write access" on contract_recommendation_features as PERMISSIVE FOR ALL to service_role;
 create index if not exists contract_recommendation_features_freshness_score on contract_recommendation_features (freshness_score desc);
 create table if not exists user_embeddings (
-  user_id text not null primary key,
-  created_at timestamp not null default now(),
-  interest_embedding vector(1536) not null,
-  pre_signup_interest_embedding vector(1536)
+    user_id text not null primary key,
+    created_at timestamp not null default now(),
+    interest_embedding vector(1536) not null,
+    pre_signup_interest_embedding vector(1536)
 );
 alter table user_embeddings enable row level security;
 drop policy if exists "public read" on user_embeddings;
@@ -492,30 +494,39 @@ select using (true);
 drop policy if exists "admin write access" on contract_embeddings;
 create policy "admin write access" on contract_embeddings as PERMISSIVE FOR ALL to service_role;
 SET ivfflat.probes = 7;
-create index if not exists contract_embeddings_embedding on contract_embeddings using ivfflat (embedding vector_cosine_ops) with (lists = 100);
+create index if not exists contract_embeddings_embedding on contract_embeddings
+  using ivfflat (embedding vector_cosine_ops)
+  with (lists = 100);
+
+
 create table if not exists topic_embeddings (
-  topic text not null primary key,
-  created_at timestamp not null default now(),
-  embedding vector(1536) not null
+    topic text not null primary key,
+    created_at timestamp not null default now(),
+    embedding vector(1536) not null
 );
 alter table topic_embeddings enable row level security;
 drop policy if exists "public read" on topic_embeddings;
-create policy "public read" on topic_embeddings for
-select using (true);
+create policy "public read" on topic_embeddings for select using (true);
 drop policy if exists "admin write access" on topic_embeddings;
-create policy "admin write access" on topic_embeddings as PERMISSIVE FOR ALL to service_role;
+create policy "admin write access" on topic_embeddings
+  as PERMISSIVE FOR ALL
+  to service_role;
+
+
 create table if not exists user_topics (
-  user_id text not null primary key,
-  created_at timestamp not null default now(),
-  topic_embedding vector(1536) not null,
-  topics text [] not null
+    user_id text not null primary key,
+    created_at timestamp not null default now(),
+    topic_embedding vector(1536) not null,
+    topics text[] not null
 );
 alter table user_topics enable row level security;
 drop policy if exists "public read" on user_topics;
-create policy "public read" on user_topics for
-select using (true);
+create policy "public read" on user_topics for select using (true);
 drop policy if exists "public write access" on user_topics;
-create policy "public write access" on user_topics for all using(true);
+create policy "public write access" on user_topics
+  for all using(true);
+
+
 begin;
 drop publication if exists supabase_realtime;
 create publication supabase_realtime;
@@ -607,13 +618,10 @@ end if;
 if r.write_kind = 'create' then
 /* possible cases:
  - if this is the most recent write to the document:
- 1. common case: the document must not exist and this is a brand new document;
- insert it
+ 1. common case: the document must not exist and this is a brand new document; insert it
  - if this is not the most recent write to the document:
- 2. the document already exists due to other more recent inserts or updates;
- do nothing
- 3. the document has been more recently deleted;
- do nothing
+ 2. the document already exists due to other more recent inserts or updates; do nothing
+ 3. the document has been more recently deleted; do nothing
  */
 if exists (
   select
@@ -629,8 +637,7 @@ if exists (
 end if;
 if dest_spec.parent_id_col_name is not null then execute format(
   'insert into %1$I (%2$I, %3$I, data, fs_updated_time) values (%4$L, %5$L, %6$L, %7$L)
-         on conflict (%2$I, %3$I) do nothing;
-',
+         on conflict (%2$I, %3$I) do nothing;',
   r.table_id,
   dest_spec.parent_id_col_name,
   dest_spec.id_col_name,
@@ -641,8 +648,7 @@ if dest_spec.parent_id_col_name is not null then execute format(
 );
 else execute format(
   'insert into %1$I (%2$I, data, fs_updated_time) values (%3$L, %4$L, %5$L)
-         on conflict (%2$I) do nothing;
-',
+         on conflict (%2$I) do nothing;',
   r.table_id,
   dest_spec.id_col_name,
   r.doc_id,
@@ -653,15 +659,11 @@ end if;
 elsif r.write_kind = 'update' then
 /* possible cases:
  - if this is the most recent write to the document:
- 1. common case: the document exists;
- update it
- 2. less common case: the document doesn't exist yet because there is an insert we haven't got;
- insert it
+ 1. common case: the document exists; update it
+ 2. less common case: the document doesn't exist yet because there is an insert we haven't got; insert it
  - if this is not the most recent write to the document:
- 3. the document exists but has more recent updates;
- do nothing
- 4. the document has been more recently deleted;
- do nothing
+ 3. the document exists but has more recent updates; do nothing
+ 4. the document has been more recently deleted; do nothing
  */
 if exists (
   select
@@ -678,8 +680,7 @@ end if;
 if dest_spec.parent_id_col_name is not null then execute format(
   'insert into %1$I (%2$I, %3$I, data, fs_updated_time) values (%4$L, %5$L, %6$L, %7$L)
          on conflict (%2$I, %3$I) do update set data = %6$L, fs_updated_time = %7$L
-         where %1$I.fs_updated_time <= %7$L;
-',
+         where %1$I.fs_updated_time <= %7$L;',
   r.table_id,
   dest_spec.parent_id_col_name,
   dest_spec.id_col_name,
@@ -691,8 +692,7 @@ if dest_spec.parent_id_col_name is not null then execute format(
 else execute format(
   'insert into %1$I (%2$I, data, fs_updated_time) values (%3$L, %4$L, %5$L)
          on conflict (%2$I) do update set data = %4$L, fs_updated_time = %5$L
-         where %1$I.fs_updated_time <= %5$L;
-',
+         where %1$I.fs_updated_time <= %5$L;',
   r.table_id,
   dest_spec.id_col_name,
   r.doc_id,
@@ -703,13 +703,10 @@ end if;
 elsif r.write_kind = 'delete' then
 /* possible cases:
  - if this is the most recent write to the document:
- 1. common case: the document must exist;
- delete it
+ 1. common case: the document must exist; delete it
  - if this is not the most recent write to the document:
- 2. the document was already deleted;
- do nothing
- 3. the document exists because it has a more recent insert or update;
- do nothing
+ 2. the document was already deleted; do nothing
+ 3. the document exists because it has a more recent insert or update; do nothing
  */
 if dest_spec.parent_id_col_name is not null then execute format(
   'delete from %1$I where %2$I = %4$L and %3$I = %5$L and fs_updated_time <= %6$L',
