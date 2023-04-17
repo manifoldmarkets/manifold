@@ -92,8 +92,6 @@ export function ContractTabs(props: {
     userId: user?.id ?? '_',
     filterAntes: true,
   })
-
-  console.log(userBets, user?.id)
   const betsTitle =
     totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`
 
