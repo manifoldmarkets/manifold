@@ -127,51 +127,38 @@ async function updateContractSubcollectionsVisibility(
 
   // Update comments' visibility
   const commentsRef = contractRef.collection('comments')
-  const commentsSnapshot = await commentsRef.get()
-
-  let commentsBatch = firestore.batch()
-  let commentsCounter = 0
-
-  for (const commentDoc of commentsSnapshot.docs) {
-    commentsBatch.update(commentDoc.ref, { visibility: newVisibility })
-    commentsCounter++
-
-    if (commentsCounter === 500) {
-      // Maximum batch size is 500 operations
-      await commentsBatch.commit()
-      commentsBatch = firestore.batch()
-      commentsCounter = 0
-    }
-  }
-
-  if (commentsCounter > 0) {
-    await commentsBatch.commit()
-  }
+  await processSubcollection(commentsRef, newVisibility)
 
   // Update bets' visibility
   const betsRef = contractRef.collection('bets')
-  const betsSnapshot = await betsRef.get()
-
-  let betsBatch = firestore.batch()
-  let betsCounter = 0
-
-  for (const betDoc of betsSnapshot.docs) {
-    betsBatch.update(betDoc.ref, { visibility: newVisibility })
-    betsCounter++
-
-    if (betsCounter === 500) {
-      // Maximum batch size is 500 operations
-      await betsBatch.commit()
-      betsBatch = firestore.batch()
-      betsCounter = 0
-    }
-  }
-
-  if (betsCounter > 0) {
-    await betsBatch.commit()
-  }
+  await processSubcollection(betsRef, newVisibility)
 }
 
+async function processSubcollection(
+  subcollectionRef: FirebaseFirestore.CollectionReference,
+  newVisibility: 'public' | 'unlisted'
+) {
+  const batchSize = 500
+
+  let moreDocuments = true
+
+  while (moreDocuments) {
+    const snapshot = await subcollectionRef.limit(batchSize).get()
+
+    if (snapshot.empty) {
+      moreDocuments = false
+      break
+    }
+
+    const updatePromises = snapshot.docs.map((doc) => {
+      return doc.ref.update({ visibility: newVisibility })
+    })
+
+    await Promise.all(updatePromises)
+
+    moreDocuments = snapshot.size >= batchSize
+  }
+}
 async function revalidateContractStaticProps(contract: Contract) {
   await revalidateStaticProps(contractPath(contract))
   await revalidateStaticProps(`/embed${contractPath(contract)}`)
