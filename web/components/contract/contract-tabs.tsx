@@ -43,7 +43,7 @@ import { ShareholderStats } from 'common/supabase/contract-metrics'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { useEvent } from 'web/hooks/use-event'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useBets } from 'web/hooks/use-bets-supabase'
+import { useBets } from 'web/hooks/use-bets'
 
 export function ContractTabs(props: {
   contract: Contract
