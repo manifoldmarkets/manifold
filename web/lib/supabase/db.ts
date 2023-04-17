@@ -12,6 +12,7 @@ export function initSupabaseClient(permission: 'admin' | 'client') {
       ? process.env.PROD_ADMIN_SUPABASE_KEY
       : ENV_CONFIG.supabaseAnonKey
   if (!ENV_CONFIG.supabaseInstanceId || !key) {
+    console.log(process.env.PROD_ADMIN_SUPABASE_KEY)
     throw new Error(
       "Supabase key not found. Supabase stuff won't work. Requested: " +
         permission

@@ -61,7 +61,7 @@ import { getContractParams } from 'web/lib/contracts'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
-import { adminDb } from 'web/lib/supabase/db'
+import { adminDb, initSupabaseClient } from 'web/lib/supabase/db'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -75,7 +75,8 @@ export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
+  const db = initSupabaseClient('admin')
+  const contract = (await getContractFromSlug(contractSlug, db)) ?? null
 
   // No contract found
   if (contract === null || contract.deleted)
