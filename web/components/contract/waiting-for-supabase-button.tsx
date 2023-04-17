@@ -18,7 +18,6 @@ export default function WaitingForSupabaseButton(props: {
 
   async function fetchContract() {
     const newContract = await getContractWithFields(contractId)
-    console.log(newContract, newContract?.visibility, newContract?.slug)
     if (newContract && newContract.visibility && newContract.slug) {
       router.push(contractPath(newContract as Contract)).catch((e) => {
         console.log(e)

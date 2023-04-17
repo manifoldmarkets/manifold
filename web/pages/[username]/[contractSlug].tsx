@@ -53,11 +53,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { BetFilter } from 'web/lib/firebase/bets'
 import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
-import {
-  Contract,
-  // getContractFromSlug,
-  tradingAllowed,
-} from 'web/lib/firebase/contracts'
+import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
@@ -81,8 +77,6 @@ export async function getStaticProps(ctx: {
   const { contractSlug } = ctx.params
   const adminDb = await initSupabaseClient('admin')
   const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
-
-  // const contract = (await getContractFromSlug(contractSlug)) ?? null
 
   // No contract found
   if (contract === null || contract.deleted)
