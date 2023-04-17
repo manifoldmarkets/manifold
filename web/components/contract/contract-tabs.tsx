@@ -44,6 +44,7 @@ import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { useEvent } from 'web/hooks/use-event'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useBets } from 'web/hooks/use-bets'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -88,7 +89,7 @@ export function ContractTabs(props: {
 
   const user = useUser()
   const userBets =
-    useBets({
+    useRealtimeBets({
       contractId: contract.id,
       userId: user?.id ?? '_',
       filterAntes: true,

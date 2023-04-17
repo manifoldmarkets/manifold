@@ -4,23 +4,39 @@ import { BetFilter } from 'web/lib/firebase/bets'
 import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 
-export function useRealtimeBets(limit: number, options?: BetFilter) {
+function getFilteredQuery(filteredParam: string, filterId?: string) {
+  if (filteredParam === 'contractId' && filterId) {
+    return `contract_id=eq.${filterId}`
+  }
+  return undefined
+}
+
+export function useRealtimeBets(options?: BetFilter) {
   const [bets, setBets] = useState<Bet[]>([])
+  let filteredParam
+  let filteredQuery: string | undefined
+  if (options) {
+    if (options.contractId) {
+      filteredParam = 'contractId'
+      filteredQuery = getFilteredQuery(filteredParam, options.contractId)
+    }
+  }
 
   useEffect(() => {
-    getBets({ limit, order: 'desc', ...options })
+    getBets({ order: 'desc', ...options })
       .then((result) => setBets(result))
       .catch((e) => console.log(e))
   }, [])
 
   useEffect(() => {
-    const channel = db.channel('live-bets')
+    const channel = db.channel(`live-bets-${options?.contractId ?? 'all'}`)
     channel.on(
       'postgres_changes',
       {
         event: 'INSERT',
         schema: 'public',
         table: 'contract_bets',
+        filter: filteredQuery,
       },
       (payload) => {
         if (payload) {

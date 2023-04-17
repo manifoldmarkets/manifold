@@ -62,6 +62,7 @@ import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { initSupabaseClient } from 'web/lib/supabase/db'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -187,7 +188,7 @@ export function ContractPageContent(props: {
 
   // Static props load bets in descending order by time
   const lastBetTime = first(contractParams.historyData.bets)?.createdTime
-  const newBets = useBets({
+  const newBets = useRealtimeBets({
     contractId: contract.id,
     afterTime: lastBetTime,
     ...CONTRACT_BET_FILTER,
