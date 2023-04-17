@@ -360,6 +360,26 @@ export interface Database {
           id?: string
         }
       }
+      post_comments: {
+        Row: {
+          comment_id: string
+          data: Json
+          fs_updated_time: string
+          post_id: string
+        }
+        Insert: {
+          comment_id: string
+          data: Json
+          fs_updated_time: string
+          post_id: string
+        }
+        Update: {
+          comment_id?: string
+          data?: Json
+          fs_updated_time?: string
+          post_id?: string
+        }
+      }
       posts: {
         Row: {
           data: Json
@@ -528,6 +548,26 @@ export interface Database {
           data?: Json
           follow_id?: string
           fs_updated_time?: string
+          user_id?: string
+        }
+      }
+      user_notifications: {
+        Row: {
+          data: Json
+          fs_updated_time: string
+          notification_id: string
+          user_id: string
+        }
+        Insert: {
+          data: Json
+          fs_updated_time: string
+          notification_id: string
+          user_id: string
+        }
+        Update: {
+          data?: Json
+          fs_updated_time?: string
+          notification_id?: string
           user_id?: string
         }
       }

@@ -7,12 +7,9 @@ import {
 import { chunk } from 'lodash'
 import { withRetries } from 'common/util/promise'
 import { log, processPartitioned } from 'shared/utils'
-import { initAdmin } from 'shared/init-admin'
+import { runScript } from './run-script'
 import { DAY_MS } from 'common/util/time'
-import {
-  createSupabaseDirectClient,
-  SupabaseDirectClient,
-} from 'shared/supabase/init'
+import { SupabaseDirectClient } from 'shared/supabase/init'
 import { bulkInsert } from 'shared/supabase/utils'
 import { TableName } from 'common/supabase/utils'
 import { Command } from 'commander'
@@ -158,12 +155,12 @@ async function clearFailedWrites() {
 }
 
 async function importDatabase(
+  pg: SupabaseDirectClient,
   tables?: string[],
   startTime = 0,
   timeChunk = 0.25
 ) {
   const firestore = admin.firestore()
-  const pg = createSupabaseDirectClient()
   const shouldImport = (t: TableName) => tables == null || tables.includes(t)
 
   if (tables == null) {
@@ -221,6 +218,14 @@ async function importDatabase(
       pg,
       firestore.collectionGroup('seenMarkets'),
       'user_seen_markets',
+      (_) => true,
+      2500
+    )
+  if (shouldImport('user_notifications'))
+    await importCollectionGroup(
+      pg,
+      firestore.collectionGroup('notifications'),
+      'user_notifications',
       (_) => true,
       2500
     )
@@ -309,10 +314,16 @@ async function importDatabase(
     )
   if (shouldImport('posts'))
     await importCollection(pg, firestore.collection('posts'), 'posts', 100)
+  if (shouldImport('post_comments'))
+    await importCollectionGroup(pg,
+      firestore.collectionGroup('comments'),
+      'post_comments',
+      (c) => c.get('commentType') === 'post',
+      500
+    )
 }
 
 if (require.main === module) {
-  initAdmin()
   const program = new Command()
   program.requiredOption(
     '-t, --tables <tables>',
@@ -336,11 +347,13 @@ if (require.main === module) {
   if (timestamp != null) log('Starting at timestamp:', timestamp)
   if (chunk != null) log('Chunking by:', chunk, 'day(s)')
 
-  importDatabase(tables, timestamp, chunk)
-    .then(() => {
-      log('Finished importing.')
-    })
-    .catch((e) => {
-      console.error(e)
-    })
+  runScript(async ({ pg }) => {
+    await importDatabase(pg, tables, timestamp, chunk)    
+  })
+  .then(() => {
+    log('Finished importing.')
+  })
+  .catch((e) => {
+    console.error(e)
+  })
 }
