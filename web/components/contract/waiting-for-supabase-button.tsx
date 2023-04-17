@@ -2,7 +2,7 @@ import { Contract, contractPath } from 'common/contract'
 import { debounce } from 'lodash'
 import { NextRouter, useRouter } from 'next/router'
 import { useEffect, useRef } from 'react'
-import { getContract } from 'web/lib/supabase/contracts'
+import { getContract, getContractWithFields } from 'web/lib/supabase/contracts'
 import { LOADING_PING_INTERVAL } from 'web/pages/group/loading/[groupId]'
 import { Button } from '../buttons/button'
 
@@ -17,8 +17,8 @@ export default function WaitingForSupabaseButton(props: {
   ).current
 
   async function fetchContract() {
-    const newContract = await getContract(contractId)
-    if (newContract) {
+    const newContract = await getContractWithFields(contractId)
+    if (newContract && newContract.visibility && newContract.slug) {
       router.push(contractPath(newContract as Contract)).catch((e) => {
         console.log(e)
       })
