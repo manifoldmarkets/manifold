@@ -37,6 +37,12 @@ export const onUpdateContract = functions
     ) {
       await revalidateContractStaticProps(contract)
     }
+
+    if (previousContract.visibility !== contract.visibility) {
+      const newVisibility = contract.visibility as 'public' | 'unlisted'
+
+      await updateContractSubcollectionsVisibility(contract.id, newVisibility)
+    }
   })
 
 async function handleUpdatedCloseTime(
@@ -110,6 +116,59 @@ const getPropsThatTriggerRevalidation = (contract: Contract) => {
     closeTime,
     description,
     groupLinks,
+  }
+}
+
+async function updateContractSubcollectionsVisibility(
+  contractId: string,
+  newVisibility: 'public' | 'unlisted'
+) {
+  const contractRef = firestore.collection('contracts').doc(contractId)
+
+  // Update comments' visibility
+  const commentsRef = contractRef.collection('comments')
+  const commentsSnapshot = await commentsRef.get()
+
+  let commentsBatch = firestore.batch()
+  let commentsCounter = 0
+
+  for (const commentDoc of commentsSnapshot.docs) {
+    commentsBatch.update(commentDoc.ref, { visibility: newVisibility })
+    commentsCounter++
+
+    if (commentsCounter === 500) {
+      // Maximum batch size is 500 operations
+      await commentsBatch.commit()
+      commentsBatch = firestore.batch()
+      commentsCounter = 0
+    }
+  }
+
+  if (commentsCounter > 0) {
+    await commentsBatch.commit()
+  }
+
+  // Update bets' visibility
+  const betsRef = contractRef.collection('bets')
+  const betsSnapshot = await betsRef.get()
+
+  let betsBatch = firestore.batch()
+  let betsCounter = 0
+
+  for (const betDoc of betsSnapshot.docs) {
+    betsBatch.update(betDoc.ref, { visibility: newVisibility })
+    betsCounter++
+
+    if (betsCounter === 500) {
+      // Maximum batch size is 500 operations
+      await betsBatch.commit()
+      betsBatch = firestore.batch()
+      betsCounter = 0
+    }
+  }
+
+  if (betsCounter > 0) {
+    await betsBatch.commit()
   }
 }
 
