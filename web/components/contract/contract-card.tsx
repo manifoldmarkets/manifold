@@ -462,6 +462,8 @@ export function ContractCardNew(props: {
             'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
             textColor
           )}
+          // if open in new tab, don't open in this one
+          onClick={(e) => e.stopPropagation()}
         >
           {question}
         </Link>
