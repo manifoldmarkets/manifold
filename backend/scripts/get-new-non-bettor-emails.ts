@@ -25,7 +25,7 @@ async function main() {
     })
   )
   try {
-    csv.unshift('name, email\n')
+    csv.unshift('email\n')
     writeFileSync('non-bettor-emails.csv', csv.join(''))
   } catch (err) {
     console.error(err)
