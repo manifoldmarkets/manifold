@@ -31,22 +31,55 @@ export interface Database {
       }
       contract_bets: {
         Row: {
+          amount: number | null
           bet_id: string
           contract_id: string
+          created_time: string | null
           data: Json
           fs_updated_time: string
+          is_ante: boolean | null
+          is_challenge: boolean | null
+          is_redemption: boolean | null
+          outcome: string | null
+          prob_after: number | null
+          prob_before: number | null
+          shares: number | null
+          user_id: string | null
+          visibility: string | null
         }
         Insert: {
+          amount?: number | null
           bet_id: string
           contract_id: string
+          created_time?: string | null
           data: Json
           fs_updated_time: string
+          is_ante?: boolean | null
+          is_challenge?: boolean | null
+          is_redemption?: boolean | null
+          outcome?: string | null
+          prob_after?: number | null
+          prob_before?: number | null
+          shares?: number | null
+          user_id?: string | null
+          visibility?: string | null
         }
         Update: {
+          amount?: number | null
           bet_id?: string
           contract_id?: string
+          created_time?: string | null
           data?: Json
           fs_updated_time?: string
+          is_ante?: boolean | null
+          is_challenge?: boolean | null
+          is_redemption?: boolean | null
+          outcome?: string | null
+          prob_after?: number | null
+          prob_before?: number | null
+          shares?: number | null
+          user_id?: string | null
+          visibility?: string | null
         }
       }
       contract_comments: {

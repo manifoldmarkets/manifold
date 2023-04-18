@@ -2,13 +2,13 @@ import { UserCircleIcon } from '@heroicons/react/solid'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import { withTracking } from 'web/lib/service/analytics'
+import { track, withTracking } from 'web/lib/service/analytics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import SquiggleVerticalIcon from 'web/lib/icons/squiggle_vertical'
 import clsx from 'clsx'
 import { Button } from './buttons/button'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import SquiggleHorizontalIcon from 'web/lib/icons/squiggle_horizontal'
 import TypewriterComponent from 'typewriter-effect'
 import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
@@ -16,6 +16,11 @@ import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import CountUp from 'react-countup'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { STARTING_BALANCE } from 'common/economy'
+import { useABTest } from 'web/hooks/use-ab-test'
+import { formatMoney } from 'common/util/format'
+import { HeartIcon } from '@heroicons/react/outline'
+import { Modal } from 'web/components/layout/modal'
+import { CharityPage } from 'web/components/onboarding/welcome'
 
 const MAX_PAGE = 2
 
@@ -49,6 +54,11 @@ export function LandingPagePanel() {
   useTracking('view landing page')
   const isMobile = useIsMobile()
   const [pageNumber, setPageNumber] = useState(0)
+  const [open, setOpen] = useState(false)
+  const variant = useABTest('promote charity', {
+    charity: 'charity',
+    blank: 'blank',
+  } as const)
 
   useEffect(() => {
     const newTimeoutId = setTimeout(
@@ -145,7 +155,38 @@ export function LandingPagePanel() {
           </div>
         </div>
       </div>
+      {variant === 'charity' && (
+        <Row
+          className={
+            'cursor-pointer items-center justify-between gap-2 rounded-md bg-pink-200 p-2 text-black'
+          }
+          onClick={() => {
+            setOpen(true)
+            track('landing page charity panel click')
+          }}
+        >
+          <HeartIcon className="h-7 w-7 text-red-400" strokeWidth={4} />
+          <span>
+            Donate your winnings to charity at a ratio of{' '}
+            <strong className="semibold">{formatMoney(100)}:$1</strong>.
+          </span>
+          <HeartIcon className="h-7 w-7 text-red-400" strokeWidth={4} />
+          <CharityModal open={open} setOpen={setOpen} />
+        </Row>
+      )}
     </>
+  )
+}
+
+export function CharityModal(props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+}) {
+  const { open, setOpen } = props
+  return (
+    <Modal open={open} setOpen={setOpen}>
+      <CharityPage className={'rounded-md p-6'} />
+    </Modal>
   )
 }
 

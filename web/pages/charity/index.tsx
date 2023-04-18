@@ -15,7 +15,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { getAllCharityTxns } from 'web/lib/firebase/txns'
-import { manaToUSD } from 'common/util/format'
+import { formatMoney, manaToUSD } from 'common/util/format'
 import { quadraticMatches } from 'common/quadratic-funding'
 import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
@@ -136,7 +136,8 @@ export default function Charity(props: {
 
           <span className="text-ink-600 mt-8">
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
-            donations.{' '}
+            donations at a ratio of{' '}
+            <strong className="semibold">{formatMoney(100)} : $1</strong>.
             <SiteLink
               href="https://help.manifold.markets/manifold-charitable-donation-program"
               className="text-primary-700 ml-2"
