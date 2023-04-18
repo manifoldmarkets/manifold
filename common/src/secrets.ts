@@ -84,11 +84,6 @@ export const getServiceAccountCredentials = (env: 'PROD' | 'DEV') => {
       ? process.env.PROD_FIREBASE_SERVICE_ACCOUNT_KEY
       : process.env.DEV_FIREBASE_SERVICE_ACCOUNT_KEY
   if (value) {
-    console.log(
-      'Using service account key from environment variable.',
-      env,
-      value
-    )
     return JSON.parse(value)
   }
 
