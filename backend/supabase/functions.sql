@@ -540,7 +540,7 @@ from (
     select contract_id,
       array_agg(
         data
-        order by (data->>'createdTime') desc
+        order by created_time desc
       ) as data
     from contract_bets
     where user_id = uid

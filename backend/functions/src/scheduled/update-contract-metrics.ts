@@ -100,11 +100,11 @@ const getUnfilledLimitOrders = async (pg: SupabaseDirectClient) => {
 const getVolumeSince = async (pg: SupabaseDirectClient, since: number) => {
   return Object.fromEntries(
     await pg.map(
-      `select contract_id, sum(abs((data->'amount')::numeric)) as volume
+      `select contract_id, sum(abs(amount)) as volume
       from contract_bets
-      where (data->'createdTime')::bigint >= $1
-      and not (data->'isRedemption')::boolean
-      and not (data->'isAnte')::boolean
+      where created_time >= millis_to_ts($1)
+      and not is_redemption
+      and not is_ante
       group by contract_id`,
       [since],
       (r) => [r.contract_id as string, parseFloat(r.volume as string)]
@@ -116,15 +116,15 @@ const getContractProbsAt = async (pg: SupabaseDirectClient, when: number) => {
   return Object.fromEntries(
     await pg.map(
       `with probs_before as (
-        select distinct on (contract_id) contract_id, (data->>'probAfter')::numeric as prob
+        select distinct on (contract_id) contract_id, prob_after as prob
         from contract_bets
-        where to_jsonb(data)->>'createdTime' < $1::text
-        order by contract_id, to_jsonb(data)->>'createdTime' desc
+        where created_time < millis_to_ts($1)
+        order by contract_id, created_time desc
       ), probs_after as (
-        select distinct on (contract_id) contract_id, (data->>'probBefore')::numeric as prob
+        select distinct on (contract_id) contract_id, prob_before as prob
         from contract_bets
-        where to_jsonb(data)->>'createdTime' >= $1::text
-        order by contract_id, to_jsonb(data)->>'createdTime' asc
+        where created_time >= millis_to_ts($1)
+        order by contract_id, created_time asc
       ), current_probs as (
         select id, resolution_time,
           get_cpmm_resolved_prob(data) as resolved_prob,

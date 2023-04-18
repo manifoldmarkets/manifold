@@ -21,8 +21,8 @@ export async function expireLimitOrders() {
     .select('data')
     .eq('data->>isFilled', false)
     .eq('data->>isCancelled', false)
-    .eq('data->>isAnte', false)
-    .eq('data->>isRedemption', false)
+    .eq('is_ante', false)
+    .eq('is_redemption', false)
     .neq('data->>expiresAt', null)
     .lt('data->>expiresAt', Date.now())
   if (!data) {

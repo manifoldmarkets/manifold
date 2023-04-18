@@ -428,36 +428,24 @@ create index if not exists contract_bets_data_gin on contract_bets using GIN (da
 create index if not exists contract_bets_bet_id on contract_bets (bet_id);
 
 /* serving stats page, recent bets API */
-create index if not exists contract_bets_created_time_global on contract_bets ((to_jsonb(data) ->> 'createdTime') desc);
+create index if not exists contract_bets_created_time_global on contract_bets (created_time desc);
 
 /* serving activity feed bets list */
-create index if not exists contract_bets_activity_feed on contract_bets (
-  (to_jsonb(data) -> 'isAnte'),
-  (to_jsonb(data) -> 'isRedemption'),
-  (to_jsonb(data) ->> 'createdTime') desc
-);
+create index if not exists contract_bets_activity_feed on contract_bets (is_ante, is_redemption, created_time desc);
 
 /* serving e.g. the contract page recent bets and the "bets by contract" API */
-create index if not exists contract_bets_created_time on contract_bets (
-  contract_id,
-  (to_jsonb(data) ->> 'createdTime') desc
-);
+create index if not exists contract_bets_created_time on contract_bets (contract_id, created_time desc);
 
 /* serving "my trades on a contract" kind of queries */
 create index if not exists contract_bets_contract_user_id on contract_bets (
-  contract_id,
-  (to_jsonb(data) ->> 'userId'),
-  (to_jsonb(data) ->> 'createdTime') desc
+  contract_id, user_id, created_time desc
 );
 
 /* serving the user bets API */
-create index if not exists contract_bets_user_id on contract_bets (
-  (to_jsonb(data) ->> 'userId'),
-  (to_jsonb(data) ->> 'createdTime') desc
-);
+create index if not exists contract_bets_user_id on contract_bets (user_id, created_time desc);
 
 create index if not exists contract_bets_user_outstanding_limit_orders on contract_bets (
-  (data ->> 'userId'),
+  user_id,
   ((data -> 'isFilled')::boolean),
   ((data -> 'isCancelled')::boolean)
 );
@@ -466,8 +454,8 @@ create index if not exists contract_bets_unexpired_limit_orders on contract_bets
   (data ->> 'expiresAt' is not null),
   ((data ->> 'isFilled')),
   ((data ->> 'isCancelled')),
-  ((data ->> 'isAnte')),
-  ((data ->> 'isRedemption')),
+  is_ante,
+  is_redemption,
   ((data ->> 'expiresAt'))
 );
 
