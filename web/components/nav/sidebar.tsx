@@ -1,5 +1,4 @@
 import {
-  BookOpenIcon,
   CashIcon,
   DeviceMobileIcon,
   HomeIcon,

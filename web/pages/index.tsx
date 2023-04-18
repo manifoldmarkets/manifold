@@ -15,7 +15,6 @@ import {
 } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import TestimonialsPanel from './testimonials-panel'
-import GoToIcon from 'web/lib/icons/go-to-icon'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
 import { Contract, CPMMBinaryContract } from 'common/contract'
