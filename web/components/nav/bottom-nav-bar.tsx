@@ -6,7 +6,11 @@ import {
   XIcon,
   SearchIcon,
 } from '@heroicons/react/outline'
-import { DeviceMobileIcon, ScaleIcon, UserCircleIcon } from '@heroicons/react/solid'
+import {
+  DeviceMobileIcon,
+  ScaleIcon,
+  UserCircleIcon,
+} from '@heroicons/react/solid'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment, useEffect } from 'react'
 import Sidebar from './sidebar'

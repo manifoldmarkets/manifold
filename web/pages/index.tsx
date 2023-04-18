@@ -205,7 +205,7 @@ export function PredictionMarketExplainer() {
       <div className="text-lg">
         Prediction markets let you bet on the outcome of future events.
       </div>
-      <div className="text-lg mt-2">
+      <div className="mt-2 text-lg">
         On Manifold, you can create your own prediction market on any question
         you want!
       </div>
