@@ -58,7 +58,7 @@ export const applyBetsFilter = (q: any, options?: BetFilter) => {
     q = q.eq('contract_id', options.contractId)
   }
   if (options?.userId) {
-    q = q.eq('data->>userId', options.userId)
+    q = q.contains('data', { userId: options.userId })
   }
   if (options?.afterTime) {
     q = q.gt('data->>createdTime', options.afterTime)
@@ -67,17 +67,16 @@ export const applyBetsFilter = (q: any, options?: BetFilter) => {
     q = q.lt('data->>createdTime', options.beforeTime)
   }
   if (options?.filterChallenges) {
-    q = q.eq('data->isChallenge', false)
+    q = q.contains('data', { isChallenge: false })
   }
   if (options?.filterAntes) {
-    q = q.eq('data->isAnte', false)
+    q = q.contains('data', { isAnte: false })
   }
   if (options?.filterRedemptions) {
-    q = q.eq('data->isRedemption', false)
+    q = q.contains('data', { isRedemption: false })
   }
   if (options?.isOpenLimitOrder) {
-    q = q.eq('data->isFilled', false)
-    q = q.eq('data->isCancelled', false)
+    q = q.contains('data', { isFilled: false, isCancelled: false })
   }
   if (options?.limit) {
     q = q.limit(options.limit)

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { BetFilter } from 'web/lib/firebase/bets'
 import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
+import { useEffectCheckEquality } from './use-effect-check-equality'
 
 function getFilteredQuery(filteredParam: string, filterId?: string) {
   if (filteredParam === 'contractId' && filterId) {
@@ -11,7 +12,7 @@ function getFilteredQuery(filteredParam: string, filterId?: string) {
   return undefined
 }
 
-export function useRealtimeBets(options?: BetFilter) {
+export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
   const [bets, setBets] = useState<Bet[]>([])
   let filteredParam
   let filteredQuery: string | undefined
@@ -22,13 +23,19 @@ export function useRealtimeBets(options?: BetFilter) {
     }
   }
 
-  useEffect(() => {
-    getBets({ order: 'desc', ...options })
-      .then((result) => setBets(result))
+  useEffectCheckEquality(() => {
+    getBets({
+      order: 'desc',
+      ...options,
+    })
+      .then((result) => {
+        if (printUser) {
+          console.log('result', result, options)
+        }
+        setBets(result)
+      })
       .catch((e) => console.log(e))
-  }, [])
 
-  useEffect(() => {
     const channel = db.channel(
       `live-bets-${
         options?.contractId ? '-contract-' + options?.contractId + '-' : ''
@@ -63,7 +70,8 @@ export function useRealtimeBets(options?: BetFilter) {
     return () => {
       db.removeChannel(channel)
     }
-  }, [db])
+  }, [options, db])
+
   return bets
 }
 

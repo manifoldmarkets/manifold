@@ -33,7 +33,7 @@ import { getTotalBetCount } from 'web/lib/firebase/bets'
 import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { track } from 'web/lib/service/analytics'
-import { getOlderBets } from 'web/lib/supabase/bets'
+import { getBets, getOlderBets } from 'web/lib/supabase/bets'
 import { ContractBetsTable } from '../bet/bets-list'
 import { FreeResponseComments } from '../feed/feed-answer-comment-group'
 import { FeedBet } from '../feed/feed-bets'
@@ -44,6 +44,10 @@ import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
 import { CertInfo, CertTrades } from './cert-overview'
 import { QfTrades } from './qf-overview'
+import { useBets } from 'web/hooks/use-bets'
+import { User } from 'common/user'
+
+export const EMPTY_USER = '_'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -57,6 +61,7 @@ export function ContractTabs(props: {
   setActiveIndex: (i: number) => void
   totalBets: number
   totalPositions: number
+  user?: User | null
   shareholderStats?: ShareholderStats
 }) {
   const {
@@ -70,6 +75,7 @@ export function ContractTabs(props: {
     totalBets,
     userPositionsByOutcome,
     shareholderStats,
+    user,
   } = props
   const comments = useMemo(
     () =>
@@ -86,12 +92,15 @@ export function ContractTabs(props: {
       ? 'Comments'
       : `${shortFormatNumber(totalComments)} Comments`
 
-  const user = useUser()
-  const userBets = useRealtimeBets({
-    contractId: contract.id,
-    userId: user?.id ?? '_',
-    filterAntes: true,
-  })
+  const userBets = useRealtimeBets(
+    {
+      contractId: contract.id,
+      userId: user?.id ?? EMPTY_USER,
+      filterAntes: true,
+    },
+    true
+  )
+
   const betsTitle =
     totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`
 
@@ -200,13 +209,13 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     key: `comments-sort-${contract.id}`,
     store: inMemoryStore(),
   })
-  const user = useUser()
   const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const shouldBeNewestFirst = (c: ContractComment) =>
     c.replyToCommentId == undefined
 
+  const user = useUser()
   const sortedComments = useMemo(
     () =>
       sortBy(comments, [
