@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions'
-import { getUser, revalidateStaticProps } from 'shared/utils'
+import { getUser, processPaginated, revalidateStaticProps } from 'shared/utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
 import { Contract, contractPath } from 'common/contract'
 import * as admin from 'firebase-admin'
@@ -124,41 +124,27 @@ async function updateContractSubcollectionsVisibility(
   newVisibility: 'public' | 'unlisted'
 ) {
   const contractRef = firestore.collection('contracts').doc(contractId)
+  const batchSize = 500
 
   // Update comments' visibility
   const commentsRef = contractRef.collection('comments')
-  await processSubcollection(commentsRef, newVisibility)
+  processPaginated(commentsRef, batchSize, (ts) => {
+    const updatePromises = ts.docs.map((doc) => {
+      return doc.ref.update({ visibility: newVisibility })
+    })
+    return Promise.all(updatePromises)
+  })
 
   // Update bets' visibility
   const betsRef = contractRef.collection('bets')
-  await processSubcollection(betsRef, newVisibility)
-}
-
-async function processSubcollection(
-  subcollectionRef: FirebaseFirestore.CollectionReference,
-  newVisibility: 'public' | 'unlisted'
-) {
-  const batchSize = 500
-
-  let moreDocuments = true
-
-  while (moreDocuments) {
-    const snapshot = await subcollectionRef.limit(batchSize).get()
-
-    if (snapshot.empty) {
-      moreDocuments = false
-      break
-    }
-
-    const updatePromises = snapshot.docs.map((doc) => {
+  processPaginated(betsRef, batchSize, (ts) => {
+    const updatePromises = ts.docs.map((doc) => {
       return doc.ref.update({ visibility: newVisibility })
     })
-
-    await Promise.all(updatePromises)
-
-    moreDocuments = snapshot.size >= batchSize
-  }
+    return Promise.all(updatePromises)
+  })
 }
+
 async function revalidateContractStaticProps(contract: Contract) {
   await revalidateStaticProps(contractPath(contract))
   await revalidateStaticProps(`/embed${contractPath(contract)}`)
