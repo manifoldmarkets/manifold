@@ -58,7 +58,7 @@ export const applyBetsFilter = (q: any, options?: BetFilter) => {
     q = q.eq('contract_id', options.contractId)
   }
   if (options?.userId) {
-    q = q.contains('data', { userId: options.userId })
+    q = q.eq('user_id', options.userId)
   }
   if (options?.afterTime) {
     q = q.gt('created_time', options.afterTime)
@@ -145,9 +145,9 @@ export async function getTotalBetCount(contractId: string) {
       .from('contract_bets')
       .select('*', { head: true, count: 'exact' })
       .eq('contract_id', contractId)
-      .eq('data->>isChallenge', false)
-      .eq('data->>isRedemption', false)
-      .eq('data->>isAnte', false)
+      .eq('is_challenge', false)
+      .eq('is_redemption', false)
+      .eq('is_ante', false)
   )
   return count as number
 }
