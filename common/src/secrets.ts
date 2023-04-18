@@ -7,9 +7,8 @@ import { readFileSync } from 'fs'
 // Edit them at:
 // prod - https://console.cloud.google.com/security/secret-manager?project=mantic-markets
 // dev - https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets
-export const secrets = [
-  // Some typescript voodoo to keep the string literal types while being not readonly.
-  ...([
+export const secrets = (
+  [
     'API_SECRET',
     'DREAM_KEY',
     'MAILGUN_KEY',
@@ -20,10 +19,24 @@ export const secrets = [
     'SUPABASE_JWT_SECRET',
     'SUPABASE_PASSWORD',
     'TEST_CREATE_USER_KEY',
-  ] as const),
-]
+    // Some typescript voodoo to keep the string literal types while being not readonly.
+  ] as const
+).concat()
 
 type secret_names = typeof secrets[number]
+
+// Get a secret from the environment. Be sure to await loadSecretsToEnv first.
+export const getSecret = (secretName: secret_names) => {
+  const secret = process.env[secretName]
+  if (secret == null) {
+    throw new Error(
+      'Secret not found: ' +
+        secretName +
+        '. Is it in the secrets list (secrets.ts)? Did you call loadSecretsToEnv?'
+    )
+  }
+  return secret
+}
 
 // Fetches all secrets from google cloud.
 // For deployed google cloud service, no credential is needed.
@@ -62,19 +75,6 @@ export const loadSecretsToEnv = async (credentials?: any) => {
       process.env[key] = value
     }
   }
-}
-
-// Get a secret from the environment. Be sure to await loadSecretsToEnv first.
-export const getSecret = (secretName: secret_names) => {
-  const secret = process.env[secretName]
-  if (secret == null) {
-    throw new Error(
-      'Secret not found: ' +
-        secretName +
-        '. Is it in the secrets list (secrets.ts)? Did you call loadSecretsToEnv?'
-    )
-  }
-  return secret
 }
 
 // Get service account credentials from Vercel environment variable or local file.
