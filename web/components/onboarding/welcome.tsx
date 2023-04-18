@@ -5,7 +5,7 @@ import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
@@ -13,6 +13,8 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { TopicSelectorDialog } from './topic-selector-dialog'
+import { useABTest } from 'web/hooks/use-ab-test'
+import clsx from 'clsx'
 
 export default function Welcome() {
   const user = useUser()
@@ -20,7 +22,10 @@ export default function Welcome() {
 
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(0)
-
+  const variant = useABTest('promote charity', {
+    charity: 'charity',
+    blank: 'blank',
+  } as const)
   const [showSignedOutUser, setShowSignedOutUser] = useState(false)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
 
@@ -30,6 +35,7 @@ export default function Welcome() {
     <WhatIsManifoldPage />,
     <PredictionMarketPage />,
     user && <ThankYouPage />,
+    variant === 'charity' && <CharityPage className={'text-center '} />,
   ])
 
   const isLastPage = page === availablePages.length - 1
@@ -181,5 +187,28 @@ function ThankYouPage() {
         <strong className="text-xl">{formatMoney(100)} : $1</strong>.
       </p>
     </>
+  )
+}
+
+export function CharityPage(props: { className?: string }) {
+  const { className } = props
+  return (
+    <Col className={clsx('bg-canvas-0', className)}>
+      <div
+        className="text-primary-700 mb-4 text-xl"
+        children="Donate to charity"
+      />
+      <img
+        height={100}
+        src="/welcome/charity.gif"
+        className="my-4 h-full w-full rounded-md object-contain"
+      />
+      <p className="mt-2 mb-2 text-left text-lg">
+        You can turn your mana earnings into a real donation to charity, at a
+        100:1 ratio. E.g. when you donate{' '}
+        <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,
+        Manifold sends them <span className="font-semibold">$10 USD</span>.
+      </p>
+    </Col>
   )
 }
