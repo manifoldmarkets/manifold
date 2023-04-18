@@ -15,6 +15,7 @@ import { BETTOR } from 'common/user'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import { Col } from 'web/components/layout/col'
 import { ReplyIcon } from '@heroicons/react/solid'
+import { track } from 'web/lib/service/analytics'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -146,14 +147,22 @@ function BetActions(props: {
   showLike?: boolean
   contract: Contract
 }) {
-  const { onReply, bet } = props
+  const { onReply, bet, contract } = props
   const user = useUser()
   if (!user || bet.amount === 0) return null
   return (
     <Col className="sm:justify-center">
       {user && onReply && (
         <span>
-          <button onClick={() => onReply(bet)}>
+          <button
+            onClick={() => {
+              onReply(bet)
+              track('reply to bet', {
+                slug: contract.slug,
+                amount: bet.amount,
+              })
+            }}
+          >
             <ReplyIcon className="text-ink-500 h-4 w-4" />
           </button>
         </span>
