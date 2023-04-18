@@ -8,8 +8,5 @@ import {
 
 export async function initSupabaseAdmin() {
   await loadSecretsToEnv(getServiceAccountCredentials(ENV))
-  return createClient(
-    ENV_CONFIG.supabaseInstanceId,
-    getSecret('SUPABASE_PASSWORD')
-  )
+  return createClient(ENV_CONFIG.supabaseInstanceId, getSecret('SUPABASE_KEY'))
 }

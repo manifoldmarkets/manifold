@@ -1,6 +1,7 @@
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager'
 import { zip } from 'lodash'
 import { ENV } from './envs/constants'
+import { readFileSync } from 'fs'
 
 // List of secrets that are available to backend (api, functions, scripts, etc.)
 // Edit them at:
@@ -98,6 +99,11 @@ export const getServiceAccountCredentials = (env?: 'PROD' | 'DEV') => {
       `Please set the ${envVar} environment variable to contain the path to your ${env} environment key file.`
     )
   }
-  /* eslint-disable-next-line @typescript-eslint/no-var-requires */
-  return require(keyPath)
+
+  try {
+    // Load the service account key JSON file.
+    return JSON.parse(readFileSync(keyPath, { encoding: 'utf8' }))
+  } catch (e) {
+    throw new Error(`Failed to load service account key from ${keyPath}.`)
+  }
 }
