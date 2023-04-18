@@ -1,7 +1,7 @@
 import { Title } from 'web/components/widgets/title'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Input } from 'web/components/widgets/input'
-import { useState, useEffect, ReactNode } from 'react'
+import { useState, ReactNode } from 'react'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUsersSupabase } from 'web/hooks/use-users'
 import { UserSearchResult } from 'web/lib/supabase/users'
@@ -16,16 +16,13 @@ import { firebaseLogin, follow, unfollow } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useRouter } from 'next/router'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
+import { useSearchQueryParameter } from 'web/hooks/use-search-query-parameter'
 
 export default function Users() {
-  const router = useRouter()
-  const { search } = router.query
-
-  const [query, setQuery] = useState(search || '')
   const isMobile = useIsMobile()
   const [limit, setLimit] = useState(25)
+  const { query, setQuery } = useSearchQueryParameter('/users', 'search')
   const users = useUsersSupabase(query.toString(), limit, [
     'bio',
     'followerCountCached',
@@ -34,19 +31,6 @@ export default function Users() {
   ])
   const currentUser = useUser()
   const myFollowedIds = useFollows(currentUser?.id)
-
-  useEffect(() => {
-    const searchQuery = router.query.search
-    if (searchQuery) {
-      setQuery(searchQuery.toString())
-    }
-  }, [router.query.search])
-
-  useEffect(() => {
-    if (query)
-      router.push(`/users?search=${query}`, undefined, { shallow: true })
-    else router.push(`/users`, undefined, { shallow: true })
-  }, [query])
 
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value)
