@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 import { STARTING_BALANCE } from 'common/economy'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
@@ -115,9 +117,12 @@ const useIsTwitch = (user: User | null | undefined) => {
 function WhatIsManifoldPage() {
   return (
     <>
-      <img
+      <Image
         className="h-1/3 w-1/3 place-self-center object-contain sm:h-1/2 sm:w-1/2 "
         src="/logo.svg"
+        alt="Manifold Logo"
+        height={150}
+        width={150}
       />
       <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-xl font-normal">
         Welcome to Manifold Markets
@@ -140,9 +145,12 @@ function PredictionMarketPage() {
         Create a market on any question. Bet on the right answer. The
         probability is the market's best estimate.
       </div>
-      <img
+      <Image
         src="/welcome/manifold-example.gif"
         className="my-4 h-full w-full object-contain"
+        alt={'Manifold example animation'}
+        width={200}
+        height={100}
       />
     </>
   )
@@ -151,9 +159,12 @@ function PredictionMarketPage() {
 function ThankYouPage() {
   return (
     <>
-      <img
+      <Image
         className="mx-auto mb-6 h-1/2 w-1/2 object-contain"
         src={'/welcome/treasure.png'}
+        alt="Mana signup bonus"
+        width={200}
+        height={100}
       />
       <div
         className="text-primary-700 mb-6 text-center text-xl font-normal"
