@@ -8,6 +8,7 @@ import { readFileSync } from 'fs'
 // prod - https://console.cloud.google.com/security/secret-manager?project=mantic-markets
 // dev - https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets
 export const secrets = [
+  // Some typescript voodoo to keep the string literal types while being not readonly.
   ...([
     'API_SECRET',
     'DREAM_KEY',
