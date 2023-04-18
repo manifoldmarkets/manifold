@@ -240,24 +240,60 @@ create policy "public read" on contract_answers for
 select using (true);
 create index if not exists contract_answers_data_gin on contract_answers using GIN (data);
 alter table contract_answers cluster on contract_answers_pkey;
+
 create table if not exists contract_bets (
   contract_id text not null,
   bet_id text not null,
+  user_id text,
+  created_time timestamptz,
+  amount numeric,
+  shares numeric,
+  outcome text,
+  prob_before numeric,
+  prob_after numeric,
+  is_ante boolean,
+  is_redemption boolean,
+  is_challenge boolean,
+  visibility text,
   data jsonb not null,
   fs_updated_time timestamp not null,
   primary key(contract_id, bet_id)
 );
 alter table contract_bets enable row level security;
 drop policy if exists "public read" on contract_bets;
-create policy "public read" on contract_bets for
-select using (true);
+create policy "public read" on contract_bets for select using (true);
+
+create or replace function contract_bet_populate_cols()
+  returns trigger
+  language plpgsql
+as $$
+  begin
+    if new.data is not null then
+      new.user_id := (new.data)->>'userId';
+      new.created_time := case when new.data ? 'createdTime' then millis_to_ts(((new.data)->>'createdTime')::bigint) else null end;
+      new.amount := ((new.data)->>'amount')::numeric;
+      new.shares := ((new.data)->>'shares')::numeric;
+      new.outcome := ((new.data)->>'outcome');
+      new.prob_before := ((new.data)->>'probBefore')::numeric;
+      new.prob_after := ((new.data)->>'probAfter')::numeric;
+      new.is_ante := ((new.data)->'isAnte')::boolean;
+      new.is_redemption := ((new.data)->'isRedemption')::boolean;
+      new.is_challenge := ((new.data)->'isChallenge')::boolean;
+      new.visibility := ((new.data)->>'visibility')::text;
+    end if;
+    return new;
+  end $$;
+
+create trigger contract_bet_populate before insert or update on contract_bets
+    for each row execute function contract_bet_populate_cols();
+
 create index if not exists contract_bets_data_gin on contract_bets using GIN (data);
 /* serves bets API pagination */
 create index if not exists contract_bets_bet_id on contract_bets (bet_id);
 /* serving stats page, recent bets API */
 create index if not exists contract_bets_created_time_global on contract_bets ((to_jsonb(data)->>'createdTime') desc);
 /* serving activity feed bets list */
-create index concurrently contract_bets_activity_feed on contract_bets (
+create index if not exists contract_bets_activity_feed on contract_bets (
   (to_jsonb(data)->'isAnte'),
   (to_jsonb(data)->'isRedemption'),
   (to_jsonb(data)->>'createdTime') desc
@@ -292,6 +328,7 @@ create index if not exists contract_bets_unexpired_limit_orders on contract_bets
   ((data->>'expiresAt'))
 );
 alter table contract_bets cluster on contract_bets_created_time;
+
 create table if not exists contract_comments (
   contract_id text not null,
   comment_id text not null,
