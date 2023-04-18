@@ -22,6 +22,7 @@ import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { Bet } from 'common/bet'
+import { useScrollToRefWithHeaderOffset } from 'web/hooks/use-scroll-to-ref-with-header'
 
 export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
@@ -51,6 +52,11 @@ export function CommentInput(props: {
     contract,
   } = props
   const user = useUser()
+
+  const { ref, scrollToRef } = useScrollToRefWithHeaderOffset()
+  useEffect(() => {
+    if (replyToBet) setTimeout(scrollToRef, 20)
+  }, [replyToBet])
 
   const key = `comment ${pageId} ${
     parentCommentId ?? parentAnswerOutcome ?? ''
@@ -112,7 +118,7 @@ export function CommentInput(props: {
           size="sm"
           className="mt-1"
         />
-        <div className="min-w-0 flex-1 pl-0.5 text-sm">
+        <div className="min-w-0 flex-1 pl-0.5 text-sm" ref={ref}>
           <CommentInputTextArea
             editor={editor}
             replyTo={replyToUserInfo}
