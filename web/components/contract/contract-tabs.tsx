@@ -18,7 +18,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
+import { useBets, useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useComments } from 'web/hooks/use-comments'
 import { useEvent } from 'web/hooks/use-event'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
@@ -44,8 +44,6 @@ import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
 import { CertInfo, CertTrades } from './cert-overview'
 import { QfTrades } from './qf-overview'
-import { useBets } from 'web/hooks/use-bets'
-import { User } from 'common/user'
 
 export const EMPTY_USER = '_'
 
@@ -61,7 +59,6 @@ export function ContractTabs(props: {
   setActiveIndex: (i: number) => void
   totalBets: number
   totalPositions: number
-  user?: User | null
   shareholderStats?: ShareholderStats
 }) {
   const {
@@ -75,7 +72,6 @@ export function ContractTabs(props: {
     totalBets,
     userPositionsByOutcome,
     shareholderStats,
-    user,
   } = props
   const comments = useMemo(
     () =>
@@ -92,14 +88,22 @@ export function ContractTabs(props: {
       ? 'Comments'
       : `${shortFormatNumber(totalComments)} Comments`
 
+  const user = useUser()
+
   const userBets = useRealtimeBets(
     {
       contractId: contract.id,
-      userId: user?.id ?? EMPTY_USER,
+      userId: user === undefined ? 'loading' : user?.id ?? EMPTY_USER,
       filterAntes: true,
     },
     true
   )
+
+  const userBetsFB = useBets({
+    contractId: contract.id,
+    userId: user?.id ?? EMPTY_USER,
+    filterAntes: true,
+  })
 
   const betsTitle =
     totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`

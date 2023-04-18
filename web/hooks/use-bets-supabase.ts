@@ -1,5 +1,5 @@
 import { Bet } from 'common/bet'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BetFilter } from 'web/lib/firebase/bets'
 import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
@@ -24,14 +24,14 @@ export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
   }
 
   useEffectCheckEquality(() => {
+    if (options?.userId === 'loading') {
+      return
+    }
     getBets({
-      order: 'desc',
       ...options,
+      order: 'desc',
     })
       .then((result) => {
-        if (printUser) {
-          console.log('result', result, options)
-        }
         setBets(result)
       })
       .catch((e) => console.log(e))
@@ -39,10 +39,9 @@ export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
     const channel = db.channel(
       `live-bets-${
         options?.contractId ? '-contract-' + options?.contractId + '-' : ''
-      } 
-      ${options?.userId ? '-user-' + options?.userId + '-' : ''} 
-      }`
+      }${options?.userId ? '-user-' + options?.userId + '-' : ''}`
     )
+
     channel.on(
       'postgres_changes',
       {
@@ -57,7 +56,7 @@ export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
           if (!betShouldBeFiltered(payloadBet, options)) {
             setBets((bets) => {
               if (payloadBet && !bets.some((c) => c.id == payloadBet.id)) {
-                return [payloadBet].concat(bets.slice(0, -1))
+                return [payloadBet].concat(bets)
               } else {
                 return bets
               }
@@ -68,7 +67,10 @@ export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
     )
     channel.subscribe(async (status) => {})
     return () => {
-      db.removeChannel(channel)
+      if (channel) {
+        // channel.unsubscribe()
+        db.removeChannel(channel)
+      }
     }
   }, [options, db])
 
@@ -102,9 +104,9 @@ function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
 export function useBets(options?: BetFilter) {
   const [bets, setBets] = useState<Bet[]>([])
 
-  useEffect(() => {
+  useEffectCheckEquality(() => {
     getBets(options).then((result) => setBets(result))
-  }, [])
+  }, [options])
 
   return bets
 }

@@ -465,7 +465,6 @@ export function ContractPageContent(props: {
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
                 shareholderStats={shareholderStats}
-                user={user}
               />
             </div>
           </Col>
