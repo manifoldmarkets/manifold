@@ -4,6 +4,7 @@ import { BetFilter } from 'web/lib/firebase/bets'
 import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { useEffectCheckEquality } from './use-effect-check-equality'
+import { EMPTY_USER } from 'web/components/contract/contract-tabs'
 
 function getFilteredQuery(filteredParam: string, filterId?: string) {
   if (filteredParam === 'contractId' && filterId) {
@@ -24,7 +25,7 @@ export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
   }
 
   useEffectCheckEquality(() => {
-    if (options?.userId === 'loading') {
+    if (options?.userId === 'loading' || options?.userId === EMPTY_USER) {
       return
     }
     getBets({
