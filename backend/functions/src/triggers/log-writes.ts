@@ -42,6 +42,7 @@ async function publishChange<T extends DocumentData>(
       .join(' ')}`
   )
 }
+
 export const logCollections = firestore
   .document('{coll}/{id}')
   .onWrite(async (change, ctx) => {

@@ -1,38 +1,47 @@
 -- Get the dot product of two vectors stored as rows in two tables.
-create or replace function dot(
-    urf user_recommendation_features,
-    crf contract_recommendation_features
-  ) returns real immutable parallel safe language sql as $$
+create
+or replace function dot (
+  urf user_recommendation_features,
+  crf contract_recommendation_features
+) returns real immutable parallel safe language sql as $$
 select round(
     (
       urf.f0 * crf.f0 + urf.f1 * crf.f1 + urf.f2 * crf.f2 + urf.f3 * crf.f3 + urf.f4 * crf.f4
     ) * 10000
   ) / 10000;
 $$;
-create or replace function calculate_distance(
-    row1 contract_recommendation_features,
-    row2 contract_recommendation_features
-  ) returns float language sql immutable parallel safe as $$
+
+create
+or replace function calculate_distance (
+  row1 contract_recommendation_features,
+  row2 contract_recommendation_features
+) returns float language sql immutable parallel safe as $$
 select sqrt(
     (row1.f0 - row2.f0) ^ 2 + (row1.f1 - row2.f1) ^ 2 + (row1.f2 - row2.f2) ^ 2 + (row1.f3 - row2.f3) ^ 2 + (row1.f4 - row2.f4) ^ 2
   ) $$;
-create or replace function recently_liked_contract_counts(since bigint) returns table (contract_id text, n int) immutable parallel safe language sql as $$
+
+create
+or replace function recently_liked_contract_counts (since bigint) returns table (contract_id text, n int) immutable parallel safe language sql as $$
 select data->>'contentId' as contract_id,
   count(*) as n
 from user_reactions
 where data->>'contentType' = 'contract'
   and data->>'createdTime' > since::text
 group by contract_id $$;
+
 -- Use cached tables of user and contract features to computed the top scoring
 -- markets for a user.
-create or replace function get_recommended_contract_scores(uid text) returns table (contract_id text, score real) immutable parallel safe language sql as $$
+create
+or replace function get_recommended_contract_scores (uid text) returns table (contract_id text, score real) immutable parallel safe language sql as $$
 select crf.contract_id,
   dot(urf, crf) as score
 from user_recommendation_features as urf
   cross join contract_recommendation_features as crf
 where user_id = uid
 order by score desc $$;
-create or replace function get_recommended_contract_scores_unseen(uid text) returns table (contract_id text, score real) immutable parallel safe language sql as $$
+
+create
+or replace function get_recommended_contract_scores_unseen (uid text) returns table (contract_id text, score real) immutable parallel safe language sql as $$
 select crf.contract_id,
   coalesce(dot(urf, crf) * crf.freshness_score, 0.0) as score
 from user_recommendation_features as urf
@@ -60,11 +69,9 @@ where user_id = uid -- That has not been viewed.
       and (user_events.data->'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
   )
 order by score desc $$;
-create or replace function get_recommended_contracts_by_score_excluding(
-    uid text,
-    count int,
-    excluded_contract_ids text []
-  ) returns table (data jsonb, score real) immutable parallel safe language sql as $$
+
+create
+or replace function get_recommended_contracts_by_score_excluding (uid text, count int, excluded_contract_ids text[]) returns table (data jsonb, score real) immutable parallel safe language sql as $$
 select data,
   score
 from get_recommended_contract_scores_unseen(uid)
@@ -77,7 +84,9 @@ where is_valid_contract(contracts)
     where w = contract_id
   )
 limit count $$;
-create or replace function get_recommended_contract_set(uid text, n int, excluded_contract_ids text []) returns table (data jsonb, score real) immutable parallel safe language sql as $$ with recommendation_scores as materialized (
+
+create
+or replace function get_recommended_contract_set (uid text, n int, excluded_contract_ids text[]) returns table (data jsonb, score real) immutable parallel safe language sql as $$ with recommendation_scores as materialized (
     select contract_id,
       score
     from get_recommended_contract_scores_unseen(uid)
@@ -124,7 +133,9 @@ select data,
   score
 from trending_contracts
 order by score desc $$;
-create or replace function get_recommended_contracts(uid text, n int, excluded_contract_ids text []) returns setof jsonb language plpgsql as $$ begin create temp table your_recs on commit drop as (
+
+create
+or replace function get_recommended_contracts (uid text, n int, excluded_contract_ids text[]) returns setof jsonb language plpgsql as $$ begin create temp table your_recs on commit drop as (
     select *
     from get_recommended_contract_set(uid, n, excluded_contract_ids)
   );
@@ -149,12 +160,14 @@ return query (
 );
 end if;
 end $$;
-create or replace function get_recommended_contracts_embeddings(uid text, n int, excluded_contract_ids text []) returns table (
-    data jsonb,
-    distance numeric,
-    relative_dist numeric,
-    popularity_score numeric
-  ) immutable parallel safe language sql as $$ with user_embedding as (
+
+create
+or replace function get_recommended_contracts_embeddings (uid text, n int, excluded_contract_ids text[]) returns table (
+  data jsonb,
+  distance numeric,
+  relative_dist numeric,
+  popularity_score numeric
+) immutable parallel safe language sql as $$ with user_embedding as (
     select interest_embedding
     from user_embeddings
     where user_id = uid
@@ -170,17 +183,19 @@ from get_recommended_contracts_embeddings_from(
     excluded_contract_ids,
     0.25
   ) $$;
-create or replace function get_recommended_contracts_embeddings_topic(
-    uid text,
-    p_topic text,
-    n int,
-    excluded_contract_ids text []
-  ) returns table (
-    data jsonb,
-    distance numeric,
-    relative_dist numeric,
-    popularity_score numeric
-  ) immutable parallel safe language sql as $$ with topic_embedding as (
+
+create
+or replace function get_recommended_contracts_embeddings_topic (
+  uid text,
+  p_topic text,
+  n int,
+  excluded_contract_ids text[]
+) returns table (
+  data jsonb,
+  distance numeric,
+  relative_dist numeric,
+  popularity_score numeric
+) immutable parallel safe language sql as $$ with topic_embedding as (
     select embedding
     from topic_embeddings
     where topic_embeddings.topic = p_topic
@@ -196,7 +211,7 @@ create or replace function get_recommended_contracts_embeddings_topic(
       not_chosen_embedding as not_chosen
   )
 select *
-from get_recommended_contracts_embeddings_from2(
+from get_recommended_contracts_embeddings_from(
     uid,
     (
       select average
@@ -206,18 +221,20 @@ from get_recommended_contracts_embeddings_from2(
     excluded_contract_ids,
     0.10
   ) $$;
-create or replace function get_recommended_contracts_embeddings_from(
-    uid text,
-    p_embedding vector,
-    n int,
-    excluded_contract_ids text [],
-    max_dist numeric
-  ) returns table (
-    data jsonb,
-    distance numeric,
-    relative_dist numeric,
-    popularity_score numeric
-  ) immutable parallel safe language sql as $$ with available_contracts_unscored as (
+
+create
+or replace function get_recommended_contracts_embeddings_from (
+  uid text,
+  p_embedding vector,
+  n int,
+  excluded_contract_ids text[],
+  max_dist numeric
+) returns table (
+  data jsonb,
+  distance numeric,
+  relative_dist numeric,
+  popularity_score numeric
+) immutable parallel safe language sql as $$ with available_contracts_unscored as (
     select contract_id,
       p_embedding <=> ce.embedding as distance,
       (
@@ -396,7 +413,9 @@ select data,
   combined_results.popularity_score
 from combined_results
   join contracts on contracts.id = combined_results.contract_id $$;
-create or replace function get_cpmm_pool_prob(pool jsonb, p numeric) returns numeric language plpgsql immutable parallel safe as $$
+
+create
+or replace function get_cpmm_pool_prob (pool jsonb, p numeric) returns numeric language plpgsql immutable parallel safe as $$
 declare p_no numeric := (pool->>'NO')::numeric;
 p_yes numeric := (pool->>'YES')::numeric;
 no_weight numeric := p * p_no;
@@ -406,7 +425,9 @@ begin return case
   else (no_weight / yes_weight)
 end;
 end $$;
-create or replace function get_cpmm_resolved_prob(data jsonb) returns numeric language sql immutable parallel safe as $$
+
+create
+or replace function get_cpmm_resolved_prob (data jsonb) returns numeric language sql immutable parallel safe as $$
 select case
     when data->>'resolution' = 'YES' then 1
     when data->>'resolution' = 'NO' then 0
@@ -414,24 +435,36 @@ select case
     and data ? 'resolutionProbability' then (data->'resolutionProbability')::numeric
     else null
   end $$;
-create or replace function ts_to_millis(ts timestamptz) returns bigint language sql immutable parallel safe as $$
+
+create
+or replace function ts_to_millis (ts timestamptz) returns bigint language sql immutable parallel safe as $$
 select (
     extract(
       epoch
       from ts
     ) * 1000
   )::bigint $$;
-create or replace function millis_to_ts(millis bigint) returns timestamptz language sql immutable parallel safe as $$
+
+create
+or replace function millis_to_ts (millis bigint) returns timestamptz language sql immutable parallel safe as $$
 select to_timestamp(millis / 1000.0) $$;
-create or replace function millis_interval(start_millis bigint, end_millis bigint) returns interval language sql immutable parallel safe as $$
+
+create
+or replace function millis_interval (start_millis bigint, end_millis bigint) returns interval language sql immutable parallel safe as $$
 select millis_to_ts(end_millis) - millis_to_ts(start_millis) $$;
-create or replace function get_time() returns bigint language sql stable parallel safe as $$
+
+create
+or replace function get_time () returns bigint language sql stable parallel safe as $$
 select ts_to_millis(now()) $$;
-create or replace function is_valid_contract(ct contracts) returns boolean stable parallel safe as $$
+
+create
+or replace function is_valid_contract (ct contracts) returns boolean stable parallel safe as $$
 select ct.resolution_time is null
   and ct.visibility = 'public'
   and ct.close_time > now() + interval '10 minutes' $$ language sql;
-create or replace function get_related_contract_ids(source_id text) returns table(contract_id text, distance float) immutable parallel safe language sql as $$ with target_contract as (
+
+create
+or replace function get_related_contract_ids (source_id text) returns table (contract_id text, distance float) immutable parallel safe language sql as $$ with target_contract as (
     select *
     from contract_recommendation_features
     where contract_id = source_id
@@ -442,7 +475,9 @@ from contract_recommendation_features as crf,
   target_contract
 where crf.contract_id != target_contract.contract_id
 order by distance $$;
-create or replace function get_related_contracts(cid text, lim int, start int) returns JSONB [] immutable parallel safe language sql as $$
+
+create
+or replace function get_related_contracts (cid text, lim int, start int) returns JSONB[] immutable parallel safe language sql as $$
 select array_agg(data)
 from (
     select data
@@ -451,23 +486,27 @@ from (
     where is_valid_contract(contracts)
     limit lim offset start
   ) as rel_contracts $$;
-create or replace function search_contracts_by_group_slugs(group_slugs text [], lim int, start int) returns jsonb [] immutable parallel safe language sql as $$
+
+create
+or replace function search_contracts_by_group_slugs (group_slugs text[], lim int, start int) returns jsonb[] immutable parallel safe language sql as $$
 select array_agg(data)
 from (
     select data
     from contracts
     where data->'groupSlugs' ?| group_slugs
       and is_valid_contract(contracts)
-    order by (data->'uniqueBettors7Days')::int desc,
+    order by popularity_score desc,
       data->'slug' offset start
     limit lim
   ) as search_contracts $$;
-create or replace function search_contracts_by_group_slugs_for_creator(
-    creator_id text,
-    group_slugs text [],
-    lim int,
-    start int
-  ) returns jsonb [] immutable parallel safe language sql as $$
+
+create
+or replace function search_contracts_by_group_slugs_for_creator (
+  creator_id text,
+  group_slugs text[],
+  lim int,
+  start int
+) returns jsonb[] immutable parallel safe language sql as $$
 select array_agg(data)
 from (
     select data
@@ -475,11 +514,13 @@ from (
     where data->'groupSlugs' ?| group_slugs
       and is_valid_contract(contracts)
       and contracts.creator_id = $1
-    order by (data->'uniqueBettors7Days')::int desc,
+    order by popularity_score desc,
       data->'slug' offset start
     limit lim
   ) as search_contracts $$;
-create or replace function get_contract_metrics_with_contracts(uid text, count int, start int) returns table(contract_id text, metrics jsonb, contract jsonb) immutable parallel safe language sql as $$
+
+create
+or replace function get_contract_metrics_with_contracts (uid text, count int, start int) returns table (contract_id text, metrics jsonb, contract jsonb) immutable parallel safe language sql as $$
 select ucm.contract_id,
   ucm.data as metrics,
   c.data as contract
@@ -489,7 +530,9 @@ where ucm.user_id = uid
   and ucm.data->'lastBetTime' is not null
 order by ((ucm.data)->'lastBetTime')::bigint desc offset start
 limit count $$;
-create or replace function get_open_limit_bets_with_contracts(uid text, count int) returns table(contract_id text, bets jsonb [], contract jsonb) immutable parallel safe language sql as $$;
+
+create
+or replace function get_open_limit_bets_with_contracts (uid text, count int) returns table (contract_id text, bets jsonb[], contract jsonb) immutable parallel safe language sql as $$;
 select contract_id,
   bets.data as bets,
   contracts.data as contracts
@@ -500,14 +543,16 @@ from (
         order by (data->>'createdTime') desc
       ) as data
     from contract_bets
-    where (data->>'userId') = uid
+    where user_id = uid
       and (data->>'isFilled')::boolean = false
       and (data->>'isCancelled')::boolean = false
     group by contract_id
   ) as bets
   join contracts on contracts.id = bets.contract_id
 limit count $$;
-create or replace function get_user_bets_from_resolved_contracts(uid text, count int, start int) returns table(contract_id text, bets jsonb [], contract jsonb) immutable parallel safe language sql as $$;
+
+create
+or replace function get_user_bets_from_resolved_contracts (uid text, count int, start int) returns table (contract_id text, bets jsonb[], contract jsonb) immutable parallel safe language sql as $$;
 select contract_id,
   bets.data as bets,
   contracts.data as contracts
@@ -515,18 +560,20 @@ from (
     select contract_id,
       array_agg(
         data
-        order by (data->>'createdTime') desc
+        order by created_time desc
       ) as data
     from contract_bets
-    where (data->>'userId') = uid
-      and (data->>'amount')::real != 0
+    where user_id = uid
+      and amount != 0
     group by contract_id
   ) as bets
   join contracts on contracts.id = bets.contract_id
 where contracts.resolution_time is not null
   and contracts.outcome_type = 'BINARY'
 limit count offset start $$;
-create or replace function get_contracts_by_creator_ids(creator_ids text [], created_time bigint) returns table(creator_id text, contracts jsonb) immutable parallel safe language sql as $$
+
+create
+or replace function get_contracts_by_creator_ids (creator_ids text[], created_time bigint) returns table (creator_id text, contracts jsonb) immutable parallel safe language sql as $$
 select creator_id,
   jsonb_agg(data) as contracts
 from contracts
@@ -534,24 +581,32 @@ where creator_id = any(creator_ids)
   and contracts.created_time > millis_to_ts($2)
 group by creator_id;
 $$;
-create table if not exists discord_users (
-  discord_user_id text not null,
-  api_key text not null,
-  user_id text not null,
-  primary key(discord_user_id)
-);
+
+create table if not exists
+  discord_users (
+    discord_user_id text not null,
+    api_key text not null,
+    user_id text not null,
+    primary key (discord_user_id)
+  );
+
 alter table discord_users enable row level security;
-create table if not exists discord_messages_markets (
-  message_id text not null,
-  market_id text not null,
-  market_slug text not null,
-  channel_id text not null,
-  last_updated_thread_time bigint,
-  thread_id text,
-  primary key(message_id)
-);
+
+create table if not exists
+  discord_messages_markets (
+    message_id text not null,
+    market_id text not null,
+    market_slug text not null,
+    channel_id text not null,
+    last_updated_thread_time bigint,
+    thread_id text,
+    primary key (message_id)
+  );
+
 alter table discord_messages_markets enable row level security;
-create or replace function get_your_contract_ids(uid text) returns table (contract_id text) immutable parallel safe language sql as $$ with your_liked_contracts as (
+
+create
+or replace function get_your_contract_ids (uid text) returns table (contract_id text) immutable parallel safe language sql as $$ with your_liked_contracts as (
     select (data->>'contentId') as contract_id
     from user_reactions
     where user_id = uid
@@ -566,7 +621,9 @@ from your_liked_contracts
 union
 select contract_id
 from your_followed_contracts $$;
-create or replace function get_your_daily_changed_contracts(uid text, n int, start int) returns table (data jsonb, daily_score real) immutable parallel safe language sql as $$
+
+create
+or replace function get_your_daily_changed_contracts (uid text, n int, start int) returns table (data jsonb, daily_score real) immutable parallel safe language sql as $$
 select data,
   coalesce((data->>'dailyScore')::real, 0.0) as daily_score
 from get_your_contract_ids(uid)
@@ -574,7 +631,9 @@ from get_your_contract_ids(uid)
 where contracts.outcome_type = 'BINARY'
 order by daily_score desc
 limit n offset start $$;
-create or replace function get_your_trending_contracts(uid text, n int, start int) returns table (data jsonb, score real) immutable parallel safe language sql as $$
+
+create
+or replace function get_your_trending_contracts (uid text, n int, start int) returns table (data jsonb, score real) immutable parallel safe language sql as $$
 select data,
   popularity_score as score
 from get_your_contract_ids(uid)
@@ -583,8 +642,10 @@ where is_valid_contract(contracts)
   and contracts.outcome_type = 'BINARY'
 order by score desc
 limit n offset start $$;
+
 -- Your most recent contracts by bets or likes.
-create or replace function get_your_recent_contracts(uid text, n int, start int) returns table (data jsonb, max_ts bigint) immutable parallel safe language sql as $$ with your_bet_on_contracts as (
+create
+or replace function get_your_recent_contracts (uid text, n int, start int) returns table (data jsonb, max_ts bigint) immutable parallel safe language sql as $$ with your_bet_on_contracts as (
     select contract_id,
       (data->>'lastBetTime')::bigint as ts
     from user_contract_metrics
@@ -619,7 +680,9 @@ from recent_unique_contract_ids
 where data is not null
 order by max_ts desc
 limit n offset start $$;
-create or replace function get_contract_metrics_grouped_by_user_ids(uids text [], period text) returns table(user_id text, contract_metrics jsonb []) immutable parallel safe language sql as $$
+
+create
+or replace function get_contract_metrics_grouped_by_user_ids (uids text[], period text) returns table (user_id text, contract_metrics jsonb[]) immutable parallel safe language sql as $$
 select ucm.user_id,
   array_agg(ucm.data) as contract_metrics
 from user_contract_metrics as ucm
@@ -629,11 +692,13 @@ where ucm.user_id in (
   and (ucm.data->'from'->period->'profit') is not null
   and abs((ucm.data->'from'->period->'profit')::bigint) > 1
 group by ucm.user_id $$;
-create or replace function search_contract_embeddings (
-    query_embedding vector(1536),
-    similarity_threshold float,
-    match_count int
-  ) returns table (contract_id text, similarity float) language plpgsql as $$ begin return query
+
+create
+or replace function search_contract_embeddings (
+  query_embedding vector (1536),
+  similarity_threshold float,
+  match_count int
+) returns table (contract_id text, similarity float) language plpgsql as $$ begin return query
 select contract_embeddings.contract_id as contract_id,
   1 - (
     contract_embeddings.embedding <=> query_embedding
@@ -646,15 +711,13 @@ order by contract_embeddings.embedding <=> query_embedding
 limit match_count;
 end;
 $$;
-create or replace function closest_contract_embeddings (
-    input_contract_id text,
-    similarity_threshold float,
-    match_count int
-  ) returns table (
-    contract_id text,
-    similarity float,
-    data jsonb
-  ) language sql as $$ WITH embedding AS (
+
+create
+or replace function closest_contract_embeddings (
+  input_contract_id text,
+  similarity_threshold float,
+  match_count int
+) returns table (contract_id text, similarity float, data jsonb) language sql as $$ WITH embedding AS (
     SELECT embedding
     FROM contract_embeddings
     WHERE contract_id = input_contract_id
@@ -676,7 +739,9 @@ where contract_id != input_contract_id
 order by similarity * similarity * log(popularity_score + 100) desc
 limit match_count;
 $$;
-create or replace function save_user_topics(p_user_id text, p_topics text []) returns void language sql as $$ with chosen_embedding as (
+
+create
+or replace function save_user_topics (p_user_id text, p_topics text[]) returns void language sql as $$ with chosen_embedding as (
     select avg(embedding) as average
     from topic_embeddings
     where topic = any(p_topics)
@@ -706,13 +771,17 @@ update
 set topics = excluded.topics,
   topic_embedding = excluded.topic_embedding;
 $$;
-create or replace function firebase_uid() returns text language sql stable parallel safe as $$
+
+create
+or replace function firebase_uid () returns text language sql stable parallel safe as $$
 select nullif(
     current_setting('request.jwt.claims', true)::json->>'sub',
     ''
   )::text;
 $$;
-create or replace function firebase_uid() returns text language sql stable parallel safe as $$
+
+create
+or replace function firebase_uid () returns text language sql stable parallel safe as $$
 select nullif(
     current_setting('request.jwt.claims', true)::json->>'sub',
     ''

@@ -10,9 +10,11 @@ import { first } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { SEO } from 'web/components/SEO'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
+import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { BackButton } from 'web/components/contract/back-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
@@ -35,12 +37,11 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
-import { SEO } from 'web/components/SEO'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { Linkify } from 'web/components/widgets/linkify'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useBets } from 'web/hooks/use-bets'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useContract } from 'web/hooks/use-contracts'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
@@ -51,17 +52,16 @@ import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { getContractParams } from 'web/lib/contracts'
 import { BetFilter } from 'web/lib/firebase/bets'
 import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { getContractFromSlug } from 'web/lib/supabase/contracts'
+import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { getContractParams } from 'web/lib/contracts'
-import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
-import { getContractFromSlug } from 'web/lib/supabase/contracts'
-import { initSupabaseClient } from 'web/lib/supabase/db'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -75,7 +75,7 @@ export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  const adminDb = await initSupabaseClient('admin')
+  const adminDb = await initSupabaseAdmin()
   const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
 
   // No contract found
@@ -187,7 +187,7 @@ export function ContractPageContent(props: {
 
   // Static props load bets in descending order by time
   const lastBetTime = first(contractParams.historyData.bets)?.createdTime
-  const newBets = useBets({
+  const newBets = useRealtimeBets({
     contractId: contract.id,
     afterTime: lastBetTime,
     ...CONTRACT_BET_FILTER,
@@ -514,7 +514,4 @@ export function ContractSEO(props: {
       ogProps={{ props: ogCardProps, endpoint: 'market' }}
     />
   )
-}
-function initializeSupabaseClient(arg0: string) {
-  throw new Error('Function not implemented.')
 }

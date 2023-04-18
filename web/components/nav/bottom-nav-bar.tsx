@@ -4,10 +4,13 @@ import {
   HomeIcon,
   MenuAlt3Icon,
   XIcon,
-  BookOpenIcon,
   SearchIcon,
 } from '@heroicons/react/outline'
-import { DeviceMobileIcon, UserCircleIcon } from '@heroicons/react/solid'
+import {
+  DeviceMobileIcon,
+  ScaleIcon,
+  UserCircleIcon,
+} from '@heroicons/react/solid'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment, useEffect } from 'react'
 import Sidebar from './sidebar'
@@ -53,13 +56,12 @@ function getNavigation(user: User) {
 
 const signedOutNavigation = (appStoreUrl: string) => [
   { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Search', href: '/find', icon: SearchIcon },
+  { name: 'Markets', href: '/markets', icon: ScaleIcon },
   {
     name: 'Get app',
     href: appStoreUrl,
     icon: DeviceMobileIcon,
   },
-  { name: 'About', href: '/?showHelpModal=true', icon: BookOpenIcon },
   { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
 ]
 

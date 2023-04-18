@@ -73,7 +73,8 @@ export function ActivityLog(props: {
   )
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
-  const rawBets = useRealtimeBets(count * 3 + 20, {
+  const rawBets = useRealtimeBets({
+    limit: count * 3 + 20,
     filterRedemptions: true,
   })
   const bets = (rawBets ?? []).filter(

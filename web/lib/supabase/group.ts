@@ -3,7 +3,7 @@ import { run, SupabaseClient } from 'common/supabase/utils'
 import { uniqBy } from 'lodash'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 import { User } from '../firebase/users'
-import { db, initSupabaseClient } from './db'
+import { db } from './db'
 
 // functions called for one group
 export async function getNumGroupMembers(groupId: string) {
@@ -125,12 +125,9 @@ export async function searchUserInGroup(
   ).slice(0, limit)
 }
 
-export async function getGroupPrivacyBySlug(
-  groupSlug: string,
-  permission: 'admin' | 'client'
-) {
+export async function getGroupPrivacyBySlug(groupSlug: string) {
   const { data: groupPrivacy } = await run(
-    initSupabaseClient(permission)
+    db
       .from('groups')
       .select('data->>privacyStatus')
       .contains('data', { slug: groupSlug })

@@ -1,9 +1,11 @@
+import Image from 'next/image'
+
 import { STARTING_BALANCE } from 'common/economy'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
@@ -11,6 +13,8 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { TopicSelectorDialog } from './topic-selector-dialog'
+import { useABTest } from 'web/hooks/use-ab-test'
+import clsx from 'clsx'
 
 export default function Welcome() {
   const user = useUser()
@@ -18,7 +22,10 @@ export default function Welcome() {
 
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(0)
-
+  const variant = useABTest('promote charity', {
+    charity: 'charity',
+    blank: 'blank',
+  } as const)
   const [showSignedOutUser, setShowSignedOutUser] = useState(false)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
 
@@ -28,6 +35,7 @@ export default function Welcome() {
     <WhatIsManifoldPage />,
     <PredictionMarketPage />,
     user && <ThankYouPage />,
+    variant === 'charity' && <CharityPage className={'text-center '} />,
   ])
 
   const isLastPage = page === availablePages.length - 1
@@ -115,9 +123,12 @@ const useIsTwitch = (user: User | null | undefined) => {
 function WhatIsManifoldPage() {
   return (
     <>
-      <img
+      <Image
         className="h-1/3 w-1/3 place-self-center object-contain sm:h-1/2 sm:w-1/2 "
         src="/logo.svg"
+        alt="Manifold Logo"
+        height={150}
+        width={150}
       />
       <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-xl font-normal">
         Welcome to Manifold Markets
@@ -140,9 +151,12 @@ function PredictionMarketPage() {
         Create a market on any question. Bet on the right answer. The
         probability is the market's best estimate.
       </div>
-      <img
+      <Image
         src="/welcome/manifold-example.gif"
         className="my-4 h-full w-full object-contain"
+        alt={'Manifold example animation'}
+        width={200}
+        height={100}
       />
     </>
   )
@@ -151,9 +165,12 @@ function PredictionMarketPage() {
 function ThankYouPage() {
   return (
     <>
-      <img
+      <Image
         className="mx-auto mb-6 h-1/2 w-1/2 object-contain"
         src={'/welcome/treasure.png'}
+        alt="Mana signup bonus"
+        width={200}
+        height={100}
       />
       <div
         className="text-primary-700 mb-6 text-center text-xl font-normal"
@@ -165,9 +182,33 @@ function ThankYouPage() {
         mana, our play money!
       </p>
       <p className={'my-3 text-lg '}>
-        Mana can't be converted into cash, but can be purchased at a ratio of{' '}
+        Mana can't be converted into cash, but can be purchased and donated to
+        charity at a ratio of{' '}
         <strong className="text-xl">{formatMoney(100)} : $1</strong>.
       </p>
     </>
+  )
+}
+
+export function CharityPage(props: { className?: string }) {
+  const { className } = props
+  return (
+    <Col className={clsx('bg-canvas-0', className)}>
+      <div
+        className="text-primary-700 mb-4 text-xl"
+        children="Donate to charity"
+      />
+      <img
+        height={100}
+        src="/welcome/charity.gif"
+        className="my-4 h-full w-full rounded-md object-contain"
+      />
+      <p className="mt-2 mb-2 text-left text-lg">
+        You can turn your mana earnings into a real donation to charity, at a
+        100:1 ratio. E.g. when you donate{' '}
+        <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,
+        Manifold sends them <span className="font-semibold">$10 USD</span>.
+      </p>
+    </Col>
   )
 }

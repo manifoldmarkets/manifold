@@ -31,22 +31,55 @@ export interface Database {
       }
       contract_bets: {
         Row: {
+          amount: number | null
           bet_id: string
           contract_id: string
+          created_time: string | null
           data: Json
           fs_updated_time: string
+          is_ante: boolean | null
+          is_challenge: boolean | null
+          is_redemption: boolean | null
+          outcome: string | null
+          prob_after: number | null
+          prob_before: number | null
+          shares: number | null
+          user_id: string | null
+          visibility: string | null
         }
         Insert: {
+          amount?: number | null
           bet_id: string
           contract_id: string
+          created_time?: string | null
           data: Json
           fs_updated_time: string
+          is_ante?: boolean | null
+          is_challenge?: boolean | null
+          is_redemption?: boolean | null
+          outcome?: string | null
+          prob_after?: number | null
+          prob_before?: number | null
+          shares?: number | null
+          user_id?: string | null
+          visibility?: string | null
         }
         Update: {
+          amount?: number | null
           bet_id?: string
           contract_id?: string
+          created_time?: string | null
           data?: Json
           fs_updated_time?: string
+          is_ante?: boolean | null
+          is_challenge?: boolean | null
+          is_redemption?: boolean | null
+          outcome?: string | null
+          prob_after?: number | null
+          prob_before?: number | null
+          shares?: number | null
+          user_id?: string | null
+          visibility?: string | null
         }
       }
       contract_comments: {
@@ -360,6 +393,26 @@ export interface Database {
           id?: string
         }
       }
+      post_comments: {
+        Row: {
+          comment_id: string
+          data: Json
+          fs_updated_time: string
+          post_id: string
+        }
+        Insert: {
+          comment_id: string
+          data: Json
+          fs_updated_time: string
+          post_id: string
+        }
+        Update: {
+          comment_id?: string
+          data?: Json
+          fs_updated_time?: string
+          post_id?: string
+        }
+      }
       posts: {
         Row: {
           data: Json
@@ -528,6 +581,26 @@ export interface Database {
           data?: Json
           follow_id?: string
           fs_updated_time?: string
+          user_id?: string
+        }
+      }
+      user_notifications: {
+        Row: {
+          data: Json
+          fs_updated_time: string
+          notification_id: string
+          user_id: string
+        }
+        Insert: {
+          data: Json
+          fs_updated_time: string
+          notification_id: string
+          user_id: string
+        }
+        Update: {
+          data?: Json
+          fs_updated_time?: string
+          notification_id?: string
           user_id?: string
         }
       }

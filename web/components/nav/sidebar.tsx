@@ -1,5 +1,4 @@
 import {
-  BookOpenIcon,
   CashIcon,
   DeviceMobileIcon,
   HomeIcon,
@@ -11,6 +10,8 @@ import {
   SunIcon,
   SparklesIcon,
   StarIcon,
+  UserGroupIcon,
+  HeartIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -34,7 +35,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-menu'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
-import RectangleGroupIcon from 'web/lib/icons/reactangle-group-icon'
+import { useABTest } from 'web/hooks/use-ab-test'
 
 export default function Sidebar(props: {
   className?: string
@@ -53,10 +54,17 @@ export default function Sidebar(props: {
   const toggleTheme = () => {
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
+  const variant = useABTest('promote charity', {
+    charity: 'charity',
+    blank: 'blank',
+  } as const)
 
   const navOptions = isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
-    : getDesktopNav(!!user, () => setIsModalOpen(true))
+    ? getMobileNav(
+        () => setIsAddFundsModalOpen(!isAddFundsModalOpen),
+        variant === 'charity'
+      )
+    : getDesktopNav(!!user, () => setIsModalOpen(true), variant === 'charity')
 
   const bottomNavOptions = bottomNav(
     !!user,
@@ -118,7 +126,11 @@ const logout = async () => {
   await Router.replace(Router.asPath)
 }
 
-const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
+const getDesktopNav = (
+  loggedIn: boolean,
+  openDownloadApp: () => void,
+  showCharity: boolean
+) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
@@ -135,25 +147,25 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
       },
       {
         name: 'Groups',
-        icon: RectangleGroupIcon,
+        icon: UserGroupIcon,
         href: '/groups',
+      },
+      showCharity && {
+        name: 'Charity',
+        icon: HeartIcon,
+        href: '/charity',
       }
     )
 
   return buildArray(
     { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'Markets', href: '/markets', icon: ScaleIcon },
-    {
-      name: 'About',
-      href: '/?showHelpModal=true',
-      icon: BookOpenIcon,
-    },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
 }
 
 // No sidebar when signed out
-const getMobileNav = (toggleModal: () => void) => {
+const getMobileNav = (toggleModal: () => void, showCharity: boolean) => {
   return buildArray(
     { name: 'Markets', href: '/markets', icon: ScaleIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
@@ -167,8 +179,13 @@ const getMobileNav = (toggleModal: () => void) => {
     },
     {
       name: 'Groups',
-      icon: RectangleGroupIcon,
+      icon: UserGroupIcon,
       href: '/groups',
+    },
+    showCharity && {
+      name: 'Charity',
+      icon: HeartIcon,
+      href: '/charity',
     }
   )
 }

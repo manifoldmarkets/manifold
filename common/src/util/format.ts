@@ -94,10 +94,10 @@ export function formatLargeNumber(num: number, sigfigs = 2): string {
 }
 
 export function shortFormatNumber(num: number): string {
-  if (num < 1000) return showPrecision(num, 3)
+  if (num < 1000 && num > -1000) return showPrecision(num, 3)
 
   const suffix = ['', 'K', 'M', 'B', 'T', 'Q']
-  const i = Math.floor(Math.log10(num) / 3)
+  const i = Math.floor(Math.log10(Math.abs(num)) / 3)
 
   const numStr = showPrecision(num / Math.pow(10, 3 * i), 2)
   return `${numStr}${suffix[i] ?? ''}`

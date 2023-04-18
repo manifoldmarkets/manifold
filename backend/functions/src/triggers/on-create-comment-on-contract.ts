@@ -18,8 +18,9 @@ import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
-import { secrets } from 'shared/secrets'
+import { secrets } from 'common/secrets'
 import { HOUR_MS } from 'common/util/time'
+import { removeUndefinedProps } from 'common/util/object'
 
 const firestore = admin.firestore()
 
@@ -120,18 +121,21 @@ export const onCreateCommentOnContract = functions
       comment.userId,
       comment.createdTime
     )
-    const bet = getMostRecentCommentableBet(
-      comment.createdTime,
-      priorUserBets,
-      priorUserComments,
-      comment.answerOutcome
-    )
-    if (bet) {
-      await change.ref.update({
-        betId: bet.id,
-        betOutcome: bet.outcome,
-        betAmount: bet.amount,
-      })
+    let bet: Bet | undefined
+    if (!comment.betId) {
+      bet = getMostRecentCommentableBet(
+        comment.createdTime,
+        priorUserBets,
+        priorUserComments,
+        comment.answerOutcome
+      )
+      await change.ref.update(
+        removeUndefinedProps({
+          betId: bet.id,
+          betOutcome: bet.outcome,
+          betAmount: bet.amount,
+        })
+      )
     }
 
     const position = getLargestPosition(contract, priorUserBets)

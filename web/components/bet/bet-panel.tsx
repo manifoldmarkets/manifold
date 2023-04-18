@@ -475,9 +475,7 @@ export function BuyPanel(props: {
                     contract,
                     'YES'
                   )} or ${formatOutcomeLabel(contract, 'NO')}`
-                : isStonk
-                ? 'Bet'
-                : 'Wager'
+                : 'Bet'
             }
           />
         )}

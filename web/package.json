@@ -9,7 +9,6 @@
     "devdev": "cross-env NEXT_PUBLIC_FIREBASE_ENV=DEV yarn dev",
     "dev:dev": "yarn devdev",
     "dev:prod": "cross-env NEXT_PUBLIC_FIREBASE_ENV=PROD yarn dev",
-    "dev:the": "cross-env NEXT_PUBLIC_FIREBASE_ENV=THEOREMONE yarn dev",
     "dev:local": "cross-env NEXT_PUBLIC_FUNCTIONS_URL=http://localhost:8080 yarn devdev",
     "dev:emulate": "cross-env NEXT_PUBLIC_FIREBASE_EMULATE=TRUE yarn devdev",
     "disk-space-info": "du -hs ./node_modules && du -hs ./.next && du -hs ./.next/cache",
@@ -24,6 +23,7 @@
     "verify:dir": "npx prettier --check .; yarn lint --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@google-cloud/secret-manager": "4.2.1",
     "@amplitude/analytics-browser": "1.9.4",
     "@floating-ui/react": "0.19.0",
     "@headlessui/react": "1.7.7",
@@ -100,6 +100,7 @@
     "eslint-config-prettier": "8.5.0",
     "next-sitemap": "^2.5.14",
     "postcss": "8.3.5",
+    "prettier-plugin-sql": "0.14.0",
     "prettier-plugin-tailwindcss": "^0.2.1",
     "prop-types": "^15.8.1",
     "tailwindcss": "3.2.4",

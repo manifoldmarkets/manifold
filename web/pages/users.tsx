@@ -1,7 +1,7 @@
 import { Title } from 'web/components/widgets/title'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Input } from 'web/components/widgets/input'
-import { useState, useEffect, ReactNode } from 'react'
+import { useState, ReactNode } from 'react'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUsersSupabase } from 'web/hooks/use-users'
 import { UserSearchResult } from 'web/lib/supabase/users'
@@ -16,16 +16,15 @@ import { firebaseLogin, follow, unfollow } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useRouter } from 'next/router'
-import { formatLargeNumber, formatMoney } from 'common/util/format'
+import { shortFormatNumber } from 'common/util/format'
+import { useSearchQueryParameter } from 'web/hooks/use-search-query-parameter'
+import clsx from 'clsx'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export default function Users() {
-  const router = useRouter()
-  const { search } = router.query
-
-  const [query, setQuery] = useState(search || '')
   const isMobile = useIsMobile()
   const [limit, setLimit] = useState(25)
+  const { query, setQuery } = useSearchQueryParameter('/users', 'search')
   const users = useUsersSupabase(query.toString(), limit, [
     'bio',
     'followerCountCached',
@@ -34,13 +33,6 @@ export default function Users() {
   ])
   const currentUser = useUser()
   const myFollowedIds = useFollows(currentUser?.id)
-
-  useEffect(() => {
-    const searchQuery = router.query.search
-    if (searchQuery) {
-      setQuery(searchQuery.toString())
-    }
-  }, [router.query.search])
 
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value)
@@ -93,8 +85,10 @@ const UserListEntry = (props: {
   const { user, currentUser, isFollowing } = props
   const { avatarUrl, username, name, id } = user
   const { followerCountCached, creatorTraders, profitCached } = user
-  const Metadata = (props: { children: ReactNode }) => (
-    <span className={'text-ink-500 text-xs'}>{props.children}</span>
+  const Metadata = (props: { children: ReactNode; className?: string }) => (
+    <span className={clsx('text-ink-500 text-xs', props.className)}>
+      {props.children}
+    </span>
   )
   return (
     <Row className={'gap-2'}>
@@ -102,7 +96,7 @@ const UserListEntry = (props: {
         <Avatar avatarUrl={avatarUrl} username={username} size={12} />
       </Col>
       <Col className={'w-full'}>
-        <Row className={'w-full justify-between'}>
+        <Row className={'w-full justify-between gap-1'}>
           <Col className={''}>
             <UserLink name={name} username={username} />
             <Row className={'gap-1'}>
@@ -110,17 +104,26 @@ const UserListEntry = (props: {
                 <Metadata>{followerCountCached} followers</Metadata>
               )}
               {followerCountCached > 0 && creatorTraders.allTime > 0 && (
-                <Metadata>•</Metadata>
+                <Metadata className={'hidden sm:inline-block'}>•</Metadata>
               )}
               {creatorTraders.allTime > 0 && (
                 <Metadata>
-                  {formatLargeNumber(creatorTraders.allTime)} traders
+                  {shortFormatNumber(creatorTraders.allTime)} traders
                 </Metadata>
               )}
               {((profitCached.allTime !== 0 && creatorTraders.allTime > 0) ||
-                followerCountCached > 0) && <Metadata>•</Metadata>}
+                followerCountCached > 0) && (
+                <Metadata className={'hidden sm:inline-block'}>•</Metadata>
+              )}
               {profitCached.allTime !== 0 && (
-                <Metadata>{formatMoney(profitCached.allTime)} profit</Metadata>
+                <Metadata>
+                  {(profitCached.allTime > 0 ? ENV_CONFIG.moneyMoniker : '') +
+                    shortFormatNumber(Math.round(profitCached.allTime)).replace(
+                      '-',
+                      '-' + ENV_CONFIG.moneyMoniker
+                    )}{' '}
+                  profit
+                </Metadata>
               )}
             </Row>
           </Col>

@@ -39,7 +39,7 @@ import { calculateUserMetrics } from 'common/calculate-metrics'
 import { runTxn, TxnData } from 'shared/run-txn'
 import { Group } from 'common/group'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { secrets } from 'shared/secrets'
+import { secrets } from 'common/secrets'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import {
   completeArchaeologyQuest,

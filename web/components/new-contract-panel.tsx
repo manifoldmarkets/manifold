@@ -659,7 +659,7 @@ const useNewContract = (
       track('create market', {
         slug: newContract.slug,
         selectedGroup: selectedGroup?.id,
-        isFree: false,
+        outcomeType,
       })
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)

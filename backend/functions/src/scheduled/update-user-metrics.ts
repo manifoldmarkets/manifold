@@ -10,7 +10,6 @@ import { DAY_MS } from 'common/util/time'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import {
   calculateNewPortfolioMetrics,
-  calculateCreatorTraders,
   calculateMetricsByContract,
 } from 'common/calculate-metrics'
 import { hasChanges } from 'common/util/object'
@@ -20,7 +19,7 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { bulkInsert } from 'shared/supabase/utils'
-import { secrets } from 'shared/secrets'
+import { secrets } from 'common/secrets'
 
 const firestore = admin.firestore()
 
@@ -56,6 +55,15 @@ export async function updateUserMetricsCore() {
   }
   log(`Loaded ${userIds.length} users.`)
 
+  log('Loading creator trader counts...')
+  const [yesterdayTraders, weeklyTraders, monthlyTraders, allTimeTraders] =
+    await Promise.all(
+      [yesterday, weekAgo, monthAgo, undefined].map((t) =>
+        getCreatorTraders(pg, userIds, t)
+      )
+    )
+  log(`Loaded creator trader counts.`)
+
   log('Loading current portfolio snapshot...')
   const currPortfolios = await getPortfolioSnapshot(pg, userIds)
   log(`Loaded current portfolio snapshot.`)
@@ -78,8 +86,7 @@ export async function updateUserMetricsCore() {
 
   log('Loading contracts...')
   const allBets = Object.values(metricRelevantBets).flat()
-  const contracts = await getRelevantContracts(pg, userIds, allBets)
-  const contractsByCreator = groupBy(contracts, (c) => c.creatorId)
+  const contracts = await getRelevantContracts(pg, allBets)
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
   log(`Loaded ${contracts.length} contracts.`)
 
@@ -94,11 +101,14 @@ export async function updateUserMetricsCore() {
   const userUpdates = []
   const portfolioUpdates = []
   for (const user of users) {
-    const userContracts = contractsByCreator[user.id] ?? []
     const userMetricRelevantBets = metricRelevantBets[user.id] ?? []
     const currPortfolio = currPortfolios[user.id]
-    const creatorTraders = calculateCreatorTraders(userContracts)
-
+    const creatorTraders = {
+      daily: yesterdayTraders[user.id] ?? 0,
+      weekly: weeklyTraders[user.id] ?? 0,
+      monthly: monthlyTraders[user.id] ?? 0,
+      allTime: allTimeTraders[user.id] ?? 0,
+    }
     const newPortfolio = calculateNewPortfolioMetrics(
       user,
       contractsById,
@@ -181,15 +191,11 @@ export async function updateUserMetricsCore() {
   log('Done.')
 }
 
-const getRelevantContracts = async (
-  pg: SupabaseDirectClient,
-  userIds: string[],
-  bets: Bet[]
-) => {
+const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
   const betContractIds = uniq(bets.map((b) => b.contractId))
   return await pg.map(
-    `select data from contracts where creator_id in ($1:list) or id in ($2:list)`,
-    [userIds, betContractIds],
+    `select data from contracts where id in ($1:list)`,
+    [betContractIds],
     (r) => r.data as Contract
   )
 }
@@ -252,6 +258,29 @@ const getPortfolioHistoricalProfits = async (
       order by user_id, ts desc`,
       [userIds, new Date(when).toISOString()],
       (r) => [r.user_id as string, parseFloat(r.profit as string)]
+    )
+  )
+}
+
+const getCreatorTraders = async (
+  pg: SupabaseDirectClient,
+  userIds: string[],
+  since?: number
+) => {
+  return Object.fromEntries(
+    await pg.map(
+      `with contract_traders as (
+        select distinct contract_id, data->>'userId' as user_id
+        from contract_bets
+        where (to_jsonb(data)->>'createdTime') >= $2::text
+      )
+      select c.creator_id, count(ct.*)::int as total
+      from contracts as c
+      join contract_traders as ct on c.id = ct.contract_id
+      where c.creator_id in ($1:list)
+      group by c.creator_id`,
+      [userIds, since ?? 0],
+      (r) => [r.creator_id as string, r.total as number]
     )
   )
 }

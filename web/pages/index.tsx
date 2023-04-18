@@ -1,6 +1,6 @@
 import { ReactNode, memo, useEffect, useState } from 'react'
 import Router from 'next/router'
-import { ChartBarIcon } from '@heroicons/react/solid'
+import { ChartBarIcon, ScaleIcon } from '@heroicons/react/solid'
 import Link from 'next/link'
 
 import { Page } from 'web/components/layout/page'
@@ -15,7 +15,6 @@ import {
 } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import TestimonialsPanel from './testimonials-panel'
-import GoToIcon from 'web/lib/icons/go-to-icon'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
 import { Contract, CPMMBinaryContract } from 'common/contract'
@@ -29,6 +28,7 @@ import { db } from 'web/lib/supabase/db'
 import { PrivacyAndTerms } from 'web/components/privacy-terms'
 import clsx from 'clsx'
 import { ContractCardNew } from 'web/components/contract/contract-card'
+import { formatMoney } from 'common/util/format'
 
 const excludedGroupSlugs = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
@@ -41,7 +41,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
       (c) => !c.groupSlugs?.some((slug) => excludedGroupSlugs.includes(slug))
     )
     .filter((c) => c.coverImageUrl)
-    .slice(0, 3)
+    .slice(0, 7)
 
   return {
     props: { trendingContracts },
@@ -105,15 +105,18 @@ export default function Home(props: {
               modal={<ManaExplainer />}
             />
 
-            <ExternalInfoCard
-              link="https://help.manifold.markets/"
-              icon={<div className="text-2xl">?</div>}
-              text="Learn more"
+            <LinkInfoCard
+              link="/markets"
+              icon={<ScaleIcon className="mx-auto h-8 w-8" />}
+              text="Explore markets"
             />
           </Row>
         </Col>
 
-        <ContractsSection contracts={trendingContracts} />
+        <ContractsSection
+          contracts={trendingContracts}
+          className="w-full self-center"
+        />
 
         <TestimonialsPanel />
 
@@ -123,7 +126,7 @@ export default function Home(props: {
   )
 }
 
-export function ExternalInfoCard(props: {
+export function LinkInfoCard(props: {
   link: string
   icon: ReactNode
   text: string
@@ -133,16 +136,12 @@ export function ExternalInfoCard(props: {
     <Link
       className="text-ink-700 border-primary-300 hover:border-primary-700 group flex w-1/3 flex-col items-center gap-1 rounded-xl border px-4 py-2 text-center text-sm drop-shadow-sm transition-all"
       href={link}
-      target="_blank"
     >
       <div className="text-primary-300 group-hover:text-primary-700 transition-colors">
         {icon}
       </div>
       <div>
         <span className="text-ink-700">{text}</span>
-        <span>
-          <GoToIcon className="text-primary-300 mb-1 ml-2 inline h-4 w-4" />
-        </span>
       </div>
     </Link>
   )
@@ -155,7 +154,7 @@ export function InfoCard(props: {
   externalLink?: boolean
   modal: ReactNode
 }) {
-  const { link, icon, text, externalLink, modal } = props
+  const { icon, text, modal } = props
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -163,16 +162,6 @@ export function InfoCard(props: {
         <Col className="bg-canvas-0 text-ink-1000 rounded-md px-8 py-6 text-sm md:text-lg">
           <Title children={text} />
           {modal}
-          <Link
-            href={link}
-            className="text-primary-700 mt-2 underline"
-            target="_blank"
-          >
-            Learn more{' '}
-            <span>
-              <GoToIcon className="text-primary-700 mb-1 ml-1 inline h-4 w-4" />
-            </span>
-          </Link>
         </Col>
       </Modal>
       <button
@@ -182,14 +171,7 @@ export function InfoCard(props: {
         <div className="text-primary-300 group-hover:text-primary-700 transition-colors">
           {icon}
         </div>
-        <div>
-          <div className="text-ink-700">{text}</div>
-          {externalLink && (
-            <span>
-              <GoToIcon className="text-primary-300 mb-1 ml-2 inline h-4 w-4" />
-            </span>
-          )}
-        </div>
+        <div className="text-ink-700">{text}</div>
       </button>
     </>
   )
@@ -202,15 +184,16 @@ export function ManaExplainer() {
         className="mx-auto mb-8 w-[60%] object-contain"
         src={'/welcome/treasure.png'}
       />
-      <div>
-        <span className="text-primary-700 mt-4 font-normal">
+      <div className="text-lg">
+        <strong className="semibold mt-4 text-xl">
           Mana ({ENV_CONFIG.moneyMoniker})
-        </span>{' '}
-        is Manifold's play money. Use it to create and bet in markets. The more
-        mana you have, the more you can bet and move the market.
+        </strong>{' '}
+        is Manifold's play money. Use it to create and bet in markets.
       </div>
-      <div className="mt-4">
-        Mana <strong>can't be converted to real money</strong>.
+      <div className={'my-3 text-lg '}>
+        Mana can't be converted into cash, but can be purchased and donated to
+        charity at a ratio of{' '}
+        <strong className="semibold text-xl">{formatMoney(100)} : $1</strong>.
       </div>
     </>
   )
@@ -219,11 +202,14 @@ export function ManaExplainer() {
 export function PredictionMarketExplainer() {
   return (
     <>
-      <p>
-        Prediction markets let you bet on the outcome of future events. On
-        Manifold, you can create your own prediction market on any question you
-        want!
-      </p>
+      <div className="text-lg">
+        Prediction markets let you bet on the outcome of future events.
+      </div>
+      <div className="mt-2 text-lg">
+        On Manifold, you can create your own prediction market on any question
+        you want!
+      </div>
+
       <div className="text-ink-400 mt-4 font-semibold">EXAMPLE</div>
       <div className="border-primary-700 bg-primary-50 mb-4 border-l-2 py-2 px-2 text-sm">
         <p className="mt-2">

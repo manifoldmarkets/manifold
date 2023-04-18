@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { removeUndefinedProps } from 'common/util/object'
 import { marked } from 'marked'
 import { Comment } from 'common/comment'
+import { Bet } from 'common/bet'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -38,6 +39,7 @@ const postSchema = z.object({
   markdown: z.string().optional(),
   replyToCommentId: z.string().optional(),
   replyToAnswerId: z.string().optional(),
+  replyToBetId: z.string().optional(),
 })
 
 const MAX_COMMENT_JSON_LENGTH = 20000
@@ -53,6 +55,7 @@ export const createcomment = authEndpoint(async (req, auth) => {
     markdown,
     replyToCommentId,
     replyToAnswerId,
+    replyToBetId,
   } = validate(postSchema, req.body)
 
   const creator = await getUser(auth.uid)
@@ -88,6 +91,13 @@ export const createcomment = authEndpoint(async (req, auth) => {
   }
 
   const ref = firestore.collection(`contracts/${contractId}/comments`).doc()
+  const bet = replyToBetId
+    ? await firestore
+        .collection(`contracts/${contract.id}/bets`)
+        .doc(replyToBetId)
+        .get()
+        .then((doc) => doc.data() as Bet)
+    : undefined
 
   const comment = removeUndefinedProps({
     id: ref.id,
@@ -107,6 +117,13 @@ export const createcomment = authEndpoint(async (req, auth) => {
     replyToCommentId: replyToCommentId,
     answerOutcome: replyToAnswerId,
     visibility: contract.visibility,
+
+    // Response to another user's bet fields
+    betId: bet?.id,
+    betAmount: bet?.amount,
+    betOutcome: bet?.outcome,
+    bettorName: bet?.userName,
+    bettorUsername: bet?.userUsername,
   } as Comment)
 
   await ref.set(comment)

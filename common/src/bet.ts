@@ -1,6 +1,26 @@
 import { visibility } from './contract'
 import { Fees } from './fees'
 
+/************************************************
+
+supabase status: columns exist for
+  userId: text
+  createdTime: timestamp (from millis)
+  amount: number
+  shares: number
+  outcome: text
+  probBefore: number
+  probAfter: number
+  isAnte: boolean
+  isRedemption: boolean
+  isChallenge: boolean
+  visibility: text
+
+any changes to the type of these columns in firestore will require modifying
+the supabase trigger, or replication of contracts may fail!
+
+*************************************************/
+
 export type Bet = {
   id: string
   userId: string

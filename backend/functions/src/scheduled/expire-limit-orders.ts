@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { LimitBet } from 'common/bet'
 import * as admin from 'firebase-admin'
-import { secrets } from 'shared/secrets'
+import { secrets } from 'common/secrets'
 const firestore = admin.firestore()
 
 export const expireLimitOrdersScheduler = functions

@@ -1,49 +1,51 @@
-import React, { memo, useEffect, useMemo, useState } from 'react'
 import { groupBy, last, sortBy } from 'lodash'
+import { memo, useEffect, useMemo, useState } from 'react'
 
-import { Pagination } from 'web/components/widgets/pagination'
-import { FeedBet } from '../feed/feed-bets'
-import { FeedLiquidity } from '../feed/feed-liquidity'
-import { FreeResponseComments } from '../feed/feed-answer-comment-group'
-import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
-import { Bet } from 'common/bet'
-import { Contract, CPMMBinaryContract } from 'common/contract'
-import { ContractBetsTable } from '../bet/bets-list'
-import { ControlledTabs } from '../layout/tabs'
-import { Col } from '../layout/col'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { useComments } from 'web/hooks/use-comments'
-import { useLiquidity } from 'web/hooks/use-liquidity'
+import { Answer } from 'common/answer'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
-import { buildArray } from 'common/util/array'
+import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
+import { CPMMBinaryContract, Contract } from 'common/contract'
+import { ShareholderStats } from 'common/supabase/contract-metrics'
+import { buildArray } from 'common/util/array'
+import { shortFormatNumber } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
-import { useUser } from 'web/hooks/use-user'
+import { BinaryUserPositionsTable } from 'web/components/contract/user-positions-table'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { Row } from '../layout/row'
+import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
+import { useComments } from 'web/hooks/use-comments'
+import { useEvent } from 'web/hooks/use-event'
+import { useHashInUrl } from 'web/hooks/use-hash-in-url'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useLiquidity } from 'web/hooks/use-liquidity'
 import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
-import { Answer } from 'common/answer'
-import { track } from 'web/lib/service/analytics'
-import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { shortFormatNumber } from 'common/util/format'
-import { CertInfo, CertTrades } from './cert-overview'
-import { getOlderBets } from 'web/lib/supabase/bets'
+import { useUser } from 'web/hooks/use-user'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
+import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import { track } from 'web/lib/service/analytics'
+import { getOlderBets } from 'web/lib/supabase/bets'
+import { ContractBetsTable } from '../bet/bets-list'
+import { FreeResponseComments } from '../feed/feed-answer-comment-group'
+import { FeedBet } from '../feed/feed-bets'
+import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
+import { FeedLiquidity } from '../feed/feed-liquidity'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { ControlledTabs } from '../layout/tabs'
+import { CertInfo, CertTrades } from './cert-overview'
 import { QfTrades } from './qf-overview'
-import { BinaryUserPositionsTable } from 'web/components/contract/user-positions-table'
-import { ShareholderStats } from 'common/supabase/contract-metrics'
-import { useHashInUrl } from 'web/hooks/use-hash-in-url'
-import { useEvent } from 'web/hooks/use-event'
-import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useBets } from 'web/hooks/use-bets-supabase'
+
+export const EMPTY_USER = '_'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -80,6 +82,10 @@ export function ContractTabs(props: {
   )
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
+  const [replyToBet, setReplyToBet] = useState<Bet | undefined>(undefined)
+  useEffect(() => {
+    if (replyToBet) setActiveIndex(0)
+  }, [replyToBet])
 
   const commentTitle =
     totalComments === 0
@@ -87,12 +93,15 @@ export function ContractTabs(props: {
       : `${shortFormatNumber(totalComments)} Comments`
 
   const user = useUser()
-  const userBets =
-    useBets({
+
+  const userBets = useRealtimeBets(
+    {
       contractId: contract.id,
-      userId: user?.id ?? '_',
+      userId: user === undefined ? 'loading' : user?.id ?? EMPTY_USER,
       filterAntes: true,
-    }) ?? []
+    },
+    true
+  )
 
   const betsTitle =
     totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`
@@ -128,6 +137,8 @@ export function ContractTabs(props: {
               answerResponse={answerResponse}
               onCancelAnswerResponse={onCancelAnswerResponse}
               blockedUserIds={blockedUserIds}
+              betResponse={replyToBet}
+              clearReply={() => setReplyToBet(undefined)}
             />
           ),
         },
@@ -149,7 +160,11 @@ export function ContractTabs(props: {
           title: betsTitle,
           content: (
             <Col className={'gap-4'}>
-              <BetsTabContent contract={contract} bets={bets} />
+              <BetsTabContent
+                contract={contract}
+                bets={bets}
+                setReplyToBet={setReplyToBet}
+              />
             </Col>
           ),
         },
@@ -183,6 +198,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   setCommentsLength?: (length: number) => void
   onCancelAnswerResponse?: () => void
   answerResponse?: Answer
+  betResponse?: Bet
+  clearReply?: () => void
 }) {
   const {
     contract,
@@ -190,6 +207,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     onCancelAnswerResponse,
     blockedUserIds,
     setCommentsLength,
+    betResponse,
+    clearReply,
   } = props
   const comments = (useComments(contract.id) ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)
@@ -202,13 +221,13 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     key: `comments-sort-${contract.id}`,
     store: inMemoryStore(),
   })
-  const user = useUser()
   const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const shouldBeNewestFirst = (c: ContractComment) =>
     c.replyToCommentId == undefined
 
+  const user = useUser()
   const sortedComments = useMemo(
     () =>
       sortBy(comments, [
@@ -255,7 +274,22 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   return (
     <>
-      {user && <ContractCommentInput className="mb-5" contract={contract} />}
+      {user && (
+        <ContractCommentInput
+          replyToBet={betResponse}
+          replyToUserInfo={
+            betResponse
+              ? {
+                  username: betResponse.userUsername,
+                  id: betResponse.userId,
+                }
+              : undefined
+          }
+          className="mb-5"
+          contract={contract}
+          clearReply={clearReply}
+        />
+      )}
       {comments.length > 0 && (
         <SortRow
           sort={sort}
@@ -304,8 +338,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract
   bets: Bet[]
+  setReplyToBet?: (bet: Bet) => void
 }) {
-  const { contract } = props
+  const { contract, setReplyToBet } = props
   const [bets, setBets] = useState(() => props.bets.filter((b) => !b.isAnte))
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
@@ -380,7 +415,12 @@ const BetsTabContent = memo(function BetsTabContent(props: {
         ) : (
           pageItems.map((item) =>
             item.type === 'bet' ? (
-              <FeedBet key={item.id} contract={contract} bet={item.bet} />
+              <FeedBet
+                onReply={setReplyToBet}
+                key={item.id}
+                contract={contract}
+                bet={item.bet}
+              />
             ) : (
               <FeedLiquidity key={item.id} liquidity={item.lp} />
             )

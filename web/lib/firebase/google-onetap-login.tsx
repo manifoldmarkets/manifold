@@ -18,7 +18,7 @@ async function handleResponse(response: any) {
 }
 
 const initGSI = () => {
-  ;(window as any).google.accounts.id.initialize({
+  ;(window as any).google?.accounts.id.initialize({
     client_id:
       '128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com',
     callback: handleResponse,
