@@ -42,6 +42,12 @@ export default function Users() {
     }
   }, [router.query.search])
 
+  useEffect(() => {
+    if (query)
+      router.push(`/users?search=${query}`, undefined, { shallow: true })
+    else router.push(`/users`, undefined, { shallow: true })
+  }, [query])
+
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value)
     setLimit(25) // Reset limit when query changes
