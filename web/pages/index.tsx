@@ -191,7 +191,8 @@ export function ManaExplainer() {
         is Manifold's play money. Use it to create and bet in markets.
       </div>
       <div className={'my-3 text-lg '}>
-        Mana can't be converted into cash, but can be purchased at a ratio of{' '}
+        Mana can't be converted into cash, but can be purchased and donated to
+        charity at a ratio of{' '}
         <strong className="semibold text-xl">{formatMoney(100)} : $1</strong>.
       </div>
     </>
