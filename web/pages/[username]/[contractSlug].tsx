@@ -61,7 +61,7 @@ import { getContractParams } from 'web/lib/contracts'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
-import { initSupabaseClient } from 'web/lib/supabase/db'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -75,7 +75,7 @@ export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  const adminDb = await initSupabaseClient('admin')
+  const adminDb = await initSupabaseAdmin()
   const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
 
   // No contract found
@@ -514,7 +514,4 @@ export function ContractSEO(props: {
       ogProps={{ props: ogCardProps, endpoint: 'market' }}
     />
   )
-}
-function initializeSupabaseClient(arg0: string) {
-  throw new Error('Function not implemented.')
 }

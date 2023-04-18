@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { SupabaseClient } from 'common/supabase/utils'
-import { getServiceAccountCredentials, initAdmin } from 'shared/init-admin'
-import { loadSecretsToEnv } from 'shared/secrets'
+import { getFirebaseActiveProject, initAdmin } from 'shared/init-admin'
+import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -17,7 +17,16 @@ export const runScript = async (
     firestore: admin.firestore.Firestore
   }) => Promise<any> | any
 ) => {
-  const credentials = getServiceAccountCredentials()
+  const activeProject = getFirebaseActiveProject(process.cwd())
+  if (activeProject == null) {
+    throw new Error(
+      "Couldn't find active Firebase project; did you do `firebase use <alias>?`"
+    )
+  }
+
+  const env = activeProject.toUpperCase() as 'PROD' | 'DEV'
+  const credentials = getServiceAccountCredentials(env)
+
   await loadSecretsToEnv(credentials)
 
   const db = createSupabaseClient()

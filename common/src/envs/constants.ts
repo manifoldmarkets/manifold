@@ -3,6 +3,7 @@ import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
 
 export const BACKGROUND_COLOR = 'bg-canvas-50'
+// Valid in every environment except scripts & cloud functions.
 export const ENV = (process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD') as
   | 'PROD'
   | 'DEV'
