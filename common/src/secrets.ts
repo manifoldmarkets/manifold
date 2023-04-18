@@ -101,7 +101,6 @@ export const getServiceAccountCredentials = (env?: 'PROD' | 'DEV') => {
   }
 
   try {
-    // Load the service account key JSON file.
     return JSON.parse(readFileSync(keyPath, { encoding: 'utf8' }))
   } catch (e) {
     throw new Error(`Failed to load service account key from ${keyPath}.`)
