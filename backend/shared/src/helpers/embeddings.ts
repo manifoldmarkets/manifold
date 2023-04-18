@@ -51,8 +51,8 @@ async function getInterestedContractIds(
   // Get contract ids that you bet on or liked.
   return await pg.map(
     `select contract_id from (
-      select contract_id, max((data->>'createdTime')::bigint) as created_time from contract_bets
-      where data->>'userId' = $1
+      select contract_id, max(created_time) as created_time from contract_bets
+      where user_id = $1
       group by contract_id
       order by 2
       limit 1000

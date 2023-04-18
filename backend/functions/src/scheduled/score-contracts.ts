@@ -32,9 +32,9 @@ const firestore = admin.firestore()
 const getContractTraders = async (pg: SupabaseDirectClient, since: number) => {
   return Object.fromEntries(
     await pg.map(
-      `select contract_id, count(distinct data->>'userId')::int as n
+      `select contract_id, count(distinct user_id)::int as n
       from contract_bets
-      where (to_jsonb(data)->>'createdTime') >= $1::text
+      where created_time >= millis_to_ts($1)
       group by contract_id`,
       [since],
       (r) => [r.contract_id as string, r.n as number]

@@ -108,7 +108,7 @@ export const changeUser = async (
 
   log('Updating denormalized user data on bets...')
   const betRows = await pg.manyOrNone(
-    `select contract_id, bet_id from contract_bets where data->>'userId' = $1`,
+    `select contract_id, bet_id from contract_bets where user_id = $1`,
     [user.id]
   )
   const betUpdate: Partial<Bet> = removeUndefinedProps({

@@ -35,13 +35,13 @@ async function getDailyBets(
 ) {
   const bets = await pg.manyOrNone(
     `select
-      extract(day from millis_interval((data->'createdTime')::bigint, $2)) as day,
-      (data->'createdTime')::bigint as ts,
-      data->>'userId' as user_id,
-      data->>'amount' as amount,
+      extract(day from (millis_to_ts($2) - created_time)) as day,
+      ts_to_millis(created_time) as ts,
+      user_id,
+      amount,
       bet_id
     from contract_bets
-    where to_jsonb(data)->>'createdTime' >= $1::text and to_jsonb(data)->>'createdTime' < $2::text`,
+    where created_time >= millis_to_ts($1) and created_time < millis_to_ts($2)`,
     [startTime, startTime + numberOfDays * DAY_MS]
   )
   const betsByDay: StatBet[][] = range(0, numberOfDays).map((_) => [])
