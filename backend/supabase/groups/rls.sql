@@ -1,28 +1,39 @@
-DROP policy IF EXISTS "Enable read access for admin" ON public.groups;
-CREATE POLICY "Enable read access for admin" ON public.groups FOR
-SELECT TO service_role USING (TRUE);
-DROP policy IF EXISTS "Enable read access for all if group is public/curated" ON public.groups;
-CREATE POLICY "Enable read access for all if group is public/curated" ON public.groups FOR
-SELECT USING (
-        (
-            (data @> '{"privacyStatus": "public"}'::jsonb)
-            OR (data @> '{"privacyStatus": "curated"}'::jsonb)
-        )
-    );
-DROP policy IF EXISTS "Enable read access for members of private groups" ON public.groups;
-CREATE POLICY "Enable read access for members of private groups" ON public.groups FOR
-SELECT USING (
-        (
-            (data @> '{"privacyStatus": "private"}'::jsonb)
-            AND (
-                EXISTS (
-                    SELECT 1
-                    FROM public.group_members
-                    WHERE (
-                            (group_members.group_id = groups.id)
-                            AND (group_members.member_id = public.firebase_uid())
-                        )
-                )
+drop policy if exists "Enable read access for admin" on public.groups;
+
+create policy "Enable read access for admin" on public.groups for
+select
+  to service_role using (true);
+
+drop policy if exists "Enable read access for all if group is public/curated" on public.groups;
+
+create policy "Enable read access for all if group is public/curated" on public.groups for
+select
+  using (
+    (
+      (data @> '{"privacyStatus": "public"}'::jsonb)
+      or (data @> '{"privacyStatus": "curated"}'::jsonb)
+    )
+  );
+
+drop policy if exists "Enable read access for members of private groups" on public.groups;
+
+create policy "Enable read access for members of private groups" on public.groups for
+select
+  using (
+    (
+      (data @> '{"privacyStatus": "private"}'::jsonb)
+      and (
+        exists (
+          select
+            1
+          from
+            public.group_members
+          where
+            (
+              (group_members.group_id = groups.id)
+              and (group_members.member_id = public.firebase_uid ())
             )
         )
-    );
+      )
+    )
+  );
