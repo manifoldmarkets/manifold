@@ -148,7 +148,7 @@ function BetActions(props: {
 }) {
   const { onReply, bet } = props
   const user = useUser()
-  if (!user) return null
+  if (!user || bet.amount === 0) return null
   return (
     <Col className="sm:justify-center">
       {user && onReply && (
