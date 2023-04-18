@@ -8,17 +8,19 @@ import { readFileSync } from 'fs'
 // prod - https://console.cloud.google.com/security/secret-manager?project=mantic-markets
 // dev - https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets
 export const secrets = [
-  'API_SECRET',
-  'DREAM_KEY',
-  'MAILGUN_KEY',
-  'OPENAI_API_KEY',
-  'STRIPE_APIKEY',
-  'STRIPE_WEBHOOKSECRET',
-  'SUPABASE_KEY',
-  'SUPABASE_JWT_SECRET',
-  'SUPABASE_PASSWORD',
-  'TEST_CREATE_USER_KEY',
-] as const
+  ...([
+    'API_SECRET',
+    'DREAM_KEY',
+    'MAILGUN_KEY',
+    'OPENAI_API_KEY',
+    'STRIPE_APIKEY',
+    'STRIPE_WEBHOOKSECRET',
+    'SUPABASE_KEY',
+    'SUPABASE_JWT_SECRET',
+    'SUPABASE_PASSWORD',
+    'TEST_CREATE_USER_KEY',
+  ] as const),
+]
 
 type secret_names = typeof secrets[number]
 
