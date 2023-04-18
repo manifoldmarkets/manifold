@@ -1,25 +1,18 @@
 import { escapeRegExp } from 'lodash'
 import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
-import { THEOREMONE_CONFIG } from './theoremone'
 
 export const BACKGROUND_COLOR = 'bg-canvas-50'
-export const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
+export const ENV = (process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD') as
+  | 'PROD'
+  | 'DEV'
 
 export const CONFIGS: { [env: string]: EnvConfig } = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,
-  THEOREMONE: THEOREMONE_CONFIG,
 }
 
 export const ENV_CONFIG = CONFIGS[ENV]
-
-export function isWhitelisted(email?: string) {
-  if (!ENV_CONFIG.whitelistEmail) {
-    return true
-  }
-  return email && (email.endsWith(ENV_CONFIG.whitelistEmail) || isAdmin(email))
-}
 
 // Note: Checking for admin or trustworthy permissions is kind of a code mess
 // atm; should pull this into an enum inside the user object?

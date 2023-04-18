@@ -6,7 +6,6 @@ import { PrivateUser, User } from 'common/user'
 import { getUser, getUserByUsername } from 'shared/utils'
 import { randomString } from 'common/util/random'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { isWhitelisted } from 'common/envs/constants'
 
 import { track } from 'shared/analytics'
 import { APIError, authEndpoint, validate } from './helpers'
@@ -53,9 +52,6 @@ export const createuser = authEndpoint(async (req, auth) => {
   const fbUser = await admin.auth().getUser(auth.uid)
 
   const email = fbUser.email
-  if (!isWhitelisted(email)) {
-    throw new APIError(400, `${email} is not whitelisted`)
-  }
   const emailName = email?.replace(/@.*$/, '')
 
   const rawName = fbUser.displayName || emailName || 'User' + randomString(4)
