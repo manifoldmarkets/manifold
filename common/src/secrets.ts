@@ -1,7 +1,6 @@
+import { readFileSync } from 'fs'
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager'
 import { zip } from 'lodash'
-import { ENV } from './envs/constants'
-import { readFileSync } from 'fs'
 
 // List of secrets that are available to backend (api, functions, scripts, etc.)
 // Edit them at:
@@ -78,8 +77,7 @@ export const loadSecretsToEnv = async (credentials?: any) => {
 }
 
 // Get service account credentials from Vercel environment variable or local file.
-export const getServiceAccountCredentials = (env?: 'PROD' | 'DEV') => {
-  env = env ?? ENV
+export const getServiceAccountCredentials = (env: 'PROD' | 'DEV') => {
   // Vercel environment variable for service credential.
   const value =
     env === 'PROD'

@@ -12,7 +12,10 @@ export async function initSupabaseAdmin() {
     await loadSecretsToEnv(getServiceAccountCredentials(ENV))
     key = getSecret('SUPABASE_KEY')
   } catch (e) {
-    console.error('Could not load google cloud secrets for Supabase admin client.', e)
+    console.error(
+      'Could not load google cloud secrets for Supabase admin client.',
+      e
+    )
     key =
       (ENV === 'PROD'
         ? process.env.PROD_ADMIN_SUPABASE_KEY

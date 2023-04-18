@@ -29,7 +29,6 @@ yarn build && \
          --project ${GCLOUD_PROJECT} \
          --region us-central1 \
          --set-env-vars ENVIRONMENT=${ENVIRONMENT} \
-         --set-env-vars NEXT_PUBLIC_FIREBASE_ENV=${ENVIRONMENT} \
          --set-env-vars GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
          --execution-environment gen2 \
          --cpu 2 \

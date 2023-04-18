@@ -35,18 +35,22 @@ export const getFirebaseActiveProject = (cwd: string) => {
   }
 }
 
-// Initialize Firebase Admin SDK locally.
-export const initAdmin = (env?: 'PROD' | 'DEV') => {
-  try {
-    env = env || getFirebaseActiveProject(process.cwd())
-    if (env == null) {
-      throw new Error(
-        "Couldn't find active Firebase project; did you do `firebase use <alias>?`"
-      )
-    }
-    const serviceAccount = getServiceAccountCredentials(
-      env.toUpperCase() as 'PROD' | 'DEV'
+export const getLocalEnv = () => {
+  const activeProject = getFirebaseActiveProject(process.cwd())
+  if (activeProject == null) {
+    throw new Error(
+      "Couldn't find active Firebase project; did you do `firebase use <alias>?`"
     )
+  }
+
+  return activeProject.toUpperCase() as 'PROD' | 'DEV'
+}
+
+// Locally initialize Firebase Admin.
+export const initAdmin = () => {
+  try {
+    const env = getLocalEnv()
+    const serviceAccount = getServiceAccountCredentials(env)
     console.log(
       `Initializing connection to ${serviceAccount.project_id} Firebase...`
     )
