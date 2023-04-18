@@ -183,27 +183,6 @@ export const computeDpmElasticity = (
   return logit(afterProb) - logit(initialProb)
 }
 
-export const calculateCreatorTraders = (userContracts: Contract[]) => {
-  let allTimeCreatorTraders = 0
-  let dailyCreatorTraders = 0
-  let weeklyCreatorTraders = 0
-  let monthlyCreatorTraders = 0
-
-  userContracts.forEach((contract) => {
-    allTimeCreatorTraders += contract.uniqueBettorCount ?? 0
-    dailyCreatorTraders += contract.uniqueBettors24Hours ?? 0
-    weeklyCreatorTraders += contract.uniqueBettors7Days ?? 0
-    monthlyCreatorTraders += contract.uniqueBettors30Days ?? 0
-  })
-
-  return {
-    daily: dailyCreatorTraders,
-    weekly: weeklyCreatorTraders,
-    monthly: monthlyCreatorTraders,
-    allTime: allTimeCreatorTraders,
-  }
-}
-
 export const calculateNewPortfolioMetrics = (
   user: User,
   contractsById: { [k: string]: Contract },

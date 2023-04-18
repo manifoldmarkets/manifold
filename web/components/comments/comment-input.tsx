@@ -12,18 +12,28 @@ import { getAnswerColor } from '../answers/answers-panel'
 import { Avatar } from '../widgets/avatar'
 import { TextEditor, useTextEditor } from '../widgets/editor'
 import { CommentsAnswer } from '../feed/feed-answer-comment-group'
-import { ContractCommentInput } from '../feed/feed-comments'
+import {
+  CommentOnBetRow,
+  ContractCommentInput,
+  ReplyToUserInfo,
+} from '../feed/feed-comments'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { Bet } from 'common/bet'
+import { useScrollToRefWithHeaderOffset } from 'web/hooks/use-scroll-to-ref-with-header'
 
 export function CommentInput(props: {
-  replyTo?: { id: string; username: string }
+  replyToUserInfo?: ReplyToUserInfo
   // Reply to a free response answer
   parentAnswerOutcome?: string
   // Reply to another comment
   parentCommentId?: string
+  // Reply to a bet
+  replyToBet?: Bet
+  clearReply?: () => void
+  contract?: Contract
   onSubmitComment?: (editor: Editor) => void
   // unique id for autosave
   pageId: string
@@ -33,12 +43,20 @@ export function CommentInput(props: {
   const {
     parentAnswerOutcome,
     parentCommentId,
-    replyTo,
+    replyToUserInfo,
     onSubmitComment,
     pageId,
     blocked,
+    replyToBet,
+    clearReply,
+    contract,
   } = props
   const user = useUser()
+
+  const { ref, scrollToRef } = useScrollToRefWithHeaderOffset()
+  useEffect(() => {
+    if (replyToBet) setTimeout(scrollToRef, 20)
+  }, [replyToBet])
 
   const key = `comment ${pageId} ${
     parentCommentId ?? parentAnswerOutcome ?? ''
@@ -81,23 +99,36 @@ export function CommentInput(props: {
       You blocked the creator or they blocked you, so you can't comment.
     </div>
   ) : (
-    <Row className={clsx(props.className, 'mb-2 gap-1 sm:gap-2')}>
-      <Avatar
-        avatarUrl={user?.avatarUrl}
-        username={user?.username}
-        size="sm"
-        className="mt-2"
-      />
-      <div className="min-w-0 flex-1 pl-0.5 text-sm">
-        <CommentInputTextArea
-          editor={editor}
-          replyTo={replyTo}
-          user={user}
-          submit={submitComment}
-          isSubmitting={isSubmitting}
+    <Col>
+      {replyToBet && contract && (
+        <CommentOnBetRow
+          betAmount={replyToBet.amount}
+          betOutcome={replyToBet.outcome}
+          bettorName={replyToBet.userName}
+          bettorUsername={replyToBet.userUsername}
+          contract={contract}
+          clearReply={clearReply}
+          className={'ml-10 mt-6 w-full'}
         />
-      </div>
-    </Row>
+      )}
+      <Row className={clsx(props.className, 'mb-2 gap-1 sm:gap-2')}>
+        <Avatar
+          avatarUrl={user?.avatarUrl}
+          username={user?.username}
+          size="sm"
+          className="mt-1"
+        />
+        <div className="min-w-0 flex-1 pl-0.5 text-sm" ref={ref}>
+          <CommentInputTextArea
+            editor={editor}
+            replyTo={replyToUserInfo}
+            user={user}
+            submit={submitComment}
+            isSubmitting={isSubmitting}
+          />
+        </div>
+      </Row>
+    </Col>
   )
 }
 export function AnswerCommentInput(props: {
@@ -132,8 +163,8 @@ export function AnswerCommentInput(props: {
           <ContractCommentInput
             contract={contract}
             replyToAnswerId={answerResponse.id}
-            replyTo={replyTo}
-            onSubmitComment={onCancelAnswerResponse}
+            replyToUserInfo={replyTo}
+            clearReply={onCancelAnswerResponse}
           />
           <button onClick={onCancelAnswerResponse}>
             <div className="bg-canvas-0 absolute -top-1 -right-2 h-4 w-4 rounded-full" />
@@ -158,9 +189,8 @@ export function CommentInputTextArea(props: {
   }, [isSubmitting, editor])
 
   useEffect(() => {
-    if (!editor) {
-      return
-    }
+    if (!editor) return
+
     // Submit on ctrl+enter or mod+enter key
     editor.setOptions({
       editorProps: {
@@ -180,6 +210,10 @@ export function CommentInputTextArea(props: {
         },
       },
     })
+  }, [editor])
+
+  useEffect(() => {
+    if (!editor) return
     // insert at mention and focus
     if (replyTo && editor.isEmpty) {
       editor
@@ -192,7 +226,7 @@ export function CommentInputTextArea(props: {
         .focus(undefined, { scrollIntoView: false })
         .run()
     }
-  }, [editor])
+  }, [replyTo, editor])
 
   return (
     <TextEditor editor={editor} simple>

@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { SupabaseClient } from 'common/supabase/utils'
-import { getServiceAccountCredentials, initAdmin } from 'shared/init-admin'
-import { loadSecretsToEnv } from 'shared/secrets'
+import { getLocalEnv, initAdmin } from 'shared/init-admin'
+import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -17,7 +17,9 @@ export const runScript = async (
     firestore: admin.firestore.Firestore
   }) => Promise<any> | any
 ) => {
-  const credentials = getServiceAccountCredentials()
+  const env = getLocalEnv()
+  const credentials = getServiceAccountCredentials(env)
+
   await loadSecretsToEnv(credentials)
 
   const db = createSupabaseClient()

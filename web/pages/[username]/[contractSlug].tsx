@@ -57,8 +57,8 @@ import { BetFilter } from 'web/lib/firebase/bets'
 import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
-import { initSupabaseClient } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
@@ -75,7 +75,7 @@ export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  const adminDb = await initSupabaseClient('admin')
+  const adminDb = await initSupabaseAdmin()
   const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
 
   // No contract found

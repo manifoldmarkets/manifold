@@ -6,7 +6,6 @@ import { PrivateUser, User } from 'common/user'
 import { getUser, getUserByUsername } from 'shared/utils'
 import { randomString } from 'common/util/random'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { isWhitelisted } from 'common/envs/constants'
 
 import { track } from 'shared/analytics'
 import { APIError, authEndpoint, validate } from './helpers'
@@ -53,9 +52,6 @@ export const createuser = authEndpoint(async (req, auth) => {
   const fbUser = await admin.auth().getUser(auth.uid)
 
   const email = fbUser.email
-  if (!isWhitelisted(email)) {
-    throw new APIError(400, `${email} is not whitelisted`)
-  }
   const emailName = email?.replace(/@.*$/, '')
 
   const rawName = fbUser.displayName || emailName || 'User' + randomString(4)
@@ -174,10 +170,12 @@ const bannedDeviceTokens = [
   'dcf208a11839',
   'bbf18707c15d',
   '4c2d15a6cc0c',
+  '0da6b4ea79d3',
 ]
 const bannedIpAddresses: string[] = [
   '24.176.214.250',
   '2607:fb90:bd95:dbcd:ac39:6c97:4e35:3fed',
   '2607:fb91:389:ddd0:ac39:8397:4e57:f060',
   '2607:fb90:ed9a:4c8f:ac39:cf57:4edd:4027',
+  '2607:fb90:bd36:517a:ac39:6c91:812c:6328',
 ]

@@ -5,7 +5,7 @@ import { Contract } from 'common/contract'
 import { getPrivateUser, getUserByUsername, isProd } from 'shared/utils'
 import { createMarketClosedNotification } from 'shared/create-notification'
 import { DAY_MS } from 'common/util/time'
-import { secrets } from 'shared/secrets'
+import { secrets } from 'common/secrets'
 
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5
 export const marketCloseNotifications = functions

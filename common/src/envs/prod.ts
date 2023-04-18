@@ -1,11 +1,11 @@
 export type EnvConfig = {
   domain: string
   firebaseConfig: FirebaseConfig
-  amplitudeApiKey?: string
-  supabaseInstanceId?: string
-  supabaseAnonKey?: string
-  twitchBotEndpoint?: string
-  sprigEnvironmentId?: string
+  amplitudeApiKey: string
+  supabaseInstanceId: string
+  supabaseAnonKey: string
+  twitchBotEndpoint: string
+  sprigEnvironmentId: string
 
   // IDs for v2 cloud functions -- find these by deploying a cloud function and
   // examining the URL, https://[name]-[cloudRunId]-[cloudRunRegion].a.run.app
@@ -14,17 +14,16 @@ export type EnvConfig = {
 
   // Access controls
   adminEmails: string[]
-  whitelistEmail?: string // e.g. '@theoremone.co'. If not provided, all emails are whitelisted
   visibility: 'PRIVATE' | 'PUBLIC'
 
   // Branding
   moneyMoniker: string // e.g. 'Ṁ'
-  bettor?: string // e.g. 'predictor'
-  nounBet?: string // e.g. 'prediction'
-  verbPastBet?: string // e.g. 'predicted'
-  faviconPath?: string // Should be a file in /public
+  bettor: string // e.g. 'predictor'
+  nounBet: string // e.g. 'prediction'
+  verbPastBet: string // e.g. 'predicted'
+  faviconPath: string // Should be a file in /public
   newQuestionPlaceholders: string[]
-  expoConfig?: {
+  expoConfig: {
     iosClientId?: string
     expoClientId?: string
     androidClientId?: string

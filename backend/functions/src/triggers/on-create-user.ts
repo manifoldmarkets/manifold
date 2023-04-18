@@ -11,7 +11,7 @@ import {
   sendPersonalFollowupEmail,
   sendWelcomeEmail,
 } from 'shared/emails'
-import { secrets } from 'shared/secrets'
+import { secrets } from 'common/secrets'
 
 export const onCreateUser = functions
   .runWith({ secrets })
