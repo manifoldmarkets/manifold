@@ -20,7 +20,7 @@ import { useEvent } from 'web/hooks/use-event'
 import { Content } from '../widgets/editor'
 import { UserLink } from 'web/components/widgets/user-link'
 import { CommentInput } from '../comments/comment-input'
-import { ReplyIcon } from '@heroicons/react/solid'
+import { ReplyIcon, XCircleIcon } from '@heroicons/react/solid'
 import { IconButton } from '../buttons/button'
 import { ReplyToggle } from '../comments/reply-toggle'
 import { ReportModal } from 'web/components/buttons/report-button'
@@ -36,8 +36,10 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { Bet } from 'common/bet'
+import Curve from 'web/public/custom-components/curve'
 
-export type ReplyTo = { id: string; username: string }
+export type ReplyToUserInfo = { id: string; username: string }
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -45,15 +47,15 @@ export function FeedCommentThread(props: {
   parentComment: ContractComment
 }) {
   const { contract, threadComments, parentComment } = props
-  const [replyTo, setReplyTo] = useState<ReplyTo>()
+  const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
   const [seeReplies, setSeeReplies] = useState(true)
 
   const idInUrl = useHashInUrl()
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
-  const onSubmitComment = useEvent(() => setReplyTo(undefined))
+  const clearReply = useEvent(() => setReplyToUserInfo(undefined))
   const onReplyClick = useEvent((comment: ContractComment) => {
-    setReplyTo({ id: comment.id, username: comment.userUsername })
+    setReplyToUserInfo({ id: comment.id, username: comment.userUsername })
   })
 
   return (
@@ -80,13 +82,13 @@ export function FeedCommentThread(props: {
             onReplyClick={onReplyClick}
           />
         ))}
-      {replyTo && (
+      {replyToUserInfo && (
         <Col className="-pb-2 relative ml-6">
           <ContractCommentInput
             contract={contract}
             parentCommentId={parentComment.id}
-            replyTo={replyTo}
-            onSubmitComment={onSubmitComment}
+            replyToUserInfo={replyToUserInfo}
+            clearReply={clearReply}
           />
         </Col>
       )}
@@ -111,10 +113,10 @@ export const FeedComment = memo(function FeedComment(props: {
     onReplyClick,
     children,
   } = props
-  const { userUsername, userAvatarUrl } = comment
+  const { userUsername, userAvatarUrl, bettorUsername } = comment
   const commentRef = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
-
+  const commentOnAnotherBettorsBet = bettorUsername !== undefined
   useEffect(() => {
     if (highlighted && commentRef.current) {
       scrollIntoViewCentered(commentRef.current)
@@ -126,7 +128,8 @@ export const FeedComment = memo(function FeedComment(props: {
       ref={commentRef}
       className={clsx(
         className ? className : 'ml-9 gap-2',
-        highlighted ? 'bg-primary-50' : ''
+        highlighted ? 'bg-primary-50' : '',
+        commentOnAnotherBettorsBet ? 'mt-6 sm:mt-2' : ''
       )}
     >
       <Avatar
@@ -136,7 +139,11 @@ export const FeedComment = memo(function FeedComment(props: {
         className={marketCreator ? 'shadow shadow-amber-300' : ''}
       />
       <Col className="w-full">
+        {commentOnAnotherBettorsBet && (
+          <FeedCommentReplyHeader comment={comment} contract={contract} />
+        )}
         <FeedCommentHeader comment={comment} contract={contract} />
+
         <HideableContent comment={comment} />
         <Row className={children ? 'justify-between' : 'justify-end'}>
           {children}
@@ -348,15 +355,23 @@ export function ContractCommentInput(props: {
   contract: Contract
   className?: string
   replyToAnswerId?: string
-  replyTo?: ReplyTo
+  replyToBet?: Bet
+  replyToUserInfo?: ReplyToUserInfo
   parentCommentId?: string
-  onSubmitComment?: () => void
+  clearReply?: () => void
 }) {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const { contract, replyToAnswerId, parentCommentId, replyTo, className } =
-    props
-  async function onSubmitComment(editor: Editor) {
+  const {
+    contract,
+    replyToBet,
+    replyToAnswerId,
+    parentCommentId,
+    replyToUserInfo,
+    className,
+    clearReply,
+  } = props
+  const onSubmitComment = useEvent(async (editor: Editor) => {
     if (!user) {
       track('sign in to comment')
       return await firebaseLogin()
@@ -366,16 +381,20 @@ export function ContractCommentInput(props: {
       content: editor.getJSON(),
       replyToAnswerId: replyToAnswerId,
       replyToCommentId: parentCommentId,
+      replyToBetId: replyToBet?.id,
     })
-    props.onSubmitComment?.()
-  }
+    clearReply?.()
+  })
 
   return (
     <CommentInput
-      replyTo={replyTo}
+      contract={contract}
+      replyToUserInfo={replyToUserInfo}
+      replyToBet={replyToBet}
       parentAnswerOutcome={replyToAnswerId}
       parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
+      clearReply={clearReply}
       pageId={contract.id}
       className={className}
       blocked={isBlocked(privateUser, contract.creatorId)}
@@ -383,21 +402,36 @@ export function ContractCommentInput(props: {
   )
 }
 
-export function FeedCommentHeader(props: {
+function FeedCommentHeader(props: {
   comment: ContractComment
   contract: Contract
 }) {
   const { comment, contract } = props
-  const { userUsername, userName, createdTime } = comment
-  const marketCreator = contract.creatorId === comment.userId
-  const betOutcome = comment.betOutcome
-  let bought: string | undefined
-  let money: string | undefined
-  if (comment.betAmount != null) {
-    bought = comment.betAmount >= 0 ? 'bought' : 'sold'
-    money = formatMoney(Math.abs(comment.betAmount))
+  const {
+    userUsername,
+    userName,
+    createdTime,
+    bettorUsername,
+    betOutcome,
+    answerOutcome,
+    betAmount,
+  } = comment
+
+  if (bettorUsername !== undefined) {
+    return (
+      <span className="text-ink-600 mt-0.5 text-sm">
+        <UserLink
+          username={userUsername}
+          name={userName}
+          marketCreator={bettorUsername === contract.creatorUsername}
+        />
+      </span>
+    )
   }
-  const shouldDisplayOutcome = betOutcome && !comment.answerOutcome
+
+  const marketCreator = contract.creatorId === comment.userId
+  const { bought, money } = getBoughtMoney(betAmount)
+  const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
     <span className="text-ink-600 mt-0.5 text-sm">
       <UserLink
@@ -427,5 +461,84 @@ export function FeedCommentHeader(props: {
         elementId={comment.id}
       />
     </span>
+  )
+}
+
+const getBoughtMoney = (betAmount: number | undefined) => {
+  let bought: string | undefined
+  let money: string | undefined
+  if (betAmount != undefined) {
+    bought = betAmount >= 0 ? 'bought' : 'sold'
+    money = formatMoney(Math.abs(betAmount))
+  }
+  return { bought, money }
+}
+
+function FeedCommentReplyHeader(props: {
+  comment: ContractComment
+  contract: Contract
+}) {
+  const { comment, contract } = props
+  const { bettorName, bettorUsername, betOutcome, betAmount } = comment
+  if (!bettorUsername || !bettorName || !betOutcome || !betAmount) return null
+  return (
+    <CommentOnBetRow
+      betOutcome={betOutcome}
+      betAmount={betAmount}
+      bettorName={bettorName}
+      bettorUsername={bettorUsername}
+      contract={contract}
+    />
+  )
+}
+
+export function CommentOnBetRow(props: {
+  contract: Contract
+  betOutcome: string
+  betAmount: number
+  bettorName: string
+  bettorUsername: string
+  clearReply?: () => void
+  className?: string
+}) {
+  const {
+    betOutcome,
+    betAmount,
+    bettorName,
+    bettorUsername,
+    contract,
+    clearReply,
+    className,
+  } = props
+  const { bought, money } = getBoughtMoney(betAmount)
+
+  return (
+    <Row className={clsx('relative w-full', className)}>
+      <Row className={'absolute -top-8 -left-10  text-sm'}>
+        <Row className="relative">
+          <div className="absolute -bottom-2 left-1.5 z-20">
+            <Curve size={32} strokeWidth={1} color="#D8D8EB" />
+          </div>
+          <Row className="bg-canvas-100 ml-[38px] gap-1 rounded-md p-1">
+            <UserLink
+              username={bettorUsername}
+              name={bettorName}
+              marketCreator={false}
+            />
+            {bought} {money} of
+            <OutcomeLabel
+              outcome={betOutcome ? betOutcome : ''}
+              contract={contract}
+              truncate="short"
+            />
+            {clearReply && (
+              <button onClick={clearReply}>
+                <XCircleIcon className={'absolute -top-1.5 -right-3 h-5 w-5'} />
+              </button>
+            )}
+          </Row>
+        </Row>
+      </Row>
+    </Row>
   )
 }

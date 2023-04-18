@@ -80,6 +80,10 @@ export function ContractTabs(props: {
   )
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
+  const [replyToBet, setReplyToBet] = useState<Bet | undefined>(undefined)
+  useEffect(() => {
+    if (replyToBet) setActiveIndex(0)
+  }, [replyToBet])
 
   const commentTitle =
     totalComments === 0
@@ -128,6 +132,8 @@ export function ContractTabs(props: {
               answerResponse={answerResponse}
               onCancelAnswerResponse={onCancelAnswerResponse}
               blockedUserIds={blockedUserIds}
+              betResponse={replyToBet}
+              clearReply={() => setReplyToBet(undefined)}
             />
           ),
         },
@@ -149,7 +155,11 @@ export function ContractTabs(props: {
           title: betsTitle,
           content: (
             <Col className={'gap-4'}>
-              <BetsTabContent contract={contract} bets={bets} />
+              <BetsTabContent
+                contract={contract}
+                bets={bets}
+                setReplyToBet={setReplyToBet}
+              />
             </Col>
           ),
         },
@@ -183,6 +193,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   setCommentsLength?: (length: number) => void
   onCancelAnswerResponse?: () => void
   answerResponse?: Answer
+  betResponse?: Bet
+  clearReply?: () => void
 }) {
   const {
     contract,
@@ -190,6 +202,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     onCancelAnswerResponse,
     blockedUserIds,
     setCommentsLength,
+    betResponse,
+    clearReply,
   } = props
   const comments = (useComments(contract.id) ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)
@@ -255,7 +269,22 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   return (
     <>
-      {user && <ContractCommentInput className="mb-5" contract={contract} />}
+      {user && (
+        <ContractCommentInput
+          replyToBet={betResponse}
+          replyToUserInfo={
+            betResponse
+              ? {
+                  username: betResponse.userUsername,
+                  id: betResponse.userId,
+                }
+              : undefined
+          }
+          className="mb-5"
+          contract={contract}
+          clearReply={clearReply}
+        />
+      )}
       {comments.length > 0 && (
         <SortRow
           sort={sort}
@@ -304,8 +333,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract
   bets: Bet[]
+  setReplyToBet?: (bet: Bet) => void
 }) {
-  const { contract } = props
+  const { contract, setReplyToBet } = props
   const [bets, setBets] = useState(() => props.bets.filter((b) => !b.isAnte))
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
@@ -380,7 +410,12 @@ const BetsTabContent = memo(function BetsTabContent(props: {
         ) : (
           pageItems.map((item) =>
             item.type === 'bet' ? (
-              <FeedBet key={item.id} contract={contract} bet={item.bet} />
+              <FeedBet
+                onReply={setReplyToBet}
+                key={item.id}
+                contract={contract}
+                bet={item.bet}
+              />
             ) : (
               <FeedLiquidity key={item.id} liquidity={item.lp} />
             )

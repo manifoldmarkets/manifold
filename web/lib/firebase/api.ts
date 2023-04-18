@@ -246,6 +246,7 @@ export function createCommentOnContract(params: {
   content: JSONContent
   replyToCommentId?: string
   replyToAnswerId?: string
+  replyToBetId?: string
 }) {
   return call(getApiUrl('createcomment'), 'POST', params)
 }

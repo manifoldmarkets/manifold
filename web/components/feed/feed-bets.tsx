@@ -13,35 +13,48 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { UserLink } from 'web/components/widgets/user-link'
 import { BETTOR } from 'common/user'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
+import { Col } from 'web/components/layout/col'
+import { ReplyIcon } from '@heroicons/react/solid'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
   bet: Bet
   avatarSize?: number | '2xs' | 'xs' | 'sm'
   className?: string
+  onReply?: (bet: Bet) => void
 }) {
-  const { contract, bet, avatarSize, className } = props
+  const { contract, bet, avatarSize, className, onReply } = props
   const { userAvatarUrl, userUsername, createdTime } = bet
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
 
   return (
-    <Row className={clsx(className, 'items-center gap-2')}>
-      {showUser ? (
-        <Avatar
-          size={avatarSize}
-          avatarUrl={userAvatarUrl}
-          username={userUsername}
+    <Col className={'w-full'}>
+      <Row className={'justify-between'}>
+        <Row className={clsx(className, 'items-center gap-2')}>
+          {showUser ? (
+            <Avatar
+              size={avatarSize}
+              avatarUrl={userAvatarUrl}
+              username={userUsername}
+            />
+          ) : (
+            <EmptyAvatar className="mx-1" />
+          )}
+          <BetStatusText
+            bet={bet}
+            contract={contract}
+            hideUser={!showUser}
+            className="flex-1"
+          />
+        </Row>
+        <BetActions
+          onReply={onReply}
+          bet={bet}
+          betLikes={0}
+          contract={contract}
         />
-      ) : (
-        <EmptyAvatar className="mx-1" />
-      )}
-      <BetStatusText
-        bet={bet}
-        contract={contract}
-        hideUser={!showUser}
-        className="flex-1"
-      />
-    </Row>
+      </Row>
+    </Col>
   )
 })
 
@@ -123,5 +136,28 @@ export function BetStatusText(props: {
       )}{' '}
       <RelativeTimestamp time={createdTime} />
     </div>
+  )
+}
+
+function BetActions(props: {
+  onReply?: (bet: Bet) => void
+  bet: Bet
+  betLikes: number
+  showLike?: boolean
+  contract: Contract
+}) {
+  const { onReply, bet } = props
+  const user = useUser()
+  if (!user) return null
+  return (
+    <Col className="sm:justify-center">
+      {user && onReply && (
+        <span>
+          <button onClick={() => onReply(bet)}>
+            <ReplyIcon className="text-ink-500 h-4 w-4" />
+          </button>
+        </span>
+      )}
+    </Col>
   )
 }
