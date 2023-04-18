@@ -3,6 +3,8 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as admin from 'firebase-admin'
 
+import { getServiceAccountCredentials } from 'common/secrets'
+
 const getFirebaseProjectRoot = (cwd: string) => {
   // see https://github.com/firebase/firebase-tools/blob/master/src/detectProjectRoot.ts
   let dir = cwd
@@ -16,7 +18,7 @@ const getFirebaseProjectRoot = (cwd: string) => {
   return dir
 }
 
-const getFirebaseActiveProject = (cwd: string) => {
+export const getFirebaseActiveProject = (cwd: string) => {
   // firebase uses this configstore package https://github.com/yeoman/configstore/blob/main/index.js#L9
   const projectRoot = getFirebaseProjectRoot(cwd)
   if (projectRoot == null) {
@@ -33,26 +35,21 @@ const getFirebaseActiveProject = (cwd: string) => {
   }
 }
 
-export const getServiceAccountCredentials = (env?: string) => {
-  env = env || getFirebaseActiveProject(process.cwd())
-  if (env == null) {
+export const getLocalEnv = () => {
+  const activeProject = getFirebaseActiveProject(process.cwd())
+  if (activeProject == null) {
     throw new Error(
       "Couldn't find active Firebase project; did you do `firebase use <alias>?`"
     )
   }
-  const envVar = `GOOGLE_APPLICATION_CREDENTIALS_${env.toUpperCase()}`
-  const keyPath = process.env[envVar]
-  if (keyPath == null) {
-    throw new Error(
-      `Please set the ${envVar} environment variable to contain the path to your ${env} environment key file.`
-    )
-  }
-  /* eslint-disable-next-line @typescript-eslint/no-var-requires */
-  return require(keyPath)
+
+  return activeProject.toUpperCase() as 'PROD' | 'DEV'
 }
 
-export const initAdmin = (env?: string) => {
+// Locally initialize Firebase Admin.
+export const initAdmin = () => {
   try {
+    const env = getLocalEnv()
     const serviceAccount = getServiceAccountCredentials(env)
     console.log(
       `Initializing connection to ${serviceAccount.project_id} Firebase...`

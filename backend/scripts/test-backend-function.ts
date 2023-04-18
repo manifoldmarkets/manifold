@@ -1,6 +1,6 @@
 import { getServiceAccountCredentials, initAdmin } from 'shared/init-admin'
 initAdmin()
-import { loadSecretsToEnv } from 'shared/secrets'
+import { loadSecretsToEnv } from 'common/secrets'
 
 import { expireLimitOrders } from 'functions/scheduled/expire-limit-orders'
 

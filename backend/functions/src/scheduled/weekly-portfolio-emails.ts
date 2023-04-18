@@ -28,7 +28,7 @@ import {
 } from 'common/supabase/contract-metrics'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getContracts, getContractsByUsers } from 'common/supabase/contracts'
-import { secrets } from 'shared/secrets'
+import { secrets } from 'common/secrets'
 
 const USERS_TO_EMAIL = 600
 const WEEKLY_MOVERS_TO_SEND = 6

@@ -15,7 +15,7 @@ import {
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import { logit } from 'common/util/math'
 import { bulkUpdate } from 'shared/supabase/utils'
-import { secrets } from 'shared/secrets'
+import { secrets } from 'common/secrets'
 
 export const scoreContracts = functions
   .runWith({

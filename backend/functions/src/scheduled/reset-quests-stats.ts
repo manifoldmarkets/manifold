@@ -6,7 +6,7 @@ import { setQuestScoreValueOnUsers } from 'common/supabase/set-scores'
 import { QUEST_SCORE_IDS } from 'common/quest'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { chunk } from 'lodash'
-import { secrets } from 'shared/secrets'
+import { secrets } from 'common/secrets'
 const firestore = admin.firestore()
 const DAILY_QUEST_SCORE_IDS = ['currentBettingStreak', 'sharesToday']
 export const resetWeeklyQuestStats = functions

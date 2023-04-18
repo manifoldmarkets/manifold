@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
-import { initAdmin, getServiceAccountCredentials } from 'shared/init-admin'
-import { loadSecretsToEnv } from 'shared/secrets'
+import { getLocalEnv, initAdmin } from 'shared/init-admin'
+import { loadSecretsToEnv, getServiceAccountCredentials } from 'common/secrets'
 
 const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 if (LOCAL_DEV) {
@@ -11,8 +11,10 @@ if (LOCAL_DEV) {
 
 import { app } from './app'
 
-// No explicit credentials needed for deployed service.
-const credentials = LOCAL_DEV ? getServiceAccountCredentials() : undefined
+const credentials = LOCAL_DEV
+  ? getServiceAccountCredentials(getLocalEnv())
+  : // No explicit credentials needed for deployed service.
+    undefined
 loadSecretsToEnv(credentials).then(() => {
   const PORT = process.env.PORT ?? 8088
   app.listen(PORT, () => {
