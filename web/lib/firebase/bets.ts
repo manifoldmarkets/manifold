@@ -23,9 +23,11 @@ export const USER_BET_FILTER = {
   filterAntes: true,
 } as const
 
+export type Loading<T> = T | 'loading'
+
 export type BetFilter = {
   contractId?: string
-  userId?: string
+  userId?: Loading<string>
   filterChallenges?: boolean
   filterRedemptions?: boolean
   filterAntes?: boolean

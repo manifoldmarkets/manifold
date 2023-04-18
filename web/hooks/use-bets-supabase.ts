@@ -1,26 +1,55 @@
 import { Bet } from 'common/bet'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BetFilter } from 'web/lib/firebase/bets'
 import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
+import { useEffectCheckEquality } from './use-effect-check-equality'
+import { EMPTY_USER } from 'web/components/contract/contract-tabs'
 
-export function useRealtimeBets(limit: number, options?: BetFilter) {
+function getFilteredQuery(filteredParam: string, filterId?: string) {
+  if (filteredParam === 'contractId' && filterId) {
+    return `contract_id=eq.${filterId}`
+  }
+  return undefined
+}
+
+export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
   const [bets, setBets] = useState<Bet[]>([])
+  let filteredParam
+  let filteredQuery: string | undefined
+  if (options) {
+    if (options.contractId) {
+      filteredParam = 'contractId'
+      filteredQuery = getFilteredQuery(filteredParam, options.contractId)
+    }
+  }
 
-  useEffect(() => {
-    getBets({ limit, order: 'desc', ...options })
-      .then((result) => setBets(result))
+  useEffectCheckEquality(() => {
+    if (options?.userId === 'loading' || options?.userId === EMPTY_USER) {
+      return
+    }
+    getBets({
+      ...options,
+      order: 'desc',
+    })
+      .then((result) => {
+        setBets(result)
+      })
       .catch((e) => console.log(e))
-  }, [])
 
-  useEffect(() => {
-    const channel = db.channel('live-bets')
+    const channel = db.channel(
+      `live-bets-${
+        options?.contractId ? '-contract-' + options?.contractId + '-' : ''
+      }${options?.userId ? '-user-' + options?.userId + '-' : ''}`
+    )
+
     channel.on(
       'postgres_changes',
       {
         event: 'INSERT',
         schema: 'public',
         table: 'contract_bets',
+        filter: filteredQuery,
       },
       (payload) => {
         if (payload) {
@@ -28,7 +57,7 @@ export function useRealtimeBets(limit: number, options?: BetFilter) {
           if (!betShouldBeFiltered(payloadBet, options)) {
             setBets((bets) => {
               if (payloadBet && !bets.some((c) => c.id == payloadBet.id)) {
-                return [payloadBet].concat(bets.slice(0, -1))
+                return [payloadBet].concat(bets)
               } else {
                 return bets
               }
@@ -39,9 +68,12 @@ export function useRealtimeBets(limit: number, options?: BetFilter) {
     )
     channel.subscribe(async (status) => {})
     return () => {
-      db.removeChannel(channel)
+      if (channel) {
+        db.removeChannel(channel)
+      }
     }
-  }, [db])
+  }, [options, db])
+
   return bets
 }
 
@@ -72,9 +104,9 @@ function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
 export function useBets(options?: BetFilter) {
   const [bets, setBets] = useState<Bet[]>([])
 
-  useEffect(() => {
+  useEffectCheckEquality(() => {
     getBets(options).then((result) => setBets(result))
-  }, [])
+  }, [options])
 
   return bets
 }

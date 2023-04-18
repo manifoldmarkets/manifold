@@ -1,49 +1,51 @@
-import React, { memo, useEffect, useMemo, useState } from 'react'
 import { groupBy, last, sortBy } from 'lodash'
+import { memo, useEffect, useMemo, useState } from 'react'
 
-import { Pagination } from 'web/components/widgets/pagination'
-import { FeedBet } from '../feed/feed-bets'
-import { FeedLiquidity } from '../feed/feed-liquidity'
-import { FreeResponseComments } from '../feed/feed-answer-comment-group'
-import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
-import { Bet } from 'common/bet'
-import { Contract, CPMMBinaryContract } from 'common/contract'
-import { ContractBetsTable } from '../bet/bets-list'
-import { ControlledTabs } from '../layout/tabs'
-import { Col } from '../layout/col'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { useComments } from 'web/hooks/use-comments'
-import { useLiquidity } from 'web/hooks/use-liquidity'
+import { Answer } from 'common/answer'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
-import { buildArray } from 'common/util/array'
+import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
+import { CPMMBinaryContract, Contract } from 'common/contract'
+import { ShareholderStats } from 'common/supabase/contract-metrics'
+import { buildArray } from 'common/util/array'
+import { shortFormatNumber } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
-import { useUser } from 'web/hooks/use-user'
+import { BinaryUserPositionsTable } from 'web/components/contract/user-positions-table'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { Row } from '../layout/row'
+import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
+import { useBets, useRealtimeBets } from 'web/hooks/use-bets-supabase'
+import { useComments } from 'web/hooks/use-comments'
+import { useEvent } from 'web/hooks/use-event'
+import { useHashInUrl } from 'web/hooks/use-hash-in-url'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useLiquidity } from 'web/hooks/use-liquidity'
 import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
-import { Answer } from 'common/answer'
-import { track } from 'web/lib/service/analytics'
-import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { shortFormatNumber } from 'common/util/format'
-import { CertInfo, CertTrades } from './cert-overview'
-import { getOlderBets } from 'web/lib/supabase/bets'
+import { useUser } from 'web/hooks/use-user'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
+import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import { track } from 'web/lib/service/analytics'
+import { getBets, getOlderBets } from 'web/lib/supabase/bets'
+import { ContractBetsTable } from '../bet/bets-list'
+import { FreeResponseComments } from '../feed/feed-answer-comment-group'
+import { FeedBet } from '../feed/feed-bets'
+import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
+import { FeedLiquidity } from '../feed/feed-liquidity'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { ControlledTabs } from '../layout/tabs'
+import { CertInfo, CertTrades } from './cert-overview'
 import { QfTrades } from './qf-overview'
-import { BinaryUserPositionsTable } from 'web/components/contract/user-positions-table'
-import { ShareholderStats } from 'common/supabase/contract-metrics'
-import { useHashInUrl } from 'web/hooks/use-hash-in-url'
-import { useEvent } from 'web/hooks/use-event'
-import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useBets } from 'web/hooks/use-bets'
+
+export const EMPTY_USER = '_'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -91,12 +93,15 @@ export function ContractTabs(props: {
       : `${shortFormatNumber(totalComments)} Comments`
 
   const user = useUser()
-  const userBets =
-    useBets({
+
+  const userBets = useRealtimeBets(
+    {
       contractId: contract.id,
-      userId: user?.id ?? '_',
+      userId: user === undefined ? 'loading' : user?.id ?? EMPTY_USER,
       filterAntes: true,
-    }) ?? []
+    },
+    true
+  )
 
   const betsTitle =
     totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`
@@ -216,13 +221,13 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     key: `comments-sort-${contract.id}`,
     store: inMemoryStore(),
   })
-  const user = useUser()
   const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const shouldBeNewestFirst = (c: ContractComment) =>
     c.replyToCommentId == undefined
 
+  const user = useUser()
   const sortedComments = useMemo(
     () =>
       sortBy(comments, [
