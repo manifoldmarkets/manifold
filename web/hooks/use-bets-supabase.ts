@@ -68,7 +68,6 @@ export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
     channel.subscribe(async (status) => {})
     return () => {
       if (channel) {
-        // channel.unsubscribe()
         db.removeChannel(channel)
       }
     }
