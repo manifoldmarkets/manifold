@@ -10,7 +10,7 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { dalleWithDefaultParams } from 'shared/dream-utils'
 import { getImagePrompt, generateEmbeddings } from 'shared/helpers/openai-utils'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { secrets } from 'shared/secrets'
+import { secrets } from 'common/secrets'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 
 export const onCreateContract = functions

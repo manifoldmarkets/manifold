@@ -18,7 +18,7 @@ import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
-import { secrets } from 'shared/secrets'
+import { secrets } from 'common/secrets'
 import { HOUR_MS } from 'common/util/time'
 
 const firestore = admin.firestore()

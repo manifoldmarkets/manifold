@@ -1,6 +1,6 @@
 import { getServiceAccountCredentials, initAdmin } from 'shared/init-admin'
 initAdmin()
-import { loadSecretsToEnv } from 'shared/secrets'
+import { loadSecretsToEnv } from 'common/secrets'
 import { START_OF_WEEK } from 'shared/complete-quest-internal'
 import { getAllUsers } from 'shared/utils'
 import { getRecentContractsCount } from 'common/supabase/contracts'

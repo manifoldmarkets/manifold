@@ -9,7 +9,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { PrivateUser } from 'common/user'
-import { secrets } from 'shared/secrets'
+import { secrets } from 'common/secrets'
 
 const firestore = admin.firestore()
 const now = new Date()
