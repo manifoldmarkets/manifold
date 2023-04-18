@@ -1,5 +1,5 @@
 import { Bet } from 'common/bet'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BetFilter } from 'web/lib/firebase/bets'
 import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
