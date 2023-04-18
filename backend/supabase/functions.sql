@@ -458,7 +458,8 @@ from (
     from contracts
     where data->'groupSlugs' ?| group_slugs
       and is_valid_contract(contracts)
-    order by popularity_score desc, data->'slug' offset start
+    order by popularity_score desc,
+      data->'slug' offset start
     limit lim
   ) as search_contracts $$;
 create or replace function search_contracts_by_group_slugs_for_creator(
@@ -474,7 +475,8 @@ from (
     where data->'groupSlugs' ?| group_slugs
       and is_valid_contract(contracts)
       and contracts.creator_id = $1
-    order by popularity_score desc, data->'slug' offset start
+    order by popularity_score desc,
+      data->'slug' offset start
     limit lim
   ) as search_contracts $$;
 create or replace function get_contract_metrics_with_contracts(uid text, count int, start int) returns table(contract_id text, metrics jsonb, contract jsonb) immutable parallel safe language sql as $$
@@ -498,7 +500,7 @@ from (
         order by (data->>'createdTime') desc
       ) as data
     from contract_bets
-    where (data->>'userId') = uid
+    where user_id = uid
       and (data->>'isFilled')::boolean = false
       and (data->>'isCancelled')::boolean = false
     group by contract_id
@@ -513,11 +515,11 @@ from (
     select contract_id,
       array_agg(
         data
-        order by (data->>'createdTime') desc
+        order by created_time desc
       ) as data
     from contract_bets
-    where (data->>'userId') = uid
-      and (data->>'amount')::real != 0
+    where user_id = uid
+      and amount != 0
     group by contract_id
   ) as bets
   join contracts on contracts.id = bets.contract_id
