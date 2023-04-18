@@ -458,8 +458,7 @@ from (
     from contracts
     where data->'groupSlugs' ?| group_slugs
       and is_valid_contract(contracts)
-    order by (data->'uniqueBettors7Days')::int desc,
-      data->'slug' offset start
+    order by popularity_score desc, data->'slug' offset start
     limit lim
   ) as search_contracts $$;
 create or replace function search_contracts_by_group_slugs_for_creator(
@@ -475,8 +474,7 @@ from (
     where data->'groupSlugs' ?| group_slugs
       and is_valid_contract(contracts)
       and contracts.creator_id = $1
-    order by (data->'uniqueBettors7Days')::int desc,
-      data->'slug' offset start
+    order by popularity_score desc, data->'slug' offset start
     limit lim
   ) as search_contracts $$;
 create or replace function get_contract_metrics_with_contracts(uid text, count int, start int) returns table(contract_id text, metrics jsonb, contract jsonb) immutable parallel safe language sql as $$
