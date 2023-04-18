@@ -196,7 +196,7 @@ create or replace function get_recommended_contracts_embeddings_topic(
       not_chosen_embedding as not_chosen
   )
 select *
-from get_recommended_contracts_embeddings_from2(
+from get_recommended_contracts_embeddings_from(
     uid,
     (
       select average
