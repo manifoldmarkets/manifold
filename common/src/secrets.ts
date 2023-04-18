@@ -84,6 +84,7 @@ export const getServiceAccountCredentials = (env: 'PROD' | 'DEV') => {
       ? process.env.PROD_FIREBASE_SERVICE_ACCOUNT_KEY
       : process.env.DEV_FIREBASE_SERVICE_ACCOUNT_KEY
   if (value) {
+    console.log('Using Vercel service account key.', value)
     return JSON.parse(value)
   }
 

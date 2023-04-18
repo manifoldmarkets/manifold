@@ -15,8 +15,8 @@ export async function getOlderBets(
 ) {
   const query = selectJson(db, 'contract_bets')
     .eq('contract_id', contractId)
-    .lt('data->>createdTime', beforeTime)
-    .order('data->>createdTime', { ascending: false } as any)
+    .lt('created_time', beforeTime)
+    .order('created_time', { ascending: false } as any)
     .limit(limit)
   const { data } = await run(query)
 
@@ -31,7 +31,7 @@ export const getBet = async (id: string) => {
 
 export const getBets = async (options?: BetFilter) => {
   let q = selectJson(db, 'contract_bets')
-  q = q.order('data->>createdTime', {
+  q = q.order('created_time', {
     ascending: options?.order === 'asc',
   } as any)
   q = applyBetsFilter(q, options)
@@ -44,7 +44,7 @@ export const getBetFields = async <T extends (keyof Bet)[]>(
   options?: BetFilter
 ) => {
   let q = selectFrom(db, 'contract_bets', ...fields)
-  q = q.order('data->>createdTime', {
+  q = q.order('created_time', {
     ascending: options?.order === 'asc',
   } as any)
   q = applyBetsFilter(q, options)
@@ -61,19 +61,19 @@ export const applyBetsFilter = (q: any, options?: BetFilter) => {
     q = q.contains('data', { userId: options.userId })
   }
   if (options?.afterTime) {
-    q = q.gt('data->>createdTime', options.afterTime)
+    q = q.gt('created_time', options.afterTime)
   }
   if (options?.beforeTime) {
-    q = q.lt('data->>createdTime', options.beforeTime)
+    q = q.lt('created_time', options.beforeTime)
   }
   if (options?.filterChallenges) {
-    q = q.contains('data', { isChallenge: false })
+    q = q.eq('is_challenge', false)
   }
   if (options?.filterAntes) {
-    q = q.contains('data', { isAnte: false })
+    q = q.eq('is_ante', false)
   }
   if (options?.filterRedemptions) {
-    q = q.contains('data', { isRedemption: false })
+    q = q.eq('is_redemption', false)
   }
   if (options?.isOpenLimitOrder) {
     q = q.contains('data', { isFilled: false, isCancelled: false })
