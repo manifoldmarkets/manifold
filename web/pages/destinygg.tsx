@@ -21,20 +21,21 @@ import { Modal } from 'web/components/layout/modal'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { getTotalSubs } from 'web/lib/firebase/utils'
 import { AlertBox } from 'web/components/widgets/alert-box'
-import { supabaseSearchContracts } from 'web/lib/firebase/api'
 import { Contract } from 'common/contract'
+import { searchContract } from 'web/lib/supabase/contracts'
 
 export async function getStaticProps() {
   const subCount = await getTotalSubs()
 
-  const trendingContracts = await supabaseSearchContracts({
-    term: '',
-    filter: 'open',
-    sort: 'score',
-    offset: 0,
-    limit: 6,
-    groupId: 'W2ES30fRo6CCbPNwMTTj',
-  })
+  const trendingContracts = (
+    await searchContract({
+      query: '',
+      filter: 'open',
+      sort: 'score',
+      limit: 6,
+      group_id: 'W2ES30fRo6CCbPNwMTTj',
+    })
+  ).data
 
   return {
     props: {

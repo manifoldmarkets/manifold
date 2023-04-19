@@ -133,16 +133,9 @@ const Results = (props: { query: string }) => {
       searchUsers(search, userHitLimit),
       searchGroups(search, groupHitLimit),
       searchContract({
-        state: {
-          contracts: undefined,
-          fuzzyContractOffset: 0,
-          shouldLoadMore: false,
-          showTime: null,
-        },
         query: search,
         filter: 'all',
         sort: 'most-popular',
-        offset: 0,
         limit: marketHitLimit,
       }),
     ]).then(([userHits, groupHits, { data: marketHits }]) => {
