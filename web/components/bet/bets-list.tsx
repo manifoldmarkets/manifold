@@ -32,7 +32,7 @@ import {
   CPMMBinaryContract,
 } from 'common/contract'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { LimitBet } from 'common/bet'
 import { Pagination } from '../widgets/pagination'
 import { OrderTable } from './limit-bets'
@@ -79,6 +79,7 @@ export function BetsList(props: { user: User }) {
   const { user } = props
 
   const signedInUser = useUser()
+    const isAuth = useIsAuthorized()
   const isYourBets = user.id === signedInUser?.id
 
   const [metricsByContract, setMetricsByContract] = usePersistentState<
@@ -111,7 +112,7 @@ export function BetsList(props: { user: User }) {
         )
       }
     )
-  }, [user.id, setMetricsByContract, setInitialContracts])
+  }, [user.id, setMetricsByContract, setInitialContracts, isAuth])
 
   useEffect(() => {
     getOpenLimitOrdersWithContracts(user.id, 5000).then((betsWithContracts) => {
@@ -121,7 +122,7 @@ export function BetsList(props: { user: User }) {
         uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
       )
     })
-  }, [setInitialContracts, setOpenLimitBetsByContract, user.id])
+  }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
   const [sort, setSort] = usePersistentState<BetSort>('newest', {
     key: 'bets-list-sort',
