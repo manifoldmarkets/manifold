@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions'
-import { getUser, revalidateStaticProps } from 'shared/utils'
+import { getUser, processPaginated, revalidateStaticProps } from 'shared/utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
 import { Contract, contractPath } from 'common/contract'
 import * as admin from 'firebase-admin'
@@ -36,6 +36,12 @@ export const onUpdateContract = functions
       )
     ) {
       await revalidateContractStaticProps(contract)
+    }
+
+    if (previousContract.visibility !== contract.visibility) {
+      const newVisibility = contract.visibility as 'public' | 'unlisted'
+
+      await updateContractSubcollectionsVisibility(contract.id, newVisibility)
     }
   })
 
@@ -111,6 +117,32 @@ const getPropsThatTriggerRevalidation = (contract: Contract) => {
     description,
     groupLinks,
   }
+}
+
+async function updateContractSubcollectionsVisibility(
+  contractId: string,
+  newVisibility: 'public' | 'unlisted'
+) {
+  const contractRef = firestore.collection('contracts').doc(contractId)
+  const batchSize = 500
+
+  // Update comments' visibility
+  const commentsRef = contractRef.collection('comments')
+  await processPaginated(commentsRef, batchSize, (ts) => {
+    const updatePromises = ts.docs.map((doc) => {
+      return doc.ref.update({ visibility: newVisibility })
+    })
+    return Promise.all(updatePromises)
+  })
+
+  // Update bets' visibility
+  const betsRef = contractRef.collection('bets')
+  await processPaginated(betsRef, batchSize, (ts) => {
+    const updatePromises = ts.docs.map((doc) => {
+      return doc.ref.update({ visibility: newVisibility })
+    })
+    return Promise.all(updatePromises)
+  })
 }
 
 async function revalidateContractStaticProps(contract: Contract) {

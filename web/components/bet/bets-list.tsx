@@ -79,7 +79,7 @@ export function BetsList(props: { user: User }) {
   const { user } = props
 
   const signedInUser = useUser()
-    const isAuth = useIsAuthorized()
+  const isAuth = useIsAuthorized()
   const isYourBets = user.id === signedInUser?.id
 
   const [metricsByContract, setMetricsByContract] = usePersistentState<
