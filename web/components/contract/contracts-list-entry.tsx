@@ -14,6 +14,8 @@ import { formatPercentShort } from 'common/util/format'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getStonkPriceMax } from 'common/stonk'
 import { Tooltip } from '../widgets/tooltip'
+import { Row } from '../layout/row'
+import { UniqueTraders } from './contract-card'
 
 export function ContractStatusLabel(props: {
   contract: Contract
@@ -119,11 +121,11 @@ export const ContractsListEntry = forwardRef(
           avatarUrl={contract.creatorAvatarUrl}
           size="xs"
         />
-        {!skinny && (
+        {/* {!skinny && (
           <div className="min-w-[2rem] text-right font-semibold">
             <ContractStatusLabel contract={contract} />
           </div>
-        )}
+        )} */}
         <div
           className={clsx(
             'break-anywhere whitespace-normal font-medium',
@@ -132,11 +134,16 @@ export const ContractsListEntry = forwardRef(
         >
           {contract.question}
         </div>
-        {skinny && (
-          <div className="ml-auto min-w-[2rem] font-semibold">
+        <Row className="ml-auto gap-4">
+          <div className="min-w-[2rem] font-semibold mr-2">
             <ContractStatusLabel contract={contract} />
           </div>
+        {!skinny && (
+          <div className="min-w-[2rem] text-sm">
+            <UniqueTraders uniqueBettorCount={contract.uniqueBettorCount} iconSize={'sm'}/>
+          </div>
         )}
+        </Row>
       </Link>
     )
   }

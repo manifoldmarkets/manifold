@@ -555,21 +555,29 @@ function ReasonChosen(props: { contract: Contract }) {
         )}
         {reason === 'New' && fromNow(createdTime)}
         {reason === 'Trending' && (
-          <Tooltip
-            text={`${uniqueBettorCount ?? 0} unique traders`}
-            placement="bottom"
-            className={'z-10'}
-          >
-            <Row className={'shrink-0 items-center gap-1'}>
-              <UserIcon className="h-4 w-4" />
-              <div>{uniqueBettorCount ?? 0}</div>
-            </Row>
-          </Tooltip>
+          <UniqueTraders uniqueBettorCount={uniqueBettorCount} />
         )}
       </Row>
     </Row>
   )
 }
+
+export function UniqueTraders(props:{uniqueBettorCount:number, iconSize?:'sm'|'md'}) {
+  const {uniqueBettorCount, iconSize='md'} = props
+  return (
+    <Tooltip
+      text={`${uniqueBettorCount ?? 0} unique traders`}
+      placement="bottom"
+      className={'z-10'}
+    >
+      <Row className={'shrink-0 items-center gap-1 align-center'}>
+        <UserIcon className={clsx(iconSize==='sm'?'h-3 w-3' :"h-4 w-4" )}/>
+        <div>{uniqueBettorCount ?? 0}</div>
+      </Row>
+    </Tooltip>
+  )
+}
+
 
 function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   const { metrics } = props
