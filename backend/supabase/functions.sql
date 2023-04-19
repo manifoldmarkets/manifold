@@ -779,11 +779,3 @@ select nullif(
     ''
   )::text;
 $$;
-
-create
-or replace function firebase_uid () returns text language sql stable parallel safe as $$
-select nullif(
-    current_setting('request.jwt.claims', true)::json->>'sub',
-    ''
-  )::text;
-$$;
