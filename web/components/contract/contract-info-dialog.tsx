@@ -252,7 +252,7 @@ export const Stats = (props: {
           </>
         )}
 
-        {!hideAdvanced && (
+        {!hideAdvanced && contract.visibility != 'private' && (
           <tr className={clsx(isAdmin && 'bg-scarlet-500/20')}>
             <td>
               Publicly listed{' '}
