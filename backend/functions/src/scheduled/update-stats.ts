@@ -6,7 +6,17 @@ import * as timezone from 'dayjs/plugin/timezone'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-import { range, zip, uniq, sum, sumBy, countBy } from 'lodash'
+import {
+  range,
+  zip,
+  uniq,
+  sum,
+  sumBy,
+  countBy,
+  groupBy,
+  mapValues,
+  intersection,
+} from 'lodash'
 import { log, logMemory } from 'shared/utils'
 import { Stats } from 'common/stats'
 import { DAY_MS } from 'common/util/time'
@@ -241,6 +251,28 @@ export const updateStatsCore = async () => {
     return uniques.size
   })
 
+  const engagedUsers = dailyUserIds.map((_, i) => {
+    const start = Math.max(0, i - 20)
+    const week1 = Math.max(0, i - 13)
+    const week2 = Math.max(0, i - 6)
+    const end = i + 1
+
+    const getTwiceActive = (dailyActiveIds: string[][]) => {
+      const userActiveCounts = mapValues(
+        groupBy(dailyActiveIds.flat(), (id) => id),
+        (ids) => ids.length
+      )
+      return Object.keys(userActiveCounts).filter(
+        (id) => userActiveCounts[id] > 1
+      )
+    }
+
+    const engaged1 = getTwiceActive(dailyUserIds.slice(start, week1))
+    const engaged2 = getTwiceActive(dailyUserIds.slice(week1, week2))
+    const engaged3 = getTwiceActive(dailyUserIds.slice(week2, end))
+    return intersection(engaged1, engaged2, engaged3).length
+  })
+
   const d1 = dailyUserIds.map((userIds, i) => {
     if (i === 0) return 0
 
@@ -396,6 +428,7 @@ export const updateStatsCore = async () => {
     dailySales,
     weeklyActiveUsers,
     monthlyActiveUsers,
+    engagedUsers,
     d1,
     d1WeeklyAvg,
     nd1,

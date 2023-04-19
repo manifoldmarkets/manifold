@@ -5,6 +5,7 @@ export type Stats = {
   avgDailyUserActions: number[]
   weeklyActiveUsers: number[]
   monthlyActiveUsers: number[]
+  engagedUsers: number[]
   dailySales: number[]
   d1: number[]
   d1WeeklyAvg: number[]

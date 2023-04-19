@@ -52,6 +52,7 @@ export function CustomAnalytics(props: Stats) {
     dailySales,
     weeklyActiveUsers,
     monthlyActiveUsers,
+    engagedUsers,
     d1,
     d1WeeklyAvg,
     nd1,
@@ -83,6 +84,8 @@ export function CustomAnalytics(props: Stats) {
     dailyActiveUsersWeeklyAvg[dailyActiveUsersWeeklyAvg.length - 1]
   const last30dSales = dailySales.slice(-30).reduce((a, b) => a + b, 0)
   const isNative = getIsNative()
+
+  const currentEngaged = engagedUsers[engagedUsers.length - 1]
 
   return (
     <Col className="px-2 sm:px-0">
@@ -159,6 +162,20 @@ export function CustomAnalytics(props: Stats) {
       </InfoBox>
 
       <Spacer h={8} />
+
+      <Title children="Engaged users" />
+      <p className="text-ink-500">
+        An engaged user is a user who has traded in, commented on, or created a
+        market on at least 2 out of 7 days in each of the past 3 weeks.
+      </p>
+      <div className="text-ink-500 mt-2">
+        <b>{formatLargeNumber(currentEngaged)} </b> engaged users
+      </div>
+      <Spacer h={4} />
+
+      <DailyChart dailyValues={engagedUsers} startDate={startDate} />
+      <Spacer h={8} />
+
 
       <Title children="Revenue" />
       <p className="text-ink-500">
