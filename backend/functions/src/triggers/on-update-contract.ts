@@ -128,7 +128,7 @@ async function updateContractSubcollectionsVisibility(
 
   // Update comments' visibility
   const commentsRef = contractRef.collection('comments')
-  processPaginated(commentsRef, batchSize, (ts) => {
+  await processPaginated(commentsRef, batchSize, (ts) => {
     const updatePromises = ts.docs.map((doc) => {
       return doc.ref.update({ visibility: newVisibility })
     })
@@ -137,7 +137,7 @@ async function updateContractSubcollectionsVisibility(
 
   // Update bets' visibility
   const betsRef = contractRef.collection('bets')
-  processPaginated(betsRef, batchSize, (ts) => {
+  await processPaginated(betsRef, batchSize, (ts) => {
     const updatePromises = ts.docs.map((doc) => {
       return doc.ref.update({ visibility: newVisibility })
     })
