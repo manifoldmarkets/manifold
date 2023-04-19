@@ -25,6 +25,7 @@ import { Col } from './layout/col'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { SiteLink } from './widgets/site-link'
+import { useIsAuthorized } from 'web/hooks/use-user'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -397,18 +398,20 @@ function SupabaseContractSearchControls(props: {
     track('select search sort', { sort: newSort })
   }
 
+  const isAuth = useIsAuthorized()
+
   useEffect(() => {
     onSearchParametersChanged({
       query: query,
       sort: sort as Sort,
       filter: filter as filter,
     })
-  }, [query, sort, filter])
+  }, [query, sort, filter, isAuth])
 
   return (
     <div
       className={clsx(
-        'sticky top-0 z-30 mb-1 flex flex-col items-stretch gap-3 pb-2 pt-px sm:flex-row sm:gap-2',
+        'bg-canvas-50 sticky top-0 z-30 mb-1 flex flex-col items-stretch gap-3 pb-2 pt-px sm:flex-row sm:gap-2',
         className
       )}
     >

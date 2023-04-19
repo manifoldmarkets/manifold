@@ -12,10 +12,13 @@ import { Col } from '../layout/col'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { useState } from 'react'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { ContractStatusLabel, ContractsListEntry } from './contracts-list-entry'
+import {
+  ContractStatusLabel,
+  ContractsListEntry,
+  ContractsTableEntry,
+} from './contracts-list-entry'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Avatar } from '../widgets/avatar'
-
 const contractListEntryHighlightClass =
   'bg-gradient-to-b from-primary-100 via-ink-0to-ink-0outline outline-2 outline-primary-400'
 export function ContractsList(props: {
@@ -29,6 +32,7 @@ export function ContractsList(props: {
     props
 
   const isMobile = useIsMobile()
+  console.log('MOBILE', isMobile)
 
   if (contracts === undefined) {
     return <LoadingIndicator />
@@ -59,33 +63,12 @@ export function ContractsList(props: {
           />
         )
       )} */}
-        <table>
-      <thead className="text-left text-sm text-ink-600 font-semibold">
-        <tr>
-          <th></th>
-          <th>Market</th>
-          <th></th>
-          <th>Traders</th>
-        </tr>
-      </thead>
-      <tbody>
-        {contracts.map((contract) => (
-          <tr key={contract.id}>
-        <td className="pr-4 py-2"><Avatar
-          username={contract.creatorUsername}
-          avatarUrl={contract.creatorAvatarUrl}
-          size="xs"/></td>
-            <td className="pr-4">{contract.question}</td>
-            <td>
-              <div className="min-w-[2rem] font-semibold mr-2"><ContractStatusLabel contract={contract} /></div>
-            </td>
-            <td>
-              {contract.uniqueBettorCount}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+      <ContractsTableEntry
+        contracts={contracts}
+        onContractClick={onContractClick}
+        isMobile={isMobile}
+        highlightContractIds={highlightContractIds}
+      />
 
       {loadMore && (
         <LoadMoreUntilNotVisible
