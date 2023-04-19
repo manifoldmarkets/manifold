@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { listenForValues } from 'web/lib/firebase/utils'
 import {
   collectionGroup,
@@ -13,6 +13,8 @@ import {
   ContractMetricsByOutcome,
 } from 'web/lib/firebase/contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
+import { SupabaseClient } from 'common/supabase/utils'
+import { useValuesOnContract } from 'web/lib/supabase/utils'
 
 export const useContractMetrics = (
   contractId: string,
@@ -104,4 +106,66 @@ export function listenForContractMetricsOnContract(
     )
     return listenForValues<ContractMetric>(unsortedQuery, setMetrics)
   }
+}
+
+export function useSupabaseContractMetrics(
+  contractId: string,
+  db: SupabaseClient,
+  sort: 'shares' | 'profit',
+  limit: number
+) {
+  const loadInitialValuesBySharesForContractId = async () => {
+    const { data: yesShares } = await db
+      .from('user_contract_metrics')
+      .select('*')
+      .eq('contract_id', contractId)
+      .eq('data->>hasYesShares', true)
+      .order('data->totalShares->YES', {
+        ascending: false,
+        nullsFirst: false,
+      } as any)
+      .limit(limit)
+    const { data: noShares } = await db
+      .from('user_contract_metrics')
+      .select('*')
+      .eq('contract_id', contractId)
+      .eq('data->>hasNoShares', true)
+      .order(`data->totalShares->NO`, {
+        ascending: false,
+        nullsFirst: false,
+      } as any)
+      .limit(limit)
+    return [...(yesShares ?? []), ...(noShares ?? [])]
+  }
+  const loadInitialValuesByProfitForContractId = async () => {
+    const { data: positiveProfit } = await db
+      .from('user_contract_metrics')
+      .select('*')
+      .eq('contract_id', contractId)
+      .gt('data->profit', 0)
+      .order(`data->profit`, { ascending: false, nullsFirst: false } as any)
+      .limit(limit)
+    const { data: negativeProfit } = await db
+      .from('user_contract_metrics')
+      .select('*')
+      .eq('contract_id', contractId)
+      .lt('data->profit', 0)
+      .order(`data->profit`, { ascending: true, nullsFirst: false } as any)
+      .limit(limit)
+    return [...(positiveProfit ?? []), ...(negativeProfit ?? [])]
+  }
+  const initalValueCallback = useCallback(
+    () =>
+      sort === 'shares'
+        ? loadInitialValuesBySharesForContractId()
+        : loadInitialValuesByProfitForContractId(),
+    [limit, sort]
+  )
+  return useValuesOnContract(
+    'user_contract_metrics',
+    'user_id',
+    contractId,
+    db,
+    initalValueCallback
+  ) as ContractMetric[] | undefined
 }

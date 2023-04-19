@@ -1,10 +1,8 @@
 import clsx from 'clsx'
-import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import {
   ShareholderStats,
-  getContractMetricsForContractId,
   getShareholderCountsForContractId,
 } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
@@ -27,7 +25,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useContractMetrics } from 'web/hooks/use-contract-metrics'
+import { useSupabaseContractMetrics } from 'web/hooks/use-contract-metrics'
 import { useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
@@ -49,43 +47,39 @@ export const BinaryUserPositionsTable = memo(
     const contractId = contract.id
     const [page, setPage] = useState(0)
     const pageSize = 20
-    const outcomes = ['YES', 'NO']
     const currentUser = useUser()
     const followedUsers = useFollows(currentUser?.id)
-    const [contractMetricsByProfit, setContractMetricsByProfit] = useState<
-      ContractMetrics[] | undefined
-    >()
+
     const [shareholderStats, setShareholderStats] = useState<
       ShareholderStats | undefined
     >(props.shareholderStats)
 
-    const [sortBy, setSortBy] = useState<'profit' | 'shares'>('shares')
-
-    useEffect(() => {
-      if (sortBy === 'profit' && contractMetricsByProfit === undefined) {
-        getContractMetricsForContractId(contractId, db, sortBy).then(
-          setContractMetricsByProfit
-        )
-      }
-    }, [contractId, contractMetricsByProfit, sortBy])
-
-    const [positiveProfitPositions, negativeProfitPositions] = useMemo(() => {
-      const [positiveProfitPositions, negativeProfitPositions] = partition(
-        contractMetricsByProfit ?? [],
-        (cm) => cm.profit > 0
-      )
-      return [positiveProfitPositions, negativeProfitPositions.reverse()]
-    }, [contractMetricsByProfit])
-
+    const [sort, setSort] = useState<'profit' | 'shares'>('shares')
     const [livePositionsLimit, setLivePositionsLimit] = useState(100)
-    const positions =
-      useContractMetrics(contractId, livePositionsLimit, outcomes) ??
-      props.positions
 
-    const yesPositionsSorted =
-      sortBy === 'shares' ? positions.YES ?? [] : positiveProfitPositions
-    const noPositionsSorted =
-      sortBy === 'shares' ? positions.NO ?? [] : negativeProfitPositions
+    const contractMetricsByProfit =
+      useSupabaseContractMetrics(
+        contractId,
+        db,
+        'profit',
+        livePositionsLimit
+      ) ?? []
+    const positions =
+      useSupabaseContractMetrics(
+        contractId,
+        db,
+        'shares',
+        livePositionsLimit
+      ) ?? []
+
+    const [yesOrProfitPositions, noOrLossPositions] = useMemo(() => {
+      const [positiveProfitPositions, negativeProfitPositions] = partition(
+        sort === 'shares' ? positions : contractMetricsByProfit,
+        (cm) => (sort === 'shares' ? cm.hasYesShares : cm.profit > 0)
+      )
+      return [positiveProfitPositions, negativeProfitPositions]
+    }, [sort, positions, contractMetricsByProfit])
+
     useEffect(() => {
       // Let's use firebase here as supabase can be slightly out of date, leading to incorrect counts
       getTotalContractMetricsCount(contractId).then(setTotalPositions)
@@ -94,23 +88,22 @@ export const BinaryUserPositionsTable = memo(
       getShareholderCountsForContractId(contractId, db).then(
         setShareholderStats
       )
-    }, [positions, contractId])
+    }, [positions.length, contractId])
 
-    const visibleYesPositions = yesPositionsSorted.slice(
+    const visibleYesPositions = yesOrProfitPositions.slice(
       page * pageSize,
       (page + 1) * pageSize
     )
-    const visibleNoPositions = noPositionsSorted.slice(
+    const visibleNoPositions = noOrLossPositions.slice(
       page * pageSize,
       (page + 1) * pageSize
     )
     const largestColumnLength =
-      yesPositionsSorted.length > noPositionsSorted.length
-        ? yesPositionsSorted.length
-        : noPositionsSorted.length
+      yesOrProfitPositions.length > noOrLossPositions.length
+        ? yesOrProfitPositions.length
+        : noOrLossPositions.length
 
     useEffect(() => {
-      // TODO: we should switch to using supabase realtime subscription for this
       if (page === largestColumnLength / pageSize - 1) {
         setLivePositionsLimit((livePositionsLimit) => livePositionsLimit + 100)
       }
@@ -175,13 +168,13 @@ export const BinaryUserPositionsTable = memo(
     return (
       <Col className={'w-full'}>
         <Row className={'mb-2 items-center justify-end gap-2'}>
-          {sortBy === 'profit' && contractMetricsByProfit === undefined && (
+          {sort === 'profit' && contractMetricsByProfit === undefined && (
             <LoadingIndicator spinnerClassName={'border-ink-500'} size={'sm'} />
           )}
           <SortRow
-            sort={sortBy === 'profit' ? 'profit' : 'position'}
+            sort={sort === 'profit' ? 'profit' : 'position'}
             onSortClick={() => {
-              setSortBy(sortBy === 'shares' ? 'profit' : 'shares')
+              setSort(sort === 'shares' ? 'profit' : 'shares')
               setPage(0)
             }}
           />
@@ -190,7 +183,7 @@ export const BinaryUserPositionsTable = memo(
         <Row className={'gap-1 sm:gap-8'}>
           <Col className={'w-full max-w-sm gap-2'}>
             <Row className={'text-ink-500 justify-end px-2'}>
-              {sortBy === 'profit' ? (
+              {sort === 'profit' ? (
                 <span className={'text-ink-500'}>Profit</span>
               ) : (
                 <span>{getPositionsTitle('YES')}</span>
@@ -200,13 +193,13 @@ export const BinaryUserPositionsTable = memo(
               const outcome = 'YES'
               return (
                 <PositionRow
-                  key={position.userId + outcome}
+                  key={position.userId + outcome + sort}
                   position={position}
                   outcome={outcome}
                   currentUser={currentUser}
                   followedUsers={followedUsers}
                   numberToShow={
-                    sortBy === 'shares'
+                    sort === 'shares'
                       ? isStonk
                         ? getStonkShares(
                             contract,
@@ -221,7 +214,7 @@ export const BinaryUserPositionsTable = memo(
           </Col>
           <Col className={'w-full max-w-sm gap-2'}>
             <Row className={'text-ink-500 justify-end px-2'}>
-              {sortBy === 'profit' ? (
+              {sort === 'profit' ? (
                 <span className={'text-ink-500'}>Loss</span>
               ) : (
                 <span>{getPositionsTitle('NO')}</span>
@@ -231,13 +224,13 @@ export const BinaryUserPositionsTable = memo(
               const outcome = 'NO'
               return (
                 <PositionRow
-                  key={position.userId + outcome}
+                  key={position.userId + outcome + sort}
                   position={position}
                   outcome={outcome}
                   currentUser={currentUser}
                   followedUsers={followedUsers}
                   numberToShow={
-                    sortBy === 'shares'
+                    sort === 'shares'
                       ? isStonk
                         ? getStonkShares(
                             contract,

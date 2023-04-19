@@ -48,7 +48,7 @@ export const subcollectionTables: SubcollectionTableMapping = {
     follows: 'user_follows',
     reactions: 'user_reactions',
     events: 'user_events',
-    notifications: 'user_notifications'
+    notifications: 'user_notifications',
   },
   'private-users': {
     seenMarkets: 'user_seen_markets',
@@ -65,8 +65,8 @@ export const subcollectionTables: SubcollectionTableMapping = {
     groupMembers: 'group_members',
   },
   posts: {
-    comments: 'post_comments'
-  }
+    comments: 'post_comments',
+  },
 }
 
 export function getInstanceHostname(instanceId: string) {
@@ -117,6 +117,12 @@ type TableJsonTypes = {
 
 export type DataFor<T extends TableName | ViewName> =
   T extends keyof TableJsonTypes ? TableJsonTypes[T] : any
+
+export type RowFor<T extends TableName | ViewName> = T extends TableName
+  ? PlainTables[T]
+  : T extends ViewName
+  ? PlainViews[T]
+  : any
 
 export function selectJson<T extends TableName | ViewName>(
   db: SupabaseClient,
