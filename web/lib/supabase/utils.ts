@@ -62,19 +62,11 @@ export function useValuesOnContract<
           // New row with filled values
           if (newRecord && newRecord[uniqueKeyBy]) {
             const newValue = newRecord as RowFor<T>
+            const index = prev?.findIndex((m) => m[uniqueKeyBy] === newValue[uniqueKeyBy])
             // We already have this row, so update it
-            if (
-              oldRecord &&
-              prev?.map((m) => m[uniqueKeyBy]).includes(newValue[uniqueKeyBy])
-            ) {
-              return prev?.map((m) => {
-                if (m[uniqueKeyBy] === newValue[uniqueKeyBy]) {
-                  return newValue
-                } else {
-                  return m
-                }
-              })
-              // We don't have this row, so add it
+            if (oldRecord && index && index > -1) {
+              return prev?.map((m, i) => (i === index) ? newValue : m)
+              // We don't have this row, or there wasn't an old record in supabase, so add it
             } else {
               return uniqBy([...(prev || []), newValue], uniqueKeyBy)
             }
