@@ -134,17 +134,22 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
 }
 
 export async function searchContract(props: {
-  state: stateType
+  state?: stateType
   query: string
   filter: filter
   sort: Sort
-  offset: number
+  offset?: number
   limit: number
   group_id?: string
   creator_id?: string
 }) {
-  const { state, query, filter, sort, offset, limit, group_id, creator_id } =
-    props
+  const { query, filter, sort, offset = 0, limit, group_id, creator_id } = props
+  const state = props.state ?? {
+    contracts: undefined,
+    fuzzyContractOffset: 0,
+    shouldLoadMore: false,
+    showTime: null,
+  }
 
   if (limit === 0) {
     return {

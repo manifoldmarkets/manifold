@@ -261,17 +261,10 @@ function SingleGroupInfo(props: {
 
   const trendingMutate = useMutation(() =>
     searchContract({
-      state: {
-        contracts: undefined,
-        fuzzyContractOffset: 0,
-        shouldLoadMore: false,
-        showTime: null,
-      },
       query: '',
       filter: 'open',
       sort: 'score',
       group_id: group.id,
-      offset: 0,
       limit: 5,
     })
   )
