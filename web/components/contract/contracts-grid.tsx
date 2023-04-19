@@ -22,7 +22,6 @@ export function ContractsGrid(props: {
   highlightContractIds?: string[]
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
-  showImageOnTopContract?: boolean
   trackCardViews?: boolean
   fromGroupProps?: {
     group: Group
@@ -37,7 +36,6 @@ export function ContractsGrid(props: {
     cardUIOptions,
     highlightContractIds,
     trackingPostfix,
-    showImageOnTopContract,
     trackCardViews,
     fromGroupProps,
   } = props
@@ -50,13 +48,6 @@ export function ContractsGrid(props: {
     return null // handle empty state outside of component
   }
 
-  const lastIndex =
-    !!contracts[0].coverImageUrl &&
-    contracts.length >= 4 &&
-    contracts.length % 2 === 0
-      ? contracts.length - 1
-      : undefined
-
   return (
     <Col className="gap-8">
       <Masonry
@@ -65,14 +56,11 @@ export function ContractsGrid(props: {
         className="-ml-4 flex w-auto"
         columnClassName="pl-4 bg-clip-padding"
       >
-        {contracts.map((contract, index) => (
+        {contracts.map((contract) => (
           <ContractCard
             contract={contract}
             key={contract.id}
             showTime={showTime}
-            showImage={
-              showImageOnTopContract && (index == 0 || index === lastIndex)
-            }
             onClick={
               onContractClick ? () => onContractClick(contract) : undefined
             }

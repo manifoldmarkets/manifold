@@ -15,35 +15,44 @@ import { Subtitle } from 'web/components/widgets/subtitle'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Spacer } from 'web/components/layout/spacer'
 import TestimonialsPanel from './testimonials-panel'
-import { useTrendingContracts } from 'web/hooks/use-contracts'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { ManaExplainer } from '.'
 import { Modal } from 'web/components/layout/modal'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { getTotalSubs } from 'web/lib/firebase/utils'
 import { AlertBox } from 'web/components/widgets/alert-box'
+import { supabaseSearchContracts } from 'web/lib/firebase/api'
+import { Contract } from 'common/contract'
 
 export async function getStaticProps() {
   const subCount = await getTotalSubs()
 
+  const trendingContracts = await supabaseSearchContracts({
+    term: '',
+    filter: 'open',
+    sort: 'score',
+    offset: 0,
+    limit: 6,
+    groupId: 'W2ES30fRo6CCbPNwMTTj',
+  })
+
   return {
     props: {
       subCount,
+      trendingContracts,
     },
     revalidate: 60, // regenerate after a minute
   }
 }
 
-export default function DestinyLandingPage(props: { subCount: number }) {
-  const { subCount } = props
+export default function DestinyLandingPage(props: {
+  subCount: number
+  trendingContracts: Contract[]
+}) {
+  const { subCount, trendingContracts } = props
 
   useSaveReferral()
   useTracking('view destiny landing page')
-
-  const trendingContracts = useTrendingContracts(6, [
-    'groupLinks.slug:destinygg',
-  ])
 
   return (
     <Page>
@@ -95,14 +104,7 @@ export default function DestinyLandingPage(props: { subCount: number }) {
 
         <Spacer h={4} />
         <Subtitle>Trending markets</Subtitle>
-        {trendingContracts ? (
-          <ContractsGrid
-            contracts={trendingContracts}
-            showImageOnTopContract={true}
-          />
-        ) : (
-          <LoadingIndicator />
-        )}
+        <ContractsGrid contracts={trendingContracts} />
         <TestimonialsPanel />
       </Col>
     </Page>
