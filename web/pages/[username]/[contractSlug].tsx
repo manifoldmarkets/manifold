@@ -54,11 +54,12 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getContractParams } from 'web/lib/contracts'
 import { BetFilter } from 'web/lib/firebase/bets'
-import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
+import { db } from 'web/lib/supabase/db'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
@@ -169,7 +170,7 @@ export function ContractPageContent(props: {
   useEffect(() => {
     // If the contract resolves while the user is on the page, get the top contract metrics
     if (contract.resolution && topContractMetrics.length === 0) {
-      getTopContractMetrics(contract.id, 10).then(setTopContractMetrics)
+      getTopContractMetrics(db, contract.id, 10).then(setTopContractMetrics)
     }
   }, [contract.resolution, contract.id, topContractMetrics.length])
 

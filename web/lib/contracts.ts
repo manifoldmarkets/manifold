@@ -11,10 +11,8 @@ import { Bet } from 'common/bet'
 import { getAllComments } from 'web/lib/supabase/comments'
 import {
   getCPMMContractUserContractMetrics,
-  getTopContractMetrics,
-} from 'web/lib/firebase/contract-metrics'
-import {
   getShareholderCountsForContractId,
+  getTopContractMetrics,
   getTotalContractMetrics,
 } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
@@ -54,11 +52,11 @@ export async function getContractParams(contract: Contract) {
 
   const userPositionsByOutcome =
     contract.mechanism === 'cpmm-1'
-      ? await getCPMMContractUserContractMetrics(contractId, 100)
+      ? await getCPMMContractUserContractMetrics(db, contractId, 100)
       : {}
 
   const topContractMetrics = contract.resolution
-    ? await getTopContractMetrics(contract.id, 10)
+    ? await getTopContractMetrics(db, contract.id, 10)
     : []
 
   const shareholderStats =

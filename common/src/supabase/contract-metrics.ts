@@ -229,3 +229,62 @@ export async function getShareholderCountsForContractId(
 export type ShareholderStats = Awaited<
   ReturnType<typeof getShareholderCountsForContractId>
 >
+
+export async function getCPMMContractUserContractMetrics(
+  db: SupabaseClient,
+  contractId: string,
+  count: number
+) {
+  const yesQ = run(
+    db.from('user_contract_metrics')
+      .select('data')
+      .eq('contract_id', contractId)
+      .eq('data->hasYesShares', true)
+      .order(`data->totalShares->YES` as any, { ascending: false })
+      .limit(count)
+  )
+  const noQ = run(
+    db.from('user_contract_metrics')
+      .select('data')
+      .eq('contract_id', contractId)
+      .eq('data->hasNoShares', true)
+      .order(`data->totalShares->NO` as any, { ascending: false })
+      .limit(count)
+  )
+  const [{ data: yesData }, { data: noData }] = await Promise.all([yesQ, noQ])
+  const outcomeToDetails = {
+    YES: yesData.map((r) => r.data as ContractMetrics),
+    NO: noData.map((r) => r.data as ContractMetrics),
+  }
+  return outcomeToDetails
+}
+
+export async function getTopContractMetrics(
+  db: SupabaseClient,
+  contractId: string,
+  count: number
+) {
+  const { data } = await run(
+    db.from('user_contract_metrics')
+      .select('data')
+      .eq('contract_id', contractId)
+      .order('data->>profit' as any, { ascending: false })
+      .limit(count)
+  )
+  return data.map(r => r.data as ContractMetrics)
+}
+
+export async function getProfitRankForContract(
+  db: SupabaseClient,
+  profit: number,
+  contractId: string
+) {
+  const { count } = await run(
+    db
+      .from('user_contract_metrics')
+      .select('*', { head: true, count: 'exact' })
+      .eq('contract_id', contractId)
+      .gt('profit', profit)
+  )
+  return count + 1
+}

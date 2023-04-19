@@ -6,6 +6,7 @@ import {
   ShareholderStats,
   getContractMetricsForContractId,
   getShareholderCountsForContractId,
+  getTotalContractMetrics,
 } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -33,7 +34,6 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import {
   ContractMetricsByOutcome,
-  getTotalContractMetricsCount,
 } from 'web/lib/firebase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { getStonkShares } from 'common/stonk'
@@ -87,10 +87,7 @@ export const BinaryUserPositionsTable = memo(
     const noPositionsSorted =
       sortBy === 'shares' ? positions.NO ?? [] : negativeProfitPositions
     useEffect(() => {
-      // Let's use firebase here as supabase can be slightly out of date, leading to incorrect counts
-      getTotalContractMetricsCount(contractId).then(setTotalPositions)
-
-      // This still uses supabase
+      getTotalContractMetrics(contractId, db).then(setTotalPositions)
       getShareholderCountsForContractId(contractId, db).then(
         setShareholderStats
       )
