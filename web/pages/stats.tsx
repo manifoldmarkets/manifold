@@ -176,7 +176,6 @@ export function CustomAnalytics(props: Stats) {
       <DailyChart dailyValues={engagedUsers} startDate={startDate} />
       <Spacer h={8} />
 
-
       <Title children="Revenue" />
       <p className="text-ink-500">
         <b>${formatWithCommas(last30dSales)}</b> of mana sold in the last 30d
