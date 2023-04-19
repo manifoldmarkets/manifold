@@ -1,17 +1,17 @@
 import clsx from 'clsx'
-import { CPMMContract } from 'common/contract'
-import { ContractMetric } from 'common/contract-metric'
+import {CPMMContract} from 'common/contract'
+import {ContractMetric} from 'common/contract-metric'
 import {
   ShareholderStats,
   getShareholderCountsForContractId,
 } from 'common/supabase/contract-metrics'
-import { User } from 'common/user'
-import { formatMoney } from 'common/util/format'
-import { partition } from 'lodash'
-import { memo, useEffect, useMemo, useState } from 'react'
-import { SortRow } from 'web/components/contract/contract-tabs'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
+import {User} from 'common/user'
+import {formatMoney} from 'common/util/format'
+import {partition} from 'lodash'
+import {memo, useEffect, useState} from 'react'
+import {SortRow} from 'web/components/contract/contract-tabs'
+import {Col} from 'web/components/layout/col'
+import {Row} from 'web/components/layout/row'
 import {
   BuyLabel,
   HigherLabel,
@@ -20,30 +20,30 @@ import {
   ShortLabel,
   YesLabel,
 } from 'web/components/outcome-label'
-import { Avatar } from 'web/components/widgets/avatar'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Pagination } from 'web/components/widgets/pagination'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { UserLink } from 'web/components/widgets/user-link'
-import { useSupabaseContractMetrics } from 'web/hooks/use-contract-metrics'
-import { useFollows } from 'web/hooks/use-follows'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { useUser } from 'web/hooks/use-user'
+import {Avatar} from 'web/components/widgets/avatar'
+import {LoadingIndicator} from 'web/components/widgets/loading-indicator'
+import {Pagination} from 'web/components/widgets/pagination'
+import {Tooltip} from 'web/components/widgets/tooltip'
+import {UserLink} from 'web/components/widgets/user-link'
+import {useSupabaseContractMetrics} from 'web/hooks/use-contract-metrics'
+import {useFollows} from 'web/hooks/use-follows'
+import {useIsMobile} from 'web/hooks/use-is-mobile'
+import {useUser} from 'web/hooks/use-user'
 import {
   ContractMetricsByOutcome,
   getTotalContractMetricsCount,
 } from 'web/lib/firebase/contract-metrics'
-import { db } from 'web/lib/supabase/db'
-import { getStonkShares } from 'common/stonk'
+import {db} from 'web/lib/supabase/db'
+import {getStonkShares} from 'common/stonk'
 
-export const BinaryUserPositionsTable = memo(
+export const BinaryUserPositionsTable =
   function BinaryUserPositionsTabContent(props: {
     contract: CPMMContract
     positions: ContractMetricsByOutcome
     setTotalPositions: (count: number) => void
     shareholderStats?: ShareholderStats
   }) {
-    const { contract, setTotalPositions } = props
+    const {contract, setTotalPositions} = props
     const contractId = contract.id
     const [page, setPage] = useState(0)
     const pageSize = 20
@@ -72,13 +72,10 @@ export const BinaryUserPositionsTable = memo(
         livePositionsLimit
       ) ?? []
 
-    const [yesOrProfitPositions, noOrLossPositions] = useMemo(() => {
-      const [positiveProfitPositions, negativeProfitPositions] = partition(
-        sort === 'shares' ? positions : contractMetricsByProfit,
-        (cm) => (sort === 'shares' ? cm.hasYesShares : cm.profit > 0)
-      )
-      return [positiveProfitPositions, negativeProfitPositions]
-    }, [sort, positions, contractMetricsByProfit])
+    const [yesOrProfitPositions, noOrLossPositions] = partition(
+      sort === 'shares' ? positions : contractMetricsByProfit,
+      (cm) => (sort === 'shares' ? cm.hasYesShares : cm.profit > 0)
+    )
 
     useEffect(() => {
       // Let's use firebase here as supabase can be slightly out of date, leading to incorrect counts
@@ -124,15 +121,15 @@ export const BinaryUserPositionsTable = memo(
           </Tooltip>
           {isBinary ? (
             <>
-              <YesLabel /> payouts
+              <YesLabel/> payouts
             </>
           ) : isStonk ? (
             <>
-              <BuyLabel /> positions
+              <BuyLabel/> positions
             </>
           ) : isPseudoNumeric ? (
             <>
-              <HigherLabel /> positions
+              <HigherLabel/> positions
             </>
           ) : (
             <></>
@@ -148,15 +145,15 @@ export const BinaryUserPositionsTable = memo(
           </Tooltip>
           {isBinary ? (
             <>
-              <NoLabel /> payouts
+              <NoLabel/> payouts
             </>
           ) : isStonk ? (
             <>
-              <ShortLabel /> positions
+              <ShortLabel/> positions
             </>
           ) : isPseudoNumeric ? (
             <>
-              <LowerLabel /> positions
+              <LowerLabel/> positions
             </>
           ) : (
             <></>
@@ -169,7 +166,7 @@ export const BinaryUserPositionsTable = memo(
       <Col className={'w-full'}>
         <Row className={'mb-2 items-center justify-end gap-2'}>
           {sort === 'profit' && contractMetricsByProfit === undefined && (
-            <LoadingIndicator spinnerClassName={'border-ink-500'} size={'sm'} />
+            <LoadingIndicator spinnerClassName={'border-ink-500'} size={'sm'}/>
           )}
           <SortRow
             sort={sort === 'profit' ? 'profit' : 'position'}
@@ -202,9 +199,9 @@ export const BinaryUserPositionsTable = memo(
                     sort === 'shares'
                       ? isStonk
                         ? getStonkShares(
-                            contract,
-                            position.totalShares[outcome] ?? 0
-                          ).toString()
+                          contract,
+                          position.totalShares[outcome] ?? 0
+                        ).toString()
                         : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
@@ -233,9 +230,9 @@ export const BinaryUserPositionsTable = memo(
                     sort === 'shares'
                       ? isStonk
                         ? getStonkShares(
-                            contract,
-                            position.totalShares[outcome] ?? 0
-                          ).toString()
+                          contract,
+                          position.totalShares[outcome] ?? 0
+                        ).toString()
                         : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
@@ -253,7 +250,7 @@ export const BinaryUserPositionsTable = memo(
       </Col>
     )
   }
-)
+
 const PositionRow = memo(function PositionRow(props: {
   position: ContractMetric
   outcome: 'YES' | 'NO'
@@ -261,8 +258,8 @@ const PositionRow = memo(function PositionRow(props: {
   currentUser: User | undefined | null
   followedUsers: string[] | undefined
 }) {
-  const { position, outcome, currentUser, followedUsers, numberToShow } = props
-  const { userName, userUsername, userAvatarUrl } = position
+  const {position, outcome, currentUser, followedUsers, numberToShow} = props
+  const {userName, userUsername, userAvatarUrl} = position
   const isMobile = useIsMobile(800)
 
   return (
@@ -278,9 +275,9 @@ const PositionRow = memo(function PositionRow(props: {
           'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
         )}
       >
-        <Avatar size={'sm'} avatarUrl={userAvatarUrl} username={userUsername} />
+        <Avatar size={'sm'} avatarUrl={userAvatarUrl} username={userUsername}/>
         {userName && userUsername ? (
-          <UserLink short={isMobile} name={userName} username={userUsername} />
+          <UserLink short={isMobile} name={userName} username={userUsername}/>
         ) : (
           <span>Loading..</span>
         )}
