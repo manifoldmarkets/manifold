@@ -5,7 +5,6 @@ import {
   ViewName,
   DataFor,
 } from 'common/supabase/utils'
-import {useIsAuthorized} from 'web/hooks/use-user'
 import {useEffect, useState} from 'react'
 import {uniqBy} from 'lodash'
 import {filterDefined} from "common/util/array";
@@ -15,60 +14,83 @@ function hasFsUpdatedTime(obj: any): obj is { fs_updated_time: number } {
   return 'fs_updated_time' in obj;
 }
 
-const channels = new Map<string, RealtimeChannel>();
-const subscriptionStatuses = new Map<string, string>();
-const callbackMap = new Map<string, ((data: any) => void)[]>();
-const channelResubscribeIntervals = new Map<string, any>();
+let mainChannel: undefined | RealtimeChannel = undefined
+let subscriptionStatus: 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR' | 'CONNECTING' = 'CONNECTING'
+const callbacks: {
+  hookId: string;
+  callback: (data: any) => void;
+  filter: string;
+  table: string;
+}[] = []
+let channelResubscribeInterval: NodeJS.Timer | undefined = undefined;
 
 export function useValuesFromSupabase<
   T extends TableName | ViewName,
   K extends keyof RowFor<T>
 >(
-  tableName: T,
+  table: T,
   rowGroupKey: K,
   rowGroupValue: string,
-  rowDataKey: K,
+  uniqueRowDataKey: K,
   db: SupabaseClient,
   getInitialValues?: (uniqueRowGroupValue: string) => Promise<RowFor<T>[]>
 ) {
-  const isAuthorized = useIsAuthorized()
   const [values, setValues] = useState<RowFor<T>[]>([])
-  const channelName = tableName + '-realtime'
+  const [hookId] = useState(table + Math.random().toString())
+  const channelName = 'supabase-realtime-values'
+  const filter = `${rowGroupKey as string}=eq.${rowGroupValue}`
   const [valuesToDelete, setValuesToDelete] = useState<RowFor<T>[]>([])
   const [retrievedInitialValues, setRetrievedInitialValues] = useState(false)
-  const [intervalId, setIntervalId] = useState<any>()
+  const [intervalId, setIntervalId] = useState<NodeJS.Timer>()
+
+  const getMyCallback = () => {
+    return {
+      hookId,
+      callback: updateValuesOnSubscriptionEvent,
+      filter,
+      table
+    }
+  }
 
   useEffect(() => {
-    if (!isAuthorized) return
     initChannel()
-  }, [isAuthorized, channelName, db])
+  }, [db])
+
   const initChannel = () => {
-    const channel = db.channel(tableName + `-realtime`)
-    // very first channel opened, register the callbacks
-    if (!channels.get(channelName)) {
+    const channel = db.channel(channelName)
+    callbacks.push(getMyCallback())
+    // very first channel opened
+    if (!mainChannel) {
       subscribeToChannel(channel)
-      channels.set(channelName, channel)
-    } else {
-      const currentCallbacks = callbackMap.get(channelName) ?? []
-      currentCallbacks.push(updateValuesOnSubscriptionEvent)
-      callbackMap.set(channelName, currentCallbacks)
+      mainChannel = channel
     }
-    return channel
+    // channel already exists, resubscribe callbacks
+    else {
+      restartChannel()
+    }
   }
+
+  const restartChannel = async () => {
+    console.log('Restarting channel')
+    subscriptionStatus = 'CONNECTING'
+    if (mainChannel) {
+      await mainChannel.unsubscribe()
+      await db.removeChannel(mainChannel)
+      mainChannel = undefined
+    }
+    initChannel()
+  }
+
   // called once per channel
   const subscribeToChannel = (channel: RealtimeChannel) => {
-    const status = subscriptionStatuses.get(channelName)
-    if (!channel || status === 'SUBSCRIBED') return
-    const currentCallbacks = callbackMap.get(channelName) ?? []
-    currentCallbacks.push(updateValuesOnSubscriptionEvent)
-    callbackMap.set(channelName, currentCallbacks)
+    if (subscriptionStatus === 'SUBSCRIBED') return
     setChannelCallbacks(channel)
     channel.subscribe(async (status, err) => {
       console.log('channel subscribe status', status, err)
-      subscriptionStatuses.set(channelName, status)
-      if (status !== 'SUBSCRIBED' && !channelResubscribeIntervals.get(channelName)) {
+      if (status !== 'SUBSCRIBED' && subscriptionStatus !== 'CONNECTING' && !channelResubscribeInterval) {
         startResubscribeLoop()
       }
+      subscriptionStatus = status
     })
   }
 
@@ -77,9 +99,9 @@ export function useValuesFromSupabase<
       const {new: newRecord, old: oldRecord} = payload
       // if this is a DELETE operation, the oldValue will only have the primary key values set
       const oldValue = oldRecord as RowFor<T>
-      const index = prev.findIndex((m) => m[rowDataKey] === oldValue[rowDataKey])
+      const index = prev.findIndex((m) => m[uniqueRowDataKey] === oldValue[uniqueRowDataKey])
       // New row with filled values
-      if (newRecord && newRecord[rowDataKey]) {
+      if (newRecord && newRecord[uniqueRowDataKey]) {
         const newValue = newRecord as RowFor<T>
         // We already have this row, so update it
         if (oldRecord && index > -1) {
@@ -87,7 +109,7 @@ export function useValuesFromSupabase<
           return prev
         }
         // We don't have this row, or there wasn't an old record in supabase, so add it
-        else return uniqBy([...prev, newValue], rowDataKey)
+        else return uniqBy([...prev, newValue], uniqueRowDataKey)
 
         // Empty new record, delete it or save it for deletion
       } else {
@@ -104,7 +126,7 @@ export function useValuesFromSupabase<
 
   const loadDefaultAllInitialValuesForRowGroup = async () => {
     const {data} = await db
-      .from(tableName)
+      .from(table)
       .select('*')
       .eq(rowGroupKey as string, rowGroupValue)
     if (data) {
@@ -113,95 +135,84 @@ export function useValuesFromSupabase<
   }
 
   useEffect(() => {
-    if (!isAuthorized) return
-    const interval = setInterval(() => {
-      // TODO: how do we handle channel error?
-      const subscriptionStatus = subscriptionStatuses.get(channelName)
-      if (retrievedInitialValues ||
-        (subscriptionStatus !== 'SUBSCRIBED' && subscriptionStatus !== 'CHANNEL_ERROR')) return
-      setRetrievedInitialValues(true)
-      // Retrieve initial values
-      if (getInitialValues) getInitialValues(rowGroupValue).then((newValues) => setValues((prev) => {
-          return filterDefined(newValues.map((newVal) => {
-            const index = prev.findIndex((p) => p[rowDataKey] == newVal[rowDataKey])
-            // previous value exists in subscription
-            if (index > -1) {
-              const prevVal = prev[index]
-              if (hasFsUpdatedTime(prevVal) && hasFsUpdatedTime(newVal)) {
-                return prevVal.fs_updated_time > newVal.fs_updated_time ? prevVal : newVal
-              } else return newVal
-            }
-            if (valuesToDelete.find((v) => v[rowDataKey] == newVal[rowDataKey])) return null
-            return newVal
-          }))
-        })
-      )
-      else loadDefaultAllInitialValuesForRowGroup()
-      setValuesToDelete([])
-    }, 100)
-    if (retrievedInitialValues) clearInterval(interval)
-    return () => clearInterval(interval)
-  }, [rowGroupValue, getInitialValues, retrievedInitialValues, isAuthorized, channelName, rowDataKey])
+    if (retrievedInitialValues || subscriptionStatus !== 'SUBSCRIBED') return
+    setRetrievedInitialValues(true)
+    // Retrieve initial values
+    if (getInitialValues) getInitialValues(rowGroupValue).then((newValues) => setValues((prev) => {
+        return filterDefined(newValues.map((newVal) => {
+          const index = prev.findIndex((p) => p[uniqueRowDataKey] == newVal[uniqueRowDataKey])
+          // previous value exists in subscription
+          if (index > -1) {
+            const prevVal = prev[index]
+            if (hasFsUpdatedTime(prevVal) && hasFsUpdatedTime(newVal)) {
+              return prevVal.fs_updated_time > newVal.fs_updated_time ? prevVal : newVal
+            } else return newVal
+          }
+          if (valuesToDelete.find((v) => v[uniqueRowDataKey] == newVal[uniqueRowDataKey])) return null
+          return newVal
+        }))
+      })
+    )
+    else loadDefaultAllInitialValuesForRowGroup()
+    setValuesToDelete([])
+  }, [rowGroupValue, getInitialValues, subscriptionStatus, retrievedInitialValues, channelName, uniqueRowDataKey])
 
   useEffect(() => {
     if (!values) return
-    console.log('values:', values)
-  }, [JSON.stringify(values)])
+    console.log('Values updated:', values.length)
+  }, [values])
 
   const startResubscribeLoop = () => {
-    const existingIntervalId = channelResubscribeIntervals.get(channelName);
-    if (existingIntervalId) {
-      console.log('clearing existing interval', existingIntervalId)
-      clearInterval(existingIntervalId);
+    if (channelResubscribeInterval) {
+      console.log('Clearing existing resubscribe interval', channelResubscribeInterval)
+      clearInterval(channelResubscribeInterval);
     }
     const interval = setInterval(async () => {
-      const intervalId = channelResubscribeIntervals.get(channelName)
-      if (intervalId !== interval) return
-      console.log('running interval', interval)
-      const status = subscriptionStatuses.get(channelName)
-      console.log('interval status', status)
-      if (status !== 'SUBSCRIBED') {
-        const channel = channels.get(channelName)
-        if (channel) {
-          await db.removeChannel(channel)
-          channels.delete(channelName)
-        }
-        initChannel()
+      if (channelResubscribeInterval !== interval) return
+      console.log('Running resubscribe interval', interval)
+      console.log('Resubscribe interval subscription status', subscriptionStatus)
+      if (subscriptionStatus !== 'SUBSCRIBED') {
+        await restartChannel()
       } else {
-        console.log('clearing interval else', interval)
+        console.log('Clearing resubscribe interval, channel status subscribed', interval)
         clearInterval(interval)
-        channelResubscribeIntervals.delete(channelName)
+        channelResubscribeInterval = undefined
       }
     }, 3000)
     setIntervalId(interval)
-    channelResubscribeIntervals.set(channelName, interval);
+    channelResubscribeInterval = interval
   }
 
   const setChannelCallbacks = (channel: RealtimeChannel) => {
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: tableName,
-        filter: `${rowGroupKey as string}=eq.${rowGroupValue}`,
-      },
-      (payload: any) => {
-        console.log('payload', payload)
-        const callbacks = callbackMap.get(channelName)
-        callbacks?.forEach((cb) => cb(payload))
-      }
-    )
+    // get all callbacks unique by table and filter
+    const uniqueCallbacks = uniqBy(callbacks, (c) => `${c.table}-${c.filter}`)
+    uniqueCallbacks.map((c) => {
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: c.table,
+          filter: c.filter,
+        },
+        (payload: any) => {
+          console.log('postgres_changes', payload)
+          // get all callbacks for this table and filter
+          const relevantCallbacks = callbacks.filter((cb) => cb.table === c.table && cb.filter === c.filter)
+          relevantCallbacks.forEach((cb) => cb.callback(payload))
+        }
+      )
+    })
   }
 
   useEffect(() => {
     return () => {
       if (!intervalId) return
-      console.log('clearing interval useeffect',)
-      const existingIntervalId = channelResubscribeIntervals.get(channelName);
+      console.log('Clearing resubscribe interval in use effect return')
       clearInterval(intervalId)
-      if (existingIntervalId === intervalId) channelResubscribeIntervals.delete(channelName)
-
+      if (channelResubscribeInterval === intervalId) channelResubscribeInterval = undefined
+      const myIndex = callbacks.findIndex((c) => c.hookId === hookId)
+      if (myIndex > -1) callbacks.splice(myIndex, 1)
     }
   }, [intervalId])
   return values.map((m) => ('data' in m ? (m.data as DataFor<T>) : m))

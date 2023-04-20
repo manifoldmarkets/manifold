@@ -1,10 +1,12 @@
-import { Bet } from 'common/bet'
-import { useEffect, useState } from 'react'
-import { BetFilter } from 'web/lib/firebase/bets'
-import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
-import { db } from 'web/lib/supabase/db'
-import { useEffectCheckEquality } from './use-effect-check-equality'
-import { EMPTY_USER } from 'web/components/contract/contract-tabs'
+import {Bet} from 'common/bet'
+import {useEffect, useState} from 'react'
+import {BetFilter} from 'web/lib/firebase/bets'
+import {getBets, getTotalBetCount} from 'web/lib/supabase/bets'
+import {db} from 'web/lib/supabase/db'
+import {useEffectCheckEquality} from './use-effect-check-equality'
+import {EMPTY_USER} from 'web/components/contract/contract-tabs'
+import {useValuesFromSupabase} from "web/lib/supabase/utils";
+import {SupabaseClient} from "common/supabase/utils";
 
 function getFilteredQuery(filteredParam: string, filterId?: string) {
   if (filteredParam === 'contractId' && filterId) {
@@ -66,7 +68,8 @@ export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
         }
       }
     )
-    channel.subscribe(async (status) => {})
+    channel.subscribe(async (status) => {
+    })
     return () => {
       if (channel) {
         db.removeChannel(channel)
@@ -121,4 +124,15 @@ export function useBetCount(contractId: string) {
   }, [contractId])
 
   return betCount
+}
+
+export const useRealtimeSingleChannelBets = (contractId: string, db: SupabaseClient) => {
+  // Proof of concept, seems like it works
+  return useValuesFromSupabase(
+    'contract_bets',
+    'contract_id',
+    contractId,
+    'bet_id',
+    db
+  ) as Bet[] | undefined
 }
