@@ -129,13 +129,14 @@ export const onCreateCommentOnContract = functions
         priorUserComments,
         comment.answerOutcome
       )
-      await change.ref.update(
-        removeUndefinedProps({
-          betId: bet.id,
-          betOutcome: bet.outcome,
-          betAmount: bet.amount,
-        })
-      )
+      if (bet)
+        await change.ref.update(
+          removeUndefinedProps({
+            betId: bet.id,
+            betOutcome: bet.outcome,
+            betAmount: bet.amount,
+          })
+        )
     }
 
     const position = getLargestPosition(contract, priorUserBets)
