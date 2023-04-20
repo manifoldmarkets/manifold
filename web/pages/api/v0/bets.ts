@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { Bet } from 'common/bet'
-import { getBet, getPublicBets } from 'web/lib/supabase/bets'
+import { getBet, getBets, getPublicBets } from 'web/lib/supabase/bets'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { getUserByUsername } from 'web/lib/firebase/users'
 import { ApiError, ValidationError } from './_types'
@@ -93,7 +93,9 @@ export default async function handler(
       getContractId(params),
       getBeforeTime(params),
     ])
-    const bets = await getPublicBets({ userId, contractId, beforeTime, limit })
+    const bets = contractId
+      ? await getBets({ userId, contractId, beforeTime, limit })
+      : await getPublicBets({ userId, contractId, beforeTime, limit })
 
     res.setHeader('Cache-Control', 'max-age=15, public')
     return res.status(200).json(bets)
