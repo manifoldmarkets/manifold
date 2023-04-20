@@ -5,24 +5,29 @@ import {
   ViewName,
   DataFor,
 } from 'common/supabase/utils'
-import {useEffect, useState} from 'react'
-import {uniqBy} from 'lodash'
-import {filterDefined} from "common/util/array";
-import {RealtimeChannel} from "@supabase/realtime-js";
+import { useEffect, useState } from 'react'
+import { uniqBy } from 'lodash'
+import { filterDefined } from 'common/util/array'
+import { RealtimeChannel } from '@supabase/realtime-js'
 
 function hasFsUpdatedTime(obj: any): obj is { fs_updated_time: number } {
-  return 'fs_updated_time' in obj;
+  return 'fs_updated_time' in obj
 }
 
 let mainChannel: undefined | RealtimeChannel = undefined
-let subscriptionStatus: 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR' | 'CONNECTING' = 'CONNECTING'
+let subscriptionStatus:
+  | 'SUBSCRIBED'
+  | 'TIMED_OUT'
+  | 'CLOSED'
+  | 'CHANNEL_ERROR'
+  | 'CONNECTING' = 'CONNECTING'
 const callbacks: {
-  hookId: string;
-  callback: (data: any) => void;
-  filter: string;
-  table: string;
+  hookId: string
+  callback: (data: any) => void
+  filter: string
+  table: string
 }[] = []
-let mainChannelResubscribeInterval: NodeJS.Timer | undefined = undefined;
+let mainChannelResubscribeInterval: NodeJS.Timer | undefined = undefined
 
 export function useValuesFromSupabase<
   T extends TableName | ViewName,
@@ -41,14 +46,15 @@ export function useValuesFromSupabase<
   const filter = `${rowGroupKey as string}=eq.${rowGroupValue}`
   const [valuesToDelete, setValuesToDelete] = useState<RowFor<T>[]>([])
   const [retrievedInitialValues, setRetrievedInitialValues] = useState(false)
-  const [channelResubscribeInterval, setChannelResubscribeInterval] = useState<NodeJS.Timer>()
+  const [channelResubscribeInterval, setChannelResubscribeInterval] =
+    useState<NodeJS.Timer>()
 
   const getMyCallback = () => {
     return {
       hookId,
       callback: updateValuesOnPostgresEvent,
       filter,
-      table
+      table,
     }
   }
 
@@ -81,7 +87,11 @@ export function useValuesFromSupabase<
     setChannelCallbacks(channel)
     channel.subscribe(async (status, err) => {
       console.log('channel subscribe status', status, err)
-      if (status !== 'SUBSCRIBED' && subscriptionStatus !== 'CONNECTING' && !mainChannelResubscribeInterval) {
+      if (
+        status !== 'SUBSCRIBED' &&
+        subscriptionStatus !== 'CONNECTING' &&
+        !mainChannelResubscribeInterval
+      ) {
         startResubscribeLoop()
       }
       subscriptionStatus = status
@@ -91,10 +101,12 @@ export function useValuesFromSupabase<
 
   const updateValuesOnPostgresEvent = (payload: any) => {
     setValues((prev) => {
-      const {new: newRecord, old: oldRecord} = payload
+      const { new: newRecord, old: oldRecord } = payload
       // if this is a DELETE operation, the oldValue will only have the primary key values set
       const oldValue = oldRecord as RowFor<T>
-      const index = prev.findIndex((m) => m[uniqueRowDataKey] === oldValue[uniqueRowDataKey])
+      const index = prev.findIndex(
+        (m) => m[uniqueRowDataKey] === oldValue[uniqueRowDataKey]
+      )
       // New row with filled values
       if (newRecord && newRecord[uniqueRowDataKey]) {
         const newValue = newRecord as RowFor<T>
@@ -113,14 +125,17 @@ export function useValuesFromSupabase<
           return prev
         }
         // Delete the value once we get the values
-        setValuesToDelete((previousDeleteValues) => [...previousDeleteValues, oldValue])
+        setValuesToDelete((previousDeleteValues) => [
+          ...previousDeleteValues,
+          oldValue,
+        ])
         return prev
       }
     })
   }
 
   const loadDefaultAllInitialValuesForRowGroup = async () => {
-    const {data} = await db
+    const { data } = await db
       .from(table)
       .select('*')
       .eq(rowGroupKey as string, rowGroupValue)
@@ -133,43 +148,74 @@ export function useValuesFromSupabase<
     if (retrievedInitialValues || subscriptionStatus !== 'SUBSCRIBED') return
     setRetrievedInitialValues(true)
     // Retrieve initial values
-    if (getInitialValues) getInitialValues(rowGroupValue).then((newValues) => setValues((prev) => {
-        return filterDefined(newValues.map((newVal) => {
-          const index = prev.findIndex((p) => p[uniqueRowDataKey] == newVal[uniqueRowDataKey])
-          // previous value exists in subscription
-          if (index > -1) {
-            const prevVal = prev[index]
-            if (hasFsUpdatedTime(prevVal) && hasFsUpdatedTime(newVal)) {
-              return prevVal.fs_updated_time > newVal.fs_updated_time ? prevVal : newVal
-            } else return newVal
-          }
-          if (valuesToDelete.find((v) => v[uniqueRowDataKey] == newVal[uniqueRowDataKey])) return null
-          return newVal
-        }))
-      })
-    )
+    if (getInitialValues)
+      getInitialValues(rowGroupValue).then((newValues) =>
+        setValues((prev) => {
+          return filterDefined(
+            newValues.map((newVal) => {
+              const index = prev.findIndex(
+                (p) => p[uniqueRowDataKey] == newVal[uniqueRowDataKey]
+              )
+              // previous value exists in subscription
+              if (index > -1) {
+                const prevVal = prev[index]
+                if (hasFsUpdatedTime(prevVal) && hasFsUpdatedTime(newVal)) {
+                  return prevVal.fs_updated_time > newVal.fs_updated_time
+                    ? prevVal
+                    : newVal
+                } else return newVal
+              }
+              if (
+                valuesToDelete.find(
+                  (v) => v[uniqueRowDataKey] == newVal[uniqueRowDataKey]
+                )
+              )
+                return null
+              return newVal
+            })
+          )
+        })
+      )
     else loadDefaultAllInitialValuesForRowGroup()
     setValuesToDelete([])
-  }, [rowGroupValue, getInitialValues, subscriptionStatus, retrievedInitialValues, channelName, uniqueRowDataKey])
+  }, [
+    rowGroupValue,
+    getInitialValues,
+    subscriptionStatus,
+    retrievedInitialValues,
+    channelName,
+    uniqueRowDataKey,
+  ])
 
   useEffect(() => {
-    if (!values) return
+    if (!values) {
+      return
+    }
     console.log('Values updated:', values.length)
   }, [values])
 
   const startResubscribeLoop = () => {
     if (mainChannelResubscribeInterval) {
-      console.log('Clearing existing resubscribe interval', mainChannelResubscribeInterval)
-      clearInterval(mainChannelResubscribeInterval);
+      console.log(
+        'Clearing existing resubscribe interval',
+        mainChannelResubscribeInterval
+      )
+      clearInterval(mainChannelResubscribeInterval)
     }
     const interval = setInterval(async () => {
       if (mainChannelResubscribeInterval !== interval) return
       console.log('Running resubscribe interval', interval)
-      console.log('Resubscribe interval subscription status', subscriptionStatus)
+      console.log(
+        'Resubscribe interval subscription status',
+        subscriptionStatus
+      )
       if (subscriptionStatus !== 'SUBSCRIBED') {
         await restartChannel()
       } else {
-        console.log('Clearing resubscribe interval, channel status subscribed', interval)
+        console.log(
+          'Clearing resubscribe interval, channel status subscribed',
+          interval
+        )
         clearInterval(interval)
         mainChannelResubscribeInterval = undefined
       }
@@ -193,7 +239,9 @@ export function useValuesFromSupabase<
         (payload: any) => {
           console.log('postgres_changes', payload)
           // get all callbacks for this table and filter
-          const relevantCallbacks = callbacks.filter((cb) => cb.table === c.table && cb.filter === c.filter)
+          const relevantCallbacks = callbacks.filter(
+            (cb) => cb.table === c.table && cb.filter === c.filter
+          )
           relevantCallbacks.forEach((cb) => cb.callback(payload))
         }
       )
