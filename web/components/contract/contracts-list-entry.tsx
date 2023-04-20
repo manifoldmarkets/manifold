@@ -24,6 +24,40 @@ import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
 import { filter } from '../supabase-search'
 
+function abbreviateNumber(num: number): string {
+  const MAX_VALUE = 1000000000 // 1 billion
+  const MIN_VALUE = 1000 // 1 thousand
+  const MAX_DECIMALS = 1
+  const THOUSANDS_SUFFIXES = ['', 'k', 'M', 'B', 'T']
+
+  // Handle negative numbers separately
+  if (num < 0) {
+    return '-' + abbreviateNumber(-num)
+  }
+
+  // Return the number as-is if it is out of range
+  if (num >= MAX_VALUE) {
+    return `${(num / MAX_VALUE).toFixed(MAX_DECIMALS)}${THOUSANDS_SUFFIXES[3]}`
+  } else if (num < MIN_VALUE) {
+    return Math.round(num).toString()
+  }
+
+  // Calculate the appropriate suffix and format the number
+  const suffixIndex = Math.floor(Math.log10(num) / 3)
+  const suffix = THOUSANDS_SUFFIXES[suffixIndex]
+  const scaled = num / Math.pow(10, suffixIndex * 3)
+  let formatted = scaled.toFixed(
+    Math.max(MAX_DECIMALS - Math.floor(Math.log10(scaled)), 0)
+  )
+
+  // Remove trailing ".0" from the formatted string
+  if (formatted.endsWith('.0')) {
+    formatted = formatted.slice(0, -2)
+  }
+
+  return `${formatted}${suffix}`
+}
+
 function isClosed(contract: Contract) {
   return (
     contract.closeTime &&
@@ -230,7 +264,7 @@ export function ContractsTableEntry(props: {
       content: (contract: Contract) => (
         <>
           {ENV_CONFIG.moneyMoniker}
-          {abbreviate(contract.volume)}
+          {abbreviateNumber(contract.volume)}
         </>
       ),
     },
