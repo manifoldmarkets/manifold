@@ -180,10 +180,8 @@ export function useValuesFromSupabase<
     setValuesToDelete([])
   }, [getInitialValues, subscriptionStatus, retrievedInitialValues])
 
+  // Just a helper for now, delete later
   useEffect(() => {
-    if (!values) {
-      return
-    }
     console.log('Values updated:', values.length)
   }, [values])
 
