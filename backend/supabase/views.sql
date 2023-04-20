@@ -249,3 +249,13 @@ from
   ) subquery
 order by
   total_referrals desc;
+
+create or replace view
+  public_contract_bets as (
+  select
+    *
+  from
+    contract_bets
+  where
+      visibility = 'public'
+  );
