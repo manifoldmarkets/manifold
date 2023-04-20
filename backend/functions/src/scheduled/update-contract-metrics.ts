@@ -64,11 +64,10 @@ export async function updateContractMetricsCore() {
         },
       }
     }
-    const isClosed = contract.closeTime && contract.closeTime < now
     const elasticity = computeElasticity(limits[contract.id] ?? [], contract)
     const update = {
       volume24Hours: volume[contract.id] ?? 0,
-      elasticity: isClosed ? 0 : elasticity,
+      elasticity,
       ...cpmmFields,
     }
 
