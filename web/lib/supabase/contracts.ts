@@ -28,6 +28,10 @@ export const getPublicContract = async (id: string) => {
   )
   return data && data.length > 0 ? (data[0].data as Contract) : null
 }
+export const getContract = async (id: string) => {
+  const { data } = await run(db.from('contracts').select('data').eq('id', id))
+  return data && data.length > 0 ? (data[0].data as Contract) : null
+}
 
 export const getContractWithFields = async (id: string) => {
   const { data } = await run(db.from('contracts').select('*').eq('id', id))
