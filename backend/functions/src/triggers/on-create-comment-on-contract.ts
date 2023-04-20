@@ -196,7 +196,7 @@ const getReplyInfo = async (comment: ContractComment, contract: Contract) => {
   }
 }
 
-const handleCommentNotifications = async (
+export const handleCommentNotifications = async (
   comment: ContractComment,
   contract: Contract,
   commentCreator: User,
