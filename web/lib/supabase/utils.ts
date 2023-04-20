@@ -22,7 +22,7 @@ const callbacks: {
   filter: string;
   table: string;
 }[] = []
-let channelResubscribeInterval: NodeJS.Timer | undefined = undefined;
+let mainChannelResubscribeInterval: NodeJS.Timer | undefined = undefined;
 
 export function useValuesFromSupabase<
   T extends TableName | ViewName,
@@ -41,33 +41,26 @@ export function useValuesFromSupabase<
   const filter = `${rowGroupKey as string}=eq.${rowGroupValue}`
   const [valuesToDelete, setValuesToDelete] = useState<RowFor<T>[]>([])
   const [retrievedInitialValues, setRetrievedInitialValues] = useState(false)
-  const [intervalId, setIntervalId] = useState<NodeJS.Timer>()
+  const [channelResubscribeInterval, setChannelResubscribeInterval] = useState<NodeJS.Timer>()
 
   const getMyCallback = () => {
     return {
       hookId,
-      callback: updateValuesOnSubscriptionEvent,
+      callback: updateValuesOnPostgresEvent,
       filter,
       table
     }
   }
 
   useEffect(() => {
-    initChannel()
+    initChannelAndCallbacks()
   }, [db])
 
-  const initChannel = () => {
-    const channel = db.channel(channelName)
-    callbacks.push(getMyCallback())
+  const initChannelAndCallbacks = () => {
     // very first channel opened
-    if (!mainChannel) {
-      subscribeToChannel(channel)
-      mainChannel = channel
-    }
-    // channel already exists, resubscribe callbacks
-    else {
-      restartChannel()
-    }
+    if (!mainChannel) subscribeToNewChannel()
+    // channel already exists, restart and resubscribe callbacks, adding my own
+    else restartChannel()
   }
 
   const restartChannel = async () => {
@@ -78,23 +71,25 @@ export function useValuesFromSupabase<
       await db.removeChannel(mainChannel)
       mainChannel = undefined
     }
-    initChannel()
+    initChannelAndCallbacks()
   }
 
-  // called once per channel
-  const subscribeToChannel = (channel: RealtimeChannel) => {
-    if (subscriptionStatus === 'SUBSCRIBED') return
+  // Must be called only once per channel
+  const subscribeToNewChannel = () => {
+    const channel = db.channel(channelName)
+    callbacks.push(getMyCallback())
     setChannelCallbacks(channel)
     channel.subscribe(async (status, err) => {
       console.log('channel subscribe status', status, err)
-      if (status !== 'SUBSCRIBED' && subscriptionStatus !== 'CONNECTING' && !channelResubscribeInterval) {
+      if (status !== 'SUBSCRIBED' && subscriptionStatus !== 'CONNECTING' && !mainChannelResubscribeInterval) {
         startResubscribeLoop()
       }
       subscriptionStatus = status
     })
+    mainChannel = channel
   }
 
-  const updateValuesOnSubscriptionEvent = (payload: any) => {
+  const updateValuesOnPostgresEvent = (payload: any) => {
     setValues((prev) => {
       const {new: newRecord, old: oldRecord} = payload
       // if this is a DELETE operation, the oldValue will only have the primary key values set
@@ -163,12 +158,12 @@ export function useValuesFromSupabase<
   }, [values])
 
   const startResubscribeLoop = () => {
-    if (channelResubscribeInterval) {
-      console.log('Clearing existing resubscribe interval', channelResubscribeInterval)
-      clearInterval(channelResubscribeInterval);
+    if (mainChannelResubscribeInterval) {
+      console.log('Clearing existing resubscribe interval', mainChannelResubscribeInterval)
+      clearInterval(mainChannelResubscribeInterval);
     }
     const interval = setInterval(async () => {
-      if (channelResubscribeInterval !== interval) return
+      if (mainChannelResubscribeInterval !== interval) return
       console.log('Running resubscribe interval', interval)
       console.log('Resubscribe interval subscription status', subscriptionStatus)
       if (subscriptionStatus !== 'SUBSCRIBED') {
@@ -176,11 +171,11 @@ export function useValuesFromSupabase<
       } else {
         console.log('Clearing resubscribe interval, channel status subscribed', interval)
         clearInterval(interval)
-        channelResubscribeInterval = undefined
+        mainChannelResubscribeInterval = undefined
       }
     }, 3000)
-    setIntervalId(interval)
-    channelResubscribeInterval = interval
+    setChannelResubscribeInterval(interval)
+    mainChannelResubscribeInterval = interval
   }
 
   const setChannelCallbacks = (channel: RealtimeChannel) => {
@@ -207,13 +202,16 @@ export function useValuesFromSupabase<
 
   useEffect(() => {
     return () => {
-      if (!intervalId) return
-      console.log('Clearing resubscribe interval in use effect return')
-      clearInterval(intervalId)
-      if (channelResubscribeInterval === intervalId) channelResubscribeInterval = undefined
+      if (channelResubscribeInterval) {
+        console.log('Clearing resubscribe interval in use effect return')
+        clearInterval(channelResubscribeInterval)
+        if (mainChannelResubscribeInterval === channelResubscribeInterval) {
+          mainChannelResubscribeInterval = undefined
+        }
+      }
       const myIndex = callbacks.findIndex((c) => c.hookId === hookId)
       if (myIndex > -1) callbacks.splice(myIndex, 1)
     }
-  }, [intervalId])
+  }, [channelResubscribeInterval, callbacks])
   return values.map((m) => ('data' in m ? (m.data as DataFor<T>) : m))
 }
