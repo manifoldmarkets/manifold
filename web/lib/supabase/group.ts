@@ -1,9 +1,10 @@
 import { Group, PrivacyStatusType } from 'common/group'
 import { run, SupabaseClient } from 'common/supabase/utils'
-import { uniqBy } from 'lodash'
+import { chunk, uniqBy } from 'lodash'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 import { User } from '../firebase/users'
 import { db } from './db'
+import { Contract } from 'common/contract'
 
 // functions called for one group
 export async function getNumGroupMembers(groupId: string) {
@@ -154,4 +155,28 @@ export async function getGroup(groupId: string) {
   } else {
     return null
   }
+}
+export async function getGroupMarkets(groupId: string) {
+  const { data: contractIds } = await run(
+    db.from('group_contracts').select('contract_id').eq('group_id', groupId)
+  )
+
+  if (!contractIds) return null
+  const chunkedContractIds = chunk(contractIds, 200)
+  const data = await Promise.all(
+    chunkedContractIds.map(
+      async (chunkedIds) =>
+        await run(
+          db
+            .from('public_contracts')
+            .select('data')
+            .in(
+              'id',
+              chunkedIds.map((c) => c.contract_id)
+            )
+        )
+    )
+  )
+  const markets = data.flatMap((d) => d.data)
+  return markets.map((m) => m.data as Contract)
 }
