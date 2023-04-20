@@ -1,8 +1,9 @@
 import { FullMarket, toFullMarket } from 'common/api-market-types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { ApiError } from '../_types'
+import { db } from 'web/lib/supabase/db'
 
 export default async function handler(
   req: NextApiRequest,
@@ -11,7 +12,7 @@ export default async function handler(
   await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
   const { slug } = req.query
 
-  const contract = await getContractFromSlug(slug as string)
+  const contract = await getContractFromSlug(slug as string, db)
 
   if (!contract) {
     res.status(404).json({ error: 'Contract not found' })

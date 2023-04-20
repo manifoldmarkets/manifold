@@ -11,9 +11,9 @@ import { stateType } from 'web/components/supabase-search'
 import { supabaseSearchContracts } from '../firebase/api'
 import { db } from './db'
 
-export async function getContractIds(contractIds: string[]) {
+export async function getPublicContractIds(contractIds: string[]) {
   const { data } = await run(
-    db.from('contracts').select('data').in('id', contractIds)
+    db.from('public_contracts').select('data').in('id', contractIds)
   )
   if (data && data.length > 0) {
     return data.map((d) => d.data as Contract)
@@ -22,8 +22,10 @@ export async function getContractIds(contractIds: string[]) {
   }
 }
 
-export const getContract = async (id: string) => {
-  const { data } = await run(db.from('contracts').select('data').eq('id', id))
+export const getPublicContract = async (id: string) => {
+  const { data } = await run(
+    db.from('public_contracts').select('data').eq('id', id)
+  )
   return data && data.length > 0 ? (data[0].data as Contract) : null
 }
 
@@ -41,7 +43,7 @@ export const getContractWithFields = async (id: string) => {
   }
 }
 // Only fetches contracts with 'public' visibility
-export const getContracts = async (options: {
+export const getPublicContracts = async (options: {
   limit: number
   beforeTime?: number
   order?: 'asc' | 'desc'

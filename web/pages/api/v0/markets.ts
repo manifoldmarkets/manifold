@@ -5,7 +5,10 @@ import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { ValidationError } from './_types'
 import { z } from 'zod'
 import { validate } from './_validate'
-import { getContract, getContracts } from 'web/lib/supabase/contracts'
+import {
+  getPublicContract,
+  getPublicContracts,
+} from 'web/lib/supabase/contracts'
 
 const queryParams = z
   .object({
@@ -22,7 +25,7 @@ const queryParams = z
 // have the exact same createdTime, but that's very unlikely
 const getBeforeTime = async (params: z.infer<typeof queryParams>) => {
   if (params.before) {
-    const beforeContract = await getContract(params.before)
+    const beforeContract = await getPublicContract(params.before)
     if (beforeContract == null) {
       throw new Error('Contract specified in before parameter not found.')
     }
@@ -53,7 +56,7 @@ export default async function handler(
 
   try {
     const beforeTime = await getBeforeTime(params)
-    const contracts = await getContracts({ limit, beforeTime })
+    const contracts = await getPublicContracts({ limit, beforeTime })
     // Serve from Vercel cache, then update. see https://vercel.com/docs/concepts/functions/edge-caching
     res.setHeader('Cache-Control', 's-maxage=45, stale-while-revalidate=45')
     res.status(200).json(contracts.map(toLiteMarket))
