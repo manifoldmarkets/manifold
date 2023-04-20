@@ -178,13 +178,7 @@ export function useValuesFromSupabase<
       )
     else loadDefaultAllInitialValuesForRowGroup()
     setValuesToDelete([])
-  }, [
-    rowGroupValue,
-    getInitialValues,
-    subscriptionStatus,
-    retrievedInitialValues,
-    uniqueRowDataKey,
-  ])
+  }, [getInitialValues, subscriptionStatus, retrievedInitialValues])
 
   useEffect(() => {
     if (!values) {
