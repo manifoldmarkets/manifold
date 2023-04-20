@@ -183,7 +183,6 @@ export function useValuesFromSupabase<
     getInitialValues,
     subscriptionStatus,
     retrievedInitialValues,
-    channelName,
     uniqueRowDataKey,
   ])
 
