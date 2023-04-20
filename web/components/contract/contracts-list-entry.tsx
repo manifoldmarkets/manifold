@@ -12,6 +12,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { forwardRef } from 'react'
 import { TbFileBroken } from 'react-icons/tb'
+import { IoUnlink } from 'react-icons/io5'
 import { useContract } from 'web/hooks/use-contracts'
 import { useUser } from 'web/hooks/use-user'
 import { fromNow } from 'web/lib/util/time'
@@ -21,6 +22,15 @@ import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
+import { filter } from '../supabase-search'
+
+function isClosed(contract: Contract) {
+  return (
+    contract.closeTime &&
+    contract.closeTime < Date.now() &&
+    !contract.isResolved
+  )
+}
 
 export function ContractStatusLabel(props: {
   contract: Contract
@@ -151,11 +161,20 @@ export const ContractsListEntry = forwardRef(
 
 export function ContractsTableEntry(props: {
   contracts: Contract[]
+  filter?: filter
   onContractClick?: (contract: Contract) => void
   isMobile?: boolean
   highlightContractIds?: string[]
+  headerClassName?: string
 }) {
-  const { contracts, onContractClick, isMobile, highlightContractIds } = props
+  const {
+    contracts,
+    filter,
+    onContractClick,
+    isMobile,
+    highlightContractIds,
+    headerClassName,
+  } = props
   // const contract = useContract(props.contract.id) ?? props.contract
 
   const contractListEntryHighlightClass =
@@ -168,20 +187,87 @@ export function ContractsTableEntry(props: {
   const firstItemClassName = 'rounded-l pl-2 pr-4'
   const user = useUser()
 
+  const contractColumns = [
+    {
+      name: 'market',
+      header: 'Market',
+      visible: true,
+      content: (contract: Contract) => (
+        <Row className="gap-4">
+          <Avatar
+            username={contract.creatorUsername}
+            avatarUrl={contract.creatorAvatarUrl}
+            size="xs"
+          />
+          <div className="">{contract.question}</div>
+        </Row>
+      ),
+    },
+    {
+      name: 'prob',
+      header: '%',
+      visible: true,
+      content: (contract: Contract) => (
+        <div className="font-semibold">
+          <ContractStatusLabel contract={contract} />
+        </div>
+      ),
+    },
+    {
+      name: 'status',
+      header: 'Status',
+      visible: filter === 'all' && !isMobile,
+      content: (contract: Contract) => (
+        <div className="w-32">
+          <Status contract={contract} user={user} />
+        </div>
+      ),
+    },
+    {
+      name: 'volume',
+      header: 'Volume',
+      visible: !isMobile,
+      content: (contract: Contract) => (
+        <>
+          {ENV_CONFIG.moneyMoniker}
+          {abbreviate(contract.volume)}
+        </>
+      ),
+    },
+    {
+      name: 'visibility',
+      header: '',
+      visible: true,
+      content: (contract: Contract) => <Visibility contract={contract} />,
+    },
+  ]
+
   return (
     <table>
       {!isMobile && (
-        <thead className="text-ink-600 bg-canvas-50 sticky top-14 text-left text-sm font-semibold">
+        <thead
+          className={clsx(
+            'text-ink-600 sticky top-14 text-left text-sm font-semibold',
+            headerClassName
+          )}
+        >
           <tr>
-            <th className={firstItemClassName}></th>
-            <th>Market</th>
-            <th className={clsx(isMobile ? lastItemClassName : '')}>%</th>
-            {!isMobile && (
-              <>
-                <th className={clsx('pl-8 pr-4')}>Status</th>
-                <th className={clsx('pr-4')}>Traders</th>
-                <th className={clsx(lastItemClassName)}></th>
-              </>
+            {contractColumns.map(
+              (column, index) =>
+                column.visible && (
+                  <th
+                    className={clsx(
+                      index === 0
+                        ? firstItemClassName
+                        : index === contractColumns.length - 1
+                        ? lastItemClassName
+                        : 'pr-4'
+                      // column.name === 'market' ? 'w-2/3' : 'w-min'
+                    )}
+                  >
+                    {column.header}
+                  </th>
+                )
             )}
           </tr>
         </thead>
@@ -194,12 +280,9 @@ export function ContractsTableEntry(props: {
               highlightContractIds?.includes(contract.id)
                 ? contractListEntryHighlightClass
                 : '',
-              contract.closeTime &&
-                contract.closeTime < Date.now() &&
-                !contract.isResolved
-                ? contract.creatorId === user?.id
-                  ? ''
-                  : 'opacity-60'
+              (isClosed(contract) && contract.creatorId !== user?.id) ||
+                contract.isResolved
+                ? 'opacity-60'
                 : '',
               'hover:bg-primary-50 focus:bg-primary-50 group cursor-pointer'
             )}
@@ -211,68 +294,56 @@ export function ContractsTableEntry(props: {
               e.preventDefault()
             }}
           >
-            <td className={clsx(dataCellClassName, firstItemClassName)}>
-              <Avatar
-                username={contract.creatorUsername}
-                avatarUrl={contract.creatorAvatarUrl}
-                size="xs"
-              />
-            </td>
-            <td className={clsx('pr-4', dataCellClassName)}>
-              {contract.question}
-            </td>
-            <td
-              className={clsx(
-                'font-semibold',
-                dataCellClassName,
-                isMobile ? lastItemClassName : ''
-              )}
-            >
-              <ContractStatusLabel contract={contract} />
-            </td>
-            {!isMobile && (
-              <>
-                <td
-                  className={clsx(dataCellClassName, 'w-36 pl-8 pr-4 text-sm')}
-                >
-                  <Status contract={contract} user={user} />
-                </td>
-                <td className={clsx(dataCellClassName, 'text-sm')}>
-                  {contract.uniqueBettorCount}
-                </td>
-                <td
-                  className={clsx(
-                    dataCellClassName,
-                    lastItemClassName,
-                    'text-sm'
-                  )}
-                >
-                  {contract.visibility === 'private' && (
-                    <Tooltip
-                      text={`Private`}
-                      placement="top"
-                      className={'z-10 w-full'}
-                    >
-                      <LockClosedIcon className="h-4 w-4" />
-                    </Tooltip>
-                  )}
-                  {contract.visibility === 'unlisted' && (
-                    <Tooltip
-                      text={`Unlisted`}
-                      placement="top"
-                      className={'z-10 w-full'}
-                    >
-                      <TbFileBroken className="h-4 w-4" />
-                    </Tooltip>
-                  )}
-                </td>
-              </>
+            {contractColumns.map(
+              (column, index) =>
+                column.visible && (
+                  <td
+                    className={clsx(
+                      index === 0
+                        ? firstItemClassName
+                        : index === contractColumns.length - 1
+                        ? lastItemClassName
+                        : 'pr-4',
+                      dataCellClassName
+                      // column.name === 'market' ? 'w-2/3' : 'w-min'
+                    )}
+                  >
+                    {column.content(contract)}
+                  </td>
+                )
             )}
           </tr>
         ))}
       </tbody>
     </table>
   )
+}
+
+function Visibility(props: { contract: Contract }) {
+  const { contract } = props
+  const iconClassName = 'h-4 w-4'
+  const visibilityFields = {
+    private: {
+      text: 'Private',
+      icon: <LockClosedIcon className={iconClassName} />,
+    },
+    unlisted: {
+      text: 'Private',
+      icon: <IoUnlink className={iconClassName} />,
+    },
+  }
+  type VisibilityType = keyof typeof visibilityFields
+  if (contract.visibility in visibilityFields) {
+    const { text, icon } =
+      visibilityFields[contract.visibility as VisibilityType]
+    return (
+      <Tooltip text={text} placement="top" className={'z-10 w-full'}>
+        {icon}
+      </Tooltip>
+    )
+  }
+
+  return <></>
 }
 
 function Status(props: { contract: Contract; user?: User | null }) {

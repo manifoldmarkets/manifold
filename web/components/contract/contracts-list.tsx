@@ -19,17 +19,27 @@ import {
 } from './contracts-list-entry'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Avatar } from '../widgets/avatar'
+import { filter } from '../supabase-search'
 const contractListEntryHighlightClass =
   'bg-gradient-to-b from-primary-100 via-ink-0to-ink-0outline outline-2 outline-primary-400'
 export function ContractsList(props: {
   contracts: Contract[] | undefined
+  filter?: filter
   loadMore?: () => Promise<boolean>
   onContractClick?: (contract: Contract) => void
   highlightContractIds?: string[]
   skinny?: boolean
+  headerClassName?: string
 }) {
-  const { contracts, loadMore, onContractClick, highlightContractIds, skinny } =
-    props
+  const {
+    contracts,
+    filter,
+    loadMore,
+    onContractClick,
+    highlightContractIds,
+    skinny,
+    headerClassName,
+  } = props
 
   const isMobile = useIsMobile()
   console.log('MOBILE', isMobile)
@@ -65,9 +75,11 @@ export function ContractsList(props: {
       )} */}
       <ContractsTableEntry
         contracts={contracts}
+        filter={filter}
         onContractClick={onContractClick}
         isMobile={isMobile}
         highlightContractIds={highlightContractIds}
+        headerClassName={headerClassName}
       />
 
       {loadMore && (

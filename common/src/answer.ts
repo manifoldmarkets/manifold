@@ -1,3 +1,4 @@
+import { visibility } from './contract'
 import { User } from './user'
 
 export type Answer = {

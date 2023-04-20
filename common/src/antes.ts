@@ -111,6 +111,7 @@ export function getMultipleChoiceAntes(
     name,
     avatarUrl,
     text: answer,
+    visibility: contract.visibility,
   }))
 
   return { bets, answerObjects }
