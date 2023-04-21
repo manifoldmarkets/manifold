@@ -86,8 +86,8 @@ export function FeedCommentThread(props: {
               key={parentComment.id + 'see-replies-feed-button'}
             >
               <Button
-                size={'sm'}
-                color={'gray-outline'}
+                size={'xs'}
+                color={'gray-white'}
                 onClick={() => setCollapseToIndex(-1)}
               >
                 <Col>
@@ -162,7 +162,7 @@ export const FeedComment = memo(function FeedComment(props: {
         size={children ? 'sm' : 'xs'}
         username={userUsername}
         avatarUrl={userAvatarUrl}
-        className={marketCreator ? 'shadow shadow-amber-300' : ''}
+        className={clsx(marketCreator ? 'shadow shadow-amber-300' : '', 'z-10')}
       />
       <Col className="w-full">
         {commentOnAnotherBettorsBet && (

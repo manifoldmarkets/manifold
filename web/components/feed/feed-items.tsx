@@ -44,7 +44,7 @@ export const FeedItems = (props: {
         return (
           <Col
             key={contract.id + 'feed'}
-            className={'border-ink-200 my-1 rounded-xl border'}
+            className={'border-ink-200 my-1 rounded-xl border overflow-y-hidden'}
           >
             <ContractCardNew
               contract={contract}
@@ -53,13 +53,13 @@ export const FeedItems = (props: {
                 commentThreads.length > 0 ? 'rounded-t-xl rounded-b-none  ' : ''
               )}
             />
-            <Row>
+            <Row className='bg-ink-0'>
               <FeedCommentItem
                 contract={contract}
                 commentThreads={commentThreads}
               />
             </Row>
-            <Row>
+            <Row className='bg-ink-0'>
               {commentThreads.length === 0 && (
                 <FeedBetsItem contract={contract} bets={relatedBets} />
               )}
@@ -124,7 +124,7 @@ const FeedCommentItem = (props: {
           key={ct.parentComment.id + 'feed-thread'}
         >
           {index !== commentThreads.length - 1 ? (
-            <div className="border-ink-200 b-[50%] absolute top-0 -z-10 ml-7 h-[100%] border-l-2" />
+            <div className="border-ink-200 b-[50%] absolute top-0 ml-7 h-[100%] border-l-2" />
           ) : (
             <div className="border-ink-200 absolute top-0 -z-10 ml-7 h-3 border-l-2" />
           )}
