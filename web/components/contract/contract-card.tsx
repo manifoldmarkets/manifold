@@ -1,4 +1,4 @@
-import { memo, ReactNode } from 'react'
+import { memo, ReactNode, useState } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -37,6 +37,7 @@ import { BetRow } from '../bet/bet-row'
 import { fromNow } from 'web/lib/util/time'
 import Router from 'next/router'
 import { STONK_NO, STONK_YES } from 'common/stonk'
+import toast from 'react-hot-toast'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -382,9 +383,10 @@ export function FeaturedPill(props: { label?: string }) {
 
 export function ContractCardNew(props: {
   contract: Contract
+  promoted?: boolean
   className?: string
 }) {
-  const { className } = props
+  const { className, promoted } = props
   const user = useUser()
 
   const contract = useContract(props.contract.id) ?? props.contract
@@ -506,11 +508,29 @@ export function ContractCardNew(props: {
         {isBinaryCpmm && metrics && metrics.hasShares && (
           <YourMetricsFooter metrics={metrics} />
         )}
+
+        {!showImage && promoted && (
+          <div className="flex justify-center">
+            <ClaimButton contract={contract} />
+            <div className="absolute bottom-2 right-2">
+              <FeaturedPill label="Promoted" />
+            </div>
+          </div>
+        )}
       </Col>
 
       {showImage && (
         <>
-          <div className="h-40" />
+          <div className="flex h-40 w-full items-center justify-center">
+            {promoted && (
+              <>
+                <ClaimButton contract={contract} className="mt-2" />
+                <div className="absolute bottom-2 right-2">
+                  <FeaturedPill label="Promoted" />
+                </div>
+              </>
+            )}
+          </div>
           <div className="absolute inset-0 -z-10 transition-all group-hover:saturate-150">
             <Image
               fill
@@ -593,5 +613,34 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
         </div>
       </Row>
     </Row>
+  )
+}
+
+function ClaimButton(props: { contract: Contract; className?: string }) {
+  const { contract, className } = props
+  const { id } = contract
+
+  const [claimed, setClaimed] = useState(false)
+
+  // TODO: grab from the ad
+  const reward = 5
+
+  return (
+    <button
+      className={clsx(
+        'bg-ink-200/50 hover:bg-ink-100/50 rounded-full bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 p-2 text-yellow-900',
+        claimed && 'cursor-default opacity-50',
+        className
+      )}
+      disabled={claimed}
+      onClick={(e) => {
+        e.stopPropagation()
+        // claimPromotedContract(id)
+        toast.success(`+${formatMoney(reward)}`)
+        setClaimed(true)
+      }}
+    >
+      {formatMoney(reward)} reward
+    </button>
   )
 }

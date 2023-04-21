@@ -1,6 +1,5 @@
 import { Ad } from 'common/ad'
-import { AdRedeemTxn } from 'common/txn'
-import { DAY_MS } from 'common/util/time'
+import { PostAdRedeemTxn } from 'common/txn'
 import * as admin from 'firebase-admin'
 import { sumBy } from 'lodash'
 import { runRedeemAdRewardTxn } from 'shared/run-txn'
@@ -38,7 +37,7 @@ export const redeemad = authEndpoint(async (req, auth) => {
        where data->>'category' = 'AD_REDEEM'
        and data->>'fromId' = $1`,
     [ad.id],
-    (r) => r.data as AdRedeemTxn
+    (r) => r.data as PostAdRedeemTxn
   )
 
   const hasRedeemed = txns.some((txn) => txn.toId === user.id)

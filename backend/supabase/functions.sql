@@ -29,6 +29,26 @@ where data->>'contentType' = 'contract'
   and data->>'createdTime' > since::text
 group by contract_id $$;
 
+-- Get recomended ads
+-- TODO: finish
+create
+or replace function get_recommended_ads (uid text) returns table (data jsonb, score real) immutable parallel safe language sql as $$
+select 
+  data,
+  coalesce(dot(urf, crf) * crf.freshness_score, 0.0) as score
+from user_recommendation_features as urf
+  cross join contract_recommendation_features as crf
+  left join contracts on contracts.id = crf.contract_id
+where user_id = uid
+  and funds >= cost_per_view
+  and not exists (
+    select 1
+    from user_seen_markets
+    where user_seen_markets.user_id = uid
+      and user_seen_markets.contract_id = crf.contract_id
+  )
+$$;
+
 -- Use cached tables of user and contract features to computed the top scoring
 -- markets for a user.
 create

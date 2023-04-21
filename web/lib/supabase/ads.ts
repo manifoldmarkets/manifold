@@ -48,3 +48,5 @@ export async function getUsersWhoSkipped(adId: string) {
   const { data } = await run(query)
   return data.map((r) => r['user_id']) ?? []
 }
+
+// Market boost Ads

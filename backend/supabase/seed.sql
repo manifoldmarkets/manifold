@@ -845,6 +845,23 @@ create table if not exists
 
 alter table user_topics enable row level security;
 
+create table if not exists
+  market_ads (
+    user_id text not null,
+    market_id text not null foreign key created_at,
+    funds number not null,
+    cost_per_view number not null,
+    timestamp not null default now(),
+    targeting_vector (1536) not null,
+  );
+
+create table if not exists
+  ad_analytics (
+    ad_id text not null foreign key funds number not null,
+    impressions number not null default 0,
+    clicks number not null default 0,
+  );
+
 drop policy if exists "public read" on user_topics;
 
 create policy "public read" on user_topics for
