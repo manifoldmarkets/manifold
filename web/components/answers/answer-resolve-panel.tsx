@@ -20,6 +20,7 @@ export function AnswerResolvePanel(props: {
     option: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   ) => void
   chosenAnswers: { [answerId: string]: number }
+  modalSetOpen?: (open: boolean) => void
 }) {
   const {
     contract,
@@ -28,6 +29,7 @@ export function AnswerResolvePanel(props: {
     chosenAnswers,
     isAdmin,
     isCreator,
+    modalSetOpen,
   } = props
   const answers = Object.keys(chosenAnswers)
 
@@ -90,7 +92,8 @@ export function AnswerResolvePanel(props: {
   return (
     <Col className="gap-4 rounded">
       <Row className="justify-between">
-        <div>Resolve your market</div>
+        {!modalSetOpen && <div>Resolve your market</div>}
+        {modalSetOpen && <div>Resolve "{contract.question}"</div>}
         {isAdmin && !isCreator && (
           <span className="bg-scarlet-500/20 text-scarlet-500 rounded p-1 text-xs">
             ADMIN
@@ -117,36 +120,73 @@ export function AnswerResolvePanel(props: {
             </Button>
           )}
 
-          <ResolveConfirmationButton
-            color={
-              resolveOption === 'CANCEL'
-                ? 'yellow'
-                : resolveOption === 'CHOOSE' && answers.length
-                ? 'green'
-                : resolveOption === 'CHOOSE_MULTIPLE' &&
-                  answers.length > 1 &&
-                  answers.every((answer) => chosenAnswers[answer] > 0)
-                ? 'blue'
-                : 'indigo'
-            }
-            label={
-              resolveOption === 'CANCEL'
-                ? 'N/A'
-                : resolveOption === 'CHOOSE'
-                ? chosenText
-                : `${answers.length} answers`
-            }
-            marketTitle={contract.question}
-            disabled={
-              !resolveOption ||
-              (resolveOption === 'CHOOSE' && !answers.length) ||
-              (resolveOption === 'CHOOSE_MULTIPLE' &&
-                (!(answers.length > 1) ||
-                  !answers.every((answer) => chosenAnswers[answer] > 0)))
-            }
-            onResolve={onResolve}
-            isSubmitting={isSubmitting}
-          />
+          {!modalSetOpen && (
+            <ResolveConfirmationButton
+              color={
+                resolveOption === 'CANCEL'
+                  ? 'yellow'
+                  : resolveOption === 'CHOOSE' && answers.length
+                  ? 'green'
+                  : resolveOption === 'CHOOSE_MULTIPLE' &&
+                    answers.length > 1 &&
+                    answers.every((answer) => chosenAnswers[answer] > 0)
+                  ? 'blue'
+                  : 'indigo'
+              }
+              label={
+                resolveOption === 'CANCEL'
+                  ? 'N/A'
+                  : resolveOption === 'CHOOSE'
+                  ? chosenText
+                  : `${answers.length} answers`
+              }
+              marketTitle={contract.question}
+              disabled={
+                !resolveOption ||
+                (resolveOption === 'CHOOSE' && !answers.length) ||
+                (resolveOption === 'CHOOSE_MULTIPLE' &&
+                  (!(answers.length > 1) ||
+                    !answers.every((answer) => chosenAnswers[answer] > 0)))
+              }
+              onResolve={onResolve}
+              isSubmitting={isSubmitting}
+            />
+          )}
+          {modalSetOpen && (
+            <Button
+              color={
+                resolveOption === 'CANCEL'
+                  ? 'yellow'
+                  : resolveOption === 'CHOOSE' && answers.length
+                  ? 'green'
+                  : resolveOption === 'CHOOSE_MULTIPLE' &&
+                    answers.length > 1 &&
+                    answers.every((answer) => chosenAnswers[answer] > 0)
+                  ? 'blue'
+                  : 'indigo'
+              }
+              disabled={
+                isSubmitting ||
+                !resolveOption ||
+                (resolveOption === 'CHOOSE' && !answers.length) ||
+                (resolveOption === 'CHOOSE_MULTIPLE' &&
+                  (!(answers.length > 1) ||
+                    !answers.every((answer) => chosenAnswers[answer] > 0)))
+              }
+              onClick={onResolve}
+            >
+              <>
+                Resolve{' '}
+                {resolveOption === 'CANCEL' ? (
+                  <>N/A</>
+                ) : resolveOption === 'CHOOSE' ? (
+                  chosenText
+                ) : (
+                  <>{answers.length} answers</>
+                )}
+              </>
+            </Button>
+          )}
         </Row>
       </div>
 

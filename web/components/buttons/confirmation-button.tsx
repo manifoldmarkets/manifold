@@ -84,7 +84,7 @@ export function ConfirmationButton(props: {
 
       <Button
         className={openModalBtn.className}
-        onClick={() => {
+        onClick={(e) => {
           if (disabled) {
             return
           }

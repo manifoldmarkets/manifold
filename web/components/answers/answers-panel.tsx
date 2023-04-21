@@ -35,9 +35,10 @@ export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   onAnswerCommentClick: (answer: Answer) => void
   showResolver?: boolean
+  modalSetOpen?: (open: boolean) => void
 }) {
   const isAdmin = useAdmin()
-  const { contract, onAnswerCommentClick, showResolver } = props
+  const { contract, onAnswerCommentClick, showResolver, modalSetOpen } = props
   const { creatorId, resolution, resolutions, outcomeType } = contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
 
@@ -135,66 +136,87 @@ export function AnswersPanel(props: {
       totalChosenProb={chosenTotal}
       onChoose={onChoose}
       onDeselect={onDeselect}
+      modalSetOpen={modalSetOpen}
     />
   ))
 
-  return (
-    <Col className="gap-3">
-      {showResolver && (
-        <GradientContainer className="mb-4">
-          <AnswerResolvePanel
-            isAdmin={isAdmin}
-            isCreator={user?.id === creatorId}
-            contract={contract}
-            resolveOption={resolveOption}
-            setResolveOption={setResolveOption}
-            chosenAnswers={chosenAnswers}
-          />
-
-          {!!resolveOption && (
-            <Col className="mt-4 gap-3">{answerItemComponents}</Col>
-          )}
-        </GradientContainer>
-      )}
-
-      {resolution && answerItemComponents}
-
-      {!resolveOption && (
-        <Col className="gap-3">
-          {answerItems.map((item) => (
-            <OpenAnswer
-              key={item.id}
-              answer={item}
-              contract={contract}
-              onAnswerCommentClick={onAnswerCommentClick}
-              color={getAnswerColor(item, answersArray)}
-            />
-          ))}
-          {answersToHide.length > 0 && !showAllAnswers && (
-            <Button
-              className="self-end"
-              color="gray-white"
-              onClick={() => setShowAllAnswers(true)}
-              size="md"
-            >
-              Show More
-            </Button>
-          )}
-        </Col>
-      )}
-
-      {answers.length === 0 && (
-        <div className="text-ink-500 pb-4">No answers yet...</div>
-      )}
-
-      {outcomeType === 'FREE_RESPONSE' &&
-        tradingAllowed(contract) &&
-        !resolveOption &&
-        !privateUser?.blockedByUserIds.includes(contract.creatorId) && (
-          <CreateAnswerPanel contract={contract} />
+  // if this is not in a modal
+  if (modalSetOpen) {
+    return (
+      <Col className="w-full">
+        <AnswerResolvePanel
+          isAdmin={isAdmin}
+          isCreator={user?.id === creatorId}
+          contract={contract}
+          resolveOption={resolveOption}
+          setResolveOption={setResolveOption}
+          chosenAnswers={chosenAnswers}
+          modalSetOpen={modalSetOpen}
+        />
+        {!!resolveOption && (
+          <Col className="mt-4 w-full gap-3">{answerItemComponents}</Col>
         )}
-    </Col>
-  )
+      </Col>
+    )
+  } else {
+    return (
+      <Col className="gap-3">
+        {showResolver && (
+          <GradientContainer className="mb-4">
+            <AnswerResolvePanel
+              isAdmin={isAdmin}
+              isCreator={user?.id === creatorId}
+              contract={contract}
+              resolveOption={resolveOption}
+              setResolveOption={setResolveOption}
+              chosenAnswers={chosenAnswers}
+            />
+
+            {!!resolveOption && (
+              <Col className="mt-4 gap-3">{answerItemComponents}</Col>
+            )}
+          </GradientContainer>
+        )}
+
+        {resolution && answerItemComponents}
+
+        {!resolveOption && (
+          <Col className="gap-3">
+            {answerItems.map((item) => (
+              <OpenAnswer
+                key={item.id}
+                answer={item}
+                contract={contract}
+                onAnswerCommentClick={onAnswerCommentClick}
+                color={getAnswerColor(item, answersArray)}
+              />
+            ))}
+            {answersToHide.length > 0 && !showAllAnswers && (
+              <Button
+                className="self-end"
+                color="gray-white"
+                onClick={() => setShowAllAnswers(true)}
+                size="md"
+              >
+                Show More
+              </Button>
+            )}
+          </Col>
+        )}
+
+        {answers.length === 0 && (
+          <div className="text-ink-500 pb-4">No answers yet...</div>
+        )}
+
+        {outcomeType === 'FREE_RESPONSE' &&
+          tradingAllowed(contract) &&
+          !resolveOption &&
+          !privateUser?.blockedByUserIds.includes(contract.creatorId) && (
+            <CreateAnswerPanel contract={contract} />
+          )}
+      </Col>
+    )
+  }
 }
 
 function OpenAnswer(props: {
