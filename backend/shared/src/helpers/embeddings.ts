@@ -108,3 +108,31 @@ async function computeUserInterestEmbedding(
     }
   )
 }
+
+export async function updateUsersCardViewEmbeddings(
+  pg: SupabaseDirectClient | ITask<any>
+) {
+  return await pg.none(
+    `with view_embedding as (
+      select
+        user_events.user_id,
+        avg(contract_embeddings.embedding) as average_embedding
+      from
+        contract_embeddings
+        join user_events on user_events.data->>'contractId' = contract_embeddings.contract_id
+        join users on users.id = user_events.user_id
+      where
+        user_events.data->>'name' = 'view market card'
+      group by
+        user_events.user_id
+    )
+    update
+      user_embeddings
+    set
+      card_view_embedding = view_embedding.average_embedding
+    from
+      view_embedding
+    where
+      user_embeddings.user_id = view_embedding.user_id`
+  )
+}
