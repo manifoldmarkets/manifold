@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { fromNow } from 'web/lib/util/time'
 import { getTextColor } from '../bet/quick-bet'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { ContractStatusLabel } from './contracts-list-entry'
+import { ContractStatusLabel } from './contracts-table'
 
 export function ContractMention(props: {
   contract: Contract

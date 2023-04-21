@@ -12,10 +12,7 @@ import { Col } from '../layout/col'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { useState } from 'react'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import {
-  ContractStatusLabel,
-  ContractsTableEntry,
-} from './contracts-list-entry'
+import { ContractStatusLabel, ContractsTableEntry } from './contracts-table'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Avatar } from '../widgets/avatar'
 import { filter } from '../supabase-search'
