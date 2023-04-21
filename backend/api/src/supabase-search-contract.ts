@@ -201,6 +201,6 @@ function getSearchContractSortSQL(
     'close-date': 'close_time',
   }
 
-  const ASCDESC = sort === 'close-date' ? 'ASC' : 'DESC'
+  const ASCDESC = sort === 'close-date' || sort === 'liquidity' ? 'ASC' : 'DESC'
   return `ORDER BY ${sortFields[sort]} ${ASCDESC}`
 }
