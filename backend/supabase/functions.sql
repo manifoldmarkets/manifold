@@ -181,7 +181,7 @@ from get_recommended_contracts_embeddings_from(
     ),
     n,
     excluded_contract_ids,
-    0.25
+    1.0
   ) $$;
 
 create
@@ -219,7 +219,7 @@ from get_recommended_contracts_embeddings_from(
     ),
     n,
     excluded_contract_ids,
-    0.10
+    0.40
   ) $$;
 
 create
@@ -241,7 +241,7 @@ or replace function get_recommended_contracts_embeddings_from (
         row_number() over (
           order by p_embedding <=> ce.embedding
         )
-      ) / 2000.0 as relative_dist,
+      ) / 600.0 as relative_dist,
       lpc.popularity_score,
       lpc.created_time,
       lpc.close_time
@@ -251,37 +251,31 @@ or replace function get_recommended_contracts_embeddings_from (
         select 1
         from unnest(excluded_contract_ids) as w
         where w = contract_id
-      ) -- That has not been viewed.
-      and not exists (
-        select 1
-        from user_events
-        where user_events.user_id = uid
-          and user_events.data->>'name' = 'view market'
-          and user_events.data->>'contractId' = contract_id
-      ) -- That has not been swiped on.
+      ) -- That has not been swiped on within 2 weeks.
       and not exists(
         select 1
         from user_seen_markets
         where user_seen_markets.user_id = uid
           and user_seen_markets.contract_id = ce.contract_id
-      ) -- That has not been viewed as a card recently.
+          and (user_seen_markets.data->>'createdTime')::bigint > ts_to_millis(now() - interval '2 weeks')
+      ) -- That has not been viewed as a card in the last day.
       and not exists(
         select 1
         from user_events
         where user_events.user_id = uid
           and user_events.data->>'name' = 'view market card'
           and user_events.data->>'contractId' = contract_id
-          and (user_events.data->'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
+          and (user_events.data->'timestamp')::bigint > ts_to_millis(now() - interval '2 days')
       )
     order by p_embedding <=> ce.embedding -- Find many that are close to your interests
       -- so that among them we can filter for new, closing soon, and trending.
-    limit 2000
+    limit 600
   ), available_contracts as (
     select *,
       (
         case
           when close_time <= NOW() + interval '1 day' then 1
-          when close_time <= NOW() + interval '1 week' then.9
+          when close_time <= NOW() + interval '1 week' then 0.9
           when close_time <= NOW() + interval '1 month' then 0.75
           when close_time <= NOW() + interval '3 months' then 0.5
           when close_time <= NOW() + interval '1 year' then 0.33
