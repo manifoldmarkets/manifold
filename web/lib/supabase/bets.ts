@@ -44,6 +44,18 @@ export const getPublicBets = async (options?: BetFilter) => {
   return data.map((r) => r.data)
 }
 
+export const getBetsOnContracts = async (
+  contractIds: string[],
+  options?: BetFilter
+) => {
+  let q = selectJson(db, 'contract_bets')
+  q = q.in('contract_id', contractIds)
+  q = q.order('created_time', { ascending: options?.order === 'asc' })
+  q = applyBetsFilter(q, options)
+  const { data } = await run(q)
+  return data.map((r) => r.data)
+}
+
 export const getBetFields = async <T extends (keyof Bet)[]>(
   fields: T,
   options?: BetFilter

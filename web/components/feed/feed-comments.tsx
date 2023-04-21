@@ -21,7 +21,7 @@ import { Content } from '../widgets/editor'
 import { UserLink } from 'web/components/widgets/user-link'
 import { CommentInput } from '../comments/comment-input'
 import { ReplyIcon, XCircleIcon } from '@heroicons/react/solid'
-import { IconButton } from '../buttons/button'
+import { Button, IconButton } from '../buttons/button'
 import { ReplyToggle } from '../comments/reply-toggle'
 import { ReportModal } from 'web/components/buttons/report-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
@@ -38,6 +38,8 @@ import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { Bet } from 'common/bet'
 import Curve from 'web/public/custom-components/curve'
+import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -45,8 +47,9 @@ export function FeedCommentThread(props: {
   contract: Contract
   threadComments: ContractComment[]
   parentComment: ContractComment
+  collapseMiddle?: boolean
 }) {
-  const { contract, threadComments, parentComment } = props
+  const { contract, threadComments, parentComment, collapseMiddle } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
   const [seeReplies, setSeeReplies] = useState(true)
 
@@ -57,6 +60,9 @@ export function FeedCommentThread(props: {
   const onReplyClick = useEvent((comment: ContractComment) => {
     setReplyToUserInfo({ id: comment.id, username: comment.userUsername })
   })
+  const [collapseToIndex, setCollapseToIndex] = useState<number>(
+    collapseMiddle && threadComments.length > 2 ? threadComments.length - 2 : -1
+  )
 
   return (
     <Col className="w-full items-stretch gap-3 pb-2">
@@ -72,16 +78,36 @@ export function FeedCommentThread(props: {
         onReplyClick={onReplyClick}
       />
       {seeReplies &&
-        threadComments.map((comment, _commentIdx) => (
-          <FeedComment
-            key={comment.id}
-            contract={contract}
-            comment={comment}
-            highlighted={idInUrl === comment.id}
-            showLike={true}
-            onReplyClick={onReplyClick}
-          />
-        ))}
+        threadComments.map((comment, _commentIdx) =>
+          _commentIdx < collapseToIndex ? null : _commentIdx ===
+            collapseToIndex ? (
+            <Row
+              className={'justify-end sm:mt-1 sm:-mb-2'}
+              key={parentComment.id + 'see-replies-feed-button'}
+            >
+              <Button
+                size={'sm'}
+                color={'gray-outline'}
+                onClick={() => setCollapseToIndex(-1)}
+              >
+                <Col>
+                  <TriangleFillIcon className={'mr-2 h-2'} />
+                  <TriangleDownFillIcon className={'mr-2 h-2'} />
+                </Col>
+                See replies
+              </Button>
+            </Row>
+          ) : (
+            <FeedComment
+              key={comment.id}
+              contract={contract}
+              comment={comment}
+              highlighted={idInUrl === comment.id}
+              showLike={true}
+              onReplyClick={onReplyClick}
+            />
+          )
+        )}
       {replyToUserInfo && (
         <Col className="-pb-2 relative ml-6">
           <ContractCommentInput
