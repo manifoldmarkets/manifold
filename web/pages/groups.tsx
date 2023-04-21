@@ -5,7 +5,7 @@ import { Group, groupPath, GroupsByTopic } from 'common/group'
 import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
 import { useMutation } from 'react-query'
-import { ContractsTableEntry } from 'web/components/contract/contracts-table'
+import { ContractsTable } from 'web/components/contract/contracts-table'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { Col } from 'web/components/layout/col'
@@ -285,8 +285,9 @@ function SingleGroupInfo(props: {
         </div>
       )}
       {trendingMutate.data && (
-        <ContractsTableEntry
+        <ContractsTable
           contracts={trendingMutate.data.data as Contract[]}
+          isMobile={true}
         />
       )}
 

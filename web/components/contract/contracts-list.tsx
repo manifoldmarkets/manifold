@@ -1,23 +1,11 @@
-import {
-  useFloating,
-  useHover,
-  useInteractions,
-  safePolygon,
-  flip,
-} from '@floating-ui/react'
-
 import { Contract } from 'common/contract'
-import { ContractCard } from './contract-card'
-import { Col } from '../layout/col'
-import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
-import { useState } from 'react'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { ContractStatusLabel, ContractsTableEntry } from './contracts-table'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Avatar } from '../widgets/avatar'
+import { Col } from '../layout/col'
 import { filter } from '../supabase-search'
-const contractListEntryHighlightClass =
-  'bg-gradient-to-b from-primary-100 via-ink-0to-ink-0outline outline-2 outline-primary-400'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
+import { ContractsTable } from './contracts-table'
+
 export function ContractsList(props: {
   contracts: Contract[] | undefined
   filter?: filter
@@ -38,7 +26,6 @@ export function ContractsList(props: {
   } = props
 
   const isMobile = useIsMobile()
-  console.log('MOBILE', isMobile)
 
   if (contracts === undefined) {
     return <LoadingIndicator />
@@ -46,7 +33,7 @@ export function ContractsList(props: {
 
   return (
     <Col>
-      <ContractsTableEntry
+      <ContractsTable
         contracts={contracts}
         filter={filter}
         onContractClick={onContractClick}

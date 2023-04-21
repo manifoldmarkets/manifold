@@ -560,7 +560,7 @@ function ReasonChosen(props: { contract: Contract }) {
             placement="bottom"
             className={'z-10'}
           >
-            <Row className={'align-center shrink-0 items-center gap-1'}>
+            <Row className={'shrink-0 items-center gap-1'}>
               <UserIcon className={'h-4 w-4'} />
               <div>{uniqueBettorCount ?? 0}</div>
             </Row>
