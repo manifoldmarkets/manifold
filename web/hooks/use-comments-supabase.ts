@@ -1,4 +1,4 @@
-import { Comment } from 'common/comment'
+import { Comment, ContractComment } from 'common/comment'
 import { Json } from 'common/supabase/schema'
 import { useEffect, useState } from 'react'
 import {
@@ -7,6 +7,7 @@ import {
   getNumUserComments,
 } from 'web/lib/supabase/comments'
 import { db } from 'web/lib/supabase/db'
+import { uniqBy } from 'lodash'
 
 export function useComments(contractId: string, limit: number) {
   const [comments, setComments] = useState<Json[]>([])
@@ -18,6 +19,40 @@ export function useComments(contractId: string, limit: number) {
   }, [contractId])
 
   return comments
+}
+
+export function useRecentReplyChainCommentsOnContracts(
+  contractIds: string[],
+  afterTime: number
+) {
+  const [comments, setComments] = useState<ContractComment[]>([])
+
+  useEffect(() => {
+    if (contractIds.length > 0) {
+      db.rpc('get_reply_chain_comments_matching_contracts', {
+        contract_ids: contractIds,
+        past_time_ms: afterTime,
+      }).then((result) => {
+        const { data, error } = result
+        if (error || !data) {
+          console.log(error)
+          return null
+        }
+        setComments((prev) =>
+          uniqBy(
+            [
+              // TODO: why does typescript think d is an array?
+              ...data.map((d: any) => d.data as ContractComment),
+              ...prev,
+            ],
+            (c) => c.id
+          )
+        )
+      })
+    }
+  }, [JSON.stringify(contractIds)])
+
+  return comments.filter((c) => c.hidden != true)
 }
 
 export function useNumUserComments(userId: string) {

@@ -145,7 +145,7 @@ service cloud.firestore {
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['tags', 'lowercaseTags', 'groupSlugs', 'groupLinks', 'flaggedByUsernames']);                                                     
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                                                                 .hasOnly(['description', 'closeTime', 'question', 'visibility', 'unlistedById'])
+                                                                 .hasOnly(['description', 'closeTime', 'question', 'visibility', 'unlistedById', 'coverImageUrl'])
                        && resource.data.creatorId == request.auth.uid;
       allow update: if isAdmin();
       allow delete: if request.resource.data.creatorId == request.auth.uid || isAdmin();

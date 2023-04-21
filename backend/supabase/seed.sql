@@ -766,7 +766,8 @@ create table if not exists
     user_id text not null primary key,
     created_at timestamp not null default now(),
     interest_embedding vector (1536) not null,
-    pre_signup_interest_embedding vector (1536)
+    pre_signup_interest_embedding vector (1536),
+    card_view_embedding vector (1536)
   );
 
 alter table user_embeddings enable row level security;
