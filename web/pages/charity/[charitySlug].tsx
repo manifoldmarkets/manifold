@@ -17,13 +17,12 @@ import { useRouter } from 'next/router'
 import Custom404 from '../404'
 import { useCharityTxns } from 'web/hooks/use-charity-txns'
 import { Donation } from 'web/components/charity/feed-items'
-import { formatMoney, manaToUSD } from 'common/util/format'
+import { manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export default function CharityPageWrapper() {
   const router = useRouter()
@@ -127,6 +126,8 @@ function Details(props: {
   )
 }
 
+const MIN_DONATION_MANA = 100
+
 function DonationBox(props: {
   user?: User | null
   charity: Charity
@@ -137,7 +138,8 @@ function DonationBox(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>()
 
-  const donateDisabled = isSubmitting || !amount || !!error || amount < 100
+  const donateDisabled =
+    isSubmitting || !amount || !!error || amount < MIN_DONATION_MANA
 
   const onSubmit: React.FormEventHandler = async (e) => {
     if (!user || donateDisabled) return
@@ -166,44 +168,41 @@ function DonationBox(props: {
   return (
     <div className="bg-canvas-0 rounded-lg py-6 px-8 shadow-lg">
       <Title>Donate</Title>
-      <form onSubmit={onSubmit}>
-        <label
-          className="text-ink-500 mb-2 block text-sm"
-          htmlFor="donate-input"
+      <label className="text-ink-500 mb-2 block text-sm" htmlFor="donate-input">
+        Amount
+      </label>
+      <BuyAmountInput
+        inputClassName="w-full max-w-none donate-input"
+        minimumAmount={MIN_DONATION_MANA}
+        quickAddAmount={MIN_DONATION_MANA}
+        amount={amount}
+        onChange={setAmount}
+        error={error}
+        setError={setError}
+      />
+
+      <Col className="mt-3 w-full gap-3">
+        <Row className="items-center text-sm xl:justify-between">
+          <span className="text-ink-500 mr-1">{charity.name} receives</span>
+          <span>{manaToUSD(amount || 0)}</span>
+        </Row>
+        {/* TODO: matching pool */}
+      </Col>
+
+      <Spacer h={8} />
+
+      {user && (
+        <Button
+          type="submit"
+          color="green"
+          className="w-full"
+          disabled={donateDisabled}
+          loading={isSubmitting}
+          onClick={onSubmit}
         >
-          Amount{' '}
-          <InfoTooltip text={`Minimum donation is ${formatMoney(100)}`} />
-        </label>
-        <BuyAmountInput
-          inputClassName="w-full max-w-none donate-input"
-          amount={amount}
-          onChange={setAmount}
-          error={error}
-          setError={setError}
-        />
-
-        <Col className="mt-3 w-full gap-3">
-          <Row className="items-center text-sm xl:justify-between">
-            <span className="text-ink-500 mr-1">{charity.name} receives</span>
-            <span>{manaToUSD(amount || 0)}</span>
-          </Row>
-          {/* TODO: matching pool */}
-        </Col>
-
-        <Spacer h={8} />
-
-        {user && (
-          <Button
-            type="submit"
-            color="green"
-            className="w-full"
-            disabled={donateDisabled}
-            loading={isSubmitting}
-          >
-            {(amount ?? 0) < 100 ? '$1 minimum' : 'Donate'}
-          </Button>
-        )}
-      </form>
+          {(amount ?? 0) < MIN_DONATION_MANA ? '$1 minimum' : 'Donate'}
+        </Button>
+      )}
     </div>
   )
 }
