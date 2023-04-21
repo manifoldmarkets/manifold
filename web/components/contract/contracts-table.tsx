@@ -24,11 +24,9 @@ const lastItemClassName = 'rounded-r pr-2'
 const firstItemClassName = 'rounded-l pl-2 pr-4'
 
 export function isClosed(contract: Contract) {
-  return (
-    contract.closeTime &&
+  return (contract.closeTime &&
     contract.closeTime < Date.now() &&
-    !contract.isResolved
-  )
+    !contract.isResolved) as boolean
 }
 
 export function ContractStatusLabel(props: {
@@ -239,7 +237,6 @@ export function ContractsTable(props: {
                         : index === contractColumns.length - 1
                         ? lastItemClassName
                         : 'pr-4'
-                      // column.name === 'market' ? 'w-2/3' : 'w-min'
                     )}
                   >
                     {column.header}

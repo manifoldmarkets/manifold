@@ -12,6 +12,7 @@ import { Row } from '../layout/row'
 import { NumericResolutionPanel } from '../numeric-resolution-panel'
 import { ResolutionPanel } from '../resolution-panel'
 import { QfResolutionPanel } from './qf-overview'
+import { isClosed } from './contracts-table'
 
 export function Action(props: { contract: Contract; user?: User | null }) {
   const { contract, user } = props
@@ -26,13 +27,12 @@ export function Action(props: { contract: Contract; user?: User | null }) {
 export function BetButton(props: { contract: Contract; user?: User | null }) {
   const { contract, user } = props
   const [open, setOpen] = useState(false)
-  const isClosed = contract.closeTime && contract.closeTime < Date.now()
-  // const [outcome, setOutcome] = useState<binaryOutcomes>()
   if (
-    !(isClosed && contract.creatorId === user?.id) &&
+    // if contract is closed, and if user is creator, don't show bet button, want to only show resolve button
+    !(isClosed(contract) && contract.creatorId === user?.id) &&
+    // TODO: only have betting for binary markets right now
     contract.outcomeType === 'BINARY' &&
     contract.mechanism === 'cpmm-1' &&
-    // !isClosed &&
     !contract.isResolved
   ) {
     return (
@@ -46,10 +46,9 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
               firebaseLogin()
               return
             }
-            // setOutcome('YES')
             setOpen(true)
           }}
-          disabled={isClosed || contract.isResolved}
+          disabled={isClosed(contract)}
         >
           Bet
         </Button>
@@ -76,7 +75,6 @@ export function ResolveButton(props: {
   if (
     user &&
     contract.creatorId === user?.id &&
-    // !contract.isResolved &&
     (contract.outcomeType === 'NUMERIC' ||
       contract.outcomeType === 'PSEUDO_NUMERIC' ||
       contract.outcomeType === 'BINARY' ||
