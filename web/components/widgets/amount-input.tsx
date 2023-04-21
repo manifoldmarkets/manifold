@@ -138,7 +138,6 @@ export function BuyAmountInput(props: {
     }
   })
 
-  // Memoize the quick add button to avoid re-rendering the whole component
   const quickAddButton = (
     <button
       className={clsx(
