@@ -135,7 +135,7 @@ const Results = (props: { query: string }) => {
       searchContract({
         query: search,
         filter: 'all',
-        sort: 'most-popular',
+        sort: 'relevance',
         limit: marketHitLimit,
       }),
     ]).then(([userHits, groupHits, { data: marketHits }]) => {
