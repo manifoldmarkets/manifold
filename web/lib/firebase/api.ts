@@ -261,7 +261,11 @@ export function supabaseSearchContracts(params: {
   groupId?: string
   creatorId?: string
 }) {
-  return maybeAuthedCall(getApiUrl('supabasesearchcontracts'), 'POST', params)
+  return maybeAuthedCall(
+    getApiUrl('supabasesearchcontracts'),
+    'POST',
+    params
+  ) as Promise<Contract[]>
 }
 
 export function deleteMarket(params: { contractId: string }) {

@@ -158,10 +158,7 @@ export async function searchContract(props: {
   }
 
   if (limit === 0) {
-    return {
-      fuzzyOffset: 0,
-      data: {},
-    }
+    return { fuzzyOffset: 0, data: [] }
   }
 
   if (!query) {
@@ -175,10 +172,7 @@ export async function searchContract(props: {
       creatorId: creator_id,
     })
     if (contracts) {
-      return {
-        fuzzyOffset: 0,
-        data: contracts,
-      }
+      return { fuzzyOffset: 0, data: contracts }
     }
   }
   if (state.fuzzyContractOffset > 0) {
