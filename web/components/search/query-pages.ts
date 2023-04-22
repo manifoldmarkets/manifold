@@ -23,7 +23,7 @@ const pages: PageData[] = [
   },
   { label: 'Get mana', slug: '/add-funds', keywords: ['buy', 'subscribe'] },
   { label: 'Charity', slug: '/charity', keywords: ['donate', 'for good'] },
-  { label: 'Referrals', slug: '/referrals' },
+  { label: 'Referrals', slug: '/referrals', keywords: ['invite', 'share'] },
   { label: 'Live Feed', slug: '/live' },
   { label: 'About & Help', slug: 'https://help.manifold.markets' },
   { label: 'Ads', slug: '/ad', keywords: ['advertisement'] },
@@ -63,9 +63,4 @@ export function searchPages(query: string, limit: number) {
 
 const pagesByLabel = keyBy(pages, 'label')
 
-export const defaultPages = [
-  pagesByLabel['Newest'],
-  pagesByLabel['Daily Changed'],
-  pagesByLabel['Trending'],
-  pagesByLabel['Users'],
-]
+export const defaultPages = [pagesByLabel['Live Feed'], pagesByLabel['Users']]
