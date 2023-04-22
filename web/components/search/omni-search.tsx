@@ -133,7 +133,7 @@ const Results = (props: { query: string }) => {
     const thisNonce = nonce.current
     setLoading(true)
 
-    Promise.all([
+    Promise.allSettled([
       searchUsers(search, userHitLimit),
       searchGroups(search, groupHitLimit),
       searchContract({
@@ -158,7 +158,12 @@ const Results = (props: { query: string }) => {
         }
         return null
       })(),
-    ]).then(([userHits, groupHits, { data: marketHits }, sortHit]) => {
+    ]).then(([u, g, m, s]) => {
+      const userHits = u.status === 'fulfilled' ? u.value : []
+      const groupHits = g.status === 'fulfilled' ? g.value : []
+      const marketHits = m.status === 'fulfilled' ? m.value.data : []
+      const sortHit = s.status === 'fulfilled' ? s.value : null
+
       if (thisNonce === nonce.current) {
         const pageHits = prefix ? [] : searchPages(search, 2)
         const uniqueMarketHits = uniqBy<Contract>(marketHits, 'id')
