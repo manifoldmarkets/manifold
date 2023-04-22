@@ -144,6 +144,7 @@ export const SummarizeBets = memo(function SummarizeBets(props: {
               size={avatarSize}
               avatarUrl={userAvatarUrl}
               username={userUsername}
+              className='z-10'
             />
           ) : (
             <EmptyAvatar className="mx-1" />

@@ -36,6 +36,8 @@ export const FeedItems = (props: {
     }
   })
 
+  const hasItems = commentThreads.length > 0 || recentBets.length > 0
+
   return (
     <Col>
       {groupedItems.map((itemGroup) => {
@@ -51,8 +53,8 @@ export const FeedItems = (props: {
             <ContractCardNew
               contract={contract}
               className={clsx(
-                'my-0  border-0',
-                commentThreads.length > 0 ? 'rounded-t-xl rounded-b-none  ' : ''
+                'my-0 border-0',
+                hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
               )}
             />
             <Row className="bg-ink-0">
