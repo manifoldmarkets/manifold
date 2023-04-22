@@ -17,9 +17,11 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { PageData, defaultPages, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
-import { uniqBy } from 'lodash'
+import { startCase, uniqBy } from 'lodash'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
 import { SiteLink } from 'web/components/widgets/site-link'
+import { SORTS, Sort } from '../supabase-search'
+import { searchMarketSorts } from './query-market-sorts'
 
 export interface Option {
   id: string
@@ -112,13 +114,16 @@ const Results = (props: { query: string }) => {
   const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
   const marketHitLimit = !prefix ? 20 : prefix === '%' ? 25 : 0
 
-  const [{ pageHits, userHits, groupHits, marketHits }, setSearchResults] =
-    useState({
-      pageHits: [] as PageData[],
-      userHits: [] as UserSearchResult[],
-      groupHits: [] as SearchGroupInfo[],
-      marketHits: [] as Contract[],
-    })
+  const [
+    { pageHits, userHits, groupHits, sortHit, marketHits },
+    setSearchResults,
+  ] = useState({
+    pageHits: [] as PageData[],
+    userHits: [] as UserSearchResult[],
+    groupHits: [] as SearchGroupInfo[],
+    sortHit: null as { sort: Sort; markets: Contract[] } | null,
+    marketHits: [] as Contract[],
+  })
   const [loading, setLoading] = useState(false)
 
   // Use nonce to make sure only latest result gets used.
@@ -138,7 +143,23 @@ const Results = (props: { query: string }) => {
         sort: 'relevance',
         limit: marketHitLimit,
       }),
-    ]).then(([userHits, groupHits, { data: marketHits }]) => {
+      (async () => {
+        const sortHits = prefix ? [] : searchMarketSorts(search)
+        const sort = sortHits[0]
+        if (sortHits.length) {
+          const markets = (
+            await searchContract({
+              query: '',
+              filter: 'all',
+              sort: sort,
+              limit: 3,
+            })
+          ).data
+          return { sort, markets }
+        }
+        return null
+      })(),
+    ]).then(([userHits, groupHits, { data: marketHits }, sortHit]) => {
       if (thisNonce === nonce.current) {
         const pageHits = prefix ? [] : searchPages(search, 2)
         const uniqueMarketHits = uniqBy<Contract>(marketHits, 'id')
@@ -146,6 +167,7 @@ const Results = (props: { query: string }) => {
           pageHits,
           userHits,
           groupHits,
+          sortHit,
           marketHits: uniqueMarketHits,
         })
         setLoading(false)
@@ -175,8 +197,8 @@ const Results = (props: { query: string }) => {
     <>
       <PageResults pages={pageHits} />
       <UserResults users={userHits} search={search} />
-
       <GroupResults groups={groupHits} search={search} />
+      {sortHit && <MarketSortResults {...sortHit} />}
       <MarketResults markets={marketHits} search={search} />
     </>
   )
@@ -242,27 +264,34 @@ const MarketResults = (props: { markets: Contract[]; search?: string }) => {
       <SectionTitle link={marketSearchSlug(props.search ?? '')}>
         Markets
       </SectionTitle>
-      {props.markets.map((market) => (
-        <ResultOption
-          value={{
-            id: market.id,
-            slug: `/${market.creatorUsername}/${market.slug}`,
-          }}
-        >
-          <div className="flex gap-2">
-            <span className="grow">{market.question}</span>
-            <span className="font-bold">
-              <ContractStatusLabel contract={market} />
-            </span>
-            <Avatar
-              size="xs"
-              username={market.creatorUsername}
-              avatarUrl={market.creatorAvatarUrl}
-            />
-          </div>
-        </ResultOption>
+      {markets.map((market) => (
+        <MarketResult key={market.id} market={market} />
       ))}
     </>
+  )
+}
+
+const MarketResult = (props: { market: Contract }) => {
+  const market = props.market
+  return (
+    <ResultOption
+      value={{
+        id: market.id,
+        slug: `/${market.creatorUsername}/${market.slug}`,
+      }}
+    >
+      <div className="flex gap-2">
+        <span className="grow">{market.question}</span>
+        <span className="font-bold">
+          <ContractStatusLabel contract={market} />
+        </span>
+        <Avatar
+          size="xs"
+          username={market.creatorUsername}
+          avatarUrl={market.creatorAvatarUrl}
+        />
+      </div>
+    </ResultOption>
   )
 }
 
@@ -339,6 +368,37 @@ const PageResults = (props: { pages: PageData[] }) => {
       {props.pages.map(({ label, slug }) => (
         <ResultOption value={{ id: label, slug }}>{label}</ResultOption>
       ))}
+    </>
+  )
+}
+
+const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
+  const { sort, markets } = props
+  if (!sort) return null
+
+  const casedLabel = startCase(SORTS.find((s) => s.value === sort)?.label)
+
+  const label = [
+    'newest',
+    'score',
+    'liquidity',
+    'close-date',
+    'resolve-date',
+  ].includes(sort)
+    ? casedLabel + ' Markets'
+    : 'Markets by ' + casedLabel
+
+  return (
+    <>
+      <SectionTitle link={`/markets?s=${sort}`}>{label}</SectionTitle>
+      <div className="flex">
+        <div className="bg-ink-200 ml-1 mr-3 w-1" />
+        <div className="flex flex-col gap-2">
+          {markets.map((market) => (
+            <MarketResult key={market.id} market={market} />
+          ))}
+        </div>
+      </div>
     </>
   )
 }

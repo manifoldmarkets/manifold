@@ -29,7 +29,7 @@ import { SiteLink } from './widgets/site-link'
 const CONTRACTS_PER_PAGE = 20
 
 export const SORTS = [
-  { label: 'Relevance', value: 'relevance' },
+  { label: 'No Sort', value: 'relevance' },
   { label: 'New', value: 'newest' },
   { label: 'Trending', value: 'score' },
   { label: 'Daily change', value: 'daily-score' },

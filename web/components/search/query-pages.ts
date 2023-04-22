@@ -29,21 +29,6 @@ const pages: PageData[] = [
   { label: 'Ads', slug: '/ad', keywords: ['advertisement'] },
 
   { label: 'Markets', slug: '/markets' },
-  { label: 'Newest', slug: '/markets?s=newest&f=open' },
-  { label: 'Trending', slug: '/markets?s=score&f=open' },
-  { label: 'Daily Changed', slug: '/markets?s=daily-score&f=open' },
-  { label: '24h Volume', slug: '/markets?s=24-hour-vol&f=open' },
-  {
-    label: 'Total Traders',
-    slug: '/markets?s=most-popular&f=open',
-    keywords: ['most popular'],
-  },
-  { label: 'Closing Soon', slug: '/markets?s=close-date&f=open' },
-  {
-    label: 'Just Resolved',
-    slug: '/markets?s=resolve-date&f=resolved',
-    keywords: ['recently resolved'],
-  },
   { label: 'Users', slug: '/users' },
 ]
 
