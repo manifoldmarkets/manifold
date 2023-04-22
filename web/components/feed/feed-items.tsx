@@ -86,9 +86,9 @@ const FeedBetsItem = (props: { contract: Contract; bets: Bet[] }) => {
       {groupedBetsByTime.map((bets, index) => (
         <Row className={'relative w-full p-3'} key={bets[0].id + 'summary'}>
           {index !== groupedBetsByTime.length - 1 ? (
-            <div className="border-ink-200 b-[50%] absolute top-0 -z-10 ml-4 h-[100%] border-l-2" />
+            <div className="border-ink-200 b-[50%] absolute top-0 ml-4 h-[100%] border-l-2" />
           ) : (
-            <div className="border-ink-200 absolute top-0 -z-10 ml-4 h-3 border-l-2" />
+            <div className="border-ink-200 absolute top-0 ml-4 h-3 border-l-2" />
           )}
           <SummarizeBets
             betsBySameUser={bets}
@@ -128,7 +128,7 @@ const FeedCommentItem = (props: {
           {index !== commentThreads.length - 1 ? (
             <div className="border-ink-200 b-[50%] absolute top-0 ml-7 h-[100%] border-l-2" />
           ) : (
-            <div className="border-ink-200 absolute top-0 -z-10 ml-7 h-3 border-l-2" />
+            <div className="border-ink-200 absolute top-0 ml-7 h-3 border-l-2" />
           )}
 
           <Col className={'w-full p-3'}>
