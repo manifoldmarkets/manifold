@@ -18,8 +18,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { PageData, defaultPages, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
 import { startCase, uniqBy } from 'lodash'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
-import { SiteLink } from 'web/components/widgets/site-link'
+import { ChevronRightIcon } from '@heroicons/react/outline'
 import { SORTS, Sort } from '../supabase-search'
 import { searchMarketSorts } from './query-market-sorts'
 
@@ -73,7 +72,7 @@ export const OmniSearch = (props: {
           />
           <Combobox.Options
             static
-            className="text-ink-700 flex flex-col overflow-y-auto px-2"
+            className="text-ink-700 flex flex-col overflow-y-auto px-1"
           >
             {query ? <Results query={query} /> : <DefaultResults />}
           </Combobox.Options>
@@ -207,19 +206,28 @@ const Results = (props: { query: string }) => {
 const SectionTitle = (props: { children: ReactNode; link?: string }) => {
   const { children, link } = props
   return (
-    <h2 className="text-ink-500 mt-2 mb-1 px-1">
-      <SiteLink href={link}>
-        {children}
-        {link && (
-          <ExternalLinkIcon className="ml-1 inline h-4 w-4 align-middle" />
-        )}
-      </SiteLink>
+    <h2 className="text-ink-800 mt-2 font-semibold first:mt-0">
+      {link ? (
+        <ResultOption
+          value={{ id: link, slug: link }}
+          className="!mb-0 flex items-center justify-between !px-2 !py-1"
+        >
+          {children}
+          <ChevronRightIcon className="h-5 w-5" />
+        </ResultOption>
+      ) : (
+        <div className="px-2 py-1">{children}</div>
+      )}
     </h2>
   )
 }
 
-const ResultOption = (props: { value: Option; children: ReactNode }) => {
-  const { value, children } = props
+const ResultOption = (props: {
+  value: Option
+  children: ReactNode
+  className?: string
+}) => {
+  const { value, children, className } = props
 
   return (
     <Combobox.Option value={value}>
@@ -233,7 +241,8 @@ const ResultOption = (props: { value: Option; children: ReactNode }) => {
           <a
             className={clsx(
               'mb-1 block cursor-pointer select-none rounded-md px-3 py-2',
-              active && 'bg-primary-100 text-primary-800'
+              active && 'bg-primary-100 text-primary-800',
+              className
             )}
             onClick={(e) => {
               if (e.ctrlKey || e.shiftKey || e.metaKey || e.button === 1) {
@@ -392,7 +401,7 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
     <>
       <SectionTitle link={`/markets?s=${sort}`}>{label}</SectionTitle>
       <div className="flex">
-        <div className="bg-ink-200 ml-1 mr-3 w-1" />
+        <div className="bg-ink-200 my-1 ml-2 mr-3 w-1" />
         <div className="flex flex-col gap-2">
           {markets.map((market) => (
             <MarketResult key={market.id} market={market} />
