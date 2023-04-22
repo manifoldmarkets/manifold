@@ -16,11 +16,16 @@ execute function comment_populate_cols ();
 update contract_comments
 set
   fs_updated_time = fs_updated_time
-create trigger comment_populate before insert
+alter table post_comments
+add column visibility text;
+
+create trigger post_comment_populate before insert
 or
 update on post_comments for each row
 execute function comment_populate_cols ();
 
-update contract_comments
+drop trigger post_comment_populate on post_comments;
+
+update post_comments
 set
   fs_updated_time = fs_updated_time
