@@ -628,8 +628,9 @@ function ClaimButton(props: { contract: Contract; className?: string }) {
   return (
     <button
       className={clsx(
-        'bg-ink-200/50 hover:bg-ink-100/50 rounded-full bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 p-2 text-yellow-900',
-        claimed && 'cursor-default opacity-50',
+        'border-ink-1000 rounded-full border bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-2 px-3 text-gray-900 transition-colors',
+        'hover:via-yellow-100 focus:via-yellow-100',
+        'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
         className
       )}
       disabled={claimed}
@@ -640,7 +641,7 @@ function ClaimButton(props: { contract: Contract; className?: string }) {
         setClaimed(true)
       }}
     >
-      {formatMoney(reward)} reward
+      {claimed ? 'Claimed!' : `${formatMoney(reward)} reward`}
     </button>
   )
 }
