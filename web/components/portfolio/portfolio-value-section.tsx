@@ -232,6 +232,20 @@ export function PortfolioValueSkeleton(props: {
 
         <Col
           className={clsx(
+            'w-24 cursor-pointer sm:w-28',
+            graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+          )}
+          onClick={() => {
+            onClickNumber('value')
+            track('Portfolio Value Clicked')
+          }}
+        >
+          <div className="text-ink-600 text-xs sm:text-sm">Portfolio</div>
+          {valueElement}
+        </Col>
+
+        <Col
+          className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
             graphMode != 'balance'
               ? 'cursor-pointer opacity-40 hover:opacity-80'
@@ -244,20 +258,6 @@ export function PortfolioValueSkeleton(props: {
         >
           <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
           {balanceElement}
-        </Col>
-
-        <Col
-          className={clsx(
-            'w-24 cursor-pointer sm:w-28',
-            graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
-          )}
-          onClick={() => {
-            onClickNumber('value')
-            track('Portfolio Value Clicked')
-          }}
-        >
-          <div className="text-ink-600 text-xs sm:text-sm">Portfolio</div>
-          {valueElement}
         </Col>
 
         <AddFundsButton userId={userId} className="self-center max-sm:hidden" />
