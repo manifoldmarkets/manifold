@@ -549,10 +549,10 @@ export function CommentOnBetRow(props: {
     <Row className={clsx('relative w-full', className)}>
       <Row className={'absolute -top-8 -left-10  text-sm'}>
         <Row className="relative">
-          <div className="absolute -bottom-2 left-1.5 z-20">
+          <div className="absolute -bottom-2 left-1.5">
             <Curve size={32} strokeWidth={1} color="#D8D8EB" />
           </div>
-          <Row className="bg-canvas-100 ml-[38px] gap-1 rounded-md p-1">
+          <Row className="bg-canvas-100 ml-[38px] gap-1 whitespace-nowrap rounded-md p-1">
             <UserLink
               username={bettorUsername}
               name={bettorName}
