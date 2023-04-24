@@ -2,10 +2,11 @@ import { User } from 'common/user'
 import { useRecentReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
 import { DAY_MS } from 'common/util/time'
 import { orderBy, uniqBy } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Bet } from 'common/bet'
 import { getBetsOnContracts } from 'web/lib/supabase/bets'
 import { filterDefined } from 'common/util/array'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export const useFeedComments = (
   user: User | null | undefined,
@@ -14,7 +15,8 @@ export const useFeedComments = (
   const cutoff = Date.now() - DAY_MS * 10
   const recentComments = useRecentReplyChainCommentsOnContracts(
     contractIds,
-    cutoff
+    cutoff,
+    user?.id ?? '_'
   )
   return filterDefined(
     recentComments
@@ -38,7 +40,10 @@ export const useFeedBets = (
   user: User | null | undefined,
   contractIds: string[]
 ) => {
-  const [bets, setBets] = useState<Bet[]>([])
+  const [bets, setBets] = usePersistentInMemoryState<Bet[]>(
+    [],
+    `recent-feed-bets-${user?.id ?? '_'}`
+  )
   useEffect(() => {
     if (contractIds.length > 0) {
       getBetsOnContracts(contractIds, {

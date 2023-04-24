@@ -110,9 +110,8 @@ export const SummarizeBets = memo(function SummarizeBets(props: {
   betsBySameUser: Bet[]
   avatarSize?: number | '2xs' | 'xs' | 'sm'
   className?: string
-  onReply?: (bet: Bet) => void
 }) {
-  const { contract, betsBySameUser, avatarSize, className, onReply } = props
+  const { contract, betsBySameUser, avatarSize, className } = props
   let bet = betsBySameUser[0]
   // for simplicity, we should just show buys of yes or buys of no
   if (betsBySameUser.length > 1) {

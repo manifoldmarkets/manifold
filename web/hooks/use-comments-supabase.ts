@@ -8,6 +8,7 @@ import {
 } from 'web/lib/supabase/comments'
 import { db } from 'web/lib/supabase/db'
 import { uniqBy } from 'lodash'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export function useComments(contractId: string, limit: number) {
   const [comments, setComments] = useState<Json[]>([])
@@ -23,9 +24,13 @@ export function useComments(contractId: string, limit: number) {
 
 export function useRecentReplyChainCommentsOnContracts(
   contractIds: string[],
-  afterTime: number
+  afterTime: number,
+  userId: string
 ) {
-  const [comments, setComments] = useState<ContractComment[]>([])
+  const [comments, setComments] = usePersistentInMemoryState<ContractComment[]>(
+    [],
+    `recent-feed-replies-${userId}`
+  )
 
   useEffect(() => {
     if (contractIds.length > 0) {
