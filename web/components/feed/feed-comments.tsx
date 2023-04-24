@@ -1,4 +1,4 @@
-import React, { memo, ReactNode, useEffect, useState } from 'react'
+import React, { memo, ReactNode, useEffect, useRef, useState } from 'react'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
 
@@ -65,9 +65,16 @@ export function FeedCommentThread(props: {
   const [collapseToIndex, setCollapseToIndex] = useState<number>(
     collapseMiddle && threadComments.length > 2 ? threadComments.length - 2 : -1
   )
-
+  const { ref } = useIsVisible(
+    () =>
+      track('view comment thread', {
+        contractId: contract.id,
+        commentId: parentComment.id,
+      } as CommentView),
+    true
+  )
   return (
-    <Col className="w-full items-stretch gap-3 pb-2">
+    <Col className="w-full items-stretch gap-3 pb-2" ref={ref}>
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
@@ -142,14 +149,7 @@ export const FeedComment = memo(function FeedComment(props: {
     children,
   } = props
   const { userUsername, userAvatarUrl, bettorUsername } = comment
-  const { ref } = useIsVisible(
-    () =>
-      track('view comment', {
-        contractId: contract.id,
-        commentId: comment.id,
-      } as CommentView),
-    true
-  )
+  const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
   const commentOnAnotherBettorsBet = bettorUsername !== undefined
   useEffect(() => {
