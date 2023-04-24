@@ -441,21 +441,28 @@ function FeedCommentHeader(props: {
     betOutcome,
     answerOutcome,
     betAmount,
+    userId,
   } = comment
 
+  const marketCreator = contract.creatorId === userId
   if (bettorUsername !== undefined) {
     return (
       <span className="text-ink-600 mt-0.5 text-sm">
         <UserLink
           username={userUsername}
           name={userName}
-          marketCreator={bettorUsername === contract.creatorUsername}
+          marketCreator={marketCreator}
+        />
+        <CopyLinkDateTimeComponent
+          prefix={contract.creatorUsername}
+          slug={contract.slug}
+          createdTime={createdTime}
+          elementId={comment.id}
         />
       </span>
     )
   }
 
-  const marketCreator = contract.creatorId === comment.userId
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
