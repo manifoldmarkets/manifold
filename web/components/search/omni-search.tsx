@@ -3,7 +3,7 @@ import { SparklesIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { useRouter } from 'next/router'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { useMemberGroupIds } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { useYourRecentContracts } from 'web/hooks/use-your-daily-changed-contracts'
@@ -17,7 +17,7 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { PageData, defaultPages, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
-import { startCase, uniqBy } from 'lodash'
+import { debounce, startCase, uniqBy } from 'lodash'
 import { ChevronRightIcon } from '@heroicons/react/outline'
 import { SORTS, Sort } from '../supabase-search'
 import { searchMarketSorts } from './query-market-sorts'
@@ -38,6 +38,17 @@ export const OmniSearch = (props: {
 
   const { setOpen } = useSearchContext() ?? {}
   const router = useRouter()
+
+  const [debouncedQuery, setDebouncedQuery] = useState(query)
+
+  const debouncedSearch = useCallback(
+    debounce((newQuery) => setDebouncedQuery(newQuery), 250),
+    []
+  )
+
+  useEffect(() => {
+    debouncedSearch(query)
+  }, [query])
 
   return (
     <Combobox
@@ -74,7 +85,11 @@ export const OmniSearch = (props: {
             static
             className="text-ink-700 flex flex-col overflow-y-auto px-1"
           >
-            {query ? <Results query={query} /> : <DefaultResults />}
+            {debouncedQuery ? (
+              <Results query={debouncedQuery} />
+            ) : (
+              <DefaultResults />
+            )}
           </Combobox.Options>
         </>
       )}
