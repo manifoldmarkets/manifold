@@ -1,4 +1,4 @@
-import React, { memo, ReactNode, useEffect, useRef, useState } from 'react'
+import React, { memo, ReactNode, useEffect, useState } from 'react'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
 
@@ -40,6 +40,8 @@ import { Bet } from 'common/bet'
 import Curve from 'web/public/custom-components/curve'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import { useIsVisible } from 'web/hooks/use-is-visible'
+import { CommentView } from 'common/events'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -140,18 +142,25 @@ export const FeedComment = memo(function FeedComment(props: {
     children,
   } = props
   const { userUsername, userAvatarUrl, bettorUsername } = comment
-  const commentRef = useRef<HTMLDivElement>(null)
+  const { ref } = useIsVisible(
+    () =>
+      track('view comment', {
+        contractId: contract.id,
+        commentId: comment.id,
+      } as CommentView),
+    true
+  )
   const marketCreator = contract.creatorId === comment.userId
   const commentOnAnotherBettorsBet = bettorUsername !== undefined
   useEffect(() => {
-    if (highlighted && commentRef.current) {
-      scrollIntoViewCentered(commentRef.current)
+    if (highlighted && ref.current) {
+      scrollIntoViewCentered(ref.current)
     }
   }, [highlighted])
 
   return (
     <Row
-      ref={commentRef}
+      ref={ref}
       className={clsx(
         className ? className : 'ml-9 gap-2',
         highlighted ? 'bg-primary-50' : '',
@@ -206,13 +215,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     numReplies,
   } = props
   const { userUsername } = comment
-  const commentRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (highlighted && commentRef.current) {
-      scrollIntoViewCentered(commentRef.current)
-    }
-  }, [highlighted])
 
   const commentKind = userUsername === 'ManifoldDream' ? 'ub-dream-comment' : ''
   return (
