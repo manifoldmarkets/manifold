@@ -19,6 +19,7 @@ import { track } from 'web/lib/service/analytics'
 import { groupBy, maxBy, partition, sumBy } from 'lodash'
 import { MINUTE_MS } from 'common/util/time'
 import { sort } from 'd3-array'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -156,12 +157,6 @@ export const SummarizeBets = memo(function SummarizeBets(props: {
             className="flex-1"
           />
         </Row>
-        <BetActions
-          onReply={onReply}
-          bet={bet}
-          betLikes={0}
-          contract={contract}
-        />
       </Row>
     </Col>
   )
@@ -259,20 +254,26 @@ function BetActions(props: {
   const user = useUser()
   if (!user || bet.amount === 0) return null
   return (
-    <Col className="sm:justify-center">
+    <Col className="ml-1 sm:justify-center">
       {user && onReply && (
         <span>
-          <button
-            onClick={() => {
-              onReply(bet)
-              track('reply to bet', {
-                slug: contract.slug,
-                amount: bet.amount,
-              })
-            }}
+          <Tooltip
+            text={` Reply to ${bet.userName}'s bet`}
+            placement="top"
+            className="mr-2"
           >
-            <ReplyIcon className="text-ink-500 h-4 w-4" />
-          </button>
+            <button
+              onClick={() => {
+                onReply(bet)
+                track('reply to bet', {
+                  slug: contract.slug,
+                  amount: bet.amount,
+                })
+              }}
+            >
+              <ReplyIcon className="text-ink-500 h-4 w-4" />
+            </button>
+          </Tooltip>
         </span>
       )}
     </Col>
