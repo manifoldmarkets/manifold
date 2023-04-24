@@ -73,7 +73,7 @@ export function FeedCommentThread(props: {
         highlighted={idInUrl === parentComment.id}
         showLike={true}
         seeReplies={seeReplies}
-        numComments={threadComments.length}
+        numReplies={threadComments.length}
         onSeeReplyClick={onSeeRepliesClick}
         onReplyClick={onReplyClick}
       />
@@ -94,7 +94,7 @@ export function FeedCommentThread(props: {
                   <TriangleFillIcon className={'mr-2 h-2'} />
                   <TriangleDownFillIcon className={'mr-2 h-2'} />
                 </Col>
-                See replies
+                See {threadComments.length - 1} replies
               </Button>
             </Row>
           ) : (
@@ -191,7 +191,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   highlighted?: boolean
   showLike?: boolean
   seeReplies: boolean
-  numComments: number
+  numReplies: number
   onReplyClick?: (comment: ContractComment) => void
   onSeeReplyClick: () => void
 }) {
@@ -203,7 +203,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     onReplyClick,
     onSeeReplyClick,
     seeReplies,
-    numComments,
+    numReplies,
   } = props
   const { userUsername } = comment
   const commentRef = useRef<HTMLDivElement>(null)
@@ -226,7 +226,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     >
       <ReplyToggle
         seeReplies={seeReplies}
-        numComments={numComments}
+        numComments={numReplies}
         onClick={onSeeReplyClick}
       />
     </FeedComment>

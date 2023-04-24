@@ -108,15 +108,14 @@ const FeedCommentItem = (props: {
 }) => {
   const { contract } = props
   const ignoredCommentTypes = ['gridCardsComponent']
-  // TODO: manually filtering grid cards as they can lead to huge comments.
   const commentThreads = props.commentThreads.filter(
     (ct) =>
-      ct.parentComment.content.content?.every(
-        (c) => !ignoredCommentTypes.includes(c.type ?? '')
+      !ct.parentComment.content?.content?.some((c) =>
+        ignoredCommentTypes.includes(c.type ?? '')
       ) &&
-      ct.childComments.map((c) =>
-        c.content.content?.every(
-          (c) => !ignoredCommentTypes.includes(c.type ?? '')
+      !ct.childComments.some((c) =>
+        c.content?.content?.some((c) =>
+          ignoredCommentTypes.includes(c.type ?? '')
         )
       )
   )
