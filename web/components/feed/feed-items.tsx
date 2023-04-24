@@ -57,13 +57,13 @@ export const FeedItems = (props: {
                 hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
               )}
             />
-            <Row className="bg-ink-0">
+            <Row className="bg-canvas-0">
               <FeedCommentItem
                 contract={contract}
                 commentThreads={commentThreads}
               />
             </Row>
-            <Row className="bg-ink-0">
+            <Row className="bg-canvas-0">
               {commentThreads.length === 0 && (
                 <FeedBetsItem contract={contract} bets={relatedBets} />
               )}
