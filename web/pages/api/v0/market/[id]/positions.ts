@@ -11,7 +11,7 @@ import { validate } from 'web/pages/api/v0/_validate'
 import { z } from 'zod'
 import { ApiError, ValidationError } from '../../_types'
 import { marketCacheStrategy } from 'web/pages/api/v0/market/[id]/index'
-import { getPublicContract } from 'web/lib/supabase/contracts'
+import { getContract } from 'web/lib/supabase/contracts'
 
 const queryParams = z.object({
   id: z.string(),
@@ -37,7 +37,7 @@ export default async function handler(
   }
 
   const { id: contractId, userId } = params
-  const contract = await getPublicContract(contractId)
+  const contract = await getContract(contractId)
   if (!contract) {
     res.status(404).json({ error: 'Contract not found' })
     return
