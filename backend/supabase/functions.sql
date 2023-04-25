@@ -90,7 +90,8 @@ or replace function get_recommended_contracts_embeddings_from (
       ) / 2000.0 as relative_dist,
       lpc.popularity_score,
       lpc.created_time,
-      lpc.close_time
+      lpc.close_time,
+      coalesce((lpc.data->>'groupSlugs')::text[], array[]::text[]) as group_slugs
     from contract_embeddings as ce
       join listed_open_contracts lpc on lpc.id = contract_id
     where not exists (
@@ -127,7 +128,18 @@ or replace function get_recommended_contracts_embeddings_from (
           when close_time <= NOW() + interval '1 year' then 0.33
           else 0.25
         end
-      ) * log(coalesce(popularity_score, 0) + 2) / (relative_dist + 0.1) as score
+      ) * (log(coalesce(popularity_score, 0) + 2) / (relative_dist + 0.1))
+        * (
+        case
+          when
+            'gambling' = ANY(group_slugs) OR
+            'whale-watching' = ANY(group_slugs) OR
+            'selfresolving' = ANY(group_slugs)
+          then 0.25
+          else 1
+        end
+      )
+        as score
     from available_contracts_unscored
   ),
   new_contracts as (
@@ -252,7 +264,8 @@ select data,
   relative_dist,
   combined_results.popularity_score
 from combined_results
-  join contracts on contracts.id = combined_results.contract_id $$;
+  join contracts on contracts.id = combined_results.contract_id
+$$;
 
 create
 or replace function get_cpmm_pool_prob (pool jsonb, p numeric) returns numeric language plpgsql immutable parallel safe as $$
