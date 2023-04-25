@@ -51,6 +51,8 @@ import { auctionbid } from './auction-bid'
 import { supabasesearchcontracts } from './supabase-search-contract'
 import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
+import { boostmarket } from './create-market-ad'
+import { redeemboost } from './redeem-market-ad-reward'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -127,6 +129,8 @@ app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
 app.post('/supabasesearchcontracts', ...apiRoute(supabasesearchcontracts))
 app.post('/delete-market', ...apiRoute(deleteMarket))
 app.post('/save-topic', ...apiRoute(saveTopic))
+app.post('/boost-market', ...apiRoute(boostmarket))
+app.post('/redeem-boost', ...apiRoute(redeemboost))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)
 app.post(
@@ -135,3 +139,15 @@ app.post(
   express.raw({ type: '*/*' }),
   stripewebhook
 )
+
+// Catch 404 errors - this should be the last route
+app.use((req, res, next) => {
+  res
+    .status(404)
+    .set('Content-Type', 'application/json')
+    .json({
+      error: {
+        message: `The requested route '${req.path}' does not exist. Please check your URL for any misspellings or refer to app.ts`,
+      },
+    })
+})

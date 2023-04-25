@@ -143,6 +143,23 @@ export function createPost(params: {
   return call(getApiUrl('createpost'), 'POST', params)
 }
 
+export function boostMarket(params: any) {
+  return call(getApiUrl('boost-market'), 'POST', params)
+}
+
+let nonce = 0
+export function redeemBoost(params: any) {
+  // TODO: rate limit on the backend instead?
+  const now = Date.now()
+  if (now - nonce < 15 * 1000) {
+    throw Error(
+      'Please wait 15 seconds after redeeming a boost before redeeming another.'
+    )
+  }
+  nonce = now
+  return call(getApiUrl('redeem-boost'), 'POST', params)
+}
+
 export function redeemAd(params: any) {
   return call(getApiUrl('redeemad'), 'POST', params)
 }

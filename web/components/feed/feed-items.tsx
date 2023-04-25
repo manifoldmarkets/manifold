@@ -40,7 +40,7 @@ export const FeedItems = (props: {
 
   return (
     <Col>
-      {groupedItems.map((itemGroup) => {
+      {groupedItems.map((itemGroup, i) => {
         const { contract, commentThreads, relatedBets } = itemGroup
 
         return (
@@ -56,6 +56,8 @@ export const FeedItems = (props: {
                 'my-0 border-0',
                 hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
               )}
+              // promoted={i % 10 === 4}
+              promoted
             />
             <Row className="bg-canvas-0">
               <FeedCommentItem

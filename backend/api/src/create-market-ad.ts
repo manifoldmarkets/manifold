@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { runTxn } from 'shared/run-txn'
 import { MarketAdCreateTxn } from 'common/txn'
+import { log } from 'shared/utils'
 
 const schema = z.object({
   marketId: z.string(),
@@ -14,35 +15,34 @@ const schema = z.object({
 
 const pg = createSupabaseDirectClient()
 
-export const createmarketad = authEndpoint(async (req, auth) => {
+export const boostmarket = authEndpoint(async (req, auth) => {
   const { marketId, totalCost, costPerView } = validate(schema, req.body)
+  log('boosting market')
 
-  const embedding = await pg.one(
+  const { embedding } = await pg.one(
     `select embedding
     from contract_embeddings
     where contract_id = $1`,
     [marketId]
   )
 
+  log('got embedding', embedding)
+
   pg.connect()
   const firestore = admin.firestore()
 
-  pg.tx(async (t) => {
+  log('connected. starting transaction to insert ad and deduct funds')
+
+  await pg.tx(async (t) => {
     const id = await t.one(
       `insert into market_ads 
-      (user_id, market_id, targeting_vector, funds, cost_per_view)
+      (user_id, market_id, embedding, funds, cost_per_view)
       values ($1, $2, $3, $4, $5)
       returning id`,
       [auth.uid, marketId, embedding, totalCost, costPerView]
     )
 
-    await t.none(
-      `insert into ad_analytics
-      ad_id values $1`,
-      id
-    )
-
-    // use supabase to add txn from user to the ad. deduct from user
+    // use supabase to add txn from user to the ad. deducts from user
     await firestore.runTransaction(async (trans) => {
       const result = await runTxn(trans, {
         category: 'MARKET_BOOST_CREATE',
@@ -62,5 +62,5 @@ export const createmarketad = authEndpoint(async (req, auth) => {
   })
 
   // return something
-  return { hi: 'mom' }
+  return { status: 'success' }
 })

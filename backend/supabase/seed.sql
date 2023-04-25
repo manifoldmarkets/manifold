@@ -20,6 +20,9 @@ create extension if not exists vector;
 /* GIN trigram indexes */
 create extension if not exists pg_trgm;
 
+/* for UUID generation */
+create extension if not exists pgcrypto;
+
 /* enable `explain` via the HTTP API for convenience */
 alter role authenticator
 set
@@ -847,19 +850,14 @@ alter table user_topics enable row level security;
 
 create table if not exists
   market_ads (
+    id text not null primary key default uuid_generate_v4 (),
     user_id text not null,
-    market_id text not null foreign key created_at,
-    funds number not null,
-    cost_per_view number not null,
-    timestamp not null default now(),
-    targeting_vector (1536) not null,
-  );
-
-create table if not exists
-  ad_analytics (
-    ad_id text not null foreign key funds number not null,
-    impressions number not null default 0,
-    clicks number not null default 0,
+    market_id text not null,
+    foreign key (market_id) references contracts (id),
+    funds numeric not null,
+    cost_per_view numeric not null,
+    created_at timestamp not null default now(),
+    embedding vector (1536) not null
   );
 
 drop policy if exists "public read" on user_topics;
