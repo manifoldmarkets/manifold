@@ -156,7 +156,7 @@ export function ContractsTable(props: {
       header: 'Traders',
       visible: true,
       content: (contract: Contract) => (
-        <Row className="align-center shrink-0 items-center gap-1">
+        <Row className="align-center shrink-0 items-center gap-0.5">
           <UserIcon className="h-4 w-4" />
           {contract.uniqueBettorCount}
         </Row>
