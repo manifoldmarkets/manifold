@@ -860,6 +860,9 @@ create table if not exists
     embedding vector (1536) not null
   );
 
+alter table market_ads
+add constraint market_ads_unique_market_id unique (market_id);
+
 drop policy if exists "public read" on user_topics;
 
 create policy "public read" on user_topics for
