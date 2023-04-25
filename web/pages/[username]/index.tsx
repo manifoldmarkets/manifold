@@ -19,7 +19,6 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { BlockedUser } from 'web/components/profile/blocked-user'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { Title } from 'web/components/widgets/title'
-import { getPostsByUser } from 'web/lib/firebase/posts'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
@@ -56,6 +55,7 @@ import { Subtitle } from 'web/components/widgets/subtitle'
 import { DailyStats } from 'web/components/daily-stats'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import { getPostsByUser } from 'web/lib/supabase/post'
 
 export const getStaticProps = async (props: {
   params: {
@@ -310,7 +310,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                 stackedTabIcon: <ChatAlt2Icon className="h-5" />,
                 content: (
                   <>
-                    {userPosts.length > 0 && (
+                    {userPosts && userPosts.length > 0 && (
                       <>
                         <Spacer h={4} />
                         <Row className="mb-3 flex items-center justify-between">

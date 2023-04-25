@@ -437,9 +437,7 @@ create index if not exists contract_bets_activity_feed on contract_bets (is_ante
 create index if not exists contract_bets_created_time on contract_bets (contract_id, created_time desc);
 
 /* serving "my trades on a contract" kind of queries */
-create index if not exists contract_bets_contract_user_id on contract_bets (
-  contract_id, user_id, created_time desc
-);
+create index if not exists contract_bets_contract_user_id on contract_bets (contract_id, user_id, created_time desc);
 
 /* serving the user bets API */
 create index if not exists contract_bets_user_id on contract_bets (user_id, created_time desc);
@@ -468,7 +466,8 @@ create table if not exists
     comment_id text not null,
     data jsonb not null,
     fs_updated_time timestamp not null,
-    primary key (contract_id, comment_id)
+    primary key (contract_id, comment_id),
+    visibility text,
   );
 
 alter table contract_comments enable row level security;
@@ -656,6 +655,10 @@ create table if not exists
   posts (
     id text not null primary key,
     data jsonb not null,
+    visibility text,
+    group_id text,
+    creator_id text,
+    created_time timestamptz,
     fs_updated_time timestamp not null
   );
 
@@ -678,6 +681,7 @@ create table if not exists
     comment_id text not null,
     data jsonb not null,
     fs_updated_time timestamp not null,
+    visibility text,
     primary key (post_id, comment_id)
   );
 
