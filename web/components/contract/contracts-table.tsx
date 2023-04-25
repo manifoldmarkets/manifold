@@ -166,7 +166,11 @@ export function ContractsTable(props: {
       name: 'visibility',
       header: '',
       visible: true,
-      content: (contract: Contract) => <Visibility contract={contract} />,
+      content: (contract: Contract) => (
+        <div className="mt-1">
+          <Visibility contract={contract} />
+        </div>
+      ),
     },
   ]
 
@@ -227,7 +231,7 @@ export function ContractsTable(props: {
       {!isMobile && (
         <thead
           className={clsx(
-            'text-ink-600 sticky top-14 text-left text-sm font-semibold',
+            'text-ink-600 sticky top-14 z-20 text-left text-sm font-semibold',
             headerClassName
           )}
         >
@@ -279,7 +283,7 @@ function Visibility(props: { contract: Contract }) {
     const { text, icon } =
       visibilityFields[contract.visibility as VisibilityType]
     return (
-      <Tooltip text={text} placement="top" className={'z-10 w-full'}>
+      <Tooltip text={text} placement="top" className={'w-full'}>
         {icon}
       </Tooltip>
     )
