@@ -122,7 +122,7 @@ export function ContractsTable(props: {
       header: 'Market',
       visible: true,
       content: (contract: Contract) => (
-        <Row className="gap-4">
+        <Row className="gap-2 sm:gap-4">
           <Avatar
             username={contract.creatorUsername}
             avatarUrl={contract.creatorAvatarUrl}
@@ -154,7 +154,7 @@ export function ContractsTable(props: {
     {
       name: 'traders',
       header: 'Traders',
-      visible: !isMobile,
+      visible: true,
       content: (contract: Contract) => (
         <Row className="align-center shrink-0 items-center gap-1">
           <UserIcon className="h-4 w-4" />
@@ -165,7 +165,7 @@ export function ContractsTable(props: {
     {
       name: 'visibility',
       header: '',
-      visible: true,
+      visible: !isMobile,
       content: (contract: Contract) => (
         <div className="mt-1">
           <Visibility contract={contract} />
@@ -212,7 +212,7 @@ export function ContractsTable(props: {
                       ? firstItemClassName
                       : index === contractColumns.length - 1
                       ? lastItemClassName
-                      : 'pr-4',
+                      : 'pr-2 sm:pr-4',
                     dataCellClassName
                   )}
                   onClick={(e) => e.stopPropagation()}
@@ -245,7 +245,7 @@ export function ContractsTable(props: {
                         ? firstItemClassName
                         : index === contractColumns.length - 1
                         ? lastItemClassName
-                        : 'pr-4'
+                        : 'pr-2 sm:pr-4'
                     )}
                   >
                     {column.header}
