@@ -140,7 +140,7 @@ or replace function get_recommended_contracts_embeddings_from (
       and close_time > (now() + interval '1 day')
       and relative_dist < max_dist
     order by score desc
-    limit n / 5
+    limit n / 6
   ), closing_soon_contracts as (
     select *,
       row_number() over (
@@ -150,7 +150,7 @@ or replace function get_recommended_contracts_embeddings_from (
     where close_time < (now() + interval '1 day')
       and relative_dist < max_dist
     order by score desc
-    limit n / 5
+    limit n / 6
   ), combined_new_closing_soon as (
     select *,
       1 as result_id
