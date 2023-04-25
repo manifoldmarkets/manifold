@@ -63,16 +63,15 @@ export async function getContractParams(contract: Contract) {
     ? await getTopContractMetrics(contract.id, 10)
     : []
 
-
   let shareholderStats: ShareholderStats | undefined = undefined
   if (contract.mechanism === 'cpmm-1') {
     const [yesCount, noCount] = await Promise.all([
       getContractMetricsYesCount(contractId),
-      getContractMetricsNoCount(contractId)
+      getContractMetricsNoCount(contractId),
     ])
     shareholderStats = {
       yesShareholders: yesCount,
-      noShareholders: noCount
+      noShareholders: noCount,
     }
   }
 

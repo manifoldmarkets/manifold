@@ -93,11 +93,11 @@ export const BinaryUserPositionsTable = memo(
 
       Promise.all([
         getContractMetricsYesCount(contractId),
-        getContractMetricsNoCount(contractId)
+        getContractMetricsNoCount(contractId),
       ]).then(([yesCount, noCount]) =>
         setShareholderStats({
           yesShareholders: yesCount,
-          noShareholders: noCount
+          noShareholders: noCount,
         })
       )
     }, [positions, contractId])
