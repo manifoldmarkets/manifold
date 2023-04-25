@@ -22,7 +22,6 @@ export const Avatar = memo(
     const sizeInPx = s * 4
 
     const onClick = (e: MouseEvent) => {
-      console.log('avatar e target', e.target, e.currentTarget)
       if (!noLink && username) {
         if (preventDefault) {
           e.preventDefault()
