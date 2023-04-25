@@ -49,11 +49,6 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
       slugs: GroupsByTopic.rat,
     },
     {
-      name: '🤓 CGP Grey',
-      description: 'youtuber for econ, gov, history...',
-      slugs: GroupsByTopic.grey,
-    },
-    {
       name: '🤖 AI',
       description: 'robots taking over, soon-ish',
       slugs: GroupsByTopic.ai,
