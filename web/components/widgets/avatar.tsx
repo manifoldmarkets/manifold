@@ -12,8 +12,9 @@ export const Avatar = memo(
     noLink?: boolean
     size?: number | '2xs' | 'xs' | 'sm'
     className?: string
+    preventDefault?: boolean
   }) => {
-    const { username, noLink, size, className } = props
+    const { username, noLink, size, className, preventDefault } = props
     const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
     useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
     const s =
@@ -21,7 +22,11 @@ export const Avatar = memo(
     const sizeInPx = s * 4
 
     const onClick = (e: MouseEvent) => {
+      console.log('avatar e target', e.target, e.currentTarget)
       if (!noLink && username) {
+        if (preventDefault) {
+          e.preventDefault()
+        }
         e.stopPropagation()
         Router.push(`/${username}`)
       }

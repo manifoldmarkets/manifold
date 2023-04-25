@@ -35,10 +35,10 @@ export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   onAnswerCommentClick: (answer: Answer) => void
   showResolver?: boolean
-  modalSetOpen?: (open: boolean) => void
+  isInModal?: boolean
 }) {
   const isAdmin = useAdmin()
-  const { contract, onAnswerCommentClick, showResolver, modalSetOpen } = props
+  const { contract, onAnswerCommentClick, showResolver, isInModal } = props
   const { creatorId, resolution, resolutions, outcomeType } = contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
 
@@ -136,12 +136,12 @@ export function AnswersPanel(props: {
       totalChosenProb={chosenTotal}
       onChoose={onChoose}
       onDeselect={onDeselect}
-      modalSetOpen={modalSetOpen}
+      isInModal={isInModal}
     />
   ))
 
-  // if this is not in a modal
-  if (modalSetOpen) {
+  // if this is in a modal
+  if (isInModal) {
     return (
       <Col className="w-full">
         <AnswerResolvePanel
@@ -151,7 +151,7 @@ export function AnswersPanel(props: {
           resolveOption={resolveOption}
           setResolveOption={setResolveOption}
           chosenAnswers={chosenAnswers}
-          modalSetOpen={modalSetOpen}
+          isInModal={isInModal}
         />
         {!!resolveOption && (
           <Col className="mt-4 w-full gap-3">{answerItemComponents}</Col>

@@ -12,6 +12,19 @@ import { BETTORS } from 'common/user'
 import { GradientContainer } from './widgets/gradient-container'
 import { Button } from './buttons/button'
 
+function getNumericResolveButtonColor(
+  outcomeMode: 'NUMBER' | 'CANCEL' | undefined
+) {
+  return outcomeMode === 'CANCEL' ? 'yellow' : 'indigo'
+}
+
+function getNumericResolveButtonLabel(
+  outcomeMode: 'NUMBER' | 'CANCEL' | undefined,
+  value: number | undefined
+) {
+  return outcomeMode === 'CANCEL' ? 'N/A' : value ? String(value) : ''
+}
+
 export function NumericResolutionPanel(props: {
   isAdmin: boolean
   isCreator: boolean
@@ -117,27 +130,20 @@ export function NumericResolutionPanel(props: {
           <ResolveConfirmationButton
             onResolve={resolve}
             isSubmitting={isSubmitting}
-            color={outcomeMode === 'CANCEL' ? 'yellow' : 'indigo'}
-            label={outcomeMode === 'CANCEL' ? 'N/A' : String(value)}
+            color={getNumericResolveButtonColor(outcomeMode)}
+            label={getNumericResolveButtonLabel(outcomeMode, value)}
             marketTitle={question}
             disabled={buttonDisabled}
           />
         )}
         {modalSetOpen && (
           <Button
-            color={outcomeMode === 'CANCEL' ? 'yellow' : 'indigo'}
+            color={getNumericResolveButtonColor(outcomeMode)}
             disabled={buttonDisabled || isSubmitting}
             loading={isSubmitting}
             onClick={resolve}
           >
-            Resolve{' '}
-            {outcomeMode === 'CANCEL' ? (
-              <>N/A</>
-            ) : !value ? (
-              <></>
-            ) : (
-              String(value)
-            )}
+            Resolve <>{getNumericResolveButtonLabel(outcomeMode, value)}</>
           </Button>
         )}
       </div>

@@ -20,7 +20,7 @@ export function AnswerItem(props: {
   totalChosenProb?: number
   onChoose: (answerId: string, prob: number) => void
   onDeselect: (answerId: string) => void
-  modalSetOpen?: (open: boolean) => void
+  isInModal?: boolean
 }) {
   const {
     answer,
@@ -30,7 +30,7 @@ export function AnswerItem(props: {
     totalChosenProb,
     onChoose,
     onDeselect,
-    modalSetOpen,
+    isInModal,
   } = props
   const { resolution, resolutions } = contract
   const { username, avatarUrl, name, number, text } = answer
@@ -46,7 +46,7 @@ export function AnswerItem(props: {
     <div
       className={clsx(
         'flex flex-col gap-4 rounded p-4',
-        modalSetOpen ? '' : 'sm:flex-row',
+        isInModal ? '' : 'sm:flex-row',
         wasResolvedTo
           ? resolution === 'MKT'
             ? 'mb-2 bg-blue-500/20'
@@ -78,7 +78,7 @@ export function AnswerItem(props: {
       <Row
         className={clsx(
           'items-center justify-end gap-4 self-end',
-          modalSetOpen ? '' : 'sm:self-start'
+          isInModal ? '' : 'sm:self-start'
         )}
       >
         {!wasResolvedTo &&

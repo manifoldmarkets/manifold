@@ -14,6 +14,29 @@ import { ProbabilityInput } from './widgets/probability-input'
 import { GradientContainer } from './widgets/gradient-container'
 import { Button } from './buttons/button'
 
+function getResolveButtonColor(outcome: resolution | undefined) {
+  return outcome === 'YES'
+    ? 'green'
+    : outcome === 'NO'
+    ? 'red'
+    : outcome === 'CANCEL'
+    ? 'yellow'
+    : outcome === 'MKT'
+    ? 'blue'
+    : 'indigo'
+}
+
+function getResolveButtonLabel(
+  outcome: resolution | undefined,
+  prob: number | undefined
+) {
+  return outcome === 'CANCEL'
+    ? 'N/A'
+    : outcome === 'MKT'
+    ? `${prob}%`
+    : outcome ?? ''
+}
+
 export function ResolutionPanel(props: {
   isAdmin: boolean
   isCreator: boolean
@@ -123,24 +146,8 @@ export function ResolutionPanel(props: {
         )}
         {!modalSetOpen && (
           <ResolveConfirmationButton
-            color={
-              outcome === 'YES'
-                ? 'green'
-                : outcome === 'NO'
-                ? 'red'
-                : outcome === 'CANCEL'
-                ? 'yellow'
-                : outcome === 'MKT'
-                ? 'blue'
-                : 'indigo'
-            }
-            label={
-              outcome === 'CANCEL'
-                ? 'N/A'
-                : outcome === 'MKT'
-                ? `${prob}%`
-                : outcome ?? ''
-            }
+            color={getResolveButtonColor(outcome)}
+            label={getResolveButtonLabel(outcome, prob)}
             marketTitle={contract.question}
             disabled={!outcome}
             onResolve={resolve}
@@ -149,29 +156,12 @@ export function ResolutionPanel(props: {
         )}
         {modalSetOpen && (
           <Button
-            color={
-              outcome === 'YES'
-                ? 'green'
-                : outcome === 'NO'
-                ? 'red'
-                : outcome === 'CANCEL'
-                ? 'yellow'
-                : outcome === 'MKT'
-                ? 'blue'
-                : 'indigo'
-            }
+            color={getResolveButtonColor(outcome)}
             disabled={!outcome || isSubmitting}
             loading={isSubmitting}
             onClick={resolve}
           >
-            Resolve{' '}
-            {outcome === 'CANCEL' ? (
-              <>N/A</>
-            ) : outcome === 'MKT' ? (
-              <>{prob}%</>
-            ) : (
-              outcome ?? <></>
-            )}
+            Resolve <>{getResolveButtonLabel(outcome, prob)}</>
           </Button>
         )}
       </Row>

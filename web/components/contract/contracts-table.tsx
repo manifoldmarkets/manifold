@@ -19,6 +19,7 @@ import { filter } from '../supabase-search'
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
 import { Action } from './contract-table-action'
+import Link from 'next/link'
 
 const lastItemClassName = 'rounded-r pr-2'
 const firstItemClassName = 'rounded-l pl-2 pr-4'
@@ -115,7 +116,6 @@ export function ContractsTable(props: {
 
   const router = useRouter()
   const user = useUser()
-
   const contractColumns = [
     {
       name: 'market',
@@ -127,6 +127,7 @@ export function ContractsTable(props: {
             username={contract.creatorUsername}
             avatarUrl={contract.creatorAvatarUrl}
             size="xs"
+            preventDefault={true}
           />
           <div className="">{contract.question}</div>
         </Row>
@@ -176,44 +177,48 @@ export function ContractsTable(props: {
 
     const dataCellClassName = 'py-2 align-top'
     return (
-      <tr
-        key={contract.id}
-        className={clsx(
-          highlightContractIds?.includes(contract.id)
-            ? contractListEntryHighlightClass
-            : '',
-          (isClosed(contract) && contract.creatorId !== user?.id) ||
-            contract.isResolved
-            ? 'text-ink-500'
-            : '',
-          'hover:bg-primary-50 focus:bg-primary-50 group cursor-pointer'
-        )}
+      <Link
         onClick={(e) => {
-          if (onContractClick) {
-            onContractClick(contract)
-          }
-          router.push(contractPath(contract))
+          if (!onContractClick) return
+          onContractClick(contract)
           e.preventDefault()
         }}
+        href={contractPath(contract)}
+        className="contents"
       >
-        {contractColumns.map(
-          (column, index) =>
-            column.visible && (
-              <td
-                className={clsx(
-                  index === 0
-                    ? firstItemClassName
-                    : index === contractColumns.length - 1
-                    ? lastItemClassName
-                    : 'pr-4',
-                  dataCellClassName
-                )}
-              >
-                {column.content(contract)}
-              </td>
-            )
-        )}
-      </tr>
+        <tr
+          key={contract.id}
+          className={clsx(
+            highlightContractIds?.includes(contract.id)
+              ? contractListEntryHighlightClass
+              : '',
+            (isClosed(contract) && contract.creatorId !== user?.id) ||
+              contract.isResolved
+              ? 'text-ink-500'
+              : '',
+            'hover:bg-primary-50 focus:bg-primary-50 group relative cursor-pointer'
+          )}
+        >
+          {contractColumns.map(
+            (column, index) =>
+              column.visible && (
+                <td
+                  className={clsx(
+                    index === 0
+                      ? firstItemClassName
+                      : index === contractColumns.length - 1
+                      ? lastItemClassName
+                      : 'pr-4',
+                    dataCellClassName
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {column.content(contract)}
+                </td>
+              )
+          )}
+        </tr>
+      </Link>
     )
   }
 

@@ -41,6 +41,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
           size="2xs"
           color="indigo"
           onClick={(e) => {
+            e.preventDefault()
             e.stopPropagation()
             if (!user) {
               firebaseLogin()
@@ -89,6 +90,7 @@ export function ResolveButton(props: {
           color={isClosed ? 'red' : 'gray-outline'}
           disabled={contract.isResolved}
           onClick={(e) => {
+            e.preventDefault()
             e.stopPropagation()
             setOpen(true)
           }}
@@ -145,7 +147,7 @@ export function SmallResolutionPanel(props: {
         console.log('YOU FOOL')
       }}
       showResolver={true}
-      modalSetOpen={setOpen}
+      isInModal={true}
     />
   ) : (
     <></>
