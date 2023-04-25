@@ -13,10 +13,7 @@ import {
   getCPMMContractUserContractMetrics,
   getTopContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
-import {
-  getShareholderCountsForContractId,
-  getTotalContractMetrics,
-} from 'common/supabase/contract-metrics'
+import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { getInitialProbability } from 'common/calculate'
 import { compressPoints, pointsToBase64 } from 'common/util/og'
@@ -61,11 +58,6 @@ export async function getContractParams(contract: Contract) {
     ? await getTopContractMetrics(contract.id, 10)
     : []
 
-  const shareholderStats =
-    contract.mechanism === 'cpmm-1'
-      ? await getShareholderCountsForContractId(contractId, db)
-      : undefined
-
   const totalPositions =
     contract.mechanism === 'cpmm-1'
       ? await getTotalContractMetrics(contractId, db)
@@ -104,7 +96,6 @@ export async function getContractParams(contract: Contract) {
     totalBets,
     topContractMetrics,
     creatorTwitter: creator?.twitterHandle,
-    relatedContracts,
-    shareholderStats,
+    relatedContracts
   })
 }

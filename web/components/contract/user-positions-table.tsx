@@ -2,11 +2,7 @@ import clsx from 'clsx'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import {
-  ShareholderStats,
-  getContractMetricsForContractId,
-  getShareholderCountsForContractId,
-} from 'common/supabase/contract-metrics'
+import { getContractMetricsForContractId } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { partition } from 'lodash'
@@ -43,7 +39,6 @@ export const BinaryUserPositionsTable = memo(
     contract: CPMMContract
     positions: ContractMetricsByOutcome
     setTotalPositions: (count: number) => void
-    shareholderStats?: ShareholderStats
   }) {
     const { contract, setTotalPositions } = props
     const contractId = contract.id
@@ -55,10 +50,6 @@ export const BinaryUserPositionsTable = memo(
     const [contractMetricsByProfit, setContractMetricsByProfit] = useState<
       ContractMetrics[] | undefined
     >()
-    const [shareholderStats, setShareholderStats] = useState<
-      ShareholderStats | undefined
-    >(props.shareholderStats)
-
     const [sortBy, setSortBy] = useState<'profit' | 'shares'>('shares')
 
     useEffect(() => {
@@ -78,22 +69,17 @@ export const BinaryUserPositionsTable = memo(
     }, [contractMetricsByProfit])
 
     const [livePositionsLimit, setLivePositionsLimit] = useState(100)
-    const positions =
-      useContractMetrics(contractId, livePositionsLimit, outcomes) ??
+    const positions = useContractMetrics(contractId, livePositionsLimit, outcomes) ??
       props.positions
 
     const yesPositionsSorted =
       sortBy === 'shares' ? positions.YES ?? [] : positiveProfitPositions
     const noPositionsSorted =
       sortBy === 'shares' ? positions.NO ?? [] : negativeProfitPositions
+
     useEffect(() => {
       // Let's use firebase here as supabase can be slightly out of date, leading to incorrect counts
       getTotalContractMetricsCount(contractId).then(setTotalPositions)
-
-      // This still uses supabase
-      getShareholderCountsForContractId(contractId, db).then(
-        setShareholderStats
-      )
     }, [positions, contractId])
 
     const visibleYesPositions = yesPositionsSorted.slice(
@@ -127,7 +113,7 @@ export const BinaryUserPositionsTable = memo(
             text={'Approximate count, refresh to update'}
             placement={'top'}
           >
-            {shareholderStats?.yesShareholders}{' '}
+            {yesPositionsSorted.length}{' '}
           </Tooltip>
           {isBinary ? (
             <>
@@ -151,7 +137,7 @@ export const BinaryUserPositionsTable = memo(
             text={'Approximate count, refresh to update'}
             placement={'top'}
           >
-            {shareholderStats?.noShareholders}{' '}
+            {noPositionsSorted.length}{' '}
           </Tooltip>
           {isBinary ? (
             <>

@@ -153,8 +153,7 @@ export function ContractPageContent(props: {
     comments,
     totalPositions,
     creatorTwitter,
-    relatedContracts,
-    shareholderStats,
+    relatedContracts
   } = contractParams
   const contract =
     useContract(contractParams.contract?.id) ?? contractParams.contract
@@ -464,7 +463,6 @@ export function ContractPageContent(props: {
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
-                shareholderStats={shareholderStats}
               />
             </div>
           </Col>
