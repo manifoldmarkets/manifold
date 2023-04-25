@@ -41,13 +41,22 @@ export function useValuesFromSupabase<
   getInitialValues?: (uniqueRowGroupValue: string) => Promise<RowFor<T>[]>
 ) {
   const [values, setValues] = useState<RowFor<T>[]>([])
+  // todo: react 18 has useHookId, so use that
   const [hookId] = useState(table + Math.random().toString())
   const channelName = 'supabase-realtime-values'
   const filter = `${rowGroupKey as string}=eq.${rowGroupValue}`
+  // todo: use refs if we just want mutable state
   const [valuesToDelete, setValuesToDelete] = useState<RowFor<T>[]>([])
   const [retrievedInitialValues, setRetrievedInitialValues] = useState(false)
   const [channelResubscribeInterval, setChannelResubscribeInterval] =
     useState<NodeJS.Timer>()
+  // TODO:
+  // 1. turn off out resubscription interval, toggle wifi to see if it handles its own stuff
+  // 2. if we disconnect, set the initial values state to false to reget it.
+  // 3. pass a callback to accept how we should handle updates - actually make this specific to the contrac metrics unless it also applies to contract-bets
+  // 4. email supabase for why we only have 500 concurrent channels/topics
+  // 5. address PR comments
+  // 6. does this actually work for views?
 
   const getMyCallback = () => {
     return {
