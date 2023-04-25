@@ -9,7 +9,6 @@ import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { BucketInput } from './widgets/bucket-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTORS } from 'common/user'
-import { GradientContainer } from './widgets/gradient-container'
 import { Button } from './buttons/button'
 
 function getNumericResolveButtonColor(

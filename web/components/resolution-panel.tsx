@@ -11,7 +11,6 @@ import { BETTORS, PLURAL_BETS } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { capitalize } from 'lodash'
 import { ProbabilityInput } from './widgets/probability-input'
-import { GradientContainer } from './widgets/gradient-container'
 import { Button } from './buttons/button'
 
 function getResolveButtonColor(outcome: resolution | undefined) {
