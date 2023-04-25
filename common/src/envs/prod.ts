@@ -28,24 +28,6 @@ export type EnvConfig = {
     expoClientId?: string
     androidClientId?: string
   }
-  economy?: Economy
-}
-
-export type Economy = {
-  FIXED_ANTE?: number
-
-  STARTING_BALANCE?: number
-  SUS_STARTING_BALANCE?: number
-
-  REFERRAL_AMOUNT?: number
-
-  UNIQUE_BETTOR_BONUS_AMOUNT?: number
-
-  BETTING_STREAK_BONUS_AMOUNT?: number
-  BETTING_STREAK_BONUS_MAX?: number
-  BETTING_STREAK_RESET_HOUR?: number
-  FREE_MARKETS_PER_USER_MAX?: number
-  STARTING_BONUS?: number
 }
 
 type FirebaseConfig = {
