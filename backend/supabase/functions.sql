@@ -228,6 +228,30 @@ or replace function get_recommended_contracts_embeddings_from (
     order by row_num,
       result_id
   ),
+  excluded_contracts as (
+    select contract_id
+    from combined_trending
+    union all
+    select contract_id
+    from combined_new_closing_soon
+    union all
+    select unnest(excluded_contract_ids) as contract_id
+  ),
+  contracts_with_liked_comments as (
+    select
+      ac.*,
+      3 as result_id,
+      row_number() over (
+        order by score desc
+        ) as row_num
+    from get_contracts_with_unseen_liked_comments(
+   array(select contract_id from available_contracts),
+   array(select contract_id from excluded_contracts),
+   uid,
+   n / 6
+     ) as cwc
+   join available_contracts ac on ac.contract_id = cwc.contract_id
+  ),
   combined_results as (
     select *,
       1 as result_id2,
@@ -244,6 +268,15 @@ or replace function get_recommended_contracts_embeddings_from (
           result_id
       ) as row_num2
     from combined_new_closing_soon
+    union all
+    select
+      *,
+      3 as result_id2,
+      row_number() over (
+        order by row_num,
+          result_id
+        ) as row_num2
+    from contracts_with_liked_comments
     order by row_num2,
       result_id2
   )
@@ -645,3 +678,63 @@ BEGIN
         SELECT * FROM reply_chain_comments;
 END;
 $$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION get_contracts_with_unseen_liked_comments(
+  available_contract_ids text[],
+  excluded_contract_ids text[],
+  current_user_id text,
+  limit_count integer
+)
+  RETURNS TABLE (
+                  contract_id text,
+                  comment_id text,
+                  user_id text,
+                  data JSONB
+                ) AS $$
+BEGIN
+  RETURN QUERY
+    SELECT
+      filtered_comments.contract_id,
+      filtered_comments.comment_id,
+      filtered_comments.user_id,
+      filtered_comments.data
+    FROM (
+           SELECT DISTINCT ON (comments.contract_id)
+             comments.contract_id,
+             comments.comment_id,
+             comments.user_id,
+             comments.data,
+             (comments.data->>'createdTime')::bigint AS created_time
+           FROM
+             liked_sorted_comments comments
+           WHERE
+               comments.contract_id = ANY (available_contract_ids) AND
+               comments.contract_id <> ALL (excluded_contract_ids)
+             AND
+             NOT EXISTS (
+               SELECT 1
+               FROM user_events ue
+               WHERE
+                   ue.user_id = current_user_id AND
+                 (
+                         ue.data->>'name' = 'view comment thread' AND
+                         (
+                                 ue.data->>'commentId' = comments.comment_id OR
+                                 ue.data->>'commentId' = comments.data->>'replyToCommentId'
+                           )
+                   )
+--                 We may want to include market views for now bc we just added comment views
+--                    OR (
+--                         ue.data->>'name' = 'view market' AND
+--                         ue.data->>'contractId' = comments.contract_id
+--                     )
+             )
+           ORDER BY
+             comments.contract_id,
+             created_time DESC
+         ) AS filtered_comments
+    ORDER BY
+      filtered_comments.created_time DESC
+    LIMIT limit_count;
+END; $$ LANGUAGE plpgsql;
