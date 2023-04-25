@@ -223,7 +223,7 @@ export function BuyPanel(props: {
   }, [initialOutcome])
 
   function onOptionChoice(choice: 'YES' | 'NO' | 'LIMIT') {
-    if (option === choice) {
+    if (option === choice && !initialOutcome) {
       setOption(undefined)
     } else {
       setOption(choice)
