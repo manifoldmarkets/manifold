@@ -13,6 +13,7 @@ import { Content } from '../widgets/editor'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Pagination } from '../widgets/pagination'
 import { SiteLink } from '../widgets/site-link'
+import { useIsAuthorized } from 'web/hooks/use-user'
 
 type ContractKey = {
   contractId: string
@@ -42,6 +43,7 @@ export function UserCommentsList(props: { user: User }) {
     }[]
   >([])
   const [isLoading, setIsLoading] = useState(false)
+  const isAuth = useIsAuthorized()
 
   useEffect(() => {
     setIsLoading(true)
@@ -58,7 +60,7 @@ export function UserCommentsList(props: { user: User }) {
         )
       )
       .finally(() => setIsLoading(false))
-  }, [pageNum])
+  }, [pageNum, isAuth])
 
   if (pageComments.length === 0) {
     if (pageNum == 0) {

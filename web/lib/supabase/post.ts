@@ -15,13 +15,17 @@ export async function getPost(postId: string) {
 
 export async function getPostsByUser(userId: string) {
   const { data: posts } = await run(
-    db.from('posts').select('data').contains('data', { creatorId: userId })
+    db
+      .from('posts')
+      .select('data')
+      .eq('creator_id', userId)
+      .order('created_time', { ascending: false } as any)
   )
   if (posts && posts.length > 0) {
     return posts.map((post) => {
       return post.data as Post
     })
   } else {
-    return null
+    return [] as Post[]
   }
 }

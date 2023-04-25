@@ -655,6 +655,10 @@ create table if not exists
   posts (
     id text not null primary key,
     data jsonb not null,
+    visibility text,
+    group_id text,
+    creator_id text,
+    created_time timestamptz,
     fs_updated_time timestamp not null
   );
 

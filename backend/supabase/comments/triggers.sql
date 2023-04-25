@@ -13,6 +13,10 @@ or
 update on contract_comments for each row
 execute function comment_populate_cols ();
 
+update contract_comments
+set
+  fs_updated_time = fs_updated_time;
+
 alter table post_comments
 add column visibility text;
 
@@ -20,3 +24,7 @@ create trigger post_comment_populate before insert
 or
 update on post_comments for each row
 execute function comment_populate_cols ();
+
+update post_comments
+set
+  fs_updated_time = fs_updated_time

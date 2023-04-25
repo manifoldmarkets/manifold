@@ -9,6 +9,7 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
 import { sortBy } from 'lodash'
 import { getPostsByUser } from 'web/lib/supabase/post'
+import { useIsAuthorized } from './use-user'
 
 export const usePost = (postId: string | undefined) => {
   const [post, setPost] = useState<Post | null | undefined>()
@@ -75,11 +76,12 @@ export const useDateDocs = () => {
 }
 
 export const usePostsByUser = (userId: string) => {
-  const [posts, setPosts] = useState<Post[] | null>(null)
+  const [posts, setPosts] = useState<Post[]>([])
+  const isAuth = useIsAuthorized()
 
   useEffect(() => {
     getPostsByUser(userId).then(setPosts)
-  }, [userId])
+  }, [userId, isAuth])
 
-  return posts?.sort((a, b) => b.createdTime - a.createdTime)
+  return posts
 }
