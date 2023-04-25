@@ -270,7 +270,6 @@ SELECT
 FROM
   contract_comments cc
 WHERE
-    cc.data->'likes' IS NOT NULL and
     (cc.data->'likes')::numeric >= 1
 ORDER BY
   (cc.data->>'createdTime')::bigint DESC;

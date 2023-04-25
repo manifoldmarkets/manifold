@@ -712,28 +712,27 @@ BEGIN
                comments.contract_id = ANY (available_contract_ids) AND
                comments.contract_id <> ALL (excluded_contract_ids)
              AND
-             NOT EXISTS (
-               SELECT 1
-               FROM user_events ue
-               WHERE
-                   ue.user_id = current_user_id AND
-                 (
+             NOT (
+                 EXISTS (
+                   SELECT 1
+                   FROM user_events ue
+                   WHERE
+                       ue.user_id = current_user_id AND
                          ue.data->>'name' = 'view comment thread' AND
-                         (
-                                 ue.data->>'commentId' = comments.comment_id OR
-                                 ue.data->>'commentId' = comments.data->>'replyToCommentId'
-                           )
-                   )
---                 We may want to include market views for now bc we just added comment views
---                    OR (
---                         ue.data->>'name' = 'view market' AND
---                         ue.data->>'contractId' = comments.contract_id
---                     )
-             )
+                         ue.data->>'commentId' = comments.comment_id
+                 )
+                 OR EXISTS (
+                 SELECT 1
+                 FROM user_events ue
+                 WHERE
+                     ue.user_id = current_user_id AND
+                       ue.data->>'name' = 'view comment thread' AND
+                       ue.data->>'commentId' = comments.data->>'replyToCommentId'
+               )
+               )
            ORDER BY
              comments.contract_id,
-             created_time DESC
-         ) AS filtered_comments
+             created_time DESC) AS filtered_comments
     ORDER BY
       filtered_comments.created_time DESC
     LIMIT limit_count;
