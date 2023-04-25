@@ -181,7 +181,7 @@ from get_recommended_contracts_embeddings_from(
     ),
     n,
     excluded_contract_ids,
-    1.0
+    0.25
   ) $$;
 
 create
@@ -219,7 +219,7 @@ from get_recommended_contracts_embeddings_from(
     ),
     n,
     excluded_contract_ids,
-    0.40
+    0.1
   ) $$;
 
 create
@@ -241,7 +241,7 @@ or replace function get_recommended_contracts_embeddings_from (
         row_number() over (
           order by p_embedding <=> ce.embedding
         )
-      ) / 600.0 as relative_dist,
+      ) / 2000.0 as relative_dist,
       lpc.popularity_score,
       lpc.created_time,
       lpc.close_time
@@ -269,7 +269,7 @@ or replace function get_recommended_contracts_embeddings_from (
       )
     order by p_embedding <=> ce.embedding -- Find many that are close to your interests
       -- so that among them we can filter for new, closing soon, and trending.
-    limit 600
+    limit 2000
   ), available_contracts as (
     select *,
       (
