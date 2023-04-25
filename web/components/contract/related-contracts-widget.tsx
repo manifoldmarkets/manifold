@@ -9,7 +9,7 @@ import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { ContractStatusLabel } from './contracts-list-entry'
+import { ContractStatusLabel } from './contracts-table'
 import { useContract } from 'web/hooks/use-contracts'
 
 export const RelatedContractsList = memo(function RelatedContractsList(props: {

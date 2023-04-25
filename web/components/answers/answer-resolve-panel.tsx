@@ -11,6 +11,47 @@ import { removeUndefinedProps } from 'common/util/object'
 import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
 
+function getAnswerResolveButtonColor(
+  resolveOption: string | undefined,
+  answers: string[],
+  chosenAnswers: { [answerId: string]: number }
+) {
+  return resolveOption === 'CANCEL'
+    ? 'yellow'
+    : resolveOption === 'CHOOSE' && answers.length
+    ? 'green'
+    : resolveOption === 'CHOOSE_MULTIPLE' &&
+      answers.length > 1 &&
+      answers.every((answer) => chosenAnswers[answer] > 0)
+    ? 'blue'
+    : 'indigo'
+}
+
+function getAnswerResolveButtonDisabled(
+  resolveOption: string | undefined,
+  answers: string[],
+  chosenAnswers: { [answerId: string]: number }
+) {
+  return (
+    (resolveOption === 'CHOOSE' && !answers.length) ||
+    (resolveOption === 'CHOOSE_MULTIPLE' &&
+      (!(answers.length > 1) ||
+        !answers.every((answer) => chosenAnswers[answer] > 0)))
+  )
+}
+
+function getAnswerResolveButtonLabel(
+  resolveOption: string | undefined,
+  chosenText: string,
+  answers: string[]
+) {
+  return resolveOption === 'CANCEL'
+    ? 'N/A'
+    : resolveOption === 'CHOOSE'
+    ? chosenText
+    : `${answers.length} answers`
+}
+
 export function AnswerResolvePanel(props: {
   isAdmin: boolean
   isCreator: boolean
@@ -20,6 +61,7 @@ export function AnswerResolvePanel(props: {
     option: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   ) => void
   chosenAnswers: { [answerId: string]: number }
+  isInModal?: boolean
 }) {
   const {
     contract,
@@ -28,6 +70,7 @@ export function AnswerResolvePanel(props: {
     chosenAnswers,
     isAdmin,
     isCreator,
+    isInModal,
   } = props
   const answers = Object.keys(chosenAnswers)
 
@@ -90,7 +133,8 @@ export function AnswerResolvePanel(props: {
   return (
     <Col className="gap-4 rounded">
       <Row className="justify-between">
-        <div>Resolve your market</div>
+        {!isInModal && <div>Resolve your market</div>}
+        {isInModal && <div>Resolve "{contract.question}"</div>}
         {isAdmin && !isCreator && (
           <span className="bg-scarlet-500/20 text-scarlet-500 rounded p-1 text-xs">
             ADMIN
@@ -117,36 +161,57 @@ export function AnswerResolvePanel(props: {
             </Button>
           )}
 
-          <ResolveConfirmationButton
-            color={
-              resolveOption === 'CANCEL'
-                ? 'yellow'
-                : resolveOption === 'CHOOSE' && answers.length
-                ? 'green'
-                : resolveOption === 'CHOOSE_MULTIPLE' &&
-                  answers.length > 1 &&
-                  answers.every((answer) => chosenAnswers[answer] > 0)
-                ? 'blue'
-                : 'indigo'
-            }
-            label={
-              resolveOption === 'CANCEL'
-                ? 'N/A'
-                : resolveOption === 'CHOOSE'
-                ? chosenText
-                : `${answers.length} answers`
-            }
-            marketTitle={contract.question}
-            disabled={
-              !resolveOption ||
-              (resolveOption === 'CHOOSE' && !answers.length) ||
-              (resolveOption === 'CHOOSE_MULTIPLE' &&
-                (!(answers.length > 1) ||
-                  !answers.every((answer) => chosenAnswers[answer] > 0)))
-            }
-            onResolve={onResolve}
-            isSubmitting={isSubmitting}
-          />
+          {!isInModal && (
+            <ResolveConfirmationButton
+              color={getAnswerResolveButtonColor(
+                resolveOption,
+                answers,
+                chosenAnswers
+              )}
+              label={getAnswerResolveButtonLabel(
+                resolveOption,
+                chosenText,
+                answers
+              )}
+              marketTitle={contract.question}
+              disabled={getAnswerResolveButtonDisabled(
+                resolveOption,
+                answers,
+                chosenAnswers
+              )}
+              onResolve={onResolve}
+              isSubmitting={isSubmitting}
+            />
+          )}
+          {isInModal && (
+            <Button
+              color={getAnswerResolveButtonColor(
+                resolveOption,
+                answers,
+                chosenAnswers
+              )}
+              disabled={
+                isSubmitting ||
+                getAnswerResolveButtonDisabled(
+                  resolveOption,
+                  answers,
+                  chosenAnswers
+                )
+              }
+              onClick={onResolve}
+            >
+              <>
+                Resolve{' '}
+                <>
+                  {getAnswerResolveButtonLabel(
+                    resolveOption,
+                    chosenText,
+                    answers
+                  )}
+                </>
+              </>
+            </Button>
+          )}
         </Row>
       </div>
 

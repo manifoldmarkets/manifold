@@ -30,7 +30,7 @@ import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { getLinkTarget } from 'web/components/widgets/site-link'
 import { richTextToString } from 'common/util/parse'
-import { ContractStatusLabel } from './contracts-list-entry'
+import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
 import { CommentsButton } from '../swipe/swipe-comments'
 import { BetRow } from '../bet/bet-row'
@@ -561,7 +561,7 @@ function ReasonChosen(props: { contract: Contract }) {
             className={'z-10'}
           >
             <Row className={'shrink-0 items-center gap-1'}>
-              <UserIcon className="h-4 w-4" />
+              <UserIcon className={'h-4 w-4'} />
               <div>{uniqueBettorCount ?? 0}</div>
             </Row>
           </Tooltip>
