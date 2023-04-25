@@ -12,9 +12,11 @@ import { getAllComments } from 'web/lib/supabase/comments'
 import {
   getCPMMContractUserContractMetrics,
   getTopContractMetrics,
+  getContractMetricsYesCount,
+  getContractMetricsNoCount,
 } from 'web/lib/firebase/contract-metrics'
 import {
-  getShareholderCountsForContractId,
+  ShareholderStats,
   getTotalContractMetrics,
 } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
@@ -61,10 +63,18 @@ export async function getContractParams(contract: Contract) {
     ? await getTopContractMetrics(contract.id, 10)
     : []
 
-  const shareholderStats =
-    contract.mechanism === 'cpmm-1'
-      ? await getShareholderCountsForContractId(contractId, db)
-      : undefined
+
+  let shareholderStats: ShareholderStats | undefined = undefined
+  if (contract.mechanism === 'cpmm-1') {
+    const [yesCount, noCount] = await Promise.all([
+      getContractMetricsYesCount(contractId),
+      getContractMetricsNoCount(contractId)
+    ])
+    shareholderStats = {
+      yesShareholders: yesCount,
+      noShareholders: noCount
+    }
+  }
 
   const totalPositions =
     contract.mechanism === 'cpmm-1'
