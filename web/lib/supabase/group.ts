@@ -1,4 +1,4 @@
-import { Group, PrivacyStatusType } from 'common/group'
+import { Group } from 'common/group'
 import { run, SupabaseClient } from 'common/supabase/utils'
 import { chunk, uniqBy } from 'lodash'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
