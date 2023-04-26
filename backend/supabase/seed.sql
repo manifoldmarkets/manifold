@@ -216,6 +216,10 @@ select
 create index if not exists user_events_data_gin on user_events using GIN (data);
 create index if not exists user_events_name on user_events (user_id, name);
 create index if not exists user_events_ts on user_events (user_id, ts);
+
+create index if not exists user_events_ad_skips on user_events (name, (to_jsonb(data)->>'adId'))
+where name = 'Skip ad';
+
 create index if not exists user_events_viewed_markets on user_events (
   user_id,
   name,
