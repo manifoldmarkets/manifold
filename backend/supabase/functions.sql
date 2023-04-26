@@ -756,10 +756,11 @@ $$;
 
 create
 or replace function get_top_market_ads (uid text) returns table (
-  id text,
+  ad_id text,
   market_id text,
-  funds numeric,
-  cost_per_view numeric
+  ad_funds numeric,
+  ad_cost_per_view numeric,
+  market_data jsonb
 ) language sql parallel safe as $$
 --with all the redeemed ads (has a txn)
 with redeemed_ad_ids as (
@@ -776,9 +777,11 @@ user_embedding as (
   select interest_embedding
   from user_embeddings
   where user_id = uid
-)
---select all the ads that haven't been redeemed, by closest to your embedding
-select (id, market_id, funds, cost_per_view)
+),
+--with all the ads that haven't been redeemed, by closest to your embedding
+unredeemed_market_ads as (
+select
+  id, market_id, funds, cost_per_view
 from market_ads
 where 
   NOT EXISTS (
@@ -787,14 +790,22 @@ where
     WHERE fromId = market_ads.market_id
   )
   and market_ads.funds > 0
-
-order by embedding <=> (
+  order by embedding <=> (
     select interest_embedding
     from user_embedding
   )
-limit 50
--- join
--- contracts on contracts.id = market_ads.market_id
+  limit 50
+)
+select 
+  ma.id,
+  ma.market_id,
+  ma.funds,
+  ma.cost_per_view,
+  contracts.data
+ from 
+ unredeemed_market_ads as ma
+inner join contracts
+on contracts.id = ma.market_id
 $$;
 
 create
