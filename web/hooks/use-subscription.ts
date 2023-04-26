@@ -1,9 +1,9 @@
 import {
-  SupabaseClient,
-  TableName,
-  RowFor,
   DataFor,
   primaryKeyColumnsByTable,
+  RowFor,
+  SupabaseClient,
+  TableName,
 } from 'common/supabase/utils'
 import { useEffect, useId, useRef, useState } from 'react'
 import { uniqBy } from 'lodash'
@@ -113,8 +113,7 @@ export function useSubscription<T extends TableName>(
         const newValue = newRecord as RowFor<T>
         // We already have this row, so update it
         if (oldRecord && index > -1) {
-          prev[index] = newValue
-          return prev
+          return [...prev.slice(0, index), newValue, ...prev.slice(index + 1)]
         }
         // We don't have this row, or there wasn't an old record in supabase, so add it
         else
@@ -125,8 +124,7 @@ export function useSubscription<T extends TableName>(
         // Empty new record, delete it or save it for deletion
       } else {
         if (index > -1) {
-          prev.splice(index, 1)
-          return prev
+          return [...prev.slice(0, index), ...prev.slice(index + 1)]
         }
         // Delete the value once we get the values
         valuesToDelete.current.push(oldValue)
