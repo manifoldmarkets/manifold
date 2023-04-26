@@ -116,9 +116,9 @@ or replace function get_recommended_contracts_embeddings_from (
         select 1
         from user_events
         where user_events.user_id = uid
-          and user_events.data->>'name' = 'view market card'
-          and user_events.data->>'contractId' = contract_id
-          and (user_events.data->'timestamp')::bigint > ts_to_millis(now() - interval '2 days')
+          and user_events.name = 'view market card'
+          and user_events.contract_id = contract_id
+          and user_events.ts > now() - interval '2 days'
       )
     order by p_embedding <=> ce.embedding -- Find many that are close to your interests
       -- so that among them we can filter for new, closing soon, and trending.
@@ -736,7 +736,7 @@ from (
                from user_events ue
                where
                    ue.user_id = current_user_id and
-                     ue.data->>'name' = 'view comment thread' and
+                     ue.name = 'view comment thread' and
                      ue.data->>'commentId' = comments.comment_id
              )
              or exists (
@@ -744,7 +744,7 @@ from (
              from user_events ue
              where
                  ue.user_id = current_user_id and
-                   ue.data->>'name' = 'view comment thread' and
+                   ue.name = 'view comment thread' and
                    ue.data->>'commentId' = comments.data->>'replyToCommentId'
            )
            )

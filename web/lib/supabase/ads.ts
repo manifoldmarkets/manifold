@@ -21,12 +21,14 @@ export async function getWatchedAdIds(userId: string) {
 }
 
 export async function getSkippedAdIds(userId: string) {
-  const query = selectJson(db, 'user_events')
+  const query = db
+    .from('user_events')
+    .select('data->>adId')
     .eq('user_id', userId)
-    .eq('data->>name', 'Skip ad')
+    .eq('name', 'Skip ad')
 
   const { data } = await run(query)
-  return data.map((r) => (r.data as any).adId)
+  return data.map((r) => (r as any).adId)
 }
 
 export async function getUsersWhoWatched(adId: string) {
@@ -42,7 +44,7 @@ export async function getUsersWhoSkipped(adId: string) {
   const query = db
     .from('user_events')
     .select('user_id')
-    .eq('data->>name', 'Skip ad')
+    .eq('name', 'Skip ad')
     .eq('data->>adId', adId)
 
   const { data } = await run(query)
