@@ -209,7 +209,11 @@ function getSearchContractWhereSQL(
    ${filterSQL[filter]}
   )
   ${sortFilter}
-  ${(groupId && hasGroupAccess) || creatorId === uid ? '' : visibilitySQL}
+  ${
+    (groupId && hasGroupAccess) || (!!creatorId && !!uid && creatorId === uid)
+      ? ''
+      : visibilitySQL
+  }
   ${creatorId ? `and creator_id = '${creatorId}'` : ''}`
 }
 
