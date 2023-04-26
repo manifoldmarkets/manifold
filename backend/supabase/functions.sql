@@ -1,3 +1,9 @@
+create or replace function jsonb_array_to_text_array(_js jsonb)
+  returns text[]
+  language sql immutable strict parallel safe as $$
+select array(select jsonb_array_elements_text(_js))
+$$;
+
 create
 or replace function recently_liked_contract_counts (since bigint) returns table (contract_id text, n int) immutable parallel safe language sql as $$
 select data->>'contentId' as contract_id,
@@ -91,7 +97,7 @@ or replace function get_recommended_contracts_embeddings_from (
       lpc.popularity_score,
       lpc.created_time,
       lpc.close_time,
-      coalesce((lpc.data->>'groupSlugs')::text[], array[]::text[]) as group_slugs
+      jsonb_array_to_text_array(lpc.data->'groupSlugs') as group_slugs
     from contract_embeddings as ce
       join listed_open_contracts lpc on lpc.id = contract_id
     where not exists (
