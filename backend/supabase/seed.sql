@@ -201,17 +201,17 @@ create table if not exists
     name text null,
     ts timestamptz null,
     data jsonb not null,
-    fs_updated_time timestamp not null,
     primary key (user_id, event_id)
   );
 
 alter table user_events enable row level security;
 
 drop policy if exists "public read" on user_events;
+create policy "public read" on user_events for select using (true);
 
-create policy "public read" on user_events for
-select
-  using (true);
+drop policy if exists "user can insert" on user_events;
+create policy "user can insert" on user_events for insert
+    with check (user_id = 'NO_USER' or user_id = firebase_uid());
 
 create index if not exists user_events_data_gin on user_events using GIN (data);
 create index if not exists user_events_name on user_events (user_id, name);
@@ -959,7 +959,6 @@ or replace function get_document_table_spec (table_id text) returns table_spec l
     when 'user_follows' then cast(('user_id', 'follow_id') as table_spec)
     when 'user_notifications' then cast(('user_id', 'notification_id') as table_spec)
     when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
-    when 'user_events' then cast(('user_id', 'event_id') as table_spec)
     when 'user_seen_markets' then cast(('user_id', 'contract_id') as table_spec)
     when 'contracts' then cast((null, 'id') as table_spec)
     when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)
