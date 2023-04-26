@@ -117,7 +117,7 @@ or replace function get_recommended_contracts_embeddings_from (
         from user_events
         where user_events.user_id = uid
           and user_events.name = 'view market card'
-          and user_events.contract_id = contract_id
+          and user_events.contract_id = ce.contract_id
           and user_events.ts > now() - interval '2 days'
       )
     order by p_embedding <=> ce.embedding -- Find many that are close to your interests
