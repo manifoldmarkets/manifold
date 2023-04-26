@@ -84,8 +84,6 @@ export function ActivityLog(props: {
       !BOT_USERNAMES.includes(bet.userUsername) &&
       !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername)
   )
-
-  console.log(bets)
   const rawComments = useRealtimeComments(count * 3)
   const comments = (rawComments ?? []).filter(
     (c) =>

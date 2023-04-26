@@ -54,7 +54,6 @@ export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
       (payload) => {
         if (payload) {
           const payloadBet = payload.new.data as Bet
-          console.log('payload:', payloadBet, 'bets:', bets)
           if (!betShouldBeFiltered(payloadBet, options)) {
             setBets((bets) => {
               if (payloadBet && !bets.some((c) => c.id == payloadBet.id)) {
