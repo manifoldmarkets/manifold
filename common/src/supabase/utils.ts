@@ -118,10 +118,8 @@ type TableJsonTypes = {
 export type DataFor<T extends TableName | ViewName> =
   T extends keyof TableJsonTypes ? TableJsonTypes[T] : any
 
-export type RowFor<T extends TableName | ViewName> = T extends TableName
+export type RowFor<T extends TableName> = T extends TableName
   ? PlainTables[T]
-  : T extends ViewName
-  ? PlainViews[T]
   : any
 
 export function selectJson<T extends TableName | ViewName>(

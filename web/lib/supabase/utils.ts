@@ -2,7 +2,6 @@ import {
   SupabaseClient,
   TableName,
   RowFor,
-  ViewName,
   DataFor,
 } from 'common/supabase/utils'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -30,7 +29,7 @@ const callbacks: {
 let mainChannelResubscribeInterval: NodeJS.Timer | undefined = undefined
 
 export function useValuesFromSupabase<
-  T extends TableName | ViewName,
+  T extends TableName,
   K extends keyof RowFor<T>
 >(
   table: T,
@@ -48,12 +47,8 @@ export function useValuesFromSupabase<
   const retrievedInitialValues = useRef<boolean>(false)
   const channelResubscribeInterval = useRef<NodeJS.Timer>()
   // TODO:
-  // 1. turn off out resubscription interval, toggle wifi to see if it handles its own stuff
-  // 2. if we disconnect, set the initial values state to false to reget it.
-  // 3. pass a callback to accept how we should handle updates - actually make this specific to the contrac metrics unless it also applies to contract-bets
   // 4. email supabase for why we only have 500 concurrent channels/topics
   // 5. address PR comments
-  // 6. does this actually work for views?
 
   const getMyCallback = () => {
     return {
@@ -78,6 +73,8 @@ export function useValuesFromSupabase<
   const restartChannel = async () => {
     console.log('Restarting channel')
     subscriptionStatus = 'CONNECTING'
+    // There may be updates while we've disconnected, so we need to refresh the values
+    retrievedInitialValues.current = false
     if (mainChannel) {
       await mainChannel.unsubscribe()
       await db.removeChannel(mainChannel)
@@ -143,7 +140,7 @@ export function useValuesFromSupabase<
       .select('*')
       .eq(rowGroupKey as string, rowGroupValue)
     if (data) {
-      setValues(data)
+      setValues(data as RowFor<T>[])
     }
   }
 
