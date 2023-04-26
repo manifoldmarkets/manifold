@@ -479,9 +479,6 @@ select
   using (true);
 
 create index if not exists contract_comments_data_gin on contract_comments using GIN (data);
-CREATE INDEX contract_comments_contract_id_idx ON contract_comments (contract_id);
-CREATE INDEX contract_comments_data_likes_idx ON contract_comments (((data -> 'likes')::numeric));
-CREATE INDEX contract_comments_data_created_time_idx ON contract_comments (((data ->> 'createdTime')::bigint));
 
 alter table contract_comments
 cluster on contract_comments_pkey;

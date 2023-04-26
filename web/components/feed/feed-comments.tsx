@@ -65,8 +65,16 @@ export function FeedCommentThread(props: {
   const [collapseToIndex, setCollapseToIndex] = useState<number>(
     collapseMiddle && threadComments.length > 2 ? threadComments.length - 2 : -1
   )
+  const { ref } = useIsVisible(
+    () =>
+      track('view comment thread', {
+        contractId: contract.id,
+        commentId: parentComment.id,
+      } as CommentView),
+    true
+  )
   return (
-    <Col className="w-full items-stretch gap-3 pb-2">
+    <Col className="w-full items-stretch gap-3 pb-2" ref={ref}>
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
@@ -207,14 +215,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     numReplies,
   } = props
   const { userUsername } = comment
-  const { ref } = useIsVisible(
-    () =>
-      track('view comment thread', {
-        contractId: contract.id,
-        commentId: comment.id,
-      } as CommentView),
-    true
-  )
+
   const commentKind = userUsername === 'ManifoldDream' ? 'ub-dream-comment' : ''
   return (
     <FeedComment
@@ -225,7 +226,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       showLike={showLike}
       className={clsx('gap-2', commentKind)}
     >
-      <div ref={ref} />
       <ReplyToggle
         seeReplies={seeReplies}
         numComments={numReplies}
