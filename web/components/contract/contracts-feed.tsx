@@ -4,7 +4,7 @@ import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { SiteLink } from '../widgets/site-link'
 import { VisibilityObserver } from '../widgets/visibility-observer'
-import { ContractCardNew } from './contract-card'
+import { FeedItems } from 'web/components/feed/feed-items'
 
 export function ContractsFeed(props: { topic?: string }) {
   const { topic } = props
@@ -15,11 +15,7 @@ export function ContractsFeed(props: { topic?: string }) {
 
   return (
     <Col>
-      <Col>
-        {contracts.map((contract) => (
-          <ContractCardNew key={contract.id} contract={contract} />
-        ))}
-      </Col>
+      <FeedItems contracts={contracts} user={user} />
 
       <div className="relative">
         <VisibilityObserver

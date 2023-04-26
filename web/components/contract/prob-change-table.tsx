@@ -10,7 +10,7 @@ import {
 import { Col } from '../layout/col'
 import { ContractCardWithPosition } from './contract-card'
 import { User } from 'common/user'
-import { ContractStatusLabel } from './contracts-list-entry'
+import { ContractStatusLabel } from './contracts-table'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { forwardRef } from 'react'

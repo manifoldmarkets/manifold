@@ -34,7 +34,7 @@ export const saveTopic = authEndpoint(async (req) => {
 
       await db.from('topic_embeddings').insert({
         topic,
-        embedding,
+        embedding: embedding as any,
       })
     }
   }

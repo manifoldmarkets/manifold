@@ -1,6 +1,6 @@
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
   '👥 Communities': [
-    '🤓 CGP Grey',
+    // '🤓 CGP Grey',
     // '📜 ACX',
     '💗 Effective Altruism',
     '🎮 Destiny.gg',

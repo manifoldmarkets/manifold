@@ -1,9 +1,10 @@
-import { Group, PrivacyStatusType } from 'common/group'
+import { Group } from 'common/group'
 import { run, SupabaseClient } from 'common/supabase/utils'
-import { uniqBy } from 'lodash'
+import { chunk, uniqBy } from 'lodash'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 import { User } from '../firebase/users'
 import { db } from './db'
+import { Contract } from 'common/contract'
 
 // functions called for one group
 export async function getNumGroupMembers(groupId: string) {
@@ -125,28 +126,6 @@ export async function searchUserInGroup(
   ).slice(0, limit)
 }
 
-export async function getGroupPrivacyBySlug(groupSlug: string) {
-  const { data: groupPrivacy } = await run(
-    db
-      .from('groups')
-      .select('data->>privacyStatus')
-      .contains('data', { slug: groupSlug })
-  )
-  return (groupPrivacy[0] as unknown as { privacyStatus: PrivacyStatusType })
-    .privacyStatus
-}
-
-export async function getGroupFromSlug(groupSlug: string, db: SupabaseClient) {
-  const { data: group } = await run(
-    db.from('groups').select('data').contains('data', { slug: groupSlug })
-  )
-
-  if (group && group.length > 0) {
-    return group[0].data as Group
-  }
-  return null
-}
-
 export async function getGroup(groupId: string) {
   const { data } = await run(db.from('groups').select('data').eq('id', groupId))
   if (data && data.length > 0) {
@@ -154,4 +133,39 @@ export async function getGroup(groupId: string) {
   } else {
     return null
   }
+}
+export async function getGroupMarkets(groupId: string) {
+  const { data: contractIds } = await run(
+    db.from('group_contracts').select('contract_id').eq('group_id', groupId)
+  )
+
+  if (!contractIds) return null
+  const chunkedContractIds = chunk(contractIds, 200)
+  const data = await Promise.all(
+    chunkedContractIds.map(
+      async (chunkedIds) =>
+        await run(
+          db
+            .from('public_contracts')
+            .select('data')
+            .in(
+              'id',
+              chunkedIds.map((c) => c.contract_id)
+            )
+        )
+    )
+  )
+  const markets = data.flatMap((d) => d.data)
+  return markets.map((m) => m.data as Contract)
+}
+
+export async function getGroupFromSlug(groupSlug: string, db: SupabaseClient) {
+  const { data: group } = await run(
+    db.from('groups').select('data').eq('slug', groupSlug)
+  )
+
+  if (group && group.length > 0) {
+    return group[0].data as Group
+  }
+  return null
 }

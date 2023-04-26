@@ -11,9 +11,9 @@ import { stateType } from 'web/components/supabase-search'
 import { supabaseSearchContracts } from '../firebase/api'
 import { db } from './db'
 
-export async function getContractIds(contractIds: string[]) {
+export async function getPublicContractIds(contractIds: string[]) {
   const { data } = await run(
-    db.from('contracts').select('data').in('id', contractIds)
+    db.from('public_contracts').select('data').in('id', contractIds)
   )
   if (data && data.length > 0) {
     return data.map((d) => d.data as Contract)
@@ -22,6 +22,12 @@ export async function getContractIds(contractIds: string[]) {
   }
 }
 
+export const getPublicContract = async (id: string) => {
+  const { data } = await run(
+    db.from('public_contracts').select('data').eq('id', id)
+  )
+  return data && data.length > 0 ? (data[0].data as Contract) : null
+}
 export const getContract = async (id: string) => {
   const { data } = await run(db.from('contracts').select('data').eq('id', id))
   return data && data.length > 0 ? (data[0].data as Contract) : null
@@ -41,7 +47,7 @@ export const getContractWithFields = async (id: string) => {
   }
 }
 // Only fetches contracts with 'public' visibility
-export const getContracts = async (options: {
+export const getPublicContracts = async (options: {
   limit: number
   beforeTime?: number
   order?: 'asc' | 'desc'
@@ -134,23 +140,25 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
 }
 
 export async function searchContract(props: {
-  state: stateType
+  state?: stateType
   query: string
   filter: filter
   sort: Sort
-  offset: number
+  offset?: number
   limit: number
   group_id?: string
   creator_id?: string
 }) {
-  const { state, query, filter, sort, offset, limit, group_id, creator_id } =
-    props
+  const { query, filter, sort, offset = 0, limit, group_id, creator_id } = props
+  const state = props.state ?? {
+    contracts: undefined,
+    fuzzyContractOffset: 0,
+    shouldLoadMore: false,
+    showTime: null,
+  }
 
   if (limit === 0) {
-    return {
-      fuzzyOffset: 0,
-      data: {},
-    }
+    return { fuzzyOffset: 0, data: [] }
   }
 
   if (!query) {
@@ -164,10 +172,7 @@ export async function searchContract(props: {
       creatorId: creator_id,
     })
     if (contracts) {
-      return {
-        fuzzyOffset: 0,
-        data: contracts,
-      }
+      return { fuzzyOffset: 0, data: contracts }
     }
   }
   if (state.fuzzyContractOffset > 0) {

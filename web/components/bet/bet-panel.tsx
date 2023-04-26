@@ -223,7 +223,7 @@ export function BuyPanel(props: {
   }, [initialOutcome])
 
   function onOptionChoice(choice: 'YES' | 'NO' | 'LIMIT') {
-    if (option === choice) {
+    if (option === choice && !initialOutcome) {
       setOption(undefined)
     } else {
       setOption(choice)
@@ -345,7 +345,7 @@ export function BuyPanel(props: {
           }
           noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : undefined}
         />
-        {!isStonk && (
+        {!isStonk && !initialOutcome && (
           <button
             className={clsx(
               'inline-flex items-center justify-center rounded-3xl border-2 p-2',

@@ -34,7 +34,6 @@ const bodySchema = z.object({
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
-    const uid = auth?.uid ?? undefined
     const { term, filter, sort, offset, limit, fuzzy, groupId, creatorId } =
       validate(bodySchema, req.body)
     const pg = createSupabaseDirectClient()
@@ -54,7 +53,7 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       [term],
       (r) => r.data as Contract
     )
-    return (contracts as unknown as Json) ?? ([] as unknown as Json)
+    return (contracts ?? []) as unknown as Json
   }
 )
 
@@ -201,6 +200,6 @@ function getSearchContractSortSQL(
     'close-date': 'close_time',
   }
 
-  const ASCDESC = sort === 'close-date' ? 'ASC' : 'DESC'
+  const ASCDESC = sort === 'close-date' || sort === 'liquidity' ? 'ASC' : 'DESC'
   return `ORDER BY ${sortFields[sort]} ${ASCDESC}`
 }

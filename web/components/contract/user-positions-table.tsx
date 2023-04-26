@@ -4,6 +4,7 @@ import { ContractMetric } from 'common/contract-metric'
 import {
   ShareholderStats,
   getShareholderCountsForContractId,
+  getContractMetricsForContractId,
 } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -32,6 +33,8 @@ import { useUser } from 'web/hooks/use-user'
 import {
   ContractMetricsByOutcome,
   getTotalContractMetricsCount,
+  getContractMetricsYesCount,
+  getContractMetricsNoCount,
 } from 'web/lib/firebase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { getStonkShares } from 'common/stonk'
@@ -81,9 +84,14 @@ export const BinaryUserPositionsTable =
       // Let's use firebase here as supabase can be slightly out of date, leading to incorrect counts
       getTotalContractMetricsCount(contractId).then(setTotalPositions)
 
-      // This still uses supabase
-      getShareholderCountsForContractId(contractId, db).then(
-        setShareholderStats
+      Promise.all([
+        getContractMetricsYesCount(contractId),
+        getContractMetricsNoCount(contractId),
+      ]).then(([yesCount, noCount]) =>
+        setShareholderStats({
+          yesShareholders: yesCount,
+          noShareholders: noCount,
+        })
       )
     }, [positions.length, contractId])
 

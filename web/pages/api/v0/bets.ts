@@ -1,12 +1,13 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { Bet } from 'common/bet'
-import { getBet, getBets } from 'web/lib/supabase/bets'
-import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { getBet, getBets, getPublicBets } from 'web/lib/supabase/bets'
+import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { getUserByUsername } from 'web/lib/firebase/users'
 import { ApiError, ValidationError } from './_types'
 import { z } from 'zod'
 import { validate } from './_validate'
+import { db } from 'web/lib/supabase/db'
 
 const queryParams = z
   .object({
@@ -30,7 +31,7 @@ const getContractId = async (params: z.infer<typeof queryParams>) => {
   }
   const slug = params.contractSlug ?? params.market
   if (slug) {
-    const contract = await getContractFromSlug(slug)
+    const contract = await getContractFromSlug(slug, db)
     if (contract) {
       return contract.id
     } else {
@@ -86,13 +87,20 @@ export default async function handler(
   }
 
   const { limit } = params
-  const [userId, contractId, beforeTime] = await Promise.all([
-    getUserId(params),
-    getContractId(params),
-    getBeforeTime(params),
-  ])
-  const bets = await getBets({ userId, contractId, beforeTime, limit })
+  try {
+    const [userId, contractId, beforeTime] = await Promise.all([
+      getUserId(params),
+      getContractId(params),
+      getBeforeTime(params),
+    ])
+    const bets = contractId
+      ? await getBets({ userId, contractId, beforeTime, limit })
+      : await getPublicBets({ userId, contractId, beforeTime, limit })
 
-  res.setHeader('Cache-Control', 'max-age=15, public')
-  return res.status(200).json(bets)
+    res.setHeader('Cache-Control', 'max-age=15, public')
+    return res.status(200).json(bets)
+  } catch (e) {
+    console.error(`Error while fetching bets: ${e}`)
+    return res.status(500).json({ error: 'Error while fetching bets: ' + e })
+  }
 }

@@ -6,12 +6,12 @@ import {
 import { uniqBy } from 'lodash'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { getContractFromId } from 'web/lib/firebase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { validate } from 'web/pages/api/v0/_validate'
 import { z } from 'zod'
 import { ApiError, ValidationError } from '../../_types'
 import { marketCacheStrategy } from 'web/pages/api/v0/market/[id]/index'
+import { getContract } from 'web/lib/supabase/contracts'
 
 const queryParams = z.object({
   id: z.string(),
@@ -37,7 +37,7 @@ export default async function handler(
   }
 
   const { id: contractId, userId } = params
-  const contract = await getContractFromId(contractId)
+  const contract = await getContract(contractId)
   if (!contract) {
     res.status(404).json({ error: 'Contract not found' })
     return

@@ -21,7 +21,7 @@ import { Content } from '../widgets/editor'
 import { UserLink } from 'web/components/widgets/user-link'
 import { CommentInput } from '../comments/comment-input'
 import { ReplyIcon, XCircleIcon } from '@heroicons/react/solid'
-import { IconButton } from '../buttons/button'
+import { Button, IconButton } from '../buttons/button'
 import { ReplyToggle } from '../comments/reply-toggle'
 import { ReportModal } from 'web/components/buttons/report-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
@@ -38,6 +38,10 @@ import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { Bet } from 'common/bet'
 import Curve from 'web/public/custom-components/curve'
+import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import { useIsVisible } from 'web/hooks/use-is-visible'
+import { CommentView } from 'common/events'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -45,8 +49,9 @@ export function FeedCommentThread(props: {
   contract: Contract
   threadComments: ContractComment[]
   parentComment: ContractComment
+  collapseMiddle?: boolean
 }) {
-  const { contract, threadComments, parentComment } = props
+  const { contract, threadComments, parentComment, collapseMiddle } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
   const [seeReplies, setSeeReplies] = useState(true)
 
@@ -57,7 +62,9 @@ export function FeedCommentThread(props: {
   const onReplyClick = useEvent((comment: ContractComment) => {
     setReplyToUserInfo({ id: comment.id, username: comment.userUsername })
   })
-
+  const [collapseToIndex, setCollapseToIndex] = useState<number>(
+    collapseMiddle && threadComments.length > 2 ? threadComments.length - 2 : -1
+  )
   return (
     <Col className="w-full items-stretch gap-3 pb-2">
       <ParentFeedComment
@@ -67,21 +74,41 @@ export function FeedCommentThread(props: {
         highlighted={idInUrl === parentComment.id}
         showLike={true}
         seeReplies={seeReplies}
-        numComments={threadComments.length}
+        numReplies={threadComments.length}
         onSeeReplyClick={onSeeRepliesClick}
         onReplyClick={onReplyClick}
       />
       {seeReplies &&
-        threadComments.map((comment, _commentIdx) => (
-          <FeedComment
-            key={comment.id}
-            contract={contract}
-            comment={comment}
-            highlighted={idInUrl === comment.id}
-            showLike={true}
-            onReplyClick={onReplyClick}
-          />
-        ))}
+        threadComments.map((comment, _commentIdx) =>
+          _commentIdx < collapseToIndex ? null : _commentIdx ===
+            collapseToIndex ? (
+            <Row
+              className={'justify-end sm:mt-1 sm:-mb-2'}
+              key={parentComment.id + 'see-replies-feed-button'}
+            >
+              <Button
+                size={'xs'}
+                color={'gray-white'}
+                onClick={() => setCollapseToIndex(-1)}
+              >
+                <Col>
+                  <TriangleFillIcon className={'mr-2 h-2'} />
+                  <TriangleDownFillIcon className={'mr-2 h-2'} />
+                </Col>
+                See {threadComments.length - 1} replies
+              </Button>
+            </Row>
+          ) : (
+            <FeedComment
+              key={comment.id}
+              contract={contract}
+              comment={comment}
+              highlighted={idInUrl === comment.id}
+              showLike={true}
+              onReplyClick={onReplyClick}
+            />
+          )
+        )}
       {replyToUserInfo && (
         <Col className="-pb-2 relative ml-6">
           <ContractCommentInput
@@ -114,18 +141,18 @@ export const FeedComment = memo(function FeedComment(props: {
     children,
   } = props
   const { userUsername, userAvatarUrl, bettorUsername } = comment
-  const commentRef = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
   const commentOnAnotherBettorsBet = bettorUsername !== undefined
   useEffect(() => {
-    if (highlighted && commentRef.current) {
-      scrollIntoViewCentered(commentRef.current)
+    if (highlighted && ref.current) {
+      scrollIntoViewCentered(ref.current)
     }
   }, [highlighted])
 
   return (
     <Row
-      ref={commentRef}
+      ref={ref}
       className={clsx(
         className ? className : 'ml-9 gap-2',
         highlighted ? 'bg-primary-50' : '',
@@ -136,7 +163,7 @@ export const FeedComment = memo(function FeedComment(props: {
         size={children ? 'sm' : 'xs'}
         username={userUsername}
         avatarUrl={userAvatarUrl}
-        className={marketCreator ? 'shadow shadow-amber-300' : ''}
+        className={clsx(marketCreator ? 'shadow shadow-amber-300' : '', 'z-10')}
       />
       <Col className="w-full">
         {commentOnAnotherBettorsBet && (
@@ -165,7 +192,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   highlighted?: boolean
   showLike?: boolean
   seeReplies: boolean
-  numComments: number
+  numReplies: number
   onReplyClick?: (comment: ContractComment) => void
   onSeeReplyClick: () => void
 }) {
@@ -177,17 +204,17 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     onReplyClick,
     onSeeReplyClick,
     seeReplies,
-    numComments,
+    numReplies,
   } = props
   const { userUsername } = comment
-  const commentRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (highlighted && commentRef.current) {
-      scrollIntoViewCentered(commentRef.current)
-    }
-  }, [highlighted])
-
+  const { ref } = useIsVisible(
+    () =>
+      track('view comment thread', {
+        contractId: contract.id,
+        commentId: comment.id,
+      } as CommentView),
+    true
+  )
   const commentKind = userUsername === 'ManifoldDream' ? 'ub-dream-comment' : ''
   return (
     <FeedComment
@@ -198,9 +225,10 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       showLike={showLike}
       className={clsx('gap-2', commentKind)}
     >
+      <div ref={ref} />
       <ReplyToggle
         seeReplies={seeReplies}
-        numComments={numComments}
+        numComments={numReplies}
         onClick={onSeeReplyClick}
       />
     </FeedComment>
@@ -415,21 +443,28 @@ function FeedCommentHeader(props: {
     betOutcome,
     answerOutcome,
     betAmount,
+    userId,
   } = comment
 
+  const marketCreator = contract.creatorId === userId
   if (bettorUsername !== undefined) {
     return (
       <span className="text-ink-600 mt-0.5 text-sm">
         <UserLink
           username={userUsername}
           name={userName}
-          marketCreator={bettorUsername === contract.creatorUsername}
+          marketCreator={marketCreator}
+        />
+        <CopyLinkDateTimeComponent
+          prefix={contract.creatorUsername}
+          slug={contract.slug}
+          createdTime={createdTime}
+          elementId={comment.id}
         />
       </span>
     )
   }
 
-  const marketCreator = contract.creatorId === comment.userId
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
@@ -516,10 +551,10 @@ export function CommentOnBetRow(props: {
     <Row className={clsx('relative w-full', className)}>
       <Row className={'absolute -top-8 -left-10  text-sm'}>
         <Row className="relative">
-          <div className="absolute -bottom-2 left-1.5 z-20">
+          <div className="absolute -bottom-2 left-1.5">
             <Curve size={32} strokeWidth={1} color="#D8D8EB" />
           </div>
-          <Row className="bg-canvas-100 ml-[38px] gap-1 rounded-md p-1">
+          <Row className="bg-canvas-100 ml-[38px] gap-1 whitespace-nowrap rounded-md p-1">
             <UserLink
               username={bettorUsername}
               name={bettorName}

@@ -1,7 +1,6 @@
-import { AnyContractType, CPMMBinaryContract } from 'common/contract'
+import { AnyContractType } from 'common/contract'
 import { filterDefined } from 'common/util/array'
 import { useEffect, useState } from 'react'
-import { useQuery } from 'react-query'
 import { getPrivateContractBySlug } from 'web/lib/firebase/api'
 import {
   Contract,
@@ -9,7 +8,6 @@ import {
   listenForContracts,
   listenForLiveContracts,
 } from 'web/lib/firebase/contracts'
-import { trendingIndex } from 'web/lib/service/algolia'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
 import { useStore, useStoreItems } from './use-store'
 import { useIsAuthorized } from './use-user'
@@ -22,30 +20,6 @@ export const useAllContracts = () => {
   }, [])
 
   return contracts
-}
-
-const defaultFilters: (string | string[])[] = [
-  'isResolved:false',
-  'visibility:public',
-]
-
-export const useTrendingContracts = (
-  maxContracts: number,
-  additionalFilters?: (string | string[])[],
-  active = true
-) => {
-  const { data } = useQuery(
-    ['trending-contracts', maxContracts, additionalFilters],
-    () =>
-      !active
-        ? undefined
-        : trendingIndex.search<CPMMBinaryContract>('', {
-            facetFilters: defaultFilters.concat(additionalFilters ?? []),
-            hitsPerPage: maxContracts,
-          })
-  )
-  if (!data) return undefined
-  return data.hits
 }
 
 export const useLiveContracts = (count: number) => {

@@ -1,10 +1,15 @@
 import { runScript } from 'run-script'
-import { DAY_MS } from 'common/util/time'
-import { getRecentContractLikes } from 'shared/supabase/likes'
+import { updateUsersCardViewEmbeddings } from 'shared/helpers/embeddings'
 
 if (require.main === module) {
-  runScript(async ({ db }) => {
-    const weekAgo = Date.now() - 7 * DAY_MS
-    console.log(await getRecentContractLikes(db, weekAgo))
+  runScript(async ({ pg }) => {
+    // James prod user id
+    // const userId = '5LZ4LgYuySdL1huCWe7bti02ghx2'
+    // James dev user id
+    // const userId = 'pfKxvtgSEua5DxoIfiPXxR4fAWd2'
+    // console.log(await updateCardViewEmbedding(pg, userId))
+
+    await updateUsersCardViewEmbeddings(pg)
+    console.log('Completed updateUsersCardViewEmbeddings')
   })
 }

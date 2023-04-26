@@ -192,10 +192,14 @@ create index if not exists user_reactions_content_id on user_reactions (
 alter table user_reactions
 cluster on user_reactions_type;
 
+
 create table if not exists
   user_events (
     user_id text not null,
     event_id text not null,
+    contract_id text null,
+    name text null,
+    ts timestamptz null,
     data jsonb not null,
     fs_updated_time timestamp not null,
     primary key (user_id, event_id)
@@ -210,21 +214,39 @@ select
   using (true);
 
 create index if not exists user_events_data_gin on user_events using GIN (data);
+create index if not exists user_events_name on user_events (user_id, name);
+create index if not exists user_events_ts on user_events (user_id, ts);
 
-create index if not exists user_events_name on user_events (user_id, (data ->> 'name'));
+create index if not exists user_events_ad_skips on user_events (name, (to_jsonb(data)->>'adId'))
+where name = 'Skip ad';
 
 create index if not exists user_events_viewed_markets on user_events (
   user_id,
-  (data ->> 'name'),
-  (data ->> 'contractId'),
-  ((data -> 'timestamp')::bigint) desc
+  name,
+  contract_id,
+  ts desc
 )
-where
-  data ->> 'name' = 'view market'
-  or data ->> 'name' = 'view market card';
+where name = 'view market' or name = 'view market card';
 
-alter table user_events
-cluster on user_events_name;
+alter table user_events cluster on user_events_name;
+
+create or replace function user_event_populate_cols()
+  returns trigger
+  language plpgsql
+as $$ begin
+  if new.data is not null then
+    new.name := (new.data)->>'name';
+    new.contract_id := (new.data)->>'contractId';
+    new.ts := case
+      when new.data ? 'timestamp' then millis_to_ts(((new.data)->>'timestamp')::bigint)
+      else null
+    end;
+  end if;
+  return new;
+end $$;
+
+create trigger user_event_populate before insert or update on user_events for each row
+execute function user_event_populate_cols();
 
 create table if not exists
   user_seen_markets (
@@ -437,9 +459,7 @@ create index if not exists contract_bets_activity_feed on contract_bets (is_ante
 create index if not exists contract_bets_created_time on contract_bets (contract_id, created_time desc);
 
 /* serving "my trades on a contract" kind of queries */
-create index if not exists contract_bets_contract_user_id on contract_bets (
-  contract_id, user_id, created_time desc
-);
+create index if not exists contract_bets_contract_user_id on contract_bets (contract_id, user_id, created_time desc);
 
 /* serving the user bets API */
 create index if not exists contract_bets_user_id on contract_bets (user_id, created_time desc);
@@ -468,7 +488,8 @@ create table if not exists
     comment_id text not null,
     data jsonb not null,
     fs_updated_time timestamp not null,
-    primary key (contract_id, comment_id)
+    primary key (contract_id, comment_id),
+    visibility text,
   );
 
 alter table contract_comments enable row level security;
@@ -480,6 +501,9 @@ select
   using (true);
 
 create index if not exists contract_comments_data_gin on contract_comments using GIN (data);
+CREATE INDEX contract_comments_contract_id_idx ON contract_comments (contract_id);
+CREATE INDEX contract_comments_data_likes_idx ON contract_comments (((data -> 'likes')::numeric));
+CREATE INDEX contract_comments_data_created_time_idx ON contract_comments (((data ->> 'createdTime')::bigint));
 
 alter table contract_comments
 cluster on contract_comments_pkey;
@@ -656,6 +680,10 @@ create table if not exists
   posts (
     id text not null primary key,
     data jsonb not null,
+    visibility text,
+    group_id text,
+    creator_id text,
+    created_time timestamptz,
     fs_updated_time timestamp not null
   );
 
@@ -678,6 +706,7 @@ create table if not exists
     comment_id text not null,
     data jsonb not null,
     fs_updated_time timestamp not null,
+    visibility text,
     primary key (post_id, comment_id)
   );
 
@@ -766,7 +795,8 @@ create table if not exists
     user_id text not null primary key,
     created_at timestamp not null default now(),
     interest_embedding vector (1536) not null,
-    pre_signup_interest_embedding vector (1536)
+    pre_signup_interest_embedding vector (1536),
+    card_view_embedding vector (1536)
   );
 
 alter table user_embeddings enable row level security;

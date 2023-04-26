@@ -1,24 +1,8 @@
--- Get the dot product of two vectors stored as rows in two tables.
-create
-or replace function dot (
-  urf user_recommendation_features,
-  crf contract_recommendation_features
-) returns real immutable parallel safe language sql as $$
-select round(
-    (
-      urf.f0 * crf.f0 + urf.f1 * crf.f1 + urf.f2 * crf.f2 + urf.f3 * crf.f3 + urf.f4 * crf.f4
-    ) * 10000
-  ) / 10000;
+create or replace function jsonb_array_to_text_array(_js jsonb)
+  returns text[]
+  language sql immutable strict parallel safe as $$
+select array(select jsonb_array_elements_text(_js))
 $$;
-
-create
-or replace function calculate_distance (
-  row1 contract_recommendation_features,
-  row2 contract_recommendation_features
-) returns float language sql immutable parallel safe as $$
-select sqrt(
-    (row1.f0 - row2.f0) ^ 2 + (row1.f1 - row2.f1) ^ 2 + (row1.f2 - row2.f2) ^ 2 + (row1.f3 - row2.f3) ^ 2 + (row1.f4 - row2.f4) ^ 2
-  ) $$;
 
 create
 or replace function recently_liked_contract_counts (since bigint) returns table (contract_id text, n int) immutable parallel safe language sql as $$
@@ -28,138 +12,6 @@ from user_reactions
 where data->>'contentType' = 'contract'
   and data->>'createdTime' > since::text
 group by contract_id $$;
-
--- Use cached tables of user and contract features to computed the top scoring
--- markets for a user.
-create
-or replace function get_recommended_contract_scores (uid text) returns table (contract_id text, score real) immutable parallel safe language sql as $$
-select crf.contract_id,
-  dot(urf, crf) as score
-from user_recommendation_features as urf
-  cross join contract_recommendation_features as crf
-where user_id = uid
-order by score desc $$;
-
-create
-or replace function get_recommended_contract_scores_unseen (uid text) returns table (contract_id text, score real) immutable parallel safe language sql as $$
-select crf.contract_id,
-  coalesce(dot(urf, crf) * crf.freshness_score, 0.0) as score
-from user_recommendation_features as urf
-  cross join contract_recommendation_features as crf
-where user_id = uid -- That has not been viewed.
-  and not exists (
-    select 1
-    from user_events
-    where user_events.user_id = uid
-      and user_events.data->>'name' = 'view market'
-      and user_events.data->>'contractId' = crf.contract_id
-  ) -- That has not been swiped on.
-  and not exists (
-    select 1
-    from user_seen_markets
-    where user_seen_markets.user_id = uid
-      and user_seen_markets.contract_id = crf.contract_id
-  ) -- That has not been viewed as a card recently.
-  and not exists (
-    select 1
-    from user_events
-    where user_events.user_id = uid
-      and user_events.data->>'name' = 'view market card'
-      and user_events.data->>'contractId' = crf.contract_id
-      and (user_events.data->'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
-  )
-order by score desc $$;
-
-create
-or replace function get_recommended_contracts_by_score_excluding (uid text, count int, excluded_contract_ids text[]) returns table (data jsonb, score real) immutable parallel safe language sql as $$
-select data,
-  score
-from get_recommended_contract_scores_unseen(uid)
-  left join contracts on contracts.id = contract_id
-where is_valid_contract(contracts)
-  and outcome_type = 'BINARY' -- Not in the list of contracts to exclude.
-  and not exists (
-    select 1
-    from unnest(excluded_contract_ids) as w
-    where w = contract_id
-  )
-limit count $$;
-
-create
-or replace function get_recommended_contract_set (uid text, n int, excluded_contract_ids text[]) returns table (data jsonb, score real) immutable parallel safe language sql as $$ with recommendation_scores as materialized (
-    select contract_id,
-      score
-    from get_recommended_contract_scores_unseen(uid)
-    order by score desc
-  ),
-  recommended_contracts as not materialized (
-    select data,
-      created_time,
-      score
-    from recommendation_scores
-      left join contracts on contracts.id = contract_id
-    where is_valid_contract(contracts)
-      and outcome_type = 'BINARY'
-      and not exists (
-        select 1
-        from unnest(excluded_contract_ids) as w
-        where w = contract_id
-      )
-    order by score desc
-  ),
-  new_contracts as (
-    select data,
-      score
-    from recommended_contracts
-    where created_time > now() - interval '1 day'
-    order by score desc
-    limit floor(n / 3)
-  ), trending_contracts as (
-    select data,
-      score
-    from recommended_contracts
-    where created_time < now() - interval '1 day'
-    order by score desc
-    limit n - (
-        select count(*)
-        from new_contracts
-      )
-  )
-select data,
-  score
-from new_contracts
-union all
-select data,
-  score
-from trending_contracts
-order by score desc $$;
-
-create
-or replace function get_recommended_contracts (uid text, n int, excluded_contract_ids text[]) returns setof jsonb language plpgsql as $$ begin create temp table your_recs on commit drop as (
-    select *
-    from get_recommended_contract_set(uid, n, excluded_contract_ids)
-  );
-if (
-  select count(*)
-  from your_recs
-) = n then return query
-select data
-from your_recs;
-else -- Default recommendations from this particular user if none for you.
-return query (
-  select data
-  from your_recs
-  union all
-  select data
-  from get_recommended_contract_set(
-      'Nm2QY6MmdnOu1HJUBcoG2OV2dQF2',
-      n,
-      excluded_contract_ids
-    )
-  limit n
-);
-end if;
-end $$;
 
 create
 or replace function get_recommended_contracts_embeddings (uid text, n int, excluded_contract_ids text[]) returns table (
@@ -219,7 +71,7 @@ from get_recommended_contracts_embeddings_from(
     ),
     n,
     excluded_contract_ids,
-    0.10
+    0.1
   ) $$;
 
 create
@@ -244,34 +96,29 @@ or replace function get_recommended_contracts_embeddings_from (
       ) / 2000.0 as relative_dist,
       lpc.popularity_score,
       lpc.created_time,
-      lpc.close_time
+      lpc.close_time,
+      jsonb_array_to_text_array(lpc.data->'groupSlugs') as group_slugs
     from contract_embeddings as ce
       join listed_open_contracts lpc on lpc.id = contract_id
     where not exists (
         select 1
         from unnest(excluded_contract_ids) as w
         where w = contract_id
-      ) -- That has not been viewed.
-      and not exists (
-        select 1
-        from user_events
-        where user_events.user_id = uid
-          and user_events.data->>'name' = 'view market'
-          and user_events.data->>'contractId' = contract_id
-      ) -- That has not been swiped on.
+      ) -- That has not been swiped on within 2 weeks.
       and not exists(
         select 1
         from user_seen_markets
         where user_seen_markets.user_id = uid
           and user_seen_markets.contract_id = ce.contract_id
-      ) -- That has not been viewed as a card recently.
+          and (user_seen_markets.data->>'createdTime')::bigint > ts_to_millis(now() - interval '2 weeks')
+      ) -- That has not been viewed as a card in the last day.
       and not exists(
         select 1
         from user_events
         where user_events.user_id = uid
-          and user_events.data->>'name' = 'view market card'
-          and user_events.data->>'contractId' = contract_id
-          and (user_events.data->'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
+          and user_events.name = 'view market card'
+          and user_events.contract_id = ce.contract_id
+          and user_events.ts > now() - interval '2 days'
       )
     order by p_embedding <=> ce.embedding -- Find many that are close to your interests
       -- so that among them we can filter for new, closing soon, and trending.
@@ -281,13 +128,24 @@ or replace function get_recommended_contracts_embeddings_from (
       (
         case
           when close_time <= NOW() + interval '1 day' then 1
-          when close_time <= NOW() + interval '1 week' then.9
+          when close_time <= NOW() + interval '1 week' then 0.9
           when close_time <= NOW() + interval '1 month' then 0.75
           when close_time <= NOW() + interval '3 months' then 0.5
           when close_time <= NOW() + interval '1 year' then 0.33
           else 0.25
         end
-      ) * log(coalesce(popularity_score, 0) + 2) / (relative_dist + 0.1) as score
+      ) * (log(coalesce(popularity_score, 0) + 2) / (relative_dist + 0.1))
+        * (
+        case
+          when
+            'gambling' = ANY(group_slugs) OR
+            'whale-watching' = ANY(group_slugs) OR
+            'selfresolving' = ANY(group_slugs)
+          then 0.25
+          else 1
+        end
+      )
+        as score
     from available_contracts_unscored
   ),
   new_contracts as (
@@ -300,7 +158,7 @@ or replace function get_recommended_contracts_embeddings_from (
       and close_time > (now() + interval '1 day')
       and relative_dist < max_dist
     order by score desc
-    limit n / 5
+    limit n / 6
   ), closing_soon_contracts as (
     select *,
       row_number() over (
@@ -310,7 +168,7 @@ or replace function get_recommended_contracts_embeddings_from (
     where close_time < (now() + interval '1 day')
       and relative_dist < max_dist
     order by score desc
-    limit n / 5
+    limit n / 6
   ), combined_new_closing_soon as (
     select *,
       1 as result_id
@@ -388,6 +246,30 @@ or replace function get_recommended_contracts_embeddings_from (
     order by row_num,
       result_id
   ),
+  excluded_contracts as (
+    select contract_id
+    from combined_trending
+    union all
+    select contract_id
+    from combined_new_closing_soon
+    union all
+    select unnest(excluded_contract_ids) as contract_id
+  ),
+  contracts_with_liked_comments as (
+    select
+      ac.*,
+      3 as result_id,
+      row_number() over (
+        order by score desc
+        ) as row_num
+    from get_contracts_with_unseen_liked_comments(
+   array(select contract_id from available_contracts),
+   array(select contract_id from excluded_contracts),
+   uid,
+   n / 6
+     ) as cwc
+   join available_contracts ac on ac.contract_id = cwc.contract_id
+  ),
   combined_results as (
     select *,
       1 as result_id2,
@@ -404,6 +286,15 @@ or replace function get_recommended_contracts_embeddings_from (
           result_id
       ) as row_num2
     from combined_new_closing_soon
+    union all
+    select
+      *,
+      3 as result_id2,
+      row_number() over (
+        order by row_num,
+          result_id
+        ) as row_num2
+    from contracts_with_liked_comments
     order by row_num2,
       result_id2
   )
@@ -412,7 +303,8 @@ select data,
   relative_dist,
   combined_results.popularity_score
 from combined_results
-  join contracts on contracts.id = combined_results.contract_id $$;
+  join contracts on contracts.id = combined_results.contract_id
+$$;
 
 create
 or replace function get_cpmm_pool_prob (pool jsonb, p numeric) returns numeric language plpgsql immutable parallel safe as $$
@@ -462,30 +354,6 @@ or replace function is_valid_contract (ct contracts) returns boolean stable para
 select ct.resolution_time is null
   and ct.visibility = 'public'
   and ct.close_time > now() + interval '10 minutes' $$ language sql;
-
-create
-or replace function get_related_contract_ids (source_id text) returns table (contract_id text, distance float) immutable parallel safe language sql as $$ with target_contract as (
-    select *
-    from contract_recommendation_features
-    where contract_id = source_id
-  )
-select crf.contract_id,
-  calculate_distance(crf, target_contract) as distance
-from contract_recommendation_features as crf,
-  target_contract
-where crf.contract_id != target_contract.contract_id
-order by distance $$;
-
-create
-or replace function get_related_contracts (cid text, lim int, start int) returns JSONB[] immutable parallel safe language sql as $$
-select array_agg(data)
-from (
-    select data
-    from get_related_contract_ids(cid)
-      left join contracts on contracts.id = contract_id
-    where is_valid_contract(contracts)
-    limit lim offset start
-  ) as rel_contracts $$;
 
 create
 or replace function search_contracts_by_group_slugs (group_slugs text[], lim int, start int) returns jsonb[] immutable parallel safe language sql as $$
@@ -779,3 +647,111 @@ select nullif(
     ''
   )::text;
 $$;
+
+
+CREATE OR REPLACE FUNCTION get_reply_chain_comments_matching_contracts(contract_ids TEXT[], past_time_ms BIGINT)
+    RETURNS TABLE (
+                      id text,
+                      contract_id text,
+                      data JSONB
+                  ) AS $$
+BEGIN
+    RETURN QUERY
+        WITH matching_comments AS (
+            SELECT
+                (c1.data ->> 'id') AS id,
+                c1.contract_id,
+                c1.data
+            FROM
+                contract_comments c1
+            WHERE
+                    c1.contract_id = ANY(contract_ids)
+              AND (c1.data -> 'createdTime')::BIGINT >= past_time_ms
+        ),
+             reply_chain_comments AS (
+                 SELECT
+                     (c2.data ->> 'id') AS id,
+                     c2.contract_id,
+                     c2.data
+                 FROM
+                     contract_comments c2
+                         JOIN matching_comments mc
+                              ON c2.contract_id = mc.contract_id
+                                  AND c2.data ->> 'replyToCommentId' = mc.data ->> 'replyToCommentId'
+                                  AND c2.data->>'id' != mc.id
+             ),
+             parent_comments AS (
+                 SELECT
+                     (c3.data ->> 'id') AS id,
+                     c3.contract_id,
+                     c3.data
+                 FROM
+                     contract_comments c3
+                         JOIN matching_comments mc
+                              ON c3.contract_id = mc.contract_id
+                                  AND c3.data ->> 'id' = mc.data ->> 'replyToCommentId'
+             )
+        SELECT * FROM matching_comments
+        UNION ALL
+        SELECT * FROM parent_comments
+        UNION ALL
+        SELECT * FROM reply_chain_comments;
+END;
+$$ LANGUAGE plpgsql;
+
+
+create or replace function get_contracts_with_unseen_liked_comments(
+  available_contract_ids text[],
+  excluded_contract_ids text[],
+  current_user_id text,
+  limit_count integer
+)
+  returns table (
+                  contract_id text,
+                  comment_id text,
+                  user_id text,
+                  data jsonb
+                ) as $$
+select
+  filtered_comments.contract_id,
+  filtered_comments.comment_id,
+  filtered_comments.user_id,
+  filtered_comments.data
+from (
+       select distinct on (comments.contract_id)
+         comments.contract_id,
+         comments.comment_id,
+         comments.user_id,
+         comments.data,
+         (comments.data->>'createdTime')::bigint as created_time
+       from
+         liked_sorted_comments comments
+       where
+           comments.contract_id = any (available_contract_ids) and
+           comments.contract_id <> all (excluded_contract_ids)
+         and
+         not (
+             exists (
+               select 1
+               from user_events ue
+               where
+                   ue.user_id = current_user_id and
+                     ue.name = 'view comment thread' and
+                     ue.data->>'commentId' = comments.comment_id
+             )
+             or exists (
+             select 1
+             from user_events ue
+             where
+                 ue.user_id = current_user_id and
+                   ue.name = 'view comment thread' and
+                   ue.data->>'commentId' = comments.data->>'replyToCommentId'
+           )
+           )
+       order by
+         comments.contract_id,
+         created_time desc) as filtered_comments
+order by
+  filtered_comments.created_time desc
+limit limit_count;
+$$ language sql;

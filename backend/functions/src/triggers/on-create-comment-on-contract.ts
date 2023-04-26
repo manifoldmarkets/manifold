@@ -129,13 +129,14 @@ export const onCreateCommentOnContract = functions
         priorUserComments,
         comment.answerOutcome
       )
-      await change.ref.update(
-        removeUndefinedProps({
-          betId: bet.id,
-          betOutcome: bet.outcome,
-          betAmount: bet.amount,
-        })
-      )
+      if (bet)
+        await change.ref.update(
+          removeUndefinedProps({
+            betId: bet.id,
+            betOutcome: bet.outcome,
+            betAmount: bet.amount,
+          })
+        )
     }
 
     const position = getLargestPosition(contract, priorUserBets)
@@ -195,7 +196,7 @@ const getReplyInfo = async (comment: ContractComment, contract: Contract) => {
   }
 }
 
-const handleCommentNotifications = async (
+export const handleCommentNotifications = async (
   comment: ContractComment,
   contract: Contract,
   commentCreator: User,

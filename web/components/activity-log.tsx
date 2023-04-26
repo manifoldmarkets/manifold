@@ -8,7 +8,7 @@ import { ReactNode, memo, useEffect } from 'react'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
 import {
-  useContracts,
+  usePublicContracts,
   useRealtimeContracts,
 } from 'web/hooks/use-contract-supabase'
 import {
@@ -100,7 +100,7 @@ export function ActivityLog(props: {
       c.visibility === 'public'
   )
 
-  const allContracts = useContracts(
+  const allContracts = usePublicContracts(
     uniq([
       ...bets.map((b) => b.contractId),
       ...comments.map((c) => c.contractId),

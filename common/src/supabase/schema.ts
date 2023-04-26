@@ -106,17 +106,17 @@ export interface Database {
         Row: {
           contract_id: string
           created_at: string
-          embedding: unknown
+          embedding: number[]
         }
         Insert: {
           contract_id: string
           created_at?: string
-          embedding: unknown
+          embedding: number[]
         }
         Update: {
           contract_id?: string
           created_at?: string
-          embedding?: unknown
+          embedding?: number[]
         }
       }
       contract_follows: {
@@ -473,17 +473,17 @@ export interface Database {
       topic_embeddings: {
         Row: {
           created_at: string
-          embedding: unknown
+          embedding: string
           topic: string
         }
         Insert: {
           created_at?: string
-          embedding: unknown
+          embedding: string
           topic: string
         }
         Update: {
           created_at?: string
-          embedding?: unknown
+          embedding?: string
           topic?: string
         }
       }
@@ -526,21 +526,24 @@ export interface Database {
       }
       user_embeddings: {
         Row: {
+          card_view_embedding: string | null
           created_at: string
-          interest_embedding: unknown
-          pre_signup_interest_embedding: unknown | null
+          interest_embedding: string
+          pre_signup_interest_embedding: string | null
           user_id: string
         }
         Insert: {
+          card_view_embedding?: string | null
           created_at?: string
-          interest_embedding: unknown
-          pre_signup_interest_embedding?: unknown | null
+          interest_embedding: string
+          pre_signup_interest_embedding?: string | null
           user_id: string
         }
         Update: {
+          card_view_embedding?: string | null
           created_at?: string
-          interest_embedding?: unknown
-          pre_signup_interest_embedding?: unknown | null
+          interest_embedding?: string
+          pre_signup_interest_embedding?: string | null
           user_id?: string
         }
       }
@@ -719,19 +722,19 @@ export interface Database {
       user_topics: {
         Row: {
           created_at: string
-          topic_embedding: unknown
+          topic_embedding: string
           topics: string[]
           user_id: string
         }
         Insert: {
           created_at?: string
-          topic_embedding: unknown
+          topic_embedding: string
           topics: string[]
           user_id: string
         }
         Update: {
           created_at?: string
-          topic_embedding?: unknown
+          topic_embedding?: string
           topics?: string[]
           user_id?: string
         }
@@ -757,22 +760,55 @@ export interface Database {
     Views: {
       contract_bets_rbac: {
         Row: {
+          amount: number | null
           bet_id: string | null
           contract_id: string | null
+          created_time: string | null
           data: Json | null
           fs_updated_time: string | null
+          is_ante: boolean | null
+          is_challenge: boolean | null
+          is_redemption: boolean | null
+          outcome: string | null
+          prob_after: number | null
+          prob_before: number | null
+          shares: number | null
+          user_id: string | null
+          visibility: string | null
         }
         Insert: {
+          amount?: number | null
           bet_id?: string | null
           contract_id?: string | null
+          created_time?: string | null
           data?: Json | null
           fs_updated_time?: string | null
+          is_ante?: boolean | null
+          is_challenge?: boolean | null
+          is_redemption?: boolean | null
+          outcome?: string | null
+          prob_after?: number | null
+          prob_before?: number | null
+          shares?: number | null
+          user_id?: string | null
+          visibility?: string | null
         }
         Update: {
+          amount?: number | null
           bet_id?: string | null
           contract_id?: string | null
+          created_time?: string | null
           data?: Json | null
           fs_updated_time?: string | null
+          is_ante?: boolean | null
+          is_challenge?: boolean | null
+          is_redemption?: boolean | null
+          outcome?: string | null
+          prob_after?: number | null
+          prob_before?: number | null
+          shares?: number | null
+          user_id?: string | null
+          visibility?: string | null
         }
       }
       contract_distance: {
@@ -958,6 +994,59 @@ export interface Database {
           contract_id: string | null
           data: Json | null
           fs_updated_time: string | null
+        }
+      }
+      public_contract_bets: {
+        Row: {
+          amount: number | null
+          bet_id: string | null
+          contract_id: string | null
+          created_time: string | null
+          data: Json | null
+          fs_updated_time: string | null
+          is_ante: boolean | null
+          is_challenge: boolean | null
+          is_redemption: boolean | null
+          outcome: string | null
+          prob_after: number | null
+          prob_before: number | null
+          shares: number | null
+          user_id: string | null
+          visibility: string | null
+        }
+        Insert: {
+          amount?: number | null
+          bet_id?: string | null
+          contract_id?: string | null
+          created_time?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
+          is_ante?: boolean | null
+          is_challenge?: boolean | null
+          is_redemption?: boolean | null
+          outcome?: string | null
+          prob_after?: number | null
+          prob_before?: number | null
+          shares?: number | null
+          user_id?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          amount?: number | null
+          bet_id?: string | null
+          contract_id?: string | null
+          created_time?: string | null
+          data?: Json | null
+          fs_updated_time?: string | null
+          is_ante?: boolean | null
+          is_challenge?: boolean | null
+          is_redemption?: boolean | null
+          outcome?: string | null
+          prob_after?: number | null
+          prob_before?: number | null
+          shares?: number | null
+          user_id?: string | null
+          visibility?: string | null
         }
       }
       public_contracts: {
@@ -1186,16 +1275,16 @@ export interface Database {
           data: Json
         }[]
       }
-      calculate_distance: {
-        Args: {
-          row1: unknown
-          row2: unknown
-        }
-        Returns: number
-      }
       can_access_private_contract: {
         Args: {
           this_contract_id: string
+          this_member_id: string
+        }
+        Returns: boolean
+      }
+      can_access_private_post: {
+        Args: {
+          this_post_id: string
           this_member_id: string
         }
         Returns: boolean
@@ -1223,13 +1312,6 @@ export interface Database {
           similarity: number
           data: Json
         }[]
-      }
-      dot: {
-        Args: {
-          urf: unknown
-          crf: unknown
-        }
-        Returns: number
       }
       firebase_uid: {
         Args: Record<PropertyKey, never>
@@ -1328,7 +1410,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database['public']['CompositeTypes']['table_spec']
+        Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_open_limit_bets_with_contracts: {
         Args: {
@@ -1358,66 +1440,10 @@ export interface Database {
         }
         Returns: number
       }
-      get_recommended_contract_scores: {
-        Args: {
-          uid: string
-        }
-        Returns: {
-          contract_id: string
-          score: number
-        }[]
-      }
-      get_recommended_contract_scores_unseen: {
-        Args: {
-          uid: string
-        }
-        Returns: {
-          contract_id: string
-          score: number
-        }[]
-      }
-      get_recommended_contract_set:
-        | {
-            Args: {
-              uid: string
-              n: number
-            }
-            Returns: Json[]
-          }
-        | {
-            Args: {
-              uid: string
-              n: number
-              excluded_contract_ids: string[]
-            }
-            Returns: {
-              data: Json
-              score: number
-            }[]
-          }
-      get_recommended_contracts: {
-        Args: {
-          uid: string
-          n: number
-          excluded_contract_ids: string[]
-        }
-        Returns: Json[]
-      }
       get_recommended_contracts_by_score: {
         Args: {
           uid: string
           count: number
-        }
-        Returns: {
-          data: Json
-          score: number
-        }[]
-      }
-      get_recommended_contracts_by_score_excluding: {
-        Args: {
-          uid: string
-          count: number
-          excluded_contract_ids: string[]
         }
         Returns: {
           data: Json
@@ -1523,15 +1549,6 @@ export interface Database {
           popularity_score: number
         }[]
       }
-      get_related_contract_ids: {
-        Args: {
-          source_id: string
-        }
-        Returns: {
-          contract_id: string
-          distance: number
-        }[]
-      }
       get_related_contracts: {
         Args: {
           cid: string
@@ -1540,11 +1557,34 @@ export interface Database {
         }
         Returns: unknown
       }
+      get_reply_chain_comments_matching_contracts: {
+        Args: {
+          contract_ids: string[]
+          past_time_ms: number
+        }
+        Returns: {
+          id: string
+          contract_id: string
+          data: Json
+        }[]
+      }
       get_time: {
         Args: Record<PropertyKey, never>
         Returns: number
       }
       get_user_bets_from_resolved_contracts: {
+        Args: {
+          uid: string
+          count: number
+          start: number
+        }
+        Returns: {
+          contract_id: string
+          bets: Json[]
+          contract: Json
+        }[]
+      }
+      get_user_bets_from_resolved_contracts_rbac: {
         Args: {
           uid: string
           count: number
@@ -1614,36 +1654,43 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       install_available_extensions_and_test: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_group_member: {
+        Args: {
+          this_group_id: string
+          this_user_id: string
+        }
         Returns: boolean
       }
       is_valid_contract: {
@@ -1654,7 +1701,7 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -1704,7 +1751,7 @@ export interface Database {
       }
       search_contract_embeddings: {
         Args: {
-          query_embedding: unknown
+          query_embedding: string
           similarity_threshold: number
           match_count: number
         }
@@ -1759,7 +1806,7 @@ export interface Database {
       }
       set_limit: {
         Args: {
-          '': number
+          "": number
         }
         Returns: number
       }
@@ -1769,7 +1816,7 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
@@ -1806,7 +1853,7 @@ export interface Database {
       }
       to_jsonb: {
         Args: {
-          '': Json
+          "": Json
         }
         Returns: Json
       }
@@ -1825,37 +1872,37 @@ export interface Database {
           }
       vector_avg: {
         Args: {
-          '': number[]
+          "": number[]
         }
-        Returns: unknown
+        Returns: string
       }
       vector_dims: {
         Args: {
-          '': unknown
+          "": string
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          '': unknown
+          "": string
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          '': unknown
+          "": string
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          '': unknown
+          "": string
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          '': unknown[]
+          "": unknown[]
         }
         Returns: number
       }

@@ -1,10 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { Comment, listAllComments } from 'web/lib/firebase/comments'
-import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { ApiError, ValidationError } from './_types'
 import { z } from 'zod'
 import { validate } from './_validate'
+import { db } from 'web/lib/supabase/db'
 
 const queryParams = z
   .object({
@@ -24,7 +25,7 @@ const getContractId = async (params: z.infer<typeof queryParams>) => {
     return params.contractId
   }
   if (params.contractSlug) {
-    const contract = await getContractFromSlug(params.contractSlug)
+    const contract = await getContractFromSlug(params.contractSlug, db)
     if (contract) {
       return contract.id
     } else {
@@ -49,13 +50,19 @@ export default async function handler(
     console.error(`Unknown error during validation: ${e}`)
     return res.status(500).json({ error: 'Unknown error during validation' })
   }
+  try {
+    const contractId = await getContractId(params)
+    if (!contractId) {
+      return res.status(400).json({ error: 'You must specify a contract.' })
+    }
+    const comments = await listAllComments(contractId)
 
-  const contractId = await getContractId(params)
-  if (!contractId) {
-    return res.status(400).json({ error: 'You must specify a contract.' })
+    res.setHeader('Cache-Control', 'max-age=15, public')
+    return res.status(200).json(comments)
+  } catch (e) {
+    console.error(`Error while fetching comments: ${e}`)
+    return res
+      .status(500)
+      .json({ error: 'Error while fetching comments: ' + e })
   }
-  const comments = await listAllComments(contractId)
-
-  res.setHeader('Cache-Control', 'max-age=15, public')
-  return res.status(200).json(comments)
 }

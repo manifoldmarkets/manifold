@@ -2,20 +2,20 @@ import { AnyContractType, Contract } from 'common/contract'
 import { useEffect, useState } from 'react'
 import {
   getContractFromSlug,
-  getContractIds,
-  getContracts,
+  getPublicContractIds,
+  getPublicContracts,
 } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { ContractParams } from 'web/pages/[username]/[contractSlug]'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { getContractParams } from 'web/lib/contracts'
 
-export const useContracts = (contractIds: string[]) => {
+export const usePublicContracts = (contractIds: string[]) => {
   const [contracts, setContracts] = useState<Contract[]>([])
 
   useEffectCheckEquality(() => {
     if (contractIds) {
-      getContractIds(contractIds).then((result) => {
+      getPublicContractIds(contractIds).then((result) => {
         setContracts(result)
       })
     }
@@ -54,7 +54,7 @@ export function useRealtimeContracts(limit: number) {
   const [contracts, setContracts] = useState<Contract[]>([])
 
   useEffect(() => {
-    getContracts({ limit, order: 'desc' })
+    getPublicContracts({ limit, order: 'desc' })
       .then((result) => setContracts(result))
       .catch((e) => console.log(e))
   }, [])

@@ -8,7 +8,7 @@ export async function getAllComments(contractId: string, maxCount: number) {
       .from('contract_comments')
       .select('data')
       .eq('contract_id', contractId)
-      .order('data->>createdTime', { ascending: false } as any)
+      .order('created_time', { ascending: false } as any)
       .limit(maxCount)
   )
   return comments.map((comment) => comment.data as ContractComment)
@@ -17,7 +17,7 @@ export async function getAllComments(contractId: string, maxCount: number) {
 export async function getComments(limit: number) {
   let q = selectJson(db, 'contract_comments')
   q = q
-    .order('data->>createdTime', {
+    .order('created_time', {
       ascending: false,
     } as any)
     .limit(limit)
@@ -34,8 +34,8 @@ export async function getUserComments(
     db
       .from('contract_comments')
       .select('data')
-      .contains('data', { userId: userId })
-      .order('data->>createdTime', { ascending: false } as any)
+      .eq('user_id', userId)
+      .order('created_time', { ascending: false } as any)
       .range(page * limit, page * limit + limit - 1)
   )
   if (data) {
@@ -52,7 +52,7 @@ export async function getNumUserComments(userId: string) {
     db
       .from('contract_comments')
       .select('*', { head: true, count: 'exact' })
-      .contains('data', { userId: userId })
+      .eq('user_id', userId)
   )
   return count as number
 }

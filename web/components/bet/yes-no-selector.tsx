@@ -118,7 +118,7 @@ export function ChooseCancelSelector(props: {
         onClick={() => onSelect('CHOOSE')}
         className={btnClassName}
       >
-        Choose an answer
+        Choose answer
       </Button>
 
       <Button

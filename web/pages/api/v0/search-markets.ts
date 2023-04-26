@@ -13,16 +13,9 @@ export default async function handler(
   const { terms } = req.query
   const keywords = terms as string
   const { data: contracts } = (await searchContract({
-    state: {
-      contracts: undefined,
-      fuzzyContractOffset: 0,
-      shouldLoadMore: false,
-      showTime: null,
-    },
     query: keywords,
     filter: 'all',
     sort: 'most-popular',
-    offset: 0,
     limit: 100,
   })) as { data: Contract[] }
   res.status(200).json(contracts.map((c) => toFullMarket(c)))

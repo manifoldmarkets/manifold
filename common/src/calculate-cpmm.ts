@@ -115,8 +115,6 @@ export function calculateCpmmPurchase(
   return { shares, newPool, newP, fees }
 }
 
-// Note: there might be a closed form solution for this.
-// If so, feel free to switch out this implementation.
 export function calculateCpmmAmountToProb(
   state: CpmmState,
   prob: number,
@@ -125,21 +123,13 @@ export function calculateCpmmAmountToProb(
   if (prob <= 0 || prob >= 1 || isNaN(prob)) return Infinity
   if (outcome === 'NO') prob = 1 - prob
 
-  // First, find an upper bound that leads to a more extreme probability than prob.
-  let maxGuess = 10
-  let newProb = 0
-  do {
-    maxGuess *= 10
-    newProb = getCpmmOutcomeProbabilityAfterBet(state, outcome, maxGuess)
-  } while (newProb < prob)
-
-  // Then, binary search for the amount that gets closest to prob.
-  const amount = binarySearch(0, maxGuess, (amount) => {
-    const newProb = getCpmmOutcomeProbabilityAfterBet(state, outcome, amount)
-    return newProb - prob
-  })
-
-  return amount
+  const { pool, p } = state
+  const { YES: y, NO: n } = pool
+  const k = y ** p * n ** (1 - p)
+  return outcome === 'YES'
+    ? // https://www.wolframalpha.com/input?i=-1+%2B+t+-+((-1+%2B+p)+t+(k%2F(n+%2B+b))^(1%2Fp))%2Fp+solve+b
+      ((p * (prob - 1)) / ((p - 1) * prob)) ** (-p)*(k - n * ((p * (prob - 1)) / ((p - 1) * prob)) ** p)
+    : (((1 - p) * (prob - 1)) / ((-p) * prob)) ** (p-1)*(k - y * (((1 - p) * (prob - 1)) / ((-p) * prob)) ** (1 - p))
 }
 
 function calculateAmountToBuyShares(

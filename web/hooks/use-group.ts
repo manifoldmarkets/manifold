@@ -16,12 +16,11 @@ import {
 import { getUser } from 'web/lib/firebase/users'
 import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
-import { keyBy, uniq, uniqBy } from 'lodash'
+import { uniq } from 'lodash'
 import { listenForValues } from 'web/lib/firebase/utils'
 import { useQuery } from 'react-query'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { limit, query } from 'firebase/firestore'
-import { useTrendingContracts } from './use-contracts'
 import { storageStore, usePersistentState } from './use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useStoreItems } from './use-store'
@@ -65,22 +64,6 @@ export const useTopFollowedGroups = (count: number) => {
     query(topFollowedGroupsQuery, limit(count))
   )
   return result.data
-}
-
-export const useTrendingGroups = () => {
-  const topGroups = useTopFollowedGroups(200)
-  const groupsById = keyBy(topGroups, 'id')
-
-  const trendingContracts = useTrendingContracts(200)
-
-  const groupLinks = uniqBy(
-    (trendingContracts ?? []).map((c) => c.groupLinks ?? []).flat(),
-    (link) => link.groupId
-  )
-
-  return filterDefined(
-    groupLinks.map((link) => groupsById[link.groupId])
-  ).filter((group) => group.totalMembers >= 3)
 }
 
 export const useMemberGroups = (userId: string | null | undefined) => {

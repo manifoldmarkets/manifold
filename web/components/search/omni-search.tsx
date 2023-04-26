@@ -3,7 +3,7 @@ import { SparklesIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { useRouter } from 'next/router'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { useMemberGroupIds } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { useYourRecentContracts } from 'web/hooks/use-your-daily-changed-contracts'
@@ -11,15 +11,16 @@ import { searchContract } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { UserSearchResult, searchUsers } from 'web/lib/supabase/users'
-import { ContractStatusLabel } from '../contract/contracts-list-entry'
+import { ContractStatusLabel } from '../contract/contracts-table'
 import { JoinOrLeaveGroupButton } from '../groups/groups-button'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { PageData, defaultPages, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
-import { uniqBy } from 'lodash'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
-import { SiteLink } from 'web/components/widgets/site-link'
+import { debounce, startCase, uniqBy } from 'lodash'
+import { ChevronRightIcon } from '@heroicons/react/outline'
+import { SORTS, Sort } from '../supabase-search'
+import { searchMarketSorts } from './query-market-sorts'
 
 export interface Option {
   id: string
@@ -37,6 +38,17 @@ export const OmniSearch = (props: {
 
   const { setOpen } = useSearchContext() ?? {}
   const router = useRouter()
+
+  const [debouncedQuery, setDebouncedQuery] = useState(query)
+
+  const debouncedSearch = useCallback(
+    debounce((newQuery) => setDebouncedQuery(newQuery), 250),
+    []
+  )
+
+  useEffect(() => {
+    debouncedSearch(query)
+  }, [query])
 
   return (
     <Combobox
@@ -71,9 +83,13 @@ export const OmniSearch = (props: {
           />
           <Combobox.Options
             static
-            className="text-ink-700 flex flex-col overflow-y-auto px-2"
+            className="text-ink-700 flex flex-col overflow-y-auto px-1"
           >
-            {query ? <Results query={query} /> : <DefaultResults />}
+            {debouncedQuery ? (
+              <Results query={debouncedQuery} />
+            ) : (
+              <DefaultResults />
+            )}
           </Combobox.Options>
         </>
       )}
@@ -112,13 +128,16 @@ const Results = (props: { query: string }) => {
   const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
   const marketHitLimit = !prefix ? 20 : prefix === '%' ? 25 : 0
 
-  const [{ pageHits, userHits, groupHits, marketHits }, setSearchResults] =
-    useState({
-      pageHits: [] as PageData[],
-      userHits: [] as UserSearchResult[],
-      groupHits: [] as SearchGroupInfo[],
-      marketHits: [] as Contract[],
-    })
+  const [
+    { pageHits, userHits, groupHits, sortHit, marketHits },
+    setSearchResults,
+  ] = useState({
+    pageHits: [] as PageData[],
+    userHits: [] as UserSearchResult[],
+    groupHits: [] as SearchGroupInfo[],
+    sortHit: null as { sort: Sort; markets: Contract[] } | null,
+    marketHits: [] as Contract[],
+  })
   const [loading, setLoading] = useState(false)
 
   // Use nonce to make sure only latest result gets used.
@@ -129,23 +148,37 @@ const Results = (props: { query: string }) => {
     const thisNonce = nonce.current
     setLoading(true)
 
-    Promise.all([
+    Promise.allSettled([
       searchUsers(search, userHitLimit),
       searchGroups(search, groupHitLimit),
       searchContract({
-        state: {
-          contracts: undefined,
-          fuzzyContractOffset: 0,
-          shouldLoadMore: false,
-          showTime: null,
-        },
         query: search,
         filter: 'all',
-        sort: 'most-popular',
-        offset: 0,
+        sort: 'relevance',
         limit: marketHitLimit,
       }),
-    ]).then(([userHits, groupHits, { data: marketHits }]) => {
+      (async () => {
+        const sortHits = prefix ? [] : searchMarketSorts(search)
+        const sort = sortHits[0]
+        if (sortHits.length) {
+          const markets = (
+            await searchContract({
+              query: '',
+              filter: 'all',
+              sort: sort,
+              limit: 3,
+            })
+          ).data
+          return { sort, markets }
+        }
+        return null
+      })(),
+    ]).then(([u, g, m, s]) => {
+      const userHits = u.status === 'fulfilled' ? u.value : []
+      const groupHits = g.status === 'fulfilled' ? g.value : []
+      const marketHits = m.status === 'fulfilled' ? m.value.data : []
+      const sortHit = s.status === 'fulfilled' ? s.value : null
+
       if (thisNonce === nonce.current) {
         const pageHits = prefix ? [] : searchPages(search, 2)
         const uniqueMarketHits = uniqBy<Contract>(marketHits, 'id')
@@ -153,6 +186,7 @@ const Results = (props: { query: string }) => {
           pageHits,
           userHits,
           groupHits,
+          sortHit,
           marketHits: uniqueMarketHits,
         })
         setLoading(false)
@@ -182,8 +216,8 @@ const Results = (props: { query: string }) => {
     <>
       <PageResults pages={pageHits} />
       <UserResults users={userHits} search={search} />
-
       <GroupResults groups={groupHits} search={search} />
+      {sortHit && <MarketSortResults {...sortHit} />}
       <MarketResults markets={marketHits} search={search} />
     </>
   )
@@ -192,19 +226,28 @@ const Results = (props: { query: string }) => {
 const SectionTitle = (props: { children: ReactNode; link?: string }) => {
   const { children, link } = props
   return (
-    <h2 className="text-ink-500 mt-2 mb-1 px-1">
-      <SiteLink href={link}>
-        {children}
-        {link && (
-          <ExternalLinkIcon className="ml-1 inline h-4 w-4 align-middle" />
-        )}
-      </SiteLink>
+    <h2 className="text-ink-800 mt-2 font-semibold first:mt-0">
+      {link ? (
+        <ResultOption
+          value={{ id: link, slug: link }}
+          className="!mb-0 flex items-center justify-between !px-2 !py-1"
+        >
+          {children}
+          <ChevronRightIcon className="h-5 w-5" />
+        </ResultOption>
+      ) : (
+        <div className="px-2 py-1">{children}</div>
+      )}
     </h2>
   )
 }
 
-const ResultOption = (props: { value: Option; children: ReactNode }) => {
-  const { value, children } = props
+const ResultOption = (props: {
+  value: Option
+  children: ReactNode
+  className?: string
+}) => {
+  const { value, children, className } = props
 
   return (
     <Combobox.Option value={value}>
@@ -218,7 +261,8 @@ const ResultOption = (props: { value: Option; children: ReactNode }) => {
           <a
             className={clsx(
               'mb-1 block cursor-pointer select-none rounded-md px-3 py-2',
-              active && 'bg-primary-100 text-primary-800'
+              active && 'bg-primary-100 text-primary-800',
+              className
             )}
             onClick={(e) => {
               if (e.ctrlKey || e.shiftKey || e.metaKey || e.button === 1) {
@@ -249,27 +293,34 @@ const MarketResults = (props: { markets: Contract[]; search?: string }) => {
       <SectionTitle link={marketSearchSlug(props.search ?? '')}>
         Markets
       </SectionTitle>
-      {props.markets.map((market) => (
-        <ResultOption
-          value={{
-            id: market.id,
-            slug: `/${market.creatorUsername}/${market.slug}`,
-          }}
-        >
-          <div className="flex gap-2">
-            <span className="grow">{market.question}</span>
-            <span className="font-bold">
-              <ContractStatusLabel contract={market} />
-            </span>
-            <Avatar
-              size="xs"
-              username={market.creatorUsername}
-              avatarUrl={market.creatorAvatarUrl}
-            />
-          </div>
-        </ResultOption>
+      {markets.map((market) => (
+        <MarketResult key={market.id} market={market} />
       ))}
     </>
+  )
+}
+
+const MarketResult = (props: { market: Contract }) => {
+  const market = props.market
+  return (
+    <ResultOption
+      value={{
+        id: market.id,
+        slug: `/${market.creatorUsername}/${market.slug}`,
+      }}
+    >
+      <div className="flex gap-2">
+        <span className="grow">{market.question}</span>
+        <span className="font-bold">
+          <ContractStatusLabel contract={market} />
+        </span>
+        <Avatar
+          size="xs"
+          username={market.creatorUsername}
+          avatarUrl={market.creatorAvatarUrl}
+        />
+      </div>
+    </ResultOption>
   )
 }
 
@@ -346,6 +397,37 @@ const PageResults = (props: { pages: PageData[] }) => {
       {props.pages.map(({ label, slug }) => (
         <ResultOption value={{ id: label, slug }}>{label}</ResultOption>
       ))}
+    </>
+  )
+}
+
+const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
+  const { sort, markets } = props
+  if (!sort) return null
+
+  const casedLabel = startCase(SORTS.find((s) => s.value === sort)?.label)
+
+  const label = [
+    'newest',
+    'score',
+    'liquidity',
+    'close-date',
+    'resolve-date',
+  ].includes(sort)
+    ? casedLabel + ' Markets'
+    : 'Markets by ' + casedLabel
+
+  return (
+    <>
+      <SectionTitle link={`/markets?s=${sort}`}>{label}</SectionTitle>
+      <div className="flex">
+        <div className="bg-ink-200 my-1 ml-2 mr-3 w-1" />
+        <div className="flex flex-col gap-2">
+          {markets.map((market) => (
+            <MarketResult key={market.id} market={market} />
+          ))}
+        </div>
+      </div>
     </>
   )
 }

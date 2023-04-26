@@ -12,7 +12,7 @@ export default function Curve({
       fill="none"
       stroke={color}
       strokeWidth={strokeWidth}
-      transform="rotate(90)"
+      style={{ transform: 'rotate(90deg)' }}
     >
       <path d="M5.02,0V5.24c0,4.3,3.49,7.79,7.79,7.79h5.2" />
     </svg>

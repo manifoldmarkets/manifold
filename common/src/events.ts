@@ -8,7 +8,15 @@ export type ContractCardView = {
   contractId: string
   creatorId: string
   // Following attributes added by saveUserEvent
-  name: 'view market card' // Name is the event name
+  name: 'view market card'
+  timestamp: number
+}
+
+export type CommentView = {
+  contractId: string
+  commentId: string
+  // Following attributes added by saveUserEvent
+  name: 'view comment'
   timestamp: number
 }
 
