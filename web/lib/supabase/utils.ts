@@ -5,7 +5,7 @@ import {
   ViewName,
   DataFor,
 } from 'common/supabase/utils'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { RealtimeChannel } from '@supabase/realtime-js'
@@ -41,15 +41,12 @@ export function useValuesFromSupabase<
   getInitialValues?: (uniqueRowGroupValue: string) => Promise<RowFor<T>[]>
 ) {
   const [values, setValues] = useState<RowFor<T>[]>([])
-  // todo: react 18 has useHookId, so use that
-  const [hookId] = useState(table + Math.random().toString())
+  const hookId = useId()
   const channelName = 'supabase-realtime-values'
   const filter = `${rowGroupKey as string}=eq.${rowGroupValue}`
-  // todo: use refs if we just want mutable state
-  const [valuesToDelete, setValuesToDelete] = useState<RowFor<T>[]>([])
-  const [retrievedInitialValues, setRetrievedInitialValues] = useState(false)
-  const [channelResubscribeInterval, setChannelResubscribeInterval] =
-    useState<NodeJS.Timer>()
+  const valuesToDelete = useRef<RowFor<T>[]>([])
+  const retrievedInitialValues = useRef<boolean>(false)
+  const channelResubscribeInterval = useRef<NodeJS.Timer>()
   // TODO:
   // 1. turn off out resubscription interval, toggle wifi to see if it handles its own stuff
   // 2. if we disconnect, set the initial values state to false to reget it.
@@ -134,10 +131,7 @@ export function useValuesFromSupabase<
           return prev
         }
         // Delete the value once we get the values
-        setValuesToDelete((previousDeleteValues) => [
-          ...previousDeleteValues,
-          oldValue,
-        ])
+        valuesToDelete.current = [...valuesToDelete.current, oldValue]
         return prev
       }
     })
@@ -154,8 +148,9 @@ export function useValuesFromSupabase<
   }
 
   useEffect(() => {
-    if (retrievedInitialValues || subscriptionStatus !== 'SUBSCRIBED') return
-    setRetrievedInitialValues(true)
+    if (retrievedInitialValues.current || subscriptionStatus !== 'SUBSCRIBED')
+      return
+    retrievedInitialValues.current = true
     // Retrieve initial values
     if (getInitialValues)
       getInitialValues(rowGroupValue).then((newValues) =>
@@ -175,7 +170,7 @@ export function useValuesFromSupabase<
                 } else return newVal
               }
               if (
-                valuesToDelete.find(
+                valuesToDelete.current.find(
                   (v) => v[uniqueRowDataKey] == newVal[uniqueRowDataKey]
                 )
               )
@@ -186,8 +181,8 @@ export function useValuesFromSupabase<
         })
       )
     else loadDefaultAllInitialValuesForRowGroup()
-    setValuesToDelete([])
-  }, [getInitialValues, subscriptionStatus, retrievedInitialValues])
+    valuesToDelete.current = []
+  }, [getInitialValues, subscriptionStatus])
 
   // Just a helper for now, delete later
   useEffect(() => {
@@ -220,7 +215,7 @@ export function useValuesFromSupabase<
         mainChannelResubscribeInterval = undefined
       }
     }, 3000)
-    setChannelResubscribeInterval(interval)
+    channelResubscribeInterval.current = interval
     mainChannelResubscribeInterval = interval
   }
 
@@ -250,16 +245,18 @@ export function useValuesFromSupabase<
 
   useEffect(() => {
     return () => {
-      if (channelResubscribeInterval) {
+      if (channelResubscribeInterval.current) {
         console.log('Clearing resubscribe interval in use effect return')
-        clearInterval(channelResubscribeInterval)
-        if (mainChannelResubscribeInterval === channelResubscribeInterval) {
+        clearInterval(channelResubscribeInterval.current)
+        if (
+          mainChannelResubscribeInterval === channelResubscribeInterval.current
+        ) {
           mainChannelResubscribeInterval = undefined
         }
       }
       const myIndex = callbacks.findIndex((c) => c.hookId === hookId)
       if (myIndex > -1) callbacks.splice(myIndex, 1)
     }
-  }, [channelResubscribeInterval, callbacks])
+  }, [callbacks])
   return values.map((m) => ('data' in m ? (m.data as DataFor<T>) : m))
 }
