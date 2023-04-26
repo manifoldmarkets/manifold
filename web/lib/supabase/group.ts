@@ -126,28 +126,6 @@ export async function searchUserInGroup(
   ).slice(0, limit)
 }
 
-export async function getGroupPrivacyBySlug(groupSlug: string) {
-  const { data: groupPrivacy } = await run(
-    db
-      .from('groups')
-      .select('data->>privacyStatus')
-      .contains('data', { slug: groupSlug })
-  )
-  return (groupPrivacy[0] as unknown as { privacyStatus: PrivacyStatusType })
-    .privacyStatus
-}
-
-export async function getGroupFromSlug(groupSlug: string, db: SupabaseClient) {
-  const { data: group } = await run(
-    db.from('groups').select('data').contains('data', { slug: groupSlug })
-  )
-
-  if (group && group.length > 0) {
-    return group[0].data as Group
-  }
-  return null
-}
-
 export async function getGroup(groupId: string) {
   const { data } = await run(db.from('groups').select('data').eq('id', groupId))
   if (data && data.length > 0) {
@@ -179,4 +157,15 @@ export async function getGroupMarkets(groupId: string) {
   )
   const markets = data.flatMap((d) => d.data)
   return markets.map((m) => m.data as Contract)
+}
+
+export async function getGroupFromSlug(groupSlug: string, db: SupabaseClient) {
+  const { data: group } = await run(
+    db.from('groups').select('data').eq('slug', groupSlug)
+  )
+
+  if (group && group.length > 0) {
+    return group[0].data as Group
+  }
+  return null
 }

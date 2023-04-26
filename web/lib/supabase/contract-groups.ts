@@ -16,7 +16,7 @@ export async function getInitialGroupsToAdd(props: {
       db
         .from('groups')
         .select('data')
-        .or('data->>privacyStatus.eq.public,data->>privacyStatus.eq.curated')
+        .or('privacy_status.eq.public,privacy_status.eq.curated')
         .order('data->totalMembers', { ascending: false } as any)
         .limit(GROUPS_LIST_SIZE)
     )
@@ -27,7 +27,7 @@ export async function getInitialGroupsToAdd(props: {
       db
         .from('groups')
         .select('data')
-        .or('data->>privacyStatus.eq.public')
+        .or('privacy_status.eq.public')
         .order('data->totalMembers', { ascending: false } as any)
         .limit(GROUPS_LIST_SIZE / 2)
     )
@@ -96,8 +96,8 @@ async function getManifoldAdminGroupsToAdd(prompt: string) {
         db
           .from('groups')
           .select('*')
-          .or('data->>privacyStatus.eq.public,data->>privacyStatus.eq.curated')
-          .ilike('data->>name', `${prompt}`)
+          .or('privacy_status.eq.public,privacy_status.eq.curated')
+          .ilike('name', `${prompt}`)
           .order('data->totalMembers', { ascending: false } as any)
           .limit(GROUPS_LIST_SIZE)
       ),
@@ -105,8 +105,8 @@ async function getManifoldAdminGroupsToAdd(prompt: string) {
         db
           .from('groups')
           .select('*')
-          .or('data->>privacyStatus.eq.public,data->>privacyStatus.eq.curated')
-          .ilike('data->>name', `${prompt}%`)
+          .or('privacy_status.eq.public,privacy_status.eq.curated')
+          .ilike('name', `${prompt}%`)
           .order('data->totalMembers', { ascending: false } as any)
           .limit(GROUPS_LIST_SIZE)
       ),
@@ -114,8 +114,8 @@ async function getManifoldAdminGroupsToAdd(prompt: string) {
         db
           .from('groups')
           .select('*')
-          .or('data->>privacyStatus.eq.public,data->>privacyStatus.eq.curated')
-          .ilike('data->>name', `%${prompt}%`)
+          .or('privacy_status.eq.public,privacy_status.eq.curated')
+          .ilike('name', `%${prompt}%`)
           .order('data->totalMembers', { ascending: false } as any)
           .limit(GROUPS_LIST_SIZE)
       ),
@@ -139,8 +139,8 @@ async function getCreatorGroupsToAdd(prompt: string, userId: string) {
       db
         .from('groups')
         .select('*')
-        .eq('data->>privacyStatus', 'public')
-        .ilike('data->>name', `${prompt}`)
+        .eq('privacy_status', 'public')
+        .ilike('name', `${prompt}`)
         .order('data->totalMembers', { ascending: false } as any)
         .limit(GROUPS_LIST_SIZE / 2)
     ),
@@ -148,8 +148,8 @@ async function getCreatorGroupsToAdd(prompt: string, userId: string) {
       db
         .from('groups')
         .select('*')
-        .eq('data->>privacyStatus', 'public')
-        .ilike('data->>name', `${prompt}%`)
+        .eq('privacy_status', 'public')
+        .ilike('name', `${prompt}%`)
         .order('data->totalMembers', { ascending: false } as any)
         .limit(GROUPS_LIST_SIZE / 2)
     ),
@@ -157,8 +157,8 @@ async function getCreatorGroupsToAdd(prompt: string, userId: string) {
       db
         .from('groups')
         .select('*')
-        .eq('data->>privacyStatus', 'public')
-        .ilike('data->>name', `%${prompt}%`)
+        .eq('privacy_status', 'public')
+        .ilike('name', `%${prompt}%`)
         .order('data->totalMembers', { ascending: false } as any)
         .limit(GROUPS_LIST_SIZE / 2)
     ),
