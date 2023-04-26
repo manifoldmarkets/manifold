@@ -88,7 +88,7 @@ export const changeUser = async (
 
   log('Updating denormalized user data on comments...')
   const commentRows = await pg.manyOrNone(
-    `select contract_id, comment_id from contract_comments where data->>'userId' = $1`,
+    `select contract_id, comment_id from contract_comments where user_id = $1`,
     [user.id]
   )
   const commentUpdate: Partial<Comment> = removeUndefinedProps({
