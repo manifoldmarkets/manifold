@@ -3,6 +3,7 @@ import {
   TableName,
   RowFor,
   DataFor,
+  primaryKeyColumnsByTable,
 } from 'common/supabase/utils'
 import { useEffect, useId, useRef, useState } from 'react'
 import { uniqBy } from 'lodash'
@@ -12,6 +13,8 @@ import { RealtimeChannel } from '@supabase/realtime-js'
 function hasFsUpdatedTime(obj: any): obj is { fs_updated_time: number } {
   return 'fs_updated_time' in obj
 }
+type RowFilter<T extends TableName> = { k: keyof RowFor<T>; v: string }
+const CHANNEL_NAME = 'supabase-realtime-values'
 
 let mainChannel: undefined | RealtimeChannel = undefined
 let subscriptionStatus:
@@ -28,33 +31,30 @@ const callbacks: {
 }[] = []
 let mainChannelResubscribeInterval: NodeJS.Timer | undefined = undefined
 
-export function useValuesFromSupabase<
-  T extends TableName,
-  K extends keyof RowFor<T>
->(
+export function useSubscription<T extends TableName>(
   table: T,
-  rowGroupKey: K,
-  rowGroupValue: string,
-  uniqueRowDataKey: K,
   db: SupabaseClient,
-  getInitialValues?: (uniqueRowGroupValue: string) => Promise<RowFor<T>[]>
+  filter?: RowFilter<T>,
+  getInitialValues?: () => Promise<RowFor<T>[]>
 ) {
   const [values, setValues] = useState<RowFor<T>[]>([])
   const hookId = useId()
-  const channelName = 'supabase-realtime-values'
-  const filter = `${rowGroupKey as string}=eq.${rowGroupValue}`
+  const primaryKeyColumns = primaryKeyColumnsByTable[table]
   const valuesToDelete = useRef<RowFor<T>[]>([])
   const retrievedInitialValues = useRef<boolean>(false)
   const channelResubscribeInterval = useRef<NodeJS.Timer>()
   // TODO:
   // 4. email supabase for why we only have 500 concurrent channels/topics
-  // 5. address PR comments
+
+  const rowMatches = (a: RowFor<T>, b: RowFor<T>) => {
+    return primaryKeyColumns.every((key) => a[key] === b[key])
+  }
 
   const getMyCallback = () => {
     return {
       hookId,
       callback: updateValuesOnPostgresEvent,
-      filter,
+      filter: filter ? `${filter.k as string}=eq.${filter.v}` : '',
       table,
     }
   }
@@ -85,7 +85,7 @@ export function useValuesFromSupabase<
 
   // Must be called only once per channel
   const subscribeToNewChannel = () => {
-    const channel = db.channel(channelName)
+    const channel = db.channel(CHANNEL_NAME)
     callbacks.push(getMyCallback())
     setChannelCallbacks(channel)
     channel.subscribe(async (status, err) => {
@@ -105,13 +105,11 @@ export function useValuesFromSupabase<
   const updateValuesOnPostgresEvent = (payload: any) => {
     setValues((prev) => {
       const { new: newRecord, old: oldRecord } = payload
-      // if this is a DELETE operation, the oldValue will only have the primary key values set
+      // During DELETE operation, oldValue will have the primary key values set and NO data
       const oldValue = oldRecord as RowFor<T>
-      const index = prev.findIndex(
-        (m) => m[uniqueRowDataKey] === oldValue[uniqueRowDataKey]
-      )
+      const index = prev.findIndex((m) => rowMatches(m, oldValue))
       // New row with filled values
-      if (newRecord && newRecord[uniqueRowDataKey]) {
+      if (newRecord && primaryKeyColumns.every((k) => newRecord[k] !== null)) {
         const newValue = newRecord as RowFor<T>
         // We already have this row, so update it
         if (oldRecord && index > -1) {
@@ -119,7 +117,10 @@ export function useValuesFromSupabase<
           return prev
         }
         // We don't have this row, or there wasn't an old record in supabase, so add it
-        else return uniqBy([...prev, newValue], uniqueRowDataKey)
+        else
+          return uniqBy([...prev, newValue], (row) =>
+            primaryKeyColumns.map((k) => row[k]).join('-')
+          )
 
         // Empty new record, delete it or save it for deletion
       } else {
@@ -128,17 +129,16 @@ export function useValuesFromSupabase<
           return prev
         }
         // Delete the value once we get the values
-        valuesToDelete.current = [...valuesToDelete.current, oldValue]
+        valuesToDelete.current.push(oldValue)
         return prev
       }
     })
   }
 
   const loadDefaultAllInitialValuesForRowGroup = async () => {
-    const { data } = await db
-      .from(table)
-      .select('*')
-      .eq(rowGroupKey as string, rowGroupValue)
+    let q = db.from(table).select('*')
+    if (filter) q = q.eq(filter.k as string, filter.v)
+    const { data } = await q
     if (data) {
       setValues(data as RowFor<T>[])
     }
@@ -150,13 +150,11 @@ export function useValuesFromSupabase<
     retrievedInitialValues.current = true
     // Retrieve initial values
     if (getInitialValues)
-      getInitialValues(rowGroupValue).then((newValues) =>
+      getInitialValues().then((newValues) =>
         setValues((prev) => {
           return filterDefined(
             newValues.map((newVal) => {
-              const index = prev.findIndex(
-                (p) => p[uniqueRowDataKey] == newVal[uniqueRowDataKey]
-              )
+              const index = prev.findIndex((p) => rowMatches(p, newVal))
               // previous value exists in subscription
               if (index > -1) {
                 const prevVal = prev[index]
@@ -166,11 +164,7 @@ export function useValuesFromSupabase<
                     : newVal
                 } else return newVal
               }
-              if (
-                valuesToDelete.current.find(
-                  (v) => v[uniqueRowDataKey] == newVal[uniqueRowDataKey]
-                )
-              )
+              if (valuesToDelete.current.find((v) => rowMatches(v, newVal)))
                 return null
               return newVal
             })

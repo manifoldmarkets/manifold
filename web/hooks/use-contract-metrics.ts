@@ -14,7 +14,7 @@ import {
 } from 'web/lib/firebase/contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { SupabaseClient } from 'common/supabase/utils'
-import { useValuesFromSupabase } from 'web/lib/supabase/utils'
+import { useSubscription } from 'web/lib/supabase/utils'
 
 export const useContractMetrics = (
   contractId: string,
@@ -161,12 +161,13 @@ export function useSupabaseContractMetrics(
         : loadInitialValuesByProfitForContractId(),
     [limit, sort]
   )
-  return useValuesFromSupabase(
+  return useSubscription(
     'user_contract_metrics',
-    'contract_id',
-    contractId,
-    'user_id',
     db,
+    {
+      k: 'contract_id',
+      v: contractId,
+    },
     initalValueCallback
   ) as ContractMetric[] | undefined
 }

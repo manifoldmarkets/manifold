@@ -121,6 +121,44 @@ export type DataFor<T extends TableName | ViewName> =
 export type RowFor<T extends TableName> = T extends TableName
   ? PlainTables[T]
   : any
+type PrimaryKeyColumns<T extends TableName> = (keyof RowFor<T>)[]
+export const primaryKeyColumnsByTable: {
+  [T in TableName]: PrimaryKeyColumns<T>
+} = {
+  contract_answers: ['contract_id', 'answer_id'],
+  contract_bets: ['contract_id', 'bet_id'],
+  contract_comments: ['contract_id', 'comment_id'],
+  contract_embeddings: ['contract_id'],
+  contract_follows: ['contract_id', 'follow_id'],
+  contract_liquidity: ['contract_id', 'liquidity_id'],
+  contract_recommendation_features: ['contract_id'],
+  contracts: ['id'],
+  discord_messages_markets: ['message_id'],
+  discord_users: ['user_id'],
+  group_contracts: ['group_id', 'contract_id'],
+  group_members: ['group_id', 'member_id'],
+  groups: ['id'],
+  incoming_writes: ['id'],
+  manalinks: ['id'],
+  post_comments: ['post_id', 'comment_id'],
+  posts: ['id'],
+  topic_embeddings: ['topic'],
+  test: ['id'],
+  tombstones: ['id'],
+  txns: ['id'],
+  user_contract_metrics: ['user_id', 'contract_id'],
+  user_embeddings: ['user_id'],
+  user_events: ['user_id', 'event_id'],
+  user_follows: ['user_id', 'follow_id'],
+  user_notifications: ['user_id', 'notification_id'],
+  user_portfolio_history: ['user_id', 'portfolio_id'],
+  user_quest_metrics: ['user_id', 'score_id'],
+  user_recommendation_features: ['user_id'],
+  user_reactions: ['user_id', 'reaction_id'],
+  user_seen_markets: ['user_id', 'contract_id'],
+  user_topics: ['user_id'],
+  users: ['id'],
+}
 
 export function selectJson<T extends TableName | ViewName>(
   db: SupabaseClient,
