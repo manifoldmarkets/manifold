@@ -855,6 +855,22 @@ drop policy if exists "public write access" on user_topics;
 
 create policy "public write access" on user_topics for all using (true);
 
+create table if not exists
+  leagues (
+    season int not null, -- integer id of season, i.e. 1 for first season, 2 for second, etc.
+    division int not null, -- 1 (beginner) to 4 (expert)
+    cohort text not null, -- id of cohort (group of competing users). Unique across seasons.
+    user_id text not null,
+    mana_earned numeric not null default 0.0,
+    created_at timestamp not null default now()
+  );
+
+alter table leagues enable row level security;
+
+drop policy if exists "public read" on leagues;
+
+create policy "public read" on leagues for select using (true);
+
 begin;
 
 drop publication if exists supabase_realtime;
