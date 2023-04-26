@@ -86,37 +86,46 @@ export interface Database {
         Row: {
           comment_id: string
           contract_id: string
+          created_time: string | null
           data: Json
           fs_updated_time: string
+          user_id: string | null
+          visibility: string | null
         }
         Insert: {
           comment_id: string
           contract_id: string
+          created_time?: string | null
           data: Json
           fs_updated_time: string
+          user_id?: string | null
+          visibility?: string | null
         }
         Update: {
           comment_id?: string
           contract_id?: string
+          created_time?: string | null
           data?: Json
           fs_updated_time?: string
+          user_id?: string | null
+          visibility?: string | null
         }
       }
       contract_embeddings: {
         Row: {
           contract_id: string
           created_at: string
-          embedding: number[]
+          embedding: string
         }
         Insert: {
           contract_id: string
           created_at?: string
-          embedding: number[]
+          embedding: string
         }
         Update: {
           contract_id?: string
           created_at?: string
-          embedding?: number[]
+          embedding?: string
         }
       }
       contract_follows: {
@@ -329,19 +338,31 @@ export interface Database {
       }
       groups: {
         Row: {
+          creator_id: string | null
           data: Json
           fs_updated_time: string
           id: string
+          name: string | null
+          privacy_status: string | null
+          slug: string | null
         }
         Insert: {
+          creator_id?: string | null
           data: Json
           fs_updated_time: string
           id: string
+          name?: string | null
+          privacy_status?: string | null
+          slug?: string | null
         }
         Update: {
+          creator_id?: string | null
           data?: Json
           fs_updated_time?: string
           id?: string
+          name?: string | null
+          privacy_status?: string | null
+          slug?: string | null
         }
       }
       incoming_writes: {
@@ -399,35 +420,50 @@ export interface Database {
           data: Json
           fs_updated_time: string
           post_id: string
+          visibility: string | null
         }
         Insert: {
           comment_id: string
           data: Json
           fs_updated_time: string
           post_id: string
+          visibility?: string | null
         }
         Update: {
           comment_id?: string
           data?: Json
           fs_updated_time?: string
           post_id?: string
+          visibility?: string | null
         }
       }
       posts: {
         Row: {
+          created_time: string | null
+          creator_id: string | null
           data: Json
           fs_updated_time: string
+          group_id: string | null
           id: string
+          visibility: string | null
         }
         Insert: {
+          created_time?: string | null
+          creator_id?: string | null
           data: Json
           fs_updated_time: string
+          group_id?: string | null
           id: string
+          visibility?: string | null
         }
         Update: {
+          created_time?: string | null
+          creator_id?: string | null
           data?: Json
           fs_updated_time?: string
+          group_id?: string | null
           id?: string
+          visibility?: string | null
         }
       }
       test: {
@@ -549,21 +585,30 @@ export interface Database {
       }
       user_events: {
         Row: {
+          contract_id: string | null
           data: Json
           event_id: string
-          fs_updated_time: string
+          fs_updated_time: string | null
+          name: string | null
+          ts: string | null
           user_id: string
         }
         Insert: {
+          contract_id?: string | null
           data: Json
           event_id: string
-          fs_updated_time: string
+          fs_updated_time?: string | null
+          name?: string | null
+          ts?: string | null
           user_id: string
         }
         Update: {
+          contract_id?: string | null
           data?: Json
           event_id?: string
-          fs_updated_time?: string
+          fs_updated_time?: string | null
+          name?: string | null
+          ts?: string | null
           user_id?: string
         }
       }
@@ -933,6 +978,26 @@ export interface Database {
           data?: Json | null
           fs_updated_time?: string | null
           id?: string | null
+        }
+      }
+      liked_sorted_comments: {
+        Row: {
+          comment_id: string | null
+          contract_id: string | null
+          data: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          comment_id?: string | null
+          contract_id?: string | null
+          data?: Json | null
+          user_id?: never
+        }
+        Update: {
+          comment_id?: string | null
+          contract_id?: string | null
+          data?: Json | null
+          user_id?: never
         }
       }
       listed_open_contracts: {
@@ -1380,6 +1445,20 @@ export interface Database {
           contracts: Json
         }[]
       }
+      get_contracts_with_unseen_liked_comments: {
+        Args: {
+          available_contract_ids: string[]
+          excluded_contract_ids: string[]
+          current_user_id: string
+          limit_count: number
+        }
+        Returns: {
+          contract_id: string
+          comment_id: string
+          user_id: string
+          data: Json
+        }[]
+      }
       get_cpmm_pool_prob: {
         Args: {
           pool: Json
@@ -1410,7 +1489,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database["public"]["CompositeTypes"]["table_spec"]
+        Returns: Database['public']['CompositeTypes']['table_spec']
       }
       get_open_limit_bets_with_contracts: {
         Args: {
@@ -1463,36 +1542,52 @@ export interface Database {
           popularity_score: number
         }[]
       }
-      get_recommended_contracts_embeddings_from:
-        | {
-            Args: {
-              uid: string
-              p_embedding: string
-              n: number
-              excluded_contract_ids: string[]
-            }
-            Returns: {
-              data: Json
-              distance: number
-              relative_dist: number
-              popularity_score: number
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              p_embedding: string
-              n: number
-              excluded_contract_ids: string[]
-              max_dist: number
-            }
-            Returns: {
-              data: Json
-              distance: number
-              relative_dist: number
-              popularity_score: number
-            }[]
-          }
+      get_recommended_contracts_embeddings_from: {
+        Args: {
+          uid: string
+          p_embedding: string
+          n: number
+          excluded_contract_ids: string[]
+          max_dist: number
+        }
+        Returns: {
+          data: Json
+          distance: number
+          relative_dist: number
+          popularity_score: number
+        }[]
+      }
+      get_recommended_contracts_embeddings_from_using_comments: {
+        Args: {
+          uid: string
+          p_embedding: string
+          n: number
+          excluded_contract_ids: string[]
+          max_dist: number
+        }
+        Returns: {
+          data: Json
+          distance: number
+          relative_dist: number
+          popularity_score: number
+        }[]
+      }
+      get_recommended_contracts_embeddings_from_using_only_comments: {
+        Args: {
+          uid: string
+          p_embedding: string
+          n: number
+          excluded_contract_ids: string[]
+          max_dist: number
+        }
+        Returns: {
+          data: Json
+          distance: number
+          relative_dist: number
+          popularity_score: number
+          comment_id: string
+        }[]
+      }
       get_recommended_contracts_embeddings_from2: {
         Args: {
           uid: string
@@ -1536,6 +1631,33 @@ export interface Database {
           popularity_score: number
         }[]
       }
+      get_recommended_contracts_embeddings_using_comments: {
+        Args: {
+          uid: string
+          n: number
+          excluded_contract_ids: string[]
+        }
+        Returns: {
+          data: Json
+          distance: number
+          relative_dist: number
+          popularity_score: number
+        }[]
+      }
+      get_recommended_contracts_embeddings_using_only_comments: {
+        Args: {
+          uid: string
+          n: number
+          excluded_contract_ids: string[]
+        }
+        Returns: {
+          data: Json
+          distance: number
+          relative_dist: number
+          popularity_score: number
+          comment_id: string
+        }[]
+      }
       get_recommended_contracts_embeddings2: {
         Args: {
           uid: string
@@ -1571,6 +1693,17 @@ export interface Database {
       get_time: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      get_unseen_reply_chain_comments_matching_contracts: {
+        Args: {
+          contract_ids: string[]
+          current_user_id: string
+        }
+        Returns: {
+          id: string
+          contract_id: string
+          data: Json
+        }[]
       }
       get_user_bets_from_resolved_contracts: {
         Args: {
@@ -1654,31 +1787,31 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
@@ -1701,7 +1834,13 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          "": unknown
+          '': unknown
+        }
+        Returns: unknown
+      }
+      jsonb_array_to_text_array: {
+        Args: {
+          _js: Json
         }
         Returns: unknown
       }
@@ -1806,7 +1945,7 @@ export interface Database {
       }
       set_limit: {
         Args: {
-          "": number
+          '': number
         }
         Returns: number
       }
@@ -1816,7 +1955,7 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          "": string
+          '': string
         }
         Returns: unknown
       }
@@ -1853,7 +1992,7 @@ export interface Database {
       }
       to_jsonb: {
         Args: {
-          "": Json
+          '': Json
         }
         Returns: Json
       }
@@ -1872,37 +2011,37 @@ export interface Database {
           }
       vector_avg: {
         Args: {
-          "": number[]
+          '': number[]
         }
         Returns: string
       }
       vector_dims: {
         Args: {
-          "": string
+          '': string
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          "": string
+          '': string
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          "": string
+          '': string
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          "": string
+          '': string
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          "": unknown[]
+          '': unknown[]
         }
         Returns: number
       }

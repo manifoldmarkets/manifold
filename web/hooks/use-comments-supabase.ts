@@ -34,9 +34,9 @@ export function useRecentReplyChainCommentsOnContracts(
 
   useEffect(() => {
     if (contractIds.length > 0) {
-      db.rpc('get_reply_chain_comments_matching_contracts', {
+      db.rpc('get_unseen_reply_chain_comments_matching_contracts', {
         contract_ids: contractIds,
-        past_time_ms: afterTime,
+        current_user_id: userId,
       }).then((result) => {
         const { data, error } = result
         if (error || !data) {

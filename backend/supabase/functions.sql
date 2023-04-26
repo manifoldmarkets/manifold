@@ -650,54 +650,51 @@ $$;
 
 
 CREATE OR REPLACE FUNCTION get_reply_chain_comments_matching_contracts(contract_ids TEXT[], past_time_ms BIGINT)
-    RETURNS TABLE (
-                      id text,
-                      contract_id text,
-                      data JSONB
-                  ) AS $$
-BEGIN
-    RETURN QUERY
-        WITH matching_comments AS (
-            SELECT
-                (c1.data ->> 'id') AS id,
-                c1.contract_id,
-                c1.data
-            FROM
-                contract_comments c1
-            WHERE
-                    c1.contract_id = ANY(contract_ids)
-              AND (c1.data -> 'createdTime')::BIGINT >= past_time_ms
-        ),
-             reply_chain_comments AS (
-                 SELECT
-                     (c2.data ->> 'id') AS id,
-                     c2.contract_id,
-                     c2.data
-                 FROM
-                     contract_comments c2
-                         JOIN matching_comments mc
-                              ON c2.contract_id = mc.contract_id
-                                  AND c2.data ->> 'replyToCommentId' = mc.data ->> 'replyToCommentId'
-                                  AND c2.data->>'id' != mc.id
-             ),
-             parent_comments AS (
-                 SELECT
-                     (c3.data ->> 'id') AS id,
-                     c3.contract_id,
-                     c3.data
-                 FROM
-                     contract_comments c3
-                         JOIN matching_comments mc
-                              ON c3.contract_id = mc.contract_id
-                                  AND c3.data ->> 'id' = mc.data ->> 'replyToCommentId'
-             )
-        SELECT * FROM matching_comments
-        UNION ALL
-        SELECT * FROM parent_comments
-        UNION ALL
-        SELECT * FROM reply_chain_comments;
-END;
-$$ LANGUAGE plpgsql;
+  RETURNS TABLE (
+                  id text,
+                  contract_id text,
+                  data JSONB
+              ) AS $$
+  WITH matching_comments AS (
+      SELECT
+          c1.comment_id AS id,
+          c1.contract_id,
+          c1.data
+      FROM
+          contract_comments c1
+      WHERE
+              c1.contract_id = ANY(contract_ids)
+        AND (c1.data -> 'createdTime')::BIGINT >= past_time_ms
+  ),
+       reply_chain_comments AS (
+           SELECT
+               c2.comment_id AS id,
+               c2.contract_id,
+               c2.data
+           FROM
+               contract_comments c2
+                   JOIN matching_comments mc
+                        ON c2.contract_id = mc.contract_id
+                            AND c2.data ->> 'replyToCommentId' = mc.data ->> 'replyToCommentId'
+                            AND c2.data->>'id' != mc.id
+       ),
+       parent_comments AS (
+           SELECT
+               c3.comment_id AS id,
+               c3.contract_id,
+               c3.data
+           FROM
+               contract_comments c3
+                   JOIN matching_comments mc
+                        ON c3.contract_id = mc.contract_id
+                            AND c3.data ->> 'id' = mc.data ->> 'replyToCommentId'
+       )
+  SELECT * FROM matching_comments
+  UNION ALL
+  SELECT * FROM parent_comments
+  UNION ALL
+  SELECT * FROM reply_chain_comments;
+$$ LANGUAGE sql;
 
 
 create or replace function get_contracts_with_unseen_liked_comments(
@@ -755,3 +752,68 @@ order by
   filtered_comments.created_time desc
 limit limit_count;
 $$ language sql;
+
+CREATE OR REPLACE FUNCTION get_unseen_reply_chain_comments_matching_contracts(contract_ids TEXT[],current_user_id text)
+  RETURNS TABLE (
+                  id text,
+                  contract_id text,
+                  data JSONB
+                ) AS $$
+WITH matching_comments AS (
+  SELECT
+    c1.comment_id AS id,
+    c1.contract_id,
+    c1.data
+  FROM
+    contract_comments c1
+  WHERE
+      c1.contract_id = ANY(contract_ids)
+    AND
+    not (
+        exists (
+          select 1
+          from user_events ue
+          where
+              ue.user_id = current_user_id and
+              ue.name = 'view comment thread' and
+                ue.data->>'commentId' = c1.comment_id
+        )
+        or exists (
+        select 1
+        from user_events ue
+        where
+            ue.user_id = current_user_id and
+            ue.name = 'view comment thread' and
+              ue.data->>'commentId' = c1.data->>'replyToCommentId'
+      )
+      )
+),
+     reply_chain_comments AS (
+       SELECT
+         c2.comment_id AS id,
+         c2.contract_id,
+         c2.data
+       FROM
+         contract_comments c2
+           JOIN matching_comments mc
+                ON c2.contract_id = mc.contract_id
+                  AND c2.data ->> 'replyToCommentId' = mc.data ->> 'replyToCommentId'
+                  AND c2.data->>'id' != mc.id
+     ),
+     parent_comments AS (
+       SELECT
+         c3.comment_id AS id,
+         c3.contract_id,
+         c3.data
+       FROM
+         contract_comments c3
+           JOIN matching_comments mc
+                ON c3.contract_id = mc.contract_id
+                  AND c3.data ->> 'id' = mc.data ->> 'replyToCommentId'
+     )
+SELECT * FROM matching_comments
+UNION ALL
+SELECT * FROM parent_comments
+UNION ALL
+SELECT * FROM reply_chain_comments;
+$$ LANGUAGE sql;
