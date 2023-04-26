@@ -152,7 +152,7 @@ or replace function get_recommended_contracts_embeddings_from (
       and close_time > (now() + interval '1 day')
       and relative_dist < max_dist
     order by score desc
-    limit n / 5
+    limit n / 6
   ), closing_soon_contracts as (
     select *,
       row_number() over (
@@ -162,7 +162,7 @@ or replace function get_recommended_contracts_embeddings_from (
     where close_time < (now() + interval '1 day')
       and relative_dist < max_dist
     order by score desc
-    limit n / 5
+    limit n / 6
   ), combined_new_closing_soon as (
     select *,
       1 as result_id
@@ -240,6 +240,30 @@ or replace function get_recommended_contracts_embeddings_from (
     order by row_num,
       result_id
   ),
+  excluded_contracts as (
+    select contract_id
+    from combined_trending
+    union all
+    select contract_id
+    from combined_new_closing_soon
+    union all
+    select unnest(excluded_contract_ids) as contract_id
+  ),
+  contracts_with_liked_comments as (
+    select
+      ac.*,
+      3 as result_id,
+      row_number() over (
+        order by score desc
+        ) as row_num
+    from get_contracts_with_unseen_liked_comments(
+   array(select contract_id from available_contracts),
+   array(select contract_id from excluded_contracts),
+   uid,
+   n / 6
+     ) as cwc
+   join available_contracts ac on ac.contract_id = cwc.contract_id
+  ),
   combined_results as (
     select *,
       1 as result_id2,
@@ -256,6 +280,15 @@ or replace function get_recommended_contracts_embeddings_from (
           result_id
       ) as row_num2
     from combined_new_closing_soon
+    union all
+    select
+      *,
+      3 as result_id2,
+      row_number() over (
+        order by row_num,
+          result_id
+        ) as row_num2
+    from contracts_with_liked_comments
     order by row_num2,
       result_id2
   )
@@ -608,3 +641,111 @@ select nullif(
     ''
   )::text;
 $$;
+
+
+CREATE OR REPLACE FUNCTION get_reply_chain_comments_matching_contracts(contract_ids TEXT[], past_time_ms BIGINT)
+    RETURNS TABLE (
+                      id text,
+                      contract_id text,
+                      data JSONB
+                  ) AS $$
+BEGIN
+    RETURN QUERY
+        WITH matching_comments AS (
+            SELECT
+                (c1.data ->> 'id') AS id,
+                c1.contract_id,
+                c1.data
+            FROM
+                contract_comments c1
+            WHERE
+                    c1.contract_id = ANY(contract_ids)
+              AND (c1.data -> 'createdTime')::BIGINT >= past_time_ms
+        ),
+             reply_chain_comments AS (
+                 SELECT
+                     (c2.data ->> 'id') AS id,
+                     c2.contract_id,
+                     c2.data
+                 FROM
+                     contract_comments c2
+                         JOIN matching_comments mc
+                              ON c2.contract_id = mc.contract_id
+                                  AND c2.data ->> 'replyToCommentId' = mc.data ->> 'replyToCommentId'
+                                  AND c2.data->>'id' != mc.id
+             ),
+             parent_comments AS (
+                 SELECT
+                     (c3.data ->> 'id') AS id,
+                     c3.contract_id,
+                     c3.data
+                 FROM
+                     contract_comments c3
+                         JOIN matching_comments mc
+                              ON c3.contract_id = mc.contract_id
+                                  AND c3.data ->> 'id' = mc.data ->> 'replyToCommentId'
+             )
+        SELECT * FROM matching_comments
+        UNION ALL
+        SELECT * FROM parent_comments
+        UNION ALL
+        SELECT * FROM reply_chain_comments;
+END;
+$$ LANGUAGE plpgsql;
+
+
+create or replace function get_contracts_with_unseen_liked_comments(
+  available_contract_ids text[],
+  excluded_contract_ids text[],
+  current_user_id text,
+  limit_count integer
+)
+  returns table (
+                  contract_id text,
+                  comment_id text,
+                  user_id text,
+                  data jsonb
+                ) as $$
+select
+  filtered_comments.contract_id,
+  filtered_comments.comment_id,
+  filtered_comments.user_id,
+  filtered_comments.data
+from (
+       select distinct on (comments.contract_id)
+         comments.contract_id,
+         comments.comment_id,
+         comments.user_id,
+         comments.data,
+         (comments.data->>'createdTime')::bigint as created_time
+       from
+         liked_sorted_comments comments
+       where
+           comments.contract_id = any (available_contract_ids) and
+           comments.contract_id <> all (excluded_contract_ids)
+         and
+         not (
+             exists (
+               select 1
+               from user_events ue
+               where
+                   ue.user_id = current_user_id and
+                     ue.data->>'name' = 'view comment thread' and
+                     ue.data->>'commentId' = comments.comment_id
+             )
+             or exists (
+             select 1
+             from user_events ue
+             where
+                 ue.user_id = current_user_id and
+                   ue.data->>'name' = 'view comment thread' and
+                   ue.data->>'commentId' = comments.data->>'replyToCommentId'
+           )
+           )
+       order by
+         comments.contract_id,
+         created_time desc) as filtered_comments
+order by
+  filtered_comments.created_time desc
+limit limit_count;
+$$ language sql;

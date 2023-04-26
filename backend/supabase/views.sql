@@ -259,3 +259,17 @@ create or replace view
   where
       visibility = 'public'
   );
+
+
+create view liked_sorted_comments as
+SELECT
+  cc.contract_id,
+  cc.comment_id,
+  cc.data->>'userId' AS user_id,
+  cc.data
+FROM
+  contract_comments cc
+WHERE
+    (cc.data->'likes')::numeric >= 1
+ORDER BY
+  (cc.data->>'createdTime')::bigint DESC;
