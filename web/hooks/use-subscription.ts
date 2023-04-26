@@ -10,6 +10,8 @@ import { uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { RealtimeChannel } from '@supabase/realtime-js'
 
+//TODO: fs_updated_time relies on firebase, which we are moving off of. We
+// have no better solution for updated time atm.
 function hasFsUpdatedTime(obj: any): obj is { fs_updated_time: number } {
   return 'fs_updated_time' in obj
 }
@@ -43,8 +45,6 @@ export function useSubscription<T extends TableName>(
   const valuesToDelete = useRef<RowFor<T>[]>([])
   const retrievedInitialValues = useRef<boolean>(false)
   const channelResubscribeInterval = useRef<NodeJS.Timer>()
-  // TODO:
-  // 4. email supabase for why we only have 500 concurrent channels/topics
 
   const rowMatches = (a: RowFor<T>, b: RowFor<T>) => {
     return primaryKeyColumns.every((key) => a[key] === b[key])
