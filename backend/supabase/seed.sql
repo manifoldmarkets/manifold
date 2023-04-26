@@ -214,18 +214,15 @@ select
   using (true);
 
 create index if not exists user_events_data_gin on user_events using GIN (data);
-
-create index if not exists user_events_name on user_events (user_id, (data ->> 'name'));
-
+create index if not exists user_events_name on user_events (user_id, name);
+create index if not exists user_events_ts on user_events (user_id, ts);
 create index if not exists user_events_viewed_markets on user_events (
   user_id,
-  (data ->> 'name'),
-  (data ->> 'contractId'),
-  ((data -> 'timestamp')::bigint) desc
+  name,
+  contract_id,
+  ts desc
 )
-where
-  data ->> 'name' = 'view market'
-  or data ->> 'name' = 'view market card';
+where name = 'view market' or name = 'view market card';
 
 alter table user_events cluster on user_events_name;
 
