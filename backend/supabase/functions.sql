@@ -680,60 +680,58 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION get_contracts_with_unseen_liked_comments(
+create or replace function get_contracts_with_unseen_liked_comments(
   available_contract_ids text[],
   excluded_contract_ids text[],
   current_user_id text,
   limit_count integer
 )
-  RETURNS TABLE (
+  returns table (
                   contract_id text,
                   comment_id text,
                   user_id text,
-                  data JSONB
-                ) AS $$
-BEGIN
-  RETURN QUERY
-    SELECT
-      filtered_comments.contract_id,
-      filtered_comments.comment_id,
-      filtered_comments.user_id,
-      filtered_comments.data
-    FROM (
-           SELECT DISTINCT ON (comments.contract_id)
-             comments.contract_id,
-             comments.comment_id,
-             comments.user_id,
-             comments.data,
-             (comments.data->>'createdTime')::bigint AS created_time
-           FROM
-             liked_sorted_comments comments
-           WHERE
-               comments.contract_id = ANY (available_contract_ids) AND
-               comments.contract_id <> ALL (excluded_contract_ids)
-             AND
-             NOT (
-                 EXISTS (
-                   SELECT 1
-                   FROM user_events ue
-                   WHERE
-                       ue.user_id = current_user_id AND
-                         ue.data->>'name' = 'view comment thread' AND
-                         ue.data->>'commentId' = comments.comment_id
-                 )
-                 OR EXISTS (
-                 SELECT 1
-                 FROM user_events ue
-                 WHERE
-                     ue.user_id = current_user_id AND
-                       ue.data->>'name' = 'view comment thread' AND
-                       ue.data->>'commentId' = comments.data->>'replyToCommentId'
-               )
-               )
-           ORDER BY
-             comments.contract_id,
-             created_time DESC) AS filtered_comments
-    ORDER BY
-      filtered_comments.created_time DESC
-    LIMIT limit_count;
-END; $$ LANGUAGE plpgsql;
+                  data jsonb
+                ) as $$
+select
+  filtered_comments.contract_id,
+  filtered_comments.comment_id,
+  filtered_comments.user_id,
+  filtered_comments.data
+from (
+       select distinct on (comments.contract_id)
+         comments.contract_id,
+         comments.comment_id,
+         comments.user_id,
+         comments.data,
+         (comments.data->>'createdTime')::bigint as created_time
+       from
+         liked_sorted_comments comments
+       where
+           comments.contract_id = any (available_contract_ids) and
+           comments.contract_id <> all (excluded_contract_ids)
+         and
+         not (
+             exists (
+               select 1
+               from user_events ue
+               where
+                   ue.user_id = current_user_id and
+                     ue.data->>'name' = 'view comment thread' and
+                     ue.data->>'commentId' = comments.comment_id
+             )
+             or exists (
+             select 1
+             from user_events ue
+             where
+                 ue.user_id = current_user_id and
+                   ue.data->>'name' = 'view comment thread' and
+                   ue.data->>'commentId' = comments.data->>'replyToCommentId'
+           )
+           )
+       order by
+         comments.contract_id,
+         created_time desc) as filtered_comments
+order by
+  filtered_comments.created_time desc
+limit limit_count;
+$$ language sql;
