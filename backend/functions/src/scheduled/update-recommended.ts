@@ -109,11 +109,11 @@ export const loadUserDataForRecommendations = async (
 
   const viewedIds = await pg.manyOrNone(
     `select
-      user_id, data->>'name' as event_name,
-      array_agg(distinct data->>'contractId') as contract_ids
+      user_id, name as event_name,
+      array_agg(distinct contract_id) as contract_ids
     from user_events
-    where data->>'name' = 'view market' or data->>'name' = 'view market card'
-    group by user_id, data->>'name'`
+    where name = 'view market' or name = 'view market card'
+    group by user_id, name`
   )
   const viewedIdsByEvent = groupBy(viewedIds, (r) => r.event_name)
   const viewedCardIds = Object.fromEntries(

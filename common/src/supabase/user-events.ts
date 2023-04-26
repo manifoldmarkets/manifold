@@ -1,5 +1,4 @@
-import { SupabaseClient } from 'common/supabase/utils'
-import { ShareEvent } from 'common/events'
+import { SupabaseClient, run, millisToTs } from 'common/supabase/utils'
 import { uniq } from 'lodash'
 
 export async function getUserEventsCount(
@@ -13,17 +12,15 @@ export async function getUserEventsCount(
     .from('user_events')
     .select('*', { head: true, count: 'exact' })
     .eq('user_id', userId)
-    .lt('data->>timestamp', endTime)
-    .gt('data->>timestamp', startTime)
+    .lt('ts', millisToTs(endTime))
+    .gt('ts', millisToTs(startTime))
   if (eventNames.length === 1) {
-    q = q.eq('data->>name', eventNames[0])
+    q = q.eq('name', eventNames[0])
   } else {
-    q = q.in('data->>name', eventNames)
+    q = q.in('name', eventNames)
   }
 
-  const { count, error } = await q
-  if (error != null) throw error
-
+  const { count } = await run(q)
   return count ?? 0
 }
 
@@ -35,15 +32,13 @@ export async function getUniqueUserShareEventsCount(
 ) {
   const q = db
     .from('user_events')
-    .select('data')
+    .select('data->>url')
     .eq('user_id', userId)
-    .gt('data->>timestamp', startTime)
-    .lt('data->>timestamp', endTime)
+    .gt('ts', millisToTs(startTime))
+    .lt('ts', millisToTs(endTime))
     .eq('data->>type', 'copy sharing link')
 
-  const { data, error } = await q
-  if (error != null) throw error
-  const shareEvents = data.map((e) => e.data as ShareEvent) ?? []
-  const uniqueUrlsShared = uniq(shareEvents.map((e) => e.url))
-  return uniqueUrlsShared.length
+  const { data } = await run(q)
+  const shareEventUrls = data.map((r) => (r as any).url)
+  return uniq(shareEventUrls).length
 }
