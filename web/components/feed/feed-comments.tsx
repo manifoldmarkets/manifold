@@ -42,6 +42,7 @@ import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { CommentView } from 'common/events'
+import { Tooltip } from '../widgets/tooltip'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -269,9 +270,11 @@ export function CommentActions(props: {
   return (
     <Row className="grow items-center justify-end">
       {user && onReplyClick && (
-        <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
-          <ReplyIcon className="h-5 w-5" />
-        </IconButton>
+        <Tooltip text="Reply" placement="bottom">
+          <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
+            <ReplyIcon className="h-5 w-5" />
+          </IconButton>
+        </Tooltip>
       )}
       {showLike && (
         <LikeButton
