@@ -1,7 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { run } from './utils'
 
-//  (await getUserIsMember(pg, groupId, auth?.uid))))
 export async function getUserIsMember(
   groupId: string | undefined | null,
   userId: string | undefined | null,

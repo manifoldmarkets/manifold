@@ -1,4 +1,3 @@
-import { AnyContractType } from 'common/contract'
 import { filterDefined } from 'common/util/array'
 import { useEffect, useState } from 'react'
 import {
@@ -9,7 +8,6 @@ import {
 } from 'web/lib/firebase/contracts'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
 import { useStore, useStoreItems } from './use-store'
-import { useIsAuthorized } from './use-user'
 
 export const useAllContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
