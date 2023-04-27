@@ -2,14 +2,31 @@ import { runScript } from 'run-script'
 import { ALL_TOPICS } from 'common/topics'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 
-type topic = typeof ALL_TOPICS[number]
-const TOPICS_TO_WORDS: { [key: topic]: string } = {
+const TOPICS_TO_IGNORE_FOR_BLANK_TOPIC = [
+  'stock',
+  'planecrash',
+  'permanent',
+  'proofnik',
+  'personal',
+  'destiny.gg',
+]
+
+const TOPICS_TO_WORDS: { [key: string]: string } = {
   'LGBTQIA+': 'lesbian, bisexual, gay, transgender',
-  // TODO ian's adding more
+  'Effective Altruism':
+    'effective altruism, charity, donations, altruism, philanthropy, AI safety, existential risk, existential threats',
+  AI: 'artificial intelligence, AI, machine learning, deep learning, neural networks',
+  Science: 'science, physics, chemistry, biology, neuroscience, psychology',
+  Religion: 'religion, christianity, islam, judaism, buddhism, hinduism',
+  Education:
+    'education, school, college, university, student, teacher, professor',
+  // TODO: add more
 }
+const all_topics = ALL_TOPICS.concat(TOPICS_TO_IGNORE_FOR_BLANK_TOPIC)
+
 if (require.main === module) {
   runScript(async ({ pg }) => {
-    for (const topic of ALL_TOPICS) {
+    for (const topic of all_topics) {
       console.log('Topic', topic)
       const embeddingsSource = Object.keys(TOPICS_TO_WORDS).includes(topic)
         ? TOPICS_TO_WORDS[topic]

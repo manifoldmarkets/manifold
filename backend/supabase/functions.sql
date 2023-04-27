@@ -643,9 +643,21 @@ $$;
 create
   or replace function save_user_topics_blank (p_user_id text) returns void language sql as $$
 with
-  topic_embedding as (
+  average_all as (
     select avg(embedding) as average
     from topic_embeddings
+  ),
+  ignore_embeddings as (
+    select avg(embedding) as average
+    from topic_embeddings
+    where topic in (
+      select unnest(ARRAY['destiny.gg', 'stock', 'planecrash', 'proofnik', 'permanent', 'personal']::text[])
+    )
+  ),
+  topic_embedding as (
+    select (avg_all.average - not_chosen.average) as average
+    from average_all as avg_all,
+         ignore_embeddings as not_chosen
   )
 insert into user_topics (user_id, topics, topic_embedding)
 values (
