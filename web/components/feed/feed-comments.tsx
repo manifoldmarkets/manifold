@@ -20,7 +20,11 @@ import { useEvent } from 'web/hooks/use-event'
 import { Content } from '../widgets/editor'
 import { UserLink } from 'web/components/widgets/user-link'
 import { CommentInput } from '../comments/comment-input'
-import { ReplyIcon, XCircleIcon } from '@heroicons/react/solid'
+import {
+  DotsHorizontalIcon,
+  ReplyIcon,
+  XCircleIcon,
+} from '@heroicons/react/solid'
 import { Button, IconButton } from '../buttons/button'
 import { ReplyToggle } from '../comments/reply-toggle'
 import { ReportModal } from 'web/components/buttons/report-button'
@@ -254,42 +258,19 @@ function HideableContent(props: { comment: ContractComment }) {
   )
 }
 
-export function CommentActions(props: {
-  onReplyClick?: (comment: ContractComment) => void
+export function DotMenu(props: {
   comment: ContractComment
-  showLike?: boolean
   contract: Contract
 }) {
-  const { onReplyClick, comment, showLike, contract } = props
+  const { comment, contract } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
   const privateUser = usePrivateUser()
   const isAdmin = useAdmin()
-  const isContractCreator = user?.id === contract.creatorId
+  const isContractCreator = privateUser?.id === contract.creatorId
 
   return (
-    <Row className="grow items-center justify-end">
-      {user && onReplyClick && (
-        <Tooltip text="Reply" placement="bottom">
-          <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
-            <ReplyIcon className="h-5 w-5" />
-          </IconButton>
-        </Tooltip>
-      )}
-      {showLike && (
-        <LikeButton
-          contentCreatorId={comment.userId}
-          contentId={comment.id}
-          user={user}
-          contentType={'comment'}
-          totalLikes={comment.likes ?? 0}
-          contract={contract}
-          contentText={richTextToString(comment.content)}
-          className={
-            isBlocked(privateUser, comment.userId) ? 'pointer-events-none' : ''
-          }
-        />
-      )}
+    <>
       <ReportModal
         report={{
           contentOwnerId: comment.userId,
@@ -303,7 +284,7 @@ export function CommentActions(props: {
         label={'Comment'}
       />
       <DropdownMenu
-        buttonClass="px-2 py-1"
+        Icon={<DotsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
         Items={buildArray(
           {
             name: 'Copy Link',
@@ -338,6 +319,43 @@ export function CommentActions(props: {
           }
         )}
       />
+    </>
+  )
+}
+
+export function CommentActions(props: {
+  onReplyClick?: (comment: ContractComment) => void
+  comment: ContractComment
+  showLike?: boolean
+  contract: Contract
+}) {
+  const { onReplyClick, comment, showLike, contract } = props
+  const user = useUser()
+  const privateUser = usePrivateUser()
+
+  return (
+    <Row className="grow items-center justify-end">
+      {user && onReplyClick && (
+        <Tooltip text="Reply" placement="bottom">
+          <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
+            <ReplyIcon className="h-5 w-5" />
+          </IconButton>
+        </Tooltip>
+      )}
+      {showLike && (
+        <LikeButton
+          contentCreatorId={comment.userId}
+          contentId={comment.id}
+          user={user}
+          contentType={'comment'}
+          totalLikes={comment.likes ?? 0}
+          contract={contract}
+          contentText={richTextToString(comment.content)}
+          className={
+            isBlocked(privateUser, comment.userId) ? 'pointer-events-none' : ''
+          }
+        />
+      )}
     </Row>
   )
 }
@@ -464,6 +482,7 @@ function FeedCommentHeader(props: {
           createdTime={createdTime}
           elementId={comment.id}
         />
+        <DotMenu comment={comment} contract={contract} />
       </span>
     )
   }
@@ -471,7 +490,7 @@ function FeedCommentHeader(props: {
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
-    <span className="text-ink-600 mt-0.5 text-sm">
+    <span className="text-ink-600 mt-0.5 align-middle text-sm">
       <UserLink
         username={userUsername}
         name={userName}
@@ -498,6 +517,7 @@ function FeedCommentHeader(props: {
         createdTime={createdTime}
         elementId={comment.id}
       />
+      <DotMenu comment={comment} contract={contract} />
     </span>
   )
 }
