@@ -140,23 +140,22 @@ export async function runRedeemBoostTxn(
 ) {
   const { amount, toId, fromId } = txnData
 
-  let txn = {}
-  await pg.tx((t) => {
-    t.none('UPDATE boosts SET funds = funds - $1 WHERE id = $2', [
-      amount,
-      fromId,
-    ])
+  await pg.none(
+    `update market_ads 
+    set funds = funds - $1
+    where id = $2`,
+    [amount, fromId]
+  )
 
-    const toDoc = firestore.doc(`users/${toId}`)
-    fbTransaction.update(toDoc, {
-      balance: FieldValue.increment(amount),
-      totalDeposits: FieldValue.increment(amount),
-    })
-
-    const newTxnDoc = firestore.collection(`txns/`).doc()
-    txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
-    fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
+  const toDoc = firestore.doc(`users/${toId}`)
+  fbTransaction.update(toDoc, {
+    balance: FieldValue.increment(amount),
+    totalDeposits: FieldValue.increment(amount),
   })
+
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
 
   return { status: 'success', txn }
 }

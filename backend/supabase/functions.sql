@@ -787,7 +787,7 @@ where
   NOT EXISTS (
     SELECT 1
     FROM redeemed_ad_ids
-    WHERE fromId = market_ads.market_id
+    WHERE fromId = market_ads.id
   )
   and market_ads.funds > 0
   order by embedding <=> (

@@ -38,6 +38,8 @@ import { fromNow } from 'web/lib/util/time'
 import Router from 'next/router'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import toast from 'react-hot-toast'
+import { redeemBoost } from 'web/lib/firebase/api'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -383,10 +385,10 @@ export function FeaturedPill(props: { label?: string }) {
 
 export function ContractCardNew(props: {
   contract: Contract
-  promoted?: boolean
+  promotedData?: { adId: string; reward: number }
   className?: string
 }) {
-  const { className, promoted } = props
+  const { className, promotedData } = props
   const user = useUser()
 
   const contract = useContract(props.contract.id) ?? props.contract
@@ -509,9 +511,9 @@ export function ContractCardNew(props: {
           <YourMetricsFooter metrics={metrics} />
         )}
 
-        {!showImage && promoted && (
+        {!showImage && promotedData && (
           <div className="flex justify-center">
-            <ClaimButton contract={contract} />
+            <ClaimButton {...promotedData} />
             <div className="absolute bottom-2 right-2">
               <FeaturedPill label="Promoted" />
             </div>
@@ -522,9 +524,9 @@ export function ContractCardNew(props: {
       {showImage && (
         <>
           <div className="flex h-40 w-full items-center justify-center">
-            {promoted && (
+            {promotedData && (
               <>
-                <ClaimButton contract={contract} className="mt-2" />
+                <ClaimButton {...promotedData} className="mt-2" />
                 <div className="absolute bottom-2 right-2">
                   <FeaturedPill label="Promoted" />
                 </div>
@@ -616,14 +618,19 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   )
 }
 
-function ClaimButton(props: { contract: Contract; className?: string }) {
-  const { contract, className } = props
-  const { id } = contract
+function ClaimButton(props: {
+  adId: string
+  reward: number
+  className?: string
+}) {
+  const { adId, reward, className } = props
 
   const [claimed, setClaimed] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  // TODO: grab from the ad
-  const reward = 5
+  const claim = async () => {
+    await redeemBoost({ adId })
+  }
 
   return (
     <button
@@ -633,15 +640,28 @@ function ClaimButton(props: { contract: Contract; className?: string }) {
         'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
         className
       )}
-      disabled={claimed}
-      onClick={(e) => {
+      disabled={loading || claimed}
+      onClick={async (e) => {
         e.stopPropagation()
-        // claimPromotedContract(id)
-        toast.success(`+${formatMoney(reward)}`)
-        setClaimed(true)
+        setLoading(true)
+        try {
+          await claim()
+          toast.success(`+${formatMoney(reward)}`)
+          setClaimed(true)
+        } catch (err) {
+          toast.error(err.message ?? err)
+        } finally {
+          setLoading(false)
+        }
       }}
     >
-      {claimed ? 'Claimed!' : `${formatMoney(reward)} reward`}
+      {claimed ? (
+        'Claimed!'
+      ) : loading ? (
+        <LoadingIndicator />
+      ) : (
+        `${formatMoney(reward)} reward`
+      )}
     </button>
   )
 }

@@ -12,12 +12,31 @@ import { Bet } from 'common/bet'
 import { sumBy } from 'lodash'
 import clsx from 'clsx'
 import { Row } from '../layout/row'
+import { BoostsType } from 'web/hooks/use-feed'
+
+// 1/frequency.  TODO: move elsewhere, or let user set
+export const AD_PERIOD = 4
 
 export const FeedItems = (props: {
   contracts: Contract[]
+  boosts: BoostsType
   user: User | null | undefined
 }) => {
-  const { contracts, user } = props
+  const { user, boosts } = props
+
+  const organicContracts = props.contracts.map((c) => ({
+    ...c,
+    type: 'contract',
+  }))
+
+  const boostedContracts =
+    boosts?.map((boost) => {
+      const { market_data, ...rest } = boost
+      return { ...(market_data as Contract), ...rest, type: 'boost' }
+    }) ?? []
+
+  const contracts = zipperMerge(organicContracts, boostedContracts, AD_PERIOD)
+
   const contractIds = contracts.map((c) => c.id)
   const commentThreads = useFeedComments(user, contractIds)
   const recentBets = useFeedBets(user, contractIds)
@@ -40,8 +59,16 @@ export const FeedItems = (props: {
 
   return (
     <Col>
-      {groupedItems.map((itemGroup, i) => {
+      {groupedItems.map((itemGroup) => {
         const { contract, commentThreads, relatedBets } = itemGroup
+
+        const promotedData =
+          contract.type === 'boost'
+            ? {
+                adId: contract.ad_id,
+                reward: contract.ad_cost_per_view,
+              }
+            : undefined
 
         return (
           <Col
@@ -56,8 +83,7 @@ export const FeedItems = (props: {
                 'my-0 border-0',
                 hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
               )}
-              // promoted={i % 10 === 4}
-              promoted
+              promotedData={promotedData}
             />
             <Row className="bg-canvas-0">
               <FeedCommentItem
@@ -75,6 +101,20 @@ export const FeedItems = (props: {
       })}
     </Col>
   )
+}
+
+// every period items in A, insert an item from B
+function zipperMerge<A, B>(a: A[], b: B[], period: number): (A | B)[] {
+  const merged = []
+  let j = 0
+  for (let i = 0; i < a.length; ++i) {
+    merged.push(a[i])
+    if ((i + 1) % period === 0 && j < b.length) {
+      merged.push(b[j])
+      ++j
+    }
+  }
+  return merged
 }
 
 //TODO: we can't yet respond to summarized bets yet bc we're just combining bets in the feed and

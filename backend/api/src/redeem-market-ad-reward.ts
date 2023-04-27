@@ -17,14 +17,34 @@ export const redeemboost = authEndpoint(async (req, auth) => {
   pg.connect()
   const firestore = admin.firestore()
 
+  // search txns if you've already reedemed this boost
+  const { count } = await pg.one(
+    `select count(*) from txns
+    where 
+    data->>'category' = 'MARKET_BOOST_REDEEM'
+    and data->>'fromId' = $1
+    and data->>'toId' = $2`,
+    [adId, auth.uid]
+  )
+
+  if (count > 1) {
+    throw new APIError(
+      403,
+      `You have already redeemed the boost for this market ${count} times`
+    )
+  }
+
   // find the advertisement
-  const [reward, total] = await pg.one(
-    `select costPerView, totalFunds from market_ads
-    where id=$1`,
+  const data = await pg.one(
+    `select cost_per_view::numeric, funds::numeric from market_ads
+    where id = $1`,
     [adId]
   )
 
-  if (total < reward) {
+  const reward = parseFloat(data.cost_per_view)
+  const funds = parseFloat(data.funds)
+
+  if (funds < reward) {
     throw new APIError(
       403,
       'Ad for market does not have enough funds to pay out'
