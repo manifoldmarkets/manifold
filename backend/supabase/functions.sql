@@ -641,6 +641,26 @@ set topics = excluded.topics,
 $$;
 
 create
+  or replace function save_user_topics_blank (p_user_id text) returns void language sql as $$
+with
+  topic_embedding as (
+    select avg(embedding) as average
+    from topic_embeddings
+  )
+insert into user_topics (user_id, topics, topic_embedding)
+values (
+         p_user_id,
+         ARRAY['']::text[],
+         (
+           select average
+           from topic_embedding
+         )
+       ) on conflict (user_id) do
+  update set topics = excluded.topics,
+             topic_embedding = excluded.topic_embedding;
+$$;
+
+create
 or replace function firebase_uid () returns text language sql stable parallel safe as $$
 select nullif(
     current_setting('request.jwt.claims', true)::json->>'sub',

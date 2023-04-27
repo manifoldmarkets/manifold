@@ -11,7 +11,7 @@ import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { db } from 'web/lib/supabase/db'
 import { updateUserEmbedding } from 'web/lib/firebase/api'
 import { filterDefined } from 'common/util/array'
-
+const BLANK_TOPIC = ''
 export function TopicSelectorDialog(props: {
   setOpen?: (open: boolean) => void
   open?: boolean
@@ -19,33 +19,49 @@ export function TopicSelectorDialog(props: {
   const { setOpen, open } = props
   const user = useUser()
 
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+  const [userSelectedTopics, setUserSelectedTopics] = useState<
+    string[] | undefined
+  >()
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (user && selectedTopics.length > 0) {
-      db.rpc('save_user_topics', {
-        p_user_id: user.id,
-        p_topics: selectedTopics,
-      }).then(() => {
-        console.log('saved user topics')
-      })
+    if (user && userSelectedTopics !== undefined) {
+      userSelectedTopics.length > 0
+        ? db
+            .rpc('save_user_topics', {
+              p_user_id: user.id,
+              p_topics: userSelectedTopics,
+            })
+            .then((r) => {
+              console.log('saved user topics', r)
+            })
+        : db
+            .rpc('save_user_topics_blank', {
+              p_user_id: user.id,
+            })
+            .then((r) => {
+              console.log('saved blank user topics', r)
+            })
     }
-  }, [selectedTopics])
+  }, [userSelectedTopics])
 
   useEffect(() => {
-    if (user && selectedTopics.length === 0 && open) {
+    if (user && userSelectedTopics === undefined && open) {
       db.from('user_topics')
         .select('topics')
         .eq('user_id', user.id)
         .limit(1)
         .then(({ data }) => {
-          setSelectedTopics(
-            filterDefined(data?.[0]?.topics?.map((t: string) => t) ?? [])
+          setUserSelectedTopics(
+            filterDefined(
+              data?.[0]?.topics?.map((t: string) =>
+                t === BLANK_TOPIC ? undefined : t
+              ) ?? []
+            )
           )
         })
     }
-  }, [user, selectedTopics, open])
+  }, [user, userSelectedTopics, open])
 
   const recomputeEmbeddingsAndReload = () => {
     if (user) {
@@ -75,27 +91,32 @@ export function TopicSelectorDialog(props: {
 
             <div className="flex flex-wrap gap-x-1 gap-y-2">
               {getSubtopics(topic).map(
-                ([subtopicWithEmoji, subtopic, groupId]) => (
-                  <PillButton
-                    key={subtopic}
-                    selected={selectedTopics.includes(subtopic)}
-                    onSelect={() => {
-                      if (selectedTopics.includes(subtopic)) {
-                        setSelectedTopics(
-                          selectedTopics.filter((t) => t !== subtopic)
-                        )
-                        if (topic === '👥 Communities' && groupId && user)
-                          leaveGroup(groupId, user.id)
-                      } else {
-                        setSelectedTopics(uniq([...selectedTopics, subtopic]))
-                        if (topic === '👥 Communities' && groupId && user)
-                          joinGroup(groupId, user.id)
-                      }
-                    }}
-                  >
-                    {subtopicWithEmoji}
-                  </PillButton>
-                )
+                ([subtopicWithEmoji, subtopic, groupId]) => {
+                  const selectedTopics: string[] = userSelectedTopics ?? []
+                  return (
+                    <PillButton
+                      key={subtopic}
+                      selected={selectedTopics.includes(subtopic)}
+                      onSelect={() => {
+                        if (selectedTopics.includes(subtopic)) {
+                          setUserSelectedTopics(
+                            selectedTopics.filter((t) => t !== subtopic)
+                          )
+                          if (topic === '👥 Communities' && groupId && user)
+                            leaveGroup(groupId, user.id)
+                        } else {
+                          setUserSelectedTopics(
+                            uniq([...selectedTopics, subtopic])
+                          )
+                          if (topic === '👥 Communities' && groupId && user)
+                            joinGroup(groupId, user.id)
+                        }
+                      }}
+                    >
+                      {subtopicWithEmoji}
+                    </PillButton>
+                  )
+                }
               )}
             </div>
           </div>
@@ -104,9 +125,12 @@ export function TopicSelectorDialog(props: {
         <div className="from-canvas-0 pointer-events-none sticky bottom-0 bg-gradient-to-t to-transparent text-right">
           <span className="pointer-events-auto ml-auto inline-flex p-6 pt-2">
             <Button
-              onClick={
-                setOpen ? () => setOpen(false) : recomputeEmbeddingsAndReload
-              }
+              onClick={() => {
+                if (setOpen) {
+                  user ? updateUserEmbedding({ userId: user.id }) : noop
+                  setOpen(false)
+                } else recomputeEmbeddingsAndReload()
+              }}
               loading={isLoading}
             >
               Done

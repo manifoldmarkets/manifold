@@ -1888,6 +1888,12 @@ export interface Database {
         }
         Returns: undefined
       }
+      save_user_topics_blank: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       search_contract_embeddings: {
         Args: {
           query_embedding: string

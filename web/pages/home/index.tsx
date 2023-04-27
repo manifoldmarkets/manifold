@@ -232,7 +232,7 @@ const MainContent = () => {
     false,
     'main-content-section-is-live'
   )
-  const [topic, setTopic] = usePersistentInMemoryState('', 'your-feed-topic')
+  const [topic, setTopic] = usePersistentLocalState('', 'your-feed-topic')
   const [pill, setPill] = usePersistentInMemoryState<pill_options>(
     'all',
     'live-pill'
