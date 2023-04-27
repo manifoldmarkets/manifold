@@ -9,6 +9,8 @@ import { AmountInput } from '../widgets/amount-input'
 import { useState } from 'react'
 import { boostMarket } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
+import toast from 'react-hot-toast'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -54,17 +56,30 @@ export const COST_PER_VIEW = 5
 function BoostFormRow(props: { contract: Contract }) {
   const { contract } = props
 
+  const [loading, setLoading] = useState(false)
   const [numViews, setNumViews] = useState<number>()
   const views = numViews ?? 0
 
   const totalCost = views * COST_PER_VIEW
 
   const onSubmit = async () => {
-    await boostMarket({
-      marketId: contract.id,
-      totalCost,
-      costPerView: COST_PER_VIEW,
-    })
+    setLoading(true)
+    try {
+      await boostMarket({
+        marketId: contract.id,
+        totalCost,
+        costPerView: COST_PER_VIEW,
+      })
+      toast.success('Boosted!')
+      setNumViews(undefined)
+    } catch (e) {
+      toast.error(
+        (e as any).message ??
+          (typeof e === 'string' ? e : 'Error boosting market')
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -78,9 +93,10 @@ function BoostFormRow(props: { contract: Contract }) {
       <span className="text-ink-800 mr-2 min-w-[180px] text-base">
         x {formatMoney(COST_PER_VIEW)}/view = {formatMoney(totalCost)} total
       </span>
-      <Button onClick={onSubmit} disabled={totalCost === 0}>
+      <Button onClick={onSubmit} disabled={totalCost === 0 || loading}>
         Buy
       </Button>
+      {loading && <LoadingIndicator />}
     </>
   )
 }
