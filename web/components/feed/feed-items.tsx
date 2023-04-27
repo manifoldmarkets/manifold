@@ -112,19 +112,8 @@ const FeedCommentItem = (props: {
     childComments: ContractComment[]
   }[]
 }) => {
-  const { contract } = props
-  const ignoredCommentTypes = ['gridCardsComponent']
-  const commentThreads = props.commentThreads.filter(
-    (ct) =>
-      !ct.parentComment.content?.content?.some((c) =>
-        ignoredCommentTypes.includes(c.type ?? '')
-      ) &&
-      !ct.childComments.some((c) =>
-        c.content?.content?.some((c) =>
-          ignoredCommentTypes.includes(c.type ?? '')
-        )
-      )
-  )
+  const { contract, commentThreads } = props
+
   return (
     <Col className={'w-full'}>
       {commentThreads.map((ct, index) => (

@@ -15,9 +15,18 @@ export const useFeedComments = (
     contractIds,
     user?.id ?? '_'
   )
+
+  // Grid cards make for huge, unwieldy comment threads
+  const ignoredCommentTypes = ['gridCardsComponent']
+  const filteredUnseenCommentThreads = unseenCommentThreads.filter(
+    (ct) =>
+      !ct.content?.content?.some((c) =>
+        ignoredCommentTypes.includes(c.type ?? '')
+      )
+  )
   const parentCommentsByContractId = groupBy(
     orderBy(
-      unseenCommentThreads.filter((c) => !c.replyToCommentId),
+      filteredUnseenCommentThreads.filter((c) => !c.replyToCommentId),
       [(c) => c.likes ?? 0, (c) => c.createdTime],
       ['desc', 'desc']
     ),
@@ -26,7 +35,7 @@ export const useFeedComments = (
 
   const childCommentsByParentCommentId = groupBy(
     sortBy(
-      unseenCommentThreads.filter((c) => c.replyToCommentId),
+      filteredUnseenCommentThreads.filter((c) => c.replyToCommentId),
       (c) => c.createdTime
     ),
     (c) => c.replyToCommentId
