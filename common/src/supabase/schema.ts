@@ -509,17 +509,17 @@ export interface Database {
       topic_embeddings: {
         Row: {
           created_at: string
-          embedding: string
+          embedding: number[]
           topic: string
         }
         Insert: {
           created_at?: string
-          embedding: string
+          embedding: number[]
           topic: string
         }
         Update: {
           created_at?: string
-          embedding?: string
+          embedding?: number[]
           topic?: string
         }
       }
@@ -767,19 +767,19 @@ export interface Database {
       user_topics: {
         Row: {
           created_at: string
-          topic_embedding: string
+          topic_embedding: number[]
           topics: string[]
           user_id: string
         }
         Insert: {
           created_at?: string
-          topic_embedding: string
+          topic_embedding: number[]
           topics: string[]
           user_id: string
         }
         Update: {
           created_at?: string
-          topic_embedding?: string
+          topic_embedding?: number[]
           topics?: string[]
           user_id?: string
         }
@@ -1545,7 +1545,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from: {
         Args: {
           uid: string
-          p_embedding: string
+          p_embedding: number[]
           n: number
           excluded_contract_ids: string[]
           max_dist: number
