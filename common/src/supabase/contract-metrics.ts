@@ -5,6 +5,41 @@ import { getContracts } from './contracts'
 import { Contract, CPMMContract } from '../contract'
 import { ContractMetric } from 'common/contract-metric'
 
+export async function getContractMetricsOutcomeCount(
+  contractId: string,
+  outcome: 'yes' | 'no',
+  db: SupabaseClient
+) {
+  const columnName = `has_${outcome}_shares`
+
+  const { data, count } = await run(
+    db
+      .from('user_contract_metrics')
+      .select(columnName, { count: 'exact' })
+      .eq('contract_id', contractId)
+      .eq(columnName, true)
+  )
+
+  return count ? count : 0
+}
+
+export async function getTopContractMetrics(
+  contractId: string,
+  limit: number,
+  db: SupabaseClient
+) {
+  const { data } = await run(
+    db
+      .from('user_contract_metrics')
+      .select('data')
+      .eq('contract_id', contractId)
+      .order('profit', { ascending: false } as any)
+      .limit(limit)
+  )
+
+  return data ? data.map((doc) => doc.data as ContractMetrics) : []
+}
+
 export async function getUserContractMetrics(
   userId: string,
   contractId: string,
@@ -16,6 +51,43 @@ export async function getUserContractMetrics(
       .eq('contract_id', contractId)
   )
   return data.map((r) => r.data) as ContractMetrics[]
+}
+
+export async function getCPMMContractUserContractMetrics(
+  contractId: string,
+  limit: number,
+  db: SupabaseClient
+) {
+  async function fetchOutcomeMetrics(outcome: 'yes' | 'no') {
+    const hasSharesColumn = `has_${outcome}_shares`
+    const totalSharesColumn = `total_shares_${outcome}`
+
+    const { data, error } = await db
+      .from('user_contract_metrics')
+      .select('data')
+      .eq('contract_id', contractId)
+      .eq(hasSharesColumn, true)
+      .order(totalSharesColumn, { ascending: false } as any)
+      .limit(limit)
+
+    if (error) {
+      throw error
+    }
+
+    return data.map((doc) => doc.data as ContractMetrics)
+  }
+
+  try {
+    const yesMetrics = await fetchOutcomeMetrics('yes')
+    const noMetrics = await fetchOutcomeMetrics('no')
+    return {
+      YES: yesMetrics,
+      NO: noMetrics,
+    }
+  } catch (error) {
+    console.error('Error fetching user contract metrics:', error)
+    return { YES: [], NO: [] }
+  }
 }
 
 export async function getUserContractMetricsWithContracts(
@@ -202,6 +274,6 @@ export async function getContractMetricsForContractId(
 }
 
 export type ShareholderStats = {
-  yesShareholders: number,
+  yesShareholders: number
   noShareholders: number
 }

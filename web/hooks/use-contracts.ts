@@ -1,7 +1,6 @@
 import { AnyContractType } from 'common/contract'
 import { filterDefined } from 'common/util/array'
 import { useEffect, useState } from 'react'
-import { getPrivateContractBySlug } from 'web/lib/firebase/api'
 import {
   Contract,
   listenForContract,
@@ -47,27 +46,4 @@ export const useContracts = (
   options: { loadOnce?: boolean } = {}
 ) => {
   return useStoreItems(filterDefined(contractIds), listenForContract, options)
-}
-
-export function usePrivateContract(contractSlug: string, delay: number) {
-  const [privateContract, setPrivateContract] = usePersistentState<
-    Contract<AnyContractType> | undefined | null
-  >(undefined, {
-    key: 'private-contract-' + contractSlug,
-    store: inMemoryStore(),
-  })
-  const isAuthorized = useIsAuthorized()
-  useEffect(() => {
-    // if there is no user
-    if (isAuthorized === null) {
-      setPrivateContract(null)
-    } else if (isAuthorized) {
-      getPrivateContractBySlug({ contractSlug: contractSlug }).then(
-        (result) => {
-          setPrivateContract(result as Contract<AnyContractType>)
-        }
-      )
-    }
-  }, [contractSlug, isAuthorized])
-  return privateContract
 }

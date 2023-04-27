@@ -54,17 +54,13 @@ import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { getContractParamz } from 'web/lib/contracts'
+import { getContractParams } from 'web/lib/firebase/api'
 import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
-import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { getContractParams } from 'web/lib/firebase/api'
-import { useContractParams } from 'web/hooks/use-contract-supabase'
 
 export type ContractParameters = {
   contractSlug: string
@@ -76,7 +72,11 @@ export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  const contractParameters = await getContractParams({ contractSlug })
+  const contractParameters = await getContractParams({
+    contractSlug,
+    fromStaticProps: true,
+  })
+
   return {
     props: contractParameters,
   }
@@ -99,10 +99,7 @@ export default function ContractPage(props: {
   return (
     <Page className="!max-w-[1400px]" mainClassName="!col-span-10">
       {visibility == 'private' && (
-        <PrivateContractPage
-          contractSlug={contractSlug}
-          contractParams={contractParams}
-        />
+        <PrivateContractPage contractSlug={contractSlug} />
       )}
       {visibility != 'private' && contractParams && (
         <NonPrivateContractPage contractParams={contractParams} />
