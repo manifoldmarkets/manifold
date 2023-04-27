@@ -1,39 +1,41 @@
 import { User } from 'common/user'
-import { useRecentReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
+import { useUnseenReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
 import { DAY_MS } from 'common/util/time'
-import { orderBy, uniqBy } from 'lodash'
+import { groupBy, orderBy, sortBy, uniqBy } from 'lodash'
 import { useEffect } from 'react'
 import { Bet } from 'common/bet'
 import { getBetsOnContracts } from 'web/lib/supabase/bets'
-import { filterDefined } from 'common/util/array'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export const useFeedComments = (
   user: User | null | undefined,
   contractIds: string[]
 ) => {
-  const cutoff = Date.now() - DAY_MS * 10
-  const recentComments = useRecentReplyChainCommentsOnContracts(
+  const unseenCommentThreads = useUnseenReplyChainCommentsOnContracts(
     contractIds,
-    cutoff,
     user?.id ?? '_'
   )
-  return filterDefined(
-    recentComments
-      .filter((c) => !c.replyToCommentId)
-      .map((pc) => {
-        const childComments = orderBy(
-          recentComments.filter((c) => c.replyToCommentId === pc.id),
-          (c) => c.createdTime
-        )
-        return pc.userId === user?.id && childComments.length === 0
-          ? null
-          : {
-              parentComment: pc,
-              childComments,
-            }
-      })
+  const parentCommentsByContractId = groupBy(
+    orderBy(
+      unseenCommentThreads.filter((c) => !c.replyToCommentId),
+      [(c) => c.likes ?? 0, (c) => c.createdTime],
+      ['desc', 'desc']
+    ),
+    (c) => c.contractId
   )
+
+  const childCommentsByParentCommentId = groupBy(
+    sortBy(
+      unseenCommentThreads.filter((c) => c.replyToCommentId),
+      (c) => c.createdTime
+    ),
+    (c) => c.replyToCommentId
+  )
+
+  return {
+    parentCommentsByContractId,
+    childCommentsByParentCommentId,
+  }
 }
 
 export const useFeedBets = (

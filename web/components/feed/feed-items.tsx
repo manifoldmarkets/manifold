@@ -12,6 +12,7 @@ import { Bet } from 'common/bet'
 import { sumBy } from 'lodash'
 import clsx from 'clsx'
 import { Row } from '../layout/row'
+import { ContractComment } from 'common/comment'
 
 export const FeedItems = (props: {
   contracts: Contract[]
@@ -19,29 +20,27 @@ export const FeedItems = (props: {
 }) => {
   const { contracts, user } = props
   const contractIds = contracts.map((c) => c.id)
-  const commentThreads = useFeedComments(user, contractIds)
+  const maxItems = 2
+  const { parentCommentsByContractId, childCommentsByParentCommentId } =
+    useFeedComments(user, contractIds)
   const recentBets = useFeedBets(user, contractIds)
-  const maxItems = 3
   const groupedItems = contracts.map((contract) => {
-    const relatedComments = commentThreads.filter(
-      (thread) => thread.parentComment.contractId === contract.id
-    )
+    const parentComments = parentCommentsByContractId[contract.id] ?? []
     const relatedBets = recentBets.filter(
       (bet) => bet.contractId === contract.id
     )
     return {
       contract,
-      commentThreads: relatedComments.slice(0, maxItems),
+      parentComments: parentComments.slice(0, maxItems),
       relatedBets: relatedBets.slice(0, maxItems),
     }
   })
 
-  const hasItems = commentThreads.length > 0 || recentBets.length > 0
-
   return (
     <Col>
       {groupedItems.map((itemGroup) => {
-        const { contract, commentThreads, relatedBets } = itemGroup
+        const { contract, parentComments, relatedBets } = itemGroup
+        const hasItems = parentComments.length > 0 || recentBets.length > 0
 
         return (
           <Col
@@ -60,11 +59,15 @@ export const FeedItems = (props: {
             <Row className="bg-canvas-0">
               <FeedCommentItem
                 contract={contract}
-                commentThreads={commentThreads}
+                commentThreads={parentComments.map((parentComment) => ({
+                  parentComment,
+                  childComments:
+                    childCommentsByParentCommentId[parentComment.id] ?? [],
+                }))}
               />
             </Row>
             <Row className="bg-canvas-0">
-              {commentThreads.length === 0 && (
+              {parentComments.length === 0 && (
                 <FeedBetsItem contract={contract} bets={relatedBets} />
               )}
             </Row>
@@ -104,7 +107,10 @@ const FeedBetsItem = (props: { contract: Contract; bets: Bet[] }) => {
 }
 const FeedCommentItem = (props: {
   contract: Contract
-  commentThreads: ReturnType<typeof useFeedComments>
+  commentThreads: {
+    parentComment: ContractComment
+    childComments: ContractComment[]
+  }[]
 }) => {
   const { contract } = props
   const ignoredCommentTypes = ['gridCardsComponent']

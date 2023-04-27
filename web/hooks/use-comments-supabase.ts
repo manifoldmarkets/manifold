@@ -22,9 +22,8 @@ export function useComments(contractId: string, limit: number) {
   return comments
 }
 
-export function useRecentReplyChainCommentsOnContracts(
+export function useUnseenReplyChainCommentsOnContracts(
   contractIds: string[],
-  afterTime: number,
   userId: string
 ) {
   const [comments, setComments] = usePersistentInMemoryState<ContractComment[]>(
