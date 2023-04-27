@@ -38,10 +38,10 @@ export function TopicSelector(props: {
           }
         }}
       >
-        <option value="">🖤 For you</option>
         <option value={CUSTOM_TOPIC_KEY} onClick={() => setOpen(true)}>
-          🔧 Custom
+          ⚙️ Customize Your Topics
         </option>
+        <option value="">🖤 For you</option>
         {subtopics.map((subtopic) => (
           <option key={subtopic} value={cleanTopic(subtopic)}>
             {subtopic}
