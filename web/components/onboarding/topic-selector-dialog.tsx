@@ -34,7 +34,7 @@ export function TopicSelectorDialog(props: {
   }, [selectedTopics])
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedTopics.length === 0 && open) {
       db.from('user_topics')
         .select('topics')
         .eq('user_id', user.id)
@@ -45,7 +45,7 @@ export function TopicSelectorDialog(props: {
           )
         })
     }
-  }, [user])
+  }, [user, selectedTopics, open])
 
   const recomputeEmbeddingsAndReload = () => {
     if (user) {
