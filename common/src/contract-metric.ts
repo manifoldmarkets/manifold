@@ -29,3 +29,5 @@ export type ContractMetric = {
   userAvatarUrl: string
   lastBetTime: number
 }
+
+export type ContractMetricsByOutcome = Record<string, ContractMetric[]>

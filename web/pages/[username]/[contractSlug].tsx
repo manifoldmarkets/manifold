@@ -1,7 +1,7 @@
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
-import { visibility } from 'common/contract'
+import { ContractParams, visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
@@ -54,7 +54,7 @@ import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { getContractParams } from 'web/lib/contracts'
+import { getContractParamz } from 'web/lib/contracts'
 import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
@@ -63,27 +63,23 @@ import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import { getContractParams } from 'web/lib/firebase/api'
+import { useContractParams } from 'web/hooks/use-contract-supabase'
 
-export type ContractParams = Awaited<ReturnType<typeof getContractParams>>
+export type ContractParameters = {
+  contractSlug: string
+  visibility: visibility | null
+  contractParams?: ContractParams
+}
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  const adminDb = await initSupabaseAdmin()
-  const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
-
-  // No contract found
-  if (contract === null || contract.deleted)
-    return { props: { contractSlug, visibility: null } }
-
-  // Private markets
-  const { visibility } = contract
-  if (visibility === 'private') return { props: { contractSlug, visibility } }
-
-  // Public markets
-  const contractParams = await getContractParams(contract)
-  return { props: { visibility, contractSlug, contractParams } }
+  const contractParameters = await getContractParams({ contractSlug })
+  return {
+    props: contractParameters,
+  }
 }
 
 export async function getStaticPaths() {
@@ -96,18 +92,17 @@ export default function ContractPage(props: {
   contractParams?: ContractParams
 }) {
   const { visibility, contractSlug, contractParams } = props
+
   if (!visibility) {
-    console.log(`There was no visibility parameter detected for your market
-      \nvisibility: ${visibility}
-      \nslug: ${contractSlug}
-      \ncontractParams: ${JSON.stringify(contractParams)}
-      `)
     return <Custom404 />
   }
   return (
     <Page className="!max-w-[1400px]" mainClassName="!col-span-10">
       {visibility == 'private' && (
-        <PrivateContractPage contractSlug={contractSlug} />
+        <PrivateContractPage
+          contractSlug={contractSlug}
+          contractParams={contractParams}
+        />
       )}
       {visibility != 'private' && contractParams && (
         <NonPrivateContractPage contractParams={contractParams} />

@@ -1,40 +1,34 @@
-import { z } from 'zod'
-import {
-  APIError,
-  MaybeAuthedEndpoint,
-  authEndpoint,
-  validate,
-} from './helpers'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { Bet } from 'common/bet'
+import { getInitialProbability } from 'common/calculate'
+import { ContractMetrics } from 'common/calculate-metrics'
 import {
   BinaryContract,
   Contract,
   PseudoNumericContract,
 } from 'common/contract'
-import { getUserIsMember } from 'shared/helpers/get-user-is-member'
-import { Bet } from 'common/bet'
-import { removeUndefinedProps } from 'common/util/object'
 import { HistoryPoint } from 'common/src/chart'
-import { IDatabase } from 'pg-promise'
-import { ContractMetric } from 'common/contract-metric'
-import { ContractMetrics } from 'common/calculate-metrics'
-import {
-  ShareholderStats,
-  getTotalContractMetrics,
-} from 'common/supabase/contract-metrics'
-import { getInitialProbability } from 'common/calculate'
-import { compressPoints, pointsToBase64 } from 'common/util/og'
-import { getUser } from 'shared/utils'
-import { getRelatedContracts } from 'common/supabase/related-contracts'
 import {
   CONTRACT_BET_FILTER,
   getBets,
   getTotalBetCount,
 } from 'common/supabase/bets'
 import { getAllComments } from 'common/supabase/comments'
+import {
+  ShareholderStats,
+  getTotalContractMetrics,
+} from 'common/supabase/contract-metrics'
+import { getRelatedContracts } from 'common/supabase/related-contracts'
+import { removeUndefinedProps } from 'common/util/object'
+import { compressPoints, pointsToBase64 } from 'common/util/og'
+import { IDatabase } from 'pg-promise'
+import { getUserIsMember } from 'shared/helpers/get-user-is-member'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { getUser } from 'shared/utils'
+import { z } from 'zod'
+import { APIError, AuthedUser, MaybeAuthedEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   contractSlug: z.string(),
@@ -42,27 +36,23 @@ const bodySchema = z.object({
 
 export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
   const { contractSlug } = validate(bodySchema, req.body)
-  //   if (!auth.uid) {
-  //     return false
-  //   }
-  //   const userCanAccess = await getUserIsMember(pg, groupId, auth.uid)
   const db = createSupabaseClient()
   const pg = createSupabaseDirectClient()
   const contract = (
     await pg.one(`select data from contracts where slug = $1`, [contractSlug])
   ).data
 
-  // console.log('RELATED CONTRACTS', relatedContracts)
+  contractErrors(contract)
   const groupId =
     contract.groupLinks && contract.groupLinks.length > 0
       ? contract.groupLinks[0].groupId
       : undefined
   const canAccessContract =
-    contract.visibility != 'private' ||
-    (auth && groupId && (await getUserIsMember(pg, groupId, auth?.uid)))
+    !contract.deleted &&
+    (contract.visibility != 'private' ||
+      (auth && groupId && (await getUserIsMember(pg, groupId, auth?.uid))))
   if (canAccessContract) {
     const totalBets = await getTotalBetCount(contract.id, db)
-    // console.log('totalBets', totalBets)
     const shouldUseBetPoints = contract.mechanism === 'cpmm-1'
 
     // in original code, prioritize newer bets via descending order
@@ -99,7 +89,6 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
       ? await fetchTopContractMetrics(pg, contract.id, 10)
       : []
 
-    // console.log('topContractMetrics', topContractMetrics)
     let shareholderStats: ShareholderStats | undefined = undefined
     if (contract.mechanism === 'cpmm-1') {
       const yesCount = await fetchContractMetricsOutcomeCount(
@@ -117,7 +106,6 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
         noShareholders: noCount,
       }
     }
-    // console.log('shareholderStats', shareholderStats)
     const totalPositions =
       contract.mechanism === 'cpmm-1'
         ? await getTotalContractMetrics(contract.id, db)
@@ -142,13 +130,30 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
     const creator = await getUser(contract.creatorId)
 
     const relatedContracts = await getRelatedContracts(contract, 9, db)
+    return {
+      contractSlug: contract.slug,
+      visibility: contract.visibility,
+      contractParams: removeUndefinedProps({
+        contract,
+        historyData: {
+          bets: shouldUseBetPoints ? bets.slice(0, 100) : bets,
+          points: betPoints,
+        },
+        pointsString,
+        comments,
+        userPositionsByOutcome,
+        totalPositions,
+        totalBets,
+        topContractMetrics,
+        creatorTwitter: creator?.twitterHandle,
+        relatedContracts,
+        shareholderStats,
+      }),
+    }
   }
-  // checks if user is member
-
-  if (canAccessContract) {
-    return contract
-  }
-  return null
+  return contract
+    ? { contractSlug: contract.slug, visibility: contract.visibility }
+    : { contractSlug, visibility: null }
 })
 
 function contractErrors(contract: Contract) {
@@ -167,28 +172,6 @@ function contractErrors(contract: Contract) {
         'Too many groups associated with this private contract!'
       )
     }
-  }
-}
-
-async function fetchComments(
-  pg: IDatabase<any>,
-  contractId: string,
-  limit: number
-): Promise<Comment[]> {
-  const sqlQuery = `
-    SELECT data
-    FROM contract_comments
-    WHERE contract_id = $1
-    ORDER BY created_time DESC
-    LIMIT $2
-  `
-
-  try {
-    const results = await pg.manyOrNone(sqlQuery, [contractId, limit])
-    return results.map((result) => result.data)
-  } catch (error) {
-    console.error('Error fetching comments:', error)
-    return []
   }
 }
 
@@ -246,7 +229,7 @@ async function fetchContractMetricsOutcomeCount(
   outcome: 'yes' | 'no'
 ): Promise<number> {
   const sqlQuery = `
-    SELECT COUNT(*)
+    SELECT COUNT(*)::integer
     FROM user_contract_metrics
     WHERE contract_id = $1
       AND has_${outcome}_shares = true

@@ -28,7 +28,7 @@ import {
 import { db } from 'web/lib/supabase/db'
 import { getUser } from 'web/lib/supabase/user'
 
-export async function getContractParams(contract: Contract) {
+export async function getContractParamz(contract: Contract) {
   const contractId = contract.id
   const totalBets = await getTotalBetCount(contractId, db)
   const shouldUseBetPoints = contract.mechanism === 'cpmm-1'
