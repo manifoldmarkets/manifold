@@ -37,7 +37,6 @@ export const boostmarket = authEndpoint(async (req, auth) => {
     [marketId]
   )
 
-  pg.connect()
   const firestore = admin.firestore()
 
   log(

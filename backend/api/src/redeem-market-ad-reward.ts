@@ -14,7 +14,6 @@ const pg = createSupabaseDirectClient()
 export const redeemboost = authEndpoint(async (req, auth) => {
   const { adId } = validate(schema, req.body)
 
-  pg.connect()
   const firestore = admin.firestore()
 
   // search txns if you've already reedemed this boost
