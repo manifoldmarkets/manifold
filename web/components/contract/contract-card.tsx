@@ -649,7 +649,7 @@ function ClaimButton(props: {
           toast.success(`+${formatMoney(reward)}`)
           setClaimed(true)
         } catch (err) {
-          toast.error(err.message ?? err)
+          toast.error((err as any).message ?? err)
         } finally {
           setLoading(false)
         }

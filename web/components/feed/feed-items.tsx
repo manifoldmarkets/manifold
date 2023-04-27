@@ -26,13 +26,13 @@ export const FeedItems = (props: {
 
   const organicContracts = props.contracts.map((c) => ({
     ...c,
-    type: 'contract',
+    type: 'contract' as const,
   }))
 
   const boostedContracts =
     boosts?.map((boost) => {
       const { market_data, ...rest } = boost
-      return { ...(market_data as Contract), ...rest, type: 'boost' }
+      return { ...(market_data as Contract), ...rest, type: 'boost' as const }
     }) ?? []
 
   const contracts = zipperMerge(organicContracts, boostedContracts, AD_PERIOD)
