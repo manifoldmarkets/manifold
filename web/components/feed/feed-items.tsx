@@ -19,7 +19,7 @@ export const AD_PERIOD = 4
 
 export const FeedItems = (props: {
   contracts: Contract[]
-  boosts: BoostsType
+  boosts?: BoostsType
   user: User | null | undefined
 }) => {
   const { user, boosts } = props
