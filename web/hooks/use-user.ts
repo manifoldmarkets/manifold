@@ -29,7 +29,6 @@ export const usePrivateUser = () => {
 
 export const useIsAuthorized = () => {
   const authUser = useContext(AuthContext)
-  console.log(authUser)
   return authUser?.authLoaded || authUser === null ? !!authUser : undefined
 }
 
