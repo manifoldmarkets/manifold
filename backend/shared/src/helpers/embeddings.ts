@@ -119,10 +119,10 @@ export async function updateUsersCardViewEmbeddings(
         avg(contract_embeddings.embedding) as average_embedding
       from
         contract_embeddings
-        join user_events on user_events.data->>'contractId' = contract_embeddings.contract_id
+        join user_events on user_events.contract_id = contract_embeddings.contract_id
         join users on users.id = user_events.user_id
       where
-        user_events.data->>'name' = 'view market card'
+        user_events.name = 'view market card'
       group by
         user_events.user_id
     )

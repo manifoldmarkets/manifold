@@ -88,6 +88,7 @@ export const BOT_USERNAMES = [
   'GPT4',
   'EntropyBot',
   'veat',
+  'ms_test',
 ]
 
 export const CORE_USERNAMES = [
@@ -176,6 +177,7 @@ export const HOME_BLOCKED_GROUP_SLUGS = [
   'test',
   'private-markets',
   'proofniks',
+  'personal-goals',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

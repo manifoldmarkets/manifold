@@ -20,6 +20,7 @@ export function AnswerItem(props: {
   totalChosenProb?: number
   onChoose: (answerId: string, prob: number) => void
   onDeselect: (answerId: string) => void
+  isInModal?: boolean
 }) {
   const {
     answer,
@@ -29,6 +30,7 @@ export function AnswerItem(props: {
     totalChosenProb,
     onChoose,
     onDeselect,
+    isInModal,
   } = props
   const { resolution, resolutions } = contract
   const { username, avatarUrl, name, number, text } = answer
@@ -43,7 +45,8 @@ export function AnswerItem(props: {
   return (
     <div
       className={clsx(
-        'flex flex-col gap-4 rounded p-4 sm:flex-row',
+        'flex flex-col gap-4 rounded p-4',
+        isInModal ? '' : 'sm:flex-row',
         wasResolvedTo
           ? resolution === 'MKT'
             ? 'mb-2 bg-blue-500/20'
@@ -72,7 +75,12 @@ export function AnswerItem(props: {
         </Row>
       </Col>
 
-      <Row className="items-center justify-end gap-4 self-end sm:self-start">
+      <Row
+        className={clsx(
+          'items-center justify-end gap-4 self-end',
+          isInModal ? '' : 'sm:self-start'
+        )}
+      >
         {!wasResolvedTo &&
           (showChoice === 'checkbox' ? (
             <Input

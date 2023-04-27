@@ -106,16 +106,16 @@ create or replace view
       member_id,
       gp.id as group_id,
       gp.data as group_data,
-      gp.data ->> 'name' as group_name,
-      gp.data ->> 'slug' as group_slug,
-      gp.data ->> 'creatorId' as creator_id,
+      gp.name as group_name,
+      gp.slug as group_slug,
+      gp.creator_id as creator_id,
       users.data ->> 'name' as name,
       users.data ->> 'username' as username,
       users.data ->> 'avatarUrl' as avatar_url,
       (
         select
           case
-            when (gp.data ->> 'creatorId')::text = member_id then 'admin'
+            when gp.creator_id = member_id then 'admin'
             else (gm.data ->> 'role')
           end
       ) as role,
@@ -252,10 +252,24 @@ order by
 
 create or replace view
   public_contract_bets as (
-  select
-    *
-  from
-    contract_bets
-  where
+    select
+      *
+    from
+      contract_bets
+    where
       visibility = 'public'
   );
+
+
+create view liked_sorted_comments as
+SELECT
+  cc.contract_id,
+  cc.comment_id,
+  cc.data->>'userId' AS user_id,
+  cc.data
+FROM
+  contract_comments cc
+WHERE
+    (cc.data->'likes')::numeric >= 1
+ORDER BY
+  (cc.data->>'createdTime')::bigint DESC;

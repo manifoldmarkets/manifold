@@ -37,6 +37,16 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
     const { term, filter, sort, offset, limit, fuzzy, groupId, creatorId } =
       validate(bodySchema, req.body)
     const pg = createSupabaseDirectClient()
+    const hasGroupAccess = groupId
+      ? await pg
+          .one('select * from check_group_accessibility($1,$2)', [
+            groupId,
+            auth?.uid ?? null,
+          ])
+          .then((r) => {
+            return r.check_group_accessibility
+          })
+      : undefined
     const searchMarketSQL = getSearchContractSQL({
       term,
       filter,
@@ -47,6 +57,7 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       groupId,
       creatorId,
       uid: auth?.uid,
+      hasGroupAccess,
     })
     const contracts = await pg.map(
       searchMarketSQL,
@@ -67,12 +78,31 @@ function getSearchContractSQL(contractInput: {
   groupId?: string
   creatorId?: string
   uid?: string
+  hasGroupAccess?: boolean
 }) {
-  const { term, filter, sort, offset, limit, fuzzy, groupId, creatorId, uid } =
-    contractInput
+  const {
+    term,
+    filter,
+    sort,
+    offset,
+    limit,
+    fuzzy,
+    groupId,
+    creatorId,
+    uid,
+    hasGroupAccess,
+  } = contractInput
   let query = ''
   const emptyTerm = term.length === 0
-  const whereSQL = getSearchContractWhereSQL(filter, sort, creatorId, uid)
+  const whereSQL = getSearchContractWhereSQL(
+    filter,
+    sort,
+    creatorId,
+    uid,
+    groupId,
+    hasGroupAccess
+  )
+
   if (groupId) {
     if (emptyTerm) {
       query = `
@@ -153,7 +183,9 @@ function getSearchContractWhereSQL(
   filter: string,
   sort: string,
   creatorId: string | undefined,
-  uid: string | undefined
+  uid: string | undefined,
+  groupId: string | undefined,
+  hasGroupAccess?: boolean
 ) {
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
@@ -168,13 +200,21 @@ function getSearchContractWhereSQL(
   OR (visibility = 'unlisted' AND creator_id='${uid}') 
   OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))`
 
+  const visibilitySQL = `AND (visibility = 'public' ${
+    uid ? otherVisibilitySQL : ''
+  })`
+
   return `
   WHERE (
    ${filterSQL[filter]}
   )
   ${sortFilter}
-  AND (visibility = 'public' ${uid ? otherVisibilitySQL : ''})
-   ${creatorId ? `and creator_id = '${creatorId}'` : ''}`
+  ${
+    (groupId && hasGroupAccess) || (!!creatorId && !!uid && creatorId === uid)
+      ? ''
+      : visibilitySQL
+  }
+  ${creatorId ? `and creator_id = '${creatorId}'` : ''}`
 }
 
 function getSearchContractSortSQL(

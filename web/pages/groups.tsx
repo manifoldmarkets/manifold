@@ -1,8 +1,11 @@
 import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { Contract } from 'common/contract'
 import { Group, groupPath, GroupsByTopic } from 'common/group'
 import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
+import { useMutation } from 'react-query'
+import { ContractsTable } from 'web/components/contract/contracts-table'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { Col } from 'web/components/layout/col'
@@ -11,18 +14,15 @@ import { Row } from 'web/components/layout/row'
 import { useGroupSearchResults } from 'web/components/search/query-groups'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
+import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
 import { useMemberGroupIds } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
-import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { searchContract } from 'web/lib/supabase/contracts'
-import { useMutation } from 'react-query'
-import { Contract } from 'common/contract'
-import { ContractsListEntry } from 'web/components/contract/contracts-list-entry'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Subtitle } from 'web/components/widgets/subtitle'
+import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 
 // TODO use trending groups
 
@@ -47,11 +47,6 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
       name: '💡 EA & Rationality',
       description: 'nerds with a math-based life philosophy',
       slugs: GroupsByTopic.rat,
-    },
-    {
-      name: '🤓 CGP Grey',
-      description: 'youtuber for econ, gov, history...',
-      slugs: GroupsByTopic.grey,
     },
     {
       name: '🤖 AI',
@@ -277,10 +272,12 @@ function SingleGroupInfo(props: {
           <LoadingIndicator />
         </div>
       )}
-      {trendingMutate.data &&
-        trendingMutate.data.data.map((c: Contract) => (
-          <ContractsListEntry contract={c} />
-        ))}
+      {trendingMutate.data && (
+        <ContractsTable
+          contracts={trendingMutate.data.data as Contract[]}
+          isMobile={true}
+        />
+      )}
 
       <div className={clsx('flex items-center justify-between gap-4 p-2')}>
         <Link

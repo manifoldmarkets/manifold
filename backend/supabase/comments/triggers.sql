@@ -1,9 +1,20 @@
 alter table contract_comments
 add column visibility text;
 
+alter table contract_comments
+add column user_id text;
+
+alter table contract_comments
+add column created_time timestamptz;
+
 create
 or replace function comment_populate_cols () returns trigger language plpgsql as $$ begin 
     if new.data is not null then new.visibility := (new.data)->>'visibility';
+    new.user_id := (new.data)->>'userId';
+    new.created_time := case
+  when new.data ? 'createdTime' then millis_to_ts(((new.data)->>'createdTime')::bigint)
+  else null
+  end;
     end if;
     return new;
 end $$;

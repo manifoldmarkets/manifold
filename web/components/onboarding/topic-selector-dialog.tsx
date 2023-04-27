@@ -10,8 +10,13 @@ import { Button } from 'web/components/buttons/button'
 import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { db } from 'web/lib/supabase/db'
 import { updateUserEmbedding } from 'web/lib/firebase/api'
+import { filterDefined } from 'common/util/array'
 
-export function TopicSelectorDialog() {
+export function TopicSelectorDialog(props: {
+  setOpen?: (open: boolean) => void
+  open?: boolean
+}) {
+  const { setOpen, open } = props
   const user = useUser()
 
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
@@ -28,6 +33,20 @@ export function TopicSelectorDialog() {
     }
   }, [selectedTopics])
 
+  useEffect(() => {
+    if (user && selectedTopics.length === 0 && open) {
+      db.from('user_topics')
+        .select('topics')
+        .eq('user_id', user.id)
+        .limit(1)
+        .then(({ data }) => {
+          setSelectedTopics(
+            filterDefined(data?.[0]?.topics?.map((t: string) => t) ?? [])
+          )
+        })
+    }
+  }, [user, selectedTopics, open])
+
   const recomputeEmbeddingsAndReload = () => {
     if (user) {
       setIsLoading(true)
@@ -40,8 +59,8 @@ export function TopicSelectorDialog() {
 
   return (
     <Modal
-      open={true}
-      setOpen={noop}
+      open={open !== undefined ? open : false}
+      setOpen={setOpen ? setOpen : noop}
       className="bg-canvas-0 overflow-hidden rounded-md"
     >
       <Col className="h-[32rem] overflow-y-auto">
@@ -84,7 +103,12 @@ export function TopicSelectorDialog() {
 
         <div className="from-canvas-0 pointer-events-none sticky bottom-0 bg-gradient-to-t to-transparent text-right">
           <span className="pointer-events-auto ml-auto inline-flex p-6 pt-2">
-            <Button onClick={recomputeEmbeddingsAndReload} loading={isLoading}>
+            <Button
+              onClick={
+                setOpen ? () => setOpen(false) : recomputeEmbeddingsAndReload
+              }
+              loading={isLoading}
+            >
               Done
             </Button>
           </span>

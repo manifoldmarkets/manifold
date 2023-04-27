@@ -661,7 +661,6 @@ export function getTextColor(contract: Contract) {
   if (resolution) {
     return OUTCOME_TO_COLOR_TEXT[resolution as resolution] ?? 'text-primary-200'
   }
-
   if ((contract.closeTime ?? Infinity) < Date.now()) {
     return 'text-ink-600'
   }

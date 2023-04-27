@@ -62,6 +62,7 @@ import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import { GradientContainer } from 'web/components/widgets/gradient-container'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -383,21 +384,27 @@ export function ContractPageContent(props: {
               user &&
               !resolution &&
               (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
-                <NumericResolutionPanel
-                  isAdmin={!!isAdmin}
-                  creator={user}
-                  isCreator={!isAdmin}
-                  contract={contract}
-                />
+                <GradientContainer>
+                  <NumericResolutionPanel
+                    isAdmin={!!isAdmin}
+                    creator={user}
+                    isCreator={!isAdmin}
+                    contract={contract}
+                  />
+                </GradientContainer>
               ) : outcomeType === 'BINARY' ? (
-                <ResolutionPanel
-                  isAdmin={isAdmin || trustworthy}
-                  creator={user}
-                  isCreator={!isAdmin}
-                  contract={contract}
-                />
+                <GradientContainer>
+                  <ResolutionPanel
+                    isAdmin={isAdmin || trustworthy}
+                    creator={user}
+                    isCreator={!isAdmin}
+                    contract={contract}
+                  />
+                </GradientContainer>
               ) : outcomeType === 'QUADRATIC_FUNDING' ? (
-                <QfResolutionPanel contract={contract} />
+                <GradientContainer>
+                  <QfResolutionPanel contract={contract} />
+                </GradientContainer>
               ) : null)}
 
             {(outcomeType === 'FREE_RESPONSE' ||

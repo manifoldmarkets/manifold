@@ -195,10 +195,14 @@ create index if not exists user_reactions_content_id on user_reactions (
 alter table user_reactions
 cluster on user_reactions_type;
 
+
 create table if not exists
   user_events (
     user_id text not null,
     event_id text not null,
+    contract_id text null,
+    name text null,
+    ts timestamptz null,
     data jsonb not null,
     fs_updated_time timestamp not null,
     primary key (user_id, event_id)
@@ -213,21 +217,39 @@ select
   using (true);
 
 create index if not exists user_events_data_gin on user_events using GIN (data);
+create index if not exists user_events_name on user_events (user_id, name);
+create index if not exists user_events_ts on user_events (user_id, ts);
 
-create index if not exists user_events_name on user_events (user_id, (data ->> 'name'));
-
+create index if not exists user_events_ad_skips on user_events (name, (to_jsonb(data)->>'adId'))
+where name = 'Skip ad';
+CREATE INDEX IF NOT EXISTS user_events_comment_view ON user_events (user_id, name, (data->>'commentId'));
 create index if not exists user_events_viewed_markets on user_events (
   user_id,
-  (data ->> 'name'),
-  (data ->> 'contractId'),
-  ((data -> 'timestamp')::bigint) desc
+  name,
+  contract_id,
+  ts desc
 )
-where
-  data ->> 'name' = 'view market'
-  or data ->> 'name' = 'view market card';
+where name = 'view market' or name = 'view market card';
 
-alter table user_events
-cluster on user_events_name;
+alter table user_events cluster on user_events_name;
+
+create or replace function user_event_populate_cols()
+  returns trigger
+  language plpgsql
+as $$ begin
+  if new.data is not null then
+    new.name := (new.data)->>'name';
+    new.contract_id := (new.data)->>'contractId';
+    new.ts := case
+      when new.data ? 'timestamp' then millis_to_ts(((new.data)->>'timestamp')::bigint)
+      else null
+    end;
+  end if;
+  return new;
+end $$;
+
+create trigger user_event_populate before insert or update on user_events for each row
+execute function user_event_populate_cols();
 
 create table if not exists
   user_seen_markets (
@@ -482,6 +504,9 @@ select
   using (true);
 
 create index if not exists contract_comments_data_gin on contract_comments using GIN (data);
+CREATE INDEX contract_comments_contract_id_idx ON contract_comments (contract_id);
+CREATE INDEX contract_comments_data_likes_idx ON contract_comments (((data -> 'likes')::numeric));
+CREATE INDEX contract_comments_data_created_time_idx ON contract_comments (((data ->> 'createdTime')::bigint));
 
 alter table contract_comments
 cluster on contract_comments_pkey;

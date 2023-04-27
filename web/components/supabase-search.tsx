@@ -25,6 +25,7 @@ import { Col } from './layout/col'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { SiteLink } from './widgets/site-link'
+import { useIsAuthorized } from 'web/hooks/use-user'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -283,10 +284,12 @@ export function SupabaseContractSearch(props: {
               '' + searchParams.current?.sort ??
               ''
             }
+            filter={searchParams.current?.filter}
             contracts={contracts}
             loadMore={loadMoreContracts}
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
+            headerClassName={headerClassName}
           />
         ) : (
           <ContractsGrid
@@ -397,13 +400,15 @@ function SupabaseContractSearchControls(props: {
     track('select search sort', { sort: newSort })
   }
 
+  const isAuth = useIsAuthorized()
+
   useEffect(() => {
     onSearchParametersChanged({
       query: query,
       sort: sort as Sort,
       filter: filter as filter,
     })
-  }, [query, sort, filter])
+  }, [query, sort, filter, isAuth])
 
   return (
     <div

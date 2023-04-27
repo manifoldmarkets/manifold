@@ -5,7 +5,7 @@ import { buildArray } from 'common/util/array'
 import { Dictionary, sortBy, uniqBy } from 'lodash'
 import Image from 'next/image'
 import { useEffect } from 'react'
-import { ContractStatusLabel } from 'web/components/contract/contracts-list-entry'
+import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import {
   usePersistentState,
   inMemoryStore,

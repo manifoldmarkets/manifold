@@ -8,3 +8,22 @@ select EXISTS (
                 and member_id = this_user_id
             )
     ) $$;
+
+create
+or replace function check_group_accessibility (this_group_id text, this_user_id text) returns boolean as $$
+declare
+    is_accessible boolean;
+begin
+    select
+        case
+            when g.privacy_status in ('public', 'curated') then true
+            when g.privacy_status = 'private' then is_group_member(this_group_id, this_user_id)
+            else false
+        end
+    into is_accessible
+    from groups g
+    where g.id = this_group_id;
+
+    return is_accessible;
+end;
+$$ language plpgsql immutable parallel safe;

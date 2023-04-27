@@ -110,3 +110,25 @@ export async function getTotalContractMetricsCount(contractId: string) {
   )
   return resp.data().count
 }
+
+export async function getContractMetricsYesCount(contractId: string) {
+  const resp = await getCountFromServer(
+    query(
+      collectionGroup(db, 'contract-metrics'),
+      where('contractId', '==', contractId),
+      where('hasYesShares', '==', true)
+    )
+  )
+  return resp.data().count
+}
+
+export async function getContractMetricsNoCount(contractId: string) {
+  const resp = await getCountFromServer(
+    query(
+      collectionGroup(db, 'contract-metrics'),
+      where('contractId', '==', contractId),
+      where('hasNoShares', '==', true)
+    )
+  )
+  return resp.data().count
+}
