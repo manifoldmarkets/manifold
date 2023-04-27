@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore'
 
 import { db } from './init'
-import { Bet, LimitBet } from 'common/bet'
+import { Bet, BetFilter, LimitBet } from 'common/bet'
 import { listenForValues } from './utils'
 export type { Bet }
 
@@ -22,21 +22,6 @@ export const USER_BET_FILTER = {
   limit: MAX_USER_BETS_LOADED,
   filterAntes: true,
 } as const
-
-export type Loading<T> = T | 'loading'
-
-export type BetFilter = {
-  contractId?: string
-  userId?: Loading<string>
-  filterChallenges?: boolean
-  filterRedemptions?: boolean
-  filterAntes?: boolean
-  isOpenLimitOrder?: boolean
-  afterTime?: number
-  beforeTime?: number
-  order?: OrderByDirection
-  limit?: number
-}
 
 export const getBetsQuery = (options?: BetFilter) => {
   let q = query(

@@ -1,21 +1,20 @@
 import { Comment, ContractComment } from 'common/comment'
 import { Json } from 'common/supabase/schema'
 import { useEffect, useState } from 'react'
-import {
-  getAllComments,
-  getComments,
-  getNumUserComments,
-} from 'web/lib/supabase/comments'
+import { getComments, getNumUserComments } from 'web/lib/supabase/comments'
 import { db } from 'web/lib/supabase/db'
 import { uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { getAllComments } from 'common/supabase/comments'
 
 export function useComments(contractId: string, limit: number) {
   const [comments, setComments] = useState<Json[]>([])
 
   useEffect(() => {
     if (contractId) {
-      getAllComments(contractId, limit).then((result) => setComments(result))
+      getAllComments(db, contractId, limit).then((result) =>
+        setComments(result)
+      )
     }
   }, [contractId])
 

@@ -26,7 +26,8 @@ import { BinaryContract, contractPath } from 'common/contract'
 import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useContract } from 'web/hooks/use-contracts'
-import { getBets } from 'web/lib/supabase/bets'
+import { getBets } from 'common/supabase/bets'
+import { db } from 'web/lib/supabase/db'
 
 export async function getStaticProps(props: {
   params: { username: string; contractSlug: string; challengeSlug: string }
@@ -34,7 +35,9 @@ export async function getStaticProps(props: {
   const { username, contractSlug, challengeSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const user = (await getUserByUsername(username)) || null
-  const bets = contract?.id ? await getBets({ contractId: contract.id }) : []
+  const bets = contract?.id
+    ? await getBets(db, { contractId: contract.id })
+    : []
   const challenge = contract?.id
     ? await getChallenge(challengeSlug, contract.id)
     : null

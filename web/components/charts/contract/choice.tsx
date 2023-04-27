@@ -15,11 +15,12 @@ import {
   formatPct,
   formatDateInRange,
 } from '../helpers'
-import { MultiPoint, MultiValueHistoryChart } from '../generic-charts'
+import { MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { buy, poolToProbs, shortSell } from 'common/calculate-cpmm-multi'
 import { buildArray } from 'common/util/array'
+import { MultiPoint } from 'common/chart'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 

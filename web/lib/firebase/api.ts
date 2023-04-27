@@ -279,3 +279,13 @@ export function saveTopic(params: { topic: string }) {
     status: 'success'
   }>
 }
+
+export function getContractParams(params: { contractSlug: string }) {
+  return maybeAuthedCall(
+    getApiUrl('getcontractparams'),
+    'POST',
+    params
+  ) as Promise<{
+    status: 'success'
+  }>
+}

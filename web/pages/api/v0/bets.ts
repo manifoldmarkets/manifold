@@ -1,13 +1,14 @@
-import { NextApiRequest, NextApiResponse } from 'next'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { Bet } from 'common/bet'
-import { getBet, getBets, getPublicBets } from 'web/lib/supabase/bets'
-import { getContractFromSlug } from 'web/lib/supabase/contracts'
+import { NextApiRequest, NextApiResponse } from 'next'
+import { CORS_UNRESTRICTED, applyCorsHeaders } from 'web/lib/api/cors'
 import { getUserByUsername } from 'web/lib/firebase/users'
-import { ApiError, ValidationError } from './_types'
-import { z } from 'zod'
-import { validate } from './_validate'
+import { getBet, getPublicBets } from 'web/lib/supabase/bets'
+import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
+import { z } from 'zod'
+import { ApiError, ValidationError } from './_types'
+import { validate } from './_validate'
+import { getBets } from 'common/supabase/bets'
 
 const queryParams = z
   .object({
@@ -94,7 +95,7 @@ export default async function handler(
       getBeforeTime(params),
     ])
     const bets = contractId
-      ? await getBets({ userId, contractId, beforeTime, limit })
+      ? await getBets(db, { userId, contractId, beforeTime, limit })
       : await getPublicBets({ userId, contractId, beforeTime, limit })
 
     res.setHeader('Cache-Control', 'max-age=15, public')

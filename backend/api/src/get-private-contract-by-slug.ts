@@ -1,10 +1,11 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
+import { getUserIsMember } from 'shared/helpers/get-user-is-member'
+
 const bodySchema = z.object({
   contractSlug: z.string(),
 })
-import { getUserIsMember } from 'shared/helpers/get-user-is-member'
 
 export const getprivatecontractbyslug = authEndpoint(async (req, auth) => {
   const { contractSlug } = validate(bodySchema, req.body)

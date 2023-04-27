@@ -51,6 +51,7 @@ import { auctionbid } from './auction-bid'
 import { supabasesearchcontracts } from './supabase-search-contract'
 import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
+import { getcontractparams } from './get-contract-params'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -135,3 +136,4 @@ app.post(
   express.raw({ type: '*/*' }),
   stripewebhook
 )
+app.post('/getcontractparams', ...apiRoute(getcontractparams))

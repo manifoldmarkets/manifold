@@ -93,3 +93,18 @@ export type fill = {
   // I.e. -fill.shares === matchedBet.shares
   isSale?: boolean
 }
+
+export type Loading<T> = T | 'loading'
+
+export type BetFilter = {
+  contractId?: string
+  userId?: Loading<string>
+  filterChallenges?: boolean
+  filterRedemptions?: boolean
+  filterAntes?: boolean
+  isOpenLimitOrder?: boolean
+  afterTime?: number
+  beforeTime?: number
+  order?: 'desc' | 'asc'
+  limit?: number
+}
