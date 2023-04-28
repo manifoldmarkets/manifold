@@ -230,24 +230,6 @@ where name = 'view market' or name = 'view market card';
 
 alter table user_events cluster on user_events_name;
 
-create or replace function user_event_populate_cols()
-  returns trigger
-  language plpgsql
-as $$ begin
-  if new.data is not null then
-    new.name := (new.data)->>'name';
-    new.contract_id := (new.data)->>'contractId';
-    new.ts := case
-      when new.data ? 'timestamp' then millis_to_ts(((new.data)->>'timestamp')::bigint)
-      else null
-    end;
-  end if;
-  return new;
-end $$;
-
-create trigger user_event_populate before insert or update on user_events for each row
-execute function user_event_populate_cols();
-
 create table if not exists
   user_seen_markets (
     user_id text not null,
