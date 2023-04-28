@@ -11,6 +11,7 @@ import { boostMarket } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import toast from 'react-hot-toast'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { DEFAULT_AD_COST_PER_VIEW } from 'common/boost'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -50,9 +51,6 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
   )
 }
 
-// in mana. TODO: variable cost
-export const COST_PER_VIEW = 5
-
 function BoostFormRow(props: { contract: Contract }) {
   const { contract } = props
 
@@ -60,7 +58,9 @@ function BoostFormRow(props: { contract: Contract }) {
   const [numViews, setNumViews] = useState<number>()
   const views = numViews ?? 0
 
-  const totalCost = views * COST_PER_VIEW
+  // TODO: let user set?
+  const costPerView = DEFAULT_AD_COST_PER_VIEW
+  const totalCost = views * costPerView
 
   const onSubmit = async () => {
     setLoading(true)
@@ -68,7 +68,7 @@ function BoostFormRow(props: { contract: Contract }) {
       await boostMarket({
         marketId: contract.id,
         totalCost,
-        costPerView: COST_PER_VIEW,
+        costPerView,
       })
       toast.success('Boosted!')
       setNumViews(undefined)
@@ -91,7 +91,7 @@ function BoostFormRow(props: { contract: Contract }) {
         inputClassName="!pl-14 w-32"
       />
       <span className="text-ink-800 mr-2 min-w-[180px] text-base">
-        x {formatMoney(COST_PER_VIEW)}/view = {formatMoney(totalCost)} total
+        x {formatMoney(costPerView)}/view = {formatMoney(totalCost)} total
       </span>
       <Button onClick={onSubmit} disabled={totalCost === 0 || loading}>
         Buy

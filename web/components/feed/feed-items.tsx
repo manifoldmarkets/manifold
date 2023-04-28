@@ -14,9 +14,7 @@ import clsx from 'clsx'
 import { Row } from '../layout/row'
 import { ContractComment } from 'common/comment'
 import { BoostsType } from 'web/hooks/use-feed'
-
-// 1/frequency.  TODO: move elsewhere, or let user set
-export const AD_PERIOD = 4
+import { AD_PERIOD } from 'common/boost'
 
 export const FeedItems = (props: {
   contracts: Contract[]

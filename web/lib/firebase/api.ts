@@ -10,6 +10,7 @@ import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
 export { APIError } from 'common/api'
 import { filter, Sort } from '../../components/supabase-search'
+import { AD_RATE_LIMIT } from 'common/boost'
 
 export async function call(url: string, method: string, params?: any) {
   const user = auth.currentUser
@@ -151,9 +152,9 @@ let nonce = 0
 export function redeemBoost(params: any) {
   // TODO: rate limit on the backend instead?
   const now = Date.now()
-  if (now - nonce < 15 * 1000) {
+  if (now - nonce < AD_RATE_LIMIT - 500) {
     throw Error(
-      'Please wait 15 seconds after redeeming a boost before redeeming another.'
+      `Please wait ${AD_RATE_LIMIT / 1000} seconds between redeeming boosts.`
     )
   }
   nonce = now
