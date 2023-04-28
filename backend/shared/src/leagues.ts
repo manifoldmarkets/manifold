@@ -1,6 +1,6 @@
 import { groupBy } from 'lodash'
 import { pgp, SupabaseDirectClient } from './supabase/init'
-import { randomString } from 'common/util/random'
+import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 
 const COHORT_SIZE = 25
 
@@ -50,6 +50,7 @@ export async function assignCohorts(pg: SupabaseDirectClient) {
   const userCohorts: {
     [userId: string]: { division: number; cohort: string }
   } = {}
+  const cohortNames: { [name: string]: boolean } = {}
 
   for (const divisionStr in usersByDivision) {
     const divisionUsers = usersByDivision[divisionStr]
@@ -84,7 +85,10 @@ export async function assignCohorts(pg: SupabaseDirectClient) {
           [remainingUserIds[0], remainingUserIds, cohortSize]
         )
       ).slice(0, cohortSize)
-      const cohort = randomString()
+
+      const cohort = genNewAdjectiveAnimal(cohortNames)
+      cohortNames[cohort] = true
+
       for (const user of cohortOfUsers) {
         userCohorts[user.user_id] = { division, cohort }
       }
