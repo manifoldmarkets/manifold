@@ -311,7 +311,7 @@ export function Member(props: {
   const tag = member.role ? (
     <div
       className={clsx(
-        'font-regular text-ink-0 rounded px-2 py-1 text-xs',
+        'font-regular text-ink-0 w-full rounded px-2 py-1 text-xs',
         isCreator
           ? 'bg-primary-400'
           : member.role === 'admin'
