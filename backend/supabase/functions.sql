@@ -1,6 +1,5 @@
-create or replace function jsonb_array_to_text_array(_js jsonb)
-  returns text[]
-  language sql immutable strict parallel safe as $$
+create
+or replace function jsonb_array_to_text_array (_js jsonb) returns text[] language sql immutable strict parallel safe as $$
 select array(select jsonb_array_elements_text(_js))
 $$;
 
@@ -86,7 +85,7 @@ or replace function get_recommended_contracts_embeddings_from (
   distance numeric,
   relative_dist numeric,
   popularity_score numeric
-                ) stable parallel safe language sql as $$ with
+) stable parallel safe language sql as $$ with
   swiped_contracts as (
     select contract_id
     from user_seen_markets
@@ -687,7 +686,7 @@ set topics = excluded.topics,
 $$;
 
 create
-  or replace function save_user_topics_blank (p_user_id text) returns void language sql as $$
+or replace function save_user_topics_blank (p_user_id text) returns void language sql as $$
 with
   average_all as (
     select avg(embedding) as average
@@ -726,13 +725,8 @@ select nullif(
   )::text;
 $$;
 
-
-CREATE OR REPLACE FUNCTION get_reply_chain_comments_matching_contracts(contract_ids TEXT[], past_time_ms BIGINT)
-  RETURNS TABLE (
-                  id text,
-                  contract_id text,
-                  data JSONB
-              ) AS $$
+create
+or replace function get_reply_chain_comments_matching_contracts (contract_ids text[], past_time_ms bigint) returns table (id text, contract_id text, data JSONB) as $$
   WITH matching_comments AS (
       SELECT
           c1.comment_id AS id,
@@ -772,21 +766,20 @@ CREATE OR REPLACE FUNCTION get_reply_chain_comments_matching_contracts(contract_
   SELECT * FROM parent_comments
   UNION ALL
   SELECT * FROM reply_chain_comments;
-$$ LANGUAGE sql;
+$$ language sql;
 
-
-create or replace function get_contracts_with_unseen_liked_comments(
+create
+or replace function get_contracts_with_unseen_liked_comments (
   available_contract_ids text[],
   excluded_contract_ids text[],
   current_user_id text,
   limit_count integer
-)
-  returns table (
-                  contract_id text,
-                  comment_id text,
-                  user_id text,
-                  data jsonb
-                ) as $$
+) returns table (
+  contract_id text,
+  comment_id text,
+  user_id text,
+  data jsonb
+) as $$
 select
   filtered_comments.contract_id,
   filtered_comments.comment_id,
@@ -831,12 +824,8 @@ order by
 limit limit_count;
 $$ language sql;
 
-CREATE OR REPLACE FUNCTION get_unseen_reply_chain_comments_matching_contracts(contract_ids TEXT[],current_user_id text)
-  RETURNS TABLE (
-                  id text,
-                  contract_id text,
-                  data JSONB
-                ) AS $$
+create
+or replace function get_unseen_reply_chain_comments_matching_contracts (contract_ids text[], current_user_id text) returns table (id text, contract_id text, data JSONB) as $$
 WITH matching_comments AS (
   SELECT
     c1.comment_id AS id,
@@ -894,4 +883,4 @@ UNION ALL
 SELECT * FROM parent_comments
 UNION ALL
 SELECT * FROM reply_chain_comments;
-$$ LANGUAGE sql;
+$$ language sql;

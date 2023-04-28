@@ -196,7 +196,6 @@ create index if not exists user_reactions_content_id on user_reactions (
 alter table user_reactions
 cluster on user_reactions_type;
 
-
 create table if not exists
   user_events (
     user_id text not null,
@@ -211,28 +210,39 @@ create table if not exists
 alter table user_events enable row level security;
 
 drop policy if exists "public read" on user_events;
-create policy "public read" on user_events for select using (true);
+
+create policy "public read" on user_events for
+select
+  using (true);
 
 drop policy if exists "user can insert" on user_events;
+
 create policy "user can insert" on user_events for insert
-    with check (user_id = 'NO_USER' or user_id = firebase_uid());
+with
+  check (
+    user_id = 'NO_USER'
+    or user_id = firebase_uid ()
+  );
 
 create index if not exists user_events_data_gin on user_events using GIN (data);
+
 create index if not exists user_events_name on user_events (user_id, name);
+
 create index if not exists user_events_ts on user_events (user_id, ts);
 
-create index if not exists user_events_ad_skips on user_events (name, (to_jsonb(data)->>'adId'))
-where name = 'Skip ad';
-CREATE INDEX IF NOT EXISTS user_events_comment_view ON user_events (user_id, name, (data->>'commentId'));
-create index if not exists user_events_viewed_markets on user_events (
-  user_id,
-  name,
-  contract_id,
-  ts desc
-)
-where name = 'view market' or name = 'view market card';
+create index if not exists user_events_ad_skips on user_events (name, (to_jsonb(data) ->> 'adId'))
+where
+  name = 'Skip ad';
 
-alter table user_events cluster on user_events_name;
+create index if not exists user_events_comment_view on user_events (user_id, name, (data ->> 'commentId'));
+
+create index if not exists user_events_viewed_markets on user_events (user_id, name, contract_id, ts desc)
+where
+  name = 'view market'
+  or name = 'view market card';
+
+alter table user_events
+cluster on user_events_name;
 
 create table if not exists
   user_seen_markets (
@@ -494,9 +504,12 @@ select
   using (true);
 
 create index if not exists contract_comments_data_gin on contract_comments using GIN (data);
-CREATE INDEX contract_comments_contract_id_idx ON contract_comments (contract_id);
-CREATE INDEX contract_comments_data_likes_idx ON contract_comments (((data -> 'likes')::numeric));
-CREATE INDEX contract_comments_data_created_time_idx ON contract_comments (((data ->> 'createdTime')::bigint));
+
+create index contract_comments_contract_id_idx on contract_comments (contract_id);
+
+create index contract_comments_data_likes_idx on contract_comments (((data -> 'likes')::numeric));
+
+create index contract_comments_data_created_time_idx on contract_comments (((data ->> 'createdTime')::bigint));
 
 alter table contract_comments
 cluster on contract_comments_pkey;
