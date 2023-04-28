@@ -130,7 +130,7 @@ function getSearchContractSQL(contractInput: {
             on group_contracts.contract_id = contracts.id
         ) AS contractz
       ${whereSQL}
-      AND contractz.similarity_score > 0.1
+      AND contractz.similarity_score > 0.3
       AND contractz.group_id = '${groupId}'`
     } else {
       // if full text search within group
@@ -161,7 +161,7 @@ function getSearchContractSQL(contractInput: {
         FROM contracts
       ) AS contractz
       ${whereSQL}
-      AND contractz.similarity_score > 0.1`
+      AND contractz.similarity_score > 0.3`
     } else {
       query = `
       SELECT contracts.data
