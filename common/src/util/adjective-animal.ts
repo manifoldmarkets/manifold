@@ -387,3 +387,10 @@ export const genNewAdjectiveAnimal = (ids: { [adjAnimal: string]: any }) => {
   }
   return adjAnimal
 }
+
+export const toLabel = (adjAnimal: string) => {
+  return adjAnimal
+    .split('-')
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(' ')
+}

@@ -111,6 +111,8 @@ export async function assignCohorts(pg: SupabaseDirectClient) {
   console.log('league inserts', leagueInserts)
   console.log('Inserting', leagueInserts.length, 'cohort rows')
 
+  await deleteSeason(pg, 1)
+
   // Bulk insert leagues.
   const insertStatement =
     pgp.helpers.insert(
@@ -122,4 +124,9 @@ export async function assignCohorts(pg: SupabaseDirectClient) {
     division = excluded.division,
     cohort = excluded.cohort`
   await pg.none(insertStatement)
+}
+
+// Be careful with this one.
+export const deleteSeason = (pg: SupabaseDirectClient, season: number) => {
+  return pg.none('delete from leagues where season = $1', [season])
 }
