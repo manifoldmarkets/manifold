@@ -50,3 +50,8 @@ export async function getUsersWhoSkipped(adId: string) {
   const { data } = await run(query)
   return data.map((r) => r['user_id']) ?? []
 }
+
+export const getBoosts = async (userId: string) => {
+  const { data } = await db.rpc('get_top_market_ads', { uid: userId })
+  return data
+}

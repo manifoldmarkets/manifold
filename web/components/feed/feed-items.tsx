@@ -13,12 +13,29 @@ import { sumBy } from 'lodash'
 import clsx from 'clsx'
 import { Row } from '../layout/row'
 import { ContractComment } from 'common/comment'
+import { BoostsType } from 'web/hooks/use-feed'
+import { AD_PERIOD } from 'common/boost'
 
 export const FeedItems = (props: {
   contracts: Contract[]
+  boosts?: BoostsType
   user: User | null | undefined
 }) => {
-  const { contracts, user } = props
+  const { user, boosts } = props
+
+  const organicContracts = props.contracts.map((c) => ({
+    ...c,
+    type: 'contract' as const,
+  }))
+
+  const boostedContracts =
+    boosts?.map((boost) => {
+      const { market_data, ...rest } = boost
+      return { ...market_data, ...rest, type: 'boost' as const }
+    }) ?? []
+
+  const contracts = mergePeriodic(organicContracts, boostedContracts, AD_PERIOD)
+
   const contractIds = contracts.map((c) => c.id)
   const maxItems = 2
   const { parentCommentsByContractId, childCommentsByParentCommentId } =
@@ -42,6 +59,14 @@ export const FeedItems = (props: {
         const { contract, parentComments, relatedBets } = itemGroup
         const hasItems = parentComments.length > 0 || recentBets.length > 0
 
+        const promotedData =
+          contract.type === 'boost'
+            ? {
+                adId: contract.ad_id,
+                reward: contract.ad_cost_per_view,
+              }
+            : undefined
+
         return (
           <Col
             key={contract.id + 'feed'}
@@ -55,6 +80,7 @@ export const FeedItems = (props: {
                 'my-0 border-0',
                 hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
               )}
+              promotedData={promotedData}
             />
             <Row className="bg-canvas-0">
               <FeedCommentItem
@@ -76,6 +102,20 @@ export const FeedItems = (props: {
       })}
     </Col>
   )
+}
+
+// every period items in A, insert an item from B
+function mergePeriodic<A, B>(a: A[], b: B[], period: number): (A | B)[] {
+  const merged = []
+  let j = 0
+  for (let i = 0; i < a.length; ++i) {
+    merged.push(a[i])
+    if ((i + 1) % period === 0 && j < b.length) {
+      merged.push(b[j])
+      ++j
+    }
+  }
+  return merged
 }
 
 //TODO: we can't yet respond to summarized bets yet bc we're just combining bets in the feed and

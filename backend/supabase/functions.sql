@@ -609,6 +609,60 @@ limit match_count;
 $$;
 
 create
+or replace function get_top_market_ads (uid text) returns table (
+  ad_id text,
+  market_id text,
+  ad_funds numeric,
+  ad_cost_per_view numeric,
+  market_data jsonb
+) language sql parallel safe as $$
+--with all the redeemed ads (has a txn)
+with redeemed_ad_ids as (
+  select
+    data->>'fromId' as fromId
+  from
+    txns
+  where
+    data->>'category' = 'MARKET_BOOST_REDEEM'
+    and data->>'toId' = uid
+),
+-- with the user embedding
+user_embedding as (
+  select interest_embedding
+  from user_embeddings
+  where user_id = uid
+),
+--with all the ads that haven't been redeemed, by closest to your embedding
+unredeemed_market_ads as (
+select
+  id, market_id, funds, cost_per_view
+from market_ads
+where 
+  NOT EXISTS (
+    SELECT 1
+    FROM redeemed_ad_ids
+    WHERE fromId = market_ads.id
+  )
+  and market_ads.funds > 0
+  order by embedding <=> (
+    select interest_embedding
+    from user_embedding
+  )
+  limit 50
+)
+select 
+  ma.id,
+  ma.market_id,
+  ma.funds,
+  ma.cost_per_view,
+  contracts.data
+ from 
+ unredeemed_market_ads as ma
+inner join contracts
+on contracts.id = ma.market_id
+$$;
+
+create
 or replace function save_user_topics (p_user_id text, p_topics text[]) returns void language sql as $$ with chosen_embedding as (
     select avg(embedding) as average
     from topic_embeddings

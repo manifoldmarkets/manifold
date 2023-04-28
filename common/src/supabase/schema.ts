@@ -397,6 +397,32 @@ export interface Database {
           write_kind?: string
         }
       }
+      leagues: {
+        Row: {
+          cohort: string
+          created_time: string
+          division: number
+          mana_earned: number
+          season: number
+          user_id: string
+        }
+        Insert: {
+          cohort: string
+          created_time?: string
+          division: number
+          mana_earned?: number
+          season: number
+          user_id: string
+        }
+        Update: {
+          cohort?: string
+          created_time?: string
+          division?: number
+          mana_earned?: number
+          season?: number
+          user_id?: string
+        }
+      }
       manalinks: {
         Row: {
           data: Json
@@ -412,6 +438,35 @@ export interface Database {
           data?: Json
           fs_updated_time?: string
           id?: string
+        }
+      }
+      market_ads: {
+        Row: {
+          cost_per_view: number
+          created_at: string
+          embedding: string
+          funds: number
+          id: string
+          market_id: string
+          user_id: string
+        }
+        Insert: {
+          cost_per_view: number
+          created_at?: string
+          embedding: string
+          funds: number
+          id?: string
+          market_id: string
+          user_id: string
+        }
+        Update: {
+          cost_per_view?: number
+          created_at?: string
+          embedding?: string
+          funds?: number
+          id?: string
+          market_id?: string
+          user_id?: string
         }
       }
       post_comments: {
@@ -1351,6 +1406,13 @@ export interface Database {
         }
         Returns: boolean
       }
+      check_group_accessibility: {
+        Args: {
+          this_group_id: string
+          this_user_id: string
+        }
+        Returns: boolean
+      }
       closest_contract_embeddings: {
         Args: {
           input_contract_id: string
@@ -1690,6 +1752,18 @@ export interface Database {
       get_time: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      get_top_market_ads: {
+        Args: {
+          uid: string
+        }
+        Returns: {
+          ad_id: string
+          market_id: string
+          ad_funds: number
+          ad_cost_per_view: number
+          market_data: Json
+        }[]
       }
       get_unseen_reply_chain_comments_matching_contracts: {
         Args: {

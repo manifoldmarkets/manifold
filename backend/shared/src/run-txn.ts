@@ -3,11 +3,13 @@ import { User } from 'common/user'
 import { FieldValue } from 'firebase-admin/firestore'
 import { removeUndefinedProps } from 'common/util/object'
 import {
-  AdRedeemTxn,
+  PostAdRedeemTxn,
   ContractResolutionPayoutTxn,
   ContractUndoResolutionPayoutTxn,
   Txn,
+  MarketAdRedeemTxn,
 } from 'common/txn'
+import { createSupabaseDirectClient } from './supabase/init'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
@@ -108,7 +110,7 @@ const firestore = admin.firestore()
 
 export function runRedeemAdRewardTxn(
   fbTransaction: admin.firestore.Transaction,
-  txnData: Omit<AdRedeemTxn, 'id' | 'createdTime'>
+  txnData: Omit<PostAdRedeemTxn, 'id' | 'createdTime'>
 ) {
   const { amount, toId, fromId } = txnData
 
@@ -116,6 +118,34 @@ export function runRedeemAdRewardTxn(
   fbTransaction.update(fromDoc, {
     funds: FieldValue.increment(-amount),
   })
+
+  const toDoc = firestore.doc(`users/${toId}`)
+  fbTransaction.update(toDoc, {
+    balance: FieldValue.increment(amount),
+    totalDeposits: FieldValue.increment(amount),
+  })
+
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
+
+  return { status: 'success', txn }
+}
+
+const pg = createSupabaseDirectClient()
+
+export async function runRedeemBoostTxn(
+  fbTransaction: admin.firestore.Transaction,
+  txnData: Omit<MarketAdRedeemTxn, 'id' | 'createdTime'>
+) {
+  const { amount, toId, fromId } = txnData
+
+  await pg.none(
+    `update market_ads 
+    set funds = funds - $1
+    where id = $2`,
+    [amount, fromId]
+  )
 
   const toDoc = firestore.doc(`users/${toId}`)
   fbTransaction.update(toDoc, {
