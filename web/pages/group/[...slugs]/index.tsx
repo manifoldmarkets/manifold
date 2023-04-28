@@ -52,6 +52,8 @@ import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
+export const MEMBER_INDEX = 0
+export const MEMBER_INVITE_INDEX = 1
 
 type GroupParams = {
   group: Group | null
@@ -189,7 +191,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     useRealtimePost(group?.aboutPostId) ?? groupParams?.aboutPost
   const groupPosts = usePosts(group?.postIds ?? []) ?? groupParams?.posts ?? []
   const creator = useGroupCreator(group) ?? groupParams?.creator
-
   const topTraders =
     useToTopUsers((group && group.cachedLeaderboard?.topTraders) ?? []) ??
     groupParams?.topTraders ??
@@ -199,6 +200,9 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     useToTopUsers((group && group.cachedLeaderboard?.topCreators) ?? []) ??
     groupParams?.topCreators ??
     []
+
+  const [openMemberModal, setOpenMemberModal] = useState(false)
+  const [defaultMemberTab, setDefaultMemberTab] = useState<0 | 1>(MEMBER_INDEX)
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator?.username,
@@ -214,6 +218,16 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
 
   if (group.privacyStatus == 'private' && userRole === null) {
     return <InaccessiblePrivateThing thing={'group'} />
+  }
+
+  const onMemberClick = () => {
+    setDefaultMemberTab(MEMBER_INDEX)
+    setOpenMemberModal(true)
+  }
+
+  const onAddMemberClick = () => {
+    setDefaultMemberTab(MEMBER_INVITE_INDEX)
+    setOpenMemberModal(true)
   }
 
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
@@ -234,6 +248,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
           canEdit={isManifoldAdmin || userRole === 'admin'}
           setWritingNewAbout={setWritingNewAbout}
           bannerVisible={bannerVisible}
+          onAddMemberClick={onAddMemberClick}
         />
       )}
       <div className="relative">
@@ -266,6 +281,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                     privateUser={privateUser}
                     canEdit={isManifoldAdmin || userRole === 'admin'}
                     setWritingNewAbout={setWritingNewAbout}
+                    onAddMemberClick={onAddMemberClick}
                   />
                 )}
               </Row>
@@ -275,6 +291,10 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
             <GroupMembersWidget
               group={group}
               canEdit={isManifoldAdmin || userRole === 'admin'}
+              onMemberClick={onMemberClick}
+              open={openMemberModal}
+              setOpen={setOpenMemberModal}
+              defaultTab={defaultMemberTab}
             />
             <GroupPrivacyStatusWidget
               group={group}
@@ -375,6 +395,7 @@ export function TopGroupNavBar(props: {
   canEdit: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
   bannerVisible: boolean
+  onAddMemberClick: () => void
 }) {
   const {
     group,
@@ -384,6 +405,7 @@ export function TopGroupNavBar(props: {
     canEdit,
     setWritingNewAbout,
     bannerVisible,
+    onAddMemberClick,
   } = props
   const user = useUser()
   const transitionClass = clsx(
@@ -426,6 +448,7 @@ export function TopGroupNavBar(props: {
               privateUser={privateUser}
               canEdit={canEdit}
               setWritingNewAbout={setWritingNewAbout}
+              onAddMemberClick={onAddMemberClick}
             />
           </Row>
         </div>
