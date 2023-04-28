@@ -18,7 +18,6 @@ import { Avatar } from '../widgets/avatar'
 import { Input } from '../widgets/input'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from '../widgets/user-link'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { UncontrolledTabs } from '../layout/tabs'
 import { AddMemberContent } from './add-member-modal'
 

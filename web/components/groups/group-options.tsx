@@ -7,17 +7,13 @@ import clsx from 'clsx'
 import { Group } from 'common/group'
 import { PrivateUser } from 'common/user'
 import { referralQuery } from 'common/util/share'
-import { useState } from 'react'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { useUser } from 'web/hooks/use-user'
 import {
-  MEMBER_INVITE_INDEX,
   groupButtonClass,
 } from 'web/pages/group/[...slugs]'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
-import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { GroupMemberModalContent } from './group-member-modal'
 import { getBlockGroupDropdownItem } from './hide-group-item'
 
 export function GroupOptions(props: {
