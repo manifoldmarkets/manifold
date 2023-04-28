@@ -44,13 +44,19 @@ export default function GroupPrivacyStatusWidget(props: {
   )
 }
 
-export function GroupMembersWidget(props: { group: Group; canEdit: boolean }) {
-  const { group, canEdit } = props
-  const [open, setOpen] = useState(false)
+export function GroupMembersWidget(props: {
+  group: Group
+  canEdit: boolean
+  onMemberClick: () => void
+  open: boolean
+  setOpen: (open: boolean) => void
+  defaultTab: 0 | 1
+}) {
+  const { group, canEdit, onMemberClick, open, setOpen, defaultTab } = props
   const numMembers = useRealtimeNumGroupMembers(group.id)
   return (
     <>
-      <button onClick={() => setOpen(true)}>
+      <button onClick={onMemberClick}>
         <Row className="text-ink-700 cursor-pointer items-center gap-1 text-sm">
           <Row className="text-ink-700 items-center gap-1 text-sm"></Row>
           <UserGroupIcon className="h-4 w-4" />
@@ -62,6 +68,7 @@ export function GroupMembersWidget(props: { group: Group; canEdit: boolean }) {
           group={group}
           canEdit={canEdit}
           numMembers={numMembers}
+          defaultIndex={defaultTab}
         />
       </Modal>
     </>
