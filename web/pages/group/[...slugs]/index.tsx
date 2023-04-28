@@ -54,6 +54,7 @@ export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
 export const MEMBER_INDEX = 0
 export const MEMBER_INVITE_INDEX = 1
+export type MemberIndex = 0 | 1
 
 type GroupParams = {
   group: Group | null
@@ -202,7 +203,8 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     []
 
   const [openMemberModal, setOpenMemberModal] = useState(false)
-  const [defaultMemberTab, setDefaultMemberTab] = useState<0 | 1>(MEMBER_INDEX)
+  const [defaultMemberTab, setDefaultMemberTab] =
+    useState<MemberIndex>(MEMBER_INDEX)
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator?.username,
