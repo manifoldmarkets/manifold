@@ -8,7 +8,6 @@ import { addGroupMember } from 'web/lib/firebase/api'
 import { searchUsersNotInGroup } from 'web/lib/supabase/users'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
-import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { Input } from '../widgets/input'
@@ -16,13 +15,13 @@ import { UserLink } from '../widgets/user-link'
 
 const QUERY_SIZE = 7
 
-export function AddMemberModal(props: {
-  open: boolean
-  setOpen: (open: boolean) => void
+export function AddMemberContent(props: {
+  query: string
+  setQuery: (query: string) => void
   group: Group
 }) {
-  const { open, setOpen, group } = props
-  const [query, setQuery] = useState('')
+  const { query, setQuery, group } = props
+
   const [searchMemberResult, setSearchMemberResult] = useState<JSONContent[]>(
     []
   )
@@ -41,36 +40,29 @@ export function AddMemberModal(props: {
       })
       .finally(() => setLoading(false))
   }, [query])
-
   return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className={clsx(MODAL_CLASS, 'h-[30rem]')}>
-        <Input
-          autoFocus
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search users"
-          className={clsx('placeholder:text-ink-400 w-full')}
-        />
-        <Col
-          className={clsx(loading ? 'animate-pulse' : '', 'gap-4', 'w-full')}
-        >
-          {searchMemberResult.length == 0 && (
-            <div className="text-ink-500">No members found</div>
-          )}
-          {searchMemberResult.map((user) => (
-            <AddMemberWidget
-              key={user.id}
-              user={user}
-              group={group}
-              isDisabled={groupMemberIds.some(
-                (memberId) => memberId == user.id
-              )}
-            />
-          ))}
-        </Col>
+    <>
+      <Input
+        autoFocus
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search users"
+        className={clsx('placeholder:text-ink-400 w-full')}
+      />
+      <Col className={clsx(loading ? 'animate-pulse' : '', 'gap-4', 'w-full')}>
+        {searchMemberResult.length == 0 && (
+          <div className="text-ink-500">No members found</div>
+        )}
+        {searchMemberResult.map((user) => (
+          <AddMemberWidget
+            key={user.id}
+            user={user}
+            group={group}
+            isDisabled={groupMemberIds.some((memberId) => memberId == user.id)}
+          />
+        ))}
       </Col>
-    </Modal>
+    </>
   )
 }
 

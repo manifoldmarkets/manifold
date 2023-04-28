@@ -643,7 +643,6 @@ export interface Database {
           contract_id: string | null
           data: Json
           event_id: string
-          fs_updated_time: string | null
           name: string | null
           ts: string | null
           user_id: string
@@ -652,7 +651,6 @@ export interface Database {
           contract_id?: string | null
           data: Json
           event_id: string
-          fs_updated_time?: string | null
           name?: string | null
           ts?: string | null
           user_id: string
@@ -661,7 +659,6 @@ export interface Database {
           contract_id?: string | null
           data?: Json
           event_id?: string
-          fs_updated_time?: string | null
           name?: string | null
           ts?: string | null
           user_id?: string
@@ -1963,12 +1960,6 @@ export interface Database {
         Returns: undefined
       }
       save_user_topics_blank: {
-        Args: {
-          p_user_id: string
-        }
-        Returns: undefined
-      }
-      save_user_topics_blank2: {
         Args: {
           p_user_id: string
         }

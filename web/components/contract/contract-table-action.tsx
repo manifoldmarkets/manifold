@@ -28,12 +28,11 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
   const { contract, user } = props
   const [open, setOpen] = useState(false)
   if (
-    // if contract is closed, and if user is creator, don't show bet button, want to only show resolve button
-    !(isClosed(contract) && contract.creatorId === user?.id) &&
+    !isClosed(contract) &&
+    !contract.isResolved &&
     // TODO: only have betting for binary markets right now
     contract.outcomeType === 'BINARY' &&
-    contract.mechanism === 'cpmm-1' &&
-    !contract.isResolved
+    contract.mechanism === 'cpmm-1'
   ) {
     return (
       <>
@@ -49,7 +48,6 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
             }
             setOpen(true)
           }}
-          disabled={isClosed(contract)}
         >
           Bet
         </Button>
@@ -75,6 +73,8 @@ export function ResolveButton(props: {
   const isClosed = contract.closeTime && contract.closeTime < Date.now()
   if (
     user &&
+    isClosed &&
+    !contract.isResolved &&
     contract.creatorId === user?.id &&
     (contract.outcomeType === 'NUMERIC' ||
       contract.outcomeType === 'PSEUDO_NUMERIC' ||
@@ -88,14 +88,13 @@ export function ResolveButton(props: {
         <Button
           size="2xs"
           color={isClosed ? 'red' : 'gray-outline'}
-          disabled={contract.isResolved}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             setOpen(true)
           }}
         >
-          {contract.isResolved ? <>Resolved</> : <>Resolve</>}
+          Resolve
         </Button>
         <Modal open={open} setOpen={setOpen}>
           <Col className={MODAL_CLASS}>

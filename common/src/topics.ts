@@ -46,7 +46,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
   ],
 
   '🪂 Lifestyle': [
-    '🏳️‍🌈 LGBT',
+    '🏳️‍🌈 LGBTQIA+',
     '⛪ Religion',
     '❤️ Sex and love',
     '👨‍🎓 Education',
@@ -89,3 +89,6 @@ export const getSubtopics = (topic: string) =>
         GROUP_IDs[cleanTopic(subtopicWithEmoji)],
       ] as const
   )
+export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
+  .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))
+  .flat()

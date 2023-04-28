@@ -135,7 +135,7 @@ export function ContractsTable(props: {
     },
     {
       name: 'prob',
-      header: '%',
+      header: 'Prob',
       visible: true,
       content: (contract: Contract) => (
         <div className="font-semibold">
@@ -143,14 +143,7 @@ export function ContractsTable(props: {
         </div>
       ),
     },
-    {
-      name: 'action',
-      header: 'Action',
-      visible: !isMobile,
-      content: (contract: Contract) => (
-        <Action contract={contract} user={user} />
-      ),
-    },
+
     {
       name: 'traders',
       header: 'Traders',
@@ -170,6 +163,14 @@ export function ContractsTable(props: {
         <div className="mt-1">
           <Visibility contract={contract} />
         </div>
+      ),
+    },
+    {
+      name: 'action',
+      header: '',
+      visible: !isMobile,
+      content: (contract: Contract) => (
+        <Action contract={contract} user={user} />
       ),
     },
   ]

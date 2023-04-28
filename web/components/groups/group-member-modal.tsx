@@ -18,6 +18,8 @@ import { Avatar } from '../widgets/avatar'
 import { Input } from '../widgets/input'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from '../widgets/user-link'
+import { UncontrolledTabs } from '../layout/tabs'
+import { AddMemberContent } from './add-member-modal'
 
 const SEARCH_MEMBER_QUERY_SIZE = 15
 
@@ -25,11 +27,65 @@ export function GroupMemberModalContent(props: {
   group: Group
   canEdit: boolean
   numMembers: number | undefined
+  defaultIndex?: number
 }) {
-  const { group, canEdit, numMembers } = props
-  const [query, setQuery] = useState('')
+  const { group, canEdit, numMembers, defaultIndex } = props
+  const [query, setQuery] = useState<string>('')
   return (
     <Col className={clsx(MODAL_CLASS, 'h-[85vh]')}>
+      {canEdit && (
+        <UncontrolledTabs
+          defaultIndex={defaultIndex ?? 0}
+          tabs={[
+            {
+              title: 'Members',
+              content: (
+                <MemberTab
+                  query={query}
+                  setQuery={setQuery}
+                  group={group}
+                  canEdit={canEdit}
+                  numMembers={numMembers}
+                />
+              ),
+            },
+            {
+              title: 'Invite',
+              content: (
+                <AddMemberContent
+                  query={query}
+                  setQuery={setQuery}
+                  group={group}
+                />
+              ),
+            },
+          ]}
+          className="w-full"
+        />
+      )}
+      {!canEdit && (
+        <MemberTab
+          query={query}
+          setQuery={setQuery}
+          group={group}
+          canEdit={canEdit}
+          numMembers={numMembers}
+        />
+      )}
+    </Col>
+  )
+}
+
+export function MemberTab(props: {
+  query: string
+  setQuery: (query: string) => void
+  group: Group
+  canEdit: boolean
+  numMembers: number | undefined
+}) {
+  const { query, setQuery, group, canEdit, numMembers } = props
+  return (
+    <>
       <Input
         autoFocus
         value={query}
@@ -52,7 +108,7 @@ export function GroupMemberModalContent(props: {
           numMembers={numMembers}
         />
       </div>
-    </Col>
+    </>
   )
 }
 
@@ -254,7 +310,7 @@ export function Member(props: {
   const tag = member.role ? (
     <div
       className={clsx(
-        'font-regular text-ink-0 rounded px-2 py-1 text-xs',
+        'font-regular text-ink-0 w-full rounded px-2 py-1 text-xs',
         isCreator
           ? 'bg-primary-400'
           : member.role === 'admin'

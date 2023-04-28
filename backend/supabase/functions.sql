@@ -695,6 +695,38 @@ set topics = excluded.topics,
 $$;
 
 create
+  or replace function save_user_topics_blank (p_user_id text) returns void language sql as $$
+with
+  average_all as (
+    select avg(embedding) as average
+    from topic_embeddings
+  ),
+  ignore_embeddings as (
+    select avg(embedding) as average
+    from topic_embeddings
+    where topic in (
+      select unnest(ARRAY['destiny.gg', 'stock', 'planecrash', 'proofnik', 'permanent', 'personal']::text[])
+    )
+  ),
+  topic_embedding as (
+    select (avg_all.average - not_chosen.average) as average
+    from average_all as avg_all,
+         ignore_embeddings as not_chosen
+  )
+insert into user_topics (user_id, topics, topic_embedding)
+values (
+         p_user_id,
+         ARRAY['']::text[],
+         (
+           select average
+           from topic_embedding
+         )
+       ) on conflict (user_id) do
+  update set topics = excluded.topics,
+             topic_embedding = excluded.topic_embedding;
+$$;
+
+create
 or replace function firebase_uid () returns text language sql stable parallel safe as $$
 select nullif(
     current_setting('request.jwt.claims', true)::json->>'sub',

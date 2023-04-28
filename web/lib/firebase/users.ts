@@ -345,20 +345,6 @@ export function listenForReferrals(
   )
 }
 
-export function saveUserEvent(
-  userId: string | undefined,
-  eventName: string,
-  eventProperties?: any
-) {
-  const eventDoc = doc(collection(users, userId ?? 'NO_USER', 'events'))
-
-  return setDoc(eventDoc, {
-    timestamp: Date.now(),
-    name: eventName,
-    ...eventProperties,
-  })
-}
-
 export const getUsersBlockFacetFilters = (
   privateUser: PrivateUser | undefined | null,
   excludeGroupSlugs?: boolean
