@@ -882,11 +882,9 @@ create table if not exists
     funds numeric not null,
     cost_per_view numeric not null,
     created_at timestamp not null default now(),
-    embedding vector (1536) not null
+    embedding vector (1536) not null,
+    unique (market_id)
   );
-
-alter table market_ads
-add constraint market_ads_unique_market_id unique (market_id);
 
 drop policy if exists "public read" on user_topics;
 

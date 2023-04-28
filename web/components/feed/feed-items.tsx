@@ -36,7 +36,7 @@ export const FeedItems = (props: {
       return { ...(market_data as Contract), ...rest, type: 'boost' as const }
     }) ?? []
 
-  const contracts = zipperMerge(organicContracts, boostedContracts, AD_PERIOD)
+  const contracts = mergePeriodic(organicContracts, boostedContracts, AD_PERIOD)
 
   const contractIds = contracts.map((c) => c.id)
   const maxItems = 2
@@ -107,7 +107,7 @@ export const FeedItems = (props: {
 }
 
 // every period items in A, insert an item from B
-function zipperMerge<A, B>(a: A[], b: B[], period: number): (A | B)[] {
+function mergePeriodic<A, B>(a: A[], b: B[], period: number): (A | B)[] {
   const merged = []
   let j = 0
   for (let i = 0; i < a.length; ++i) {

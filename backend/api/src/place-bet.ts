@@ -49,7 +49,7 @@ const numericSchema = z.object({
 })
 
 export const placebet = authEndpoint(async (req, auth) => {
-  log(`Inside endpoint handler for ${auth.uid}. LOL`)
+  log(`Inside endpoint handler for ${auth.uid}.`)
   const { amount, contractId } = validate(bodySchema, req.body)
 
   const result = await firestore.runTransaction(async (trans) => {

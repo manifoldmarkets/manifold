@@ -229,7 +229,7 @@ type PostAdRedeem = {
 type MarketAdCreate = {
   category: 'MARKET_BOOST_CREATE'
   fromType: 'USER'
-  toTupe: 'AD'
+  toType: 'AD'
 }
 
 type MarketAdRedeem = {
