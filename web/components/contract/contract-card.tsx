@@ -514,9 +514,7 @@ export function ContractCardNew(props: {
         {!showImage && promotedData && (
           <div className="flex justify-center">
             <ClaimButton {...promotedData} />
-            <div className="absolute bottom-2 right-2">
-              <FeaturedPill label="Promoted" />
-            </div>
+            <BoostPill />
           </div>
         )}
       </Col>
@@ -527,9 +525,7 @@ export function ContractCardNew(props: {
             {promotedData && (
               <>
                 <ClaimButton {...promotedData} className="mt-2" />
-                <div className="absolute bottom-2 right-2">
-                  <FeaturedPill label="Promoted" />
-                </div>
+                <BoostPill />
               </>
             )}
           </div>
@@ -547,6 +543,14 @@ export function ContractCardNew(props: {
     </div>
   )
 }
+
+const BoostPill = () => (
+  <div className="absolute bottom-2 right-2">
+    <Tooltip text={"They're paying you to see this"}>
+      <FeaturedPill label="Boosted" />
+    </Tooltip>
+  </div>
+)
 
 function ReasonChosen(props: { contract: Contract }) {
   const { contract } = props
@@ -660,7 +664,7 @@ function ClaimButton(props: {
       ) : loading ? (
         <LoadingIndicator />
       ) : (
-        `${formatMoney(reward)} reward`
+        `Claim ${formatMoney(reward)}`
       )}
     </button>
   )
