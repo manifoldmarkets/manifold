@@ -650,7 +650,10 @@ function ClaimButton(props: {
           setClaimed(true)
           track('claim boost', { adId })
         } catch (err) {
-          toast.error((err as any).message ?? err)
+          toast.error(
+            (err as any).message ??
+              (typeof err === 'string' ? err : 'Error claiming boost')
+          )
         } finally {
           setLoading(false)
         }
