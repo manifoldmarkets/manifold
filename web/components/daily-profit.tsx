@@ -30,6 +30,7 @@ import { InfoTooltip } from './widgets/info-tooltip'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { animated } from '@react-spring/web'
+import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
@@ -39,6 +40,12 @@ export const DailyProfit = memo(function DailyProfit(props: {
   const { user } = props
   const isCurrentUser =
     props.isCurrentUser === undefined ? true : props.isCurrentUser
+
+  const portfolio = useCurrentPortfolio(user?.id)
+  const portfolioValue = portfolio
+    ? portfolio.balance + portfolio.investmentValue
+    : 0
+  const portfolioValueAnimated = useAnimatedNumber(portfolioValue)
 
   const [open, setOpen] = useState(false)
 
@@ -74,7 +81,6 @@ export const DailyProfit = memo(function DailyProfit(props: {
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
       useHasSeen(user, [DAILY_PROFIT_CLICK_EVENT], 'day')
     : [true, () => {}]
-  const balance = useAnimatedNumber(user?.balance ?? 0)
 
   if (!user) return <div />
 
@@ -94,9 +100,11 @@ export const DailyProfit = memo(function DailyProfit(props: {
         <Row>
           <Col className="justify-start">
             <div>
-              <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
+              <animated.div>
+                {portfolioValueAnimated.to((b) => formatMoney(b))}
+              </animated.div>
             </div>
-            <div className="text-ink-600 text-sm ">Balance</div>
+            <div className="text-ink-600 text-sm ">Portfolio</div>
           </Col>
 
           {dailyProfit !== 0 && (
@@ -119,7 +127,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
           metrics={data?.metrics}
           contracts={data?.contracts}
           dailyProfit={dailyProfit}
-          balance={user.balance}
+          portfolio={portfolioValue}
         />
       )}
     </>
@@ -132,23 +140,21 @@ function DailyProfitModal(props: {
   metrics?: ContractMetrics[]
   contracts?: CPMMContract[]
   dailyProfit: number
-  balance: number
+  portfolio: number
 }) {
-  const { open, setOpen, metrics, contracts, dailyProfit, balance } = props
+  const { open, setOpen, metrics, contracts, dailyProfit, portfolio } = props
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
       <div className="bg-canvas-0 text-ink-1000 rounded-lg p-4">
         <Col className={'mb-4'}>
-          {/* <Title className={'mb-1'}>💰 Daily profit</Title> */}
-
           <Row className="gap-2 text-2xl">
             <Col className="gap-2">
-              <div>Balance</div>
+              <div>Portfolio</div>
               <div>Daily profit</div>
             </Col>
             <Col className="text-ink-600 items-end gap-2">
-              <div>{formatMoney(balance)}</div>
+              <div>{formatMoney(portfolio)}</div>
               <div
                 className={clsx(
                   dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
