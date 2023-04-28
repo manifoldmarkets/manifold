@@ -33,8 +33,7 @@ export async function searchGroups(prompt: string, limit: number) {
   )
     .order('data->totalMembers', { ascending: false } as any)
     .limit(limit)
-  if (prompt)
-    query.or(`data->>name.ilike.%${prompt}%,data->>about.ilike.%${prompt}%`)
+  if (prompt) query.or(`name.ilike.%${prompt}%,data->>about.ilike.%${prompt}%`)
 
   return (await run(query)).data
 }
@@ -54,13 +53,18 @@ export async function getShouldBlockDestiny(
   db: SupabaseClient
 ) {
   const groupIds = await getMemberGroupIds(userId, db)
-  const query = selectFrom(db, 'groups', 'id', 'slug')
-    .in(
-      'id',
-      groupIds.map((d: { group_id: string }) => d.group_id)
-    )
-    .in('data->>slug', DESTINY_GROUP_SLUGS)
-  return (await run(query)).data.length === 0
+  const { data } = await run(
+    db
+      .from('groups')
+      .select('data')
+      .in(
+        'id',
+        groupIds.map((d: { group_id: string }) => d.group_id)
+      )
+      .in('slug', DESTINY_GROUP_SLUGS)
+  )
+
+  return data.length === 0
 }
 
 export async function getMemberGroupIds(userId: string, db: SupabaseClient) {
@@ -108,30 +112,14 @@ export async function getGroupsWhereUserIsMember(userId: string) {
   return groupThings.data
 }
 
-export async function getNonPublicGroupsWhereUserHasRole(userId: string) {
-  const groupThings = await run(
-    db
-      .from('group_role')
-      .select('group_data')
-      .eq('member_id', userId)
-      .or(
-        'group_data->>privacyStatus.eq.private,group_data->>privacyStatus.eq.curated'
-      )
-      .or('role.eq.admin,role.eq.moderator')
-      .order('name')
-  )
-
-  return groupThings.data
-}
-
 // gets all public groups
 export async function getPublicGroups() {
   const groupThings = await run(
     db
       .from('groups')
       .select('data')
-      .eq('data->>privacyStatus', 'public')
-      .order('data->>name')
+      .eq('privacy_status', 'public')
+      .order('name')
   )
 
   return groupThings.data.map((d: { data: any }) => d.data as Group)

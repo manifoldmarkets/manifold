@@ -20,6 +20,9 @@ create extension if not exists vector;
 /* GIN trigram indexes */
 create extension if not exists pg_trgm;
 
+/* for UUID generation */
+create extension if not exists pgcrypto;
+
 /* enable `explain` via the HTTP API for convenience */
 alter role authenticator
 set
@@ -193,39 +196,43 @@ create index if not exists user_reactions_content_id on user_reactions (
 alter table user_reactions
 cluster on user_reactions_type;
 
+
 create table if not exists
   user_events (
     user_id text not null,
     event_id text not null,
+    contract_id text null,
+    name text null,
+    ts timestamptz null,
     data jsonb not null,
-    fs_updated_time timestamp not null,
     primary key (user_id, event_id)
   );
 
 alter table user_events enable row level security;
 
 drop policy if exists "public read" on user_events;
+create policy "public read" on user_events for select using (true);
 
-create policy "public read" on user_events for
-select
-  using (true);
+drop policy if exists "user can insert" on user_events;
+create policy "user can insert" on user_events for insert
+    with check (user_id = 'NO_USER' or user_id = firebase_uid());
 
 create index if not exists user_events_data_gin on user_events using GIN (data);
+create index if not exists user_events_name on user_events (user_id, name);
+create index if not exists user_events_ts on user_events (user_id, ts);
 
-create index if not exists user_events_name on user_events (user_id, (data ->> 'name'));
-
+create index if not exists user_events_ad_skips on user_events (name, (to_jsonb(data)->>'adId'))
+where name = 'Skip ad';
+CREATE INDEX IF NOT EXISTS user_events_comment_view ON user_events (user_id, name, (data->>'commentId'));
 create index if not exists user_events_viewed_markets on user_events (
   user_id,
-  (data ->> 'name'),
-  (data ->> 'contractId'),
-  ((data -> 'timestamp')::bigint) desc
+  name,
+  contract_id,
+  ts desc
 )
-where
-  data ->> 'name' = 'view market'
-  or data ->> 'name' = 'view market card';
+where name = 'view market' or name = 'view market card';
 
-alter table user_events
-cluster on user_events_name;
+alter table user_events cluster on user_events_name;
 
 create table if not exists
   user_seen_markets (
@@ -487,6 +494,9 @@ select
   using (true);
 
 create index if not exists contract_comments_data_gin on contract_comments using GIN (data);
+CREATE INDEX contract_comments_contract_id_idx ON contract_comments (contract_id);
+CREATE INDEX contract_comments_data_likes_idx ON contract_comments (((data -> 'likes')::numeric));
+CREATE INDEX contract_comments_data_created_time_idx ON contract_comments (((data ->> 'createdTime')::bigint));
 
 alter table contract_comments
 cluster on contract_comments_pkey;
@@ -852,6 +862,19 @@ create table if not exists
   );
 
 alter table user_topics enable row level security;
+
+create table if not exists
+  market_ads (
+    id text not null primary key default uuid_generate_v4 (),
+    user_id text not null,
+    market_id text not null,
+    foreign key (market_id) references contracts (id),
+    funds numeric not null,
+    cost_per_view numeric not null,
+    created_at timestamp not null default now(),
+    embedding vector (1536) not null,
+    unique (market_id)
+  );
 
 drop policy if exists "public read" on user_topics;
 

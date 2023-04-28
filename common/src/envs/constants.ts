@@ -88,6 +88,7 @@ export const BOT_USERNAMES = [
   'GPT4',
   'EntropyBot',
   'veat',
+  'ms_test',
 ]
 
 export const CORE_USERNAMES = [

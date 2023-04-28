@@ -22,8 +22,10 @@ type AnyTxnType =
   | QfPayment
   | QfAddPool
   | QfDividend
-  | AdCreate
-  | AdRedeem
+  | PostAdCreate
+  | PostAdRedeem
+  | MarketAdCreate
+  | MarketAdRedeem
   | QuestReward
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
@@ -212,14 +214,26 @@ type QfDividend = {
   toType: 'USER'
 }
 
-type AdCreate = {
+type PostAdCreate = {
   category: 'AD_CREATE'
   fromType: 'USER'
   toType: 'AD'
 }
 
-type AdRedeem = {
+type PostAdRedeem = {
   category: 'AD_REDEEM'
+  fromType: 'AD'
+  toType: 'USER'
+}
+
+type MarketAdCreate = {
+  category: 'MARKET_BOOST_CREATE'
+  fromType: 'USER'
+  toType: 'AD'
+}
+
+type MarketAdRedeem = {
+  category: 'MARKET_BOOST_REDEEM'
   fromType: 'AD'
   toType: 'USER'
 }
@@ -255,6 +269,8 @@ export type QfTxn = Txn & QfId
 export type QfPaymentTxn = QfTxn & QfPayment
 export type QfAddPoolTxn = QfTxn & QfAddPool
 export type QfDividendTxn = QfTxn & QfDividend
-export type AdCreateTxn = Txn & AdCreate
-export type AdRedeemTxn = Txn & AdRedeem
+export type PostAdCreateTxn = Txn & PostAdCreate
+export type PostAdRedeemTxn = Txn & PostAdRedeem
+export type MarketAdCreateTxn = Txn & MarketAdCreate
+export type MarketAdRedeemTxn = Txn & MarketAdRedeem
 export type QuestRewardTxn = Txn & QuestReward

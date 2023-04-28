@@ -82,12 +82,16 @@ export const completeArchaeologyQuest = async (
     firestore.collection('contracts').doc(contract.id).collection('bets')
   )
   if (bets.length === 0) return
-  const sortedBets = sortBy(
-    bets.filter((b) => !b.isRedemption),
+  const sortedEarlierBets = sortBy(
+    bets.filter(
+      (b) => !b.isRedemption && b.createdTime < mostRecentBet.createdTime
+    ),
     (bet) => -bet.createdTime
   )
   const lastBetTime =
-    sortedBets.length === 1 ? contract.createdTime : sortedBets[1].createdTime
+    sortedEarlierBets.length === 1
+      ? contract.createdTime
+      : sortedEarlierBets[0].createdTime
   const threeMonthsAgo = dayjs().subtract(3, 'month').valueOf()
   if (lastBetTime <= threeMonthsAgo) {
     const db = createSupabaseClient()
@@ -170,7 +174,7 @@ const awardQuestBonus = async (
       .where('data.questCount', '==', newCount)
       .where('createdTime', '>=', START_OF_DAY)
       .limit(1)
-    const previousTxn = (await previousTxns.get()).docs[0]
+    const previousTxn = (await trans.get(previousTxns)).docs[0]
     if (previousTxn) {
       return {
         error: true,

@@ -8,12 +8,7 @@ drop policy if exists "Enable read access for all if group is public/curated" on
 
 create policy "Enable read access for all if group is public/curated" on public.groups for
 select
-  using (
-    (
-      (data @> '{"privacyStatus": "public"}'::jsonb)
-      or (data @> '{"privacyStatus": "curated"}'::jsonb)
-    )
-  );
+  using ((privacy_status <> 'private'));
 
 drop policy if exists "Enable read access for members of private groups" on public.groups;
 
@@ -21,7 +16,7 @@ create policy "Enable read access for members of private groups" on public.group
 select
   using (
     (
-      (data @> '{"privacyStatus": "private"}'::jsonb)
+      privacy_status = 'private'
       and (
         exists (
           select

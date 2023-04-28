@@ -55,5 +55,5 @@ export const onCreateContract = functions
 
     await createSupabaseClient()
       .from('contract_embeddings')
-      .insert({ contract_id: contract.id, embedding })
+      .insert({ contract_id: contract.id, embedding: embedding as any })
   })

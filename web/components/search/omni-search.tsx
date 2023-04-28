@@ -103,8 +103,8 @@ const DefaultResults = () => {
 
   return (
     <>
-      <PageResults pages={defaultPages} />
       <MarketResults markets={markets} />
+      <PageResults pages={defaultPages} />
       <div className="mx-2 my-2 text-xs">
         <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
         Start with <Key>%</Key> for markets, <Key>@</Key> for users, or{' '}
@@ -393,9 +393,10 @@ const PageResults = (props: { pages: PageData[] }) => {
   if (!props.pages.length) return null
   return (
     <>
-      <SectionTitle>Pages</SectionTitle>
       {props.pages.map(({ label, slug }) => (
-        <ResultOption value={{ id: label, slug }}>{label}</ResultOption>
+        <SectionTitle link={slug} key={label}>
+          {label}
+        </SectionTitle>
       ))}
     </>
   )
