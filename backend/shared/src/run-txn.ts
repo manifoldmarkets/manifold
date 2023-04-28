@@ -132,13 +132,12 @@ export function runRedeemAdRewardTxn(
   return { status: 'success', txn }
 }
 
-const pg = createSupabaseDirectClient()
-
 export async function runRedeemBoostTxn(
   fbTransaction: admin.firestore.Transaction,
   txnData: Omit<MarketAdRedeemTxn, 'id' | 'createdTime'>
 ) {
   const { amount, toId, fromId } = txnData
+  const pg = createSupabaseDirectClient()
 
   await pg.none(
     `update market_ads 

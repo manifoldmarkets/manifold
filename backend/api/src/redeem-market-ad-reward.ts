@@ -9,10 +9,9 @@ const schema = z.object({
   adId: z.string(),
 })
 
-const pg = createSupabaseDirectClient()
-
 export const redeemboost = authEndpoint(async (req, auth) => {
   const { adId } = validate(schema, req.body)
+  const pg = createSupabaseDirectClient()
 
   const firestore = admin.firestore()
 

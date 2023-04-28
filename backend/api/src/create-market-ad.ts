@@ -13,11 +13,10 @@ const schema = z.object({
   costPerView: z.number(),
 })
 
-const pg = createSupabaseDirectClient()
-
 export const boostmarket = authEndpoint(async (req, auth) => {
   const { marketId, totalCost, costPerView } = validate(schema, req.body)
   log('boosting market')
+  const pg = createSupabaseDirectClient()
 
   const { creator_id } = await pg.one(
     `select creator_id
