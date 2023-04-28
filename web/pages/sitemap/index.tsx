@@ -133,12 +133,6 @@ export default function LabsPage() {
           />
 
           <LabCard
-            title="👀 Ads"
-            description="Read ads for mana. Or pay mana to promote your markets or anything else you want."
-            href="/ad"
-          />
-
-          <LabCard
             title="💬 Discord Bot"
             description="Create, trade, and share markets directly from Discord"
             href="/discord-bot"
@@ -232,6 +226,11 @@ export default function LabsPage() {
             title="🎲 Magic the Guessering"
             description="Match MTG card names to their art"
             href={`https://${DOMAIN}/mtg/index.html`}
+          />
+          <LabCard
+            title="👀 Ads"
+            description="Read ads for mana. Or pay mana to promote your content."
+            href="/ad"
           />
           <LabCard title="🐮 Cowp" description="???" href="/cowp" />
         </Masonry>

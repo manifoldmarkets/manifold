@@ -6,7 +6,6 @@ import {
   ScaleIcon,
   MapIcon,
   MoonIcon,
-  SpeakerphoneIcon,
   SunIcon,
   SparklesIcon,
   StarIcon,
@@ -16,7 +15,6 @@ import {
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
-import { formatMoney } from 'common/util/format'
 import { capitalize } from 'lodash'
 import Router, { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
@@ -172,11 +170,6 @@ const getMobileNav = (toggleModal: () => void, showCharity: boolean) => {
 
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
-    {
-      name: `Ads - earn ${formatMoney(5)} per view!`,
-      icon: SpeakerphoneIcon,
-      href: '/ad',
-    },
     {
       name: 'Groups',
       icon: UserGroupIcon,
