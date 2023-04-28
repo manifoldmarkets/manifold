@@ -189,8 +189,9 @@ export function BuyAmountInput(props: {
         ) : (
           showBalance &&
           user && (
-            <div className="text-ink-500 whitespace-nowrap text-xs font-medium tracking-wide">
-              Balance: {formatMoney(user.balance)}
+            <div className="text-ink-500 whitespace-nowrap text-sm font-medium tracking-wide">
+              Balance{' '}
+              <span className="text-ink-1000">{formatMoney(user.balance)}</span>
             </div>
           )
         )}
