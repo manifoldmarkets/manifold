@@ -42,7 +42,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '💵 Finance',
     '💰 Economics',
     '🚀 Startups',
-    '🚘 Elon musk',
+    '🚘 Elon Musk',
   ],
 
   '🪂 Lifestyle': [
