@@ -24,3 +24,14 @@ export async function getUsers(userIds: string[]) {
     return []
   }
 }
+const BLANK_TOPIC = ''
+export async function getUserInterestTopics(userId: string) {
+  const { data } = await run(
+    db.from('user_topics').select('topics').eq('user_id', userId).limit(1)
+  )
+  if (data && data.length > 0) {
+    return data[0].topics?.filter((t) => t !== BLANK_TOPIC)
+  } else {
+    return []
+  }
+}

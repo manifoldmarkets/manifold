@@ -68,21 +68,20 @@ export const useFeed = (
     if (userId) {
       requestIdRef.current++
       const requestId = requestIdRef.current
-      const promise =
-        topic === CUSTOM_TOPIC_KEY
-          ? getCustomEmbeddingsPromise(userId)
-          : topic
-          ? db.rpc('get_recommended_contracts_embeddings_topic', {
-              uid: userId,
-              p_topic: topic,
-              n: PAGE_SIZE,
-              excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
-            })
-          : db.rpc('get_recommended_contracts_embeddings', {
-              uid: userId,
-              n: PAGE_SIZE,
-              excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
-            })
+      const promise = topic?.includes(CUSTOM_TOPIC_KEY)
+        ? getCustomEmbeddingsPromise(userId)
+        : topic
+        ? db.rpc('get_recommended_contracts_embeddings_topic', {
+            uid: userId,
+            p_topic: topic,
+            n: PAGE_SIZE,
+            excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
+          })
+        : db.rpc('get_recommended_contracts_embeddings', {
+            uid: userId,
+            n: PAGE_SIZE,
+            excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
+          })
 
       promise.then((res) => {
         if (requestIdRef.current !== requestId) return

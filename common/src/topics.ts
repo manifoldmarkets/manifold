@@ -80,6 +80,13 @@ export const cleanTopic = (topic: string) =>
     .replace(/[^\x00-\x7F]/g, '')
     .trim()
 
+export const getEmojiFromTopic = (topic: string) => {
+  const textWithEmoji = Object.values(TOPICS_TO_SUBTOPICS)
+    .flat()
+    .find((t) => t.includes(topic))
+  return textWithEmoji ? textWithEmoji.split(' ')[0] : ''
+}
+
 export const getSubtopics = (topic: string) =>
   TOPICS_TO_SUBTOPICS[topic].map(
     (subtopicWithEmoji) =>
