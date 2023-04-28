@@ -4,7 +4,7 @@ import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { saveUserEvent } from '../supabase/user-events'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
-import { UserEvent, ShareEvent } from 'common/events'
+import { ShareEvent } from 'common/events'
 import { completeQuest } from 'web/lib/firebase/api'
 import { QuestType } from 'common/quest'
 
