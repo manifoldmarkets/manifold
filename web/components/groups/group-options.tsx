@@ -9,9 +9,7 @@ import { PrivateUser } from 'common/user'
 import { referralQuery } from 'common/util/share'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { useUser } from 'web/hooks/use-user'
-import {
-  groupButtonClass,
-} from 'web/pages/group/[...slugs]'
+import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
 import { getBlockGroupDropdownItem } from './hide-group-item'
