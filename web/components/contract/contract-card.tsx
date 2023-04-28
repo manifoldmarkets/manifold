@@ -456,7 +456,7 @@ export function ContractCardNew(props: {
             />
           </Row>
           <div className="flex-1" />
-          <ReasonChosen contract={contract} />
+          {promotedData ? <BoostPill /> : <ReasonChosen contract={contract} />}
         </Row>
 
         {/* Title is link to contract for open in new tab and a11y */}
@@ -514,7 +514,6 @@ export function ContractCardNew(props: {
         {!showImage && promotedData && (
           <div className="flex justify-center">
             <ClaimButton {...promotedData} />
-            <BoostPill />
           </div>
         )}
       </Col>
@@ -522,12 +521,7 @@ export function ContractCardNew(props: {
       {showImage && (
         <>
           <div className="flex h-40 w-full items-center justify-center">
-            {promotedData && (
-              <>
-                <ClaimButton {...promotedData} className="mt-2" />
-                <BoostPill />
-              </>
-            )}
+            {promotedData && <ClaimButton {...promotedData} className="mt-2" />}
           </div>
           <div className="absolute inset-0 -z-10 transition-all group-hover:saturate-150">
             <Image
@@ -545,11 +539,9 @@ export function ContractCardNew(props: {
 }
 
 const BoostPill = () => (
-  <div className="absolute bottom-2 right-2">
-    <Tooltip text={"They're paying you to see this"}>
-      <FeaturedPill label="Boosted" />
-    </Tooltip>
-  </div>
+  <Tooltip text={"They're paying you to see this"}>
+    <FeaturedPill label="Boosted" />
+  </Tooltip>
 )
 
 function ReasonChosen(props: { contract: Contract }) {
