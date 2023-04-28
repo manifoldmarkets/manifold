@@ -9,12 +9,14 @@ export async function saveUserEvent(
   eventName: string,
   eventProperties?: Record<string, Json>
 ) {
-  return await run(db.from('user_events').insert({
-    user_id: userId ?? 'NO_USER',
-    contract_id: contractId,
-    event_id: getId(),
-    ts: millisToTs(Date.now()),
-    name: eventName,
-    data: eventProperties ?? {}
-  }))
+  return await run(
+    db.from('user_events').insert({
+      user_id: userId ?? 'NO_USER',
+      contract_id: contractId,
+      event_id: getId(),
+      ts: millisToTs(Date.now()),
+      name: eventName,
+      data: eventProperties ?? {},
+    })
+  )
 }
