@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { groupBy } from 'lodash'
 import clsx from 'clsx'
 
@@ -15,6 +15,7 @@ import { User } from 'common/user'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { formatMoney } from 'common/util/format'
+import { useUser } from 'web/hooks/use-user'
 
 export async function getStaticProps() {
   const { data: rows } = await db.from('leagues').select('*')
@@ -39,57 +40,70 @@ export default function Leagues(props: { rows: any[] }) {
   const [division, setDivision] = useState<division>(1)
   const [cohort, setCohort] = useState(cohortNames[0])
 
+  const user = useUser()
   const onSetDivision = (division: division) => {
     setDivision(division)
-    setCohort(divisionToCohorts[division][0])
+
+    const userRow = rows.find(
+      (row) => row.user_id === user?.id && row.division === division
+    )
+    setCohort(userRow ? userRow.cohort : divisionToCohorts[division][0])
   }
 
-  const cohortRows = cohorts[cohort]
+  useEffect(() => {
+    const userRow = rows.find((row) => row.user_id === user?.id)
+    if (userRow) {
+      setDivision(userRow.division)
+      setCohort(userRow.cohort)
+    }
+  }, [user])
 
   return (
     <Page>
-      <Title>Leagues</Title>
+      <Col className="mx-auto w-full max-w-lg px-4 pb-8 sm:px-2">
+        <Title>Leagues</Title>
 
-      <Row className="flex-wrap gap-2">
-        <Select
-          className="!border-ink-200"
-          value={season}
-          onChange={(e) => setSeason(+e.target.value as season)}
-        >
-          {SEASONS.map((season) => (
-            <option key={season} value={season}>
-              Season {season}
-            </option>
-          ))}
-        </Select>
+        <Col className="gap-2 sm:flex-row sm:justify-between">
+          <Select
+            className="!border-ink-200"
+            value={season}
+            onChange={(e) => setSeason(+e.target.value as season)}
+          >
+            {SEASONS.map((season) => (
+              <option key={season} value={season}>
+                Season {season}
+              </option>
+            ))}
+          </Select>
 
-        <Select
-          className="!border-ink-200"
-          value={division}
-          onChange={(e) => onSetDivision(+e.target.value as division)}
-        >
-          {Object.keys(divisionToCohorts).map((division) => (
-            <option key={division} value={division}>
-              {getDivisionName(division)}
-            </option>
-          ))}
-        </Select>
+          <Select
+            className="!border-ink-200"
+            value={division}
+            onChange={(e) => onSetDivision(+e.target.value as division)}
+          >
+            {Object.keys(divisionToCohorts).map((division) => (
+              <option key={division} value={division}>
+                {getDivisionName(division)}
+              </option>
+            ))}
+          </Select>
 
-        <Select
-          className="!border-ink-200"
-          value={cohort}
-          onChange={(e) => setCohort(e.target.value)}
-        >
-          {divisionToCohorts[division].map((cohortName) => (
-            <option key={cohortName} value={cohortName}>
-              {toLabel(cohortName)}
-            </option>
-          ))}
-        </Select>
-      </Row>
+          <Select
+            className="!border-ink-200"
+            value={cohort}
+            onChange={(e) => setCohort(e.target.value)}
+          >
+            {divisionToCohorts[division].map((cohortName) => (
+              <option key={cohortName} value={cohortName}>
+                {toLabel(cohortName)}
+              </option>
+            ))}
+          </Select>
+        </Col>
 
-      <Col className="mx-4 mt-4 sm:mx-2">
-        <CohortTable cohort={cohort} rows={cohortRows} />
+        <Col className="mt-4">
+          <CohortTable cohort={cohort} rows={cohorts[cohort]} />
+        </Col>
       </Col>
     </Page>
   )
@@ -101,7 +115,7 @@ const CohortTable = (props: { cohort: string; rows: any[] }) => {
   if (!users) return <LoadingIndicator />
 
   return (
-    <table className="max-w-sm">
+    <table>
       <thead className={clsx('text-ink-600 text-left text-sm font-semibold')}>
         <tr>
           <th className={clsx('pb-1')}>User</th>
