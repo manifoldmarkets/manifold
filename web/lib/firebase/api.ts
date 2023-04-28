@@ -11,6 +11,7 @@ import { Contract } from './contracts'
 export { APIError } from 'common/api'
 import { filter, Sort } from '../../components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
+import { groupRoleType } from 'web/components/groups/group-member-modal'
 
 export async function call(url: string, method: string, params?: any) {
   const user = auth.currentUser
@@ -227,7 +228,11 @@ export function updateGroupPrivacy(params: {
   return call(getApiUrl('updategroupprivacy'), 'POST', params)
 }
 
-export function addGroupMember(params: { groupId: string; userId: string }) {
+export function addGroupMember(params: {
+  groupId: string
+  userId: string
+  role?: groupRoleType
+}) {
   return call(getApiUrl('addgroupmember'), 'POST', params)
 }
 
