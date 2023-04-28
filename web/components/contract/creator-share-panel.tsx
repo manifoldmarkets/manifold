@@ -33,12 +33,12 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
         />
       </div>
 
-      <div className="text-ink-500 mb-6 text-base">
+      <div className="text-ink-500 text-base">
         Earn {formatMoney(REFERRAL_AMOUNT)} for each sign up and{' '}
         {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each trader.
       </div>
 
-      <div className="mb-2 flex flex-wrap items-center gap-2">
+      {/* <div className="mb-2 flex flex-wrap items-center gap-2">
         <div className="mr-2 text-lg">Boost:</div>
         <BoostFormRow contract={contract} />
       </div>
@@ -46,7 +46,7 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
       <div className="text-ink-500 mb-2 text-base">
         Bump up your market in the feed. We'll target it to users who like
         questions like this one. All funds go to the viewers.
-      </div>
+      </div> */}
     </GradientContainer>
   )
 }
