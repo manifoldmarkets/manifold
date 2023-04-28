@@ -873,7 +873,7 @@ create table if not exists
     cost_per_view numeric not null,
     created_at timestamp not null default now(),
     embedding vector (1536) not null,
-    unique (market_id)
+    constraint market_ads_market_id_unique unique (market_id)
   );
 
 drop policy if exists "public read" on user_topics;
