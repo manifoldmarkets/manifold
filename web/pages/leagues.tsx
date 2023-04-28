@@ -18,7 +18,10 @@ import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
 
 export async function getStaticProps() {
-  const { data: rows } = await db.from('leagues').select('*')
+  const { data: rows } = await db
+    .from('leagues')
+    .select('*')
+    .order('mana_earned', { ascending: false })
   return {
     props: {
       rows: rows ?? [],
@@ -102,15 +105,23 @@ export default function Leagues(props: { rows: any[] }) {
         </Col>
 
         <Col className="mt-4">
-          <CohortTable cohort={cohort} rows={cohorts[cohort]} />
+          <CohortTable
+            cohort={cohort}
+            rows={cohorts[cohort]}
+            currUserId={user?.id}
+          />
         </Col>
       </Col>
     </Page>
   )
 }
 
-const CohortTable = (props: { cohort: string; rows: any[] }) => {
-  const { rows } = props
+const CohortTable = (props: {
+  cohort: string
+  rows: any[]
+  currUserId: string | undefined
+}) => {
+  const { rows, currUserId } = props
   const users = useUsers(rows.map((row) => row.user_id))
   if (!users) return <LoadingIndicator />
 
@@ -128,7 +139,13 @@ const CohortTable = (props: { cohort: string; rows: any[] }) => {
           if (!user) console.log('no user', row)
           return (
             user && (
-              <UserRow key={user.id} {...row} user={users[i]} rank={i + 1} />
+              <UserRow
+                key={user.id}
+                {...row}
+                user={users[i]}
+                rank={i + 1}
+                isUser={currUserId === user.id}
+              />
             )
           )
         })}
@@ -137,13 +154,18 @@ const CohortTable = (props: { cohort: string; rows: any[] }) => {
   )
 }
 
-const UserRow = (props: { user: User; mana_earned: number; rank: number }) => {
-  const { user, mana_earned, rank } = props
+const UserRow = (props: {
+  user: User
+  mana_earned: number
+  rank: number
+  isUser: boolean
+}) => {
+  const { user, mana_earned, rank, isUser } = props
 
   return (
-    <tr>
+    <tr className={clsx(isUser && 'bg-indigo-400/20')}>
       <td>
-        <Row className="mb-2 items-center gap-4">
+        <Row className="my-2 items-center gap-4">
           <div className="w-4 text-right font-semibold">{rank}</div>
           <UserAvatarAndBadge
             name={user.name}

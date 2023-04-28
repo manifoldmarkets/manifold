@@ -16,7 +16,10 @@ export async function getUser(userId: string) {
 export async function getUsers(userIds: string[]) {
   const { data } = await run(db.from('users').select('data').in('id', userIds))
   if (data && data.length > 0) {
-    return data.map((d) => d.data as User)
+    const userObj = Object.fromEntries(
+      data.map((d) => [(d.data as any)?.id, d.data])
+    )
+    return userIds.map((id) => userObj[id] as User)
   } else {
     return []
   }
