@@ -470,7 +470,7 @@ function FeedCommentHeader(props: {
   const marketCreator = contract.creatorId === userId
   if (bettorUsername !== undefined) {
     return (
-      <span className="text-ink-600 mt-0.5 text-sm">
+      <Row className="text-ink-600 mt-0.5 flex-wrap items-center text-sm">
         <UserLink
           username={userUsername}
           name={userName}
@@ -483,14 +483,14 @@ function FeedCommentHeader(props: {
           elementId={comment.id}
         />
         <DotMenu comment={comment} contract={contract} />
-      </span>
+      </Row>
     )
   }
 
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
-    <span className="text-ink-600 mt-0.5 align-middle text-sm">
+    <Row className="text-ink-600 mt-0.5 flex-wrap items-center text-sm">
       <UserLink
         username={userUsername}
         name={userName}
@@ -518,7 +518,7 @@ function FeedCommentHeader(props: {
         elementId={comment.id}
       />
       <DotMenu comment={comment} contract={contract} />
-    </span>
+    </Row>
   )
 }
 
