@@ -86,42 +86,34 @@ or replace function get_recommended_contracts_embeddings_from (
   distance numeric,
   relative_dist numeric,
   popularity_score numeric
-) immutable parallel safe language sql as $$ with available_contracts_unscored as (
-    select contract_id,
-      p_embedding <=> ce.embedding as distance,
-      (
-        row_number() over (
-          order by p_embedding <=> ce.embedding
-        )
-      ) / 2000.0 as relative_dist,
-      lpc.popularity_score,
-      lpc.created_time,
-      lpc.close_time,
-      jsonb_array_to_text_array(lpc.data->'groupSlugs') as group_slugs
+                ) stable parallel safe language sql as $$ with
+  swiped_contracts as (
+    select contract_id
+    from user_seen_markets
+    where user_id = uid
+      and (data->>'createdTime')::bigint > ts_to_millis(now() - interval '2 weeks')
+  ),
+  viewed_market_cards as (
+    select contract_id
+    from user_events
+    where user_id = uid
+      and name = 'view market card'
+      and ts > now() - interval '2 days'
+  ),
+  available_contracts_unscored as (
+    select ce.contract_id,
+           p_embedding <=> ce.embedding as distance,
+           (row_number() over (order by p_embedding <=> ce.embedding)) / 2000.0 as relative_dist,
+           lpc.popularity_score,
+           lpc.created_time,
+           lpc.close_time,
+           jsonb_array_to_text_array(lpc.data->'groupSlugs') as group_slugs
     from contract_embeddings as ce
-      join listed_open_contracts lpc on lpc.id = contract_id
-    where not exists (
-        select 1
-        from unnest(excluded_contract_ids) as w
-        where w = contract_id
-      ) -- That has not been swiped on within 2 weeks.
-      and not exists(
-        select 1
-        from user_seen_markets
-        where user_seen_markets.user_id = uid
-          and user_seen_markets.contract_id = ce.contract_id
-          and (user_seen_markets.data->>'createdTime')::bigint > ts_to_millis(now() - interval '2 weeks')
-      ) -- That has not been viewed as a card in the last day.
-      and not exists(
-        select 1
-        from user_events
-        where user_events.user_id = uid
-          and user_events.name = 'view market card'
-          and user_events.contract_id = ce.contract_id
-          and user_events.ts > now() - interval '2 days'
-      )
-    order by p_embedding <=> ce.embedding -- Find many that are close to your interests
-      -- so that among them we can filter for new, closing soon, and trending.
+           join listed_open_contracts lpc on lpc.id = ce.contract_id
+    where not exists (select 1 from unnest(excluded_contract_ids) w where w = ce.contract_id)
+      and not exists (select 1 from swiped_contracts sc where sc.contract_id = ce.contract_id)
+      and not exists (select 1 from viewed_market_cards vmc where vmc.contract_id = ce.contract_id)
+    order by p_embedding <=> ce.embedding
     limit 2000
   ), available_contracts as (
     select *,
