@@ -1,10 +1,10 @@
 import * as Sprig from 'web/lib/service/sprig'
 
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
-import { saveUserEvent } from '../firebase/users'
+import { saveUserEvent } from '../supabase/user-events'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
-import { ShareEvent } from 'common/events'
+import { UserEvent, ShareEvent } from 'common/events'
 import { completeQuest } from 'web/lib/firebase/api'
 import { QuestType } from 'common/quest'
 
@@ -39,9 +39,12 @@ export async function track(eventName: string, eventProperties?: any) {
     else console.log(eventName)
   }
   try {
+    // mqp: kind of weird that we extract the contract ID specially, but it is kind of
+    // a uniquely useful thing to have as a separate column in the DB
+    const contractId = eventProperties['contractId'] as string | undefined
     await Promise.all([
       amplitude.track(eventName, eventProperties).promise,
-      saveUserEvent(userId, eventName, props),
+      saveUserEvent(userId, contractId, eventName, props),
     ])
   } catch (e) {
     console.log('error tracking event:', e)
