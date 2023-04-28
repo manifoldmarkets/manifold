@@ -632,10 +632,6 @@ function ClaimButton(props: {
   const [claimed, setClaimed] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const claim = async () => {
-    await redeemBoost({ adId })
-  }
-
   return (
     <button
       className={clsx(
@@ -649,9 +645,10 @@ function ClaimButton(props: {
         e.stopPropagation()
         setLoading(true)
         try {
-          await claim()
+          await redeemBoost({ adId })
           toast.success(`+${formatMoney(reward)}`)
           setClaimed(true)
+          track('claim boost', { adId })
         } catch (err) {
           toast.error((err as any).message ?? err)
         } finally {
