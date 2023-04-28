@@ -6,7 +6,10 @@ import {
   useFeedComments,
 } from 'web/hooks/use-additional-feed-items'
 import { User } from 'common/user'
-import { FeedCommentThread } from 'web/components/feed/feed-comments'
+import {
+  FeedCommentThread,
+  isReplyToBet,
+} from 'web/components/feed/feed-comments'
 import { SummarizeBets, groupBetsByCreatedTimeAndUserId } from './feed-bets'
 import { Bet } from 'common/bet'
 import { sumBy } from 'lodash'
@@ -153,15 +156,18 @@ const FeedCommentItem = (props: {
   }[]
 }) => {
   const { contract, commentThreads } = props
-
+  const firstCommentIsReplyToBet =
+    commentThreads[0] && isReplyToBet(commentThreads[0].parentComment)
   return (
-    <Col className={'w-full'}>
+    <Col className={clsx('w-full', firstCommentIsReplyToBet ? 'sm:mt-4' : '')}>
       {commentThreads.map((ct, index) => (
         <Row
           className={'relative w-full'}
           key={ct.parentComment.id + 'feed-thread'}
         >
-          {index !== commentThreads.length - 1 ? (
+          {index === 0 && firstCommentIsReplyToBet ? (
+            <div />
+          ) : index !== commentThreads.length - 1 ? (
             <div className="border-ink-200 b-[50%] absolute top-0 ml-7 h-[100%] border-l-2" />
           ) : (
             <div className="border-ink-200 absolute top-0 ml-7 h-3 border-l-2" />
