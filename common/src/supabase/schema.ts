@@ -1538,12 +1538,6 @@ export interface Database {
             }
             Returns: number
           }
-      get_document_table: {
-        Args: {
-          doc_kind: string
-        }
-        Returns: string
-      }
       get_document_table_spec: {
         Args: {
           table_id: string
@@ -2019,6 +2013,17 @@ export interface Database {
           creator_id?: string
         }
         Returns: string
+      }
+      search_users: {
+        Args: {
+          query: string
+          count: number
+        }
+        Returns: {
+          data: Json
+          fs_updated_time: string
+          id: string
+        }[]
       }
       set_limit: {
         Args: {

@@ -825,6 +825,20 @@ limit limit_count;
 $$ language sql;
 
 create
+or replace function search_users (query text, count integer) returns setof users as $$
+select *
+from users
+where to_tsvector((data->>'username') || ' ' || (data->>'name')) @@ websearch_to_tsquery(query)
+  or data->>'username' ilike '%' || query || '%'
+  or data->>'name' ilike '%' || query || '%'
+order by greatest(
+    similarity(query, data->>'name'),
+    similarity(query, data->>'username')
+  ) desc,
+  data->>'lastBetTime' desc nulls last
+limit count $$ language sql stable;
+
+create
 or replace function get_unseen_reply_chain_comments_matching_contracts (contract_ids text[], current_user_id text) returns table (id text, contract_id text, data JSONB) as $$
 WITH matching_comments AS (
   SELECT
