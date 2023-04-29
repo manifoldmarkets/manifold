@@ -93,7 +93,7 @@ export default function Welcome() {
               Previous
             </Button>
             <Button onClick={increasePage}>
-              {isLastPage ? 'Done' : 'Next'}
+              {isLastPage ? `Claim ${formatMoney(STARTING_BALANCE)}` : 'Next'}
             </Button>
           </Row>
         </Col>
