@@ -17,7 +17,9 @@ export const DailyLeagueStat = (props: { user: User }) => {
     <Link href="/leagues">
       <Col className="bg-ink-100 gap-1 rounded-lg px-2 py-1 shadow">
         <div>Rank {info.rank}</div>
-        <div className="text-sm text-ink-600">{getDivisionName(info.division)}</div>
+        <div className="text-ink-600 text-sm">
+          {getDivisionName(info.division)}
+        </div>
       </Col>
     </Link>
   )
