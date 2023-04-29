@@ -564,7 +564,11 @@ create table if not exists
   groups (
     id text not null primary key,
     data jsonb not null,
-    fs_updated_time timestamp not null
+    fs_updated_time timestamp not null,
+    privacy_status text,
+    slug text,
+    name text,
+    creator_id text;
   );
 
 alter table groups enable row level security;
