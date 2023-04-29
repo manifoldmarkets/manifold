@@ -215,14 +215,11 @@ create policy "public read" on user_events for
 select
   using (true);
 
+-- mqp: we should fix this up so that users can only insert their own events.
+-- but right now it's blocked because our application code is too dumb to wait
+-- for auth to be done until it starts sending events
 drop policy if exists "user can insert" on user_events;
-
-create policy "user can insert" on user_events for insert
-with
-  check (
-    user_id = 'NO_USER'
-    or user_id = firebase_uid ()
-  );
+create policy "user can insert" on user_events for insert with check (true)
 
 create index if not exists user_events_name on user_events (user_id, name);
 
