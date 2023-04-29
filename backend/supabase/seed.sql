@@ -201,7 +201,6 @@ create table if not exists
     id bigint generated always as identity primary key,
     ts timestamptz not null default now(),
     name text not null,
-    event_id text null,
     user_id text null,
     contract_id text null,
     data jsonb not null
@@ -1002,7 +1001,6 @@ begin
            when 'user_follows' then cast(('user_id', 'follow_id') as table_spec)
            when 'user_notifications' then cast(('user_id', 'notification_id') as table_spec)
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
-           when 'user_events' then cast(('user_id', 'event_id') as table_spec)
            when 'user_seen_markets' then cast(('user_id', 'contract_id') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)

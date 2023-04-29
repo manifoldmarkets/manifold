@@ -642,7 +642,6 @@ export interface Database {
         Row: {
           contract_id: string | null
           data: Json
-          event_id: string | null
           id: number
           name: string
           ts: string | null
@@ -651,7 +650,6 @@ export interface Database {
         Insert: {
           contract_id?: string | null
           data: Json
-          event_id?: string | null
           id?: never
           name: string
           ts?: string | null
@@ -660,7 +658,6 @@ export interface Database {
         Update: {
           contract_id?: string | null
           data?: Json
-          event_id?: string | null
           id?: never
           name?: string
           ts?: string | null
