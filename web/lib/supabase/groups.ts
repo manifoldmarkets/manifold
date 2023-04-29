@@ -33,7 +33,7 @@ export async function searchGroups(prompt: string, limit: number) {
   )
     .order('data->totalMembers', { ascending: false } as any)
     .limit(limit)
-  if (prompt) query.or(`name.ilike.%${prompt}%,data->>about.ilike.%${prompt}%`)
+  if (prompt) query.ilike('name', `%${prompt}%`)
 
   return (await run(query)).data
 }
