@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react'
-import { groupBy } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 import clsx from 'clsx'
 
-import { SEASONS, division, getDivisionName, season } from 'common/leagues'
+import {
+  SEASONS,
+  division,
+  getDemotionAndPromotionCount,
+  getDivisionName,
+  season,
+} from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -38,6 +44,10 @@ export default function Leagues(props: { rows: any[] }) {
     cohortNames,
     (cohort) => cohorts[cohort][0].division
   )
+  const divisions = sortBy(
+    Object.keys(divisionToCohorts),
+    (division) => division
+  ).reverse()
 
   const [season, setSeason] = useState<season>(1)
   const [division, setDivision] = useState<division>(1)
@@ -60,6 +70,8 @@ export default function Leagues(props: { rows: any[] }) {
       setCohort(userRow.cohort)
     }
   }, [user])
+
+  const { demotion, promotion } = getDemotionAndPromotionCount(division)
 
   return (
     <Page>
@@ -84,7 +96,7 @@ export default function Leagues(props: { rows: any[] }) {
             value={division}
             onChange={(e) => onSetDivision(+e.target.value as division)}
           >
-            {Object.keys(divisionToCohorts).map((division) => (
+            {divisions.map((division) => (
               <option key={division} value={division}>
                 {getDivisionName(division)}
               </option>
@@ -109,6 +121,8 @@ export default function Leagues(props: { rows: any[] }) {
             cohort={cohort}
             rows={cohorts[cohort]}
             currUserId={user?.id}
+            demotionCount={demotion}
+            promotionCount={promotion}
           />
         </Col>
       </Col>
@@ -120,8 +134,10 @@ const CohortTable = (props: {
   cohort: string
   rows: any[]
   currUserId: string | undefined
+  demotionCount: number
+  promotionCount: number
 }) => {
-  const { rows, currUserId } = props
+  const { rows, currUserId, demotionCount, promotionCount } = props
   const users = useUsers(rows.map((row) => row.user_id))
   if (!users) return <LoadingIndicator />
 
@@ -138,15 +154,38 @@ const CohortTable = (props: {
           const user = users[i]
           if (!user) console.log('no user', row)
           return (
-            user && (
-              <UserRow
-                key={user.id}
-                {...row}
-                user={users[i]}
-                rank={i + 1}
-                isUser={currUserId === user.id}
-              />
-            )
+            <>
+              {user && (
+                <UserRow
+                  key={user.id}
+                  {...row}
+                  user={users[i]}
+                  rank={i + 1}
+                  isUser={currUserId === user.id}
+                />
+              )}
+
+              {promotionCount > 0 && i + 1 === promotionCount && (
+                <tr>
+                  <td colSpan={2}>
+                    <Col className="mb-2 w-full items-center gap-2">
+                      <div>Promotion</div>
+                      <div className="border-ink-300 w-full border-t-2 border-dashed" />
+                    </Col>
+                  </td>
+                </tr>
+              )}
+              {demotionCount > 0 && rows.length - (i + 1) === demotionCount && (
+                <tr>
+                  <td colSpan={2}>
+                    <Col className="mt-2 w-full items-center gap-2">
+                      <div className="border-ink-300 w-full border-t-2 border-dashed" />
+                      <div>Demotion</div>
+                    </Col>
+                  </td>
+                </tr>
+              )}
+            </>
           )
         })}
       </tbody>
