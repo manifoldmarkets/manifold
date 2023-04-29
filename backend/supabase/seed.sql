@@ -493,6 +493,8 @@ create table if not exists
     fs_updated_time timestamp not null,
     primary key (contract_id, comment_id),
     visibility text,
+    user_id text,
+    created_time timestamptz,
   );
 
 alter table contract_comments enable row level security;
@@ -713,6 +715,8 @@ create table if not exists
     data jsonb not null,
     fs_updated_time timestamp not null,
     visibility text,
+    user_id text,
+    created_time timestamptz,
     primary key (post_id, comment_id)
   );
 
