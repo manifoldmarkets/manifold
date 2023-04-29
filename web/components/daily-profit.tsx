@@ -98,7 +98,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
         }, DAILY_PROFIT_CLICK_EVENT)}
       >
         <Row>
-          <Col className="justify-start">
+          <Col className="items-start">
             <div>
               <animated.div>
                 {portfolioValueAnimated.to((b) => formatMoney(b))}

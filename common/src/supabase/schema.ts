@@ -1353,6 +1353,17 @@ export interface Database {
           username: string | null
         }
       }
+      user_league_info: {
+        Row: {
+          cohort: string | null
+          created_time: string | null
+          division: number | null
+          mana_earned: number | null
+          rank: number | null
+          season: number | null
+          user_id: string | null
+        }
+      }
       user_referrals: {
         Row: {
           data: Json | null
