@@ -18,4 +18,4 @@ export const getDivisionName = (division: number | string) =>
 
 export type league_user_info = PlainTablesAndViews['user_league_info']
 
-export const LEAGUES_ENABLED = true
+export const LEAGUES_ENABLED = false
