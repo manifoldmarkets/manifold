@@ -198,13 +198,13 @@ cluster on user_reactions_type;
 
 create table if not exists
   user_events (
-    user_id text not null,
-    event_id text not null,
+    id bigint generated always as identity primary key,
+    ts timestamptz not null default now(),
+    name text not null,
+    event_id text null,
+    user_id text null,
     contract_id text null,
-    name text null,
-    ts timestamptz null,
-    data jsonb not null,
-    primary key (user_id, event_id)
+    data jsonb not null
   );
 
 alter table user_events enable row level security;
@@ -223,8 +223,6 @@ with
     user_id = 'NO_USER'
     or user_id = firebase_uid ()
   );
-
-create index if not exists user_events_data_gin on user_events using GIN (data);
 
 create index if not exists user_events_name on user_events (user_id, name);
 

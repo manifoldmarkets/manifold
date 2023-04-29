@@ -642,26 +642,29 @@ export interface Database {
         Row: {
           contract_id: string | null
           data: Json
-          event_id: string
-          name: string | null
+          event_id: string | null
+          id: number
+          name: string
           ts: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           contract_id?: string | null
           data: Json
-          event_id: string
-          name?: string | null
+          event_id?: string | null
+          id?: never
+          name: string
           ts?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           contract_id?: string | null
           data?: Json
-          event_id?: string
-          name?: string | null
+          event_id?: string | null
+          id?: never
+          name?: string
           ts?: string | null
-          user_id?: string
+          user_id?: string | null
         }
       }
       user_follows: {
