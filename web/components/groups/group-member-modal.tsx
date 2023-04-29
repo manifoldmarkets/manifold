@@ -20,6 +20,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from '../widgets/user-link'
 import { UncontrolledTabs } from '../layout/tabs'
 import { AddMemberContent } from './add-member-modal'
+import { Spacer } from '../layout/spacer'
 
 const SEARCH_MEMBER_QUERY_SIZE = 15
 
@@ -135,7 +136,8 @@ export function SearchGroupMemberModalContent(props: {
       })
       .finally(() => setLoading(false))
   }, [query])
-  if (searchMemberResult.length == 0 && !loading) {
+  const length = searchMemberResult.length
+  if (length == 0 && !loading) {
     return <div>No results...</div>
   }
   return (
@@ -146,13 +148,16 @@ export function SearchGroupMemberModalContent(props: {
         loading ? 'animate-pulse' : ''
       )}
     >
-      {searchMemberResult.map((member) => (
-        <Member
-          key={member.member_id}
-          group={group}
-          member={member}
-          canEdit={canEdit}
-        />
+      {searchMemberResult.map((member, index) => (
+        <>
+          <Member
+            key={member.member_id}
+            group={group}
+            member={member}
+            canEdit={canEdit}
+          />
+          {length - 1 === index && <Spacer h={24} />}
+        </>
       ))}
     </div>
   )
@@ -253,6 +258,7 @@ export function MemberRoleSection(props: {
   canEdit: boolean
 }) {
   const { group, members, role, canEdit } = props
+  const length = members?.length
   return (
     <Col className="w-full gap-3">
       <MemberRoleHeader
@@ -263,19 +269,22 @@ export function MemberRoleSection(props: {
             : roleDescription[role]
         }
       />
-      {members === undefined ? (
+      {members === undefined || length === undefined ? (
         <LoadingIndicator />
-      ) : members.length === 0 ? (
+      ) : length === 0 ? (
         <div className="text-ink-400">{`No ${role}s yet...`}</div>
       ) : (
-        members.map((member) => {
+        members.map((member, index) => {
           return (
-            <Member
-              key={member.member_id}
-              group={group}
-              member={member}
-              canEdit={canEdit}
-            />
+            <>
+              <Member
+                key={member.member_id}
+                group={group}
+                member={member}
+                canEdit={canEdit}
+              />
+              {role === 'member' && length - 1 === index && <Spacer h={24} />}
+            </>
           )
         })
       )}
