@@ -14,6 +14,8 @@ export const DIVISION_NAMES = {
   4: 'Platinum',
 } as { [key: number | string]: string }
 
+export const SECRET_NEXT_DIVISION = 'Diamond'
+
 export const getDemotionAndPromotionCount = (division: number) => {
   if (division === 1) {
     return { demotion: 0, promotion: 7 }

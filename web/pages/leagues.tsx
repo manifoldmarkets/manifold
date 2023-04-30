@@ -6,6 +6,7 @@ import {
   DIVISION_NAMES,
   SEASONS,
   SEASON_END,
+  SECRET_NEXT_DIVISION,
   getDemotionAndPromotionCount,
   league_row,
   season,
@@ -24,6 +25,7 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
 import { Countdown } from 'web/components/widgets/countdown'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export async function getStaticProps() {
   const { data: rows } = await db
@@ -147,7 +149,7 @@ export default function Leagues(props: { rows: league_row[] }) {
 
 const CohortTable = (props: {
   cohort: string
-  rows: any[]
+  rows: league_row[]
   currUserId: string | undefined
   demotionCount: number
   promotionCount: number
@@ -155,6 +157,12 @@ const CohortTable = (props: {
   const { rows, currUserId, demotionCount, promotionCount } = props
   const users = useUsers(rows.map((row) => row.user_id))
   if (!users) return <LoadingIndicator />
+
+  const division = rows[0].division
+  const nextDivision = division + 1
+  const nextDivisionName = DIVISION_NAMES[nextDivision] ?? SECRET_NEXT_DIVISION
+  const prevDivison = Math.max(division - 1, 1)
+  const prevDivisionName = DIVISION_NAMES[prevDivison]
 
   return (
     <table>
@@ -183,7 +191,12 @@ const CohortTable = (props: {
                 <tr>
                   <td colSpan={2}>
                     <Col className="mb-2 w-full items-center gap-2">
-                      <div>Promotion</div>
+                      <div>
+                        Promotion{' '}
+                        <InfoTooltip
+                          text={`Top ${promotionCount} users promote to ${nextDivisionName} next season`}
+                        />
+                      </div>
                       <div className="border-ink-300 w-full border-t-2 border-dashed" />
                     </Col>
                   </td>
@@ -194,7 +207,12 @@ const CohortTable = (props: {
                   <td colSpan={2}>
                     <Col className="mt-2 w-full items-center gap-2">
                       <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                      <div>Demotion</div>
+                      <div>
+                        Demotion{' '}
+                        <InfoTooltip
+                          text={`Bottom ${demotionCount} users demote to ${prevDivisionName} next season`}
+                        />
+                      </div>
                     </Col>
                   </td>
                 </tr>
