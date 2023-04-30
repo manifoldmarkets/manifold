@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { groupBy, sortBy } from 'lodash'
 import clsx from 'clsx'
 
 import {
+  DIVISION_NAMES,
   SEASONS,
   SEASON_END,
-  division,
   getDemotionAndPromotionCount,
-  getDivisionName,
+  league_row,
   season,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
@@ -37,7 +37,7 @@ export async function getStaticProps() {
   }
 }
 
-export default function Leagues(props: { rows: any[] }) {
+export default function Leagues(props: { rows: league_row[] }) {
   const { rows } = props
 
   const cohorts = groupBy(rows, 'cohort')
@@ -47,16 +47,16 @@ export default function Leagues(props: { rows: any[] }) {
     (cohort) => cohorts[cohort][0].division
   )
   const divisions = sortBy(
-    Object.keys(divisionToCohorts),
+    Object.keys(divisionToCohorts).map((division) => +division),
     (division) => division
   ).reverse()
 
   const [season, setSeason] = useState<season>(1)
-  const [division, setDivision] = useState<division>(1)
+  const [division, setDivision] = useState<number>(1)
   const [cohort, setCohort] = useState(cohortNames[0])
 
   const user = useUser()
-  const onSetDivision = (division: division) => {
+  const onSetDivision = (division: number) => {
     setDivision(division)
 
     const userRow = rows.find(
@@ -65,8 +65,10 @@ export default function Leagues(props: { rows: any[] }) {
     setCohort(userRow ? userRow.cohort : divisionToCohorts[division][0])
   }
 
+  const userRow = rows.find((row) => row.user_id === user?.id)
+  const userDivision = userRow?.division
+  const userCohort = userRow?.cohort
   useEffect(() => {
-    const userRow = rows.find((row) => row.user_id === user?.id)
     if (userRow) {
       setDivision(userRow.division)
       setCohort(userRow.cohort)
@@ -74,6 +76,8 @@ export default function Leagues(props: { rows: any[] }) {
   }, [user])
 
   const { demotion, promotion } = getDemotionAndPromotionCount(division)
+
+  const star = '★'
 
   return (
     <Page>
@@ -88,7 +92,7 @@ export default function Leagues(props: { rows: any[] }) {
           >
             {SEASONS.map((season) => (
               <option key={season} value={season}>
-                Season {season}
+                {star} Season {season}
               </option>
             ))}
           </Select>
@@ -96,11 +100,11 @@ export default function Leagues(props: { rows: any[] }) {
           <Select
             className="!border-ink-200"
             value={division}
-            onChange={(e) => onSetDivision(+e.target.value as division)}
+            onChange={(e) => onSetDivision(+e.target.value)}
           >
             {divisions.map((division) => (
               <option key={division} value={division}>
-                {getDivisionName(division)}
+                {division === userDivision && star} {DIVISION_NAMES[division]}
               </option>
             ))}
           </Select>
@@ -110,9 +114,9 @@ export default function Leagues(props: { rows: any[] }) {
             value={cohort}
             onChange={(e) => setCohort(e.target.value)}
           >
-            {divisionToCohorts[division].map((cohortName) => (
-              <option key={cohortName} value={cohortName}>
-                {toLabel(cohortName)}
+            {divisionToCohorts[division].map((cohort) => (
+              <option key={cohort} value={cohort}>
+                {cohort === userCohort && star} {toLabel(cohort)}
               </option>
             ))}
           </Select>
@@ -170,10 +174,9 @@ const CohortTable = (props: {
           const user = users[i]
           if (!user) console.log('no user', row)
           return (
-            <>
+            <Fragment key={user.id}>
               {user && (
                 <UserRow
-                  key={user.id}
                   {...row}
                   user={users[i]}
                   rank={i + 1}
@@ -201,7 +204,7 @@ const CohortTable = (props: {
                   </td>
                 </tr>
               )}
-            </>
+            </Fragment>
           )
         })}
       </tbody>
