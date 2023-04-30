@@ -1,10 +1,12 @@
 import { Fragment, useEffect, useState } from 'react'
 import { groupBy, sortBy } from 'lodash'
 import clsx from 'clsx'
+import { ClockIcon } from '@heroicons/react/outline'
 
 import {
   DIVISION_NAMES,
   SEASONS,
+  SEASON_END,
   SECRET_NEXT_DIVISION,
   getDemotionAndPromotionCount,
   league_row,
@@ -24,6 +26,7 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { Countdown } from 'web/components/widgets/countdown'
 
 export async function getStaticProps() {
   const { data: rows } = await db
@@ -99,11 +102,10 @@ export default function Leagues(props: { rows: league_row[] }) {
                     </option>
                   ))}
                 </Select>
-                {/* My (not-so) beautiful countdown timer
-                <Row className="items-baseline gap-1">
-                  <Countdown className="text-sm" endDate={SEASON_END} /> left
+                <Row className="items-center gap-1">
+                  <ClockIcon className="text-ink-1000 h-4 w-4" />{' '}
+                  <Countdown className="text-sm" endDate={SEASON_END} />
                 </Row>
-                */}
               </Col>
             </Row>
           </Row>
