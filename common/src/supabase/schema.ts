@@ -640,6 +640,8 @@ export interface Database {
       }
       user_events: {
         Row: {
+          ad_id: string | null
+          comment_id: string | null
           contract_id: string | null
           data: Json
           id: number
@@ -648,6 +650,8 @@ export interface Database {
           user_id: string | null
         }
         Insert: {
+          ad_id?: string | null
+          comment_id?: string | null
           contract_id?: string | null
           data: Json
           id?: never
@@ -656,6 +660,8 @@ export interface Database {
           user_id?: string | null
         }
         Update: {
+          ad_id?: string | null
+          comment_id?: string | null
           contract_id?: string | null
           data?: Json
           id?: never

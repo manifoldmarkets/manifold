@@ -203,6 +203,8 @@ create table if not exists
     name text not null,
     user_id text null,
     contract_id text null,
+    comment_id text null,
+    ad_id text null,
     data jsonb not null
   );
 
