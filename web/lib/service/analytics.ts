@@ -14,8 +14,8 @@ const loadAmplitude = () => import('@amplitude/analytics-browser')
 let amplitudeLib: ReturnType<typeof loadAmplitude> | undefined
 
 type EventIds = {
-  contractId?: string | null,
-  commentId?: string | null,
+  contractId?: string | null
+  commentId?: string | null
   adId?: string | null
 }
 type EventData = Record<string, Json | undefined>
@@ -50,7 +50,6 @@ async function insertSupabaseEvent(
   )
 }
 
-
 export async function track(name: string, properties?: EventIds & EventData) {
   const amplitude = await initAmplitude()
   const deviceId = amplitude.getDeviceId()
@@ -60,7 +59,11 @@ export async function track(name: string, properties?: EventIds & EventData) {
 
   // mqp: did you know typescript can't type `const x = { a: b, ...c }` correctly?
   // see https://github.com/microsoft/TypeScript/issues/27273
-  const allProperties = Object.assign(properties ?? {}, { isNative, deviceId, sessionId })
+  const allProperties = Object.assign(properties ?? {}, {
+    isNative,
+    deviceId,
+    sessionId,
+  })
 
   if (ENV !== 'PROD') {
     console.log(name, allProperties)
@@ -69,7 +72,7 @@ export async function track(name: string, properties?: EventIds & EventData) {
     const { contractId, adId, commentId, ...data } = allProperties
     await Promise.all([
       amplitude.track(name, removeUndefinedProps(allProperties)).promise,
-      insertSupabaseEvent(name, data, userId, contractId, commentId, adId)
+      insertSupabaseEvent(name, data, userId, contractId, commentId, adId),
     ])
   } catch (e) {
     console.log('error tracking event:', e)
