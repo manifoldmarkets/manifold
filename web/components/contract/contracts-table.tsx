@@ -7,7 +7,6 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkPriceMax } from 'common/stonk'
 import { formatPercentShort } from 'common/util/format'
-import { useRouter } from 'next/router'
 import { IoUnlink } from 'react-icons/io5'
 import { useContract } from 'web/hooks/use-contracts'
 import { useUser } from 'web/hooks/use-user'
@@ -15,7 +14,6 @@ import { getTextColor } from '../bet/quick-bet'
 import { ContractMinibar } from '../charts/minibar'
 import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
-import { filter } from '../supabase-search'
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
 import { Action } from './contract-table-action'
@@ -99,7 +97,6 @@ export function ContractStatusLabel(props: {
 
 export function ContractsTable(props: {
   contracts: Contract[]
-  filter?: filter
   onContractClick?: (contract: Contract) => void
   isMobile?: boolean
   highlightContractIds?: string[]
@@ -107,14 +104,12 @@ export function ContractsTable(props: {
 }) {
   const {
     contracts,
-    filter,
     onContractClick,
     isMobile,
     highlightContractIds,
     headerClassName,
   } = props
 
-  const router = useRouter()
   const user = useUser()
   const contractColumns = [
     {
@@ -182,48 +177,49 @@ export function ContractsTable(props: {
 
     const dataCellClassName = 'py-2 align-top'
     return (
-      <Link
-        onClick={(e) => {
-          if (!onContractClick) return
-          onContractClick(contract)
-          e.preventDefault()
-        }}
-        href={contractPath(contract)}
-        className="contents"
+      <tr
+        key={contract.id}
+        className={clsx(
+          highlightContractIds?.includes(contract.id)
+            ? contractListEntryHighlightClass
+            : '',
+          (isClosed(contract) && contract.creatorId !== user?.id) ||
+            contract.isResolved
+            ? 'text-ink-500'
+            : '',
+          'hover:bg-primary-50 focus:bg-primary-50 group relative cursor-pointer'
+        )}
       >
-        <tr
-          key={contract.id}
-          className={clsx(
-            highlightContractIds?.includes(contract.id)
-              ? contractListEntryHighlightClass
-              : '',
-            (isClosed(contract) && contract.creatorId !== user?.id) ||
-              contract.isResolved
-              ? 'text-ink-500'
-              : '',
-            'hover:bg-primary-50 focus:bg-primary-50 group relative cursor-pointer'
-          )}
-        >
-          {contractColumns.map(
-            (column, index) =>
-              column.visible && (
-                <td
-                  className={clsx(
-                    index === 0
-                      ? firstItemClassName
-                      : index === contractColumns.length - 1
-                      ? lastItemClassName
-                      : 'pr-2 sm:pr-4',
-                    dataCellClassName
-                  )}
-                  onClick={(e) => e.stopPropagation()}
+        {contractColumns.map(
+          (column, index) =>
+            column.visible && (
+              <td
+                key={column.name}
+                className={clsx(
+                  index === 0
+                    ? firstItemClassName
+                    : index === contractColumns.length - 1
+                    ? lastItemClassName
+                    : 'pr-2 sm:pr-4',
+                  dataCellClassName
+                )}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Link
+                  onClick={(e) => {
+                    if (!onContractClick) return
+                    onContractClick(contract)
+                    e.preventDefault()
+                  }}
+                  href={contractPath(contract)}
+                  className="contents"
                 >
                   {column.content(contract)}
-                </td>
-              )
-          )}
-        </tr>
-      </Link>
+                </Link>
+              </td>
+            )
+        )}
+      </tr>
     )
   }
 
@@ -232,7 +228,7 @@ export function ContractsTable(props: {
       {!isMobile && (
         <thead
           className={clsx(
-            'text-ink-600 sticky top-14 z-20 text-left text-sm font-semibold',
+            'text-ink-600 bg-canvas-50 sticky top-0 z-20 text-left text-sm font-semibold',
             headerClassName
           )}
         >
@@ -241,6 +237,7 @@ export function ContractsTable(props: {
               (column, index) =>
                 column.visible && (
                   <th
+                    key={column.name}
                     className={clsx(
                       index === 0
                         ? firstItemClassName
@@ -258,7 +255,7 @@ export function ContractsTable(props: {
       )}
       <tbody>
         {contracts.map((contract) => (
-          <ContractRow contract={contract} />
+          <ContractRow key={contract.id} contract={contract} />
         ))}
       </tbody>
     </table>

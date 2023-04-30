@@ -343,7 +343,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                     group: group,
                     userRole: isManifoldAdmin ? 'admin' : userRole ?? null,
                   }}
-                  headerClassName="bg-canvas-50"
                 />
               ),
             },
