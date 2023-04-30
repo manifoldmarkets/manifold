@@ -83,55 +83,58 @@ export default function Leagues(props: { rows: league_row[] }) {
 
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-lg px-4 pb-8 pt-2 sm:px-2 sm:pt-0">
-        <Row className="items-center justify-between">
-          <Title>Leagues</Title>
-        </Row>
+      <Col className="mx-auto w-full max-w-lg pb-8 pt-2 sm:pt-0">
+        <Col className="px-2 sm:px-0">
+          <Row className="items-center justify-between">
+            <Title>Leagues</Title>
+          </Row>
 
-        <Row className="items-center gap-3">
-          <Select
-            className="!border-ink-200"
-            value={season}
-            onChange={(e) => setSeason(+e.target.value as season)}
-          >
-            {SEASONS.map((season) => (
-              <option key={season} value={season}>
-                {MARKER} Season {season}
-              </option>
-            ))}
-          </Select>
+          <Row className="items-center gap-3">
+            <Select
+              className="!border-ink-200"
+              value={season}
+              onChange={(e) => setSeason(+e.target.value as season)}
+            >
+              {SEASONS.map((season) => (
+                <option key={season} value={season}>
+                  {MARKER} Season {season}
+                </option>
+              ))}
+            </Select>
 
-          <Col>
-            <div>May 1-June 1</div>
-            <Countdown className="text-sm" endDate={SEASON_END} />
-          </Col>
-        </Row>
+            <Col>
+              <div>May 1-June 1</div>
+              <Countdown className="text-sm" endDate={SEASON_END} />
+            </Col>
+          </Row>
 
-        <Row className="mt-2 gap-2">
-          <Select
-            className="!border-ink-200"
-            value={division}
-            onChange={(e) => onSetDivision(+e.target.value)}
-          >
-            {divisions.map((division) => (
-              <option key={division} value={division}>
-                {division === userDivision && MARKER} {DIVISION_NAMES[division]}
-              </option>
-            ))}
-          </Select>
+          <Row className="mt-2 gap-2">
+            <Select
+              className="!border-ink-200"
+              value={division}
+              onChange={(e) => onSetDivision(+e.target.value)}
+            >
+              {divisions.map((division) => (
+                <option key={division} value={division}>
+                  {division === userDivision && MARKER}{' '}
+                  {DIVISION_NAMES[division]}
+                </option>
+              ))}
+            </Select>
 
-          <Select
-            className="!border-ink-200"
-            value={cohort}
-            onChange={(e) => setCohort(e.target.value)}
-          >
-            {divisionToCohorts[division].map((cohort) => (
-              <option key={cohort} value={cohort}>
-                {cohort === userCohort && MARKER} {toLabel(cohort)}
-              </option>
-            ))}
-          </Select>
-        </Row>
+            <Select
+              className="!border-ink-200"
+              value={cohort}
+              onChange={(e) => setCohort(e.target.value)}
+            >
+              {divisionToCohorts[division].map((cohort) => (
+                <option key={cohort} value={cohort}>
+                  {cohort === userCohort && MARKER} {toLabel(cohort)}
+                </option>
+              ))}
+            </Select>
+          </Row>
+        </Col>
 
         <Col className="mt-4">
           <CohortTable
@@ -168,8 +171,8 @@ const CohortTable = (props: {
     <table>
       <thead className={clsx('text-ink-600 text-left text-sm font-semibold')}>
         <tr>
-          <th className={clsx('pb-1')}>User</th>
-          <th className={clsx('pb-1 text-right')}>Mana earned</th>
+          <th className={clsx('px-2 pb-1')}>User</th>
+          <th className={clsx('px-2 pb-1 text-right')}>Mana earned</th>
         </tr>
       </thead>
       <tbody>
@@ -234,8 +237,12 @@ const UserRow = (props: {
   const { user, mana_earned, rank, isUser } = props
 
   return (
-    <tr className={clsx(isUser && 'bg-indigo-400/20')}>
-      <td>
+    <tr
+      className={clsx(
+        isUser && `bg-canvas-100 sticky bottom-[58px] sm:bottom-0`
+      )}
+    >
+      <td className={clsx('pl-2', isUser && 'bg-indigo-400/20')}>
         <Row className="my-2 items-center gap-4">
           <div className="w-4 text-right font-semibold">{rank}</div>
           <UserAvatarAndBadge
@@ -245,7 +252,9 @@ const UserRow = (props: {
           />
         </Row>
       </td>
-      <td className="text-right">{formatMoney(mana_earned)}</td>
+      <td className={clsx(isUser && 'bg-indigo-400/20', 'pr-2 text-right')}>
+        {formatMoney(mana_earned)}
+      </td>
     </tr>
   )
 }
