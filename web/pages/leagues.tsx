@@ -4,6 +4,7 @@ import clsx from 'clsx'
 
 import {
   SEASONS,
+  SEASON_END,
   division,
   getDemotionAndPromotionCount,
   getDivisionName,
@@ -22,6 +23,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
+import { Countdown } from 'web/components/widgets/countdown'
 
 export async function getStaticProps() {
   const { data: rows } = await db
@@ -115,6 +117,11 @@ export default function Leagues(props: { rows: any[] }) {
             ))}
           </Select>
         </Col>
+
+        <Row className="mt-4 items-baseline gap-2 self-end">
+          <span className="font-semibold text-sm text-ink-900">Season end:</span>
+          <Countdown className="text-sm" endDate={SEASON_END} />
+        </Row>
 
         <Col className="mt-4">
           <CohortTable
