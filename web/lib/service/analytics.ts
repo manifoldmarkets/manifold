@@ -1,7 +1,9 @@
 import * as Sprig from 'web/lib/service/sprig'
 
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
-import { saveUserEvent } from '../supabase/user-events'
+import { run } from 'common/supabase/utils'
+import { Json } from 'common/supabase/schema'
+import { db } from 'web/lib/supabase/db'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
 import { ShareEvent } from 'common/events'
@@ -10,6 +12,13 @@ import { QuestType } from 'common/quest'
 
 const loadAmplitude = () => import('@amplitude/analytics-browser')
 let amplitudeLib: ReturnType<typeof loadAmplitude> | undefined
+
+type EventIds = {
+  contractId?: string | null,
+  commentId?: string | null,
+  adId?: string | null
+}
+type EventData = Record<string, Json | undefined>
 
 export const initAmplitude = async () => {
   if (amplitudeLib == null) {
@@ -21,30 +30,46 @@ export const initAmplitude = async () => {
   }
 }
 
-export async function track(eventName: string, eventProperties?: any) {
+async function insertSupabaseEvent(
+  name: string,
+  data: EventData,
+  userId?: string | null,
+  contractId?: string | null,
+  commentId?: string | null,
+  adId?: string | null
+) {
+  return await run(
+    db.from('user_events').insert({
+      name,
+      data: removeUndefinedProps(data) as Record<string, Json>,
+      user_id: userId,
+      contract_id: contractId,
+      comment_id: commentId,
+      ad_id: adId,
+    })
+  )
+}
+
+
+export async function track(name: string, properties?: EventIds & EventData) {
   const amplitude = await initAmplitude()
   const deviceId = amplitude.getDeviceId()
   const sessionId = amplitude.getSessionId()
   const userId = amplitude.getUserId()
   const isNative = getIsNative()
-  const props = removeUndefinedProps({
-    isNative,
-    deviceId,
-    sessionId,
-    ...eventProperties,
-  })
+
+  // mqp: did you know typescript can't type `const x = { a: b, ...c }` correctly?
+  // see https://github.com/microsoft/TypeScript/issues/27273
+  const allProperties = Object.assign(properties ?? {}, { isNative, deviceId, sessionId })
 
   if (ENV !== 'PROD') {
-    if (eventProperties) console.log(eventName, eventProperties)
-    else console.log(eventName)
+    console.log(name, allProperties)
   }
   try {
-    // mqp: kind of weird that we extract the contract ID specially, but it is kind of
-    // a uniquely useful thing to have as a separate column in the DB
-    const contractId = eventProperties['contractId'] as string | undefined
+    const { contractId, adId, commentId, ...data } = allProperties
     await Promise.all([
-      amplitude.track(eventName, eventProperties).promise,
-      saveUserEvent(userId, contractId, eventName, props),
+      amplitude.track(name, removeUndefinedProps(allProperties)).promise,
+      insertSupabaseEvent(name, data, userId, contractId, commentId, adId)
     ])
   } catch (e) {
     console.log('error tracking event:', e)
