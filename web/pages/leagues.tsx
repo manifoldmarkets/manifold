@@ -5,7 +5,6 @@ import clsx from 'clsx'
 import {
   DIVISION_NAMES,
   SEASONS,
-  SEASON_END,
   SECRET_NEXT_DIVISION,
   getDemotionAndPromotionCount,
   league_row,
@@ -24,7 +23,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
-import { Countdown } from 'web/components/widgets/countdown'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export async function getStaticProps() {
@@ -85,27 +83,29 @@ export default function Leagues(props: { rows: league_row[] }) {
     <Page>
       <Col className="mx-auto w-full max-w-lg pb-8 pt-2 sm:pt-0">
         <Col className="px-2 sm:px-0">
-          <Row className="items-center justify-between">
-            <Title>Leagues</Title>
-          </Row>
+          <Row className="mb-4 justify-between">
+            <Title className="!mb-0">Leagues</Title>
 
-          <Row className="items-center gap-3">
-            <Select
-              className="!border-ink-200"
-              value={season}
-              onChange={(e) => setSeason(+e.target.value as season)}
-            >
-              {SEASONS.map((season) => (
-                <option key={season} value={season}>
-                  {MARKER} Season {season}
-                </option>
-              ))}
-            </Select>
-
-            <Col>
-              <div>May 1-June 1</div>
-              <Countdown className="text-sm" endDate={SEASON_END} />
-            </Col>
+            <Row className="items-center gap-3">
+              <Col className="items-center gap-1">
+                <Select
+                  className="!border-ink-200 !h-10"
+                  value={season}
+                  onChange={(e) => setSeason(+e.target.value as season)}
+                >
+                  {SEASONS.map((season) => (
+                    <option key={season} value={season}>
+                      Season {season}: May
+                    </option>
+                  ))}
+                </Select>
+                {/* My (not-so) beautiful countdown timer
+                <Row className="items-baseline gap-1">
+                  <Countdown className="text-sm" endDate={SEASON_END} /> left
+                </Row>
+                */}
+              </Col>
+            </Row>
           </Row>
 
           <Row className="mt-2 gap-2">
