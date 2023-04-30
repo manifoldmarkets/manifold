@@ -119,7 +119,9 @@ export default function Leagues(props: { rows: any[] }) {
         </Col>
 
         <Row className="mt-4 items-baseline gap-2 self-end">
-          <span className="font-semibold text-sm text-ink-900">Season end:</span>
+          <span className="text-ink-900 text-sm font-semibold">
+            Season end:
+          </span>
           <Countdown className="text-sm" endDate={SEASON_END} />
         </Row>
 
