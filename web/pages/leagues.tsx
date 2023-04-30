@@ -77,14 +77,16 @@ export default function Leagues(props: { rows: league_row[] }) {
 
   const { demotion, promotion } = getDemotionAndPromotionCount(division)
 
-  const star = '★'
+  const MARKER = '●️'
 
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-lg px-4 pb-8 sm:px-2">
-        <Title>Leagues</Title>
+      <Col className="mx-auto w-full max-w-lg px-4 pb-8 pt-2 sm:px-2 sm:pt-0">
+        <Row className="items-center justify-between">
+          <Title>Leagues</Title>
+        </Row>
 
-        <Col className="gap-2 sm:flex-row sm:justify-between">
+        <Row className="items-center gap-3">
           <Select
             className="!border-ink-200"
             value={season}
@@ -92,11 +94,18 @@ export default function Leagues(props: { rows: league_row[] }) {
           >
             {SEASONS.map((season) => (
               <option key={season} value={season}>
-                {star} Season {season}
+                {MARKER} Season {season}
               </option>
             ))}
           </Select>
 
+          <Col>
+            <div>May 1-June 1</div>
+            <Countdown className="text-sm" endDate={SEASON_END} />
+          </Col>
+        </Row>
+
+        <Row className="mt-2 gap-2">
           <Select
             className="!border-ink-200"
             value={division}
@@ -104,7 +113,7 @@ export default function Leagues(props: { rows: league_row[] }) {
           >
             {divisions.map((division) => (
               <option key={division} value={division}>
-                {division === userDivision && star} {DIVISION_NAMES[division]}
+                {division === userDivision && MARKER} {DIVISION_NAMES[division]}
               </option>
             ))}
           </Select>
@@ -116,24 +125,10 @@ export default function Leagues(props: { rows: league_row[] }) {
           >
             {divisionToCohorts[division].map((cohort) => (
               <option key={cohort} value={cohort}>
-                {cohort === userCohort && star} {toLabel(cohort)}
+                {cohort === userCohort && MARKER} {toLabel(cohort)}
               </option>
             ))}
           </Select>
-        </Col>
-
-        <Row className="mt-4 justify-between text-sm">
-          <Row className="items-baseline gap-2">
-            <span className="text-ink-900 text-sm font-semibold">
-              Season start:
-            </span>
-            <div>May 1</div>
-          </Row>
-
-          <Row className="items-baseline gap-2">
-            <span className="text-ink-900 font-semibold">Season end:</span>
-            <Countdown endDate={SEASON_END} />
-          </Row>
         </Row>
 
         <Col className="mt-4">
