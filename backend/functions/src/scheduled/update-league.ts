@@ -44,6 +44,65 @@ export async function updateLeagueCore() {
   )
   log(`Loaded ${userIds.length} user ids.`)
 
+  log('Loading txns...')
+  const txnCategoriesCountedAsManaEarned = [
+    'UNIQUE_BETTOR_BONUS',
+    'BETTING_STREAK_BONUS',
+    'AD_REDEEM',
+    'MARKET_BOOST_REDEEM',
+    'QUEST_REWARD',
+  ]
+  const txnData = await pg.manyOrNone(
+    `select
+      user_id,
+      sum((data->>'amount')::numeric) as bonus_total
+    from txns 
+    join
+      leagues on leagues.user_id = txns.data->>'toId'
+    where
+      leagues.season = $1
+      and (data->>'createdTime')::bigint > $2
+      and (data->>'createdTime')::bigint < $3
+      and data->>'category' in ($4:csv)
+    group by user_id
+    `,
+    [season, seasonStart, seasonEnd, txnCategoriesCountedAsManaEarned]
+  )
+
+  const txnCategoriesCountedAsNegativeManaEarned = [
+    'CANCEL_UNIQUE_BETTOR_BONUS',
+  ]
+  const negativeTxnData = await pg.manyOrNone(
+    `select
+      user_id,
+      sum((data->>'amount')::numeric) as bonus_total
+    from txns 
+    join
+      leagues on leagues.user_id = txns.data->>'fromId'
+    where
+      leagues.season = $1
+      and (data->>'createdTime')::bigint > $2
+      and (data->>'createdTime')::bigint < $3
+      and data->>'category' in ($4:csv)
+    group by user_id
+    `,
+    [season, seasonStart, seasonEnd, txnCategoriesCountedAsNegativeManaEarned]
+  )
+
+  console.log(
+    'Loaded txns per user',
+    txnData.length,
+    'negative',
+    negativeTxnData.length
+  )
+
+  const txnDataByUserId = Object.fromEntries(
+    txnData.map((t) => [t.user_id, t.bonus_total])
+  )
+  const negativeTxnDataByUserId = Object.fromEntries(
+    negativeTxnData.map((t) => [t.user_id, t.bonus_total])
+  )
+
   log('Loading bets...')
   const betData = await pg.manyOrNone<{ data: Bet }>(
     `select cb.data
@@ -70,19 +129,20 @@ export async function updateLeagueCore() {
     const userBets = betsByUserId[userId] ?? []
     const betsByContract = groupBy(userBets, (b) => b.contractId)
 
-    let manEarned = 0
+    let manaEarned =
+      (txnDataByUserId[userId] ?? 0) - (negativeTxnDataByUserId[userId] ?? 0)
     for (const [contractId, contractBets] of Object.entries(betsByContract)) {
       const contract = contractsById[contractId]
       const { profit } = getContractBetMetrics(contract, contractBets)
-      manEarned += profit
+      manaEarned += profit
     }
     updates.push({
       user_id: userId,
-      mana_earned: manEarned,
+      mana_earned: manaEarned,
     })
   }
 
-  await bulkUpdate(pg, 'leagues' as any, 'user_id', updates)
+  await bulkUpdate(pg, 'leagues', 'user_id', updates)
   await revalidateStaticProps('/leagues')
   log('Done.')
 }
