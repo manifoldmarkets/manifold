@@ -29,10 +29,10 @@ export async function updateLeagueCore() {
   const pg = createSupabaseDirectClient()
 
   const season = SEASONS[SEASONS.length - 1]
-  const seasonStart = dayjs('2023-04-01')
+  const seasonStart = dayjs('2023-05-01')
     .add(season - 1, 'month')
     .valueOf()
-  const seasonEnd = dayjs('2023-04-01').add(season, 'month').valueOf()
+  const seasonEnd = dayjs('2023-05-01').add(season, 'month').valueOf()
 
   log('Loading users...')
   const userIds = await pg.map(
