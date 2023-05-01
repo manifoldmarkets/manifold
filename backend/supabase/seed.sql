@@ -100,6 +100,12 @@ create table if not exists
     contract_id text not null,
     data jsonb not null,
     fs_updated_time timestamp not null,
+    has_yes_shares boolean,
+    has_no_shares boolean,
+    total_shares_yes numeric,
+    total_shares_no numeric,
+    profit numeric,
+    has_shares boolean,
     primary key (user_id, contract_id)
   );
 
@@ -110,31 +116,6 @@ drop policy if exists "public read" on user_contract_metrics;
 create policy "public read" on user_contract_metrics for
 select
   using (true);
-
-create index if not exists user_contract_metrics_gin on user_contract_metrics using GIN (data);
-
-create index if not exists user_contract_metrics_recent_bets on user_contract_metrics (user_id, ((data -> 'lastBetTime')::bigint) desc);
-
-create index if not exists user_contract_metrics_contract_id on user_contract_metrics (contract_id);
-
-create index if not exists user_contract_metrics_weekly_profit on user_contract_metrics ((data -> 'from' -> 'week' -> 'profit'))
-where
-  (data -> 'from' -> 'week' -> 'profit') is not null;
-
-create index if not exists user_contract_metrics_user_id on user_contract_metrics (user_id);
-
-create index if not exists user_contract_metrics_has_no_shares on user_contract_metrics (contract_id)
-where
-  ((data) ->> 'hasNoShares') = 'true';
-
-create index if not exists user_contract_metrics_has_yes_shares on user_contract_metrics (contract_id)
-where
-  ((data) ->> 'hasYesShares') = 'true';
-
-create index if not exists user_contract_metrics_profit on user_contract_metrics (contract_id)
-where
-  ((data) ->> 'profit') is not null
-  and ((data) ->> 'profit')::float > 0;
 
 alter table user_contract_metrics
 cluster on user_contract_metrics_pkey;
@@ -192,7 +173,6 @@ create index if not exists user_reactions_content_id on user_reactions (
 alter table user_reactions
 cluster on user_reactions_type;
 
-
 create table if not exists
   user_events (
     user_id text not null,
@@ -214,26 +194,27 @@ select
   using (true);
 
 create index if not exists user_events_data_gin on user_events using GIN (data);
+
 create index if not exists user_events_name on user_events (user_id, name);
+
 create index if not exists user_events_ts on user_events (user_id, ts);
 
-create index if not exists user_events_ad_skips on user_events (name, (to_jsonb(data)->>'adId'))
-where name = 'Skip ad';
-CREATE INDEX IF NOT EXISTS user_events_comment_view ON user_events (user_id, name, (data->>'commentId'));
-create index if not exists user_events_viewed_markets on user_events (
-  user_id,
-  name,
-  contract_id,
-  ts desc
-)
-where name = 'view market' or name = 'view market card';
+create index if not exists user_events_ad_skips on user_events (name, (to_jsonb(data) ->> 'adId'))
+where
+  name = 'Skip ad';
 
-alter table user_events cluster on user_events_name;
+create index if not exists user_events_comment_view on user_events (user_id, name, (data ->> 'commentId'));
 
-create or replace function user_event_populate_cols()
-  returns trigger
-  language plpgsql
-as $$ begin
+create index if not exists user_events_viewed_markets on user_events (user_id, name, contract_id, ts desc)
+where
+  name = 'view market'
+  or name = 'view market card';
+
+alter table user_events
+cluster on user_events_name;
+
+create
+or replace function user_event_populate_cols () returns trigger language plpgsql as $$ begin
   if new.data is not null then
     new.name := (new.data)->>'name';
     new.contract_id := (new.data)->>'contractId';
@@ -245,8 +226,10 @@ as $$ begin
   return new;
 end $$;
 
-create trigger user_event_populate before insert or update on user_events for each row
-execute function user_event_populate_cols();
+create trigger user_event_populate before insert
+or
+update on user_events for each row
+execute function user_event_populate_cols ();
 
 create table if not exists
   user_seen_markets (
@@ -501,9 +484,12 @@ select
   using (true);
 
 create index if not exists contract_comments_data_gin on contract_comments using GIN (data);
-CREATE INDEX contract_comments_contract_id_idx ON contract_comments (contract_id);
-CREATE INDEX contract_comments_data_likes_idx ON contract_comments (((data -> 'likes')::numeric));
-CREATE INDEX contract_comments_data_created_time_idx ON contract_comments (((data ->> 'createdTime')::bigint));
+
+create index contract_comments_contract_id_idx on contract_comments (contract_id);
+
+create index contract_comments_data_likes_idx on contract_comments (((data -> 'likes')::numeric));
+
+create index contract_comments_data_created_time_idx on contract_comments (((data ->> 'createdTime')::bigint));
 
 alter table contract_comments
 cluster on contract_comments_pkey;

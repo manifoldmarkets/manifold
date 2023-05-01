@@ -39,128 +39,6 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
   const db = createSupabaseClient()
   const contract = await getContractFromSlug(contractSlug, db)
 
-  contractErrors(contract)
-  const groupId =
-    contract.groupLinks && contract.groupLinks.length > 0
-      ? contract.groupLinks[0].groupId
-      : undefined
-  const canAccessContract =
-    // can't access if contract is deleted
-    !contract.deleted &&
-    // can access if contract is not private
-    (contract.visibility != 'private' ||
-      // if contract is private, can't access if in static props
-      (!fromStaticProps &&
-        // otherwise, can access if user can access contract's group
-        auth &&
-        groupId &&
-        (await getUserIsMember(groupId, auth?.uid, db))))
-  if (canAccessContract) {
-    const totalBets = await getTotalBetCount(contract.id, db)
-    const shouldUseBetPoints = contract.mechanism === 'cpmm-1'
-
-    // in original code, prioritize newer bets via descending order
-
-    const bets = await getBets(db, {
-      contractId: contract.id,
-      ...CONTRACT_BET_FILTER,
-      limit: shouldUseBetPoints ? 50000 : 4000,
-      order: 'desc',
-    })
-
-    const betPoints = shouldUseBetPoints
-      ? bets.map(
-          (bet) =>
-            removeUndefinedProps({
-              x: bet.createdTime,
-              y: bet.probAfter,
-              obj:
-                totalBets < 1000
-                  ? { userAvatarUrl: bet.userAvatarUrl }
-                  : undefined,
-            }) as HistoryPoint<Partial<Bet>>
-        )
-      : []
-
-    const comments = await getAllComments(db, contract.id, 100)
-
-    const userPositionsByOutcome =
-      contract.mechanism === 'cpmm-1'
-        ? await getCPMMContractUserContractMetrics(contract.id, 100, db)
-        : {}
-
-    const topContractMetrics = contract.resolution
-      ? await getTopContractMetrics(contract.id, 10, db)
-      : []
-
-    let shareholderStats: ShareholderStats | undefined = undefined
-    if (contract.mechanism === 'cpmm-1') {
-      const yesCount = await getContractMetricsOutcomeCount(
-        contract.id,
-        'yes',
-        db
-      )
-      const noCount = await getContractMetricsOutcomeCount(
-        contract.id,
-        'no',
-        db
-      )
-      shareholderStats = {
-        yesShareholders: yesCount,
-        noShareholders: noCount,
-      }
-    }
-    const totalPositions =
-      contract.mechanism === 'cpmm-1'
-        ? await getTotalContractMetrics(contract.id, db)
-        : 0
-
-    if (shouldUseBetPoints) {
-      const firstPoint = {
-        x: contract.createdTime,
-        y: getInitialProbability(
-          contract as BinaryContract | PseudoNumericContract
-        ),
-      }
-      betPoints.push(firstPoint)
-      betPoints.reverse()
-    }
-
-    const pointsString =
-      contract.visibility != 'private'
-        ? pointsToBase64(compressPoints(betPoints))
-        : undefined
-
-    const creator = await getUser(contract.creatorId)
-
-    const relatedContracts = await getRelatedContracts(contract, 9, db)
-    return {
-      contractSlug: contract.slug,
-      visibility: contract.visibility,
-      contractParams: removeUndefinedProps({
-        contract,
-        historyData: {
-          bets: shouldUseBetPoints ? bets.slice(0, 100) : bets,
-          points: betPoints,
-        },
-        pointsString,
-        comments,
-        userPositionsByOutcome,
-        totalPositions,
-        totalBets,
-        topContractMetrics,
-        creatorTwitter: creator?.twitterHandle,
-        relatedContracts,
-        shareholderStats,
-      }),
-    }
-  }
-  return contract
-    ? { contractSlug: contract.slug, visibility: contract.visibility }
-    : { contractSlug, visibility: null }
-})
-
-function contractErrors(contract: Contract) {
   if (!contract) {
     throw new APIError(400, 'This contract does not exist!')
   }
@@ -177,4 +55,121 @@ function contractErrors(contract: Contract) {
       )
     }
   }
-}
+  const groupId =
+    contract.groupLinks && contract.groupLinks.length > 0
+      ? contract.groupLinks[0].groupId
+      : undefined
+
+  const canAccessContract =
+    // can't access if contract is deleted
+    !contract.deleted &&
+    // can access if contract is not private
+    (contract.visibility != 'private' ||
+      // if contract is private, can't access if in static props
+      (!fromStaticProps &&
+        // otherwise, can access if user can access contract's group
+        auth &&
+        groupId &&
+        (await getUserIsMember(groupId, auth?.uid, db))))
+
+  if (!canAccessContract) {
+    return contract
+      ? { contractSlug: contract.slug, visibility: contract.visibility }
+      : { contractSlug, visibility: null }
+  }
+
+  const totalBets = await getTotalBetCount(contract.id, db)
+  const shouldUseBetPoints = contract.mechanism === 'cpmm-1'
+
+  // in original code, prioritize newer bets via descending order
+
+  const bets = await getBets(db, {
+    contractId: contract.id,
+    ...CONTRACT_BET_FILTER,
+    limit: shouldUseBetPoints ? 50000 : 4000,
+    order: 'desc',
+  })
+
+  const betPoints = shouldUseBetPoints
+    ? bets.map(
+        (bet) =>
+          removeUndefinedProps({
+            x: bet.createdTime,
+            y: bet.probAfter,
+            obj:
+              totalBets < 1000
+                ? { userAvatarUrl: bet.userAvatarUrl }
+                : undefined,
+          }) as HistoryPoint<Partial<Bet>>
+      )
+    : []
+
+  const comments = await getAllComments(db, contract.id, 100)
+
+  const userPositionsByOutcome =
+    contract.mechanism === 'cpmm-1'
+      ? await getCPMMContractUserContractMetrics(contract.id, 100, db)
+      : {}
+
+  const topContractMetrics = contract.resolution
+    ? await getTopContractMetrics(contract.id, 10, db)
+    : []
+
+  let shareholderStats: ShareholderStats | undefined = undefined
+  if (contract.mechanism === 'cpmm-1') {
+    const yesCount = await getContractMetricsOutcomeCount(
+      contract.id,
+      'yes',
+      db
+    )
+    const noCount = await getContractMetricsOutcomeCount(contract.id, 'no', db)
+    shareholderStats = {
+      yesShareholders: yesCount,
+      noShareholders: noCount,
+    }
+  }
+  const totalPositions =
+    contract.mechanism === 'cpmm-1'
+      ? await getTotalContractMetrics(contract.id, db)
+      : 0
+
+  if (shouldUseBetPoints) {
+    const firstPoint = {
+      x: contract.createdTime,
+      y: getInitialProbability(
+        contract as BinaryContract | PseudoNumericContract
+      ),
+    }
+    betPoints.push(firstPoint)
+    betPoints.reverse()
+  }
+
+  const pointsString =
+    contract.visibility != 'private'
+      ? pointsToBase64(compressPoints(betPoints))
+      : undefined
+
+  const creator = await getUser(contract.creatorId)
+
+  const relatedContracts = await getRelatedContracts(contract, 9, db)
+  return {
+    contractSlug: contract.slug,
+    visibility: contract.visibility,
+    contractParams: removeUndefinedProps({
+      contract,
+      historyData: {
+        bets: shouldUseBetPoints ? bets.slice(0, 100) : bets,
+        points: betPoints,
+      },
+      pointsString,
+      comments,
+      userPositionsByOutcome,
+      totalPositions,
+      totalBets,
+      topContractMetrics,
+      creatorTwitter: creator?.twitterHandle,
+      relatedContracts,
+      shareholderStats,
+    }),
+  }
+})
