@@ -197,7 +197,6 @@ create policy "public read" on user_events for
 select
   using (true);
 
-create index if not exists user_events_data_gin on user_events using GIN (data);
 -- mqp: we should fix this up so that users can only insert their own events.
 -- but right now it's blocked because our application code is too dumb to wait
 -- for auth to be done until it starts sending events
