@@ -55,8 +55,8 @@ export default function Leagues(props: { rows: league_row[] }) {
   ).reverse()
 
   const [season, setSeason] = useState<season>(1)
-  const [division, setDivision] = useState<number>(1)
-  const [cohort, setCohort] = useState(cohortNames[0])
+  const [division, setDivision] = useState<number>(4)
+  const [cohort, setCohort] = useState(divisionToCohorts[4][0])
 
   const user = useUser()
   const onSetDivision = (division: number) => {
@@ -73,6 +73,7 @@ export default function Leagues(props: { rows: league_row[] }) {
   const userCohort = userRow?.cohort
   useEffect(() => {
     if (userRow) {
+      console.log('hi')
       setDivision(userRow.division)
       setCohort(userRow.cohort)
     }
