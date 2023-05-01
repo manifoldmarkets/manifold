@@ -133,8 +133,10 @@ export async function updateLeagueCore() {
       (txnDataByUserId[userId] ?? 0) - (negativeTxnDataByUserId[userId] ?? 0)
     for (const [contractId, contractBets] of Object.entries(betsByContract)) {
       const contract = contractsById[contractId]
-      const { profit } = getContractBetMetrics(contract, contractBets)
-      manaEarned += profit
+      if (contract.visibility === 'public') {
+        const { profit } = getContractBetMetrics(contract, contractBets)
+        manaEarned += profit
+      }
     }
     updates.push({
       user_id: userId,
