@@ -1,7 +1,12 @@
 import { Answer } from './answer'
+import { Bet } from './bet'
+import { HistoryPoint } from './chart'
 import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
 import { GroupLink } from 'common/group'
+import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
+import { ShareholderStats } from './supabase/contract-metrics'
+import { ContractComment } from './comment'
 
 /************************************************
 
@@ -247,4 +252,21 @@ export const VISIBILITIES = ['public', 'unlisted', 'private'] as const
 
 export function contractPath(contract: Contract) {
   return `/${contract.creatorUsername}/${contract.slug}`
+}
+
+export type ContractParams = {
+  contract: Contract
+  historyData: {
+    bets: Bet[]
+    points: HistoryPoint<Partial<Bet>>[]
+  }
+  pointsString?: string
+  comments: ContractComment[]
+  userPositionsByOutcome: ContractMetricsByOutcome
+  totalPositions: number
+  totalBets: number
+  topContractMetrics: ContractMetric[]
+  creatorTwitter?: string
+  relatedContracts: Contract[]
+  shareholderStats?: ShareholderStats
 }

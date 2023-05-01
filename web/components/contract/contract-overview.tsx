@@ -8,10 +8,7 @@ import {
   NumericContractChart,
   PseudoNumericContractChart,
 } from 'web/components/charts/contract'
-import {
-  HistoryPoint,
-  useSingleValueHistoryChartViewScale,
-} from 'web/components/charts/generic-charts'
+import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
 import { Bet } from 'common/bet'
@@ -46,6 +43,7 @@ import {
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
+import { HistoryPoint } from 'common/chart'
 
 export const ContractOverview = memo(
   (props: {

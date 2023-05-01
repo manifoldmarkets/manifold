@@ -5,12 +5,9 @@ import { min, max } from 'lodash'
 import dayjs from 'dayjs'
 import { Col } from '../layout/col'
 import { TooltipProps } from 'web/components/charts/helpers'
-import {
-  ControllableSingleValueHistoryChart,
-  HistoryPoint,
-  viewScale,
-} from 'web/components/charts/generic-charts'
+import { ControllableSingleValueHistoryChart } from 'web/components/charts/generic-charts'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { HistoryPoint, viewScale } from 'common/chart'
 
 const MARGIN = { top: 12, right: 48, bottom: 20, left: 12 }
 const MARGIN_X = MARGIN.left + MARGIN.right

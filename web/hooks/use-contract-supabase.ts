@@ -1,14 +1,15 @@
 import { AnyContractType, Contract } from 'common/contract'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   getContractFromSlug,
   getPublicContractIds,
   getPublicContracts,
 } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
-import { ContractParams } from 'web/pages/[username]/[contractSlug]'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { getContractParams } from 'web/lib/contracts'
+import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
+import { getContractParams } from 'web/lib/firebase/api'
+import { useIsAuthorized } from './use-user'
 
 export const usePublicContracts = (contractIds: string[]) => {
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -24,6 +25,31 @@ export const usePublicContracts = (contractIds: string[]) => {
   return contracts
 }
 
+export const useContractParams = (contractSlug: string | undefined) => {
+  const [contractParams, setContractParams] = useState<any | undefined>(
+    undefined
+  )
+
+  const isAuth = useIsAuthorized()
+  const paramsRef = useRef(0)
+  useEffect(() => {
+    paramsRef.current += 1
+    const thisParamsRef = paramsRef.current
+    if (contractSlug && isAuth !== undefined) {
+      setContractParams(undefined)
+      getContractParams({ contractSlug, fromStaticProps: false }).then(
+        (result) => {
+          if (thisParamsRef === paramsRef.current) {
+            setContractParams(result)
+          }
+        }
+      )
+    }
+  }, [contractSlug, isAuth])
+
+  return contractParams as ContractParameters
+}
+
 export const useContractFromSlug = (contractSlug: string | undefined) => {
   const [contract, setContract] = useState<Contract | undefined>(undefined)
 
@@ -36,18 +62,6 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
   }, [contractSlug])
 
   return contract as Contract<AnyContractType>
-}
-
-export const useContractParams = (contract: Contract) => {
-  const [contractParams, setContractParams] = useState<
-    ContractParams | undefined
-  >()
-
-  useEffect(() => {
-    getContractParams(contract).then(setContractParams)
-  }, [contract.id])
-
-  return contractParams
 }
 
 export function useRealtimeContracts(limit: number) {

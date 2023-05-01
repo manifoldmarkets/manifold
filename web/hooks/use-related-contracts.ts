@@ -73,13 +73,3 @@ export const useRelatedMarkets = (
 
   return { contracts: savedContracts, loadMore }
 }
-
-export async function getRelatedContracts(contract: Contract, count = 10) {
-  const { data } = await db.rpc('closest_contract_embeddings', {
-    input_contract_id: contract.id,
-    match_count: count,
-    similarity_threshold: 0.7,
-  })
-  const contracts = (data ?? []).map((c) => (c as any).data)
-  return contracts
-}

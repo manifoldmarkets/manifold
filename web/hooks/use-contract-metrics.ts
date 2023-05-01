@@ -8,11 +8,11 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
+import { CONTRACT_METRICS_SORTED_INDICES } from 'web/lib/firebase/contract-metrics'
 import {
-  CONTRACT_METRICS_SORTED_INDICES,
+  ContractMetric,
   ContractMetricsByOutcome,
-} from 'web/lib/firebase/contract-metrics'
-import { ContractMetric } from 'common/contract-metric'
+} from 'common/contract-metric'
 
 export const useContractMetrics = (
   contractId: string,

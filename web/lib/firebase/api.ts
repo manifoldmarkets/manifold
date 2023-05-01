@@ -248,10 +248,6 @@ export function completeQuest(params: any) {
   return call(getApiUrl('completequest'), 'POST', params)
 }
 
-export function getPrivateContractBySlug(params: { contractSlug: string }) {
-  return call(getApiUrl('getprivatecontractbyslug'), 'POST', params)
-}
-
 export function getSupabaseToken() {
   return call(getApiUrl('getsupabasetoken'), 'GET')
 }
@@ -299,6 +295,19 @@ export function deleteMarket(params: { contractId: string }) {
 
 export function saveTopic(params: { topic: string }) {
   return call(getApiUrl('save-topic'), 'POST', params) as Promise<{
+    status: 'success'
+  }>
+}
+
+export function getContractParams(params: {
+  contractSlug: string
+  fromStaticProps: boolean
+}) {
+  return maybeAuthedCall(
+    getApiUrl('getcontractparams'),
+    'POST',
+    params
+  ) as Promise<{
     status: 'success'
   }>
 }

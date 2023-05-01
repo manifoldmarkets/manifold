@@ -1,3 +1,9 @@
+import clsx from 'clsx'
+import { Axis, AxisScale } from 'd3-axis'
+import { D3BrushEvent, brushX } from 'd3-brush'
+import { pointer, select } from 'd3-selection'
+import { CurveFactory, area, line } from 'd3-shape'
+import dayjs from 'dayjs'
 import {
   ComponentType,
   ReactNode,
@@ -8,31 +14,14 @@ import {
   useMemo,
   useRef,
 } from 'react'
-import { pointer, select } from 'd3-selection'
-import { Axis, AxisScale } from 'd3-axis'
-import { brushX, D3BrushEvent } from 'd3-brush'
-import { area, CurveFactory, line } from 'd3-shape'
-import dayjs from 'dayjs'
-import clsx from 'clsx'
 
+import { Margin } from 'common/chart'
 import { Contract } from 'common/contract'
-import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-
-export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
+import { useMeasureSize } from 'web/hooks/use-measure-size'
 
 export interface ContinuousScale<T> extends AxisScale<T> {
   invert(n: number): T
-}
-
-export type XScale<P> = P extends Point<infer X, infer _> ? AxisScale<X> : never
-export type YScale<P> = P extends Point<infer _, infer Y> ? AxisScale<Y> : never
-
-export type Margin = {
-  top: number
-  right: number
-  bottom: number
-  left: number
 }
 
 export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {

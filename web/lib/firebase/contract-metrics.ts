@@ -15,8 +15,6 @@ import { ContractMetric } from 'common/contract-metric'
 
 export const CONTRACT_METRICS_SORTED_INDICES = ['YES', 'NO']
 
-export type ContractMetricsByOutcome = Record<string, ContractMetric[]>
-
 export async function getUserContractMetrics(userId: string) {
   const q = query(
     collection(db, 'users', userId, 'contract-metrics'),
