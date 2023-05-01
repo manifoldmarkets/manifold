@@ -170,7 +170,7 @@ function BetsTable(props: {
       </Row>
 
       <div className="text-center text-xs text-gray-400">
-        10 largest bets for each bucket
+        3 largest bets for each bucket
       </div>
 
       {Object.entries(betsShown === 'YES' ? yesBetsBuckets : noBetsBuckets).map(
@@ -244,9 +244,9 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
     }
   }
 
-  // Return the top 10 bets by amount for each probability bucket
+  // Return the top 3 bets by amount for each probability bucket
   function sortAndLimit(contractAndBets: [Contract, Bet][]) {
-    return sortBy(contractAndBets, (cAndB) => -cAndB[1].amount).slice(0, 10)
+    return sortBy(contractAndBets, (cAndB) => -cAndB[1].amount).slice(0, 3)
   }
 
   return {
