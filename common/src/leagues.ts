@@ -32,6 +32,7 @@ export const getDemotionAndPromotionCount = (division: number) => {
 export type league_row = PlainTablesAndViews['leagues']
 export type league_user_info = PlainTablesAndViews['user_league_info']
 
+
 export const COHORT_SIZE = 25
 export const MAX_COHORT_SIZE = 35
 

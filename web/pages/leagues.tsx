@@ -28,6 +28,8 @@ import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
 import { Countdown } from 'web/components/widgets/countdown'
 import { Modal } from 'web/components/layout/modal'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+
 
 export async function getStaticProps() {
   const { data: rows } = await db
@@ -96,6 +98,7 @@ export default function Leagues(props: { rows: league_row[] }) {
             <Title className="!mb-0">Leagues</Title>
           </Row>
 
+
           <Row className="mb-4 items-center gap-3">
             <text className="">
               Compete for{' '}
@@ -105,10 +108,9 @@ export default function Leagues(props: { rows: league_row[] }) {
               >
                 rewards
               </span>{' '}
-              and promotion by earning the most mana through profits, quests,
-              and unique trader bonuses. Only markets traded during the season
-              will count!
+              and promotion by earning the most mana by the end of the season!
             </text>
+
 
             <Modal
               open={prizesModalOpen}
@@ -186,8 +188,15 @@ export default function Leagues(props: { rows: league_row[] }) {
               <Row className="items-center gap-1.5">
                 <ClockIcon className="text-ink-1000 h-4 w-4" />{' '}
                 <Row className={' gap-1 text-sm'}>
-                  Ends in{' '}
-                  <Countdown className=" text-sm" endDate={SEASON_END} />
+
+                  <InfoTooltip
+                    text={
+                      'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
+                    }
+                  >
+                    Ends in{' '}
+                    <Countdown className=" text-sm" endDate={SEASON_END} />
+                  </InfoTooltip>
                 </Row>
               </Row>
             </Col>
@@ -267,7 +276,15 @@ const CohortTable = (props: {
       <thead className={clsx('text-ink-600 text-left text-sm font-semibold')}>
         <tr>
           <th className={clsx('px-2 pb-1')}>User</th>
-          <th className={clsx('px-2 pb-1 text-right')}>Mana earned</th>
+          <th className={clsx('px-2 pb-1 text-right')}>
+            <InfoTooltip
+              text={
+                'Profit from trades, quests rewards, and unique trader bonuses. Actions MUST have occurred during the season.'
+              }
+            >
+              Mana Earned{' '}
+            </InfoTooltip>
+          </th>
         </tr>
       </thead>
       <tbody>
