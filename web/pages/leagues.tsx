@@ -161,7 +161,7 @@ const CohortTable = (props: {
 }) => {
   const { rows, currUserId, demotionCount, promotionCount } = props
   const users = useUsers(rows.map((row) => row.user_id))
-  if (!users) return <LoadingIndicator />
+  if (!users || users.length !== rows.length) return <LoadingIndicator />
 
   const division = rows[0].division
   const nextDivision = division + 1
@@ -180,7 +180,6 @@ const CohortTable = (props: {
       <tbody>
         {rows.map((row, i) => {
           const user = users[i]
-          if (!user) console.log('no user', row)
           return (
             <Fragment key={user.id}>
               {user && (
