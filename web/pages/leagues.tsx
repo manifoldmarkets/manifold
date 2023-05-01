@@ -73,7 +73,6 @@ export default function Leagues(props: { rows: league_row[] }) {
   const userCohort = userRow?.cohort
   useEffect(() => {
     if (userRow) {
-      console.log('hi')
       setDivision(userRow.division)
       setCohort(userRow.cohort)
     }

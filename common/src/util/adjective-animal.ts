@@ -380,9 +380,9 @@ export const getRandomAdjectiveAnimal = () => {
   return `${adj}-${animal}`
 }
 
-export const genNewAdjectiveAnimal = (ids: { [adjAnimal: string]: any }) => {
+export const genNewAdjectiveAnimal = (ids: Set<string>) => {
   let adjAnimal = getRandomAdjectiveAnimal()
-  while (ids[adjAnimal]) {
+  while (ids.has(adjAnimal)) {
     adjAnimal = getRandomAdjectiveAnimal()
   }
   return adjAnimal
