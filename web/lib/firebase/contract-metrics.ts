@@ -11,7 +11,6 @@ import {
   getCountFromServer,
 } from 'firebase/firestore'
 import { db } from './init'
-import { ContractMetric } from 'common/contract-metric'
 
 export const CONTRACT_METRICS_SORTED_INDICES = ['YES', 'NO']
 

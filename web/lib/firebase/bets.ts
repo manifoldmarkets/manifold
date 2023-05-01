@@ -4,7 +4,6 @@ import {
   query,
   where,
   orderBy,
-  OrderByDirection,
   limit,
   Query,
   getCountFromServer,
