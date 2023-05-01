@@ -20,6 +20,9 @@ create extension if not exists vector;
 /* GIN trigram indexes */
 create extension if not exists pg_trgm;
 
+/* for UUID generation */
+create extension if not exists pgcrypto;
+
 /* enable `explain` via the HTTP API for convenience */
 alter role authenticator
 set
@@ -32,7 +35,8 @@ notify pgrst,
 see https://github.com/PostgREST/postgrest/issues/2594 */
 create
 or replace function to_jsonb(jsonb) returns jsonb immutable parallel safe strict language sql as $$
-select $1 $$;
+select $1
+$$;
 
 /******************************************/
 /* 1. tables containing firestore content */
@@ -175,14 +179,14 @@ cluster on user_reactions_type;
 
 create table if not exists
   user_events (
-    user_id text not null,
-    event_id text not null,
+    id bigint generated always as identity primary key,
+    ts timestamptz not null default now(),
+    name text not null,
+    user_id text null,
     contract_id text null,
-    name text null,
-    ts timestamptz null,
-    data jsonb not null,
-    fs_updated_time timestamp not null,
-    primary key (user_id, event_id)
+    comment_id text null,
+    ad_id text null,
+    data jsonb not null
   );
 
 alter table user_events enable row level security;
@@ -194,6 +198,11 @@ select
   using (true);
 
 create index if not exists user_events_data_gin on user_events using GIN (data);
+-- mqp: we should fix this up so that users can only insert their own events.
+-- but right now it's blocked because our application code is too dumb to wait
+-- for auth to be done until it starts sending events
+drop policy if exists "user can insert" on user_events;
+create policy "user can insert" on user_events for insert with check (true)
 
 create index if not exists user_events_name on user_events (user_id, name);
 
@@ -212,24 +221,6 @@ where
 
 alter table user_events
 cluster on user_events_name;
-
-create
-or replace function user_event_populate_cols () returns trigger language plpgsql as $$ begin
-  if new.data is not null then
-    new.name := (new.data)->>'name';
-    new.contract_id := (new.data)->>'contractId';
-    new.ts := case
-      when new.data ? 'timestamp' then millis_to_ts(((new.data)->>'timestamp')::bigint)
-      else null
-    end;
-  end if;
-  return new;
-end $$;
-
-create trigger user_event_populate before insert
-or
-update on user_events for each row
-execute function user_event_populate_cols ();
 
 create table if not exists
   user_seen_markets (
@@ -292,6 +283,7 @@ create table if not exists
     popularity_score numeric,
     data jsonb not null,
     question_fts tsvector generated always as (to_tsvector('english'::regconfig, question)) stored,
+    description_fts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, add_creator_name_to_description(data))) STORED,
     fs_updated_time timestamp not null
   );
 
@@ -319,34 +311,43 @@ create index if not exists contracts_popularity_score on contracts (popularity_s
 
 create index if not exists contracts_visibility on contracts (visibility);
 
+create index if not exists description_fts on contracts using gin (description_fts);
+-- for the ilike search
+create index concurrently if not exists contracts_question_trgm_idx on contracts using gin (question gin_trgm_ops);
+
 alter table contracts
 cluster on contracts_creator_id;
 
 create
-or replace function contract_populate_cols () returns trigger language plpgsql as $$ begin if new.data is not null then new.slug := (new.data)->>'slug';
-new.question := (new.data)->>'question';
-new.creator_id := (new.data)->>'creatorId';
-new.visibility := (new.data)->>'visibility';
-new.mechanism := (new.data)->>'mechanism';
-new.outcome_type := (new.data)->>'outcomeType';
-new.created_time := case
-  when new.data ? 'createdTime' then millis_to_ts(((new.data)->>'createdTime')::bigint)
-  else null
-end;
-new.close_time := case
-  when new.data ? 'closeTime' then millis_to_ts(((new.data)->>'closeTime')::bigint)
-  else null
-end;
-new.resolution_time := case
-  when new.data ? 'resolutionTime' then millis_to_ts(((new.data)->>'resolutionTime')::bigint)
-  else null
-end;
-new.resolution_probability := ((new.data)->>'resolutionProbability')::numeric;
-new.resolution := (new.data)->>'resolution';
-new.popularity_score := coalesce(((new.data)->>'popularityScore')::numeric, 0);
-end if;
-return new;
-end $$;
+or replace function contract_populate_cols () returns trigger language plpgsql as $$
+begin
+  if new.data is not null then
+    new.slug := (new.data) ->> 'slug';
+    new.question := (new.data) ->> 'question';
+    new.creator_id := (new.data) ->> 'creatorId';
+    new.visibility := (new.data) ->> 'visibility';
+    new.mechanism := (new.data) ->> 'mechanism';
+    new.outcome_type := (new.data) ->> 'outcomeType';
+    new.created_time := case
+                          when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint)
+                          else null
+      end;
+    new.close_time := case
+                        when new.data ? 'closeTime' then millis_to_ts(((new.data) ->> 'closeTime')::bigint)
+                        else null
+      end;
+    new.resolution_time := case
+                             when new.data ? 'resolutionTime'
+                               then millis_to_ts(((new.data) ->> 'resolutionTime')::bigint)
+                             else null
+      end;
+    new.resolution_probability := ((new.data) ->> 'resolutionProbability')::numeric;
+    new.resolution := (new.data) ->> 'resolution';
+    new.popularity_score := coalesce(((new.data) ->> 'popularityScore')::numeric, 0);
+  end if;
+  return new;
+end
+$$;
 
 create trigger contract_populate before insert
 or
@@ -405,22 +406,24 @@ select
 
 create
 or replace function contract_bet_populate_cols () returns trigger language plpgsql as $$
-  begin
-    if new.data is not null then
-      new.user_id := (new.data)->>'userId';
-      new.created_time := case when new.data ? 'createdTime' then millis_to_ts(((new.data)->>'createdTime')::bigint) else null end;
-      new.amount := ((new.data)->>'amount')::numeric;
-      new.shares := ((new.data)->>'shares')::numeric;
-      new.outcome := ((new.data)->>'outcome');
-      new.prob_before := ((new.data)->>'probBefore')::numeric;
-      new.prob_after := ((new.data)->>'probAfter')::numeric;
-      new.is_ante := ((new.data)->'isAnte')::boolean;
-      new.is_redemption := ((new.data)->'isRedemption')::boolean;
-      new.is_challenge := ((new.data)->'isChallenge')::boolean;
-      new.visibility := ((new.data)->>'visibility')::text;
-    end if;
-    return new;
-  end $$;
+begin
+  if new.data is not null then
+    new.user_id := (new.data) ->> 'userId';
+    new.created_time :=
+        case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
+    new.amount := ((new.data) ->> 'amount')::numeric;
+    new.shares := ((new.data) ->> 'shares')::numeric;
+    new.outcome := ((new.data) ->> 'outcome');
+    new.prob_before := ((new.data) ->> 'probBefore')::numeric;
+    new.prob_after := ((new.data) ->> 'probAfter')::numeric;
+    new.is_ante := ((new.data) -> 'isAnte')::boolean;
+    new.is_redemption := ((new.data) -> 'isRedemption')::boolean;
+    new.is_challenge := ((new.data) -> 'isChallenge')::boolean;
+    new.visibility := ((new.data) ->> 'visibility')::text;
+  end if;
+  return new;
+end
+$$;
 
 create trigger contract_bet_populate before insert
 or
@@ -473,6 +476,8 @@ create table if not exists
     fs_updated_time timestamp not null,
     primary key (contract_id, comment_id),
     visibility text,
+    user_id text,
+    created_time timestamptz,
   );
 
 alter table contract_comments enable row level security;
@@ -542,7 +547,11 @@ create table if not exists
   groups (
     id text not null primary key,
     data jsonb not null,
-    fs_updated_time timestamp not null
+    fs_updated_time timestamp not null,
+    privacy_status text,
+    slug text,
+    name text,
+    creator_id text;
   );
 
 alter table groups enable row level security;
@@ -693,6 +702,8 @@ create table if not exists
     data jsonb not null,
     fs_updated_time timestamp not null,
     visibility text,
+    user_id text,
+    created_time timestamptz,
     primary key (post_id, comment_id)
   );
 
@@ -856,6 +867,19 @@ create table if not exists
 
 alter table user_topics enable row level security;
 
+create table if not exists
+  market_ads (
+    id text not null primary key default uuid_generate_v4 (),
+    user_id text not null,
+    market_id text not null,
+    foreign key (market_id) references contracts (id),
+    funds numeric not null,
+    cost_per_view numeric not null,
+    created_at timestamp not null default now(),
+    embedding vector (1536) not null,
+    constraint market_ads_market_id_unique unique (market_id)
+  );
+
 drop policy if exists "public read" on user_topics;
 
 create policy "public read" on user_topics for
@@ -865,6 +889,25 @@ select
 drop policy if exists "public write access" on user_topics;
 
 create policy "public write access" on user_topics for all using (true);
+
+create table if not exists
+  leagues (
+    user_id text not null,
+    season int not null, -- integer id of season, i.e. 1 for first season, 2 for second, etc.
+    division int not null, -- 1 (beginner) to 4 (expert)
+    cohort text not null, -- id of cohort (group of competing users). Unique across seasons.
+    mana_earned numeric not null default 0.0,
+    created_time timestamp not null default now(),
+    unique (user_id, season)
+  );
+
+alter table leagues enable row level security;
+
+drop policy if exists "public read" on leagues;
+
+create policy "public read" on leagues for
+select
+  using (true);
 
 begin;
 
@@ -939,32 +982,34 @@ drop type if exists table_spec;
 create type table_spec as (parent_id_col_name text, id_col_name text);
 
 create
-or replace function get_document_table_spec (table_id text) returns table_spec language plpgsql as $$ begin return case
+or replace function get_document_table_spec (table_id text) returns table_spec language plpgsql as $$
+begin
+  return case
     table_id
-    when 'users' then cast((null, 'id') as table_spec)
-    when 'user_follows' then cast(('user_id', 'follow_id') as table_spec)
-    when 'user_notifications' then cast(('user_id', 'notification_id') as table_spec)
-    when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
-    when 'user_events' then cast(('user_id', 'event_id') as table_spec)
-    when 'user_seen_markets' then cast(('user_id', 'contract_id') as table_spec)
-    when 'contracts' then cast((null, 'id') as table_spec)
-    when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)
-    when 'contract_bets' then cast(('contract_id', 'bet_id') as table_spec)
-    when 'contract_comments' then cast(('contract_id', 'comment_id') as table_spec)
-    when 'contract_follows' then cast(('contract_id', 'follow_id') as table_spec)
-    when 'contract_liquidity' then cast(('contract_id', 'liquidity_id') as table_spec)
-    when 'groups' then cast((null, 'id') as table_spec)
-    when 'group_contracts' then cast(('group_id', 'contract_id') as table_spec)
-    when 'group_members' then cast(('group_id', 'member_id') as table_spec)
-    when 'txns' then cast((null, 'id') as table_spec)
-    when 'manalinks' then cast((null, 'id') as table_spec)
-    when 'posts' then cast((null, 'id') as table_spec)
-    when 'post_comments' then cast(('post_id', 'comment_id') as table_spec)
-    when 'test' then cast((null, 'id') as table_spec)
-    when 'user_contract_metrics' then cast(('user_id', 'contract_id') as table_spec)
-    else null
-  end;
-end $$;
+           when 'users' then cast((null, 'id') as table_spec)
+           when 'user_follows' then cast(('user_id', 'follow_id') as table_spec)
+           when 'user_notifications' then cast(('user_id', 'notification_id') as table_spec)
+           when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
+           when 'user_seen_markets' then cast(('user_id', 'contract_id') as table_spec)
+           when 'contracts' then cast((null, 'id') as table_spec)
+           when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)
+           when 'contract_bets' then cast(('contract_id', 'bet_id') as table_spec)
+           when 'contract_comments' then cast(('contract_id', 'comment_id') as table_spec)
+           when 'contract_follows' then cast(('contract_id', 'follow_id') as table_spec)
+           when 'contract_liquidity' then cast(('contract_id', 'liquidity_id') as table_spec)
+           when 'groups' then cast((null, 'id') as table_spec)
+           when 'group_contracts' then cast(('group_id', 'contract_id') as table_spec)
+           when 'group_members' then cast(('group_id', 'member_id') as table_spec)
+           when 'txns' then cast((null, 'id') as table_spec)
+           when 'manalinks' then cast((null, 'id') as table_spec)
+           when 'posts' then cast((null, 'id') as table_spec)
+           when 'post_comments' then cast(('post_id', 'comment_id') as table_spec)
+           when 'test' then cast((null, 'id') as table_spec)
+           when 'user_contract_metrics' then cast(('user_id', 'contract_id') as table_spec)
+           else null
+    end;
+end
+$$;
 
 /* takes a single new firestore write and replicates it into the database.
 the contract of this function is:
@@ -974,13 +1019,16 @@ the same and correct at the end.
 */
 create
 or replace function replicate_writes_process_one (r incoming_writes) returns boolean language plpgsql as $$
-declare dest_spec table_spec;
-begin dest_spec = get_document_table_spec(r.table_id);
-if dest_spec is null then raise warning 'Invalid table ID: %',
-r.table_id;
-return false;
-end if;
-if r.write_kind = 'create' then
+declare
+  dest_spec table_spec;
+begin
+  dest_spec = get_document_table_spec(r.table_id);
+  if dest_spec is null then
+    raise warning 'Invalid table ID: %',
+      r.table_id;
+    return false;
+  end if;
+  if r.write_kind = 'create' then
 /* possible cases:
  - if this is the most recent write to the document:
  1. common case: the document must not exist and this is a brand new document; insert it
@@ -988,40 +1036,42 @@ if r.write_kind = 'create' then
  2. the document already exists due to other more recent inserts or updates; do nothing
  3. the document has been more recently deleted; do nothing
  */
-if exists (
-  select
-  from tombstones as t
-  where t.table_id = r.table_id
-    and t.doc_id = r.doc_id
-    and t.fs_deleted_at > r.ts
-    and t.parent_id is not distinct
-  from r.parent_id
-    /* mind nulls */
-) then return true;
+    if exists(
+        select
+        from tombstones as t
+        where t.table_id = r.table_id
+          and t.doc_id = r.doc_id
+          and t.fs_deleted_at > r.ts
+          and t.parent_id is not distinct from r.parent_id
+      /* mind nulls */
+      ) then
+      return true;
 /* case 3 */
-end if;
-if dest_spec.parent_id_col_name is not null then execute format(
-  'insert into %1$I (%2$I, %3$I, data, fs_updated_time) values (%4$L, %5$L, %6$L, %7$L)
-         on conflict (%2$I, %3$I) do nothing;',
-  r.table_id,
-  dest_spec.parent_id_col_name,
-  dest_spec.id_col_name,
-  r.parent_id,
-  r.doc_id,
-  r.data,
-  r.ts
-);
-else execute format(
-  'insert into %1$I (%2$I, data, fs_updated_time) values (%3$L, %4$L, %5$L)
-         on conflict (%2$I) do nothing;',
-  r.table_id,
-  dest_spec.id_col_name,
-  r.doc_id,
-  r.data,
-  r.ts
-);
-end if;
-elsif r.write_kind = 'update' then
+    end if;
+    if dest_spec.parent_id_col_name is not null then
+      execute format(
+          'insert into %1$I (%2$I, %3$I, data, fs_updated_time) values (%4$L, %5$L, %6$L, %7$L)
+                 on conflict (%2$I, %3$I) do nothing;',
+          r.table_id,
+          dest_spec.parent_id_col_name,
+          dest_spec.id_col_name,
+          r.parent_id,
+          r.doc_id,
+          r.data,
+          r.ts
+        );
+    else
+      execute format(
+          'insert into %1$I (%2$I, data, fs_updated_time) values (%3$L, %4$L, %5$L)
+                 on conflict (%2$I) do nothing;',
+          r.table_id,
+          dest_spec.id_col_name,
+          r.doc_id,
+          r.data,
+          r.ts
+        );
+    end if;
+  elsif r.write_kind = 'update' then
 /* possible cases:
  - if this is the most recent write to the document:
  1. common case: the document exists; update it
@@ -1030,42 +1080,44 @@ elsif r.write_kind = 'update' then
  3. the document exists but has more recent updates; do nothing
  4. the document has been more recently deleted; do nothing
  */
-if exists (
-  select
-  from tombstones as t
-  where t.table_id = r.table_id
-    and t.doc_id = r.doc_id
-    and t.fs_deleted_at > r.ts
-    and t.parent_id is not distinct
-  from r.parent_id
-    /* mind nulls */
-) then return true;
+    if exists(
+        select
+        from tombstones as t
+        where t.table_id = r.table_id
+          and t.doc_id = r.doc_id
+          and t.fs_deleted_at > r.ts
+          and t.parent_id is not distinct from r.parent_id
+      /* mind nulls */
+      ) then
+      return true;
 /* case 4 */
-end if;
-if dest_spec.parent_id_col_name is not null then execute format(
-  'insert into %1$I (%2$I, %3$I, data, fs_updated_time) values (%4$L, %5$L, %6$L, %7$L)
-         on conflict (%2$I, %3$I) do update set data = %6$L, fs_updated_time = %7$L
-         where %1$I.fs_updated_time <= %7$L;',
-  r.table_id,
-  dest_spec.parent_id_col_name,
-  dest_spec.id_col_name,
-  r.parent_id,
-  r.doc_id,
-  r.data,
-  r.ts
-);
-else execute format(
-  'insert into %1$I (%2$I, data, fs_updated_time) values (%3$L, %4$L, %5$L)
-         on conflict (%2$I) do update set data = %4$L, fs_updated_time = %5$L
-         where %1$I.fs_updated_time <= %5$L;',
-  r.table_id,
-  dest_spec.id_col_name,
-  r.doc_id,
-  r.data,
-  r.ts
-);
-end if;
-elsif r.write_kind = 'delete' then
+    end if;
+    if dest_spec.parent_id_col_name is not null then
+      execute format(
+          'insert into %1$I (%2$I, %3$I, data, fs_updated_time) values (%4$L, %5$L, %6$L, %7$L)
+                 on conflict (%2$I, %3$I) do update set data = %6$L, fs_updated_time = %7$L
+                 where %1$I.fs_updated_time <= %7$L;',
+          r.table_id,
+          dest_spec.parent_id_col_name,
+          dest_spec.id_col_name,
+          r.parent_id,
+          r.doc_id,
+          r.data,
+          r.ts
+        );
+    else
+      execute format(
+          'insert into %1$I (%2$I, data, fs_updated_time) values (%3$L, %4$L, %5$L)
+                 on conflict (%2$I) do update set data = %4$L, fs_updated_time = %5$L
+                 where %1$I.fs_updated_time <= %5$L;',
+          r.table_id,
+          dest_spec.id_col_name,
+          r.doc_id,
+          r.data,
+          r.ts
+        );
+    end if;
+  elsif r.write_kind = 'delete' then
 /* possible cases:
  - if this is the most recent write to the document:
  1. common case: the document must exist; delete it
@@ -1073,35 +1125,39 @@ elsif r.write_kind = 'delete' then
  2. the document was already deleted; do nothing
  3. the document exists because it has a more recent insert or update; do nothing
  */
-if dest_spec.parent_id_col_name is not null then execute format(
-  'delete from %1$I where %2$I = %4$L and %3$I = %5$L and fs_updated_time <= %6$L',
-  r.table_id,
-  dest_spec.parent_id_col_name,
-  dest_spec.id_col_name,
-  r.parent_id,
-  r.doc_id,
-  r.ts
-);
-else execute format(
-  'delete from %1$I where %2$I = %3$L and fs_updated_time <= %4$L',
-  r.table_id,
-  dest_spec.id_col_name,
-  r.doc_id,
-  r.ts
-);
-end if;
+    if dest_spec.parent_id_col_name is not null then
+      execute format(
+          'delete from %1$I where %2$I = %4$L and %3$I = %5$L and fs_updated_time <= %6$L',
+          r.table_id,
+          dest_spec.parent_id_col_name,
+          dest_spec.id_col_name,
+          r.parent_id,
+          r.doc_id,
+          r.ts
+        );
+    else
+      execute format(
+          'delete from %1$I where %2$I = %3$L and fs_updated_time <= %4$L',
+          r.table_id,
+          dest_spec.id_col_name,
+          r.doc_id,
+          r.ts
+        );
+    end if;
 /* update tombstone so inserts and updates can know when this document was deleted */
-insert into tombstones (table_id, parent_id, doc_id, fs_deleted_at)
-values (r.table_id, r.parent_id, r.doc_id, r.ts) on conflict (table_id, parent_id, doc_id) do
-update
-set fs_deleted_at = r.ts
-where tombstones.fs_deleted_at < r.ts;
-else raise warning 'Invalid write kind: %',
-r.write_kind;
-return false;
-end if;
-return true;
-end $$;
+    insert into tombstones (table_id, parent_id, doc_id, fs_deleted_at)
+    values (r.table_id, r.parent_id, r.doc_id, r.ts)
+    on conflict (table_id, parent_id, doc_id) do update
+      set fs_deleted_at = r.ts
+    where tombstones.fs_deleted_at < r.ts;
+  else
+    raise warning 'Invalid write kind: %',
+      r.write_kind;
+    return false;
+  end if;
+  return true;
+end
+$$;
 
 /* when processing batches of writes, we order by document ID to avoid deadlocks
 when incoming write batches hit the same documents with new writes in different
@@ -1109,23 +1165,28 @@ sequences. */
 /* todo: we could process batches more efficiently by doing batch modifications for
 each destination table in the batch, but likely not important right now */
 create
-or replace function replicate_writes_process_since (since timestamp) returns table (id bigint, succeeded boolean) language plpgsql as $$ begin return query
-select r.id,
-  replicate_writes_process_one(r) as succeeded
-from incoming_writes as r
-where r.ts >= since
-order by r.parent_id,
-  r.doc_id;
-end $$;
+or replace function replicate_writes_process_since (since timestamp) returns table (id bigint, succeeded boolean) language plpgsql as $$
+begin
+  return query
+    select r.id,
+           replicate_writes_process_one(r) as succeeded
+    from incoming_writes as r
+    where r.ts >= since
+    order by r.parent_id,
+             r.doc_id;
+end
+$$;
 
 create
-or replace function replicate_writes_process_new () returns trigger language plpgsql as $$ begin perform r.id,
-  replicate_writes_process_one(r) as succeeded
-from new_table as r
-order by r.parent_id,
-  r.doc_id;
-return null;
-end $$;
+or replace function replicate_writes_process_new () returns trigger language plpgsql as $$
+begin
+  perform r.id, replicate_writes_process_one(r) as succeeded
+  from new_table as r
+  order by r.parent_id,
+           r.doc_id;
+  return null;
+end
+$$;
 
 drop trigger if exists replicate_writes on incoming_writes;
 

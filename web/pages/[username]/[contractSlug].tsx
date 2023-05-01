@@ -27,7 +27,7 @@ import {
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
-import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
+import { CreatorShareBoostPanel } from 'web/components/contract/creator-share-panel'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
@@ -416,7 +416,7 @@ export function ContractPageContent(props: {
             {isCreator && !isResolved && !isClosed && (
               <>
                 {showResolver && <Spacer h={4} />}
-                <CreatorSharePanel contract={contract} />
+                <CreatorShareBoostPanel contract={contract} />
               </>
             )}
 

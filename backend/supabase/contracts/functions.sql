@@ -1,9 +1,5 @@
-CREATE OR REPLACE FUNCTION can_access_private_contract(this_contract_id TEXT, this_member_id TEXT)
-RETURNS BOOLEAN
-IMMUTABLE
-PARALLEL SAFE
-LANGUAGE SQL
-AS $$
+create
+or replace function can_access_private_contract (this_contract_id text, this_member_id text) returns boolean immutable parallel SAFE language sql as $$
 SELECT EXISTS (
     SELECT 1
     FROM group_members

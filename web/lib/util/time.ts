@@ -34,3 +34,19 @@ export const getCutoff = (period: Period) => {
   const nowRounded = Math.round(Date.now() / HOUR_MS) * HOUR_MS
   return nowRounded - periodDurations[period]
 }
+
+export const getCountdownString = (endDate: Date) => {
+  const remainingTimeMs = endDate.getTime() - Date.now()
+
+  const seconds = Math.floor(remainingTimeMs / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+
+  const secondsStr = `${seconds % 60}`.padStart(2, '0')
+  const minutesStr = `${minutes % 60}`.padStart(2, '0')
+  const hoursStr = `${hours % 24}`.padStart(2, '0')
+  const daysStr = `${days}`.padStart(2, '0')
+
+  return `${daysStr}:${hoursStr}:${minutesStr}:${secondsStr}`
+}

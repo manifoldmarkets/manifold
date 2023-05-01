@@ -6,17 +6,14 @@ import {
   ScaleIcon,
   MapIcon,
   MoonIcon,
-  SpeakerphoneIcon,
   SunIcon,
   SparklesIcon,
   StarIcon,
   UserGroupIcon,
-  HeartIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
-import { formatMoney } from 'common/util/format'
 import { capitalize } from 'lodash'
 import Router, { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
@@ -35,7 +32,6 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-menu'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
-import { useABTest } from 'web/hooks/use-ab-test'
 
 export default function Sidebar(props: {
   className?: string
@@ -54,17 +50,10 @@ export default function Sidebar(props: {
   const toggleTheme = () => {
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
-  const variant = useABTest('promote charity', {
-    charity: 'charity',
-    blank: 'blank',
-  } as const)
 
   const navOptions = isMobile
-    ? getMobileNav(
-        () => setIsAddFundsModalOpen(!isAddFundsModalOpen),
-        variant === 'charity'
-      )
-    : getDesktopNav(!!user, () => setIsModalOpen(true), variant === 'charity')
+    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
+    : getDesktopNav(!!user, () => setIsModalOpen(true))
 
   const bottomNavOptions = bottomNav(
     !!user,
@@ -126,11 +115,7 @@ const logout = async () => {
   await Router.replace(Router.asPath)
 }
 
-const getDesktopNav = (
-  loggedIn: boolean,
-  openDownloadApp: () => void,
-  showCharity: boolean
-) => {
+const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
@@ -149,11 +134,6 @@ const getDesktopNav = (
         name: 'Groups',
         icon: UserGroupIcon,
         href: '/groups',
-      },
-      showCharity && {
-        name: 'Charity',
-        icon: HeartIcon,
-        href: '/charity',
       }
     )
 
@@ -165,7 +145,7 @@ const getDesktopNav = (
 }
 
 // No sidebar when signed out
-const getMobileNav = (toggleModal: () => void, showCharity: boolean) => {
+const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Markets', href: '/markets', icon: ScaleIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
@@ -173,19 +153,9 @@ const getMobileNav = (toggleModal: () => void, showCharity: boolean) => {
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
     {
-      name: `Ads - earn ${formatMoney(5)} per view!`,
-      icon: SpeakerphoneIcon,
-      href: '/ad',
-    },
-    {
       name: 'Groups',
       icon: UserGroupIcon,
       href: '/groups',
-    },
-    showCharity && {
-      name: 'Charity',
-      icon: HeartIcon,
-      href: '/charity',
     }
   )
 }

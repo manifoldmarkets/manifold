@@ -9,13 +9,13 @@ import { FeedItems } from 'web/components/feed/feed-items'
 export function ContractsFeed(props: { topic?: string }) {
   const { topic } = props
   const user = useUser()
-  const { contracts, loadMore } = useFeed(user, 'feed', { topic })
+  const { contracts, boosts, loadMore } = useFeed(user, 'feed', { topic })
 
   if (!contracts) return <LoadingIndicator />
 
   return (
     <Col>
-      <FeedItems contracts={contracts} user={user} />
+      <FeedItems contracts={contracts} boosts={boosts} user={user} />
 
       <div className="relative">
         <VisibilityObserver

@@ -6,42 +6,69 @@ import {
   useFeedComments,
 } from 'web/hooks/use-additional-feed-items'
 import { User } from 'common/user'
-import { FeedCommentThread } from 'web/components/feed/feed-comments'
+import {
+  FeedCommentThread,
+  isReplyToBet,
+} from 'web/components/feed/feed-comments'
 import { SummarizeBets, groupBetsByCreatedTimeAndUserId } from './feed-bets'
 import { Bet } from 'common/bet'
 import { sumBy } from 'lodash'
 import clsx from 'clsx'
 import { Row } from '../layout/row'
+import { ContractComment } from 'common/comment'
+import { BoostsType } from 'web/hooks/use-feed'
+import { AD_PERIOD } from 'common/boost'
 
 export const FeedItems = (props: {
   contracts: Contract[]
+  boosts?: BoostsType
   user: User | null | undefined
 }) => {
-  const { contracts, user } = props
+  const { user, boosts } = props
+
+  const organicContracts = props.contracts.map((c) => ({
+    ...c,
+    type: 'contract' as const,
+  }))
+
+  const boostedContracts =
+    boosts?.map((boost) => {
+      const { market_data, ...rest } = boost
+      return { ...market_data, ...rest, type: 'boost' as const }
+    }) ?? []
+
+  const contracts = mergePeriodic(organicContracts, boostedContracts, AD_PERIOD)
+
   const contractIds = contracts.map((c) => c.id)
-  const commentThreads = useFeedComments(user, contractIds)
+  const maxItems = 2
+  const { parentCommentsByContractId, childCommentsByParentCommentId } =
+    useFeedComments(user, contractIds)
   const recentBets = useFeedBets(user, contractIds)
-  const maxItems = 3
   const groupedItems = contracts.map((contract) => {
-    const relatedComments = commentThreads.filter(
-      (thread) => thread.parentComment.contractId === contract.id
-    )
+    const parentComments = parentCommentsByContractId[contract.id] ?? []
     const relatedBets = recentBets.filter(
       (bet) => bet.contractId === contract.id
     )
     return {
       contract,
-      commentThreads: relatedComments.slice(0, maxItems),
+      parentComments: parentComments.slice(0, maxItems),
       relatedBets: relatedBets.slice(0, maxItems),
     }
   })
 
-  const hasItems = commentThreads.length > 0 || recentBets.length > 0
-
   return (
     <Col>
       {groupedItems.map((itemGroup) => {
-        const { contract, commentThreads, relatedBets } = itemGroup
+        const { contract, parentComments, relatedBets } = itemGroup
+        const hasItems = parentComments.length > 0 || recentBets.length > 0
+
+        const promotedData =
+          contract.type === 'boost'
+            ? {
+                adId: contract.ad_id,
+                reward: contract.ad_cost_per_view,
+              }
+            : undefined
 
         return (
           <Col
@@ -56,15 +83,20 @@ export const FeedItems = (props: {
                 'my-0 border-0',
                 hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
               )}
+              promotedData={promotedData}
             />
             <Row className="bg-canvas-0">
               <FeedCommentItem
                 contract={contract}
-                commentThreads={commentThreads}
+                commentThreads={parentComments.map((parentComment) => ({
+                  parentComment,
+                  childComments:
+                    childCommentsByParentCommentId[parentComment.id] ?? [],
+                }))}
               />
             </Row>
             <Row className="bg-canvas-0">
-              {commentThreads.length === 0 && (
+              {parentComments.length === 0 && (
                 <FeedBetsItem contract={contract} bets={relatedBets} />
               )}
             </Row>
@@ -73,6 +105,20 @@ export const FeedItems = (props: {
       })}
     </Col>
   )
+}
+
+// every period items in A, insert an item from B
+function mergePeriodic<A, B>(a: A[], b: B[], period: number): (A | B)[] {
+  const merged = []
+  let j = 0
+  for (let i = 0; i < a.length; ++i) {
+    merged.push(a[i])
+    if ((i + 1) % period === 0 && j < b.length) {
+      merged.push(b[j])
+      ++j
+    }
+  }
+  return merged
 }
 
 //TODO: we can't yet respond to summarized bets yet bc we're just combining bets in the feed and
@@ -104,29 +150,24 @@ const FeedBetsItem = (props: { contract: Contract; bets: Bet[] }) => {
 }
 const FeedCommentItem = (props: {
   contract: Contract
-  commentThreads: ReturnType<typeof useFeedComments>
+  commentThreads: {
+    parentComment: ContractComment
+    childComments: ContractComment[]
+  }[]
 }) => {
-  const { contract } = props
-  const ignoredCommentTypes = ['gridCardsComponent']
-  const commentThreads = props.commentThreads.filter(
-    (ct) =>
-      !ct.parentComment.content?.content?.some((c) =>
-        ignoredCommentTypes.includes(c.type ?? '')
-      ) &&
-      !ct.childComments.some((c) =>
-        c.content?.content?.some((c) =>
-          ignoredCommentTypes.includes(c.type ?? '')
-        )
-      )
-  )
+  const { contract, commentThreads } = props
+  const firstCommentIsReplyToBet =
+    commentThreads[0] && isReplyToBet(commentThreads[0].parentComment)
   return (
-    <Col className={'w-full'}>
+    <Col className={clsx('w-full', firstCommentIsReplyToBet ? 'sm:mt-4' : '')}>
       {commentThreads.map((ct, index) => (
         <Row
           className={'relative w-full'}
           key={ct.parentComment.id + 'feed-thread'}
         >
-          {index !== commentThreads.length - 1 ? (
+          {index === 0 && firstCommentIsReplyToBet ? (
+            <div />
+          ) : index !== commentThreads.length - 1 ? (
             <div className="border-ink-200 b-[50%] absolute top-0 ml-7 h-[100%] border-l-2" />
           ) : (
             <div className="border-ink-200 absolute top-0 ml-7 h-3 border-l-2" />

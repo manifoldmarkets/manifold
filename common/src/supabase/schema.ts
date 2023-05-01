@@ -397,6 +397,32 @@ export interface Database {
           write_kind?: string
         }
       }
+      leagues: {
+        Row: {
+          cohort: string
+          created_time: string
+          division: number
+          mana_earned: number
+          season: number
+          user_id: string
+        }
+        Insert: {
+          cohort: string
+          created_time?: string
+          division: number
+          mana_earned?: number
+          season: number
+          user_id: string
+        }
+        Update: {
+          cohort?: string
+          created_time?: string
+          division?: number
+          mana_earned?: number
+          season?: number
+          user_id?: string
+        }
+      }
       manalinks: {
         Row: {
           data: Json
@@ -412,6 +438,35 @@ export interface Database {
           data?: Json
           fs_updated_time?: string
           id?: string
+        }
+      }
+      market_ads: {
+        Row: {
+          cost_per_view: number
+          created_at: string
+          embedding: string
+          funds: number
+          id: string
+          market_id: string
+          user_id: string
+        }
+        Insert: {
+          cost_per_view: number
+          created_at?: string
+          embedding: string
+          funds: number
+          id?: string
+          market_id: string
+          user_id: string
+        }
+        Update: {
+          cost_per_view?: number
+          created_at?: string
+          embedding?: string
+          funds?: number
+          id?: string
+          market_id?: string
+          user_id?: string
         }
       }
       post_comments: {
@@ -509,17 +564,17 @@ export interface Database {
       topic_embeddings: {
         Row: {
           created_at: string
-          embedding: string
+          embedding: number[]
           topic: string
         }
         Insert: {
           created_at?: string
-          embedding: string
+          embedding: number[]
           topic: string
         }
         Update: {
           created_at?: string
-          embedding?: string
+          embedding?: number[]
           topic?: string
         }
       }
@@ -585,31 +640,34 @@ export interface Database {
       }
       user_events: {
         Row: {
+          ad_id: string | null
+          comment_id: string | null
           contract_id: string | null
           data: Json
-          event_id: string
-          fs_updated_time: string | null
-          name: string | null
+          id: number
+          name: string
           ts: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          ad_id?: string | null
+          comment_id?: string | null
           contract_id?: string | null
           data: Json
-          event_id: string
-          fs_updated_time?: string | null
-          name?: string | null
+          id?: never
+          name: string
           ts?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          ad_id?: string | null
+          comment_id?: string | null
           contract_id?: string | null
           data?: Json
-          event_id?: string
-          fs_updated_time?: string | null
-          name?: string | null
+          id?: never
+          name?: string
           ts?: string | null
-          user_id?: string
+          user_id?: string | null
         }
       }
       user_follows: {
@@ -767,19 +825,19 @@ export interface Database {
       user_topics: {
         Row: {
           created_at: string
-          topic_embedding: string
+          topic_embedding: number[]
           topics: string[]
           user_id: string
         }
         Insert: {
           created_at?: string
-          topic_embedding: string
+          topic_embedding: number[]
           topics: string[]
           user_id: string
         }
         Update: {
           created_at?: string
-          topic_embedding?: string
+          topic_embedding?: number[]
           topics?: string[]
           user_id?: string
         }
@@ -1301,6 +1359,17 @@ export interface Database {
           username: string | null
         }
       }
+      user_league_info: {
+        Row: {
+          cohort: string | null
+          created_time: string | null
+          division: number | null
+          mana_earned: number | null
+          rank: number | null
+          season: number | null
+          user_id: string | null
+        }
+      }
       user_referrals: {
         Row: {
           data: Json | null
@@ -1351,6 +1420,13 @@ export interface Database {
         Args: {
           this_post_id: string
           this_member_id: string
+        }
+        Returns: boolean
+      }
+      check_group_accessibility: {
+        Args: {
+          this_group_id: string
+          this_user_id: string
         }
         Returns: boolean
       }
@@ -1479,12 +1555,6 @@ export interface Database {
             }
             Returns: number
           }
-      get_document_table: {
-        Args: {
-          doc_kind: string
-        }
-        Returns: string
-      }
       get_document_table_spec: {
         Args: {
           table_id: string
@@ -1545,7 +1615,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from: {
         Args: {
           uid: string
-          p_embedding: string
+          p_embedding: number[]
           n: number
           excluded_contract_ids: string[]
           max_dist: number
@@ -1693,6 +1763,18 @@ export interface Database {
       get_time: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      get_top_market_ads: {
+        Args: {
+          uid: string
+        }
+        Returns: {
+          ad_id: string
+          market_id: string
+          ad_funds: number
+          ad_cost_per_view: number
+          market_data: Json
+        }[]
       }
       get_unseen_reply_chain_comments_matching_contracts: {
         Args: {
@@ -1888,6 +1970,12 @@ export interface Database {
         }
         Returns: undefined
       }
+      save_user_topics_blank: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       search_contract_embeddings: {
         Args: {
           query_embedding: string
@@ -1942,6 +2030,17 @@ export interface Database {
           creator_id?: string
         }
         Returns: string
+      }
+      search_users: {
+        Args: {
+          query: string
+          count: number
+        }
+        Returns: {
+          data: Json
+          fs_updated_time: string
+          id: string
+        }[]
       }
       set_limit: {
         Args: {

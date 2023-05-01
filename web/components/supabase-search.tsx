@@ -284,12 +284,11 @@ export function SupabaseContractSearch(props: {
               '' + searchParams.current?.sort ??
               ''
             }
-            filter={searchParams.current?.filter}
             contracts={contracts}
             loadMore={loadMoreContracts}
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
-            headerClassName={headerClassName}
+            headerClassName={`${headerClassName} !top-14`}
           />
         ) : (
           <ContractsGrid
@@ -413,7 +412,7 @@ function SupabaseContractSearchControls(props: {
   return (
     <div
       className={clsx(
-        'sticky top-0 z-30 mb-1 flex flex-col items-stretch gap-3 pb-2 pt-px sm:flex-row sm:gap-2',
+        'bg-canvas-50 sticky top-0 z-30 mb-1 flex flex-col items-stretch gap-3 pb-2 pt-px sm:flex-row sm:gap-2',
         className
       )}
     >

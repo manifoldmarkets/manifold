@@ -22,7 +22,7 @@ export const PortfolioValueSection = memo(
     const { userId } = props
     const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('weekly')
     const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
-    const [graphMode, setGraphMode] = useState<GraphMode>('profit')
+    const [graphMode, setGraphMode] = useState<GraphMode>('value')
     const graphPoints = useMemo(
       () =>
         portfolioHistory?.map((p) => ({
@@ -181,9 +181,9 @@ export function PortfolioValueSkeleton(props: {
   onClickNumber: (mode: GraphMode) => void
   currentTimePeriod: Period
   setCurrentTimePeriod: (timePeriod: Period) => void
+  valueElement: ReactNode
   profitElement: ReactNode
   balanceElement: ReactNode
-  valueElement: ReactNode
   graphElement: (width: number, height: number) => ReactNode
   hideSwitcher?: boolean
   switcherColor?: ColorType
@@ -196,9 +196,9 @@ export function PortfolioValueSkeleton(props: {
     onClickNumber,
     currentTimePeriod,
     setCurrentTimePeriod,
+    valueElement,
     profitElement,
     balanceElement,
-    valueElement,
     graphElement,
     hideSwitcher,
     switcherColor,
@@ -214,6 +214,20 @@ export function PortfolioValueSkeleton(props: {
           placement === 'bottom' ? 'ml-2 gap-8' : ''
         )}
       >
+        <Col
+          className={clsx(
+            'w-24 cursor-pointer sm:w-28',
+            graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+          )}
+          onClick={() => {
+            onClickNumber('value')
+            track('Portfolio Value Clicked')
+          }}
+        >
+          <div className="text-ink-600 text-xs sm:text-sm">Portfolio</div>
+          {valueElement}
+        </Col>
+
         <Col
           className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
@@ -232,20 +246,6 @@ export function PortfolioValueSkeleton(props: {
 
         <Col
           className={clsx(
-            'w-24 cursor-pointer sm:w-28',
-            graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
-          )}
-          onClick={() => {
-            onClickNumber('value')
-            track('Portfolio Value Clicked')
-          }}
-        >
-          <div className="text-ink-600 text-xs sm:text-sm">Portfolio</div>
-          {valueElement}
-        </Col>
-
-        <Col
-          className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
             graphMode != 'balance'
               ? 'cursor-pointer opacity-40 hover:opacity-80'
@@ -256,7 +256,7 @@ export function PortfolioValueSkeleton(props: {
             track('Graph Balance Clicked')
           }}
         >
-          <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
+          <div className="text-ink-600 text-xs sm:text-sm">Cash balance</div>
           {balanceElement}
         </Col>
 

@@ -10,6 +10,8 @@ import { LoansModal } from 'web/components/profile/loans-modal'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { DailyProfit } from 'web/components/daily-profit'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
+import { DailyLeagueStat } from './daily-league-stat'
+import { LEAGUES_ENABLED } from 'common/leagues'
 
 export const dailyStatsClass = 'text-lg py-1'
 
@@ -31,6 +33,7 @@ export function DailyStats(props: {
   return (
     <Row className={'z-30 flex-shrink-0 items-center gap-4'}>
       <DailyProfit user={user} />
+      {LEAGUES_ENABLED && <DailyLeagueStat user={user} />}
       <QuestsOrStreak user={user} />
 
       {showLoans && (

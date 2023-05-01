@@ -21,38 +21,9 @@ export async function searchUsers(
     return data
   }
 
-  const [{ data: exactData }, { data: prefixData }, { data: containsData }] =
-    await Promise.all([
-      run(
-        selectFrom(db, 'users', ...fields)
-          .or(`data->>username.ilike.${prompt},data->>name.ilike.${prompt}`)
-          .order('data->followerCountCached', { ascending: false } as any)
-          .limit(limit)
-      ),
-      run(
-        selectFrom(db, 'users', ...fields)
-          .or(`data->>username.ilike.${prompt}%,data->>name.ilike.${prompt}%`)
-          .order('data->lastBetTime', {
-            ascending: false,
-            nullsFirst: false,
-          } as any)
-          .limit(limit)
-      ),
-      run(
-        selectFrom(db, 'users', ...fields)
-          .or(`data->>username.ilike.%${prompt}%,data->>name.ilike.%${prompt}%`)
-          .order('data->lastBetTime', {
-            ascending: false,
-            nullsFirst: false,
-          } as any)
-          .limit(limit)
-      ),
-    ])
+  const { data } = await db.rpc('search_users', { query: prompt, count: limit })
 
-  return uniqBy([...exactData, ...prefixData, ...containsData], 'id').slice(
-    0,
-    limit
-  )
+  return data?.map((d: any) => d.data as User) ?? []
 }
 
 export async function searchUsersNotInGroup(

@@ -130,7 +130,7 @@ function getSearchContractSQL(contractInput: {
             on group_contracts.contract_id = contracts.id
         ) AS contractz
       ${whereSQL}
-      AND contractz.similarity_score > 0.1
+      AND contractz.similarity_score > 0.3
       AND contractz.group_id = '${groupId}'`
     } else {
       // if full text search within group
@@ -140,16 +140,18 @@ function getSearchContractSQL(contractInput: {
             select contracts.*, group_contracts.group_id 
             from contracts 
             join group_contracts on group_contracts.contract_id = contracts.id
-        ) as contractz,
-        websearch_to_tsquery(' english ', $1) query
+        ) as contractz, websearch_to_tsquery('english', $1) as query
             ${whereSQL}
-        AND contractz.question_fts @@ query
+        AND (contractz.question_fts @@ query
+            OR contractz.question ILIKE '%' || $1 || '%'
+            OR contractz.description_fts @@ query
+            )
         AND contractz.group_id = '${groupId}'`
     }
   } else {
     if (emptyTerm) {
       query = `
-      SELECT contracts.data
+      SELECT data
       FROM contracts 
       ${whereSQL}`
     } else if (fuzzy) {
@@ -161,13 +163,15 @@ function getSearchContractSQL(contractInput: {
         FROM contracts
       ) AS contractz
       ${whereSQL}
-      AND contractz.similarity_score > 0.1`
+      AND contractz.similarity_score > 0.3`
     } else {
       query = `
-      SELECT contracts.data
-      FROM contracts, websearch_to_tsquery('english',  $1) query
+      SELECT data
+      FROM contracts, websearch_to_tsquery('english',  $1) as query
          ${whereSQL}
-      AND contracts.question_fts @@ query`
+      AND (question_fts @@ query
+        OR question ILIKE '%' || $1 || '%'
+        OR description_fts @@ query)`
     }
   }
   return (

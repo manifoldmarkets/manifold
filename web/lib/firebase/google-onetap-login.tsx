@@ -41,12 +41,14 @@ export const GoogleOneTapLogin = (props: { className?: string }) => {
   const user = useUser()
 
   useEffect(() => {
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       if (!user) {
         ;(window as any).google.accounts.id.prompt()
       }
     }, 1000)
-  }, [])
+
+    return () => clearTimeout(timeoutId)
+  }, [user])
 
   return <div id="signup-prompt" className={props.className} />
 }

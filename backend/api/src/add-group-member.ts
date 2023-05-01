@@ -7,14 +7,16 @@ import { User } from 'common/user'
 import { GroupMember } from 'common/group-member'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createAddedToGroupNotification } from 'shared/create-notification'
+import { removeUndefinedProps } from 'common/util/object'
 
 const bodySchema = z.object({
   groupId: z.string(),
   userId: z.string(),
+  role: z.string().optional(),
 })
 
 export const addgroupmember = authEndpoint(async (req, auth) => {
-  const { groupId, userId } = validate(bodySchema, req.body)
+  const { groupId, userId, role } = validate(bodySchema, req.body)
 
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {
@@ -62,7 +64,11 @@ export const addgroupmember = authEndpoint(async (req, auth) => {
       }
     }
 
-    const member = { userId, createdTime: Date.now() }
+    const member = removeUndefinedProps({
+      userId,
+      createdTime: Date.now(),
+      role: role,
+    })
     firestore
       .collection(`groups/${groupId}/groupMembers`)
       .doc(userId)

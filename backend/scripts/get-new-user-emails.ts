@@ -11,14 +11,13 @@ async function main() {
   // Last run on 4/18/2023
   const usersSnap = await firestore
     .collection('users')
-    .where('createdTime', '>', Date.now() - 18 * DAY_MS)
+    .where('createdTime', '>=', Date.now() - 12 * DAY_MS)
     .get()
   const users = usersSnap.docs.map((doc) => doc.data() as User)
 
   console.log('Loaded', users.length, 'users')
   const csv = await Promise.all(
     users.map(async (user: User) => {
-      if (user.lastBetTime) return ''
       const privateUser = await getPrivateUser(user.id)
       if (!privateUser || !privateUser.email) return ''
       return `${privateUser.email},\n`
@@ -26,7 +25,7 @@ async function main() {
   )
   try {
     csv.unshift('email\n')
-    writeFileSync('non-bettor-emails.csv', csv.join(''))
+    writeFileSync('new-user-emails.csv', csv.join(''))
   } catch (err) {
     console.error(err)
   }
