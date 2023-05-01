@@ -56,8 +56,8 @@ export default function Leagues(props: { rows: league_row[] }) {
   ).reverse()
 
   const [season, setSeason] = useState<season>(1)
-  const [division, setDivision] = useState<number>(1)
-  const [cohort, setCohort] = useState(cohortNames[0])
+  const [division, setDivision] = useState<number>(4)
+  const [cohort, setCohort] = useState(divisionToCohorts[4][0])
   const [prizesModalOpen, setPrizesModalOpen] = useState(false)
   const togglePrizesModal = () => {
     setPrizesModalOpen(!prizesModalOpen)
@@ -85,6 +85,7 @@ export default function Leagues(props: { rows: league_row[] }) {
   const userCohort = userRow?.cohort
   useEffect(() => {
     if (userRow) {
+      console.log('hi')
       setDivision(userRow.division)
       setCohort(userRow.cohort)
     }
@@ -255,7 +256,7 @@ const CohortTable = (props: {
     doublePromotionCount,
   } = props
   const users = useUsers(rows.map((row) => row.user_id))
-  if (!users) return <LoadingIndicator />
+  if (!users || users.length !== rows.length) return <LoadingIndicator />
 
   const division = rows[0].division
   const nextDivision = division + 1
@@ -278,7 +279,6 @@ const CohortTable = (props: {
       <tbody>
         {rows.map((row, i) => {
           const user = users[i]
-          if (!user) console.log('no user', row)
           return (
             <Fragment key={user.id}>
               {user && (

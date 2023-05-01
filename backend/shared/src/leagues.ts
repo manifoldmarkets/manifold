@@ -1,22 +1,28 @@
 import { groupBy } from 'lodash'
 import { pgp, SupabaseDirectClient } from './supabase/init'
 import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
+import { BOT_USERNAMES } from 'common/envs/constants'
 
 const COHORT_SIZE = 25
 
 export async function assignCohorts(pg: SupabaseDirectClient) {
-  const userDivisons = await pg.many<{ user_id: string; division: number }>(`
+  const userDivisons = await pg.many<{ user_id: string; division: number }>(
+    `
   with user_bet_count as (
     select users.id as user_id, count(*) as bet_count
     from users
     join contract_bets on contract_bets.user_id = users.id
     where created_time > (now() - interval '2 weeks')
+    and coalesce(users.data->>'isBannedFromPosting', 'false') = 'false'
+    and users.data->>'username' not in ($1:csv)
     group by users.id
   ), user_profit as (
     select
       user_id,
       bet_count,
-      (users.data->'profitCached'->>'allTime')::numeric as profit,
+      (users.data->'profitCached'->>'allTime')::numeric
+      + coalesce((users.data->'creatorTraders'->>'allTime')::numeric, 0) * 5
+       as profit,
       ntile(100) over (order by (users.data->'profitCached'->>'allTime')::numeric) / 100.0 as profit_rank
     from user_bet_count
     join users on users.id = user_id
@@ -44,7 +50,9 @@ export async function assignCohorts(pg: SupabaseDirectClient) {
       else 1
     end as division
   from user_score
-  order by score desc`)
+  order by score desc`,
+    [BOT_USERNAMES]
+  )
 
   const usersByDivision = groupBy(userDivisons, 'division')
   const userCohorts: {
@@ -60,7 +68,7 @@ export async function assignCohorts(pg: SupabaseDirectClient) {
     const cohortsWithOneLess =
       usersPerCohort * numCohorts - divisionUsers.length
     console.log(
-      'division',
+      'division users',
       divisionUsers.length,
       'numCohorts',
       numCohorts,
@@ -71,6 +79,13 @@ export async function assignCohorts(pg: SupabaseDirectClient) {
     )
 
     let remainingUserIds = divisionUsers.map((u) => u.user_id)
+    const jamesId = '5LZ4LgYuySdL1huCWe7bti02ghx2'
+    if (remainingUserIds.includes(jamesId)) {
+      remainingUserIds = [
+        jamesId,
+        ...remainingUserIds.filter((u) => u !== jamesId),
+      ]
+    }
     let i = 0
     while (remainingUserIds.length > 0) {
       const cohortSize =

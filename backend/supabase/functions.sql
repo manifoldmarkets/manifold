@@ -898,3 +898,46 @@ SELECT * FROM parent_comments
 UNION ALL
 SELECT * FROM reply_chain_comments;
 $$ language sql;
+
+
+CREATE OR REPLACE FUNCTION extract_text_from_rich_text_json(description jsonb) RETURNS text
+  LANGUAGE sql IMMUTABLE AS $$
+WITH RECURSIVE content_elements AS (
+  SELECT jsonb_array_elements(description->'content') AS element
+  WHERE jsonb_typeof(description) = 'object'
+  UNION ALL
+  SELECT jsonb_array_elements(element->'content')
+  FROM content_elements
+  WHERE element->>'type' = 'paragraph' AND element->'content' IS NOT NULL
+),
+               text_elements AS (
+                 SELECT jsonb_array_elements(element->'content') AS text_element
+                 FROM content_elements
+                 WHERE element->>'type' = 'paragraph'
+               ),
+               filtered_text_elements AS (
+                 SELECT text_element
+                 FROM text_elements
+                 WHERE jsonb_typeof(text_element) = 'object' AND text_element->>'type' = 'text'
+               ),
+               all_text_elements AS (
+                 SELECT filtered_text_elements.text_element->>'text' AS text
+                 FROM filtered_text_elements
+               )
+SELECT
+  CASE
+    WHEN jsonb_typeof(description) = 'string' THEN description::text
+    ELSE COALESCE(string_agg(all_text_elements.text, ' '), '')
+    END
+FROM
+  all_text_elements;
+$$;
+
+CREATE OR REPLACE FUNCTION add_creator_name_to_description(data jsonb) RETURNS text
+  LANGUAGE sql IMMUTABLE AS $$
+select * from CONCAT_WS(
+        ' '::text,
+        data->>'creatorName',
+        extract_text_from_rich_text_json(data->'description')
+  )
+$$;

@@ -301,6 +301,7 @@ create table if not exists
     popularity_score numeric,
     data jsonb not null,
     question_fts tsvector generated always as (to_tsvector('english'::regconfig, question)) stored,
+    description_fts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, add_creator_name_to_description(data))) STORED,
     fs_updated_time timestamp not null
   );
 
@@ -327,6 +328,10 @@ create index if not exists contracts_close_time on contracts (close_time desc);
 create index if not exists contracts_popularity_score on contracts (popularity_score desc);
 
 create index if not exists contracts_visibility on contracts (visibility);
+
+create index if not exists description_fts on contracts using gin (description_fts);
+-- for the ilike search
+create index concurrently if not exists contracts_question_trgm_idx on contracts using gin (question gin_trgm_ops);
 
 alter table contracts
 cluster on contracts_creator_id;
