@@ -111,6 +111,8 @@ export const PortfolioValueSection = memo(
             ? totalProfit > 0
               ? 'green'
               : 'red'
+            : graphMode === 'balance'
+            ? 'blue'
             : 'indigo'
         }
         profitElement={
@@ -138,7 +140,7 @@ export const PortfolioValueSection = memo(
           </div>
         }
         balanceElement={
-          <div className={clsx('text-primary-600 text-lg sm:text-xl')}>
+          <div className={clsx('text-lg text-blue-600 sm:text-xl')}>
             {graphMode === 'balance'
               ? graphDisplayNumber
                 ? graphDisplayNumber

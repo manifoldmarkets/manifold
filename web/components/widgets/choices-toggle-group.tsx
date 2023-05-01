@@ -9,6 +9,7 @@ const colorClasses = {
     'text-ink-500 hover:bg-ink-100 aria-checked:bg-primary-100 aria-checked:text-primary-900',
   green:
     'text-ink-500 hover:bg-ink-100 aria-checked:bg-teal-500/30 aria-checked:text-teal-600',
+  blue: 'text-ink-500 hover:bg-ink-100 aria-checked:bg-blue-500/30 aria-checked:text-blue-600',
   red: 'hover:bg-ink-100 aria-checked:bg-scarlet-100 aria-checked:text-scarlet-600',
 }
 
