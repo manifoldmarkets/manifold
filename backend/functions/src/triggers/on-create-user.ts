@@ -12,6 +12,9 @@ import {
   sendWelcomeEmail,
 } from 'shared/emails'
 import { secrets } from 'common/secrets'
+import { CURRENT_SEASON } from 'common/leagues'
+import { addUserToLeague } from 'shared/leagues'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const onCreateUser = functions
   .runWith({ secrets })
@@ -20,6 +23,9 @@ export const onCreateUser = functions
     const user = snapshot.data() as User
     const privateUser = await getPrivateUser(user.id)
     if (!privateUser) return
+
+    const pg = createSupabaseDirectClient()
+    await addUserToLeague(pg, user.id, CURRENT_SEASON, 1)
 
     await sendWelcomeEmail(user, privateUser)
 

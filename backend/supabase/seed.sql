@@ -104,6 +104,12 @@ create table if not exists
     contract_id text not null,
     data jsonb not null,
     fs_updated_time timestamp not null,
+    has_yes_shares boolean,
+    has_no_shares boolean,
+    total_shares_yes numeric,
+    total_shares_no numeric,
+    profit numeric,
+    has_shares boolean,
     primary key (user_id, contract_id)
   );
 
@@ -114,31 +120,6 @@ drop policy if exists "public read" on user_contract_metrics;
 create policy "public read" on user_contract_metrics for
 select
   using (true);
-
-create index if not exists user_contract_metrics_gin on user_contract_metrics using GIN (data);
-
-create index if not exists user_contract_metrics_recent_bets on user_contract_metrics (user_id, ((data -> 'lastBetTime')::bigint) desc);
-
-create index if not exists user_contract_metrics_contract_id on user_contract_metrics (contract_id);
-
-create index if not exists user_contract_metrics_weekly_profit on user_contract_metrics ((data -> 'from' -> 'week' -> 'profit'))
-where
-  (data -> 'from' -> 'week' -> 'profit') is not null;
-
-create index if not exists user_contract_metrics_user_id on user_contract_metrics (user_id);
-
-create index if not exists user_contract_metrics_has_no_shares on user_contract_metrics (contract_id)
-where
-  ((data) ->> 'hasNoShares') = 'true';
-
-create index if not exists user_contract_metrics_has_yes_shares on user_contract_metrics (contract_id)
-where
-  ((data) ->> 'hasYesShares') = 'true';
-
-create index if not exists user_contract_metrics_profit on user_contract_metrics (contract_id)
-where
-  ((data) ->> 'profit') is not null
-  and ((data) ->> 'profit')::float > 0;
 
 alter table user_contract_metrics
 cluster on user_contract_metrics_pkey;

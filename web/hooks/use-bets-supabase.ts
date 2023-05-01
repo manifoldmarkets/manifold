@@ -1,10 +1,9 @@
-import { Bet } from 'common/bet'
+import { Bet, BetFilter } from 'common/bet'
 import { useEffect, useState } from 'react'
-import { BetFilter } from 'web/lib/firebase/bets'
-import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { EMPTY_USER } from 'web/components/contract/contract-tabs'
+import { getBets, getTotalBetCount } from 'common/supabase/bets'
 
 function getFilteredQuery(filteredParam: string, filterId?: string) {
   if (filteredParam === 'contractId' && filterId) {
@@ -28,7 +27,7 @@ export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
     if (options?.userId === 'loading' || options?.userId === EMPTY_USER) {
       return
     }
-    getBets({
+    getBets(db, {
       ...options,
       order: 'desc',
     })
@@ -105,7 +104,7 @@ export function useBets(options?: BetFilter) {
   const [bets, setBets] = useState<Bet[]>([])
 
   useEffectCheckEquality(() => {
-    getBets(options).then((result) => setBets(result))
+    getBets(db, options).then((result) => setBets(result))
   }, [options])
 
   return bets
@@ -116,7 +115,7 @@ export function useBetCount(contractId: string) {
 
   useEffect(() => {
     if (contractId) {
-      getTotalBetCount(contractId).then((result) => setBetCount(result))
+      getTotalBetCount(contractId, db).then((result) => setBetCount(result))
     }
   }, [contractId])
 

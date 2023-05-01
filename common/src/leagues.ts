@@ -32,7 +32,10 @@ export const getDemotionAndPromotionCount = (division: number) => {
 export type league_row = PlainTablesAndViews['leagues']
 export type league_user_info = PlainTablesAndViews['user_league_info']
 
-export const LEAGUES_ENABLED = false
+
+export const COHORT_SIZE = 25
+export const MAX_COHORT_SIZE = 35
+
 export const rewardsData = [
   [500, 400, 300, 250, 200, 150, 100],
   [1000, 750, 600, 500, 450, 400, 350, 300],

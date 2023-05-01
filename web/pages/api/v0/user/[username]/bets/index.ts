@@ -2,8 +2,9 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { Bet } from 'web/lib/firebase/bets'
 import { getUserByUsername } from 'web/lib/firebase/users'
-import { getBets } from 'web/lib/supabase/bets'
 import { ApiError } from '../../../_types'
+import { getBets } from 'common/supabase/bets'
+import { db } from 'web/lib/supabase/db'
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,7 +20,7 @@ export default async function handler(
     return
   }
 
-  const bets = await getBets({
+  const bets = await getBets(db, {
     userId: user.id,
     filterAntes: true,
     filterRedemptions: true,

@@ -30,6 +30,7 @@ import { Countdown } from 'web/components/widgets/countdown'
 import { Modal } from 'web/components/layout/modal'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
+
 export async function getStaticProps() {
   const { data: rows } = await db
     .from('leagues')
@@ -79,7 +80,6 @@ export default function Leagues(props: { rows: league_row[] }) {
   const userCohort = userRow?.cohort
   useEffect(() => {
     if (userRow) {
-      console.log('hi')
       setDivision(userRow.division)
       setCohort(userRow.cohort)
     }
@@ -98,6 +98,7 @@ export default function Leagues(props: { rows: league_row[] }) {
             <Title className="!mb-0">Leagues</Title>
           </Row>
 
+
           <Row className="mb-4 items-center gap-3">
             <text className="">
               Compete for{' '}
@@ -109,6 +110,7 @@ export default function Leagues(props: { rows: league_row[] }) {
               </span>{' '}
               and promotion by earning the most mana by the end of the season!
             </text>
+
 
             <Modal
               open={prizesModalOpen}
@@ -186,6 +188,7 @@ export default function Leagues(props: { rows: league_row[] }) {
               <Row className="items-center gap-1.5">
                 <ClockIcon className="text-ink-1000 h-4 w-4" />{' '}
                 <Row className={' gap-1 text-sm'}>
+
                   <InfoTooltip
                     text={
                       'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'

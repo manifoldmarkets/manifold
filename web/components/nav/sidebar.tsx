@@ -10,6 +10,7 @@ import {
   SparklesIcon,
   StarIcon,
   UserGroupIcon,
+  ChartBarIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -126,8 +127,8 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         icon: NotificationsIcon,
       },
       {
-        name: 'Leaderboards',
-        href: '/leaderboards',
+        name: 'Leagues',
+        href: '/leagues',
         icon: TrophyIcon,
       },
       {
@@ -148,7 +149,8 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Markets', href: '/markets', icon: ScaleIcon },
-    { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
+    { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
 
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG

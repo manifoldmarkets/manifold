@@ -2,8 +2,7 @@ import { groupBy } from 'lodash'
 import { pgp, SupabaseDirectClient } from './supabase/init'
 import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES } from 'common/envs/constants'
-
-const COHORT_SIZE = 25
+import { COHORT_SIZE, MAX_COHORT_SIZE } from 'common/leagues'
 
 export async function assignCohorts(pg: SupabaseDirectClient) {
   const userDivisons = await pg.many<{ user_id: string; division: number }>(
@@ -58,7 +57,7 @@ export async function assignCohorts(pg: SupabaseDirectClient) {
   const userCohorts: {
     [userId: string]: { division: number; cohort: string }
   } = {}
-  const cohortNames: { [name: string]: boolean } = {}
+  const cohortSet = new Set<string>()
 
   for (const divisionStr in usersByDivision) {
     const divisionUsers = usersByDivision[divisionStr]
@@ -101,8 +100,8 @@ export async function assignCohorts(pg: SupabaseDirectClient) {
         )
       ).slice(0, cohortSize)
 
-      const cohort = genNewAdjectiveAnimal(cohortNames)
-      cohortNames[cohort] = true
+      const cohort = genNewAdjectiveAnimal(cohortSet)
+      cohortSet.add(cohort)
 
       for (const user of cohortOfUsers) {
         userCohorts[user.user_id] = { division, cohort }
@@ -144,4 +143,65 @@ export async function assignCohorts(pg: SupabaseDirectClient) {
 // Be careful with this one.
 export const deleteSeason = (pg: SupabaseDirectClient, season: number) => {
   return pg.none('delete from leagues where season = $1', [season])
+}
+
+const getSmallestCohort = async (
+  pg: SupabaseDirectClient,
+  season: number,
+  division: number
+) => {
+  return await pg.one<{ cohort: string; count: number }>(
+    `select cohort, count(user_id) as count from leagues
+    where season = $1
+      and division = $2
+    group by cohort
+    order by count(user_id) ASC
+    limit 1`,
+    [season, division]
+  )
+}
+
+const generateNewCohortName = async (
+  pg: SupabaseDirectClient,
+  season: number
+) => {
+  const cohortData = await pg.many<{ cohort: string }>(
+    `select distinct cohort from leagues where season = $1`,
+    [season]
+  )
+  const cohortSet = new Set(cohortData.map((d) => d.cohort))
+  return genNewAdjectiveAnimal(cohortSet)
+}
+
+export const addUserToLeague = async (
+  pg: SupabaseDirectClient,
+  userId: string,
+  season: number,
+  division: number
+) => {
+  const { cohort: smallestCohort, count } = await getSmallestCohort(
+    pg,
+    season,
+    division
+  )
+  const cohort =
+    count >= MAX_COHORT_SIZE
+      ? await generateNewCohortName(pg, season)
+      : smallestCohort
+
+  console.log(
+    'Inserting user',
+    userId,
+    'into division',
+    division,
+    'cohort',
+    cohort
+  )
+
+  await pg.none(
+    `insert into leagues (user_id, season, division, cohort)
+      values ($1, $2, $3, $4)`,
+    [userId, season, division, cohort]
+  )
+  return cohort
 }
