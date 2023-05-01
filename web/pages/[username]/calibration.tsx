@@ -26,7 +26,7 @@ export const getStaticProps = async (props: {
   const user = await getUserByUsername(username)
 
   const bets = user
-    ? await getUserBetsFromResolvedContracts(user.id, 25000)
+    ? await getUserBetsFromResolvedContracts(user.id, 10000)
     : []
   const { yesBuckets, noBuckets, yesBetsBuckets, noBetsBuckets } =
     getCalibrationPoints(bets)
