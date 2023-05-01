@@ -11,6 +11,7 @@ import {
   getDemotionAndPromotionCount,
   league_row,
   season,
+  rewardsData,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -25,8 +26,8 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Countdown } from 'web/components/widgets/countdown'
+import { Modal } from 'web/components/layout/modal'
 
 export async function getStaticProps() {
   const { data: rows } = await db
@@ -57,6 +58,10 @@ export default function Leagues(props: { rows: league_row[] }) {
   const [season, setSeason] = useState<season>(1)
   const [division, setDivision] = useState<number>(4)
   const [cohort, setCohort] = useState(divisionToCohorts[4][0])
+  const [prizesModalOpen, setPrizesModalOpen] = useState(false)
+  const togglePrizesModal = () => {
+    setPrizesModalOpen(!prizesModalOpen)
+  }
 
   const user = useUser()
   const onSetDivision = (division: number) => {
@@ -78,7 +83,8 @@ export default function Leagues(props: { rows: league_row[] }) {
     }
   }, [user])
 
-  const { demotion, promotion } = getDemotionAndPromotionCount(division)
+  const { demotion, promotion, doublePromotion } =
+    getDemotionAndPromotionCount(division)
 
   const MARKER = '●️'
 
@@ -88,28 +94,104 @@ export default function Leagues(props: { rows: league_row[] }) {
         <Col className="px-2 sm:px-0">
           <Row className="mb-4 justify-between">
             <Title className="!mb-0">Leagues</Title>
-
-            <Row className="items-center gap-3">
-              <Col className="items-center gap-1">
-                <Select
-                  className="!border-ink-200 !h-10"
-                  value={season}
-                  onChange={(e) => setSeason(+e.target.value as season)}
-                >
-                  {SEASONS.map((season) => (
-                    <option key={season} value={season}>
-                      Season {season}: May
-                    </option>
-                  ))}
-                </Select>
-                <Row className="items-center gap-1">
-                  <ClockIcon className="text-ink-1000 h-4 w-4" />{' '}
-                  <Countdown className="text-sm" endDate={SEASON_END} />
-                </Row>
-              </Col>
-            </Row>
           </Row>
 
+          <Row className="mb-4 items-center gap-3">
+            <text className="">
+              Compete for{' '}
+              <span
+                className="cursor-pointer border-b border-dotted border-blue-600 text-blue-600 hover:text-blue-800"
+                onClick={togglePrizesModal}
+              >
+                rewards
+              </span>{' '}
+              and promotion by earning the most mana through profits, quests,
+              and unique trader bonuses. Only markets traded during the season
+              will count!
+            </text>
+
+            <Modal
+              open={prizesModalOpen}
+              setOpen={togglePrizesModal}
+              size={'md'}
+            >
+              <div className="bg-canvas-0 text-ink-1000 rounded-lg p-3">
+                <Col className={'mb-2 items-center justify-center gap-2'}>
+                  <Title className={'!mb-1'}> Rewards</Title>
+                  <div className={'mx-4  justify-center '}>
+                    {' '}
+                    Win Mana at the end of the season based on your division and
+                    finishing rank.{' '}
+                  </div>
+                </Col>
+                <Col className="m-4 items-center justify-center">
+                  <table>
+                    {
+                      <table className="table-auto border-collapse border border-gray-300">
+                        <thead>
+                          <tr>
+                            <th className="border border-gray-300 px-4 py-2">
+                              Rank
+                            </th>
+                            <th className="border border-gray-300 px-4 py-2">
+                              Bronze
+                            </th>
+                            <th className="border border-gray-300 px-4 py-2">
+                              Silver
+                            </th>
+                            <th className="border border-gray-300 px-4 py-2">
+                              Gold
+                            </th>
+                            <th className="border border-gray-300 px-4 py-2">
+                              Platinum
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Array.from({ length: 10 }, (_, i) => (
+                            <tr key={i}>
+                              <td className="border border-gray-300 px-4 py-2 text-center font-black">
+                                {i + 1}
+                              </td>
+                              {rewardsData.map((columnData) => (
+                                <td className="border border-gray-300 px-4 py-2 text-center">
+                                  {columnData[i]}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    }
+                  </table>
+                </Col>
+              </div>
+            </Modal>
+          </Row>
+          <Row className="items-center gap-3">
+            <Col className="items-center gap-1">
+              <Select
+                className="!border-ink-200 !h-10"
+                value={season}
+                onChange={(e) => setSeason(+e.target.value as season)}
+              >
+                {SEASONS.map((season) => (
+                  <option key={season} value={season}>
+                    Season {season}: May
+                  </option>
+                ))}
+              </Select>
+            </Col>
+            <Col className="items-center gap-1">
+              <Row className="items-center gap-1.5">
+                <ClockIcon className="text-ink-1000 h-4 w-4" />{' '}
+                <Row className={' gap-1 text-sm'}>
+                  Ends in{' '}
+                  <Countdown className=" text-sm" endDate={SEASON_END} />
+                </Row>
+              </Row>
+            </Col>
+          </Row>
           <Row className="mt-2 gap-2">
             <Select
               className="!border-ink-200"
@@ -145,6 +227,7 @@ export default function Leagues(props: { rows: league_row[] }) {
             currUserId={user?.id}
             demotionCount={demotion}
             promotionCount={promotion}
+            doublePromotionCount={doublePromotion}
           />
         </Col>
       </Col>
@@ -158,14 +241,24 @@ const CohortTable = (props: {
   currUserId: string | undefined
   demotionCount: number
   promotionCount: number
+  doublePromotionCount: number
 }) => {
-  const { rows, currUserId, demotionCount, promotionCount } = props
+  const {
+    rows,
+    currUserId,
+    demotionCount,
+    promotionCount,
+    doublePromotionCount,
+  } = props
   const users = useUsers(rows.map((row) => row.user_id))
   if (!users || users.length !== rows.length) return <LoadingIndicator />
 
   const division = rows[0].division
   const nextDivision = division + 1
+  const nextNextDivision = division + 2
   const nextDivisionName = DIVISION_NAMES[nextDivision] ?? SECRET_NEXT_DIVISION
+  const nextNextDivisionName =
+    DIVISION_NAMES[nextNextDivision] ?? SECRET_NEXT_DIVISION
   const prevDivison = Math.max(division - 1, 1)
   const prevDivisionName = DIVISION_NAMES[prevDivison]
 
@@ -190,16 +283,24 @@ const CohortTable = (props: {
                   isUser={currUserId === user.id}
                 />
               )}
-
+              {doublePromotionCount > 0 && i + 1 === doublePromotionCount && (
+                <tr>
+                  <td colSpan={2}>
+                    <Col className="mb-2 w-full items-center gap-1">
+                      <div className="text-xs text-gray-600">
+                        ▲ Promotes to {nextNextDivisionName}
+                      </div>
+                      <div className="border-ink-300 w-full border-t-2 border-dashed" />
+                    </Col>
+                  </td>
+                </tr>
+              )}
               {promotionCount > 0 && i + 1 === promotionCount && (
                 <tr>
                   <td colSpan={2}>
-                    <Col className="mb-2 w-full items-center gap-2">
-                      <div>
-                        Promotion{' '}
-                        <InfoTooltip
-                          text={`Top ${promotionCount} users promote to ${nextDivisionName} next season`}
-                        />
+                    <Col className="mb-2 w-full items-center gap-1">
+                      <div className="text-xs text-gray-600">
+                        ▲ Promotes to {nextDivisionName}
                       </div>
                       <div className="border-ink-300 w-full border-t-2 border-dashed" />
                     </Col>
@@ -209,13 +310,10 @@ const CohortTable = (props: {
               {demotionCount > 0 && rows.length - (i + 1) === demotionCount && (
                 <tr>
                   <td colSpan={2}>
-                    <Col className="mt-2 w-full items-center gap-2">
+                    <Col className="mt-2 w-full items-center gap-1">
                       <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                      <div>
-                        Demotion{' '}
-                        <InfoTooltip
-                          text={`Bottom ${demotionCount} users demote to ${prevDivisionName} next season`}
-                        />
+                      <div className="text-xs text-gray-600">
+                        ▼ Demotes to {prevDivisionName}
                       </div>
                     </Col>
                   </td>

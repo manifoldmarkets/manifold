@@ -13,5 +13,5 @@ export function Countdown(props: { endDate: Date; className?: string }) {
     return () => clearInterval(intervalId)
   }, [endDate])
 
-  return <div className={clsx(className, 'font-mono')}>{countdown}</div>
+  return <div className={clsx(className)}>{countdown}</div>
 }

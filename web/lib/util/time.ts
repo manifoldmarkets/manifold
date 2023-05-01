@@ -43,10 +43,9 @@ export const getCountdownString = (endDate: Date) => {
   const hours = Math.floor(minutes / 60)
   const days = Math.floor(hours / 24)
 
-  const secondsStr = `${seconds % 60}`.padStart(2, '0')
-  const minutesStr = `${minutes % 60}`.padStart(2, '0')
-  const hoursStr = `${hours % 24}`.padStart(2, '0')
-  const daysStr = `${days}`.padStart(2, '0')
+  const hoursStr = `${hours % 24}h`
+  const minutesStr = `${minutes % 60}m`
+  const daysStr = `${days}d`
 
-  return `${daysStr}:${hoursStr}:${minutesStr}:${secondsStr}`
+  return `${daysStr} ${hoursStr} ${minutesStr}`
 }

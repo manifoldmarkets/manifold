@@ -18,9 +18,15 @@ export const SECRET_NEXT_DIVISION = 'Diamond'
 
 export const getDemotionAndPromotionCount = (division: number) => {
   if (division === 1) {
-    return { demotion: 0, promotion: 7 }
+    return { demotion: 0, promotion: 10, doublePromotion: 2 }
   }
-  return { demotion: 5, promotion: 5 }
+  if (division === 2) {
+    return { demotion: 5, promotion: 7, doublePromotion: 1 }
+  }
+  if (division === 3) {
+    return { demotion: 5, promotion: 6, doublePromotion: 0 }
+  }
+  return { demotion: 5, promotion: 5, doublePromotion: 0 }
 }
 
 export type league_row = PlainTablesAndViews['leagues']
@@ -30,3 +36,9 @@ export const COHORT_SIZE = 25
 export const MAX_COHORT_SIZE = 35
 
 export const LEAGUES_ENABLED = false
+export const rewardsData = [
+  [500, 400, 300, 250, 200, 150, 100],
+  [1000, 750, 600, 500, 450, 400, 350, 300],
+  [1500, 1000, 750, 600, 500, 450, 400, 350, 300],
+  [2000, 1500, 1000, 750, 600, 500, 450, 400, 350, 300],
+]
