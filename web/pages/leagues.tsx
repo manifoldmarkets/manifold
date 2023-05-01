@@ -11,6 +11,7 @@ import {
   getDemotionAndPromotionCount,
   league_row,
   season,
+  rewardsData,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -25,7 +26,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Countdown } from 'web/components/widgets/countdown'
 import { Modal } from 'web/components/layout/modal'
 
@@ -63,13 +63,6 @@ export default function Leagues(props: { rows: league_row[] }) {
     setPrizesModalOpen(!prizesModalOpen)
   }
 
-  const rewardsData = [
-    [500, 400, 300, 250, 200, 150, 100, , ,],
-    [1000, 750, 600, 500, 450, 400, 350, 300, ,],
-    [1500, 1000, 750, 600, 500, 450, 400, 350, 300],
-    [2000, 1500, 1000, 750, 600, 500, 450, 400, 350, 300],
-  ]
-
   const user = useUser()
   const onSetDivision = (division: number) => {
     setDivision(division)
@@ -102,33 +95,13 @@ export default function Leagues(props: { rows: league_row[] }) {
         <Col className="px-2 sm:px-0">
           <Row className="mb-4 justify-between">
             <Title className="!mb-0">Leagues</Title>
-
-            <Row className="items-center gap-3">
-              <Col className="items-center gap-1">
-                <Select
-                  className="!border-ink-200 !h-10"
-                  value={season}
-                  onChange={(e) => setSeason(+e.target.value as season)}
-                >
-                  {SEASONS.map((season) => (
-                    <option key={season} value={season}>
-                      Season {season}: May
-                    </option>
-                  ))}
-                </Select>
-                <Row className="items-center gap-1">
-                  <ClockIcon className="text-ink-1000 h-4 w-4" />{' '}
-                  <Countdown className="text-sm" endDate={SEASON_END} />
-                </Row>
-              </Col>
-            </Row>
           </Row>
 
           <Row className="mb-4 items-center gap-3">
             <text className="">
               Compete for{' '}
               <span
-                className="cursor-pointer border-b border-dotted border-blue-600 text-blue-600 hover:text-blue-800" // Add any styling you want for the clickable text
+                className="cursor-pointer border-b border-dotted border-blue-600 text-blue-600 hover:text-blue-800"
                 onClick={togglePrizesModal}
               >
                 rewards
@@ -196,7 +169,30 @@ export default function Leagues(props: { rows: league_row[] }) {
               </div>
             </Modal>
           </Row>
-
+          <Row className="items-center gap-3">
+            <Col className="items-center gap-1">
+              <Select
+                className="!border-ink-200 !h-10"
+                value={season}
+                onChange={(e) => setSeason(+e.target.value as season)}
+              >
+                {SEASONS.map((season) => (
+                  <option key={season} value={season}>
+                    Season {season}: May
+                  </option>
+                ))}
+              </Select>
+            </Col>
+            <Col className="items-center gap-1">
+              <Row className="items-center gap-1.5">
+                <ClockIcon className="text-ink-1000 h-4 w-4" />{' '}
+                <Row className={' gap-1 text-sm'}>
+                  Ends in{' '}
+                  <Countdown className=" text-sm" endDate={SEASON_END} />
+                </Row>
+              </Row>
+            </Col>
+          </Row>
           <Row className="mt-2 gap-2">
             <Select
               className="!border-ink-200"
@@ -264,7 +260,6 @@ const CohortTable = (props: {
   const nextDivisionName = DIVISION_NAMES[nextDivision] ?? SECRET_NEXT_DIVISION
   const nextNextDivisionName =
     DIVISION_NAMES[nextNextDivision] ?? SECRET_NEXT_DIVISION
-  DIVISION_NAMES[nextDivision] ?? SECRET_NEXT_DIVISION
   const prevDivison = Math.max(division - 1, 1)
   const prevDivisionName = DIVISION_NAMES[prevDivison]
 
@@ -292,7 +287,10 @@ const CohortTable = (props: {
               {doublePromotionCount > 0 && i + 1 === doublePromotionCount && (
                 <tr>
                   <td colSpan={2}>
-                    <Col className="mb-2 w-full items-center gap-2">
+                    <Col className="mb-2 w-full items-center gap-1">
+                      <div className="text-xs text-gray-600">
+                        ▲ Promotes to {nextNextDivisionName}
+                      </div>
                       <div className="border-ink-300 w-full border-t-2 border-dashed" />
                     </Col>
                   </td>
@@ -303,15 +301,7 @@ const CohortTable = (props: {
                   <td colSpan={2}>
                     <Col className="mb-2 w-full items-center gap-1">
                       <div className="text-xs text-gray-600">
-                        <InfoTooltip
-                          text={
-                            doublePromotionCount === 0
-                              ? `Top ${promotionCount} promote to ${nextDivisionName}.`
-                              : `Top ${promotionCount} promote to ${nextDivisionName}. Top ${doublePromotionCount} promote to ${nextNextDivisionName}`
-                          }
-                        >
-                          Promotion
-                        </InfoTooltip>
+                        ▲ Promotes to {nextDivisionName}
                       </div>
                       <div className="border-ink-300 w-full border-t-2 border-dashed" />
                     </Col>
@@ -324,11 +314,7 @@ const CohortTable = (props: {
                     <Col className="mt-2 w-full items-center gap-1">
                       <div className="border-ink-300 w-full border-t-2 border-dashed" />
                       <div className="text-xs text-gray-600">
-                        <InfoTooltip
-                          text={`Bottom ${demotionCount} users demote to ${prevDivisionName} next season`}
-                        >
-                          Demotion
-                        </InfoTooltip>
+                        ▼ Demotes to {prevDivisionName}
                       </div>
                     </Col>
                   </td>
