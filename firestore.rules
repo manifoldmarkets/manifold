@@ -19,10 +19,6 @@ service cloud.firestore {
       ]
     }
 
-    function isGroupMember(groupId) {
-      return exists(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid));
-    }
-
      match /apr1-auction/{bid} {
       allow read;
     }
@@ -223,10 +219,12 @@ service cloud.firestore {
       allow read;
     }
 
+    function isGroupMember(groupId) {
+      return exists(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid));
+    }
+
     match /groups/{groupId} {
-      allow read: if isAdmin()
-      allow read: if resource.data.privacyStatus!='private';
-      allow read: if resource.data.privacyStatus=='private' && isGroupMember(groupId);
+      allow read;
       allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                         && request.resource.data.diff(resource.data)
                         .affectedKeys()
@@ -239,7 +237,7 @@ service cloud.firestore {
         request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || 
         isAdmin() || 
         (
-        isGroupMember() && 
+        isGroupMember(groupId) && 
         (
         get(/databases/$(database)/documents/contracts/$(contractId)).data.creatorId == request.auth.uid || 
         ['admin','contributor'].includes(get(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid)).data.role)
@@ -255,14 +253,9 @@ service cloud.firestore {
         allow delete: if request.auth.uid == resource.data.userId;
       }
 
-
-      function isGroupMember() {
-        return exists(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid));
-      }
-
       match /comments/{commentId} {
         allow read;
-        allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isGroupMember();
+        allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isGroupMember(groupId);
       }
     }
 

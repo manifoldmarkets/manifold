@@ -6,30 +6,12 @@ import { getContractFollows } from 'web/lib/supabase/follows'
 export function useRealtimeContractFollows(contractId: string | undefined) {
   const [follows, setFollows] = useState<string[] | undefined | null>(undefined)
 
-  // useEffect(() => {
-  //   if (contractId) {
-  //     getContractFollows(contractId)
-  //       .then((result) =>
-  //         setFollows((follows) => {
-  //           if (follows) {
-  //             return [...follows, ...result]
-  //           } else {
-  //             return result
-  //           }
-  //         })
-  //       )
-  //       .catch((e) => console.log(e))
-  //   }
-  // }, [])
-
   useEffect(() => {
     let channel: RealtimeChannel
-    console.log(contractId, follows)
     if (contractId) {
       getContractFollows(contractId)
         .then((result) => setFollows(result))
         .catch((e) => console.log(e))
-      console.log('HIII')
       channel = db.channel(`realtime-contract-follows-${contractId}`)
       channel.on(
         'postgres_changes',
@@ -76,6 +58,6 @@ export function useRealtimeContractFollows(contractId: string | undefined) {
         db.removeChannel(channel)
       }
     }
-  }, [db])
+  }, [db, contractId])
   return follows
 }

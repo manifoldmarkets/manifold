@@ -1,3 +1,8 @@
+import { getDisplayProbability } from 'common/calculate'
+import { getLiquidity } from 'common/calculate-cpmm-multi'
+import { BinaryContract, Contract, contractPath } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { formatMoney, formatPercent } from 'common/util/format'
 import {
   collection,
   deleteDoc,
@@ -6,20 +11,13 @@ import {
   getDocs,
   limit,
   orderBy,
-  Query,
   query,
   setDoc,
   startAfter,
   updateDoc,
-  where,
 } from 'firebase/firestore'
 import { sum } from 'lodash'
-import { coll, getValues, listenForValue, listenForValues } from './utils'
-import { BinaryContract, Contract, contractPath } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { getLiquidity } from 'common/calculate-cpmm-multi'
-import { getDisplayProbability } from 'common/calculate'
+import { coll } from './utils'
 
 export const contracts = coll<Contract>('contracts')
 
@@ -95,17 +93,4 @@ export async function followContract(contractId: string, userId: string) {
 export async function unFollowContract(contractId: string, userId: string) {
   const followDoc = doc(collection(contracts, contractId, 'follows'), userId)
   await deleteDoc(followDoc)
-}
-
-export const trendingContractsQuery = query(
-  contracts,
-  where('isResolved', '==', false),
-  where('visibility', '==', 'public'),
-  orderBy('popularityScore', 'desc')
-)
-
-export async function getTrendingContracts(maxContracts = 10) {
-  return await getValues<Contract>(
-    query(trendingContractsQuery, limit(maxContracts))
-  )
 }
