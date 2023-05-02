@@ -38,7 +38,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
       <>
         <Button
           size="2xs"
-          color="indigo"
+          color="indigo-outline"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()

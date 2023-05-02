@@ -46,7 +46,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'indigo' &&
       'disabled:bg-ink-300 bg-primary-500 text-white hover:bg-primary-600',
     color === 'indigo-outline' &&
-      'border-2 border-primary-500 disabled:border-ink-300 disabled:text-ink-300 text-primary-500 hover:bg-primary-500 hover:text-ink-0 disabled:focus:bg-inherit disabled:hover:bg-inherit',
+      'border border-primary-500 disabled:border-ink-300 disabled:text-ink-300 text-primary-500 hover:bg-primary-500 hover:text-ink-0 disabled:focus:bg-inherit disabled:hover:bg-inherit',
     color === 'gray' &&
       'bg-ink-200 text-ink-600 enabled:hover:bg-ink-300 enabled:hover:text-ink-700 disabled:opacity-50',
     color === 'dark-gray' &&

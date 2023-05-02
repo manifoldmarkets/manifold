@@ -1,4 +1,4 @@
-import { memo, ReactNode } from 'react'
+import { memo, ReactNode, useState } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -37,6 +37,9 @@ import { BetRow } from '../bet/bet-row'
 import { fromNow } from 'web/lib/util/time'
 import Router from 'next/router'
 import { STONK_NO, STONK_YES } from 'common/stonk'
+import toast from 'react-hot-toast'
+import { redeemBoost } from 'web/lib/firebase/api'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -382,9 +385,10 @@ export function FeaturedPill(props: { label?: string }) {
 
 export function ContractCardNew(props: {
   contract: Contract
+  promotedData?: { adId: string; reward: number }
   className?: string
 }) {
-  const { className } = props
+  const { className, promotedData } = props
   const user = useUser()
 
   const contract = useContract(props.contract.id) ?? props.contract
@@ -452,7 +456,7 @@ export function ContractCardNew(props: {
             />
           </Row>
           <div className="flex-1" />
-          <ReasonChosen contract={contract} />
+          {promotedData ? <BoostPill /> : <ReasonChosen contract={contract} />}
         </Row>
 
         {/* Title is link to contract for open in new tab and a11y */}
@@ -506,11 +510,19 @@ export function ContractCardNew(props: {
         {isBinaryCpmm && metrics && metrics.hasShares && (
           <YourMetricsFooter metrics={metrics} />
         )}
+
+        {!showImage && promotedData && (
+          <div className="flex justify-center">
+            <ClaimButton {...promotedData} />
+          </div>
+        )}
       </Col>
 
       {showImage && (
         <>
-          <div className="h-40" />
+          <div className="flex h-40 w-full items-center justify-center">
+            {promotedData && <ClaimButton {...promotedData} className="mt-2" />}
+          </div>
           <div className="absolute inset-0 -z-10 transition-all group-hover:saturate-150">
             <Image
               fill
@@ -525,6 +537,12 @@ export function ContractCardNew(props: {
     </div>
   )
 }
+
+const BoostPill = () => (
+  <Tooltip text={"They're paying you to see this"}>
+    <FeaturedPill label="Boosted" />
+  </Tooltip>
+)
 
 function ReasonChosen(props: { contract: Contract }) {
   const { contract } = props
@@ -593,5 +611,53 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
         </div>
       </Row>
     </Row>
+  )
+}
+
+function ClaimButton(props: {
+  adId: string
+  reward: number
+  className?: string
+}) {
+  const { adId, reward, className } = props
+
+  const [claimed, setClaimed] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  return (
+    <button
+      className={clsx(
+        'border-ink-1000 rounded-full border bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-2 px-3 text-gray-900 transition-colors',
+        'hover:via-yellow-100 focus:via-yellow-100',
+        'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
+        className
+      )}
+      disabled={loading || claimed}
+      onClick={async (e) => {
+        e.stopPropagation()
+        setLoading(true)
+        try {
+          await redeemBoost({ adId })
+          toast.success(`+${formatMoney(reward)}`)
+          setClaimed(true)
+          track('claim boost', { adId })
+        } catch (err) {
+          toast.error(
+            (err as any).message ??
+              (typeof err === 'string' ? err : 'Error claiming boost')
+          )
+        } finally {
+          setLoading(false)
+        }
+      }}
+    >
+      {claimed ? (
+        'Claimed!'
+      ) : loading ? (
+        <LoadingIndicator />
+      ) : (
+        `Claim ${formatMoney(reward)}`
+      )}
+    </button>
   )
 }

@@ -1,7 +1,10 @@
 import clsx from 'clsx'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMContract } from 'common/contract'
-import { ContractMetric } from 'common/contract-metric'
+import {
+  ContractMetric,
+  ContractMetricsByOutcome,
+} from 'common/contract-metric'
 import {
   ShareholderStats,
   getContractMetricsForContractId,
@@ -31,7 +34,6 @@ import { useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import {
-  ContractMetricsByOutcome,
   getTotalContractMetricsCount,
   getContractMetricsYesCount,
   getContractMetricsNoCount,

@@ -9,8 +9,20 @@ import { useEvent } from './use-event'
 import { db } from 'web/lib/supabase/db'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { CUSTOM_TOPIC_KEY } from 'web/components/topic-selector'
+import { getBoosts } from 'web/lib/supabase/ads'
 
 const PAGE_SIZE = 20
+
+// supabase type generator adds an extra array in the return type of getBoosts, so we define our own type instead
+export type BoostsType =
+  | {
+      ad_id: string
+      market_id: string
+      ad_funds: number
+      ad_cost_per_view: number
+      market_data: Contract
+    }[]
+  | null
 
 export const useFeed = (
   user: User | null | undefined,
@@ -21,6 +33,12 @@ export const useFeed = (
   }
 ) => {
   const { topic } = options ?? {}
+
+  const [boosts, setBoosts] = useState<BoostsType>()
+  useEffect(() => {
+    if (user) getBoosts(user.id).then(setBoosts as any)
+  }, [user?.id])
+
   const [savedContracts, setSavedContracts] = usePersistentInMemoryState<
     Contract[] | undefined
   >(undefined, `recommended-contracts-${user?.id}-${key}`)
@@ -50,21 +68,20 @@ export const useFeed = (
     if (userId) {
       requestIdRef.current++
       const requestId = requestIdRef.current
-      const promise =
-        topic === CUSTOM_TOPIC_KEY
-          ? getCustomEmbeddingsPromise(userId)
-          : topic
-          ? db.rpc('get_recommended_contracts_embeddings_topic', {
-              uid: userId,
-              p_topic: topic,
-              n: PAGE_SIZE,
-              excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
-            })
-          : db.rpc('get_recommended_contracts_embeddings', {
-              uid: userId,
-              n: PAGE_SIZE,
-              excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
-            })
+      const promise = topic?.includes(CUSTOM_TOPIC_KEY)
+        ? getCustomEmbeddingsPromise(userId)
+        : topic
+        ? db.rpc('get_recommended_contracts_embeddings_topic', {
+            uid: userId,
+            p_topic: topic,
+            n: PAGE_SIZE,
+            excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
+          })
+        : db.rpc('get_recommended_contracts_embeddings', {
+            uid: userId,
+            n: PAGE_SIZE,
+            excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
+          })
 
       promise.then((res) => {
         if (requestIdRef.current !== requestId) return
@@ -109,6 +126,7 @@ export const useFeed = (
 
   return {
     contracts: filteredContracts,
+    boosts,
     loadMore,
   }
 }

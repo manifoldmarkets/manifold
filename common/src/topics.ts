@@ -42,7 +42,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '💵 Finance',
     '💰 Economics',
     '🚀 Startups',
-    '🚘 Elon musk',
+    '🚘 Elon Musk',
   ],
 
   '🪂 Lifestyle': [
@@ -79,6 +79,13 @@ export const cleanTopic = (topic: string) =>
     // eslint-disable-next-line no-control-regex
     .replace(/[^\x00-\x7F]/g, '')
     .trim()
+
+export const getEmojiFromTopic = (topic: string) => {
+  const textWithEmoji = Object.values(TOPICS_TO_SUBTOPICS)
+    .flat()
+    .find((t) => t.includes(topic))
+  return textWithEmoji ? textWithEmoji.split(' ')[0] : ''
+}
 
 export const getSubtopics = (topic: string) =>
   TOPICS_TO_SUBTOPICS[topic].map(

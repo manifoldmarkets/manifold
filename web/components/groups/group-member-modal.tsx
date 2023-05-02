@@ -18,6 +18,9 @@ import { Avatar } from '../widgets/avatar'
 import { Input } from '../widgets/input'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from '../widgets/user-link'
+import { UncontrolledTabs } from '../layout/tabs'
+import { AddMemberContent } from './add-member-modal'
+import { Spacer } from '../layout/spacer'
 
 const SEARCH_MEMBER_QUERY_SIZE = 15
 
@@ -25,11 +28,65 @@ export function GroupMemberModalContent(props: {
   group: Group
   canEdit: boolean
   numMembers: number | undefined
+  defaultIndex?: number
 }) {
-  const { group, canEdit, numMembers } = props
-  const [query, setQuery] = useState('')
+  const { group, canEdit, numMembers, defaultIndex } = props
+  const [query, setQuery] = useState<string>('')
   return (
     <Col className={clsx(MODAL_CLASS, 'h-[85vh]')}>
+      {canEdit && (
+        <UncontrolledTabs
+          defaultIndex={defaultIndex ?? 0}
+          tabs={[
+            {
+              title: 'Members',
+              content: (
+                <MemberTab
+                  query={query}
+                  setQuery={setQuery}
+                  group={group}
+                  canEdit={canEdit}
+                  numMembers={numMembers}
+                />
+              ),
+            },
+            {
+              title: 'Invite',
+              content: (
+                <AddMemberContent
+                  query={query}
+                  setQuery={setQuery}
+                  group={group}
+                />
+              ),
+            },
+          ]}
+          className="w-full"
+        />
+      )}
+      {!canEdit && (
+        <MemberTab
+          query={query}
+          setQuery={setQuery}
+          group={group}
+          canEdit={canEdit}
+          numMembers={numMembers}
+        />
+      )}
+    </Col>
+  )
+}
+
+export function MemberTab(props: {
+  query: string
+  setQuery: (query: string) => void
+  group: Group
+  canEdit: boolean
+  numMembers: number | undefined
+}) {
+  const { query, setQuery, group, canEdit, numMembers } = props
+  return (
+    <>
       <Input
         autoFocus
         value={query}
@@ -52,7 +109,7 @@ export function GroupMemberModalContent(props: {
           numMembers={numMembers}
         />
       </div>
-    </Col>
+    </>
   )
 }
 
@@ -79,7 +136,8 @@ export function SearchGroupMemberModalContent(props: {
       })
       .finally(() => setLoading(false))
   }, [query])
-  if (searchMemberResult.length == 0 && !loading) {
+  const length = searchMemberResult.length
+  if (length == 0 && !loading) {
     return <div>No results...</div>
   }
   return (
@@ -90,13 +148,16 @@ export function SearchGroupMemberModalContent(props: {
         loading ? 'animate-pulse' : ''
       )}
     >
-      {searchMemberResult.map((member) => (
-        <Member
-          key={member.member_id}
-          group={group}
-          member={member}
-          canEdit={canEdit}
-        />
+      {searchMemberResult.map((member, index) => (
+        <>
+          <Member
+            key={member.member_id}
+            group={group}
+            member={member}
+            canEdit={canEdit}
+          />
+          {length - 1 === index && <Spacer h={24} />}
+        </>
       ))}
     </div>
   )
@@ -197,6 +258,7 @@ export function MemberRoleSection(props: {
   canEdit: boolean
 }) {
   const { group, members, role, canEdit } = props
+  const length = members?.length
   return (
     <Col className="w-full gap-3">
       <MemberRoleHeader
@@ -207,19 +269,22 @@ export function MemberRoleSection(props: {
             : roleDescription[role]
         }
       />
-      {members === undefined ? (
+      {members === undefined || length === undefined ? (
         <LoadingIndicator />
-      ) : members.length === 0 ? (
+      ) : length === 0 ? (
         <div className="text-ink-400">{`No ${role}s yet...`}</div>
       ) : (
-        members.map((member) => {
+        members.map((member, index) => {
           return (
-            <Member
-              key={member.member_id}
-              group={group}
-              member={member}
-              canEdit={canEdit}
-            />
+            <>
+              <Member
+                key={member.member_id}
+                group={group}
+                member={member}
+                canEdit={canEdit}
+              />
+              {role === 'member' && length - 1 === index && <Spacer h={24} />}
+            </>
           )
         })
       )}
@@ -254,7 +319,7 @@ export function Member(props: {
   const tag = member.role ? (
     <div
       className={clsx(
-        'font-regular text-ink-0 rounded px-2 py-1 text-xs',
+        'font-regular text-ink-0 w-full rounded px-2 py-1 text-xs',
         isCreator
           ? 'bg-primary-400'
           : member.role === 'admin'

@@ -260,16 +260,30 @@ create or replace view
       visibility = 'public'
   );
 
-
-create view liked_sorted_comments as
-SELECT
+create view
+  liked_sorted_comments as
+select
   cc.contract_id,
   cc.comment_id,
-  cc.data->>'userId' AS user_id,
+  cc.data ->> 'userId' as user_id,
   cc.data
-FROM
+from
   contract_comments cc
-WHERE
-    (cc.data->'likes')::numeric >= 1
-ORDER BY
-  (cc.data->>'createdTime')::bigint DESC;
+where
+  (cc.data -> 'likes')::numeric >= 1
+order by
+  (cc.data ->> 'createdTime')::bigint desc;
+
+create or replace view
+  user_league_info as (
+    select
+      *,
+      rank() over (
+        partition by
+          cohort
+        order by
+          mana_earned desc
+      ) as rank
+    from
+      leagues
+  );

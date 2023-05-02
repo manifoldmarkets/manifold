@@ -10,15 +10,15 @@ import { Button } from 'web/components/buttons/button'
 import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { db } from 'web/lib/supabase/db'
 import { updateUserEmbedding } from 'web/lib/firebase/api'
-import { filterDefined } from 'common/util/array'
-const BLANK_TOPIC = ''
+import { getUserInterestTopics } from 'web/lib/supabase/user'
+
 export function TopicSelectorDialog(props: {
   setOpen?: (open: boolean) => void
   open?: boolean
+  onFinishSelectingTopics?: (topics: string[]) => void
 }) {
-  const { setOpen, open } = props
+  const { setOpen, open, onFinishSelectingTopics } = props
   const user = useUser()
-
   const [userSelectedTopics, setUserSelectedTopics] = useState<
     string[] | undefined
   >()
@@ -46,25 +46,18 @@ export function TopicSelectorDialog(props: {
   }, [userSelectedTopics])
 
   useEffect(() => {
-    if (user && userSelectedTopics === undefined && open) {
-      db.from('user_topics')
-        .select('topics')
-        .eq('user_id', user.id)
-        .limit(1)
-        .then(({ data }) => {
-          setUserSelectedTopics(
-            filterDefined(
-              data?.[0]?.topics?.map((t: string) =>
-                t === BLANK_TOPIC ? undefined : t
-              ) ?? []
-            )
-          )
-        })
-    }
+    if (!user || userSelectedTopics !== undefined || !open) return
+    getUserInterestTopics(user.id).then((topics) => {
+      setUserSelectedTopics(topics)
+    })
   }, [user, userSelectedTopics, open])
 
-  const recomputeEmbeddingsAndReload = () => {
-    if (user) {
+  const closeDialog = () => {
+    if (setOpen) {
+      user ? updateUserEmbedding({ userId: user.id }) : noop
+      onFinishSelectingTopics?.(userSelectedTopics ?? [])
+      setOpen(false)
+    } else if (user) {
       setIsLoading(true)
       updateUserEmbedding({ userId: user.id }).then(() => {
         // Reload to recompute feed!
@@ -75,8 +68,8 @@ export function TopicSelectorDialog(props: {
 
   return (
     <Modal
-      open={open !== undefined ? open : false}
-      setOpen={setOpen ? setOpen : noop}
+      open={open !== undefined ? open : true}
+      setOpen={setOpen ? closeDialog : noop}
       className="bg-canvas-0 overflow-hidden rounded-md"
     >
       <Col className="h-[32rem] overflow-y-auto">
@@ -124,15 +117,7 @@ export function TopicSelectorDialog(props: {
 
         <div className="from-canvas-0 pointer-events-none sticky bottom-0 bg-gradient-to-t to-transparent text-right">
           <span className="pointer-events-auto ml-auto inline-flex p-6 pt-2">
-            <Button
-              onClick={() => {
-                if (setOpen) {
-                  user ? updateUserEmbedding({ userId: user.id }) : noop
-                  setOpen(false)
-                } else recomputeEmbeddingsAndReload()
-              }}
-              loading={isLoading}
-            >
+            <Button onClick={closeDialog} loading={isLoading}>
               Done
             </Button>
           </span>

@@ -90,6 +90,7 @@ export const BOT_USERNAMES = [
   'veat',
   'ms_test',
   'arb',
+  'Turbot',
 ]
 
 export const CORE_USERNAMES = [
@@ -117,7 +118,6 @@ export const CHECK_USERNAMES = [
   'NathanpmYoung',
   'itsTomekK',
   'SneakySly',
-  'IsaacKing',
   'MattP',
   'egroj',
   'dreev',
@@ -144,6 +144,7 @@ export const CHECK_USERNAMES = [
   'KatjaGrace',
   'AndrewG',
   'AmmonLam',
+  'MarcusAbramovitch',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'

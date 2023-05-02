@@ -49,6 +49,8 @@ import { CommentView } from 'common/events'
 import { Tooltip } from '../widgets/tooltip'
 
 export type ReplyToUserInfo = { id: string; username: string }
+export const isReplyToBet = (comment: ContractComment) =>
+  comment.bettorUsername !== undefined
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -145,10 +147,10 @@ export const FeedComment = memo(function FeedComment(props: {
     onReplyClick,
     children,
   } = props
-  const { userUsername, userAvatarUrl, bettorUsername } = comment
+  const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
-  const commentOnAnotherBettorsBet = bettorUsername !== undefined
+
   useEffect(() => {
     if (highlighted && ref.current) {
       scrollIntoViewCentered(ref.current)
@@ -161,7 +163,7 @@ export const FeedComment = memo(function FeedComment(props: {
       className={clsx(
         className ? className : 'ml-9 gap-2',
         highlighted ? 'bg-primary-50' : '',
-        commentOnAnotherBettorsBet ? 'mt-6 sm:mt-2' : ''
+        isReplyToBet(comment) ? 'mt-6 sm:mt-2' : ''
       )}
     >
       <Avatar
@@ -171,7 +173,7 @@ export const FeedComment = memo(function FeedComment(props: {
         className={clsx(marketCreator ? 'shadow shadow-amber-300' : '', 'z-10')}
       />
       <Col className="w-full">
-        {commentOnAnotherBettorsBet && (
+        {isReplyToBet(comment) && (
           <FeedCommentReplyHeader comment={comment} contract={contract} />
         )}
         <FeedCommentHeader comment={comment} contract={contract} />
@@ -470,7 +472,7 @@ function FeedCommentHeader(props: {
   const marketCreator = contract.creatorId === userId
   if (bettorUsername !== undefined) {
     return (
-      <span className="text-ink-600 mt-0.5 text-sm">
+      <Row className="text-ink-600 mt-0.5 flex-wrap items-end text-sm">
         <UserLink
           username={userUsername}
           name={userName}
@@ -483,14 +485,14 @@ function FeedCommentHeader(props: {
           elementId={comment.id}
         />
         <DotMenu comment={comment} contract={contract} />
-      </span>
+      </Row>
     )
   }
 
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
-    <span className="text-ink-600 mt-0.5 align-middle text-sm">
+    <Row className="text-ink-600 mt-0.5 flex-wrap items-end text-sm">
       <UserLink
         username={userUsername}
         name={userName}
@@ -518,7 +520,7 @@ function FeedCommentHeader(props: {
         elementId={comment.id}
       />
       <DotMenu comment={comment} contract={contract} />
-    </span>
+    </Row>
   )
 }
 

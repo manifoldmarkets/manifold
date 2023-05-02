@@ -13,7 +13,6 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { TopicSelectorDialog } from './topic-selector-dialog'
-import { useABTest } from 'web/hooks/use-ab-test'
 import clsx from 'clsx'
 
 export default function Welcome() {
@@ -22,10 +21,7 @@ export default function Welcome() {
 
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(0)
-  const variant = useABTest('promote charity', {
-    charity: 'charity',
-    blank: 'blank',
-  } as const)
+
   const [showSignedOutUser, setShowSignedOutUser] = useState(false)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
 
@@ -35,7 +31,6 @@ export default function Welcome() {
     <WhatIsManifoldPage />,
     <PredictionMarketPage />,
     user && <ThankYouPage />,
-    variant === 'charity' && <CharityPage className={'text-center '} />,
   ])
 
   const isLastPage = page === availablePages.length - 1
@@ -98,7 +93,7 @@ export default function Welcome() {
               Previous
             </Button>
             <Button onClick={increasePage}>
-              {isLastPage ? 'Done' : 'Next'}
+              {isLastPage ? `Claim ${formatMoney(STARTING_BALANCE)}` : 'Next'}
             </Button>
           </Row>
         </Col>

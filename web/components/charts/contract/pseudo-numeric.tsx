@@ -15,13 +15,10 @@ import {
   getRightmostVisibleDate,
   formatDateInRange,
 } from '../helpers'
-import {
-  HistoryPoint,
-  ControllableSingleValueHistoryChart,
-  viewScale,
-} from '../generic-charts'
+import { ControllableSingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
+import { HistoryPoint, viewScale } from 'common/chart'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right

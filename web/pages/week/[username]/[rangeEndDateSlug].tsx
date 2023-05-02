@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { HistoryPoint } from 'common/chart'
 import { CPMMBinaryContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
@@ -14,10 +15,7 @@ import { query, where } from 'firebase/firestore'
 import { chunk, orderBy, sortBy, sum } from 'lodash'
 import React, { useMemo } from 'react'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
-import {
-  HistoryPoint,
-  useSingleValueHistoryChartViewScale,
-} from 'web/components/charts/generic-charts'
+import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { ProfitChangeTable } from 'web/components/daily-profit'
 import { Col } from 'web/components/layout/col'
