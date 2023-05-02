@@ -97,7 +97,7 @@ or replace function get_recommended_contracts_embeddings_from (
     from user_events
     where user_id = uid
       and name = 'view market card'
-      and ts > now() - interval '2 days'
+      and ts > now() - interval '7 days'
   ),
   available_contracts_unscored as (
     select ce.contract_id,
