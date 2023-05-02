@@ -23,7 +23,7 @@ export async function getUserBetContracts(
     })
   )
   if (data && data.length > 0) {
-    return data.map((d) => d.data as Contract)
+    return data.map((d) => (d as any).data as Contract)
   } else {
     return []
   }
