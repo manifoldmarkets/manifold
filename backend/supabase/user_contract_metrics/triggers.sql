@@ -1,3 +1,11 @@
+alter table user_contract_metrics
+add column has_yes_shares boolean,
+add column has_no_shares boolean,
+add column total_shares_yes numeric,
+add column total_shares_no numeric,
+add column profit numeric,
+add column has_shares boolean;
+
 create
 or replace function user_contract_metric_populate_cols () returns trigger language plpgsql as $$ begin 
     if new.data is not null then 

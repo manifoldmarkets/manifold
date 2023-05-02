@@ -44,7 +44,7 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
-import { useContract } from 'web/hooks/use-contracts'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
@@ -144,7 +144,7 @@ export function ContractPageContent(props: {
     shareholderStats,
   } = contractParams
   const contract =
-    useContract(contractParams.contract?.id) ?? contractParams.contract
+    useRealtimeContract(contractParams.contract?.id) ?? contractParams.contract
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()

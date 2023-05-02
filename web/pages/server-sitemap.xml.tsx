@@ -2,9 +2,15 @@ import { GetServerSideProps } from 'next'
 import { getServerSideSitemap, ISitemapField } from 'next-sitemap'
 
 import { listAllContracts } from 'web/lib/firebase/contracts'
+import { searchContract } from 'web/lib/supabase/contracts'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const contracts = await listAllContracts(5000, undefined, 'popularityScore')
+  const contracts = await searchContract({
+    query: '',
+    filter: 'all',
+    sort: 'newest',
+    limit: 5000,
+  }).then((x) => x.data)
 
   const score = (popularity: number) => Math.tanh(Math.log10(popularity + 1))
 

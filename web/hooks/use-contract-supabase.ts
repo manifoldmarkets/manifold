@@ -1,7 +1,9 @@
 import { AnyContractType, Contract } from 'common/contract'
 import { useEffect, useRef, useState } from 'react'
 import {
+  getContract,
   getContractFromSlug,
+  getContracts,
   getPublicContractIds,
   getPublicContracts,
 } from 'web/lib/supabase/contracts'
@@ -10,6 +12,51 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
+import { RealtimeChannel } from '@supabase/realtime-js'
+
+export function useRealtimeContract(contractId: string | undefined) {
+  const [contract, setContract] = useState<Contract | undefined | null>(
+    undefined
+  )
+
+  useEffect(() => {
+    if (contractId) {
+      getContract(contractId)
+        .then((result) => setContract(result))
+        .catch((e) => console.log(e))
+    }
+    console.log(contract)
+  }, [])
+
+  useEffect(() => {
+    let channel: RealtimeChannel
+    if (contractId && contract) {
+      channel = db.channel(`realtime-contract-${contractId}`)
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contracts',
+          filter: 'id=eq.' + contractId,
+        },
+        (payload) => {
+          if (payload) {
+            setContract(payload.new as Contract)
+          }
+        }
+      )
+      channel.subscribe(async (status) => {})
+    }
+    return () => {
+      if (channel) {
+        db.removeChannel(channel)
+      }
+    }
+  }, [db])
+
+  return contract
+}
 
 export const usePublicContracts = (contractIds: string[]) => {
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -17,6 +64,20 @@ export const usePublicContracts = (contractIds: string[]) => {
   useEffectCheckEquality(() => {
     if (contractIds) {
       getPublicContractIds(contractIds).then((result) => {
+        setContracts(result)
+      })
+    }
+  }, [contractIds])
+
+  return contracts
+}
+
+export const useContracts = (contractIds: string[]) => {
+  const [contracts, setContracts] = useState<Contract[]>([])
+
+  useEffectCheckEquality(() => {
+    if (contractIds) {
+      getContracts(contractIds).then((result) => {
         setContracts(result)
       })
     }

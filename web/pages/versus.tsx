@@ -1,38 +1,41 @@
 import { ClockIcon, UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import Router from 'next/router'
 import { sortBy } from 'lodash'
+import Router from 'next/router'
 
+import { ExclamationIcon } from '@heroicons/react/outline'
+import { getDisplayProbability, getProbability } from 'common/calculate'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
 import { ContractCardView } from 'common/events'
+import { filterDefined } from 'common/util/array'
 import { formatMoney, formatPercentShort } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
 import { useEffect, useState } from 'react'
+import { BetDialog } from 'web/components/bet/bet-dialog'
+import { binaryOutcomes } from 'web/components/bet/bet-panel'
 import { Button } from 'web/components/buttons/button'
 import { LikeButton } from 'web/components/contract/like-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { CommentsButton } from 'web/components/swipe/swipe-comments'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import {
+  useContracts,
+  useRealtimeContract,
+} from 'web/hooks/use-contract-supabase'
+import { useGroupContractIds } from 'web/hooks/use-group'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { createDebate } from 'web/lib/firebase/api'
 import { listGroupContracts } from 'web/lib/firebase/groups'
-import { track } from 'web/lib/service/analytics'
-import { Row } from 'web/components/layout/row'
-import { useContract, useContracts } from 'web/hooks/use-contracts'
-import { binaryOutcomes } from 'web/components/bet/bet-panel'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { BetDialog } from 'web/components/bet/bet-dialog'
-import { getDisplayProbability, getProbability } from 'common/calculate'
-import { ExclamationIcon } from '@heroicons/react/outline'
-import { useGroupContractIds } from 'web/hooks/use-group'
-import { filterDefined } from 'common/util/array'
+import { track } from 'web/lib/service/analytics'
 
 const debateGroupId = '0i8ozKhPq5qJ89DG9tCW'
 
@@ -169,7 +172,7 @@ function ContractCardVersus(props: { contract: Contract; className?: string }) {
   const { className } = props
   const user = useUser()
 
-  const contract = useContract(props.contract.id) ?? props.contract
+  const contract = useRealtimeContract(props.contract.id) ?? props.contract
   const {
     question,
     coverImageUrl,

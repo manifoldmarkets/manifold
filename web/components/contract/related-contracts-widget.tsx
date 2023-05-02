@@ -1,16 +1,16 @@
+import clsx from 'clsx'
 import { Contract, contractPath } from 'common/contract'
 import Link from 'next/link'
 import { memo } from 'react'
-import clsx from 'clsx'
 
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
+import { useIsClient } from 'web/hooks/use-is-client'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
-import { useIsClient } from 'web/hooks/use-is-client'
+import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { ContractStatusLabel } from './contracts-table'
-import { useContract } from 'web/hooks/use-contracts'
 
 export const RelatedContractsList = memo(function RelatedContractsList(props: {
   contracts: Contract[]
@@ -54,7 +54,7 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
 }) {
   const { onContractClick } = props
 
-  const contract = useContract(props.contract.id) ?? props.contract
+  const contract = useRealtimeContract(props.contract.id) ?? props.contract
   const { creatorUsername, creatorAvatarUrl, question, creatorCreatedTime } =
     contract
 

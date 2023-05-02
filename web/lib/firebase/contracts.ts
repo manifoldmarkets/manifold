@@ -69,24 +69,7 @@ export async function updateContract(
   await updateDoc(doc(contracts, contractId), update)
 }
 
-export async function getContractFromId(contractId: string) {
-  const result = await getDoc(doc(contracts, contractId))
-  return result.exists() ? result.data() : undefined
-}
-
-export async function getContractFromSlug(slug: string) {
-  const q = query(contracts, where('slug', '==', slug))
-  const snapshot = await getDocs(q)
-  return snapshot.empty ? undefined : snapshot.docs[0].data()
-}
-
-export const tournamentContractsByGroupSlugQuery = (slug: string) =>
-  query(
-    contracts,
-    where('groupSlugs', 'array-contains', slug),
-    orderBy('popularityScore', 'desc')
-  )
-
+// REPLACED but getting slightly different results than main on http://localhost:3000/server-sitemap.xml
 export async function listAllContracts(
   n: number,
   before?: string,
@@ -101,25 +84,7 @@ export async function listAllContracts(
   return snapshot.docs.map((doc) => doc.data())
 }
 
-export function listenForContracts(
-  setContracts: (contracts: Contract[]) => void
-) {
-  const q = query(contracts, orderBy('createdTime', 'desc'))
-  return listenForValues<Contract>(q, setContracts)
-}
-
-export function listenForUserContracts(
-  creatorId: string,
-  setContracts: (contracts: Contract[]) => void
-) {
-  const q = query(
-    contracts,
-    where('creatorId', '==', creatorId),
-    orderBy('createdTime', 'desc')
-  )
-  return listenForValues<Contract>(q, setContracts)
-}
-
+// ned to change to supabase
 export function getUserBetContracts(userId: string) {
   return getValues<Contract>(getUserBetContractsQuery(userId))
 }

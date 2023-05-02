@@ -7,8 +7,9 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkPriceMax } from 'common/stonk'
 import { formatPercentShort } from 'common/util/format'
+import Link from 'next/link'
 import { IoUnlink } from 'react-icons/io5'
-import { useContract } from 'web/hooks/use-contracts'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { getTextColor } from '../bet/quick-bet'
 import { ContractMinibar } from '../charts/minibar'
@@ -17,7 +18,6 @@ import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
 import { Action } from './contract-table-action'
-import Link from 'next/link'
 
 const lastItemClassName = 'rounded-r pr-2'
 const firstItemClassName = 'rounded-l pl-2 pr-4'
@@ -171,7 +171,7 @@ export function ContractsTable(props: {
   ]
 
   function ContractRow(props: { contract: Contract }) {
-    const contract = useContract(props.contract.id) ?? props.contract
+    const contract = useRealtimeContract(props.contract.id) ?? props.contract
     const contractListEntryHighlightClass =
       'bg-gradient-to-b from-primary-100 via-ink-0 to-ink-0 outline outline-2 outline-primary-400'
 

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { PrivateUser, User } from 'common/user'
 import { debounce, groupBy, sortBy } from 'lodash'
-import { getUserBetContracts } from 'web/lib/firebase/contracts'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { DocumentData } from 'firebase/firestore'
 import { users, privateUsers } from 'web/lib/firebase/users'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
+import { getUserBetContracts } from 'web/lib/supabase/contracts'
 
 export const useUsers = () => {
   const result = useFirestoreQueryData<DocumentData, User[]>(['users'], users, {

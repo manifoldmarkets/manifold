@@ -1,24 +1,9 @@
-import Link from 'next/link'
-import { sortBy, partition, sumBy, max, uniqBy, Dictionary } from 'lodash'
-import { useEffect, useMemo, useState } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
+import { Dictionary, max, partition, sortBy, sumBy, uniqBy } from 'lodash'
+import Link from 'next/link'
+import { useEffect, useMemo, useState } from 'react'
 
-import { Bet } from 'web/lib/firebase/bets'
-import { User } from 'web/lib/firebase/users'
-import {
-  formatMoney,
-  formatPercent,
-  formatWithCommas,
-} from 'common/util/format'
-import { Col } from '../layout/col'
-import { Spacer } from '../layout/spacer'
-import { Contract, getBinaryProbPercent } from 'web/lib/firebase/contracts'
-import { Row } from '../layout/row'
-import { sellBet } from 'web/lib/firebase/api'
-import { ConfirmationButton } from '../buttons/confirmation-button'
-import { OutcomeLabel } from '../outcome-label'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { SiteLink } from '../widgets/site-link'
+import { LimitBet } from 'common/bet'
 import {
   calculatePayout,
   getContractBetNullMetrics,
@@ -26,42 +11,57 @@ import {
   resolvedPayout,
 } from 'common/calculate'
 import {
+  calculateDpmSaleAmount,
+  getDpmProbabilityAfterSale,
+} from 'common/calculate-dpm'
+import {
+  CPMMBinaryContract,
   DPMContract,
   NumericContract,
   contractPath,
-  CPMMBinaryContract,
 } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { LimitBet } from 'common/bet'
-import { Pagination } from '../widgets/pagination'
-import { OrderTable } from './limit-bets'
+import { getStonkShares } from 'common/stonk'
+import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
+import { buildArray } from 'common/util/array'
+import {
+  formatMoney,
+  formatPercent,
+  formatWithCommas,
+} from 'common/util/format'
+import { searchInAny } from 'common/util/parse'
+import { Input } from 'web/components/widgets/input'
 import { UserLink } from 'web/components/widgets/user-link'
-import { BetsSummary } from './bet-summary'
-import { ProfitBadge } from '../profit-badge'
+import { useBets } from 'web/hooks/use-bets-supabase'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { Select } from '../widgets/select'
-import { Table } from '../widgets/table'
-import { SellRow } from './sell-row'
-import {
-  calculateDpmSaleAmount,
-  getDpmProbabilityAfterSale,
-} from 'common/calculate-dpm'
-import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
-import { ContractMetric } from 'common/contract-metric'
-import { buildArray } from 'common/util/array'
-import { formatTimeShort } from 'web/lib/util/time'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { sellBet } from 'web/lib/firebase/api'
+import { Bet } from 'web/lib/firebase/bets'
+import { Contract, getBinaryProbPercent } from 'web/lib/firebase/contracts'
+import { User } from 'web/lib/firebase/users'
 import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
-import { Input } from 'web/components/widgets/input'
-import { searchInAny } from 'common/util/parse'
-import { useContract } from 'web/hooks/use-contracts'
-import { AddFundsButton } from '../profile/add-funds-button'
 import { db } from 'web/lib/supabase/db'
-import { useBets } from 'web/hooks/use-bets-supabase'
-import { getStonkShares } from 'common/stonk'
+import { formatTimeShort } from 'web/lib/util/time'
+import { ConfirmationButton } from '../buttons/confirmation-button'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { Spacer } from '../layout/spacer'
+import { OutcomeLabel } from '../outcome-label'
+import { AddFundsButton } from '../profile/add-funds-button'
+import { ProfitBadge } from '../profit-badge'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { Pagination } from '../widgets/pagination'
+import { Select } from '../widgets/select'
+import { SiteLink } from '../widgets/site-link'
+import { Table } from '../widgets/table'
+import { BetsSummary } from './bet-summary'
+import { OrderTable } from './limit-bets'
+import { SellRow } from './sell-row'
 
 type BetSort =
   | 'newest'
@@ -367,7 +367,7 @@ function ContractBets(props: {
   userId: string
 }) {
   const { metrics, displayMetric, isYourBets, userId } = props
-  const contract = useContract(props.contract.id) ?? props.contract
+  const contract = useRealtimeContract(props.contract.id) ?? props.contract
   const { resolution, closeTime, outcomeType, isResolved } = contract
 
   const user = useUser()

@@ -8,7 +8,6 @@ import { ContractMetrics } from 'common/calculate-metrics'
 import { getUserContractMetricsQuery } from 'web/lib/firebase/contract-metrics'
 import { buildArray, filterDefined } from 'common/util/array'
 import { Contract, CPMMBinaryContract } from 'common/contract'
-import { useContracts } from './use-contracts'
 import { useStore, useStoreItems } from './use-store'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useEffectCheckEquality } from './use-effect-check-equality'
@@ -16,6 +15,7 @@ import { listenForValue } from 'web/lib/firebase/utils'
 import { PrivateUser } from 'common/user'
 import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 import { db } from 'web/lib/supabase/db'
+import { useContracts } from './use-contract-supabase'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -70,7 +70,7 @@ export const useUserContractMetricsByProfit = (userId = '_', count = 50) => {
   )
 
   const contractIds = sortBy(metrics.map((m) => m.contractId))
-  const contracts = useContracts(contractIds, { loadOnce: true })
+  const contracts = useContracts(contractIds)
 
   const isReady =
     positiveResult.data &&
