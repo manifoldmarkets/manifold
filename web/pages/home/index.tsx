@@ -97,20 +97,15 @@ function MobileHome() {
   return (
     <Page>
       <Col className="gap-2 py-2 pb-8 sm:px-2">
-        <Row className="mx-4 mb-2 items-center justify-between gap-4">
-          <Row className="items-center gap-2">
-            <Title children="Home" className="!my-0" />
-            {isNative && (
-              <SwitchHorizontalIcon
-                className="h-5 w-5"
-                onClick={toggleView(true)}
-              />
-            )}
-          </Row>
+        <Row className="mx-4 mb-2 items-center gap-4">
+          {isNative && (
+            <SwitchHorizontalIcon
+              className="h-5 w-5"
+              onClick={toggleView(true)}
+            />
+          )}
 
-          <Row className="items-center gap-4">
-            <DailyStats user={user} />
-          </Row>
+          <DailyStats user={user} />
         </Row>
 
         {isLoading && <LoadingIndicator />}
