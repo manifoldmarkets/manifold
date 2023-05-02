@@ -30,7 +30,7 @@ export function useRealtimeContract(contractId: string | undefined) {
 
   useEffect(() => {
     let channel: RealtimeChannel
-    if (contractId && contract) {
+    if (contractId) {
       channel = db.channel(`realtime-contract-${contractId}`)
       channel.on(
         'postgres_changes',
