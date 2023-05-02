@@ -472,7 +472,7 @@ export function ContractPageContent(props: {
         />
       </Row>
       <RelatedContractsList
-        className="max-w-[600px] xl:hidden"
+        className="mx-auto mt-8 max-w-[600px] xl:hidden"
         contracts={relatedMarkets}
         onContractClick={(c) =>
           track('click related market', { contractId: c.id })
