@@ -14,6 +14,21 @@ import { getContractParams } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
 import { RealtimeChannel } from '@supabase/realtime-js'
 
+interface ContractPayload {
+  schema: string
+  table: string
+  commit_timestamp: string
+  eventType: string
+  new: {
+    [key: string]: any
+    data: Contract
+  }
+  old: {
+    [key: string]: any
+  }
+  errors: null
+}
+
 export function useRealtimeContract(contractId: string | undefined) {
   const [contract, setContract] = useState<Contract | undefined | null>(
     undefined
@@ -35,8 +50,10 @@ export function useRealtimeContract(contractId: string | undefined) {
           filter: 'id=eq.' + contractId,
         },
         (payload) => {
-          if (payload) {
-            setContract(payload.new as Contract)
+          const contractPayload: ContractPayload =
+            payload as unknown as ContractPayload
+          if (contractPayload) {
+            setContract(contractPayload.new['data'])
           }
         }
       )

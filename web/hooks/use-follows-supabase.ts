@@ -58,6 +58,6 @@ export function useRealtimeContractFollows(contractId: string | undefined) {
         db.removeChannel(channel)
       }
     }
-  }, [db, contractId])
+  }, [db])
   return follows
 }

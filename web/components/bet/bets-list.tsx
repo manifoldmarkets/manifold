@@ -387,7 +387,7 @@ function ContractBets(props: {
 
   const [collapsed, setCollapsed] = useState(true)
 
-  const isBinary = outcomeType === 'BINARY'
+  const isBinary = outcomeType == 'BINARY'
   const isClosed = closeTime && closeTime < Date.now()
 
   const { payout, profit, profitPercent } = metrics
@@ -415,7 +415,6 @@ function ContractBets(props: {
               <ChevronUpIcon className="absolute top-5 right-4 h-6 w-6" />
             )}
           </Row>
-
           <Row className="text-ink-500 flex-1 items-center gap-2 text-sm">
             {resolution ? (
               <>
