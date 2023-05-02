@@ -24,8 +24,6 @@ export const getStaticProps = async () => {
       'lte',
       dayjs().subtract(3, 'month').valueOf()
     )
-    // .filter('data->prob', 'lte', 0.95)
-    // .filter('data->prob', 'gte', 0.05)
     // Couldn't get this to work...
     // .not('data->groupSlugs', 'cs', '{"destinygg"}')
     .order('data->lastUpdatedTime' as any, { ascending: true })
@@ -50,7 +48,7 @@ export default function AncientMarkets(props: { contracts: Contract[] }) {
   const { contracts } = props
   return (
     <Page>
-      <Title>Ancient Markets</Title>
+      <Title>🏺 Ancient Markets 🏺</Title>
       <ContractsTable contracts={contracts} />
     </Page>
   )
