@@ -10,7 +10,6 @@ import {
   SparklesIcon,
   StarIcon,
   UserGroupIcon,
-  ChartBarIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -150,7 +149,6 @@ const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Markets', href: '/markets', icon: ScaleIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
 
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
