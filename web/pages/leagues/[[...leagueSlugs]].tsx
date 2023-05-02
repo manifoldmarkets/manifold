@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react'
 import { groupBy, sortBy } from 'lodash'
 import clsx from 'clsx'
 import { ClockIcon } from '@heroicons/react/outline'
+import { useRouter } from 'next/router'
 
 import {
   DIVISION_NAMES,
@@ -12,6 +13,7 @@ import {
   league_row,
   season,
   rewardsData,
+  CURRENT_SEASON,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -43,6 +45,13 @@ export async function getStaticProps() {
   }
 }
 
+export function getStaticPaths() {
+  return {
+    paths: [],
+    fallback: 'blocking',
+  }
+}
+
 export default function Leagues(props: { rows: league_row[] }) {
   useTracking('view leagues')
 
@@ -68,24 +77,77 @@ export default function Leagues(props: { rows: league_row[] }) {
   }
 
   const user = useUser()
+  const { query, isReady, replace } = useRouter()
+  const { leagueSlugs } = query as { leagueSlugs: string[] }
+
   const onSetDivision = (division: number) => {
     setDivision(division)
 
     const userRow = rows.find(
       (row) => row.user_id === user?.id && row.division === division
     )
-    setCohort(userRow ? userRow.cohort : divisionToCohorts[division][0])
+    const cohort = userRow ? userRow.cohort : divisionToCohorts[division][0]
+    setCohort(cohort)
+
+    const divisionName = DIVISION_NAMES[division].toLowerCase()
+    replace(`/leagues/${season}/${divisionName}/${cohort.toLowerCase()}`)
+  }
+
+  const onSetCohort = (cohort: string) => {
+    setCohort(cohort)
+    const divisionName = DIVISION_NAMES[division].toLowerCase()
+    replace(`/leagues/${season}/${divisionName}/${cohort.toLowerCase()}`)
   }
 
   const userRow = rows.find((row) => row.user_id === user?.id)
   const userDivision = userRow?.division
   const userCohort = userRow?.cohort
+
   useEffect(() => {
-    if (userRow) {
+    if (!isReady) return
+
+    if (leagueSlugs) {
+      let season: season = CURRENT_SEASON
+      let division: string | undefined
+      let cohort: string | undefined
+      if (SEASONS.includes(+leagueSlugs[0] as season)) {
+        season = +leagueSlugs[0] as season
+        division = leagueSlugs[1]
+        cohort = leagueSlugs[2]
+      } else {
+        division = leagueSlugs[0]
+        cohort = leagueSlugs[1]
+      }
+
+      setSeason(season)
+
+      let divisionNum
+      if (Object.keys(DIVISION_NAMES).includes(division)) {
+        divisionNum = +division
+      } else {
+        const divisionName = Object.keys(DIVISION_NAMES).find(
+          (key) =>
+            DIVISION_NAMES[key]?.toLowerCase() === division?.toLowerCase()
+        )
+        if (divisionName) divisionNum = +divisionName
+      }
+
+      if (divisionNum) {
+        setDivision(divisionNum)
+
+        const cohorts = divisionToCohorts[divisionNum] ?? []
+        const matchedCohort = cohorts.find(
+          (c) => c?.toLowerCase() === cohort?.toLowerCase()
+        )
+        if (matchedCohort) {
+          setCohort(matchedCohort)
+        }
+      }
+    } else if (userRow) {
       setDivision(userRow.division)
       setCohort(userRow.cohort)
     }
-  }, [user])
+  }, [isReady, leagueSlugs, user])
 
   const { demotion, promotion, doublePromotion } =
     getDemotionAndPromotionCount(division)
@@ -155,8 +217,11 @@ export default function Leagues(props: { rows: league_row[] }) {
                               <td className="border border-gray-300 px-4 py-2 text-center font-black">
                                 {i + 1}
                               </td>
-                              {rewardsData.map((columnData) => (
-                                <td className="border border-gray-300 px-4 py-2 text-center">
+                              {rewardsData.map((columnData, j) => (
+                                <td
+                                  key={j}
+                                  className="border border-gray-300 px-4 py-2 text-center"
+                                >
                                   {columnData[i]}
                                 </td>
                               ))}
@@ -217,7 +282,7 @@ export default function Leagues(props: { rows: league_row[] }) {
             <Select
               className="!border-ink-200"
               value={cohort}
-              onChange={(e) => setCohort(e.target.value)}
+              onChange={(e) => onSetCohort(e.target.value)}
             >
               {divisionToCohorts[division].map((cohort) => (
                 <option key={cohort} value={cohort}>
