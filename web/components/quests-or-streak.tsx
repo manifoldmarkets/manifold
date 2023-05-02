@@ -133,6 +133,7 @@ export function QuestsModal(props: {
               BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
               BETTING_STREAK_BONUS_MAX
             )}
+            link={'markets'}
           />
           <QuestRow
             emoji={'📤'}
@@ -151,6 +152,7 @@ export function QuestsModal(props: {
             complete={createStatus.currentCount >= createStatus.requiredCount}
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
+            link={'create'}
           />
           <QuestRow
             emoji={'🏺'}
@@ -164,6 +166,7 @@ export function QuestsModal(props: {
             info={
               'This has to be a market that no other user has bet on in the last 3 months'
             }
+            link={'ancient'}
           />{' '}
           <QuestRow
             emoji={'🙋️'}
@@ -176,6 +179,7 @@ export function QuestsModal(props: {
             info={
               'Just click the share button on a market and your referral code will be added to the link'
             }
+            link={'referrals'}
           />
         </Col>
       </div>
@@ -190,8 +194,10 @@ const QuestRow = (props: {
   status: string
   reward: number
   info?: string
+  link?: string
 }) => {
-  const { title, complete, status, reward, emoji, info } = props
+  const { title, complete, status, reward, emoji, info, link } = props
+  const url = 'https://manifold.markets/' + link
   return (
     <Row className={'justify-between'}>
       <Col>
@@ -201,7 +207,7 @@ const QuestRow = (props: {
           </span>
           <Col>
             <span className={clsx('sm:text-xl')}>
-              {title}
+              {link ? <a href={url}>{title}</a> : title}
               {info && (
                 <InfoTooltip className={'!mb-1 ml-1 !h-4 !w-4'} text={info} />
               )}
