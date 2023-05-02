@@ -6,12 +6,16 @@ import { CopyLinkButton } from '../buttons/copy-link-button'
 import { TweetButton } from '../buttons/tweet-button'
 import { GradientContainer } from '../widgets/gradient-container'
 import { AmountInput } from '../widgets/amount-input'
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { boostMarket } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import toast from 'react-hot-toast'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { DEFAULT_AD_COST_PER_VIEW } from 'common/boost'
+import { db } from 'web/lib/supabase/db'
+import { useQuery } from 'react-query'
+import { Table } from '../widgets/table'
+import { uniqBy } from 'lodash'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -45,8 +49,9 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
 
       <div className="text-ink-500 mb-2 text-base">
         Bump up your market in the feed. We'll target it to users who like
-        questions like this one. All funds go to the viewers.
+        questions like this. Funds go to the viewers.
       </div>
+      <BoostAnalytics contractId={contract.id} />
     </GradientContainer>
   )
 }
@@ -100,3 +105,104 @@ function BoostFormRow(props: { contract: Contract }) {
     </>
   )
 }
+
+function BoostAnalytics(props: { contractId: string }) {
+  const { contractId } = props
+  const adQuery = useQuery(
+    ['ad data', contractId],
+    async () =>
+      await db
+        .from('market_ads')
+        .select('id, funds, created_at, cost_per_view')
+        .eq('market_id', contractId),
+    { refetchInterval: false }
+  )
+
+  const viewQuery = useQuery(
+    ['view market card data', contractId],
+    async () =>
+      await db
+        .from('user_events')
+        .select()
+        .eq('name', 'view market card')
+        .eq('contract_id', contractId),
+    { refetchInterval: false }
+  )
+
+  const redeemQuery = useQuery(
+    ['redeem data', contractId],
+    async () =>
+      await db
+        .from('txns')
+        .select('*', { count: 'exact' })
+        .eq('data->>category', 'MARKET_BOOST_REDEEM')
+        .eq('data->>fromId', adQuery.data?.data?.[0]?.id),
+    { enabled: adQuery.isSuccess, refetchInterval: false }
+  )
+
+  if (adQuery.isError || viewQuery.isError || redeemQuery.isError) {
+    return (
+      <div className="bg-scarlet-100 mb-2 rounded-md p-4">
+        Error loading analytics
+      </div>
+    )
+  }
+
+  const viewData = viewQuery.data?.data
+
+  if (adQuery.data?.data?.length) {
+    const { funds, created_at, cost_per_view } = adQuery.data.data[0]
+
+    return (
+      <div className="mt-4">
+        <div className="mb-1 font-semibold">
+          Analytics{' '}
+          {(adQuery.isFetching ||
+            viewQuery.isFetching ||
+            redeemQuery.isFetching) &&
+            '...'}
+        </div>
+        <Table className="text-ink-900">
+          <TableItem
+            label="Campaign start"
+            value={new Date(created_at).toDateString()}
+          />
+          <TableItem
+            label="Funds left"
+            value={`${formatMoney(funds)} (${funds / cost_per_view} redeems)`}
+          />
+          {viewData && (
+            <>
+              <TableItem
+                label="Total Impressions"
+                value={`${viewData.length} (${
+                  uniqBy(viewData, 'user_id').length
+                } unique)`}
+              />
+              <TableItem
+                label="Impressions since campaign start"
+                value={`${
+                  viewData.filter(
+                    (i) => i.ts && Date.parse(i.ts) > Date.parse(created_at)
+                  ).length
+                }`}
+              />
+            </>
+          )}
+          {redeemQuery.data && (
+            <TableItem label="Redeems" value={redeemQuery.data.count} />
+          )}
+        </Table>
+      </div>
+    )
+  }
+
+  return null
+}
+
+const TableItem = (props: { label: ReactNode; value: ReactNode }) => (
+  <tr>
+    <td>{props.label}</td>
+    <td>{props.value}</td>
+  </tr>
+)
