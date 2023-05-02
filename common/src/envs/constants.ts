@@ -89,7 +89,7 @@ export const BOT_USERNAMES = [
   'EntropyBot',
   'veat',
   'ms_test',
-  'arbitragebot',
+  'arb',
 ]
 
 export const CORE_USERNAMES = [
