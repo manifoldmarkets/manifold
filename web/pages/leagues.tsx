@@ -29,6 +29,7 @@ import { useUser } from 'web/hooks/use-user'
 import { Countdown } from 'web/components/widgets/countdown'
 import { Modal } from 'web/components/layout/modal'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export async function getStaticProps() {
   const { data: rows } = await db
@@ -43,6 +44,8 @@ export async function getStaticProps() {
 }
 
 export default function Leagues(props: { rows: league_row[] }) {
+  useTracking('view leagues')
+
   const { rows } = props
 
   const cohorts = groupBy(rows, 'cohort')
