@@ -84,51 +84,6 @@ export async function listAllContracts(
   return snapshot.docs.map((doc) => doc.data())
 }
 
-// ned to change to supabase
-export function getUserBetContracts(userId: string) {
-  return getValues<Contract>(getUserBetContractsQuery(userId))
-}
-
-export const MAX_USER_BET_CONTRACTS_LOADED = 1000
-export function getUserBetContractsQuery(userId: string) {
-  return query(
-    contracts,
-    where('uniqueBettorIds', 'array-contains', userId),
-    limit(MAX_USER_BET_CONTRACTS_LOADED)
-  ) as Query<Contract>
-}
-
-export function listenForLiveContracts(
-  count: number,
-  setContracts: (contracts: Contract[]) => void
-) {
-  const q = query(
-    contracts,
-    where('isResolved', '==', false),
-    orderBy('createdTime', 'desc'),
-    limit(count)
-  )
-  return listenForValues<Contract>(q, setContracts)
-}
-
-export function listenForContract(
-  contractId: string,
-  setContract: (contract: Contract | null) => void
-) {
-  const contractRef = doc(contracts, contractId)
-  return listenForValue<Contract>(contractRef, setContract)
-}
-
-export function listenForContractFollows(
-  contractId: string,
-  setFollowIds: (followIds: string[]) => void
-) {
-  const follows = collection(contracts, contractId, 'follows')
-  return listenForValues<{ id: string }>(follows, (docs) =>
-    setFollowIds(docs.map(({ id }) => id))
-  )
-}
-
 export async function followContract(contractId: string, userId: string) {
   const followDoc = doc(collection(contracts, contractId, 'follows'), userId)
   return await setDoc(followDoc, {
