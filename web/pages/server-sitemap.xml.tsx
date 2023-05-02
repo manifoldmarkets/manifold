@@ -8,7 +8,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const contracts = await searchContract({
     query: '',
     filter: 'all',
-    sort: 'newest',
+    sort: 'score',
     limit: 5000,
   }).then((x) => x.data)
 
