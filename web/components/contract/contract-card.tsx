@@ -362,7 +362,7 @@ function LoadedMetricsFooter(props: {
 export function FeaturedPill(props: { label?: string }) {
   const label = props.label ?? 'Featured'
   return (
-    <div className="text-ink-0 from-primary-500 rounded-full bg-gradient-to-br to-fuchsia-500 px-2 py-0.5 text-xs">
+    <div className="from-primary-500 rounded-full bg-gradient-to-br to-fuchsia-500 px-2 text-white">
       {label}
     </div>
   )
@@ -525,7 +525,7 @@ export function ContractCardNew(props: {
 }
 
 const BoostPill = () => (
-  <Tooltip text={"They're paying you to see this"}>
+  <Tooltip text="They're paying you to see this" placement="right">
     <FeaturedPill label="Boosted" />
   </Tooltip>
 )
