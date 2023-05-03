@@ -84,6 +84,7 @@ export const FeedItems = (props: {
                 hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
               )}
               promotedData={promotedData}
+              trackingPostfix="feed"
             />
             <Row className="bg-canvas-0">
               <FeedCommentItem

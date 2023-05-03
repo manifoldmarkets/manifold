@@ -371,9 +371,11 @@ export function FeaturedPill(props: { label?: string }) {
 export function ContractCardNew(props: {
   contract: Contract
   promotedData?: { adId: string; reward: number }
+  /** location of the card, to disambiguate card click events */
+  trackingPostfix?: string
   className?: string
 }) {
-  const { className, promotedData } = props
+  const { className, promotedData, trackingPostfix } = props
   const user = useUser()
 
   const contract = useContract(props.contract.id) ?? props.contract
@@ -398,9 +400,18 @@ export function ContractCardNew(props: {
         contractId: contract.id,
         creatorId: contract.creatorId,
         slug: contract.slug,
+        isPromoted: !!promotedData,
       } as ContractCardView),
     true
   )
+
+  const trackClick = () =>
+    track(('click market card ' + trackingPostfix).trim(), {
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+      slug: contract.slug,
+      isPromoted: !!promotedData,
+    })
 
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
@@ -421,6 +432,7 @@ export function ContractCardNew(props: {
       // we have other links inside this card like the username, so can't make the whole card a button or link
       tabIndex={-1}
       onClick={(e) => {
+        trackClick()
         Router.push(path)
         e.currentTarget.focus() // focus the div like a button, for style
       }}
@@ -452,7 +464,10 @@ export function ContractCardNew(props: {
             textColor
           )}
           // if open in new tab, don't open in this one
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            trackClick()
+            e.stopPropagation()
+          }}
         >
           {question}
         </Link>
