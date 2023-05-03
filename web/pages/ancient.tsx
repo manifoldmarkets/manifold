@@ -18,14 +18,10 @@ export const getStaticProps = async () => {
   const { data } = await db
     .from('public_open_contracts')
     .select('data')
-    // Should really be based off last bet time, but this still guarantees antiquity
-    .filter(
-      'data->lastUpdatedTime',
-      'lte',
-      dayjs().subtract(3, 'month').valueOf()
-    )
-    // Couldn't get this to work...
-    // .not('data->groupSlugs', 'cs', '{"destinygg"}')
+    // Excludes markets with recent comments but not recent bets
+    .lte('data->lastUpdatedTime', dayjs().subtract(3, 'month').valueOf())
+    // Main sort is by lastBetTime with unbet-on markets first, then sorted by most recently updated
+    .order('data->lastUpdatedTime' as any, { ascending: true })
     .order('data->lastBetTime' as any, { ascending: true, nullsFirst: true })
     .limit(300)
 
