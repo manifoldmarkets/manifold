@@ -26,7 +26,7 @@ export const getStaticProps = async () => {
     )
     // Couldn't get this to work...
     // .not('data->groupSlugs', 'cs', '{"destinygg"}')
-    .order('data->lastUpdatedTime' as any, { ascending: true })
+    .order('data->lastBetTime' as any, { ascending: true, nullsFirst: true })
     .limit(300)
 
   const contracts = (data ?? [])
