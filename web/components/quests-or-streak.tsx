@@ -133,7 +133,7 @@ export function QuestsModal(props: {
               BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
               BETTING_STREAK_BONUS_MAX
             )}
-            link={'markets'}
+            href={'markets'}
           />
           <QuestRow
             emoji={'📤'}
@@ -152,7 +152,7 @@ export function QuestsModal(props: {
             complete={createStatus.currentCount >= createStatus.requiredCount}
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
-            link={'create'}
+            href={'create'}
           />
           <QuestRow
             emoji={'🏺'}
@@ -166,7 +166,7 @@ export function QuestsModal(props: {
             info={
               'This has to be a market that no other user has bet on in the last 3 months'
             }
-            link={'ancient'}
+            href={'ancient'}
           />{' '}
           <QuestRow
             emoji={'🙋️'}
@@ -179,7 +179,7 @@ export function QuestsModal(props: {
             info={
               'Just click the share button on a market and your referral code will be added to the link'
             }
-            link={'referrals'}
+            href={'referrals'}
           />
         </Col>
       </div>
@@ -194,10 +194,10 @@ const QuestRow = (props: {
   status: string
   reward: number
   info?: string
-  link?: string
+  href?: string
 }) => {
-  const { title, complete, status, reward, emoji, info, link } = props
-  const url = 'https://manifold.markets/' + link
+  const { title, complete, status, reward, emoji, info, href } = props
+  const url = 'https://manifold.markets/' + href
   return (
     <Row className={'justify-between'}>
       <Col>
