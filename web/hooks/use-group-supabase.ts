@@ -67,11 +67,7 @@ export function useRealtimeMemberGroups(
     getGroup(payload.new.group_id).then((newGroup: Group | null) => {
       if (newGroup) {
         setGroups((groups) => {
-          if (groups) {
-            return [...groups, newGroup]
-          } else {
-            return [newGroup]
-          }
+          return [...groups, newGroup]
         })
       }
     })
@@ -79,11 +75,7 @@ export function useRealtimeMemberGroups(
 
   const onDelete = (payload: any) => {
     setGroups((groups) => {
-      if (groups) {
-        return groups.filter((group) => group.id !== payload.old.group_id)
-      } else {
-        return []
-      }
+      return groups.filter((group) => group.id !== payload.old.group_id)
     })
   }
 
@@ -109,21 +101,13 @@ export function useRealtimeMemberGroupIds(
 
   const onInsert = (payload: any) => {
     setGroupIds((groupIds) => {
-      if (groupIds) {
-        return [...groupIds, payload.new.group_id]
-      } else {
-        return [payload.new.group_id]
-      }
+      return [...groupIds, payload.new.group_id]
     })
   }
 
   const onDelete = (payload: any) => {
     setGroupIds((groupIds) => {
-      if (groupIds) {
-        return groupIds.filter((groupId) => groupId !== payload.old.group_id)
-      } else {
-        return []
-      }
+      return groupIds.filter((groupId) => groupId !== payload.old.group_id)
     })
   }
 
@@ -179,7 +163,6 @@ export function useRealtimeGroupContractIds(groupId: string) {
     getGroupContractIds(groupId)
       .then((result) => {
         setContractIds(result)
-        console.log('GET GROUP CONTRACT ID', result)
       })
       .catch((e) => console.log(e))
     const channel = db.channel(`group-${groupId}-contract-ids`)
@@ -192,13 +175,8 @@ export function useRealtimeGroupContractIds(groupId: string) {
         filter: `group_id=eq.${groupId}`,
       },
       (payload) => {
-        console.log('INSERT', payload)
         setContractIds((contractIds) => {
-          if (contractIds) {
-            return [...contractIds, payload.new.contract_id]
-          } else {
-            return [payload.new.contract_id]
-          }
+          return [...contractIds, payload.new.contract_id]
         })
       }
     )
@@ -211,15 +189,10 @@ export function useRealtimeGroupContractIds(groupId: string) {
         filter: `group_id=eq.${groupId}`,
       },
       (payload) => {
-        console.log('DELETE', payload)
         setContractIds((contractIds) => {
-          if (contractIds) {
-            return contractIds.filter(
-              (contractId) => contractId !== payload.old.contract_id
-            )
-          } else {
-            return []
-          }
+          return contractIds.filter(
+            (contractId) => contractId !== payload.old.contract_id
+          )
         })
       }
     )
