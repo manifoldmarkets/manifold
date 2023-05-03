@@ -2,9 +2,6 @@ import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
-import { IDatabase } from 'pg-promise'
-import { IClient } from 'pg-promise/typescript/pg-subset'
-import { uniqBy } from 'lodash'
 
 const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
 
