@@ -30,7 +30,7 @@ export function AddMemberContent(props: {
   )
   const requestId = useRef(0)
   const [loading, setLoading] = useState(false)
-  const groupMemberIds = useRealtimeGroupMemberIds(group.id).members
+  const groupMemberIds = useRealtimeGroupMemberIds(group.id)
   useEffect(() => {
     const id = ++requestId.current
     setLoading(true)

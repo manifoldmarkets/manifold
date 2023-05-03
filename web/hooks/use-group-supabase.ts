@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { db } from 'web/lib/supabase/db'
 import {
+  getGroup,
+  getGroupContractIds,
   getGroupFromSlug,
   getGroupMemberIds,
   getGroupMembers,
@@ -15,7 +17,233 @@ import {
 } from 'web/lib/supabase/group'
 import { getUser } from 'web/lib/supabase/user'
 import { useAdmin } from './use-admin'
-import { useUser } from './use-user'
+import { useIsAuthorized, useUser } from './use-user'
+import { Contract } from 'common/contract'
+import {
+  getMemberGroupIds,
+  getMemberGroups,
+  listGroupsBySlug,
+} from 'web/lib/supabase/groups'
+import { uniq } from 'lodash'
+import { filterDefined } from 'common/util/array'
+import { RealtimeChannel } from '@supabase/realtime-js'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { getUserIsGroupMember } from 'web/lib/firebase/api'
+
+export function useIsGroupMember(groupSlug: string) {
+  const [isMember, setIsMember] = usePersistentInMemoryState<any | undefined>(
+    undefined,
+    'is-member-' + groupSlug
+  )
+  const isAuthorized = useIsAuthorized()
+  useEffect(() => {
+    // if there is no user
+    if (isAuthorized === false) {
+      setIsMember(false)
+    } else if (isAuthorized) {
+      getUserIsGroupMember({ groupSlug: groupSlug }).then((result) => {
+        setIsMember(result)
+      })
+    }
+  }, [groupSlug, isAuthorized])
+  return isMember
+}
+
+export function useRealtimeMemberGroups(
+  user: User | undefined | null
+): Group[] {
+  const [groups, setGroups] = useState<Group[]>([])
+
+  const userId = user?.id
+  useEffect(() => {
+    if (userId) {
+      getMemberGroups(user.id, db).then((results) => {
+        setGroups(results)
+      })
+    }
+  }, [userId])
+
+  const onInsert = (payload: any) => {
+    getGroup(payload.new.group_id).then((newGroup: Group | null) => {
+      if (newGroup) {
+        setGroups((groups) => {
+          if (groups) {
+            return [...groups, newGroup]
+          } else {
+            return [newGroup]
+          }
+        })
+      }
+    })
+  }
+
+  const onDelete = (payload: any) => {
+    setGroups((groups) => {
+      if (groups) {
+        return groups.filter((group) => group.id !== payload.old.group_id)
+      } else {
+        return []
+      }
+    })
+  }
+
+  useRealtimeMemberGroupIdsChannel(userId, onInsert, onDelete)
+
+  // ...rest of the code for fetching initial groups
+  return groups
+}
+
+export function useRealtimeMemberGroupIds(
+  user: User | undefined | null
+): string[] {
+  const [groupIds, setGroupIds] = useState<string[]>([])
+  const userId = user?.id
+
+  useEffect(() => {
+    if (userId) {
+      getMemberGroupIds(user.id, db).then((results) => {
+        setGroupIds(results)
+      })
+    }
+  }, [userId])
+
+  const onInsert = (payload: any) => {
+    setGroupIds((groupIds) => {
+      if (groupIds) {
+        return [...groupIds, payload.new.group_id]
+      } else {
+        return [payload.new.group_id]
+      }
+    })
+  }
+
+  const onDelete = (payload: any) => {
+    setGroupIds((groupIds) => {
+      if (groupIds) {
+        return groupIds.filter((groupId) => groupId !== payload.old.group_id)
+      } else {
+        return []
+      }
+    })
+  }
+
+  useRealtimeMemberGroupIdsChannel(userId, onInsert, onDelete)
+
+  // ...rest of the code for fetching initial groupIds
+  return groupIds
+}
+
+function useRealtimeMemberGroupIdsChannel(
+  userId: string | undefined,
+  onInsert: (payload: any) => void,
+  onDelete: (payload: any) => void
+) {
+  useEffect(() => {
+    let channel: RealtimeChannel | undefined = undefined
+    if (userId) {
+      channel = db.channel(`group-members-${userId}-group-ids`)
+      channel.on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'group_members',
+          filter: `member_id=eq.${userId}`,
+        },
+        onInsert
+      )
+      channel.on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'group_members',
+          filter: `member_id=eq.${userId}`,
+        },
+        onDelete
+      )
+      channel.subscribe(async (status) => {})
+    }
+    return () => {
+      if (channel) {
+        db.removeChannel(channel)
+      }
+    }
+  }, [db, userId, onInsert, onDelete])
+}
+
+export function useRealtimeGroupContractIds(groupId: string) {
+  const [contractIds, setContractIds] = useState<string[]>([])
+
+  useEffect(() => {
+    getGroupContractIds(groupId)
+      .then((result) => {
+        setContractIds(result)
+        console.log('GET GROUP CONTRACT ID', result)
+      })
+      .catch((e) => console.log(e))
+    const channel = db.channel(`group-${groupId}-contract-ids`)
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'group_contracts',
+        filter: `group_id=eq.${groupId}`,
+      },
+      (payload) => {
+        console.log('INSERT', payload)
+        setContractIds((contractIds) => {
+          if (contractIds) {
+            return [...contractIds, payload.new.contract_id]
+          } else {
+            return [payload.new.contract_id]
+          }
+        })
+      }
+    )
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'group_contracts',
+        filter: `group_id=eq.${groupId}`,
+      },
+      (payload) => {
+        console.log('DELETE', payload)
+        setContractIds((contractIds) => {
+          if (contractIds) {
+            return contractIds.filter(
+              (contractId) => contractId !== payload.old.contract_id
+            )
+          } else {
+            return []
+          }
+        })
+      }
+    )
+    channel.subscribe(async (status) => {})
+    return () => {
+      db.removeChannel(channel)
+    }
+  }, [db])
+
+  return contractIds
+}
+
+export const useGroupsWithContract = (contract: Contract) => {
+  const [groups, setGroups] = useState<Group[]>()
+
+  useEffect(() => {
+    if (contract.groupSlugs)
+      listGroupsBySlug(uniq(contract.groupSlugs)).then((groups) =>
+        setGroups(filterDefined(groups))
+      )
+  }, [contract.groupSlugs])
+
+  return groups
+}
 
 export function useRealtimeRole(groupId: string | undefined) {
   const [userRole, setUserRole] = useState<groupRoleType | null | undefined>(
@@ -53,18 +281,15 @@ export function useRealtimeRole(groupId: string | undefined) {
 }
 
 export function useRealtimeGroupMemberIds(groupId: string) {
-  const [members, setMembers] = useState<(string | null)[]>([])
-  function fetchGroupMembers() {
+  const [members, setMembers] = useState<string[]>([])
+  useEffect(() => {
     getGroupMemberIds(groupId)
       .then((result) => {
-        const members = result
-        setMembers(members)
+        if (result) {
+          setMembers(result)
+        }
       })
       .catch((e) => console.log(e))
-  }
-
-  useEffect(() => {
-    fetchGroupMembers()
   }, [])
 
   useEffect(() => {
@@ -72,13 +297,31 @@ export function useRealtimeGroupMemberIds(groupId: string) {
     channel.on(
       'postgres_changes',
       {
-        event: '*',
+        event: 'INSERT',
         schema: 'public',
         table: 'group_members',
         filter: `group_id=eq.${groupId}`,
       },
       (payload) => {
-        fetchGroupMembers()
+        setMembers((members) => {
+          return [...members, payload.new.member_id]
+        })
+      }
+    )
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'group_members',
+        filter: `group_id=eq.${groupId}`,
+      },
+      (payload) => {
+        setMembers((members) => {
+          return members.filter(
+            (memberId) => memberId !== payload.old.member_id
+          )
+        })
       }
     )
     channel.subscribe(async (status) => {})
@@ -86,7 +329,7 @@ export function useRealtimeGroupMemberIds(groupId: string) {
       db.removeChannel(channel)
     }
   }, [db])
-  return { members }
+  return members
 }
 
 export function useRealtimeGroupMembers(

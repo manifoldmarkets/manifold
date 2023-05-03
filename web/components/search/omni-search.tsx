@@ -1,10 +1,12 @@
 import { Combobox } from '@headlessui/react'
+import { ChevronRightIcon } from '@heroicons/react/outline'
 import { SparklesIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
+import { debounce, startCase, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
-import { useMemberGroupIds } from 'web/hooks/use-group'
+import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { useYourRecentContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { searchContract } from 'web/lib/supabase/contracts'
@@ -13,14 +15,12 @@ import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { UserSearchResult, searchUsers } from 'web/lib/supabase/users'
 import { ContractStatusLabel } from '../contract/contracts-table'
 import { JoinOrLeaveGroupButton } from '../groups/groups-button'
+import { SORTS, Sort } from '../supabase-search'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { searchMarketSorts } from './query-market-sorts'
 import { PageData, defaultPages, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
-import { debounce, startCase, uniqBy } from 'lodash'
-import { ChevronRightIcon } from '@heroicons/react/outline'
-import { SORTS, Sort } from '../supabase-search'
-import { searchMarketSorts } from './query-market-sorts'
 
 export interface Option {
   id: string
@@ -358,7 +358,7 @@ const GroupResults = (props: {
   search?: string
 }) => {
   const me = useUser()
-  const myGroups = useMemberGroupIds(me) || []
+  const myGroups = useRealtimeMemberGroupIds(me) || []
   const { search } = props
   if (!props.groups.length) return null
   return (

@@ -8,10 +8,10 @@ import { Spacer } from '../layout/spacer'
 import { useRouter } from 'next/router'
 import { Modal } from 'web/components/layout/modal'
 import { FilterSelectUsers } from 'web/components/filter-select-users'
-import { useMemberIds } from 'web/hooks/use-group'
 import { Input } from '../widgets/input'
 import { Button } from '../buttons/button'
 import { UserSearchResult } from 'web/lib/supabase/users'
+import { useRealtimeGroupMemberIds } from 'web/hooks/use-group-supabase'
 
 export function EditGroupButton(props: { group: Group; className?: string }) {
   const { group, className } = props
@@ -21,7 +21,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [addMemberUsers, setAddMemberUsers] = useState<UserSearchResult[]>([])
-  const memberIds = useMemberIds(group.id) ?? []
+  const memberIds = useRealtimeGroupMemberIds(group.id) ?? []
   function updateOpen(newOpen: boolean) {
     setAddMemberUsers([])
     setOpen(newOpen)

@@ -52,10 +52,10 @@ export async function getGroupMembers(
 }
 
 export async function getGroupMemberIds(groupId: string) {
-  const groupMemberIds = await run(
-    db.from('group_role').select('member_id').eq('group_id', groupId)
+  const { data } = await run(
+    db.from('group_members').select('member_id').eq('group_id', groupId)
   )
-  return groupMemberIds.data.map((member) => member.member_id)
+  return data ? data.map((member) => member.member_id) : []
 }
 
 export async function getMemberRole(user: User, groupId: string) {

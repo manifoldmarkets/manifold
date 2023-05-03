@@ -18,7 +18,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
-import { useMemberGroupIds } from 'web/hooks/use-group'
+import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
 import { searchContract } from 'web/lib/supabase/contracts'
@@ -148,7 +148,7 @@ function Community(props: {
 
 function GroupSearchResult(props: { groups: SearchGroupInfo[] }) {
   const user = useUser()
-  const myGroupsIds = useMemberGroupIds(user)
+  const myGroupsIds = useRealtimeMemberGroupIds(user)
   return (
     <>
       {props.groups.map((group) => (
@@ -205,7 +205,7 @@ function GroupPills(props: {
 }) {
   const { groups, autoselect } = props
   const user = useUser()
-  const myGroupsIds = useMemberGroupIds(user)
+  const myGroupsIds = useRealtimeMemberGroupIds(user)
   const [selected, setSelected] = useState<SearchGroupInfo | null>(
     autoselect ? groups[0] : null
   )

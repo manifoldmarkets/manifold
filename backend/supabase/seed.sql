@@ -929,6 +929,9 @@ add table group_members;
 alter publication supabase_realtime
 add table posts;
 
+alter publication supabase_realtime
+add table group_contracts;
+
 commit;
 
 / * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * /

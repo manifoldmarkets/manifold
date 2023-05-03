@@ -10,7 +10,6 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useGroupsWithContract } from 'web/hooks/use-group'
 import {
   addContractToGroup,
   removeContractFromGroup,
@@ -18,6 +17,7 @@ import {
 import { getGroupsWhereUserHasRole } from 'web/lib/supabase/groups'
 import { GroupLinkItem } from 'web/pages/groups'
 import { GroupSelector } from './group-selector'
+import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 
 export function ContractGroupsList(props: {
   contract: Contract

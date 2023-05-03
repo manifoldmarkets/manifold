@@ -7,6 +7,7 @@ import {
   SupabaseClient,
 } from 'common/supabase/utils'
 import { db } from './db'
+import { Contract } from '../firebase/contracts'
 export type SearchGroupInfo = Pick<
   Group,
   | 'id'
@@ -17,6 +18,52 @@ export type SearchGroupInfo = Pick<
   | 'totalMembers'
   | 'privacyStatus'
 >
+
+export async function getGroupBySlug(groupSlug: string) {
+  const { data } = await run(
+    db.from('groups').select('data').eq('slug', groupSlug).limit(1)
+  )
+  return data ? (data[0]?.data as Group) : null
+}
+
+export async function getGroup(groupId: string) {
+  const { data } = await run(
+    db.from('groups').select('data').eq('id', groupId).limit(1)
+  )
+  return data ? (data[0]?.data as Group) : null
+}
+
+export async function getGroupContracts(groupId: string) {
+  const { data } = await run(
+    db.rpc('get_group_contracts', {
+      this_group_id: groupId,
+    })
+  )
+  if (data && data.length > 0) {
+    return data.map((contract) => (contract as any).data as Contract)
+  }
+  return []
+}
+
+export async function getGroupContractIds(groupId: string) {
+  const { data } = await run(
+    db.from('group_contracts').select('contract_id').eq('group_id', groupId)
+  )
+  if (data && data.length > 0) {
+    return data.map((group) => group.contract_id as string)
+  }
+  return []
+}
+
+export async function listGroupsBySlug(groupSlugs: string[]) {
+  const { data } = await run(
+    db.from('groups').select('data').in('slug', groupSlugs)
+  )
+  if (data && data.length > 0) {
+    return data.map((group) => group.data as Group)
+  }
+  return []
+}
 
 // functions called for multiple groups
 export async function searchGroups(prompt: string, limit: number) {
@@ -40,10 +87,7 @@ export async function searchGroups(prompt: string, limit: number) {
 
 export async function getMemberGroups(userId: string, db: SupabaseClient) {
   const groupIds = await getMemberGroupIds(userId, db)
-  const query = selectJson(db, 'groups').in(
-    'id',
-    groupIds.map((d: { group_id: string }) => d.group_id)
-  )
+  const query = selectJson(db, 'groups').in('id', groupIds)
 
   return (await run(query)).data.map((d) => d.data as Group)
 }
@@ -57,10 +101,7 @@ export async function getShouldBlockDestiny(
     db
       .from('groups')
       .select('data')
-      .in(
-        'id',
-        groupIds.map((d: { group_id: string }) => d.group_id)
-      )
+      .in('id', groupIds)
       .in('slug', DESTINY_GROUP_SLUGS)
   )
 
@@ -72,7 +113,7 @@ export async function getMemberGroupIds(userId: string, db: SupabaseClient) {
     db.from('group_members').select('group_id').eq('member_id', userId)
   )
 
-  return groupIds
+  return groupIds ? groupIds.map((groupId) => groupId.group_id) : []
 }
 
 export async function getMemberGroupsCount(userId: string) {
