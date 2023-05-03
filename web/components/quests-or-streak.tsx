@@ -26,6 +26,7 @@ import { getQuestScores } from 'common/supabase/set-scores'
 import { useQuestStatus } from 'web/hooks/use-quest-status'
 import { db } from 'web/lib/supabase/db'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import Link from 'next/link'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -207,7 +208,7 @@ const QuestRow = (props: {
           </span>
           <Col>
             <span className={clsx('sm:text-xl')}>
-              {link ? <a href={url}>{title}</a> : title}
+              {href ? <Link href={url}>{title}</Link> : title}
               {info && (
                 <InfoTooltip className={'!mb-1 ml-1 !h-4 !w-4'} text={info} />
               )}
