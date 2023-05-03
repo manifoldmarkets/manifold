@@ -141,6 +141,8 @@ function getSearchContractSQL(contractInput: {
       AND contractz.group_id = '${groupId}'`
     } else {
       // Normal full text search within group
+      //TODO: For creator/group searching, use the prefix and exact matching sort, sorting
+      // by the weight as it's written now and that's all you need, no websearch, etc.
       query = `
         SELECT contractz.data
         FROM (
@@ -186,6 +188,8 @@ function getSearchContractSQL(contractInput: {
     }
     // Normal full text search for markets by creator
     else {
+      //TODO: For creator/group searching, use the prefix and exact matching sort, sorting
+      // by the weight as it's written now and that's all you need, no websearch, etc.
       query = `
       SELECT data
       FROM contracts,
@@ -212,61 +216,65 @@ function getSearchContractSQL(contractInput: {
       ${whereSQL}`
     }
     // Fuzzy search for markets
-    // TODO: handle signed out user case
+
+    //TODO: for omni fuzzy search, we use the matching it has now and the exact matching
+    // excluding the last word, then the prefix matching sorting everything by popularity score
     else if (fuzzy) {
       query = `
-          SELECT contractz.*
-          FROM (
-          SELECT *,
-                 similarity(question, $1) AS similarity_score
-          FROM contracts 
-                   ${whereSQL}
-            and question_nostop_fts @@ websearch_to_tsquery('english_nostop_with_prefix', $1)
-            and similarity(question, $1) > 0.2
-          ) AS contractz
-             
-          union all
-
-          select your_recent_contracts.*
-          from (
-             SELECT *,
-                    similarity(question, $1)*10 AS similarity_score
-             FROM convert_data_array_to_contract_table(
-               ARRAY(
-                 SELECT data
-                 FROM get_your_recent_contracts('${uid}'::text, 100::int, 0::int)
-               )
-             )
-             where similarity(question, $1) > 0.1
-           ) as your_recent_contracts`
+        select * from (select *
+               from (SELECT contracts.*, query, query2, similarity_score, 1.0 AS weight
+                     FROM contracts,
+                          similarity(question, $1) AS similarity_score,
+                          websearch_to_tsquery('english_nostop_with_prefix', $1) as query,
+                          websearch_to_tsquery('english', $1) as query2 ${whereSQL}
+        and (question_nostop_fts @@ query
+        or description_fts @@ query2)
+        and similarity(question, $1) > 0.3) as contractz
+        union all
+        select *
+        from (WITH
+                exact_query AS (
+                    SELECT to_tsquery('english_nostop_with_prefix', get_exact_match_query($1)) AS query
+                ),
+                prefix_query AS (
+                    SELECT to_tsquery('english_nostop_with_prefix', get_prefix_match_query($1)) AS query
+                ),
+                exact_matches AS (
+                    SELECT contracts.*, exact_query.query, 'blank'::tsquery as query2, 0.0 AS weight
+                    FROM contracts, exact_query
+                    WHERE question_nostop_fts @@ exact_query.query
+                ),
+                prefix_matches AS (
+                    SELECT contracts.*, prefix_query.query, 'blank'::tsquery as query2, 1.0 AS weight
+                    FROM contracts, prefix_query
+                    WHERE question_nostop_fts @@ prefix_query.query
+                ),
+                combined_matches AS (
+                    SELECT * FROM prefix_matches
+                    UNION ALL
+                    SELECT * FROM exact_matches
+                )
+              SELECT *
+              FROM (
+                   SELECT *,
+                          ROW_NUMBER() OVER (PARTITION BY id ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC) as row_num
+                   FROM combined_matches
+               ) AS ranked_matches
+           WHERE row_num = 1
+           ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
+           limit ${limit}) as contractz
+     ) as all_contracts
+    `
+      sortAlgorithm = 'popularity_score'
     }
     // Normal full text search for markets
     else {
       query = `
-      select * from (
-      SELECT contractz.*
-         FROM (SELECT *
-               FROM contracts,
-                    websearch_to_tsquery('english', $1) as query
-                    ${whereSQL}
-                    AND (
-                      question_fts @@ query OR
-                      description_fts @@ query
-                      )
-               ) AS contractz
-      union all
-
-      select your_recent_contracts.*
-      from (
-      SELECT *
-       FROM convert_data_array_to_contract_table(
-         ARRAY(
-           SELECT data
-           FROM get_your_recent_contracts('${uid}'::text, 100::int, 0::int)
-         )
-       ), websearch_to_tsquery('english', $1) as query
-       where similarity(question, $1) > 0.1) as your_recent_contracts
-     ) as combined_contracts`
+          SELECT data
+          FROM contracts, websearch_to_tsquery('english',  $1) as query
+              ${whereSQL}
+      AND (question_fts @@ query
+          OR description_fts @@ query)`
     }
   }
   return (
