@@ -2911,11 +2911,6 @@
   dependencies:
     "@use-gesture/core" "10.2.23"
 
-"@vercel/analytics@0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@vercel/analytics/-/analytics-0.1.1.tgz#ce036282d76f03417141b54830930f915f40504b"
-  integrity sha512-34on7YtVt/yT8+QX7c5K2bcKYXnax06sQiK2PUdlQ1ABg5699mPdLGOSpS1gF//kR1s9oig4MCJ+N9nOjpaS6g==
-
 "@vercel/og@0.1.0":
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/@vercel/og/-/og-0.1.0.tgz#dd0574bca4acef7cf69576142d9b158fb74fda08"
