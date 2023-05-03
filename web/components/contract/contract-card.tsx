@@ -59,7 +59,6 @@ export const ContractCard = memo(function ContractCard(props: {
   hideQuestion?: boolean
   hideDetails?: boolean
   numAnswersFR?: number
-  trackCardViews?: boolean
   fromGroupProps?: {
     group: Group
     userRole: groupRoleType | null
@@ -82,7 +81,6 @@ export const ContractCard = memo(function ContractCard(props: {
     hideQuestion,
     hideDetails,
     numAnswersFR,
-    trackCardViews,
     fromGroupProps,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
@@ -92,18 +90,6 @@ export const ContractCard = memo(function ContractCard(props: {
   const { resolution } = contract
 
   const user = useUser()
-  const { ref } = trackCardViews
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useIsVisible(
-        () =>
-          track('view market card', {
-            contractId: contract.id,
-            creatorId: contract.creatorId,
-            slug: contract.slug,
-          } as ContractCardView),
-        true
-      )
-    : { ref: undefined }
   const marketClosed =
     (contract.closeTime || Infinity) < Date.now() || !!resolution
 
@@ -124,7 +110,6 @@ export const ContractCard = memo(function ContractCard(props: {
         hasImage ? 'ub-cover-image' : '',
         className
       )}
-      ref={ref}
     >
       <Col className="relative flex-1 gap-1 pt-2">
         {!hideDetails && (
