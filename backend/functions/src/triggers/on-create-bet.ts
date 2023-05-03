@@ -236,6 +236,9 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   if (!newUniqueBettorIds || newUniqueBettorIds.length > MAX_TRADERS_FOR_BONUS)
     return
 
+  // exclude unlisted markets from bonuses
+  if (oldContract.visibility === 'unlisted') return
+
   // exclude bots from bonuses
   if (BOT_USERNAMES.includes(bettor.username)) return
 

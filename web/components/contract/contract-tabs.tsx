@@ -30,7 +30,6 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { useUser } from 'web/hooks/use-user'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
-import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { track } from 'web/lib/service/analytics'
 import { getOlderBets } from 'web/lib/supabase/bets'
@@ -44,6 +43,7 @@ import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
 import { CertInfo, CertTrades } from './cert-overview'
 import { QfTrades } from './qf-overview'
+import { ContractMetricsByOutcome } from 'common/contract-metric'
 
 export const EMPTY_USER = '_'
 
@@ -288,6 +288,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           className="mb-5"
           contract={contract}
           clearReply={clearReply}
+          trackingLocation={'contract page'}
         />
       )}
       {comments.length > 0 && (
@@ -323,6 +324,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               contract={contract}
               parentComment={parent}
               threadComments={commentsByParent[parent.id] ?? []}
+              trackingLocation={'contract page'}
             />
           ))}
       <div className="relative w-full">

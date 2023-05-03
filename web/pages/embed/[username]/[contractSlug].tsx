@@ -21,11 +21,8 @@ import { useContract } from 'web/hooks/use-contracts'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useUser } from 'web/hooks/use-user'
-import {
-  HistoryPoint,
-  useSingleValueHistoryChartViewScale,
-} from 'web/components/charts/generic-charts'
-import { getBets, getBetFields } from 'web/lib/supabase/bets'
+import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
+import { getBetFields } from 'web/lib/supabase/bets'
 import { NoSEO } from 'web/components/NoSEO'
 import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
 import { useIsDarkMode } from 'web/hooks/dark-mode-context'
@@ -36,6 +33,9 @@ import {
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
+import { HistoryPoint } from 'common/chart'
+import { getBets } from 'common/supabase/bets'
+import { db } from 'web/lib/supabase/db'
 
 type HistoryData = { bets?: Bet[]; points?: HistoryPoint<Partial<Bet>>[] }
 
@@ -65,7 +65,7 @@ async function getHistoryData(contract: Contract) {
       }))
       return { points } as HistoryData
     default: // choice contracts
-      const bets = await getBets({
+      const bets = await getBets(db, {
         contractId: contract.id,
         ...CONTRACT_BET_LOADING_OPTS,
         limit: 50000,

@@ -11,7 +11,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { createMarketHelper } from './create-market'
 import { DAY_MS } from 'common/util/time'
 import { runTxn } from 'shared/run-txn'
-import { AdCreateTxn } from 'common/txn'
+import { PostAdCreateTxn } from 'common/txn'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -121,7 +121,7 @@ export const createpost = authEndpoint(async (req, auth) => {
         amount: cost,
         token: 'M$',
         description: 'Creating ad',
-      } as AdCreateTxn)
+      } as PostAdCreateTxn)
       if (result.status == 'error') {
         throw new APIError(500, result.message ?? 'An unknown error occurred')
       }

@@ -2,6 +2,16 @@ import { chunk } from 'lodash'
 import { run, millisToTs, selectJson, SupabaseClient } from './utils'
 import { Contract } from '../contract'
 
+export const getContractFromSlug = async (
+  contractSlug: string,
+  db: SupabaseClient
+) => {
+  const { data } = await run(
+    db.from('contracts').select('data').eq('slug', contractSlug).maybeSingle()
+  )
+  return data ? (data.data as Contract) : null
+}
+
 export const getContracts = async (
   contractIds: string[],
   db: SupabaseClient

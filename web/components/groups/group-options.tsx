@@ -6,15 +6,13 @@ import {
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { PrivateUser } from 'common/user'
+import { referralQuery } from 'common/util/share'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { useUser } from 'web/hooks/use-user'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
 import { getBlockGroupDropdownItem } from './hide-group-item'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
-import { useState } from 'react'
-import { AddMemberModal } from './add-member-modal'
-import { referralQuery } from 'common/util/share'
-import { useUser } from 'web/hooks/use-user'
 
 export function GroupOptions(props: {
   group: Group
@@ -22,17 +20,24 @@ export function GroupOptions(props: {
   privateUser: PrivateUser | undefined | null
   canEdit: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
+  onAddMemberClick: () => void
 }) {
-  const { group, groupUrl, privateUser, canEdit, setWritingNewAbout } = props
+  const {
+    group,
+    groupUrl,
+    privateUser,
+    canEdit,
+    setWritingNewAbout,
+    onAddMemberClick,
+  } = props
 
-  const [openAddMemberModal, setOpenAddMemberModal] = useState(false)
   let groupOptionItems = [] as DropdownItem[]
 
   if (canEdit) {
     groupOptionItems = groupOptionItems.concat({
       name: 'Add members',
       icon: <PlusCircleIcon className="h-5 w-5" />,
-      onClick: () => setOpenAddMemberModal(true),
+      onClick: onAddMemberClick,
     })
   }
   if (privateUser) {
@@ -76,11 +81,6 @@ export function GroupOptions(props: {
           />
         )}
       </Row>
-      <AddMemberModal
-        open={openAddMemberModal}
-        setOpen={setOpenAddMemberModal}
-        group={group}
-      />
     </>
   )
 }

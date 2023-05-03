@@ -42,11 +42,11 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '💵 Finance',
     '💰 Economics',
     '🚀 Startups',
-    '🚘 Elon musk',
+    '🚘 Elon Musk',
   ],
 
   '🪂 Lifestyle': [
-    '🏳️‍🌈 LGBT',
+    '🏳️‍🌈 LGBTQIA+',
     '⛪ Religion',
     '❤️ Sex and love',
     '👨‍🎓 Education',
@@ -80,6 +80,13 @@ export const cleanTopic = (topic: string) =>
     .replace(/[^\x00-\x7F]/g, '')
     .trim()
 
+export const getEmojiFromTopic = (topic: string) => {
+  const textWithEmoji = Object.values(TOPICS_TO_SUBTOPICS)
+    .flat()
+    .find((t) => t.includes(topic))
+  return textWithEmoji ? textWithEmoji.split(' ')[0] : ''
+}
+
 export const getSubtopics = (topic: string) =>
   TOPICS_TO_SUBTOPICS[topic].map(
     (subtopicWithEmoji) =>
@@ -89,3 +96,6 @@ export const getSubtopics = (topic: string) =>
         GROUP_IDs[cleanTopic(subtopicWithEmoji)],
       ] as const
   )
+export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
+  .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))
+  .flat()

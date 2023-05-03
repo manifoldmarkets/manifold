@@ -5,9 +5,10 @@ import dayjs from 'dayjs'
 
 import { formatPercent } from 'common/util/format'
 import { Row } from '../layout/row'
-import { HistoryPoint, SingleValueHistoryChart } from './generic-charts'
+import { SingleValueHistoryChart } from './generic-charts'
 import { TooltipProps } from './helpers'
 import { SizedContainer } from 'web/components/sized-container'
+import { HistoryPoint } from 'common/chart'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right

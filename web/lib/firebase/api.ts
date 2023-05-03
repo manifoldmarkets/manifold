@@ -10,6 +10,8 @@ import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
 export { APIError } from 'common/api'
 import { filter, Sort } from '../../components/supabase-search'
+import { AD_RATE_LIMIT } from 'common/boost'
+import { groupRoleType } from 'web/components/groups/group-member-modal'
 
 export async function call(url: string, method: string, params?: any) {
   const user = auth.currentUser
@@ -143,6 +145,23 @@ export function createPost(params: {
   return call(getApiUrl('createpost'), 'POST', params)
 }
 
+export function boostMarket(params: any) {
+  return call(getApiUrl('boost-market'), 'POST', params)
+}
+
+let nonce = 0
+export function redeemBoost(params: any) {
+  // TODO: rate limit on the backend instead?
+  const now = Date.now()
+  if (now - nonce < AD_RATE_LIMIT - 500) {
+    throw Error(
+      `Please wait ${AD_RATE_LIMIT / 1000} seconds between redeeming boosts.`
+    )
+  }
+  nonce = now
+  return call(getApiUrl('redeem-boost'), 'POST', params)
+}
+
 export function redeemAd(params: any) {
   return call(getApiUrl('redeemad'), 'POST', params)
 }
@@ -209,7 +228,11 @@ export function updateGroupPrivacy(params: {
   return call(getApiUrl('updategroupprivacy'), 'POST', params)
 }
 
-export function addGroupMember(params: { groupId: string; userId: string }) {
+export function addGroupMember(params: {
+  groupId: string
+  userId: string
+  role?: groupRoleType
+}) {
   return call(getApiUrl('addgroupmember'), 'POST', params)
 }
 
@@ -223,10 +246,6 @@ export function getUserIsGroupMember(params: { groupSlug: string }) {
 
 export function completeQuest(params: any) {
   return call(getApiUrl('completequest'), 'POST', params)
-}
-
-export function getPrivateContractBySlug(params: { contractSlug: string }) {
-  return call(getApiUrl('getprivatecontractbyslug'), 'POST', params)
 }
 
 export function getSupabaseToken() {
@@ -276,6 +295,19 @@ export function deleteMarket(params: { contractId: string }) {
 
 export function saveTopic(params: { topic: string }) {
   return call(getApiUrl('save-topic'), 'POST', params) as Promise<{
+    status: 'success'
+  }>
+}
+
+export function getContractParams(params: {
+  contractSlug: string
+  fromStaticProps: boolean
+}) {
+  return maybeAuthedCall(
+    getApiUrl('getcontractparams'),
+    'POST',
+    params
+  ) as Promise<{
     status: 'success'
   }>
 }

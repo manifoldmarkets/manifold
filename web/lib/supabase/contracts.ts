@@ -199,7 +199,7 @@ export async function searchContract(props: {
     creatorId: creator_id,
   })
   if (contracts) {
-    if (contracts.length == 20) {
+    if (contracts.length == limit) {
       return { fuzzyOffset: 0, data: contracts }
     } else {
       const fuzzyData = await searchContractFuzzy({

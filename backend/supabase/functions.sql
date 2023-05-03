@@ -1,11 +1,10 @@
-create or replace function jsonb_array_to_text_array(_js jsonb)
-  returns text[]
-  language sql immutable strict parallel safe as $$
+create
+or replace function jsonb_array_to_text_array (_js jsonb) returns text[] language sql immutable strict parallel safe as $$
 select array(select jsonb_array_elements_text(_js))
 $$;
 
 create
-or replace function recently_liked_contract_counts (since bigint) returns table (contract_id text, n int) immutable parallel safe language sql as $$
+or replace function recently_liked_contract_counts (since bigint) returns table (contract_id text, n int) stable parallel safe language sql as $$
 select data->>'contentId' as contract_id,
   count(*) as n
 from user_reactions
@@ -19,7 +18,7 @@ or replace function get_recommended_contracts_embeddings (uid text, n int, exclu
   distance numeric,
   relative_dist numeric,
   popularity_score numeric
-) immutable parallel safe language sql as $$ with user_embedding as (
+) stable parallel safe language sql as $$ with user_embedding as (
     select interest_embedding
     from user_embeddings
     where user_id = uid
@@ -47,7 +46,7 @@ or replace function get_recommended_contracts_embeddings_topic (
   distance numeric,
   relative_dist numeric,
   popularity_score numeric
-) immutable parallel safe language sql as $$ with topic_embedding as (
+) stable parallel safe language sql as $$ with topic_embedding as (
     select embedding
     from topic_embeddings
     where topic_embeddings.topic = p_topic
@@ -86,42 +85,34 @@ or replace function get_recommended_contracts_embeddings_from (
   distance numeric,
   relative_dist numeric,
   popularity_score numeric
-) immutable parallel safe language sql as $$ with available_contracts_unscored as (
-    select contract_id,
-      p_embedding <=> ce.embedding as distance,
-      (
-        row_number() over (
-          order by p_embedding <=> ce.embedding
-        )
-      ) / 2000.0 as relative_dist,
-      lpc.popularity_score,
-      lpc.created_time,
-      lpc.close_time,
-      jsonb_array_to_text_array(lpc.data->'groupSlugs') as group_slugs
+) stable parallel safe language sql as $$ with
+  swiped_contracts as (
+    select contract_id
+    from user_seen_markets
+    where user_id = uid
+      and (data->>'createdTime')::bigint > ts_to_millis(now() - interval '2 weeks')
+  ),
+  viewed_market_cards as (
+    select contract_id
+    from user_events
+    where user_id = uid
+      and name = 'view market card'
+      and ts > now() - interval '7 days'
+  ),
+  available_contracts_unscored as (
+    select ce.contract_id,
+           p_embedding <=> ce.embedding as distance,
+           (row_number() over (order by p_embedding <=> ce.embedding)) / 2000.0 as relative_dist,
+           lpc.popularity_score,
+           lpc.created_time,
+           lpc.close_time,
+           jsonb_array_to_text_array(lpc.data->'groupSlugs') as group_slugs
     from contract_embeddings as ce
-      join listed_open_contracts lpc on lpc.id = contract_id
-    where not exists (
-        select 1
-        from unnest(excluded_contract_ids) as w
-        where w = contract_id
-      ) -- That has not been swiped on within 2 weeks.
-      and not exists(
-        select 1
-        from user_seen_markets
-        where user_seen_markets.user_id = uid
-          and user_seen_markets.contract_id = ce.contract_id
-          and (user_seen_markets.data->>'createdTime')::bigint > ts_to_millis(now() - interval '2 weeks')
-      ) -- That has not been viewed as a card in the last day.
-      and not exists(
-        select 1
-        from user_events
-        where user_events.user_id = uid
-          and user_events.name = 'view market card'
-          and user_events.contract_id = ce.contract_id
-          and user_events.ts > now() - interval '2 days'
-      )
-    order by p_embedding <=> ce.embedding -- Find many that are close to your interests
-      -- so that among them we can filter for new, closing soon, and trending.
+           join listed_open_contracts lpc on lpc.id = ce.contract_id
+    where not exists (select 1 from unnest(excluded_contract_ids) w where w = ce.contract_id)
+      and not exists (select 1 from swiped_contracts sc where sc.contract_id = ce.contract_id)
+      and not exists (select 1 from viewed_market_cards vmc where vmc.contract_id = ce.contract_id)
+    order by p_embedding <=> ce.embedding
     limit 2000
   ), available_contracts as (
     select *,
@@ -356,7 +347,7 @@ select ct.resolution_time is null
   and ct.close_time > now() + interval '10 minutes' $$ language sql;
 
 create
-or replace function search_contracts_by_group_slugs (group_slugs text[], lim int, start int) returns jsonb[] immutable parallel safe language sql as $$
+or replace function search_contracts_by_group_slugs (group_slugs text[], lim int, start int) returns jsonb[] stable parallel safe language sql as $$
 select array_agg(data)
 from (
     select data
@@ -374,7 +365,7 @@ or replace function search_contracts_by_group_slugs_for_creator (
   group_slugs text[],
   lim int,
   start int
-) returns jsonb[] immutable parallel safe language sql as $$
+) returns jsonb[] stable parallel safe language sql as $$
 select array_agg(data)
 from (
     select data
@@ -388,7 +379,7 @@ from (
   ) as search_contracts $$;
 
 create
-or replace function get_contract_metrics_with_contracts (uid text, count int, start int) returns table (contract_id text, metrics jsonb, contract jsonb) immutable parallel safe language sql as $$
+or replace function get_contract_metrics_with_contracts (uid text, count int, start int) returns table (contract_id text, metrics jsonb, contract jsonb) stable parallel safe language sql as $$
 select ucm.contract_id,
   ucm.data as metrics,
   c.data as contract
@@ -400,7 +391,7 @@ order by ((ucm.data)->'lastBetTime')::bigint desc offset start
 limit count $$;
 
 create
-or replace function get_open_limit_bets_with_contracts (uid text, count int) returns table (contract_id text, bets jsonb[], contract jsonb) immutable parallel safe language sql as $$;
+or replace function get_open_limit_bets_with_contracts (uid text, count int) returns table (contract_id text, bets jsonb[], contract jsonb) stable parallel safe language sql as $$;
 select contract_id,
   bets.data as bets,
   contracts.data as contracts
@@ -420,7 +411,7 @@ from (
 limit count $$;
 
 create
-or replace function get_user_bets_from_resolved_contracts (uid text, count int, start int) returns table (contract_id text, bets jsonb[], contract jsonb) immutable parallel safe language sql as $$;
+or replace function get_user_bets_from_resolved_contracts (uid text, count int, start int) returns table (contract_id text, bets jsonb[], contract jsonb) stable parallel safe language sql as $$;
 select contract_id,
   bets.data as bets,
   contracts.data as contracts
@@ -441,7 +432,7 @@ where contracts.resolution_time is not null
 limit count offset start $$;
 
 create
-or replace function get_contracts_by_creator_ids (creator_ids text[], created_time bigint) returns table (creator_id text, contracts jsonb) immutable parallel safe language sql as $$
+or replace function get_contracts_by_creator_ids (creator_ids text[], created_time bigint) returns table (creator_id text, contracts jsonb) stable parallel safe language sql as $$
 select creator_id,
   jsonb_agg(data) as contracts
 from contracts
@@ -474,7 +465,7 @@ create table if not exists
 alter table discord_messages_markets enable row level security;
 
 create
-or replace function get_your_contract_ids (uid text) returns table (contract_id text) immutable parallel safe language sql as $$ with your_liked_contracts as (
+or replace function get_your_contract_ids (uid text) returns table (contract_id text) stable parallel safe language sql as $$ with your_liked_contracts as (
     select (data->>'contentId') as contract_id
     from user_reactions
     where user_id = uid
@@ -491,7 +482,7 @@ select contract_id
 from your_followed_contracts $$;
 
 create
-or replace function get_your_daily_changed_contracts (uid text, n int, start int) returns table (data jsonb, daily_score real) immutable parallel safe language sql as $$
+or replace function get_your_daily_changed_contracts (uid text, n int, start int) returns table (data jsonb, daily_score real) stable parallel safe language sql as $$
 select data,
   coalesce((data->>'dailyScore')::real, 0.0) as daily_score
 from get_your_contract_ids(uid)
@@ -501,7 +492,7 @@ order by daily_score desc
 limit n offset start $$;
 
 create
-or replace function get_your_trending_contracts (uid text, n int, start int) returns table (data jsonb, score real) immutable parallel safe language sql as $$
+or replace function get_your_trending_contracts (uid text, n int, start int) returns table (data jsonb, score real) stable parallel safe language sql as $$
 select data,
   popularity_score as score
 from get_your_contract_ids(uid)
@@ -513,7 +504,7 @@ limit n offset start $$;
 
 -- Your most recent contracts by bets or likes.
 create
-or replace function get_your_recent_contracts (uid text, n int, start int) returns table (data jsonb, max_ts bigint) immutable parallel safe language sql as $$ with your_bet_on_contracts as (
+or replace function get_your_recent_contracts (uid text, n int, start int) returns table (data jsonb, max_ts bigint) stable parallel safe language sql as $$ with your_bet_on_contracts as (
     select contract_id,
       (data->>'lastBetTime')::bigint as ts
     from user_contract_metrics
@@ -550,7 +541,7 @@ order by max_ts desc
 limit n offset start $$;
 
 create
-or replace function get_contract_metrics_grouped_by_user_ids (uids text[], period text) returns table (user_id text, contract_metrics jsonb[]) immutable parallel safe language sql as $$
+or replace function get_contract_metrics_grouped_by_user_ids (uids text[], period text) returns table (user_id text, contract_metrics jsonb[]) stable parallel safe language sql as $$
 select ucm.user_id,
   array_agg(ucm.data) as contract_metrics
 from user_contract_metrics as ucm
@@ -609,6 +600,60 @@ limit match_count;
 $$;
 
 create
+or replace function get_top_market_ads (uid text) returns table (
+  ad_id text,
+  market_id text,
+  ad_funds numeric,
+  ad_cost_per_view numeric,
+  market_data jsonb
+) language sql parallel safe as $$
+--with all the redeemed ads (has a txn)
+with redeemed_ad_ids as (
+  select
+    data->>'fromId' as fromId
+  from
+    txns
+  where
+    data->>'category' = 'MARKET_BOOST_REDEEM'
+    and data->>'toId' = uid
+),
+-- with the user embedding
+user_embedding as (
+  select interest_embedding
+  from user_embeddings
+  where user_id = uid
+),
+--with all the ads that haven't been redeemed, by closest to your embedding
+unredeemed_market_ads as (
+select
+  id, market_id, funds, cost_per_view
+from market_ads
+where 
+  NOT EXISTS (
+    SELECT 1
+    FROM redeemed_ad_ids
+    WHERE fromId = market_ads.id
+  )
+  and market_ads.funds > 0
+  order by embedding <=> (
+    select interest_embedding
+    from user_embedding
+  )
+  limit 50
+)
+select 
+  ma.id,
+  ma.market_id,
+  ma.funds,
+  ma.cost_per_view,
+  contracts.data
+ from 
+ unredeemed_market_ads as ma
+inner join contracts
+on contracts.id = ma.market_id
+$$;
+
+create
 or replace function save_user_topics (p_user_id text, p_topics text[]) returns void language sql as $$ with chosen_embedding as (
     select avg(embedding) as average
     from topic_embeddings
@@ -641,6 +686,38 @@ set topics = excluded.topics,
 $$;
 
 create
+or replace function save_user_topics_blank (p_user_id text) returns void language sql as $$
+with
+  average_all as (
+    select avg(embedding) as average
+    from topic_embeddings
+  ),
+  ignore_embeddings as (
+    select avg(embedding) as average
+    from topic_embeddings
+    where topic in (
+      select unnest(ARRAY['destiny.gg', 'stock', 'planecrash', 'proofnik', 'permanent', 'personal']::text[])
+    )
+  ),
+  topic_embedding as (
+    select (avg_all.average - not_chosen.average) as average
+    from average_all as avg_all,
+         ignore_embeddings as not_chosen
+  )
+insert into user_topics (user_id, topics, topic_embedding)
+values (
+         p_user_id,
+         ARRAY['']::text[],
+         (
+           select average
+           from topic_embedding
+         )
+       ) on conflict (user_id) do
+  update set topics = excluded.topics,
+             topic_embedding = excluded.topic_embedding;
+$$;
+
+create
 or replace function firebase_uid () returns text language sql stable parallel safe as $$
 select nullif(
     current_setting('request.jwt.claims', true)::json->>'sub',
@@ -648,70 +725,61 @@ select nullif(
   )::text;
 $$;
 
+create
+or replace function get_reply_chain_comments_matching_contracts (contract_ids text[], past_time_ms bigint) returns table (id text, contract_id text, data JSONB) as $$
+  WITH matching_comments AS (
+      SELECT
+          c1.comment_id AS id,
+          c1.contract_id,
+          c1.data
+      FROM
+          contract_comments c1
+      WHERE
+              c1.contract_id = ANY(contract_ids)
+        AND (c1.data -> 'createdTime')::BIGINT >= past_time_ms
+  ),
+       reply_chain_comments AS (
+           SELECT
+               c2.comment_id AS id,
+               c2.contract_id,
+               c2.data
+           FROM
+               contract_comments c2
+                   JOIN matching_comments mc
+                        ON c2.contract_id = mc.contract_id
+                            AND c2.data ->> 'replyToCommentId' = mc.data ->> 'replyToCommentId'
+                            AND c2.data->>'id' != mc.id
+       ),
+       parent_comments AS (
+           SELECT
+               c3.comment_id AS id,
+               c3.contract_id,
+               c3.data
+           FROM
+               contract_comments c3
+                   JOIN matching_comments mc
+                        ON c3.contract_id = mc.contract_id
+                            AND c3.data ->> 'id' = mc.data ->> 'replyToCommentId'
+       )
+  SELECT * FROM matching_comments
+  UNION ALL
+  SELECT * FROM parent_comments
+  UNION ALL
+  SELECT * FROM reply_chain_comments;
+$$ language sql;
 
-CREATE OR REPLACE FUNCTION get_reply_chain_comments_matching_contracts(contract_ids TEXT[], past_time_ms BIGINT)
-    RETURNS TABLE (
-                      id text,
-                      contract_id text,
-                      data JSONB
-                  ) AS $$
-BEGIN
-    RETURN QUERY
-        WITH matching_comments AS (
-            SELECT
-                (c1.data ->> 'id') AS id,
-                c1.contract_id,
-                c1.data
-            FROM
-                contract_comments c1
-            WHERE
-                    c1.contract_id = ANY(contract_ids)
-              AND (c1.data -> 'createdTime')::BIGINT >= past_time_ms
-        ),
-             reply_chain_comments AS (
-                 SELECT
-                     (c2.data ->> 'id') AS id,
-                     c2.contract_id,
-                     c2.data
-                 FROM
-                     contract_comments c2
-                         JOIN matching_comments mc
-                              ON c2.contract_id = mc.contract_id
-                                  AND c2.data ->> 'replyToCommentId' = mc.data ->> 'replyToCommentId'
-                                  AND c2.data->>'id' != mc.id
-             ),
-             parent_comments AS (
-                 SELECT
-                     (c3.data ->> 'id') AS id,
-                     c3.contract_id,
-                     c3.data
-                 FROM
-                     contract_comments c3
-                         JOIN matching_comments mc
-                              ON c3.contract_id = mc.contract_id
-                                  AND c3.data ->> 'id' = mc.data ->> 'replyToCommentId'
-             )
-        SELECT * FROM matching_comments
-        UNION ALL
-        SELECT * FROM parent_comments
-        UNION ALL
-        SELECT * FROM reply_chain_comments;
-END;
-$$ LANGUAGE plpgsql;
-
-
-create or replace function get_contracts_with_unseen_liked_comments(
+create
+or replace function get_contracts_with_unseen_liked_comments (
   available_contract_ids text[],
   excluded_contract_ids text[],
   current_user_id text,
   limit_count integer
-)
-  returns table (
-                  contract_id text,
-                  comment_id text,
-                  user_id text,
-                  data jsonb
-                ) as $$
+) returns table (
+  contract_id text,
+  comment_id text,
+  user_id text,
+  data jsonb
+) as $$
 select
   filtered_comments.contract_id,
   filtered_comments.comment_id,
@@ -737,7 +805,7 @@ from (
                where
                    ue.user_id = current_user_id and
                      ue.name = 'view comment thread' and
-                     ue.data->>'commentId' = comments.comment_id
+                     ue.comment_id = comments.comment_id
              )
              or exists (
              select 1
@@ -745,7 +813,7 @@ from (
              where
                  ue.user_id = current_user_id and
                    ue.name = 'view comment thread' and
-                   ue.data->>'commentId' = comments.data->>'replyToCommentId'
+                   ue.comment_id = comments.data->>'replyToCommentId'
            )
            )
        order by
@@ -755,3 +823,152 @@ order by
   filtered_comments.created_time desc
 limit limit_count;
 $$ language sql;
+
+create
+or replace function search_users (query text, count integer) returns setof users as $$
+select *
+from users
+where to_tsvector((data->>'username') || ' ' || (data->>'name')) @@ websearch_to_tsquery(query)
+  or data->>'username' ilike '%' || query || '%'
+  or data->>'name' ilike '%' || query || '%'
+order by greatest(
+    similarity(query, data->>'name'),
+    similarity(query, data->>'username')
+  ) desc,
+  data->>'lastBetTime' desc nulls last
+limit count $$ language sql stable;
+
+create
+or replace function get_unseen_reply_chain_comments_matching_contracts (contract_ids text[], current_user_id text) returns table (id text, contract_id text, data JSONB) as $$
+WITH matching_comments AS (
+  SELECT
+    c1.comment_id AS id,
+    c1.contract_id,
+    c1.data
+  FROM
+    contract_comments c1
+  WHERE
+      c1.contract_id = ANY(contract_ids)
+    AND
+    not (
+        exists (
+          select 1
+          from user_events ue
+          where
+              ue.user_id = current_user_id and
+              ue.name = 'view comment thread' and
+                ue.comment_id = c1.comment_id
+        )
+        or exists (
+        select 1
+        from user_events ue
+        where
+            ue.user_id = current_user_id and
+            ue.name = 'view comment thread' and
+              ue.comment_id = c1.data->>'replyToCommentId'
+      )
+      )
+),
+     reply_chain_comments AS (
+       SELECT
+         c2.comment_id AS id,
+         c2.contract_id,
+         c2.data
+       FROM
+         contract_comments c2
+           JOIN matching_comments mc
+                ON c2.contract_id = mc.contract_id
+                  AND c2.data ->> 'replyToCommentId' = mc.data ->> 'replyToCommentId'
+                  AND c2.data->>'id' != mc.id
+     ),
+     parent_comments AS (
+       SELECT
+         c3.comment_id AS id,
+         c3.contract_id,
+         c3.data
+       FROM
+         contract_comments c3
+           JOIN matching_comments mc
+                ON c3.contract_id = mc.contract_id
+                  AND c3.data ->> 'id' = mc.data ->> 'replyToCommentId'
+     )
+SELECT * FROM matching_comments
+UNION ALL
+SELECT * FROM parent_comments
+UNION ALL
+SELECT * FROM reply_chain_comments;
+$$ language sql;
+
+
+CREATE OR REPLACE FUNCTION extract_text_from_rich_text_json(description jsonb) RETURNS text
+  LANGUAGE sql IMMUTABLE AS $$
+WITH RECURSIVE content_elements AS (
+  SELECT jsonb_array_elements(description->'content') AS element
+  WHERE jsonb_typeof(description) = 'object'
+  UNION ALL
+  SELECT jsonb_array_elements(element->'content')
+  FROM content_elements
+  WHERE element->>'type' = 'paragraph' AND element->'content' IS NOT NULL
+),
+               text_elements AS (
+                 SELECT jsonb_array_elements(element->'content') AS text_element
+                 FROM content_elements
+                 WHERE element->>'type' = 'paragraph'
+               ),
+               filtered_text_elements AS (
+                 SELECT text_element
+                 FROM text_elements
+                 WHERE jsonb_typeof(text_element) = 'object' AND text_element->>'type' = 'text'
+               ),
+               all_text_elements AS (
+                 SELECT filtered_text_elements.text_element->>'text' AS text
+                 FROM filtered_text_elements
+               )
+SELECT
+  CASE
+    WHEN jsonb_typeof(description) = 'string' THEN description::text
+    ELSE COALESCE(string_agg(all_text_elements.text, ' '), '')
+    END
+FROM
+  all_text_elements;
+$$;
+
+CREATE OR REPLACE FUNCTION add_creator_name_to_description(data jsonb) RETURNS text
+  LANGUAGE sql IMMUTABLE AS $$
+select * from CONCAT_WS(
+        ' '::text,
+        data->>'creatorName',
+        extract_text_from_rich_text_json(data->'description')
+  )
+$$;
+
+
+CREATE OR REPLACE FUNCTION get_prefix_match_query(p_query text)
+  RETURNS text AS $$
+WITH words AS (
+  SELECT unnest(regexp_split_to_array(trim(p_query), E'\\s+')) AS word
+),
+     numbered_words AS (
+       SELECT word, row_number() OVER () AS rn, count(*) OVER () AS total
+       FROM words
+     )
+SELECT string_agg(CASE
+                    WHEN rn < total THEN word
+                    ELSE word || ':*'
+                    END, ' & ')
+FROM numbered_words;
+$$ LANGUAGE sql IMMUTABLE;
+
+create or replace function get_exact_match_minus_last_word_query(p_query text)
+  returns text as $$
+WITH words AS (
+  SELECT unnest(regexp_split_to_array(trim(p_query), E'\\s+')) AS word
+),
+     numbered_words AS (
+       SELECT word, row_number() OVER () AS rn, count(*) OVER () AS total
+       FROM words
+     )
+SELECT string_agg(word, ' & ')
+FROM numbered_words
+WHERE rn < total
+$$ language sql immutable;

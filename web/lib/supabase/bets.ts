@@ -1,12 +1,12 @@
 import { db } from './db'
 import { millisToTs, run, selectFrom, selectJson } from 'common/supabase/utils'
-import { BetFilter } from 'web/lib/firebase/bets'
-import { Bet } from 'common/bet'
+import { Bet, BetFilter } from 'common/bet'
 import { Contract } from 'common/contract'
 import { Dictionary, flatMap } from 'lodash'
 import { LimitBet } from 'common/bet'
 import { useCallback, useEffect, useState } from 'react'
 import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
+import { applyBetsFilter } from 'common/supabase/bets'
 
 export async function getOlderBets(
   contractId: string,
@@ -29,13 +29,6 @@ export const getBet = async (id: string) => {
   return data.length > 0 ? data[0].data : null
 }
 
-export const getBets = async (options?: BetFilter) => {
-  let q = selectJson(db, 'contract_bets')
-  q = q.order('created_time', { ascending: options?.order === 'asc' })
-  q = applyBetsFilter(q, options)
-  const { data } = await run(q)
-  return data.map((r) => r.data)
-}
 export const getPublicBets = async (options?: BetFilter) => {
   let q = selectJson(db, 'public_contract_bets')
   q = q.order('created_time', { ascending: options?.order === 'asc' })
@@ -65,38 +58,6 @@ export const getBetFields = async <T extends (keyof Bet)[]>(
   q = applyBetsFilter(q, options)
   const { data } = await run(q)
   return data
-}
-
-// mqp: good luck typing q
-export const applyBetsFilter = (q: any, options?: BetFilter) => {
-  if (options?.contractId) {
-    q = q.eq('contract_id', options.contractId)
-  }
-  if (options?.userId) {
-    q = q.eq('user_id', options.userId)
-  }
-  if (options?.afterTime) {
-    q = q.gt('created_time', millisToTs(options.afterTime))
-  }
-  if (options?.beforeTime) {
-    q = q.lt('created_time', millisToTs(options.beforeTime))
-  }
-  if (options?.filterChallenges) {
-    q = q.eq('is_challenge', false)
-  }
-  if (options?.filterAntes) {
-    q = q.eq('is_ante', false)
-  }
-  if (options?.filterRedemptions) {
-    q = q.eq('is_redemption', false)
-  }
-  if (options?.isOpenLimitOrder) {
-    q = q.contains('data', { isFilled: false, isCancelled: false })
-  }
-  if (options?.limit) {
-    q = q.limit(options.limit)
-  }
-  return q
 }
 
 export const getOpenLimitOrdersWithContracts = async (
@@ -152,17 +113,4 @@ export const useRecentlyBetOnContracts = (userId: string) => {
   }, [loadMore])
 
   return { contracts: savedContracts, loadMore }
-}
-
-export async function getTotalBetCount(contractId: string) {
-  const { count } = await run(
-    db
-      .from('contract_bets')
-      .select('*', { head: true, count: 'exact' })
-      .eq('contract_id', contractId)
-      .eq('is_challenge', false)
-      .eq('is_redemption', false)
-      .eq('is_ante', false)
-  )
-  return count as number
 }

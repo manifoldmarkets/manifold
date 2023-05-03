@@ -209,11 +209,9 @@ const getMetricRelevantUserBets = async (
     `select cb.data
     from contract_bets as cb
     join contracts as c on cb.contract_id = c.id
-    where
-      cb.data->>'userId' in ($1:list) and
-      (c.resolution_time is null or c.resolution_time > millis_to_ts($2))
-    order by (cb.data->'createdTime')::bigint asc`,
-    [userIds, since]
+    where cb.user_id in ($1:list) and (c.resolution_time is null or c.resolution_time > $2)
+    order by cb.created_time asc`,
+    [userIds, new Date(since).toISOString()]
   )
   return mapValues(
     groupBy(bets, (r) => r.data.userId as string),
@@ -270,16 +268,14 @@ const getCreatorTraders = async (
   return Object.fromEntries(
     await pg.map(
       `with contract_traders as (
-        select distinct contract_id, data->>'userId' as user_id
-        from contract_bets
-        where (to_jsonb(data)->>'createdTime') >= $2::text
+        select distinct contract_id, user_id from contract_bets where created_time >= $2
       )
       select c.creator_id, count(ct.*)::int as total
       from contracts as c
       join contract_traders as ct on c.id = ct.contract_id
       where c.creator_id in ($1:list)
       group by c.creator_id`,
-      [userIds, since ?? 0],
+      [userIds, new Date(since ?? 0).toISOString()],
       (r) => [r.creator_id as string, r.total as number]
     )
   )

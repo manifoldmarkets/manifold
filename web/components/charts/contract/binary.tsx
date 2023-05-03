@@ -14,14 +14,11 @@ import {
   formatDateInRange,
   formatPct,
 } from '../helpers'
-import {
-  ControllableSingleValueHistoryChart,
-  HistoryPoint,
-  viewScale,
-} from '../generic-charts'
+import { ControllableSingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
+import { HistoryPoint, viewScale } from 'common/chart'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 

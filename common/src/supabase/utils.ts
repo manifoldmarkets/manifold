@@ -12,7 +12,6 @@ import { Contract } from '../contract'
 import { Bet } from '../bet'
 import { ContractMetrics } from '../calculate-metrics'
 import { Group, GroupMemberDoc, GroupContractDoc } from '../group'
-import { UserEvent } from '../events'
 
 export type Schema = Database['public']
 export type Tables = Schema['Tables']
@@ -47,7 +46,6 @@ export const subcollectionTables: SubcollectionTableMapping = {
     'contract-metrics': 'user_contract_metrics',
     follows: 'user_follows',
     reactions: 'user_reactions',
-    events: 'user_events',
     notifications: 'user_notifications',
   },
   'private-users': {
@@ -105,7 +103,6 @@ export async function run<T>(
 
 type TableJsonTypes = {
   users: User
-  user_events: UserEvent
   user_contract_metrics: ContractMetrics
   contracts: Contract
   cotracts_rbac: Contract

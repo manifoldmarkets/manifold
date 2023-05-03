@@ -1,10 +1,11 @@
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
-import { visibility } from 'common/contract'
+import { ContractParams, visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
+import { CONTRACT_BET_FILTER } from 'common/supabase/bets'
 import { removeUndefinedProps } from 'common/util/object'
 import { first } from 'lodash'
 import Head from 'next/head'
@@ -26,7 +27,7 @@ import {
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
-import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
+import { CreatorShareBoostPanel } from 'web/components/contract/creator-share-panel'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
@@ -38,6 +39,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { AlertBox } from 'web/components/widgets/alert-box'
+import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Linkify } from 'web/components/widgets/linkify'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -52,44 +54,32 @@ import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { getContractParams } from 'web/lib/contracts'
-import { BetFilter } from 'web/lib/firebase/bets'
+import { getContractParams } from 'web/lib/firebase/api'
 import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
-import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { GradientContainer } from 'web/components/widgets/gradient-container'
 
-export const CONTRACT_BET_FILTER: BetFilter = {
-  filterRedemptions: true,
-  filterChallenges: true,
-  filterAntes: false,
+export type ContractParameters = {
+  contractSlug: string
+  visibility: visibility | null
+  contractParams?: ContractParams
 }
-
-export type ContractParams = Awaited<ReturnType<typeof getContractParams>>
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  const adminDb = await initSupabaseAdmin()
-  const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
+  const contractParameters = await getContractParams({
+    contractSlug,
+    fromStaticProps: true,
+  })
 
-  // No contract found
-  if (contract === null || contract.deleted)
-    return { props: { contractSlug, visibility: null } }
-
-  // Private markets
-  const { visibility } = contract
-  if (visibility === 'private') return { props: { contractSlug, visibility } }
-
-  // Public markets
-  const contractParams = await getContractParams(contract)
-  return { props: { visibility, contractSlug, contractParams } }
+  return {
+    props: contractParameters,
+  }
 }
 
 export async function getStaticPaths() {
@@ -102,12 +92,8 @@ export default function ContractPage(props: {
   contractParams?: ContractParams
 }) {
   const { visibility, contractSlug, contractParams } = props
+
   if (!visibility) {
-    console.log(`There was no visibility parameter detected for your market
-      \nvisibility: ${visibility}
-      \nslug: ${contractSlug}
-      \ncontractParams: ${JSON.stringify(contractParams)}
-      `)
     return <Custom404 />
   }
   return (
@@ -430,7 +416,7 @@ export function ContractPageContent(props: {
             {isCreator && !isResolved && !isClosed && (
               <>
                 {showResolver && <Spacer h={4} />}
-                <CreatorSharePanel contract={contract} />
+                <CreatorShareBoostPanel contract={contract} />
               </>
             )}
 
@@ -486,7 +472,7 @@ export function ContractPageContent(props: {
         />
       </Row>
       <RelatedContractsList
-        className="max-w-[600px] xl:hidden"
+        className="mx-auto mt-8 max-w-[600px] xl:hidden"
         contracts={relatedMarkets}
         onContractClick={(c) =>
           track('click related market', { contractId: c.id })

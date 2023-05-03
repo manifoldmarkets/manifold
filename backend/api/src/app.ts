@@ -41,7 +41,6 @@ import { updategroupprivacy } from './update-group-privacy'
 import { addgroupmember } from './add-group-member'
 import { registerdiscordid } from './register-discord-id'
 import { getuserisgroupmember } from './get-user-is-group-member'
-import { getprivatecontractbyslug } from './get-private-contract-by-slug'
 import { redeemad } from './redeem-ad-reward'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
@@ -51,6 +50,9 @@ import { auctionbid } from './auction-bid'
 import { supabasesearchcontracts } from './supabase-search-contract'
 import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
+import { getcontractparams } from './get-contract-params'
+import { boostmarket } from './create-market-ad'
+import { redeemboost } from './redeem-market-ad-reward'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -118,7 +120,6 @@ app.post('/addcontracttogroup', ...apiRoute(addcontracttogroup))
 app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup))
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
-app.post('/getprivatecontractbyslug', ...apiRoute(getprivatecontractbyslug))
 app.post('/redeemad', ...apiRoute(redeemad))
 app.post('/completequest', ...apiRoute(completequest))
 app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
@@ -127,6 +128,8 @@ app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
 app.post('/supabasesearchcontracts', ...apiRoute(supabasesearchcontracts))
 app.post('/delete-market', ...apiRoute(deleteMarket))
 app.post('/save-topic', ...apiRoute(saveTopic))
+app.post('/boost-market', ...apiRoute(boostmarket))
+app.post('/redeem-boost', ...apiRoute(redeemboost))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)
 app.post(
@@ -135,3 +138,16 @@ app.post(
   express.raw({ type: '*/*' }),
   stripewebhook
 )
+app.post('/getcontractparams', ...apiRoute(getcontractparams))
+
+// Catch 404 errors - this should be the last route
+app.use((req, res, next) => {
+  res
+    .status(404)
+    .set('Content-Type', 'application/json')
+    .json({
+      error: {
+        message: `The requested route '${req.path}' does not exist. Please check your URL for any misspellings or refer to app.ts`,
+      },
+    })
+})

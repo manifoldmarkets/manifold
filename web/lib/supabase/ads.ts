@@ -1,4 +1,5 @@
 import { run, selectJson, selectFrom } from 'common/supabase/utils'
+import { filterDefined } from 'common/util/array'
 import { db } from './db'
 
 export async function getAllAds() {
@@ -23,7 +24,7 @@ export async function getWatchedAdIds(userId: string) {
 export async function getSkippedAdIds(userId: string) {
   const query = db
     .from('user_events')
-    .select('data->>adId')
+    .select('ad_id')
     .eq('user_id', userId)
     .eq('name', 'Skip ad')
 
@@ -45,8 +46,13 @@ export async function getUsersWhoSkipped(adId: string) {
     .from('user_events')
     .select('user_id')
     .eq('name', 'Skip ad')
-    .eq('data->>adId', adId)
+    .eq('ad_id', adId)
 
   const { data } = await run(query)
-  return data.map((r) => r['user_id']) ?? []
+  return filterDefined(data.map((r) => r['user_id']))
+}
+
+export const getBoosts = async (userId: string) => {
+  const { data } = await db.rpc('get_top_market_ads', { uid: userId })
+  return data
 }

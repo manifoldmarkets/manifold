@@ -1,62 +1,41 @@
-import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useId,
-  useMemo,
-  useState,
-} from 'react'
 import { bisector, extent } from 'd3-array'
 import { axisBottom, axisRight } from 'd3-axis'
 import { D3BrushEvent } from 'd3-brush'
-import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
+import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
 import {
   CurveFactory,
   SeriesPoint,
   curveLinear,
-  curveStepBefore,
   curveStepAfter,
+  curveStepBefore,
   stack,
   stackOrderReverse,
 } from 'd3-shape'
 import { range } from 'lodash'
+import { useCallback, useId, useMemo, useState } from 'react'
 
 import {
+  AxisConstraints,
+  DistributionPoint,
+  HistoryPoint,
   Margin,
-  SVGChart,
+  MultiPoint,
+  Point,
+  ValueKind,
+  viewScale,
+} from 'common/chart'
+import { formatMoneyNumber } from 'common/util/format'
+import { useEvent } from 'web/hooks/use-event'
+import {
   AreaPath,
   AreaWithTopStroke,
-  Point,
+  SVGChart,
   SliceMarker,
-  TooltipParams,
   TooltipComponent,
-  formatPct,
+  TooltipParams,
   computeColorStops,
+  formatPct,
 } from './helpers'
-import { useEvent } from 'web/hooks/use-event'
-import { formatMoneyNumber } from 'common/util/format'
-
-export type MultiPoint<T = unknown> = Point<number, number[], T>
-export type HistoryPoint<T = unknown> = Point<number, number, T>
-export type DistributionPoint<T = unknown> = Point<number, number, T>
-export type ValueKind = 'Ṁ' | 'percent' | 'amount'
-
-export type viewScale = {
-  viewXScale: ScaleTime<number, number, never> | undefined
-  setViewXScale: Dispatch<
-    SetStateAction<ScaleTime<number, number, never> | undefined>
-  >
-  viewYScale: ScaleContinuousNumeric<number, number, never> | undefined
-  setViewYScale: Dispatch<
-    SetStateAction<ScaleContinuousNumeric<number, number, never> | undefined>
-  >
-}
-
-type AxisConstraints = {
-  min?: number
-  max?: number
-  minExtent?: number
-}
 
 const Y_AXIS_CONSTRAINTS: Record<ValueKind, AxisConstraints> = {
   percent: { min: 0, max: 1, minExtent: 0.04 },

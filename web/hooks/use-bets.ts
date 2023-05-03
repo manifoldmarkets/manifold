@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react'
 import {
   Bet,
-  BetFilter,
   listenForBets,
   listenForUnfilledBets,
 } from 'web/lib/firebase/bets'
-import { LimitBet } from 'common/bet'
+import { BetFilter, LimitBet } from 'common/bet'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { useUsersById } from './use-user'
 import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
-import { getBets } from 'web/lib/supabase/bets'
+import { db } from 'web/lib/supabase/db'
+import { getBets } from 'common/supabase/bets'
 
 export const useBets = (options?: BetFilter) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
@@ -85,11 +85,11 @@ export const useRecentBets = (contractId: string, limit: number) => {
   })
 
   useEffect(() => {
-    getBets({
+    getBets(db, {
       contractId,
       limit,
       order: 'desc',
-    }).then((bets) => setBets(bets.reverse()))
+    }).then((bets: Bet[]) => setBets(bets.reverse()))
   }, [contractId, limit, setBets])
 
   return bets

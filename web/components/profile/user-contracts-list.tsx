@@ -92,7 +92,6 @@ export function UserContractsList(props: { creator: User }) {
         }}
         persistPrefix={`user-${creator.id}`}
         profile={true}
-        headerClassName="bg-canvas-50"
       />
     </Col>
   )

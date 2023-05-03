@@ -1,7 +1,10 @@
 import clsx from 'clsx'
 import { CPMMContract } from 'common/contract'
-import { ContractMetric } from 'common/contract-metric'
 import { ShareholderStats } from 'common/supabase/contract-metrics'
+import {
+  ContractMetric,
+  ContractMetricsByOutcome,
+} from 'common/contract-metric'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { partition } from 'lodash'
@@ -27,7 +30,6 @@ import { useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import {
-  ContractMetricsByOutcome,
   getTotalContractMetricsCount,
   getContractMetricsYesCount,
   getContractMetricsNoCount,

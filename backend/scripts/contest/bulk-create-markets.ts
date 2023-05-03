@@ -100,9 +100,9 @@ function makeDescription(submission: CEPSubmission) {
       {
         type: 'iframe',
         attrs: {
-          allowfullscreen: true,
+          allowFullscreen: true,
           src: link,
-          frameborder: 0,
+          frameBorder: 0,
         },
       },
     ],

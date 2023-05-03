@@ -10,9 +10,10 @@ import {
   getRightmostVisibleDate,
   TooltipProps,
 } from '../helpers'
-import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
+import { SingleValueHistoryChart } from '../generic-charts'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { Row } from 'web/components/layout/row'
+import { HistoryPoint } from 'common/chart'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
