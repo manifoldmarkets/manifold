@@ -145,7 +145,7 @@ export const primaryKeyColumnsByTable: {
   txns: ['id'],
   user_contract_metrics: ['user_id', 'contract_id'],
   user_embeddings: ['user_id'],
-  user_events: ['user_id', 'event_id'],
+  user_events: ['user_id', 'id'],
   user_follows: ['user_id', 'follow_id'],
   user_notifications: ['user_id', 'notification_id'],
   user_portfolio_history: ['user_id', 'portfolio_id'],
@@ -155,6 +155,8 @@ export const primaryKeyColumnsByTable: {
   user_seen_markets: ['user_id', 'contract_id'],
   user_topics: ['user_id'],
   users: ['id'],
+  leagues: ['user_id', 'season'],
+  market_ads: ['id'],
 }
 
 export function selectJson<T extends TableName | ViewName>(
