@@ -26,6 +26,7 @@ import { getQuestScores } from 'common/supabase/set-scores'
 import { useQuestStatus } from 'web/hooks/use-quest-status'
 import { db } from 'web/lib/supabase/db'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import Link from 'next/link'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -133,6 +134,7 @@ export function QuestsModal(props: {
               BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
               BETTING_STREAK_BONUS_MAX
             )}
+            href={'markets'}
           />
           <QuestRow
             emoji={'📤'}
@@ -151,6 +153,7 @@ export function QuestsModal(props: {
             complete={createStatus.currentCount >= createStatus.requiredCount}
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
+            href={'create'}
           />
           <QuestRow
             emoji={'🏺'}
@@ -164,6 +167,7 @@ export function QuestsModal(props: {
             info={
               'This has to be a market that no other user has bet on in the last 3 months'
             }
+            href={'ancient'}
           />{' '}
           <QuestRow
             emoji={'🙋️'}
@@ -176,6 +180,7 @@ export function QuestsModal(props: {
             info={
               'Just click the share button on a market and your referral code will be added to the link'
             }
+            href={'referrals'}
           />
         </Col>
       </div>
@@ -190,8 +195,10 @@ const QuestRow = (props: {
   status: string
   reward: number
   info?: string
+  href?: string
 }) => {
-  const { title, complete, status, reward, emoji, info } = props
+  const { title, complete, status, reward, emoji, info, href } = props
+  const url = 'https://manifold.markets/' + href
   return (
     <Row className={'justify-between'}>
       <Col>
@@ -201,7 +208,7 @@ const QuestRow = (props: {
           </span>
           <Col>
             <span className={clsx('sm:text-xl')}>
-              {title}
+              {href ? <Link href={url}>{title}</Link> : title}
               {info && (
                 <InfoTooltip className={'!mb-1 ml-1 !h-4 !w-4'} text={info} />
               )}
