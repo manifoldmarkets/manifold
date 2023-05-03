@@ -24,6 +24,7 @@ const bodySchema = z.object({
     z.literal('last-updated'),
     z.literal('close-date'),
     z.literal('resolve-date'),
+    z.literal('random'),
   ]),
   offset: z.number().gte(0),
   limit: z.number().gt(0),
@@ -377,6 +378,7 @@ function getSearchContractSortSQL(
     newest: 'created_time',
     'resolve-date': 'resolution_time',
     'close-date': 'close_time',
+    random: 'random()',
   }
 
   const ASCDESC = sort === 'close-date' || sort === 'liquidity' ? 'ASC' : 'DESC'
