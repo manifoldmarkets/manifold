@@ -2,15 +2,12 @@ import * as admin from 'firebase-admin'
 import { writeCsv } from 'shared/helpers/file'
 
 import { initAdmin } from 'shared/init-admin'
-import { PrivateUser } from 'common/user'
 
-// Initialize Firebase Admin SDK
 initAdmin()
 
 const firestore = admin.firestore()
 
 async function main() {
-  // Get the email data from the 'private-users' collection
   const emailSnap = await firestore
     .collection('private-users')
     .select('email')
@@ -20,7 +17,6 @@ async function main() {
     return acc
   }, {} as { [id: string]: string })
 
-  // Get the username data from the 'users' collection
   const usersSnap = await firestore
     .collection('users')
     .select('username', 'createdTime')
@@ -33,13 +29,11 @@ async function main() {
     email: emailData[doc.id] || '',
   }))
 
-  // Prepare CSV data
   const data = users.map((user) => ({
     username: user.username,
     email: user.email,
   }))
 
-  // Update the fields and header for the CSV
   const filePath =
     'C:\\Users\\d4vid\\OneDrive\\Documents\\Manifold emails\\user-emails.csv'
   const fields = ['username', 'email']
