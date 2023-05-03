@@ -207,11 +207,11 @@ create index if not exists user_events_name on user_events (user_id, name);
 
 create index if not exists user_events_ts on user_events (user_id, ts);
 
-create index if not exists user_events_ad_skips on user_events (name, (to_jsonb(data) ->> 'adId'))
+create index if not exists user_events_ad_skips on user_events (name, ad_id)
 where
   name = 'Skip ad';
 
-create index if not exists user_events_comment_view on user_events (user_id, name, (data ->> 'commentId'));
+create index if not exists user_events_comment_view on user_events (user_id, name, comment_id);
 
 create index if not exists user_events_viewed_markets on user_events (user_id, name, contract_id, ts desc)
 where

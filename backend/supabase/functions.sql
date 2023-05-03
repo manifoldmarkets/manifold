@@ -805,7 +805,7 @@ from (
                where
                    ue.user_id = current_user_id and
                      ue.name = 'view comment thread' and
-                     ue.data->>'commentId' = comments.comment_id
+                     ue.comment_id = comments.comment_id
              )
              or exists (
              select 1
@@ -813,7 +813,7 @@ from (
              where
                  ue.user_id = current_user_id and
                    ue.name = 'view comment thread' and
-                   ue.data->>'commentId' = comments.data->>'replyToCommentId'
+                   ue.comment_id = comments.data->>'replyToCommentId'
            )
            )
        order by
@@ -857,7 +857,7 @@ WITH matching_comments AS (
           where
               ue.user_id = current_user_id and
               ue.name = 'view comment thread' and
-                ue.data->>'commentId' = c1.comment_id
+                ue.comment_id = c1.comment_id
         )
         or exists (
         select 1
@@ -865,7 +865,7 @@ WITH matching_comments AS (
         where
             ue.user_id = current_user_id and
             ue.name = 'view comment thread' and
-              ue.data->>'commentId' = c1.data->>'replyToCommentId'
+              ue.comment_id = c1.data->>'replyToCommentId'
       )
       )
 ),
