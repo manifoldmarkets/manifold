@@ -20,8 +20,7 @@ export const getStaticProps = async () => {
     .select('data')
     // Excludes markets with recent comments but not recent bets
     .lte('data->lastUpdatedTime', dayjs().subtract(3, 'month').valueOf())
-    // Main sort is by lastBetTime with unbet-on markets first, then sorted by most recently updated
-    .order('data->lastUpdatedTime' as any, { ascending: true })
+    // Put markets with no bets first
     .order('data->lastBetTime' as any, { ascending: true, nullsFirst: true })
     .limit(300)
 
