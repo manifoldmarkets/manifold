@@ -282,6 +282,7 @@ create table if not exists
     popularity_score numeric,
     data jsonb not null,
     question_fts tsvector generated always as (to_tsvector('english'::regconfig, question)) stored,
+    question_nostop_fts tsvector generated always as (to_tsvector('english_nostop_with_prefix'::regconfig, question)) stored,
     description_fts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, add_creator_name_to_description(data))) STORED,
     fs_updated_time timestamp not null
   );
@@ -311,8 +312,11 @@ create index if not exists contracts_popularity_score on contracts (popularity_s
 create index if not exists contracts_visibility on contracts (visibility);
 
 create index if not exists description_fts on contracts using gin (description_fts);
--- for the ilike search
+
+-- for the ilike search TODO: remove this after PR merge
 create index concurrently if not exists contracts_question_trgm_idx on contracts using gin (question gin_trgm_ops);
+
+create index concurrently if not exists question_nostop_fts on contracts  using gin (question_nostop_fts);
 
 alter table contracts
 cluster on contracts_creator_id;
@@ -1192,3 +1196,17 @@ drop trigger if exists replicate_writes on incoming_writes;
 create trigger replicate_writes
 after insert on incoming_writes referencing new table as new_table for each statement
 execute function replicate_writes_process_new ();
+
+
+CREATE TEXT SEARCH DICTIONARY english_stem_nostop (
+  Template = snowball,
+  Language = english
+  );
+
+CREATE TEXT SEARCH DICTIONARY english_prefix (
+  TEMPLATE = simple
+  );
+CREATE TEXT SEARCH CONFIGURATION public.english_nostop_with_prefix (COPY = english);
+ALTER TEXT SEARCH CONFIGURATION public.english_nostop_with_prefix
+  ALTER MAPPING FOR asciiword, asciihword, hword_asciipart, hword, hword_part, word
+    WITH english_stem_nostop, english_prefix;

@@ -140,29 +140,51 @@ function getSearchContractSQL(contractInput: {
       AND contractz.similarity_score > 0.1
       AND contractz.group_id = '${groupId}'`
     } else {
-      // Normal full text search within group
-      //TODO: For creator/group searching, use the prefix and exact matching sort, sorting
-      // by the weight as it's written now and that's all you need, no websearch, etc.
+      // Normal exact match and prefix search within group
       query = `
-        SELECT contractz.data
-        FROM (
+    select * from (
+        WITH group_contracts as (
             select contracts.*, group_contracts.group_id 
             from contracts 
             join group_contracts on group_contracts.contract_id = contracts.id
-        ) as contractz,
-             build_tsquery_with_prefix('english_nostop_with_prefix', $1) AS tsq(exact_query, prefix_query),
-             websearch_to_tsquery('english',  $1) as query
-            ${whereSQL}
-        AND (
-            contractz.question_nostop_fts @@ exact_query OR
-            contractz.question_nostop_fts @@ prefix_query OR
-            contractz.description_fts @@ query
-            )
-        AND contractz.group_id = '${groupId}'`
-      sortAlgorithm =
-        'ts_rank_cd(question_nostop_fts, exact_query, 2) * 1.0 +' +
-        'ts_rank_cd(question_nostop_fts, prefix_query, 2) * 0.5 +' +
-        'ts_rank_cd(description_fts, query) * 0.1'
+        ) ,
+        subset_query AS (
+            SELECT to_tsquery('english_nostop_with_prefix', get_exact_match_minus_last_word_query($1)) AS query
+        ),
+        prefix_query AS (
+            SELECT to_tsquery('english_nostop_with_prefix', get_prefix_match_query($1)) AS query
+        ),
+        subset_matches AS (
+            SELECT group_contracts.*, subset_query.query, 0.0 AS weight
+            FROM group_contracts, subset_query
+                ${whereSQL}
+                AND question_nostop_fts @@ subset_query.query
+                AND group_contracts.group_id = '${groupId}'
+        ),
+        prefix_matches AS (
+            SELECT group_contracts.*, prefix_query.query,  1.0 AS weight
+            FROM group_contracts, prefix_query
+                ${whereSQL}
+                AND question_nostop_fts @@ prefix_query.query
+                AND group_contracts.group_id = '${groupId}'
+        ),
+        combined_matches AS (
+            SELECT * FROM prefix_matches
+            UNION ALL
+            SELECT * FROM subset_matches
+        )
+    SELECT *
+    FROM (
+             SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC) as row_num
+             FROM combined_matches
+         ) AS ranked_matches
+    WHERE row_num = 1
+    -- prefix matches are weighted higher than subset matches bc they include the last word
+    ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
+    limit ${limit}) as relevant_group_contracts
+      `
+      // We use popularity score bc these are exact matches and can be low quality
+      sortAlgorithm = 'popularity_score'
     }
   }
   // Searching markets by creator
@@ -186,25 +208,45 @@ function getSearchContractSQL(contractInput: {
       ${whereSQL}
       AND contractz.similarity_score > 0.1`
     }
-    // Normal full text search for markets by creator
+    // Normal prefix and exact match search for markets by creator
     else {
-      //TODO: For creator/group searching, use the prefix and exact matching sort, sorting
-      // by the weight as it's written now and that's all you need, no websearch, etc.
       query = `
-      SELECT data
-      FROM contracts,
-           build_tsquery_with_prefix('english_nostop_with_prefix', $1) AS tsq(exact_query, prefix_query),
-           websearch_to_tsquery('english',  $1) as query 
-         ${whereSQL}
-      AND (
-        question_nostop_fts @@ exact_query OR
-        question_nostop_fts @@ prefix_query OR
-        description_fts @@ query
-        )`
-      sortAlgorithm =
-        'ts_rank_cd(question_nostop_fts, exact_query, 2) * 1.0 +' +
-        'ts_rank_cd(question_nostop_fts, prefix_query, 2) * 0.5 +' +
-        'ts_rank_cd(description_fts, query) * 0.1'
+        select *
+        from (WITH
+          subset_query AS (
+              SELECT to_tsquery('english_nostop_with_prefix', get_exact_match_minus_last_word_query($1)) AS query
+          ),
+          prefix_query AS (
+              SELECT to_tsquery('english_nostop_with_prefix', get_prefix_match_query($1)) AS query
+          ),
+          subset_matches AS (
+              SELECT contracts.*, subset_query.query, 0.0 AS weight
+              FROM contracts, subset_query
+                  ${whereSQL}
+                  AND question_nostop_fts @@ subset_query.query
+          ),
+          prefix_matches AS (
+              SELECT contracts.*, prefix_query.query,  1.0 AS weight
+              FROM contracts, prefix_query
+                  ${whereSQL}
+                  AND question_nostop_fts @@ prefix_query.query
+          ),
+          combined_matches AS (
+              SELECT * FROM prefix_matches
+              UNION ALL
+              SELECT * FROM subset_matches
+          )
+        SELECT *
+        FROM (
+             SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC) as row_num
+             FROM combined_matches
+         ) AS ranked_matches
+        WHERE row_num = 1
+        -- prefix matches are weighted higher than subset matches bc they include the last word
+        ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
+        limit ${limit}) as relevant_creator_contracts
+      `
+      // Creators typically don't have that many markets so we don't have to sort by popularity score
     }
   }
   // Blank search for markets not by group nor creator
@@ -215,56 +257,46 @@ function getSearchContractSQL(contractInput: {
       FROM contracts 
       ${whereSQL}`
     }
-    // Fuzzy search for markets
-
-    //TODO: for omni fuzzy search, we use the matching it has now and the exact matching
-    // excluding the last word, then the prefix matching sorting everything by popularity score
+    // Fuzzy search for markets not by group nor creator
     else if (fuzzy) {
       query = `
-        select * from (select *
-               from (SELECT contracts.*, query, query2, similarity_score, 1.0 AS weight
-                     FROM contracts,
-                          similarity(question, $1) AS similarity_score,
-                          websearch_to_tsquery('english_nostop_with_prefix', $1) as query,
-                          websearch_to_tsquery('english', $1) as query2 ${whereSQL}
-        and (question_nostop_fts @@ query
-        or description_fts @@ query2)
-        and similarity(question, $1) > 0.3) as contractz
-        union all
-        select *
-        from (WITH
-                exact_query AS (
-                    SELECT to_tsquery('english_nostop_with_prefix', get_exact_match_query($1)) AS query
-                ),
-                prefix_query AS (
-                    SELECT to_tsquery('english_nostop_with_prefix', get_prefix_match_query($1)) AS query
-                ),
-                exact_matches AS (
-                    SELECT contracts.*, exact_query.query, 'blank'::tsquery as query2, 0.0 AS weight
-                    FROM contracts, exact_query
-                    WHERE question_nostop_fts @@ exact_query.query
-                ),
-                prefix_matches AS (
-                    SELECT contracts.*, prefix_query.query, 'blank'::tsquery as query2, 1.0 AS weight
-                    FROM contracts, prefix_query
-                    WHERE question_nostop_fts @@ prefix_query.query
-                ),
-                combined_matches AS (
-                    SELECT * FROM prefix_matches
-                    UNION ALL
-                    SELECT * FROM exact_matches
-                )
-              SELECT *
-              FROM (
-                   SELECT *,
-                          ROW_NUMBER() OVER (PARTITION BY id ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC) as row_num
-                   FROM combined_matches
-               ) AS ranked_matches
-           WHERE row_num = 1
-           ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
-           limit ${limit}) as contractz
-     ) as all_contracts
+    select *
+      from (WITH
+        subset_query AS (
+            SELECT to_tsquery('english_nostop_with_prefix', get_exact_match_minus_last_word_query($1)) AS query
+        ),
+        prefix_query AS (
+            SELECT to_tsquery('english_nostop_with_prefix', get_prefix_match_query($1)) AS query
+        ),
+        subset_matches AS (
+            SELECT contracts.*, subset_query.query, 0.0 AS weight
+            FROM contracts, subset_query
+                ${whereSQL}
+            AND question_nostop_fts @@ subset_query.query
+        ),
+        prefix_matches AS (
+            SELECT contracts.*, prefix_query.query,  1.0 AS weight
+            FROM contracts, prefix_query
+            ${whereSQL}
+            AND question_nostop_fts @@ prefix_query.query
+        ),
+        combined_matches AS (
+            SELECT * FROM prefix_matches
+            UNION ALL
+            SELECT * FROM subset_matches
+        )
+      SELECT *
+      FROM (
+           SELECT *,
+                  ROW_NUMBER() OVER (PARTITION BY id ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC) as row_num
+           FROM combined_matches
+       ) AS ranked_matches
+     WHERE row_num = 1
+     -- prefix matches are weighted higher than subset matches bc they include the last word
+     ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
+   limit ${limit}) as relevant_contracts
     `
+      // We use popularity score bc these are exact matches and can be low quality
       sortAlgorithm = 'popularity_score'
     }
     // Normal full text search for markets

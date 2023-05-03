@@ -941,3 +941,34 @@ select * from CONCAT_WS(
         extract_text_from_rich_text_json(data->'description')
   )
 $$;
+
+
+CREATE OR REPLACE FUNCTION get_prefix_match_query(p_query text)
+  RETURNS text AS $$
+WITH words AS (
+  SELECT unnest(regexp_split_to_array(trim(p_query), E'\\s+')) AS word
+),
+     numbered_words AS (
+       SELECT word, row_number() OVER () AS rn, count(*) OVER () AS total
+       FROM words
+     )
+SELECT string_agg(CASE
+                    WHEN rn < total THEN word
+                    ELSE word || ':*'
+                    END, ' & ')
+FROM numbered_words;
+$$ LANGUAGE sql IMMUTABLE;
+
+create or replace function get_exact_match_minus_last_word_query(p_query text)
+  returns text as $$
+WITH words AS (
+  SELECT unnest(regexp_split_to_array(trim(p_query), E'\\s+')) AS word
+),
+     numbered_words AS (
+       SELECT word, row_number() OVER () AS rn, count(*) OVER () AS total
+       FROM words
+     )
+SELECT string_agg(word, ' & ')
+FROM numbered_words
+WHERE rn < total
+$$ language sql immutable;
