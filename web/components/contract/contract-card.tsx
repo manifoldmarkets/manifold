@@ -500,6 +500,7 @@ export function ContractCardNew(props: {
                 size="md"
                 color="gray"
                 className="!px-0"
+                trackingLocation={'contract card (feed)'}
               />
             </div>
 

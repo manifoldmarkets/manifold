@@ -34,6 +34,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
             'p-2',
             isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
           )}
+          trackingLocation={'contract page'}
         />
       </div>
 

@@ -56,9 +56,16 @@ export function FeedCommentThread(props: {
   contract: Contract
   threadComments: ContractComment[]
   parentComment: ContractComment
+  trackingLocation: string
   collapseMiddle?: boolean
 }) {
-  const { contract, threadComments, parentComment, collapseMiddle } = props
+  const {
+    contract,
+    threadComments,
+    parentComment,
+    collapseMiddle,
+    trackingLocation,
+  } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
   const [seeReplies, setSeeReplies] = useState(true)
 
@@ -84,6 +91,7 @@ export function FeedCommentThread(props: {
         numReplies={threadComments.length}
         onSeeReplyClick={onSeeRepliesClick}
         onReplyClick={onReplyClick}
+        trackingLocation={trackingLocation}
       />
       {seeReplies &&
         threadComments.map((comment, _commentIdx) =>
@@ -113,6 +121,7 @@ export function FeedCommentThread(props: {
               highlighted={idInUrl === comment.id}
               showLike={true}
               onReplyClick={onReplyClick}
+              trackingLocation={trackingLocation}
             />
           )
         )}
@@ -123,6 +132,7 @@ export function FeedCommentThread(props: {
             parentCommentId={parentComment.id}
             replyToUserInfo={replyToUserInfo}
             clearReply={clearReply}
+            trackingLocation={trackingLocation}
           />
         </Col>
       )}
@@ -132,6 +142,7 @@ export function FeedCommentThread(props: {
 export const FeedComment = memo(function FeedComment(props: {
   contract: Contract
   comment: ContractComment
+  trackingLocation: string
   highlighted?: boolean
   showLike?: boolean
   onReplyClick?: (comment: ContractComment) => void
@@ -146,6 +157,7 @@ export const FeedComment = memo(function FeedComment(props: {
     showLike,
     onReplyClick,
     children,
+    trackingLocation,
   } = props
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
@@ -186,6 +198,7 @@ export const FeedComment = memo(function FeedComment(props: {
             comment={comment}
             showLike={showLike}
             contract={contract}
+            trackingLocation={trackingLocation}
           />
         </Row>
       </Col>
@@ -202,6 +215,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   numReplies: number
   onReplyClick?: (comment: ContractComment) => void
   onSeeReplyClick: () => void
+  trackingLocation: string
 }) {
   const {
     contract,
@@ -212,6 +226,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     onSeeReplyClick,
     seeReplies,
     numReplies,
+    trackingLocation,
   } = props
   const { userUsername } = comment
   const { ref } = useIsVisible(
@@ -231,6 +246,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       highlighted={highlighted}
       showLike={showLike}
       className={clsx('gap-2', commentKind)}
+      trackingLocation={trackingLocation}
     >
       <div ref={ref} />
       <ReplyToggle
@@ -328,10 +344,11 @@ export function DotMenu(props: {
 export function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
   comment: ContractComment
-  showLike?: boolean
   contract: Contract
+  trackingLocation: string
+  showLike?: boolean
 }) {
-  const { onReplyClick, comment, showLike, contract } = props
+  const { onReplyClick, comment, showLike, contract, trackingLocation } = props
   const user = useUser()
   const privateUser = usePrivateUser()
 
@@ -356,6 +373,7 @@ export function CommentActions(props: {
           className={
             isBlocked(privateUser, comment.userId) ? 'pointer-events-none' : ''
           }
+          trackingLocation={trackingLocation}
         />
       )}
     </Row>
@@ -410,6 +428,7 @@ export function ContractCommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
   parentCommentId?: string
   clearReply?: () => void
+  trackingLocation: string
 }) {
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -421,6 +440,7 @@ export function ContractCommentInput(props: {
     replyToUserInfo,
     className,
     clearReply,
+    trackingLocation,
   } = props
   const onSubmitComment = useEvent(async (editor: Editor) => {
     if (!user) {
@@ -435,6 +455,16 @@ export function ContractCommentInput(props: {
       replyToBetId: replyToBet?.id,
     })
     clearReply?.()
+    track('comment', {
+      location: trackingLocation,
+      replyTo: replyToAnswerId
+        ? 'answer'
+        : replyToBet
+        ? 'bet'
+        : replyToUserInfo
+        ? 'user'
+        : undefined,
+    })
   })
 
   return (

@@ -179,6 +179,7 @@ const FeedCommentItem = (props: {
               threadComments={ct.childComments}
               parentComment={ct.parentComment}
               collapseMiddle={true}
+              trackingLocation={'feed'}
             />
           </Col>
         </Row>

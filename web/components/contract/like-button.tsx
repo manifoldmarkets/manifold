@@ -31,6 +31,7 @@ export const LikeButton = memo(function LikeButton(props: {
   totalLikes: number
   contract: Contract
   contentText: string
+  trackingLocation: string
   className?: string
   size?: LikeButtonSizeType
   showTotalLikesUnder?: boolean
@@ -49,6 +50,7 @@ export const LikeButton = memo(function LikeButton(props: {
     showTotalLikesUnder,
     color = 'gray',
     isSwipe,
+    trackingLocation,
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
   const disabled = !user || contentCreatorId === user?.id
@@ -74,7 +76,7 @@ export const LikeButton = memo(function LikeButton(props: {
       contract.question,
       contentText,
       ButtonReactionType,
-      { isSwipe: !!isSwipe }
+      { isSwipe: !!isSwipe, location: trackingLocation }
     )
   }
 
