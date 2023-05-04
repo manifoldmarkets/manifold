@@ -198,7 +198,7 @@ export function AnswersPanel(props: {
                 onClick={() => setShowAllAnswers(true)}
                 size="md"
               >
-                Show More
+                Show more
               </Button>
             )}
           </Col>
@@ -209,6 +209,7 @@ export function AnswersPanel(props: {
         )}
 
         {outcomeType === 'FREE_RESPONSE' &&
+          user &&
           tradingAllowed(contract) &&
           !resolveOption &&
           !privateUser?.blockedByUserIds.includes(contract.creatorId) && (
