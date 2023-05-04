@@ -61,6 +61,9 @@ import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import { User } from 'common/user'
+import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
+import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 
 export type ContractParameters = {
   contractSlug: string
@@ -358,6 +361,8 @@ export function ContractPageContent(props: {
                 bets={bets}
                 betPoints={betPoints}
               />
+
+              <SignUpFlow user={user} />
             </Col>
 
             {isCreator &&
@@ -484,6 +489,19 @@ export function ContractPageContent(props: {
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>
   )
+}
+
+function SignUpFlow({ user }: { user: User | null | undefined }) {
+  if (user === null)
+    return (
+      <Col className="mt-1 w-full">
+        <BetSignUpPrompt className="xl:self-center" size="xl" />
+        <PlayMoneyDisclaimer />
+      </Col>
+    )
+  if (user === undefined) return <div className="h-[72px] w-full" />
+
+  return <></>
 }
 
 export function ContractSEO(props: {
