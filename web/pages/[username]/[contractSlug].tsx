@@ -339,6 +339,20 @@ export function ContractPageContent(props: {
                   />
                 </div>
               </div>
+
+              {(outcomeType === 'FREE_RESPONSE' ||
+                outcomeType === 'MULTIPLE_CHOICE') && (
+                <>
+                  <Spacer h={4} />
+                  <AnswersPanel
+                    contract={contract}
+                    onAnswerCommentClick={onAnswerCommentClick}
+                    showResolver={showResolver}
+                  />
+                  <Spacer h={4} />
+                </>
+              )}
+
               <ContractOverview
                 contract={contract}
                 bets={bets}
@@ -392,19 +406,6 @@ export function ContractPageContent(props: {
                   <QfResolutionPanel contract={contract} />
                 </GradientContainer>
               ) : null)}
-
-            {(outcomeType === 'FREE_RESPONSE' ||
-              outcomeType === 'MULTIPLE_CHOICE') && (
-              <>
-                <Spacer h={4} />
-                <AnswersPanel
-                  contract={contract}
-                  onAnswerCommentClick={onAnswerCommentClick}
-                  showResolver={showResolver}
-                />
-                <Spacer h={4} />
-              </>
-            )}
 
             {outcomeType === 'NUMERIC' && (
               <AlertBox

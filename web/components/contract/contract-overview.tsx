@@ -51,7 +51,8 @@ export const ContractOverview = memo(
     bets: Bet[]
     betPoints: HistoryPoint<Partial<Bet>>[]
   }) => {
-    const { betPoints, contract, bets } = props
+    const { betPoints, contract } = props
+
     switch (contract.outcomeType) {
       case 'BINARY':
         return <BinaryOverview betPoints={betPoints} contract={contract} />
@@ -67,7 +68,8 @@ export const ContractOverview = memo(
         return <QfOverview contract={contract} />
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
-        return <ChoiceOverview contract={contract} bets={bets} />
+        return <></>
+        // return <ChoiceOverview contract={contract} bets={bets} />
       case 'STONK':
         return <StonkOverview contract={contract} betPoints={betPoints} />
     }
