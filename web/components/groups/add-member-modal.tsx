@@ -15,6 +15,7 @@ import { UserLink } from '../widgets/user-link'
 import DropdownMenu from '../comments/dropdown-menu'
 import { buildArray } from 'common/util/array'
 import { ChevronDownIcon } from '@heroicons/react/solid'
+import { useIsAuthorized } from 'web/hooks/use-user'
 
 const QUERY_SIZE = 7
 
@@ -31,6 +32,12 @@ export function AddMemberContent(props: {
   const requestId = useRef(0)
   const [loading, setLoading] = useState(false)
   const groupMemberIds = useRealtimeGroupMemberIds(group.id).members
+  const isAuth = useIsAuthorized()
+  useEffect(() => {
+    if (isAuth) {
+      console.log('isAuth', isAuth)
+    }
+  })
   useEffect(() => {
     const id = ++requestId.current
     setLoading(true)
@@ -43,6 +50,7 @@ export function AddMemberContent(props: {
       })
       .finally(() => setLoading(false))
   }, [query])
+
   return (
     <>
       <Input
@@ -52,18 +60,24 @@ export function AddMemberContent(props: {
         placeholder="Search users"
         className={clsx('placeholder:text-ink-400 w-full')}
       />
-      <Col className={clsx(loading ? 'animate-pulse' : '', 'gap-4', 'w-full')}>
-        {searchMemberResult.length == 0 && (
-          <div className="text-ink-500">No members found</div>
-        )}
-        {searchMemberResult.map((user) => (
-          <AddMemberWidget
-            key={user.id}
-            user={user}
-            group={group}
-            isDisabled={groupMemberIds.some((memberId) => memberId == user.id)}
-          />
-        ))}
+      <Col className="justify-between">
+        <Col
+          className={clsx(loading ? 'animate-pulse' : '', 'gap-4', 'w-full')}
+        >
+          {searchMemberResult.length == 0 && (
+            <div className="text-ink-500">No members found</div>
+          )}
+          {searchMemberResult.map((user) => (
+            <AddMemberWidget
+              key={user.id}
+              user={user}
+              group={group}
+              isDisabled={groupMemberIds.some(
+                (memberId) => memberId == user.id
+              )}
+            />
+          ))}
+        </Col>
       </Col>
     </>
   )
