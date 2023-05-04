@@ -40,6 +40,7 @@ export const SORTS = [
   { label: 'Last activity', value: 'last-updated' },
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Just resolved', value: 'resolve-date' },
+  { label: '🎲 rAnDoM', value: 'random' },
 ] as const
 
 export type Sort = typeof SORTS[number]['value']

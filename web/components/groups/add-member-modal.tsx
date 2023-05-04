@@ -31,13 +31,14 @@ export function AddMemberContent(props: {
   )
   const requestId = useRef(0)
   const [loading, setLoading] = useState(false)
-  const groupMemberIds = useRealtimeGroupMemberIds(group.id).members
   const isAuth = useIsAuthorized()
   useEffect(() => {
     if (isAuth) {
       console.log('isAuth', isAuth)
     }
   })
+  const [groupMemberIds] = useRealtimeGroupMemberIds(group.id)
+
   useEffect(() => {
     const id = ++requestId.current
     setLoading(true)
@@ -60,24 +61,20 @@ export function AddMemberContent(props: {
         placeholder="Search users"
         className={clsx('placeholder:text-ink-400 w-full')}
       />
-      <Col className="justify-between">
-        <Col
-          className={clsx(loading ? 'animate-pulse' : '', 'gap-4', 'w-full')}
-        >
-          {searchMemberResult.length == 0 && (
-            <div className="text-ink-500">No members found</div>
-          )}
-          {searchMemberResult.map((user) => (
-            <AddMemberWidget
-              key={user.id}
-              user={user}
-              group={group}
-              isDisabled={groupMemberIds.some(
-                (memberId) => memberId == user.id
-              )}
-            />
-          ))}
-        </Col>
+      <Col className={clsx(loading ? 'animate-pulse' : '', 'gap-4', 'w-full')}>
+        {searchMemberResult.length == 0 && (
+          <div className="text-ink-500">No members found</div>
+        )}
+        {searchMemberResult.map((user) => (
+          <AddMemberWidget
+            key={user.id}
+            user={user}
+            group={group}
+            isDisabled={groupMemberIds?.data.some(
+              (r) => r.member_id == user.id
+            )}
+          />
+        ))}
       </Col>
     </>
   )

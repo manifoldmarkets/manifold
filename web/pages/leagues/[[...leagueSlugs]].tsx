@@ -14,6 +14,7 @@ import {
   season,
   rewardsData,
   CURRENT_SEASON,
+  getLeaguePath,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -68,9 +69,12 @@ export default function Leagues(props: { rows: league_row[] }) {
     (division) => division
   ).reverse()
 
-  const [season, setSeason] = useState<season>(1)
+  const [season, setSeason] = useState<number>(1)
   const [division, setDivision] = useState<number>(4)
   const [cohort, setCohort] = useState(divisionToCohorts[4][0])
+  const [highlightedUserId, setHighlightedUserId] = useState<
+    string | undefined
+  >()
   const [prizesModalOpen, setPrizesModalOpen] = useState(false)
   const togglePrizesModal = () => {
     setPrizesModalOpen(!prizesModalOpen)
@@ -89,14 +93,12 @@ export default function Leagues(props: { rows: league_row[] }) {
     const cohort = userRow ? userRow.cohort : divisionToCohorts[division][0]
     setCohort(cohort)
 
-    const divisionName = DIVISION_NAMES[division].toLowerCase()
-    replace(`/leagues/${season}/${divisionName}/${cohort.toLowerCase()}`)
+    replace(getLeaguePath(season, division, cohort))
   }
 
   const onSetCohort = (cohort: string) => {
     setCohort(cohort)
-    const divisionName = DIVISION_NAMES[division].toLowerCase()
-    replace(`/leagues/${season}/${divisionName}/${cohort.toLowerCase()}`)
+    replace(getLeaguePath(season, division, cohort))
   }
 
   const userRow = rows.find((row) => row.user_id === user?.id)
@@ -107,21 +109,14 @@ export default function Leagues(props: { rows: league_row[] }) {
     if (!isReady) return
 
     if (leagueSlugs) {
-      let season: season = CURRENT_SEASON
-      let division: string | undefined
-      let cohort: string | undefined
-      if (SEASONS.includes(+leagueSlugs[0] as season)) {
-        season = +leagueSlugs[0] as season
-        division = leagueSlugs[1]
-        cohort = leagueSlugs[2]
+      const [season, division, cohort, userId] = leagueSlugs
+      if (SEASONS.includes(+season as season)) {
+        setSeason(+season)
       } else {
-        division = leagueSlugs[0]
-        cohort = leagueSlugs[1]
+        setSeason(CURRENT_SEASON)
       }
 
-      setSeason(season)
-
-      let divisionNum
+      let divisionNum: number | undefined
       if (Object.keys(DIVISION_NAMES).includes(division)) {
         divisionNum = +division
       } else {
@@ -141,11 +136,21 @@ export default function Leagues(props: { rows: league_row[] }) {
         )
         if (matchedCohort) {
           setCohort(matchedCohort)
+
+          if (
+            userId &&
+            rows.find(
+              (row) => row.user_id === userId && row.division === divisionNum
+            )
+          ) {
+            setHighlightedUserId(userId)
+          }
         }
       }
     } else if (userRow) {
       setDivision(userRow.division)
       setCohort(userRow.cohort)
+      setHighlightedUserId(userRow.user_id)
     }
   }, [isReady, leagueSlugs, user])
 
@@ -297,7 +302,7 @@ export default function Leagues(props: { rows: league_row[] }) {
           <CohortTable
             cohort={cohort}
             rows={cohorts[cohort]}
-            currUserId={user?.id}
+            highlightedUserId={highlightedUserId}
             demotionCount={demotion}
             promotionCount={promotion}
             doublePromotionCount={doublePromotion}
@@ -311,14 +316,14 @@ export default function Leagues(props: { rows: league_row[] }) {
 const CohortTable = (props: {
   cohort: string
   rows: league_row[]
-  currUserId: string | undefined
+  highlightedUserId: string | undefined
   demotionCount: number
   promotionCount: number
   doublePromotionCount: number
 }) => {
   const {
     rows,
-    currUserId,
+    highlightedUserId,
     demotionCount,
     promotionCount,
     doublePromotionCount,
@@ -361,7 +366,7 @@ const CohortTable = (props: {
                   {...row}
                   user={users[i]}
                   rank={i + 1}
-                  isUser={currUserId === user.id}
+                  isHighlighted={highlightedUserId === user.id}
                 />
               )}
               {doublePromotionCount > 0 && i + 1 === doublePromotionCount && (
@@ -412,17 +417,17 @@ const UserRow = (props: {
   user: User
   mana_earned: number
   rank: number
-  isUser: boolean
+  isHighlighted: boolean
 }) => {
-  const { user, mana_earned, rank, isUser } = props
+  const { user, mana_earned, rank, isHighlighted } = props
 
   return (
     <tr
       className={clsx(
-        isUser && `bg-canvas-100 sticky bottom-[58px] sm:bottom-0`
+        isHighlighted && `bg-canvas-100 sticky bottom-[58px] sm:bottom-0`
       )}
     >
-      <td className={clsx('pl-2', isUser && 'bg-indigo-400/20')}>
+      <td className={clsx('pl-2', isHighlighted && 'bg-indigo-400/20')}>
         <Row className="my-2 items-center gap-4">
           <div className="w-4 text-right font-semibold">{rank}</div>
           <UserAvatarAndBadge
@@ -432,7 +437,9 @@ const UserRow = (props: {
           />
         </Row>
       </td>
-      <td className={clsx(isUser && 'bg-indigo-400/20', 'pr-2 text-right')}>
+      <td
+        className={clsx(isHighlighted && 'bg-indigo-400/20', 'pr-2 text-right')}
+      >
         {formatMoney(mana_earned)}
       </td>
     </tr>

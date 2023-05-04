@@ -28,6 +28,8 @@ import { deleteField } from 'firebase/firestore'
 import { toast } from 'react-hot-toast'
 import router from 'next/router'
 import { useUser } from 'web/hooks/use-user'
+import ShortToggle from 'web/components/widgets/short-toggle'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -84,7 +86,7 @@ export default function ProfilePage(props: {
   const [loadingUsername, setLoadingUsername] = useState(false)
   const [errorName, setErrorName] = useState('')
   const [errorUsername, setErrorUsername] = useState('')
-
+  const [betWarnings, setBetWarnings] = useState(!user.optOutBetWarnings)
   const updateDisplayName = async () => {
     const newName = cleanDisplayName(name)
     if (newName === user.name) return
@@ -269,6 +271,23 @@ export default function ProfilePage(props: {
           <div>
             <label className="mb-1 block">Email</label>
             <div className="text-ink-500">{privateUser.email ?? '\u00a0'}</div>
+          </div>
+          <div>
+            <label className="mb-1 block">
+              Bet warnings{' '}
+              <InfoTooltip
+                text={
+                  'Warnings before you place a bet that is either 1. a large portion of your balance, or 2. going to move the market by a large amount'
+                }
+              />
+            </label>
+            <ShortToggle
+              on={betWarnings}
+              setOn={(enabled) => {
+                setBetWarnings(enabled)
+                updateUser(user.id, { optOutBetWarnings: !enabled })
+              }}
+            />
           </div>
 
           <div>

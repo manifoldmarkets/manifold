@@ -24,6 +24,7 @@ const bodySchema = z.object({
     z.literal('last-updated'),
     z.literal('close-date'),
     z.literal('resolve-date'),
+    z.literal('random'),
   ]),
   offset: z.number().gte(0),
   limit: z.number().gt(0),
@@ -93,15 +94,21 @@ function getSearchContractSQL(contractInput: {
     uid,
     hasGroupAccess,
   } = contractInput
+
   let query = ''
   const emptyTerm = term.length === 0
+
+  const hideStonks =
+    (sort === 'relevance' || sort === 'score') && !term && !groupId
+
   const whereSQL = getSearchContractWhereSQL(
     filter,
     sort,
     creatorId,
     uid,
     groupId,
-    hasGroupAccess
+    hasGroupAccess,
+    hideStonks
   )
   let sortAlgorithm: string | undefined = undefined
 
@@ -321,7 +328,8 @@ function getSearchContractWhereSQL(
   creatorId: string | undefined,
   uid: string | undefined,
   groupId: string | undefined,
-  hasGroupAccess?: boolean
+  hasGroupAccess?: boolean,
+  hideStonks?: boolean
 ) {
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
@@ -330,6 +338,8 @@ function getSearchContractWhereSQL(
     resolved: 'resolution_time IS NOT NULL',
     all: 'true',
   }
+
+  const stonkFilter = hideStonks ? `AND outcome_type != 'STONK'` : ''
 
   const sortFilter = sort == 'close-date' ? 'AND close_time > NOW()' : ''
   const otherVisibilitySQL = `
@@ -343,6 +353,7 @@ function getSearchContractWhereSQL(
   return `
   WHERE (
    ${filterSQL[filter]}
+   ${stonkFilter}
   )
   ${sortFilter}
   ${
@@ -377,6 +388,7 @@ function getSearchContractSortSQL(
     newest: 'created_time',
     'resolve-date': 'resolution_time',
     'close-date': 'close_time',
+    random: 'random()',
   }
 
   const ASCDESC = sort === 'close-date' || sort === 'liquidity' ? 'ASC' : 'DESC'

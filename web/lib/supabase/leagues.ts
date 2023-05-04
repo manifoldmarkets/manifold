@@ -7,6 +7,9 @@ export async function getLeagueInfo(userId: string) {
     .select('*')
     .eq('user_id', userId)
     .eq('season', CURRENT_SEASON)
-    .single()
-  return data
+    .limit(1)
+  if (data && data.length > 0) {
+    return data[0]
+  }
+  return null
 }

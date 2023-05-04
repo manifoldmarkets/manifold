@@ -6,6 +6,7 @@ import { db } from 'web/lib/supabase/db'
 import { uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getAllComments } from 'common/supabase/comments'
+import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
 
 export function useComments(contractId: string, limit: number) {
   const [comments, setComments] = useState<Json[]>([])
@@ -29,6 +30,7 @@ export function useUnseenReplyChainCommentsOnContracts(
     [],
     `recent-feed-replies-${userId}`
   )
+  const privateUser = usePrivateUser()
 
   useEffect(() => {
     if (contractIds.length > 0) {
@@ -55,7 +57,9 @@ export function useUnseenReplyChainCommentsOnContracts(
     }
   }, [JSON.stringify(contractIds)])
 
-  return comments.filter((c) => c.hidden != true)
+  return comments.filter(
+    (c) => c.hidden != true && !isBlocked(privateUser, c.userId)
+  )
 }
 
 export function useNumUserComments(userId: string) {

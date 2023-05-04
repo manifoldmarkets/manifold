@@ -214,10 +214,10 @@ export const computeFills = (
       i++
       const { userId } = maker.bet
       const makerBalance = currentBalanceByUserId[userId]
-      if (floatingGreaterEqual(maker.amount, 0)) {
+      if (maker.amount > 0) {
         currentBalanceByUserId[userId] = makerBalance - maker.amount
       }
-      if (floatingEqual(currentBalanceByUserId[userId], 0)) {
+      if (currentBalanceByUserId[userId] <= 0) {
         // Now they've insufficient balance. Cancel maker bet.
         ordersToCancel.push(maker.bet)
       }

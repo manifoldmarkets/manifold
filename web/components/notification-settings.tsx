@@ -37,12 +37,15 @@ import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getIsNative } from 'web/lib/native/is-native'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { postMessageToNative } from 'web/components/native-message-listener'
+import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
+import { useUser } from 'web/hooks/use-user'
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined
   privateUser: PrivateUser
 }) {
   const { navigateToSection, privateUser } = props
+  const user = useUser()
   const [showWatchModal, setShowWatchModal] = useState(false)
   const isNative = getIsNative()
 
@@ -412,7 +415,11 @@ export function NotificationSettings(props: {
       <Col className={'gap-6'}>
         <PushNotificationsBanner privateUser={privateUser} />
         <Row className={'text-ink-700 gap-2 text-xl'}>
-          <span>Notifications for Watched Markets</span>
+          {user ? (
+            <UserWatchedContractsButton user={user} />
+          ) : (
+            <span>Watched Markets</span>
+          )}
           <InformationCircleIcon
             className="text-ink-500 -mb-1 h-5 w-5 cursor-pointer"
             onClick={() => setShowWatchModal(true)}

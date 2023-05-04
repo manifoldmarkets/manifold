@@ -10,6 +10,7 @@ import {
   SparklesIcon,
   StarIcon,
   UserGroupIcon,
+  SearchIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -32,6 +33,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-menu'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
+import { useABTest } from 'web/hooks/use-ab-test'
 
 export default function Sidebar(props: {
   className?: string
@@ -51,8 +53,16 @@ export default function Sidebar(props: {
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
 
+  const showMarkets = !!useABTest('show nav bar markets', {
+    markets: true,
+    search: false,
+  })
+
   const navOptions = isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
+    ? getMobileNav(
+        () => setIsAddFundsModalOpen(!isAddFundsModalOpen),
+        showMarkets
+      )
     : getDesktopNav(!!user, () => setIsModalOpen(true))
 
   const bottomNavOptions = bottomNav(
@@ -145,9 +155,12 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 }
 
 // No sidebar when signed out
-const getMobileNav = (toggleModal: () => void) => {
+const getMobileNav = (toggleModal: () => void, showMarkets: boolean) => {
   return buildArray(
-    { name: 'Markets', href: '/markets', icon: ScaleIcon },
+    // opposite of nav bar:
+    showMarkets
+      ? { name: 'Search', href: '/find', icon: SearchIcon }
+      : { name: 'Markets', href: '/markets', icon: ScaleIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
 
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },

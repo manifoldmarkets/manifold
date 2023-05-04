@@ -245,6 +245,7 @@ export function SellPanel(props: {
         marketType="binary"
         amount={undefined}
         warning={warning}
+        userOptedOutOfWarning={user.optOutBetWarnings}
         isSubmitting={isSubmitting}
         onSubmit={betDisabled ? undefined : submitSell}
         disabled={!!betDisabled}

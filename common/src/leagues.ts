@@ -30,8 +30,7 @@ export const getDemotionAndPromotionCount = (division: number) => {
 }
 
 export type league_row = PlainTablesAndViews['leagues']
-export type league_user_info = PlainTablesAndViews['user_league_info']
-
+export type league_user_info = league_row & { rank: number }
 
 export const COHORT_SIZE = 25
 export const MAX_COHORT_SIZE = 35
@@ -42,3 +41,13 @@ export const rewardsData = [
   [1500, 1000, 750, 600, 500, 450, 400, 350, 300],
   [2000, 1500, 1000, 750, 600, 500, 450, 400, 350, 300],
 ]
+
+export const getLeaguePath = (
+  season: number,
+  division: number,
+  cohort: string,
+  userId?: string
+) => {
+  const divisionName = DIVISION_NAMES[division].toLowerCase()
+  return `/leagues/${season}/${divisionName}/${cohort}/${userId ?? ''}`
+}

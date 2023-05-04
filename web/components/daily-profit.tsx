@@ -13,10 +13,7 @@ import { Col } from 'web/components/layout/col'
 import { keyBy, partition, sortBy, sum } from 'lodash'
 import { _ as r, Grid } from 'gridjs-react'
 import { ContractMention } from 'web/components/contract/contract-mention'
-import {
-  dailyStatsClass,
-  unseenDailyStatsClass,
-} from 'web/components/daily-stats'
+import { dailyStatsClass } from 'web/components/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
 import {
   storageStore,
@@ -25,7 +22,6 @@ import {
 import { safeLocalStorage } from 'web/lib/util/local'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
-import { useHasSeen } from 'web/hooks/use-has-seen'
 import { InfoTooltip } from './widgets/info-tooltip'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
@@ -38,8 +34,6 @@ export const DailyProfit = memo(function DailyProfit(props: {
   isCurrentUser?: boolean
 }) {
   const { user } = props
-  const isCurrentUser =
-    props.isCurrentUser === undefined ? true : props.isCurrentUser
 
   const portfolio = useCurrentPortfolio(user?.id)
   const portfolioValue = portfolio
@@ -77,28 +71,19 @@ export const DailyProfit = memo(function DailyProfit(props: {
       return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
     }, [data])
   )
-  const [seenToday, setSeenToday] = isCurrentUser
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useHasSeen(user, [DAILY_PROFIT_CLICK_EVENT], 'day')
-    : [true, () => {}]
 
   if (!user) return <div />
 
   return (
     <>
       <button
-        className={clsx(
-          dailyStatsClass,
-          'rounded-md text-center',
-          seenToday || Math.abs(dailyProfit) < 1 ? '' : unseenDailyStatsClass
-        )}
+        className={clsx(dailyStatsClass, ' text-center')}
         onClick={withTracking(() => {
           setOpen(true)
-          setSeenToday(true)
         }, DAILY_PROFIT_CLICK_EVENT)}
       >
         <Row>
-          <Col className="items-start">
+          <Col className="items-start gap-1">
             <div>
               <animated.div>
                 {portfolioValueAnimated.to((b) => formatMoney(b))}

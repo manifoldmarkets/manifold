@@ -52,6 +52,7 @@ export type User = {
   isBannedFromPosting?: boolean
   userDeleted?: boolean
   metricsLastUpdated?: number
+  optOutBetWarnings?: boolean
 }
 
 export type PrivateUser = {

@@ -511,6 +511,7 @@ create table if not exists
     primary key (contract_id, follow_id)
   );
 
+create index if not exists contract_follows_idx on contract_follows (follow_id);
 alter table contract_follows enable row level security;
 
 drop policy if exists "public read" on contract_follows;
