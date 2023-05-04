@@ -94,11 +94,14 @@ function getSearchContractSQL(contractInput: {
     uid,
     hasGroupAccess,
   } = contractInput
+
   let query = ''
   const emptyTerm = term.length === 0
+
+  const adjSort = sort === 'relevance' && !term ? 'score' : sort
   const whereSQL = getSearchContractWhereSQL(
     filter,
-    sort,
+    adjSort,
     creatorId,
     uid,
     groupId,
