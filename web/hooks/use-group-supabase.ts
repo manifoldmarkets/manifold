@@ -6,16 +6,15 @@ import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { db } from 'web/lib/supabase/db'
 import {
   getGroupFromSlug,
-  getGroupMemberIds,
   getGroupMembers,
   getGroupOfRole,
   getMemberRole,
-  getNumGroupMembers,
   MEMBER_LOAD_NUM,
 } from 'web/lib/supabase/group'
 import { getUser } from 'web/lib/supabase/user'
 import { useAdmin } from './use-admin'
 import { useUser } from './use-user'
+import { useSupabasePolling } from 'web/hooks/use-supabase'
 
 export function useRealtimeRole(groupId: string | undefined) {
   const [userRole, setUserRole] = useState<groupRoleType | null | undefined>(
@@ -53,40 +52,8 @@ export function useRealtimeRole(groupId: string | undefined) {
 }
 
 export function useRealtimeGroupMemberIds(groupId: string) {
-  const [members, setMembers] = useState<(string | null)[]>([])
-  function fetchGroupMembers() {
-    getGroupMemberIds(groupId)
-      .then((result) => {
-        const members = result
-        setMembers(members)
-      })
-      .catch((e) => console.log(e))
-  }
-
-  useEffect(() => {
-    fetchGroupMembers()
-  }, [])
-
-  useEffect(() => {
-    const channel = db.channel('group-members-ids-realtime')
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'group_members',
-        filter: `group_id=eq.${groupId}`,
-      },
-      (payload) => {
-        fetchGroupMembers()
-      }
-    )
-    channel.subscribe(async (status) => {})
-    return () => {
-      db.removeChannel(channel)
-    }
-  }, [db])
-  return { members }
+  const q = db.from('group_role').select('member_id').eq('group_id', groupId)
+  return useSupabasePolling(q)
 }
 
 export function useRealtimeGroupMembers(
@@ -173,52 +140,11 @@ export function useRealtimeGroupMembers(
 }
 
 export function useRealtimeNumGroupMembers(groupId: string) {
-  const [numMembers, setNumMembers] = useState<number | undefined>(undefined)
-
-  useEffect(() => {
-    getNumGroupMembers(groupId)
-      .then((result) => setNumMembers(result))
-      .catch((e) => console.log(e))
-  }, [])
-
-  useEffect(() => {
-    const channel = db.channel('group-num-members-realtime')
-    channel.on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'group_members',
-        filter: `group_id=eq.${groupId}`,
-      },
-      (payload) => {
-        getNumGroupMembers(groupId)
-          .then((result) => {
-            setNumMembers(result)
-          })
-          .catch((e) => console.log(e))
-      }
-    )
-    channel.on(
-      'postgres_changes',
-      {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'group_members',
-        filter: `group_id=eq.${groupId}`,
-      },
-      (_payload) => {
-        getNumGroupMembers(groupId)
-          .then((result) => setNumMembers(result))
-          .catch((e) => console.log(e))
-      }
-    )
-    channel.subscribe(async (status) => {})
-    return () => {
-      db.removeChannel(channel)
-    }
-  }, [db])
-  return numMembers
+  const q = db
+    .from('group_members')
+    .select('*', { head: true, count: 'exact' })
+    .eq('group_id', groupId)
+  return useSupabasePolling(q)[0]?.count
 }
 
 export async function setTranslatedMemberRole(
