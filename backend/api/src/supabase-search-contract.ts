@@ -332,6 +332,8 @@ function getSearchContractWhereSQL(
     all: 'true',
   }
 
+  const stonkFilter = sort === 'score' ? `AND outcome_type != 'STONK'` : ''
+
   const sortFilter = sort == 'close-date' ? 'AND close_time > NOW()' : ''
   const otherVisibilitySQL = `
   OR (visibility = 'unlisted' AND creator_id='${uid}') 
@@ -344,6 +346,7 @@ function getSearchContractWhereSQL(
   return `
   WHERE (
    ${filterSQL[filter]}
+   ${stonkFilter}
   )
   ${sortFilter}
   ${
