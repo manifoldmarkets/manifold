@@ -1,3 +1,5 @@
+drop function get_last_week_long_link;
+
 create
 or replace function get_last_week_long_link (this_group_id text) returns text as $$
     SELECT id
