@@ -102,7 +102,7 @@ function ActuallyCollapsibleContent(props: {
         {isCollapsed && (
           <>
             <div className="absolute bottom-0 w-full">
-              <div className="from-ink-100 h-12 bg-gradient-to-t" />
+              <div className="from-canvas-100 h-8 bg-gradient-to-t" />
             </div>
           </>
         )}
