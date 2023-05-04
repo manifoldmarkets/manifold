@@ -30,7 +30,8 @@ export function AddMemberContent(props: {
   )
   const requestId = useRef(0)
   const [loading, setLoading] = useState(false)
-  const groupMemberIds = useRealtimeGroupMemberIds(group.id).members
+  const [groupMemberIds] = useRealtimeGroupMemberIds(group.id)
+
   useEffect(() => {
     const id = ++requestId.current
     setLoading(true)
@@ -61,7 +62,7 @@ export function AddMemberContent(props: {
             key={user.id}
             user={user}
             group={group}
-            isDisabled={groupMemberIds.some((memberId) => memberId == user.id)}
+            isDisabled={groupMemberIds?.data.some((r) => r.member_id == user.id)}
           />
         ))}
       </Col>
