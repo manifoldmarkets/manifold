@@ -194,6 +194,7 @@ export function AnswerBetPanel(props: {
           disabled={!!betDisabled}
           color={'indigo'}
           actionLabel="Buy"
+          userOptedOutOfWarning={user.optOutBetWarnings}
         />
       ) : (
         <BetSignUpPrompt />
