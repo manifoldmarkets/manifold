@@ -364,8 +364,7 @@ function ProfilePublicStats(props: {
     setFollowsTab(tabName)
   }
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const leagueInfo = !isCurrentUser && useLeagueInfo(user.id)
+  const leagueInfo = useLeagueInfo(user.id)
 
   return (
     <Row
