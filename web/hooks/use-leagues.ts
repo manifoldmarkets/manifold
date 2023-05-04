@@ -15,7 +15,7 @@ export const useLeagueInfo = (userId: string | null | undefined) => {
         if (result === null)
           throw new Error('No league info found for user ' + userId)
 
-        setLeagueInfo(result)
+        setLeagueInfo(result as league_user_info)
       })
     }
   }, [userId])

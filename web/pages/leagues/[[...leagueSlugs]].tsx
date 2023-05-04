@@ -14,6 +14,7 @@ import {
   season,
   rewardsData,
   CURRENT_SEASON,
+  getLeaguePath,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -89,14 +90,12 @@ export default function Leagues(props: { rows: league_row[] }) {
     const cohort = userRow ? userRow.cohort : divisionToCohorts[division][0]
     setCohort(cohort)
 
-    const divisionName = DIVISION_NAMES[division].toLowerCase()
-    replace(`/leagues/${season}/${divisionName}/${cohort.toLowerCase()}`)
+    replace(getLeaguePath(season, division, cohort))
   }
 
   const onSetCohort = (cohort: string) => {
     setCohort(cohort)
-    const divisionName = DIVISION_NAMES[division].toLowerCase()
-    replace(`/leagues/${season}/${divisionName}/${cohort.toLowerCase()}`)
+    replace(getLeaguePath(season, division, cohort))
   }
 
   const userRow = rows.find((row) => row.user_id === user?.id)

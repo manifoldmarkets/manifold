@@ -56,6 +56,9 @@ import { DailyStats } from 'web/components/daily-stats'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import { getPostsByUser } from 'web/lib/supabase/post'
+import { useLeagueInfo } from 'web/hooks/use-leagues'
+import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
+import TrophyIcon from 'web/lib/icons/trophy-icon'
 
 export const getStaticProps = async (props: {
   params: {
@@ -361,6 +364,9 @@ function ProfilePublicStats(props: {
     setFollowsTab(tabName)
   }
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const leagueInfo = !isCurrentUser && useLeagueInfo(user.id)
+
   return (
     <Row
       className={clsx(
@@ -393,6 +399,24 @@ function ProfilePublicStats(props: {
           Calibration
         </Row>
       </SiteLink>
+
+      {!isCurrentUser && leagueInfo && (
+        <Link
+          className={clsx(linkClass, className)}
+          href={getLeaguePath(
+            leagueInfo.season,
+            leagueInfo.division,
+            leagueInfo.cohort,
+            user.id
+          )}
+        >
+          <TrophyIcon className="mr-1 inline h-4 w-4" />
+          <span className={clsx('font-semibold')}>
+            Rank {leagueInfo.rank}
+          </span>{' '}
+          {DIVISION_NAMES[leagueInfo.division ?? '']}
+        </Link>
+      )}
 
       <FollowsDialog
         user={user}
