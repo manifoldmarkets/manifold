@@ -69,7 +69,7 @@ export const ContractOverview = memo(
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
         return <></>
-        // return <ChoiceOverview contract={contract} bets={bets} />
+      // return <ChoiceOverview contract={contract} bets={bets} />
       case 'STONK':
         return <StonkOverview contract={contract} betPoints={betPoints} />
     }
