@@ -72,7 +72,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   lastBetTime?: number
   lastCommentTime?: number
   closeTime?: number // When no more trading is allowed
-  randomCloseAfterTime?: number // Every 15 minutes, has a random chance of closing
+  randomCloseAfterTime?: number // Every hour, has a 10% chance of closing
   deleted?: boolean // If true, don't show market anywhere.
 
   isResolved: boolean
