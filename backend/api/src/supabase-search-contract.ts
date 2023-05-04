@@ -98,14 +98,17 @@ function getSearchContractSQL(contractInput: {
   let query = ''
   const emptyTerm = term.length === 0
 
-  const adjSort = sort === 'relevance' && !term ? 'score' : sort
+  const hideStonks =
+    (sort === 'relevance' || sort === 'score') && !term && !groupId
+
   const whereSQL = getSearchContractWhereSQL(
     filter,
-    adjSort,
+    sort,
     creatorId,
     uid,
     groupId,
-    hasGroupAccess
+    hasGroupAccess,
+    hideStonks
   )
   let sortAlgorithm: string | undefined = undefined
 
@@ -325,7 +328,8 @@ function getSearchContractWhereSQL(
   creatorId: string | undefined,
   uid: string | undefined,
   groupId: string | undefined,
-  hasGroupAccess?: boolean
+  hasGroupAccess?: boolean,
+  hideStonks?: boolean
 ) {
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
@@ -335,7 +339,7 @@ function getSearchContractWhereSQL(
     all: 'true',
   }
 
-  const stonkFilter = sort === 'score' ? `AND outcome_type != 'STONK'` : ''
+  const stonkFilter = hideStonks ? `AND outcome_type != 'STONK'` : ''
 
   const sortFilter = sort == 'close-date' ? 'AND close_time > NOW()' : ''
   const otherVisibilitySQL = `
