@@ -4,17 +4,16 @@ import * as admin from 'firebase-admin'
 import { secrets } from 'common/secrets'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
+import Firestore = admin.firestore.Firestore
 
 export const closeMarketsRandomly = functions
   .runWith({ secrets, memory: '4GB', timeoutSeconds: 540 })
   .pubsub.schedule('every 1 hours')
   .onRun(async () => {
-    await closeMarketsInternal()
+    await closeMarketsInternal(admin.firestore())
   })
 
-const firestore = admin.firestore()
-
-export async function closeMarketsInternal() {
+export async function closeMarketsInternal(firestore: Firestore) {
   const now = Date.now()
   const db = createSupabaseClient()
   const q = await db
