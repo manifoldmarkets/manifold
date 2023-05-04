@@ -62,7 +62,9 @@ export function AddMemberContent(props: {
             key={user.id}
             user={user}
             group={group}
-            isDisabled={groupMemberIds?.data.some((r) => r.member_id == user.id)}
+            isDisabled={groupMemberIds?.data.some(
+              (r) => r.member_id == user.id
+            )}
           />
         ))}
       </Col>
