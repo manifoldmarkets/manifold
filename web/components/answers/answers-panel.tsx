@@ -282,7 +282,7 @@ function OpenAnswer(props: {
                   onClick={() => setBetMode('buy')}
                   className="my-auto"
                 >
-                  Buy
+                  Bet
                 </Button>
               ) : (
                 <Row className="gap-2">

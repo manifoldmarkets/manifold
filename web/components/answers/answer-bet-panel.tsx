@@ -115,7 +115,7 @@ export function AnswerBetPanel(props: {
     <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
       <Row className="items-center justify-between self-stretch">
         <div className="text-xl">
-          Buy {mode === 'buy' ? 'YES' : 'NO'} on:{' '}
+          {mode === 'buy' ? 'Bet on' : 'Sell'} {' '}
           {isModal ? `"${answer.text}"` : 'this answer'}
         </div>
 
