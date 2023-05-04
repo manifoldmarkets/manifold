@@ -1,6 +1,6 @@
 import clsx from 'clsx'
-import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
+
 import {
   Contract,
   MAX_DESCRIPTION_LENGTH,
@@ -10,15 +10,9 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
-import {
-  TextEditor,
-  editorExtensions,
-  useTextEditor,
-} from 'web/components/widgets/editor'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { Button } from '../buttons/button'
 import { Spacer } from '../layout/spacer'
-import { Editor, Content as ContentType } from '@tiptap/react'
-import { insertContent } from '../editor/utils'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { isTrustworthy } from 'common/envs/constants'
@@ -63,10 +57,6 @@ export function ContractDescription(props: {
       {showEditHistory && <SeeEditHistoryButton contract={contract} />}
     </div>
   )
-}
-
-function editTimestamp() {
-  return `${dayjs().format('MMM D, h:mma')}: `
 }
 
 function ContractActions(props: {
@@ -159,28 +149,10 @@ function EditQuestion(props: {
   const { contract, editing, setEditing } = props
   const [text, setText] = useState(contract.question)
 
-  function questionChanged(oldQ: string, newQ: string) {
-    return `<p>${editTimestamp()}<s>${oldQ}</s> → ${newQ}</p>`
-  }
-
-  function joinContent(oldContent: ContentType, newContent: string) {
-    const editor = new Editor({
-      content: oldContent,
-      extensions: editorExtensions(),
-    })
-    editor.commands.focus('end')
-    insertContent(editor, newContent)
-    return editor.getJSON()
-  }
-
   const onSave = async (newText: string) => {
     setEditing(false)
     await updateContract(contract.id, {
       question: newText,
-      description: joinContent(
-        contract.description,
-        questionChanged(contract.question, newText)
-      ),
     })
   }
 
