@@ -49,5 +49,5 @@ export const getLeaguePath = (
   userId?: string
 ) => {
   const divisionName = DIVISION_NAMES[division].toLowerCase()
-  return `leagues/${season}/${divisionName}/${cohort}/${userId ?? ''}`
+  return `/leagues/${season}/${divisionName}/${cohort}/${userId ?? ''}`
 }
