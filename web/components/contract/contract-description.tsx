@@ -22,13 +22,15 @@ import { insertContent } from '../editor/utils'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { isTrustworthy } from 'common/envs/constants'
+import { SeeEditHistoryButton } from 'web/components/contract/see-edit-history-button'
 
 export function ContractDescription(props: {
   contract: Contract
   toggleResolver?: () => void
   className?: string
+  showEditHistory?: boolean
 }) {
-  const { contract, className, toggleResolver } = props
+  const { contract, showEditHistory, className, toggleResolver } = props
   const { creatorId, closeTime } = contract
 
   const isAdmin = useAdmin()
@@ -58,6 +60,7 @@ export function ContractDescription(props: {
           stateKey={`isCollapsed-contract-${contract.id}`}
         />
       )}
+      {showEditHistory && <SeeEditHistoryButton contract={contract} />}
     </div>
   )
 }
@@ -73,7 +76,6 @@ function ContractActions(props: {
   toggleResolver: () => void
 }) {
   const { contract, isOnlyAdmin, isOnlyTrustworthy, toggleResolver } = props
-
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
 

@@ -7,6 +7,8 @@ import * as admin from 'firebase-admin'
 import { GroupContractDoc } from 'common/group'
 import { isEqual } from 'lodash'
 import { secrets } from 'common/secrets'
+import { run } from 'common/supabase/utils'
+import { createSupabaseClient } from 'shared/supabase/init'
 
 export const onUpdateContract = functions
   .runWith({ secrets })
@@ -15,10 +17,27 @@ export const onUpdateContract = functions
     const contract = change.after.data() as Contract
     const previousContract = change.before.data() as Contract
     const { eventId } = context
-    const { closeTime, question } = contract
+    const { closeTime, question, description, resolution } = contract
 
     if (!isEqual(previousContract.groupSlugs, contract.groupSlugs)) {
       await handleContractGroupUpdated(previousContract, contract)
+    }
+
+    if (
+      !isEqual(previousContract.description, description) ||
+      !isEqual(previousContract.question, question) ||
+      !isEqual(previousContract.closeTime, closeTime) ||
+      !isEqual(previousContract.resolution, resolution)
+    ) {
+      const db = createSupabaseClient()
+      await run(
+        db.from('contract_edits').insert({
+          contract_id: contract.id,
+          editor_id: contract.creatorId,
+          data: previousContract,
+          idempotency_key: eventId,
+        })
+      )
     }
 
     if (
