@@ -200,24 +200,20 @@ function FeedAnalytics(props: { contractId: string }) {
           </>
         )}
         {viewData && (
-          <>
-            <TableItem
-              label="Impressions"
-              value={`${viewData.length} (${
-                uniqBy(viewData, 'user_id').length
-              } people)`}
-            />
-          </>
+          <TableItem
+            label="Impressions"
+            value={`${viewData.length} (${
+              uniqBy(viewData, 'user_id').length
+            } people)`}
+          />
         )}
         {isBoosted && promotedViewData && (
-          <>
-            <TableItem
-              label="Boost Impressions"
-              value={`${promotedViewData.length} (${
-                uniqBy(promotedViewData, 'user_id').length
-              } people)`}
-            />
-          </>
+          <TableItem
+            label="Boost Impressions"
+            value={`${promotedViewData.length} (${
+              uniqBy(promotedViewData, 'user_id').length
+            } people)`}
+          />
         )}
         {isBoosted && redeemQuery.data && (
           <TableItem label="Redeems" value={redeemQuery.data.count} />
