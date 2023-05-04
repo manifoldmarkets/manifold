@@ -311,3 +311,11 @@ export function getContractParams(params: {
     status: 'success'
   }>
 }
+
+export function createGroupInvite(params: {
+  groupId: string
+  maxUses?: number
+  duration?: string
+}) {
+  return call(getApiUrl('creategroupinvite'), 'POST', params)
+}
