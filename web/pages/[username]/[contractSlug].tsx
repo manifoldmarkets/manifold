@@ -379,7 +379,6 @@ export function ContractPageContent(props: {
               className="mt-2 xl:mt-6"
               contract={contract}
               toggleResolver={() => setShowResolver(!showResolver)}
-              showEditHistory={true}
             />
 
             <div className="my-4">
