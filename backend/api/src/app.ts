@@ -53,6 +53,7 @@ import { saveTopic } from './save-topic'
 import { getcontractparams } from './get-contract-params'
 import { boostmarket } from './create-market-ad'
 import { redeemboost } from './redeem-market-ad-reward'
+import { editcomment } from 'api/edit-comment'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -97,6 +98,7 @@ app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/createcomment', ...apiRoute(createcomment))
+app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
 app.post('/placebet', ...apiRoute(placebet))

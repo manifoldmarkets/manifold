@@ -3,13 +3,13 @@ import * as admin from 'firebase-admin'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
 import { APIError, authEndpoint, validate } from './helpers'
 import { JSONContent } from '@tiptap/core'
-import { z } from 'zod'
+import { string, z } from 'zod'
 import { removeUndefinedProps } from 'common/util/object'
 import { marked } from 'marked'
 import { Comment } from 'common/comment'
 import { Bet } from 'common/bet'
 
-const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
+export const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
     z.record(z.any()),
     z.object({
@@ -42,7 +42,7 @@ const postSchema = z.object({
   replyToBetId: z.string().optional(),
 })
 
-const MAX_COMMENT_JSON_LENGTH = 20000
+export const MAX_COMMENT_JSON_LENGTH = 20000
 
 // For now, only supports creating a new top-level comment on a contract.
 // Replies, posts, chats are not supported yet.
@@ -58,37 +58,13 @@ export const createcomment = authEndpoint(async (req, auth) => {
     replyToBetId,
   } = validate(postSchema, req.body)
 
-  const creator = await getUser(auth.uid)
-  const contract = await getContract(contractId)
-
-  if (!creator)
-    throw new APIError(400, 'No user exists with the authenticated user ID.')
-  if (creator.isBannedFromPosting)
-    throw new APIError(400, 'User banned from commented.')
-
-  if (!contract)
-    throw new APIError(400, 'No contract exists with the given ID.')
-
-  let contentJson = null
-  if (content) {
-    contentJson = content
-  } else if (html) {
-    contentJson = htmlToRichText(html)
-  } else if (markdown) {
-    const markedParse = marked.parse(markdown)
-    contentJson = htmlToRichText(markedParse)
-  }
-
-  if (!contentJson) {
-    throw new APIError(400, 'No comment content provided.')
-  }
-
-  if (JSON.stringify(contentJson).length > MAX_COMMENT_JSON_LENGTH) {
-    throw new APIError(
-      400,
-      `Comment is too long; should be less than ${MAX_COMMENT_JSON_LENGTH} as a JSON string.`
-    )
-  }
+  const { creator, contract, contentJson } = await validateComment(
+    contractId,
+    auth.uid,
+    content,
+    html,
+    markdown
+  )
 
   const ref = firestore.collection(`contracts/${contractId}/comments`).doc()
   const bet = replyToBetId
@@ -130,3 +106,44 @@ export const createcomment = authEndpoint(async (req, auth) => {
 
   return { status: 'success', comment }
 })
+
+export const validateComment = async (
+  contractId: string,
+  userId: string,
+  content: JSONContent | undefined,
+  html: string | undefined,
+  markdown: string | undefined
+) => {
+  const creator = await getUser(userId)
+  const contract = await getContract(contractId)
+
+  if (!creator)
+    throw new APIError(400, 'No user exists with the authenticated user ID.')
+  if (creator.isBannedFromPosting)
+    throw new APIError(400, 'User banned from commented.')
+
+  if (!contract)
+    throw new APIError(400, 'No contract exists with the given ID.')
+
+  let contentJson = null
+  if (content) {
+    contentJson = content
+  } else if (html) {
+    contentJson = htmlToRichText(html)
+  } else if (markdown) {
+    const markedParse = marked.parse(markdown)
+    contentJson = htmlToRichText(markedParse)
+  }
+
+  if (!contentJson) {
+    throw new APIError(400, 'No comment content provided.')
+  }
+
+  if (JSON.stringify(contentJson).length > MAX_COMMENT_JSON_LENGTH) {
+    throw new APIError(
+      400,
+      `Comment is too long; should be less than ${MAX_COMMENT_JSON_LENGTH} as a JSON string.`
+    )
+  }
+  return { contentJson, creator, contract }
+}
