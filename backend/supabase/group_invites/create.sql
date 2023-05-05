@@ -2,7 +2,7 @@ drop table group_invites;
 
 create table if not exists
   group_invites (
-    id text not null default random_alphanumeric (10),
+    id text not null primary key default random_alphanumeric (12),
     group_id text not null,
     foreign key (group_id) references groups (id),
     created_time timestamptz not null default now(),
@@ -16,8 +16,7 @@ create table if not exists
       or (duration is not null)
     ),
     uses numeric not null default 0,
-    max_uses numeric default null,
-    primary key (id, group_id)
+    max_uses numeric default null
   );
 
 create type group_invite_type as (

@@ -51,7 +51,7 @@ export function useRealtimeRole(groupId: string | undefined) {
   return userRole
 }
 
-export function useRealtimeGroupMemberIds(groupId: string) {
+export function usePollingGroupMemberIds(groupId: string) {
   const q = db.from('group_role').select('member_id').eq('group_id', groupId)
   return useSupabasePolling(q)
 }

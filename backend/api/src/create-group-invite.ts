@@ -1,11 +1,7 @@
-import * as admin from 'firebase-admin'
-
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { log } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
-import { runTxn } from 'shared/run-txn'
-import { MarketAdCreateTxn } from 'common/txn'
-import { getGroup, log } from 'shared/utils'
 
 const schema = z.object({
   groupId: z.string(),
@@ -47,23 +43,26 @@ export const creategroupinvite = authEndpoint(async (req, auth) => {
     )
   }
 
-  const { data } = await pg.oneOrNone(`SELECT get_last_week_long_link($1)`, [
-    groupId,
-  ])
+  // if user just wants to generate a default link, look to see if there's already an existing one
+  if (!maxUses && duration == '1 week') {
+    console.log('IN DEfAULT search')
+    const { get_last_week_long_link } = await pg.oneOrNone(
+      `SELECT get_last_week_long_link($1)`,
+      [groupId]
+    )
+    if (get_last_week_long_link) {
+      return { inviteSlug: get_last_week_long_link }
+    }
+  }
 
-  console.log(data)
-  if (!data) {
-    // create if not exists the group invite link row
-    const { id } = await pg.one(
-      `insert into group_invites(group_id, max_uses, duration, is_forever)
+  // create if not exists the group invite link row
+  const { id } = await pg.one(
+    `insert into group_invites(group_id, max_uses, duration, is_forever)
       values ($1, $2, $3, $4)
       returning id`,
-      [groupId, maxUses ? maxUses : null, duration ? duration : null, !duration]
-    )
+    [groupId, maxUses ? maxUses : null, duration ? duration : null, !duration]
+  )
 
-    // return something
-    return id
-  } else {
-    return 'hi'
-  }
+  // return something
+  return { inviteSlug: id }
 })

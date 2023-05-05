@@ -14,17 +14,27 @@ import { CheckIcon, DuplicateIcon } from '@heroicons/react/outline'
 import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon'
 import { getIsNative } from 'web/lib/native/is-native'
 import { ShareEventName } from 'common/events'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function CopyLinkButton(props: {
-  url: string
+  url: string | undefined
   eventTrackingName: ShareEventName
   linkIconOnlyProps?: {
     tooltip: string
     className?: string
   }
+  loading?: boolean
   displayUrl?: string
+  allowManualCopy?: boolean
 }) {
-  const { url, displayUrl, eventTrackingName, linkIconOnlyProps } = props
+  const {
+    url,
+    displayUrl,
+    eventTrackingName,
+    linkIconOnlyProps,
+    loading,
+    allowManualCopy = true,
+  } = props
   const { className, tooltip } = linkIconOnlyProps ?? {}
   // TODO: this is resulting in hydration errors on mobile dev
   const isNative = getIsNative()
@@ -34,6 +44,7 @@ export function CopyLinkButton(props: {
   const [iconPressed, setIconPressed] = useState(false)
 
   const onClick = () => {
+    if (!url) return
     if (isNative) {
       // If we want to extend this: iOS can use a url and a message, Android can use a title and a message.
       postMessageToNative('share', {
@@ -60,9 +71,65 @@ export function CopyLinkButton(props: {
         noTap
         placement="bottom"
       >
-        <IconButton size="2xs" onClick={onClick} className={className}>
+        <IconButton
+          size="2xs"
+          onClick={onClick}
+          className={className}
+          loading={!url}
+          disabled={!url}
+        >
           <Col className={'items-center gap-x-2 sm:flex-row'}>
-            {isNative ? (
+            {loading ? (
+              <LoadingIndicator size="mdsm" />
+            ) : isNative ? (
+              <ArrowUpSquareIcon className={'h-5 w-5'} />
+            ) : linkIconOnlyProps ? (
+              <LinkIcon className={clsx('h-5 w-5')} aria-hidden="true" />
+            ) : iconPressed ? (
+              <CheckIcon className="h-5 w-5" />
+            ) : (
+              <DuplicateIcon className="h-5 w-5" />
+            )}
+        </Col>
+        </IconButton>
+      </Tooltip>
+    )
+  }
+
+  if (linkIconOnlyProps) return <Button onClick={onClick} />
+
+  return (
+    <Row
+      className={clsx(
+        'bg-canvas-50 text-ink-500 select-none items-center rounded border text-sm transition-colors duration-700',
+        bgPressed ? 'bg-primary-50 text-primary-500 transition-none' : '',
+        loading ? 'animate-pulse' : ''
+      )}
+    >
+      <div
+        className={clsx(
+          'ml-3 w-full truncate',
+          allowManualCopy ? 'select-all' : 'select-none'
+        )}
+      >
+        {displayUrl ?? url}
+      </div>
+      <Tooltip
+        text={tooltip ?? (iconPressed ? 'Copied!' : 'Copy link')}
+        noTap
+        placement="bottom"
+      >
+        <IconButton
+          size="2xs"
+          onClick={onClick}
+          className={className}
+          loading={!url}
+          disabled={!url}
+        >
+          <Col className={'items-center gap-x-2 sm:flex-row'}>
+            {loading ? (
+              <LoadingIndicator size="mdsm" />
+            ) : isNative ? (
               <ArrowUpSquareIcon className={'h-5 w-5'} />
             ) : linkIconOnlyProps ? (
               <LinkIcon className={clsx('h-5 w-5')} aria-hidden="true" />
@@ -74,20 +141,6 @@ export function CopyLinkButton(props: {
           </Col>
         </IconButton>
       </Tooltip>
-    )
-  }
-
-  if (linkIconOnlyProps) return <Button onClick={onClick} />
-
-  return (
-    <Row
-      className={clsx(
-        'bg-canvas-50 text-ink-500 items-center rounded border text-sm transition-colors duration-700',
-        bgPressed ? 'bg-primary-50 text-primary-500 transition-none' : ''
-      )}
-    >
-      <div className="ml-3 w-full select-all truncate">{displayUrl ?? url}</div>
-      <Button onClick={onClick} />
     </Row>
   )
 }
