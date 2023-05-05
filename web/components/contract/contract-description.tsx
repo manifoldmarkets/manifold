@@ -23,8 +23,15 @@ export function ContractDescription(props: {
   toggleResolver?: () => void
   className?: string
   showEditHistory?: boolean
+  defaultCollapse?: boolean
 }) {
-  const { contract, className, toggleResolver, showEditHistory } = props
+  const {
+    contract,
+    className,
+    defaultCollapse,
+    toggleResolver,
+    showEditHistory,
+  } = props
   const { creatorId, closeTime } = contract
 
   const isAdmin = useAdmin()
@@ -53,6 +60,7 @@ export function ContractDescription(props: {
           <CollapsibleContent
             content={contract.description}
             stateKey={`isCollapsed-contract-${contract.id}`}
+            defaultCollapse={defaultCollapse}
           />
           {showEditHistory && <ContractEditHistoryButton contract={contract} />}
         </>

@@ -91,7 +91,7 @@ export const ContractEditHistoryButton = (props: { contract: Contract }) => {
                 </span>
               </Row>
               <Col className={'gap-1'}>
-                <ContractDescription contract={edit} />
+                <ContractDescription contract={edit} defaultCollapse={true} />
               </Col>
               <Row>
                 <CloseOrResolveTime contract={edit} editable={false} />
