@@ -22,8 +22,9 @@ export function ContractDescription(props: {
   contract: Contract
   toggleResolver?: () => void
   className?: string
+  showEditHistory?: boolean
 }) {
-  const { contract, className, toggleResolver } = props
+  const { contract, className, toggleResolver, showEditHistory } = props
   const { creatorId, closeTime } = contract
 
   const isAdmin = useAdmin()
@@ -53,7 +54,7 @@ export function ContractDescription(props: {
             content={contract.description}
             stateKey={`isCollapsed-contract-${contract.id}`}
           />
-          <SeeEditHistoryButton contract={contract} />
+          {showEditHistory && <SeeEditHistoryButton contract={contract} />}
         </>
       )}
     </div>
