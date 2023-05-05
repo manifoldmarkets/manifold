@@ -62,32 +62,36 @@ export default function GroupInvitePage(props: {
     <Page>
       <Col className="h-[80vh] w-full items-center justify-center">
         <Col className="bg-canvas-0 mx-8 my-auto max-w-lg gap-4 rounded-xl px-8  pt-4 pb-12 drop-shadow-lg">
-          {invite.expire_time !== null && (
-            <Row className="w-full justify-end">
-              <div
-                className={clsx(
-                  'text-sm',
-                  isExpired ? 'text-red-600' : 'text-gray-400'
-                )}
-              >
-                {isExpired
-                  ? `Expired ${whenExpires}`
-                  : `Expires ${whenExpires}`}
-              </div>
-            </Row>
-          )}
-          {invite.max_uses !== null && (
-            <Row className="w-full justify-end">
-              <div
-                className={clsx(
-                  'text-sm',
-                  invite.is_max_uses_reached ? 'text-red-600' : 'text-gray-400'
-                )}
-              >
-                {invite.uses}/{invite.max_uses} uses
-              </div>
-            </Row>
-          )}
+          <Col className="gap-1">
+            {invite.expire_time !== null && (
+              <Row className="w-full justify-end">
+                <div
+                  className={clsx(
+                    'text-sm',
+                    isExpired ? 'text-red-600' : 'text-gray-400'
+                  )}
+                >
+                  {isExpired
+                    ? `Expired ${whenExpires}`
+                    : `Expires ${whenExpires}`}
+                </div>
+              </Row>
+            )}
+            {invite.max_uses !== null && (
+              <Row className="w-full justify-end">
+                <div
+                  className={clsx(
+                    'text-sm',
+                    invite.is_max_uses_reached
+                      ? 'text-red-600'
+                      : 'text-gray-400'
+                  )}
+                >
+                  {invite.uses}/{invite.max_uses} uses
+                </div>
+              </Row>
+            )}
+          </Col>
           <Lottie
             options={{
               loop: true,

@@ -170,6 +170,8 @@ export function PrivateGroupLink(props: { group: Group }) {
         loading={slugLoading}
         eventTrackingName={'copy market link'}
         displayUrl={realUrl ? truncatedUrl(realUrl) : ''}
+        linkBoxClassName={'border-indigo-400 py-1 border-2 text-ink-900'}
+        linkButtonClassName={'text-indigo-400'}
       />
       <div className="text-ink-700 text-sm">
         This link will immediately allow anyone who has it to join your group

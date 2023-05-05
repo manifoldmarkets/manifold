@@ -26,6 +26,8 @@ export function CopyLinkButton(props: {
   loading?: boolean
   displayUrl?: string
   allowManualCopy?: boolean
+  linkBoxClassName?: string
+  linkButtonClassName?: string
 }) {
   const {
     url,
@@ -34,6 +36,8 @@ export function CopyLinkButton(props: {
     linkIconOnlyProps,
     loading,
     allowManualCopy = true,
+    linkBoxClassName,
+    linkButtonClassName,
   } = props
   const { className, tooltip } = linkIconOnlyProps ?? {}
   // TODO: this is resulting in hydration errors on mobile dev
@@ -78,55 +82,12 @@ export function CopyLinkButton(props: {
           loading={!url}
           disabled={!url}
         >
-          <Col className={'items-center gap-x-2 sm:flex-row'}>
-            {loading ? (
-              <LoadingIndicator size="mdsm" />
-            ) : isNative ? (
-              <ArrowUpSquareIcon className={'h-5 w-5'} />
-            ) : linkIconOnlyProps ? (
-              <LinkIcon className={clsx('h-5 w-5')} aria-hidden="true" />
-            ) : iconPressed ? (
-              <CheckIcon className="h-5 w-5" />
-            ) : (
-              <DuplicateIcon className="h-5 w-5" />
+          <Col
+            className={clsx(
+              'items-center gap-x-2 sm:flex-row',
+              linkButtonClassName
             )}
-        </Col>
-        </IconButton>
-      </Tooltip>
-    )
-  }
-
-  if (linkIconOnlyProps) return <Button onClick={onClick} />
-
-  return (
-    <Row
-      className={clsx(
-        'bg-canvas-50 text-ink-500 select-none items-center rounded border text-sm transition-colors duration-700',
-        bgPressed ? 'bg-primary-50 text-primary-500 transition-none' : '',
-        loading ? 'animate-pulse' : ''
-      )}
-    >
-      <div
-        className={clsx(
-          'ml-3 w-full truncate',
-          allowManualCopy ? 'select-all' : 'select-none'
-        )}
-      >
-        {displayUrl ?? url}
-      </div>
-      <Tooltip
-        text={tooltip ?? (iconPressed ? 'Copied!' : 'Copy link')}
-        noTap
-        placement="bottom"
-      >
-        <IconButton
-          size="2xs"
-          onClick={onClick}
-          className={className}
-          loading={!url}
-          disabled={!url}
-        >
-          <Col className={'items-center gap-x-2 sm:flex-row'}>
+          >
             {loading ? (
               <LoadingIndicator size="mdsm" />
             ) : isNative ? (
@@ -141,6 +102,29 @@ export function CopyLinkButton(props: {
           </Col>
         </IconButton>
       </Tooltip>
+    )
+  }
+
+  if (linkIconOnlyProps) return <Button onClick={onClick} />
+
+  return (
+    <Row
+      className={clsx(
+        'bg-canvas-50 text-ink-500 select-none items-center rounded border text-sm transition-colors duration-700',
+        bgPressed ? 'bg-primary-50 text-primary-500 transition-none' : '',
+        loading ? 'animate-pulse' : '',
+        linkBoxClassName ? linkBoxClassName : ''
+      )}
+    >
+      <div
+        className={clsx(
+          'ml-3 w-full truncate',
+          allowManualCopy ? 'select-all' : 'select-none'
+        )}
+      >
+        {displayUrl ?? url}
+      </div>
+      <Button onClick={onClick} />
     </Row>
   )
 }
