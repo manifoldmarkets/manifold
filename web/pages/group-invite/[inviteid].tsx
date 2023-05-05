@@ -11,7 +11,6 @@ import { fromNow } from 'web/lib/util/time'
 import * as invitation from '../../public/lottie/invitation.json'
 import { Button } from 'web/components/buttons/button'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { joinGroup } from 'web/lib/firebase/groups'
 import {
   getUserIsGroupMember,
   joinGroupThroughInvite,
@@ -56,8 +55,6 @@ export default function GroupInvitePage(props: {
     : null
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-
-  console.log('isAlreadyGroupMember', isAlreadyGroupMember, errorMessage)
   return (
     <Page>
       <Col className="h-[80vh] w-full items-center justify-center">
@@ -123,7 +120,6 @@ export default function GroupInvitePage(props: {
                 setLoading(true)
                 try {
                   await joinGroupThroughInvite({ inviteId: invite.id })
-                  await joinGroup(invite.group_id, user.id)
                   const intervalId = setInterval(async () => {
                     // Call the callback function to poll
                     const result = await getUserIsGroupMember({ groupSlug })
@@ -132,7 +128,7 @@ export default function GroupInvitePage(props: {
                     if (result.isGroupMember) {
                       // Clear the interval
                       clearInterval(intervalId)
-                      setLoading(false)
+                      // setLoading(false)
                       router.push(`/group/${groupSlug}`)
                     }
                   }, 500)

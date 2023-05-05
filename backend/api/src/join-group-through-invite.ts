@@ -3,6 +3,9 @@ import { log } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { GroupInvite } from 'common/src/group-invite'
+import * as admin from 'firebase-admin'
+import { Group } from 'common/group'
+import { joinGroupHelper } from './join-group'
 
 const schema = z.object({
   inviteId: z.string(),
@@ -26,7 +29,7 @@ export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
   if (invite.is_max_uses_reached) {
     throw new APIError(404, 'The max uses has been reached for this link')
   }
-  log('joining group through invite')
+  const member = await joinGroupHelper(invite.group_id, true, auth)
   try {
     const result = await pg.result(
       `update group_invites set uses = $1 + 1 where id = $2`,
@@ -38,6 +41,5 @@ export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
   } catch (error) {
     throw new APIError(500, 'Failed to update group invite')
   }
-  // return something
-  return { status: 'success' }
+  return { status: 'success', member }
 })
