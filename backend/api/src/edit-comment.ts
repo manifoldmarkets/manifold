@@ -40,7 +40,7 @@ export const editcomment = authEndpoint(async (req, auth) => {
   })
   const db = createSupabaseClient()
   await run(
-    db.from('comment_edits').insert({
+    db.from('contract_comment_edits').insert({
       contract_id: contract.id,
       editor_id: editor.id,
       comment_id: comment.id,

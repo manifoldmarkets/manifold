@@ -520,7 +520,7 @@ select
 create index if not exists contract_edits_contract_id_idx on contract_edits (contract_id);
 
 create table if not exists
-    comment_edits (
+    contract_comment_edits (
         id serial primary key,
         contract_id text not null,
         comment_id text not null,
@@ -528,12 +528,12 @@ create table if not exists
         data jsonb not null,
         created_time timestamptz not null default now()
     );
-alter table comment_edits enable row level security;
-drop policy if exists "public read" on comment_edits;
-create policy "public read" on comment_edits for
+alter table contract_comment_edits enable row level security;
+drop policy if exists "public read" on contract_comment_edits;
+create policy "public read" on contract_comment_edits for
 select
     using (true);
-create index if not exists comment_edits_comment_id_idx on comment_edits (comment_id);
+create index if not exists comment_edits_comment_id_idx on contract_comment_edits (comment_id);
 
 create table if not exists
   contract_follows (

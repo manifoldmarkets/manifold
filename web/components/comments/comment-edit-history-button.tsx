@@ -21,7 +21,7 @@ export const CommentEditHistoryButton = (props: { comment: Comment }) => {
   const loadEdits = async () => {
     const { data } = await run(
       db
-        .from('comment_edits')
+        .from('contract_comment_edits')
         .select('*')
         .eq('comment_id', comment.id)
         .order('created_time', { ascending: false })
