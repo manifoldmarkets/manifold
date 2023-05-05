@@ -131,7 +131,7 @@ export default function GroupInvitePage(props: {
                       // setLoading(false)
                       router.push(`/group/${groupSlug}`)
                     }
-                  }, 500)
+                  }, 200)
                 } catch (e) {
                   errorMessage = e as string
                 }
