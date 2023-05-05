@@ -15,7 +15,7 @@ import { uniqBy } from 'lodash'
 type EditHistory = Contract & {
   editCreatedTime: number
 }
-export const SeeEditHistoryButton = (props: { contract: Contract }) => {
+export const ContractEditHistoryButton = (props: { contract: Contract }) => {
   const { contract } = props
   const [showEditHistory, setShowEditHistory] = useState(false)
   const [contractHasEdits, setContractHasEdits] = useState(false)

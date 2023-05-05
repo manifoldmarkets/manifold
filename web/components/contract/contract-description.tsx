@@ -16,7 +16,7 @@ import { Spacer } from '../layout/spacer'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { isTrustworthy } from 'common/envs/constants'
-import { SeeEditHistoryButton } from 'web/components/contract/see-edit-history-button'
+import { ContractEditHistoryButton } from 'web/components/contract/contract-edit-history-button'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -54,7 +54,7 @@ export function ContractDescription(props: {
             content={contract.description}
             stateKey={`isCollapsed-contract-${contract.id}`}
           />
-          {showEditHistory && <SeeEditHistoryButton contract={contract} />}
+          {showEditHistory && <ContractEditHistoryButton contract={contract} />}
         </>
       )}
     </div>
@@ -133,7 +133,7 @@ function ContractActions(props: {
             </Button>
           </>
         )}
-        <SeeEditHistoryButton contract={contract} />
+        <ContractEditHistoryButton contract={contract} />
       </Row>
       <EditQuestion
         contract={contract}
