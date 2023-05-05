@@ -641,16 +641,18 @@ where
   )
   limit 50
 )
-select 
+select
   ma.id,
   ma.market_id,
   ma.funds,
   ma.cost_per_view,
   contracts.data
- from 
- unredeemed_market_ads as ma
-inner join contracts
-on contracts.id = ma.market_id
+from
+  unredeemed_market_ads as ma
+  inner join contracts on contracts.id = ma.market_id
+where
+  contracts.resolution_time is null
+  and contracts.close_time > now()
 $$;
 
 create
