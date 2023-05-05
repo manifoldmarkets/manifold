@@ -13,8 +13,9 @@ import {
 } from 'web/lib/supabase/group'
 import { getUser } from 'web/lib/supabase/user'
 import { useAdmin } from './use-admin'
-import { useUser } from './use-user'
+import { useIsAuthorized, useUser } from './use-user'
 import { useSupabasePolling } from 'web/hooks/use-supabase'
+import { getUserIsGroupMember } from 'web/lib/firebase/api'
 
 export function useRealtimeRole(groupId: string | undefined) {
   const [userRole, setUserRole] = useState<groupRoleType | null | undefined>(
@@ -196,4 +197,17 @@ export function useGroupCreator(group?: Group | null) {
     }
   }, [group])
   return creator
+}
+
+export function useIsGroupMember(groupSlug: string) {
+  const [isGroupMember, setIsGroupMember] = useState<boolean>(false)
+  const isAuth = useIsAuthorized()
+  useEffect(() => {
+    if (isAuth) {
+      getUserIsGroupMember({ groupSlug }).then((result) => {
+        setIsGroupMember(result.isGroupMember)
+      })
+    }
+  }, [isAuth])
+  return isGroupMember
 }

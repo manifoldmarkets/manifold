@@ -1,5 +1,15 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { run } from './utils'
+import { Group } from 'common/group'
+
+export async function getGroup(groupId: string, db: SupabaseClient) {
+  const { data } = await run(db.from('groups').select('data').eq('id', groupId))
+  if (data && data.length > 0) {
+    return data[0].data as Group
+  } else {
+    return null
+  }
+}
 
 export async function getUserIsMember(
   groupId: string | undefined | null,

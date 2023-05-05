@@ -45,7 +45,6 @@ export const creategroupinvite = authEndpoint(async (req, auth) => {
 
   // if user just wants to generate a default link, look to see if there's already an existing one
   if (!maxUses && duration == '1 week') {
-    console.log('IN DEfAULT search')
     const { get_last_week_long_link } = await pg.oneOrNone(
       `SELECT get_last_week_long_link($1)`,
       [groupId]

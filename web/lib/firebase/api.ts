@@ -319,3 +319,7 @@ export function createGroupInvite(params: {
 }) {
   return call(getApiUrl('creategroupinvite'), 'POST', params)
 }
+
+export function joinGroupThroughInvite(params: { inviteId: string }) {
+  return call(getApiUrl('joingroupthroughinvite'), 'POST', params)
+}

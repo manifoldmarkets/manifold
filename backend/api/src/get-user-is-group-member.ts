@@ -8,7 +8,7 @@ const bodySchema = z.object({
 export const getuserisgroupmember = authEndpoint(async (req, auth) => {
   const { groupSlug } = validate(bodySchema, req.body)
   if (!auth.uid) {
-    return false
+    return { isGroupMember: false }
   }
   const pg = createSupabaseDirectClient()
   const userIsMember = await pg.one(
@@ -17,5 +17,5 @@ export const getuserisgroupmember = authEndpoint(async (req, auth) => {
         where group_slug = '${groupSlug}'
         and member_id='${auth.uid}')`
   )
-  return userIsMember.exists
+  return { isGroupMember: userIsMember.exists }
 })

@@ -126,14 +126,6 @@ export async function searchUserInGroup(
   ).slice(0, limit)
 }
 
-export async function getGroup(groupId: string) {
-  const { data } = await run(db.from('groups').select('data').eq('id', groupId))
-  if (data && data.length > 0) {
-    return data[0].data as Group
-  } else {
-    return null
-  }
-}
 export async function getGroupMarkets(groupId: string) {
   const { data: contractIds } = await run(
     db.from('group_contracts').select('contract_id').eq('group_id', groupId)

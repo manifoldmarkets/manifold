@@ -16,15 +16,30 @@ create table if not exists
       or (duration is not null)
     ),
     uses numeric not null default 0,
-    max_uses numeric default null
+    max_uses numeric default null,
+    is_max_uses_reached boolean generated always as (
+      case
+        when max_uses is null then false
+        else uses >= max_uses
+      end
+    ) stored,
+    expire_time timestamptz
   );
 
-create type group_invite_type as (
-  id text,
-  group_id text,
-  created_time TIMESTAMPTZ,
-  duration interval,
-  is_forever boolean,
-  uses numeric,
-  max_uses numeric
-);
+  CREATE OR REPLACE FUNCTION set_expire_time()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.duration IS NULL THEN
+        NEW.expire_time = NULL;
+    ELSE
+        NEW.expire_time = NEW.created_time + NEW.duration;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER populate_group_invites_expire_time
+BEFORE INSERT ON group_invites
+FOR EACH ROW
+EXECUTE FUNCTION set_expire_time();

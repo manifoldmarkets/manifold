@@ -1,12 +1,11 @@
-import { run, SupabaseClient } from 'common/supabase/utils'
-
-export async function getInvite(inviteId: string, db: SupabaseClient) {
-  const { data: invite } = await run(
-    db.from('group_invites').select('*').eq('id', inviteId).limit(1)
-  )
-
-  if (invite && invite.length > 0) {
-    return invite[0]
-  }
-  return null
+export type GroupInvite = {
+  id: string
+  group_id: string
+  uses: number
+  max_uses: number | null
+  created_time: Date
+  duration: string
+  expire_time: Date
+  is_forever: boolean
+  is_max_uses_reached: boolean
 }
