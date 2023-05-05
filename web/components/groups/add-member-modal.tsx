@@ -22,15 +22,38 @@ import { Select } from '../widgets/select'
 
 const QUERY_SIZE = 7
 
-export const durationOptions = [
-  '1 hour',
-  '1 week',
-  '1 month',
-  '1 year',
-  'Forever',
-]
+export type InviteDurationKey =
+  | '1 hour'
+  | '1 week'
+  | '1 month'
+  | '1 year'
+  | 'Forever'
+export type InviteMaxUsesKey =
+  | '1 use'
+  | '5 uses'
+  | '10 uses'
+  | '25 uses'
+  | '50 uses'
+  | '100 uses'
+  | 'Unlimited'
 
-export const maxUsesOptions = [1, 5, 10, 25, 50, 100, Infinity]
+export const durationOptions: Record<InviteDurationKey, string | undefined> = {
+  '1 hour': '1 hour',
+  '1 week': '1 week',
+  '1 month': '1 month',
+  '1 year': '1 year',
+  Forever: undefined,
+}
+
+export const maxUsesOptions: Record<InviteMaxUsesKey, number | undefined> = {
+  '1 use': 1,
+  '5 uses': 5,
+  '10 uses': 10,
+  '25 uses': 25,
+  '50 uses': 50,
+  '100 uses': 100,
+  Unlimited: undefined,
+}
 
 export function AddMemberContent(props: {
   query: string
@@ -101,21 +124,21 @@ export function PrivateGroupLink(props: { group: Group }) {
   const { group } = props
   const [inviteSlug, setInviteSlug] = useState<string | undefined>(undefined)
   const [slugLoading, setSlugLoading] = useState(false)
-  const [maxUses, setMaxUses] = useState(Infinity)
-  const [duration, setDuration] = useState('1 week')
+  const [maxUsesKey, setMaxUsesKey] = useState<InviteMaxUsesKey>('Unlimited')
+  const [durationKey, setDurationKey] = useState<InviteDurationKey>('1 week')
   const isAuth = useIsAuthorized()
   useEffect(() => {
     if (isAuth) {
       setSlugLoading(true)
       createGroupInvite({
         groupId: group.id,
-        maxUses: maxUses === Infinity ? undefined : maxUses,
-        duration: duration === 'Forever' ? undefined : duration,
+        maxUses: maxUsesOptions[maxUsesKey],
+        duration: durationOptions[durationKey],
       })
         .then((result) => setInviteSlug(result.inviteSlug))
         .finally(() => setSlugLoading(false))
     }
-  }, [isAuth, maxUses, duration])
+  }, [isAuth, maxUsesKey, durationKey])
 
   const realUrl = inviteSlug ? getGroupInviteUrl(group, inviteSlug) : undefined
   return (
@@ -130,11 +153,13 @@ export function PrivateGroupLink(props: { group: Group }) {
         <Col className="w-1/2 gap-0.5">
           <div className="text-ink-300 text-xs">DURATION</div>
           <Select
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
+            value={durationKey}
+            onChange={(e) =>
+              setDurationKey(e.target.value as InviteDurationKey)
+            }
             className="!h-full w-full grow py-1"
           >
-            {durationOptions.map((option) => (
+            {Object.keys(durationOptions).map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>
@@ -144,22 +169,15 @@ export function PrivateGroupLink(props: { group: Group }) {
         <Col className="w-1/2 gap-0.5">
           <div className="text-ink-300 text-xs">USES</div>
           <Select
-            value={maxUses === Infinity ? 'Unlimited' : maxUses}
+            value={maxUsesKey}
             onChange={(e) => {
-              const value =
-                e.target.value === 'Unlimited'
-                  ? Infinity
-                  : parseInt(e.target.value, 10)
-              setMaxUses(value)
+              setMaxUsesKey(e.target.value as InviteMaxUsesKey)
             }}
             className="!h-full w-full grow py-1"
           >
-            {maxUsesOptions.map((option) => (
-              <option
-                key={option === Infinity ? 'Unlimited' : `${option} uses`}
-                value={option === Infinity ? 'Unlimited' : option}
-              >
-                {option === Infinity ? 'Unlimited' : `${option} uses`}
+            {Object.keys(maxUsesOptions).map((option) => (
+              <option key={option} value={option}>
+                {option}
               </option>
             ))}
           </Select>

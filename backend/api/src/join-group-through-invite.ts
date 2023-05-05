@@ -11,7 +11,6 @@ const schema = z.object({
   inviteId: z.string(),
 })
 
-// TODO: add the actual joining group logic here once we move off firebase
 export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
   const { inviteId } = validate(schema, req.body)
   const pg = createSupabaseDirectClient()

@@ -39,7 +39,6 @@ export default function GroupInvitePage(props: {
   groupSlug: string
 }) {
   const { invite, groupName, groupSlug } = props
-  console.log(invite, groupName)
   const whenExpires = dayjs(invite.expire_time).fromNow()
   const isExpired = invite.expire_time <= new Date()
   const isAuth = useIsAuthorized()
@@ -152,22 +151,3 @@ export default function GroupInvitePage(props: {
     </Page>
   )
 }
-
-// async function rerouteOnceSupabaseUserExists(
-//   pollingIntervalMs: number,
-//   groupSlug: string
-//   router: Next
-// ) {
-//   // Set an interval to poll every x seconds
-//   const intervalId = setInterval(async () => {
-//     // Call the callback function to poll
-//     const result = await getUserIsGroupMember({ groupSlug })
-//     Router.push(`/group/${groupSlug}`)
-
-//     // Check if we got the result we were looking for
-//     if (result.isGroupMember) {
-//       // Clear the interval
-//       clearInterval(intervalId)
-//     }
-//   }, pollingIntervalMs)
-// }
