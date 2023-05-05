@@ -39,7 +39,7 @@ export function ContractsList(props: {
       {loadMore && (
         <LoadMoreUntilNotVisible
           loadMore={loadMore}
-          className="relative -top-96 h-1"
+          className="bottom-30 relative h-1 "
         />
       )}
     </Col>
