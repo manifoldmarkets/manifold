@@ -4,7 +4,13 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { debounce, isEqual, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
-import { createContext, useContext, useEffect, useRef } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+} from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import {
@@ -137,9 +143,7 @@ export function SupabaseContractSearch(props: {
     `${persistPrefix}-supabase-search`
   )
 
-  const loadMoreContracts = () => {
-    return performQuery(() => state)()
-  }
+  const loadMoreContracts = () => performQuery(() => state)
 
   const searchParams = useRef<SupabaseSearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SupabaseSearchParameters>()
@@ -156,7 +160,22 @@ export function SupabaseContractSearch(props: {
     }
   }, [])
 
-  const performQuery = useEvent((getState) => async (freshQuery?: boolean) => {
+  const performQuery = useEvent(
+    async (getState, freshQuery?: boolean) =>
+      (await debouncedQuery(getState, freshQuery)) ?? false
+  )
+
+  const debouncedQuery = useCallback(
+    debounce(
+      async (getState, freshQuery?: boolean) => query(getState, freshQuery),
+      200
+    ),
+    []
+  )
+
+  useEffect(() => debouncedQuery.cancel, [debouncedQuery])
+
+  const query = async (getState: any, freshQuery?: boolean) => {
     const currentState = getState()
     if (searchParams.current == null) {
       return false
@@ -214,7 +233,7 @@ export function SupabaseContractSearch(props: {
       }
     }
     return false
-  })
+  }
 
   // Always do first query when loading search page, unless going back in history.
   const [firstQuery, setFirstQuery] = usePersistentState(true, {
@@ -231,7 +250,7 @@ export function SupabaseContractSearch(props: {
         }
         searchParams.current = params
         setState({ ...INITIAL_STATE, showTime: getShowTime(params.sort) })
-        performQuery(() => state)(true)
+        performQuery(() => state, true)
       }
     }, 100)
   ).current
