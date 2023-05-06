@@ -1,7 +1,6 @@
 import { memo, useState } from 'react'
 
 import { tradingAllowed } from 'web/lib/firebase/contracts'
-import { Col } from '../layout/col'
 import {
   BinaryContractChart,
   ChoiceContractChart,
@@ -24,8 +23,6 @@ import {
 } from 'common/contract'
 import { SizedContainer } from 'web/components/sized-container'
 import { CertOverview } from './cert-overview'
-import { BetSignUpPrompt } from '../sign-up-prompt'
-import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Period } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
@@ -33,8 +30,6 @@ import { periodDurations } from 'web/lib/util/time'
 import { getDateRange } from '../charts/helpers'
 import { QfOverview } from './qf-overview'
 import { StonkContractChart } from '../charts/contract/stonk'
-import { STARTING_BALANCE } from 'common/economy'
-import { formatMoney } from 'common/util/format'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import {
   BinaryResolutionOrChance,
@@ -51,7 +46,8 @@ export const ContractOverview = memo(
     bets: Bet[]
     betPoints: HistoryPoint<Partial<Bet>>[]
   }) => {
-    const { betPoints, contract, bets } = props
+    const { betPoints, contract } = props
+
     switch (contract.outcomeType) {
       case 'BINARY':
         return <BinaryOverview betPoints={betPoints} contract={contract} />
@@ -67,7 +63,8 @@ export const ContractOverview = memo(
         return <QfOverview contract={contract} />
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
-        return <ChoiceOverview contract={contract} bets={bets} />
+        return <></>
+      // return <ChoiceOverview contract={contract} bets={bets} />
       case 'STONK':
         return <StonkOverview contract={contract} betPoints={betPoints} />
     }
@@ -125,14 +122,6 @@ const BinaryOverview = (props: {
       {user && tradingAllowed(contract) && (
         <SignedInBinaryMobileBetting contract={contract} user={user} />
       )}
-
-      {user === null && (
-        <Col className="mt-1 w-full">
-          <BetSignUpPrompt className="xl:self-center" size="xl" />
-          <PlayMoneyDisclaimer />
-        </Col>
-      )}
-      {user === undefined && <div className="h-[72px] w-full" />}
     </>
   )
 }
@@ -196,14 +185,6 @@ const PseudoNumericOverview = (props: {
       {user && tradingAllowed(contract) && (
         <SignedInBinaryMobileBetting contract={contract} user={user} />
       )}
-
-      {user === null && (
-        <Col className="mt-1 w-full">
-          <BetSignUpPrompt className="xl:self-center" size="xl" />
-          <PlayMoneyDisclaimer />
-        </Col>
-      )}
-      {user === undefined && <div className="h-[72px] w-full" />}
     </>
   )
 }
@@ -244,18 +225,6 @@ const StonkOverview = (props: {
       {user && tradingAllowed(contract) && (
         <SignedInBinaryMobileBetting contract={contract} user={user} />
       )}
-
-      {user === null && (
-        <Col className="mt-1 w-full">
-          <BetSignUpPrompt className="xl:self-center" size="xl" />
-          <PlayMoneyDisclaimer
-            text={`Get ${formatMoney(
-              STARTING_BALANCE
-            )} play money to bet on the stock`}
-          />
-        </Col>
-      )}
-      {user === undefined && <div className="h-[72px] w-full" />}
     </>
   )
 }

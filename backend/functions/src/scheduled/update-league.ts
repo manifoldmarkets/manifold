@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions'
-import { groupBy, uniq } from 'lodash'
+import { groupBy, sumBy, uniq } from 'lodash'
 import * as dayjs from 'dayjs'
 
 import { log, revalidateStaticProps } from 'shared/utils'
@@ -36,7 +36,7 @@ export async function updateLeagueCore() {
 
   log('Loading users...')
   const userIds = await pg.map(
-    `select id from users 
+    `select id from users
     join leagues on leagues.user_id = users.id
     where leagues.season = $1`,
     [season],
@@ -46,17 +46,21 @@ export async function updateLeagueCore() {
 
   log('Loading txns...')
   const txnCategoriesCountedAsManaEarned = [
-    'UNIQUE_BETTOR_BONUS',
     'BETTING_STREAK_BONUS',
     'AD_REDEEM',
     'MARKET_BOOST_REDEEM',
     'QUEST_REWARD',
   ]
-  const txnData = await pg.manyOrNone(
+  const txnData = await pg.manyOrNone<{
+    user_id: string
+    category: string
+    amount: number
+  }>(
     `select
       user_id,
-      sum((data->>'amount')::numeric) as bonus_total
-    from txns 
+      data->>'category' as category,
+      sum((data->>'amount')::numeric) as amount
+    from txns
     join
       leagues on leagues.user_id = txns.data->>'toId'
     where
@@ -64,43 +68,72 @@ export async function updateLeagueCore() {
       and (data->>'createdTime')::bigint > $2
       and (data->>'createdTime')::bigint < $3
       and data->>'category' in ($4:csv)
-    group by user_id
+    group by user_id, category
     `,
     [season, seasonStart, seasonEnd, txnCategoriesCountedAsManaEarned]
   )
 
-  const txnCategoriesCountedAsNegativeManaEarned = [
-    'CANCEL_UNIQUE_BETTOR_BONUS',
-  ]
-  const negativeTxnData = await pg.manyOrNone(
+  // Require that the contract that is giving the unique bettor bonus
+  // was created during the current season.
+  const uniqueBettorBonuses = await pg.manyOrNone<{
+    user_id: string
+    category: string
+    amount: number
+  }>(
     `select
       user_id,
-      sum((data->>'amount')::numeric) as bonus_total
+      txns.data->>'category' as category,
+      sum((txns.data->>'amount')::numeric) as amount
+    from txns 
+    join
+      leagues on leagues.user_id = txns.data->>'toId'
+    join
+      contracts on contracts.id = txns.data->'data'->>'contractId'
+    where
+      leagues.season = $1
+      and ts_to_millis(contracts.created_time) > $2
+      and ts_to_millis(contracts.created_time) < $3
+      and (txns.data->>'createdTime')::bigint > $2
+      and (txns.data->>'createdTime')::bigint < $3
+      and txns.data->>'category' = 'UNIQUE_BETTOR_BONUS'
+    group by user_id, category
+    `,
+    [season, seasonStart, seasonEnd]
+  )
+
+  const negativeBettorBonuses = await pg.manyOrNone<{
+    user_id: string
+    category: string
+    amount: number
+  }>(
+    `select
+      user_id,
+      txns.data->>'category' as category,
+      -1 * sum((txns.data->>'amount')::numeric) as amount
     from txns 
     join
       leagues on leagues.user_id = txns.data->>'fromId'
+    join
+      contracts on contracts.id = txns.data->'data'->>'contractId'
     where
       leagues.season = $1
-      and (data->>'createdTime')::bigint > $2
-      and (data->>'createdTime')::bigint < $3
-      and data->>'category' in ($4:csv)
-    group by user_id
+      and ts_to_millis(contracts.created_time) > $2
+      and ts_to_millis(contracts.created_time) < $3
+      and (txns.data->>'createdTime')::bigint > $2
+      and (txns.data->>'createdTime')::bigint < $3
+      and txns.data->>'category' = 'CANCEL_UNIQUE_BETTOR_BONUS'
+    group by user_id, category
     `,
-    [season, seasonStart, seasonEnd, txnCategoriesCountedAsNegativeManaEarned]
+    [season, seasonStart, seasonEnd]
   )
 
   console.log(
     'Loaded txns per user',
     txnData.length,
-    'negative',
-    negativeTxnData.length
-  )
-
-  const txnDataByUserId = Object.fromEntries(
-    txnData.map((t) => [t.user_id, t.bonus_total])
-  )
-  const negativeTxnDataByUserId = Object.fromEntries(
-    negativeTxnData.map((t) => [t.user_id, t.bonus_total])
+    'unique bettor bonuses',
+    uniqueBettorBonuses.length,
+    'negative bettor bonuses',
+    negativeBettorBonuses.length
   )
 
   log('Loading bets...')
@@ -124,25 +157,52 @@ export async function updateLeagueCore() {
   log(`Loaded ${contracts.length} contracts.`)
 
   log('Computing metric updates...')
-  const updates: { user_id: string; mana_earned: number }[] = []
+  const userProfit: { user_id: string; amount: number; category: 'profit' }[] =
+    []
   for (const userId of userIds) {
     const userBets = betsByUserId[userId] ?? []
     const betsByContract = groupBy(userBets, (b) => b.contractId)
+    let totalProfit = 0
 
-    let manaEarned =
-      (txnDataByUserId[userId] ?? 0) - (negativeTxnDataByUserId[userId] ?? 0)
     for (const [contractId, contractBets] of Object.entries(betsByContract)) {
       const contract = contractsById[contractId]
       if (contract.visibility === 'public') {
         const { profit } = getContractBetMetrics(contract, contractBets)
-        manaEarned += profit
+        totalProfit += profit
       }
     }
-    updates.push({
+    userProfit.push({
       user_id: userId,
-      mana_earned: manaEarned,
+      amount: totalProfit,
+      category: 'profit',
     })
   }
+
+  const amountByUserId = groupBy(
+    [
+      ...userProfit,
+      ...txnData,
+      ...uniqueBettorBonuses,
+      ...negativeBettorBonuses,
+    ].map((u) => ({ ...u, amount: +u.amount })),
+    'user_id'
+  )
+
+  for (const [userId, manaEarned] of Object.entries(amountByUserId)) {
+    const total = sumBy(manaEarned, 'amount')
+    manaEarned.push({ user_id: userId, amount: total, category: 'mana_earned' })
+  }
+
+  const updates = Object.entries(amountByUserId)
+    .map(([userId, earnedCategories]) => {
+      const update = {
+        user_id: userId,
+        mana_earned: earnedCategories.find((c) => c.category === 'mana_earned')
+          ?.amount,
+      }
+      return update
+    })
+    .filter((u) => u.mana_earned !== undefined)
 
   await bulkUpdate(pg, 'leagues', 'user_id', updates)
   await revalidateStaticProps('/leagues')

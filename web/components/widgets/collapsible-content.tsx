@@ -55,8 +55,9 @@ export function ShowMoreLessButton(props: {
 export function CollapsibleContent(props: {
   content: JSONContent | string
   stateKey: string
+  defaultCollapse?: boolean
 }) {
-  const { content, stateKey } = props
+  const { content, stateKey, defaultCollapse } = props
   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
     useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -69,7 +70,13 @@ export function CollapsibleContent(props: {
     }
   }, [contentRef.current?.offsetHeight])
   if (shouldAllowCollapseOfContent) {
-    return <ActuallyCollapsibleContent content={content} stateKey={stateKey} />
+    return (
+      <ActuallyCollapsibleContent
+        content={content}
+        stateKey={stateKey}
+        defaultCollapse={defaultCollapse}
+      />
+    )
   }
   return (
     <div ref={contentRef}>
@@ -82,12 +89,18 @@ export function CollapsibleContent(props: {
 function ActuallyCollapsibleContent(props: {
   content: JSONContent | string
   stateKey: string
+  defaultCollapse?: boolean
 }) {
-  const { content, stateKey } = props
-  const [isCollapsed, setIsCollapsed] = usePersistentState<boolean>(false, {
-    store: storageStore(safeLocalStorage),
-    key: stateKey,
-  })
+  const { content, stateKey, defaultCollapse } = props
+  const [collapsed, setCollapsed] = usePersistentState<boolean>(
+    defaultCollapse ?? false,
+    {
+      store: storageStore(safeLocalStorage),
+      key: stateKey,
+    }
+  )
+  const [overrideCollaped, setOverrideCollaped] = useState(defaultCollapse)
+  const isCollapsed = overrideCollaped ?? collapsed
   return (
     <div>
       <div
@@ -102,7 +115,7 @@ function ActuallyCollapsibleContent(props: {
         {isCollapsed && (
           <>
             <div className="absolute bottom-0 w-full">
-              <div className="from-ink-100 h-12 bg-gradient-to-t" />
+              <div className="from-canvas-100 h-8 bg-gradient-to-t" />
             </div>
           </>
         )}
@@ -116,7 +129,8 @@ function ActuallyCollapsibleContent(props: {
                 top: 0,
                 behavior: 'smooth',
               })
-            setIsCollapsed(!isCollapsed)
+            setCollapsed(!isCollapsed)
+            setOverrideCollaped(!isCollapsed)
           }}
           isCollapsed={isCollapsed}
         />

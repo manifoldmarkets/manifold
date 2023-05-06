@@ -31,7 +31,7 @@ import { ReportModal } from 'web/components/buttons/report-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { toast } from 'react-hot-toast'
 import LinkIcon from 'web/lib/icons/link-icon'
-import { EyeOffIcon, FlagIcon } from '@heroicons/react/outline'
+import { EyeOffIcon, FlagIcon, PencilIcon } from '@heroicons/react/outline'
 import { LikeButton } from 'web/components/contract/like-button'
 import { richTextToString } from 'common/util/parse'
 import { buildArray } from 'common/util/array'
@@ -47,6 +47,8 @@ import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { CommentView } from 'common/events'
 import { Tooltip } from '../widgets/tooltip'
+import { EditCommentModal } from 'web/components/comments/edit-comment-modal'
+import { CommentEditHistoryButton } from 'web/components/comments/comment-edit-history-button'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -286,7 +288,7 @@ export function DotMenu(props: {
   const privateUser = usePrivateUser()
   const isAdmin = useAdmin()
   const isContractCreator = privateUser?.id === contract.creatorId
-
+  const [editingComment, setEditingComment] = useState(false)
   return (
     <>
       <ReportModal
@@ -323,6 +325,13 @@ export function DotMenu(props: {
               else toast.error(`You can't report your own comment`)
             },
           },
+          comment.userId === user?.id && {
+            name: 'Edit',
+            icon: <PencilIcon className="h-5 w-5" />,
+            onClick: async () => {
+              setEditingComment(true)
+            },
+          },
           (isAdmin || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
@@ -337,6 +346,15 @@ export function DotMenu(props: {
           }
         )}
       />
+      {user && editingComment && (
+        <EditCommentModal
+          user={user}
+          comment={comment}
+          contract={contract}
+          open={editingComment}
+          setOpen={setEditingComment}
+        />
+      )}
     </>
   )
 }
@@ -497,28 +515,10 @@ function FeedCommentHeader(props: {
     answerOutcome,
     betAmount,
     userId,
+    editedTime,
   } = comment
 
   const marketCreator = contract.creatorId === userId
-  if (bettorUsername !== undefined) {
-    return (
-      <Row className="text-ink-600 mt-0.5 flex-wrap items-end text-sm">
-        <UserLink
-          username={userUsername}
-          name={userName}
-          marketCreator={marketCreator}
-        />
-        <CopyLinkDateTimeComponent
-          prefix={contract.creatorUsername}
-          slug={contract.slug}
-          createdTime={createdTime}
-          elementId={comment.id}
-        />
-        <DotMenu comment={comment} contract={contract} />
-      </Row>
-    )
-  }
-
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
@@ -528,26 +528,30 @@ function FeedCommentHeader(props: {
         name={userName}
         marketCreator={marketCreator}
       />
-      <span className="text-ink-400 ml-1">
-        <CommentStatus contract={contract} comment={comment} />
-        {bought} {money}
-        {shouldDisplayOutcome && (
-          <>
-            {' '}
-            of{' '}
-            <OutcomeLabel
-              outcome={betOutcome ? betOutcome : ''}
-              contract={contract}
-              truncate="short"
-            />
-          </>
-        )}
-      </span>
+      {/* Hide my status if replying to a bet, it's too much clutter*/}
+      {bettorUsername == undefined && (
+        <span className="text-ink-400 ml-1">
+          <CommentStatus contract={contract} comment={comment} />
+          {bought} {money}
+          {shouldDisplayOutcome && (
+            <>
+              {' '}
+              of{' '}
+              <OutcomeLabel
+                outcome={betOutcome ? betOutcome : ''}
+                contract={contract}
+                truncate="short"
+              />
+            </>
+          )}
+        </span>
+      )}
       <CopyLinkDateTimeComponent
         prefix={contract.creatorUsername}
         slug={contract.slug}
-        createdTime={createdTime}
+        createdTime={editedTime ? editedTime : createdTime}
         elementId={comment.id}
+        seeEditsButton={<CommentEditHistoryButton comment={comment} />}
       />
       <DotMenu comment={comment} contract={contract} />
     </Row>

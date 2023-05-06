@@ -185,7 +185,7 @@ function getSearchContractSQL(contractInput: {
     WHERE row_num = 1
     -- prefix matches are weighted higher than subset matches bc they include the last word
     ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
-    limit ${limit}) as relevant_group_contracts
+    ) as relevant_group_contracts
       `
       // We use popularity score bc these are exact matches and can be low quality
       sortAlgorithm = 'popularity_score'
@@ -248,7 +248,7 @@ function getSearchContractSQL(contractInput: {
         WHERE row_num = 1
         -- prefix matches are weighted higher than subset matches bc they include the last word
         ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
-        limit ${limit}) as relevant_creator_contracts
+        ) as relevant_creator_contracts
       `
       // Creators typically don't have that many markets so we don't have to sort by popularity score
     }
@@ -298,7 +298,7 @@ function getSearchContractSQL(contractInput: {
      WHERE row_num = 1
      -- prefix matches are weighted higher than subset matches bc they include the last word
      ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
-   limit ${limit}) as relevant_contracts
+   ) as relevant_contracts
     `
       // We use popularity score bc these are exact matches and can be low quality
       sortAlgorithm = 'popularity_score'
