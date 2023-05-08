@@ -17,6 +17,7 @@ import { PrivacyStatusView } from './group-privacy-modal'
 import { getGroupWithFields } from 'web/lib/supabase/group'
 import { SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import clsx from 'clsx'
+import { LOADING_PING_INTERVAL } from '../contract/waiting-for-supabase-button'
 
 export function editorHasContent(editor: Editor | null) {
   if (!editor) {
@@ -102,15 +103,12 @@ export function CreateGroupButton(props: {
       // Wrap the interval and timeout logic inside a Promise
       const waitForGroupUpdate = new Promise<boolean>((resolve, reject) => {
         const intervalId = setInterval(async () => {
-          console.log('in interval', intervalId)
           const groupWithFields = await getGroupWithFields(result.group.id)
-          console.log('got group with fields:', groupWithFields)
           if (
             groupWithFields &&
             groupWithFields.slug &&
             groupWithFields.privacyStatus
           ) {
-            console.log('yay clearing interval')
             clearInterval(intervalId) // Clear the interval
             if (goToGroupOnSubmit) {
               router.push(`/group/${result.group.slug}`)
@@ -123,7 +121,7 @@ export function CreateGroupButton(props: {
             setIsSubmitting(false)
             resolve(true)
           }
-        }, 200)
+        }, LOADING_PING_INTERVAL)
 
         // Set the timeout for 1 minute (60,000 ms)
         const timeoutId = setTimeout(() => {
@@ -199,14 +197,12 @@ export function CreateGroupButton(props: {
               onClick={() => setPrivacy('curated')}
               size="sm"
             />
-            {/* {goToGroupOnSubmit && isManifoldAdmin && ( */}
             <PrivacyStatusView
               viewStatus={'private'}
               isSelected={privacy == 'private'}
               onClick={() => setPrivacy('private')}
               size="sm"
             />
-            {/* )} */}
           </Col>
         </div>
 

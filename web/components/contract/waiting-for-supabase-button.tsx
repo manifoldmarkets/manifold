@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { Button } from '../buttons/button'
 
-const LOADING_PING_INTERVAL = 200
+export const LOADING_PING_INTERVAL = 200
 
 export default function WaitingForSupabaseButton(props: {
   contractId: string
