@@ -3,8 +3,9 @@ import { debounce } from 'lodash'
 import { NextRouter, useRouter } from 'next/router'
 import { useEffect, useRef } from 'react'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
-import { LOADING_PING_INTERVAL } from 'web/pages/group/loading/[groupId]'
 import { Button } from '../buttons/button'
+
+const LOADING_PING_INTERVAL = 200
 
 export default function WaitingForSupabaseButton(props: {
   contractId: string

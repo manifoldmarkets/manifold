@@ -14,6 +14,9 @@ import { Input } from '../widgets/input'
 import { Title } from '../widgets/title'
 import { savePost } from './group-about-section'
 import { PrivacyStatusView } from './group-privacy-modal'
+import { getGroupWithFields } from 'web/lib/supabase/group'
+import { SCROLLABLE_MODAL_CLASS } from '../layout/modal'
+import clsx from 'clsx'
 
 export function editorHasContent(editor: Editor | null) {
   if (!editor) {
@@ -86,23 +89,53 @@ export function CreateGroupButton(props: {
       return e
     })
 
+    if (!result.group) {
+      setIsSubmitting(false)
+      return false
+    }
     if (editorHasContent(editor)) {
       savePost(editor, result.group, null)
     }
     editor?.commands.clearContent(true)
 
-    if (result.group) {
-      if (goToGroupOnSubmit) {
-        router.push(`/group/loading/${result.group.id}`)
-      } else if (addGroupIdParamOnSubmit) {
-        router.replace({
-          pathname: router.pathname,
-          query: { ...router.query, groupId: result.group.id },
-        })
-      }
-      setIsSubmitting(false)
-      return true
-    } else {
+    try {
+      // Wrap the interval and timeout logic inside a Promise
+      const waitForGroupUpdate = new Promise<boolean>((resolve, reject) => {
+        const intervalId = setInterval(async () => {
+          console.log('in interval', intervalId)
+          const groupWithFields = await getGroupWithFields(result.group.id)
+          console.log('got group with fields:', groupWithFields)
+          if (
+            groupWithFields &&
+            groupWithFields.slug &&
+            groupWithFields.privacyStatus
+          ) {
+            console.log('yay clearing interval')
+            clearInterval(intervalId) // Clear the interval
+            if (goToGroupOnSubmit) {
+              router.push(`/group/${result.group.slug}`)
+            } else if (addGroupIdParamOnSubmit) {
+              router.replace({
+                pathname: router.pathname,
+                query: { ...router.query, groupId: result.group.id },
+              })
+            }
+            setIsSubmitting(false)
+            resolve(true)
+          }
+        }, 200)
+
+        // Set the timeout for 1 minute (60,000 ms)
+        const timeoutId = setTimeout(() => {
+          clearInterval(intervalId) // Clear the interval
+          setIsSubmitting(false)
+          reject(false)
+        }, 60000)
+      })
+
+      // Wait for the Promise to resolve or reject
+      return await waitForGroupUpdate
+    } catch (e) {
       setIsSubmitting(false)
       return false
     }
@@ -132,7 +165,7 @@ export function CreateGroupButton(props: {
       }}
       disabled={editor?.storage.upload.mutation.isLoading}
     >
-      <Col className="gap-4">
+      <Col className={clsx('-mx-4 gap-4 px-4', SCROLLABLE_MODAL_CLASS)}>
         <Title className="!my-0" children="Create a group" />
 
         <Col className="text-ink-500">
@@ -166,14 +199,14 @@ export function CreateGroupButton(props: {
               onClick={() => setPrivacy('curated')}
               size="sm"
             />
-            {goToGroupOnSubmit && isManifoldAdmin && (
-              <PrivacyStatusView
-                viewStatus={'private'}
-                isSelected={privacy == 'private'}
-                onClick={() => setPrivacy('private')}
-                size="sm"
-              />
-            )}
+            {/* {goToGroupOnSubmit && isManifoldAdmin && ( */}
+            <PrivacyStatusView
+              viewStatus={'private'}
+              isSelected={privacy == 'private'}
+              onClick={() => setPrivacy('private')}
+              size="sm"
+            />
+            {/* )} */}
           </Col>
         </div>
 
