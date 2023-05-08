@@ -22,9 +22,9 @@ export async function getPortfolioHistory(
       // -- we have to make it look like an ISO9601 date or the JS date constructor will
       // assume that it's in local time. will fix this up soon
       timestamp: tsToMillis(d.ts! + '+0000'),
-      investmentValue: d.investment_value!,
-      totalDeposits: d.total_deposits!,
-      balance: d.balance!,
+      investmentValue: +d.investment_value!,
+      totalDeposits: +d.total_deposits!,
+      balance: +d.balance!,
     }
   })
 }
@@ -43,8 +43,8 @@ export async function getCurrentPortfolio(userId: string, db: SupabaseClient) {
     // -- we have to make it look like an ISO9601 date or the JS date constructor will
     // assume that it's in local time. will fix this up soon
     timestamp: tsToMillis(d.ts! + '+0000'),
-    investmentValue: d.investment_value!,
-    totalDeposits: d.total_deposits!,
-    balance: d.balance!,
+    investmentValue: +d.investment_value!,
+    totalDeposits: +d.total_deposits!,
+    balance: +d.balance!,
   }
 }
