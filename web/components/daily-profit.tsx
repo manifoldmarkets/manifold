@@ -24,8 +24,6 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
 import { InfoTooltip } from './widgets/info-tooltip'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import { animated } from '@react-spring/web'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
@@ -39,7 +37,6 @@ export const DailyProfit = memo(function DailyProfit(props: {
   const portfolioValue = portfolio
     ? portfolio.balance + portfolio.investmentValue
     : 0
-  const portfolioValueAnimated = useAnimatedNumber(portfolioValue)
 
   const [open, setOpen] = useState(false)
 
@@ -84,11 +81,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
       >
         <Row>
           <Col className="items-start gap-1">
-            <div>
-              <animated.div>
-                {portfolioValueAnimated.to((b) => formatMoney(b))}
-              </animated.div>
-            </div>
+            <div>{formatMoney(portfolioValue)}</div>
             <div className="text-ink-600 text-sm ">Portfolio</div>
           </Col>
 
