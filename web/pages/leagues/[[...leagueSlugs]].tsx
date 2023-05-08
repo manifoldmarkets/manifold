@@ -348,7 +348,7 @@ const CohortTable = (props: {
           <th className={clsx('px-2 pb-1 text-right')}>
             <InfoTooltip
               text={
-                'Profit from trades, quests rewards, and unique trader bonuses. Actions MUST have occurred during the season.'
+                'Includes both realized and unrealized profits from bets placed this month plus quest rewards and unique trader bonuses.'
               }
             >
               Mana Earned{' '}
