@@ -169,14 +169,14 @@ export default function Leagues(props: { rows: league_row[] }) {
 
           <Row className="mb-4 items-center gap-3">
             <text className="">
-              Compete for{' '}
+              Compete against similarly skilled users for{' '}
               <span
                 className="cursor-pointer border-b border-dotted border-blue-600 text-blue-600 hover:text-blue-800"
                 onClick={togglePrizesModal}
               >
-                rewards
+                prizes
               </span>{' '}
-              and promotion by earning the most mana by the end of the season!
+              and promotion by earning the most mana this month!
             </text>
 
             <Modal
@@ -185,11 +185,11 @@ export default function Leagues(props: { rows: league_row[] }) {
               size={'md'}
             >
               <div className="bg-canvas-0 text-ink-1000 rounded-lg p-3">
-                <Col className={'mb-2 items-center justify-center gap-2'}>
-                  <Title className={'!mb-1'}> Rewards</Title>
-                  <div className={'mx-4  justify-center '}>
+                <Col className={'mb-2 justify-center gap-2'}>
+                  <Title className={'!mb-1'}>Prizes</Title>
+                  <div className={'justify-center'}>
                     {' '}
-                    Win Mana at the end of the season based on your division and
+                    Win mana at the end of the season based on your division and
                     finishing rank.{' '}
                   </div>
                 </Col>
@@ -348,10 +348,10 @@ const CohortTable = (props: {
           <th className={clsx('px-2 pb-1 text-right')}>
             <InfoTooltip
               text={
-                'Profit from trades, quests rewards, and unique trader bonuses. Actions MUST have occurred during the season.'
+                'Includes both realized and unrealized profits from bets placed this month plus quest rewards and unique trader bonuses.'
               }
             >
-              Mana Earned{' '}
+              Mana earned{' '}
             </InfoTooltip>
           </th>
         </tr>

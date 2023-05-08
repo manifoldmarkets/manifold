@@ -226,7 +226,7 @@ export default function Leaderboards(props: {
         <QueryUncontrolledTabs
           className="mb-4"
           currentPageForAnalytics={'leaderboards'}
-          defaultIndex={1}
+          defaultIndex={3}
           tabs={[
             {
               title: 'Daily',

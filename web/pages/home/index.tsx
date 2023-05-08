@@ -1,4 +1,4 @@
-import { PencilAltIcon, SwitchHorizontalIcon } from '@heroicons/react/solid'
+import { PencilAltIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 
 import { CPMMContract } from 'common/contract'
@@ -27,8 +27,6 @@ import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
-import { Swipe } from 'web/components/swipe/swipe'
-import { getIsNative } from 'web/lib/native/is-native'
 import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
@@ -86,25 +84,15 @@ function HomeDashboard() {
 
 function MobileHome() {
   const user = useUser()
-  const { showSwipe, toggleView, isNative } = useViewToggle()
 
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
-
   const isLoading = !dailyChangedContracts
-
-  if (showSwipe) return <Swipe toggleView={toggleView(false)} />
 
   return (
     <Page>
       <Col className="gap-2 py-2 pb-8 sm:px-2">
         <Row className="mx-4 mb-2 items-center gap-4">
-          {isNative && (
-            <SwitchHorizontalIcon
-              className="h-5 w-5"
-              onClick={toggleView(true)}
-            />
-          )}
-
+          <Title children="Home" className="!my-0" />
           <DailyStats user={user} />
         </Row>
 
@@ -132,18 +120,6 @@ function MobileHome() {
       </button>
     </Page>
   )
-}
-
-const useViewToggle = () => {
-  const isNative = getIsNative()
-
-  const [showSwipe, setShowSwipe] = usePersistentLocalState(false, 'show-swipe')
-
-  const toggleView = (showSwipe: boolean) => () => {
-    setShowSwipe(showSwipe)
-    track('toggle swipe', { showSwipe })
-  }
-  return { showSwipe, toggleView, isNative }
 }
 
 function HomeSectionHeader(props: {

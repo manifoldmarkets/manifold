@@ -62,14 +62,16 @@ export function GroupOptions(props: {
   return (
     <>
       <Row className="items-center gap-2">
-        <CopyLinkButton
-          url={shareUrl}
-          linkIconOnlyProps={{
-            tooltip: `Copy link to ${group.name}`,
-            className: groupButtonClass,
-          }}
-          eventTrackingName="copy group link"
-        />
+        {group.privacyStatus != 'private' && (
+          <CopyLinkButton
+            url={shareUrl}
+            linkIconOnlyProps={{
+              tooltip: `Copy link to ${group.name}`,
+              className: groupButtonClass,
+            }}
+            eventTrackingName="copy group link"
+          />
+        )}
         {privateUser && (
           <DropdownMenu
             Items={groupOptionItems}

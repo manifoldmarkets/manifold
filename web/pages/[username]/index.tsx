@@ -411,9 +411,9 @@ function ProfilePublicStats(props: {
         >
           <TrophyIcon className="mr-1 inline h-4 w-4" />
           <span className={clsx('font-semibold')}>
-            Rank {leagueInfo.rank}
+            {DIVISION_NAMES[leagueInfo.division ?? '']}
           </span>{' '}
-          {DIVISION_NAMES[leagueInfo.division ?? '']}
+          Rank {leagueInfo.rank}
         </Link>
       )}
 
