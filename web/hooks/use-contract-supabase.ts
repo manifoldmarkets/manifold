@@ -11,8 +11,8 @@ import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
 
-export const usePublicContracts = (contractIds: string[]) => {
-  const [contracts, setContracts] = useState<Contract[]>([])
+export const usePublicContracts = (contractIds: string[] | undefined) => {
+  const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   useEffectCheckEquality(() => {
     if (contractIds) {
@@ -98,7 +98,7 @@ export function useRealtimeContracts(limit: number) {
         }
       }
     )
-    channel.subscribe(async (status) => {})
+    channel.subscribe(async (_status) => {})
     return () => {
       db.removeChannel(channel)
     }

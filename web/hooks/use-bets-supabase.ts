@@ -101,7 +101,7 @@ function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
 }
 
 export function useBets(options?: BetFilter) {
-  const [bets, setBets] = useState<Bet[]>([])
+  const [bets, setBets] = useState<Bet[] | undefined>()
 
   useEffectCheckEquality(() => {
     getBets(db, options).then((result) => setBets(result))

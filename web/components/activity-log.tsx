@@ -108,7 +108,7 @@ export function ActivityLog(props: {
   )
 
   const [contracts, unlistedContracts] = partition(
-    filterDefined(allContracts).concat(newContracts ?? []),
+    filterDefined(allContracts ?? []).concat(newContracts ?? []),
     (c) => c.visibility === 'public'
   )
 

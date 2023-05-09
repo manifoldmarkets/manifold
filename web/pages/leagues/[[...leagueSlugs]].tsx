@@ -508,13 +508,16 @@ const UserManaEarnedBreakdown = (props: {
       (mana_earned_breakdown.AD_REDEEM ?? 0),
   } as { [key: string]: number }
 
-  const bets = useBets({
+  const loadingBets = useBets({
     userId: user.id,
     afterTime: SEASON_START.getTime(),
     beforeTime: SEASON_END.getTime(),
   })
+  const bets = loadingBets ?? []
 
-  const contracts = usePublicContracts(uniq(bets.map((b) => b.contractId)))
+  const contracts = usePublicContracts(
+    loadingBets ? uniq(loadingBets.map((b) => b.contractId)) : undefined
+  )
 
   const betIdToContract = useMemo(() => {
     const contractsById = keyBy(contracts, 'id')
@@ -566,9 +569,10 @@ const UserManaEarnedBreakdown = (props: {
           </tbody>
         </Table>
 
-        {contracts.length > 0 ? (
+        {contracts && contracts.length > 0 && (
           <Subtitle className="mt-4">Trades this season</Subtitle>
-        ) : (
+        )}
+        {contracts === undefined && (
           <div className="h-[500px]">
             <LoadingIndicator className="mt-6" />
           </div>
