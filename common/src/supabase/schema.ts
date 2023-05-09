@@ -403,6 +403,7 @@ export interface Database {
           created_time: string
           division: number
           mana_earned: number
+          mana_earned_breakdown: Json
           season: number
           user_id: string
         }
@@ -411,6 +412,7 @@ export interface Database {
           created_time?: string
           division: number
           mana_earned?: number
+          mana_earned_breakdown?: Json
           season: number
           user_id: string
         }
@@ -419,6 +421,7 @@ export interface Database {
           created_time?: string
           division?: number
           mana_earned?: number
+          mana_earned_breakdown?: Json
           season?: number
           user_id?: string
         }
