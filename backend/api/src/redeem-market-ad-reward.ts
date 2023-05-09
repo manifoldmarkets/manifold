@@ -52,7 +52,7 @@ export const redeemboost = authEndpoint(async (req, auth) => {
 
   // create the redeem txn
   const result = await firestore.runTransaction(async (trans) => {
-    const res = runRedeemBoostTxn(trans, {
+    const res = await runRedeemBoostTxn(trans, {
       category: 'MARKET_BOOST_REDEEM',
       fromType: 'AD',
       fromId: adId,
@@ -62,7 +62,7 @@ export const redeemboost = authEndpoint(async (req, auth) => {
       token: 'M$',
       description: 'Redeeming market ad',
     })
-    runRedeemBoostFeeTxn(trans, {
+    await runRedeemBoostFeeTxn(trans, {
       category: 'MARKET_BOOST_REDEEM_FEE',
       fromType: 'AD',
       fromId: adId,
