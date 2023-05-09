@@ -81,6 +81,10 @@ export function Modal(props: {
                   className
                 )}
               >
+                {/* Hack to capture focus b/c headlessui dialog always focuses first element
+                    and we don't want it to.
+                */}
+                <div tabIndex={0} />
                 {children}
               </Dialog.Panel>
             </div>

@@ -29,11 +29,12 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
 import { Countdown } from 'web/components/widgets/countdown'
-import { Modal } from 'web/components/layout/modal'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getLeagueRows } from 'web/lib/supabase/leagues'
+import { Table } from 'web/components/widgets/table'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
@@ -372,6 +373,7 @@ const CohortTable = (props: {
                   user={users[i]}
                   rank={i + 1}
                   isHighlighted={highlightedUserId === user.id}
+                  mana_earned_breakdown={row.mana_earned_breakdown as any}
                 />
               )}
               {doublePromotionCount > 0 && i + 1 === doublePromotionCount && (
@@ -421,19 +423,30 @@ const CohortTable = (props: {
 const UserRow = (props: {
   user: User
   mana_earned: number
+  mana_earned_breakdown: { [key: string]: number }
   rank: number
   isHighlighted: boolean
 }) => {
-  const { user, mana_earned, rank, isHighlighted } = props
+  const { user, mana_earned, mana_earned_breakdown, rank, isHighlighted } =
+    props
+
+  const [showDialog, setShowDialog] = useState(false)
 
   return (
     <tr
       className={clsx(
+        'relative',
         isHighlighted && `bg-canvas-100 sticky bottom-[58px] sm:bottom-0`
       )}
     >
       <td className={clsx('pl-2', isHighlighted && 'bg-indigo-400/20')}>
         <Row className="my-2 items-center gap-4">
+          <div
+            className="absolute h-full w-full cursor-pointer hover:bg-indigo-300/20"
+            onClick={() => {
+              setShowDialog(true)
+            }}
+          />
           <div className="w-4 text-right font-semibold">{rank}</div>
           <UserAvatarAndBadge
             name={user.name}
@@ -447,6 +460,94 @@ const UserRow = (props: {
       >
         {formatMoney(mana_earned)}
       </td>
+
+      {showDialog && (
+        <UserManaEarnedBreakdown
+          user={user}
+          showDialog={showDialog}
+          setShowDialog={setShowDialog}
+          mana_earned={mana_earned}
+          mana_earned_breakdown={mana_earned_breakdown}
+        />
+      )}
     </tr>
   )
 }
+
+const UserManaEarnedBreakdown = (props: {
+  user: User
+  showDialog: boolean
+  setShowDialog: (show: boolean) => void
+  mana_earned: number
+  mana_earned_breakdown: { [key: string]: number }
+}) => {
+  const {
+    user,
+    showDialog,
+    setShowDialog,
+    mana_earned,
+    mana_earned_breakdown,
+  } = props
+
+  const breakdown = {
+    PROFIT: mana_earned_breakdown.profit,
+    ...mana_earned_breakdown,
+    MARKET_BOOST_REDEEM:
+      (mana_earned_breakdown.MARKET_BOOST_REDEEM ?? 0) +
+      (mana_earned_breakdown.AD_REDEEM ?? 0),
+  } as { [key: string]: number }
+
+  return (
+    <Modal
+      className={clsx(MODAL_CLASS, '')}
+      open={showDialog}
+      setOpen={(open) => setShowDialog(open)}
+    >
+      <Col>
+        <Row className="mb-2 items-center gap-4">
+          <UserAvatarAndBadge
+            name={user.name}
+            username={user.username}
+            avatarUrl={user.avatarUrl}
+          />
+        </Row>
+        <Table>
+          <thead
+            className={clsx('text-ink-600 text-left text-sm font-semibold')}
+          >
+            <tr>
+              <th className={clsx('px-2 pb-1')}>Earning type</th>
+              <th className={clsx('px-2 pb-1 text-right')}>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.keys(MANA_EARNED_CATEGORY_LABELS).map((category) => (
+              <tr key={category}>
+                <td className={clsx('pl-2')}>
+                  {MANA_EARNED_CATEGORY_LABELS[category]}
+                </td>
+                <td className={clsx('pr-2 text-right')}>
+                  {formatMoney(breakdown[category] ?? 0)}
+                </td>
+              </tr>
+            ))}
+            <tr className="font-semibold">
+              <td className={clsx('pl-2')}>Total</td>
+              <td className={clsx('pr-2 text-right')}>
+                {formatMoney(mana_earned)}
+              </td>
+            </tr>
+          </tbody>
+        </Table>
+      </Col>
+    </Modal>
+  )
+}
+
+const MANA_EARNED_CATEGORY_LABELS = {
+  PROFIT: 'Profit',
+  BETTING_STREAK_BONUS: 'Streak bonuses',
+  QUEST_REWARD: 'Quests',
+  MARKET_BOOST_REDEEM: 'Boosts claimed',
+  UNIQUE_BETTOR_BONUS: 'Trader bonuses',
+} as { [key: string]: string }
