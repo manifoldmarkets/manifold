@@ -1,5 +1,5 @@
-import { Fragment, useEffect, useState } from 'react'
-import { groupBy, sortBy } from 'lodash'
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import { groupBy, keyBy, sortBy, uniq } from 'lodash'
 import clsx from 'clsx'
 import { ClockIcon } from '@heroicons/react/outline'
 import { useRouter } from 'next/router'
@@ -15,6 +15,7 @@ import {
   rewardsData,
   CURRENT_SEASON,
   getLeaguePath,
+  SEASON_START,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -35,6 +36,11 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getLeagueRows } from 'web/lib/supabase/leagues'
 import { Table } from 'web/components/widgets/table'
+import { useBets } from 'web/hooks/use-bets-supabase'
+import { usePublicContracts } from 'web/hooks/use-contract-supabase'
+import { FeedBet } from 'web/components/feed/feed-bets'
+import { ContractMention } from 'web/components/contract/contract-mention'
+import { Subtitle } from 'web/components/widgets/subtitle'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
@@ -502,6 +508,21 @@ const UserManaEarnedBreakdown = (props: {
       (mana_earned_breakdown.AD_REDEEM ?? 0),
   } as { [key: string]: number }
 
+  const bets = useBets({
+    userId: user.id,
+    afterTime: SEASON_START.getTime(),
+    beforeTime: SEASON_END.getTime(),
+  })
+
+  const contracts = usePublicContracts(uniq(bets.map((b) => b.contractId)))
+
+  const betIdToContract = useMemo(() => {
+    const contractsById = keyBy(contracts, 'id')
+    return Object.fromEntries(
+      bets.map((bet) => [bet.id, contractsById[bet.contractId]])
+    )
+  }, [contracts])
+
   return (
     <Modal
       className={clsx(MODAL_CLASS, '')}
@@ -544,6 +565,29 @@ const UserManaEarnedBreakdown = (props: {
             </tr>
           </tbody>
         </Table>
+
+        {contracts.length > 0 ? (
+          <Subtitle className="mt-4">Trades this season</Subtitle>
+        ) : (
+          <div className="h-[500px]">
+            <LoadingIndicator className="mt-6" />
+          </div>
+        )}
+        <Col className="divide-y-[0.5px]">
+          {bets.map(
+            (bet) =>
+              betIdToContract[bet.id] && (
+                <Col className="gap-2 py-4 first:border-t-[0.5px]">
+                  <ContractMention contract={betIdToContract[bet.id]} />
+                  <FeedBet
+                    key={bet.id}
+                    bet={bet}
+                    contract={betIdToContract[bet.id]}
+                  />
+                </Col>
+              )
+          )}
+        </Col>
       </Col>
     </Modal>
   )
