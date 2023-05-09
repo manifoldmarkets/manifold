@@ -40,7 +40,7 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
   const contract = await getContractFromSlug(contractSlug, db)
 
   if (!contract) {
-    throw new APIError(400, 'This contract does not exist!')
+    throw new APIError(404, 'This contract does not exist!')
   }
 
   if (contract.visibility === 'private') {

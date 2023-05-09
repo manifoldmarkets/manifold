@@ -75,13 +75,25 @@ export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  const contractParameters = await getContractParams({
-    contractSlug,
-    fromStaticProps: true,
-  })
 
+  let props: any
+  try {
+    props = await getContractParams({
+      contractSlug,
+      fromStaticProps: true,
+    })
+  } catch (e) {
+    if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {
+      props = {
+        contractSlug,
+        visibility: null,
+      }
+    } else {
+      throw e
+    }
+  }
   return {
-    props: contractParameters,
+    props,
   }
 }
 
