@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions'
-import { groupBy, sumBy, uniq } from 'lodash'
+import { groupBy, sum, uniq, zipObject } from 'lodash'
 import * as dayjs from 'dayjs'
 
 import { log, revalidateStaticProps } from 'shared/utils'
@@ -188,23 +188,27 @@ export async function updateLeagueCore() {
     'user_id'
   )
 
+  const manaEarnedUpdates = []
   for (const [userId, manaEarned] of Object.entries(amountByUserId)) {
-    const total = sumBy(manaEarned, 'amount')
-    manaEarned.push({ user_id: userId, amount: total, category: 'mana_earned' })
+    const keys = manaEarned.map((a) => a.category)
+    const amounts = manaEarned.map((a) => a.amount)
+    const manaEarnedBreakdown = zipObject(keys, amounts)
+    const total = sum(amounts)
+
+    manaEarnedUpdates.push({
+      user_id: userId,
+      mana_earned: total,
+      mana_earned_breakdown: `${JSON.stringify(manaEarnedBreakdown)}::jsonb`,
+    })
   }
 
-  const updates = Object.entries(amountByUserId)
-    .map(([userId, earnedCategories]) => {
-      const update = {
-        user_id: userId,
-        mana_earned: earnedCategories.find((c) => c.category === 'mana_earned')
-          ?.amount,
-      }
-      return update
-    })
-    .filter((u) => u.mana_earned !== undefined)
+  console.log(
+    'Mana earned updates',
+    manaEarnedUpdates.length,
+    manaEarnedUpdates
+  )
 
-  await bulkUpdate(pg, 'leagues', 'user_id', updates)
+  await bulkUpdate(pg, 'leagues', 'user_id', manaEarnedUpdates)
   await revalidateStaticProps('/leagues')
   log('Done.')
 }
