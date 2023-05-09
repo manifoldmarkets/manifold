@@ -444,15 +444,15 @@ const UserRow = (props: {
         'hover:bg-canvas-100 group cursor-pointer',
         isHighlighted && `bg-canvas-100 sticky bottom-[58px] sm:bottom-0`
       )}
+      onClick={() => {
+        setShowDialog(true)
+      }}
     >
       <td
         className={clsx(
           'pl-2 group-hover:bg-indigo-400/20',
           isHighlighted && 'bg-indigo-400/20'
         )}
-        onClick={() => {
-          setShowDialog(true)
-        }}
       >
         <Row className="my-2 items-center gap-4">
           <div className="w-4 text-right font-semibold">{rank}</div>
