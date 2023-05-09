@@ -1,3 +1,10 @@
+import { Contract } from 'common/contract'
+import { PrivateUser, User, UserAndPrivateUser } from 'common/user'
+import { filterDefined } from 'common/util/array'
+import { removeUndefinedProps } from 'common/util/object'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
 import {
   collection,
   collectionGroup,
@@ -15,21 +22,14 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
-import { app, db } from './init'
-import { PrivateUser, User, UserAndPrivateUser } from 'common/user'
-import { coll, getValues, listenForValue, listenForValues } from './utils'
-import { safeLocalStorage } from '../util/local'
-import { filterDefined } from 'common/util/array'
-import { addUserToGroupViaId } from 'web/lib/firebase/groups'
-import { removeUndefinedProps } from 'common/util/object'
-import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import { track } from '../service/analytics'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
-import { Contract } from 'common/contract'
 import { nativeSignOut } from 'web/lib/native/native-messages'
+import { track } from '../service/analytics'
+import { safeLocalStorage } from '../util/local'
+import { addGroupMember } from './api'
+import { app, db } from './init'
+import { coll, getValues, listenForValue, listenForValues } from './utils'
 
 dayjs.extend(utc)
 
@@ -192,7 +192,7 @@ export async function setCachedReferralInfoForUser(user: User | null) {
           local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
 
           if (cachedReferralGroupId)
-            addUserToGroupViaId(cachedReferralGroupId, user.id)
+            addGroupMember({ groupId: cachedReferralGroupId, userId: user.id })
         })
     })
 }

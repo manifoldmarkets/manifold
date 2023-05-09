@@ -9,20 +9,21 @@ import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
-import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
+import { leaveGroup } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
+import { db } from 'web/lib/supabase/db'
 import {
+  SearchGroupInfo,
   getMemberGroups,
   getMemberGroupsCount,
-  SearchGroupInfo,
 } from 'web/lib/supabase/groups'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import { GroupLinkItem } from 'web/pages/groups'
 import { Button, buttonClass } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Subtitle } from '../widgets/subtitle'
-import { db } from 'web/lib/supabase/db'
+import { joinGroup } from 'web/lib/firebase/api'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -205,7 +206,7 @@ export function JoinOrLeaveGroupButton(props: {
     : firebaseLogin
   const follow = user
     ? withTracking(() => {
-        joinGroup(group.id, user.id)
+        joinGroup({ groupId: group.id })
           .then(() => setIsMember(true))
           .catch(() => {
             toast.error('Failed to follow group')

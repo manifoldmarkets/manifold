@@ -5,8 +5,9 @@ import { useEffect, useRef } from 'react'
 import Lottie from 'react-lottie'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { getGroup } from 'web/lib/supabase/group'
 import loading from '../../../public/lottie/loading-icon.json'
+import { getGroup } from 'common/supabase/groups'
+import { db } from 'web/lib/supabase/db'
 
 export const LOADING_PING_INTERVAL = 100
 
@@ -31,7 +32,7 @@ export default function LoadingNewGroup(props: { groupId: string }) {
   ).current
 
   async function fetchGroup() {
-    const newGroup = await getGroup(groupId)
+    const newGroup = await getGroup(db, groupId)
     if (newGroup) {
       router.replace(groupPath(newGroup.slug)).catch((e) => {
         console.log(e)
