@@ -2,7 +2,8 @@ import { groupBy } from 'lodash'
 import { pgp, SupabaseDirectClient } from './supabase/init'
 import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES } from 'common/envs/constants'
-import { COHORT_SIZE, MAX_COHORT_SIZE } from 'common/leagues'
+import { COHORT_SIZE, CURRENT_SEASON, MAX_COHORT_SIZE } from 'common/leagues'
+import { getCurrentPortfolio } from './helpers/portfolio'
 
 export async function assignCohorts(pg: SupabaseDirectClient) {
   const userDivisons = await pg.many<{ user_id: string; division: number }>(
@@ -204,4 +205,57 @@ export const addUserToLeague = async (
     [userId, season, division, cohort]
   )
   return cohort
+}
+
+export const getUsersNotInLeague = async (
+  pg: SupabaseDirectClient,
+  season: number
+) => {
+  const rows = await pg.manyOrNone<{ id: string }>(
+    `
+    select distinct users.id
+    from users
+    left join leagues on users.id = leagues.user_id
+    join contract_bets cb on users.id = cb.user_id
+    where
+      (leagues.user_id is null or leagues.season != $1)
+      and cb.created_time > to_date('20230501', 'YYYYMMDD')
+    `,
+    [season]
+  )
+  return rows.map((r) => r.id)
+}
+
+const portfolioToDivision = (portfolio: {
+  balance: number
+  investmentValue: number
+}) => {
+  const value = portfolio.balance + portfolio.investmentValue
+  if (value < 1500) return 1
+  if (value < 5000) return 2
+  return 3
+}
+
+export const addToLeagueIfNotInOne = async (
+  pg: SupabaseDirectClient,
+  userId: string
+) => {
+  const season = CURRENT_SEASON
+
+  const existingLeague = await pg.oneOrNone<{
+    season: number
+    division: number
+    cohort: string
+  }>(
+    `select season, division, cohort from leagues where user_id = $1 and season = $2`,
+    [userId, season]
+  )
+  if (existingLeague) {
+    return existingLeague
+  }
+
+  const portfolio = await getCurrentPortfolio(pg, userId)
+  const division = portfolio ? portfolioToDivision(portfolio) : 1
+  const cohort = await addUserToLeague(pg, userId, season, division)
+  return { season, division, cohort }
 }

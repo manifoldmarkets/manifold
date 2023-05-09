@@ -70,7 +70,7 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
         // otherwise, can access if user can access contract's group
         auth &&
         groupId &&
-        (await getUserIsMember(groupId, auth?.uid, db))))
+        (await getUserIsMember(db, groupId, auth?.uid))))
 
   if (!canAccessContract) {
     return contract

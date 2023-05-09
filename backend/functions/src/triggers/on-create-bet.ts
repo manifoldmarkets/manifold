@@ -45,12 +45,13 @@ import {
   completeArchaeologyQuest,
   completeReferralsQuest,
 } from 'shared/complete-quest-internal'
+import { addToLeagueIfNotInOne } from 'shared/leagues'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
 
 export const onCreateBet = functions
-  .runWith({ secrets, memory: '512MB' })
+  .runWith({ secrets, memory: '512MB', timeoutSeconds: 540 })
   .firestore.document('contracts/{contractId}/bets/{betId}')
   .onCreate(async (change, context) => {
     const pg = createSupabaseDirectClient()
@@ -100,6 +101,9 @@ export const onCreateBet = functions
     )
     await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
     await updateUserInterestEmbedding(pg, bettor.id)
+
+    // TODO: Send notification when adding a user to a league.
+    await addToLeagueIfNotInOne(pg, bettor.id)
 
     // Referrals should always be handled before the betting streak bc they both use lastBetTime
     await handleReferral(bettor, eventId).then(async () => {

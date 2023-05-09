@@ -53,6 +53,9 @@ import { saveTopic } from './save-topic'
 import { getcontractparams } from './get-contract-params'
 import { boostmarket } from './create-market-ad'
 import { redeemboost } from './redeem-market-ad-reward'
+import { creategroupinvite } from './create-group-invite'
+import { joingroupthroughinvite } from './join-group-through-invite'
+import { joingroup } from './join-group'
 import { editcomment } from 'api/edit-comment'
 
 const allowCors: RequestHandler = cors({
@@ -141,6 +144,9 @@ app.post(
   stripewebhook
 )
 app.post('/getcontractparams', ...apiRoute(getcontractparams))
+app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
+app.post('/joingroupthroughinvite', ...apiRoute(joingroupthroughinvite))
+app.post('/joingroup', ...apiRoute(joingroup))
 
 // Catch 404 errors - this should be the last route
 app.use((req, res, next) => {
