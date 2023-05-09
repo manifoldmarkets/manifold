@@ -459,6 +459,7 @@ const UserRow = (props: {
           <UserAvatarAndBadge
             name={user.name}
             username={user.username}
+            noLink
             avatarUrl={user.avatarUrl}
           />
         </Row>
