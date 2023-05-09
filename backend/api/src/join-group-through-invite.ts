@@ -22,7 +22,7 @@ export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
   if (!invite) {
     throw new APIError(404, 'Group invite not found')
   }
-  if (now >= invite.expire_time) {
+  if (!invite.is_forever && now >= invite.expire_time) {
     throw new APIError(404, 'This link has expired')
   }
   if (invite.is_max_uses_reached) {
