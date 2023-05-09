@@ -63,10 +63,10 @@ export const creategroupinvite = authEndpoint(async (req, auth) => {
 
   // create if not exists the group invite link row
   const { id } = await pg.one(
-    `insert into group_invites(group_id, max_uses, duration, is_forever)
-      values ($1, $2, $3, $4)
+    `insert into group_invites(group_id, max_uses, duration)
+      values ($1, $2, $3)
       returning id`,
-    [groupId, maxUses ? maxUses : null, duration ? duration : null, !duration]
+    [groupId, maxUses ? maxUses : null, duration ? duration : null]
   )
 
   // return something

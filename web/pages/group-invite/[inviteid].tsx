@@ -21,17 +21,19 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 
-export async function getStaticProps(props: { params: { inviteid: string } }) {
+export async function getServerSideProps(props: {
+  params: { inviteid: string }
+}) {
   const { inviteid } = props.params
   const adminDb = await initSupabaseAdmin()
   const invite: GroupInvite = (await getInvite(inviteid, adminDb)) || null
-  const group = invite ? await getGroup(invite.group_id, adminDb) : null
+  const group = invite ? await getGroup(adminDb, invite.group_id) : null
   return { props: { invite, groupName: group?.name, groupSlug: group?.slug } }
 }
 
-export async function getStaticPaths() {
-  return { paths: [], fallback: 'blocking' }
-}
+// export async function getStaticPaths() {
+//   return { paths: [], fallback: 'blocking' }
+// }
 
 export default function GroupInvitePage(props: {
   invite: GroupInvite

@@ -32,7 +32,7 @@ export default function LoadingNewGroup(props: { groupId: string }) {
   ).current
 
   async function fetchGroup() {
-    const newGroup = await getGroup(groupId, db)
+    const newGroup = await getGroup(db, groupId)
     if (newGroup) {
       router.replace(groupPath(newGroup.slug)).catch((e) => {
         console.log(e)
