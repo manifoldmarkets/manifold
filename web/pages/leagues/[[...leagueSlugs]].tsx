@@ -334,6 +334,7 @@ const CohortTable = (props: {
   doublePromotionCount: number
 }) => {
   const {
+    cohort,
     rows,
     highlightedUserId,
     demotionCount,
@@ -351,6 +352,8 @@ const CohortTable = (props: {
     DIVISION_NAMES[nextNextDivision] ?? SECRET_NEXT_DIVISION
   const prevDivison = Math.max(division - 1, 1)
   const prevDivisionName = DIVISION_NAMES[prevDivison]
+
+  const noPromotionDemotion = cohort === 'bots'
 
   return (
     <table>
@@ -382,41 +385,46 @@ const CohortTable = (props: {
                   mana_earned_breakdown={row.mana_earned_breakdown as any}
                 />
               )}
-              {doublePromotionCount > 0 && i + 1 === doublePromotionCount && (
-                <tr>
-                  <td colSpan={2}>
-                    <Col className="mb-2 w-full items-center gap-1">
-                      <div className="text-xs text-gray-600">
-                        ▲ Promotes to {nextNextDivisionName}
-                      </div>
-                      <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                    </Col>
-                  </td>
-                </tr>
-              )}
-              {promotionCount > 0 && i + 1 === promotionCount && (
-                <tr>
-                  <td colSpan={2}>
-                    <Col className="mb-2 w-full items-center gap-1">
-                      <div className="text-xs text-gray-600">
-                        ▲ Promotes to {nextDivisionName}
-                      </div>
-                      <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                    </Col>
-                  </td>
-                </tr>
-              )}
-              {demotionCount > 0 && rows.length - (i + 1) === demotionCount && (
-                <tr>
-                  <td colSpan={2}>
-                    <Col className="mt-2 w-full items-center gap-1">
-                      <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                      <div className="text-xs text-gray-600">
-                        ▼ Demotes to {prevDivisionName}
-                      </div>
-                    </Col>
-                  </td>
-                </tr>
+              {!noPromotionDemotion && (
+                <>
+                  {doublePromotionCount > 0 && i + 1 === doublePromotionCount && (
+                    <tr>
+                      <td colSpan={2}>
+                        <Col className="mb-2 w-full items-center gap-1">
+                          <div className="text-xs text-gray-600">
+                            ▲ Promotes to {nextNextDivisionName}
+                          </div>
+                          <div className="border-ink-300 w-full border-t-2 border-dashed" />
+                        </Col>
+                      </td>
+                    </tr>
+                  )}
+                  {promotionCount > 0 && i + 1 === promotionCount && (
+                    <tr>
+                      <td colSpan={2}>
+                        <Col className="mb-2 w-full items-center gap-1">
+                          <div className="text-xs text-gray-600">
+                            ▲ Promotes to {nextDivisionName}
+                          </div>
+                          <div className="border-ink-300 w-full border-t-2 border-dashed" />
+                        </Col>
+                      </td>
+                    </tr>
+                  )}
+                  {demotionCount > 0 &&
+                    rows.length - (i + 1) === demotionCount && (
+                      <tr>
+                        <td colSpan={2}>
+                          <Col className="mt-2 w-full items-center gap-1">
+                            <div className="border-ink-300 w-full border-t-2 border-dashed" />
+                            <div className="text-xs text-gray-600">
+                              ▼ Demotes to {prevDivisionName}
+                            </div>
+                          </Col>
+                        </td>
+                      </tr>
+                    )}
+                </>
               )}
             </Fragment>
           )
