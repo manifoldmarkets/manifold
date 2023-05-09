@@ -22,7 +22,6 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Select } from 'web/components/widgets/select'
 import { Title } from 'web/components/widgets/title'
-import { db } from 'web/lib/supabase/db'
 import { useUsers } from 'web/hooks/use-user-supabase'
 import { User } from 'common/user'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -33,15 +32,14 @@ import { Countdown } from 'web/components/widgets/countdown'
 import { Modal } from 'web/components/layout/modal'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useTracking } from 'web/hooks/use-tracking'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { getLeagueRows } from 'web/lib/supabase/leagues'
 
 export async function getStaticProps() {
-  const { data: rows } = await db
-    .from('leagues')
-    .select('*')
-    .order('mana_earned', { ascending: false })
+  const rows = await getLeagueRows()
   return {
     props: {
-      rows: rows ?? [],
+      rows,
     },
   }
 }
@@ -56,7 +54,14 @@ export function getStaticPaths() {
 export default function Leagues(props: { rows: league_row[] }) {
   useTracking('view leagues')
 
-  const { rows } = props
+  const [rows, setRows] = usePersistentInMemoryState<league_row[]>(
+    props.rows,
+    'league-rows'
+  )
+
+  useEffect(() => {
+    getLeagueRows().then(setRows)
+  }, [])
 
   const cohorts = groupBy(rows, 'cohort')
   const cohortNames = Object.keys(cohorts)
