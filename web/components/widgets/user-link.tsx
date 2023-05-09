@@ -1,4 +1,4 @@
-import { linkClass, SiteLink } from 'web/components/widgets/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
 import {
   BOT_USERNAMES,
@@ -33,13 +33,19 @@ export function UserAvatarAndBadge(props: {
   name: string
   username: string
   avatarUrl?: string
+  noLink?: boolean
   className?: string
 }) {
-  const { name, username, avatarUrl, className } = props
+  const { name, username, avatarUrl, noLink, className } = props
   return (
     <Row className={clsx('items-center gap-4', className)}>
-      <Avatar avatarUrl={avatarUrl} username={username} size={8} />
-      <UserLink name={name} username={username} />
+      <Avatar
+        avatarUrl={avatarUrl}
+        username={username}
+        size={8}
+        noLink={noLink}
+      />
+      <UserLink name={name} username={username} noLink={noLink} />
     </Row>
   )
 }
@@ -81,11 +87,7 @@ export function UserLink(props: {
   if (noLink) {
     return (
       <div
-        className={clsx(
-          'inline-flex flex-row items-center gap-1',
-          linkClass,
-          className
-        )}
+        className={clsx('inline-flex flex-row items-center gap-1', className)}
       >
         {children}
       </div>
@@ -96,6 +98,7 @@ export function UserLink(props: {
       href={`/${username}`}
       className={clsx('inline-flex flex-row items-center gap-1', className)}
       followsLinkClass
+      onClick={(e) => e.stopPropagation()}
     >
       {children}
     </SiteLink>

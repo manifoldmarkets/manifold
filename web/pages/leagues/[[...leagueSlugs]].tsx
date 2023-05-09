@@ -435,18 +435,20 @@ const UserRow = (props: {
   return (
     <tr
       className={clsx(
-        'relative',
+        'hover:bg-canvas-100 group cursor-pointer',
         isHighlighted && `bg-canvas-100 sticky bottom-[58px] sm:bottom-0`
       )}
     >
-      <td className={clsx('pl-2', isHighlighted && 'bg-indigo-400/20')}>
+      <td
+        className={clsx(
+          'pl-2 group-hover:bg-indigo-400/20',
+          isHighlighted && 'bg-indigo-400/20'
+        )}
+        onClick={() => {
+          setShowDialog(true)
+        }}
+      >
         <Row className="my-2 items-center gap-4">
-          <div
-            className="absolute h-full w-full cursor-pointer hover:bg-indigo-300/20"
-            onClick={() => {
-              setShowDialog(true)
-            }}
-          />
           <div className="w-4 text-right font-semibold">{rank}</div>
           <UserAvatarAndBadge
             name={user.name}
@@ -456,7 +458,10 @@ const UserRow = (props: {
         </Row>
       </td>
       <td
-        className={clsx(isHighlighted && 'bg-indigo-400/20', 'pr-2 text-right')}
+        className={clsx(
+          isHighlighted && 'bg-indigo-400/20',
+          'pr-2 text-right group-hover:bg-indigo-400/20'
+        )}
       >
         {formatMoney(mana_earned)}
       </td>
