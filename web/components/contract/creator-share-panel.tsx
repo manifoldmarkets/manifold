@@ -50,7 +50,7 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
 
       <div className="text-ink-500 mb-2 text-base">
         Bump up your market in the feed. We'll target it to users who like
-        questions like this. Funds go to the viewers.
+        questions like this. Some funds go to viewers as a claimable reward.
       </div>
       <FeedAnalytics contractId={contract.id} />
     </GradientContainer>
