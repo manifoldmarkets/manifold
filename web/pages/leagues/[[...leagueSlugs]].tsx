@@ -71,7 +71,9 @@ export default function Leagues(props: { rows: league_row[] }) {
   }, [])
 
   const cohorts = groupBy(rows, 'cohort')
-  const cohortNames = Object.keys(cohorts)
+  const cohortNames = sortBy(Object.keys(cohorts), (cohort) =>
+    cohort.toLowerCase()
+  )
   const divisionToCohorts = groupBy(
     cohortNames,
     (cohort) => cohorts[cohort][0].division
