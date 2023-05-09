@@ -41,7 +41,7 @@ export default function GroupInvitePage(props: {
 }) {
   const { invite, groupName, groupSlug } = props
   const whenExpires = dayjs(invite.expire_time).fromNow()
-  const isExpired = invite.expire_time <= new Date()
+  const isExpired = !invite.is_forever && invite.expire_time <= new Date()
   const isAuth = useIsAuthorized()
   const user = useUser()
   const isAlreadyGroupMember = useIsGroupMember(groupSlug)
