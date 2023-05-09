@@ -1,9 +1,10 @@
 import * as admin from 'firebase-admin'
 
-import { runRedeemBoostTxn } from 'shared/run-txn'
+import { runRedeemBoostFeeTxn, runRedeemBoostTxn } from 'shared/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
+import { AD_REDEEM_FEE } from 'common/boost'
 
 const schema = z.object({
   adId: z.string(),
@@ -50,18 +51,29 @@ export const redeemboost = authEndpoint(async (req, auth) => {
   }
 
   // create the redeem txn
-  const result = await firestore.runTransaction(async (trans) =>
-    runRedeemBoostTxn(trans, {
+  const result = await firestore.runTransaction(async (trans) => {
+    const res = runRedeemBoostTxn(trans, {
       category: 'MARKET_BOOST_REDEEM',
       fromType: 'AD',
       fromId: adId,
       toType: 'USER',
       toId: auth.uid,
-      amount: reward,
+      amount: reward - AD_REDEEM_FEE,
       token: 'M$',
       description: 'Redeeming market ad',
     })
-  )
+    runRedeemBoostFeeTxn(trans, {
+      category: 'MARKET_BOOST_REDEEM_FEE',
+      fromType: 'AD',
+      fromId: adId,
+      toType: 'BANK',
+      toId: 'BANK',
+      amount: AD_REDEEM_FEE,
+      token: 'M$',
+      description: 'Manifold fee for redeeming market ad',
+    })
+    return res
+  })
 
   if (result.status == 'error') {
     throw new APIError(500, 'An unknown error occurred')

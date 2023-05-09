@@ -26,6 +26,7 @@ type AnyTxnType =
   | PostAdRedeem
   | MarketAdCreate
   | MarketAdRedeem
+  | MarketAdRedeemFee
   | QuestReward
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
@@ -238,6 +239,12 @@ type MarketAdRedeem = {
   toType: 'USER'
 }
 
+type MarketAdRedeemFee = {
+  category: 'MARKET_BOOST_REDEEM_FEE'
+  fromType: 'AD'
+  toType: 'BANK'
+}
+
 type QuestReward = {
   category: 'QUEST_REWARD'
   fromType: 'BANK'
@@ -273,4 +280,5 @@ export type PostAdCreateTxn = Txn & PostAdCreate
 export type PostAdRedeemTxn = Txn & PostAdRedeem
 export type MarketAdCreateTxn = Txn & MarketAdCreate
 export type MarketAdRedeemTxn = Txn & MarketAdRedeem
+export type MarketAdRedeemFeeTxn = Txn & MarketAdRedeemFee
 export type QuestRewardTxn = Txn & QuestReward
