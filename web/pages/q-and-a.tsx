@@ -1,9 +1,12 @@
+import { useState } from 'react'
+import { groupBy } from 'lodash'
+import clsx from 'clsx'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+
 import { MAX_DESCRIPTION_LENGTH, MAX_QUESTION_LENGTH } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { MAX_QA_ANSWER_LENGTH, q_and_a, q_and_a_answer } from 'common/q-and-a'
 import { formatMoney } from 'common/util/format'
-import { groupBy } from 'lodash'
-import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -11,11 +14,11 @@ import { Row } from 'web/components/layout/row'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
-import { Subtitle } from 'web/components/widgets/subtitle'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useUserById } from 'web/hooks/use-user-supabase'
 import { createQAndA, createQAndAAnswer } from 'web/lib/firebase/api'
-import { db } from 'web/lib/supabase/db'
+import { Title } from 'web/components/widgets/title'
+import { useQAndA } from 'web/lib/supabase/q-and-a'
 
 export default function QuestionAndAnswer() {
   const { questions, answers } = useQAndA()
@@ -23,57 +26,43 @@ export default function QuestionAndAnswer() {
   return (
     <Page>
       <Col className="mx-auto w-full max-w-lg gap-4 pb-8 pt-2 sm:pt-0">
+        <Title className="mx-4 !mb-0 sm:mx-0">Q&A</Title>
         {questions.map((q) => (
           <QuestionAnswer key={q.id} q={q} as={answersByQuestion[q.id] ?? []} />
         ))}
+        <div className="my-6 w-full border-t" />
         <CreateQAndA />
       </Col>
     </Page>
   )
 }
 
-const getQuestionsAnswers = async () => {
-  const [questions, answers] = await Promise.all([
-    db.from('q_and_a').select('*'),
-    db.from('q_and_a_answers').select('*'),
-  ])
-
-  return {
-    questions: questions.data ?? [],
-    answers: answers.data ?? [],
-  }
-}
-
-const useQAndA = () => {
-  const [questions, setQAndA] = usePersistentInMemoryState<q_and_a[]>(
-    [],
-    'q-and-a'
-  )
-  const [answers, setAnswers] = usePersistentInMemoryState<q_and_a_answer[]>(
-    [],
-    'q-and-a-answers'
-  )
-  useEffect(() => {
-    getQuestionsAnswers().then(({ questions, answers }) => {
-      setQAndA(questions)
-      setAnswers(answers)
-    })
-  }, [])
-
-  return { questions, answers }
-}
-
 function QuestionAnswer(props: { q: q_and_a; as: q_and_a_answer[] }) {
   const { q, as } = props
   const user = useUserById(q.user_id)
+
+  const [expanded, setExpanded] = useState(false)
+
   return (
-    <Col className="gap-1">
+    <Col
+      className="cursor-pointer gap-1"
+      onClick={() => setExpanded((b) => !b)}
+    >
       <Col className="bg-canvas-0 px-3 py-2 shadow">
-        <div>{q.question}</div>
-        <div className="text-ink-700 line-clamp-1">
-          {q.description}s dfasdfasdfasfa;sldkfj ;lsakjdf;l aksdjf al;skf
-          jas;ldf kjas;lf kajsdf ;lkaj sd;lfkasjd f;laksjdf ;laskdf j;lasdkf
-          ja;sl f
+        <Row className="justify-between">
+          <div>{q.question}</div>
+          {expanded ? (
+            <ChevronUpIcon className="text-ink-500 h-5 w-5 text-xs">
+              Hide
+            </ChevronUpIcon>
+          ) : (
+            <ChevronDownIcon className="text-ink-500 h-5 w-5 text-xs">
+              Show
+            </ChevronDownIcon>
+          )}
+        </Row>
+        <div className={clsx('text-ink-700', !expanded && 'line-clamp-1')}>
+          {q.description}
         </div>
         <Row className="mt-1 gap-2">
           {user ? (
@@ -81,6 +70,7 @@ function QuestionAnswer(props: { q: q_and_a; as: q_and_a_answer[] }) {
               size="xs"
               avatarUrl={user.avatarUrl}
               username={user.username}
+              noLink={!expanded}
             />
           ) : (
             <EmptyAvatar size={6} />
@@ -89,27 +79,32 @@ function QuestionAnswer(props: { q: q_and_a; as: q_and_a_answer[] }) {
         </Row>
       </Col>
       <Col className="ml-6">
-        {as.map((a) => (
-          <Answer key={a.id} answer={a} />
+        {(expanded ? as : as.slice(0, 3)).map((a) => (
+          <Answer key={a.id} answer={a} expanded={expanded} />
         ))}
-        <CreateAnswer questionId={q.id} />
+        {expanded && <CreateAnswer questionId={q.id} />}
       </Col>
     </Col>
   )
 }
 
-function Answer(props: { answer: q_and_a_answer }) {
-  const { answer } = props
+function Answer(props: { answer: q_and_a_answer; expanded: boolean }) {
+  const { answer, expanded } = props
   const user = useUserById(answer.user_id)
 
   return (
     <Row className="gap-2">
       {user ? (
-        <Avatar size="xs" avatarUrl={user.avatarUrl} username={user.username} />
+        <Avatar
+          size="xs"
+          avatarUrl={user.avatarUrl}
+          username={user.username}
+          noLink={!expanded}
+        />
       ) : (
         <EmptyAvatar size={6} />
       )}
-      <div>{answer.text}</div>
+      <div className={clsx(!expanded && 'line-clamp-1')}>{answer.text} </div>
     </Row>
   )
 }
@@ -176,8 +171,8 @@ function CreateQAndA() {
   }
 
   return (
-    <Col className="gap-4">
-      <Subtitle>Create question</Subtitle>
+    <Col className="gap-4 px-4 sm:px-0">
+      <Title className="!mb-0">Create a question</Title>
 
       <Col className="w-full">
         <label className="px-1 pt-2 pb-3">
