@@ -1,11 +1,3 @@
-import {
-  VictoryChart,
-  VictoryGroup,
-  VictoryArea,
-  VictoryLine,
-  VictoryAxis,
-  VictoryLabel,
-} from 'victory'
 import { LimitBet } from 'common/bet'
 import {
   CPMMBinaryContract,
@@ -14,16 +6,21 @@ import {
 } from 'common/contract'
 import { getDisplayProbability } from 'common/calculate'
 import { Col } from '../../layout/col'
-import { useIsDarkMode } from 'web/hooks/dark-mode-context'
+import { HistoryPoint } from 'common/chart'
+import { scaleLinear } from 'd3-scale'
+import { AreaWithTopStroke, SVGChart, formatPct } from '../helpers'
+import { curveStepBefore, line } from 'd3-shape'
+import { axisBottom, axisRight } from 'd3-axis'
+import { formatMoney } from 'common/util/format'
 
 export function DepthChart(props: {
   contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
   yesBets: LimitBet[]
   noBets: LimitBet[]
+  width: number
+  height: number
 }) {
-  const { contract, yesBets, noBets } = props
-
-  const isDarkMode = useIsDarkMode()
+  const { contract, yesBets, noBets, width, height } = props
 
   // Won't display a depth chart for numeric contracts, only binary contracts right now
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
@@ -39,123 +36,81 @@ export function DepthChart(props: {
     yesData[yesData.length - 1].y,
     noData[noData.length - 1].y
   )
-  let minX = yesData[yesData.length - 1].x
-  let maxX = noData[noData.length - 1].x
-  const xRange = maxX - minX
-  minX -= xRange * 0.1
-  if (minX < 0) {
-    minX = 0
-  }
-  maxX += xRange * 0.1
-  if (maxX > 1) {
-    maxX = 1
-  }
-  yesData.unshift({ x: minX, y: yesData[0].y })
-  noData.push({ x: maxX, y: noData[noData.length - 1].y })
+
+  // extend curve out to edges: \ / ~>  --\ /-- and middle down to 0
+  yesData.push({ x: 0, y: yesData[yesData.length - 1].y })
+  yesData.unshift({ x: yesData[0].x, y: 0 })
+  noData.push({ x: 1, y: noData[noData.length - 1].y })
+  noData.unshift({ x: noData[0].x, y: 0 })
 
   const currentValue = getDisplayProbability(contract)
 
-  const strokeColor = isDarkMode ? 'white' : 'black'
-  const axisStyle = {
-    axis: {
-      stroke: strokeColor,
-    },
-    tickLabels: {
-      fill: strokeColor,
-    },
-  }
+  const margin = { top: 10, bottom: 20, left: 20, right: 60 }
+
+  const innerW = width - (margin.left + margin.right)
+  const innerH = height - (margin.top + margin.bottom)
+
+  const xScale = scaleLinear().domain([0, 1]).range([0, innerW])
+  const yScale = scaleLinear().domain([0, maxAmount]).range([innerH, 0])
+  const dl = line<HistoryPoint>()
+    .x((p) => xScale(p.x))
+    .y((p) => yScale(p.y))
+    .curve(curveStepBefore)
+
+  const yAxis = axisRight<number>(yScale).ticks(8).tickFormat(formatMoney)
+  const xAxis = axisBottom<number>(xScale).ticks(6).tickFormat(formatPct)
+
+  const dYes = dl(yesData)
+  const dNo = dl(noData)
+
+  if (dYes === null || dNo === null) return null
 
   return (
-    <Col>
-      <h2 className="text-ink-1000 self-center text-sm">Market depth</h2>
-      <VictoryChart
-        minDomain={{ x: minX, y: 0 }}
-        maxDomain={{ x: maxX, y: maxAmount }}
-        padding={{ top: 50, bottom: 50, left: 100, right: 50 }}
-        domainPadding={30}
+    <Col className="text-ink-800 items-center">
+      <h2>Market depth</h2>
+      <SVGChart
+        w={width}
+        h={height}
+        margin={margin}
+        xAxis={xAxis}
+        yAxis={yAxis}
       >
-        <VictoryAxis
-          tickFormat={(t) => `${Math.round(t * 100)}%`}
-          tickCount={6}
-          label="Chance"
-          axisLabelComponent={<VictoryLabel dy={10} />}
-          style={axisStyle}
+        <AreaWithTopStroke
+          color="#11b981"
+          data={yesData}
+          px={(p) => xScale(p.x)}
+          py0={yScale(0)}
+          py1={(p) => yScale(p.y)}
+          curve={curveStepBefore}
         />
-        <VictoryAxis
-          tickFormat={(t) => `M${Math.round(t)}`}
-          tickCount={6}
-          dependentAxis={true}
-          axisLabelComponent={<VictoryLabel dy={-30} />}
-          label={'Amount'}
-          style={axisStyle}
+        <AreaWithTopStroke
+          color="red"
+          data={noData}
+          px={(p) => xScale(p.x)}
+          py0={yScale(0)}
+          py1={(p) => yScale(p.y)}
+          curve={curveStepBefore}
         />
-        <VictoryGroup
-          style={{
-            data: { strokeWidth: 1, fillOpacity: 0.4 },
-          }}
-        >
-          {/* // Line that shows the current value */}
-          <VictoryLine
-            style={{
-              // Indigo
-              data: { stroke: 'rgb(99 102 241)' },
-            }}
-            data={[
-              { x: currentValue, y: 0 },
-              { x: currentValue, y: maxAmount },
-            ]}
-          />
-          {/* First vertical line of the "yes" bets */}
-          <VictoryLine
-            style={{
-              data: { stroke: '#059669' },
-            }}
-            data={[
-              { x: yesData[yesData.length - 1].x, y: 0 },
-              {
-                x: yesData[yesData.length - 1].x,
-                y: yesData[yesData.length - 1].y,
-              },
-            ]}
-          />
-          {/* First vertical line of the "no" bets */}
-          <VictoryLine
-            style={{
-              data: { stroke: 'red' },
-            }}
-            data={[
-              { x: noData[0].x, y: 0 },
-              { x: noData[0].x, y: noData[0].y },
-            ]}
-          />
-          {/* // Area that shows the yes bets */}
-          <VictoryArea
-            style={{
-              data: { fill: '#6EE7B7', stroke: '#059669' },
-            }}
-            data={yesData}
-            interpolation="stepBefore"
-          />
-          {/* // Area that shows the no bets */}
-          <VictoryArea
-            style={{
-              data: { fill: 'red', stroke: 'red' },
-            }}
-            data={noData}
-            interpolation="stepAfter"
-          />
-        </VictoryGroup>
-      </VictoryChart>
+
+        {/* line at current value */}
+        <line
+          x1={xScale(currentValue)}
+          y1={yScale(0)}
+          x2={xScale(currentValue)}
+          y2={yScale(maxAmount)}
+          stroke="rgb(99 102 241)"
+          strokeWidth={1}
+          strokeDasharray="2 2"
+        />
+      </SVGChart>
     </Col>
   )
 }
 
-type Coordinate = { x: number; y: number }
-
 // Converts a list of LimitBets into a list of coordinates to render into a depth chart.
 // Going in order of probability, the y value accumulates each order's amount.
-function cumulative(bets: LimitBet[]): Coordinate[] {
-  const result: Coordinate[] = []
+function cumulative(bets: LimitBet[]): HistoryPoint[] {
+  const result: HistoryPoint[] = []
   let totalAmount = 0
 
   for (let i = 0; i < bets.length; i++) {
