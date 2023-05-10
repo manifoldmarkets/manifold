@@ -23,6 +23,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { Bet } from 'common/bet'
 import { useScrollToRefWithHeaderOffset } from 'web/hooks/use-scroll-to-ref-with-header'
+import { LinkPreviewEditor } from 'web/components/editor/link-preview-extension'
 
 export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
@@ -119,13 +120,7 @@ export function CommentInput(props: {
           className="mt-1"
         />
         <div className="min-w-0 flex-1 pl-0.5 text-sm" ref={ref}>
-          <CommentInputTextArea
-            editor={editor}
-            replyTo={replyToUserInfo}
-            user={user}
-            submit={submitComment}
-            isSubmitting={isSubmitting}
-          />
+          <LinkPreviewEditor />
         </div>
       </Row>
     </Col>
