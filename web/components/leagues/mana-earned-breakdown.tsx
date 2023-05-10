@@ -64,6 +64,7 @@ export const ManaEarnedBreakdown = (props: {
       className={clsx(MODAL_CLASS, '')}
       open={showDialog}
       setOpen={(open) => setShowDialog(open)}
+      noAutoFocus
     >
       <Col>
         <Row className="mb-2 items-center gap-4">

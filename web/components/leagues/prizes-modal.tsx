@@ -9,7 +9,7 @@ export function PrizesModal(props: {
 }) {
   const { open, setOpen } = props
   return (
-    <Modal open={open} setOpen={setOpen} size={'md'}>
+    <Modal open={open} setOpen={setOpen} size={'md'} noAutoFocus>
       <div className="bg-canvas-0 text-ink-1000 rounded-lg p-3">
         <Col className={'mb-2 justify-center gap-2'}>
           <Title className={'!mb-1'}>Prizes</Title>
