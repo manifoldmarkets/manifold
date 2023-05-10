@@ -81,7 +81,7 @@ export default function CalibrationPage(props: {
           <div className="bg-canvas-0 relative rounded-md p-4 pr-12">
             <div className="absolute top-0 bottom-0 right-4 flex items-center">
               <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
-                Probability after bet
+                Resolution Probability
               </span>
             </div>
             <SizedContainer fullHeight={400} mobileHeight={200}>
@@ -94,7 +94,7 @@ export default function CalibrationPage(props: {
               )}
             </SizedContainer>
             <div className="text-ink-800 text-center text-sm">
-              Resolution Probability
+              Probability after bet
             </div>
           </div>
 
