@@ -1,6 +1,3 @@
-import dynamic from 'next/dynamic'
-const Plot = dynamic(() => import('react-plotly.js'), { ssr: false }) as any
-
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
@@ -16,6 +13,8 @@ import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
+import { CalibrationChart } from 'web/components/charts/calibration'
+import { SizedContainer } from 'web/components/sized-container'
 
 export const getStaticProps = async (props: {
   params: {
@@ -55,14 +54,13 @@ export async function getStaticPaths() {
 
 export default function CalibrationPage(props: {
   user: User | null
-  yesPoints: { x: number[]; y: number[] }
-  noPoints: { x: number[]; y: number[] }
+  yesPoints: { x: number; y: number }[]
+  noPoints: { x: number; y: number }[]
   yesBetsBuckets: Record<number, [Contract, Bet][]>
   noBetsBuckets: Record<number, [Contract, Bet][]>
   score: number
 }) {
   const { user, yesPoints, noPoints, score } = props
-  const domain = range(0, 1.01, 0.01)
 
   return (
     <Page>
@@ -74,43 +72,31 @@ export default function CalibrationPage(props: {
         <Col className="max-w-[800px]">
           <Title>{user?.name}'s calibration</Title>
 
-          <Plot
-            data={[
-              {
-                ...yesPoints,
-                mode: 'markers',
-                type: 'scatter',
-                marker: { color: 'green' },
-                name: 'YES bets',
-              },
-              {
-                ...noPoints,
-                mode: 'markers',
-                type: 'scatter',
-                marker: { color: 'red' },
-                name: 'NO bets',
-              },
-              {
-                x: domain,
-                y: domain,
-                mode: 'lines',
-                type: 'scatter',
-                marker: { color: 'gray' },
-                name: 'y=x',
-              },
-            ]}
-            layout={{
-              title:
-                user?.name +
-                "'s bet calibration" +
-                (score !== undefined
-                  ? ` <br><sub>Grade: ${getGrade(score)}, Score: ${score}</sub>`
-                  : ''),
-              subtitle: 'blah',
-              xaxis: { title: 'Probability after bet' },
-              yaxis: { title: 'Resolution probability' },
-            }}
-          />
+          {score !== undefined && (
+            <div className="mb-4 text-center text-lg">
+              Grade: {getGrade(score)}, Score: {score}
+            </div>
+          )}
+
+          <div className="bg-canvas-0 relative rounded-md p-4 pr-12">
+            <div className="absolute top-0 bottom-0 right-4 flex items-center">
+              <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
+                Probability after bet
+              </span>
+            </div>
+            <SizedContainer fullHeight={400} mobileHeight={200}>
+              {(w) => (
+                <CalibrationChart
+                  yesPoints={yesPoints}
+                  noPoints={noPoints}
+                  width={w}
+                />
+              )}
+            </SizedContainer>
+            <div className="text-ink-800 text-center text-sm">
+              Resolution Probability
+            </div>
+          </div>
 
           <div className="prose prose-sm text-ink-600 my-4 max-w-[800px]">
             <b>Interpretation</b>
@@ -194,7 +180,7 @@ function BetsTable(props: {
   )
 }
 
-const points = [1, 3, 5, ...range(10, 100, 10), 95, 97, 99]
+export const points = [1, 3, 5, ...range(10, 100, 10), 95, 97, 99]
 
 const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
   const yesProbBuckets: Dictionary<number> = {}
@@ -258,17 +244,15 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
 }
 
 const getXY = (probBuckets: Dictionary<number>) => {
-  const x = []
-  const y = []
+  const xy = []
 
   for (const point of points) {
     if (probBuckets[point] !== undefined) {
-      x.push(point / 100)
-      y.push(probBuckets[point])
+      xy.push({ x: point / 100, y: probBuckets[point] })
     }
   }
 
-  return { x, y }
+  return xy
 }
 
 const calculateScore = (
