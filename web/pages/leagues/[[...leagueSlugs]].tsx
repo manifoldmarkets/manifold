@@ -85,20 +85,20 @@ export default function Leagues(props: { rows: league_row[] }) {
   const { leagueSlugs } = query as { leagueSlugs: string[] }
 
   const onSetDivision = (division: number) => {
-    setDivision(division)
-
     const userRow = rows.find(
       (row) => row.user_id === user?.id && row.division === division
     )
     const cohort = userRow ? userRow.cohort : divisionToCohorts[division][0]
-    setCohort(cohort)
 
-    replace(getLeaguePath(season, division, cohort))
+    replace(getLeaguePath(season, division, cohort), undefined, {
+      shallow: true,
+    })
   }
 
   const onSetCohort = (cohort: string) => {
-    setCohort(cohort)
-    replace(getLeaguePath(season, division, cohort))
+    replace(getLeaguePath(season, division, cohort), undefined, {
+      shallow: true,
+    })
   }
 
   const userRow = rows.find((row) => row.user_id === user?.id)
@@ -161,7 +161,7 @@ export default function Leagues(props: { rows: league_row[] }) {
 
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-lg pb-8 pt-2 sm:pt-0">
+      <Col className="mx-auto w-full max-w-lg gap-4 pb-8 pt-2 sm:pt-0">
         <Col className="px-2 sm:px-0">
           <Row className="mb-4 justify-between">
             <Title className="!mb-0">Leagues</Title>
@@ -238,16 +238,14 @@ export default function Leagues(props: { rows: league_row[] }) {
           </Row>
         </Col>
 
-        <Col className="mt-4">
-          <CohortTable
-            cohort={cohort}
-            rows={cohorts[cohort]}
-            highlightedUserId={highlightedUserId}
-            demotionCount={demotion}
-            promotionCount={promotion}
-            doublePromotionCount={doublePromotion}
-          />
-        </Col>
+        <CohortTable
+          cohort={cohort}
+          rows={cohorts[cohort]}
+          highlightedUserId={highlightedUserId}
+          demotionCount={demotion}
+          promotionCount={promotion}
+          doublePromotionCount={doublePromotion}
+        />
       </Col>
     </Page>
   )
