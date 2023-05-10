@@ -19,9 +19,18 @@ export const getStonkPriceAtProb = (contract: StonkContract, prob: number) => {
   return stonkPrice
 }
 
-export const getStonkShares = (contract: StonkContract, shares: number) => {
+export const getStonkShares = (
+  contract: StonkContract,
+  shares: number,
+  precision?: number
+) => {
+  if (precision !== undefined) {
+    return Number(
+      (Math.floor(shares) / getStonkPriceAtProb(contract, 1)).toPrecision(2)
+    )
+  }
   return Number(
-    (Math.floor(shares) / getStonkPriceAtProb(contract, 1)).toFixed(2)
+    (Math.floor(shares) / getStonkPriceAtProb(contract, 1)).toFixed(5)
   )
 }
 
