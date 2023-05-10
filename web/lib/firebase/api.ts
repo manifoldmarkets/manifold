@@ -337,3 +337,11 @@ export function leagueActivity(params: { season: number; cohort: string }) {
     contracts: Contract[]
   }>
 }
+
+export function createQAndA(params: {
+  question: string
+  description: string
+  bounty: number
+}) {
+  return call(getApiUrl('create-q-and-a'), 'POST', params)
+}

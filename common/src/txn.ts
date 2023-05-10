@@ -28,6 +28,9 @@ type AnyTxnType =
   | MarketAdRedeem
   | MarketAdRedeemFee
   | QuestReward
+  | QAndACreate
+  | QAndAReward
+
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
@@ -255,6 +258,24 @@ type QuestReward = {
   }
 }
 
+type QAndACreate = {
+  category: 'Q_AND_A_CREATE'
+  fromType: 'USER'
+  toType: 'BANK'
+  data: {
+    q_and_a_id: string
+  }
+}
+
+type QAndAReward = {
+  category: 'Q_AND_A_REWARD'
+  fromType: 'BANK'
+  toType: 'USER'
+  data: {
+    q_and_a_id: string
+  }
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -282,3 +303,5 @@ export type MarketAdCreateTxn = Txn & MarketAdCreate
 export type MarketAdRedeemTxn = Txn & MarketAdRedeem
 export type MarketAdRedeemFeeTxn = Txn & MarketAdRedeemFee
 export type QuestRewardTxn = Txn & QuestReward
+export type QAndACreateTxn = Txn & QAndACreate
+export type QAndARewardTxn = Txn & QAndAReward
