@@ -330,7 +330,7 @@ export function joinGroup(params: { groupId: string }) {
   return call(getApiUrl('joingroup'), 'POST', params)
 }
 
-export function leagueActivity(params: { season: number, cohort: string }) {
+export function leagueActivity(params: { season: number; cohort: string }) {
   return call(getApiUrl('league-activity'), 'POST', params) as Promise<{
     bets: Bet[]
     comments: ContractComment[]
