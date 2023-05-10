@@ -61,14 +61,12 @@ export function LeagueFeed(props: { season: number; cohort: string }) {
           )
         })}
 
-        {!loading && (
-          <LoadMoreUntilNotVisible
-            loadMore={async () => {
-              setMaxItems((maxItems) => maxItems + 100)
-              return maxItems < items.length
-            }}
-          />
-        )}
+        <LoadMoreUntilNotVisible
+          loadMore={async () => {
+            setMaxItems((maxItems) => maxItems + 100)
+            return maxItems < items.length
+          }}
+        />
       </Col>
     </Col>
   )

@@ -44,6 +44,7 @@ export const ManaEarnedBreakdown = (props: {
     userId: user.id,
     afterTime: SEASON_START.getTime(),
     beforeTime: SEASON_END.getTime(),
+    order: 'desc',
   })
   const bets = loadingBets ?? []
 
@@ -109,20 +110,28 @@ export const ManaEarnedBreakdown = (props: {
             <LoadingIndicator className="mt-6" />
           </div>
         )}
-        <Col className="divide-y-[0.5px]">
-          {bets.map(
-            (bet) =>
-              betIdToContract[bet.id] && (
-                <Col className="gap-2 py-4 first:border-t-[0.5px]">
+        <Col className="">
+          {bets.map((bet, i) => {
+            const contract = betIdToContract[bet.id]
+            if (!contract) return null
+
+            const prevContract = i > 0 ? betIdToContract[bets[i - 1].id] : null
+            const showContract =
+              !prevContract || prevContract.id !== contract.id
+
+            return (
+              <Col className={clsx('gap-2', showContract ? 'pt-4' : 'pt-2')}>
+                {showContract && (
                   <ContractMention contract={betIdToContract[bet.id]} />
-                  <FeedBet
-                    key={bet.id}
-                    bet={bet}
-                    contract={betIdToContract[bet.id]}
-                  />
-                </Col>
-              )
-          )}
+                )}
+                <FeedBet
+                  key={bet.id}
+                  bet={bet}
+                  contract={betIdToContract[bet.id]}
+                />
+              </Col>
+            )
+          })}
         </Col>
       </Col>
     </Modal>
