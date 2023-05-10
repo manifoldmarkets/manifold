@@ -965,6 +965,23 @@ create policy "public read" on q_and_a for
   select
   using (true);
 
+create table if not exists
+  q_and_a_answers (
+  id text not null primary key,
+  q_and_a_id text not null,
+  user_id text not null,
+  text text not null,
+  created_time timestamptz not null default now()
+);
+
+alter table q_and_a_answers enable row level security;
+
+drop policy if exists "public read" on q_and_a_answers;
+
+create policy "public read" on q_and_a_answers for
+  select
+  using (true);
+
 begin;
 
 drop publication if exists supabase_realtime;

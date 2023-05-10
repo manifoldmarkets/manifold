@@ -345,3 +345,10 @@ export function createQAndA(params: {
 }) {
   return call(getApiUrl('create-q-and-a'), 'POST', params)
 }
+
+export function createQAndAAnswer(params: {
+  questionId: string
+  text: string
+}) {
+  return call(getApiUrl('create-q-and-a-answer'), 'POST', params)
+}
