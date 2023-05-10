@@ -53,8 +53,6 @@ export default function DiscoverGroups() {
   //     (g) => !allSpecialGroupSlugs.includes(g.slug)
   //   )
 
-  console.log(allSpecialGroups, allSpecialGroupSlugs)
-
   const searchedGroups = useGroupSearchResults(query, 50)
   const groups = query !== '' ? searchedGroups : []
 

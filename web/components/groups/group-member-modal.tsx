@@ -316,7 +316,7 @@ export function MemberRoleTag(role: any | undefined, isCreator: boolean) {
   return (
     <div
       className={clsx(
-        'font-regular text-ink-0 w-full rounded px-2 py-1 text-xs',
+        'text-ink-0 h-min w-full rounded px-1 py-0.5 text-xs font-semibold',
         isCreator
           ? 'bg-primary-400'
           : role === 'admin'
