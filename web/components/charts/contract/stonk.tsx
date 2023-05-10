@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { last, sortBy } from 'lodash'
+import { last, maxBy, minBy, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 
@@ -25,8 +25,8 @@ const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
 const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
-const getScaleP = (min: number, max: number) => {
-  return (p: number) => p * (max - min) + min
+const getScaleP = () => {
+  return (p: number) => getStonkPriceAtProb({} as StonkContract, p)
 }
 
 const getBetPoints = (
@@ -77,12 +77,24 @@ export const StonkContractChart = (props: {
     color,
     onMouseOver,
   } = props
-  const min = getStonkPriceAtProb(contract, 0)
-  const max = getStonkPriceAtProb(contract, 1)
 
   const [start, end] = getDateRange(contract)
   const rangeStart = controlledStart ?? start
-  const scaleP = useMemo(() => getScaleP(min, max), [min, max])
+  const betPointsInRange = useMemo(
+    () => props.betPoints.filter((pt) => pt.x >= rangeStart),
+    [props.betPoints, rangeStart]
+  )
+  const minProb = useMemo(
+    () => minBy(betPointsInRange, (pt) => pt.y)?.y ?? 0,
+    [betPointsInRange]
+  )
+  const maxProb = useMemo(
+    () => maxBy(betPointsInRange, (pt) => pt.y)?.y ?? 1,
+    [betPointsInRange]
+  )
+  const min = getStonkPriceAtProb(contract, minProb)
+  const max = getStonkPriceAtProb(contract, maxProb)
+  const scaleP = useMemo(getScaleP, [])
   const startP = scaleP(getInitialProbability(contract))
   const endP = scaleP(getProbability(contract))
   const betPoints = useMemo(
