@@ -27,6 +27,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { getLeagueRows } from 'web/lib/supabase/leagues'
 import { CohortTable } from 'web/components/leagues/cohort-table'
 import { PrizesModal } from 'web/components/leagues/prizes-modal'
+import { LeagueFeed } from 'web/components/leagues/league-feed'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
@@ -246,6 +247,8 @@ export default function Leagues(props: { rows: league_row[] }) {
           promotionCount={promotion}
           doublePromotionCount={doublePromotion}
         />
+
+        <LeagueFeed season={season} cohort={cohort} />
       </Col>
     </Page>
   )

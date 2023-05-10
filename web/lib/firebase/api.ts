@@ -12,6 +12,8 @@ export { APIError } from 'common/api'
 import { filter, Sort } from '../../components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
+import { Bet } from 'common/bet'
+import { ContractComment } from 'common/comment'
 
 export async function call(url: string, method: string, params?: any) {
   const user = auth.currentUser
@@ -326,4 +328,12 @@ export function joinGroupThroughInvite(params: { inviteId: string }) {
 
 export function joinGroup(params: { groupId: string }) {
   return call(getApiUrl('joingroup'), 'POST', params)
+}
+
+export function leagueActivity(params: { season: number, cohort: string }) {
+  return call(getApiUrl('league-activity'), 'POST', params) as Promise<{
+    bets: Bet[]
+    comments: ContractComment[]
+    contracts: Contract[]
+  }>
 }
