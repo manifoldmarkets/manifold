@@ -16,6 +16,12 @@ import { useAdmin } from './use-admin'
 import { useIsAuthorized, useUser } from './use-user'
 import { useSupabasePolling } from 'web/hooks/use-supabase'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
+import {
+  GroupAndRoleType,
+  getGroupsWhereUserHasRole,
+  listGroupsBySlug,
+} from 'web/lib/supabase/groups'
+import { useEffectCheckEquality } from './use-effect-check-equality'
 
 export function useRealtimeRole(groupId: string | undefined) {
   const [userRole, setUserRole] = useState<groupRoleType | null | undefined>(
@@ -210,4 +216,30 @@ export function useIsGroupMember(groupSlug: string) {
     }
   }, [isAuth])
   return isGroupMember
+}
+
+export function useListGroupsBySlug(groupSlugs: string[]) {
+  const [groups, setGroups] = useState<Group[] | null>(null)
+  useEffectCheckEquality(() => {
+    if (groupSlugs.length > 0) {
+      listGroupsBySlug(groupSlugs).then((result) => {
+        setGroups(result)
+      })
+    }
+  }, [groupSlugs])
+  return groups
+}
+
+export function useGroupsWhereUserHasRole(userId: string | undefined) {
+  const [groupsAndRoles, setGroupsAndRoles] = useState<
+    GroupAndRoleType[] | null
+  >(null)
+  useEffect(() => {
+    if (userId) {
+      getGroupsWhereUserHasRole(userId).then((result) => {
+        setGroupsAndRoles(result)
+      })
+    }
+  }, [userId])
+  return groupsAndRoles
 }

@@ -309,6 +309,26 @@ export function MemberRoleHeader(props: {
   )
 }
 
+export function MemberRoleTag(role: any | undefined, isCreator: boolean) {
+  if (!role) {
+    return <></>
+  }
+  return (
+    <div
+      className={clsx(
+        'font-regular text-ink-0 w-full rounded px-2 py-1 text-xs',
+        isCreator
+          ? 'bg-primary-400'
+          : role === 'admin'
+          ? 'bg-primary-300'
+          : 'bg-ink-300'
+      )}
+    >
+      {isCreator ? 'CREATOR' : `${role.toLocaleUpperCase()}`}
+    </div>
+  )
+}
+
 export function Member(props: {
   group: Group
   member: JSONContent
@@ -316,20 +336,6 @@ export function Member(props: {
 }) {
   const { group, member, canEdit } = props
   const isCreator = member.member_id === member.creator_id
-  const tag = member.role ? (
-    <div
-      className={clsx(
-        'font-regular text-ink-0 w-full rounded px-2 py-1 text-xs',
-        isCreator
-          ? 'bg-primary-400'
-          : member.role === 'admin'
-          ? 'bg-primary-300'
-          : 'bg-ink-300'
-      )}
-    >
-      {isCreator ? 'CREATOR' : `${member.role.toLocaleUpperCase()}`}
-    </div>
-  ) : undefined
 
   return (
     <Row className="w-full items-center justify-between gap-2">
@@ -342,7 +348,7 @@ export function Member(props: {
         <UserLink name={member.name} username={member.username} />
       </Row>
       <Row className="mr-4 items-center gap-1">
-        {tag}
+        <MemberRoleTag role={member.role} isCreator={isCreator} />
         <AdminRoleDropdown group={group} member={member} canEdit={canEdit} />
       </Row>
     </Row>

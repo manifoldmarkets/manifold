@@ -85,18 +85,27 @@ export async function getMemberGroupsCount(userId: string) {
   return count
 }
 
+export type GroupAndRoleType = {
+  group: Group
+  role: string
+}
 // gets all groups where the user is an admin or moderator
 export async function getGroupsWhereUserHasRole(userId: string) {
   const groupThings = await run(
     db
       .from('group_role')
-      .select('group_data')
+      .select('*')
       .eq('member_id', userId)
       .or('role.eq.admin,role.eq.moderator')
       .order('name')
   )
 
-  return groupThings.data
+  return groupThings.data.map((d) => {
+    return {
+      group: d.group_data as Group,
+      role: d.role as string,
+    }
+  })
 }
 
 // gets all groups where the user is member
@@ -123,4 +132,38 @@ export async function getPublicGroups() {
   )
 
   return groupThings.data.map((d: { data: any }) => d.data as Group)
+}
+
+export async function getGroupBySlug(groupSlug: string) {
+  const { data } = await run(
+    db.from('groups').select('data').eq('slug', groupSlug).limit(1)
+  )
+  return data ? (data[0]?.data as Group) : null
+}
+
+export async function getGroup(groupId: string) {
+  const { data } = await run(
+    db.from('groups').select('data').eq('id', groupId).limit(1)
+  )
+  return data ? (data[0]?.data as Group) : null
+}
+
+export async function getGroupContractIds(groupId: string) {
+  const { data } = await run(
+    db.from('group_contracts').select('contract_id').eq('group_id', groupId)
+  )
+  if (data && data.length > 0) {
+    return data.map((group) => group.contract_id as string)
+  }
+  return []
+}
+
+export async function listGroupsBySlug(groupSlugs: string[]) {
+  const { data } = await run(
+    db.from('groups').select('data').in('slug', groupSlugs)
+  )
+  if (data && data.length > 0) {
+    return data.map((group) => group.data as Group)
+  }
+  return []
 }

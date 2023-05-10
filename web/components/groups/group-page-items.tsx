@@ -58,7 +58,6 @@ export function GroupMembersWidget(props: {
     <>
       <button onClick={onMemberClick}>
         <Row className="text-ink-700 cursor-pointer items-center gap-1 text-sm">
-          <Row className="text-ink-700 items-center gap-1 text-sm"></Row>
           <UserGroupIcon className="h-4 w-4" />
           <span>{numMembers} members</span>
         </Row>
