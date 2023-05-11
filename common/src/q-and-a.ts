@@ -4,7 +4,7 @@ export type q_and_a = {
   question: string
   description: string
   bounty: number
-  created_time: Date
+  created_time: number
 }
 
 export type q_and_a_answer = {
@@ -13,7 +13,7 @@ export type q_and_a_answer = {
   user_id: string
   text: string
   award: number
-  created_time: Date
+  created_time: number
 }
 
 export const MAX_QA_ANSWER_LENGTH = 1000

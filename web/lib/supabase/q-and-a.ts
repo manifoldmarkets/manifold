@@ -12,8 +12,16 @@ export const getQuestionsAnswers = async () => {
   ])
 
   return {
-    questions: questions.data ?? [],
-    answers: answers.data ?? [],
+    questions: (questions.data ?? []).map((q) => ({
+      ...q,
+      bounty: +q.bounty,
+      created_time: new Date(q.created_time).getTime(),
+    })),
+    answers: (answers.data ?? []).map((a) => ({
+      ...a,
+      award: +a.award,
+      created_time: new Date(a.created_time).getTime(),
+    })),
   }
 }
 
@@ -52,10 +60,9 @@ export const getBountyRemaining = async (questionId: string) => {
 }
 
 export const useBountyRemaining = (questionId: string) => {
-  const [remaining, setRemaining] = usePersistentInMemoryState<number | undefined>(
-    undefined,
-    `q-and-a-bounty-remaining-${questionId}`
-  )
+  const [remaining, setRemaining] = usePersistentInMemoryState<
+    number | undefined
+  >(undefined, `q-and-a-bounty-remaining-${questionId}`)
 
   useEffect(() => {
     getBountyRemaining(questionId).then((bounty) => setRemaining(bounty))

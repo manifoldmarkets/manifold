@@ -25,6 +25,7 @@ import { Title } from 'web/components/widgets/title'
 import { useBountyRemaining, useQAndA } from 'web/lib/supabase/q-and-a'
 import { useUser } from 'web/hooks/use-user'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import { fromNow } from 'web/lib/util/time'
 
 export default function QuestionAndAnswer() {
   const { questions, answers } = useQAndA()
@@ -61,26 +62,26 @@ function QuestionAnswer(props: {
 
   return (
     <Col
-      className="cursor-pointer gap-1"
+      className="cursor-pointer gap-2"
       onClick={() => setExpanded((b) => !b)}
     >
-      <Col className="bg-canvas-0 px-3 py-2 shadow">
+      <Col className="bg-canvas-0 px-4 py-2.5 shadow">
         <Row className="justify-between">
-          <div>{question.question}</div>
+          <div className="text-lg">{question.question}</div>
           {expanded ? (
-            <ChevronUpIcon className="text-ink-500 h-5 w-5 text-xs">
+            <ChevronUpIcon className="text-ink-600 h-5 w-5 text-xs">
               Hide
             </ChevronUpIcon>
           ) : (
-            <ChevronDownIcon className="text-ink-500 h-5 w-5 text-xs">
+            <ChevronDownIcon className="text-ink-600 h-5 w-5 text-xs">
               Show
             </ChevronDownIcon>
           )}
         </Row>
-        <div className={clsx('text-ink-700', !expanded && 'line-clamp-1')}>
+        <div className={clsx('text-ink-600', !expanded && 'line-clamp-1')}>
           {question.description}
         </div>
-        <Row className="mt-1 gap-2">
+        <Row className="text-ink-600 mt-1 gap-2">
           {user ? (
             <Avatar
               size="xs"
@@ -92,9 +93,10 @@ function QuestionAnswer(props: {
             <EmptyAvatar size={6} />
           )}
           <div>{formatMoney(question.bounty)} bounty</div>
+          <div>{fromNow(question.created_time)}</div>
         </Row>
       </Col>
-      <Col className="ml-6">
+      <Col className="ml-6 gap-2">
         {(expanded ? answers : answers.slice(0, 3)).map((a) => (
           <Answer
             key={a.id}
@@ -120,36 +122,43 @@ function Answer(props: {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
-    <Row className="gap-2">
-      {user ? (
-        <Avatar
-          size="xs"
-          avatarUrl={user.avatarUrl}
-          username={user.username}
-          noLink={!expanded}
-        />
-      ) : (
-        <EmptyAvatar size={6} />
+    <Col>
+      <Row className="mr-1 gap-2">
+        {user ? (
+          <Avatar
+            size="xs"
+            avatarUrl={user.avatarUrl}
+            username={user.username}
+            noLink={!expanded}
+          />
+        ) : (
+          <EmptyAvatar size={6} />
+        )}
+        <div className={clsx(!expanded && 'line-clamp-1')}>{answer.text} </div>
+        {isCreator && expanded && (
+          <>
+            <Button
+              size="2xs"
+              className="mb-0.5 ml-auto"
+              onClick={(e) => {
+                e.stopPropagation()
+                setDialogOpen(true)
+              }}
+            >
+              Award
+            </Button>
+            {dialogOpen && (
+              <AwardAnswerDialog answer={answer} setOpen={setDialogOpen} />
+            )}
+          </>
+        )}
+      </Row>
+      {expanded && (
+        <div className="text-ink-600 ml-6 mt-0.5 text-xs">
+          {fromNow(answer.created_time)}
+        </div>
       )}
-      <div className={clsx(!expanded && 'line-clamp-1')}>{answer.text} </div>
-      {isCreator && expanded && (
-        <>
-          <Button
-            size="2xs"
-            className="mb-0.5 ml-auto"
-            onClick={(e) => {
-              e.stopPropagation()
-              setDialogOpen(true)
-            }}
-          >
-            Award
-          </Button>
-          {dialogOpen && (
-            <AwardAnswerDialog answer={answer} setOpen={setDialogOpen} />
-          )}
-        </>
-      )}
-    </Row>
+    </Col>
   )
 }
 
@@ -184,7 +193,7 @@ function AwardAnswerDialog(props: {
 
         <div>{answer.text}</div>
 
-        <div className="text-ink-700">
+        <div className="text-ink-600">
           Awarding an answer will transfer a portion of the bounty to the user
           who created the answer.
         </div>
@@ -238,10 +247,11 @@ function CreateAnswer(props: { questionId: string }) {
     setIsSubmitting(true)
     await createQAndAAnswer({ questionId, text })
     setIsSubmitting(false)
+    setText('')
   }
 
   return (
-    <Col className="mt-2 w-full">
+    <Col className="mt-1 w-full pr-1" onClick={(e) => e.stopPropagation()}>
       <Row className="items-end gap-2">
         <ExpandingInput
           className="flex-1 !text-sm"
@@ -315,7 +325,9 @@ function CreateQAndA() {
       </Col>
 
       <Col className="w-full">
-        <label className="px-1 pt-2 pb-3">Bounty (paid now)</label>
+        <label className="px-1 pt-2 pb-3">
+          Bounty (paid now)<span className={'text-scarlet-500'}>*</span>
+        </label>
         <AmountInput
           label={ENV_CONFIG.moneyMoniker}
           amount={bounty}
