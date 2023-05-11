@@ -25,6 +25,7 @@ import { Row } from 'web/components/layout/row'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -135,44 +136,54 @@ function LootModal(props: {
   const { open, setOpen, box } = props
   const totalValue = box?.reduce((acc, loot) => acc + loot.amount, 0)
   return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className={MODAL_CLASS}>
-        {box && (
-          <>
-            <Title>Your loot</Title>
-            <Col className="w-full items-center justify-center text-2xl text-teal-700">
-              {formatMoney(totalValue ?? 0)}
-              <div className="text-ink-1000 text-sm"> total value</div>
-            </Col>
-            <table className="mt-4 w-full overflow-y-auto">
-              <thead
-                className={clsx(
-                  'text-ink-600 bg-canvas-50 sticky top-0 z-20 text-left text-sm font-semibold'
-                )}
-              >
-                <tr>
-                  <th className="px-4" key={'market'}>
-                    Market
-                  </th>
-                  <th className="pr-4" key={'market'}>
-                    Shares
-                  </th>
-                  <th className="px-4" key={'market'}>
-                    Value
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {box.map((loot) => (
-                  <LootRow key={loot.contract.id} loot={loot} />
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
-        {!box && <>Something went wrong! We couldn't find your loot :(</>}
-      </Col>
-    </Modal>
+    <>
+      {open && (
+        <FullscreenConfetti
+          recycle={false}
+          numberOfPieces={300}
+          className="hidden md:flex"
+        />
+      )}
+
+      <Modal open={open} setOpen={setOpen}>
+        <Col className={MODAL_CLASS}>
+          {box && (
+            <>
+              <Title>Your loot</Title>
+              <Col className="w-full items-center justify-center text-2xl text-teal-700">
+                {formatMoney(totalValue ?? 0)}
+                <div className="text-ink-1000 text-sm"> total value</div>
+              </Col>
+              <table className="mt-4 w-full overflow-y-auto">
+                <thead
+                  className={clsx(
+                    'text-ink-600 bg-canvas-50 sticky top-0 z-20 text-left text-sm font-semibold'
+                  )}
+                >
+                  <tr>
+                    <th className="px-4" key={'market'}>
+                      Market
+                    </th>
+                    <th className="pr-4" key={'market'}>
+                      Shares
+                    </th>
+                    <th className="px-4" key={'market'}>
+                      Value
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {box.map((loot) => (
+                    <LootRow key={loot.contract.id} loot={loot} />
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+          {!box && <>Something went wrong! We couldn't find your loot :(</>}
+        </Col>
+      </Modal>
+    </>
   )
 }
 
