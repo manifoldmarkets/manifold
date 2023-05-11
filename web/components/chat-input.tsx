@@ -107,7 +107,7 @@ const ChatInput = (props: {
       </button>
       {showChat && (
         <button
-          className={clsx('absolute -top-1 right-1')}
+          className={clsx('absolute -top-1 right-1 lg:hidden')}
           onClick={() => setShowChat(!showChat)}
         >
           <XIcon className={'bg-ink-300 h-6 rounded-full p-1'} />
