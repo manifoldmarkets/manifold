@@ -90,6 +90,7 @@ export const BOT_USERNAMES = [
   'veat',
   'ms_test',
   'Turbot',
+  'MiraBot',
 ]
 
 export const CORE_USERNAMES = [
