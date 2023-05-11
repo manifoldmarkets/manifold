@@ -34,6 +34,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { TopicSelector } from 'web/components/topic-selector'
 import ShortToggle from 'web/components/widgets/short-toggle'
+import ChatInput from 'web/components/chat-input'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -62,7 +63,14 @@ function HomeDashboard() {
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
 
   const isLoading = !dailyChangedContracts
-
+  const [isLive, setIsLive] = usePersistentInMemoryState(
+    false,
+    'main-content-section-is-live'
+  )
+  const [pill, setPill] = usePersistentInMemoryState<pill_options>(
+    'all',
+    'live-pill'
+  )
   return (
     <Page>
       <Col className="mx-auto w-full max-w-2xl gap-6 pb-8 sm:px-2 lg:pr-4">
@@ -75,7 +83,12 @@ function HomeDashboard() {
 
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
-          <MainContent />
+          <MainContent
+            pill={pill}
+            isLive={isLive}
+            setIsLive={setIsLive}
+            setPill={setPill}
+          />
         </Col>
       </Col>
     </Page>
@@ -87,7 +100,14 @@ function MobileHome() {
 
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
   const isLoading = !dailyChangedContracts
-
+  const [isLive, setIsLive] = usePersistentInMemoryState(
+    false,
+    'main-content-section-is-live'
+  )
+  const [pill, setPill] = usePersistentInMemoryState<pill_options>(
+    'all',
+    'live-pill'
+  )
   return (
     <Page>
       <Col className="gap-2 py-2 pb-8 sm:px-2">
@@ -100,7 +120,12 @@ function MobileHome() {
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
           <Col>
-            <MainContent />
+            <MainContent
+              pill={pill}
+              isLive={isLive}
+              setIsLive={setIsLive}
+              setPill={setPill}
+            />
           </Col>
         </Col>
       </Col>
@@ -108,8 +133,9 @@ function MobileHome() {
       <button
         type="button"
         className={clsx(
-          'focus:ring-primary-500 fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
-          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r'
+          'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
+          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
+          isLive && pill === 'all' ? 'bottom-[135px]' : 'bottom-[70px]'
         )}
         onClick={() => {
           Router.push('/create')
@@ -181,6 +207,7 @@ const LiveSection = memo(function LiveSection(props: {
     <Col className={clsx('relative mt-4', className)}>
       <ActivityLog count={30} pill={pill} />
       <div className="from-canvas-50 pointer-events-none absolute bottom-0 h-5 w-full select-none bg-gradient-to-t to-transparent" />
+      <ChatInput />
     </Col>
   )
 })
@@ -198,16 +225,14 @@ const YourFeedSection = memo(function YourFeedSection(props: {
   )
 })
 
-const MainContent = () => {
-  const [isLive, setIsLive] = usePersistentInMemoryState(
-    false,
-    'main-content-section-is-live'
-  )
+const MainContent = (props: {
+  isLive: boolean
+  setIsLive: (on: boolean) => void
+  pill: pill_options
+  setPill: (pill: pill_options) => void
+}) => {
+  const { isLive, setIsLive, pill, setPill } = props
   const [topic, setTopic] = usePersistentLocalState('', 'your-feed-topic')
-  const [pill, setPill] = usePersistentInMemoryState<pill_options>(
-    'all',
-    'live-pill'
-  )
 
   const selectLive = (on: boolean) => {
     setIsLive(on)

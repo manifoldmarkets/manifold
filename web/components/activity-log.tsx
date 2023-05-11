@@ -3,7 +3,7 @@ import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { BOT_USERNAMES, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
-import { groupBy, keyBy, partition, range, sortBy, uniq } from 'lodash'
+import { groupBy, keyBy, orderBy, partition, range, sortBy, uniq } from 'lodash'
 import { ReactNode, memo, useEffect } from 'react'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
@@ -33,6 +33,9 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 import { db } from 'web/lib/supabase/db'
 import { track } from 'web/lib/service/analytics'
+import { useRealtimeChats } from 'web/hooks/use-chats'
+import { ChatMessage } from 'common/chat-message'
+import { ChatMessageItem } from 'web/components/chat-message'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
@@ -72,6 +75,7 @@ export function ActivityLog(props: {
     privateUser?.blockedContractIds
   )
   const blockedUserIds = privateUser?.blockedUserIds ?? []
+  const chatMessages = useRealtimeChats(count * 3)
 
   const rawBets = useRealtimeBets({
     limit: count * 3 + 20,
@@ -114,23 +118,22 @@ export function ActivityLog(props: {
 
   const items = sortBy(
     pill === 'all'
-      ? [...bets, ...comments, ...(newContracts ?? [])]
+      ? [...bets, ...comments, ...(newContracts ?? []), ...chatMessages]
       : pill === 'comments'
       ? comments
       : pill === 'trades'
       ? bets
+      : pill === 'chat'
+      ? chatMessages
       : newContracts ?? [],
     (i) => i.createdTime
   )
     .reverse()
-    .filter(
-      (i) =>
-        i.createdTime < Date.now() &&
-        ('contractId' in i
-          ? !unlistedContracts.some((c) => c.id === i.contractId)
-          : true)
+    .filter((i) =>
+      'contractId' in i
+        ? !unlistedContracts.some((c) => c.id === i.contractId)
+        : true
     )
-
   const contractsById = keyBy(contracts, 'id')
 
   const startIndex =
@@ -142,7 +145,6 @@ export function ActivityLog(props: {
         )
     ) ?? 0
   const itemsSubset = items.slice(startIndex, startIndex + count)
-
   const allLoaded =
     rawBets &&
     rawComments &&
@@ -152,25 +154,36 @@ export function ActivityLog(props: {
       'contractId' in item ? contractsById[item.contractId] : true
     )
 
-  const groups = Object.entries(
-    groupBy(itemsSubset, (item) =>
-      'contractId' in item ? item.contractId : item.id
-    )
-  ).map(([contractId, items]) => ({
-    contractId,
-    items,
-  }))
+  const groups = orderBy(
+    Object.entries(
+      groupBy(itemsSubset, (item) =>
+        'contractId' in item ? item.contractId : item.id
+      )
+    ).map(([parentId, items]) => ({
+      parentId,
+      items,
+    })),
+    ({ items }) =>
+      // get the largest createdTime of any item in the group
+      Math.max(...items.map((item) => item.createdTime)),
+    'desc'
+  )
 
   return (
     <Col className={clsx('gap-4', className)}>
       {!allLoaded && <LoadingIndicator />}
       {allLoaded && (
         <Col className="border-ink-400 divide-ink-400 divide-y-[0.5px] rounded-sm border-[0.5px]">
-          {groups.map(({ contractId, items }) => {
-            const contract = contractsById[contractId] as Contract
+          {groups.map(({ parentId, items }) => {
+            const contract = contractsById[parentId] as Contract
+            if (contract === undefined) {
+              const chat = items[0] as ChatMessage
+              return <ChatMessageItem chat={chat} key={chat.id} user={user} />
+            }
+
             return (
               <Col
-                key={contractId}
+                key={parentId}
                 className="bg-canvas-0 focus:bg-canvas-100 lg:hover:bg-canvas-100 gap-2 px-4 py-3"
               >
                 <ContractMention contract={contract} />
@@ -185,7 +198,7 @@ export function ActivityLog(props: {
                     />
                   ) : 'question' in item ? (
                     <MarketCreatedLog key={item.id} contract={item} />
-                  ) : (
+                  ) : 'channelId' in item ? null : (
                     <CommentLog key={item.id} comment={item} />
                   )
                 )}
@@ -198,7 +211,7 @@ export function ActivityLog(props: {
   )
 }
 
-export type pill_options = 'all' | 'markets' | 'comments' | 'trades'
+export type pill_options = 'all' | 'markets' | 'comments' | 'trades' | 'chat'
 export const LivePillOptions = (props: {
   pill: pill_options
   setPill: (pill: pill_options) => void
@@ -240,10 +253,17 @@ export const LivePillOptions = (props: {
       >
         Trades
       </PillButton>
+      <PillButton
+        selected={pill === 'chat'}
+        onSelect={() => selectPill('chat')}
+        xs
+      >
+        Chat
+      </PillButton>
     </Row>
   )
 }
-export const MarketCreatedLog = (props: { contract: Contract }) => {
+const MarketCreatedLog = memo((props: { contract: Contract }) => {
   const { creatorAvatarUrl, creatorUsername, creatorName, createdTime } =
     props.contract
 
@@ -261,9 +281,9 @@ export const MarketCreatedLog = (props: { contract: Contract }) => {
       </Row>
     </Row>
   )
-}
+})
 
-export const CommentLog = memo(function FeedComment(props: {
+const CommentLog = memo(function FeedComment(props: {
   comment: ContractComment
 }) {
   const { comment } = props

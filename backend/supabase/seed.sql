@@ -535,6 +535,27 @@ select
     using (true);
 create index if not exists comment_edits_comment_id_idx on contract_comment_edits (comment_id);
 
+
+create table if not exists
+  chat_messages (
+                id serial primary key,
+                user_id text not null,
+                channel_id text not null,
+                content jsonb not null,
+                user_name text not null,
+                user_avatar_url text not null,
+                user_username text not null,
+                created_time timestamptz not null default now()
+);
+
+alter table chat_messages enable row level security;
+
+drop policy if exists "public read" on chat_messages;
+
+create policy "public read" on chat_messages for
+  select
+  using (true);
+
 create table if not exists
   contract_follows (
     contract_id text not null,
@@ -1003,6 +1024,9 @@ add table group_members;
 
 alter publication supabase_realtime
 add table posts;
+
+alter publication supabase_realtime
+add table chat_messages;
 
 commit;
 

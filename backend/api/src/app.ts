@@ -62,6 +62,7 @@ import { lootbox } from './loot-box'
 import { createQAndA } from './create-q-and-a'
 import { createQAndAAnswer } from './create-q-and-a-answer'
 import { awardQAndAAnswer } from './award-q-and-a-answer'
+import { createchatmessage } from 'api/create-chat-message'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -107,6 +108,7 @@ app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/createcomment', ...apiRoute(createcomment))
+app.post('/createchatmessage', ...apiRoute(createchatmessage))
 app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))

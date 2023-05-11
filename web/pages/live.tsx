@@ -8,6 +8,7 @@ import {
   pill_options,
 } from 'web/components/activity-log'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import ChatInput from 'web/components/chat-input'
 
 export default function LivePage() {
   useTracking('view live page')
@@ -24,6 +25,7 @@ export default function LivePage() {
         <Col className="gap-4">
           <LivePillOptions pill={pill} setPill={setPill} />
           <ActivityLog count={30} pill={pill} />
+          <ChatInput />
         </Col>
       </Col>
     </Page>
