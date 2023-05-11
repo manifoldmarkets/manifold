@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { groupBy } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 
@@ -57,6 +57,7 @@ function QuestionAnswer(props: {
 }) {
   const { question, answers, isCreator } = props
   const user = useUserById(question.user_id)
+  const sortedAnwers = sortBy(answers, 'award', 'created_time').reverse()
 
   const [expanded, setExpanded] = useState(false)
 
@@ -81,7 +82,7 @@ function QuestionAnswer(props: {
         <div className={clsx('text-ink-600', !expanded && 'line-clamp-1')}>
           {question.description}
         </div>
-        <Row className="text-ink-600 mt-1 gap-2">
+        <Row className="text-ink-600 mt-1 gap-2 text-sm">
           {user ? (
             <Avatar
               size="xs"
@@ -92,12 +93,17 @@ function QuestionAnswer(props: {
           ) : (
             <EmptyAvatar size={6} />
           )}
-          <div>{formatMoney(question.bounty)} bounty</div>
+          <div>
+            <span className="font-semibold">
+              {formatMoney(question.bounty)}
+            </span>{' '}
+            bounty
+          </div>
           <div>{fromNow(question.created_time)}</div>
         </Row>
       </Col>
       <Col className="ml-6 gap-2">
-        {(expanded ? answers : answers.slice(0, 3)).map((a) => (
+        {(expanded ? sortedAnwers : sortedAnwers.slice(0, 3)).map((a) => (
           <Answer
             key={a.id}
             answer={a}
@@ -123,7 +129,7 @@ function Answer(props: {
 
   return (
     <Col>
-      <Row className="mr-1 gap-2">
+      <Row className="mr-1 items-center gap-2">
         {user ? (
           <Avatar
             size="xs"
@@ -135,7 +141,9 @@ function Answer(props: {
           <EmptyAvatar size={6} />
         )}
         {answer.award > 0 && (
-          <div className="text-green-600">{formatMoney(answer.award)}</div>
+          <div className="text-sm font-semibold text-green-600">
+            {formatMoney(answer.award)}
+          </div>
         )}
         <div className={clsx(!expanded && 'line-clamp-1')}>{answer.text} </div>
         {isCreator && expanded && (
