@@ -188,14 +188,8 @@ function LootModal(props: {
 }
 
 const LootRow = forwardRef(
-  (
-    props: {
-      loot: LootBoxItem
-      className?: string
-    },
-    ref: React.Ref<HTMLAnchorElement>
-  ) => {
-    const { className, loot } = props
+  (props: { loot: LootBoxItem }, ref: React.Ref<HTMLAnchorElement>) => {
+    const { loot } = props
     const { contract, amount, shares, outcome } = loot
 
     const { creatorUsername, creatorAvatarUrl, question } = contract
