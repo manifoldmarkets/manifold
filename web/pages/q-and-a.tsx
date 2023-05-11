@@ -65,7 +65,7 @@ function QuestionAnswer(props: {
       className="cursor-pointer gap-2"
       onClick={() => setExpanded((b) => !b)}
     >
-      <Col className="bg-canvas-0 px-4 py-2.5 shadow">
+      <Col className="bg-canvas-0 px-4 py-3 shadow">
         <Row className="justify-between">
           <div className="text-lg">{question.question}</div>
           {expanded ? (
@@ -289,7 +289,12 @@ function CreateQAndA() {
     if (!isValid) return
 
     setIsSubmitting(true)
+
     await createQAndA({ question, description, bounty })
+
+    setQuestion('')
+    setDescription('')
+    setBounty(50)
     setIsSubmitting(false)
   }
 

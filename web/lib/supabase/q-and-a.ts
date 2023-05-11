@@ -4,6 +4,7 @@ import { q_and_a, q_and_a_answer } from 'common/q-and-a'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { db } from 'web/lib/supabase/db'
 import { sum } from 'lodash'
+import { useSupabasePolling } from 'web/hooks/use-supabase'
 
 export const getQuestionsAnswers = async () => {
   const [questions, answers] = await Promise.all([
@@ -26,20 +27,35 @@ export const getQuestionsAnswers = async () => {
 }
 
 export const useQAndA = () => {
-  const [questions, setQAndA] = usePersistentInMemoryState<q_and_a[]>(
-    [],
-    'q-and-a'
+  const [questionsData] = useSupabasePolling(
+    db.from('q_and_a').select('*').order('created_time', {
+      ascending: false,
+    }),
+    {
+      deps: [],
+      ms: 1000 * 2,
+    }
   )
-  const [answers, setAnswers] = usePersistentInMemoryState<q_and_a_answer[]>(
-    [],
-    'q-and-a-answers'
+  const [answersData] = useSupabasePolling(
+    db.from('q_and_a_answers').select('*').order('created_time', {
+      ascending: false,
+    }),
+    {
+      deps: [],
+      ms: 1000 * 2,
+    }
   )
-  useEffect(() => {
-    getQuestionsAnswers().then(({ questions, answers }) => {
-      setQAndA(questions)
-      setAnswers(answers)
-    })
-  }, [])
+
+  const questions: q_and_a[] = (questionsData?.data ?? []).map((q) => ({
+    ...q,
+    bounty: +q.bounty,
+    created_time: new Date(q.created_time).getTime(),
+  }))
+  const answers: q_and_a_answer[] = (answersData?.data ?? []).map((a) => ({
+    ...a,
+    amount: +a.amount,
+    created_time: new Date(a.created_time).getTime(),
+  }))
 
   return { questions, answers }
 }
