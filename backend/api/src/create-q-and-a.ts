@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
-import { authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxn } from 'shared/run-txn'
 import { randomString } from 'common/util/random'
@@ -11,6 +11,11 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
+import {
+  MIN_BOUNTY,
+  MAX_QA_QUESTION_LENGTH,
+  MAX_QA_DESCRIPTION_LENGTH,
+} from 'common/q-and-a'
 
 const bodySchema = z.object({
   question: z.string(),
@@ -21,6 +26,24 @@ const bodySchema = z.object({
 export const createQAndA = authEndpoint(async (req, auth) => {
   const { question, description, bounty } = validate(bodySchema, req.body)
   const userId = auth.uid
+
+  if (bounty < MIN_BOUNTY) {
+    throw new APIError(400, 'Bounty must be at least ' + MIN_BOUNTY)
+  }
+  if (question.length > MAX_QA_QUESTION_LENGTH) {
+    throw new APIError(
+      400,
+      'Question must be less than ' + MAX_QA_QUESTION_LENGTH + ' characters'
+    )
+  }
+  if (description.length > MAX_QA_DESCRIPTION_LENGTH) {
+    throw new APIError(
+      400,
+      'Description must be less than ' +
+        MAX_QA_DESCRIPTION_LENGTH +
+        ' characters'
+    )
+  }
 
   const pg = createSupabaseDirectClient()
   const firestore = admin.firestore()

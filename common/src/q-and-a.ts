@@ -16,4 +16,8 @@ export type q_and_a_answer = {
   created_time: number
 }
 
+export const MAX_QA_QUESTION_LENGTH = 240
+export const MAX_QA_DESCRIPTION_LENGTH = 1000
 export const MAX_QA_ANSWER_LENGTH = 1000
+
+export const MIN_BOUNTY = 10

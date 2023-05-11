@@ -1,7 +1,11 @@
 import { useState } from 'react'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, sortBy, sumBy } from 'lodash'
 import clsx from 'clsx'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import {
+  CheckCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from '@heroicons/react/outline'
 
 import { MAX_DESCRIPTION_LENGTH, MAX_QUESTION_LENGTH } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -61,6 +65,8 @@ function QuestionAnswer(props: {
 
   const [expanded, setExpanded] = useState(false)
 
+  const noBountyRemaining = question.bounty === sumBy(answers, 'award')
+
   return (
     <Col
       className="cursor-pointer gap-2"
@@ -68,13 +74,16 @@ function QuestionAnswer(props: {
     >
       <Col className="bg-canvas-0 px-4 py-3 shadow">
         <Row className="justify-between">
-          <div className="text-lg">{question.question}</div>
+          <Row className="items-center gap-1">
+            {noBountyRemaining && <CheckCircleIcon className="h-6 w-6 " />}
+            <div className="text-lg">{question.question}</div>
+          </Row>
           {expanded ? (
-            <ChevronUpIcon className="text-ink-600 h-5 w-5 text-xs">
+            <ChevronUpIcon className="text-ink-600 h-6 w-6 flex-shrink-0 text-xs">
               Hide
             </ChevronUpIcon>
           ) : (
-            <ChevronDownIcon className="text-ink-600 h-5 w-5 text-xs">
+            <ChevronDownIcon className="text-ink-600 h-6 w-6 flex-shrink-0 text-xs">
               Show
             </ChevronDownIcon>
           )}
@@ -311,7 +320,7 @@ function CreateQAndA() {
 
   return (
     <Col className="gap-4 px-4 sm:px-0">
-      <Title className="!mb-0">Create a question</Title>
+      <Title className="!mb-0">Ask your question</Title>
 
       <Col className="w-full">
         <label className="px-1 pt-2 pb-3">
@@ -349,6 +358,11 @@ function CreateQAndA() {
           amount={bounty}
           onChange={setBounty}
           disabled={isSubmitting}
+          error={
+            bounty !== undefined && bounty < 10
+              ? 'Minimum bounty is 10'
+              : undefined
+          }
         />
       </Col>
 
