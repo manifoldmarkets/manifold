@@ -8,7 +8,7 @@ import { getProbability } from './calculate'
 
 export const LOOTBOX_COST = 501
 export const LOOTBOX_MAX = 5000
-const LOOTBOX_MEAN = 300
+const LOOTBOX_MEAN = 350
 const LOOTBOX_MIN = 25
 
 export interface LootBoxItem {
