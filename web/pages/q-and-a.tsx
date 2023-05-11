@@ -41,7 +41,7 @@ export default function QuestionAndAnswer() {
   const user = useUser()
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-lg gap-4 pb-8 pt-2 sm:pt-0">
+      <Col className="mx-auto w-full max-w-2xl gap-4 pb-8 pt-2 sm:pt-0">
         <Title className="mx-4 !mb-0 sm:mx-0">Q&A</Title>
         {visibleQuestions.map((q) => (
           <QuestionAnswer
