@@ -73,40 +73,38 @@ const ChatInput = (props: {
         className
       )}
     >
-      {showChat ? (
-        <TextEditor
-          editor={editor}
-          simple
-          hideToolbar
-          className={'relative h-16'}
-        >
-          {user && (
-            <button
-              className=" text-ink-400 hover:text-ink-600 active:bg-ink-300 disabled:text-ink-300 absolute bottom-2 px-4 transition-colors sm:hidden"
-              disabled={!editor || editor.isEmpty}
-              onClick={submitComment}
-            >
-              {!isSubmitting ? (
-                <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
-              ) : (
-                <LoadingIndicator />
-              )}
-            </button>
-          )}
-        </TextEditor>
-      ) : (
-        <button
-          type="button"
-          className={clsx(
-            'focus:ring-primary-500 fixed  left-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
-            'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
-            'bottom-[70px]'
-          )}
-          onClick={() => setShowChat(!showChat)}
-        >
-          <ChatIcon className="h-6 w-6" aria-hidden="true" />
-        </button>
-      )}
+      <TextEditor
+        editor={editor}
+        simple
+        hideToolbar
+        className={clsx('relative h-16', showChat ? '' : 'hidden lg:block')}
+      >
+        {user && (
+          <button
+            className=" text-ink-400 hover:text-ink-600 active:bg-ink-300 disabled:text-ink-300 absolute bottom-2 px-4 transition-colors sm:hidden"
+            disabled={!editor || editor.isEmpty}
+            onClick={submitComment}
+          >
+            {!isSubmitting ? (
+              <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
+            ) : (
+              <LoadingIndicator />
+            )}
+          </button>
+        )}
+      </TextEditor>
+      <button
+        type="button"
+        className={clsx(
+          'focus:ring-primary-500 fixed  left-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
+          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
+          'bottom-[70px]',
+          showChat ? 'hidden' : ''
+        )}
+        onClick={() => setShowChat(!showChat)}
+      >
+        <ChatIcon className="h-6 w-6" aria-hidden="true" />
+      </button>
       {showChat && (
         <button
           className={clsx('absolute -top-1 right-1')}
