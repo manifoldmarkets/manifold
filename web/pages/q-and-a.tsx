@@ -28,6 +28,7 @@ import {
 import { Title } from 'web/components/widgets/title'
 import { useBountyRemaining, useQAndA } from 'web/lib/supabase/q-and-a'
 import { useUser } from 'web/hooks/use-user'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { fromNow } from 'web/lib/util/time'
 
@@ -116,7 +117,7 @@ function QuestionAnswer(props: {
           <div>{fromNow(question.created_time)}</div>
         </Row>
       </Col>
-      <Col className="ml-6 gap-2">
+      <Col className={clsx('ml-6 gap-2', answers.length > 0 && 'mb-2')}>
         {(expanded ? sortedAnwers : sortedAnwers.slice(0, 3)).map((a) => (
           <Answer
             key={a.id}
@@ -183,7 +184,7 @@ function Answer(props: {
         )}
       </Row>
       {expanded && (
-        <div className="text-ink-600 ml-6 mt-0.5 text-xs">
+        <div className="text-ink-600 ml-8 mt-0.5 text-xs">
           {fromNow(answer.created_time)}
         </div>
       )}
@@ -279,16 +280,18 @@ function CreateAnswer(props: { questionId: string }) {
     setText('')
   }
 
+  const isMobile = useIsMobile()
+
   return (
     <Col className="mt-1 w-full pr-1" onClick={(e) => e.stopPropagation()}>
       <Row className="items-end gap-2">
         <ExpandingInput
           className="flex-1 !text-sm"
           placeholder="Submit an answer"
-          autoFocus
           maxLength={MAX_QA_ANSWER_LENGTH}
           value={text}
           onChange={(e) => setText(e.target.value || '')}
+          autoFocus={!isMobile}
         />
         <Button
           className="mb-0.5"
@@ -338,7 +341,6 @@ function CreateQAndA() {
 
         <ExpandingInput
           placeholder="e.g. What book should I read next?"
-          autoFocus
           maxLength={MAX_QUESTION_LENGTH}
           value={question}
           onChange={(e) => setQuestion(e.target.value || '')}
@@ -350,7 +352,6 @@ function CreateQAndA() {
 
         <ExpandingInput
           placeholder="e.g. I enjoy Sci-Fi and Fantasy books, and recently read Dune."
-          autoFocus
           rows={2}
           maxLength={MAX_DESCRIPTION_LENGTH}
           value={description}
