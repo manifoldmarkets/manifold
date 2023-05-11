@@ -30,6 +30,7 @@ import { useBountyRemaining, useQAndA } from 'web/lib/supabase/q-and-a'
 import { useUser } from 'web/hooks/use-user'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { fromNow } from 'web/lib/util/time'
+import { Linkify } from 'web/components/widgets/linkify'
 
 export default function QuestionAndAnswer() {
   const { questions, answers } = useQAndA()
@@ -70,11 +71,11 @@ function QuestionAnswer(props: {
   const noBountyRemaining = question.bounty === sumBy(answers, 'award')
 
   return (
-    <Col
-      className="cursor-pointer gap-2"
-      onClick={() => setExpanded((b) => !b)}
-    >
-      <Col className="bg-canvas-0 px-4 py-3 shadow">
+    <Col className="gap-2">
+      <Col
+        className="bg-canvas-0 cursor-pointer px-4 py-3 shadow"
+        onClick={() => setExpanded((b) => !b)}
+      >
         <Row className="justify-between">
           <Row className="items-center gap-1">
             {noBountyRemaining && <CheckCircleIcon className="h-6 w-6 " />}
@@ -96,7 +97,7 @@ function QuestionAnswer(props: {
             expanded ? 'whitespace-pre-line' : 'line-clamp-1'
           )}
         >
-          {question.description}
+          <Linkify text={question.description} />
         </div>
         <Row className="text-ink-600 mt-1 gap-2 text-sm">
           {user ? (
@@ -118,7 +119,14 @@ function QuestionAnswer(props: {
           <div>{fromNow(question.created_time)}</div>
         </Row>
       </Col>
-      <Col className={clsx('ml-6 gap-2', answers.length > 0 && 'mb-2')}>
+      <Col
+        className={clsx(
+          'ml-6 gap-2',
+          answers.length > 0 && 'mb-2',
+          !expanded && 'cursor-pointer'
+        )}
+        onClick={expanded ? undefined : () => setExpanded(true)}
+      >
         {(expanded ? sortedAnwers : sortedAnwers.slice(0, 3)).map((a) => (
           <Answer
             key={a.id}
@@ -164,7 +172,7 @@ function Answer(props: {
         <div
           className={clsx(expanded ? 'whitespace-pre-line' : 'line-clamp-1')}
         >
-          {answer.text}{' '}
+          <Linkify text={answer.text} />
         </div>
         {isCreator && expanded && (
           <>
