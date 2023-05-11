@@ -51,8 +51,6 @@
     "d3-scale": "4.0.2",
     "d3-selection": "3.0.0",
     "d3-shape": "3.1.0",
-    "d3-timer": "3.0.1",
-    "d3-transition": "3.0.1",
     "dayjs": "1.10.7",
     "firebase": "9.19.1",
     "gridjs": "5.1.0",
@@ -60,7 +58,6 @@
     "lodash": "4.17.21",
     "nanoid": "^3.3.4",
     "next": "13.2.3",
-    "plotly.js": "2.18.2",
     "prosemirror-state": "1.4.2",
     "rc-slider": "10.0.1",
     "react": "18.2.0",
@@ -72,15 +69,13 @@
     "react-icons": "4.8.0",
     "react-lottie": "1.2.3",
     "react-masonry-css": "1.0.16",
-    "react-plotly.js": "2.6.0",
     "react-query": "3.39.0",
     "react-tinder-card": "1.5.4",
     "react-twitter-embed": "4.0.4",
     "stability-client": "1.6.1",
     "string-similarity": "^4.0.4",
     "tippy.js": "6.3.7",
-    "typewriter-effect": "2.19.0",
-    "victory": "36.6.8"
+    "typewriter-effect": "2.19.0"
   },
   "devDependencies": {
     "@tailwindcss/forms": "0.4.0",

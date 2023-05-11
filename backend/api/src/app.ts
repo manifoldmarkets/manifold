@@ -57,6 +57,10 @@ import { creategroupinvite } from './create-group-invite'
 import { joingroupthroughinvite } from './join-group-through-invite'
 import { joingroup } from './join-group'
 import { editcomment } from 'api/edit-comment'
+import { leagueActivity } from './league-activity'
+import { createQAndA } from './create-q-and-a'
+import { createQAndAAnswer } from './create-q-and-a-answer'
+import { awardQAndAAnswer } from './award-q-and-a-answer'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -147,6 +151,10 @@ app.post('/getcontractparams', ...apiRoute(getcontractparams))
 app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
 app.post('/joingroupthroughinvite', ...apiRoute(joingroupthroughinvite))
 app.post('/joingroup', ...apiRoute(joingroup))
+app.post('/league-activity', ...apiRoute(leagueActivity))
+app.post('/create-q-and-a', ...apiRoute(createQAndA))
+app.post('/create-q-and-a-answer', ...apiRoute(createQAndAAnswer))
+app.post('/award-q-and-a-answer', ...apiRoute(awardQAndAAnswer))
 
 // Catch 404 errors - this should be the last route
 app.use((req, res, next) => {

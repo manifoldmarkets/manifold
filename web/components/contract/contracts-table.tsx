@@ -5,7 +5,6 @@ import { getValueFromBucket } from 'common/calculate-dpm'
 import { Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { getStonkPriceMax } from 'common/stonk'
 import { formatPercentShort } from 'common/util/format'
 import { IoUnlink } from 'react-icons/io5'
 import { useContract } from 'web/hooks/use-contracts'
@@ -55,13 +54,9 @@ export function ContractStatusLabel(props: {
     case 'STONK': {
       const val = getDisplayProbability(contract)
       return (
-        <Tooltip
-          text={`of ${ENV_CONFIG.moneyMoniker + getStonkPriceMax(contract)}`}
-        >
-          <span className={probTextColor}>
-            {ENV_CONFIG.moneyMoniker + getFormattedMappedValue(contract, val)}
-          </span>
-        </Tooltip>
+        <span className={probTextColor}>
+          {ENV_CONFIG.moneyMoniker + getFormattedMappedValue(contract, val)}
+        </span>
       )
     }
     case 'PSEUDO_NUMERIC': {
