@@ -88,7 +88,12 @@ function QuestionAnswer(props: {
             </ChevronDownIcon>
           )}
         </Row>
-        <div className={clsx('text-ink-600', !expanded && 'line-clamp-1')}>
+        <div
+          className={clsx(
+            'text-ink-600',
+            expanded ? 'whitespace-pre-line' : 'line-clamp-1'
+          )}
+        >
           {question.description}
         </div>
         <Row className="text-ink-600 mt-1 gap-2 text-sm">
@@ -138,7 +143,7 @@ function Answer(props: {
 
   return (
     <Col>
-      <Row className="mr-1 items-center gap-2">
+      <Row className="mr-1 items-start gap-2">
         {user ? (
           <Avatar
             size="xs"
@@ -154,7 +159,11 @@ function Answer(props: {
             {formatMoney(answer.award)}
           </div>
         )}
-        <div className={clsx(!expanded && 'line-clamp-1')}>{answer.text} </div>
+        <div
+          className={clsx(expanded ? 'whitespace-pre-line' : 'line-clamp-1')}
+        >
+          {answer.text}{' '}
+        </div>
         {isCreator && expanded && (
           <>
             <Button
