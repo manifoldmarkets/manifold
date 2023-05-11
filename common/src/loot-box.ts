@@ -7,12 +7,20 @@ import { noFees } from './fees'
 import { getProbability } from './calculate'
 
 export const LOOTBOX_COST = 501
-
+export const LOOTBOX_MAX = 5000
 const LOOTBOX_MEAN = 300
 const LOOTBOX_MIN = 25
-const LOOTBOX_MAX = 5000
 
-export const createLootBox = (contracts: BinaryContract[]) => {
+export interface LootBoxItem {
+  contract: BinaryContract
+  outcome: 'YES' | 'NO'
+  amount: number
+  shares: number
+}
+
+export type LootBox = LootBoxItem[]
+
+export const createLootBox = (contracts: BinaryContract[]): LootBox => {
   const boxValue = clamp(
     Math.round(customLogNormalSample(LOOTBOX_MEAN, LOOTBOX_MAX)),
     LOOTBOX_MIN,
