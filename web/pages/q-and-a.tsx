@@ -134,6 +134,9 @@ function Answer(props: {
         ) : (
           <EmptyAvatar size={6} />
         )}
+        {answer.award > 0 && (
+          <div className="text-green-600">{formatMoney(answer.award)}</div>
+        )}
         <div className={clsx(!expanded && 'line-clamp-1')}>{answer.text} </div>
         {isCreator && expanded && (
           <>
