@@ -6,10 +6,10 @@ import { Bet } from './bet'
 import { noFees } from './fees'
 import { getProbability } from './calculate'
 
-export const LOOTBOX_COST = 501
-export const LOOTBOX_MAX = 5000
-const LOOTBOX_MEAN = 350
-const LOOTBOX_MIN = 25
+export const LOOTBOX_COST = 100
+export const LOOTBOX_MAX = 1000
+const LOOTBOX_MEAN = 80
+const LOOTBOX_MIN = 5
 
 export interface LootBoxItem {
   contract: BinaryContract
