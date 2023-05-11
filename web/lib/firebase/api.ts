@@ -337,3 +337,22 @@ export function leagueActivity(params: { season: number; cohort: string }) {
     contracts: Contract[]
   }>
 }
+
+export function createQAndA(params: {
+  question: string
+  description: string
+  bounty: number
+}) {
+  return call(getApiUrl('create-q-and-a'), 'POST', params)
+}
+
+export function createQAndAAnswer(params: {
+  questionId: string
+  text: string
+}) {
+  return call(getApiUrl('create-q-and-a-answer'), 'POST', params)
+}
+
+export function awardQAndAAnswer(params: { answerId: string; amount: number }) {
+  return call(getApiUrl('award-q-and-a-answer'), 'POST', params)
+}

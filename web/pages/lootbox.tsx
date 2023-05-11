@@ -15,7 +15,7 @@ import {
   LootBoxItem,
 } from 'common/loot-box'
 import { callApi } from 'web/lib/firebase/api'
-import { forwardRef, useState } from 'react'
+import { forwardRef, useRef, useState } from 'react'
 import { sleep } from 'common/util/time'
 import { contractPath } from 'common/contract'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -23,6 +23,9 @@ import { Row } from 'web/components/layout/row'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import Lottie, { AnimationItem } from 'react-lottie'
+import * as lootbox from '../public/lottie/lootbox.json'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -37,6 +40,8 @@ export default function LootBoxPage() {
   const [disabed, setDisabled] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
+  const [animationPaused, setAnimationPaused] = useState(true)
+  const [openLootModal, setOpenLootModal] = useState(false)
 
   const buyLootBox = async () => {
     setDisabled(true)
@@ -52,22 +57,42 @@ export default function LootBoxPage() {
       return
     }
 
+    setAnimationPaused(false)
     setBox(box)
+    setTimeout(() => {
+      setAnimationPaused(true)
+      setOpenLootModal(true)
+    }, 1200)
 
     await sleep(10000)
     setDisabled(false)
   }
+
+  const animationRef = useRef<AnimationItem | null>(null)
 
   return (
     <Page className="">
       <Col className=" items-center">
         <Col className="bg-canvas-0 h-full max-w-xl rounded p-4 py-8 sm:p-8 sm:shadow-md">
           <Title>Loot box</Title>
-          <img
-            className="mb-6 block -scale-x-100 self-center"
-            src="/logo-flapping-with-money.gif"
-            width={200}
+          <Lottie
+            options={{
+              loop: false,
+              autoplay: false,
+              animationData: lootbox,
+              rendererSettings: {
+                preserveAspectRatio: 'xMidYMid slice',
+              },
+            }}
             height={200}
+            width={200}
+            isStopped={false}
+            isPaused={animationPaused}
+            style={{
+              color: '#6366f1',
+              pointerEvents: 'none',
+              background: 'transparent',
+            }}
           />
 
           <div className={'mb-4'}>
@@ -80,6 +105,7 @@ export default function LootBoxPage() {
             color="gradient-pink"
             onClick={buyLootBox}
             disabled={disabed}
+            loading={loading}
           >
             Buy loot box for {formatMoney(LOOTBOX_COST)}
           </Button>
@@ -90,25 +116,63 @@ export default function LootBoxPage() {
             </div>
           )}
 
-          {loading && <LoadingIndicator className="mt-4" size="lg" />}
-
-          {box && (
-            <>
-              <div className={'my-8 text-xl text-indigo-700'}>Your loot</div>
-              <Col className="bg-canvas-0 divide-ink-400 border-ink-400 w-full divide-y-[0.5px] rounded-sm border-[0.5px]">
-                <Row className="group flex flex-col justify-end gap-1 whitespace-nowrap px-4 py-3 lg:flex-row lg:gap-2">
-                  <div className="min-w-[2rem] text-right">Shares</div>
-                  <div className={clsx('min-w-[2rem] text-right')}>Value</div>
-                </Row>
-                {box.map((loot) => (
-                  <LootRow key={loot.contract.id} loot={loot} />
-                ))}
-              </Col>
-            </>
-          )}
+          <LootModal
+            open={openLootModal}
+            setOpen={setOpenLootModal}
+            box={box}
+          />
         </Col>
       </Col>
     </Page>
+  )
+}
+
+function LootModal(props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+  box?: LootBox
+}) {
+  const { open, setOpen, box } = props
+  const totalValue = box?.reduce((acc, loot) => acc + loot.amount, 0)
+  return (
+    <Modal open={open} setOpen={setOpen}>
+      <Col className={MODAL_CLASS}>
+        {box && (
+          <>
+            <Title>Your loot</Title>
+            <Col className="w-full items-center justify-center text-2xl text-teal-700">
+              {formatMoney(totalValue ?? 0)}
+              <div className="text-ink-1000 text-sm"> total value</div>
+            </Col>
+            <table className="mt-4 w-full overflow-y-auto">
+              <thead
+                className={clsx(
+                  'text-ink-600 bg-canvas-50 sticky top-0 z-20 text-left text-sm font-semibold'
+                )}
+              >
+                <tr>
+                  <th className="px-4" key={'market'}>
+                    Market
+                  </th>
+                  <th className="pr-4" key={'market'}>
+                    Shares
+                  </th>
+                  <th className="px-4" key={'market'}>
+                    Value
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {box.map((loot) => (
+                  <LootRow key={loot.contract.id} loot={loot} />
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+        {!box && <>Something went wrong! We couldn't find your loot :(</>}
+      </Col>
+    </Modal>
   )
 }
 
@@ -126,48 +190,42 @@ const LootRow = forwardRef(
     const { creatorUsername, creatorAvatarUrl, question } = contract
 
     return (
-      <Link
-        ref={ref}
-        href={contractPath(contract)}
-        className={clsx(
-          'group flex flex-col gap-1 whitespace-nowrap px-4 py-3 lg:flex-row lg:gap-2',
-          'focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors',
-          className
-        )}
-      >
-        <Avatar
-          className="hidden lg:mr-1 lg:flex"
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          size="xs"
-        />
-        <div
-          className={clsx(
-            'break-anywhere mr-0.5 whitespace-normal font-medium lg:mr-auto'
-          )}
-        >
-          {question}
-        </div>
-        <Row className="gap-3">
-          <Avatar
-            className="lg:hidden"
-            username={creatorUsername}
-            avatarUrl={creatorAvatarUrl}
-            size="xs"
-          />
-          <div className="min-w-[2rem] text-right">
-            {Math.floor(shares)}{' '}
-            <OutcomeLabel
-              contract={contract}
-              outcome={outcome}
-              truncate={'short'}
-            />{' '}
-          </div>
-          <div className={clsx('min-w-[2rem] text-right')}>
-            {formatMoney(amount)}
-          </div>
-        </Row>
-      </Link>
+      <tr className=" hover:bg-indigo-400/20">
+        <Link ref={ref} href={contractPath(contract)} className="contents">
+          <td className="rounded-l px-4 py-2">
+            <Row>
+              <Avatar
+                className="hidden lg:mr-1 lg:flex"
+                username={creatorUsername}
+                avatarUrl={creatorAvatarUrl}
+                size="xs"
+              />
+              <div
+                className={clsx(
+                  'break-anywhere mr-0.5 whitespace-normal font-medium lg:mr-auto'
+                )}
+              >
+                {question}
+              </div>
+            </Row>
+          </td>
+          <td className="pr-4">
+            <div className="min-w-[4rem]">
+              {Math.floor(shares)}{' '}
+              <OutcomeLabel
+                contract={contract}
+                outcome={outcome}
+                truncate={'short'}
+              />{' '}
+            </div>
+          </td>
+          <td className="rounded-r pr-4">
+            <div className={clsx('min-w-[2rem] text-right')}>
+              {formatMoney(amount)}
+            </div>
+          </td>
+        </Link>
+      </tr>
     )
   }
 )

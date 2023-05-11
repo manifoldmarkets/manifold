@@ -19,8 +19,12 @@ export function CalibrationChart(props: {
   const innerW = width - (margin.left + margin.right)
   const innerH = height - (margin.top + margin.bottom)
 
-  const xScale = scaleLinear().domain([0, 1]).range([0, innerW])
-  const yScale = scaleLinear().domain([0, 1]).range([innerH, 0])
+  const xScale = scaleLinear()
+    .domain([0, 1])
+    .range([5, innerW - 5])
+  const yScale = scaleLinear()
+    .domain([0, 1])
+    .range([innerH - 5, 5])
 
   const tickVals = points.map((p) => p / 100)
 
@@ -51,12 +55,28 @@ export function CalibrationChart(props: {
         curve={curveLinear}
         stroke="red"
       />
-      {/* dots */}
+      {/* points */}
       {yesPoints.map((p, i) => (
-        <circle key={i} cx={px(p)} cy={py(p)} r={4} fill="green" />
+        // triangle pointing up
+        <polygon
+          key={i}
+          points={`
+           ${px(p)},${py(p) - 6}
+            ${px(p) - 3 * V3},${py(p) + 3}
+            ${px(p) + 3 * V3},${py(p) + 3}`}
+          fill="green"
+        />
       ))}
       {noPoints.map((p, i) => (
-        <circle key={i} cx={px(p)} cy={py(p)} r={4} fill="red" />
+        // triangle pointing down
+        <polygon
+          key={i}
+          points={`
+            ${px(p)},${py(p) + 6}
+            ${px(p) - 3 * V3},${py(p) - 3}
+            ${px(p) + 3 * V3},${py(p) - 3}`}
+          fill="red"
+        />
       ))}
 
       {/* line x = y */}
@@ -73,4 +93,5 @@ export function CalibrationChart(props: {
   )
 }
 
-function CalibrationTooltip({}) {}
+// √3
+const V3 = Math.sqrt(3)
