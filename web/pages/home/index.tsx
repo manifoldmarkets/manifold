@@ -202,7 +202,7 @@ const MainContent = () => {
     track('select live', { on })
   }
   const [showChat, setShowChat] = usePersistentLocalState(
-    false,
+    true,
     'show-live-chat-input'
   )
   return (

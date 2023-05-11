@@ -19,7 +19,7 @@ export default function LivePage() {
     'live-pill'
   )
   const [showChat, setShowChat] = usePersistentLocalState(
-    false,
+    true,
     'show-live-chat-input'
   )
   return (
