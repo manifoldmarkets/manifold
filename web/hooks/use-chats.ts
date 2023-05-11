@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { ChatMessage } from 'common/chat-message'
 import { run } from 'common/supabase/utils'
-import { MINUTE_MS } from 'common/util/time'
+import { HOUR_MS } from 'common/util/time'
 
 export function useRealtimeChats(limit: number) {
   const [chats, setChats] = useState<ChatMessage[]>([])
@@ -19,7 +19,7 @@ export function useRealtimeChats(limit: number) {
       userUsername: c.user_username,
     } as ChatMessage)
   useEffect(() => {
-    const after = new Date(Date.now() - 60 * MINUTE_MS).toISOString()
+    const after = new Date(Date.now() - 3 * HOUR_MS).toISOString()
     run(
       db
         .from('chat_messages')
