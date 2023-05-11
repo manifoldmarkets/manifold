@@ -26,6 +26,7 @@ import { OutcomeLabel } from 'web/components/outcome-label'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { track } from 'web/lib/service/analytics'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -64,6 +65,7 @@ export default function LootBoxPage() {
       setAnimationPaused(true)
       setOpenLootModal(true)
     }, 1200)
+    track('buy loot box')
 
     await sleep(5000)
     setDisabled(false)
