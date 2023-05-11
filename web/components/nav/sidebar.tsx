@@ -11,6 +11,7 @@ import {
   StarIcon,
   UserGroupIcon,
   FireIcon,
+  ChatAlt2Icon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -136,6 +137,11 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         name: 'Groups',
         icon: UserGroupIcon,
         href: '/groups',
+      },
+      {
+        name: 'Q&A',
+        icon: ChatAlt2Icon,
+        href: '/q-and-a',
       }
     )
 
@@ -156,6 +162,11 @@ const getMobileNav = (toggleModal: () => void) => {
       name: 'Groups',
       icon: UserGroupIcon,
       href: '/groups',
+    },
+    {
+      name: 'Q&A',
+      icon: ChatAlt2Icon,
+      href: '/q-and-a',
     },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
