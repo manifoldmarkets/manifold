@@ -8,8 +8,7 @@ import { getProbability } from './calculate'
 
 export const LOOTBOX_COST = 100
 export const LOOTBOX_MAX = 1000
-const LOOTBOX_MEAN = 80
-const LOOTBOX_MIN = 5
+const LOOTBOX_MIN = 50
 
 export interface LootBoxItem {
   contract: BinaryContract
@@ -21,16 +20,11 @@ export interface LootBoxItem {
 export type LootBox = LootBoxItem[]
 
 export const createLootBox = (contracts: BinaryContract[]): LootBox => {
-  const boxValue = clamp(
-    Math.round(customLogNormalSample(LOOTBOX_MEAN, LOOTBOX_MAX)),
-    LOOTBOX_MIN,
-    LOOTBOX_MAX
-  )
+  const boxValue = getBoxValue()
 
-  const n = boxValue < 50 ? 1 : Math.ceil(Math.random() * 4)
-
+  const n = Math.ceil(Math.random() * 4)
   const selectedContracts = shuffle(contracts).slice(0, n)
-  const weights = generateWeights(n)
+  const weights = generateWeights(selectedContracts.length)
 
   const box = selectedContracts.map((contract, i) => {
     const outcome: 'YES' | 'NO' = Math.random() > 0.5 ? 'YES' : 'NO'
@@ -42,6 +36,40 @@ export const createLootBox = (contracts: BinaryContract[]): LootBox => {
   })
 
   return box
+}
+
+const getBoxValue = () => {
+  return Math.random() > 0.5 ? winDistribution() : loseDistribution()
+}
+
+const winDistribution = () =>
+  clamp(
+    Math.round(
+      LOOTBOX_COST + customLogNormalSample(20, LOOTBOX_MAX - LOOTBOX_COST)
+    ),
+    LOOTBOX_COST,
+    LOOTBOX_MAX
+  )
+
+const loseDistribution = () =>
+  clamp(
+    Math.round(normalSample(LOOTBOX_MIN + 5, 10)),
+    LOOTBOX_MIN,
+    0.7 * LOOTBOX_COST
+  )
+
+
+export const lootBoxExpectation = () => {
+  let e = 0
+  for (let i = 0; i < 1e6; i++) e += getBoxValue()
+  return e / 1e6
+}
+
+function normalSample(mean = 0, stdev = 1) {
+  const u = 1 - Math.random() // Converting [0,1) to (0,1]
+  const v = Math.random()
+  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v)
+  return z * stdev + mean
 }
 
 function logNormalSample(mu: number, sigma: number) {

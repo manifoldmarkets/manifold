@@ -27,11 +27,15 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { track } from 'web/lib/service/analytics'
+import { useUser } from 'web/hooks/use-user'
+import { SEO } from 'web/components/SEO'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
 export default function LootBoxPage() {
   useTracking('view loot box')
+  const user = useUser()
+  const cantAfford = (user?.balance ?? 0) < LOOTBOX_COST
 
   const [box, setBox] = usePersistentInMemoryState<LootBox | undefined>(
     undefined,
@@ -50,7 +54,10 @@ export default function LootBoxPage() {
     setError(false)
     setLoading(true)
 
-    const { box } = await callApi('lootbox')
+    const { box } = await callApi('lootbox').catch((e) => {
+      console.error('Loot error', e)
+      return { box: undefined }
+    })
     setLoading(false)
 
     if (!box) {
@@ -73,7 +80,12 @@ export default function LootBoxPage() {
   }
 
   return (
-    <Page className="">
+    <Page>
+      <SEO
+        title="Loot box"
+        description={`Feeling lucky? A loot box gives you random shares in markets worth
+            up to ${formatMoney(LOOTBOX_MAX)}!`}
+      />
       <Col className=" items-center">
         <Col className="bg-canvas-0 h-full max-w-xl rounded p-4 py-8 sm:p-8 sm:shadow-md">
           <Title>Loot box</Title>
@@ -107,7 +119,7 @@ export default function LootBoxPage() {
             size="2xl"
             color="gradient-pink"
             onClick={buyLootBox}
-            disabled={disabed}
+            disabled={disabed || cantAfford}
             loading={loading}
           >
             Buy loot box for {formatMoney(LOOTBOX_COST)}

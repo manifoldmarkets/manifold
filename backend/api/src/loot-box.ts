@@ -6,15 +6,16 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { User } from 'common/user'
 import { APIError, authEndpoint } from './helpers'
 import { LootBoxPuchaseTxn } from 'common/txn'
-import { BinaryContract } from 'common/contract'
+import { BinaryContract, CPMMContract } from 'common/contract'
 import { getProbability } from 'common/calculate'
 import { LOOTBOX_COST, createLootBox, createLootBet } from 'common/loot-box'
+import { redeemShares } from './redeem-shares'
 
 export const lootbox = authEndpoint(async (req, auth) => {
   const firestore = admin.firestore()
   const db = createSupabaseClient()
 
-  return await firestore.runTransaction(async (transaction) => {
+  const box = await firestore.runTransaction(async (transaction) => {
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const userSnap = await transaction.get(userDoc)
     if (!userSnap.exists) throw new APIError(400, 'User not found')
@@ -69,8 +70,20 @@ export const lootbox = authEndpoint(async (req, auth) => {
     }
     transaction.create(newTxnDoc, txn)
 
-    return { success: true, box }
+    transaction.create(firestore.collection('loot-boxes').doc(), {
+      createdTime: Date.now(),
+      box,
+      betPaths,
+    })
+
+    return box
   })
+
+  await Promise.all(
+    box.map((b) => redeemShares(auth.uid, b.contract as CPMMContract))
+  )
+
+  return { success: true, box }
 })
 
 const loadUserContracts = async (db: SupabaseClient, userId: string, n = 100) =>
