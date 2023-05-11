@@ -1,3 +1,6 @@
+import { forwardRef, useRef, useState } from 'react'
+import Lottie from 'react-lottie'
+import * as lootbox from '../public/lottie/lootbox.json'
 import Link from 'next/link'
 import clsx from 'clsx'
 
@@ -15,16 +18,12 @@ import {
   LootBoxItem,
 } from 'common/loot-box'
 import { callApi } from 'web/lib/firebase/api'
-import { forwardRef, useRef, useState } from 'react'
 import { sleep } from 'common/util/time'
 import { contractPath } from 'common/contract'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import Lottie, { AnimationItem } from 'react-lottie'
-import * as lootbox from '../public/lottie/lootbox.json'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
@@ -42,6 +41,7 @@ export default function LootBoxPage() {
   const [error, setError] = useState(false)
   const [animationPaused, setAnimationPaused] = useState(true)
   const [openLootModal, setOpenLootModal] = useState(false)
+  const animationRef = useRef<any>(null)
 
   const buyLootBox = async () => {
     setDisabled(true)
@@ -64,11 +64,10 @@ export default function LootBoxPage() {
       setOpenLootModal(true)
     }, 1200)
 
-    await sleep(10000)
+    await sleep(5000)
     setDisabled(false)
+    animationRef?.current?.anim.goToAndStop(0, true)
   }
-
-  const animationRef = useRef<AnimationItem | null>(null)
 
   return (
     <Page className="">
@@ -76,6 +75,7 @@ export default function LootBoxPage() {
         <Col className="bg-canvas-0 h-full max-w-xl rounded p-4 py-8 sm:p-8 sm:shadow-md">
           <Title>Loot box</Title>
           <Lottie
+            ref={animationRef}
             options={{
               loop: false,
               autoplay: false,
