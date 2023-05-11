@@ -31,6 +31,7 @@ import { useUser } from 'web/hooks/use-user'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { fromNow } from 'web/lib/util/time'
 import { Linkify } from 'web/components/widgets/linkify'
+import { UserLink } from 'web/components/widgets/user-link'
 
 export default function QuestionAndAnswer() {
   const { questions, answers } = useQAndA()
@@ -99,14 +100,21 @@ function QuestionAnswer(props: {
         >
           <Linkify text={question.description} />
         </div>
-        <Row className="text-ink-600 mt-1 gap-2 text-sm">
+        <Row className="text-ink-600 mt-1 items-center gap-2 text-sm">
           {user ? (
-            <Avatar
-              size="xs"
-              avatarUrl={user.avatarUrl}
-              username={user.username}
-              noLink={!expanded}
-            />
+            <Row className="gap-2">
+              <Avatar
+                size="xs"
+                avatarUrl={user.avatarUrl}
+                username={user.username}
+                noLink={!expanded}
+              />
+              <UserLink
+                name={user.name}
+                username={user.username}
+                noLink={!expanded}
+              />
+            </Row>
           ) : (
             <EmptyAvatar size={6} />
           )}
