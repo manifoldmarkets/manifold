@@ -4,6 +4,7 @@ export type q_and_a = {
   question: string
   description: string
   bounty: number
+  deleted: boolean
   created_time: number
 }
 
@@ -13,6 +14,7 @@ export type q_and_a_answer = {
   user_id: string
   text: string
   award: number
+  deleted: boolean
   created_time: number
 }
 

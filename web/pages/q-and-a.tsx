@@ -28,19 +28,20 @@ import {
 import { Title } from 'web/components/widgets/title'
 import { useBountyRemaining, useQAndA } from 'web/lib/supabase/q-and-a'
 import { useUser } from 'web/hooks/use-user'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { fromNow } from 'web/lib/util/time'
 
 export default function QuestionAndAnswer() {
   const { questions, answers } = useQAndA()
-  const answersByQuestion = groupBy(answers, 'q_and_a_id')
+  const visibleQuestions = questions.filter((q) => !q.deleted)
+  const visibleAnswers = answers.filter((a) => !a.deleted)
+  const answersByQuestion = groupBy(visibleAnswers, 'q_and_a_id')
   const user = useUser()
   return (
     <Page>
       <Col className="mx-auto w-full max-w-lg gap-4 pb-8 pt-2 sm:pt-0">
         <Title className="mx-4 !mb-0 sm:mx-0">Q&A</Title>
-        {questions.map((q) => (
+        {visibleQuestions.map((q) => (
           <QuestionAnswer
             key={q.id}
             question={q}
@@ -280,8 +281,6 @@ function CreateAnswer(props: { questionId: string }) {
     setText('')
   }
 
-  const isMobile = useIsMobile()
-
   return (
     <Col className="mt-1 w-full pr-1" onClick={(e) => e.stopPropagation()}>
       <Row className="items-end gap-2">
@@ -291,7 +290,6 @@ function CreateAnswer(props: { questionId: string }) {
           maxLength={MAX_QA_ANSWER_LENGTH}
           value={text}
           onChange={(e) => setText(e.target.value || '')}
-          autoFocus={!isMobile}
         />
         <Button
           className="mb-0.5"

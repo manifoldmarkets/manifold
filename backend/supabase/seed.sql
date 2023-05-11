@@ -975,6 +975,7 @@ create table if not exists
   question text not null,
   description text not null,
   bounty numeric not null,
+  deleted boolean not null default false,
   created_time timestamptz not null default now()
 );
 
@@ -993,6 +994,7 @@ create table if not exists
   user_id text not null,
   text text not null,
   award numeric not null default 0.0,
+  deleted boolean not null default false,
   created_time timestamptz not null default now()
 );
 
