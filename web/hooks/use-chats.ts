@@ -19,16 +19,16 @@ export function useRealtimeChats(limit: number) {
       userUsername: c.user_username,
     } as ChatMessage)
   useEffect(() => {
-    const after = new Date(Date.now() - 100 * MINUTE_MS).toISOString()
+    const after = new Date(Date.now() - 60 * MINUTE_MS).toISOString()
     run(
       db
         .from('chat_messages')
         .select('*')
         .gte('created_time', after)
+        .order('created_time', { ascending: false })
         .limit(limit)
     )
       .then((result) => {
-        console.log('new chat', result)
         setChats(result.data.map((c) => convertSQLChatToChatMessage(c)))
       })
       .catch((e) => console.log(e))

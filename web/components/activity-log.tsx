@@ -75,7 +75,7 @@ export function ActivityLog(props: {
     privateUser?.blockedContractIds
   )
   const blockedUserIds = privateUser?.blockedUserIds ?? []
-  const chatMessages = useRealtimeChats(count * 3)
+  const chatMessages = useRealtimeChats(count)
 
   const rawBets = useRealtimeBets({
     limit: count * 3 + 20,
