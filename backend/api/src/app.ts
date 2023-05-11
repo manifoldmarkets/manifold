@@ -58,6 +58,7 @@ import { joingroupthroughinvite } from './join-group-through-invite'
 import { joingroup } from './join-group'
 import { editcomment } from 'api/edit-comment'
 import { leagueActivity } from './league-activity'
+import { lootbox } from './loot-box'
 import { createQAndA } from './create-q-and-a'
 import { createQAndAAnswer } from './create-q-and-a-answer'
 import { awardQAndAAnswer } from './award-q-and-a-answer'
@@ -99,6 +100,7 @@ app.get('/health', ...apiRoute(health))
 app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 
+app.post('/lootbox', ...apiRoute(lootbox))
 app.post('/auctionbid', ...apiRoute(auctionbid))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))

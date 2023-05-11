@@ -6,6 +6,7 @@ import { QuestType } from 'common/quest'
 type AnyTxnType =
   | Donation
   | Tip
+  | LootBoxPurchase
   | Manalink
   | Referral
   | UniqueBettorBonus
@@ -58,6 +59,13 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
 type CertId = {
   // TODO: should certIds be in data?
   certId: string
+}
+
+type LootBoxPurchase = {
+  category: 'LOOTBOX_PURCHASE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
 }
 
 type CertMint = {
@@ -303,5 +311,6 @@ export type MarketAdCreateTxn = Txn & MarketAdCreate
 export type MarketAdRedeemTxn = Txn & MarketAdRedeem
 export type MarketAdRedeemFeeTxn = Txn & MarketAdRedeemFee
 export type QuestRewardTxn = Txn & QuestReward
+export type LootBoxPuchaseTxn = Txn & LootBoxPurchase
 export type QAndACreateTxn = Txn & QAndACreate
 export type QAndAAwardTxn = Txn & QAndAAward
