@@ -12,6 +12,7 @@ export type q_and_a_answer = {
   q_and_a_id: string
   user_id: string
   text: string
+  award: number
   created_time: Date
 }
 

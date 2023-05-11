@@ -29,7 +29,7 @@ type AnyTxnType =
   | MarketAdRedeemFee
   | QuestReward
   | QAndACreate
-  | QAndAReward
+  | QAndAAward
 
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
@@ -267,8 +267,8 @@ type QAndACreate = {
   }
 }
 
-type QAndAReward = {
-  category: 'Q_AND_A_REWARD'
+type QAndAAward = {
+  category: 'Q_AND_A_AWARD'
   fromType: 'BANK'
   toType: 'USER'
   data: {
@@ -304,4 +304,4 @@ export type MarketAdRedeemTxn = Txn & MarketAdRedeem
 export type MarketAdRedeemFeeTxn = Txn & MarketAdRedeemFee
 export type QuestRewardTxn = Txn & QuestReward
 export type QAndACreateTxn = Txn & QAndACreate
-export type QAndARewardTxn = Txn & QAndAReward
+export type QAndAAwardTxn = Txn & QAndAAward

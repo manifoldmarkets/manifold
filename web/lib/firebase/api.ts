@@ -352,3 +352,7 @@ export function createQAndAAnswer(params: {
 }) {
   return call(getApiUrl('create-q-and-a-answer'), 'POST', params)
 }
+
+export function awardQAndAAnswer(params: { answerId: string; amount: number }) {
+  return call(getApiUrl('award-q-and-a-answer'), 'POST', params)
+}

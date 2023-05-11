@@ -971,6 +971,7 @@ create table if not exists
   q_and_a_id text not null,
   user_id text not null,
   text text not null,
+  award numeric not null default 0.0,
   created_time timestamptz not null default now()
 );
 

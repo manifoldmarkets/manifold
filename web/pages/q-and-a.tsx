@@ -16,19 +16,31 @@ import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useUserById } from 'web/hooks/use-user-supabase'
-import { createQAndA, createQAndAAnswer } from 'web/lib/firebase/api'
+import {
+  awardQAndAAnswer,
+  createQAndA,
+  createQAndAAnswer,
+} from 'web/lib/firebase/api'
 import { Title } from 'web/components/widgets/title'
-import { useQAndA } from 'web/lib/supabase/q-and-a'
+import { useBountyRemaining, useQAndA } from 'web/lib/supabase/q-and-a'
+import { useUser } from 'web/hooks/use-user'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 
 export default function QuestionAndAnswer() {
   const { questions, answers } = useQAndA()
   const answersByQuestion = groupBy(answers, 'q_and_a_id')
+  const user = useUser()
   return (
     <Page>
       <Col className="mx-auto w-full max-w-lg gap-4 pb-8 pt-2 sm:pt-0">
         <Title className="mx-4 !mb-0 sm:mx-0">Q&A</Title>
         {questions.map((q) => (
-          <QuestionAnswer key={q.id} q={q} as={answersByQuestion[q.id] ?? []} />
+          <QuestionAnswer
+            key={q.id}
+            question={q}
+            answers={answersByQuestion[q.id] ?? []}
+            isCreator={user?.id === q.user_id}
+          />
         ))}
         <div className="my-6 w-full border-t" />
         <CreateQAndA />
@@ -37,9 +49,13 @@ export default function QuestionAndAnswer() {
   )
 }
 
-function QuestionAnswer(props: { q: q_and_a; as: q_and_a_answer[] }) {
-  const { q, as } = props
-  const user = useUserById(q.user_id)
+function QuestionAnswer(props: {
+  question: q_and_a
+  answers: q_and_a_answer[]
+  isCreator: boolean
+}) {
+  const { question, answers, isCreator } = props
+  const user = useUserById(question.user_id)
 
   const [expanded, setExpanded] = useState(false)
 
@@ -50,7 +66,7 @@ function QuestionAnswer(props: { q: q_and_a; as: q_and_a_answer[] }) {
     >
       <Col className="bg-canvas-0 px-3 py-2 shadow">
         <Row className="justify-between">
-          <div>{q.question}</div>
+          <div>{question.question}</div>
           {expanded ? (
             <ChevronUpIcon className="text-ink-500 h-5 w-5 text-xs">
               Hide
@@ -62,7 +78,7 @@ function QuestionAnswer(props: { q: q_and_a; as: q_and_a_answer[] }) {
           )}
         </Row>
         <div className={clsx('text-ink-700', !expanded && 'line-clamp-1')}>
-          {q.description}
+          {question.description}
         </div>
         <Row className="mt-1 gap-2">
           {user ? (
@@ -75,22 +91,33 @@ function QuestionAnswer(props: { q: q_and_a; as: q_and_a_answer[] }) {
           ) : (
             <EmptyAvatar size={6} />
           )}
-          <div>{formatMoney(q.bounty)} bounty</div>
+          <div>{formatMoney(question.bounty)} bounty</div>
         </Row>
       </Col>
       <Col className="ml-6">
-        {(expanded ? as : as.slice(0, 3)).map((a) => (
-          <Answer key={a.id} answer={a} expanded={expanded} />
+        {(expanded ? answers : answers.slice(0, 3)).map((a) => (
+          <Answer
+            key={a.id}
+            answer={a}
+            expanded={expanded}
+            isCreator={isCreator}
+          />
         ))}
-        {expanded && <CreateAnswer questionId={q.id} />}
+        {expanded && <CreateAnswer questionId={question.id} />}
       </Col>
     </Col>
   )
 }
 
-function Answer(props: { answer: q_and_a_answer; expanded: boolean }) {
-  const { answer, expanded } = props
+function Answer(props: {
+  answer: q_and_a_answer
+  isCreator: boolean
+  expanded: boolean
+}) {
+  const { answer, isCreator, expanded } = props
   const user = useUserById(answer.user_id)
+
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
     <Row className="gap-2">
@@ -105,7 +132,93 @@ function Answer(props: { answer: q_and_a_answer; expanded: boolean }) {
         <EmptyAvatar size={6} />
       )}
       <div className={clsx(!expanded && 'line-clamp-1')}>{answer.text} </div>
+      {isCreator && expanded && (
+        <>
+          <Button
+            size="2xs"
+            className="mb-0.5 ml-auto"
+            onClick={(e) => {
+              e.stopPropagation()
+              setDialogOpen(true)
+            }}
+          >
+            Award
+          </Button>
+          {dialogOpen && (
+            <AwardAnswerDialog answer={answer} setOpen={setDialogOpen} />
+          )}
+        </>
+      )}
     </Row>
+  )
+}
+
+function AwardAnswerDialog(props: {
+  answer: q_and_a_answer
+  setOpen: (b: boolean) => void
+}) {
+  const { answer, setOpen } = props
+  const [amount, setAmount] = useState<number | undefined>(10)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const bountyRemaining = useBountyRemaining(answer.q_and_a_id)
+  const isValid =
+    amount !== undefined &&
+    amount > 0 &&
+    bountyRemaining !== undefined &&
+    amount <= bountyRemaining
+
+  const submit = async () => {
+    if (isValid) {
+      setIsSubmitting(true)
+      await awardQAndAAnswer({ answerId: answer.id, amount })
+      setIsSubmitting(false)
+      setOpen(false)
+    }
+  }
+
+  return (
+    <Modal className={clsx(MODAL_CLASS, '')} open={true} setOpen={setOpen}>
+      <Col className="gap-4">
+        <Title className="!mb-0">Award answer</Title>
+
+        <div>{answer.text}</div>
+
+        <div className="text-ink-700">
+          Awarding an answer will transfer a portion of the bounty to the user
+          who created the answer.
+        </div>
+
+        <Col>
+          <div>Remaining bounty</div>
+          <div>{formatMoney(bountyRemaining ?? 0)}</div>
+        </Col>
+
+        <div>Award amount</div>
+
+        <AmountInput
+          className="w-full"
+          amount={amount}
+          onChange={setAmount}
+          error={
+            isValid || bountyRemaining === undefined
+              ? undefined
+              : 'Invalid amount'
+          }
+          label={ENV_CONFIG.moneyMoniker}
+        />
+        <Row className="mt-4">
+          <Button
+            className="flex-1"
+            disabled={!isValid}
+            onClick={submit}
+            loading={isSubmitting}
+          >
+            Award
+          </Button>
+        </Row>
+      </Col>
+    </Modal>
   )
 }
 
