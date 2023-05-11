@@ -205,6 +205,11 @@ export default function LabsPage() {
           className="-ml-4 flex w-auto"
           columnClassName="pl-4 bg-clip-padding"
         >
+          <LabCard
+            title="❓ Q&A"
+            description="Ask and answer questions to win mana"
+            href="/q-and-a"
+          />
           {user && (
             <LabCard
               title="🎁 Loot box"
