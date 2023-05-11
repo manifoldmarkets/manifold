@@ -974,3 +974,44 @@ SELECT string_agg(word, ' & ')
 FROM numbered_words
 WHERE rn < total
 $$ language sql immutable;
+
+
+create or replace function get_engaged_users() returns table (user_id text, username text, name text)
+    as $$
+  WITH recent_bettors AS (
+      SELECT user_id, date_trunc('week', created_time) AS week
+      FROM contract_bets
+      WHERE created_time > NOW() - INTERVAL '3 weeks'
+  ),
+   recent_commentors AS (
+       SELECT user_id, date_trunc('week', created_time) AS week
+       FROM contract_comments
+       WHERE created_time > NOW() - INTERVAL '3 weeks'
+   ),
+   recent_contractors AS (
+       SELECT creator_id AS user_id, date_trunc('week', created_time) AS week
+       FROM contracts
+       WHERE created_time > NOW() - INTERVAL '3 weeks'
+   ),
+   weekly_activity_counts AS (
+       SELECT user_id, week, COUNT(*) AS activity_count
+       FROM (
+                SELECT * FROM recent_bettors
+                UNION ALL
+                SELECT * FROM recent_commentors
+                UNION ALL
+                SELECT * FROM recent_contractors
+            ) all_activities
+       GROUP BY user_id, week
+   )
+
+  SELECT u.id, u.data->>'username' AS username, u.data->>'name' AS name
+  FROM users u
+  WHERE u.id IN (
+      SELECT user_id
+      FROM weekly_activity_counts
+      GROUP BY user_id
+      -- Must have at least 2 actions for at least 3 of the past 3 + current weeks
+      HAVING COUNT(*) >= 3 AND MIN(activity_count) >= 2
+  )
+$$ language sql stable;
