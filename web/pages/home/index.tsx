@@ -219,12 +219,13 @@ const MainContent = () => {
         </Row>
       </Row>
       <YourFeedSection topic={topic} className={clsx(isLive ? 'hidden' : '')} />
-      <LiveSection
-        showChat={showChat}
-        setShowChat={setShowChat}
-        className={clsx(isLive ? '' : 'hidden')}
-        pill={pill}
-      />
+      {isLive && (
+        <LiveSection
+          showChat={showChat}
+          setShowChat={setShowChat}
+          pill={pill}
+        />
+      )}
       <button
         type="button"
         className={clsx(
