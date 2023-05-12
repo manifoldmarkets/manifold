@@ -15,6 +15,7 @@ import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { CalibrationChart } from 'web/components/charts/calibration'
 import { SizedContainer } from 'web/components/sized-container'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export const getStaticProps = async (props: {
   params: {
@@ -61,6 +62,7 @@ export default function CalibrationPage(props: {
   score: number
 }) {
   const { user, yesPoints, noPoints, score } = props
+  const isMobile = useIsMobile()
 
   return (
     <Page>
@@ -78,21 +80,19 @@ export default function CalibrationPage(props: {
             </div>
           )}
 
-          <div className="bg-canvas-0 relative rounded-md p-4 pr-12">
+          <div className="bg-canvas-0 relative rounded-md p-4 pr-12 max-w-[800px]">
             <div className="absolute top-0 bottom-0 right-4 flex items-center">
               <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
-                Resolution Probability
+                Resolution probability
               </span>
             </div>
-            <SizedContainer fullHeight={400} mobileHeight={200}>
-              {(w) => (
-                <CalibrationChart
-                  yesPoints={yesPoints}
-                  noPoints={noPoints}
-                  width={w}
-                />
-              )}
-            </SizedContainer>
+
+            <CalibrationChart
+              yesPoints={yesPoints}
+              noPoints={noPoints}
+              width={isMobile ? 290 : 700}
+              height={isMobile ? 200 : 400}
+            />
             <div className="text-ink-800 text-center text-sm">
               Probability after bet
             </div>
