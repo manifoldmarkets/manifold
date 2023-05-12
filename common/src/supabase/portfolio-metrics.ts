@@ -38,6 +38,7 @@ export async function getCurrentPortfolio(userId: string, db: SupabaseClient) {
     .limit(1)
   const { data } = await run(query)
   const [d] = data
+  if (!d) return null
   return {
     // mqp: hack for temporary unwise choice of postgres timestamp without time zone type
     // -- we have to make it look like an ISO9601 date or the JS date constructor will

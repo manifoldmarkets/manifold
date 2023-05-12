@@ -40,7 +40,7 @@ export const usePortfolioHistory = (userId: string, period: Period) => {
 
 export const useCurrentPortfolio = (userId: string | null | undefined) => {
   const [portfolio, setPortfolio] = usePersistentInMemoryState<
-    PortfolioSnapshot | undefined
+    PortfolioSnapshot | null | undefined
   >(undefined, `current-portfolio-${userId}`)
 
   useEffect(() => {
