@@ -14,7 +14,6 @@ import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { CalibrationChart } from 'web/components/charts/calibration'
-import { SizedContainer } from 'web/components/sized-container'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export const getStaticProps = async (props: {
