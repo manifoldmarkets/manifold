@@ -44,10 +44,26 @@ export function CalibrationChart(props: {
     <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} margin={margin}>
       {/* points */}
       {yesPoints.map((p, i) => (
-        <circle key={i} cx={px(p)} cy={py(p)} r="4" fill="green" />
+        // triangle pointing up
+        <polygon
+          key={i}
+          points={`
+           ${px(p)},${py(p) - 6}
+            ${px(p) - 3 * V3},${py(p) + 3}
+            ${px(p) + 3 * V3},${py(p) + 3}`}
+          fill="green"
+        />
       ))}
       {noPoints.map((p, i) => (
-        <circle key={i} cx={px(p)} cy={py(p)} r="4" fill="red" />
+        // triangle pointing down
+        <polygon
+          key={i}
+          points={`
+            ${px(p)},${py(p) + 6}
+            ${px(p) - 3 * V3},${py(p) - 3}
+            ${px(p) + 3 * V3},${py(p) - 3}`}
+          fill="red"
+        />
       ))}
       {/* line x = y */}
       <line
@@ -62,3 +78,6 @@ export function CalibrationChart(props: {
     </SVGChart>
   )
 }
+
+// √3
+const V3 = Math.sqrt(3)
