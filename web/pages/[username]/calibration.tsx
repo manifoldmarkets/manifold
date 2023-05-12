@@ -80,7 +80,7 @@ export default function CalibrationPage(props: {
             </div>
           )}
 
-          <div className="bg-canvas-0 relative rounded-md p-4 pr-12 max-w-[800px]">
+          <div className="bg-canvas-0 relative max-w-[800px] rounded-md p-4 pr-12">
             <div className="absolute top-0 bottom-0 right-4 flex items-center">
               <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
                 Resolution probability
