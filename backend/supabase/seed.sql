@@ -313,6 +313,9 @@ create index if not exists contracts_visibility on contracts (visibility);
 
 create index if not exists description_fts on contracts using gin (description_fts);
 
+CREATE INDEX idx_contracts_close_time_resolution_time_visibility
+  ON contracts (close_time, resolution_time, visibility);
+
 -- for the ilike search TODO: remove this after PR merge
 create index concurrently if not exists contracts_question_trgm_idx on contracts using gin (question gin_trgm_ops);
 

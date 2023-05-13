@@ -86,19 +86,6 @@ or replace function get_recommended_contracts_embeddings_from (
   relative_dist numeric,
   popularity_score numeric
 ) stable parallel safe language sql as $$ with
-  swiped_contracts as (
-    select contract_id
-    from user_seen_markets
-    where user_id = uid
-      and (data->>'createdTime')::bigint > ts_to_millis(now() - interval '2 weeks')
-  ),
-  viewed_market_cards as (
-    select contract_id
-    from user_events
-    where user_id = uid
-      and name = 'view market card'
-      and ts > now() - interval '7 days'
-  ),
   available_contracts_unscored as (
     select ce.contract_id,
            p_embedding <=> ce.embedding as distance,
@@ -109,9 +96,20 @@ or replace function get_recommended_contracts_embeddings_from (
            jsonb_array_to_text_array(lpc.data->'groupSlugs') as group_slugs
     from contract_embeddings as ce
            join listed_open_contracts lpc on lpc.id = ce.contract_id
+     left join (
+        select contract_id
+        from user_seen_markets
+        where user_id = uid
+          and (data->>'createdTime')::bigint > ts_to_millis(now() - interval '2 weeks')
+        union
+        select contract_id
+        from user_events
+        where user_id = uid
+          and name = 'view market card'
+          and ts > now() - interval '7 days'
+      ) seen on seen.contract_id = ce.contract_id
     where not exists (select 1 from unnest(excluded_contract_ids) w where w = ce.contract_id)
-      and not exists (select 1 from swiped_contracts sc where sc.contract_id = ce.contract_id)
-      and not exists (select 1 from viewed_market_cards vmc where vmc.contract_id = ce.contract_id)
+      and seen.contract_id is null
     order by p_embedding <=> ce.embedding
     limit 2000
   ), available_contracts as (
