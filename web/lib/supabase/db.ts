@@ -11,11 +11,11 @@ export function updateSupabaseAuth(token?: string) {
   if (currentToken != token) {
     currentToken = token
     if (token == null) {
-      delete (db as any).rest.headers['Authorization']
-      ;(db as any).realtime.setAuth(null)
+      db['rest'].headers['Authorization']
+      db['realtime'].setAuth(null)
     } else {
-      ;(db as any).rest.headers['Authorization'] = `Bearer ${token}`
-      ;(db as any).realtime.setAuth(token)
+      db['rest'].headers['Authorization'] = `Bearer ${token}`
+      db['realtime'].setAuth(token)
     }
   }
 }

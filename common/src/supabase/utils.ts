@@ -15,16 +15,16 @@ import { Group, GroupMemberDoc, GroupContractDoc } from '../group'
 
 export type Schema = Database['public']
 export type Tables = Schema['Tables']
-export type PlainTables = {
-  [table in keyof Tables]: Tables[table]['Row']
-}
 export type Views = Schema['Views']
-export type PlainViews = {
-  [view in keyof Views]: Views[view]['Row']
-}
-export type PlainTablesAndViews = PlainTables & PlainViews
 export type TableName = keyof Tables
 export type ViewName = keyof Views
+export type Selectable = TableName | ViewName
+export type Row<T extends Selectable> = (
+  T extends TableName ? Tables[T]['Row'] :
+  T extends ViewName ? Views[T]['Row'] :
+  never);
+export type Column<T extends Selectable> = keyof Row<T> & string
+
 export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
 
 export type CollectionTableMapping = { [coll: string]: TableName }
@@ -101,7 +101,7 @@ export async function run<T>(
   }
 }
 
-type TableJsonTypes = {
+type JsonTypes = {
   users: User
   user_contract_metrics: ContractMetrics
   contracts: Contract
@@ -112,8 +112,8 @@ type TableJsonTypes = {
   group_contracts: GroupContractDoc
 }
 
-export type DataFor<T extends TableName | ViewName> =
-  T extends keyof TableJsonTypes ? TableJsonTypes[T] : any
+export type DataFor<T extends Selectable> =
+  T extends keyof JsonTypes ? JsonTypes[T] : any
 
 export function selectJson<T extends TableName | ViewName>(
   db: SupabaseClient,
