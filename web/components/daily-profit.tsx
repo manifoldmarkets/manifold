@@ -11,7 +11,6 @@ import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/con
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { keyBy, partition, sortBy, sum } from 'lodash'
-import { _ as r, Grid } from 'gridjs-react'
 import { ContractMention } from 'web/components/contract/contract-mention'
 import { dailyStatsClass } from 'web/components/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
@@ -25,6 +24,7 @@ import { db } from 'web/lib/supabase/db'
 import { InfoTooltip } from './widgets/info-tooltip'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
+import { Table } from './widgets/table'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
@@ -204,7 +204,7 @@ export function ProfitChangeTable(props: {
     )
       .map((c) => [c, metricsByContractId[c.id].from?.[from].profit ?? 0])
       .slice(currentSlice, currentSlice + rowsPerSection),
-  ]
+  ] as [CPMMContract, number][]
 
   if (positive.length === 0 && negative.length === 0)
     return (
@@ -213,72 +213,65 @@ export function ProfitChangeTable(props: {
       </div>
     )
 
-  const marketRow = (c: CPMMContract) => {
-    const change = getFormattedMappedValue(c, c.probChanges[from]).replace(
-      '%',
-      ''
-    )
-    return r(
-      <div className={'ml-2'}>
-        <ContractMention
-          contract={c}
-          probChange={(c.probChanges[from] > 0 ? '+' : '') + change}
-          className={'line-clamp-6 sm:line-clamp-4 !whitespace-normal'}
-        />
-      </div>
-    )
-  }
-
-  const columnHeader = (text: string) =>
-    r(<Row className={'text-ink-600 mx-2 items-center gap-2'}>{text}</Row>)
-  const profitRow = (profit: number) =>
-    r(
-      <div
-        className={clsx(
-          'mx-2 min-w-[2rem] text-right',
-          profit > 0 ? 'text-teal-500' : 'text-scarlet-600'
-        )}
-      >
-        {formatMoney(profit)}
-      </div>
-    )
-
   return (
-    <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
-      <Col className="flex-1 gap-4">
-        <Grid
-          data={rows}
-          style={{
-            td: {
-              paddingBottom: '0.5rem',
-              paddingTop: '0.5rem',
-              verticalAlign: 'top',
-            },
-          }}
-          columns={[
-            {
-              name: columnHeader('Market'),
-              formatter: (c: CPMMContract) => marketRow(c),
-              id: 'market',
-            },
-            {
-              name: columnHeader('Profit'),
-              formatter: (value: number) => profitRow(value),
-              id: 'profit',
-            },
-          ]}
-          sort={false}
+    <Col className="mb-4 flex-1 gap-4">
+      <Table>
+        <thead>
+          <tr>
+            <th>Market</th>
+            <th>Profit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([contract, profit]) => (
+            <tr key={contract.id + 'mention'}>
+              <MarketCell contract={contract} from={from} />
+              <ProfitCell profit={profit} />
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      {showPagination && (
+        <Pagination
+          page={page}
+          itemsPerPage={rowsPerSection * 2}
+          totalItems={contracts.length}
+          setPage={setPage}
+          scrollToTop={true}
         />
-        {showPagination && (
-          <Pagination
-            page={page}
-            itemsPerPage={rowsPerSection * 2}
-            totalItems={contracts.length}
-            setPage={setPage}
-            scrollToTop={true}
-          />
-        )}
-      </Col>
+      )}
     </Col>
   )
 }
+
+const MarketCell = (props: {
+  contract: CPMMContract
+  from: 'day' | 'week' | 'month'
+}) => {
+  const c = props.contract
+  const probChange = c.probChanges[props.from]
+  const change =
+    (probChange > 0 ? '+' : '') +
+    getFormattedMappedValue(c, probChange).replace('%', '')
+
+  return (
+    <td>
+      <ContractMention
+        contract={c}
+        probChange={change}
+        className={'line-clamp-6 sm:line-clamp-4 !whitespace-normal'}
+      />
+    </td>
+  )
+}
+
+const ProfitCell = (props: { profit: number }) => (
+  <td
+    className={clsx(
+      'mx-2 min-w-[2rem] text-right',
+      props.profit > 0 ? 'text-teal-500' : 'text-scarlet-600'
+    )}
+  >
+    {formatMoney(props.profit)}
+  </td>
+)

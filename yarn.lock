@@ -5361,18 +5361,6 @@ grapheme-splitter@^1.0.4:
   resolved "https://registry.yarnpkg.com/grapheme-splitter/-/grapheme-splitter-1.0.4.tgz#9cf3a665c6247479896834af35cf1dbb4400767e"
   integrity sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==
 
-gridjs-react@5.1.0:
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/gridjs-react/-/gridjs-react-5.1.0.tgz#3934d9677d84cfdd4a92cd2634ff1af4269c04b1"
-  integrity sha512-FBrXEVKI4poixjBLgRIeW4xH4RZTjqDFL+mU5fR332La7CVjMo/IwMJPrEjs70eIFRRaKzUe3pOhKFDIykrV2g==
-
-gridjs@5.1.0:
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/gridjs/-/gridjs-5.1.0.tgz#77563e766c1faf6e8042577404098bb05ec514d0"
-  integrity sha512-ElT4RccHVZXR6mAn0Neh7jRv0yLPYLl9tWr9EC1tIJ7UC035kScGc/VMSJlPmOTyUU6qPUz1mtmzg/i8+IT24g==
-  dependencies:
-    preact "^10.10.6"
-
 gtoken@^6.1.0:
   version "6.1.2"
   resolved "https://registry.yarnpkg.com/gtoken/-/gtoken-6.1.2.tgz#aeb7bdb019ff4c3ba3ac100bbe7b6e74dce0e8bc"
@@ -7548,11 +7536,6 @@ postgres-interval@^1.1.0:
   integrity sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==
   dependencies:
     xtend "^4.0.0"
-
-preact@^10.10.6:
-  version "10.11.3"
-  resolved "https://registry.yarnpkg.com/preact/-/preact-10.11.3.tgz#8a7e4ba19d3992c488b0785afcc0f8aa13c78d19"
-  integrity sha512-eY93IVpod/zG3uMF22Unl8h9KkrcKIRs2EGar8hwLZZDU1lkjph303V9HZBwufh2s736U6VXuhD109LYqPoffg==
 
 prelude-ls@^1.2.1:
   version "1.2.1"
