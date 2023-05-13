@@ -143,7 +143,6 @@ export const CHECK_USERNAMES = [
   'CGPGrey',
   'KatjaGrace',
   'AndrewG',
-  'AmmonLam',
   'MarcusAbramovitch',
   'KevinBurke',
 ]
