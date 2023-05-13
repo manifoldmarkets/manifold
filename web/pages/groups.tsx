@@ -29,11 +29,11 @@ import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 
 // TODO use trending groups
 
-export const getStaticProps = async () => {
-  const groups = await searchGroups('', 200).catch((_) => [])
+// export const getStaticProps = async () => {
+//   const groups = await searchGroups('', 200).catch((_) => [])
 
-  return { props: { groups }, revalidate: 60 }
-}
+//   return { props: { groups }, revalidate: 60 }
+// }
 
 export default function Groups(props: { groups: SearchGroupInfo[] }) {
   const user = useUser()

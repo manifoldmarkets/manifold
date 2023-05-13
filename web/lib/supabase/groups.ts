@@ -7,6 +7,8 @@ import {
   SupabaseClient,
 } from 'common/supabase/utils'
 import { db } from './db'
+import { groupStateType } from 'web/components/groups/group-search'
+import { supabaseSearchGroups } from '../firebase/api'
 export type SearchGroupInfo = Pick<
   Group,
   | 'id'
@@ -19,23 +21,111 @@ export type SearchGroupInfo = Pick<
 >
 
 // functions called for multiple groups
-export async function searchGroups(prompt: string, limit: number) {
-  const query = selectFrom(
-    db,
-    'groups',
-    'id',
-    'name',
-    'about',
-    'slug',
-    'totalMembers',
-    'totalContracts',
-    'privacyStatus'
-  )
-    .order('data->totalMembers', { ascending: false } as any)
-    .limit(limit)
-  if (prompt) query.ilike('name', `%${prompt}%`)
+// export async function searchGroups(prompt: string, limit: number) {
+//   const query = selectFrom(
+//     db,
+//     'groups',
+//     'id',
+//     'name',
+//     'about',
+//     'slug',
+//     'totalMembers',
+//     'totalContracts',
+//     'privacyStatus'
+//   )
+//     .order('data->totalMembers', { ascending: false } as any)
+//     .limit(limit)
+//   if (prompt) query.ilike('name', `%${prompt}%`)
 
-  return (await run(query)).data
+//   return (await run(query)).data
+// }
+
+export async function searchGroups(props: {
+  state?: groupStateType
+  term: string
+  offset?: number
+  limit: number
+  yourGroups?: boolean
+}) {
+  const { term, offset = 0, limit, yourGroups } = props
+  const state = props.state ?? {
+    groups: undefined,
+    fuzzyGroupOffset: 0,
+    shouldLoadMore: false,
+  }
+
+  if (limit === 0) {
+    return { fuzzyOffset: 0, data: [] }
+  }
+
+  if (!term) {
+    const groups = await supabaseSearchGroups({
+      term: '',
+      offset: offset,
+      limit: limit,
+      yourGroups,
+    })
+    if (groups) {
+      return { fuzzyOffset: 0, data: groups }
+    }
+  }
+  if (state.fuzzyGroupOffset > 0) {
+    const contractFuzzy = searchGroupsFuzzy({
+      term,
+      state,
+      limit,
+      yourGroups,
+    })
+    return contractFuzzy
+  }
+
+  const groups = await supabaseSearchGroups({
+    term: term,
+    offset,
+    limit,
+    fuzzy: false,
+    yourGroups,
+  })
+  if (groups) {
+    if (groups.length == limit) {
+      return { fuzzyOffset: 0, data: groups }
+    } else {
+      const fuzzyData = await searchGroupsFuzzy({
+        state,
+        term,
+        limit: limit - groups.length,
+        yourGroups: yourGroups,
+      })
+      return {
+        fuzzyOffset: fuzzyData.fuzzyOffset,
+        data: groups.concat(fuzzyData.data),
+      }
+    }
+  }
+  return { fuzzyOffset: 0, data: [] }
+}
+
+export async function searchGroupsFuzzy(props: {
+  state: groupStateType
+  term: string
+  limit: number
+  yourGroups?: boolean
+}) {
+  const { state, term, limit, yourGroups } = props
+  const groups = await supabaseSearchGroups({
+    term,
+    offset: state.fuzzyGroupOffset,
+    limit: limit,
+    fuzzy: true,
+    yourGroups,
+  })
+  if (groups) {
+    return {
+      fuzzyOffset: groups.length,
+      data: groups,
+    }
+  }
+  return { fuzzyOffset: 0, data: [] }
 }
 
 export async function getMemberGroups(userId: string, db: SupabaseClient) {

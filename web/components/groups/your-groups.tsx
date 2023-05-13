@@ -18,6 +18,7 @@ import Link from 'next/link'
 import { Spacer } from '../layout/spacer'
 import { User } from 'common/user'
 import { Button } from '../buttons/button'
+import GroupSearch from './group-search'
 
 const YOUR_GROUPS_MAX_LENGTH = 5
 export default function YourGroups() {
@@ -74,17 +75,13 @@ export default function YourGroups() {
       )}
       <Subtitle>Groups You Follow</Subtitle>
 
-      <Input
-        type="text"
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search groups"
-        value={query}
-        className="mb-4 w-full"
+      <GroupSearch
+        filter={{
+          yourGroups: true,
+        }}
+        persistPrefix={'your-groups'}
+        myGroupIds={[]}
       />
-      {/* 
-      <div className="grid grid-cols-1">
-        <GroupSearchResult groups={groups} />
-      </div> */}
     </>
   )
 }

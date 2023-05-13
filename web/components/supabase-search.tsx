@@ -399,11 +399,6 @@ function SupabaseContractSearchControls(props: {
       ? 'resolved'
       : filterState
 
-  useEffect(() => {
-    if (persistPrefix && sort) {
-      safeLocalStorage?.setItem(sortKey, sort as string)
-    }
-  }, [persistPrefix, query, sort, sortKey])
 
   const updateQuery = (newQuery: string) => {
     setQuery(newQuery)

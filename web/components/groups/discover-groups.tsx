@@ -136,7 +136,7 @@ function GroupSearchResult(props: { groups: SearchGroupInfo[] }) {
   )
 }
 
-function GroupLine(props: {
+export function GroupLine(props: {
   group: Group
   isMember: boolean
   user: User | undefined | null
