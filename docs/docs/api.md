@@ -661,6 +661,8 @@ Parameters:
       depending on current unfilled limit bets and the AMM's liquidity. Any remaining
       portion of the bet not filled would remain to be matched against in the future.
   - An unfilled limit order bet can be cancelled using the cancel API.
+- `expiresAt`: Optional. A Unix timestamp (in milliseconds) at which the limit bet
+  should be automatically canceled.
 
 Example request:
 
@@ -671,6 +673,8 @@ $ curl https://manifold.markets/api/v0/bet -X POST -H 'Content-Type: application
                  "outcome":"YES", \
                  "contractId":"{...}"}'
 ```
+
+Response type: A `Bet`.
 
 ### `POST /v0/bet/cancel/[id]`
 
@@ -821,6 +825,9 @@ $ curl https://manifold.markets/api/v0/market/{marketId}/sell -X POST \
     -H 'Authorization: Key {...}' \
     --data-raw '{"outcome": "YES", "shares": 10}'
 ```
+
+Response type: A `Bet`, with an additional `"status": "success"` field, for backwards
+compatibility.  In previous versions it simply returned `{"status": "success"}`.
 
 ### `POST /v0/comment`
 
