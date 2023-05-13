@@ -4,76 +4,41 @@ import { db } from 'web/lib/supabase/db'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { EMPTY_USER } from 'web/components/contract/contract-tabs'
 import { getBets, getTotalBetCount } from 'common/supabase/bets'
+import { Filter } from 'common/supabase/realtime'
+import { useLiveStream } from 'web/lib/supabase/realtime/use-live-stream'
 
 function getFilteredQuery(filteredParam: string, filterId?: string) {
   if (filteredParam === 'contractId' && filterId) {
-    return `contract_id=eq.${filterId}`
+    return { k: 'contract_id', v: filterId } as const
   }
   return undefined
 }
 
 export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
-  const [bets, setBets] = useState<Bet[]>([])
   let filteredParam
-  let filteredQuery: string | undefined
+  let filteredQuery: Filter<'contract_bets'> | undefined
   if (options) {
     if (options.contractId) {
       filteredParam = 'contractId'
       filteredQuery = getFilteredQuery(filteredParam, options.contractId)
     }
   }
+  const [oldBets, setOldBets] = useState<Bet[]>([])
+  const stream = useLiveStream('contract_bets', filteredQuery)
+  const newBets = stream
+    .map(r => r.data as Bet)
+    .filter(b => !betShouldBeFiltered(b, options))
 
   useEffectCheckEquality(() => {
     if (options?.userId === 'loading' || options?.userId === EMPTY_USER) {
       return
     }
-    getBets(db, {
-      ...options,
-      order: 'desc',
-    })
-      .then((result) => {
-        setBets(result)
-      })
+    getBets(db, { ...options, order: 'desc' })
+      .then((result) => setOldBets(result))
       .catch((e) => console.log(e))
-
-    const channel = db.channel(
-      `live-bets-${
-        options?.contractId ? '-contract-' + options?.contractId + '-' : ''
-      }${options?.userId ? '-user-' + options?.userId + '-' : ''}`
-    )
-
-    channel.on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'contract_bets',
-        filter: filteredQuery,
-      },
-      (payload) => {
-        if (payload) {
-          const payloadBet = payload.new.data as Bet
-          if (!betShouldBeFiltered(payloadBet, options)) {
-            setBets((bets) => {
-              if (payloadBet && !bets.some((c) => c.id == payloadBet.id)) {
-                return [payloadBet].concat(bets)
-              } else {
-                return bets
-              }
-            })
-          }
-        }
-      }
-    )
-    channel.subscribe(async (status) => {})
-    return () => {
-      if (channel) {
-        db.removeChannel(channel)
-      }
-    }
   }, [options, db])
 
-  return bets
+  return [...oldBets, ...newBets]
 }
 
 function betShouldBeFiltered(bet: Bet, options?: BetFilter) {

@@ -7,6 +7,7 @@ import { uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getAllComments } from 'common/supabase/comments'
 import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
+import { useLiveStream } from 'web/lib/supabase/realtime/use-live-stream'
 
 export function useComments(contractId: string, limit: number) {
   const [comments, setComments] = useState<Json[]>([])
@@ -74,45 +75,16 @@ export function useNumUserComments(userId: string) {
   return num
 }
 
-export function useRealtimeComments(limit: number) {
-  const [comments, setComments] = useState<Comment[]>([])
+export function useRealtimeComments(limit: number): Comment[] {
+  const [oldComments, setOldComments] = useState<Comment[]>([])
+  const stream = useLiveStream('contract_comments')
+  const newComments = stream.map(r => r.data as Comment)
 
   useEffect(() => {
     getComments(limit)
-      .then((result) => setComments(result))
+      .then((result) => setOldComments(result))
       .catch((e) => console.log(e))
   }, [])
 
-  useEffect(() => {
-    const channel = db.channel('live-comments')
-    channel.on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'contract_comments',
-      },
-      (payload) => {
-        if (payload) {
-          const payloadComment = payload.new.data as Comment
-          setComments((comments) => {
-            if (
-              payloadComment &&
-              !comments.some((c) => c.id == payloadComment.id)
-            ) {
-              return [payloadComment].concat(comments.slice(0, -1))
-            } else {
-              return comments
-            }
-          })
-        }
-      }
-    )
-    channel.subscribe(async (status) => {})
-    return () => {
-      db.removeChannel(channel)
-    }
-  }, [db])
-
-  return comments
+  return [...oldComments, ...newComments].slice(-limit)
 }

@@ -10,6 +10,7 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
+import { useLiveStream } from 'web/lib/supabase/realtime/use-live-stream'
 
 export const usePublicContracts = (contractIds: string[] | undefined) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -65,44 +66,15 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
 }
 
 export function useRealtimeContracts(limit: number) {
-  const [contracts, setContracts] = useState<Contract[]>([])
+  const [oldContracts, setOldContracts] = useState<Contract[]>([])
+  const stream = useLiveStream('contracts')
+  const newContracts = stream.map(r => r.data as Contract)
 
   useEffect(() => {
     getPublicContracts({ limit, order: 'desc' })
-      .then((result) => setContracts(result))
+      .then((result) => setOldContracts(result))
       .catch((e) => console.log(e))
   }, [])
 
-  useEffect(() => {
-    const channel = db.channel('live-contracts')
-    channel.on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'contracts',
-      },
-      (payload) => {
-        if (payload) {
-          const payloadContract = payload.new.data as Contract
-          setContracts((contracts) => {
-            if (
-              payloadContract &&
-              !contracts.some((c) => c.id == payloadContract.id)
-            ) {
-              return [payloadContract].concat(contracts.slice(0, -1))
-            } else {
-              return contracts
-            }
-          })
-        }
-      }
-    )
-    channel.subscribe(async (_status) => {})
-    return () => {
-      db.removeChannel(channel)
-    }
-  }, [db])
-
-  return contracts
+  return [...oldContracts, ...newContracts].slice(-limit)
 }
