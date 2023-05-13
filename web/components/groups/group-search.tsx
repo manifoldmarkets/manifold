@@ -13,6 +13,7 @@ import { Input } from '../widgets/input'
 import { GroupLine } from './discover-groups'
 import { useUser } from 'web/hooks/use-user'
 import { searchGroups } from 'web/lib/supabase/groups'
+import { GroupsList } from 'web/components/groups/groups-list'
 
 const INITIAL_STATE = {
   groups: undefined,
@@ -31,9 +32,9 @@ export type groupStateType = {
 export default function GroupSearch(props: {
   filter?: { yourGroups?: boolean }
   persistPrefix: string
-  myGroupIds: string[]
+  yourGroupIds?: string[]
 }) {
-  const { filter, persistPrefix, myGroupIds } = props
+  const { filter, persistPrefix, yourGroupIds } = props
   const user = useUser()
   const performQuery = useEvent(
     async (currentState, freshQuery?: boolean) =>
@@ -43,6 +44,8 @@ export default function GroupSearch(props: {
     INITIAL_STATE,
     `${persistPrefix}-supabase-search`
   )
+
+  const loadMoreGroups = () => performQuery(state)
 
   const searchTerm = useRef<string>('')
   const [inputTerm, setInputTerm] = useState<string>('')
@@ -138,18 +141,11 @@ export default function GroupSearch(props: {
         placeholder="Search groups"
         className="w-full"
       />
-      {!groups || groups.length === 0 ? (
-        <div>No groups found</div>
-      ) : (
-        groups.map((group) => (
-          <GroupLine
-            key={group.id}
-            group={group as Group}
-            user={user}
-            isMember={!!myGroupIds?.includes(group.id)}
-          />
-        ))
-      )}
+      <GroupsList
+        groups={groups}
+        loadMore={loadMoreGroups}
+        yourGroupIds={yourGroupIds}
+      />
     </Col>
   )
 }

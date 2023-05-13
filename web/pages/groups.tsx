@@ -29,9 +29,7 @@ import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 
 export default function Groups(props: { groups: SearchGroupInfo[] }) {
   const user = useUser()
-
-  const [query, setQuery] = useState('')
-
+  const yourGroupIds = useMemberGroupIds(user)
   return (
     <Page>
       <SEO
@@ -57,16 +55,16 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
               tabs={[
                 {
                   title: 'Your Groups',
-                  content: <YourGroups />,
+                  content: <YourGroups yourGroupIds={yourGroupIds} />,
                 },
                 {
                   title: 'Discover',
-                  content: <DiscoverGroups />,
+                  content: <DiscoverGroups yourGroupIds={yourGroupIds} />,
                 },
               ]}
             />
           )}{' '}
-          {!user && <DiscoverGroups />}
+          {!user && <DiscoverGroups yourGroupIds={yourGroupIds} />}
         </Col>
       </Col>
     </Page>

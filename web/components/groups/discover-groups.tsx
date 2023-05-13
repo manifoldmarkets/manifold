@@ -21,9 +21,8 @@ import { SiteLink } from '../widgets/site-link'
 import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
 import GroupSearch from './group-search'
 
-export default function DiscoverGroups() {
-  const [query, setQuery] = useState('')
-
+export default function DiscoverGroups(props: { yourGroupIds?: string[] }) {
+  const { yourGroupIds } = props
   const communities = [
     {
       name: '🎮 Destiny.gg',
@@ -50,13 +49,6 @@ export default function DiscoverGroups() {
   const allSpecialGroupSlugs = Object.values(GroupsByTopic).flat()
   const allSpecialGroups = useListGroupsBySlug(allSpecialGroupSlugs)
 
-  //   const otherGroups = props.groups.filter(
-  //     (g) => !allSpecialGroupSlugs.includes(g.slug)
-  //   )
-
-  const searchedGroups = useGroupSearchResults(query, 50)
-  const groups = query !== '' ? searchedGroups : []
-
   const [selectedCommunity, setSelected] = useState<number>()
 
   return (
@@ -77,7 +69,10 @@ export default function DiscoverGroups() {
       ))}
       <Subtitle>Search Groups</Subtitle>
 
-      <GroupSearch persistPrefix={'discover-groups'} myGroupIds={[]} />
+      <GroupSearch
+        persistPrefix={'discover-groups'}
+        yourGroupIds={yourGroupIds}
+      />
     </>
   )
 }

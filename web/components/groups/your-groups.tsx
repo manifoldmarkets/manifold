@@ -21,7 +21,8 @@ import { Button } from '../buttons/button'
 import GroupSearch from './group-search'
 
 const YOUR_GROUPS_MAX_LENGTH = 5
-export default function YourGroups() {
+export default function YourGroups(props: { yourGroupIds?: string[] }) {
+  const { yourGroupIds } = props
   const isAuth = useIsAuthorized()
   const [query, setQuery] = useState('')
   const user = useUser()
@@ -74,7 +75,7 @@ export default function YourGroups() {
             yourGroups: true,
           }}
           persistPrefix={'your-groups'}
-          myGroupIds={[]}
+          yourGroupIds={yourGroupIds}
         />
       )}
     </>
