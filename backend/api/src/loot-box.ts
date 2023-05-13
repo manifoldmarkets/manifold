@@ -10,6 +10,7 @@ import { BinaryContract, CPMMContract } from 'common/contract'
 import { getProbability } from 'common/calculate'
 import { LOOTBOX_COST, createLootBox, createLootBet } from 'common/loot-box'
 import { redeemShares } from './redeem-shares'
+import { sum } from 'lodash'
 
 export const lootbox = authEndpoint(async (req, auth) => {
   const firestore = admin.firestore()
@@ -72,6 +73,9 @@ export const lootbox = authEndpoint(async (req, auth) => {
 
     transaction.create(firestore.collection('loot-boxes').doc(), {
       createdTime: Date.now(),
+      username: user.username,
+      userId: user.id,
+      value: sum(box.map((b) => b.amount)),
       box,
       betPaths,
     })
