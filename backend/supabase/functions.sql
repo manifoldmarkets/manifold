@@ -298,6 +298,248 @@ from combined_results
 $$;
 
 create
+or replace function get_recommended_contracts_embeddings_fast (uid text, n int, excluded_contract_ids text[]) returns table (
+  data jsonb,
+  distance numeric,
+  relative_dist numeric,
+  popularity_score numeric
+) stable parallel safe language sql as $$ with user_embedding as (
+    select interest_embedding
+    from user_embeddings
+    where user_id = uid
+  )
+select *
+from get_recommended_contracts_embeddings_from_fast(
+    uid,
+    (
+      select interest_embedding
+      from user_embedding
+    ),
+    n,
+    excluded_contract_ids
+  ) $$;
+
+create
+or replace function get_recommended_contracts_embeddings_from_fast (
+  uid text,
+  p_embedding vector,
+  n int,
+  excluded_contract_ids text[]
+) returns table (
+  data jsonb,
+  distance numeric,
+  relative_dist numeric,
+  popularity_score numeric
+) stable parallel safe language sql as $$ with
+  swiped_contracts as (
+    select contract_id
+    from user_seen_markets
+    where user_id = uid
+      and (data->>'createdTime')::bigint > ts_to_millis(now() - interval '2 weeks')
+  ),
+  viewed_market_cards as (
+    select contract_id
+    from user_events
+    where user_id = uid
+      and name = 'view market card'
+      and ts > now() - interval '7 days'
+  ),
+  available_contracts_unscored as (
+    select ce.contract_id,
+           p_embedding <=> ce.embedding as distance,
+           (row_number() over (order by p_embedding <=> ce.embedding)) / 500.0 as relative_dist,
+           lpc.popularity_score,
+           lpc.created_time,
+           lpc.close_time,
+           jsonb_array_to_text_array(lpc.data->'groupSlugs') as group_slugs
+    from contract_embeddings as ce
+           join listed_open_contracts lpc on lpc.id = ce.contract_id
+    where not exists (select 1 from unnest(excluded_contract_ids) w where w = ce.contract_id)
+      and not exists (select 1 from swiped_contracts sc where sc.contract_id = ce.contract_id)
+      and not exists (select 1 from viewed_market_cards vmc where vmc.contract_id = ce.contract_id)
+    order by p_embedding <=> ce.embedding
+    limit 500
+  ), available_contracts as (
+    select *,
+      (
+        case
+          when close_time <= NOW() + interval '1 day' then 1
+          when close_time <= NOW() + interval '1 week' then 0.9
+          when close_time <= NOW() + interval '1 month' then 0.75
+          when close_time <= NOW() + interval '3 months' then 0.5
+          when close_time <= NOW() + interval '1 year' then 0.33
+          else 0.25
+        end
+      ) * (log(coalesce(popularity_score, 0) + 2) / (relative_dist + 0.1))
+        * (
+        case
+          when
+            'gambling' = ANY(group_slugs) OR
+            'whale-watching' = ANY(group_slugs) OR
+            'selfresolving' = ANY(group_slugs)
+          then 0.25
+          else 1
+        end
+      )
+        as score
+    from available_contracts_unscored
+  ),
+  new_contracts as (
+    select *,
+      row_number() over (
+        order by score desc
+      ) as row_num
+    from available_contracts
+    where created_time > (now() - interval '1 day')
+      and close_time > (now() + interval '1 day')
+    order by score desc
+    limit n / 6
+  ), closing_soon_contracts as (
+    select *,
+      row_number() over (
+        order by score desc
+      ) as row_num
+    from available_contracts
+    where close_time < (now() + interval '1 day')
+    order by score desc
+    limit n / 6
+  ), combined_new_closing_soon as (
+    select *,
+      1 as result_id
+    from new_contracts
+    union all
+    select *,
+      2 as result_id
+    from closing_soon_contracts
+    order by row_num,
+      result_id
+  ),
+  trending_contracts as (
+    select *
+    from available_contracts
+    where created_time < (now() - interval '1 day')
+      and close_time > (now() + interval '1 day')
+      and popularity_score >= 0
+  ),
+  trending_results1 as (
+    select *,
+      row_number() over (
+        order by score desc
+      ) as row_num
+    from trending_contracts
+    where relative_dist < 0.25
+    limit 1 + (
+        n - (
+          select count(*)
+          from combined_new_closing_soon
+        )
+      ) / 3
+  ),
+  trending_results2 as (
+    select *,
+      row_number() over (
+        order by score desc
+      ) as row_num
+    from trending_contracts
+    where relative_dist >= 0.25
+      and relative_dist < 0.5
+    limit 1 + (
+        n - (
+          select count(*)
+          from combined_new_closing_soon
+        )
+      ) / 3
+  ),
+  trending_results3 as (
+    select *,
+      row_number() over (
+        order by score desc
+      ) as row_num
+    from trending_contracts
+    where relative_dist >= 0.5
+    limit 1 + (
+        n - (
+          select count(*)
+          from combined_new_closing_soon
+        )
+      ) / 3
+  ),
+  combined_trending as (
+    select *,
+      1 as result_id
+    from trending_results1
+    union all
+    select *,
+      2 as result_id
+    from trending_results2
+    union all
+    select *,
+      3 as result_id
+    from trending_results3
+    order by row_num,
+      result_id
+  ),
+  excluded_contracts as (
+    select contract_id
+    from combined_trending
+    union all
+    select contract_id
+    from combined_new_closing_soon
+    union all
+    select unnest(excluded_contract_ids) as contract_id
+  ),
+  contracts_with_liked_comments as (
+    select
+      ac.*,
+      3 as result_id,
+      row_number() over (
+        order by score desc
+        ) as row_num
+    from get_contracts_with_unseen_liked_comments(
+   array(select contract_id from available_contracts),
+   array(select contract_id from excluded_contracts),
+   uid,
+   n / 6
+     ) as cwc
+   join available_contracts ac on ac.contract_id = cwc.contract_id
+  ),
+  combined_results as (
+    select *,
+      1 as result_id2,
+      row_number() over (
+        order by row_num,
+          result_id
+      ) as row_num2
+    from combined_trending
+    union all
+    select *,
+      2 as result_id2,
+      row_number() over (
+        order by row_num,
+          result_id
+      ) as row_num2
+    from combined_new_closing_soon
+    union all
+    select
+      *,
+      3 as result_id2,
+      row_number() over (
+        order by row_num,
+          result_id
+        ) as row_num2
+    from contracts_with_liked_comments
+    order by row_num2,
+      result_id2
+  )
+select data,
+  distance,
+  relative_dist,
+  combined_results.popularity_score
+from combined_results
+  join contracts on contracts.id = combined_results.contract_id
+$$;
+
+create
 or replace function get_cpmm_pool_prob (pool jsonb, p numeric) returns numeric language plpgsql immutable parallel safe as $$
 declare p_no numeric := (pool->>'NO')::numeric;
 p_yes numeric := (pool->>'YES')::numeric;
@@ -901,9 +1143,8 @@ UNION ALL
 SELECT * FROM reply_chain_comments;
 $$ language sql;
 
-
-CREATE OR REPLACE FUNCTION extract_text_from_rich_text_json(description jsonb) RETURNS text
-  LANGUAGE sql IMMUTABLE AS $$
+create
+or replace function extract_text_from_rich_text_json (description jsonb) returns text language sql immutable as $$
 WITH RECURSIVE content_elements AS (
   SELECT jsonb_array_elements(description->'content') AS element
   WHERE jsonb_typeof(description) = 'object'
@@ -935,8 +1176,8 @@ FROM
   all_text_elements;
 $$;
 
-CREATE OR REPLACE FUNCTION add_creator_name_to_description(data jsonb) RETURNS text
-  LANGUAGE sql IMMUTABLE AS $$
+create
+or replace function add_creator_name_to_description (data jsonb) returns text language sql immutable as $$
 select * from CONCAT_WS(
         ' '::text,
         data->>'creatorName',
@@ -944,9 +1185,8 @@ select * from CONCAT_WS(
   )
 $$;
 
-
-CREATE OR REPLACE FUNCTION get_prefix_match_query(p_query text)
-  RETURNS text AS $$
+create
+or replace function get_prefix_match_query (p_query text) returns text as $$
 WITH words AS (
   SELECT unnest(regexp_split_to_array(trim(p_query), E'\\s+')) AS word
 ),
@@ -959,10 +1199,10 @@ SELECT string_agg(CASE
                     ELSE word || ':*'
                     END, ' & ')
 FROM numbered_words;
-$$ LANGUAGE sql IMMUTABLE;
+$$ language sql immutable;
 
-create or replace function get_exact_match_minus_last_word_query(p_query text)
-  returns text as $$
+create
+or replace function get_exact_match_minus_last_word_query (p_query text) returns text as $$
 WITH words AS (
   SELECT unnest(regexp_split_to_array(trim(p_query), E'\\s+')) AS word
 ),
@@ -975,9 +1215,8 @@ FROM numbered_words
 WHERE rn < total
 $$ language sql immutable;
 
-
-create or replace function get_engaged_users() returns table (user_id text, username text, name text)
-    as $$
+create
+or replace function get_engaged_users () returns table (user_id text, username text, name text) as $$
   WITH recent_bettors AS (
       SELECT user_id, date_trunc('week', created_time) AS week
       FROM contract_bets
