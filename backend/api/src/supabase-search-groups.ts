@@ -5,7 +5,7 @@ import { APIError, Json, MaybeAuthedEndpoint, validate } from './helpers'
 import { FIRESTORE_DOC_REF_ID_REGEX } from './supabase-search-contract'
 import { Group } from 'common/group'
 
-const SIMILARITY_THRESHOLD = 0.4
+const SIMILARITY_THRESHOLD = 0.2
 
 const bodySchema = z.object({
   term: z.string(),
@@ -29,7 +29,9 @@ export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
     yourGroups,
     uid: auth?.uid,
   })
+  console.log(searchGroupSQL)
   const groups = await pg.map(searchGroupSQL, [term], (r) => r.data as Group)
+  console.log(groups)
 
   return (groups ?? []) as unknown as Json
 })

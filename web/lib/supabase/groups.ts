@@ -47,6 +47,7 @@ export async function searchGroups(props: {
   limit: number
   yourGroups?: boolean
 }) {
+  console.log(props)
   const { term, offset = 0, limit, yourGroups } = props
   const state = props.state ?? {
     groups: undefined,

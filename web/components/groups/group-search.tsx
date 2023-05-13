@@ -29,7 +29,7 @@ export type groupStateType = {
 }
 
 export default function GroupSearch(props: {
-  filter: { yourGroups?: boolean }
+  filter?: { yourGroups?: boolean }
   persistPrefix: string
   myGroupIds: string[]
 }) {
@@ -70,7 +70,7 @@ export default function GroupSearch(props: {
         term: searchTerm.current,
         offset: offset,
         limit: GROUPS_PER_PAGE,
-        yourGroups: filter.yourGroups,
+        yourGroups: filter?.yourGroups,
       })
 
       if (id === requestId.current) {
@@ -125,9 +125,7 @@ export default function GroupSearch(props: {
     : undefined
 
   useEffect(() => {
-    onSearchTermChanged({
-      term: inputTerm,
-    })
+    onSearchTermChanged(inputTerm)
   }, [inputTerm])
 
   return (

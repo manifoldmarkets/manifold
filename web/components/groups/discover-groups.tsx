@@ -19,6 +19,7 @@ import { Contract } from 'common/contract'
 import Link from 'next/link'
 import { SiteLink } from '../widgets/site-link'
 import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
+import GroupSearch from './group-search'
 
 export default function DiscoverGroups() {
   const [query, setQuery] = useState('')
@@ -76,17 +77,7 @@ export default function DiscoverGroups() {
       ))}
       <Subtitle>Search Groups</Subtitle>
 
-      <Input
-        type="text"
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search groups"
-        value={query}
-        className="mb-4 w-full"
-      />
-
-      <div className="grid grid-cols-1">
-        <GroupSearchResult groups={groups} />
-      </div>
+      <GroupSearch persistPrefix={'discover-groups'} myGroupIds={[]} />
     </>
   )
 }

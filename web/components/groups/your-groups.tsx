@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { Subtitle } from '../widgets/subtitle'
 import { Row } from '../layout/row'
 import { PRIVACY_STATUS_ITEMS } from './group-privacy-modal'
@@ -22,23 +22,17 @@ import GroupSearch from './group-search'
 
 const YOUR_GROUPS_MAX_LENGTH = 5
 export default function YourGroups() {
+  const isAuth = useIsAuthorized()
   const [query, setQuery] = useState('')
   const user = useUser()
   const userId = user?.id
   const yourGroups = useGroupsWhereUserHasRole(user?.id)
   const yourGroupsLength = yourGroups?.length
   const [showAllYourGroups, setShowAllYourGroups] = useState(false)
-  console.log(showAllYourGroups)
 
   const yourShownGroups = showAllYourGroups
     ? yourGroups
     : yourGroups?.slice(0, 5)
-  //   const otherGroups = props.groups.filter(
-  //     (g) => !allSpecialGroupSlugs.includes(g.slug)
-  //   )
-
-  //   const searchedGroups = useGroupSearchResults(query, 50)
-  //   const groups = query !== '' ? searchedGroups : []
 
   return (
     <>
@@ -74,14 +68,15 @@ export default function YourGroups() {
         </>
       )}
       <Subtitle>Groups You Follow</Subtitle>
-
-      <GroupSearch
-        filter={{
-          yourGroups: true,
-        }}
-        persistPrefix={'your-groups'}
-        myGroupIds={[]}
-      />
+      {isAuth && (
+        <GroupSearch
+          filter={{
+            yourGroups: true,
+          }}
+          persistPrefix={'your-groups'}
+          myGroupIds={[]}
+        />
+      )}
     </>
   )
 }
