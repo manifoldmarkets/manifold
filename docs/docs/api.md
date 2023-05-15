@@ -826,8 +826,7 @@ $ curl https://manifold.markets/api/v0/market/{marketId}/sell -X POST \
     --data-raw '{"outcome": "YES", "shares": 10}'
 ```
 
-Response type: A `Bet`, with an additional `"status": "success"` field, for backwards
-compatibility.  In previous versions it simply returned `{"status": "success"}`.
+Response type: A `Bet`, with an additional `"status": "success"` field.
 
 ### `POST /v0/comment`
 
@@ -941,6 +940,8 @@ Requires no authorization.
   </details>
 
 ## Changelog
+- 2023-05-15: Change the response of the `/market/{marketId}/sell` POST endpoint from
+  `{"status": "success"}` to a full `Bet`, with an additional `"status": "success"` field.
 - 2023-04-03: Add `/market/[marketId]/group` POST endpoint.
 - 2023-03-21: Add `/market/[marketId]/positions` and `/search-markets` endpoints
 - 2022-11-22: Update /market GET to remove `bets` and `comments`
