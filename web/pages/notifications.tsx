@@ -7,7 +7,7 @@ import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { ControlledTabs } from 'web/components/layout/tabs'
+import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { NotificationSettings } from 'web/components/notification-settings'
 import { combineAndSumIncomeNotifications } from 'web/components/notifications/income-summary-notifications'
 import {
@@ -37,20 +37,18 @@ import { XIcon } from '@heroicons/react/outline'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
+import { buildArray } from 'common/util/array'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
   const router = useRouter()
   const [navigateToSection, setNavigateToSection] = useState<string>()
-  const [activeIndex, setActiveIndex] = useState(0)
   const { isNative } = getNativePlatform()
   useRedirectIfSignedOut()
 
   useEffect(() => {
+    if (!router.isReady) return
     const query = { ...router.query }
-    if (query.tab === 'settings') {
-      setActiveIndex(2)
-    }
     if (query.section) {
       setNavigateToSection(query.section as string)
     }
@@ -94,51 +92,34 @@ export default function Notifications() {
           )
         )}
 
-        {privateUser && router.isReady && (
-          <div className="relative h-full w-full">
-            <div className="relative">
-              <ControlledTabs
-                currentPageForAnalytics={'notifications'}
-                labelClassName={'pb-2 pt-1 '}
-                className={'mb-0 sm:mb-2'}
-                activeIndex={activeIndex}
-                onClick={(title, i) => {
-                  router.replace(
-                    {
-                      query: {
-                        ...router.query,
-                        tab: title.toLowerCase(),
-                        section: '',
-                      },
-                    },
-                    undefined,
-                    { shallow: true }
-                  )
-                  setActiveIndex(i)
-                }}
-                tabs={[
-                  {
-                    title: 'Notifications',
-                    content: <NotificationsList privateUser={privateUser} />,
-                  },
-                  {
-                    title: 'Balance Changes',
-                    content: <BalanceChangesList privateUser={privateUser} />,
-                  },
-                  {
-                    title: 'Settings',
-                    content: (
-                      <NotificationSettings
-                        navigateToSection={navigateToSection}
-                        privateUser={privateUser}
-                      />
-                    ),
-                  },
-                ]}
-              />
-            </div>
+        <div className="relative h-full w-full">
+          <div className="relative">
+            <QueryUncontrolledTabs
+              currentPageForAnalytics={'notifications'}
+              labelClassName={'pb-2 pt-1 '}
+              className={'mb-0 sm:mb-2'}
+              tabs={buildArray([
+                {
+                  title: 'Notifications',
+                  content: <NotificationsList privateUser={privateUser} />,
+                },
+                {
+                  title: 'Balance Changes',
+                  content: <BalanceChangesList privateUser={privateUser} />,
+                },
+                privateUser && {
+                  title: 'Settings',
+                  content: (
+                    <NotificationSettings
+                      navigateToSection={navigateToSection}
+                      privateUser={privateUser}
+                    />
+                  ),
+                },
+              ])}
+            />
           </div>
-        )}
+        </div>
       </Col>
     </Page>
   )
@@ -184,15 +165,16 @@ function RenderNotificationGroups(props: {
           itemsPerPage={NOTIFICATIONS_PER_PAGE}
           totalItems={totalItems}
           setPage={setPage}
-          scrollToTop
-          // We can't save page to query without more work bc the two tabs have different page states.
+          savePageToQuery={true}
         />
       )}
     </>
   )
 }
 
-function NotificationsList(props: { privateUser: PrivateUser }) {
+function NotificationsList(props: {
+  privateUser: PrivateUser | undefined | null
+}) {
   const { privateUser } = props
   const { groupedNotifications, mostRecentNotification } =
     useGroupedNonBalanceChangeNotifications(privateUser)
@@ -223,12 +205,14 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
           see more.
         </div>
       )}
-      <PushNotificationsModal
-        privateUser={privateUser}
-        totalNotifications={
-          groupedNotifications.map((ng) => ng.notifications).flat().length
-        }
-      />
+      {privateUser && (
+        <PushNotificationsModal
+          privateUser={privateUser}
+          totalNotifications={
+            groupedNotifications.map((ng) => ng.notifications).flat().length
+          }
+        />
+      )}
 
       <RenderNotificationGroups
         notificationGroups={paginatedGroupedNotifications}
@@ -240,7 +224,9 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
   )
 }
 
-function BalanceChangesList(props: { privateUser: PrivateUser }) {
+function BalanceChangesList(props: {
+  privateUser: PrivateUser | undefined | null
+}) {
   const { privateUser } = props
   const allGroupedNotifications =
     useGroupedBalanceChangeNotifications(privateUser)

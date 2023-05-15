@@ -29,16 +29,13 @@ import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SwitchSetting } from 'web/components/switch-setting'
-import {
-  storageStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
+
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getIsNative } from 'web/lib/native/is-native'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { useUser } from 'web/hooks/use-user'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined
@@ -295,10 +292,10 @@ export function NotificationSettings(props: {
 
     // Not sure how to prevent re-render (and collapse of an open section)
     // due to a private user settings change. Just going to persist expanded state here
-    const [expanded, setExpanded] = usePersistentState(expand ?? false, {
-      key: 'NotificationsSettingsSection-' + subscriptionTypes.join('-'),
-      store: storageStore(safeLocalStorage),
-    })
+    const [expanded, setExpanded] = usePersistentInMemoryState(
+      expand ?? false,
+      'notifs-section-open-' + subscriptionTypes.join('-')
+    )
 
     // Not working as the default value for expanded, so using a useEffect
     useEffect(() => {
