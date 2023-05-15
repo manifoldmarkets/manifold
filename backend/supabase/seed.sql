@@ -454,6 +454,9 @@ create index if not exists contract_bets_activity_feed on contract_bets (is_ante
 /* serving e.g. the contract page recent bets and the "bets by contract" API */
 create index if not exists contract_bets_created_time on contract_bets (contract_id, created_time desc);
 
+/* serving update contract metrics*/
+create index if not exists contract_bets_created_time_asc ON contract_bets (contract_id, created_time);
+
 /* serving "my trades on a contract" kind of queries */
 create index if not exists contract_bets_contract_user_id on contract_bets (contract_id, user_id, created_time desc);
 
