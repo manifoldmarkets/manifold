@@ -34,6 +34,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { TopicSelector } from 'web/components/topic-selector'
 import ShortToggle from 'web/components/widgets/short-toggle'
+import ChatInput from 'web/components/chat-input'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -62,7 +63,6 @@ function HomeDashboard() {
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
 
   const isLoading = !dailyChangedContracts
-
   return (
     <Page>
       <Col className="mx-auto w-full max-w-2xl gap-6 pb-8 sm:px-2 lg:pr-4">
@@ -87,7 +87,6 @@ function MobileHome() {
 
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
   const isLoading = !dailyChangedContracts
-
   return (
     <Page>
       <Col className="gap-2 py-2 pb-8 sm:px-2">
@@ -104,20 +103,6 @@ function MobileHome() {
           </Col>
         </Col>
       </Col>
-
-      <button
-        type="button"
-        className={clsx(
-          'focus:ring-primary-500 fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
-          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r'
-        )}
-        onClick={() => {
-          Router.push('/create')
-          track('mobile create button')
-        }}
-      >
-        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
-      </button>
     </Page>
   )
 }
@@ -175,12 +160,16 @@ const YourDailyUpdates = memo(function YourDailyUpdates(props: {
 const LiveSection = memo(function LiveSection(props: {
   pill: pill_options
   className?: string
+  showChat: boolean
+  setShowChat: (showChat: boolean) => void
 }) {
+  const { showChat, setShowChat } = props
   const { pill, className } = props
   return (
     <Col className={clsx('relative mt-4', className)}>
       <ActivityLog count={30} pill={pill} />
       <div className="from-canvas-50 pointer-events-none absolute bottom-0 h-5 w-full select-none bg-gradient-to-t to-transparent" />
+      <ChatInput setShowChat={setShowChat} showChat={showChat} />
     </Col>
   )
 })
@@ -199,21 +188,23 @@ const YourFeedSection = memo(function YourFeedSection(props: {
 })
 
 const MainContent = () => {
+  const [topic, setTopic] = usePersistentLocalState('', 'your-feed-topic')
   const [isLive, setIsLive] = usePersistentInMemoryState(
     false,
     'main-content-section-is-live'
   )
-  const [topic, setTopic] = usePersistentLocalState('', 'your-feed-topic')
   const [pill, setPill] = usePersistentInMemoryState<pill_options>(
     'all',
     'live-pill'
   )
-
   const selectLive = (on: boolean) => {
     setIsLive(on)
     track('select live', { on })
   }
-
+  const [showChat, setShowChat] = usePersistentLocalState(
+    true,
+    'show-live-chat-input'
+  )
   return (
     <Col>
       <Row className="h-[48px] items-center justify-between">
@@ -228,7 +219,27 @@ const MainContent = () => {
         </Row>
       </Row>
       <YourFeedSection topic={topic} className={clsx(isLive ? 'hidden' : '')} />
-      <LiveSection className={clsx(isLive ? '' : 'hidden')} pill={pill} />
+      {isLive && (
+        <LiveSection
+          showChat={showChat}
+          setShowChat={setShowChat}
+          pill={pill}
+        />
+      )}
+      <button
+        type="button"
+        className={clsx(
+          'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
+          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
+          isLive && showChat ? 'hidden' : 'bottom-[70px]'
+        )}
+        onClick={() => {
+          Router.push('/create')
+          track('mobile create button')
+        }}
+      >
+        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
+      </button>
     </Col>
   )
 }

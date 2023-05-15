@@ -1,6 +1,8 @@
+import { BOT_USERNAMES } from 'common/envs/constants'
 import { groupBy, mapValues } from 'lodash'
 import { runScript } from 'run-script'
 import { addToLeagueIfNotInOne, getUsersNotInLeague } from 'shared/leagues'
+import { SupabaseDirectClient } from 'shared/supabase/init'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
@@ -23,4 +25,18 @@ if (require.main === module) {
       )
     )
   })
+}
+
+const _reassignBots = (pg: SupabaseDirectClient) => {
+  return pg.none(
+    `update leagues
+    set division = 4,
+        cohort = 'bots'
+    where user_id in (
+        select id from users
+        where data->>'username' in ($1:csv)
+        limit 40
+    )`,
+    [BOT_USERNAMES]
+  )
 }

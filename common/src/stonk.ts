@@ -4,32 +4,33 @@ export const STONK_YES = 'BUY'
 export const STONK_NO = 'SHORT'
 export const STONK_INITIAL_PROB = 50
 
-const DEFAULT_STONK_MAX = 100
-const DEFAULT_STONK_MIN = 0
-export const getStonkPriceMax = (contract: StonkContract) => {
-  //max is log scale of unique bettors
-  const { uniqueBettorCount } = contract
-  // unique counts to max price:
-  // <35 = 100
-  // <100 = 200
-  // <250 = 300
-  // <700 = 400
-  // <2000 = 500
-  const logCount = Math.log(uniqueBettorCount / 4.9)
-  const growthScale =
-    logCount * DEFAULT_STONK_MAX - ((logCount * DEFAULT_STONK_MAX) % 100)
-  return growthScale > 100 ? growthScale : DEFAULT_STONK_MAX
+const DEFAULT_STONK_MULTIPLIER = 500
+// Doesn't seem necessary to show the max as *stocks* should be unbounded
+export const getStonkPriceMax = () => {
+  return Math.round(getStonkPriceAtProb({} as StonkContract, 1))
 }
 
+// TODO: remove unused contract param if we ever settle on a pricing mechanism
 export const getStonkPriceAtProb = (contract: StonkContract, prob: number) => {
-  return (
-    prob * (getStonkPriceMax(contract) - DEFAULT_STONK_MIN) + DEFAULT_STONK_MIN
-  )
+  const cappedProb = Math.min(Math.max(prob, 0.0001), 0.9999)
+  const logTerm = Math.log(cappedProb / (1 - cappedProb))
+  const maxTerm = Math.max(logTerm, cappedProb)
+  const stonkPrice = maxTerm * DEFAULT_STONK_MULTIPLIER
+  return stonkPrice
 }
 
-export const getStonkShares = (contract: StonkContract, shares: number) => {
+export const getStonkShares = (
+  contract: StonkContract,
+  shares: number,
+  precision?: number
+) => {
+  if (precision !== undefined) {
+    return Number(
+      (Math.floor(shares) / getStonkPriceAtProb(contract, 1)).toPrecision(2)
+    )
+  }
   return Number(
-    (Math.floor(shares) / getStonkPriceAtProb(contract, 1)).toFixed(2)
+    (Math.floor(shares) / getStonkPriceAtProb(contract, 1)).toFixed(5)
   )
 }
 

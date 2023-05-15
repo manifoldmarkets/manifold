@@ -661,6 +661,8 @@ Parameters:
       depending on current unfilled limit bets and the AMM's liquidity. Any remaining
       portion of the bet not filled would remain to be matched against in the future.
   - An unfilled limit order bet can be cancelled using the cancel API.
+- `expiresAt`: Optional. A Unix timestamp (in milliseconds) at which the limit bet
+  should be automatically canceled.
 
 Example request:
 
@@ -671,6 +673,8 @@ $ curl https://manifold.markets/api/v0/bet -X POST -H 'Content-Type: application
                  "outcome":"YES", \
                  "contractId":"{...}"}'
 ```
+
+Response type: A `Bet`.
 
 ### `POST /v0/bet/cancel/[id]`
 
@@ -822,6 +826,8 @@ $ curl https://manifold.markets/api/v0/market/{marketId}/sell -X POST \
     --data-raw '{"outcome": "YES", "shares": 10}'
 ```
 
+Response type: A `Bet`, with an additional `"status": "success"` field.
+
 ### `POST /v0/comment`
 
 Creates a comment in the specified market. Only supports top-level comments for now.
@@ -934,6 +940,8 @@ Requires no authorization.
   </details>
 
 ## Changelog
+- 2023-05-15: Change the response of the `/market/{marketId}/sell` POST endpoint from
+  `{"status": "success"}` to a full `Bet`, with an additional `"status": "success"` field.
 - 2023-04-03: Add `/market/[marketId]/group` POST endpoint.
 - 2023-03-21: Add `/market/[marketId]/positions` and `/search-markets` endpoints
 - 2022-11-22: Update /market GET to remove `bets` and `comments`

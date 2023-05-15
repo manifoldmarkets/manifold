@@ -45,8 +45,10 @@ create table if not exists
   users (
     id text not null primary key,
     data jsonb not null,
-    fs_updated_time timestamp not null
+    fs_updated_time timestamp not null,
+    name_username_vector tsvector generated always as (to_tsvector((data->>'username') || ' ' || (data->>'name'))) stored
   );
+
 
 alter table users enable row level security;
 
@@ -62,6 +64,8 @@ create index if not exists users_data_gin on users using GIN (data);
 create index if not exists users_name_gin on users using GIN ((data ->> 'name') gin_trgm_ops);
 
 create index if not exists users_username_gin on users using GIN ((data ->> 'username') gin_trgm_ops);
+
+create index users_name_username_vector_idx on users using gin(name_username_vector);
 
 create index if not exists users_follower_count_cached on users ((to_jsonb(data -> 'followerCountCached')) desc);
 
@@ -313,10 +317,13 @@ create index if not exists contracts_visibility on contracts (visibility);
 
 create index if not exists description_fts on contracts using gin (description_fts);
 
--- for the ilike search TODO: remove this after PR merge
-create index concurrently if not exists contracts_question_trgm_idx on contracts using gin (question gin_trgm_ops);
+CREATE INDEX idx_contracts_close_time_resolution_time_visibility
+  ON contracts (close_time, resolution_time, visibility);
 
-create index concurrently if not exists question_nostop_fts on contracts  using gin (question_nostop_fts);
+-- for the ilike search TODO: remove this after PR merge
+create index if not exists contracts_question_trgm_idx on contracts using gin (question gin_trgm_ops);
+
+create index if not exists question_nostop_fts on contracts  using gin (question_nostop_fts);
 
 alter table contracts
 cluster on contracts_creator_id;
@@ -447,6 +454,9 @@ create index if not exists contract_bets_activity_feed on contract_bets (is_ante
 /* serving e.g. the contract page recent bets and the "bets by contract" API */
 create index if not exists contract_bets_created_time on contract_bets (contract_id, created_time desc);
 
+/* serving update contract metrics*/
+create index if not exists contract_bets_created_time_asc ON contract_bets (contract_id, created_time);
+
 /* serving "my trades on a contract" kind of queries */
 create index if not exists contract_bets_contract_user_id on contract_bets (contract_id, user_id, created_time desc);
 
@@ -498,6 +508,7 @@ create index contract_comments_contract_id_idx on contract_comments (contract_id
 create index contract_comments_data_likes_idx on contract_comments (((data -> 'likes')::numeric));
 
 create index contract_comments_data_created_time_idx on contract_comments (((data ->> 'createdTime')::bigint));
+create index contract_comments_created_time_idx on contract_comments (created_time desc);
 
 alter table contract_comments
 cluster on contract_comments_pkey;
@@ -534,6 +545,27 @@ create policy "public read" on contract_comment_edits for
 select
     using (true);
 create index if not exists comment_edits_comment_id_idx on contract_comment_edits (comment_id);
+
+
+create table if not exists
+  chat_messages (
+                id serial primary key,
+                user_id text not null,
+                channel_id text not null,
+                content jsonb not null,
+                user_name text not null,
+                user_avatar_url text not null,
+                user_username text not null,
+                created_time timestamptz not null default now()
+);
+
+alter table chat_messages enable row level security;
+
+drop policy if exists "public read" on chat_messages;
+
+create policy "public read" on chat_messages for
+  select
+  using (true);
 
 create table if not exists
   contract_follows (
@@ -646,7 +678,7 @@ select
   using (true);
 
 create index if not exists group_members_data_gin on group_members using GIN (data);
-
+create index  group_members_member_id_idx on group_members (member_id);
 alter table group_members
 cluster on group_members_pkey;
 
@@ -689,6 +721,9 @@ create index if not exists txns_data_gin on txns using GIN (data);
 
 alter table txns
 cluster on txns_pkey;
+
+-- for querying top market_ads
+create index if not exists txns_category on txns ((data ->> 'category'), (data ->> 'to_id'));
 
 create table if not exists
   manalinks (
@@ -906,6 +941,16 @@ create table if not exists
 
 alter table user_topics enable row level security;
 
+drop policy if exists "public read" on user_topics;
+
+create policy "public read" on user_topics for
+select
+  using (true);
+
+drop policy if exists "public write access" on user_topics;
+
+create policy "public write access" on user_topics for all using (true);
+
 create table if not exists
   market_ads (
     id text not null primary key default uuid_generate_v4 (),
@@ -919,15 +964,19 @@ create table if not exists
     constraint market_ads_market_id_unique unique (market_id)
   );
 
-drop policy if exists "public read" on user_topics;
+alter table market_ads enable row level security;
 
-create policy "public read" on user_topics for
+drop policy if exists "public read" on market_ads;
+
+create policy "public read" on market_ads for
 select
   using (true);
 
-drop policy if exists "public write access" on user_topics;
+drop policy if exists "admin write access" on market_ads;
 
-create policy "public write access" on user_topics for all using (true);
+create policy "admin write access" on market_ads as PERMISSIVE for all to service_role;
+
+
 
 create table if not exists
   leagues (
@@ -947,6 +996,44 @@ drop policy if exists "public read" on leagues;
 
 create policy "public read" on leagues for
 select
+  using (true);
+
+create table if not exists
+  q_and_a (
+  id text not null primary key,
+  user_id text not null,
+  question text not null,
+  description text not null,
+  bounty numeric not null,
+  deleted boolean not null default false,
+  created_time timestamptz not null default now()
+);
+
+alter table q_and_a enable row level security;
+
+drop policy if exists "public read" on q_and_a;
+
+create policy "public read" on q_and_a for
+  select
+  using (true);
+
+create table if not exists
+  q_and_a_answers (
+  id text not null primary key,
+  q_and_a_id text not null,
+  user_id text not null,
+  text text not null,
+  award numeric not null default 0.0,
+  deleted boolean not null default false,
+  created_time timestamptz not null default now()
+);
+
+alter table q_and_a_answers enable row level security;
+
+drop policy if exists "public read" on q_and_a_answers;
+
+create policy "public read" on q_and_a_answers for
+  select
   using (true);
 
 begin;
@@ -969,6 +1056,9 @@ add table group_members;
 
 alter publication supabase_realtime
 add table posts;
+
+alter publication supabase_realtime
+add table chat_messages;
 
 commit;
 

@@ -8,6 +8,14 @@ export const CURRENT_SEASON = 1
 export const SEASON_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
 export const SEASON_END = new Date('2023-06-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
 
+export const getSeasonDates = (season: number) => {
+  const start = new Date(SEASON_START)
+  start.setMonth(start.getMonth() + season - 1)
+  const end = new Date(SEASON_START)
+  end.setMonth(end.getMonth() + season)
+  return { start, end }
+}
+
 export const DIVISION_NAMES = {
   1: 'Bronze',
   2: 'Silver',

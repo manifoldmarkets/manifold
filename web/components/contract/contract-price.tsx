@@ -23,7 +23,6 @@ import { getTextColor } from 'web/components/bet/quick-bet'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { getValueFromBucket } from 'common/calculate-dpm'
-import { getStonkPriceMax } from 'common/stonk'
 
 export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
@@ -157,14 +156,10 @@ export function StonkPrice(props: {
   const spring = useAnimatedNumber(value)
   return (
     <Row className={clsx('text-ink-1000 items-baseline text-3xl', className)}>
-      <Tooltip
-        text={`of ${ENV_CONFIG.moneyMoniker + getStonkPriceMax(contract)}`}
-      >
-        <Row>
-          {ENV_CONFIG.moneyMoniker}
-          <animated.div>{spring.to((val) => Math.round(val))}</animated.div>
-        </Row>
-      </Tooltip>
+      <Row>
+        {ENV_CONFIG.moneyMoniker}
+        <animated.div>{spring.to((val) => Math.round(val))}</animated.div>
+      </Row>
       <div className="ml-2 text-base">per share</div>
     </Row>
   )

@@ -51,7 +51,6 @@ export function LandingPagePanel() {
   useTracking('view landing page')
   const isMobile = useIsMobile()
   const [pageNumber, setPageNumber] = useState(0)
-  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     const newTimeoutId = setTimeout(

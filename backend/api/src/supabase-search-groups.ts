@@ -98,6 +98,7 @@ function getSearchGroupSQL(groupInput: {
       and groups.creator_id != '${uid}'
       `
     }
+    // if in discover groups
   } else {
     if (emptyTerm) {
       query = `

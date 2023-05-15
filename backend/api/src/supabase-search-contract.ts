@@ -111,9 +111,19 @@ function getSearchContractSQL(contractInput: {
     hideStonks
   )
   let sortAlgorithm: string | undefined = undefined
+  const isUrl = term.startsWith('https://manifold.markets/')
 
+  if (isUrl) {
+    const slug = term.split('/').pop()
+    query = `
+    SELECT data
+    FROM contracts
+    ${whereSQL}
+    AND slug = '${slug}' `
+    sortAlgorithm = 'popularity_score'
+  }
   // Searching markets within a group
-  if (groupId) {
+  else if (groupId) {
     // Blank search within group
     if (emptyTerm) {
       query = `

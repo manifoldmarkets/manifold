@@ -176,7 +176,8 @@ export function BetStatusText(props: {
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const isShortSell = isCPMM2 && amount > 0 && shares === 0
-  const money = formatMoney(Math.abs(amount))
+  const absAmount = Math.abs(amount)
+  const money = formatMoney(absAmount)
   const orderAmount =
     bet.limitProb !== undefined && bet.orderAmount !== undefined
       ? formatMoney(bet.orderAmount)
@@ -200,7 +201,10 @@ export function BetStatusText(props: {
       : getFormattedMappedValue(contract, bet.limitProb ?? bet.probAfter)
 
   return (
-    <div className={clsx('text-ink-500 text-sm', className)}>
+    <div
+      className={clsx('text-ink-500', className)}
+      style={{ fontSize: 14 + Math.min(absAmount / 1000, 40) }}
+    >
       {!hideUser ? (
         <UserLink name={bet.userName} username={bet.userUsername} />
       ) : (

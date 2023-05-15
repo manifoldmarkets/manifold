@@ -90,6 +90,7 @@ export const BOT_USERNAMES = [
   'veat',
   'ms_test',
   'Turbot',
+  'MiraBot',
 ]
 
 export const CORE_USERNAMES = [
@@ -142,7 +143,6 @@ export const CHECK_USERNAMES = [
   'CGPGrey',
   'KatjaGrace',
   'AndrewG',
-  'AmmonLam',
   'MarcusAbramovitch',
   'KevinBurke',
 ]

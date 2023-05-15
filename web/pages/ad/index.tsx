@@ -61,7 +61,7 @@ export default function AdsPage(props: { ads: AdType[] }) {
           ) : (
             <>
               <span className="w-full py-4 text-center">No more ads</span>
-              <CreateBanner />
+              {/* <CreateBanner /> */}
             </>
           )}
         </>
@@ -100,8 +100,8 @@ function Ad(props: { ad: AdType; onNext: () => void }) {
 
       <PostCommentsActivity post={ad} comments={comments} tips={tips} />
 
-      <div className="h-8" />
-      <CreateBanner />
+      {/* <div className="h-8" />
+      <CreateBanner /> */}
     </div>
   )
 }
@@ -185,7 +185,7 @@ const TimerBar = (props: { duration: number }) => {
   )
 }
 
-const CreateBanner = () => (
+export const CreateBanner = () => (
   <Link
     href="/ad/create"
     className={clsx(buttonClass('xl', 'indigo'), 'self-center')}

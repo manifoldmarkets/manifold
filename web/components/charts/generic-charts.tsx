@@ -143,7 +143,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
 
   const { xAxis, yAxis } = useMemo(() => {
     const xAxis = axisBottom<number>(xScale).ticks(w / 100)
-    const yAxis = axisRight<number>(yScale).tickFormat((n) => formatPct(n, 2))
+    const yAxis = axisRight<number>(yScale).tickFormat((n) => formatPct(n))
     return { xAxis, yAxis }
   }, [w, xScale, yScale])
 

@@ -14,6 +14,7 @@ export function Modal(props: {
   setOpen: (open: boolean) => void
   size?: 'sm' | 'md' | 'lg' | 'xl'
   position?: 'center' | 'top' | 'bottom'
+  noAutoFocus?: boolean
   className?: string
 }) {
   const {
@@ -23,6 +24,7 @@ export function Modal(props: {
     setOpen,
     size = 'md',
     className,
+    noAutoFocus,
   } = props
 
   const sizeClass = {
@@ -84,7 +86,7 @@ export function Modal(props: {
                 {/* Hack to capture focus b/c headlessui dialog always focuses first element
                     and we don't want it to.
                 */}
-                <div tabIndex={0} />
+                {noAutoFocus && <div tabIndex={0} />}
                 {children}
               </Dialog.Panel>
             </div>

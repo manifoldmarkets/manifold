@@ -69,8 +69,8 @@ export const LinePath = <P,>(
     curve: CurveFactory
   } & SVGProps<SVGPathElement>
 ) => {
-  const { px, py, curve, ...rest } = props
-  const data = useDeferredValue(props.data)
+  const { px, py, curve, data: propData, ...rest } = props
+  const data = useDeferredValue(propData)
   const d = useMemo(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     () => line<P>(px, py).curve(curve)(data)!,
@@ -88,8 +88,8 @@ export const AreaPath = <P,>(
     curve: CurveFactory
   } & SVGProps<SVGPathElement>
 ) => {
-  const { px, py0, py1, curve, ...rest } = props
-  const data = useDeferredValue(props.data)
+  const { px, py0, py1, curve, data: propData, ...rest } = props
+  const data = useDeferredValue(propData)
   const d = useMemo(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     () => area<P>(px, py0, py1).curve(curve)(data)!,
@@ -377,8 +377,8 @@ export const getRightmostVisibleDate = (
   }
 }
 
-export const formatPct = (n: number, digits?: number) => {
-  return `${(n * 100).toFixed(digits ?? 0)}%`
+export const formatPct = (n: number) => {
+  return `${(n * 100).toFixed(0)}%`
 }
 
 export const formatDate = (

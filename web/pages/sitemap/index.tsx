@@ -16,6 +16,7 @@ import { SEO } from 'web/components/SEO'
 import { Card } from 'web/components/widgets/card'
 import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useUser } from 'web/hooks/use-user'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { isIOS } from 'web/lib/util/device'
 
@@ -34,6 +35,8 @@ export default function LabsPage() {
           setIsModalOpen(true)
         },
       } as { href: string }) // typechecker is dumb
+
+  const user = useUser()
 
   return (
     <Page>
@@ -202,6 +205,18 @@ export default function LabsPage() {
           className="-ml-4 flex w-auto"
           columnClassName="pl-4 bg-clip-padding"
         >
+          <LabCard
+            title="❓ Q&A"
+            description="Ask and answer questions to win mana"
+            href="/q-and-a"
+          />
+          {user && (
+            <LabCard
+              title="🎁 Loot box"
+              description="Invest in random markets"
+              href="/lootbox"
+            />
+          )}
           <LabCard
             title="🎴 Manifold: The Gambling"
             description="Match each market to its creator"
