@@ -179,7 +179,6 @@ export function JoinOrLeaveGroupButton(props: {
   disabled?: boolean
 }) {
   const { group, className, user, isMobile, disabled } = props
-
   // Handle both non-live and live updating isMember state
   const [isMember, setIsMember] = useState(props.isMember)
   useEffect(() => setIsMember(props.isMember), [props.isMember])
@@ -217,13 +216,18 @@ export function JoinOrLeaveGroupButton(props: {
   if (isMember) {
     if (isMobile) {
       return (
-        <button className={className} onClick={unfollow} disabled={disabled}>
+        <Button className={className} onClick={unfollow} disabled={disabled}>
           <UserRemoveIcon className={clsx('h-5 w-5', groupButtonClass)} />
-        </button>
+        </Button>
       )
     }
     return (
-      <Button color="dark-gray" className={className} onClick={unfollow}>
+      <Button
+        color="dark-gray"
+        className={className}
+        onClick={unfollow}
+        disabled={disabled}
+      >
         <Row className="gap-1">
           <UserRemoveIcon className="h-5 w-5" />
           Leave

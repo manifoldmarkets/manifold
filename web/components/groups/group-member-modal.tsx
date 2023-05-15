@@ -309,7 +309,11 @@ export function MemberRoleHeader(props: {
   )
 }
 
-export function MemberRoleTag(role: any | undefined, isCreator: boolean) {
+export function MemberRoleTag(props: {
+  role: any | undefined
+  isCreator: boolean
+}) {
+  const { role, isCreator } = props
   if (!role) {
     return <></>
   }

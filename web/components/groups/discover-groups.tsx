@@ -148,6 +148,7 @@ export function GroupLine(props: {
           <JoinOrLeaveGroupButton
             group={group}
             user={user}
+            disabled={user?.id == group.creatorId}
             isMember={isMember}
             className="w-[80px] !px-0 !py-1"
           />

@@ -14,6 +14,7 @@ import { GroupLine } from './discover-groups'
 import { useUser } from 'web/hooks/use-user'
 import { searchGroups } from 'web/lib/supabase/groups'
 import { GroupsList } from 'web/components/groups/groups-list'
+import { Spacer } from '../layout/spacer'
 
 const INITIAL_STATE = {
   groups: undefined,
@@ -141,10 +142,12 @@ export default function GroupSearch(props: {
         placeholder="Search groups"
         className="w-full"
       />
+      <Spacer h={1} />
       <GroupsList
         groups={groups}
         loadMore={loadMoreGroups}
         yourGroupIds={yourGroupIds}
+        className="my-1"
       />
     </Col>
   )

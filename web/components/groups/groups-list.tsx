@@ -10,8 +10,9 @@ export function GroupsList(props: {
   groups: Group[] | undefined
   loadMore?: () => Promise<boolean>
   yourGroupIds?: string[]
+  className?: string
 }) {
-  const { groups, loadMore, yourGroupIds } = props
+  const { groups, loadMore, yourGroupIds, className } = props
 
   const isMobile = useIsMobile()
   const user = useUser()
@@ -24,7 +25,7 @@ export function GroupsList(props: {
     return <div>No groups found</div>
   }
   return (
-    <Col>
+    <Col className={className}>
       {groups &&
         groups.map((group) => (
           <GroupLine
