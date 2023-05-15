@@ -146,10 +146,10 @@ export const sellshares = authEndpoint(async (req, auth) => {
       })
     }
 
-    return { newBet, makers, maxShares, soldShares, contract }
+    return { newBet, betId: newBetDoc.id, makers, maxShares, soldShares, contract }
   })
 
-  const { makers, maxShares, soldShares, contract } = result
+  const { newBet, betId, makers, maxShares, soldShares, contract } = result
 
   if (floatingEqual(maxShares, soldShares)) {
     await removeUserFromContractFollowers(contractId, auth.uid)
@@ -158,7 +158,7 @@ export const sellshares = authEndpoint(async (req, auth) => {
   await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
   log('Share redemption transaction finished.')
 
-  return { status: 'success' }
+  return { status: 'success', ...newBet, betId: betId }
 })
 
 const firestore = admin.firestore()
