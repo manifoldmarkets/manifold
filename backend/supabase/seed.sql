@@ -45,8 +45,10 @@ create table if not exists
   users (
     id text not null primary key,
     data jsonb not null,
-    fs_updated_time timestamp not null
+    fs_updated_time timestamp not null,
+    name_username_vector tsvector generated always as (to_tsvector((data->>'username') || ' ' || (data->>'name'))) stored
   );
+
 
 alter table users enable row level security;
 
@@ -62,6 +64,8 @@ create index if not exists users_data_gin on users using GIN (data);
 create index if not exists users_name_gin on users using GIN ((data ->> 'name') gin_trgm_ops);
 
 create index if not exists users_username_gin on users using GIN ((data ->> 'username') gin_trgm_ops);
+
+create index users_name_username_vector_idx on users using gin(name_username_vector);
 
 create index if not exists users_follower_count_cached on users ((to_jsonb(data -> 'followerCountCached')) desc);
 
@@ -669,7 +673,8 @@ select
   using (true);
 
 create index if not exists group_members_data_gin on group_members using GIN (data);
-
+CREATE INDEX concurrently group_members_member_id_idx ON group_members (member_id);
+drop index if exists group_members_member_id_idx;
 alter table group_members
 cluster on group_members_pkey;
 

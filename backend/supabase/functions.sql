@@ -595,7 +595,7 @@ from (
     where data->'groupSlugs' ?| group_slugs
       and is_valid_contract(contracts)
     order by popularity_score desc,
-      data->'slug' offset start
+     slug offset start
     limit lim
   ) as search_contracts $$;
 
@@ -614,7 +614,7 @@ from (
       and is_valid_contract(contracts)
       and contracts.creator_id = $1
     order by popularity_score desc,
-      data->'slug' offset start
+      slug offset start
     limit lim
   ) as search_contracts $$;
 
@@ -1070,9 +1070,9 @@ create
 or replace function search_users (query text, count integer) returns setof users as $$
 select *
 from users
-where to_tsvector((data->>'username') || ' ' || (data->>'name')) @@ websearch_to_tsquery(query)
-  or data->>'username' ilike '%' || query || '%'
-  or data->>'name' ilike '%' || query || '%'
+where users.name_username_vector @@ websearch_to_tsquery(query)
+   or (data->>'username') % query
+   or (data->>'name') % query
 order by greatest(
     similarity(query, data->>'name'),
     similarity(query, data->>'username')
