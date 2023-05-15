@@ -84,6 +84,9 @@ export const sellshares = authEndpoint(async (req, auth) => {
     const maxShares = sharesByOutcome[chosenOutcome]
     const sharesToSell = shares ?? maxShares
 
+    if (!maxShares)
+      throw new APIError(400, `You don't have any ${chosenOutcome} shares to sell.`)
+
     if (!floatingLesserEqual(sharesToSell, maxShares))
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
 
