@@ -1,6 +1,3 @@
-update groups
-set fs_updated_time=fs_updated_time;
-
 create
 or replace function group_populate_cols () returns trigger language plpgsql as $$ begin 
     if new.data is not null then 

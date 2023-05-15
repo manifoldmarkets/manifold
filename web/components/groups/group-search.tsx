@@ -83,9 +83,6 @@ export default function GroupSearch(props: {
           ? newGroups
           : [...(currentState.groups ? currentState.groups : []), ...newGroups]
 
-        // TODO: When `deleted` is a native supabase column, filter
-        // out deleted contracts in backend.
-
         const newFuzzyGroupOffset =
           results.fuzzyOffset + currentState.fuzzyGroupOffset
 

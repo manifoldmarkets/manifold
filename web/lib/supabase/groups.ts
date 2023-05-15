@@ -20,26 +20,6 @@ export type SearchGroupInfo = Pick<
   | 'privacyStatus'
 >
 
-// functions called for multiple groups
-// export async function searchGroups(prompt: string, limit: number) {
-//   const query = selectFrom(
-//     db,
-//     'groups',
-//     'id',
-//     'name',
-//     'about',
-//     'slug',
-//     'totalMembers',
-//     'totalContracts',
-//     'privacyStatus'
-//   )
-//     .order('data->totalMembers', { ascending: false } as any)
-//     .limit(limit)
-//   if (prompt) query.ilike('name', `%${prompt}%`)
-
-//   return (await run(query)).data
-// }
-
 export async function searchGroups(props: {
   state?: groupStateType
   term: string
@@ -47,7 +27,6 @@ export async function searchGroups(props: {
   limit: number
   yourGroups?: boolean
 }) {
-  console.log(props)
   const { term, offset = 0, limit, yourGroups } = props
   const state = props.state ?? {
     groups: undefined,
