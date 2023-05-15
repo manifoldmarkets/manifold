@@ -936,6 +936,16 @@ create table if not exists
 
 alter table user_topics enable row level security;
 
+drop policy if exists "public read" on user_topics;
+
+create policy "public read" on user_topics for
+select
+  using (true);
+
+drop policy if exists "public write access" on user_topics;
+
+create policy "public write access" on user_topics for all using (true);
+
 create table if not exists
   market_ads (
     id text not null primary key default uuid_generate_v4 (),
@@ -949,15 +959,19 @@ create table if not exists
     constraint market_ads_market_id_unique unique (market_id)
   );
 
-drop policy if exists "public read" on user_topics;
+alter table market_ads enable row level security;
 
-create policy "public read" on user_topics for
+drop policy if exists "public read" on market_ads;
+
+create policy "public read" on market_ads for
 select
   using (true);
 
-drop policy if exists "public write access" on user_topics;
+drop policy if exists "admin write access" on market_ads;
 
-create policy "public write access" on user_topics for all using (true);
+create policy "admin write access" on market_ads as PERMISSIVE for all to service_role;
+
+
 
 create table if not exists
   leagues (
