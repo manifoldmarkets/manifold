@@ -47,10 +47,11 @@ function getSearchGroupSQL(groupInput: {
   let query = ''
   const emptyTerm = term.length === 0
 
+  // make sure when perusing groups, only non private ones are shown
   const discoverGroupSearchWhereSQL = "where privacy_status != 'private'"
   const discoverGroupOrderBySQL = 'order by total_members desc'
 
-  // if looking for a specific user's groups
+  // if looking for your own groups
   if (yourGroups) {
     // if user is not the same user groups
     if (!uid) {
@@ -81,7 +82,6 @@ function getSearchGroupSQL(groupInput: {
         join group_members 
         on groups.id = group_members.group_id
         where group_members.member_id = '${uid}'
-        and groups.creator_id != '${uid}'
       ) AS groupz
       where
       groupz.similarity_score > ${SIMILARITY_THRESHOLD}
