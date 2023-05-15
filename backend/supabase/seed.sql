@@ -720,6 +720,9 @@ create index if not exists txns_data_gin on txns using GIN (data);
 alter table txns
 cluster on txns_pkey;
 
+-- for querying top market_ads
+create index if not exists txns_category on txns ((data ->> 'category'), (data ->> 'to_id'));
+
 create table if not exists
   manalinks (
     id text not null primary key,
