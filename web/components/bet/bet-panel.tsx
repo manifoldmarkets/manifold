@@ -336,27 +336,22 @@ export function BuyPanel(props: {
         <YesNoSelector
           className="flex-1"
           btnClassName="flex-1"
-          selected={outcome}
+          selected={seeLimit ? 'LIMIT' : outcome}
           onSelect={(choice) => {
             onOptionChoice(choice)
           }}
           yesLabel={
-            isPseudoNumeric ? 'HIGHER' : isStonk ? STONK_YES : undefined
+            isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
           }
-          noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : undefined}
+          noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : 'Bet NO'}
         />
         {!isStonk && !initialOutcome && (
-          <button
-            className={clsx(
-              'inline-flex items-center justify-center rounded-3xl border-2 p-2',
-              seeLimit
-                ? 'border-indigo-500 bg-indigo-500 text-white'
-                : 'bg-canvas-0 border-indigo-500 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-500/10 hover:text-indigo-500'
-            )}
+          <Button
+            color={seeLimit ? 'indigo' : 'indigo-outline'}
             onClick={() => onOptionChoice('LIMIT')}
           >
             <div className="h-6 w-6 text-center">%</div>
-          </button>
+          </Button>
         )}
       </Row>
 

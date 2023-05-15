@@ -5,7 +5,9 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export type ColorType =
   | 'green'
+  | 'green-outline'
   | 'red'
+  | 'red-outline'
   | 'blue'
   | 'indigo'
   | 'indigo-outline'
@@ -37,14 +39,18 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     sizeClasses[size],
     color === 'green' &&
       'disabled:bg-ink-300 bg-teal-500 text-white hover:bg-teal-600',
+    color === 'green-outline' &&
+      'border border-teal-500 disabled:border-ink-300 disabled:text-ink-300 text-teal-500 hover:bg-teal-500 hover:text-ink-0 disabled:focus:bg-inherit disabled:hover:bg-inherit',
     color === 'red' &&
       'disabled:bg-ink-300 bg-scarlet-300 text-white hover:bg-scarlet-400',
+    color === 'red-outline' &&
+      'border border-scarlet-300 disabled:border-ink-300 disabled:text-ink-300 text-scarlet-300 hover:bg-scarlet-300 hover:text-ink-0 disabled:focus:bg-inherit disabled:hover:bg-inherit',
     color === 'yellow' &&
       'disabled:bg-ink-300 bg-yellow-400 text-white hover:bg-yellow-500',
     color === 'blue' &&
       'disabled:bg-ink-300 bg-blue-400 text-white hover:bg-blue-500',
     color === 'indigo' &&
-      'disabled:bg-ink-300 bg-primary-500 text-white hover:bg-primary-600',
+      'border disabled:bg-ink-300 bg-primary-500 text-white hover:bg-primary-600',
     color === 'indigo-outline' &&
       'border border-primary-500 disabled:border-ink-300 disabled:text-ink-300 text-primary-500 hover:bg-primary-500 hover:text-ink-0 disabled:focus:bg-inherit disabled:hover:bg-inherit',
     color === 'gray' &&
