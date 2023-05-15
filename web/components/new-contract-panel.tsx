@@ -654,6 +654,7 @@ const useNewContract = (
           answers,
           groupId: selectedGroup?.id,
           visibility,
+          utcOffset: new Date().getTimezoneOffset(),
         })
       )) as Contract
 
