@@ -321,9 +321,9 @@ CREATE INDEX idx_contracts_close_time_resolution_time_visibility
   ON contracts (close_time, resolution_time, visibility);
 
 -- for the ilike search TODO: remove this after PR merge
-create index concurrently if not exists contracts_question_trgm_idx on contracts using gin (question gin_trgm_ops);
+create index if not exists contracts_question_trgm_idx on contracts using gin (question gin_trgm_ops);
 
-create index concurrently if not exists question_nostop_fts on contracts  using gin (question_nostop_fts);
+create index if not exists question_nostop_fts on contracts  using gin (question_nostop_fts);
 
 alter table contracts
 cluster on contracts_creator_id;
@@ -673,8 +673,7 @@ select
   using (true);
 
 create index if not exists group_members_data_gin on group_members using GIN (data);
-CREATE INDEX concurrently group_members_member_id_idx ON group_members (member_id);
-drop index if exists group_members_member_id_idx;
+create index  group_members_member_id_idx on group_members (member_id);
 alter table group_members
 cluster on group_members_pkey;
 
