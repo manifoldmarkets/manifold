@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { useStateCheckEquality } from './use-state-check-equality'
 
 const store: { [key: string]: any } = {}
-function isFunction<T>(
+export function isFunction<T>(
   value: T | ((prevState: T) => T)
 ): value is (prevState: T) => T {
   return typeof value === 'function'

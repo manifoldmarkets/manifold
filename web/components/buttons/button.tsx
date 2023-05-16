@@ -5,7 +5,9 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export type ColorType =
   | 'green'
+  | 'green-outline'
   | 'red'
+  | 'red-outline'
   | 'blue'
   | 'indigo'
   | 'indigo-outline'
@@ -36,29 +38,33 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     baseButtonClasses,
     sizeClasses[size],
     color === 'green' &&
-      'disabled:bg-ink-300 bg-teal-500 text-white hover:bg-teal-600',
+      'disabled:bg-ink-300 bg-teal-500 text-white hover:bg-teal-600 border-teal-500',
+    color === 'green-outline' &&
+      'border border-teal-500 disabled:border-ink-300 disabled:text-ink-300 text-teal-500 hover:bg-teal-500 hover:text-ink-0 disabled:focus:bg-inherit disabled:hover:bg-inherit',
     color === 'red' &&
-      'disabled:bg-ink-300 bg-scarlet-300 text-white hover:bg-scarlet-400',
+      'disabled:bg-ink-300 bg-scarlet-300 text-white hover:bg-scarlet-400 border-scarlet-300',
+    color === 'red-outline' &&
+      'border border-scarlet-300 disabled:border-ink-300 disabled:text-ink-300 text-scarlet-300 hover:bg-scarlet-300 hover:text-ink-0 disabled:focus:bg-inherit disabled:hover:bg-inherit',
     color === 'yellow' &&
-      'disabled:bg-ink-300 bg-yellow-400 text-white hover:bg-yellow-500',
+      'disabled:bg-ink-300 bg-yellow-400 text-white hover:bg-yellow-500 border-yellow-500',
     color === 'blue' &&
-      'disabled:bg-ink-300 bg-blue-400 text-white hover:bg-blue-500',
+      'disabled:bg-ink-300 bg-blue-400 text-white hover:bg-blue-500 border-blue-500',
     color === 'indigo' &&
-      'disabled:bg-ink-300 bg-primary-500 text-white hover:bg-primary-600',
+      'border disabled:bg-ink-300 bg-primary-500 text-white hover:bg-primary-600 border-primary-500',
     color === 'indigo-outline' &&
       'border border-primary-500 disabled:border-ink-300 disabled:text-ink-300 text-primary-500 hover:bg-primary-500 hover:text-ink-0 disabled:focus:bg-inherit disabled:hover:bg-inherit',
     color === 'gray' &&
-      'bg-ink-200 text-ink-600 enabled:hover:bg-ink-300 enabled:hover:text-ink-700 disabled:opacity-50',
+      'bg-ink-200 text-ink-600 enabled:hover:bg-ink-300 enabled:hover:text-ink-700 disabled:opacity-50 border-ink-300',
     color === 'dark-gray' &&
-      'bg-gray-500 dark:bg-ink-400 text-ink-0 hover:bg-ink-700 disabled:opacity-50',
+      'bg-gray-500 dark:bg-ink-400 text-ink-0 hover:bg-ink-700 disabled:opacity-50 border-ink-300',
     color === 'gray-outline' &&
       'ring-2 ring-ink-500 text-ink-500 enabled:hover:bg-ink-500 enabled:hover:text-ink-0 disabled:opacity-50',
     color === 'gradient' &&
-      'disabled:bg-ink-300 enabled:bg-gradient-to-r from-primary-500 to-blue-500 text-white hover:from-primary-700 hover:to-blue-700',
+      'disabled:bg-ink-300 enabled:bg-gradient-to-r from-primary-500 to-blue-500 text-white hover:from-primary-700 hover:to-blue-700 border-primary-500',
     color === 'gradient-pink' &&
       'disabled:bg-ink-300 enabled:bg-gradient-to-r from-primary-500 to-fuchsia-500 text-white',
     color === 'gray-white' &&
-      'text-ink-600 hover:bg-ink-200 shadow-none disabled:opacity-50',
+      'text-ink-600 hover:bg-ink-200 shadow-none disabled:opacity-50 border-ink-300',
     color === 'yellow-outline' &&
       'ring-2 ring-yellow-500 text-yellow-500 enabled:hover:bg-yellow-500 enabled:hover:text-ink-0 disabled:opacity-50'
   )
