@@ -5,6 +5,7 @@ import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { GroupLine } from './discover-groups'
+import { useState } from 'react'
 
 export function GroupsList(props: {
   groups: Group[] | undefined
@@ -13,6 +14,7 @@ export function GroupsList(props: {
   className?: string
 }) {
   const { groups, loadMore, yourGroupIds, className } = props
+  const [expandedId, setExpandeId] = useState<string | null>(null)
 
   const isMobile = useIsMobile()
   const user = useUser()
@@ -33,6 +35,8 @@ export function GroupsList(props: {
             group={group as Group}
             user={user}
             isMember={!!yourGroupIds?.includes(group.id)}
+            expandedId={expandedId}
+            setExpandedId={setExpandeId}
           />
         ))}
 

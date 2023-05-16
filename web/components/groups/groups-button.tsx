@@ -229,7 +229,11 @@ export function JoinOrLeaveGroupButton(props: {
       <Button
         color="dark-gray"
         className={className}
-        onClick={unfollow}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          unfollow()
+        }}
         disabled={disabled}
       >
         <Row className="gap-1">
@@ -252,7 +256,15 @@ export function JoinOrLeaveGroupButton(props: {
     )
   }
   return (
-    <Button color="indigo" className={className} onClick={() => follow()}>
+    <Button
+      color="indigo"
+      className={className}
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        follow()
+      }}
+    >
       <Row className="gap-1">
         <UserAddIcon className="h-5 w-5" />
         Join
