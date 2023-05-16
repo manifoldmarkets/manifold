@@ -343,7 +343,9 @@ export function BuyPanel(props: {
           yesLabel={
             isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
           }
-          noLabel={isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'}
+          noLabel={
+            isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
+          }
         />
         {!isStonk && !initialOutcome && (
           <Button
