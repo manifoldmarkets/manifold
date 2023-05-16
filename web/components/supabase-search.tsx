@@ -399,7 +399,6 @@ function SupabaseContractSearchControls(props: {
       ? 'resolved'
       : filterState
 
-
   const updateQuery = (newQuery: string) => {
     setQuery(newQuery)
   }
