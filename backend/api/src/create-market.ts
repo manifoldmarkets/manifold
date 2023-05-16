@@ -86,7 +86,7 @@ const bodySchema = z.object({
   groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
   visibility: z.enum(VISIBILITIES).optional(),
   isTwitchContract: z.boolean().optional(),
-  utcOffset: z.number().positive().optional(),
+  utcOffset: z.number().optional(),
 })
 
 const binarySchema = z.object({
