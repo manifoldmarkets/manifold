@@ -811,18 +811,23 @@ export interface Database {
           data: Json
           fs_updated_time: string
           user_id: string
+          created_time: string
+          type: string
         }
         Insert: {
           contract_id: string
           data: Json
           fs_updated_time: string
           user_id: string
+          type: string
         }
         Update: {
           contract_id?: string
           data?: Json
           fs_updated_time?: string
           user_id?: string
+          created_time?: string
+          type?: string
         }
       }
       user_topics: {
