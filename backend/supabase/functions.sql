@@ -292,7 +292,7 @@ select data,
   relative_dist,
   combined_results.popularity_score
 from combined_results
-  join contracts on contracts.id = combined_results.contract_id
+  join contracts_rbac on contracts_rbac.id = combined_results.contract_id
 $$;
 
 create
@@ -534,7 +534,7 @@ select data,
   relative_dist,
   combined_results.popularity_score
 from combined_results
-  join contracts on contracts.id = combined_results.contract_id
+  join contracts_rbac on contracts_rbac.id = combined_results.contract_id
 $$;
 
 create
@@ -581,7 +581,7 @@ or replace function get_time () returns bigint language sql stable parallel safe
 select ts_to_millis(now()) $$;
 
 create
-or replace function is_valid_contract (ct contracts) returns boolean stable parallel safe as $$
+or replace function is_valid_contract (ct contracts_rbac) returns boolean stable parallel safe as $$
 select ct.resolution_time is null
   and ct.visibility = 'public'
   and ct.close_time > now() + interval '10 minutes' $$ language sql;
@@ -591,9 +591,9 @@ or replace function search_contracts_by_group_slugs (group_slugs text[], lim int
 select array_agg(data)
 from (
     select data
-    from contracts
+    from contracts_rbac
     where data->'groupSlugs' ?| group_slugs
-      and is_valid_contract(contracts)
+      and is_valid_contract(contracts_rbac)
     order by popularity_score desc,
      slug offset start
     limit lim
@@ -609,10 +609,10 @@ or replace function search_contracts_by_group_slugs_for_creator (
 select array_agg(data)
 from (
     select data
-    from contracts
+    from contracts_rbac
     where data->'groupSlugs' ?| group_slugs
-      and is_valid_contract(contracts)
-      and contracts.creator_id = $1
+      and is_valid_contract(contracts_rbac)
+      and contracts_rbac.creator_id = $1
     order by popularity_score desc,
       slug offset start
     limit lim
@@ -634,7 +634,7 @@ create
 or replace function get_open_limit_bets_with_contracts (uid text, count int) returns table (contract_id text, bets jsonb[], contract jsonb) stable parallel safe language sql as $$;
 select contract_id,
   bets.data as bets,
-  contracts.data as contracts
+  contracts_rbac.data as contracts
 from (
     select contract_id,
       array_agg(
@@ -647,14 +647,14 @@ from (
       and (data->>'isCancelled')::boolean = false
     group by contract_id
   ) as bets
-  join contracts on contracts.id = bets.contract_id
+  join contracts_rbac on contracts_rbac.id = bets.contract_id
 limit count $$;
 
 create
 or replace function get_user_bets_from_resolved_contracts (uid text, count int, start int) returns table (contract_id text, bets jsonb[], contract jsonb) stable parallel safe language sql as $$;
 select contract_id,
   bets.data as bets,
-  contracts.data as contracts
+  contracts_rbac.data as contracts
 from (
     select contract_id,
       array_agg(
@@ -666,20 +666,10 @@ from (
       and amount != 0
     group by contract_id
   ) as bets
-  join contracts on contracts.id = bets.contract_id
-where contracts.resolution_time is not null
-  and contracts.outcome_type = 'BINARY'
+  join contracts_rbac on contracts_rbac.id = bets.contract_id
+where contracts_rbac.resolution_time is not null
+  and contracts_rbac.outcome_type = 'BINARY'
 limit count offset start $$;
-
-create
-or replace function get_contracts_by_creator_ids (creator_ids text[], created_time bigint) returns table (creator_id text, contracts jsonb) stable parallel safe language sql as $$
-select creator_id,
-  jsonb_agg(data) as contracts
-from contracts
-where creator_id = any(creator_ids)
-  and contracts.created_time > millis_to_ts($2)
-group by creator_id;
-$$;
 
 create table if not exists
   discord_users (
@@ -726,8 +716,8 @@ or replace function get_your_daily_changed_contracts (uid text, n int, start int
 select data,
   coalesce((data->>'dailyScore')::real, 0.0) as daily_score
 from get_your_contract_ids(uid)
-  left join contracts on contracts.id = contract_id
-where contracts.outcome_type = 'BINARY'
+  left join contracts_rbac on contracts_rbac.id = contract_id
+where contracts_rbac.outcome_type = 'BINARY'
 order by daily_score desc
 limit n offset start $$;
 
@@ -736,9 +726,9 @@ or replace function get_your_trending_contracts (uid text, n int, start int) ret
 select data,
   popularity_score as score
 from get_your_contract_ids(uid)
-  left join contracts on contracts.id = contract_id
-where is_valid_contract(contracts)
-  and contracts.outcome_type = 'BINARY'
+  left join contracts_rbac on contracts_rbac.id = contract_id
+where is_valid_contract(contracts_rbac)
+  and contracts_rbac.outcome_type = 'BINARY'
 order by score desc
 limit n offset start $$;
 
@@ -775,7 +765,7 @@ or replace function get_your_recent_contracts (uid text, n int, start int) retur
 select data,
   max_ts
 from recent_unique_contract_ids
-  left join contracts on contracts.id = contract_id
+  left join contracts_rbac on contracts_rbac.id = contract_id
 where data is not null
 order by max_ts desc
 limit n offset start $$;
@@ -832,7 +822,7 @@ FROM search_contract_embeddings(
     similarity_threshold,
     match_count + 10
   )
-  join contracts on contract_id = contracts.id
+  join contracts_rbac on contract_id = contracts_rbac.id
 where contract_id != input_contract_id
   and resolution_time is null
 order by similarity * similarity * log(popularity_score + 100) desc
@@ -886,13 +876,13 @@ select
   ma.market_id,
   ma.funds,
   ma.cost_per_view,
-  contracts.data
+  contracts_rbac.data
 from
   unredeemed_market_ads as ma
-  inner join contracts on contracts.id = ma.market_id
+  inner join contracts_rbac on contracts_rbac.id = ma.market_id
 where
-  contracts.resolution_time is null
-  and contracts.close_time > now()
+  contracts_rbac.resolution_time is null
+  and contracts_rbac.close_time > now()
 $$;
 
 create
@@ -1227,7 +1217,7 @@ or replace function get_engaged_users () returns table (user_id text, username t
    ),
    recent_contractors AS (
        SELECT creator_id AS user_id, date_trunc('week', created_time) AS week
-       FROM contracts
+       FROM contracts_rbac
        WHERE created_time > NOW() - INTERVAL '3 weeks'
    ),
    weekly_activity_counts AS (

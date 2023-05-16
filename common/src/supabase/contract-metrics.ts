@@ -115,12 +115,14 @@ export async function getUserContractMetricsByProfitWithContracts(
   userId: string,
   db: SupabaseClient,
   from: 'day' | 'week' | 'month' | 'all',
-  limit = 20
+  limit = 20,
+  isAdmin?: boolean
 ) {
   const cms = await getBestAndWorstUserContractMetrics(userId, db, from, limit)
   const contracts = (await getContracts(
     cms.map((cm) => cm.contractId),
-    db
+    db,
+    isAdmin
   )) as CPMMContract[]
   return {
     metrics: cms,

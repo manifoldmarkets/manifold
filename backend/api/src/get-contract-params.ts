@@ -37,7 +37,7 @@ const bodySchema = z.object({
 export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
   const { contractSlug, fromStaticProps } = validate(bodySchema, req.body)
   const db = createSupabaseClient()
-  const contract = await getContractFromSlug(contractSlug, db)
+  const contract = await getContractFromSlug(contractSlug, db, true)
 
   if (!contract) {
     throw new APIError(404, 'This contract does not exist!')

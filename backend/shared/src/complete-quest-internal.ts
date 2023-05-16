@@ -50,7 +50,7 @@ export const completeCalculatedQuestFromTrigger = async (
   idempotencyKey: string
 ) => {
   const db = createSupabaseClient()
-  const count = await getCurrentCountForQuest(user, questType, db)
+  const count = await getCurrentCountForQuest(user, questType, db, true)
   const oldEntry = await getQuestScore(user.id, questType, db)
   if (idempotencyKey && oldEntry.idempotencyKey === idempotencyKey)
     return { count: oldEntry.score }
@@ -143,10 +143,11 @@ const completeQuestInternal = async (
 const getCurrentCountForQuest = async (
   user: User,
   questType: QUESTS_INTERNALLY_CALCULATED,
-  db: SupabaseClient
+  db: SupabaseClient,
+  isAdmin?: boolean
 ): Promise<number> => {
   if (questType === 'MARKETS_CREATED') {
-    return await getRecentContractsCount(user.id, START_OF_WEEK, db)
+    return await getRecentContractsCount(user.id, START_OF_WEEK, db, isAdmin)
   } else if (questType === 'SHARES') {
     return await getUniqueUserShareEventsCount(
       user.id,

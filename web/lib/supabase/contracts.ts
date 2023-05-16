@@ -31,12 +31,14 @@ export const getPublicContract = async (id: string) => {
   return data && data.length > 0 ? (data[0].data as Contract) : null
 }
 export const getContract = async (id: string) => {
-  const { data } = await run(db.from('contracts').select('data').eq('id', id))
+  const { data } = await run(
+    db.from('contracts_rbac').select('data').eq('id', id)
+  )
   return data && data.length > 0 ? (data[0].data as Contract) : null
 }
 
 export const getContractWithFields = async (id: string) => {
-  const { data } = await run(db.from('contracts').select('*').eq('id', id))
+  const { data } = await run(db.from('contracts_rbac').select('*').eq('id', id))
   if (data && data.length > 0) {
     const result = data[0]
     return {
@@ -121,7 +123,7 @@ export async function getContractFromSlug(
   db: SupabaseClient
 ) {
   const { data: contract } = await run(
-    db.from('contracts').select('data').eq('slug', contractSlug)
+    db.from('contracts_rbac').select('data').eq('slug', contractSlug)
   )
   if (contract && contract.length > 0) {
     return (contract[0] as unknown as { data: Contract }).data
@@ -131,7 +133,7 @@ export async function getContractFromSlug(
 
 export async function getContractVisibilityFromSlug(contractSlug: string) {
   const { data: contractVisibility } = await run(
-    db.from('contracts').select('visibility').eq('slug', contractSlug)
+    db.from('contracts_rbac').select('visibility').eq('slug', contractSlug)
   )
 
   if (contractVisibility && contractVisibility.length > 0) {
@@ -261,9 +263,11 @@ export async function getWatchedContracts(userId: string) {
   const datas = await Promise.all(
     chunks.map(async (ids) => {
       const { data } = await run(
-        selectFrom(db, 'contracts', 'id', 'question', 'slug', 'creatorUsername')
+        db
+          .from('contracts_rbac')
+          .select('*')
           .in('id', ids)
-          .order('data->>createdTime' as any, { ascending: false })
+          .order('created_time' as any, { ascending: false })
       )
       return data
     })
