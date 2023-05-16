@@ -216,7 +216,7 @@ where
   name = 'Skip ad';
 
 create index if not exists user_events_comment_view on user_events (user_id, name, comment_id);
-
+-- TODO: drop this after PR merge
 create index if not exists user_events_viewed_markets on user_events (user_id, name, contract_id, ts desc)
 where
   name = 'view market'
@@ -1129,7 +1129,7 @@ begin
            when 'user_follows' then cast(('user_id', 'follow_id') as table_spec)
            when 'user_notifications' then cast(('user_id', 'notification_id') as table_spec)
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
-           when 'user_seen_markets' then cast(('user_id', 'contract_id') as table_spec)
+           when 'user_seen_markets' then cast(('user_id', 'contract_id', 'created_time') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)
            when 'contract_bets' then cast(('contract_id', 'bet_id') as table_spec)
