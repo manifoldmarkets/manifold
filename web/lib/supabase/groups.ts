@@ -2,7 +2,6 @@ import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { Group } from 'common/group'
 import {
   run,
-  selectFrom,
   selectJson,
   SupabaseClient,
 } from 'common/supabase/utils'

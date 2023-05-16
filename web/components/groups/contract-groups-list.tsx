@@ -3,7 +3,6 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { User } from 'common/user'
-import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { IconButton } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -15,7 +14,6 @@ import {
   addContractToGroup,
   removeContractFromGroup,
 } from 'web/lib/firebase/api'
-import { getGroupsWhereUserHasRole } from 'web/lib/supabase/groups'
 import { GroupLinkItem } from 'web/pages/groups'
 import { GroupSelector } from './group-selector'
 import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'

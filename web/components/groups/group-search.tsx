@@ -10,7 +10,6 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { Col } from '../layout/col'
 import { Input } from '../widgets/input'
-import { GroupLine } from './discover-groups'
 import { useUser } from 'web/hooks/use-user'
 import { searchGroups } from 'web/lib/supabase/groups'
 import { GroupsList } from 'web/components/groups/groups-list'
