@@ -49,7 +49,7 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
               />
             )}
           </Row>
-          {user && (
+          {user && yourGroupIds && yourGroupIds.length > 0 && (
             <UncontrolledTabs
               className={'mb-4'}
               tabs={[
@@ -64,7 +64,11 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
               ]}
             />
           )}{' '}
-          {!user && <DiscoverGroups yourGroupIds={yourGroupIds} />}
+          {!user ||
+            !yourGroupIds ||
+            (yourGroupIds.length < 1 && (
+              <DiscoverGroups yourGroupIds={yourGroupIds} />
+            ))}
         </Col>
       </Col>
     </Page>

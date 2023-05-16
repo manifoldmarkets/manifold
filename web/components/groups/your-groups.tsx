@@ -66,9 +66,9 @@ export default function YourGroups(props: { yourGroupIds?: string[] }) {
               </Row>
             )}
           </Col>
+          <Subtitle>Groups You Follow</Subtitle>
         </>
       )}
-      <Subtitle>Groups You Follow</Subtitle>
       {isAuth && (
         <GroupSearch
           filter={{
