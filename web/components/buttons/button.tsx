@@ -41,19 +41,19 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'green' &&
       'disabled:bg-ink-300 bg-teal-500 text-white hover:bg-teal-600 border-teal-500',
     color === 'green-outline' &&
-      'border border-teal-500 disabled:border-ink-300 disabled:text-ink-300 text-teal-500 hover:bg-teal-500 hover:text-ink-0 disabled:focus:bg-inherit disabled:hover:bg-inherit',
+      'ring-2 ring-teal-500 disabled:ring-ink-300 disabled:text-ink-300 text-teal-500 enabled:hover:bg-teal-500 enabled:hover:text-ink-0',
     color === 'red' &&
       'disabled:bg-ink-300 bg-scarlet-300 text-white hover:bg-scarlet-400 border-scarlet-300',
     color === 'red-outline' &&
-      'border border-scarlet-300 disabled:border-ink-300 disabled:text-ink-300 text-scarlet-300 hover:bg-scarlet-300 hover:text-ink-0 disabled:focus:bg-inherit disabled:hover:bg-inherit',
+      'ring-2 ring-scarlet-300 disabled:ring-ink-300 disabled:text-ink-300 text-scarlet-300 enabled:hover:bg-scarlet-300 enabled:hover:text-ink-0',
     color === 'yellow' &&
       'disabled:bg-ink-300 bg-yellow-400 text-white hover:bg-yellow-500 border-yellow-500',
     color === 'blue' &&
       'disabled:bg-ink-300 bg-blue-400 text-white hover:bg-blue-500 border-blue-500',
     color === 'indigo' &&
-      'border disabled:bg-ink-300 bg-primary-500 text-white hover:bg-primary-600 border-primary-500',
+      'disabled:bg-ink-300 bg-primary-500 text-white hover:bg-primary-600 border-primary-500',
     color === 'indigo-outline' &&
-      'border border-primary-500 disabled:border-ink-300 disabled:text-ink-300 text-primary-500 hover:bg-primary-500 hover:text-ink-0 disabled:focus:bg-inherit disabled:hover:bg-inherit',
+      'ring-2 ring-primary-500 disabled:ring-ink-300 disabled:text-ink-300 text-primary-500 enabled:hover:bg-primary-500 enabled:hover:text-ink-0',
     color === 'gray' &&
       'bg-ink-200 text-ink-600 enabled:hover:bg-ink-300 enabled:hover:text-ink-700 disabled:opacity-50 border-ink-300',
     color === 'dark-gray' &&
@@ -67,7 +67,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'gray-white' &&
       'text-ink-600 hover:bg-ink-200 shadow-none disabled:opacity-50 border-ink-300',
     color === 'yellow-outline' &&
-      'ring-2 ring-yellow-500 text-yellow-500 enabled:hover:bg-yellow-500 enabled:hover:text-ink-0 disabled:opacity-50',
+      'ring-2 ring-yellow-500 text-yellow-500 disabled:ring-ink-300 enabled:hover:bg-yellow-500 enabled:hover:text-ink-0 disabled:text-ink-300',
     color === 'none' && 'bg-none'
   )
 }
