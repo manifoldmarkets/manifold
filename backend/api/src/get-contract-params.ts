@@ -73,7 +73,7 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
         (await getUserIsMember(db, groupId, auth?.uid))))
 
   if (!canAccessContract) {
-    return contract
+    return contract && !contract.deleted
       ? { contractSlug: contract.slug, visibility: contract.visibility }
       : { contractSlug, visibility: null }
   }
