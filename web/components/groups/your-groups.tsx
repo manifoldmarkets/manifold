@@ -3,10 +3,7 @@ import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { Subtitle } from '../widgets/subtitle'
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from '@heroicons/react/solid'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
 import { GroupAndRoleType } from 'web/lib/supabase/groups'
 import Link from 'next/link'
