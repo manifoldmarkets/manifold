@@ -1,4 +1,4 @@
-import { UsersIcon } from '@heroicons/react/solid'
+import { FlagIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group, groupPath } from 'common/group'
@@ -24,6 +24,17 @@ import { User } from 'web/lib/firebase/users'
 import { searchContract } from 'web/lib/supabase/contracts'
 import { SearchGroupInfo } from 'web/lib/supabase/groups'
 
+function PrivateGroupsBanner() {
+  return (
+    <Row className="dark:border-indigo-00 mb-4 gap- rounded bg-indigo-200 bg-opacity-70 px-2 py-1 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100">
+      <span>
+        <FlagIcon className="mt-0.5 h-5 w-5" />
+      </span>
+      <span>Private groups are now in beta! Create a private group today</span>
+    </Row>
+  )
+}
+
 export default function Groups(props: { groups: SearchGroupInfo[] }) {
   const user = useUser()
   const yourGroupIds = useMemberGroupIds(user)
@@ -36,6 +47,7 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
       />
       <Col className="items-center">
         <Col className="w-full max-w-2xl px-4 sm:px-2">
+          <PrivateGroupsBanner />
           <Row className="items-start justify-between">
             <Title>Groups</Title>
             {user && (
