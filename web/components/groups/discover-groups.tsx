@@ -132,7 +132,6 @@ export function GroupLine(props: {
 }) {
   const { group, isMember, user, expandedId, setExpandedId } = props
   const isExpanded = expandedId == group.id
-  console.log(group.slug, isExpanded, expandedId)
 
   return (
     <Link
