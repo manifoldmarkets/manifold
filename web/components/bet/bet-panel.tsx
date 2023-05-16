@@ -50,8 +50,6 @@ import { WarningConfirmationButton } from '../buttons/warning-confirmation-butto
 import { Button } from '../buttons/button'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
-import { SiteLink } from '../widgets/site-link'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
 import { getStonkShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { Input } from 'web/components/widgets/input'
 import { DAY_MS, MINUTE_MS } from 'common/util/time'
