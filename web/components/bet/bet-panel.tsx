@@ -349,8 +349,9 @@ export function BuyPanel(props: {
           <Button
             color={seeLimit ? 'indigo' : 'indigo-outline'}
             onClick={() => onOptionChoice('LIMIT')}
+            className="text-lg"
           >
-            <div className="h-6 w-6 text-center">%</div>
+            %
           </Button>
         )}
       </Row>
