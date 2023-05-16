@@ -26,7 +26,7 @@ import { SearchGroupInfo } from 'web/lib/supabase/groups'
 
 function PrivateGroupsBanner() {
   return (
-    <Row className="dark:border-indigo-00 mb-4 gap- rounded bg-indigo-200 bg-opacity-70 px-2 py-1 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100">
+    <Row className="dark:border-indigo-00 gap- mb-4 rounded bg-indigo-200 bg-opacity-70 px-2 py-1 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100">
       <span>
         <FlagIcon className="mt-0.5 h-5 w-5" />
       </span>
