@@ -66,6 +66,9 @@ export const sendPositionsEmbed = async (
     `the thread`,
     `https://discord.com/channels/${channel.guildId}/${thread.id}/${leaderboardMessage.id}`
   )
+  if (interaction.channel.isThread()) {
+    return await interaction.deleteReply()
+  }
   return await interaction.editReply({
     content: `I sent the leaderboard to the ${linkedMessageContent} for you!`,
     options: { ephemeral: true },
