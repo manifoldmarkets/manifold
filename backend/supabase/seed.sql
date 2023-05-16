@@ -620,7 +620,9 @@ create table if not exists
     privacy_status text,
     slug text,
     name text,
+    name_fts tsvector generated always as (to_tsvector('english'::regconfig, name)) stored,
     creator_id text;
+    total_members numeric;
   );
 
 alter table groups enable row level security;

@@ -57,6 +57,7 @@ import { creategroupinvite } from './create-group-invite'
 import { joingroupthroughinvite } from './join-group-through-invite'
 import { joingroup } from './join-group'
 import { editcomment } from 'api/edit-comment'
+import { supabasesearchgroups } from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
 import { lootbox } from './loot-box'
 import { createQAndA } from './create-q-and-a'
@@ -155,6 +156,7 @@ app.post('/getcontractparams', ...apiRoute(getcontractparams))
 app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
 app.post('/joingroupthroughinvite', ...apiRoute(joingroupthroughinvite))
 app.post('/joingroup', ...apiRoute(joingroup))
+app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/create-q-and-a', ...apiRoute(createQAndA))
 app.post('/create-q-and-a-answer', ...apiRoute(createQAndAAnswer))

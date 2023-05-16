@@ -150,7 +150,7 @@ const Results = (props: { query: string }) => {
 
     Promise.allSettled([
       searchUsers(search, userHitLimit),
-      searchGroups(search, groupHitLimit),
+      searchGroups({ term: search, limit: groupHitLimit }),
       searchContract({
         query: search,
         filter: 'all',
@@ -175,7 +175,7 @@ const Results = (props: { query: string }) => {
       })(),
     ]).then(([u, g, m, s]) => {
       const userHits = u.status === 'fulfilled' ? u.value : []
-      const groupHits = g.status === 'fulfilled' ? g.value : []
+      const groupHits = g.status === 'fulfilled' ? g.value.data : []
       const marketHits = m.status === 'fulfilled' ? m.value.data : []
       const sortHit = s.status === 'fulfilled' ? s.value : null
 

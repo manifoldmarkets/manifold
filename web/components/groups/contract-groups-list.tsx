@@ -18,6 +18,7 @@ import {
 import { getGroupsWhereUserHasRole } from 'web/lib/supabase/groups'
 import { GroupLinkItem } from 'web/pages/groups'
 import { GroupSelector } from './group-selector'
+import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
 
 export function ContractGroupsList(props: {
   contract: Contract
@@ -28,15 +29,7 @@ export function ContractGroupsList(props: {
   const groups = useGroupsWithContract(contract) ?? []
 
   const isCreator = contract.creatorId === user?.id
-  const [adminGroups, setAdminGroups] = useState<Group[]>([])
-
-  useEffect(() => {
-    if (user) {
-      getGroupsWhereUserHasRole(user.id).then((g) =>
-        setAdminGroups(g.map((gp: { group_data: any }) => gp.group_data))
-      )
-    }
-  }, [user])
+  const adminGroups = useGroupsWhereUserHasRole(user?.id)?.map((g) => g.group)
 
   const isAdmin = useAdmin()
   function canRemoveFromGroup(group: Group) {
@@ -104,7 +97,9 @@ export function ContractGroupsList(props: {
             })}
           </Row>
           {/* if is manifold admin, show all possible groups */}
-          {(isAdmin || isCreator || adminGroups.length > 0) && (
+          {(isAdmin ||
+            isCreator ||
+            (adminGroups && adminGroups.length > 0)) && (
             <Col className={'my-2 items-center justify-between p-0.5'}>
               <Row className="text-ink-400 w-full justify-start text-sm">
                 Add to group

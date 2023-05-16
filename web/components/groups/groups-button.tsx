@@ -20,7 +20,7 @@ import {
 } from 'web/lib/supabase/groups'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import { GroupLinkItem } from 'web/pages/groups'
-import { Button, buttonClass } from '../buttons/button'
+import { Button, IconButton, buttonClass } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Subtitle } from '../widgets/subtitle'
 import { joinGroup } from 'web/lib/firebase/api'
@@ -107,8 +107,9 @@ export function LeavePrivateGroupButton(props: {
   setIsMember: (isMember: boolean) => void
   isMobile?: boolean
   disabled?: boolean
+  className?: string
 }) {
-  const { group, user, setIsMember, isMobile, disabled } = props
+  const { group, user, setIsMember, isMobile, disabled, className } = props
   const leavePrivateGroup = user
     ? withTracking(() => {
         leaveGroup(group.id, user.id)
@@ -125,9 +126,11 @@ export function LeavePrivateGroupButton(props: {
         openModalBtn={{
           className: clsx(
             isMobile
-              ? 'bg-inherit hover:bg-inherit inline-flex items-center justify-center disabled:cursor-not-allowed shadow-none px-1 '
-              : buttonClass('md', 'dark-gray')
+              ? 'bg-inherit hover:bg-inherit inline-flex items-center justify-center disabled:cursor-not-allowed shadow-none px-1'
+              : '',
+            className
           ),
+          color: isMobile ? 'none' : 'dark-gray',
           disabled: disabled,
           icon: (
             <UserRemoveIcon
@@ -179,7 +182,6 @@ export function JoinOrLeaveGroupButton(props: {
   disabled?: boolean
 }) {
   const { group, className, user, isMobile, disabled } = props
-
   // Handle both non-live and live updating isMember state
   const [isMember, setIsMember] = useState(props.isMember)
   useEffect(() => setIsMember(props.isMember), [props.isMember])
@@ -191,6 +193,7 @@ export function JoinOrLeaveGroupButton(props: {
         user={user}
         isMobile={isMobile}
         disabled={disabled}
+        className={className}
       />
     )
   }
@@ -223,7 +226,12 @@ export function JoinOrLeaveGroupButton(props: {
       )
     }
     return (
-      <Button color="dark-gray" className={className} onClick={unfollow}>
+      <Button
+        color="dark-gray"
+        className={className}
+        onClick={unfollow}
+        disabled={disabled}
+      >
         <Row className="gap-1">
           <UserRemoveIcon className="h-5 w-5" />
           Leave

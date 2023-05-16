@@ -1,77 +1,79 @@
-import { UsersIcon } from '@heroicons/react/solid'
-import clsx from 'clsx'
-import { Contract } from 'common/contract'
-import { Group, groupPath, GroupsByTopic } from 'common/group'
-import Link from 'next/link'
+import { Group, GroupsByTopic, groupPath } from 'common/group'
 import { ReactNode, useEffect, useState } from 'react'
-import { useMutation } from 'react-query'
-import { ContractsTable } from 'web/components/contract/contracts-table'
-import { CreateGroupButton } from 'web/components/groups/create-group-button'
-import DiscoverGroups from 'web/components/groups/discover-groups'
-import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
-import YourGroups from 'web/components/groups/your-groups'
-import { Col } from 'web/components/layout/col'
-import { Page } from 'web/components/layout/page'
-import { Row } from 'web/components/layout/row'
-import { UncontrolledTabs } from 'web/components/layout/tabs'
-import { useGroupSearchResults } from 'web/components/search/query-groups'
-import { SEO } from 'web/components/SEO'
-import { Input } from 'web/components/widgets/input'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { SiteLink } from 'web/components/widgets/site-link'
-import { Subtitle } from 'web/components/widgets/subtitle'
-import { Title } from 'web/components/widgets/title'
-import { useMemberGroupIds } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
-import { User } from 'web/lib/firebase/users'
+import { SearchGroupInfo } from 'web/lib/supabase/groups'
+import { Col } from '../layout/col'
+import { Input } from '../widgets/input'
+import { Subtitle } from '../widgets/subtitle'
+import { useGroupSearchResults } from '../search/query-groups'
+import { useMemberGroupIds } from 'web/hooks/use-group'
+import clsx from 'clsx'
+import { UsersIcon } from '@heroicons/react/solid'
+import { User } from 'common/user'
+import { JoinOrLeaveGroupButton } from './groups-button'
+import { useMutation } from 'react-query'
 import { searchContract } from 'web/lib/supabase/contracts'
-import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { ContractsTable } from '../contract/contracts-table'
+import { Contract } from 'common/contract'
+import Link from 'next/link'
+import { SiteLink } from '../widgets/site-link'
+import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
+import GroupSearch from './group-search'
 
-export default function Groups(props: { groups: SearchGroupInfo[] }) {
-  const user = useUser()
-  const yourGroupIds = useMemberGroupIds(user)
+export default function DiscoverGroups(props: { yourGroupIds?: string[] }) {
+  const { yourGroupIds } = props
+  const communities = [
+    {
+      name: '🎮 Destiny.gg',
+      description: 'gamers betting on "stocks" for streamers',
+      slugs: GroupsByTopic.destiny,
+    },
+    {
+      name: '💡 EA & Rationality',
+      description: 'nerds with a math-based life philosophy',
+      slugs: GroupsByTopic.rat,
+    },
+    {
+      name: '🤖 AI',
+      description: 'robots taking over, soon-ish',
+      slugs: GroupsByTopic.ai,
+    },
+    {
+      name: '🎲 Fun',
+      description: 'degens gambling on manifold',
+      slugs: GroupsByTopic.ponzi,
+    },
+  ]
+
+  const allSpecialGroupSlugs = Object.values(GroupsByTopic).flat()
+  const allSpecialGroups = useListGroupsBySlug(allSpecialGroupSlugs)
+
+  const [selectedCommunity, setSelected] = useState<number>()
+
   return (
-    <Page>
-      <SEO
-        title="Groups"
-        description="Topics and communities centered prediction markets."
-        url="/groups"
+    <>
+      <Subtitle>Top Communities</Subtitle>
+      {communities.map((c, i) => (
+        <Community
+          name={c.name}
+          description={c.description}
+          selected={i === selectedCommunity}
+          onClick={() => setSelected(i)}
+          groups={
+            allSpecialGroups
+              ? allSpecialGroups.filter((g) => c.slugs?.includes(g.slug))
+              : []
+          }
+        />
+      ))}
+      <Subtitle>Search Groups</Subtitle>
+
+      <GroupSearch
+        persistPrefix={'discover-groups'}
+        yourGroupIds={yourGroupIds}
       />
-      <Col className="items-center">
-        <Col className="w-full max-w-2xl px-4 sm:px-2">
-          <Row className="items-start justify-between">
-            <Title>Groups</Title>
-            {user && (
-              <CreateGroupButton
-                user={user}
-                goToGroupOnSubmit={true}
-                className={'w-32 whitespace-nowrap'}
-              />
-            )}
-          </Row>
-          {user && yourGroupIds && yourGroupIds.length > 0 && (
-            <UncontrolledTabs
-              className={'mb-4'}
-              tabs={[
-                {
-                  title: 'Your Groups',
-                  content: <YourGroups yourGroupIds={yourGroupIds} />,
-                },
-                {
-                  title: 'Discover',
-                  content: <DiscoverGroups yourGroupIds={yourGroupIds} />,
-                },
-              ]}
-            />
-          )}{' '}
-          {!user ||
-            !yourGroupIds ||
-            (yourGroupIds.length < 1 && (
-              <DiscoverGroups yourGroupIds={yourGroupIds} />
-            ))}
-        </Col>
-      </Col>
-    </Page>
+    </>
   )
 }
 
@@ -120,7 +122,7 @@ function GroupSearchResult(props: { groups: SearchGroupInfo[] }) {
   )
 }
 
-function GroupLine(props: {
+export function GroupLine(props: {
   group: Group
   isMember: boolean
   user: User | undefined | null
@@ -146,6 +148,7 @@ function GroupLine(props: {
           <JoinOrLeaveGroupButton
             group={group}
             user={user}
+            disabled={user?.id == group.creatorId}
             isMember={isMember}
             className="w-[80px] !px-0 !py-1"
           />
