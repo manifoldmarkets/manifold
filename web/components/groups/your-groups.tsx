@@ -2,12 +2,10 @@ import { useState } from 'react'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { Subtitle } from '../widgets/subtitle'
 import { Row } from '../layout/row'
-import { PRIVACY_STATUS_ITEMS } from './group-privacy-modal'
 import { Col } from '../layout/col'
 import {
   ChevronDownIcon,
   ChevronUpIcon,
-  UserGroupIcon,
 } from '@heroicons/react/solid'
 import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
 import { GroupAndRoleType } from 'web/lib/supabase/groups'
@@ -15,7 +13,6 @@ import Link from 'next/link'
 import { Spacer } from '../layout/spacer'
 import { User } from 'common/user'
 import GroupSearch from './group-search'
-import { shortenNumber } from 'web/lib/util/shortenNumber'
 import { GroupSummary } from './discover-groups'
 
 const YOUR_GROUPS_MAX_LENGTH = 5
