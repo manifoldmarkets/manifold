@@ -1939,7 +1939,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from: {
         Args: {
           uid: string
-          p_embedding: string
+          p_embedding: number[]
           n: number
           excluded_contract_ids: string[]
           max_dist: number
