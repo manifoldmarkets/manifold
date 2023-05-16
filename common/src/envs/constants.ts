@@ -177,9 +177,6 @@ export const HOME_BLOCKED_GROUP_SLUGS = [
   'whale-watching',
   'spam',
   'test',
-  'private-markets',
-  'proofniks',
-  'personal-goals',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
