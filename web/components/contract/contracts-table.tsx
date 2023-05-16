@@ -17,6 +17,7 @@ import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
 import { Action } from './contract-table-action'
 import Link from 'next/link'
+import { shortenNumber } from 'web/lib/util/shortenNumber'
 
 const lastItemClassName = 'rounded-r pr-2'
 const firstItemClassName = 'rounded-l pl-2 pr-4'
@@ -141,7 +142,7 @@ export function ContractsTable(props: {
       content: (contract: Contract) => (
         <Row className="align-center shrink-0 items-center gap-0.5">
           <UserIcon className="h-4 w-4" />
-          {contract.uniqueBettorCount}
+          {shortenNumber(contract.uniqueBettorCount)}
         </Row>
       ),
     },

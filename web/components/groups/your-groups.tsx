@@ -15,6 +15,8 @@ import Link from 'next/link'
 import { Spacer } from '../layout/spacer'
 import { User } from 'common/user'
 import GroupSearch from './group-search'
+import { shortenNumber } from 'web/lib/util/shortenNumber'
+import { GroupSummary } from './discover-groups'
 
 const YOUR_GROUPS_MAX_LENGTH = 5
 export default function YourGroups(props: { yourGroupIds?: string[] }) {
@@ -81,7 +83,6 @@ export default function YourGroups(props: { yourGroupIds?: string[] }) {
 function YourGroup(props: { groupAndRole: GroupAndRoleType; user: User }) {
   const { groupAndRole, user } = props
   const { group, role } = groupAndRole
-  const { icon, status } = PRIVACY_STATUS_ITEMS[group.privacyStatus]
   return (
     <Link
       href={`/group/${group.slug}`}
@@ -98,16 +99,7 @@ function YourGroup(props: { groupAndRole: GroupAndRoleType; user: User }) {
         </Row>
       </Row>
       <Spacer h={2} />
-      <Row className="text-ink-700 gap-3 text-sm ">
-        <Row className="h-min items-center gap-1">
-          <UserGroupIcon className="h-4 w-4" />
-          <span>{group.totalMembers} members</span>
-        </Row>
-        <Row className="items-center gap-1">
-          {icon}
-          {status}
-        </Row>
-      </Row>
+      <GroupSummary group={group} />
     </Link>
   )
 }
