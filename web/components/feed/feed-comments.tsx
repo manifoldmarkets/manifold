@@ -184,7 +184,7 @@ export const FeedComment = memo(function FeedComment(props: {
         size={children ? 'sm' : 'xs'}
         username={userUsername}
         avatarUrl={userAvatarUrl}
-        className={clsx('', 'z-10')}
+        className={clsx('z-10')}
       />
       <Col className="w-full">
         {isReplyToBet(comment) && (
