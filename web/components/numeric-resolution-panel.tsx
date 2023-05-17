@@ -6,7 +6,7 @@ import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { PseudoNumericContract } from 'common/contract'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
-import { BucketInput } from './widgets/bucket-input'
+import { NumberInput } from './widgets/number-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTORS } from 'common/user'
 import { Button } from './buttons/button'
@@ -108,7 +108,7 @@ export function NumericResolutionPanel(props: {
       <Spacer h={4} />
 
       {outcomeMode === 'NUMBER' && (
-        <BucketInput isSubmitting={isSubmitting} onBucketChange={setValue} />
+        <NumberInput isSubmitting={isSubmitting} onChange={setValue} />
       )}
 
       <div className="flex items-center justify-between">

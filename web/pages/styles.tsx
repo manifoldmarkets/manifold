@@ -6,6 +6,7 @@ import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Input } from 'web/components/widgets/input'
+import { NumberInput } from 'web/components/widgets/number-input'
 import { Select } from 'web/components/widgets/select'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Subtitle } from 'web/components/widgets/subtitle'
@@ -24,11 +25,11 @@ export default function StylePage() {
       <Subtitle>Toggles</Subtitle>
       <ToggleSection />
       <Subtitle>Inputs</Subtitle>
-      TODO: number input
       <div className="mb-4 flex flex-wrap gap-2">
         <Input placeholder="Input" />
         <Input disabled placeholder="Input disabled=true" />
         <Input error placeholder="Input error=true" />
+        <NumberInput onChange={() => {}} placeholder="NumberInput" />
       </div>
       <ExpandingInput
         className="mb-4 w-full"

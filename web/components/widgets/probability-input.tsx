@@ -5,8 +5,8 @@ import {
   StonkContract,
 } from 'common/contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import { BucketInput } from './bucket-input'
 import { Input } from './input'
+import { NumberInput } from './number-input'
 import { Col } from '../layout/col'
 
 export function ProbabilityInput(props: {
@@ -62,8 +62,8 @@ export function ProbabilityOrNumericInput(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   return isPseudoNumeric ? (
-    <BucketInput
-      onBucketChange={(value) =>
+    <NumberInput
+      onChange={(value) =>
         setProb(
           value === undefined
             ? undefined

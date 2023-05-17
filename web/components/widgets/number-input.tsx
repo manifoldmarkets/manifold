@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 
 import React from 'react'
 import { Col } from '../layout/col'
@@ -7,6 +7,39 @@ import { Spacer } from '../layout/spacer'
 import { Input } from './input'
 
 export function NumberInput(props: {
+  isSubmitting?: boolean
+  onChange: (value?: number) => void
+  placeholder?: string
+}) {
+  const { isSubmitting, placeholder } = props
+
+  const [numberString, setNumberString] = useState('')
+
+  const stringOnChange = (s: string) => {
+    setNumberString(s)
+
+    const value = parseFloat(s)
+
+    if (!isFinite(value)) {
+      props.onChange(undefined)
+      return
+    }
+
+    props.onChange(value)
+  }
+
+  return (
+    <BaseNumberInput
+      onChange={stringOnChange}
+      error={undefined}
+      disabled={isSubmitting}
+      numberString={numberString}
+      placeholder={placeholder}
+    />
+  )
+}
+
+function BaseNumberInput(props: {
   numberString: string
   onChange: (newNumberString: string) => void
   error: string | undefined
@@ -24,16 +57,15 @@ export function NumberInput(props: {
     error,
     disabled,
     placeholder,
-    className,
     inputClassName,
     inputRef,
     children,
   } = props
 
   return (
-    <Col className={className}>
+    <Col>
       <Input
-        className={clsx('max-w-[200px] !text-lg', inputClassName)}
+        className={clsx('!text-lg', inputClassName)}
         ref={inputRef}
         type="text"
         pattern="[0-9]*"
