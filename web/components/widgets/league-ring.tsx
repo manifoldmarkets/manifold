@@ -13,7 +13,7 @@ export function LeagueRing(props: {
       style={{ height: `${size}px`, width: `${size}px` }}
       className={clsx(
         league == 'Platinum'
-          ? 'bg-gradient-to-br from-blue-900 via-blue-100 to-blue-900'
+          ? 'bg-gradient-to-br from-blue-800 via-blue-200 to-blue-800'
           : league == 'Gold'
           ? 'bg-gradient-to-br from-yellow-500 via-yellow-100 to-yellow-500'
           : league == 'Silver'
