@@ -30,7 +30,6 @@ export const Avatar = memo(
       size == '2xs' ? 4 : size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
     const sizeInPx = s * 4
     const innerSizeInPx = floorToEven(Math.floor(sizeInPx * 0.8))
-    console.log('leagueInfo', leagueInfo)
 
     const onClick = (e: MouseEvent) => {
       if (!noLink && username) {
@@ -63,7 +62,6 @@ export const Avatar = memo(
               ' object-cover',
               !noLink && 'cursor-pointer rounded-full'
             )}
-            // style={{ maxWidth: `${s * 0.25}rem` }}
             src={avatarUrl}
             onClick={onClick}
             alt={`${username ?? 'Unknown user'} avatar`}
@@ -84,7 +82,7 @@ export const Avatar = memo(
         <UserCircleIcon
           style={{ height: `${innerSizeInPx}px`, width: `${innerSizeInPx}px` }}
           className={clsx(
-            `bg-canvas-0 flex-shrink-0 rounded-full w-[${innerSizeInPx}px] h-[${innerSizeInPx}px] text-ink-500`
+            `bg-canvas-0 text-ink-500 flex-shrink-0 rounded-full`
           )}
           aria-hidden="true"
         />
