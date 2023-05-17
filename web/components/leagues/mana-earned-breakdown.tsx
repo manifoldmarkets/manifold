@@ -21,6 +21,8 @@ import { calculateUserMetrics } from 'common/calculate-metrics'
 import { ProfitBadge } from '../profit-badge'
 import { ContractMetric } from 'common/contract-metric'
 import { useBets } from 'web/hooks/use-bets-supabase'
+import ShortToggle from '../widgets/short-toggle'
+import { useState } from 'react'
 
 export const ManaEarnedBreakdown = (props: {
   user: User
@@ -65,13 +67,17 @@ export const ManaEarnedBreakdown = (props: {
       const contract = contractsById[contractId]
       return contract ? calculateUserMetrics(contract, bets) : undefined
     })
-  const contractsSortedByProfit =
+
+  const [showHighestFirst, setShowHighestFirst] = useState(true)
+
+  const contractsSorted =
     contracts &&
     metricsByContract &&
-    sortBy(
-      contracts,
-      (contract) => metricsByContract[contract.id]?.profit ?? 0
-    ).reverse()
+    sortBy(contracts, (contract) => metricsByContract[contract.id]?.profit ?? 0)
+
+  const contractsSortedByProfit = showHighestFirst
+    ? contractsSorted?.reverse()
+    : contractsSorted
 
   return (
     <Modal
@@ -117,10 +123,15 @@ export const ManaEarnedBreakdown = (props: {
         </Table>
 
         {contracts && contracts.length > 0 && (
-          <Subtitle className="text-ink-800 mt-6 !mb-4">
-            Profit by market
-          </Subtitle>
+          <Col>
+            <Subtitle className="text-ink-800 mt-6">Profit by market</Subtitle>
+            <Row className="mb-4 gap-2">
+              <ShortToggle on={showHighestFirst} setOn={setShowHighestFirst} />{' '}
+              Highest first
+            </Row>
+          </Col>
         )}
+
         {contracts === undefined && (
           <div className="h-[500px]">
             <LoadingIndicator className="mt-6" />
