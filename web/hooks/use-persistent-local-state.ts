@@ -9,7 +9,7 @@ import { useIsClient } from 'web/hooks/use-is-client'
 export const usePersistentLocalState = <T>(initialValue: T, key: string) => {
   const isClient = useIsClient()
   const [state, setState] = useStateCheckEquality<T>(
-    (isClient && safeJsonParse(safeLocalStorage?.getItem(key))) ?? initialValue
+    (isClient && safeJsonParse(safeLocalStorage?.getItem(key))) || initialValue
   )
 
   useEffect(() => {
