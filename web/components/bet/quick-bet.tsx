@@ -14,7 +14,6 @@ import {
   Contract,
   FreeResponseContract,
   MultipleChoiceContract,
-  NumericContract,
   PseudoNumericContract,
   resolution,
   StonkContract,
@@ -599,15 +598,7 @@ function getProb(contract: Contract) {
     ? getProbability(contract)
     : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
     ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
-    : outcomeType === 'NUMERIC'
-    ? getNumericScale(contract)
     : 1 // Should not happen
-}
-
-function getNumericScale(contract: NumericContract) {
-  const { min, max } = contract
-  const ev = getExpectedValue(contract)
-  return (ev - min) / (max - min)
 }
 
 const OUTCOME_TO_COLOR_BAR = {

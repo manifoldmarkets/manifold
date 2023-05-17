@@ -81,16 +81,14 @@ export function FreeResponseResolution(props: {
   )
 }
 
-export function NumericResolutionOrExpectation(props: {
-  contract: NumericContract
-}) {
+// All distributional numeric markets are resolved now
+export function OldNumericResolution(props: { contract: NumericContract }) {
   const { contract } = props
   const { resolution } = contract
 
   const resolutionValue =
     contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)
 
-  // All distributional numeric markets are resolved now
   return (
     <Row className="items-baseline gap-2 text-3xl">
       <div className={clsx('text-base')}>Resolved</div>

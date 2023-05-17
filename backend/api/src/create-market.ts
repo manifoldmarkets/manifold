@@ -9,7 +9,6 @@ import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getMultipleChoiceAntes,
-  getNumericAnte,
 } from 'common/antes'
 import { Bet } from 'common/bet'
 import {
@@ -19,20 +18,13 @@ import {
   FreeResponseContract,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
-  NumericContract,
   OUTCOME_TYPES,
   VISIBILITIES,
 } from 'common/contract'
 import { ANTES } from 'common/economy'
-import {
-  CHECK_USERNAMES,
-  isAdmin,
-  isManifoldId,
-  isTrustworthy,
-} from 'common/envs/constants'
+import { isAdmin, isManifoldId, isTrustworthy } from 'common/envs/constants'
 import { Group, GroupLink, MAX_ID_LENGTH } from 'common/group'
 import { getNewContract } from 'common/new-contract'
-import { NUMERIC_BUCKET_COUNT } from 'common/numeric-constants'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { QfAddPoolTxn } from 'common/txn'
 import { User } from 'common/user'
@@ -142,7 +134,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     }
   }
 
-  if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
+  if (outcomeType === 'PSEUDO_NUMERIC') {
     let initialValue
     ;({ min, max, initialValue, isLogScale } = validate(numericSchema, body))
     if (max - min <= 0.01 || initialValue <= min || initialValue >= max)
@@ -289,7 +281,6 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     ante,
     closeTimestamp,
     tags ?? [],
-    NUMERIC_BUCKET_COUNT,
     min ?? 0,
     max ?? 0,
     isLogScale ?? false,
@@ -393,19 +384,6 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       contract as FreeResponseContract,
       anteBetDoc.id
     )
-    await anteBetDoc.set(anteBet)
-  } else if (outcomeType === 'NUMERIC') {
-    const anteBetDoc = firestore
-      .collection(`contracts/${contract.id}/bets`)
-      .doc()
-
-    const anteBet = getNumericAnte(
-      providerId,
-      contract as NumericContract,
-      ante,
-      anteBetDoc.id
-    )
-
     await anteBetDoc.set(anteBet)
   } else if (outcomeType === 'CERT') {
     const DEFAULT_SHARES = 10_000

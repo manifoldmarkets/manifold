@@ -1,17 +1,13 @@
 import { useState } from 'react'
 
-import { NumericContract, PseudoNumericContract } from 'common/contract'
-import { getMappedBucket } from 'common/calculate-dpm'
-
 import { NumberInput } from './number-input'
 
 export function BucketInput(props: {
-  contract: NumericContract | PseudoNumericContract
   isSubmitting?: boolean
-  onBucketChange: (value?: number, bucket?: string) => void
+  onBucketChange: (value?: number) => void
   placeholder?: string
 }) {
-  const { contract, isSubmitting, onBucketChange, placeholder } = props
+  const { isSubmitting, onBucketChange, placeholder } = props
 
   const [numberString, setNumberString] = useState('')
 
@@ -21,16 +17,11 @@ export function BucketInput(props: {
     const value = parseFloat(s)
 
     if (!isFinite(value)) {
-      onBucketChange(undefined, undefined)
+      onBucketChange(undefined)
       return
     }
 
-    const bucket =
-      contract.outcomeType === 'PSEUDO_NUMERIC'
-        ? ''
-        : getMappedBucket(value, contract)
-
-    onBucketChange(value, bucket)
+    onBucketChange(value)
   }
 
   return (

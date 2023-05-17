@@ -34,7 +34,7 @@ import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolution,
-  NumericResolutionOrExpectation,
+  OldNumericResolution,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
@@ -52,7 +52,7 @@ export const ContractOverview = memo(
       case 'BINARY':
         return <BinaryOverview betPoints={betPoints} contract={contract} />
       case 'NUMERIC':
-        return <NumericOverview contract={contract} />
+        return <OldNumericOverview contract={contract} />
       case 'PSEUDO_NUMERIC':
         return (
           <PseudoNumericOverview contract={contract} betPoints={betPoints} />
@@ -71,11 +71,11 @@ export const ContractOverview = memo(
   }
 )
 
-const NumericOverview = (props: { contract: NumericContract }) => {
+const OldNumericOverview = (props: { contract: NumericContract }) => {
   const { contract } = props
   return (
     <>
-      <NumericResolutionOrExpectation contract={contract} />
+      <OldNumericResolution contract={contract} />
       <SizedContainer fullHeight={250} mobileHeight={150}>
         {(w, h) => (
           <NumericContractChart width={w} height={h} contract={contract} />

@@ -1,9 +1,7 @@
-import { cloneDeep, range, sum, sumBy, sortBy, mapValues } from 'lodash'
+import { range, sum, sumBy, mapValues } from 'lodash'
 import { Bet, NumericBet } from './bet'
 import { DPMContract, DPMBinaryContract, NumericContract } from './contract'
 import { DPM_FEES } from './fees'
-import { normpdf } from './util/math'
-import { addObjects } from './util/object'
 
 export function getDpmProbability(totalShares: { [outcome: string]: number }) {
   // For binary contracts only.
@@ -26,46 +24,6 @@ export function getDpmOutcomeProbabilities(totalShares: {
 }) {
   const squareSum = sumBy(Object.values(totalShares), (shares) => shares ** 2)
   return mapValues(totalShares, (shares) => shares ** 2 / squareSum)
-}
-
-export function getNumericBets(
-  contract: NumericContract,
-  bucket: string,
-  betAmount: number,
-  variance: number
-) {
-  const { bucketCount } = contract
-  const bucketNumber = parseInt(bucket)
-  const buckets = range(0, bucketCount)
-
-  const mean = bucketNumber / bucketCount
-
-  const allDensities = buckets.map((i) =>
-    normpdf(i / bucketCount, mean, variance)
-  )
-  const densitySum = sum(allDensities)
-
-  const rawBetAmounts = allDensities
-    .map((d) => (d / densitySum) * betAmount)
-    .map((x) => (x >= 1 / bucketCount ? x : 0))
-
-  const rawSum = sum(rawBetAmounts)
-  const scaledBetAmounts = rawBetAmounts.map((x) => (x / rawSum) * betAmount)
-
-  const bets = scaledBetAmounts
-    .map((x, i) => (x > 0 ? [i.toString(), x] : undefined))
-    .filter((x) => x != undefined) as [string, number][]
-
-  return bets
-}
-
-export const getMappedBucket = (value: number, contract: NumericContract) => {
-  const { bucketCount, min, max } = contract
-
-  const index = Math.floor(((value - min) / (max - min)) * bucketCount)
-  const bucket = Math.max(Math.min(index, bucketCount - 1), 0)
-
-  return `${bucket}`
 }
 
 export const getValueFromBucket = (
@@ -146,30 +104,6 @@ export function calculateDpmShares(
   const c = 2 * bet * Math.sqrt(squareSum)
 
   return Math.sqrt(bet ** 2 + shares ** 2 + c) - shares
-}
-
-export function calculateNumericDpmShares(
-  totalShares: {
-    [outcome: string]: number
-  },
-  bets: [string, number][]
-) {
-  const shares: number[] = []
-
-  totalShares = cloneDeep(totalShares)
-
-  const order = sortBy(
-    bets.map(([, amount], i) => [amount, i]),
-    ([amount]) => amount
-  ).map(([, i]) => i)
-
-  for (const i of order) {
-    const [bucket, bet] = bets[i]
-    shares[i] = calculateDpmShares(totalShares, bet, bucket)
-    totalShares = addObjects(totalShares, { [bucket]: shares[i] })
-  }
-
-  return { shares, totalShares }
 }
 
 export function calculateDpmRawShareValue(

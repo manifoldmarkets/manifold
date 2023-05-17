@@ -122,7 +122,7 @@ export function SmallResolutionPanel(props: {
   const { contract, user, setOpen } = props
   const outcomeType = contract.outcomeType
   const isAdmin = useAdmin()
-  return outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
+  return outcomeType === 'PSEUDO_NUMERIC' ? (
     <NumericResolutionPanel
       isAdmin={!!isAdmin}
       creator={user}

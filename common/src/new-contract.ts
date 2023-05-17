@@ -8,7 +8,6 @@ import {
   DPM,
   FreeResponse,
   MultipleChoice,
-  Numeric,
   outcomeType,
   PseudoNumeric,
   QuadraticFunding,
@@ -34,7 +33,6 @@ export function getNewContract(
   extraTags: string[],
 
   // used for numeric markets
-  bucketCount: number,
   min: number,
   max: number,
   isLogScale: boolean,
@@ -52,7 +50,6 @@ export function getNewContract(
     BINARY: () => getBinaryCpmmProps(initialProb, ante),
     PSEUDO_NUMERIC: () =>
       getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale),
-    NUMERIC: () => getNumericProps(ante, bucketCount, min, max),
     MULTIPLE_CHOICE: () => getDpmMultipleChoiceProps(ante, answers),
     QUADRATIC_FUNDING: () => getQfProps(ante),
     CERT: () => getCertProps(ante),
@@ -257,37 +254,6 @@ const _getMultipleChoiceProps = (
     pool,
     answers: answerObjects,
     subsidyPool: 0,
-  }
-
-  return system
-}
-
-const getNumericProps = (
-  ante: number,
-  bucketCount: number,
-  min: number,
-  max: number
-) => {
-  const buckets = range(0, bucketCount).map((i) => i.toString())
-
-  const betAnte = ante / bucketCount
-  const pool = Object.fromEntries(buckets.map((answer) => [answer, betAnte]))
-  const totalBets = pool
-
-  const betShares = Math.sqrt(ante ** 2 / bucketCount)
-  const totalShares = Object.fromEntries(
-    buckets.map((answer) => [answer, betShares])
-  )
-
-  const system: DPM & Numeric = {
-    mechanism: 'dpm-2',
-    outcomeType: 'NUMERIC',
-    pool,
-    totalBets,
-    totalShares,
-    bucketCount,
-    min,
-    max,
   }
 
   return system

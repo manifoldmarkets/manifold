@@ -1,11 +1,9 @@
-import { range } from 'lodash'
-import { Bet, NumericBet } from './bet'
-import { getDpmProbability, getValueFromBucket } from './calculate-dpm'
+import { Bet } from './bet'
+import { getDpmProbability } from './calculate-dpm'
 import {
   CPMMBinaryContract,
   DPMBinaryContract,
   FreeResponseContract,
-  NumericContract,
   CPMM2Contract,
   DpmMultipleChoiceContract,
 } from './contract'
@@ -184,48 +182,6 @@ export function getFreeAnswerAnte(
     outcome: '0',
     probBefore: 0,
     probAfter: 1,
-    createdTime,
-    fees: noFees,
-    isAnte: true,
-    isRedemption: false,
-    isChallenge: false,
-    visibility: contract.visibility,
-  }
-
-  return anteBet
-}
-
-export function getNumericAnte(
-  anteBettorId: string,
-  contract: NumericContract,
-  ante: number,
-  newBetId: string
-) {
-  const { bucketCount, createdTime } = contract
-
-  const betAnte = ante / bucketCount
-  const betShares = Math.sqrt(ante ** 2 / bucketCount)
-
-  const allOutcomeShares = Object.fromEntries(
-    range(0, bucketCount).map((_, i) => [i, betShares])
-  )
-
-  const allBetAmounts = Object.fromEntries(
-    range(0, bucketCount).map((_, i) => [i, betAnte])
-  )
-
-  const anteBet: NormalizedBet<NumericBet> = {
-    id: newBetId,
-    userId: anteBettorId,
-    contractId: contract.id,
-    amount: ante,
-    allBetAmounts,
-    outcome: '0',
-    value: getValueFromBucket('0', contract),
-    shares: betShares,
-    allOutcomeShares,
-    probBefore: 0,
-    probAfter: 1 / bucketCount,
     createdTime,
     fees: noFees,
     isAnte: true,

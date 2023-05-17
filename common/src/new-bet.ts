@@ -1,12 +1,10 @@
 import { sortBy, sum, sumBy } from 'lodash'
 
-import { Bet, fill, LimitBet, NumericBet } from './bet'
+import { Bet, fill, LimitBet } from './bet'
 import {
   calculateDpmShares,
-  calculateNumericDpmShares,
   getDpmOutcomeProbability,
   getDpmProbability,
-  getNumericBets,
 } from './calculate-dpm'
 import {
   calculateCpmmAmountToProb,
@@ -19,13 +17,11 @@ import {
   CPMMMultipleChoiceContract,
   DPMBinaryContract,
   DPMContract,
-  NumericContract,
   PseudoNumericContract,
   StonkContract,
 } from './contract'
 import { noFees } from './fees'
 import { addObjects, removeUndefinedProps } from './util/object'
-import { NUMERIC_FIXED_VAR } from './numeric-constants'
 import {
   floatingEqual,
   floatingGreaterEqual,
@@ -455,51 +451,4 @@ export const getNewMultiCpmmBetInfo = (
   })
 
   return { newBet, newPool }
-}
-
-export const getNumericBetsInfo = (
-  value: number,
-  outcome: string,
-  amount: number,
-  contract: NumericContract
-) => {
-  const { pool, totalShares, totalBets } = contract
-
-  const bets = getNumericBets(contract, outcome, amount, NUMERIC_FIXED_VAR)
-
-  const allBetAmounts = Object.fromEntries(bets)
-  const newTotalBets = addObjects(totalBets, allBetAmounts)
-  const newPool = addObjects(pool, allBetAmounts)
-
-  const { shares, totalShares: newTotalShares } = calculateNumericDpmShares(
-    contract.totalShares,
-    bets
-  )
-
-  const allOutcomeShares = Object.fromEntries(
-    bets.map(([outcome], i) => [outcome, shares[i]])
-  )
-
-  const probBefore = getDpmOutcomeProbability(totalShares, outcome)
-  const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
-
-  const newBet: CandidateBet<NumericBet> = {
-    contractId: contract.id,
-    value,
-    amount,
-    allBetAmounts,
-    shares: shares.find((s, i) => bets[i][0] === outcome) ?? 0,
-    allOutcomeShares,
-    outcome,
-    probBefore,
-    probAfter,
-    createdTime: Date.now(),
-    fees: noFees,
-    isAnte: false,
-    isRedemption: false,
-    isChallenge: false,
-    visibility: contract.visibility,
-  }
-
-  return { newBet, newPool, newTotalShares, newTotalBets }
 }

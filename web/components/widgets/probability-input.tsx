@@ -63,7 +63,6 @@ export function ProbabilityOrNumericInput(props: {
 
   return isPseudoNumeric ? (
     <BucketInput
-      contract={contract}
       onBucketChange={(value) =>
         setProb(
           value === undefined

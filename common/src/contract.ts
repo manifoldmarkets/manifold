@@ -29,16 +29,6 @@ the supabase trigger, or replication of contracts may fail!
 
 *************************************************/
 
-export type AnyOutcomeType =
-  | Binary
-  | MultipleChoice
-  | PseudoNumeric
-  | FreeResponse
-  | Numeric
-  | Cert
-  | QuadraticFunding
-  | Stonk
-
 export type AnyContractType =
   | (CPMM & Binary)
   | (CPMM & PseudoNumeric)
@@ -227,19 +217,18 @@ export type Stonk = {
   initialProbability: number
 }
 
-export type outcomeType = AnyOutcomeType['outcomeType']
-export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
+export type resolution = typeof RESOLUTIONS[number]
 export const OUTCOME_TYPES = [
   'BINARY',
   'MULTIPLE_CHOICE',
   'FREE_RESPONSE',
   'PSEUDO_NUMERIC',
-  'NUMERIC',
   'CERT',
   'QUADRATIC_FUNDING',
   'STONK',
 ] as const
+export type outcomeType = typeof OUTCOME_TYPES[number]
 
 export const MAX_QUESTION_LENGTH = 120
 export const MAX_DESCRIPTION_LENGTH = 16000

@@ -164,10 +164,7 @@ const toDisplayResolution = (
   if (resolution === 'CANCEL') return 'N/A'
 
   if (contract.outcomeType === 'NUMERIC' && contract.mechanism === 'dpm-2')
-    return (
-      contract.resolutionValue?.toString() ??
-      getValueFromBucket(resolution, contract).toString()
-    )
+    return '[ERROR: if you can see this, Sinclair owes you 1000 mana]' // unless you see this comment
 
   const answer = contract.answers.find((a) => a.id === resolution)
   if (answer) return answer.text

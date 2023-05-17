@@ -17,7 +17,6 @@ import {
   getBinaryCpmmBetInfo,
   getNewMultiBetInfo,
   getNewMultiCpmmBetInfo,
-  getNumericBetsInfo,
 } from 'common/new-bet'
 import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { LimitBet } from 'common/bet'
@@ -141,8 +140,7 @@ export const placebet = authEndpoint(async (req, auth) => {
         if (!answerSnap.exists) throw new APIError(400, 'Invalid answer')
         return getNewMultiBetInfo(outcome, amount, contract)
       } else if (outcomeType == 'NUMERIC' && mechanism == 'dpm-2') {
-        const { outcome, value } = validate(numericSchema, req.body)
-        return getNumericBetsInfo(value, outcome, amount, contract)
+        throw new APIError(400, 'DPM Numeric contracts are deprecated.')
       } else {
         throw new APIError(500, 'Contract has invalid type/mechanism.')
       }

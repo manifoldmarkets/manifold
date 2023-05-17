@@ -29,7 +29,7 @@ import { useIsDarkMode } from 'web/hooks/dark-mode-context'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
 import {
   BinaryResolutionOrChance,
-  NumericResolutionOrExpectation,
+  OldNumericResolution,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
@@ -247,7 +247,7 @@ function ContractSmolView(props: {
         )}
 
         {outcomeType === 'NUMERIC' && (
-          <NumericResolutionOrExpectation contract={contract} />
+          <OldNumericResolution contract={contract} />
         )}
         {outcomeType === 'STONK' && (
           <StonkPrice className="!flex-col !gap-0" contract={contract} />
