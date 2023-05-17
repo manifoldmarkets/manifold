@@ -21,6 +21,7 @@ export * from './triggers/on-update-reaction'
 // scheduled functions
 export * from './scheduled/update-loans'
 export * from './scheduled/update-recommended'
+export * from './scheduled/repack-supabase'
 export {
   sendWeeklyPortfolioUpdate,
   saveWeeklyContractMetrics,
