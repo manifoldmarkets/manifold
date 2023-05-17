@@ -1,6 +1,6 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
-import { Bet, NumericBet } from './bet'
+import { Bet } from './bet'
 import { Contract, CPMM2Contract, CPMMContract, DPMContract } from './contract'
 import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
@@ -8,7 +8,6 @@ import {
   getDpmCancelPayouts,
   getDpmMktPayouts,
   getDpmStandardPayouts,
-  getNumericDpmPayouts,
   getPayoutsMultiOutcome,
 } from './payouts-dpm'
 import {
@@ -142,7 +141,9 @@ export const getDpmPayouts = (
 
     default:
       if (outcomeType === 'NUMERIC')
-        return getNumericDpmPayouts(outcome, contract, openBets as NumericBet[])
+        throw new Error(
+          'DPM distributional numeric outcomes no longer supported'
+        )
 
       // Outcome is a free response answer id.
       return getDpmStandardPayouts(outcome, contract, openBets)

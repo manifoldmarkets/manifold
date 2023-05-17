@@ -1,6 +1,6 @@
 import { sum, groupBy, sumBy, mapValues } from 'lodash'
 
-import { Bet, NumericBet } from './bet'
+import { Bet } from './bet'
 import { deductDpmFees, getDpmProbability } from './calculate-dpm'
 import {
   DPMContract,
@@ -47,47 +47,6 @@ export const getDpmStandardPayouts = (
     const payout = amount + (1 - DPM_FEES) * Math.max(0, profit)
     return { userId, profit, payout }
   })
-
-  const profits = sumBy(payouts, (po) => Math.max(0, po.profit))
-  const creatorFee = DPM_CREATOR_FEE * profits
-  const platformFee = DPM_PLATFORM_FEE * profits
-  const collectedFees = addObjects(contract.collectedFees, {
-    creatorFee,
-    platformFee,
-    liquidityFee: 0,
-  })
-
-  return {
-    payouts: payouts.map(({ userId, payout }) => ({ userId, payout })),
-    creatorPayout: creatorFee,
-    liquidityPayouts: [],
-    collectedFees,
-  }
-}
-
-export const getNumericDpmPayouts = (
-  outcome: string,
-  contract: DPMContract,
-  bets: NumericBet[]
-) => {
-  const totalShares = sumBy(bets, (bet) => bet.allOutcomeShares[outcome] ?? 0)
-  const winningBets = bets.filter((bet) => !!bet.allOutcomeShares[outcome])
-
-  const poolTotal = sum(Object.values(contract.pool))
-
-  const payouts = winningBets.map(
-    ({ userId, allBetAmounts, allOutcomeShares }) => {
-      const shares = allOutcomeShares[outcome] ?? 0
-      const winnings = (shares / totalShares) * poolTotal
-
-      const amount = allBetAmounts[outcome] ?? 0
-      const profit = winnings - amount
-
-      // profit can be negative if using phantom shares
-      const payout = amount + (1 - DPM_FEES) * Math.max(0, profit)
-      return { userId, profit, payout }
-    }
-  )
 
   const profits = sumBy(payouts, (po) => Math.max(0, po.profit))
   const creatorFee = DPM_CREATOR_FEE * profits
