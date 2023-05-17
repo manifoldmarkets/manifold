@@ -1,10 +1,17 @@
 import clsx from 'clsx'
+import {
+  ChevronDoubleDownIcon,
+  ChevronDoubleUpIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from '@heroicons/react/solid'
+
 import { Fragment, useState } from 'react'
 import { Row } from '../layout/row'
 import {
-  league_row,
   DIVISION_NAMES,
   SECRET_NEXT_DIVISION,
+  league_user_info,
 } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { User } from 'common/user'
@@ -14,10 +21,11 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 import { ManaEarnedBreakdown } from './mana-earned-breakdown'
+import { Tooltip } from '../widgets/tooltip'
 
 export const CohortTable = (props: {
   cohort: string
-  rows: league_row[]
+  rows: league_user_info[]
   highlightedUserId: string | undefined
   demotionCount: number
   promotionCount: number
@@ -49,7 +57,7 @@ export const CohortTable = (props: {
     <table>
       <thead className={clsx('text-ink-600 text-left text-sm font-semibold')}>
         <tr>
-          <th className={clsx('px-2 pb-1')}>User</th>
+          <th className={clsx('pl-10 pr-2 pb-1')}>User</th>
           <th className={clsx('px-2 pb-1 text-right')}>
             <InfoTooltip
               text={
@@ -70,7 +78,6 @@ export const CohortTable = (props: {
                 <UserRow
                   {...row}
                   user={users[i]}
-                  rank={i + 1}
                   isHighlighted={highlightedUserId === user.id}
                   mana_earned_breakdown={row.mana_earned_breakdown as any}
                 />
@@ -129,12 +136,21 @@ const UserRow = (props: {
   mana_earned: number
   mana_earned_breakdown: { [key: string]: number }
   rank: number
+  rank_snapshot: number | null
   isHighlighted: boolean
 }) => {
-  const { user, mana_earned, mana_earned_breakdown, rank, isHighlighted } =
-    props
+  const {
+    user,
+    mana_earned,
+    mana_earned_breakdown,
+    rank,
+    rank_snapshot,
+    isHighlighted,
+  } = props
 
   const [showDialog, setShowDialog] = useState(false)
+
+  const rankDiff = rank_snapshot ? rank - rank_snapshot : 0
 
   return (
     <tr
@@ -153,7 +169,30 @@ const UserRow = (props: {
         )}
       >
         <Row className="my-2 items-center gap-4">
-          <div className="w-4 text-right font-semibold">{rank}</div>
+          <Tooltip
+            text={
+              rankDiff
+                ? `${rankDiff < 0 ? 'Gained' : 'Lost'} ${Math.abs(
+                    rankDiff
+                  )} rank${Math.abs(rankDiff) > 1 ? 's' : ''} today`
+                : undefined
+            }
+          >
+            <Row>
+              {rankDiff < -1 ? (
+                <ChevronDoubleUpIcon className="h-6 w-6 text-teal-500" />
+              ) : rankDiff === -1 ? (
+                <ChevronUpIcon className="h-6 w-6 text-teal-500" />
+              ) : rankDiff === 1 ? (
+                <ChevronDownIcon className="text-scarlet-500 h-6 w-6" />
+              ) : rankDiff > 1 ? (
+                <ChevronDoubleDownIcon className="text-scarlet-500 h-6 w-6" />
+              ) : (
+                <div className="h-6 w-6" />
+              )}
+              <div className="w-4 text-right font-semibold">{rank}</div>
+            </Row>
+          </Tooltip>
           <UserAvatarAndBadge
             name={user.name}
             username={user.username}

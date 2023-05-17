@@ -8,10 +8,10 @@ import {
   SEASONS,
   SEASON_END,
   getDemotionAndPromotionCount,
-  league_row,
   season,
   CURRENT_SEASON,
   getLeaguePath,
+  league_user_info,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -31,6 +31,7 @@ import { LeagueFeed } from 'web/components/leagues/league-feed'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
+  console.log('rows', rows)
   return {
     props: {
       rows,
@@ -45,10 +46,10 @@ export function getStaticPaths() {
   }
 }
 
-export default function Leagues(props: { rows: league_row[] }) {
+export default function Leagues(props: { rows: league_user_info[] }) {
   useTracking('view leagues')
 
-  const [rows, setRows] = usePersistentInMemoryState<league_row[]>(
+  const [rows, setRows] = usePersistentInMemoryState<league_user_info[]>(
     props.rows,
     'league-rows'
   )

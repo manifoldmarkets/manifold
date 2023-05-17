@@ -1,5 +1,5 @@
 import { db } from './db'
-import { CURRENT_SEASON } from 'common/leagues'
+import { CURRENT_SEASON, league_user_info } from 'common/leagues'
 
 export async function getLeagueInfo(userId: string) {
   const { data } = await db
@@ -16,8 +16,8 @@ export async function getLeagueInfo(userId: string) {
 
 export async function getLeagueRows() {
   const { data: rows } = await db
-    .from('leagues')
+    .from('user_league_info')
     .select('*')
     .order('mana_earned', { ascending: false })
-  return rows ?? []
+  return (rows ?? []) as league_user_info[]
 }
