@@ -90,9 +90,7 @@ export const ManaEarnedBreakdown = (props: {
         </Row>
         <Subtitle className="text-ink-800 !mt-2 !mb-2">Mana earned</Subtitle>
         <Table className="text-base">
-          <thead
-            className={clsx('text-ink-600 text-left font-semibold')}
-          >
+          <thead className={clsx('text-ink-600 text-left font-semibold')}>
             <tr>
               <th className={clsx('px-2 pb-1')}>Category</th>
               <th className={clsx('px-2 pb-1 text-right')}>Amount</th>
