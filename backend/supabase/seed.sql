@@ -216,7 +216,7 @@ where
   name = 'Skip ad';
 
 create index if not exists user_events_comment_view on user_events (user_id, name, comment_id);
-
+-- TODO: drop this after PR merge
 create index if not exists user_events_viewed_markets on user_events (user_id, name, contract_id, ts desc)
 where
   name = 'view market'
@@ -231,7 +231,10 @@ create table if not exists
     contract_id text not null,
     data jsonb not null,
     fs_updated_time timestamp not null,
-    primary key (user_id, contract_id)
+    created_time timestamptz not null default now(),
+    -- so far we have: 'view market' or 'view market card'
+    type text not null default 'view market',
+    primary key (user_id, contract_id, created_time)
   );
 
 alter table user_seen_markets enable row level security;
@@ -241,6 +244,12 @@ drop policy if exists "public read" on user_seen_markets;
 create policy "public read" on user_seen_markets for
 select
   using (true);
+
+drop policy if exists "user can insert" on user_seen_markets;
+create policy "user can insert" on user_seen_markets for insert with check (true)
+
+create index if not exists user_seen_markets_created_time_desc_idx
+  on user_seen_markets (user_id, contract_id, created_time desc);
 
 create index if not exists user_seen_markets_data_gin on user_seen_markets using GIN (data);
 
@@ -1121,7 +1130,7 @@ begin
            when 'user_follows' then cast(('user_id', 'follow_id') as table_spec)
            when 'user_notifications' then cast(('user_id', 'notification_id') as table_spec)
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
-           when 'user_seen_markets' then cast(('user_id', 'contract_id') as table_spec)
+           when 'user_seen_markets' then cast(('user_id', 'contract_id', 'created_time') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)
            when 'contract_bets' then cast(('contract_id', 'bet_id') as table_spec)
