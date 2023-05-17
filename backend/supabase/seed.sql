@@ -986,6 +986,7 @@ create table if not exists
     cohort text not null, -- id of cohort (group of competing users). Unique across seasons.
     mana_earned numeric not null default 0.0,
     mana_earned_breakdown jsonb not null default '{}'::jsonb, -- Key is category, value is total mana earned in that category
+    rank_snapshot int;
     created_time timestamp not null default now(),
     unique (user_id, season)
   );
