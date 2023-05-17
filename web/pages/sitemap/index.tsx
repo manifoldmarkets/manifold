@@ -14,6 +14,7 @@ import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
 import { SEO } from 'web/components/SEO'
 import { Card } from 'web/components/widgets/card'
+import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
@@ -48,163 +49,98 @@ export default function LabsPage() {
           isModalOpen={isModalOpen}
           setIsModalOpen={setIsModalOpen}
         />
-        <Masonry
-          breakpointCols={{ default: 2, 768: 1 }}
-          className="-ml-4 flex w-auto"
-          columnClassName="pl-4 bg-clip-padding"
-        >
+        <LabSection>
           <LabCard
             title="🙋 About & Help"
             description={`Learn more about Manifold`}
             href="https://help.manifold.markets/"
           />
-
           <LabCard
             title="💬 Discord"
             description={`Join our community on Discord`}
             href="https://discord.com/invite/eHQBNBqXuh"
           />
-
           <LabCard
             title="📱 App"
             description={`Download our iOS/Android app`}
             {...appCallback}
           />
-
           <LabCard
             title="📰 Newsletter"
             description={`Read the latest about Manifold`}
             href="https://news.manifold.markets/"
           />
-        </Masonry>
-
-        <Masonry
-          breakpointCols={{ default: 2, 768: 1 }}
-          className="-ml-4 mt-8 flex w-auto"
-          columnClassName="pl-4 bg-clip-padding"
-        >
-          <LabCard
-            title="⚖️ Markets"
-            description="Search for markets"
-            href="/markets"
-          />
-
+        </LabSection>
+        <Subtitle>📄 Pages</Subtitle>
+        <LabSection>
+          {/* duplicate condition so that masonry weaves cards in the right order */}
           {(!isNative || (isNative && platform !== 'ios')) && (
-            <>
-              <LabCard
-                title="💰 Get mana"
-                description="Buy Ṁ to trade in your favorite markets"
-                href="/add-funds"
-              />
-
-              <LabCard
-                title="🫀 Charity"
-                description={`Turn ${ENV_CONFIG.moneyMoniker} into real charitable donations`}
-                href="/charity"
-              />
-            </>
+            <LabCard
+              title="💰 Get mana"
+              description="Buy Ṁ to trade in your favorite markets"
+              href="/add-funds"
+            />
           )}
-
+          {(!isNative || (isNative && platform !== 'ios')) && (
+            <LabCard
+              title="🫀 Charity"
+              description={`Turn ${ENV_CONFIG.moneyMoniker} into real charitable donations`}
+              href="/charity"
+            />
+          )}
           <LabCard
             title="💸 Referrals"
             description="Refer your friends to earn mana"
             href="/referrals"
           />
-
-          <LabCard
-            title="👥 Users"
-            description="Find your friends or other people on Manifold"
-            href="/users"
-          />
-
-          <LabCard
-            title="⚔️ Versus"
-            description="Create mana-battles between two players"
-            href="/versus"
-          />
-
-          <LabCard
-            title="🔥 Swipe"
-            description="Swipe-to-bet UI. Try via iOS/Android app."
-            {...(isNative ? { href: '/swipe' } : appCallback)}
-          />
-
           <LabCard
             title="⚡️ Live"
             description="Live feed of Manifold activity"
             href="/live"
           />
-
           <LabCard
-            title="💬 Discord Bot"
-            description="Create, trade, and share markets directly from Discord"
-            href="/discord-bot"
+            title="⚖️ Markets"
+            description="Search for markets"
+            href="/markets"
           />
-
           <LabCard
-            title="🏆 CSPI/Salem tournament"
-            description="Special contest on politics and current events"
-            href="https://salemcenter.manifold.markets/"
+            title="👥 Users"
+            description="Find your friends or other people on Manifold"
+            href="/users"
           />
-
-          <LabCard
-            title="🎮 Twitch bot"
-            description="Embed markets in your stream"
-            href="/twitch"
-          />
-
-          <LabCard
-            title="📏 Calibration"
-            description="User bet calibration graph"
-            href="/my-calibration"
-          />
-
           <LabCard
             title="👥 Groups"
             description="Curated markets on a topic"
             href="/groups"
           />
-
-          <LabCard
-            title="🏆 Leaderboards"
-            description="See who's winning"
-            href="/leaderboards"
-          />
-
-          <LabCard
-            title="💸 Manalinks"
-            description={`Send ${ENV_CONFIG.moneyMoniker} to anyone`}
-            href="/links"
-          />
-
-          <LabCard
-            title="📈 Stats"
-            description="See how Manifold is doing"
-            href="/stats"
-          />
-
           <LabCard
             title="✏ Posts"
             description="Go long on longform"
             href="/latestposts"
           />
-
           <LabCard
-            title="🎨 Design system"
-            description="For us, mostly"
-            href="/styles"
+            title="🏆 Leaderboards"
+            description="See who's winning"
+            href="/leaderboards"
           />
-        </Masonry>
-
-        <Spacer h={8} />
-
-        <Title>🧪 Labs</Title>
-        <div className="mb-4">Experimental or past projects at Manifold</div>
-        <Masonry
-          breakpointCols={{ default: 2, 768: 1 }}
-          className="-ml-4 flex w-auto"
-          columnClassName="pl-4 bg-clip-padding"
-        >
+          <LabCard
+            title="💸 Manalinks"
+            description={`Send ${ENV_CONFIG.moneyMoniker} to anyone`}
+            href="/links"
+          />
+          {/* <LabCard
+            title="📏 Calibration"
+            description="User bet calibration graph"
+            href="/my-calibration"
+          /> */}
+        </LabSection>
+        <Subtitle>🧪 Ongoing Experiments</Subtitle>
+        <LabSection>
+          <LabCard
+            title="⚔️ Versus"
+            description="Create mana-battles between two players"
+            href="/versus"
+          />
           <LabCard
             title="❓ Q&A"
             description="Ask and answer questions to win mana"
@@ -217,6 +153,46 @@ export default function LabsPage() {
               href="/lootbox"
             />
           )}
+          <LabCard
+            title="🔥 Swipe"
+            description="Swipe-to-bet UI. Try via iOS/Android app."
+            {...(isNative ? { href: '/swipe' } : appCallback)}
+          />
+        </LabSection>
+
+        <Subtitle>🏝️ Exotic lands</Subtitle>
+        <LabSection>
+          <LabCard
+            title="💬 Discord Bot"
+            description="Create, trade, and share markets directly from Discord"
+            href="/discord-bot"
+          />
+          <LabCard
+            title="🎮 Twitch bot"
+            description="Embed markets in your stream"
+            href="/twitch"
+          />
+          <LabCard
+            title="🏆 CSPI/Salem tournament"
+            description="Special contest on politics and current events"
+            href="https://salemcenter.manifold.markets/"
+          />
+          <LabCard
+            title="📈 Stats"
+            description="See how Manifold is doing"
+            href="/stats"
+          />
+          <LabCard
+            title="🎨 Design system"
+            description="For us, mostly"
+            href="/styles"
+          />
+        </LabSection>
+        <Subtitle>🪦 Spooky Graveyard</Subtitle>
+        <div className="mb-4 italic">
+          If these projects were truly dead, surely they would disappear?
+        </div>
+        <LabSection>
           <LabCard
             title="🎴 Manifold: The Gambling"
             description="Match each market to its creator"
@@ -248,8 +224,7 @@ export default function LabsPage() {
             href="/ad"
           />
           <LabCard title="🐮 Cowp" description="???" href="/cowp" />
-        </Masonry>
-
+        </LabSection>
         <Spacer h={8} />
       </Col>
     </Page>
@@ -272,3 +247,13 @@ const LabCard = (props: {
     </Link>
   )
 }
+
+const LabSection = (props: { children: React.ReactNode }) => (
+  <Masonry
+    breakpointCols={{ default: 2, 768: 1 }}
+    className="-ml-4 flex w-auto"
+    columnClassName="pl-4 bg-clip-padding"
+  >
+    {props.children}
+  </Masonry>
+)
