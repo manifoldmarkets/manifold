@@ -5,8 +5,12 @@ import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
 import { floor } from 'lodash'
 import { useLeagueInfo, useLeagueInfoFromUsername } from 'web/hooks/use-leagues'
-import { DIVISION_TRAITS } from 'common/leagues'
-import { ColoredRing } from './colored-ring'
+import { DIVISION_NAMES } from 'common/leagues'
+import { LeagueRing } from './league-ring'
+
+function floorToEven(num: number) {
+  return num - (num % 2)
+}
 
 export const Avatar = memo(
   (props: {
@@ -25,9 +29,8 @@ export const Avatar = memo(
     const s =
       size == '2xs' ? 4 : size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
     const sizeInPx = s * 4
-    const innerSizeInPx = leagueInfo ? floor(sizeInPx * 0.8) : sizeInPx
-    const sizeOffsetInPx = floor((sizeInPx - innerSizeInPx) / 2)
-    // console.log('leagueInfo', leagueInfo)
+    const innerSizeInPx = floorToEven(Math.floor(sizeInPx * 0.8))
+    console.log('leagueInfo', leagueInfo)
 
     const onClick = (e: MouseEvent) => {
       if (!noLink && username) {
@@ -42,45 +45,50 @@ export const Avatar = memo(
     // there can be no avatar URL or username in the feed, we show a "submit comment"
     // item with a fake grey user circle guy even if you aren't signed in
     return avatarUrl ? (
-      <ColoredRing
-        color={leagueInfo ? DIVISION_TRAITS[leagueInfo.division].twColor : ''}
+      <LeagueRing
         size={sizeInPx}
-        offset={sizeOffsetInPx}
+        className={className}
+        league={leagueInfo ? DIVISION_NAMES[leagueInfo.division] : ''}
       >
-        <Image
-          width={innerSizeInPx}
-          height={innerSizeInPx}
-          className={clsx(
-            'bg-canvas-0 my-0 flex-shrink-0 rounded-full object-cover',
-            `w-[${innerSizeInPx}px] h-[${innerSizeInPx}px]`,
-            !noLink && 'cursor-pointer',
-            className
-          )}
-          style={{ maxWidth: `${s * 0.25}rem` }}
-          src={avatarUrl}
-          onClick={onClick}
-          alt={`${username ?? 'Unknown user'} avatar`}
-          onError={() => {
-            // If the image doesn't load, clear the avatarUrl to show the default
-            // Mostly for localhost, when getting a 403 from googleusercontent
-            setAvatarUrl('')
+        <div
+          className="relative overflow-hidden rounded-full"
+          style={{
+            width: `${innerSizeInPx}px`,
+            height: `${innerSizeInPx}px`,
           }}
-        />
-      </ColoredRing>
+        >
+          <Image
+            layout="fill"
+            className={clsx(
+              ' object-cover',
+              !noLink && 'cursor-pointer rounded-full'
+            )}
+            // style={{ maxWidth: `${s * 0.25}rem` }}
+            src={avatarUrl}
+            onClick={onClick}
+            alt={`${username ?? 'Unknown user'} avatar`}
+            onError={() => {
+              // If the image doesn't load, clear the avatarUrl to show the default
+              // Mostly for localhost, when getting a 403 from googleusercontent
+              setAvatarUrl('')
+            }}
+          />
+        </div>
+      </LeagueRing>
     ) : (
-      <ColoredRing
-        color={leagueInfo ? DIVISION_TRAITS[leagueInfo.division].twColor : ''}
+      <LeagueRing
+        league={leagueInfo ? DIVISION_NAMES[leagueInfo.division] : ''}
         size={sizeInPx}
-        offset={sizeOffsetInPx}
+        className={className}
       >
         <UserCircleIcon
+          style={{ height: `${innerSizeInPx}px`, width: `${innerSizeInPx}px` }}
           className={clsx(
-            `bg-canvas-0 flex-shrink-0 rounded-full w-[${innerSizeInPx}px] h-[${innerSizeInPx}px] text-ink-500`,
-            className
+            `bg-canvas-0 flex-shrink-0 rounded-full w-[${innerSizeInPx}px] h-[${innerSizeInPx}px] text-ink-500`
           )}
           aria-hidden="true"
         />
-      </ColoredRing>
+      </LeagueRing>
     )
   }
 )

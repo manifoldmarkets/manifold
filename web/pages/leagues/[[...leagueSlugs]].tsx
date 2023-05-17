@@ -4,7 +4,7 @@ import { ClockIcon } from '@heroicons/react/outline'
 import { useRouter } from 'next/router'
 
 import {
-  DIVISION_TRAITS,
+  DIVISION_NAMES,
   SEASONS,
   SEASON_END,
   getDemotionAndPromotionCount,
@@ -118,12 +118,11 @@ export default function Leagues(props: { rows: league_row[] }) {
       }
 
       let divisionNum: number | undefined
-      if (Object.keys(DIVISION_TRAITS).includes(division)) {
+      if (Object.keys(DIVISION_NAMES).includes(division)) {
         divisionNum = +division
       } else {
-        const divisionName = Object.keys(DIVISION_TRAITS).find(
-          (key) =>
-            DIVISION_TRAITS[key].name?.toLowerCase() === division?.toLowerCase()
+        const divisionName = Object.keys(DIVISION_NAMES).find(
+          (key) => DIVISION_NAMES[key].toLowerCase() === division?.toLowerCase()
         )
         if (divisionName) divisionNum = +divisionName
       }
@@ -220,7 +219,7 @@ export default function Leagues(props: { rows: league_row[] }) {
               {divisions.map((division) => (
                 <option key={division} value={division}>
                   {division === userDivision && MARKER}{' '}
-                  {DIVISION_TRAITS[division].name}
+                  {DIVISION_NAMES[division]}
                 </option>
               ))}
             </Select>

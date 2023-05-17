@@ -3,7 +3,7 @@ import { Fragment, useState } from 'react'
 import { Row } from '../layout/row'
 import {
   league_row,
-  DIVISION_TRAITS,
+  DIVISION_NAMES,
   SECRET_NEXT_DIVISION,
 } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
@@ -37,12 +37,11 @@ export const CohortTable = (props: {
   const division = rows[0].division
   const nextDivision = division + 1
   const nextNextDivision = division + 2
-  const nextDivisionName =
-    DIVISION_TRAITS[nextDivision].name ?? SECRET_NEXT_DIVISION
+  const nextDivisionName = DIVISION_NAMES[nextDivision] ?? SECRET_NEXT_DIVISION
   const nextNextDivisionName =
-    DIVISION_TRAITS[nextNextDivision].name ?? SECRET_NEXT_DIVISION
+    DIVISION_NAMES[nextNextDivision] ?? SECRET_NEXT_DIVISION
   const prevDivison = Math.max(division - 1, 1)
-  const prevDivisionName = DIVISION_TRAITS[prevDivison].name
+  const prevDivisionName = DIVISION_NAMES[prevDivison]
 
   const noPromotionDemotion = cohort === 'bots'
 

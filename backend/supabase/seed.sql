@@ -46,7 +46,8 @@ create table if not exists
     id text not null primary key,
     data jsonb not null,
     fs_updated_time timestamp not null,
-    name_username_vector tsvector generated always as (to_tsvector((data->>'username') || ' ' || (data->>'name'))) stored
+    name_username_vector tsvector generated always as (to_tsvector((data->>'username') || ' ' || (data->>'name'))) stored,
+    username text
   );
 
 

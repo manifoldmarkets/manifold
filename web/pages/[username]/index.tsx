@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
-import { DIVISION_TRAITS, getLeaguePath } from 'common/leagues'
+import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { Post } from 'common/post'
 import { BetsList } from 'web/components/bet/bets-list'
 import { buttonClass } from 'web/components/buttons/button'
@@ -409,7 +409,7 @@ function ProfilePublicStats(props: {
         >
           <TrophyIcon className="mr-1 inline h-4 w-4" />
           <span className={clsx('font-semibold')}>
-            {DIVISION_TRAITS[leagueInfo.division ?? ''].name}
+            {DIVISION_NAMES[leagueInfo.division ?? '']}
           </span>{' '}
           Rank {leagueInfo.rank}
         </Link>
