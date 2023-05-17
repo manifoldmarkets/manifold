@@ -1,3 +1,4 @@
+import { REFERRAL_AMOUNT } from 'common/economy'
 import {
   APPLE_APP_URL,
   DOMAIN,
@@ -5,6 +6,7 @@ import {
   GOOGLE_PLAY_APP_URL,
 } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
+import { ref } from 'firebase/storage'
 import Link from 'next/link'
 import { useState } from 'react'
 import Masonry from 'react-masonry-css'
@@ -52,76 +54,46 @@ export default function LabsPage() {
         <LabSection>
           <LabCard
             title="🙋 About & Help"
-            description={`Learn more about Manifold`}
             href="https://help.manifold.markets/"
           />
           <LabCard
             title="💬 Discord"
-            description={`Join our community on Discord`}
             href="https://discord.com/invite/eHQBNBqXuh"
           />
-          <LabCard
-            title="📱 App"
-            description={`Download our iOS/Android app`}
-            {...appCallback}
-          />
+          <LabCard title="📱 Download iOS/Android App" {...appCallback} />
           <LabCard
             title="📰 Newsletter"
-            description={`Read the latest about Manifold`}
             href="https://news.manifold.markets/"
           />
         </LabSection>
         <Subtitle>📄 Pages</Subtitle>
         <LabSection>
-          {/* duplicate condition so that masonry weaves cards in the right order */}
-          {(!isNative || (isNative && platform !== 'ios')) && (
-            <LabCard
-              title="💰 Get mana"
-              description="Buy Ṁ to trade in your favorite markets"
-              href="/add-funds"
-            />
-          )}
           {(!isNative || (isNative && platform !== 'ios')) && (
             <LabCard
               title="🫀 Charity"
-              description={`Turn ${ENV_CONFIG.moneyMoniker} into real charitable donations`}
+              description={`Turn mana into real charitable donations`}
               href="/charity"
             />
           )}
           <LabCard
             title="💸 Referrals"
-            description="Refer your friends to earn mana"
+            description={`Refer a friend to earn ${formatMoney(
+              REFERRAL_AMOUNT
+            )}`}
             href="/referrals"
           />
-          <LabCard
-            title="⚡️ Live"
-            description="Live feed of Manifold activity"
-            href="/live"
-          />
-          <LabCard
-            title="⚖️ Markets"
-            description="Search for markets"
-            href="/markets"
-          />
-          <LabCard
-            title="👥 Users"
-            description="Find your friends or other people on Manifold"
-            href="/users"
-          />
-          <LabCard
-            title="👥 Groups"
-            description="Curated markets on a topic"
-            href="/groups"
-          />
+          {(!isNative || (isNative && platform !== 'ios')) && (
+            <LabCard title="💰 Get Mana" href="/add-funds" />
+          )}
+          <LabCard title="⚡️ Live Feed" href="/live" />
+          <LabCard title="⚖️ Market Search" href="/markets" />
+          <LabCard title="👥 User Search" href="/users" />
+          <LabCard title="👥 Group Search" href="/groups" />
+          <LabCard title="🏆 Leaderboards" href="/leaderboards" />
           <LabCard
             title="✏ Posts"
             description="Go long on longform"
             href="/latestposts"
-          />
-          <LabCard
-            title="🏆 Leaderboards"
-            description="See who's winning"
-            href="/leaderboards"
           />
           <LabCard
             title="💸 Manalinks"
@@ -138,7 +110,7 @@ export default function LabsPage() {
         <LabSection>
           <LabCard
             title="⚔️ Versus"
-            description="Create mana-battles between two players"
+            description="Create mana-battles between two ideas"
             href="/versus"
           />
           <LabCard
@@ -148,7 +120,7 @@ export default function LabsPage() {
           />
           {user && (
             <LabCard
-              title="🎁 Loot box"
+              title="🎁 Loot Box"
               description="Invest in random markets"
               href="/lootbox"
             />
@@ -163,8 +135,8 @@ export default function LabsPage() {
         <Subtitle>🏝️ Exotic lands</Subtitle>
         <LabSection>
           <LabCard
-            title="💬 Discord Bot"
-            description="Create, trade, and share markets directly from Discord"
+            title="🤖 Discord Bot"
+            description="Create, trade, & share markets from Discord"
             href="/discord-bot"
           />
           <LabCard
@@ -182,15 +154,12 @@ export default function LabsPage() {
             description="See how Manifold is doing"
             href="/stats"
           />
-          <LabCard
-            title="🎨 Design system"
-            description="For us, mostly"
-            href="/styles"
-          />
+          <LabCard title="🎨 Design system" href="/styles" />
         </LabSection>
         <Subtitle>🪦 Spooky Graveyard</Subtitle>
         <div className="mb-4 italic">
-          If these projects were truly dead, surely they would disappear?
+          Dead and undead projects, haunting this page until we resurrect or
+          exorcise them.
         </div>
         <LabSection>
           <LabCard
@@ -205,7 +174,7 @@ export default function LabsPage() {
           />
           <LabCard
             title="💭 Dream"
-            description="Ask our AI to generate a custom image"
+            description="Generate an image with AI"
             href="/dream"
           />
           <LabCard
@@ -214,13 +183,13 @@ export default function LabsPage() {
             href="/date-docs"
           />
           <LabCard
-            title="🎲 Magic the Guessering"
+            title="🃏 Magic the Guessering"
             description="Match MTG card names to their art"
             href={`https://${DOMAIN}/mtg/index.html`}
           />
           <LabCard
-            title="👀 Ads"
-            description="Read ads for mana. Or pay mana to promote your content."
+            title="👀 Classified Ads"
+            description="An old version of market boosts that let you advertise anything. View ads for mana!"
             href="/ad"
           />
           <LabCard title="🐮 Cowp" description="???" href="/cowp" />
@@ -233,7 +202,7 @@ export default function LabsPage() {
 
 const LabCard = (props: {
   title: string
-  description: string
+  description?: string
   href: string
   onClick?: () => void
 }) => {
@@ -241,8 +210,8 @@ const LabCard = (props: {
   return (
     <Link href={href} onClick={onClick} className="mb-4 block">
       <Card className="flex flex-col gap-2 px-4 py-3">
-        <h3 className="text-lg font-semibold">{title}</h3>
-        <p className="text-ink-600">{description}</p>
+        <div className="text-lg font-semibold">{title}</div>
+        {description && <p className="text-ink-600">{description}</p>}
       </Card>
     </Link>
   )
