@@ -4,7 +4,7 @@ import { tradingAllowed } from 'web/lib/firebase/contracts'
 import {
   BinaryContractChart,
   ChoiceContractChart,
-  NumericContractChart,
+  OldNumericContractChart,
   PseudoNumericContractChart,
 } from 'web/components/charts/contract'
 import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
@@ -16,7 +16,7 @@ import {
   Contract,
   FreeResponseContract,
   MultipleChoiceContract,
-  NumericContract,
+  OldNumericContract,
   PseudoNumericContract,
   BinaryContract,
   CPMMStonkContract,
@@ -71,14 +71,14 @@ export const ContractOverview = memo(
   }
 )
 
-const OldNumericOverview = (props: { contract: NumericContract }) => {
+const OldNumericOverview = (props: { contract: OldNumericContract }) => {
   const { contract } = props
   return (
     <>
       <OldNumericResolution contract={contract} />
       <SizedContainer fullHeight={250} mobileHeight={150}>
         {(w, h) => (
-          <NumericContractChart width={w} height={h} contract={contract} />
+          <OldNumericContractChart width={w} height={h} contract={contract} />
         )}
       </SizedContainer>
     </>

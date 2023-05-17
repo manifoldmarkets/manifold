@@ -1,6 +1,6 @@
 import { range, sum, sumBy, mapValues } from 'lodash'
-import { Bet, NumericBet } from './bet'
-import { DPMContract, DPMBinaryContract, NumericContract } from './contract'
+import { Bet, OldNumericBet } from './bet'
+import { DPMContract, DPMBinaryContract, OldNumericContract } from './contract'
 import { DPM_FEES } from './fees'
 
 export function getDpmProbability(totalShares: { [outcome: string]: number }) {
@@ -28,7 +28,7 @@ export function getDpmOutcomeProbabilities(totalShares: {
 
 export const getValueFromBucket = (
   bucket: string,
-  contract: NumericContract
+  contract: OldNumericContract
 ) => {
   const { bucketCount, min, max } = contract
   const index = parseInt(bucket)
@@ -37,7 +37,7 @@ export const getValueFromBucket = (
   return rounded
 }
 
-export const getExpectedValue = (contract: NumericContract) => {
+export const getExpectedValue = (contract: OldNumericContract) => {
   const { bucketCount, min, max, totalShares } = contract
 
   const totalShareSum = sumBy(
@@ -198,11 +198,11 @@ export function calculateStandardDpmPayout(
   outcome: string
 ) {
   const { outcome: betOutcome } = bet
-  const isNumeric = contract.outcomeType === 'NUMERIC'
-  if (!isNumeric && betOutcome !== outcome) return 0
+  const isOldNumeric = contract.outcomeType === 'NUMERIC'
+  if (!isOldNumeric && betOutcome !== outcome) return 0
 
-  const shares = isNumeric
-    ? ((bet as NumericBet).allOutcomeShares ?? {})[outcome]
+  const shares = isOldNumeric
+    ? ((bet as OldNumericBet).allOutcomeShares ?? {})[outcome]
     : bet.shares
 
   if (!shares) return 0
@@ -217,8 +217,8 @@ export function calculateStandardDpmPayout(
 
   const winnings = (shares / total) * poolTotal
 
-  const amount = isNumeric
-    ? (bet as NumericBet).allBetAmounts[outcome]
+  const amount = isOldNumeric
+    ? (bet as OldNumericBet).allBetAmounts[outcome]
     : bet.amount
 
   const payout = amount + (1 - DPM_FEES) * Math.max(0, winnings - amount)
@@ -285,10 +285,11 @@ function calculateMktDpmPayout(contract: DPMContract, bet: Bet) {
   const poolFrac =
     outcomeType === 'NUMERIC'
       ? sumBy(
-          Object.keys((bet as NumericBet).allOutcomeShares ?? {}),
+          Object.keys((bet as OldNumericBet).allOutcomeShares ?? {}),
           (outcome) => {
             return (
-              (probs[outcome] * (bet as NumericBet).allOutcomeShares[outcome]) /
+              (probs[outcome] *
+                (bet as OldNumericBet).allOutcomeShares[outcome]) /
               totalShares[outcome]
             )
           }

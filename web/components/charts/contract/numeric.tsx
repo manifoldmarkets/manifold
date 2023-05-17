@@ -1,9 +1,8 @@
 import { useMemo } from 'react'
 import { range } from 'lodash'
 import { scaleLinear } from 'd3-scale'
-
 import { getDpmOutcomeProbabilities } from 'common/calculate-dpm'
-import { NumericContract } from 'common/contract'
+import { OldNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { DistributionChart } from '../generic-charts'
 
@@ -11,7 +10,7 @@ const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
 const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
-const getNumericChartData = (contract: NumericContract) => {
+const getChartData = (contract: OldNumericContract) => {
   const { totalShares, bucketCount, min, max } = contract
   const step = (max - min) / bucketCount
   const bucketProbs = getDpmOutcomeProbabilities(totalShares)
@@ -21,14 +20,14 @@ const getNumericChartData = (contract: NumericContract) => {
   }))
 }
 
-export const NumericContractChart = (props: {
-  contract: NumericContract
+export const OldNumericContractChart = (props: {
+  contract: OldNumericContract
   width: number
   height: number
 }) => {
   const { contract, width, height } = props
   const { min, max } = contract
-  const data = useMemo(() => getNumericChartData(contract), [contract])
+  const data = useMemo(() => getChartData(contract), [contract])
   const maxY = Math.max(...data.map((d) => d.y))
   const xScale = scaleLinear([min, max], [0, width - MARGIN_X])
   const yScale = scaleLinear([0, maxY], [height - MARGIN_Y, 0])

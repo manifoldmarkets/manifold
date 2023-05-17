@@ -2,7 +2,7 @@ import {
   BinaryContract,
   FreeResponseContract,
   MultipleChoiceContract,
-  NumericContract,
+  OldNumericContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -82,7 +82,7 @@ export function FreeResponseResolution(props: {
 }
 
 // All distributional numeric markets are resolved now
-export function OldNumericResolution(props: { contract: NumericContract }) {
+export function OldNumericResolution(props: { contract: OldNumericContract }) {
   const { contract } = props
   const { resolution } = contract
 

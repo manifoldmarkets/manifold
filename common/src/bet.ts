@@ -62,7 +62,7 @@ export type Bet = {
   }
 } & Partial<LimitProps>
 
-export type NumericBet = Bet & {
+export type OldNumericBet = Bet & {
   value: number
   allOutcomeShares: { [outcome: string]: number }
   allBetAmounts: { [outcome: string]: number }

@@ -7,7 +7,7 @@ import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import {
   BinaryContractChart,
   ChoiceContractChart,
-  NumericContractChart,
+  OldNumericContractChart,
   PseudoNumericContractChart,
 } from 'web/components/charts/contract'
 import { Col } from 'web/components/layout/col'
@@ -181,7 +181,7 @@ const ContractChart = (props: {
         />
       )
     case 'NUMERIC':
-      return <NumericContractChart {...rest} contract={contract} />
+      return <OldNumericContractChart {...rest} contract={contract} />
     case 'STONK':
       return (
         <StonkContractChart

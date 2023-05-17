@@ -27,7 +27,7 @@ import {
 } from 'common/calculate'
 import {
   DPMContract,
-  NumericContract,
+  OldNumericContract,
   contractPath,
   CPMMBinaryContract,
 } from 'common/contract'
@@ -383,7 +383,7 @@ function ContractBets(props: {
   const limitBets = (bets ?? []).filter(
     (bet) => bet.limitProb !== undefined && !bet.isCancelled && !bet.isFilled
   ) as LimitBet[]
-  const resolutionValue = (contract as NumericContract).resolutionValue
+  const resolutionValue = (contract as OldNumericContract).resolutionValue
 
   const [collapsed, setCollapsed] = useState(true)
 
@@ -541,7 +541,7 @@ export function ContractBetsTable(props: {
   const isCPMM = mechanism === 'cpmm-1'
   const isCPMM2 = mechanism === 'cpmm-2'
   const isDPM = mechanism === 'dpm-2'
-  const isNumeric = outcomeType === 'NUMERIC'
+  const isOldNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isClosed = closeTime && Date.now() > closeTime
@@ -586,13 +586,15 @@ export function ContractBetsTable(props: {
       <Table>
         <thead>
           <tr className="p-2">
-            {isYourBets && isDPM && !isNumeric && !isResolved && !isClosed && (
-              <th></th>
-            )}
+            {isYourBets &&
+              isDPM &&
+              !isOldNumeric &&
+              !isResolved &&
+              !isClosed && <th></th>}
             {isCPMM && <th>Type</th>}
             <th>Outcome</th>
             <th>Amount</th>
-            {isDPM && !isNumeric && (
+            {isDPM && !isOldNumeric && (
               <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
             )}
             {isDPM && !isResolved && <th>Payout if chosen</th>}
@@ -648,7 +650,7 @@ function BetRow(props: {
   const isCPMM = mechanism === 'cpmm-1'
   const isCPMM2 = mechanism === 'cpmm-2'
   const isShortSell = isCPMM2 && bet.amount > 0 && bet.shares === 0
-  const isNumeric = outcomeType === 'NUMERIC'
+  const isOldNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isDPM = mechanism === 'dpm-2'
   const isStonk = outcomeType === 'STONK'
@@ -698,7 +700,7 @@ function BetRow(props: {
 
   return (
     <tr>
-      {isYourBet && isDPM && !isNumeric && !isResolved && !isClosed && (
+      {isYourBet && isDPM && !isOldNumeric && !isResolved && !isClosed && (
         <td className="text-ink-700">
           {!isSold && !isAnte && (
             <DpmSellButton contract={contract} bet={bet} />
@@ -723,7 +725,7 @@ function BetRow(props: {
         {formatMoney(Math.abs(amount))}
         {ofTotalAmount}
       </td>
-      {isDPM && !isNumeric && <td>{saleDisplay}</td>}
+      {isDPM && !isOldNumeric && <td>{saleDisplay}</td>}
       {isDPM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>
         {isStonk
