@@ -16,12 +16,12 @@ export const getSeasonDates = (season: number) => {
   return { start, end }
 }
 
-export const DIVISION_NAMES = {
-  1: 'Bronze',
-  2: 'Silver',
-  3: 'Gold',
-  4: 'Platinum',
-} as { [key: number | string]: string }
+export const DIVISION_TRAITS = {
+  1: { name: 'Bronze', twColor: 'bg-yellow-800' },
+  2: { name: 'Silver', twColor: 'bg-stone-500' },
+  3: { name: 'Gold', twColor: 'bg-amber-400' },
+  4: { name: 'Platinum', twColor: 'bg-slate-500' },
+} as { [key: number | string]: { name: string; twColor: string } }
 
 export const SECRET_NEXT_DIVISION = 'Diamond'
 
@@ -57,6 +57,6 @@ export const getLeaguePath = (
   cohort: string,
   userId?: string
 ) => {
-  const divisionName = DIVISION_NAMES[division].toLowerCase()
+  const divisionName = DIVISION_TRAITS[division].name.toLowerCase()
   return `/leagues/${season}/${divisionName}/${cohort}/${userId ?? ''}`
 }

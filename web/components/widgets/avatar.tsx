@@ -4,6 +4,9 @@ import { memo, MouseEvent, useEffect, useState } from 'react'
 import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
 import { floor } from 'lodash'
+import { useLeagueInfo, useLeagueInfoFromUsername } from 'web/hooks/use-leagues'
+import { DIVISION_TRAITS } from 'common/leagues'
+import { ColoredRing } from './colored-ring'
 
 export const Avatar = memo(
   (props: {
@@ -17,9 +20,14 @@ export const Avatar = memo(
     const { username, noLink, size, className, preventDefault } = props
     const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
     useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
+
+    const leagueInfo = useLeagueInfoFromUsername(username)
     const s =
       size == '2xs' ? 4 : size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
     const sizeInPx = s * 4
+    const innerSizeInPx = leagueInfo ? floor(sizeInPx * 0.8) : sizeInPx
+    const sizeOffsetInPx = floor((sizeInPx - innerSizeInPx) / 2)
+    // console.log('leagueInfo', leagueInfo)
 
     const onClick = (e: MouseEvent) => {
       if (!noLink && username) {
@@ -34,33 +42,45 @@ export const Avatar = memo(
     // there can be no avatar URL or username in the feed, we show a "submit comment"
     // item with a fake grey user circle guy even if you aren't signed in
     return avatarUrl ? (
-      <Image
-        width={sizeInPx}
-        height={sizeInPx}
-        className={clsx(
-          'bg-canvas-0 my-0 flex-shrink-0 rounded-full object-cover',
-          `w-${s} h-${s}`,
-          !noLink && 'cursor-pointer',
-          className
-        )}
-        style={{ maxWidth: `${s * 0.25}rem` }}
-        src={avatarUrl}
-        onClick={onClick}
-        alt={`${username ?? 'Unknown user'} avatar`}
-        onError={() => {
-          // If the image doesn't load, clear the avatarUrl to show the default
-          // Mostly for localhost, when getting a 403 from googleusercontent
-          setAvatarUrl('')
-        }}
-      />
+      <ColoredRing
+        color={leagueInfo ? DIVISION_TRAITS[leagueInfo.division].twColor : ''}
+        size={sizeInPx}
+        offset={sizeOffsetInPx}
+      >
+        <Image
+          width={innerSizeInPx}
+          height={innerSizeInPx}
+          className={clsx(
+            'bg-canvas-0 my-0 flex-shrink-0 rounded-full object-cover',
+            `w-[${innerSizeInPx}px] h-[${innerSizeInPx}px]`,
+            !noLink && 'cursor-pointer',
+            className
+          )}
+          style={{ maxWidth: `${s * 0.25}rem` }}
+          src={avatarUrl}
+          onClick={onClick}
+          alt={`${username ?? 'Unknown user'} avatar`}
+          onError={() => {
+            // If the image doesn't load, clear the avatarUrl to show the default
+            // Mostly for localhost, when getting a 403 from googleusercontent
+            setAvatarUrl('')
+          }}
+        />
+      </ColoredRing>
     ) : (
-      <UserCircleIcon
-        className={clsx(
-          `bg-canvas-0 flex-shrink-0 rounded-full w-${s} h-${s} text-ink-500`,
-          className
-        )}
-        aria-hidden="true"
-      />
+      <ColoredRing
+        color={leagueInfo ? DIVISION_TRAITS[leagueInfo.division].twColor : ''}
+        size={sizeInPx}
+        offset={sizeOffsetInPx}
+      >
+        <UserCircleIcon
+          className={clsx(
+            `bg-canvas-0 flex-shrink-0 rounded-full w-[${innerSizeInPx}px] h-[${innerSizeInPx}px] text-ink-500`,
+            className
+          )}
+          aria-hidden="true"
+        />
+      </ColoredRing>
     )
   }
 )
