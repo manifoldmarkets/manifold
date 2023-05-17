@@ -1,7 +1,8 @@
 import * as functions from 'firebase-functions'
 import { getCloudRunServiceUrl } from 'common/api'
 import { invokeFunction } from 'shared/utils'
-import { onRequest } from 'firebase-functions/lib/v2/providers/https'
+import { onRequest } from 'firebase-functions/v2/https'
+
 export const repackSupabaseScheduled = functions.pubsub
   // 2am on monday
   .schedule('0 2 * * 1')
