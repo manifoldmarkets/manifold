@@ -6,7 +6,6 @@ import {
   GOOGLE_PLAY_APP_URL,
 } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
-import { ref } from 'firebase/storage'
 import Link from 'next/link'
 import { useState } from 'react'
 import Masonry from 'react-masonry-css'
