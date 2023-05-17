@@ -497,6 +497,7 @@ export interface Database {
           division: number
           mana_earned: number
           mana_earned_breakdown: Json
+          rank_snapshot: number | null
           season: number
           user_id: string
         }
@@ -506,6 +507,7 @@ export interface Database {
           division: number
           mana_earned?: number
           mana_earned_breakdown?: Json
+          rank_snapshot?: number | null
           season: number
           user_id: string
         }
@@ -515,6 +517,7 @@ export interface Database {
           division?: number
           mana_earned?: number
           mana_earned_breakdown?: Json
+          rank_snapshot?: number | null
           season?: number
           user_id?: string
         }

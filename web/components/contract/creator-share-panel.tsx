@@ -126,9 +126,9 @@ function FeedAnalytics(props: { contractId: string }) {
     ['view market card data', contractId],
     async () =>
       await db
-        .from('user_events')
-        .select()
-        .eq('name', 'view market card')
+        .from('user_seen_markets')
+        .select('user_id, data')
+        .eq('type', 'view market card')
         .eq('contract_id', contractId),
     { refetchInterval: false }
   )
