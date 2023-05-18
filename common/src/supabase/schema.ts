@@ -199,17 +199,17 @@ export interface Database {
         Row: {
           contract_id: string
           created_at: string
-          embedding: number[]
+          embedding: string
         }
         Insert: {
           contract_id: string
           created_at?: string
-          embedding: number[]
+          embedding: string
         }
         Update: {
           contract_id?: string
           created_at?: string
-          embedding?: number[]
+          embedding?: string
         }
       }
       contract_follows: {
@@ -581,7 +581,7 @@ export interface Database {
         Row: {
           cost_per_view: number
           created_at: string
-          embedding: number[]
+          embedding: string
           funds: number
           id: string
           market_id: string
@@ -590,7 +590,7 @@ export interface Database {
         Insert: {
           cost_per_view: number
           created_at?: string
-          embedding: number[]
+          embedding: string
           funds: number
           id?: string
           market_id: string
@@ -599,7 +599,7 @@ export interface Database {
         Update: {
           cost_per_view?: number
           created_at?: string
-          embedding?: number[]
+          embedding?: string
           funds?: number
           id?: string
           market_id?: string
@@ -880,24 +880,24 @@ export interface Database {
       }
       user_embeddings: {
         Row: {
-          card_view_embedding: number[] | null
+          card_view_embedding: string | null
           created_at: string
-          interest_embedding: number[]
+          interest_embedding: string
           pre_signup_interest_embedding: number[] | null
           user_id: string
         }
         Insert: {
-          card_view_embedding?: number[] | null
+          card_view_embedding?: string | null
           created_at?: string
-          interest_embedding: number[]
+          interest_embedding: string
           pre_signup_interest_embedding?: number[] | null
           user_id: string
         }
         Update: {
-          card_view_embedding?: number[] | null
+          card_view_embedding?: string | null
           created_at?: string
-          interest_embedding?: number[]
-          pre_signup_interest_embedding?: number[] | null
+          interest_embedding?: string
+          pre_signup_interest_embedding?: string | null
           user_id?: string
         }
       }
@@ -2006,7 +2006,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from_fast: {
         Args: {
           uid: string
-          p_embedding: number[]
+          p_embedding: string
           n: number
           excluded_contract_ids: string[]
         }
@@ -2020,7 +2020,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from_ian: {
         Args: {
           uid: string
-          p_embedding: number[]
+          p_embedding: string
           n: number
           excluded_contract_ids: string[]
           max_dist: number
@@ -2035,7 +2035,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from_using_comments: {
         Args: {
           uid: string
-          p_embedding: number[]
+          p_embedding: string
           n: number
           excluded_contract_ids: string[]
           max_dist: number
@@ -2050,7 +2050,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from_using_only_comments: {
         Args: {
           uid: string
-          p_embedding: number[]
+          p_embedding: string
           n: number
           excluded_contract_ids: string[]
           max_dist: number
@@ -2067,7 +2067,7 @@ export interface Database {
         | {
             Args: {
               uid: string
-              p_embedding: number[]
+              p_embedding: string
               n: number
               excluded_contract_ids: string[]
               max_dist: number
@@ -2082,7 +2082,7 @@ export interface Database {
         | {
             Args: {
               uid: string
-              p_embedding: number[]
+              p_embedding: string
               n: number
               excluded_contract_ids: string[]
             }
@@ -2407,7 +2407,7 @@ export interface Database {
       }
       search_contract_embeddings: {
         Args: {
-          query_embedding: number[]
+          query_embedding: string
           similarity_threshold: number
           match_count: number
         }
