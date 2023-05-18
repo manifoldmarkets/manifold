@@ -1,4 +1,4 @@
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, BOT_USERNAMES, CORE_USERNAMES, CHECK_USERNAMES } from 'common/envs/constants'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 
@@ -57,7 +57,16 @@ export function toLiteUser(user: User): LiteUser {
     balance,
     totalDeposits,
     profitCached,
+    isBannedFromPosting,
+    userDeleted,
+    followerCountCached,
+    currentBettingStreak,
+    lastBetTime,
   } = user
+
+  const isBot = BOT_USERNAMES.includes(username)
+  const isCore = CORE_USERNAMES.includes(username)
+  const isChecked = CHECK_USERNAMES.includes(username)
 
   return removeUndefinedProps({
     id,
@@ -73,5 +82,13 @@ export function toLiteUser(user: User): LiteUser {
     balance,
     totalDeposits,
     profitCached,
+    isBot,
+    isCore,
+    isChecked,
+    isBannedFromPosting,
+    userDeleted,
+    followerCountCached,
+    currentBettingStreak,
+    lastBetTime,
   })
 }

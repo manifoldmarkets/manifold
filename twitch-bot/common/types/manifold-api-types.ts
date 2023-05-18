@@ -61,6 +61,17 @@ export type LiteUser = {
     monthly: number;
     allTime: number;
   };
+
+  isBot: boolean;
+  isCore: boolean;
+  isChecked: boolean;
+
+  isBannedFromPosting?: boolean;
+  userDeleted?: boolean;
+
+  followerCountCached: number;
+  currentBettingStreak?: number;
+  lastBetTime?: number;
 };
 
 export type ApiAnswer = Answer & {
