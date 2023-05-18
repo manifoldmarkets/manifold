@@ -151,7 +151,7 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
 
   const creator = await getUser(contract.creatorId)
 
-  const relatedContracts = await getRelatedContracts(contract, 9, db)
+  const relatedContracts = await getRelatedContracts(contract, 9, db, true)
   return {
     contractSlug: contract.slug,
     visibility: contract.visibility,

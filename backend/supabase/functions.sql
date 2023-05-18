@@ -801,7 +801,8 @@ create
 or replace function closest_contract_embeddings (
   input_contract_id text,
   similarity_threshold float,
-  match_count int
+  match_count int,
+  is_admin boolean default false
 ) returns table (contract_id text, similarity float, data jsonb) language sql as $$ WITH embedding AS (
     SELECT embedding
     FROM contract_embeddings
@@ -821,6 +822,12 @@ FROM search_contract_embeddings(
   join contracts on contract_id = contracts.id
 where contract_id != input_contract_id
   and resolution_time is null
+    -- if function is being called by an admin, manually filter which contracts can be seen based on firebase_uid
+    and (
+    (is_admin = false) 
+    OR (is_admin = true and contracts.visibility = 'public') 
+    OR (is_admin = true and contracts.visibility = 'private' and firebase_uid() is not null and can_access_private_contract(contracts.id, firebase_uid()))
+  )
 order by similarity * similarity * log(popularity_score + 100) desc
 limit match_count;
 $$;
