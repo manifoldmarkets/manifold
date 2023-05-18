@@ -6,7 +6,7 @@ import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   groupId: z.string(),
-})
+}).strict()
 
 export const joingroup = authEndpoint(async (req, auth) => {
   const { groupId } = validate(bodySchema, req.body)

@@ -21,7 +21,8 @@ const firestore = admin.firestore()
 const schema = z.object({
   qfId: z.string(),
   amount: z.number(),
-})
+}).strict()
+
 export type QfAddPoolReq = {
   qfId: string
   amount: number

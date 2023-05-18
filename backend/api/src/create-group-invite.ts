@@ -14,7 +14,7 @@ const schema = z.object({
     .refine((value) => value === undefined || durationOptions.includes(value), {
       message: 'Duration must be one of: 1 hour, 1 week, 1 month, 1 year',
     }),
-})
+}).strict()
 
 export const creategroupinvite = authEndpoint(async (req, auth) => {
   const { groupId, maxUses, duration } = validate(schema, req.body)

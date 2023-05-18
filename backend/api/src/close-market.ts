@@ -10,7 +10,7 @@ import { APIError, authEndpoint, validate } from './helpers'
 const bodySchema = z.object({
   contractId: z.string(),
   closeTime: z.number().int().nonnegative().optional(),
-})
+}).strict()
 
 export const closemarket = authEndpoint(async (req, auth) => {
   const { contractId, closeTime } = validate(bodySchema, req.body)

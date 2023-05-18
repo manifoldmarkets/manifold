@@ -8,7 +8,7 @@ import { max } from 'lodash'
 
 const bodySchema = z.object({
   amount: z.number().gte(1),
-})
+}).strict()
 
 const CUTOFF_TIME = 1680418800000 // Apr 2nd, 12 am PT
 

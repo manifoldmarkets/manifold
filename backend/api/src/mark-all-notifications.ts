@@ -5,7 +5,7 @@ import { authEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   seen: z.boolean(),
-})
+}).strict()
 
 export const markallnotifications = authEndpoint(async (req, auth) => {
   const { seen } = validate(bodySchema, req.body)

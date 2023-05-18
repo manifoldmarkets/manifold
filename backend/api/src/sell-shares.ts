@@ -20,7 +20,7 @@ const bodySchema = z.object({
   contractId: z.string(),
   shares: z.number().positive().optional(), // leave it out to sell all shares
   outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
-})
+}).strict()
 
 export const sellshares = authEndpoint(async (req, auth) => {
   const { contractId, shares, outcome } = validate(bodySchema, req.body)

@@ -12,7 +12,8 @@ const editSchema = z.object({
   content: contentSchema.optional(),
   html: z.string().optional(),
   markdown: z.string().optional(),
-})
+}).strict()
+
 export const editcomment = authEndpoint(async (req, auth) => {
   const firestore = admin.firestore()
   const { commentId, contractId, content, html, markdown } = validate(

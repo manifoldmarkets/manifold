@@ -14,7 +14,7 @@ import { runTxn } from 'shared/run-txn'
 
 const bodySchema = z.object({
   receipt: z.string(),
-})
+}).strict()
 
 const PRODUCTS_TO_AMOUNTS: { [key: string]: number } = {
   mana_1000: 1000,

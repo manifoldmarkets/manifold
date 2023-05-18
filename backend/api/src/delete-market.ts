@@ -9,7 +9,7 @@ import { APIError, authEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   contractId: z.string(),
-})
+}).strict()
 
 export const deleteMarket = authEndpoint(async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)

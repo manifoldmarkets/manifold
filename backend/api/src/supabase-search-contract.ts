@@ -31,7 +31,7 @@ const bodySchema = z.object({
   fuzzy: z.boolean().optional(),
   groupId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
   creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
-})
+}).strict()
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {

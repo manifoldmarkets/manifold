@@ -12,7 +12,7 @@ const bodySchema = z.object({
   groupId: z.string(),
   memberId: z.string(),
   role: z.string(),
-})
+}).strict()
 
 export const updatememberrole = authEndpoint(async (req, auth) => {
   const { groupId, memberId, role } = validate(bodySchema, req.body)

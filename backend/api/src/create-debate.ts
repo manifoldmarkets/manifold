@@ -10,7 +10,7 @@ import { getUser, revalidateStaticProps } from 'shared/utils'
 const bodySchema = z.object({
   topic1: z.string().min(1).max(MAX_QUESTION_LENGTH),
   topic2: z.string().min(1).max(MAX_QUESTION_LENGTH),
-})
+}).strict()
 
 const debateBotUserId = 'PzOAq29wOnWw401h613wyQPvbZF2'
 const debateGroupId = '0i8ozKhPq5qJ89DG9tCW'

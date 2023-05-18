@@ -32,7 +32,7 @@ import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
 const bodySchema = z.object({
   contractSlug: z.string(),
   fromStaticProps: z.boolean(),
-})
+}).strict()
 
 export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
   const { contractSlug, fromStaticProps } = validate(bodySchema, req.body)

@@ -6,7 +6,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const bodySchema = z.object({
   userId: z.string(),
-})
+}).strict()
 
 export const updateUserEmbedding = authEndpoint(async (req, auth) => {
   const pg = createSupabaseDirectClient()

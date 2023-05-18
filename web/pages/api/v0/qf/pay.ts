@@ -22,7 +22,8 @@ const schema = z.object({
   qfId: z.string(),
   answerId: z.string(),
   amount: z.number(),
-})
+}).strict()
+
 export type QfPayReq = {
   qfId: string
   answerId: string

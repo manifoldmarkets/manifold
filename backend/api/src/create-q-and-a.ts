@@ -21,7 +21,7 @@ const bodySchema = z.object({
   question: z.string(),
   description: z.string(),
   bounty: z.number(),
-})
+}).strict()
 
 export const createQAndA = authEndpoint(async (req, auth) => {
   const { question, description, bounty } = validate(bodySchema, req.body)

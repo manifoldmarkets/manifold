@@ -30,23 +30,23 @@ import { createLimitBetCanceledNotification } from 'shared/create-notification'
 const bodySchema = z.object({
   contractId: z.string(),
   amount: z.number().gte(1),
-})
+}).strict()
 
 const binarySchema = z.object({
   outcome: z.enum(['YES', 'NO']),
   limitProb: z.number().gte(0).lte(1).optional(),
   expiresAt: z.number().optional(),
-})
+}).strict()
 
 const freeResponseSchema = z.object({
   outcome: z.string(),
   shortSell: z.boolean().optional(),
-})
+}).strict()
 
 const numericSchema = z.object({
   outcome: z.string(),
   value: z.number(),
-})
+}).strict()
 
 export const placebet = authEndpoint(async (req, auth) => {
   log(`Inside endpoint handler for ${auth.uid}.`)

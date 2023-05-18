@@ -7,8 +7,8 @@ const bodySchema = z.object({
   twitchInfo: z.object({
     twitchName: z.string(),
     controlToken: z.string(),
-  }),
-})
+  }).strict(),
+}).strict()
 
 export const savetwitchcredentials = authEndpoint(async (req, auth) => {
   const { twitchInfo } = validate(bodySchema, req.body)

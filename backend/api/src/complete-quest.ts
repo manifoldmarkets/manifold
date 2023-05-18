@@ -5,7 +5,7 @@ import { completeCalculatedQuest } from 'shared/complete-quest-internal'
 
 const bodySchema = z.object({
   questType: z.enum(['SHARES'] as const),
-})
+}).strict()
 
 export const completequest = authEndpoint(async (req, auth) => {
   const { questType } = validate(bodySchema, req.body)

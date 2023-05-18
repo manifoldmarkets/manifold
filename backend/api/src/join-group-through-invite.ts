@@ -6,7 +6,7 @@ import { joinGroupHelper } from './join-group'
 
 const schema = z.object({
   inviteId: z.string(),
-})
+}).strict()
 
 export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
   const { inviteId } = validate(schema, req.body)

@@ -7,7 +7,7 @@ import { randomString } from 'common/util/random'
 const bodySchema = z.object({
   questionId: z.string(),
   text: z.string(),
-})
+}).strict()
 
 export const createQAndAAnswer = authEndpoint(async (req, auth) => {
   const { questionId, text } = validate(bodySchema, req.body)

@@ -20,7 +20,7 @@ const bodySchema = z.object({
   memberIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)),
   about: z.string().min(1).max(MAX_ABOUT_LENGTH).optional(),
   privacyStatus: z.string().min(1).optional(),
-})
+}).strict()
 
 export const creategroup = authEndpoint(async (req, auth) => {
   const firestore = admin.firestore()

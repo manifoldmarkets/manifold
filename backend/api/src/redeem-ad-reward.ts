@@ -11,7 +11,7 @@ import { APIError, authEndpoint, validate } from './helpers'
 
 const schema = z.object({
   adId: z.string(),
-})
+}).strict()
 
 export const redeemad = authEndpoint(async (req, auth) => {
   const firestore = admin.firestore()

@@ -9,7 +9,7 @@ import { APIError, authEndpoint, validate } from './helpers'
 const bodySchema = z.object({
   groupId: z.string(),
   privacy: z.string(),
-})
+}).strict()
 
 export const updategroupprivacy = authEndpoint(async (req, auth) => {
   const { groupId, privacy } = validate(bodySchema, req.body)

@@ -9,7 +9,7 @@ import { APIError, authEndpoint, validate } from './helpers'
 const bodySchema = z.object({
   contractId: z.string(),
   amount: z.number().gt(0),
-})
+}).strict()
 
 export const addsubsidy = authEndpoint(async (req, auth) => {
   const { amount, contractId } = validate(bodySchema, req.body)

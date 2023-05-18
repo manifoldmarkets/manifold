@@ -13,7 +13,7 @@ const bodySchema = z.object({
   contractId: z.string().max(MAX_ANSWER_LENGTH),
   amount: z.number().gt(0),
   text: z.string(),
-})
+}).strict()
 
 export const createanswer = authEndpoint(async (req, auth) => {
   const { contractId, amount, text } = validate(bodySchema, req.body)

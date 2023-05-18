@@ -9,7 +9,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 
 const bodySchema = z.object({
   slug: z.string(),
-})
+}).strict()
 
 export const claimmanalink = authEndpoint(async (req, auth) => {
   const { slug } = validate(bodySchema, req.body)

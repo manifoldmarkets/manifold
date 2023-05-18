@@ -22,7 +22,8 @@ const firestore = admin.firestore()
 
 const schema = z.object({
   qfId: z.string(),
-})
+}).strict()
+
 export type QfResolveReq = {
   qfId: string
 }

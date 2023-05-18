@@ -5,7 +5,7 @@ import { LimitBet } from 'common/bet'
 
 const bodySchema = z.object({
   betId: z.string(),
-})
+}).strict()
 
 export const cancelbet = authEndpoint(async (req, auth) => {
   const { betId } = validate(bodySchema, req.body)

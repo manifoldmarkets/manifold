@@ -22,7 +22,8 @@ const schema = z.object({
   qfId: z.string(),
   text: z.string(),
   receiverId: z.string().optional(),
-})
+}).strict()
+
 export type QfAnswerReq = {
   qfId: string
   text: string

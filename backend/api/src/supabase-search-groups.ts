@@ -13,7 +13,7 @@ const bodySchema = z.object({
   limit: z.number().gt(0),
   fuzzy: z.boolean().optional(),
   yourGroups: z.boolean().optional(),
-})
+}).strict()
 
 export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
   const { term, offset, limit, fuzzy, yourGroups } = validate(

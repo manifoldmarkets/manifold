@@ -12,7 +12,7 @@ import { payUsers } from 'shared/utils'
 const bodySchema = z.object({
   certId: z.string(),
   amount: z.number(),
-})
+}).strict()
 
 export const dividendcert = authEndpoint(async (req, auth) => {
   return await firestore.runTransaction(async (transaction) => {

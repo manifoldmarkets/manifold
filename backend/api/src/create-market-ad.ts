@@ -11,7 +11,7 @@ const schema = z.object({
   marketId: z.string(),
   totalCost: z.number(),
   costPerView: z.number(),
-})
+}).strict()
 
 export const boostmarket = authEndpoint(async (req, auth) => {
   const { marketId, totalCost, costPerView } = validate(schema, req.body)

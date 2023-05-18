@@ -34,7 +34,7 @@ export const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
 const postSchema = z.object({
   content: contentSchema.optional(),
   channelId: z.string(),
-})
+}).strict()
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 

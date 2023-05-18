@@ -6,7 +6,7 @@ import { authEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   topic: z.string(),
-})
+}).strict()
 
 export const saveTopic = authEndpoint(async (req) => {
   const { topic } = validate(bodySchema, req.body)

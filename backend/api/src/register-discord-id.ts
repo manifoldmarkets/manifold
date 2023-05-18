@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto'
 
 const bodySchema = z.object({
   discordId: z.string(),
-})
+}).strict()
 
 export const registerdiscordid = authEndpoint(async (req, auth) => {
   const { discordId } = validate(bodySchema, req.body)

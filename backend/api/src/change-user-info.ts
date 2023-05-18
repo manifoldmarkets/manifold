@@ -23,7 +23,7 @@ const bodySchema = z.object({
   username: z.string().optional(),
   name: z.string().optional(),
   avatarUrl: z.string().optional(),
-})
+}).strict()
 
 export const changeuserinfo = authEndpoint(async (req, auth) => {
   const { username, name, avatarUrl } = validate(bodySchema, req.body)

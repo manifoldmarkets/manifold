@@ -19,7 +19,8 @@ const queryParams = z.object({
   top: z.number().optional().or(z.string().regex(/\d+/).transform(Number)),
   bottom: z.number().optional().or(z.string().regex(/\d+/).transform(Number)),
   order: z.string().optional(),
-})
+}).strict()
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ContractMetric[] | ValidationError | ApiError>

@@ -13,7 +13,7 @@ const bodySchema = z.object({
   amount: z.number(),
   // Assumes 'M$' for now.
   // token: z.enum(['SHARE', 'M$']),
-})
+}).strict()
 
 export const swapcert = authEndpoint(async (req, auth) => {
   return await firestore.runTransaction(async (transaction) => {

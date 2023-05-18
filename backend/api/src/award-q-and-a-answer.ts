@@ -15,7 +15,7 @@ import { isProd } from 'shared/utils'
 const bodySchema = z.object({
   answerId: z.string(),
   amount: z.number(),
-})
+}).strict()
 
 export const awardQAndAAnswer = authEndpoint(async (req, auth) => {
   const { answerId, amount } = validate(bodySchema, req.body)

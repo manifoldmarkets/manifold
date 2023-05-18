@@ -11,7 +11,7 @@ import { getUser } from 'shared/utils'
 const bodySchema = z.object({
   groupId: z.string(),
   contractId: z.string(),
-})
+}).strict()
 
 export const removecontractfromgroup = authEndpoint(async (req, auth) => {
   const { groupId, contractId } = validate(bodySchema, req.body)
