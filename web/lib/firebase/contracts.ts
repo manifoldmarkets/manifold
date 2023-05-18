@@ -101,25 +101,6 @@ export async function listAllContracts(
   return snapshot.docs.map((doc) => doc.data())
 }
 
-export function listenForContracts(
-  setContracts: (contracts: Contract[]) => void
-) {
-  const q = query(contracts, orderBy('createdTime', 'desc'))
-  return listenForValues<Contract>(q, setContracts)
-}
-
-export function listenForUserContracts(
-  creatorId: string,
-  setContracts: (contracts: Contract[]) => void
-) {
-  const q = query(
-    contracts,
-    where('creatorId', '==', creatorId),
-    orderBy('createdTime', 'desc')
-  )
-  return listenForValues<Contract>(q, setContracts)
-}
-
 export function getUserBetContracts(userId: string) {
   return getValues<Contract>(getUserBetContractsQuery(userId))
 }
