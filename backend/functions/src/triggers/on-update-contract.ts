@@ -19,6 +19,8 @@ export const onUpdateContract = functions
     const { eventId } = context
     const { closeTime, question, description, resolution } = contract
 
+    const db = createSupabaseClient()
+
     if (!isEqual(previousContract.groupSlugs, contract.groupSlugs)) {
       await handleContractGroupUpdated(previousContract, contract)
     }
@@ -29,7 +31,6 @@ export const onUpdateContract = functions
       !isEqual(previousContract.closeTime, closeTime) ||
       !isEqual(previousContract.resolution, resolution)
     ) {
-      const db = createSupabaseClient()
       await run(
         db.from('contract_edits').insert({
           contract_id: contract.id,
@@ -54,7 +55,15 @@ export const onUpdateContract = functions
         getPropsThatTriggerRevalidation(contract)
       )
     ) {
-      await revalidateContractStaticProps(contract)
+      // Check if replicated to supabase before revalidating contract.
+      const result = await db
+        .from('contracts')
+        .select('*')
+        .eq('id', contract.id)
+        .limit(1)
+      if (result.data && result.data.length > 0) {
+        await revalidateContractStaticProps(contract)
+      }
     }
 
     if (previousContract.visibility !== contract.visibility) {
