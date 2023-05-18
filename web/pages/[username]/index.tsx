@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   ChatAlt2Icon,
   CurrencyDollarIcon,
@@ -8,29 +7,19 @@ import {
 import { LinkIcon, PresentationChartBarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { difference } from 'lodash'
-import { useRouter } from 'next/router'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
+import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { Post } from 'common/post'
-import { getUserByUsername, User } from 'web/lib/firebase/users'
-import Custom404 from 'web/pages/404'
-import { useTracking } from 'web/hooks/use-tracking'
-import { BlockedUser } from 'web/components/profile/blocked-user'
-import { usePrivateUser } from 'web/hooks/use-user'
-import { Title } from 'web/components/widgets/title'
-import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
-import { UserContractsList } from 'web/components/profile/user-contracts-list'
-import { useFollowers, useFollows } from 'web/hooks/use-follows'
-import { usePostsByUser } from 'web/hooks/use-post'
-import { usePrefetchUsers, useUser, useUserById } from 'web/hooks/use-user'
-import { useDiscoverUsers } from 'web/hooks/use-users'
-import { track } from 'web/lib/service/analytics'
 import { BetsList } from 'web/components/bet/bets-list'
 import { buttonClass } from 'web/components/buttons/button'
-import { TextButton } from 'web/components/buttons/text-button'
 import { UserFollowButton } from 'web/components/buttons/follow-button'
+import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
+import { TextButton } from 'web/components/buttons/text-button'
 import { UserCommentsList } from 'web/components/comments/comments-list'
+import { DailyStats } from 'web/components/daily-stats'
 import { FollowList } from 'web/components/follow-list'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -40,25 +29,38 @@ import { Spacer } from 'web/components/layout/spacer'
 import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { PostCardList } from 'web/components/posts/post-card'
+import { BlockedUser } from 'web/components/profile/blocked-user'
+import { UserContractsList } from 'web/components/profile/user-contracts-list'
+import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import { SEO } from 'web/components/SEO'
 import { Avatar } from 'web/components/widgets/avatar'
-import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
+import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Linkify } from 'web/components/widgets/linkify'
 import { linkClass, SiteLink } from 'web/components/widgets/site-link'
+import { Subtitle } from 'web/components/widgets/subtitle'
+import { Title } from 'web/components/widgets/title'
 import {
   isFresh,
   PostBanBadge,
   UserBadge,
 } from 'web/components/widgets/user-link'
-import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
-import { Subtitle } from 'web/components/widgets/subtitle'
-import { DailyStats } from 'web/components/daily-stats'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
-import { getPostsByUser } from 'web/lib/supabase/post'
+import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
-import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
+import { usePostsByUser } from 'web/hooks/use-post'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useTracking } from 'web/hooks/use-tracking'
+import {
+  usePrefetchUsers,
+  usePrivateUser,
+  useUser,
+  useUserById,
+} from 'web/hooks/use-user'
+import { useDiscoverUsers } from 'web/hooks/use-users'
+import { getUserByUsername, User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
+import { track } from 'web/lib/service/analytics'
+import { getPostsByUser } from 'web/lib/supabase/post'
+import Custom404 from 'web/pages/404'
 
 export const getStaticProps = async (props: {
   params: {
@@ -167,16 +169,12 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
         <Row className={clsx('flex-wrap justify-between p-1')}>
           <Row className={clsx('gap-2')}>
             <Col className={'relative max-h-14'}>
-              <ImageWithBlurredShadow
-                image={
-                  <Avatar
-                    username={user.username}
-                    avatarUrl={user.avatarUrl}
-                    size={12}
-                    className="bg-ink-1000"
-                    noLink
-                  />
-                }
+              <Avatar
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                size={12}
+                className="bg-ink-1000"
+                noLink
               />
               {isCurrentUser && (
                 <Link
