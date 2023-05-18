@@ -70,7 +70,7 @@ const processNewsArticle = async (
   pg: IDatabase<IClient, IClient>
 ) => {
   const publishedAtDate = new Date(publishedAt)
-  if (publishedAtDate < lastPublished) {
+  if (publishedAtDate <= lastPublished) {
     console.log('Skipping', title)
     return
   }
