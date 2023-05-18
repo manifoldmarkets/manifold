@@ -883,14 +883,14 @@ export interface Database {
           card_view_embedding: string | null
           created_at: string
           interest_embedding: string
-          pre_signup_interest_embedding: number[] | null
+          pre_signup_interest_embedding: string | null
           user_id: string
         }
         Insert: {
           card_view_embedding?: string | null
           created_at?: string
           interest_embedding: string
-          pre_signup_interest_embedding?: number[] | null
+          pre_signup_interest_embedding?: string | null
           user_id: string
         }
         Update: {
