@@ -120,9 +120,9 @@ android {
         applicationId 'com.markets.manifold'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 52
+        versionCode 53
         missingDimensionStrategy 'store', 'play'
-        versionName "2.0.44"
+        versionName "2.0.45"
     }
 
     splits {
