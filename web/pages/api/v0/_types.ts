@@ -1,4 +1,9 @@
-import { ENV_CONFIG, BOT_USERNAMES, CORE_USERNAMES, CHECK_USERNAMES } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  BOT_USERNAMES,
+  CORE_USERNAMES,
+  CHECK_USERNAMES,
+} from 'common/envs/constants'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 
