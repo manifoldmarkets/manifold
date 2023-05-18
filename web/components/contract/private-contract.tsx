@@ -10,7 +10,7 @@ export function PrivateContractPage(props: {
   contractSlug: string
   contractParams?: ContractParams
 }) {
-  const { contractSlug } = props
+  const { contractSlug, contractParams } = props
   const contractParameters = useContractParams(contractSlug)
 
   if (contractParameters === undefined) {

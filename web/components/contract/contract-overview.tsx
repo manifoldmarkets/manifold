@@ -1,40 +1,44 @@
 import { memo, useState } from 'react'
 
-import { Bet } from 'common/bet'
-import { HistoryPoint } from 'common/chart'
-import {
-  BinaryContract,
-  CPMMStonkContract,
-  Contract,
-  NumericContract,
-  PseudoNumericContract,
-} from 'common/contract'
-import { YES_GRAPH_COLOR } from 'common/envs/constants'
+import { tradingAllowed } from 'web/lib/firebase/contracts'
 import {
   BinaryContractChart,
+  ChoiceContractChart,
   NumericContractChart,
   PseudoNumericContractChart,
 } from 'web/components/charts/contract'
 import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
+import { useUser } from 'web/hooks/use-user'
+import { Row } from '../layout/row'
+import { Bet } from 'common/bet'
+import { SignedInBinaryMobileBetting } from '../bet/bet-button'
+import {
+  Contract,
+  FreeResponseContract,
+  MultipleChoiceContract,
+  NumericContract,
+  PseudoNumericContract,
+  BinaryContract,
+  CPMMStonkContract,
+} from 'common/contract'
+import { SizedContainer } from 'web/components/sized-container'
+import { CertOverview } from './cert-overview'
+import { TimeRangePicker } from '../charts/time-range-picker'
+import { Period } from 'web/lib/firebase/users'
+import { useEvent } from 'web/hooks/use-event'
+import { periodDurations } from 'web/lib/util/time'
+import { getDateRange } from '../charts/helpers'
+import { QfOverview } from './qf-overview'
+import { StonkContractChart } from '../charts/contract/stonk'
+import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import {
   BinaryResolutionOrChance,
+  FreeResponseResolution,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
-import { SizedContainer } from 'web/components/sized-container'
-import { useEvent } from 'web/hooks/use-event'
-import { useUser } from 'web/hooks/use-user'
-import { tradingAllowed } from 'web/lib/firebase/contracts'
-import { Period } from 'web/lib/firebase/users'
-import { periodDurations } from 'web/lib/util/time'
-import { SignedInBinaryMobileBetting } from '../bet/bet-button'
-import { StonkContractChart } from '../charts/contract/stonk'
-import { getDateRange } from '../charts/helpers'
-import { TimeRangePicker } from '../charts/time-range-picker'
-import { Row } from '../layout/row'
-import { CertOverview } from './cert-overview'
-import { QfOverview } from './qf-overview'
+import { HistoryPoint } from 'common/chart'
 
 export const ContractOverview = memo(
   (props: {
@@ -122,28 +126,28 @@ const BinaryOverview = (props: {
   )
 }
 
-// const ChoiceOverview = (props: {
-//   contract: FreeResponseContract | MultipleChoiceContract
-//   bets: Bet[]
-// }) => {
-//   const { contract, bets } = props
+const ChoiceOverview = (props: {
+  contract: FreeResponseContract | MultipleChoiceContract
+  bets: Bet[]
+}) => {
+  const { contract, bets } = props
 
-//   return (
-//     <>
-//       <FreeResponseResolution contract={contract} />
-//       <SizedContainer fullHeight={350} mobileHeight={250}>
-//         {(w, h) => (
-//           <ChoiceContractChart
-//             width={w}
-//             height={h}
-//             bets={bets}
-//             contract={contract}
-//           />
-//         )}
-//       </SizedContainer>
-//     </>
-//   )
-// }
+  return (
+    <>
+      <FreeResponseResolution contract={contract} />
+      <SizedContainer fullHeight={350} mobileHeight={250}>
+        {(w, h) => (
+          <ChoiceContractChart
+            width={w}
+            height={h}
+            bets={bets}
+            contract={contract}
+          />
+        )}
+      </SizedContainer>
+    </>
+  )
+}
 
 const PseudoNumericOverview = (props: {
   contract: PseudoNumericContract

@@ -1,22 +1,23 @@
 import { Editor } from '@tiptap/core'
-import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { MAX_GROUP_NAME_LENGTH, PrivacyStatusType } from 'common/group'
 import { User } from 'common/user'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { useAdmin } from 'web/hooks/use-admin'
 import { createGroup } from 'web/lib/firebase/api'
-import { getGroupWithFields } from 'web/lib/supabase/group'
 import { ColorType } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
-import { LOADING_PING_INTERVAL } from '../contract/waiting-for-supabase-button'
 import { Col } from '../layout/col'
-import { SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { TextEditor, useTextEditor } from '../widgets/editor'
 import { Input } from '../widgets/input'
 import { Title } from '../widgets/title'
 import { savePost } from './group-about-section'
 import { PrivacyStatusView } from './group-privacy-modal'
+import { getGroupWithFields } from 'web/lib/supabase/group'
+import { SCROLLABLE_MODAL_CLASS } from '../layout/modal'
+import clsx from 'clsx'
+import { LOADING_PING_INTERVAL } from '../contract/waiting-for-supabase-button'
 
 export function editorHasContent(editor: Editor | null) {
   if (!editor) {
@@ -60,6 +61,7 @@ export function CreateGroupButton(props: {
   const [errorText, setErrorText] = useState('')
   const [privacy, setPrivacy] = useState<PrivacyStatusType>('public')
   const router = useRouter()
+  const isManifoldAdmin = useAdmin()
 
   const editor = useTextEditor({
     key: 'create a group',
@@ -122,7 +124,7 @@ export function CreateGroupButton(props: {
         }, LOADING_PING_INTERVAL)
 
         // Set the timeout for 1 minute (60,000 ms)
-        const _timeoutId = setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           clearInterval(intervalId) // Clear the interval
           setIsSubmitting(false)
           reject(false)

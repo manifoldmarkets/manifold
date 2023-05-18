@@ -9,4 +9,3 @@ export default function ImageWithBlurredShadow(props: { image: ReactNode }) {
     </div>
   )
 }
-
