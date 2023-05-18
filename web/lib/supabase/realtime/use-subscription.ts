@@ -114,5 +114,5 @@ export function useSubscription<T extends TableName>(
   })
 
   useRealtimeChannel('*', table, filter, onChange, onStatus)
-  return state.rows
+  return state
 }
