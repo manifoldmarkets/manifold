@@ -94,7 +94,6 @@ export function useSubscription<T extends TableName>(
   })
 
   const onStatus = useEvent((status: SubscriptionStatus, err?: Error) => {
-    console.log(status, err)
     switch (status) {
       case 'SUBSCRIBED': {
         dispatch({ type: 'SUBSCRIBED' })
@@ -117,17 +116,6 @@ export function useSubscription<T extends TableName>(
     }
   })
 
-  // WIP - test and figure out most appropriate stuff to do on
-  // socket close, socket error, channel error, channel timeout
-
-  const onSocketClose = useEvent((ev: CloseEvent) => {
-    console.log("onClose: ", ev)
-  })
-
-  const onSocketError = useEvent((ev: ErrorEvent) => {
-    console.log("onError: ", ev)
-  })
-
   useEffect(() => {
     if (isVisible) {
       const opts = { event: '*', schema: 'public', table, filter: filterString } as const
@@ -146,16 +134,6 @@ export function useSubscription<T extends TableName>(
       }
     }
   }, [table, filterString, isVisible, onChange, onStatus])
-
-  useEffect(() => {
-    const cbs = db['realtime'].stateChangeCallbacks
-    const closeIdx = cbs.close.push(onSocketClose) - 1
-    const errorIdx = cbs.error.push(onSocketError) - 1
-    return () => {
-      cbs.close.splice(closeIdx, 1)
-      cbs.error.splice(errorIdx, 1)
-    }
-  }, [])
 
   return state.rows
 }
