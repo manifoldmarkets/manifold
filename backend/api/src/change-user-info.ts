@@ -10,6 +10,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
+import { RESERVED_PATHS } from "common/envs/constants";
 import * as admin from 'firebase-admin'
 import { uniq } from 'lodash'
 import { log, getUser, getUserByUsername } from 'shared/utils'
@@ -34,6 +35,8 @@ export const changeuserinfo = authEndpoint(async (req, auth) => {
 
   if (username) {
     if (!cleanedUsername) throw new APIError(400, 'Invalid username')
+    const reservedName = RESERVED_PATHS.includes(cleanedUsername)
+    if (reservedName) throw new APIError(400, 'This username is reserved')
     const otherUserExists = await getUserByUsername(cleanedUsername)
     if (otherUserExists) throw new APIError(400, 'Username already taken')
   }
