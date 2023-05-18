@@ -817,15 +817,15 @@ FROM search_contract_embeddings(
       FROM embedding
     ),
     similarity_threshold,
-    match_count + 10
+    match_count + 500
   )
   join contracts on contract_id = contracts.id
 where contract_id != input_contract_id
   and resolution_time is null
     -- if function is being called by an admin, manually filter which contracts can be seen based on firebase_uid
     and (
-    (is_admin = false) 
-    OR (is_admin = true and contracts.visibility = 'public') 
+    (is_admin = false)
+    OR (is_admin = true and contracts.visibility = 'public')
     OR (is_admin = true and contracts.visibility = 'private' and firebase_uid() is not null and can_access_private_contract(contracts.id, firebase_uid()))
   )
 order by similarity * similarity * log(popularity_score + 100) desc
