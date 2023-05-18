@@ -1337,3 +1337,31 @@ CREATE TEXT SEARCH CONFIGURATION public.english_nostop_with_prefix (COPY = engli
 ALTER TEXT SEARCH CONFIGURATION public.english_nostop_with_prefix
   ALTER MAPPING FOR asciiword, asciihword, hword_asciipart, hword, hword_part, word
     WITH english_stem_nostop, english_prefix;
+
+
+
+
+
+
+create table if not exists
+  news (
+    id serial primary key,
+    created_time timestamp not null default now(),
+
+    title text not null,
+    url text not null,
+    published_time timestamp not null,
+    author text,
+    description text,
+    image_url text,
+    source_id text,
+    source_name text,
+
+    title_embedding vector (1536) not null,
+    contract_ids text[] not null
+  );
+alter table news enable row level security;
+drop policy if exists "public read" on news;
+create policy "public read" on news for
+select
+  using (true);
