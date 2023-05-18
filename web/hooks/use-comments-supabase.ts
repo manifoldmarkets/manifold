@@ -78,7 +78,7 @@ export function useNumUserComments(userId: string) {
 export function useRealtimeComments(limit: number): Comment[] {
   const [oldComments, setOldComments] = useState<Comment[]>([])
   const rows = useRealtimeRows('contract_comments')
-  const newComments = rows.map(r => r.data as Comment)
+  const newComments = rows.map((r) => r.data as Comment)
 
   useEffect(() => {
     getComments(limit)

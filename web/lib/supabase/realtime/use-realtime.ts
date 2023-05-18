@@ -1,7 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { RealtimeChannel } from '@supabase/realtime-js'
 import { TableName, Row } from 'common/supabase/utils'
-import { Change, Event, Filter, buildFilterString } from 'common/supabase/realtime'
+import {
+  Change,
+  Event,
+  Filter,
+  buildFilterString,
+} from 'common/supabase/realtime'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { db } from 'web/lib/supabase/db'
 
@@ -9,7 +14,7 @@ export function useRealtimeRows<T extends TableName>(
   table: T,
   filter?: Filter<T>
 ) {
-  return useRealtimeChanges('INSERT', table, filter).map(i => i.new)
+  return useRealtimeChanges('INSERT', table, filter).map((i) => i.new)
 }
 
 export function useRealtimeChanges<T extends TableName, E extends Event>(
@@ -41,19 +46,21 @@ export function useRealtimeChannel<T extends TableName, E extends Event>(
         event,
         schema: 'public',
         table,
-        filter: filterString
+        filter: filterString,
       } as const
-      const chan = channel.current = db.channel(channelId)
-      chan.on<Row<T>>('postgres_changes', opts as any, (change) => {
-        // if we got this change over a channel we have recycled, ignore it
-        if (channel.current === chan) {
-          callback(change as any)
-        }
-      }).subscribe((_status, err) => {
-        if (err) {
-          console.error(err)
-        }
-      })
+      const chan = (channel.current = db.channel(channelId))
+      chan
+        .on<Row<T>>('postgres_changes', opts as any, (change) => {
+          // if we got this change over a channel we have recycled, ignore it
+          if (channel.current === chan) {
+            callback(change as any)
+          }
+        })
+        .subscribe((_status, err) => {
+          if (err) {
+            console.error(err)
+          }
+        })
       return () => {
         db.removeChannel(chan)
         channel.current = undefined

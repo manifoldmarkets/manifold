@@ -67,7 +67,9 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
 
 export function useRealtimeContracts(limit: number) {
   const [oldContracts, setOldContracts] = useState<Contract[]>([])
-  const newContracts = useRealtimeRows('contracts').map(r => r.data as Contract)
+  const newContracts = useRealtimeRows('contracts').map(
+    (r) => r.data as Contract
+  )
 
   useEffect(() => {
     getPublicContracts({ limit, order: 'desc' })

@@ -26,8 +26,8 @@ export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
   const [oldBets, setOldBets] = useState<Bet[]>([])
   const rows = useRealtimeRows('contract_bets', filteredQuery)
   const newBets = rows
-    .map(r => r.data as Bet)
-    .filter(b => !betShouldBeFiltered(b, options))
+    .map((r) => r.data as Bet)
+    .filter((b) => !betShouldBeFiltered(b, options))
 
   useEffectCheckEquality(() => {
     if (options?.userId === 'loading' || options?.userId === EMPTY_USER) {

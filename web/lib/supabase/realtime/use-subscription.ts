@@ -6,7 +6,7 @@ import {
   Filter,
   SubscriptionStatus,
   applyChange,
-  buildFilterString
+  buildFilterString,
 } from 'common/supabase/realtime'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
@@ -30,8 +30,8 @@ async function fetchSnapshot<T extends TableName>(
 // 4. errored -- when the subscription is dead due to an error
 
 interface State<T extends TableName> {
-  status: 'subscribing' | 'fetching' | 'live' | 'errored',
-  rows?: Row<T>[],
+  status: 'subscribing' | 'fetching' | 'live' | 'errored'
+  rows?: Row<T>[]
   pending: Change<T>[]
 }
 
@@ -64,7 +64,10 @@ const getReducer =
       }
       case 'RECEIVED_CHANGE': {
         if (state.rows != null) {
-          return { ...state, rows: applyChange(table, state.rows, action.change) }
+          return {
+            ...state,
+            rows: applyChange(table, state.rows, action.change),
+          }
         } else {
           return { ...state, pending: [...state.pending, action.change] }
         }
@@ -118,16 +121,23 @@ export function useSubscription<T extends TableName>(
 
   useEffect(() => {
     if (isVisible) {
-      const opts = { event: '*', schema: 'public', table, filter: filterString } as const
-      const chan = channel.current = db.channel(channelId)
-      chan.on<Row<T>>('postgres_changes', opts, (change) => {
-        // if we got this change over a channel we have recycled, ignore it
-        if (channel.current === chan) {
-          onChange?.(change)
-        }
-      }).subscribe((status, err) => {
-        onStatus?.(status, err)
-      })
+      const opts = {
+        event: '*',
+        schema: 'public',
+        table,
+        filter: filterString,
+      } as const
+      const chan = (channel.current = db.channel(channelId))
+      chan
+        .on<Row<T>>('postgres_changes', opts, (change) => {
+          // if we got this change over a channel we have recycled, ignore it
+          if (channel.current === chan) {
+            onChange?.(change)
+          }
+        })
+        .subscribe((status, err) => {
+          onStatus?.(status, err)
+        })
       return () => {
         db.removeChannel(chan)
         channel.current = undefined
