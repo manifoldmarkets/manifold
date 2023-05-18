@@ -163,7 +163,6 @@ export const FeedComment = memo(function FeedComment(props: {
   } = props
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
-  const marketCreator = contract.creatorId === comment.userId
 
   useEffect(() => {
     if (highlighted && ref.current) {
@@ -184,7 +183,7 @@ export const FeedComment = memo(function FeedComment(props: {
         size={children ? 'sm' : 'xs'}
         username={userUsername}
         avatarUrl={userAvatarUrl}
-        className={clsx(marketCreator ? 'shadow shadow-amber-300' : '', 'z-10')}
+        className={clsx('z-10')}
       />
       <Col className="w-full">
         {isReplyToBet(comment) && (

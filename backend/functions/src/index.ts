@@ -21,6 +21,7 @@ export * from './triggers/on-update-reaction'
 // scheduled functions
 export * from './scheduled/update-loans'
 export * from './scheduled/update-recommended'
+export * from './scheduled/repack-supabase'
 export {
   sendWeeklyPortfolioUpdate,
   saveWeeklyContractMetrics,
@@ -46,3 +47,4 @@ export * from './scheduled/expire-limit-orders'
 export * from './scheduled/update-card-view-embeddings'
 export * from './scheduled/update-league'
 export * from './scheduled/poll-news'
+export * from './scheduled/update-league-ranks'

@@ -1,21 +1,28 @@
-import { uniq, keyBy } from 'lodash'
-import { useMemo } from 'react'
+import { uniq, keyBy, groupBy, sortBy, mapValues } from 'lodash'
+import Link from 'next/link'
 import clsx from 'clsx'
 
 import { SEASON_START, SEASON_END } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { User } from 'common/user'
 import { Row } from '../layout/row'
-import { useBets } from 'web/hooks/use-bets'
 import { usePublicContracts } from 'web/hooks/use-contract-supabase'
-import { ContractMention } from '../contract/contract-mention'
-import { FeedBet } from '../feed/feed-bets'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { UserAvatarAndBadge } from '../widgets/user-link'
+import { useContract } from 'web/hooks/use-contracts'
+import { Contract, contractPath } from 'common/contract'
+import { ContractBetsTable } from '../bet/bets-list'
+import { Bet } from 'common/bet'
+import { calculateUserMetrics } from 'common/calculate-metrics'
+import { ProfitBadge } from '../profit-badge'
+import { ContractMetric } from 'common/contract-metric'
+import { useBets } from 'web/hooks/use-bets-supabase'
+import ShortToggle from '../widgets/short-toggle'
+import { useState } from 'react'
 
 export const ManaEarnedBreakdown = (props: {
   user: User
@@ -51,13 +58,26 @@ export const ManaEarnedBreakdown = (props: {
   const contracts = usePublicContracts(
     loadingBets ? uniq(loadingBets.map((b) => b.contractId)) : undefined
   )
+  const contractsById = keyBy(contracts, 'id')
 
-  const betIdToContract = useMemo(() => {
-    const contractsById = keyBy(contracts, 'id')
-    return Object.fromEntries(
-      bets.map((bet) => [bet.id, contractsById[bet.contractId]])
-    )
-  }, [contracts])
+  const betsByContract = groupBy(bets, 'contractId')
+  const metricsByContract =
+    contracts &&
+    mapValues(betsByContract, (bets, contractId) => {
+      const contract = contractsById[contractId]
+      return contract ? calculateUserMetrics(contract, bets) : undefined
+    })
+
+  const [showHighestFirst, setShowHighestFirst] = useState(true)
+
+  const contractsSorted =
+    contracts &&
+    metricsByContract &&
+    sortBy(contracts, (contract) => metricsByContract[contract.id]?.profit ?? 0)
+
+  const contractsSortedByProfit = showHighestFirst
+    ? contractsSorted?.reverse()
+    : contractsSorted
 
   return (
     <Modal
@@ -74,12 +94,11 @@ export const ManaEarnedBreakdown = (props: {
             avatarUrl={user.avatarUrl}
           />
         </Row>
-        <Table>
-          <thead
-            className={clsx('text-ink-600 text-left text-sm font-semibold')}
-          >
+        <Subtitle className="text-ink-800 !mt-2 !mb-2">Mana earned</Subtitle>
+        <Table className="text-base">
+          <thead className={clsx('text-ink-600 text-left font-semibold')}>
             <tr>
-              <th className={clsx('px-2 pb-1')}>Earning type</th>
+              <th className={clsx('px-2 pb-1')}>Category</th>
               <th className={clsx('px-2 pb-1 text-right')}>Amount</th>
             </tr>
           </thead>
@@ -104,38 +123,79 @@ export const ManaEarnedBreakdown = (props: {
         </Table>
 
         {contracts && contracts.length > 0 && (
-          <Subtitle className="mt-4">Trades this season</Subtitle>
+          <Col>
+            <Subtitle className="text-ink-800 mt-6">Profit by market</Subtitle>
+            <Row className="mb-4 gap-2">
+              <ShortToggle on={showHighestFirst} setOn={setShowHighestFirst} />{' '}
+              Highest first
+            </Row>
+          </Col>
         )}
+
         {contracts === undefined && (
           <div className="h-[500px]">
             <LoadingIndicator className="mt-6" />
           </div>
         )}
-        <Col className="">
-          {bets.map((bet, i) => {
-            const contract = betIdToContract[bet.id]
-            if (!contract) return null
-
-            const prevContract = i > 0 ? betIdToContract[bets[i - 1].id] : null
-            const showContract =
-              !prevContract || prevContract.id !== contract.id
-
-            return (
-              <Col className={clsx('gap-2', showContract ? 'pt-4' : 'pt-2')}>
-                {showContract && (
-                  <ContractMention contract={betIdToContract[bet.id]} />
-                )}
-                <FeedBet
-                  key={bet.id}
-                  bet={bet}
-                  contract={betIdToContract[bet.id]}
+        <Col className="gap-6">
+          {contracts &&
+            contractsSortedByProfit &&
+            metricsByContract &&
+            contractsSortedByProfit.map((contract) => {
+              const bets = betsByContract[contract.id]
+              const metrics = metricsByContract[contract.id]
+              if (!bets || !metrics) return null
+              return (
+                <ContractBetsEntry
+                  key={contract.id}
+                  contract={contract}
+                  bets={bets}
+                  metrics={metrics}
                 />
-              </Col>
-            )
-          })}
+              )
+            })}
         </Col>
       </Col>
     </Modal>
+  )
+}
+
+const ContractBetsEntry = (props: {
+  contract: Contract
+  bets: Bet[]
+  metrics: ContractMetric
+}) => {
+  const { bets, metrics } = props
+
+  const contract = useContract(props.contract.id) ?? props.contract
+  const { profit, profitPercent } = metrics
+
+  return (
+    <Col>
+      <Row className="gap-2">
+        <Link
+          href={contractPath(contract)}
+          className="text-primary-700 hover:decoration-primary-400 flex-1 font-medium hover:underline hover:decoration-2"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {contract.question}
+        </Link>
+
+        <Col>
+          <div className="whitespace-nowrap text-right text-lg">
+            {formatMoney(profit)}
+          </div>
+          <ProfitBadge className="text-right" profitPercent={profitPercent} />
+        </Col>
+      </Row>
+
+      <ContractBetsTable
+        contract={contract}
+        bets={bets}
+        isYourBets={false}
+        hideRedemptionAndLoanMessages
+      />
+    </Col>
   )
 }
 

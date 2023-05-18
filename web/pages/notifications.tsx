@@ -37,7 +37,6 @@ import { XIcon } from '@heroicons/react/outline'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
-import { buildArray } from 'common/util/array'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
@@ -94,30 +93,32 @@ export default function Notifications() {
 
         <div className="relative h-full w-full">
           <div className="relative">
-            <QueryUncontrolledTabs
-              currentPageForAnalytics={'notifications'}
-              labelClassName={'pb-2 pt-1 '}
-              className={'mb-0 sm:mb-2'}
-              tabs={buildArray([
-                {
-                  title: 'Notifications',
-                  content: <NotificationsList privateUser={privateUser} />,
-                },
-                {
-                  title: 'Balance Changes',
-                  content: <BalanceChangesList privateUser={privateUser} />,
-                },
-                privateUser && {
-                  title: 'Settings',
-                  content: (
-                    <NotificationSettings
-                      navigateToSection={navigateToSection}
-                      privateUser={privateUser}
-                    />
-                  ),
-                },
-              ])}
-            />
+            {privateUser && router.isReady && (
+              <QueryUncontrolledTabs
+                currentPageForAnalytics={'notifications'}
+                labelClassName={'pb-2 pt-1 '}
+                className={'mb-0 sm:mb-2'}
+                tabs={[
+                  {
+                    title: 'Notifications',
+                    content: <NotificationsList privateUser={privateUser} />,
+                  },
+                  {
+                    title: 'Balance Changes',
+                    content: <BalanceChangesList privateUser={privateUser} />,
+                  },
+                  {
+                    title: 'Settings',
+                    content: (
+                      <NotificationSettings
+                        navigateToSection={navigateToSection}
+                        privateUser={privateUser}
+                      />
+                    ),
+                  },
+                ]}
+              />
+            )}
           </div>
         </div>
       </Col>
@@ -172,9 +173,7 @@ function RenderNotificationGroups(props: {
   )
 }
 
-function NotificationsList(props: {
-  privateUser: PrivateUser | undefined | null
-}) {
+function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
   const { groupedNotifications, mostRecentNotification } =
     useGroupedNonBalanceChangeNotifications(privateUser)
@@ -224,9 +223,7 @@ function NotificationsList(props: {
   )
 }
 
-function BalanceChangesList(props: {
-  privateUser: PrivateUser | undefined | null
-}) {
+function BalanceChangesList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
   const allGroupedNotifications =
     useGroupedBalanceChangeNotifications(privateUser)

@@ -29,6 +29,3 @@ or
 update on posts for each row
 execute function post_populate_cols ();
 
-update posts
-set
-  fs_updated_time = fs_updated_time;

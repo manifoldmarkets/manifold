@@ -535,6 +535,7 @@ export interface Database {
           division: number
           mana_earned: number
           mana_earned_breakdown: Json
+          rank_snapshot: number | null
           season: number
           user_id: string
         }
@@ -544,6 +545,7 @@ export interface Database {
           division: number
           mana_earned?: number
           mana_earned_breakdown?: Json
+          rank_snapshot?: number | null
           season: number
           user_id: string
         }
@@ -553,6 +555,7 @@ export interface Database {
           division?: number
           mana_earned?: number
           mana_earned_breakdown?: Json
+          rank_snapshot?: number | null
           season?: number
           user_id?: string
         }
@@ -601,6 +604,50 @@ export interface Database {
           id?: string
           market_id?: string
           user_id?: string
+        }
+      }
+      news: {
+        Row: {
+          author: string | null
+          contract_ids: string[]
+          created_time: string
+          description: string | null
+          id: number
+          image_url: string | null
+          published_time: string
+          source_id: string | null
+          source_name: string | null
+          title: string
+          title_embedding: number[]
+          url: string
+        }
+        Insert: {
+          author?: string | null
+          contract_ids: string[]
+          created_time?: string
+          description?: string | null
+          id?: number
+          image_url?: string | null
+          published_time: string
+          source_id?: string | null
+          source_name?: string | null
+          title: string
+          title_embedding: number[]
+          url: string
+        }
+        Update: {
+          author?: string | null
+          contract_ids?: string[]
+          created_time?: string
+          description?: string | null
+          id?: number
+          image_url?: string | null
+          published_time?: string
+          source_id?: string | null
+          source_name?: string | null
+          title?: string
+          title_embedding?: number[]
+          url?: string
         }
       }
       post_comments: {
@@ -1070,18 +1117,21 @@ export interface Database {
           fs_updated_time: string
           id: string
           name_username_vector: unknown | null
+          username: string | null
         }
         Insert: {
           data: Json
           fs_updated_time: string
           id: string
           name_username_vector?: unknown | null
+          username?: string | null
         }
         Update: {
           data?: Json
           fs_updated_time?: string
           id?: string
           name_username_vector?: unknown | null
+          username?: string | null
         }
       }
     }
@@ -1590,7 +1640,9 @@ export interface Database {
           created_time: string | null
           division: number | null
           mana_earned: number | null
+          mana_earned_breakdown: Json | null
           rank: number | null
+          rank_snapshot: number | null
           season: number | null
           user_id: string | null
         }
@@ -2156,6 +2208,23 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_league_info_from_username: {
+        Args: {
+          this_season: number
+          this_username: string
+        }
+        Returns: {
+          cohort: string | null
+          created_time: string | null
+          division: number | null
+          mana_earned: number | null
+          mana_earned_breakdown: Json | null
+          rank: number | null
+          rank_snapshot: number | null
+          season: number | null
+          user_id: string | null
+        }[]
+      }
       get_your_contract_ids:
         | {
             Args: {
@@ -2418,6 +2487,7 @@ export interface Database {
           fs_updated_time: string
           id: string
           name_username_vector: unknown | null
+          username: string | null
         }[]
       }
       search_users2: {
@@ -2430,6 +2500,7 @@ export interface Database {
           fs_updated_time: string
           id: string
           name_username_vector: unknown | null
+          username: string | null
         }[]
       }
       set_limit: {

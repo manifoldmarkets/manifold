@@ -82,13 +82,13 @@ export default function LootBoxPage() {
   return (
     <Page>
       <SEO
-        title="Loot box"
+        title="Loot Box"
         description={`Feeling lucky? A loot box gives you random shares in markets worth
             up to ${formatMoney(LOOTBOX_MAX)}!`}
       />
       <Col className=" items-center">
         <Col className="bg-canvas-0 h-full max-w-xl rounded p-4 py-8 sm:p-8 sm:shadow-md">
-          <Title>Loot box</Title>
+          <Title>Loot Box</Title>
           <Lottie
             ref={animationRef}
             options={{

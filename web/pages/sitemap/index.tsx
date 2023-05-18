@@ -1,3 +1,4 @@
+import { REFERRAL_AMOUNT } from 'common/economy'
 import {
   APPLE_APP_URL,
   DOMAIN,
@@ -14,6 +15,7 @@ import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
 import { SEO } from 'web/components/SEO'
 import { Card } from 'web/components/widgets/card'
+import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
@@ -48,163 +50,68 @@ export default function LabsPage() {
           isModalOpen={isModalOpen}
           setIsModalOpen={setIsModalOpen}
         />
-        <Masonry
-          breakpointCols={{ default: 2, 768: 1 }}
-          className="-ml-4 flex w-auto"
-          columnClassName="pl-4 bg-clip-padding"
-        >
+        <LabSection>
           <LabCard
             title="🙋 About & Help"
-            description={`Learn more about Manifold`}
             href="https://help.manifold.markets/"
           />
-
           <LabCard
             title="💬 Discord"
-            description={`Join our community on Discord`}
             href="https://discord.com/invite/eHQBNBqXuh"
           />
-
-          <LabCard
-            title="📱 App"
-            description={`Download our iOS/Android app`}
-            {...appCallback}
-          />
-
+          <LabCard title="📱 Download iOS/Android App" {...appCallback} />
           <LabCard
             title="📰 Newsletter"
-            description={`Read the latest about Manifold`}
             href="https://news.manifold.markets/"
           />
-        </Masonry>
-
-        <Masonry
-          breakpointCols={{ default: 2, 768: 1 }}
-          className="-ml-4 mt-8 flex w-auto"
-          columnClassName="pl-4 bg-clip-padding"
-        >
-          <LabCard
-            title="⚖️ Markets"
-            description="Search for markets"
-            href="/markets"
-          />
-
+        </LabSection>
+        <Subtitle>📄 Pages</Subtitle>
+        <LabSection>
           {(!isNative || (isNative && platform !== 'ios')) && (
-            <>
-              <LabCard
-                title="💰 Get mana"
-                description="Buy Ṁ to trade in your favorite markets"
-                href="/add-funds"
-              />
-
-              <LabCard
-                title="🫀 Charity"
-                description={`Turn ${ENV_CONFIG.moneyMoniker} into real charitable donations`}
-                href="/charity"
-              />
-            </>
+            <LabCard
+              title="🫀 Charity"
+              description={`Turn mana into real charitable donations`}
+              href="/charity"
+            />
           )}
-
           <LabCard
             title="💸 Referrals"
-            description="Refer your friends to earn mana"
+            description={`Refer a friend to earn ${formatMoney(
+              REFERRAL_AMOUNT
+            )}`}
             href="/referrals"
           />
-
-          <LabCard
-            title="👥 Users"
-            description="Find your friends or other people on Manifold"
-            href="/users"
-          />
-
-          <LabCard
-            title="⚔️ Versus"
-            description="Create mana-battles between two players"
-            href="/versus"
-          />
-
-          <LabCard
-            title="🔥 Swipe"
-            description="Swipe-to-bet UI. Try via iOS/Android app."
-            {...(isNative ? { href: '/swipe' } : appCallback)}
-          />
-
-          <LabCard
-            title="⚡️ Live"
-            description="Live feed of Manifold activity"
-            href="/live"
-          />
-
-          <LabCard
-            title="💬 Discord Bot"
-            description="Create, trade, and share markets directly from Discord"
-            href="/discord-bot"
-          />
-
-          <LabCard
-            title="🏆 CSPI/Salem tournament"
-            description="Special contest on politics and current events"
-            href="https://salemcenter.manifold.markets/"
-          />
-
-          <LabCard
-            title="🎮 Twitch bot"
-            description="Embed markets in your stream"
-            href="/twitch"
-          />
-
-          <LabCard
-            title="📏 Calibration"
-            description="User bet calibration graph"
-            href="/my-calibration"
-          />
-
-          <LabCard
-            title="👥 Groups"
-            description="Curated markets on a topic"
-            href="/groups"
-          />
-
-          <LabCard
-            title="🏆 Leaderboards"
-            description="See who's winning"
-            href="/leaderboards"
-          />
-
-          <LabCard
-            title="💸 Manalinks"
-            description={`Send ${ENV_CONFIG.moneyMoniker} to anyone`}
-            href="/links"
-          />
-
-          <LabCard
-            title="📈 Stats"
-            description="See how Manifold is doing"
-            href="/stats"
-          />
-
+          {(!isNative || (isNative && platform !== 'ios')) && (
+            <LabCard title="💰 Get Mana" href="/add-funds" />
+          )}
+          <LabCard title="⚡️ Live Feed" href="/live" />
+          <LabCard title="⚖️ Market Search" href="/markets" />
+          <LabCard title="👥 User Search" href="/users" />
+          <LabCard title="👥 Group Search" href="/groups" />
+          <LabCard title="🏆 Leaderboards" href="/leaderboards" />
           <LabCard
             title="✏ Posts"
             description="Go long on longform"
             href="/latestposts"
           />
-
           <LabCard
-            title="🎨 Design system"
-            description="For us, mostly"
-            href="/styles"
+            title="💸 Manalinks"
+            description={`Send ${ENV_CONFIG.moneyMoniker} to anyone`}
+            href="/links"
           />
-        </Masonry>
-
-        <Spacer h={8} />
-
-        <Title>🧪 Labs</Title>
-        <div className="mb-4">Experimental or past projects at Manifold</div>
-        <Masonry
-          breakpointCols={{ default: 2, 768: 1 }}
-          className="-ml-4 flex w-auto"
-          columnClassName="pl-4 bg-clip-padding"
-        >
+          {/* <LabCard
+            title="📏 Calibration"
+            description="User bet calibration graph"
+            href="/my-calibration"
+          /> */}
+        </LabSection>
+        <Subtitle>🧪 Ongoing Experiments</Subtitle>
+        <LabSection>
+          <LabCard
+            title="⚔️ Versus"
+            description="Create mana-battles between two ideas"
+            href="/versus"
+          />
           <LabCard
             title="❓ Q&A"
             description="Ask and answer questions to win mana"
@@ -212,11 +119,48 @@ export default function LabsPage() {
           />
           {user && (
             <LabCard
-              title="🎁 Loot box"
+              title="🎁 Loot Box"
               description="Invest in random markets"
               href="/lootbox"
             />
           )}
+          <LabCard
+            title="🔥 Swipe"
+            description="Swipe-to-bet UI. Try via iOS/Android app."
+            {...(isNative ? { href: '/swipe' } : appCallback)}
+          />
+        </LabSection>
+
+        <Subtitle>🏝️ Exotic lands</Subtitle>
+        <LabSection>
+          <LabCard
+            title="🤖 Discord Bot"
+            description="Create, trade, & share markets from Discord"
+            href="/discord-bot"
+          />
+          <LabCard
+            title="🎮 Twitch bot"
+            description="Embed markets in your stream"
+            href="/twitch"
+          />
+          <LabCard
+            title="🏆 CSPI/Salem tournament"
+            description="Special contest on politics and current events"
+            href="https://salemcenter.manifold.markets/"
+          />
+          <LabCard
+            title="📈 Stats"
+            description="See how Manifold is doing"
+            href="/stats"
+          />
+          <LabCard title="🎨 Design system" href="/styles" />
+        </LabSection>
+        <Subtitle>🪦 Spooky Graveyard</Subtitle>
+        <div className="mb-4 italic">
+          Dead and undead projects, haunting this page until we resurrect or
+          exorcise them.
+        </div>
+        <LabSection>
           <LabCard
             title="🎴 Manifold: The Gambling"
             description="Match each market to its creator"
@@ -229,7 +173,7 @@ export default function LabsPage() {
           />
           <LabCard
             title="💭 Dream"
-            description="Ask our AI to generate a custom image"
+            description="Generate an image with AI"
             href="/dream"
           />
           <LabCard
@@ -238,18 +182,17 @@ export default function LabsPage() {
             href="/date-docs"
           />
           <LabCard
-            title="🎲 Magic the Guessering"
+            title="🃏 Magic the Guessering"
             description="Match MTG card names to their art"
             href={`https://${DOMAIN}/mtg/index.html`}
           />
           <LabCard
-            title="👀 Ads"
-            description="Read ads for mana. Or pay mana to promote your content."
+            title="👀 Classified Ads"
+            description="An old version of market boosts that let you advertise anything. View ads for mana!"
             href="/ad"
           />
           <LabCard title="🐮 Cowp" description="???" href="/cowp" />
-        </Masonry>
-
+        </LabSection>
         <Spacer h={8} />
       </Col>
     </Page>
@@ -258,7 +201,7 @@ export default function LabsPage() {
 
 const LabCard = (props: {
   title: string
-  description: string
+  description?: string
   href: string
   onClick?: () => void
 }) => {
@@ -266,9 +209,19 @@ const LabCard = (props: {
   return (
     <Link href={href} onClick={onClick} className="mb-4 block">
       <Card className="flex flex-col gap-2 px-4 py-3">
-        <h3 className="text-lg font-semibold">{title}</h3>
-        <p className="text-ink-600">{description}</p>
+        <div className="text-lg font-semibold">{title}</div>
+        {description && <p className="text-ink-600">{description}</p>}
       </Card>
     </Link>
   )
 }
+
+const LabSection = (props: { children: React.ReactNode }) => (
+  <Masonry
+    breakpointCols={{ default: 2, 768: 1 }}
+    className="-ml-4 flex w-auto"
+    columnClassName="pl-4 bg-clip-padding"
+  >
+    {props.children}
+  </Masonry>
+)
