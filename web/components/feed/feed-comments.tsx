@@ -163,7 +163,6 @@ export const FeedComment = memo(function FeedComment(props: {
   } = props
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
-  const marketCreator = contract.creatorId === comment.userId
 
   useEffect(() => {
     if (highlighted && ref.current) {

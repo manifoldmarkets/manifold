@@ -4,7 +4,7 @@ import { memo, MouseEvent, useEffect, useState } from 'react'
 import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
 import { floor } from 'lodash'
-import { useLeagueInfo, useLeagueInfoFromUsername } from 'web/hooks/use-leagues'
+import { useLeagueInfoFromUsername } from 'web/hooks/use-leagues'
 import { DIVISION_NAMES } from 'common/leagues'
 import { LeagueRing } from './league-ring'
 
