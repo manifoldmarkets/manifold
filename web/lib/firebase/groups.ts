@@ -102,15 +102,6 @@ export function listenForGroup(
   return listenForValue(doc(groups, groupId), setGroup)
 }
 
-export async function getMemberGroups(userId: string) {
-  const snapshot = await getDocs(memberGroupsQuery(userId))
-  const groupIds = filterDefined(
-    snapshot.docs.map((doc) => doc.ref.parent.parent?.id)
-  )
-  const groups = await Promise.all(groupIds.map(getGroup))
-  return filterDefined(groups)
-}
-
 export function listenForMemberGroupIds(
   userId: string,
   setGroupIds: (groupIds: string[]) => void
