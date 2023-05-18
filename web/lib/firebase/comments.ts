@@ -1,12 +1,9 @@
 import {
-  Query,
   collection,
-  collectionGroup,
   doc,
   orderBy,
   query,
   setDoc,
-  where,
   DocumentData,
   DocumentReference,
   limit,
@@ -132,19 +129,6 @@ export function listenForCommentsOnContract(
   )
 }
 
-export function listenForCommentsOnGroup(
-  groupId: string,
-  setComments: (comments: GroupComment[]) => void
-) {
-  return listenForValues<GroupComment>(
-    query(
-      getCommentsOnGroupCollection(groupId),
-      orderBy('createdTime', 'desc')
-    ),
-    setComments
-  )
-}
-
 export function listenForCommentsOnPost(
   postId: string,
   setComments: (comments: PostComment[]) => void
@@ -153,43 +137,4 @@ export function listenForCommentsOnPost(
     query(getCommentsOnPostCollection(postId), orderBy('createdTime', 'desc')),
     setComments
   )
-}
-
-const DAY_IN_MS = 24 * 60 * 60 * 1000
-
-// Define "recent" as "<3 days ago" for now
-const recentCommentsQuery = query(
-  collectionGroup(db, 'comments'),
-  where('createdTime', '>', Date.now() - 3 * DAY_IN_MS),
-  orderBy('createdTime', 'desc')
-)
-
-export async function getRecentComments() {
-  return getValues<Comment>(recentCommentsQuery)
-}
-
-export function listenForRecentComments(
-  setComments: (comments: Comment[]) => void
-) {
-  return listenForValues<Comment>(recentCommentsQuery, setComments)
-}
-
-export const getUserCommentsQuery = (userId: string) =>
-  query(
-    collectionGroup(db, 'comments'),
-    where('userId', '==', userId),
-    where('commentType', '==', 'contract'),
-    orderBy('createdTime', 'desc')
-  ) as Query<ContractComment>
-
-export function listenForLiveComments(
-  count: number,
-  setComments: (comments: Comment[]) => void
-) {
-  const commentsQuery = query(
-    collectionGroup(db, 'comments'),
-    orderBy('createdTime', 'desc'),
-    limit(count)
-  )
-  return listenForValues<Comment>(commentsQuery, setComments)
 }

@@ -43,41 +43,6 @@ export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
   return { unfilledBets, balanceByUserId }
 }
 
-export const useLiveBets = (count: number, options?: BetFilter) => {
-  const [bets, setBets] = usePersistentState<Bet[] | undefined>(undefined, {
-    store: inMemoryStore(),
-    key: `liveBets-${count}`,
-  })
-  useEffectCheckEquality(() => {
-    return listenForBets(setBets, { limit: count, order: 'desc', ...options })
-  }, [count, setBets, options])
-
-  return bets
-}
-
-export const useOpenLimitBets = (userId: string) => {
-  const openLimitBets = useBets({
-    userId: userId,
-    isOpenLimitOrder: true,
-    limit: 1000,
-  }) as LimitBet[] | undefined
-  const [savedBets, setSavedBets] = usePersistentState<LimitBet[] | undefined>(
-    undefined,
-    {
-      key: `open-limit-bets-${userId}`,
-      store: inMemoryStore(),
-    }
-  )
-
-  useEffect(() => {
-    if (openLimitBets) {
-      setSavedBets(openLimitBets)
-    }
-  }, [openLimitBets, setSavedBets])
-
-  return openLimitBets ?? savedBets
-}
-
 export const useRecentBets = (contractId: string, limit: number) => {
   const [bets, setBets] = usePersistentState<Bet[] | undefined>(undefined, {
     key: `recent-bets-${contractId}-${limit}`,

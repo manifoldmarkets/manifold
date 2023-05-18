@@ -133,19 +133,6 @@ export function getUserBetContractsQuery(userId: string) {
   ) as Query<Contract>
 }
 
-export function listenForLiveContracts(
-  count: number,
-  setContracts: (contracts: Contract[]) => void
-) {
-  const q = query(
-    contracts,
-    where('isResolved', '==', false),
-    orderBy('createdTime', 'desc'),
-    limit(count)
-  )
-  return listenForValues<Contract>(q, setContracts)
-}
-
 export function listenForContract(
   contractId: string,
   setContract: (contract: Contract | null) => void

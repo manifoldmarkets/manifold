@@ -3,10 +3,9 @@ import { useEffect, useState } from 'react'
 import {
   Contract,
   listenForContract,
-  listenForContracts,
-  listenForLiveContracts,
+  listenForContracts
 } from 'web/lib/firebase/contracts'
-import { inMemoryStore, usePersistentState } from './use-persistent-state'
+import { usePersistentState } from './use-persistent-state'
 import { useStore, useStoreItems } from './use-store'
 
 export const useAllContracts = () => {
@@ -15,22 +14,6 @@ export const useAllContracts = () => {
   useEffect(() => {
     return listenForContracts(setContracts)
   }, [])
-
-  return contracts
-}
-
-export const useLiveContracts = (count: number) => {
-  const [contracts, setContracts] = usePersistentState<Contract[] | undefined>(
-    undefined,
-    {
-      store: inMemoryStore(),
-      key: `liveContracts-${count}`,
-    }
-  )
-
-  useEffect(() => {
-    return listenForLiveContracts(count, setContracts)
-  }, [count, setContracts])
 
   return contracts
 }
