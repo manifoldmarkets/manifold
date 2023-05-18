@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  ContractComment,
-  PostComment,
-} from 'common/comment'
+import { ContractComment, PostComment } from 'common/comment'
 import {
   listenForCommentsOnContract,
   listenForCommentsOnPost,
