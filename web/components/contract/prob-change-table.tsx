@@ -1,14 +1,6 @@
 import { sortBy } from 'lodash'
-import { filterDefined } from 'common/util/array'
-import { ContractMetrics } from 'common/calculate-metrics'
-import {
-  Contract,
-  CPMMBinaryContract,
-  CPMMContract,
-  contractPath,
-} from 'common/contract'
+import { Contract, CPMMContract, contractPath } from 'common/contract'
 import { Col } from '../layout/col'
-import { ContractCardWithPosition } from './contract-card'
 import { User } from 'common/user'
 import { ContractStatusLabel } from './contracts-table'
 import clsx from 'clsx'
@@ -122,64 +114,6 @@ const ContractWithProbChange = forwardRef(
     )
   }
 )
-
-export function ProfitChangeCardsTable(props: {
-  contracts: CPMMBinaryContract[]
-  metrics: ContractMetrics[]
-  maxRows?: number
-}) {
-  const { contracts, metrics, maxRows } = props
-
-  const contractProfit = metrics.map(
-    (m) => [m.contractId, m.from?.day.profit ?? 0] as const
-  )
-
-  const positiveProfit = sortBy(
-    contractProfit.filter(([, profit]) => profit > 0),
-    ([, profit]) => profit
-  ).reverse()
-  const positive = filterDefined(
-    positiveProfit.map(([contractId]) =>
-      contracts.find((c) => c.id === contractId)
-    )
-  ).slice(0, maxRows)
-
-  const negativeProfit = sortBy(
-    contractProfit.filter(([, profit]) => profit < 0),
-    ([, profit]) => profit
-  )
-  const negative = filterDefined(
-    negativeProfit.map(([contractId]) =>
-      contracts.find((c) => c.id === contractId)
-    )
-  ).slice(0, maxRows)
-
-  if (positive.length === 0 && negative.length === 0)
-    return <div className="text-ink-500 px-4">None</div>
-
-  return (
-    <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
-      <Col className="flex-1 gap-4">
-        {positive.map((contract) => (
-          <ContractCardWithPosition
-            key={contract.id}
-            contract={contract}
-            showDailyProfit
-          />
-        ))}
-      </Col>
-      <Col className="flex-1 gap-4">
-        {negative.map((contract) => (
-          <ContractCardWithPosition
-            key={contract.id}
-            contract={contract}
-            showDailyProfit
-          />
-        ))}
-      </Col>
-    </Col>
-  )
-}
 
 export function ProbOrNumericChange(props: {
   contract: CPMMContract
