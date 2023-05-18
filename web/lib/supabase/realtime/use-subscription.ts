@@ -4,7 +4,7 @@ import {
   Change,
   Filter,
   SubscriptionStatus,
-  applyChange
+  applyChange,
 } from 'common/supabase/realtime'
 import { useEvent } from 'web/hooks/use-event'
 import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
