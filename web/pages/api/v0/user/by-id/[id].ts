@@ -1,11 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getUser } from 'web/lib/firebase/users'
+import { User } from 'common/user'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { LiteUser, ApiError, toLiteUser } from '../../_types'
+import { ApiError } from '../../_types'
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<LiteUser | ApiError>
+  res: NextApiResponse<User | ApiError>
 ) {
   await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
   const { id } = req.query
@@ -15,5 +16,5 @@ export default async function handler(
     return
   }
   res.setHeader('Cache-Control', 'no-cache')
-  return res.status(200).json(toLiteUser(user))
+  return res.status(200).json(user)
 }
