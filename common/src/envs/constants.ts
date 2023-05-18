@@ -92,6 +92,7 @@ export const BOT_USERNAMES = [
   'arb',
   'Turbot',
   'MiraBot',
+  'MetaculusBot',
 ]
 
 export const CORE_USERNAMES = [
