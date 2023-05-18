@@ -344,7 +344,7 @@ function EditableCloseDate(props: {
         <DateTimeTooltip
           text={closeTime <= Date.now() ? 'Trading ended:' : 'Trading ends:'}
           time={closeTime}
-          placement="bottom-start"
+          placement="bottom-end"
           noTap
           className="flex items-center"
         >
