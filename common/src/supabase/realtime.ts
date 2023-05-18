@@ -17,14 +17,18 @@ export type TableSpec<T extends TableName> = {
 }
 
 export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
+  posts: {
+    pk: ['id'],
+    ts: (r) => Date.parse(r.fs_updated_time)
+  },
   contract_bets: {
     pk: ['contract_id', 'bet_id'],
-    ts: (r) => parseInt(r.fs_updated_time)
+    ts: (r) => Date.parse(r.fs_updated_time)
   }
 }
 
 export function buildFilterString<T extends TableName>(filter: Filter<T>) {
-  return `${filter.k}=${filter.v}`
+  return `${filter.k}=eq.${filter.v}`
 }
 
 export function applyChange<T extends TableName>(
@@ -60,7 +64,7 @@ export function applyChange<T extends TableName>(
       }
       if (spec.ts(rows[idx]) < spec.ts(change.new)) {
         // replace the existing row with the updated row
-        return [...rows.slice(0, idx), change.new, ...rows.slice(idx)]
+        return [...rows.slice(0, idx), change.new, ...rows.slice(idx + 1)]
       } else {
         // the updated row is not more recent, so ignore the update
         return rows
@@ -74,7 +78,7 @@ export function applyChange<T extends TableName>(
         console.warn("Out-of-order subscription delete: ", change)
         return rows
       }
-      return [...rows.slice(0, idx), ...rows.slice(idx)]
+      return [...rows.slice(0, idx), ...rows.slice(idx + 1)]
     }
     default: {
       console.warn('Unknown change type, ignoring: ', change)
