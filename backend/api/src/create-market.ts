@@ -1,8 +1,9 @@
-import { JSONContent } from '@tiptap/core'
 import * as admin from 'firebase-admin'
+import { JSONContent } from '@tiptap/core'
 import { FieldValue, Transaction } from 'firebase-admin/firestore'
 import { uniq, zip } from 'lodash'
 import { z } from 'zod'
+import { marked } from 'marked'
 
 import { Answer, getNoneAnswer } from 'common/answer'
 import {
@@ -33,79 +34,12 @@ import { QfAddPoolTxn } from 'common/txn'
 import { User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import { marked } from 'marked'
 import { mintAndPoolCert } from 'shared/helpers/cert-txns'
 import { getCloseDate } from 'shared/helpers/openai-utils'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
-
-const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
-  z.intersection(
-    z.record(z.any()),
-    z.object({
-      type: z.string().optional(),
-      attrs: z.record(z.any()).optional(),
-      content: z.array(descSchema).optional(),
-      marks: z
-        .array(
-          z.intersection(
-            z.record(z.any()),
-            z.object({
-              type: z.string(),
-              attrs: z.record(z.any()).optional(),
-            })
-          )
-        )
-        .optional(),
-      text: z.string().optional(),
-    })
-  )
-)
-
-const bodySchema = z.object({
-  question: z.string().min(1).max(MAX_QUESTION_LENGTH),
-  description: descSchema.or(z.string()).optional(),
-  descriptionHtml: z.string().optional(),
-  descriptionMarkdown: z.string().optional(),
-  tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
-  closeTime: z
-    .union([z.date(), z.number()])
-    .refine(
-      (date) => (typeof date === 'number' ? date : date.getTime()) > Date.now(),
-      'Close time must be in the future.'
-    )
-    .optional(),
-  outcomeType: z.enum(OUTCOME_TYPES),
-  groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
-  visibility: z.enum(VISIBILITIES).optional(),
-  isTwitchContract: z.boolean().optional(),
-  utcOffset: z.number().optional(),
-})
-
-const binarySchema = z.object({
-  initialProb: z.number().min(1).max(99),
-})
-
-const finite = () =>
-  z.number().gte(Number.MIN_SAFE_INTEGER).lte(Number.MAX_SAFE_INTEGER)
-
-const numericSchema = z.object({
-  min: finite(),
-  max: finite(),
-  initialValue: finite(),
-  isLogScale: z.boolean().optional(),
-})
-
-const multipleChoiceSchema = z.object({
-  answers: z.string().trim().min(1).array().min(2),
-})
-
-type schema = z.infer<typeof bodySchema> &
-  (z.infer<typeof binarySchema> | {}) &
-  (z.infer<typeof numericSchema> | {}) &
-  (z.infer<typeof multipleChoiceSchema> | {})
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -121,119 +55,25 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     closeTime,
     outcomeType,
     groupId,
-    visibility = 'public',
+    visibility,
     isTwitchContract,
     utcOffset,
-  } = validate(bodySchema, body)
-
-  let min: number,
-    max: number,
-    initialProb: number,
-    isLogScale: boolean | undefined,
-    answers: string[] | undefined
-
-  if (visibility == 'private' && !groupId) {
-    throw new APIError(
-      400,
-      'Private markets cannot exist outside a private group.'
-    )
-  }
-
-  if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
-    let initialValue
-    ;({ min, max, initialValue, isLogScale } = validate(numericSchema, body))
-    if (max - min <= 0.01 || initialValue <= min || initialValue >= max)
-      throw new APIError(400, 'Invalid range.')
-
-    initialProb = getPseudoProbability(initialValue, min, max, isLogScale) * 100
-
-    if (initialProb < 1 || initialProb > 99)
-      if (outcomeType === 'PSEUDO_NUMERIC')
-        throw new APIError(
-          400,
-          `Initial value is too ${initialProb < 1 ? 'low' : 'high'}`
-        )
-      else throw new APIError(400, 'Invalid initial probability.')
-  }
-  if (outcomeType === 'STONK') {
-    initialProb = STONK_INITIAL_PROB
-  }
-
-  if (outcomeType === 'BINARY') {
-    ;({ initialProb } = validate(binarySchema, body))
-  }
-
-  if (outcomeType === 'MULTIPLE_CHOICE') {
-    ;({ answers } = validate(multipleChoiceSchema, body))
-  }
+    min,
+    max,
+    initialProb,
+    isLogScale,
+    answers,
+  } = validateMarketBody(body)
 
   const userId = auth.uid
 
-  let group: Group | null = null
-
-  if (groupId) {
-    const groupDocRef = firestore.collection('groups').doc(groupId)
-    const groupDoc = await groupDocRef.get()
-    const firebaseUser = await admin.auth().getUser(auth.uid)
-    if (!groupDoc.exists) {
-      throw new APIError(400, 'No group exists with the given group ID.')
-    }
-    const user = await getUser(auth.uid)
-
-    group = groupDoc.data() as Group
-    const groupMembersSnap = await firestore
-      .collection(`groups/${groupId}/groupMembers`)
-      .get()
-    const groupMemberDocs = groupMembersSnap.docs.map(
-      (doc) =>
-        doc.data() as { userId: string; createdTime: number; role?: string }
-    )
-    const userGroupMemberDoc = groupMemberDocs.filter(
-      (m) => m.userId === userId
-    )
-    const groupMemberRole =
-      userGroupMemberDoc.length >= 1
-        ? userGroupMemberDoc[0].role
-          ? (userGroupMemberDoc[0].role as 'admin' | 'moderator')
-          : undefined
-        : undefined
-
-    if (
-      (group.privacyStatus == 'private' && visibility != 'private') ||
-      (group.privacyStatus != 'private' && visibility == 'private')
-    ) {
-      throw new APIError(
-        400,
-        `Both "${group.name}" and market must be of the same private visibility.`
-      )
-    }
-    if (
-      !canUserAddGroupToMarket({
-        userId: auth.uid,
-        group: group,
-        isMarketCreator: true,
-        isManifoldAdmin: isManifoldId(auth.uid) || isAdmin(firebaseUser.email),
-        isTrustworthy: isTrustworthy(user?.username),
-        userGroupRole: groupMemberRole,
-      })
-    ) {
-      throw new APIError(
-        400,
-        `User does not have permission to add this market to group "${group.name}".`
-      )
-    }
-  }
+  let group = groupId ? await getGroup(groupId, visibility, userId) : null
 
   const contractRef = firestore.collection('contracts').doc()
 
-  const closeTimestamp = closeTime
-    ? typeof closeTime === 'number'
-      ? closeTime
-      : closeTime.getTime()
-    : // Use AI to get date, default to one week after now if failure
-      (await getCloseDate(question, utcOffset)) ??
-      Date.now() + 7 * 24 * 60 * 60 * 1000
   const ante = ANTES[outcomeType]
+
+  const closeTimestamp = await getCloseTimestamp(closeTime, question, utcOffset)
 
   const { user, contract } = await firestore.runTransaction(async (trans) => {
     const userDoc = await trans.get(firestore.collection('users').doc(userId))
@@ -289,31 +129,282 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     ante || 0
   )
 
-  if (group != null) {
-    const groupContractsSnap = await firestore
-      .collection(`groups/${groupId}/groupContracts`)
-      .get()
+  if (group && groupId)
+    await addGroupContract(groupId, group, contractRef, userId)
 
-    const groupContracts = groupContractsSnap.docs.map(
-      (doc) => doc.data() as { contractId: string; createdTime: number }
-    )
+  await generateAntes(
+    userId,
+    user,
+    contract,
+    contractRef,
+    outcomeType,
+    ante,
+    answers
+  )
 
-    if (!groupContracts.some((c) => c.contractId === contractRef.id)) {
-      await createGroupLinks(group, [contractRef.id], auth.uid)
+  return contract
+}
 
-      const groupContractRef = firestore
-        .collection(`groups/${groupId}/groupContracts`)
-        .doc(contract.id)
+function getDescriptionJson(
+  description?: string | JSONContent,
+  descriptionHtml?: string,
+  descriptionMarkdown?: string
+): JSONContent {
+  if (description) {
+    if (typeof description === 'string') {
+      return htmlToRichText(`<p>${description}</p>`)
+    } else {
+      return description
+    }
+  } else if (descriptionHtml) {
+    return htmlToRichText(descriptionHtml)
+  } else if (descriptionMarkdown) {
+    return htmlToRichText(marked.parse(descriptionMarkdown))
+  } else {
+    // Use a single empty space as the description
+    return htmlToRichText('<p> </p>')
+  }
+}
 
-      await groupContractRef.set({
-        contractId: contract.id,
-        createdTime: Date.now(),
-      })
+async function getCloseTimestamp(
+  closeTime: number | Date | undefined,
+  question: string,
+  utcOffset?: number
+): Promise<number> {
+  return closeTime
+    ? typeof closeTime === 'number'
+      ? closeTime
+      : closeTime.getTime()
+    : (await getCloseDate(question, utcOffset)) ??
+        Date.now() + 7 * 24 * 60 * 60 * 1000
+}
+
+const getSlug = async (trans: Transaction, question: string) => {
+  const proposedSlug = slugify(question)
+
+  const preexistingContract = await getContractFromSlug(trans, proposedSlug)
+
+  return preexistingContract
+    ? proposedSlug + '-' + randomString()
+    : proposedSlug
+}
+
+const firestore = admin.firestore()
+
+async function getContractFromSlug(trans: Transaction, slug: string) {
+  const contractsRef = firestore.collection('contracts')
+  const query = contractsRef.where('slug', '==', slug)
+
+  const snap = await trans.get(query)
+
+  return snap.empty ? undefined : (snap.docs[0].data() as Contract)
+}
+
+async function createGroupLinks(
+  group: Group,
+  contractIds: string[],
+  userId: string
+) {
+  for (const contractId of contractIds) {
+    const contract = await getContract(contractId)
+    if (!contract?.groupSlugs?.includes(group.slug)) {
+      await firestore
+        .collection('contracts')
+        .doc(contractId)
+        .update({
+          groupSlugs: uniq([group.slug, ...(contract?.groupSlugs ?? [])]),
+        })
+    }
+    if (!contract?.groupLinks?.some((gl) => gl.groupId === group.id)) {
+      await firestore
+        .collection('contracts')
+        .doc(contractId)
+        .update({
+          groupLinks: [
+            {
+              groupId: group.id,
+              name: group.name,
+              slug: group.slug,
+              userId,
+              createdTime: Date.now(),
+            } as GroupLink,
+            ...(contract?.groupLinks ?? []),
+          ],
+        })
     }
   }
+}
 
-  const providerId = userId
+function validateMarketBody(body: any) {
+  const {
+    question,
+    description,
+    descriptionHtml,
+    descriptionMarkdown,
+    tags,
+    closeTime,
+    outcomeType,
+    groupId,
+    visibility = 'public',
+    isTwitchContract,
+    utcOffset,
+  } = validate(bodySchema, body)
 
+  let min: number | undefined,
+    max: number | undefined,
+    initialProb: number | undefined,
+    isLogScale: boolean | undefined,
+    answers: string[] | undefined
+
+  if (visibility == 'private' && !groupId) {
+    throw new APIError(
+      400,
+      'Private markets cannot exist outside a private group.'
+    )
+  }
+
+  if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
+    let initialValue
+    ;({ min, max, initialValue, isLogScale } = validate(numericSchema, body))
+    if (max - min <= 0.01 || initialValue <= min || initialValue >= max)
+      throw new APIError(400, 'Invalid range.')
+
+    initialProb = getPseudoProbability(initialValue, min, max, isLogScale) * 100
+
+    if (initialProb < 1 || initialProb > 99)
+      if (outcomeType === 'PSEUDO_NUMERIC')
+        throw new APIError(
+          400,
+          `Initial value is too ${initialProb < 1 ? 'low' : 'high'}`
+        )
+      else throw new APIError(400, 'Invalid initial probability.')
+  }
+  if (outcomeType === 'STONK') {
+    initialProb = STONK_INITIAL_PROB
+  }
+
+  if (outcomeType === 'BINARY') {
+    ;({ initialProb } = validate(binarySchema, body))
+  }
+
+  if (outcomeType === 'MULTIPLE_CHOICE') {
+    ;({ answers } = validate(multipleChoiceSchema, body))
+  }
+
+  return {
+    question,
+    description,
+    descriptionHtml,
+    descriptionMarkdown,
+    tags,
+    closeTime,
+    outcomeType,
+    groupId,
+    visibility,
+    isTwitchContract,
+    utcOffset,
+    min,
+    max,
+    initialProb,
+    isLogScale,
+    answers,
+  }
+}
+
+async function getGroup(
+  groupId: string,
+  visibility: string,
+  userId: string
+): Promise<Group> {
+  const groupDocRef = firestore.collection('groups').doc(groupId)
+  const groupDoc = await groupDocRef.get()
+  const firebaseUser = await admin.auth().getUser(userId)
+  if (!groupDoc.exists) {
+    throw new APIError(400, 'No group exists with the given group ID.')
+  }
+  const user = await getUser(userId)
+
+  const group = groupDoc.data() as Group
+  const groupMembersSnap = await firestore
+    .collection(`groups/${groupId}/groupMembers`)
+    .get()
+  const groupMemberDocs = groupMembersSnap.docs.map(
+    (doc) =>
+      doc.data() as { userId: string; createdTime: number; role?: string }
+  )
+  const userGroupMemberDoc = groupMemberDocs.filter((m) => m.userId === userId)
+  const groupMemberRole =
+    userGroupMemberDoc.length >= 1
+      ? userGroupMemberDoc[0].role
+        ? (userGroupMemberDoc[0].role as 'admin' | 'moderator')
+        : undefined
+      : undefined
+
+  if (
+    (group.privacyStatus == 'private' && visibility != 'private') ||
+    (group.privacyStatus != 'private' && visibility == 'private')
+  ) {
+    throw new APIError(
+      400,
+      `Both "${group.name}" and market must be of the same private visibility.`
+    )
+  }
+  if (
+    !canUserAddGroupToMarket({
+      userId,
+      group: group,
+      isMarketCreator: true,
+      isManifoldAdmin: isManifoldId(userId) || isAdmin(firebaseUser.email),
+      isTrustworthy: isTrustworthy(user?.username),
+      userGroupRole: groupMemberRole,
+    })
+  ) {
+    throw new APIError(
+      400,
+      `User does not have permission to add this market to group "${group.name}".`
+    )
+  }
+
+  return group
+}
+
+async function addGroupContract(
+  groupId: string,
+  group: Group,
+  contractRef: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>,
+  userId: string
+): Promise<void> {
+  const groupContractsSnap = await firestore
+    .collection(`groups/${groupId}/groupContracts`)
+    .get()
+
+  const groupContracts = groupContractsSnap.docs.map(
+    (doc) => doc.data() as { contractId: string; createdTime: number }
+  )
+
+  if (!groupContracts.some((c) => c.contractId === contractRef.id)) {
+    await createGroupLinks(group, [contractRef.id], userId)
+
+    const groupContractRef = firestore
+      .collection(`groups/${groupId}/groupContracts`)
+      .doc(contractRef.id)
+
+    await groupContractRef.set({
+      contractId: contractRef.id,
+      createdTime: Date.now(),
+    })
+  }
+}
+
+async function generateAntes(
+  providerId: string,
+  user: User,
+  contract: Contract,
+  contractRef: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>,
+  outcomeType: string,
+  ante: number,
+  answers?: string[]
+) {
   if (
     outcomeType === 'BINARY' ||
     outcomeType === 'PSEUDO_NUMERIC' ||
@@ -408,83 +499,72 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     }
     await txnDoc.set(txn)
   }
-
-  return contract
 }
 
-function getDescriptionJson(
-  description?: string | JSONContent,
-  descriptionHtml?: string,
-  descriptionMarkdown?: string
-): JSONContent {
-  if (description) {
-    if (typeof description === 'string') {
-      return htmlToRichText(`<p>${description}</p>`)
-    } else {
-      return description
-    }
-  } else if (descriptionHtml) {
-    return htmlToRichText(descriptionHtml)
-  } else if (descriptionMarkdown) {
-    return htmlToRichText(marked.parse(descriptionMarkdown))
-  } else {
-    // Use a single empty space as the description
-    return htmlToRichText('<p> </p>')
-  }
-}
+/* Zod schema */
 
-const getSlug = async (trans: Transaction, question: string) => {
-  const proposedSlug = slugify(question)
+const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
+  z.intersection(
+    z.record(z.any()),
+    z.object({
+      type: z.string().optional(),
+      attrs: z.record(z.any()).optional(),
+      content: z.array(descSchema).optional(),
+      marks: z
+        .array(
+          z.intersection(
+            z.record(z.any()),
+            z.object({
+              type: z.string(),
+              attrs: z.record(z.any()).optional(),
+            })
+          )
+        )
+        .optional(),
+      text: z.string().optional(),
+    })
+  )
+)
 
-  const preexistingContract = await getContractFromSlug(trans, proposedSlug)
+const bodySchema = z.object({
+  question: z.string().min(1).max(MAX_QUESTION_LENGTH),
+  description: descSchema.or(z.string()).optional(),
+  descriptionHtml: z.string().optional(),
+  descriptionMarkdown: z.string().optional(),
+  tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
+  closeTime: z
+    .union([z.date(), z.number()])
+    .refine(
+      (date) => (typeof date === 'number' ? date : date.getTime()) > Date.now(),
+      'Close time must be in the future.'
+    )
+    .optional(),
+  outcomeType: z.enum(OUTCOME_TYPES),
+  groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+  visibility: z.enum(VISIBILITIES).optional(),
+  isTwitchContract: z.boolean().optional(),
+  utcOffset: z.number().optional(),
+})
 
-  return preexistingContract
-    ? proposedSlug + '-' + randomString()
-    : proposedSlug
-}
+const binarySchema = z.object({
+  initialProb: z.number().min(1).max(99),
+})
 
-const firestore = admin.firestore()
+const finite = () =>
+  z.number().gte(Number.MIN_SAFE_INTEGER).lte(Number.MAX_SAFE_INTEGER)
 
-async function getContractFromSlug(trans: Transaction, slug: string) {
-  const contractsRef = firestore.collection('contracts')
-  const query = contractsRef.where('slug', '==', slug)
+const numericSchema = z.object({
+  min: finite(),
+  max: finite(),
+  initialValue: finite(),
+  isLogScale: z.boolean().optional(),
+})
 
-  const snap = await trans.get(query)
+const multipleChoiceSchema = z.object({
+  answers: z.string().trim().min(1).array().min(2),
+})
 
-  return snap.empty ? undefined : (snap.docs[0].data() as Contract)
-}
-
-async function createGroupLinks(
-  group: Group,
-  contractIds: string[],
-  userId: string
-) {
-  for (const contractId of contractIds) {
-    const contract = await getContract(contractId)
-    if (!contract?.groupSlugs?.includes(group.slug)) {
-      await firestore
-        .collection('contracts')
-        .doc(contractId)
-        .update({
-          groupSlugs: uniq([group.slug, ...(contract?.groupSlugs ?? [])]),
-        })
-    }
-    if (!contract?.groupLinks?.some((gl) => gl.groupId === group.id)) {
-      await firestore
-        .collection('contracts')
-        .doc(contractId)
-        .update({
-          groupLinks: [
-            {
-              groupId: group.id,
-              name: group.name,
-              slug: group.slug,
-              userId,
-              createdTime: Date.now(),
-            } as GroupLink,
-            ...(contract?.groupLinks ?? []),
-          ],
-        })
-    }
-  }
-}
+type schema = z.infer<typeof bodySchema> &
+  (z.infer<typeof binarySchema> | {}) &
+  (z.infer<typeof numericSchema> | {}) &
+  (z.infer<typeof multipleChoiceSchema> | {})
