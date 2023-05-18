@@ -286,7 +286,7 @@ export function ContractPageContent(props: {
         </Head>
       )}
 
-      <Row className="w-full items-start gap-8 self-center">
+      <Row className="w-full items-start justify-center gap-8">
         <Col
           className={clsx(
             'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
