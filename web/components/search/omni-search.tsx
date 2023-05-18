@@ -21,6 +21,7 @@ import { debounce, startCase, uniqBy } from 'lodash'
 import { ChevronRightIcon } from '@heroicons/react/outline'
 import { SORTS, Sort } from '../supabase-search'
 import { searchMarketSorts } from './query-market-sorts'
+import { Group } from 'common/group'
 
 export interface Option {
   id: string
@@ -134,7 +135,7 @@ const Results = (props: { query: string }) => {
   ] = useState({
     pageHits: [] as PageData[],
     userHits: [] as UserSearchResult[],
-    groupHits: [] as SearchGroupInfo[],
+    groupHits: [] as Group[],
     sortHit: null as { sort: Sort; markets: Contract[] } | null,
     marketHits: [] as Contract[],
   })
@@ -182,10 +183,11 @@ const Results = (props: { query: string }) => {
       if (thisNonce === nonce.current) {
         const pageHits = prefix ? [] : searchPages(search, 2)
         const uniqueMarketHits = uniqBy<Contract>(marketHits, 'id')
+        const uniqueGroupHits = uniqBy<Group>(groupHits, 'id')
         setSearchResults({
           pageHits,
           userHits,
-          groupHits,
+          groupHits: uniqueGroupHits,
           sortHit,
           marketHits: uniqueMarketHits,
         })
