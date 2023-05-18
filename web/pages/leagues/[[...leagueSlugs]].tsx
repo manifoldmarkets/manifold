@@ -123,7 +123,8 @@ export default function Leagues(props: { rows: league_user_info[] }) {
         divisionNum = +division
       } else {
         const divisionName = Object.keys(DIVISION_NAMES).find(
-          (key) => DIVISION_NAMES[key].toLowerCase() === division?.toLowerCase()
+          (key) =>
+            DIVISION_NAMES[key]?.toLowerCase() === division?.toLowerCase()
         )
         if (divisionName) divisionNum = +divisionName
       }
