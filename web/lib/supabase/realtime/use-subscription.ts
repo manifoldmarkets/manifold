@@ -1,15 +1,13 @@
-import { useEffect, useId, useMemo, useReducer, useRef } from 'react'
-import { RealtimeChannel } from '@supabase/realtime-js'
+import { useMemo, useReducer } from 'react'
 import { TableName, Row, run } from 'common/supabase/utils'
 import {
   Change,
   Filter,
   SubscriptionStatus,
-  applyChange,
-  buildFilterString,
+  applyChange
 } from 'common/supabase/realtime'
 import { useEvent } from 'web/hooks/use-event'
-import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
 import { db } from 'web/lib/supabase/db'
 
 async function fetchSnapshot<T extends TableName>(
@@ -85,12 +83,8 @@ export function useSubscription<T extends TableName>(
   filter?: Filter<T>
 ) {
   const initialState = { status: 'subscribing', pending: [] } as State<T>
-  const filterString = filter ? buildFilterString(filter) : undefined
-  const channelId = `${table}-${useId()}`
-  const channel = useRef<RealtimeChannel | undefined>()
   const reducer = useMemo(() => getReducer(table), [table])
   const [state, dispatch] = useReducer(reducer, initialState)
-  const isVisible = useIsPageVisible()
 
   const onChange = useEvent((change: Change<T>) => {
     dispatch({ type: 'RECEIVED_CHANGE', change })
@@ -119,31 +113,6 @@ export function useSubscription<T extends TableName>(
     }
   })
 
-  useEffect(() => {
-    if (isVisible) {
-      const opts = {
-        event: '*',
-        schema: 'public',
-        table,
-        filter: filterString,
-      } as const
-      const chan = (channel.current = db.channel(channelId))
-      chan
-        .on<Row<T>>('postgres_changes', opts, (change) => {
-          // if we got this change over a channel we have recycled, ignore it
-          if (channel.current === chan) {
-            onChange?.(change)
-          }
-        })
-        .subscribe((status, err) => {
-          onStatus?.(status, err)
-        })
-      return () => {
-        db.removeChannel(chan)
-        channel.current = undefined
-      }
-    }
-  }, [table, filterString, isVisible, onChange, onStatus])
-
-  return state.rows
+  useRealtimeChannel('*', table, filter, onChange, onStatus)
+  return state
 }
