@@ -20,14 +20,13 @@ export type NotificationGroup = {
   isSeen: boolean
 }
 const NOTIFICATIONS_KEY = 'notifications'
-function useNotifications(privateUser: PrivateUser | undefined | null) {
+function useNotifications(privateUser: PrivateUser) {
   const [notifications, setNotifications] = usePersistentLocalState<
     Notification[] | undefined
   >(undefined, NOTIFICATIONS_KEY)
   useEffect(() => {
-    if (!privateUser) return
     listenForNotifications(privateUser.id, setNotifications)
-  }, [privateUser?.id, setNotifications])
+  }, [privateUser.id, setNotifications])
 
   return notifications
 }
@@ -58,12 +57,12 @@ function useUnseenNotifications(privateUser: PrivateUser) {
         })
       }
     })
-  }, [privateUser.id, setUnseenNotifications])
+  }, [privateUser.id])
   return unseenNotifications
 }
 
 export function useGroupedNonBalanceChangeNotifications(
-  privateUser: PrivateUser | undefined | null
+  privateUser: PrivateUser
 ) {
   const notifications = useNotifications(privateUser) ?? []
   const balanceChangeOnlyReasons: NotificationReason[] = ['loan_income']
@@ -79,9 +78,7 @@ export function useGroupedNonBalanceChangeNotifications(
   }, [notifications])
 }
 
-export function useGroupedBalanceChangeNotifications(
-  privateUser: PrivateUser | undefined | null
-) {
+export function useGroupedBalanceChangeNotifications(privateUser: PrivateUser) {
   const notifications = useNotifications(privateUser) ?? []
   return useMemo(() => {
     return groupBalanceChangeNotifications(notifications)
