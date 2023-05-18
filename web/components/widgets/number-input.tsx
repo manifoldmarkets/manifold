@@ -7,14 +7,20 @@ import { Spacer } from '../layout/spacer'
 import { Input } from './input'
 
 export function NumberInput(props: {
-  isSubmitting?: boolean
-  onChange: (value?: number) => void
+  onChange: (value: number | undefined) => void
+  error?: string | undefined
+  disabled?: boolean
   placeholder?: string
+  className?: string
+  inputClassName?: string
+  // Needed to focus the amount input
+  inputRef?: React.MutableRefObject<any>
+  children?: ReactNode
 }) {
-  const { isSubmitting, placeholder } = props
+  const { error, disabled, placeholder, inputClassName, inputRef, children } =
+    props
 
   const [numberString, setNumberString] = useState('')
-
   const stringOnChange = (s: string) => {
     setNumberString(s)
 
@@ -29,40 +35,6 @@ export function NumberInput(props: {
   }
 
   return (
-    <BaseNumberInput
-      onChange={stringOnChange}
-      error={undefined}
-      disabled={isSubmitting}
-      numberString={numberString}
-      placeholder={placeholder}
-    />
-  )
-}
-
-function BaseNumberInput(props: {
-  numberString: string
-  onChange: (newNumberString: string) => void
-  error: string | undefined
-  disabled?: boolean
-  placeholder?: string
-  className?: string
-  inputClassName?: string
-  // Needed to focus the amount input
-  inputRef?: React.MutableRefObject<any>
-  children?: ReactNode
-}) {
-  const {
-    numberString,
-    onChange,
-    error,
-    disabled,
-    placeholder,
-    inputClassName,
-    inputRef,
-    children,
-  } = props
-
-  return (
     <Col>
       <Input
         className={clsx('!text-lg', inputClassName)}
@@ -75,7 +47,7 @@ function BaseNumberInput(props: {
         value={numberString}
         error={!!error}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => stringOnChange(e.target.value)}
       />
 
       <Spacer h={4} />

@@ -76,7 +76,7 @@ export function ProbabilityOrNumericInput(props: {
                 )
         )
       }
-      isSubmitting={isSubmitting}
+      disabled={isSubmitting}
       placeholder={placeholder}
     />
   ) : (

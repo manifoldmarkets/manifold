@@ -108,7 +108,7 @@ export function NumericResolutionPanel(props: {
       <Spacer h={4} />
 
       {outcomeMode === 'NUMBER' && (
-        <NumberInput isSubmitting={isSubmitting} onChange={setValue} />
+        <NumberInput disabled={isSubmitting} onChange={setValue} />
       )}
 
       <div className="flex items-center justify-between">
