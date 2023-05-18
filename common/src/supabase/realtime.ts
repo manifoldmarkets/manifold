@@ -1,12 +1,26 @@
 import { TableName, Row, Column } from 'common/supabase/utils'
 import {
-  RealtimePostgresChangesPayload,
+  RealtimePostgresInsertPayload,
+  RealtimePostgresUpdatePayload,
+  RealtimePostgresDeletePayload,
+  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
   REALTIME_SUBSCRIBE_STATES
 } from '@supabase/realtime-js'
 
+export type Insert<T extends TableName> = RealtimePostgresInsertPayload<Row<T>>
+export type Update<T extends TableName> = RealtimePostgresUpdatePayload<Row<T>>
+export type Delete<T extends TableName> = RealtimePostgresDeletePayload<Row<T>>
+export type Event = `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT}`
+export type EventChangeTypes<T extends TableName> = {
+  '*': Insert<T> | Update<T> | Delete<T>,
+  'INSERT': Insert<T>,
+  'UPDATE': Update<T>,
+  'DELETE': Delete<T>
+}
+export type Change<T extends TableName, E extends Event = '*'> = EventChangeTypes<T>[E]
+
 // we could support the other filters that realtime supports rather than just 'eq'
 export type Filter<T extends TableName> = { k: Column<T>; v: string | number }
-export type Change<T extends TableName> = RealtimePostgresChangesPayload<Row<T>>
 export type SubscriptionStatus = `${REALTIME_SUBSCRIBE_STATES}`
 
 // to work with realtime, the table needs a primary key we can use to identify

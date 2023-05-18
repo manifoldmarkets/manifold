@@ -5,7 +5,7 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { EMPTY_USER } from 'web/components/contract/contract-tabs'
 import { getBets, getTotalBetCount } from 'common/supabase/bets'
 import { Filter } from 'common/supabase/realtime'
-import { useLiveStream } from 'web/lib/supabase/realtime/use-live-stream'
+import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
 
 function getFilteredQuery(filteredParam: string, filterId?: string) {
   if (filteredParam === 'contractId' && filterId) {
@@ -24,8 +24,8 @@ export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
     }
   }
   const [oldBets, setOldBets] = useState<Bet[]>([])
-  const stream = useLiveStream('contract_bets', filteredQuery)
-  const newBets = stream
+  const rows = useRealtimeRows('contract_bets', filteredQuery)
+  const newBets = rows
     .map(r => r.data as Bet)
     .filter(b => !betShouldBeFiltered(b, options))
 

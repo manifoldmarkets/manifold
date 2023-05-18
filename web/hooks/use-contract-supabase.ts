@@ -10,7 +10,7 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
-import { useLiveStream } from 'web/lib/supabase/realtime/use-live-stream'
+import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
 
 export const usePublicContracts = (contractIds: string[] | undefined) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -67,8 +67,7 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
 
 export function useRealtimeContracts(limit: number) {
   const [oldContracts, setOldContracts] = useState<Contract[]>([])
-  const stream = useLiveStream('contracts')
-  const newContracts = stream.map(r => r.data as Contract)
+  const newContracts = useRealtimeRows('contracts').map(r => r.data as Contract)
 
   useEffect(() => {
     getPublicContracts({ limit, order: 'desc' })

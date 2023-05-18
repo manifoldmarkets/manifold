@@ -7,7 +7,7 @@ import { uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getAllComments } from 'common/supabase/comments'
 import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
-import { useLiveStream } from 'web/lib/supabase/realtime/use-live-stream'
+import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
 
 export function useComments(contractId: string, limit: number) {
   const [comments, setComments] = useState<Json[]>([])
@@ -77,8 +77,8 @@ export function useNumUserComments(userId: string) {
 
 export function useRealtimeComments(limit: number): Comment[] {
   const [oldComments, setOldComments] = useState<Comment[]>([])
-  const stream = useLiveStream('contract_comments')
-  const newComments = stream.map(r => r.data as Comment)
+  const rows = useRealtimeRows('contract_comments')
+  const newComments = rows.map(r => r.data as Comment)
 
   useEffect(() => {
     getComments(limit)
