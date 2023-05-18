@@ -1,4 +1,5 @@
 import * as dayjs from 'dayjs'
+import 'dayjs/plugin/utc'
 import * as admin from 'firebase-admin'
 import { Configuration, OpenAIApi } from 'openai'
 
