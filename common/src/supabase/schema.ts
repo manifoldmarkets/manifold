@@ -199,17 +199,17 @@ export interface Database {
         Row: {
           contract_id: string
           created_at: string
-          embedding: string
+          embedding: number[]
         }
         Insert: {
           contract_id: string
           created_at?: string
-          embedding: string
+          embedding: number[]
         }
         Update: {
           contract_id?: string
           created_at?: string
-          embedding?: string
+          embedding?: number[]
         }
       }
       contract_follows: {
@@ -581,7 +581,7 @@ export interface Database {
         Row: {
           cost_per_view: number
           created_at: string
-          embedding: string
+          embedding: number[]
           funds: number
           id: string
           market_id: string
@@ -590,7 +590,7 @@ export interface Database {
         Insert: {
           cost_per_view: number
           created_at?: string
-          embedding: string
+          embedding: number[]
           funds: number
           id?: string
           market_id: string
@@ -599,7 +599,7 @@ export interface Database {
         Update: {
           cost_per_view?: number
           created_at?: string
-          embedding?: string
+          embedding?: number[]
           funds?: number
           id?: string
           market_id?: string
@@ -618,7 +618,7 @@ export interface Database {
           source_id: string | null
           source_name: string | null
           title: string
-          title_embedding: string
+          title_embedding: number[]
           url: string
         }
         Insert: {
@@ -632,7 +632,7 @@ export interface Database {
           source_id?: string | null
           source_name?: string | null
           title: string
-          title_embedding: string
+          title_embedding: number[]
           url: string
         }
         Update: {
@@ -646,7 +646,7 @@ export interface Database {
           source_id?: string | null
           source_name?: string | null
           title?: string
-          title_embedding?: string
+          title_embedding?: number[]
           url?: string
         }
       }
@@ -809,17 +809,17 @@ export interface Database {
       topic_embeddings: {
         Row: {
           created_at: string
-          embedding: string
+          embedding: number[]
           topic: string
         }
         Insert: {
           created_at?: string
-          embedding: string
+          embedding: number[]
           topic: string
         }
         Update: {
           created_at?: string
-          embedding?: string
+          embedding?: number[]
           topic?: string
         }
       }
@@ -880,24 +880,24 @@ export interface Database {
       }
       user_embeddings: {
         Row: {
-          card_view_embedding: string | null
+          card_view_embedding: number[] | null
           created_at: string
-          interest_embedding: string
-          pre_signup_interest_embedding: string | null
+          interest_embedding: number[]
+          pre_signup_interest_embedding: number[] | null
           user_id: string
         }
         Insert: {
-          card_view_embedding?: string | null
+          card_view_embedding?: number[] | null
           created_at?: string
-          interest_embedding: string
-          pre_signup_interest_embedding?: string | null
+          interest_embedding: number[]
+          pre_signup_interest_embedding?: number[] | null
           user_id: string
         }
         Update: {
-          card_view_embedding?: string | null
+          card_view_embedding?: number[] | null
           created_at?: string
-          interest_embedding?: string
-          pre_signup_interest_embedding?: string | null
+          interest_embedding?: number[]
+          pre_signup_interest_embedding?: number[] | null
           user_id?: string
         }
       }
@@ -1094,19 +1094,19 @@ export interface Database {
       user_topics: {
         Row: {
           created_at: string
-          topic_embedding: string
+          topic_embedding: number[]
           topics: string[]
           user_id: string
         }
         Insert: {
           created_at?: string
-          topic_embedding: string
+          topic_embedding: number[]
           topics: string[]
           user_id: string
         }
         Update: {
           created_at?: string
-          topic_embedding?: string
+          topic_embedding?: number[]
           topics?: string[]
           user_id?: string
         }
@@ -1896,7 +1896,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database["public"]["CompositeTypes"]["table_spec"]
+        Returns: Database['public']['CompositeTypes']['table_spec']
       }
       get_engaged_users: {
         Args: Record<PropertyKey, never>
@@ -1991,7 +1991,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from: {
         Args: {
           uid: string
-          p_embedding: string
+          p_embedding: number[]
           n: number
           excluded_contract_ids: string[]
           max_dist: number
@@ -2006,7 +2006,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from_fast: {
         Args: {
           uid: string
-          p_embedding: string
+          p_embedding: number[]
           n: number
           excluded_contract_ids: string[]
         }
@@ -2020,7 +2020,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from_ian: {
         Args: {
           uid: string
-          p_embedding: string
+          p_embedding: number[]
           n: number
           excluded_contract_ids: string[]
           max_dist: number
@@ -2035,7 +2035,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from_using_comments: {
         Args: {
           uid: string
-          p_embedding: string
+          p_embedding: number[]
           n: number
           excluded_contract_ids: string[]
           max_dist: number
@@ -2050,7 +2050,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from_using_only_comments: {
         Args: {
           uid: string
-          p_embedding: string
+          p_embedding: number[]
           n: number
           excluded_contract_ids: string[]
           max_dist: number
@@ -2067,7 +2067,7 @@ export interface Database {
         | {
             Args: {
               uid: string
-              p_embedding: string
+              p_embedding: number[]
               n: number
               excluded_contract_ids: string[]
               max_dist: number
@@ -2082,7 +2082,7 @@ export interface Database {
         | {
             Args: {
               uid: string
-              p_embedding: string
+              p_embedding: number[]
               n: number
               excluded_contract_ids: string[]
             }
@@ -2279,31 +2279,31 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
@@ -2333,7 +2333,7 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
@@ -2407,7 +2407,7 @@ export interface Database {
       }
       search_contract_embeddings: {
         Args: {
-          query_embedding: string
+          query_embedding: number[]
           similarity_threshold: number
           match_count: number
         }
@@ -2505,7 +2505,7 @@ export interface Database {
       }
       set_limit: {
         Args: {
-          "": number
+          '': number
         }
         Returns: number
       }
@@ -2515,7 +2515,7 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          "": string
+          '': string
         }
         Returns: unknown
       }
@@ -2552,7 +2552,7 @@ export interface Database {
       }
       to_jsonb: {
         Args: {
-          "": Json
+          '': Json
         }
         Returns: Json
       }
@@ -2571,37 +2571,37 @@ export interface Database {
           }
       vector_avg: {
         Args: {
-          "": number[]
+          '': number[]
         }
         Returns: string
       }
       vector_dims: {
         Args: {
-          "": string
+          '': string
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          "": string
+          '': string
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          "": string
+          '': string
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          "": string
+          '': string
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          "": unknown[]
+          '': unknown[]
         }
         Returns: number
       }
