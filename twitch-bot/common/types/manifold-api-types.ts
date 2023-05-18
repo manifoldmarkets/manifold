@@ -63,8 +63,8 @@ export type LiteUser = {
   };
 
   isBot: boolean;
-  isCore: boolean;
-  isChecked: boolean;
+  isAdmin: boolean;
+  isTrustworthy: boolean;
 
   isBannedFromPosting?: boolean;
   userDeleted?: boolean;

@@ -65,8 +65,8 @@ export function toLiteUser(user: User): LiteUser {
   } = user
 
   const isBot = BOT_USERNAMES.includes(username)
-  const isCore = CORE_USERNAMES.includes(username)
-  const isChecked = CHECK_USERNAMES.includes(username)
+  const isAdmin = CORE_USERNAMES.includes(username)
+  const isTrustworthy = CHECK_USERNAMES.includes(username)
 
   return removeUndefinedProps({
     id,
@@ -83,8 +83,8 @@ export function toLiteUser(user: User): LiteUser {
     totalDeposits,
     profitCached,
     isBot,
-    isCore,
-    isChecked,
+    isAdmin,
+    isTrustworthy,
     isBannedFromPosting,
     userDeleted,
     followerCountCached,
