@@ -33,9 +33,6 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 import { db } from 'web/lib/supabase/db'
 import { track } from 'web/lib/service/analytics'
-import { useRealtimeChats } from 'web/hooks/use-chats'
-import { ChatMessage } from 'common/chat-message'
-import { ChatMessageItem } from 'web/components/chat-message'
 import { useTracking } from 'web/hooks/use-tracking'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
@@ -78,7 +75,6 @@ export function ActivityLog(props: {
     privateUser?.blockedContractIds
   )
   const blockedUserIds = privateUser?.blockedUserIds ?? []
-  const chatMessages = useRealtimeChats(count)
 
   const rawBets = useRealtimeBets({
     limit: count * 3 + 20,
@@ -121,13 +117,11 @@ export function ActivityLog(props: {
 
   const items = sortBy(
     pill === 'all'
-      ? [...bets, ...comments, ...(newContracts ?? []), ...chatMessages]
+      ? [...bets, ...comments, ...(newContracts ?? [])]
       : pill === 'comments'
       ? comments
       : pill === 'trades'
       ? bets
-      : pill === 'chat'
-      ? chatMessages
       : newContracts ?? [],
     (i) => i.createdTime
   )
@@ -179,10 +173,6 @@ export function ActivityLog(props: {
         <Col className="border-ink-400 divide-ink-400 divide-y-[0.5px] rounded-sm border-[0.5px]">
           {groups.map(({ parentId, items }) => {
             const contract = contractsById[parentId] as Contract
-            if (contract === undefined) {
-              const chat = items[0] as ChatMessage
-              return <ChatMessageItem chat={chat} key={chat.id} user={user} />
-            }
 
             return (
               <Col
@@ -214,7 +204,7 @@ export function ActivityLog(props: {
   )
 }
 
-export type pill_options = 'all' | 'markets' | 'comments' | 'trades' | 'chat'
+export type pill_options = 'all' | 'markets' | 'comments' | 'trades'
 export const LivePillOptions = (props: {
   pill: pill_options
   setPill: (pill: pill_options) => void
@@ -255,13 +245,6 @@ export const LivePillOptions = (props: {
         xs
       >
         Trades
-      </PillButton>
-      <PillButton
-        selected={pill === 'chat'}
-        onSelect={() => selectPill('chat')}
-        xs
-      >
-        Chat
       </PillButton>
     </Row>
   )
