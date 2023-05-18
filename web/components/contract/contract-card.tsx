@@ -609,7 +609,7 @@ function ClaimButton(props: {
   return (
     <button
       className={clsx(
-        'border-ink-1000 rounded-full border bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-2 px-3 text-gray-900 transition-colors',
+        'rounded-lg bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-2.5 px-6 font-semibold text-gray-900 transition-colors',
         'hover:via-yellow-100 focus:via-yellow-100',
         'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
         className
