@@ -89,7 +89,7 @@ export const useRecentBets = (contractId: string, limit: number) => {
       contractId,
       limit,
       order: 'desc',
-    }).then((bets: Bet[]) => setBets(bets.reverse()))
+    }).then((bets) => setBets(bets.reverse()))
   }, [contractId, limit, setBets])
 
   return bets

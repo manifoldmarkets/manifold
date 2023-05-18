@@ -107,6 +107,7 @@ type JsonTypes = {
   contracts: Contract
   cotracts_rbac: Contract
   contract_bets: Bet
+  public_contract_bets: Bet
   groups: Group
   group_members: GroupMemberDoc
   group_contracts: GroupContractDoc
