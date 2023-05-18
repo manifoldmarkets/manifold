@@ -29,7 +29,7 @@ const interceptNewline = (callback: () => void) => {
 }
 
 const key = 'live-chat'
-const ChatInput = (props: {
+export const ChatInput = (props: {
   showChat: boolean
   setShowChat: (showChat: boolean) => void
 }) => {
@@ -110,5 +110,3 @@ const ChatInput = (props: {
     </Col>
   )
 }
-
-export default ChatInput

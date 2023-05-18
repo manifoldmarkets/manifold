@@ -34,7 +34,6 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { TopicSelector } from 'web/components/topic-selector'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import ChatInput from 'web/components/chat-input'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -160,16 +159,12 @@ const YourDailyUpdates = memo(function YourDailyUpdates(props: {
 const LiveSection = memo(function LiveSection(props: {
   pill: pill_options
   className?: string
-  showChat: boolean
-  setShowChat: (showChat: boolean) => void
 }) {
-  const { showChat, setShowChat } = props
   const { pill, className } = props
   return (
     <Col className={clsx('relative mt-4', className)}>
       <ActivityLog count={30} pill={pill} />
       <div className="from-canvas-50 pointer-events-none absolute bottom-0 h-5 w-full select-none bg-gradient-to-t to-transparent" />
-      <ChatInput setShowChat={setShowChat} showChat={showChat} />
     </Col>
   )
 })
@@ -201,10 +196,6 @@ const MainContent = () => {
     setIsLive(on)
     track('select live', { on })
   }
-  const [showChat, setShowChat] = usePersistentLocalState(
-    true,
-    'show-live-chat-input'
-  )
   return (
     <Col>
       <Row className="h-[48px] items-center justify-between">
@@ -219,19 +210,13 @@ const MainContent = () => {
         </Row>
       </Row>
       <YourFeedSection topic={topic} className={clsx(isLive ? 'hidden' : '')} />
-      {isLive && (
-        <LiveSection
-          showChat={showChat}
-          setShowChat={setShowChat}
-          pill={pill}
-        />
-      )}
+      {isLive && <LiveSection pill={pill} />}
       <button
         type="button"
         className={clsx(
           'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
           'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
-          isLive && showChat ? 'hidden' : 'bottom-[70px]'
+          isLive ? 'hidden' : 'bottom-[75px]'
         )}
         onClick={() => {
           Router.push('/create')

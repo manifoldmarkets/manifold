@@ -8,8 +8,6 @@ import {
   pill_options,
 } from 'web/components/activity-log'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import ChatInput from 'web/components/chat-input'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export default function LivePage() {
   useTracking('view live page')
@@ -18,10 +16,6 @@ export default function LivePage() {
     'all',
     'live-pill'
   )
-  const [showChat, setShowChat] = usePersistentLocalState(
-    true,
-    'show-live-chat-input'
-  )
   return (
     <Page>
       <Col className="gap-4 sm:px-4 sm:pb-4">
@@ -29,7 +23,6 @@ export default function LivePage() {
         <Col className="gap-4">
           <LivePillOptions pill={pill} setPill={setPill} />
           <ActivityLog count={30} pill={pill} />
-          <ChatInput setShowChat={setShowChat} showChat={showChat} />
         </Col>
       </Col>
     </Page>
