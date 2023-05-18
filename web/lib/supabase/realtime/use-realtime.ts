@@ -5,6 +5,7 @@ import {
   Change,
   Event,
   Filter,
+  SubscriptionStatus,
   buildFilterString,
 } from 'common/supabase/realtime'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
@@ -33,7 +34,8 @@ export function useRealtimeChannel<T extends TableName, E extends Event>(
   event: E,
   table: T,
   filter: Filter<T> | null | undefined,
-  callback: (change: Change<T, E>) => void
+  onChange: (change: Change<T, E>) => void,
+  onStatus?: (status: SubscriptionStatus, err?: Error) => void
 ) {
   const filterString = filter ? buildFilterString(filter) : undefined
   const channelId = `${table}-${useId()}`
@@ -53,12 +55,16 @@ export function useRealtimeChannel<T extends TableName, E extends Event>(
         .on<Row<T>>('postgres_changes', opts as any, (change) => {
           // if we got this change over a channel we have recycled, ignore it
           if (channel.current === chan) {
-            callback(change as any)
+            onChange(change as any)
           }
         })
-        .subscribe((_status, err) => {
-          if (err) {
-            console.error(err)
+        .subscribe((status, err) => {
+          if (onStatus != null) {
+            onStatus(status, err)
+          } else {
+            if (err != null) {
+              console.error(err)
+            }
           }
         })
       return () => {
