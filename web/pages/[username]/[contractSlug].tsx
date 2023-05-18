@@ -65,6 +65,7 @@ import { User } from 'common/user'
 import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
 import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import { ContractView } from 'common/events'
+import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 
 export type ContractParameters = {
   contractSlug: string
@@ -309,6 +310,10 @@ export function ContractPageContent(props: {
                   src={coverImageUrl}
                   priority={true}
                 />
+                <ChangeBannerButton
+                  contract={contract}
+                  className="absolute top-12 right-4"
+                />
               </div>
             )}
             <div
@@ -319,11 +324,19 @@ export function ContractPageContent(props: {
             >
               <div className="mr-4 flex items-center truncate">
                 <BackButton />
+
                 {headerStuck && (
                   <span className="ml-4 text-white">{contract.question}</span>
                 )}
               </div>
-              <ExtraContractActionsRow contract={contract} />
+              <ExtraContractActionsRow contract={contract}>
+                {!headerStuck && !coverImageUrl && isCreator && (
+                  <ChangeBannerButton
+                    contract={contract}
+                    className="ml-3 first:ml-0"
+                  />
+                )}
+              </ExtraContractActionsRow>
             </div>
           </div>
 
