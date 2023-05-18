@@ -4,7 +4,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ClockIcon, StarIcon, UserIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
-
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { Col } from '../layout/col'
@@ -269,24 +268,6 @@ function DescriptionRow(props: { description: string | JSONContent }) {
     </Row>
   )
 }
-
-export const ContractCardWithPosition = memo(function ContractCardWithPosition(
-  props: {
-    contract: CPMMContract
-    showDailyProfit?: boolean
-  } & Parameters<typeof ContractCard>[0]
-) {
-  const { contract, showDailyProfit, ...contractCardProps } = props
-
-  return (
-    <ContractCard contract={contract} {...contractCardProps}>
-      <ContractMetricsFooter
-        contract={contract}
-        showDailyProfit={showDailyProfit}
-      />
-    </ContractCard>
-  )
-})
 
 export function ContractMetricsFooter(props: {
   contract: CPMMContract
