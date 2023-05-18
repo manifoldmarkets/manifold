@@ -79,10 +79,9 @@ const getReducer =
 
 export function useSubscription<T extends TableName>(
   table: T,
-  filter?: Filter<T>,
-  preload?: Row<T>[]
+  filter?: Filter<T>
 ) {
-  const initialState = { status: 'subscribing', rows: preload, pending: [] } as State<T>
+  const initialState = { status: 'subscribing', pending: [] } as State<T>
   const filterString = filter ? buildFilterString(filter) : undefined
   const channelId = `${table}-${useId()}`
   const channel = useRef<RealtimeChannel | undefined>()
