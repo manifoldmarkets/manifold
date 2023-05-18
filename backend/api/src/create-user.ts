@@ -16,6 +16,7 @@ import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-url
 import { getStorage } from 'firebase-admin/storage'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
+import { RESERVED_PATHS } from 'common/envs/constants'
 import { isProd } from 'shared/utils'
 import {
   getAverageContractEmbedding,
@@ -59,7 +60,8 @@ export const createuser = authEndpoint(async (req, auth) => {
   let username = cleanUsername(name)
 
   const sameNameUser = await getUserByUsername(username)
-  if (sameNameUser) {
+  const reservedName = RESERVED_PATHS.includes(username)
+  if (sameNameUser || reservedName) {
     username += randomString(4)
   }
 
