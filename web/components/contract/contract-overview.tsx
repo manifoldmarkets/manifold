@@ -6,22 +6,18 @@ import {
   BinaryContract,
   CPMMStonkContract,
   Contract,
-  FreeResponseContract,
-  MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
 } from 'common/contract'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import {
   BinaryContractChart,
-  ChoiceContractChart,
   NumericContractChart,
   PseudoNumericContractChart,
 } from 'web/components/charts/contract'
 import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
 import {
   BinaryResolutionOrChance,
-  FreeResponseResolution,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
