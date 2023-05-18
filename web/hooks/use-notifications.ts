@@ -10,12 +10,9 @@ import {
   listenForNotifications,
   listenForUnseenNotifications,
 } from 'web/lib/firebase/notifications'
-import {
-  inMemoryStore,
-  storageStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
+
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export type NotificationGroup = {
   notifications: Notification[]
@@ -24,12 +21,9 @@ export type NotificationGroup = {
 }
 const NOTIFICATIONS_KEY = 'notifications'
 function useNotifications(privateUser: PrivateUser) {
-  const [notifications, setNotifications] = usePersistentState<
+  const [notifications, setNotifications] = usePersistentLocalState<
     Notification[] | undefined
-  >(undefined, {
-    key: NOTIFICATIONS_KEY,
-    store: storageStore(safeLocalStorage),
-  })
+  >(undefined, NOTIFICATIONS_KEY)
   useEffect(() => {
     listenForNotifications(privateUser.id, setNotifications)
   }, [privateUser.id, setNotifications])
@@ -38,21 +32,17 @@ function useNotifications(privateUser: PrivateUser) {
 }
 
 function useUnseenNotifications(privateUser: PrivateUser) {
-  const [unseenNotifications, setUnseenNotifications] = usePersistentState<
-    Notification[] | undefined
-  >(undefined, {
-    key: 'unseen-notifications',
-    store: inMemoryStore(),
-  })
+  const [unseenNotifications, setUnseenNotifications] =
+    usePersistentInMemoryState<Notification[] | undefined>(
+      undefined,
+      'unseen-notifications'
+    )
   // We also tack on the unseen notifications to the notifications state so that
   // when you navigate to the notifications page, you see the new ones immediately
-  const [_, setNotifications] = usePersistentState<Notification[] | undefined>(
-    undefined,
-    {
-      key: NOTIFICATIONS_KEY,
-      store: storageStore(safeLocalStorage),
-    }
-  )
+  const [_, setNotifications] = usePersistentLocalState<
+    Notification[] | undefined
+  >(undefined, NOTIFICATIONS_KEY)
+
   useEffect(() => {
     listenForUnseenNotifications(privateUser.id, (unseenNotifications) => {
       setUnseenNotifications(unseenNotifications)
@@ -67,7 +57,7 @@ function useUnseenNotifications(privateUser: PrivateUser) {
         })
       }
     })
-  }, [privateUser.id, setUnseenNotifications])
+  }, [privateUser.id])
   return unseenNotifications
 }
 

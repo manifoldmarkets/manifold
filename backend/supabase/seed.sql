@@ -45,8 +45,10 @@ create table if not exists
   users (
     id text not null primary key,
     data jsonb not null,
-    fs_updated_time timestamp not null
+    fs_updated_time timestamp not null,
+    name_username_vector tsvector generated always as (to_tsvector((data->>'username') || ' ' || (data->>'name'))) stored
   );
+
 
 alter table users enable row level security;
 
@@ -62,6 +64,8 @@ create index if not exists users_data_gin on users using GIN (data);
 create index if not exists users_name_gin on users using GIN ((data ->> 'name') gin_trgm_ops);
 
 create index if not exists users_username_gin on users using GIN ((data ->> 'username') gin_trgm_ops);
+
+create index users_name_username_vector_idx on users using gin(name_username_vector);
 
 create index if not exists users_follower_count_cached on users ((to_jsonb(data -> 'followerCountCached')) desc);
 
@@ -212,7 +216,7 @@ where
   name = 'Skip ad';
 
 create index if not exists user_events_comment_view on user_events (user_id, name, comment_id);
-
+-- TODO: drop this after PR merge
 create index if not exists user_events_viewed_markets on user_events (user_id, name, contract_id, ts desc)
 where
   name = 'view market'
@@ -227,7 +231,10 @@ create table if not exists
     contract_id text not null,
     data jsonb not null,
     fs_updated_time timestamp not null,
-    primary key (user_id, contract_id)
+    created_time timestamptz not null default now(),
+    -- so far we have: 'view market' or 'view market card'
+    type text not null default 'view market',
+    primary key (user_id, contract_id, created_time)
   );
 
 alter table user_seen_markets enable row level security;
@@ -237,6 +244,12 @@ drop policy if exists "public read" on user_seen_markets;
 create policy "public read" on user_seen_markets for
 select
   using (true);
+
+drop policy if exists "user can insert" on user_seen_markets;
+create policy "user can insert" on user_seen_markets for insert with check (true)
+
+create index if not exists user_seen_markets_created_time_desc_idx
+  on user_seen_markets (user_id, contract_id, created_time desc);
 
 create index if not exists user_seen_markets_data_gin on user_seen_markets using GIN (data);
 
@@ -317,9 +330,9 @@ CREATE INDEX idx_contracts_close_time_resolution_time_visibility
   ON contracts (close_time, resolution_time, visibility);
 
 -- for the ilike search TODO: remove this after PR merge
-create index concurrently if not exists contracts_question_trgm_idx on contracts using gin (question gin_trgm_ops);
+create index if not exists contracts_question_trgm_idx on contracts using gin (question gin_trgm_ops);
 
-create index concurrently if not exists question_nostop_fts on contracts  using gin (question_nostop_fts);
+create index if not exists question_nostop_fts on contracts  using gin (question_nostop_fts);
 
 alter table contracts
 cluster on contracts_creator_id;
@@ -449,6 +462,9 @@ create index if not exists contract_bets_activity_feed on contract_bets (is_ante
 
 /* serving e.g. the contract page recent bets and the "bets by contract" API */
 create index if not exists contract_bets_created_time on contract_bets (contract_id, created_time desc);
+
+/* serving update contract metrics*/
+create index if not exists contract_bets_created_time_asc ON contract_bets (contract_id, created_time);
 
 /* serving "my trades on a contract" kind of queries */
 create index if not exists contract_bets_contract_user_id on contract_bets (contract_id, user_id, created_time desc);
@@ -613,7 +629,9 @@ create table if not exists
     privacy_status text,
     slug text,
     name text,
+    name_fts tsvector generated always as (to_tsvector('english'::regconfig, name)) stored,
     creator_id text;
+    total_members numeric;
   );
 
 alter table groups enable row level security;
@@ -669,7 +687,7 @@ select
   using (true);
 
 create index if not exists group_members_data_gin on group_members using GIN (data);
-
+create index  group_members_member_id_idx on group_members (member_id);
 alter table group_members
 cluster on group_members_pkey;
 
@@ -712,6 +730,9 @@ create index if not exists txns_data_gin on txns using GIN (data);
 
 alter table txns
 cluster on txns_pkey;
+
+-- for querying top market_ads
+create index if not exists txns_category on txns ((data ->> 'category'), (data ->> 'to_id'));
 
 create table if not exists
   manalinks (
@@ -929,6 +950,16 @@ create table if not exists
 
 alter table user_topics enable row level security;
 
+drop policy if exists "public read" on user_topics;
+
+create policy "public read" on user_topics for
+select
+  using (true);
+
+drop policy if exists "public write access" on user_topics;
+
+create policy "public write access" on user_topics for all using (true);
+
 create table if not exists
   market_ads (
     id text not null primary key default uuid_generate_v4 (),
@@ -942,15 +973,19 @@ create table if not exists
     constraint market_ads_market_id_unique unique (market_id)
   );
 
-drop policy if exists "public read" on user_topics;
+alter table market_ads enable row level security;
 
-create policy "public read" on user_topics for
+drop policy if exists "public read" on market_ads;
+
+create policy "public read" on market_ads for
 select
   using (true);
 
-drop policy if exists "public write access" on user_topics;
+drop policy if exists "admin write access" on market_ads;
 
-create policy "public write access" on user_topics for all using (true);
+create policy "admin write access" on market_ads as PERMISSIVE for all to service_role;
+
+
 
 create table if not exists
   leagues (
@@ -960,6 +995,7 @@ create table if not exists
     cohort text not null, -- id of cohort (group of competing users). Unique across seasons.
     mana_earned numeric not null default 0.0,
     mana_earned_breakdown jsonb not null default '{}'::jsonb, -- Key is category, value is total mana earned in that category
+    rank_snapshot int;
     created_time timestamp not null default now(),
     unique (user_id, season)
   );
@@ -1094,7 +1130,7 @@ begin
            when 'user_follows' then cast(('user_id', 'follow_id') as table_spec)
            when 'user_notifications' then cast(('user_id', 'notification_id') as table_spec)
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
-           when 'user_seen_markets' then cast(('user_id', 'contract_id') as table_spec)
+           when 'user_seen_markets' then cast(('user_id', 'contract_id', 'created_time') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)
            when 'contract_bets' then cast(('contract_id', 'bet_id') as table_spec)
@@ -1311,3 +1347,31 @@ CREATE TEXT SEARCH CONFIGURATION public.english_nostop_with_prefix (COPY = engli
 ALTER TEXT SEARCH CONFIGURATION public.english_nostop_with_prefix
   ALTER MAPPING FOR asciiword, asciihword, hword_asciipart, hword, hword_part, word
     WITH english_stem_nostop, english_prefix;
+
+
+
+
+
+
+create table if not exists
+  news (
+    id serial primary key,
+    created_time timestamp not null default now(),
+
+    title text not null,
+    url text not null,
+    published_time timestamp not null,
+    author text,
+    description text,
+    image_url text,
+    source_id text,
+    source_name text,
+
+    title_embedding vector (1536) not null,
+    contract_ids text[] not null
+  );
+alter table news enable row level security;
+drop policy if exists "public read" on news;
+create policy "public read" on news for
+select
+  using (true);

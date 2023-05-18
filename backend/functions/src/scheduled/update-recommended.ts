@@ -97,23 +97,12 @@ export const loadUserDataForRecommendations = async (
     )
   )
 
-  const swipedIds = Object.fromEntries(
-    await pg.map(
-      `select user_id, array_agg(contract_id) as contract_ids
-      from user_seen_markets
-      group by user_id`,
-      [],
-      (r) => [r.user_id as string, r.contract_ids as string[]]
-    )
-  )
-
   const viewedIds = await pg.manyOrNone(
     `select
-      user_id, name as event_name,
+      user_id, type as event_name,
       array_agg(distinct contract_id) as contract_ids
-    from user_events
-    where name = 'view market' or name = 'view market card'
-    group by user_id, name`
+    from user_seen_markets
+    group by user_id, type`
   )
   const viewedIdsByEvent = groupBy(viewedIds, (r) => r.event_name)
   const viewedCardIds = Object.fromEntries(
@@ -153,7 +142,6 @@ export const loadUserDataForRecommendations = async (
   return uids.map((userId) => ({
     userId,
     betOnIds: betOnIds[userId] ?? [],
-    swipedIds: swipedIds[userId] ?? [],
     viewedCardIds: viewedCardIds[userId] ?? [],
     viewedPageIds: viewedPageIds[userId] ?? [],
     likedIds: likedIds[userId] ?? [],

@@ -1,9 +1,16 @@
 import { safeJsonParse } from 'common/util/json'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { isFunction } from 'web/hooks/use-persistent-in-memory-state'
+import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
+import { useEvent } from 'web/hooks/use-event'
+import { useIsClient } from 'web/hooks/use-is-client'
 
 export const usePersistentLocalState = <T>(initialValue: T, key: string) => {
-  const [state, setState] = useState<T>(initialValue)
+  const isClient = useIsClient()
+  const [state, setState] = useStateCheckEquality<T>(
+    (isClient && safeJsonParse(safeLocalStorage?.getItem(key))) || initialValue
+  )
 
   useEffect(() => {
     const storedJson = safeJsonParse(safeLocalStorage?.getItem(key))
@@ -11,10 +18,13 @@ export const usePersistentLocalState = <T>(initialValue: T, key: string) => {
     setState(storedValue as T)
   }, [key])
 
-  const saveState = (newState: T) => {
-    setState(newState)
-    safeLocalStorage?.setItem(key, JSON.stringify(newState))
-  }
+  const saveState = useEvent((newState: T | ((prevState: T) => T)) => {
+    setState((prevState: T) => {
+      const updatedState = isFunction(newState) ? newState(prevState) : newState
+      safeLocalStorage?.setItem(key, JSON.stringify(newState))
+      return updatedState
+    })
+  })
 
   return [state, saveState] as const
 }

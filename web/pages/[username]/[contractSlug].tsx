@@ -64,6 +64,7 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { User } from 'common/user'
 import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
 import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
+import { ContractView } from 'common/events'
 
 export type ContractParameters = {
   contractSlug: string
@@ -183,7 +184,7 @@ export function ContractPageContent(props: {
       slug: contract.slug,
       contractId: contract.id,
       creatorId: contract.creatorId,
-    },
+    } as ContractView,
     true
   )
   useSaveContractVisitsLocally(user === null, contract.id)
@@ -330,7 +331,7 @@ export function ContractPageContent(props: {
             <Col className="gap-3 sm:gap-4">
               <div ref={titleRef}>
                 <Linkify
-                  className="text-primary-700 text-lg sm:text-2xl"
+                  className="text-primary-700 text-lg font-medium sm:text-2xl"
                   text={contract.question}
                 />
               </div>

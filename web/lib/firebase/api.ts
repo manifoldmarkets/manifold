@@ -5,7 +5,7 @@ import { QfAnswerReq } from 'web/pages/api/v0/qf/answer'
 import { QfPayReq } from 'web/pages/api/v0/qf/pay'
 import { QfAddPoolReq } from 'web/pages/api/v0/qf/add-pool'
 import { QfResolveReq } from 'web/pages/api/v0/qf/resolve'
-import { PrivacyStatusType } from 'common/group'
+import { Group, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
 export { APIError } from 'common/api'
@@ -328,6 +328,20 @@ export function joinGroupThroughInvite(params: { inviteId: string }) {
 
 export function joinGroup(params: { groupId: string }) {
   return call(getApiUrl('joingroup'), 'POST', params)
+}
+
+export function supabaseSearchGroups(params: {
+  term: string
+  offset: number
+  limit: number
+  fuzzy?: boolean
+  yourGroups?: boolean
+}) {
+  return maybeAuthedCall(
+    getApiUrl('supabasesearchgroups'),
+    'POST',
+    params
+  ) as Promise<Group[]>
 }
 
 export function leagueActivity(params: { season: number; cohort: string }) {

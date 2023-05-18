@@ -235,7 +235,7 @@ export function OrderBookButton(props: {
         size="xs"
         color="indigo"
       >
-        {limitBets.length} orders
+        View {limitBets.length} order{limitBets.length === 1 ? '' : 's'}
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">

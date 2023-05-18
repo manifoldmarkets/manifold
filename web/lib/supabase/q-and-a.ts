@@ -53,7 +53,7 @@ export const useQAndA = () => {
   }))
   const answers: q_and_a_answer[] = (answersData?.data ?? []).map((a) => ({
     ...a,
-    amount: +a.amount,
+    award: +a.award,
     created_time: new Date(a.created_time).getTime(),
   }))
 

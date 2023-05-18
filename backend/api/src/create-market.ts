@@ -86,6 +86,7 @@ const bodySchema = z.object({
   groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
   visibility: z.enum(VISIBILITIES).optional(),
   isTwitchContract: z.boolean().optional(),
+  utcOffset: z.number().optional(),
 })
 
 const binarySchema = z.object({
@@ -127,6 +128,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     groupId,
     visibility = 'public',
     isTwitchContract,
+    utcOffset,
   } = validate(bodySchema, body)
 
   let min, max, initialProb, isLogScale, answers
@@ -273,7 +275,8 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       ? closeTime
       : closeTime.getTime()
     : // Use AI to get date, default to one week after now if failure
-      (await getCloseDate(question)) ?? Date.now() + 7 * 24 * 60 * 60 * 1000
+      (await getCloseDate(question, utcOffset)) ??
+      Date.now() + 7 * 24 * 60 * 60 * 1000
 
   const contract = getNewContract(
     contractRef.id,

@@ -36,6 +36,7 @@ import { track } from 'web/lib/service/analytics'
 import { useRealtimeChats } from 'web/hooks/use-chats'
 import { ChatMessage } from 'common/chat-message'
 import { ChatMessageItem } from 'web/components/chat-message'
+import { useTracking } from 'web/hooks/use-tracking'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
@@ -45,6 +46,8 @@ export function ActivityLog(props: {
   rightPanel?: ReactNode
   className?: string
 }) {
+  useTracking('view live feed')
+
   const { count, pill, className } = props
 
   const privateUser = usePrivateUser()

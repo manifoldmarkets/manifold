@@ -1,10 +1,7 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { log } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { GroupInvite } from 'common/src/group-invite'
-import * as admin from 'firebase-admin'
-import { Group } from 'common/group'
 import { joinGroupHelper } from './join-group'
 
 const schema = z.object({
@@ -22,7 +19,7 @@ export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
   if (!invite) {
     throw new APIError(404, 'Group invite not found')
   }
-  if (!invite.is_forever && now >= invite.expire_time) {
+  if (!invite.is_forever && invite.expire_time && now >= invite.expire_time) {
     throw new APIError(404, 'This link has expired')
   }
   if (invite.is_max_uses_reached) {

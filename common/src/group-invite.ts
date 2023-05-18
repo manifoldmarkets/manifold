@@ -4,8 +4,8 @@ export type GroupInvite = {
   uses: number
   max_uses: number | null
   created_time: Date
-  duration: string
-  expire_time: Date
-  is_forever: boolean
-  is_max_uses_reached: boolean
+  duration: unknown
+  expire_time: Date | null
+  is_forever: boolean | null
+  is_max_uses_reached: boolean | null
 }

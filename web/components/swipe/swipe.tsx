@@ -26,12 +26,12 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { logView } from 'web/lib/firebase/views'
 import { track } from 'web/lib/service/analytics'
 import { placeBet } from 'web/lib/firebase/api'
 import { formatMoney } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { ContractCardView } from 'common/events'
 
 export function Swipe(props: { toggleView?: () => void }) {
   useTracking('view swipe page')
@@ -82,11 +82,14 @@ export function Swipe(props: { toggleView?: () => void }) {
 
   useEffect(() => {
     if (user && contract) {
-      console.log('log view')
-      logView({ contractId: contract.id, userId: user.id })
+      track('view market card', {
+        slug: contract.slug,
+        creatorId: contract.creatorId,
+        contractId: contract.id,
+      } as ContractCardView)
       setAmount(STARTING_BET_AMOUNT)
     }
-  }, [user, contract])
+  }, [user, contract?.id])
 
   useEffect(() => {
     postMessageToNative('onPageVisit', { page: 'swipe' })
@@ -154,7 +157,6 @@ export function Swipe(props: { toggleView?: () => void }) {
       { position: 'top-center' }
     )
 
-    if (user) logView({ amount, outcome, contractId, userId: user.id })
     track('swipe bet', {
       slug: contract.slug,
       contractId,

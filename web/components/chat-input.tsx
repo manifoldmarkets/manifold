@@ -11,7 +11,6 @@ import { Col } from 'web/components/layout/col'
 import { Extension } from '@tiptap/core'
 import { useEvent } from 'web/hooks/use-event'
 import { PaperAirplaneIcon, XIcon } from '@heroicons/react/solid'
-import { className } from 'gridjs'
 import { ChatIcon } from '@heroicons/react/outline'
 
 const interceptNewline = (callback: () => void) => {
@@ -67,12 +66,7 @@ const ChatInput = (props: {
   if (user?.isBannedFromPosting) return <></>
 
   return (
-    <Col
-      className={clsx(
-        'sticky bottom-14 w-full items-center justify-center py-2 shadow-md lg:bottom-0',
-        className
-      )}
-    >
+    <Col className="sticky bottom-14 w-full items-center justify-center py-2 shadow-md lg:bottom-0">
       <TextEditor
         editor={editor}
         simple

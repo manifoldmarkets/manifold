@@ -6,6 +6,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { getUser } from 'shared/utils'
 import { ChatMessage } from 'common/chat-message'
 import { createSupabaseClient } from 'shared/supabase/init'
+import { Json } from 'common/supabase/schema'
 
 export const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -50,7 +51,7 @@ export const createchatmessage = authEndpoint(async (req, auth) => {
     throw new APIError(400, 'User banned from chat.')
 
   const chatMessage = removeUndefinedProps({
-    content,
+    content: content as Json,
     channel_id: channelId,
     user_id: creator.id,
     user_name: creator.name,

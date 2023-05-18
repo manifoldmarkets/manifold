@@ -7,7 +7,7 @@ import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { ControlledTabs } from 'web/components/layout/tabs'
+import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { NotificationSettings } from 'web/components/notification-settings'
 import { combineAndSumIncomeNotifications } from 'web/components/notifications/income-summary-notifications'
 import {
@@ -42,15 +42,12 @@ export default function Notifications() {
   const privateUser = usePrivateUser()
   const router = useRouter()
   const [navigateToSection, setNavigateToSection] = useState<string>()
-  const [activeIndex, setActiveIndex] = useState(0)
   const { isNative } = getNativePlatform()
   useRedirectIfSignedOut()
 
   useEffect(() => {
+    if (!router.isReady) return
     const query = { ...router.query }
-    if (query.tab === 'settings') {
-      setActiveIndex(2)
-    }
     if (query.section) {
       setNavigateToSection(query.section as string)
     }
@@ -94,28 +91,13 @@ export default function Notifications() {
           )
         )}
 
-        {privateUser && router.isReady && (
-          <div className="relative h-full w-full">
-            <div className="relative">
-              <ControlledTabs
+        <div className="relative h-full w-full">
+          <div className="relative">
+            {privateUser && router.isReady && (
+              <QueryUncontrolledTabs
                 currentPageForAnalytics={'notifications'}
                 labelClassName={'pb-2 pt-1 '}
                 className={'mb-0 sm:mb-2'}
-                activeIndex={activeIndex}
-                onClick={(title, i) => {
-                  router.replace(
-                    {
-                      query: {
-                        ...router.query,
-                        tab: title.toLowerCase(),
-                        section: '',
-                      },
-                    },
-                    undefined,
-                    { shallow: true }
-                  )
-                  setActiveIndex(i)
-                }}
                 tabs={[
                   {
                     title: 'Notifications',
@@ -136,9 +118,9 @@ export default function Notifications() {
                   },
                 ]}
               />
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </Col>
     </Page>
   )
@@ -184,8 +166,7 @@ function RenderNotificationGroups(props: {
           itemsPerPage={NOTIFICATIONS_PER_PAGE}
           totalItems={totalItems}
           setPage={setPage}
-          scrollToTop
-          // We can't save page to query without more work bc the two tabs have different page states.
+          savePageToQuery={true}
         />
       )}
     </>
@@ -223,12 +204,14 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
           see more.
         </div>
       )}
-      <PushNotificationsModal
-        privateUser={privateUser}
-        totalNotifications={
-          groupedNotifications.map((ng) => ng.notifications).flat().length
-        }
-      />
+      {privateUser && (
+        <PushNotificationsModal
+          privateUser={privateUser}
+          totalNotifications={
+            groupedNotifications.map((ng) => ng.notifications).flat().length
+          }
+        />
+      )}
 
       <RenderNotificationGroups
         notificationGroups={paginatedGroupedNotifications}

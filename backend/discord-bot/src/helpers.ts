@@ -229,7 +229,9 @@ const getOrCreateThread = async (
   const name = marketName.slice(0, 40) + '-' + randomString(5)
   if (discordMessageIdsToThreads[messageId])
     return discordMessageIdsToThreads[messageId]
-  if (threadId) {
+  else if (channel.isThread()) {
+    return channel
+  } else if (threadId) {
     await channel.threads.fetch({}, { cache: true })
     const thread = channel.threads.cache.find((t) => t.id === threadId)
     if (thread) return thread

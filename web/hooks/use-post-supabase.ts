@@ -1,52 +1,13 @@
 import { Post } from 'common/post'
 import { useEffect, useState } from 'react'
-import { db } from 'web/lib/supabase/db'
 import { getPost } from 'web/lib/supabase/post'
+import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
 export function useRealtimePost(postId?: string) {
-  const [post, setPost] = useState<Post | null>(null)
-  function fetchPost() {
-    if (postId) {
-      getPost(postId)
-        .then((result) => {
-          setPost(result)
-        })
-        .catch((e) => console.log(e))
-    }
-  }
-
-  useEffect(() => {
-    fetchPost()
-  }, [postId])
-
-  useEffect(() => {
-    if (postId) {
-      const channel = db.channel('post-realtime')
-      channel.on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'posts',
-          filter: `id=eq.${postId}`,
-        },
-        (payload) => {
-          console.log(payload)
-          if (payload.eventType === 'UPDATE') {
-            setPost(payload.new.data)
-          }
-          if (payload.eventType === 'DELETE') {
-            setPost(null)
-          }
-        }
-      )
-      channel.subscribe(async (status) => {})
-      return () => {
-        db.removeChannel(channel)
-      }
-    }
-  }, [db, postId])
-  return post
+  // mqp: the posts components are weird and it's hard to refactor them
+  // in a way that only calls this hook when there's a real post to subscribe to
+  const posts = useSubscription('posts', { k: 'id', v: postId ?? '_' })
+  return posts != null && posts.length > 0 ? (posts[0].data as Post) : undefined
 }
 
 export function usePost(postId?: string) {

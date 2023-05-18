@@ -5,6 +5,7 @@ or replace function group_populate_cols () returns trigger language plpgsql as $
     new.slug := (new.data)->>'slug';
     new.name := (new.data)->>'name';
     new.creator_id := (new.data)->>'creatorId';
+    new.total_members := (new.data)->>'totalMembers';
     end if;
     return new;
 end $$;

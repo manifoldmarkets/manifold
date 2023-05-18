@@ -1,4 +1,5 @@
 import * as dayjs from 'dayjs'
+import 'dayjs/plugin/utc'
 import * as admin from 'firebase-admin'
 import { Configuration, OpenAIApi } from 'openai'
 
@@ -76,16 +77,16 @@ export const getGroupForMarket = async (question: string) => {
   )
 }
 
-export const getCloseDate = async (question: string) => {
+export const getCloseDate = async (question: string, utcOffset?: number) => {
   if (!openai) openai = initOpenAIApi()
 
-  const now = dayjs().format('M/D/YYYY h:mm a')
+  const now = dayjs.utc().format('M/D/YYYY h:mm a')
 
   let response
   try {
     response = await openai.createCompletion({
       model: 'text-davinci-003',
-      prompt: `Question: Will an AI-drawn movie have a rating >=7.0 on IMDB before 2025?\nNow: 5/2/2019 3:47 pm\nEnd date: 12/31/2025 11:59 pm\n\nQuestion: Will Bolsanaro concede the election by Nov 15?\nNow: 8/5/2022 1:20 pm\nEnd date: 11/14/2022 11:59 pm\n\nQuestion: Will Dwarf Fortress be released on Steam this year?\nNow: 2/5/2023 11:24 am\nEnd date: 12/31/2023 11:59 pm\n\nQuestion: Will eat ice cream today?\nNow: 10/2/2022 5:55 pm\nEnd date: 10/2/2022 11:59 pm\n\nQuestion: ${question}\nNow: ${now}\nEnd date:`,
+      prompt: `Question: Will I finish the task by 2027?\nNow: 5/2/2026 12:11 pm\nEnd date: 12/31/2026 11:59 pm\n\nQuestion: Will an AI-drawn movie have a rating >=7.0 on IMDB before 2025?\nNow: 5/2/2019 3:47 pm\nEnd date: 12/31/2024 11:59 pm\n\nQuestion: Will Bolsanaro concede the election by Nov 15?\nNow: 8/5/2022 1:20 pm\nEnd date: 11/14/2022 11:59 pm\n\nQuestion: Will Dwarf Fortress be released on Steam this year?\nNow: 2/5/2023 11:24 am\nEnd date: 12/31/2023 11:59 pm\n\nQuestion: Will eat ice cream today?\nNow: 10/2/2022 5:55 pm\nEnd date: 10/2/2022 11:59 pm\n\nQuestion: ${question}\nNow: ${now}\nEnd date:`,
       temperature: 0.4,
       max_tokens: 15,
       top_p: 1,
@@ -105,11 +106,21 @@ export const getCloseDate = async (question: string) => {
 
   const text = response.data.choices[0].text?.trim()
   if (!text) return undefined
-  console.log('AI-selected close date for question', question, ':', text)
+  console.log(
+    'AI-selected close date for question',
+    question,
+    ':',
+    text,
+    'utc offset',
+    utcOffset ?? 'none'
+  )
 
-  const timestamp = dayjs(text, 'M/D/YYYY h:mm a').valueOf()
+  const utcTime = dayjs.utc(text, 'M/D/YYYY h:mm a')
+  const timestamp = utcTime.valueOf()
+  if (!timestamp || !isFinite(timestamp)) return undefined
 
-  return !timestamp || !isFinite(timestamp) ? undefined : timestamp
+  // adjust for local timezone
+  return utcTime.utcOffset(utcOffset ?? 0).valueOf()
 }
 
 export const getImagePrompt = async (question: string) => {
