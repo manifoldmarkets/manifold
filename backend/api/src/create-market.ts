@@ -1,6 +1,6 @@
 import { JSONContent } from '@tiptap/core'
 import * as admin from 'firebase-admin'
-import { FieldValue } from 'firebase-admin/firestore'
+import { FieldValue, Transaction } from 'firebase-admin/firestore'
 import { uniq, zip } from 'lodash'
 import { z } from 'zod'
 
@@ -24,12 +24,7 @@ import {
   VISIBILITIES,
 } from 'common/contract'
 import { ANTES } from 'common/economy'
-import {
-  CHECK_USERNAMES,
-  isAdmin,
-  isManifoldId,
-  isTrustworthy,
-} from 'common/envs/constants'
+import { isAdmin, isManifoldId, isTrustworthy } from 'common/envs/constants'
 import { Group, GroupLink, MAX_ID_LENGTH } from 'common/group'
 import { getNewContract } from 'common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from 'common/numeric-constants'
@@ -131,15 +126,17 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     utcOffset,
   } = validate(bodySchema, body)
 
-  let min, max, initialProb, isLogScale, answers
+  let min: number,
+    max: number,
+    initialProb: number,
+    isLogScale: boolean | undefined,
+    answers: string[] | undefined
 
-  if (visibility == 'private') {
-    if (!groupId) {
-      throw new APIError(
-        400,
-        'Private markets cannot exist outside a private group.'
-      )
-    }
+  if (visibility == 'private' && !groupId) {
+    throw new APIError(
+      400,
+      'Private markets cannot exist outside a private group.'
+    )
   }
 
   if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
@@ -227,29 +224,18 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     }
   }
 
-  const slug = await getSlug(question)
   const contractRef = firestore.collection('contracts').doc()
 
-  // convert string descriptions into JSONContent
-  let descriptionJson = null
-  if (description) {
-    if (typeof description === 'string') {
-      descriptionJson = htmlToRichText(`<p>${description}</p>`)
-    } else {
-      descriptionJson = description
-    }
-  } else if (descriptionHtml) {
-    descriptionJson = htmlToRichText(descriptionHtml)
-  } else if (descriptionMarkdown) {
-    descriptionJson = htmlToRichText(marked.parse(descriptionMarkdown))
-  } else {
-    // Use a single empty space as the description
-    descriptionJson = htmlToRichText('<p> </p>')
-  }
-
+  const closeTimestamp = closeTime
+    ? typeof closeTime === 'number'
+      ? closeTime
+      : closeTime.getTime()
+    : // Use AI to get date, default to one week after now if failure
+      (await getCloseDate(question, utcOffset)) ??
+      Date.now() + 7 * 24 * 60 * 60 * 1000
   const ante = ANTES[outcomeType]
 
-  const user = await firestore.runTransaction(async (trans) => {
+  const { user, contract } = await firestore.runTransaction(async (trans) => {
     const userDoc = await trans.get(firestore.collection('users').doc(userId))
     if (!userDoc.exists)
       throw new APIError(400, 'No user exists with the authenticated user ID.')
@@ -262,43 +248,37 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     if (ante > user.balance)
       throw new APIError(400, `Balance must be at least ${ante}.`)
 
+    const slug = await getSlug(trans, question)
+
+    const contract = getNewContract(
+      contractRef.id,
+      slug,
+      user,
+      question,
+      outcomeType,
+      getDescriptionJson(description, descriptionHtml, descriptionMarkdown),
+      initialProb ?? 0,
+      ante,
+      closeTimestamp,
+      tags ?? [],
+      NUMERIC_BUCKET_COUNT,
+      min ?? 0,
+      max ?? 0,
+      isLogScale ?? false,
+      answers ?? [],
+      visibility,
+      isTwitchContract ? true : undefined
+    )
+
+    trans.create(contractRef, contract)
+
     trans.update(userDoc.ref, {
       balance: FieldValue.increment(-ante),
       totalDeposits: FieldValue.increment(-ante),
     })
 
-    return user
+    return { user, contract }
   })
-
-  const closeTimestamp = closeTime
-    ? typeof closeTime === 'number'
-      ? closeTime
-      : closeTime.getTime()
-    : // Use AI to get date, default to one week after now if failure
-      (await getCloseDate(question, utcOffset)) ??
-      Date.now() + 7 * 24 * 60 * 60 * 1000
-
-  const contract = getNewContract(
-    contractRef.id,
-    slug,
-    user,
-    question,
-    outcomeType,
-    descriptionJson,
-    initialProb ?? 0,
-    ante,
-    closeTimestamp,
-    tags ?? [],
-    NUMERIC_BUCKET_COUNT,
-    min ?? 0,
-    max ?? 0,
-    isLogScale ?? false,
-    answers ?? [],
-    visibility,
-    isTwitchContract ? true : undefined
-  )
-
-  await contractRef.create(contract)
 
   console.log(
     'created contract for',
@@ -432,10 +412,31 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
   return contract
 }
 
-const getSlug = async (question: string) => {
+function getDescriptionJson(
+  description?: string | JSONContent,
+  descriptionHtml?: string,
+  descriptionMarkdown?: string
+): JSONContent {
+  if (description) {
+    if (typeof description === 'string') {
+      return htmlToRichText(`<p>${description}</p>`)
+    } else {
+      return description
+    }
+  } else if (descriptionHtml) {
+    return htmlToRichText(descriptionHtml)
+  } else if (descriptionMarkdown) {
+    return htmlToRichText(marked.parse(descriptionMarkdown))
+  } else {
+    // Use a single empty space as the description
+    return htmlToRichText('<p> </p>')
+  }
+}
+
+const getSlug = async (trans: Transaction, question: string) => {
   const proposedSlug = slugify(question)
 
-  const preexistingContract = await getContractFromSlug(proposedSlug)
+  const preexistingContract = await getContractFromSlug(trans, proposedSlug)
 
   return preexistingContract
     ? proposedSlug + '-' + randomString()
@@ -444,11 +445,11 @@ const getSlug = async (question: string) => {
 
 const firestore = admin.firestore()
 
-export async function getContractFromSlug(slug: string) {
-  const snap = await firestore
-    .collection('contracts')
-    .where('slug', '==', slug)
-    .get()
+async function getContractFromSlug(trans: Transaction, slug: string) {
+  const contractsRef = firestore.collection('contracts')
+  const query = contractsRef.where('slug', '==', slug)
+
+  const snap = await trans.get(query)
 
   return snap.empty ? undefined : (snap.docs[0].data() as Contract)
 }
