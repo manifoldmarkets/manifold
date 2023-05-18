@@ -29,7 +29,7 @@ export const Avatar = memo(
     const s =
       size == '2xs' ? 4 : size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
     const sizeInPx = s * 4
-    const innerSizeInPx = floorToEven(Math.floor(sizeInPx * 0.8))
+    const innerSizeInPx = floorToEven(Math.floor(sizeInPx * 0.85))
 
     const onClick = (e: MouseEvent) => {
       if (!noLink && username) {
