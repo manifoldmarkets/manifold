@@ -20,7 +20,7 @@ export const usePersistentLocalState = <T>(initialValue: T, key: string) => {
   })
 
   useEffect(() => {
-    if (isClient && safeLocalStorage) {
+    if (safeLocalStorage) {
       const storedJson = safeJsonParse(safeLocalStorage.getItem(key))
       const storedValue = storedJson ?? initialValue
       saveState(storedValue as T)
