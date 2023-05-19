@@ -93,6 +93,7 @@ export const BOT_USERNAMES = [
   'Turbot',
   'MiraBot',
   'MetaculusBot',
+  'KevinBurke',
 ]
 
 export const CORE_USERNAMES = [
@@ -146,7 +147,6 @@ export const CHECK_USERNAMES = [
   'KatjaGrace',
   'AndrewG',
   'MarcusAbramovitch',
-  'KevinBurke',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
