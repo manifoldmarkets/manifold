@@ -1,9 +1,16 @@
-// LinkPreviewExtension.ts
 import { mergeAttributes, Node } from '@tiptap/core'
-// fetchLinkPreview.ts
+import { LinkPreviewNodeView } from 'web/components/editor/link-preview-node-view'
+import React from 'react'
 
 interface LinkPreviewOptions {
   HTMLAttributes: Record<string, unknown>
+}
+export type LinkPreviewProps = {
+  url: string
+  title: string
+  description: string
+  image: string
+  id: string
 }
 const name = 'linkPreview'
 export const LinkPreviewExtension = Node.create<LinkPreviewOptions>({
@@ -11,14 +18,12 @@ export const LinkPreviewExtension = Node.create<LinkPreviewOptions>({
   atom: true,
 
   group: 'block',
-  addOptions() {
-    return {
-      HTMLAttributes: {},
-    }
-  },
 
   addAttributes() {
     return {
+      id: {
+        default: null,
+      },
       url: {
         default: null,
       },
@@ -31,10 +36,14 @@ export const LinkPreviewExtension = Node.create<LinkPreviewOptions>({
       image: {
         default: null,
       },
+      deleteCallback: {
+        default: null,
+      },
     }
   },
-  addNodeView() {
-    return LinkPreviewNodeView
+
+  renderReact(attrs: any) {
+    return <LinkPreviewNodeView {...attrs} />
   },
 
   parseHTML() {
@@ -50,56 +59,3 @@ export const LinkPreviewExtension = Node.create<LinkPreviewOptions>({
     return [name, mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)]
   },
 })
-
-/// components/LinkPreviewEditor.tsx
-import React, { useState } from 'react'
-import axios from 'axios'
-import { Editor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import LinkPreviewNodeView from 'web/components/editor/link-preview-node-view'
-import { nodeViewMiddleware } from 'web/components/editor/nodeview-middleware'
-
-export const LinkPreviewEditor = () => {
-  const editor = new Editor({
-    extensions: nodeViewMiddleware([StarterKit, LinkPreviewExtension]),
-    content: '',
-  })
-
-  const [url, setUrl] = useState('')
-
-  const handleAddLinkPreview = async () => {
-    try {
-      const { data: metadata } = await axios.post(
-        '/api/v0/fetch-link-preview',
-        {
-          url,
-        }
-      )
-
-      // Generate a JSON representation of the linkPreview node
-      const linkPreviewNodeJSON = {
-        type: 'linkPreview',
-        attrs: metadata,
-      }
-
-      editor.chain().focus().insertContent(linkPreviewNodeJSON).run()
-
-      setUrl('')
-    } catch (error) {
-      console.error('Error fetching link preview:', error)
-    }
-  }
-
-  return (
-    <div>
-      <input
-        type="text"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="Enter URL"
-      />
-      <button onClick={handleAddLinkPreview}>Add Link Preview</button>
-      <EditorContent className={'h-32'} editor={editor} />
-    </div>
-  )
-}
