@@ -12,7 +12,7 @@ import {
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import React, { ReactNode, useCallback, useMemo } from 'react'
+import React, { ReactNode, useCallback, useEffect, useMemo } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
 import GridComponent from '../editor/tiptap-grid-cards'
@@ -35,6 +35,12 @@ import { EmojiExtension } from '../editor/emoji/emoji-extension'
 import { DisplaySpoiler } from '../editor/spoiler'
 import { nodeViewMiddleware } from '../editor/nodeview-middleware'
 import { BasicImage, DisplayImage } from '../editor/image'
+
+import { LinkPreviewExtension } from 'web/components/editor/link-preview-extension'
+import { useEvent } from 'web/hooks/use-event'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { filterDefined } from 'common/util/array'
+
 import { Row } from 'web/components/layout/row'
 
 const DisplayLink = Link.extend({
@@ -57,6 +63,7 @@ export const editorExtensions = (simple = false): Extensions =>
     DisplayContractMention,
     GridComponent,
     Iframe,
+    LinkPreviewExtension,
     DisplayTweet,
     TiptapSpoiler.configure({ class: 'rounded-sm bg-ink-200' }),
     Upload,
@@ -91,7 +98,11 @@ export function useTextEditor(props: {
       store: storageStore(safeLocalStorage),
     }
   )
-
+  const [linkPreviewsDismissed, setLinkPreviewsDismissed] =
+    usePersistentInMemoryState<{ [url: string]: boolean }>(
+      {},
+      `${key}-link-previews-dismissed`
+    )
   const save = useCallback(debounce(saveContent, 500), [])
 
   const editorClass = clsx(
@@ -105,7 +116,13 @@ export function useTextEditor(props: {
     editorProps: {
       attributes: { class: editorClass, spellcheck: simple ? 'true' : 'false' },
     },
-    onUpdate: !key ? noop : ({ editor }) => save(editor.getJSON()),
+    onUpdate: !key
+      ? noop
+      : ({ editor }) => {
+          const json = editor.getJSON()
+          save(json)
+          addPreviewIfLinkPresent(json)
+        },
     extensions: [
       ...editorExtensions(simple),
       Placeholder.configure({
@@ -117,6 +134,85 @@ export function useTextEditor(props: {
       ...(props.extensions ?? []),
     ],
     content: defaultValue ?? (key && content ? content : ''),
+  })
+  const handleDeleteNode = useEvent((event: any) => {
+    const id = event.detail
+    if (!editor) return
+    const { state } = editor
+    const { doc } = state
+    let { tr } = state
+
+    doc.descendants((node, pos) => {
+      if (node.type.name === 'linkPreview' && node.attrs.id === id) {
+        const { url } = node.attrs
+        setLinkPreviewsDismissed((prev) => ({ ...prev, [url]: true }))
+        tr = tr.delete(pos, pos + node.nodeSize)
+        return false
+      }
+    })
+    if (tr.docChanged) {
+      editor.view.dispatch(tr)
+    }
+  })
+
+  useEffect(() => {
+    window.addEventListener('deleteNode', handleDeleteNode)
+    return () => window.removeEventListener('deleteNode', handleDeleteNode)
+  }, [])
+
+  const addPreviewIfLinkPresent = useEvent((content: JSONContent) => {
+    const containsLinkPreview = content.content?.some(
+      (node) => node.type === 'linkPreview'
+    )
+    if (containsLinkPreview || !editor) return
+    const linkRegExp =
+      /(?:^|[^@\w])((?:https?:\/\/)?[\w-]+(?:\.[\w-]+)+\S*[^@\s])/g
+    const linkMatches = content.content?.flatMap((node) =>
+      node.content?.flatMap((n) => {
+        return n.text ? Array.from(n.text.matchAll(linkRegExp)) : []
+      })
+    )
+    const links = filterDefined(linkMatches?.map((m) => m?.[0]) ?? [])
+    links.forEach(async (link) => {
+      if (linkPreviewsDismissed[link]) return
+      try {
+        const res = await fetch('/api/v0/fetch-link-preview', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: link,
+          }),
+        })
+        const resText = await res.json()
+        if (
+          !resText ||
+          !resText.title ||
+          !resText.description ||
+          !resText.image ||
+          resText.description === 'Error' ||
+          resText.title === 'Error'
+        )
+          return
+        const linkPreviewNodeJSON = {
+          type: 'linkPreview',
+          attrs: {
+            ...resText,
+            id: crypto.randomUUID(),
+          },
+        }
+        // Append to very end of doc
+        const docLength = editor.state.doc.content.size
+        editor
+          .chain()
+          .focus()
+          .insertContentAt(docLength ?? 0, linkPreviewNodeJSON)
+          .run()
+      } catch (e) {
+        console.error('error on add preview for link', link, e)
+      }
+    })
   })
 
   const upload = useUploadMutation(editor)
