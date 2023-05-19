@@ -20,13 +20,14 @@ export type NotificationGroup = {
   isSeen: boolean
 }
 const NOTIFICATIONS_KEY = 'notifications'
-function useNotifications(privateUser: PrivateUser) {
+function useNotifications(privateUser: PrivateUser | null | undefined) {
   const [notifications, setNotifications] = usePersistentLocalState<
     Notification[] | undefined
   >(undefined, NOTIFICATIONS_KEY)
   useEffect(() => {
+    if (!privateUser) return
     listenForNotifications(privateUser.id, setNotifications)
-  }, [privateUser.id, setNotifications])
+  }, [privateUser?.id, setNotifications])
 
   return notifications
 }
@@ -57,19 +58,23 @@ function useUnseenNotifications(privateUser: PrivateUser) {
         })
       }
     })
-  }, [privateUser.id])
+  }, [privateUser.id, setNotifications, setUnseenNotifications])
   return unseenNotifications
 }
 
 export function useGroupedNonBalanceChangeNotifications(
-  privateUser: PrivateUser
+  privateUser: PrivateUser | null | undefined
 ) {
-  const notifications = useNotifications(privateUser) ?? []
+  const notifications = useNotifications(privateUser)
   const balanceChangeOnlyReasons: NotificationReason[] = ['loan_income']
   return useMemo(() => {
-    const groupedNotifications = groupNotifications(
-      notifications.filter((n) => !balanceChangeOnlyReasons.includes(n.reason))
-    )
+    const groupedNotifications = notifications
+      ? groupNotifications(
+          notifications.filter(
+            (n) => !balanceChangeOnlyReasons.includes(n.reason)
+          )
+        )
+      : undefined
     const mostRecentNotification = first(notifications)
     return {
       groupedNotifications,
@@ -78,9 +83,12 @@ export function useGroupedNonBalanceChangeNotifications(
   }, [notifications])
 }
 
-export function useGroupedBalanceChangeNotifications(privateUser: PrivateUser) {
-  const notifications = useNotifications(privateUser) ?? []
+export function useGroupedBalanceChangeNotifications(
+  privateUser: PrivateUser | null | undefined
+) {
+  const notifications = useNotifications(privateUser)
   return useMemo(() => {
+    if (!notifications) return undefined
     return groupBalanceChangeNotifications(notifications)
   }, [notifications])
 }

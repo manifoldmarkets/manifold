@@ -11,20 +11,21 @@ export const usePersistentLocalState = <T>(initialValue: T, key: string) => {
   const [state, setState] = useStateCheckEquality<T>(
     (isClient && safeJsonParse(safeLocalStorage?.getItem(key))) || initialValue
   )
-
-  useEffect(() => {
-    const storedJson = safeJsonParse(safeLocalStorage?.getItem(key))
-    const storedValue = storedJson ?? initialValue
-    setState(storedValue as T)
-  }, [key])
-
   const saveState = useEvent((newState: T | ((prevState: T) => T)) => {
     setState((prevState: T) => {
       const updatedState = isFunction(newState) ? newState(prevState) : newState
-      safeLocalStorage?.setItem(key, JSON.stringify(newState))
+      safeLocalStorage?.setItem(key, JSON.stringify(updatedState))
       return updatedState
     })
   })
+
+  useEffect(() => {
+    if (isClient && safeLocalStorage) {
+      const storedJson = safeJsonParse(safeLocalStorage.getItem(key))
+      const storedValue = storedJson ?? initialValue
+      saveState(storedValue as T)
+    }
+  }, [key])
 
   return [state, saveState] as const
 }

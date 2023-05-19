@@ -37,6 +37,7 @@ import { XIcon } from '@heroicons/react/outline'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
@@ -44,6 +45,10 @@ export default function Notifications() {
   const [navigateToSection, setNavigateToSection] = useState<string>()
   const { isNative } = getNativePlatform()
   useRedirectIfSignedOut()
+  const { groupedNotifications, mostRecentNotification } =
+    useGroupedNonBalanceChangeNotifications(privateUser)
+  const balanceChangeGroupedNotifications =
+    useGroupedBalanceChangeNotifications(privateUser)
 
   useEffect(() => {
     if (!router.isReady) return
@@ -101,11 +106,21 @@ export default function Notifications() {
                 tabs={[
                   {
                     title: 'Notifications',
-                    content: <NotificationsList privateUser={privateUser} />,
+                    content: (
+                      <NotificationsList
+                        privateUser={privateUser}
+                        groupedNotifications={groupedNotifications}
+                        mostRecentNotification={mostRecentNotification}
+                      />
+                    ),
                   },
                   {
                     title: 'Balance Changes',
-                    content: <BalanceChangesList privateUser={privateUser} />,
+                    content: (
+                      <NotificationsList
+                        groupedNotifications={balanceChangeGroupedNotifications}
+                      />
+                    ),
                   },
                   {
                     title: 'Settings',
@@ -173,18 +188,19 @@ function RenderNotificationGroups(props: {
   )
 }
 
-function NotificationsList(props: { privateUser: PrivateUser }) {
-  const { privateUser } = props
-  const { groupedNotifications, mostRecentNotification } =
-    useGroupedNonBalanceChangeNotifications(privateUser)
+function NotificationsList(props: {
+  groupedNotifications: NotificationGroup[] | undefined
+  privateUser?: PrivateUser
+  mostRecentNotification?: Notification
+}) {
+  const { privateUser, groupedNotifications, mostRecentNotification } = props
   const isAuthorized = useIsAuthorized()
-
   const [page, setPage] = useState(0)
 
   const paginatedGroupedNotifications = useMemo(() => {
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
-    return groupedNotifications.slice(start, end)
+    return groupedNotifications?.slice(start, end)
   }, [groupedNotifications, page])
 
   const isPageVisible = useIsPageVisible()
@@ -198,13 +214,23 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
 
   return (
     <Col className={'min-h-[100vh] gap-0 text-sm'}>
-      {paginatedGroupedNotifications.length === 0 && (
+      {groupedNotifications === undefined ||
+      paginatedGroupedNotifications === undefined ? (
+        <LoadingIndicator />
+      ) : paginatedGroupedNotifications.length === 0 ? (
         <div className={'mt-2'}>
           You don't have any notifications, yet. Try changing your settings to
           see more.
         </div>
+      ) : (
+        <RenderNotificationGroups
+          notificationGroups={paginatedGroupedNotifications}
+          totalItems={groupedNotifications.length}
+          page={page}
+          setPage={setPage}
+        />
       )}
-      {privateUser && (
+      {privateUser && groupedNotifications && (
         <PushNotificationsModal
           privateUser={privateUser}
           totalNotifications={
@@ -212,43 +238,6 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
           }
         />
       )}
-
-      <RenderNotificationGroups
-        notificationGroups={paginatedGroupedNotifications}
-        totalItems={groupedNotifications.length}
-        page={page}
-        setPage={setPage}
-      />
-    </Col>
-  )
-}
-
-function BalanceChangesList(props: { privateUser: PrivateUser }) {
-  const { privateUser } = props
-  const allGroupedNotifications =
-    useGroupedBalanceChangeNotifications(privateUser)
-  const [page, setPage] = useState(0)
-  const paginatedGroupedNotifications = useMemo(() => {
-    const start = page * NOTIFICATIONS_PER_PAGE
-    const end = start + NOTIFICATIONS_PER_PAGE
-    return allGroupedNotifications.slice(start, end)
-  }, [allGroupedNotifications, page])
-
-  return (
-    <Col className={'min-h-[100vh] gap-0 text-sm'}>
-      {paginatedGroupedNotifications.length === 0 && (
-        <div className={'mt-2'}>
-          You don't have any notifications, yet. Try changing your settings to
-          see more.
-        </div>
-      )}
-
-      <RenderNotificationGroups
-        notificationGroups={paginatedGroupedNotifications}
-        totalItems={allGroupedNotifications.length}
-        page={page}
-        setPage={setPage}
-      />
     </Col>
   )
 }
