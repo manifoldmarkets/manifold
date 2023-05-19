@@ -7149,20 +7149,6 @@ merge2@^1.3.0, merge2@^1.4.1:
   resolved "https://registry.yarnpkg.com/merge2/-/merge2-1.4.1.tgz#4368892f885e907455a6fd7dc55c0c9d404990ae"
   integrity sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==
 
-metascraper-author@5.34.4:
-  version "5.34.4"
-  resolved "https://registry.yarnpkg.com/metascraper-author/-/metascraper-author-5.34.4.tgz#3e81d9a7af9edfc82020f9896bdf14c1da020a11"
-  integrity sha512-JkNTBYMQ6+HH+WKcGY7upFb3Gh/z0Lo4Dh50UlAqLsZjUHvgulXLLQrUrrXQhSjEWbcDZI4IictQBVUO9knMuA==
-  dependencies:
-    "@metascraper/helpers" "^5.34.4"
-
-metascraper-date@5.34.4:
-  version "5.34.4"
-  resolved "https://registry.yarnpkg.com/metascraper-date/-/metascraper-date-5.34.4.tgz#76d66a938b3f2d7df5698ca5fb8553d80e03514e"
-  integrity sha512-3bp+HaAdQueCCLmL+KjYmUsHGGAXEyE1N1OTzp+0WuExAciivDUzGpveTDDd8uSeUpfBjPIiyYqCu56Xgp46YA==
-  dependencies:
-    "@metascraper/helpers" "^5.34.4"
-
 metascraper-description@5.34.4:
   version "5.34.4"
   resolved "https://registry.yarnpkg.com/metascraper-description/-/metascraper-description-5.34.4.tgz#dc904d3b0936b244bdcdb9a20ffeecccbc460672"
@@ -7174,21 +7160,6 @@ metascraper-image@5.34.4:
   version "5.34.4"
   resolved "https://registry.yarnpkg.com/metascraper-image/-/metascraper-image-5.34.4.tgz#a073296b428412a4c2172cf15e6884f964670440"
   integrity sha512-3uO4pfAHNE0+0832oExSQFmBSxYhzQHsolzYjRqHJ9wisAZKHszdCLNheQPN6ORKWqPP5rKHYEaDBQgWZ+L8Zw==
-  dependencies:
-    "@metascraper/helpers" "^5.34.4"
-
-metascraper-logo@5.34.4:
-  version "5.34.4"
-  resolved "https://registry.yarnpkg.com/metascraper-logo/-/metascraper-logo-5.34.4.tgz#47bdb1f43d9ef80ca6cbe5712dc550c29b6169a4"
-  integrity sha512-d4Q9FNI0babxG7zrzUkMz40AxvDaQbjBcQT85S2URK5q8CfLwqhbdbkSkGLYqiHt5p63hdW2FNC+bOoYlhfMDg==
-  dependencies:
-    "@metascraper/helpers" "^5.34.4"
-    lodash "~4.17.21"
-
-metascraper-publisher@5.34.4:
-  version "5.34.4"
-  resolved "https://registry.yarnpkg.com/metascraper-publisher/-/metascraper-publisher-5.34.4.tgz#34cf52d32d7c9e543e61cc067f84b9a7879418ba"
-  integrity sha512-qyimpNYVVkaaMaPWRh4G0AAunWr8+0g6/Pb4N8+IYwY40Jo7BRFBvFlHYfuSFmDbI4KuZoLzE3lcbmrlRcjQsA==
   dependencies:
     "@metascraper/helpers" "^5.34.4"
 

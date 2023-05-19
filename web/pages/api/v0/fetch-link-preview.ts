@@ -1,12 +1,8 @@
 // pages/api/fetch-link-preview.ts
 import { Metadata, NextApiRequest, NextApiResponse } from 'next'
 import metascraper from 'metascraper'
-import metascraperAuthor from 'metascraper-author'
-import metascraperDate from 'metascraper-date'
 import metascraperDescription from 'metascraper-description'
 import metascraperImage from 'metascraper-image'
-import metascraperLogo from 'metascraper-logo'
-import metascraperPublisher from 'metascraper-publisher'
 import metascraperTitle from 'metascraper-title'
 import metascraperUrl from 'metascraper-url'
 import { ApiError } from 'web/pages/api/v0/_types'
@@ -29,12 +25,8 @@ export default async function handler(
 
 export async function fetchLinkPreview(url: string) {
   const scraper = metascraper([
-    metascraperAuthor(),
-    metascraperDate(),
     metascraperDescription(),
     metascraperImage(),
-    metascraperLogo(),
-    metascraperPublisher(),
     metascraperTitle(),
     metascraperUrl(),
   ])
