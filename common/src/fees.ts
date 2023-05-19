@@ -1,4 +1,4 @@
-export const FLAT_TRADE_FEE = 0 
+export const FLAT_TRADE_FEE = 0.25
 
 export const PLATFORM_FEE = 0
 export const CREATOR_FEE = 0

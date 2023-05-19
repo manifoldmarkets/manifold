@@ -161,12 +161,15 @@ export const placebet = authEndpoint(async (req, auth) => {
     }
 
     const betDoc = contractDoc.collection('bets').doc()
+    const isApi = auth.creds.kind === 'key'
+
     trans.create(betDoc, {
       id: betDoc.id,
       userId: user.id,
       userAvatarUrl: user.avatarUrl,
       userUsername: user.username,
       userName: user.name,
+      isApi,
       ...newBet,
     })
     log(`Created new bet document for ${user.username} - auth ${auth.uid}.`)

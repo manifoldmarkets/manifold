@@ -46,6 +46,8 @@ export type Bet = {
 
   fees: Fees
 
+  isApi?: boolean // true if bet was placed via API
+
   isAnte: boolean
   isRedemption: boolean
   isChallenge: boolean

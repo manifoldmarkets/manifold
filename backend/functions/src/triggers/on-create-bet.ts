@@ -46,6 +46,8 @@ import {
   completeReferralsQuest,
 } from 'shared/complete-quest-internal'
 import { addToLeagueIfNotInOne } from 'shared/leagues'
+import { FieldValue } from 'firebase-admin/firestore'
+import { FLAT_TRADE_FEE } from 'common/fees'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -54,46 +56,24 @@ export const onCreateBet = functions
   .runWith({ secrets, memory: '512MB', timeoutSeconds: 540 })
   .firestore.document('contracts/{contractId}/bets/{betId}')
   .onCreate(async (change, context) => {
-    const pg = createSupabaseDirectClient()
-
-    const { contractId } = context.params as {
-      contractId: string
-    }
+    const { contractId } = context.params as { contractId: string }
     const { eventId } = context
 
     const bet = change.data() as Bet
     if (bet.isChallenge) return
 
-    const lastBetTime = bet.createdTime
-    await firestore
-      .collection('contracts')
-      .doc(contractId)
-      .update({ lastBetTime, lastUpdatedTime: Date.now() })
-
-    const contractSnap = await firestore
-      .collection(`contracts`)
-      .doc(contractId)
-      .get()
+    const contractRef = firestore.collection('contracts').doc(contractId)
+    const contractSnap = await contractRef.get()
     const contract = contractSnap.data() as Contract
-
-    if (!contract) {
-      log(`Could not find contract ${contractId}`)
-      return
-    }
+    if (!contract) return
+    await contractRef.update({
+      lastBetTime: bet.createdTime,
+      lastUpdatedTime: Date.now(),
+    })
 
     const bettor = await getUser(bet.userId)
     if (!bettor) return
 
-    await change.ref.update({
-      userAvatarUrl: bettor.avatarUrl,
-      userName: bettor.name,
-      userUsername: bettor.username,
-    })
-
-    // They may be selling out of a position completely, so only add them if they're buying
-    if (bet.amount >= 0 && !bet.isSold)
-      await addUserToContractFollowers(contractId, bettor.id)
-    await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor, bet)
     const notifiedUsers = await notifyUsersOfLimitFills(
       bet,
       contract,
@@ -101,16 +81,37 @@ export const onCreateBet = functions
       bettor
     )
     await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
+
+    const isApiOrBot = bet.isApi || BOT_USERNAMES.includes(bettor.username)
+    if (isApiOrBot) {
+      // assess flat fee for bots
+      const userRef = firestore.doc(`users/${bettor.id}`)
+      await userRef.update({ balance: FieldValue.increment(-FLAT_TRADE_FEE) })
+
+      if (bet.isApi) return // skip the rest only if it's an API bet
+    }
+
+    /**
+     *  Handle bonuses, other stuff for non-bot users below:
+     */
+
+    // They may be selling out of a position completely, so only add them if they're buying
+    if (bet.amount >= 0 && !bet.isSold)
+      await addUserToContractFollowers(contractId, bettor.id)
+
+    // Referrals should always be handled before the betting streak bc they both use lastBetTime
+    await handleReferral(bettor, eventId)
+    await updateBettingStreak(bettor, bet, contract, eventId)
+
+    await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor, bet)
+
+    await completeArchaeologyQuest(bet, bettor, contract, eventId)
+
+    const pg = createSupabaseDirectClient()
     await updateUserInterestEmbedding(pg, bettor.id)
 
     // TODO: Send notification when adding a user to a league.
     await addToLeagueIfNotInOne(pg, bettor.id)
-
-    // Referrals should always be handled before the betting streak bc they both use lastBetTime
-    await handleReferral(bettor, eventId).then(async () => {
-      await updateBettingStreak(bettor, bet, contract, eventId)
-    })
-    await completeArchaeologyQuest(bet, bettor, contract, eventId)
   })
 
 const updateBettingStreak = async (
