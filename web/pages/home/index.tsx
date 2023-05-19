@@ -150,7 +150,11 @@ const YourDailyUpdates = memo(function YourDailyUpdates(props: {
 
   return (
     <Col>
-      <HomeSectionHeader label="Today's updates" icon="📊" href='/todays-updates' />
+      <HomeSectionHeader
+        label="Today's updates"
+        icon="📊"
+        href="/todays-updates"
+      />
       <ProbChangeTable changes={changedContracts as CPMMContract[]} />
     </Col>
   )
