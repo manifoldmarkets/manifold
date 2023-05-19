@@ -121,7 +121,7 @@ export function useTextEditor(props: {
       : ({ editor }) => {
           const json = editor.getJSON()
           save(json)
-          addPreviewIfLinkPresent(json)
+          debouncedAddPreviewIfLinkPresent(json)
         },
     extensions: [
       ...editorExtensions(simple),
@@ -159,6 +159,11 @@ export function useTextEditor(props: {
     window.addEventListener('deleteNode', handleDeleteNode)
     return () => window.removeEventListener('deleteNode', handleDeleteNode)
   }, [])
+
+  const debouncedAddPreviewIfLinkPresent = useCallback(
+    debounce((content: JSONContent) => addPreviewIfLinkPresent(content), 500),
+    []
+  )
 
   const addPreviewIfLinkPresent = useEvent((content: JSONContent) => {
     const containsLinkPreview = content.content?.some(
