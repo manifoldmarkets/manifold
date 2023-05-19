@@ -12,7 +12,6 @@ import { FeedComment } from '../feed/feed-comments'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { ContractMention } from '../contract/contract-mention'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
-import { Subtitle } from '../widgets/subtitle'
 
 export function LeagueFeed(props: { season: number; cohort: string }) {
   const { season, cohort } = props
