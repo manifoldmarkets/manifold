@@ -34,7 +34,7 @@ export function getHighlightClass(highlight: boolean) {
 }
 export const NUM_SUMMARY_LINES = 3
 
-export const NOTIFICATION_ICON_SIZE = 10
+export const NOTIFICATION_ICON_SIZE = 'md'
 
 export function PrimaryNotificationLink(props: {
   text: string | undefined

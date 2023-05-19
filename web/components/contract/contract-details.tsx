@@ -130,7 +130,7 @@ export function AuthorInfo(props: { contract: Contract }) {
         <Avatar
           username={creatorUsername}
           avatarUrl={creatorAvatarUrl}
-          size={6}
+          size={'xs'}
         />
       </div>
 
