@@ -43,7 +43,6 @@ import { filterDefined } from 'common/util/array'
 
 import { Row } from 'web/components/layout/row'
 
-
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
     delete HTMLAttributes.class // only use our classes (don't duplicate on paste)
@@ -165,7 +164,7 @@ export function useTextEditor(props: {
     const containsLinkPreview = content.content?.some(
       (node) => node.type === 'linkPreview'
     )
-    if (containsLinkPreview) return
+    if (containsLinkPreview || !editor) return
     const linkRegExp =
       /(?:^|[^@\w])((?:https?:\/\/)?[\w-]+(?:\.[\w-]+)+\S*[^@\s])/g
     const linkMatches = content.content?.flatMap((node) =>
@@ -204,9 +203,9 @@ export function useTextEditor(props: {
           },
         }
         // Append to very end of doc
-        const docLength = editor?.state.doc.content.size
+        const docLength = editor.state.doc.content.size
         editor
-          ?.chain()
+          .chain()
           .focus()
           .insertContentAt(docLength ?? 0, linkPreviewNodeJSON)
           .run()
