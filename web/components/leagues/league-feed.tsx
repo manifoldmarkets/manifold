@@ -29,7 +29,6 @@ export function LeagueFeed(props: { season: number; cohort: string }) {
 
   return (
     <Col>
-      <Subtitle>Activity</Subtitle>
       <Col className="bg-canvas-0 px-4">
         {items.map((item, i) => {
           const contract = contractsById[item.contractId]

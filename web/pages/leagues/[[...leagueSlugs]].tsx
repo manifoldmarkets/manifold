@@ -28,6 +28,7 @@ import { getLeagueRows } from 'web/lib/supabase/leagues'
 import { CohortTable } from 'web/components/leagues/cohort-table'
 import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { LeagueFeed } from 'web/components/leagues/league-feed'
+import { Tabs } from 'web/components/layout/tabs'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
@@ -240,16 +241,29 @@ export default function Leagues(props: { rows: league_user_info[] }) {
           </Row>
         </Col>
 
-        <CohortTable
-          cohort={cohort}
-          rows={cohorts[cohort]}
-          highlightedUserId={highlightedUserId}
-          demotionCount={demotion}
-          promotionCount={promotion}
-          doublePromotionCount={doublePromotion}
-        />
+        <Tabs
+          key={`${season}-${division}-${cohort}`}
+          tabs={[
+            {
+              title: 'Rankings',
+              content: (
+                <CohortTable
+                  cohort={cohort}
+                  rows={cohorts[cohort]}
+                  highlightedUserId={highlightedUserId}
+                  demotionCount={demotion}
+                  promotionCount={promotion}
+                  doublePromotionCount={doublePromotion}
+                />
+              ),
+            },
 
-        <LeagueFeed season={season} cohort={cohort} />
+            {
+              title: 'Activity',
+              content: <LeagueFeed season={season} cohort={cohort} />,
+            },
+          ]}
+        />
       </Col>
     </Page>
   )
