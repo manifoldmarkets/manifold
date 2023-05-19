@@ -1,4 +1,3 @@
-// pages/api/fetch-link-preview.ts
 import { Metadata, NextApiRequest, NextApiResponse } from 'next'
 import metascraper from 'metascraper'
 import metascraperDescription from 'metascraper-description'
