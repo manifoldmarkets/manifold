@@ -1,13 +1,16 @@
 import * as admin from 'firebase-admin'
 
-import { getContract, getUser, htmlToRichText } from 'shared/utils'
-import { APIError, authEndpoint, validate } from './helpers'
 import { JSONContent } from '@tiptap/core'
-import { string, z } from 'zod'
-import { removeUndefinedProps } from 'common/util/object'
+import { z } from 'zod'
 import { marked } from 'marked'
+
 import { Comment } from 'common/comment'
 import { Bet } from 'common/bet'
+import { FieldValue } from 'firebase-admin/firestore'
+import { FLAT_COMMENT_FEE } from 'common/fees'
+import { removeUndefinedProps } from 'common/util/object'
+import { getContract, getUser, htmlToRichText } from 'shared/utils'
+import { APIError, authEndpoint, validate } from './helpers'
 
 export const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -75,6 +78,8 @@ export const createcomment = authEndpoint(async (req, auth) => {
         .then((doc) => doc.data() as Bet)
     : undefined
 
+  const isApi = auth.creds.kind === 'key'
+
   const comment = removeUndefinedProps({
     id: ref.id,
     content: contentJson,
@@ -100,9 +105,18 @@ export const createcomment = authEndpoint(async (req, auth) => {
     betOutcome: bet?.outcome,
     bettorName: bet?.userName,
     bettorUsername: bet?.userUsername,
+    isApi,
   } as Comment)
 
   await ref.set(comment)
+
+  if (isApi) {
+    const userRef = firestore.doc(`users/${creator.id}`)
+    await userRef.update({
+      balance: FieldValue.increment(-FLAT_COMMENT_FEE),
+      totalDeposits: FieldValue.increment(-FLAT_COMMENT_FEE),
+    })
+  }
 
   return { status: 'success', comment }
 })
