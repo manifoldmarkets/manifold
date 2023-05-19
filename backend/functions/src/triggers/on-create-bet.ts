@@ -86,7 +86,10 @@ export const onCreateBet = functions
     if (isApiOrBot) {
       // assess flat fee for bots
       const userRef = firestore.doc(`users/${bettor.id}`)
-      await userRef.update({ balance: FieldValue.increment(-FLAT_TRADE_FEE) })
+      await userRef.update({
+        balance: FieldValue.increment(-FLAT_TRADE_FEE),
+        totalDeposits: FieldValue.increment(-FLAT_TRADE_FEE),
+      })
 
       if (bet.isApi) return // skip the rest only if it's an API bet
     }
