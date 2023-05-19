@@ -14,8 +14,7 @@ import { truncateLengthType, truncateText } from '../widgets/truncate'
 import NotificationDropdown from './notification-dropdown'
 import { groupBy } from 'lodash'
 
-const notification_base_style =
-  'relative cursor-pointer text-sm transition-colors'
+const notification_base_style = 'relative text-sm transition-colors'
 export const NESTED_NOTIFICATION_STYLE = clsx(
   notification_base_style,
   'hover:bg-primary-50 p-2'
@@ -182,7 +181,9 @@ export function NotificationFrame(props: {
 
   const frameObject = (
     <>
-      <Row className={clsx(highlightClass, 'text-sm md:text-base')}>
+      <Row
+        className={clsx(highlightClass, 'cursor-pointer text-sm md:text-base')}
+      >
         <Row className="w-full gap-3">
           <Col className="w-fit">{icon}</Col>
           <Col className="font w-full">
