@@ -18,23 +18,19 @@ import { useContract } from 'web/hooks/use-contracts'
 import { useUser } from 'web/hooks/use-user'
 import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { db } from 'web/lib/supabase/db'
+import { getContractBetNullMetrics } from 'common/calculate'
 
 export default function TodaysUpdates() {
   const user = useUser()
   const changedContracts = useYourDailyChangedContracts(db, user?.id, 50)
   const metrics = useContractMetrics(user?.id, changedContracts)
 
-  const contractMetrics = metrics
-    ?.map((m) => ({
-      metrics: m,
-      contract: changedContracts?.find((c) => c.id === m.contractId),
-    }))
-    .filter((m) => m.contract) as
-    | {
-        metrics: ContractMetrics
-        contract: CPMMContract
-      }[]
-    | undefined
+  const contractMetrics = changedContracts?.map((contract) => ({
+    metrics:
+      metrics?.find((m) => contract.id === m.contractId) ??
+      getContractBetNullMetrics(),
+    contract,
+  }))
 
   const isLoading = !changedContracts || !metrics
 
@@ -73,7 +69,6 @@ export function ContractChangeTable(props: {
     | undefined
 }) {
   const { contractMetrics } = props
-  console.log('contractMetrics', contractMetrics)
 
   if (!contractMetrics) return <LoadingIndicator />
 
