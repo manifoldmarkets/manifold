@@ -4,7 +4,11 @@ import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
+import {
+  Avatar,
+  AvatarSizeType,
+  EmptyAvatar,
+} from 'web/components/widgets/avatar'
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
@@ -24,7 +28,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
   bet: Bet
-  avatarSize?: number | '2xs' | 'xs' | 'sm'
+  avatarSize?: AvatarSizeType
   className?: string
   onReply?: (bet: Bet) => void
 }) {
@@ -108,7 +112,7 @@ export function groupBetsByCreatedTimeAndUserId(bets: Bet[]) {
 export const SummarizeBets = memo(function SummarizeBets(props: {
   contract: Contract
   betsBySameUser: Bet[]
-  avatarSize?: number | '2xs' | 'xs' | 'sm'
+  avatarSize?: AvatarSizeType
   className?: string
 }) {
   const { contract, betsBySameUser, avatarSize, className } = props

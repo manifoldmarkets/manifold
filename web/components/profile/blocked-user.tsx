@@ -25,7 +25,7 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
           <Avatar
             username={user.username}
             avatarUrl={user.avatarUrl}
-            size={24}
+            size={'xl'}
             className="bg-canvas-0 shadow-primary-300 shadow-sm"
           />
 
