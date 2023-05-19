@@ -35,11 +35,12 @@ import { User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { mintAndPoolCert } from 'shared/helpers/cert-txns'
-import { getCloseDate } from 'shared/helpers/openai-utils'
+import { generateEmbeddings, getCloseDate } from 'shared/helpers/openai-utils'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
+import { createSupabaseClient } from 'shared/supabase/init'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -142,7 +143,18 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     answers
   )
 
+  await generateContractEmbeddings(contract)
+
   return contract
+}
+
+const generateContractEmbeddings = async (contract: Contract) => {
+  const embedding = await generateEmbeddings(contract.question)
+  if (!embedding) return
+
+  await createSupabaseClient()
+    .from('contract_embeddings')
+    .insert({ contract_id: contract.id, embedding: embedding as any })
 }
 
 function getDescriptionJson(
