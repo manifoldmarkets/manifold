@@ -36,8 +36,15 @@ response was a 4xx or 5xx.)
 ## Usage Guidelines
 
 Feel free to use the API for any purpose you'd like. We ask that you:
+
 - Keep your bets to less than 10 per minute, amortized (transient spikes of over 10/min are okay).
 - Keep your reads to less than 100 per second.
+
+One way to accomplish this is to route all API calls through a client that
+implements a [sliding window algorithm][sliding-window], which ensures no more
+than N calls have been made in a given interval.
+
+[sliding-window]: https://arpitbhayani.me/blogs/sliding-window-ratelimiter
 
 ## Endpoints
 
@@ -290,10 +297,10 @@ Requires no authorization.
     textDescription: string // string description without formatting, images, or embeds
   }
   ```
-  
+
 ### `GET /v0/market/[marketId]/positions`
 
-Get positions information about a single market by ID. 
+Get positions information about a single market by ID.
 
 Parameters:
 - `order` - Optional. The field to order results by. Default: `profit`. Options: `shares` or `profit`,
@@ -413,7 +420,7 @@ Requires no authorization.
   type ContractMetric = {
   contractId: string
   from:
-    | { 
+    | {
         // includes, day, week,month
         [period: string]: {
           profit: number
@@ -458,7 +465,7 @@ Requires no authorization.
 
 ### `GET /v0/search-markets`
 
-Search markets by keywords, limited to 100 results.  
+Search markets by keywords, limited to 100 results.
 Parameters:
 
 - `terms`: Optional. A space-separated list of keywords to search for.

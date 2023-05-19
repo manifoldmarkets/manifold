@@ -63,6 +63,18 @@ for the pool to be sorted into.
   - If the market moves significantly in either direction, your liquidity will become significantly less valuable. You are currently very unlikely to make money by investing liquidity in a market, it is a way to subsidize a market and encourage more people to bet, to achieve a more accurate answer.
   - Adding liquidity to a market also makes it require more capital to move the market, so if you want to subsidize a market, first make sure the market price is roughly where you think it should be.
 
+### Algorithm
+
+As of May 2023 the binary algorithm is referred to as "cpmm-1" in [the Manifold
+source code](https://github.com/manifoldmarkets/manifold). Code explaining
+how to compute how much a given bet will move a market can be found in
+common/src/calculate-cpmm.ts in the Manifold repo.
+
+A version of this calculation that omits fees
+(which are zero as of May 2023) can be found in the
+[mango](https://github.com/kevinburke/mango/blob/main/algorithm.go) client
+library.
+
 # Free-Response Markets
 
 ## Free-Response Markets: Overview
