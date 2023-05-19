@@ -117,7 +117,7 @@ export const ContractCard = memo(function ContractCard(props: {
               <Avatar
                 username={contract.creatorUsername}
                 avatarUrl={contract.creatorAvatarUrl}
-                size={'xs'}
+                size={'2xs'}
                 noLink={noLinkAvatar}
               />
               <UserLink
