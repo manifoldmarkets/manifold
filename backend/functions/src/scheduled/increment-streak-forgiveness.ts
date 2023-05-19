@@ -23,7 +23,7 @@ const incrementStreakForgivenessInternal = async () => {
         .collection('users')
         .doc(user.id)
         .update({
-          streakForgiveness: (user.streakForgiveness ?? 0) + 1,
+          streakForgiveness: Math.min((user.streakForgiveness ?? 0) + 1, 3),
         })
     )
   )
