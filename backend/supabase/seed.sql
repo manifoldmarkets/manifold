@@ -216,11 +216,6 @@ where
   name = 'Skip ad';
 
 create index if not exists user_events_comment_view on user_events (user_id, name, comment_id);
--- TODO: drop this after PR merge
-create index if not exists user_events_viewed_markets on user_events (user_id, name, contract_id, ts desc)
-where
-  name = 'view market'
-  or name = 'view market card';
 
 alter table user_events
 cluster on user_events_name;
