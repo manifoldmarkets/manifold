@@ -31,6 +31,7 @@ export const LikeButton = memo(function LikeButton(props: {
   totalLikes: number
   contract: Contract
   contentText: string
+  trackingLocation: string
   className?: string
   size?: LikeButtonSizeType
   showTotalLikesUnder?: boolean
@@ -49,6 +50,7 @@ export const LikeButton = memo(function LikeButton(props: {
     showTotalLikesUnder,
     color = 'gray',
     isSwipe,
+    trackingLocation,
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
   const disabled = !user || contentCreatorId === user?.id
@@ -74,7 +76,7 @@ export const LikeButton = memo(function LikeButton(props: {
       contract.question,
       contentText,
       ButtonReactionType,
-      { isSwipe: !!isSwipe }
+      { isSwipe: !!isSwipe, location: trackingLocation }
     )
   }
 
@@ -259,7 +261,7 @@ function UserLikedPopup(props: {
 
   if (displayInfos == null) {
     return (
-      <Col className="min-w-24 items-start">
+      <Col className="min-w-[6rem] items-start">
         <div className="mb-1 font-bold">Like</div>
         <LoadingIndicator className="mx-auto my-2" size="sm" />
       </Col>
@@ -273,7 +275,7 @@ function UserLikedPopup(props: {
       : displayInfos.slice(0, LIKES_SHOWN)
 
   return (
-    <Col className="min-w-24 items-start">
+    <Col className="min-w-[6rem] items-start">
       <div className="mb-1 font-bold">Like</div>
       {shown.map((u, i) => {
         return <UserLikedItem key={i} userInfo={u} />

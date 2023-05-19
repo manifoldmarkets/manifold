@@ -44,6 +44,7 @@ import { generateJSON } from '@tiptap/core'
 import { extensions } from 'common/util/parse'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -105,6 +106,7 @@ export function NewContractPanel(props: {
     ante,
     newContract,
   } = useNewContract(creator, params)
+  const isAdmin = useAdmin()
 
   const [hideOptions, setHideOptions] = usePersistentLocalState(
     true,
@@ -361,7 +363,7 @@ export function NewContractPanel(props: {
               </Row>
             </div>
           )}
-          {params?.visibility != 'private' && (
+          {params?.visibility != 'private' && isAdmin && (
             <>
               <Spacer h={6} />
               <Row className="items-center gap-2">
@@ -398,16 +400,18 @@ export function NewContractPanel(props: {
 
           <div className="text-ink-700 pl-1 text-sm">
             {formatMoney(ante)}
-            <span>
-              {' '}
-              or <span className=" text-teal-500">FREE </span>
-              if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
-              <InfoTooltip
-                text={`You'll earn a bonus of ${formatMoney(
-                  UNIQUE_BETTOR_BONUS_AMOUNT
-                )} for each unique trader you get on your market.`}
-              />
-            </span>
+            {visibility === 'public' && (
+              <span>
+                {' '}
+                or <span className=" text-teal-500">FREE </span>
+                if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
+                <InfoTooltip
+                  text={`You'll earn a bonus of ${formatMoney(
+                    UNIQUE_BETTOR_BONUS_AMOUNT
+                  )} for each unique trader you get on your market.`}
+                />
+              </span>
+            )}
           </div>
           <div className="text-ink-500 pl-1"></div>
 
@@ -650,6 +654,7 @@ const useNewContract = (
           answers,
           groupId: selectedGroup?.id,
           visibility,
+          utcOffset: new Date().getTimezoneOffset(),
         })
       )) as Contract
 

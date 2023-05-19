@@ -4,12 +4,14 @@ import {
   millisToTs,
   run,
   selectJson,
+  selectFrom,
 } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import { Sort, filter } from 'web/components/supabase-search'
 import { stateType } from 'web/components/supabase-search'
 import { supabaseSearchContracts } from '../firebase/api'
 import { db } from './db'
+import { chunk } from 'lodash'
 
 // A function to retrieve all contracts a user has bet on.
 export async function getUserBetContracts(
@@ -228,7 +230,7 @@ export async function searchContract(props: {
     creatorId: creator_id,
   })
   if (contracts) {
-    if (contracts.length == 20) {
+    if (contracts.length == limit) {
       return { fuzzyOffset: 0, data: contracts }
     } else {
       const fuzzyData = await searchContractFuzzy({
@@ -276,4 +278,34 @@ export async function searchContractFuzzy(props: {
     }
   }
   return { fuzzyOffset: 0, data: [] }
+}
+export async function getWatchedContracts(userId: string) {
+  const { data: ids } = await run(
+    db.from('contract_follows').select('contract_id').eq('follow_id', userId)
+  )
+  const chunks = chunk(
+    ids.map((r) => r.contract_id),
+    200
+  )
+  const datas = await Promise.all(
+    chunks.map(async (ids) => {
+      const { data } = await run(
+        selectFrom(db, 'contracts', 'id', 'question', 'slug', 'creatorUsername')
+          .in('id', ids)
+          .order('data->>createdTime' as any, { ascending: false })
+      )
+      return data
+    })
+  )
+  return datas.flat()
+}
+
+export async function getWatchedContractsCount(userId: string) {
+  const { count } = await run(
+    db
+      .from('contract_follows')
+      .select('*', { head: true, count: 'exact' })
+      .eq('follow_id', userId)
+  )
+  return count
 }

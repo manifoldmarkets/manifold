@@ -555,7 +555,7 @@ function ContractCardAnswer(props: {
   const answerColor = getAnswerColor(answer, answersArray)
   const color =
     type === 'loser' || (isClosed && type === 'contender')
-      ? '#D8D8EB'
+      ? '#D8D8EB80'
       : answerColor
   return (
     <div
@@ -574,7 +574,7 @@ function ContractCardAnswer(props: {
       <span
         className={clsx(
           'text-md',
-          type === 'loser' ? 'text-ink-500' : 'text-ink-900',
+          type === 'loser' ? 'text-ink-600' : 'text-ink-900',
           'absolute inset-0 flex items-center justify-between px-4'
         )}
       >

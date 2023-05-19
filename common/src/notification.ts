@@ -396,4 +396,5 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
   'user_joined_to_bet_on_your_market',
   'user_joined_from_your_group_invite',
   'quest_payout',
+  'bet_fill',
 ]

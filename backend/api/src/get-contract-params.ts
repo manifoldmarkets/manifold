@@ -40,7 +40,7 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
   const contract = await getContractFromSlug(contractSlug, db)
 
   if (!contract) {
-    throw new APIError(400, 'This contract does not exist!')
+    throw new APIError(404, 'This contract does not exist!')
   }
 
   if (contract.visibility === 'private') {
@@ -70,10 +70,10 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
         // otherwise, can access if user can access contract's group
         auth &&
         groupId &&
-        (await getUserIsMember(groupId, auth?.uid, db))))
+        (await getUserIsMember(db, groupId, auth?.uid))))
 
   if (!canAccessContract) {
-    return contract
+    return contract && !contract.deleted
       ? { contractSlug: contract.slug, visibility: contract.visibility }
       : { contractSlug, visibility: null }
   }
@@ -151,7 +151,7 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
 
   const creator = await getUser(contract.creatorId)
 
-  const relatedContracts = await getRelatedContracts(contract, 9, db)
+  const relatedContracts = await getRelatedContracts(contract, 20, db, true)
   return {
     contractSlug: contract.slug,
     visibility: contract.visibility,

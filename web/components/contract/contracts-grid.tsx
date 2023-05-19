@@ -22,7 +22,6 @@ export function ContractsGrid(props: {
   highlightContractIds?: string[]
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
-  trackCardViews?: boolean
   fromGroupProps?: {
     group: Group
     userRole: groupRoleType | null
@@ -36,7 +35,6 @@ export function ContractsGrid(props: {
     cardUIOptions,
     highlightContractIds,
     trackingPostfix,
-    trackCardViews,
     fromGroupProps,
   } = props
   const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
@@ -73,7 +71,6 @@ export function ContractsGrid(props: {
               highlightContractIds?.includes(contract.id) &&
                 'via-ink-0to-ink-0bg-gradient-to-b from-primary-50 outline-primary-400 outline outline-2'
             )}
-            trackCardViews={trackCardViews}
             fromGroupProps={fromGroupProps}
           >
             {contract.mechanism === 'cpmm-1' ? (

@@ -19,7 +19,10 @@ import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
-import { useRouter } from 'next/router'
+import { query, where } from 'firebase/firestore'
+import { coll, listenForValues } from 'web/lib/firebase/utils'
+import { sum } from 'lodash'
+import { AlertBox } from './widgets/alert-box'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -83,11 +86,11 @@ export function BuyManaTab(props: { onClose: () => void }) {
   }
   useNativeMessages(['iapReceipt', 'iapError'], handleIapReceipt)
 
-  const router = useRouter()
-  console.log('route', router.route)
-
   const [url, setUrl] = useState('https://manifold.markets')
   useEffect(() => setUrl(window.location.href), [])
+
+  const totalPurchased = use24hrUsdPurchases(user?.id || '')
+  const pastLimit = totalPurchased >= 500
 
   return (
     <>
@@ -108,6 +111,14 @@ export function BuyManaTab(props: { onClose: () => void }) {
         <div className="text-xl">{manaToUSD(amountSelected)}</div>
       </div>
 
+      {pastLimit && (
+        <AlertBox
+          title="Purchase limit"
+          text="You have reached your daily purchase limit. Please try again tomorrow."
+          className="my-4"
+        />
+      )}
+
       <div className="mt-2 flex gap-2">
         <Button color="gray" onClick={onClose}>
           Back
@@ -117,6 +128,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
           <Button
             color={'gradient'}
             loading={loading}
+            disabled={pastLimit}
             onClick={() => {
               setError(null)
               setLoading(true)
@@ -130,7 +142,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
             action={checkoutURL(user?.id || '', amountSelected, url)}
             method="POST"
           >
-            <Button type="submit" color="gradient">
+            <Button type="submit" color="gradient" disabled={pastLimit}>
               Checkout
             </Button>
           </form>
@@ -200,5 +212,26 @@ export function FundsSelector(props: {
       choicesMap={fundAmounts}
       setChoice={onSelect as any}
     />
+  )
+}
+
+export const use24hrUsdPurchases = (userId: string) => {
+  const [purchases, setPurchases] = useState<any[]>([])
+
+  useEffect(() => {
+    return listenForValues<any>(
+      query(coll<any>('stripe-transactions'), where('userId', '==', userId)),
+      setPurchases
+    )
+  }, [userId])
+
+  //  TODO: include ios purchases
+
+  return (
+    sum(
+      purchases
+        .filter((p) => p.timestamp > Date.now() - 24 * 60 * 60 * 1000)
+        .map((p) => p.manticDollarQuantity)
+    ) / 100
   )
 }

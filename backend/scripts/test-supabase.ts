@@ -1,6 +1,9 @@
 import { runScript } from 'run-script'
 import { updateUsersCardViewEmbeddings } from 'shared/helpers/embeddings'
 import { addUserToLeague } from 'shared/leagues'
+import { updateLeagueCore } from 'functions/scheduled/update-league'
+import { updateLeagueRanksCore } from 'functions/scheduled/update-league-ranks'
+import { getLeagueActivity } from 'api/league-activity'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
@@ -13,6 +16,9 @@ if (require.main === module) {
     // await updateUsersCardViewEmbeddings(pg)
     // console.log('Completed updateUsersCardViewEmbeddings')
 
-    await addUserToLeague(pg, 'abc', 1, 1)
+    // await addUserToLeague(pg, 'abc', 1, 1)
+    // await updateLeagueCore()
+    // await getLeagueActivity(pg, 1, 'Oracular-Pythias')
+    await updateLeagueRanksCore()
   })
 }

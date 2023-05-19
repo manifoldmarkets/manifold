@@ -13,6 +13,7 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
+import { Tooltip } from '../widgets/tooltip'
 
 export default function GroupPrivacyStatusModal(props: {
   open: boolean
@@ -140,9 +141,23 @@ export function PrivacyStatusView(props: {
         </Row>
       )}
       {size == 'sm' && (
-        <Row className="w-full items-center justify-start gap-1">
-          {icon}
-          {status}
+        <Row className="justify-between">
+          <Row className="w-full items-center gap-1 ">
+            {icon}
+            {status}
+          </Row>
+          {viewStatus == 'private' && (
+            <Tooltip
+              text={
+                'This feature is still under active development. Please use at your own discretion'
+              }
+              placement={'top-end'}
+            >
+              <div className="rounded bg-yellow-200 bg-opacity-60 px-1 text-sm font-semibold text-yellow-800 ">
+                BETA
+              </div>
+            </Tooltip>
+          )}
         </Row>
       )}
       <p className="text-ink-700 text-sm">{descriptor}</p>

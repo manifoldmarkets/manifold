@@ -129,10 +129,12 @@ export const getLiquidityPoolProbPayouts = (
   liquidities: LiquidityProvision[]
 ) => {
   const { pool, subsidyPool } = contract
-  const finalPool = sumBy(
+
+  const weightedPool = sumBy(
     Object.keys(pool),
-    (o) => pool[o] * (outcomeProbs[o] ?? 0) + (subsidyPool ?? 0)
+    (o) => pool[o] * (outcomeProbs[o] ?? 0)
   )
+  const finalPool = weightedPool + (subsidyPool ?? 0)
   if (finalPool < 1e-3) return []
 
   const weights = getCpmmLiquidityPoolWeights(liquidities)

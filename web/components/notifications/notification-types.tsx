@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import {
-  BalanceChangeNotificationTypes,
   BetFillData,
   ContractResolutionData,
   getSourceUrl,
@@ -13,7 +12,13 @@ import { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
-import { IncomeNotificationItem } from 'web/components/notifications/income-summary-notifications'
+import {
+  BettingStreakBonusIncomeNotification,
+  LoanIncomeNotification,
+  QuestIncomeNotification,
+  UniqueBettorBonusIncomeNotification,
+  UserJoinedNotification,
+} from 'web/components/notifications/income-summary-notifications'
 import {
   BinaryOutcomeLabel,
   MultiLabel,
@@ -44,18 +49,47 @@ export function NotificationItem(props: {
 
   const [highlighted, setHighlighted] = useState(!notification.isSeen)
 
-  if (BalanceChangeNotificationTypes.includes(reason)) {
+  if (sourceType === 'bonus') {
     return (
-      <IncomeNotificationItem
+      <UniqueBettorBonusIncomeNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
       />
     )
-  }
-
-  // TODO Any new notification should be its own component
-  if (reason === 'bet_fill') {
+  } else if (sourceType === 'quest_reward') {
+    return (
+      <QuestIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'betting_streak_bonus') {
+    return (
+      <BettingStreakBonusIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'loan') {
+    return (
+      <LoanIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'user') {
+    return (
+      <UserJoinedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'bet_fill') {
     return (
       <BetFillNotification
         notification={notification}

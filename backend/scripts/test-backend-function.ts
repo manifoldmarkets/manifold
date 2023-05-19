@@ -1,13 +1,12 @@
-import { initAdmin } from 'shared/init-admin'
+import { getLocalEnv, initAdmin } from 'shared/init-admin'
 initAdmin()
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
-import { ENV } from 'common/envs/constants'
 import { getPriorContractBets } from 'functions/triggers/on-create-comment-on-contract'
 import { getContract, getUser } from 'shared/utils'
 import { completeArchaeologyQuest } from 'shared/complete-quest-internal'
 
 async function testScheduledFunction() {
-  const credentials = getServiceAccountCredentials(ENV)
+  const credentials = getServiceAccountCredentials(getLocalEnv())
   await loadSecretsToEnv(credentials)
   // await getReferralCount('AJwLWoo3xue32XIiAVrL5SyR1WB2', 0, db)
   try {

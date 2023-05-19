@@ -38,7 +38,7 @@ export function SellRow(props: {
         <Row className="items-center justify-between gap-4">
           <div>
             {isStonk ? (
-              <>You have {getStonkShares(contract, shares)} shares of </>
+              <>You have {getStonkShares(contract, shares, 2)} shares of </>
             ) : (
               <>You'll get {formatMoney(shares)} on </>
             )}

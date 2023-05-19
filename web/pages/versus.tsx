@@ -269,6 +269,7 @@ function ContractCardVersus(props: { contract: Contract; className?: string }) {
                 size="md"
                 color="gray"
                 className="!px-0"
+                trackingLocation={'contract card versus'}
               />
             </div>
 

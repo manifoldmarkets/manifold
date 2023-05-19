@@ -130,7 +130,7 @@ export function AuthorInfo(props: { contract: Contract }) {
         <Avatar
           username={creatorUsername}
           avatarUrl={creatorAvatarUrl}
-          size={6}
+          size={'xs'}
         />
       </div>
 
@@ -344,7 +344,7 @@ function EditableCloseDate(props: {
         <DateTimeTooltip
           text={closeTime <= Date.now() ? 'Trading ended:' : 'Trading ends:'}
           time={closeTime}
-          placement="bottom-start"
+          placement="bottom-end"
           noTap
           className="flex items-center"
         >

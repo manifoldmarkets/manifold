@@ -147,7 +147,7 @@ function NavBarItem(props: {
         <Col>
           <div className="mx-auto my-1">
             <Avatar
-              className="h-6 w-6"
+              size="xs"
               username={user.username}
               avatarUrl={user.avatarUrl}
               noLink

@@ -7,6 +7,7 @@ export type ContractCardView = {
   slug: string
   contractId: string
   creatorId: string
+  isPromoted?: boolean
   // Following attributes added by saveUserEvent
   name: 'view market card'
   timestamp: number

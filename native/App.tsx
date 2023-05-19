@@ -30,7 +30,7 @@ import { AuthPage } from 'components/auth-page'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 import { getSourceUrl, Notification } from 'common/src/notification'
-import { SplashLoading } from 'components/splash-loading'
+import { Splash } from 'components/splash'
 import {
   nativeToWebMessage,
   nativeToWebMessageType,
@@ -46,7 +46,9 @@ import { ExportLogsButton, log } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import Constants from 'expo-constants'
 import { NativeShareData } from 'common/src/native-share-data'
-import { clearData, getData, storeData } from './lib/auth'
+import { clearData, getData, storeData } from 'lib/auth'
+import { SplashAuth } from 'components/splash-auth'
+import { useIsConnected } from 'lib/use-is-connected'
 
 // NOTE: URIs other than manifold.markets and localhost:3000 won't work for API requests due to CORS
 // this means no supabase jwt, placing bets, creating markets, etc.
@@ -431,19 +433,20 @@ const App = () => {
     }, 100)
   }
 
-  const webViewAndUserLoaded = hasLoadedWebView && fbUser
+  const isConnected = useIsConnected()
+  const fullyLoaded = hasLoadedWebView && fbUser && isConnected
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
     container: {
-      display: webViewAndUserLoaded ? 'flex' : 'none',
+      display: fullyLoaded ? 'flex' : 'none',
       flex: 1,
       justifyContent: 'center',
       overflow: 'hidden',
       backgroundColor: backgroundColor,
     },
     webView: {
-      display: webViewAndUserLoaded ? 'flex' : 'none',
+      display: fullyLoaded ? 'flex' : 'none',
       overflow: 'hidden',
       marginTop: isIOS ? 0 : RNStatusBar.currentHeight ?? 0,
       marginBottom: 0,
@@ -452,17 +455,16 @@ const App = () => {
 
   return (
     <>
-      {!hasLoadedWebView ? (
-        <SplashLoading
-          height={height}
-          width={width}
-          source={require('./assets/splash.png')}
-        />
-      ) : (
-        hasLoadedWebView &&
-        !fbUser && <AuthPage webview={webview} height={height} width={width} />
-      )}
-      {Platform.OS === 'ios' && Device.isDevice && webViewAndUserLoaded && (
+      <SplashAuth
+        height={height}
+        width={width}
+        source={require('./assets/splash.png')}
+        webview={webview}
+        hasLoadedWebView={hasLoadedWebView}
+        fbUser={fbUser}
+        isConnected={isConnected}
+      />
+      {Platform.OS === 'ios' && Device.isDevice && fullyLoaded && (
         <IosIapListener
           checkoutAmount={checkoutAmount}
           setCheckoutAmount={setCheckoutAmount}

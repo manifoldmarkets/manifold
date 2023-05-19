@@ -17,7 +17,7 @@ import clsx from 'clsx'
 import { Row } from '../layout/row'
 import { ContractComment } from 'common/comment'
 import { BoostsType } from 'web/hooks/use-feed'
-import { AD_PERIOD } from 'common/boost'
+import { AD_PERIOD, AD_REDEEM_FEE } from 'common/boost'
 
 export const FeedItems = (props: {
   contracts: Contract[]
@@ -40,7 +40,8 @@ export const FeedItems = (props: {
   const contracts = mergePeriodic(organicContracts, boostedContracts, AD_PERIOD)
 
   const contractIds = contracts.map((c) => c.id)
-  const maxItems = 2
+  const maxBets = 2
+  const maxComments = 1
   const { parentCommentsByContractId, childCommentsByParentCommentId } =
     useFeedComments(user, contractIds)
   const recentBets = useFeedBets(user, contractIds)
@@ -51,8 +52,8 @@ export const FeedItems = (props: {
     )
     return {
       contract,
-      parentComments: parentComments.slice(0, maxItems),
-      relatedBets: relatedBets.slice(0, maxItems),
+      parentComments: parentComments.slice(0, maxComments),
+      relatedBets: relatedBets.slice(0, maxBets),
     }
   })
 
@@ -66,7 +67,7 @@ export const FeedItems = (props: {
           contract.type === 'boost'
             ? {
                 adId: contract.ad_id,
-                reward: contract.ad_cost_per_view,
+                reward: contract.ad_cost_per_view - AD_REDEEM_FEE,
               }
             : undefined
 
@@ -84,6 +85,7 @@ export const FeedItems = (props: {
                 hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
               )}
               promotedData={promotedData}
+              trackingPostfix="feed"
             />
             <Row className="bg-canvas-0">
               <FeedCommentItem
@@ -179,6 +181,7 @@ const FeedCommentItem = (props: {
               threadComments={ct.childComments}
               parentComment={ct.parentComment}
               collapseMiddle={true}
+              trackingLocation={'feed'}
             />
           </Col>
         </Row>

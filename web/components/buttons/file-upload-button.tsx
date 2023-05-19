@@ -5,14 +5,16 @@ export function FileUploadButton(props: {
   onFiles: (files: File[]) => void
   className?: string
   children?: React.ReactNode
+  disabled?: boolean
 }) {
-  const { onFiles, className, children } = props
+  const { onFiles, className, children, disabled } = props
   const ref = useRef<HTMLInputElement>(null)
   return (
     <>
       <button
         type={'button'}
         className={className}
+        disabled={disabled}
         onClick={() => ref.current?.click()}
       >
         {children}

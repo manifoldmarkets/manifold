@@ -5,12 +5,13 @@ import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
 import { floor } from 'lodash'
 
+export type AvatarSizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export const Avatar = memo(
   (props: {
     username?: string
     avatarUrl?: string
     noLink?: boolean
-    size?: number | '2xs' | 'xs' | 'sm'
+    size?: AvatarSizeType
     className?: string
     preventDefault?: boolean
   }) => {
@@ -18,7 +19,19 @@ export const Avatar = memo(
     const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
     useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
     const s =
-      size == '2xs' ? 4 : size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
+      size == '2xs'
+        ? 4
+        : size == 'xs'
+        ? 6
+        : size == 'sm'
+        ? 8
+        : size == 'md'
+        ? 10
+        : size == 'lg'
+        ? 12
+        : size == 'xl'
+        ? 24
+        : 10
     const sizeInPx = s * 4
 
     const onClick = (e: MouseEvent) => {

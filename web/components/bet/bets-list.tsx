@@ -504,9 +504,10 @@ export function ContractBetsTable(props: {
   contract: Contract
   bets: Bet[]
   isYourBets: boolean
+  hideRedemptionAndLoanMessages?: boolean
 }) {
-  const { contract, isYourBets } = props
-  const { isResolved, mechanism, outcomeType } = contract
+  const { contract, isYourBets, hideRedemptionAndLoanMessages } = props
+  const { isResolved, mechanism, outcomeType, closeTime } = contract
 
   const bets = sortBy(
     props.bets.filter((b) => !b.isAnte && b.amount !== 0),
@@ -542,10 +543,11 @@ export function ContractBetsTable(props: {
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
+  const isClosed = closeTime && Date.now() > closeTime
 
   return (
     <div className="overflow-x-auto">
-      {amountRedeemed > 0 && (
+      {!hideRedemptionAndLoanMessages && amountRedeemed > 0 && (
         <>
           <div className="text-ink-500 pl-2 text-sm">
             {isCPMM2 ? (
@@ -565,7 +567,7 @@ export function ContractBetsTable(props: {
         </>
       )}
 
-      {!isResolved && amountLoaned > 0 && (
+      {!hideRedemptionAndLoanMessages && !isResolved && amountLoaned > 0 && (
         <>
           <div className="text-ink-500 pl-2 text-sm">
             {isYourBets ? (
@@ -583,7 +585,9 @@ export function ContractBetsTable(props: {
       <Table>
         <thead>
           <tr className="p-2">
-            <th></th>
+            {isYourBets && isDPM && !isNumeric && !isResolved && !isClosed && (
+              <th></th>
+            )}
             {isCPMM && <th>Type</th>}
             <th>Outcome</th>
             <th>Amount</th>
@@ -693,15 +697,13 @@ function BetRow(props: {
 
   return (
     <tr>
-      <td className="text-ink-700">
-        {isYourBet &&
-          isDPM &&
-          !isNumeric &&
-          !isResolved &&
-          !isClosed &&
-          !isSold &&
-          !isAnte && <DpmSellButton contract={contract} bet={bet} />}
-      </td>
+      {isYourBet && isDPM && !isNumeric && !isResolved && !isClosed && (
+        <td className="text-ink-700">
+          {!isSold && !isAnte && (
+            <DpmSellButton contract={contract} bet={bet} />
+          )}
+        </td>
+      )}
       {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       <td>
         {isCPMM2 && (isShortSell ? 'NO ' : 'YES ')}
@@ -724,7 +726,7 @@ function BetRow(props: {
       {isDPM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>
         {isStonk
-          ? getStonkShares(contract, sharesOrShortSellShares)
+          ? getStonkShares(contract, sharesOrShortSellShares, 2)
           : formatWithCommas(sharesOrShortSellShares)}
       </td>
 

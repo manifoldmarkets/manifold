@@ -1,3 +1,10 @@
+import { Contract } from 'common/contract'
+import { PrivateUser, User, UserAndPrivateUser } from 'common/user'
+import { filterDefined } from 'common/util/array'
+import { removeUndefinedProps } from 'common/util/object'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
 import {
   collection,
   collectionGroup,
@@ -15,21 +22,14 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
-import { app, db } from './init'
-import { PrivateUser, User, UserAndPrivateUser } from 'common/user'
-import { coll, getValues, listenForValue, listenForValues } from './utils'
-import { safeLocalStorage } from '../util/local'
-import { filterDefined } from 'common/util/array'
-import { addUserToGroupViaId } from 'web/lib/firebase/groups'
-import { removeUndefinedProps } from 'common/util/object'
-import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import { track } from '../service/analytics'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
-import { Contract } from 'common/contract'
 import { nativeSignOut } from 'web/lib/native/native-messages'
+import { track } from '../service/analytics'
+import { safeLocalStorage } from '../util/local'
+import { addGroupMember } from './api'
+import { app, db } from './init'
+import { coll, getValues, listenForValue, listenForValues } from './utils'
 
 dayjs.extend(utc)
 
@@ -192,7 +192,7 @@ export async function setCachedReferralInfoForUser(user: User | null) {
           local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
 
           if (cachedReferralGroupId)
-            addUserToGroupViaId(cachedReferralGroupId, user.id)
+            addGroupMember({ groupId: cachedReferralGroupId, userId: user.id })
         })
     })
 }
@@ -215,15 +215,6 @@ export async function firebaseLogout() {
   await auth.signOut()
 }
 
-export async function listUsers(userIds: string[]) {
-  if (userIds.length > 10) {
-    throw new Error('Too many users requested at once; Firestore limits to 10')
-  }
-  const q = query(users, where('id', 'in', userIds))
-  const docs = (await getDocs(q)).docs
-  return docs.map((doc) => doc.data())
-}
-
 export async function listAllUsers(
   n: number,
   before?: string,
@@ -237,47 +228,6 @@ export async function listAllUsers(
   const snapshot = await getDocs(q)
   return snapshot.docs.map((doc) => doc.data())
 }
-
-export async function getProfitRank(profit: number, period: Period) {
-  const q = query(users, where(`profitCached.${period}`, '>', profit))
-  const resp = await getCountFromServer(q)
-  return resp.data().count + 1
-}
-
-export async function getCreatorRank(traders: number, period: Period) {
-  const q = query(users, where(`creatorTraders.${period}`, '>', traders))
-  const resp = await getCountFromServer(q)
-  return resp.data().count + 1
-}
-
-export function getTopTraders(period: Period) {
-  const topTraders = query(
-    users,
-    orderBy('profitCached.' + period, 'desc'),
-    limit(21) // add extra to account for @acc removal
-  )
-
-  return getValues<User>(topTraders)
-}
-
-export function getTopCreators(period: Period) {
-  const topCreators = query(
-    users,
-    orderBy('creatorTraders.' + period, 'desc'),
-    limit(20)
-  )
-  return getValues<User>(topCreators)
-}
-
-export async function getTopFollowed() {
-  return (await getValues<User>(topFollowedQuery)).slice(0, 20)
-}
-
-const topFollowedQuery = query(
-  users,
-  orderBy('followerCountCached', 'desc'),
-  limit(20)
-)
 
 export function getUsers() {
   return getValues<User>(users)

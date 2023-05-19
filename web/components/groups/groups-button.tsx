@@ -9,20 +9,21 @@ import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
-import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
+import { leaveGroup } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
+import { db } from 'web/lib/supabase/db'
 import {
+  SearchGroupInfo,
   getMemberGroups,
   getMemberGroupsCount,
-  SearchGroupInfo,
 } from 'web/lib/supabase/groups'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import { GroupLinkItem } from 'web/pages/groups'
-import { Button, buttonClass } from '../buttons/button'
+import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Subtitle } from '../widgets/subtitle'
-import { db } from 'web/lib/supabase/db'
+import { joinGroup } from 'web/lib/firebase/api'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -106,8 +107,9 @@ export function LeavePrivateGroupButton(props: {
   setIsMember: (isMember: boolean) => void
   isMobile?: boolean
   disabled?: boolean
+  className?: string
 }) {
-  const { group, user, setIsMember, isMobile, disabled } = props
+  const { group, user, setIsMember, isMobile, disabled, className } = props
   const leavePrivateGroup = user
     ? withTracking(() => {
         leaveGroup(group.id, user.id)
@@ -124,9 +126,11 @@ export function LeavePrivateGroupButton(props: {
         openModalBtn={{
           className: clsx(
             isMobile
-              ? 'bg-inherit hover:bg-inherit inline-flex items-center justify-center disabled:cursor-not-allowed shadow-none px-1 '
-              : buttonClass('md', 'dark-gray')
+              ? 'bg-inherit hover:bg-inherit inline-flex items-center justify-center disabled:cursor-not-allowed shadow-none px-1'
+              : '',
+            className
           ),
+          color: isMobile ? 'none' : 'dark-gray',
           disabled: disabled,
           icon: (
             <UserRemoveIcon
@@ -178,7 +182,6 @@ export function JoinOrLeaveGroupButton(props: {
   disabled?: boolean
 }) {
   const { group, className, user, isMobile, disabled } = props
-
   // Handle both non-live and live updating isMember state
   const [isMember, setIsMember] = useState(props.isMember)
   useEffect(() => setIsMember(props.isMember), [props.isMember])
@@ -190,6 +193,7 @@ export function JoinOrLeaveGroupButton(props: {
         user={user}
         isMobile={isMobile}
         disabled={disabled}
+        className={className}
       />
     )
   }
@@ -205,7 +209,7 @@ export function JoinOrLeaveGroupButton(props: {
     : firebaseLogin
   const follow = user
     ? withTracking(() => {
-        joinGroup(group.id, user.id)
+        joinGroup({ groupId: group.id })
           .then(() => setIsMember(true))
           .catch(() => {
             toast.error('Failed to follow group')
@@ -222,7 +226,16 @@ export function JoinOrLeaveGroupButton(props: {
       )
     }
     return (
-      <Button color="dark-gray" className={className} onClick={unfollow}>
+      <Button
+        color="dark-gray"
+        className={className}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          unfollow()
+        }}
+        disabled={disabled}
+      >
         <Row className="gap-1">
           <UserRemoveIcon className="h-5 w-5" />
           Leave
@@ -243,7 +256,15 @@ export function JoinOrLeaveGroupButton(props: {
     )
   }
   return (
-    <Button color="indigo" className={className} onClick={() => follow()}>
+    <Button
+      color="indigo"
+      className={className}
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        follow()
+      }}
+    >
       <Row className="gap-1">
         <UserAddIcon className="h-5 w-5" />
         Join

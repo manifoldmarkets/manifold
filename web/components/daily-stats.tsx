@@ -11,13 +11,8 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { DailyProfit } from 'web/components/daily-profit'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { DailyLeagueStat } from './daily-league-stat'
-import { LEAGUES_ENABLED } from 'common/leagues'
 
-export const dailyStatsClass = 'text-lg py-1'
-
-// still not that pretty...
-export const unseenDailyStatsClass =
-  'px-1.5 transition-all shadow-lg !shadow-primary-200 dark:shadow-canvas-100 bg-primary-50 dark:bg-primary-200/10 hover:shadow-md'
+export const dailyStatsClass = 'bg-ink-100 rounded-lg px-2 py-1 shadow'
 
 export function DailyStats(props: {
   user: User | null | undefined
@@ -31,9 +26,9 @@ export function DailyStats(props: {
   if (!user) return <></>
 
   return (
-    <Row className={'z-30 flex-shrink-0 items-center gap-4'}>
+    <Row className={'z-30 flex-shrink-0 items-center gap-3'}>
       <DailyProfit user={user} />
-      {LEAGUES_ENABLED && <DailyLeagueStat user={user} />}
+      <DailyLeagueStat user={user} />
       <QuestsOrStreak user={user} />
 
       {showLoans && (

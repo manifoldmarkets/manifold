@@ -11,7 +11,6 @@ import {
   onSnapshot,
   orderBy,
   query,
-  setDoc,
   updateDoc,
   where,
 } from 'firebase/firestore'
@@ -103,15 +102,6 @@ export function listenForGroup(
   return listenForValue(doc(groups, groupId), setGroup)
 }
 
-export async function getMemberGroups(userId: string) {
-  const snapshot = await getDocs(memberGroupsQuery(userId))
-  const groupIds = filterDefined(
-    snapshot.docs.map((doc) => doc.ref.parent.parent?.id)
-  )
-  const groups = await Promise.all(groupIds.map(getGroup))
-  return filterDefined(groups)
-}
-
 export function listenForMemberGroupIds(
   userId: string,
   setGroupIds: (groupIds: string[]) => void
@@ -153,28 +143,6 @@ export async function listAvailableGroups(userId: string) {
   )
 
   return uniqBy([...openGroups, ...memberGroups], (g) => g.id)
-}
-
-export async function addUserToGroupViaId(groupId: string, userId: string) {
-  // get group to get the member ids
-  const group = await getGroup(groupId)
-  if (!group) {
-    console.error(`Group not found: ${groupId}`)
-    return
-  }
-  return await joinGroup(group.id, userId)
-}
-
-export async function joinGroup(
-  groupId: string,
-  userId: string
-): Promise<void> {
-  // create a new member document in groupMembers collection
-  const memberDoc = doc(groupMembers(groupId), userId)
-  return await setDoc(memberDoc, {
-    userId,
-    createdTime: Date.now(),
-  })
 }
 
 export async function leaveGroup(

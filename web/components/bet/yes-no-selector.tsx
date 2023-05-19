@@ -1,11 +1,13 @@
 import clsx from 'clsx'
 import React from 'react'
+import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/solid'
+
 import { Row } from '../layout/row'
 import { resolution } from 'common/contract'
 import { Button } from '../buttons/button'
 
 export function YesNoSelector(props: {
-  selected?: 'YES' | 'NO'
+  selected?: 'YES' | 'NO' | 'LIMIT'
   onSelect: (selected: 'YES' | 'NO') => void
   className?: string
   btnClassName?: string
@@ -15,40 +17,27 @@ export function YesNoSelector(props: {
   const { selected, onSelect, className, btnClassName, yesLabel, noLabel } =
     props
 
-  const commonClassNames =
-    'inline-flex items-center justify-center rounded-3xl border-2 p-2'
-
   return (
     <Row className={clsx('space-x-3', className)}>
-      <button
-        className={clsx(
-          commonClassNames,
-          selected == 'YES'
-            ? 'border-teal-500 bg-teal-500 text-white'
-            : selected == 'NO'
-            ? 'border-ink-300 text-ink-300 bg-canvas-0 hover:border-teal-500 hover:text-teal-500'
-            : 'bg-canvas-0 border-teal-500 text-teal-500 hover:bg-teal-500/10',
-          btnClassName
-        )}
+      <Button
+        color={selected && selected !== 'YES' ? 'green-outline' : 'green'}
+        size="xl"
         onClick={() => onSelect('YES')}
+        className={btnClassName}
       >
         {yesLabel ? yesLabel : 'YES'}
-      </button>
+        <ArrowUpIcon className="ml-1 h-4 w-4" />
+      </Button>
 
-      <button
-        className={clsx(
-          commonClassNames,
-          selected == 'NO'
-            ? 'border-scarlet-300 bg-scarlet-300 text-white'
-            : selected == 'YES'
-            ? 'hover:border-scarlet-300 hover:text-scarlet-300 border-ink-300 text-ink-300 bg-canvas-0'
-            : 'border-scarlet-300 text-scarlet-300 bg-canvas-0 hover:bg-red-500/10',
-          btnClassName
-        )}
+      <Button
+        color={selected && selected !== 'NO' ? 'red-outline' : 'red'}
+        size="xl"
         onClick={() => onSelect('NO')}
+        className={btnClassName}
       >
         {noLabel ? noLabel : 'NO'}
-      </button>
+        <ArrowDownIcon className="ml-1 h-4 w-4" />
+      </Button>
     </Row>
   )
 }

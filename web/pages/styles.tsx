@@ -54,6 +54,9 @@ function ButtonSection() {
         <Button disabled={disabled} loading={loading}>
           indigo
         </Button>
+        <Button disabled={disabled} loading={loading} color="indigo-outline">
+          indigo-outline
+        </Button>
         <Button disabled={disabled} loading={loading} color="gradient">
           gradient
         </Button>
@@ -78,11 +81,20 @@ function ButtonSection() {
         <Button disabled={disabled} loading={loading} color="green">
           green
         </Button>
+        <Button disabled={disabled} loading={loading} color="green-outline">
+          green-outline
+        </Button>
         <Button disabled={disabled} loading={loading} color="yellow">
           yellow
         </Button>
+        <Button disabled={disabled} loading={loading} color="yellow-outline">
+          yellow-outline
+        </Button>
         <Button disabled={disabled} loading={loading} color="red">
           red
+        </Button>
+        <Button disabled={disabled} loading={loading} color="red-outline">
+          red-outline
         </Button>
       </div>
 

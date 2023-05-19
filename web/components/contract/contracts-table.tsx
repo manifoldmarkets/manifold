@@ -5,12 +5,12 @@ import { getValueFromBucket } from 'common/calculate-dpm'
 import { Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { getStonkPriceMax } from 'common/stonk'
 import { formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
 import { IoUnlink } from 'react-icons/io5'
 import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import { useUser } from 'web/hooks/use-user'
+import { shortenNumber } from 'web/lib/util/shortenNumber'
 import { getTextColor } from '../bet/quick-bet'
 import { ContractMinibar } from '../charts/minibar'
 import { Row } from '../layout/row'
@@ -55,13 +55,9 @@ export function ContractStatusLabel(props: {
     case 'STONK': {
       const val = getDisplayProbability(contract)
       return (
-        <Tooltip
-          text={`of ${ENV_CONFIG.moneyMoniker + getStonkPriceMax(contract)}`}
-        >
-          <span className={probTextColor}>
-            {ENV_CONFIG.moneyMoniker + getFormattedMappedValue(contract, val)}
-          </span>
-        </Tooltip>
+        <span className={probTextColor}>
+          {ENV_CONFIG.moneyMoniker + getFormattedMappedValue(contract, val)}
+        </span>
       )
     }
     case 'PSEUDO_NUMERIC': {
@@ -146,7 +142,7 @@ export function ContractsTable(props: {
       content: (contract: Contract) => (
         <Row className="align-center shrink-0 items-center gap-0.5">
           <UserIcon className="h-4 w-4" />
-          {contract.uniqueBettorCount}
+          {shortenNumber(contract.uniqueBettorCount)}
         </Row>
       ),
     },

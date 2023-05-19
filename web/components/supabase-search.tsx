@@ -4,7 +4,13 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { debounce, isEqual, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
-import { createContext, useContext, useEffect, useRef } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+} from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import {
@@ -40,6 +46,7 @@ export const SORTS = [
   { label: 'Last activity', value: 'last-updated' },
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Just resolved', value: 'resolve-date' },
+  { label: '🎲 rAnDoM', value: 'random' },
 ] as const
 
 export type Sort = typeof SORTS[number]['value']
@@ -136,9 +143,7 @@ export function SupabaseContractSearch(props: {
     `${persistPrefix}-supabase-search`
   )
 
-  const loadMoreContracts = () => {
-    return performQuery(() => state)()
-  }
+  const loadMoreContracts = () => performQuery(state)
 
   const searchParams = useRef<SupabaseSearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SupabaseSearchParameters>()
@@ -155,8 +160,30 @@ export function SupabaseContractSearch(props: {
     }
   }, [])
 
-  const performQuery = useEvent((getState) => async (freshQuery?: boolean) => {
-    const currentState = getState()
+  // Counts as loaded if you are on the page and a query finished or if you go back in history.
+  const hasLoadedKey = `${persistPrefix}-search-has-loaded`
+  const searchHistoryStore = historyStore()
+  const hasLoaded = searchHistoryStore.get(hasLoadedKey)
+
+  // Use useEvent to pass the current state to the query function
+  const performQuery = useEvent(
+    async (currentState, freshQuery?: boolean) =>
+      (await debouncedQuery(currentState, freshQuery)) ?? false
+  )
+
+  // Debounce to reduce spam
+  const debouncedQuery = useCallback(
+    debounce(
+      async (currentState, freshQuery?: boolean) =>
+        query(currentState, freshQuery),
+      100
+    ),
+    []
+  )
+  // Cancel the debounced query on unmount
+  useEffect(() => debouncedQuery.cancel, [debouncedQuery])
+
+  const query = async (currentState: stateType, freshQuery?: boolean) => {
     if (searchParams.current == null) {
       return false
     }
@@ -213,24 +240,18 @@ export function SupabaseContractSearch(props: {
       }
     }
     return false
-  })
-
-  // Always do first query when loading search page, unless going back in history.
-  const [firstQuery, setFirstQuery] = usePersistentState(true, {
-    key: `${persistPrefix}-supabase-first-query`,
-    store: historyStore(),
-  })
+  }
 
   const onSearchParametersChanged = useRef(
     debounce((params) => {
-      if (!isEqual(searchParams.current, params) || firstQuery) {
-        setFirstQuery(false)
+      if (!isEqual(searchParams.current, params) || !hasLoaded) {
+        searchHistoryStore.set(hasLoadedKey, true)
         if (persistPrefix) {
           searchParamsStore.set(`${persistPrefix}-params`, params)
         }
         searchParams.current = params
         setState({ ...INITIAL_STATE, showTime: getShowTime(params.sort) })
-        performQuery(() => state)(true)
+        performQuery(state, true)
       }
     }, 100)
   ).current
@@ -377,12 +398,6 @@ function SupabaseContractSearchControls(props: {
       ? 'resolved'
       : filterState
 
-  useEffect(() => {
-    if (persistPrefix && sort) {
-      safeLocalStorage?.setItem(sortKey, sort as string)
-    }
-  }, [persistPrefix, query, sort, sortKey])
-
   const updateQuery = (newQuery: string) => {
     setQuery(newQuery)
   }
@@ -402,11 +417,13 @@ function SupabaseContractSearchControls(props: {
   const isAuth = useIsAuthorized()
 
   useEffect(() => {
-    onSearchParametersChanged({
-      query: query,
-      sort: sort as Sort,
-      filter: filter as filter,
-    })
+    if (isAuth !== undefined) {
+      onSearchParametersChanged({
+        query: query,
+        sort: sort as Sort,
+        filter: filter as filter,
+      })
+    }
   }, [query, sort, filter, isAuth])
 
   return (

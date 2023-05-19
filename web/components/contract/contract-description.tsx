@@ -1,6 +1,6 @@
 import clsx from 'clsx'
-import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
+
 import {
   Contract,
   MAX_DESCRIPTION_LENGTH,
@@ -10,25 +10,28 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
-import {
-  TextEditor,
-  editorExtensions,
-  useTextEditor,
-} from 'web/components/widgets/editor'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { Button } from '../buttons/button'
 import { Spacer } from '../layout/spacer'
-import { Editor, Content as ContentType } from '@tiptap/react'
-import { insertContent } from '../editor/utils'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { isTrustworthy } from 'common/envs/constants'
+import { ContractEditHistoryButton } from 'web/components/contract/contract-edit-history-button'
 
 export function ContractDescription(props: {
   contract: Contract
   toggleResolver?: () => void
   className?: string
+  showEditHistory?: boolean
+  defaultCollapse?: boolean
 }) {
-  const { contract, className, toggleResolver } = props
+  const {
+    contract,
+    className,
+    defaultCollapse,
+    toggleResolver,
+    showEditHistory,
+  } = props
   const { creatorId, closeTime } = contract
 
   const isAdmin = useAdmin()
@@ -53,17 +56,17 @@ export function ContractDescription(props: {
           toggleResolver={toggleResolver}
         />
       ) : (
-        <CollapsibleContent
-          content={contract.description}
-          stateKey={`isCollapsed-contract-${contract.id}`}
-        />
+        <>
+          <CollapsibleContent
+            content={contract.description}
+            stateKey={`isCollapsed-contract-${contract.id}`}
+            defaultCollapse={defaultCollapse}
+          />
+          {showEditHistory && <ContractEditHistoryButton contract={contract} />}
+        </>
       )}
     </div>
   )
-}
-
-function editTimestamp() {
-  return `${dayjs().format('MMM D, h:mma')}: `
 }
 
 function ContractActions(props: {
@@ -73,7 +76,6 @@ function ContractActions(props: {
   toggleResolver: () => void
 }) {
   const { contract, isOnlyAdmin, isOnlyTrustworthy, toggleResolver } = props
-
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
 
@@ -139,6 +141,7 @@ function ContractActions(props: {
             </Button>
           </>
         )}
+        <ContractEditHistoryButton contract={contract} />
       </Row>
       <EditQuestion
         contract={contract}
@@ -157,28 +160,10 @@ function EditQuestion(props: {
   const { contract, editing, setEditing } = props
   const [text, setText] = useState(contract.question)
 
-  function questionChanged(oldQ: string, newQ: string) {
-    return `<p>${editTimestamp()}<s>${oldQ}</s> → ${newQ}</p>`
-  }
-
-  function joinContent(oldContent: ContentType, newContent: string) {
-    const editor = new Editor({
-      content: oldContent,
-      extensions: editorExtensions(),
-    })
-    editor.commands.focus('end')
-    insertContent(editor, newContent)
-    return editor.getJSON()
-  }
-
   const onSave = async (newText: string) => {
     setEditing(false)
     await updateContract(contract.id, {
       question: newText,
-      description: joinContent(
-        contract.description,
-        questionChanged(contract.question, newText)
-      ),
     })
   }
 

@@ -10,6 +10,7 @@ import {
   SparklesIcon,
   StarIcon,
   UserGroupIcon,
+  FireIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -32,6 +33,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-menu'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export default function Sidebar(props: {
   className?: string
@@ -39,7 +41,7 @@ export default function Sidebar(props: {
 }) {
   const { className, isMobile } = props
   const router = useRouter()
-  const currentPage = router.pathname
+  const currentPage = router.asPath
 
   const user = useUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -126,8 +128,8 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         icon: NotificationsIcon,
       },
       {
-        name: 'Leaderboards',
-        href: '/leaderboards',
+        name: 'Leagues',
+        href: '/leagues',
         icon: TrophyIcon,
       },
       {
@@ -148,15 +150,15 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Markets', href: '/markets', icon: ScaleIcon },
-    { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
-
-    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
-    { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
+    getIsNative() && { name: 'Swipe', href: '/swipe', icon: FireIcon },
+    { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     {
       name: 'Groups',
       icon: UserGroupIcon,
       href: '/groups',
-    }
+    },
+    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
+    { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )
 }
 

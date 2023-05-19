@@ -4,9 +4,7 @@ import {
   ImageSourcePropType,
   StyleSheet,
 } from 'react-native'
-import React from 'react'
-
-export const SplashLoading = (props: {
+export const Splash = (props: {
   width: number
   height: number
   source: ImageSourcePropType
@@ -27,6 +25,7 @@ export const SplashLoading = (props: {
       bottom: 100,
     },
   })
+
   return (
     <>
       <Image style={styles.image} source={source} />

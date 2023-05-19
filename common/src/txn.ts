@@ -6,6 +6,7 @@ import { QuestType } from 'common/quest'
 type AnyTxnType =
   | Donation
   | Tip
+  | LootBoxPurchase
   | Manalink
   | Referral
   | UniqueBettorBonus
@@ -26,7 +27,11 @@ type AnyTxnType =
   | PostAdRedeem
   | MarketAdCreate
   | MarketAdRedeem
+  | MarketAdRedeemFee
   | QuestReward
+  | QAndACreate
+  | QAndAAward
+
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
@@ -54,6 +59,13 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
 type CertId = {
   // TODO: should certIds be in data?
   certId: string
+}
+
+type LootBoxPurchase = {
+  category: 'LOOTBOX_PURCHASE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
 }
 
 type CertMint = {
@@ -238,6 +250,12 @@ type MarketAdRedeem = {
   toType: 'USER'
 }
 
+type MarketAdRedeemFee = {
+  category: 'MARKET_BOOST_REDEEM_FEE'
+  fromType: 'AD'
+  toType: 'BANK'
+}
+
 type QuestReward = {
   category: 'QUEST_REWARD'
   fromType: 'BANK'
@@ -245,6 +263,24 @@ type QuestReward = {
   data: {
     questType: QuestType
     questCount: number
+  }
+}
+
+type QAndACreate = {
+  category: 'Q_AND_A_CREATE'
+  fromType: 'USER'
+  toType: 'BANK'
+  data: {
+    q_and_a_id: string
+  }
+}
+
+type QAndAAward = {
+  category: 'Q_AND_A_AWARD'
+  fromType: 'BANK'
+  toType: 'USER'
+  data: {
+    q_and_a_id: string
   }
 }
 
@@ -273,4 +309,8 @@ export type PostAdCreateTxn = Txn & PostAdCreate
 export type PostAdRedeemTxn = Txn & PostAdRedeem
 export type MarketAdCreateTxn = Txn & MarketAdCreate
 export type MarketAdRedeemTxn = Txn & MarketAdRedeem
+export type MarketAdRedeemFeeTxn = Txn & MarketAdRedeemFee
 export type QuestRewardTxn = Txn & QuestReward
+export type LootBoxPuchaseTxn = Txn & LootBoxPurchase
+export type QAndACreateTxn = Txn & QAndACreate
+export type QAndAAwardTxn = Txn & QAndAAward

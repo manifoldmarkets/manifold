@@ -4,7 +4,11 @@ import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
+import {
+  Avatar,
+  AvatarSizeType,
+  EmptyAvatar,
+} from 'web/components/widgets/avatar'
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
@@ -24,7 +28,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
   bet: Bet
-  avatarSize?: number | '2xs' | 'xs' | 'sm'
+  avatarSize?: AvatarSizeType
   className?: string
   onReply?: (bet: Bet) => void
 }) {
@@ -108,7 +112,7 @@ export function groupBetsByCreatedTimeAndUserId(bets: Bet[]) {
 export const SummarizeBets = memo(function SummarizeBets(props: {
   contract: Contract
   betsBySameUser: Bet[]
-  avatarSize?: number | '2xs' | 'xs' | 'sm'
+  avatarSize?: AvatarSizeType
   className?: string
 }) {
   const { contract, betsBySameUser, avatarSize, className } = props
@@ -176,7 +180,8 @@ export function BetStatusText(props: {
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const isShortSell = isCPMM2 && amount > 0 && shares === 0
-  const money = formatMoney(Math.abs(amount))
+  const absAmount = Math.abs(amount)
+  const money = formatMoney(absAmount)
   const orderAmount =
     bet.limitProb !== undefined && bet.orderAmount !== undefined
       ? formatMoney(bet.orderAmount)
@@ -200,7 +205,10 @@ export function BetStatusText(props: {
       : getFormattedMappedValue(contract, bet.limitProb ?? bet.probAfter)
 
   return (
-    <div className={clsx('text-ink-500 text-sm', className)}>
+    <div
+      className={clsx('text-ink-500', className)}
+      style={{ fontSize: 14 + Math.min(absAmount / 1000, 40) }}
+    >
       {!hideUser ? (
         <UserLink name={bet.userName} username={bet.userUsername} />
       ) : (

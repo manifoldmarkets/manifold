@@ -8,7 +8,9 @@ export function useGroupSearchResults(query: string, limit: number) {
   const debouncedOnSearch = useMemo(
     () =>
       debounce(async (query: string) => {
-        searchGroups(query, limit).then(setResults)
+        searchGroups({ term: query, limit }).then((results) =>
+          setResults(results.data)
+        )
       }, 50),
     [limit]
   )

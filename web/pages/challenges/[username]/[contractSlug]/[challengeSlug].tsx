@@ -331,7 +331,7 @@ const userCol = (challenger: User) => (
       username={challenger.username}
     />
     <Avatar
-      size={24}
+      size={'xl'}
       avatarUrl={challenger.avatarUrl}
       username={challenger.username}
     />

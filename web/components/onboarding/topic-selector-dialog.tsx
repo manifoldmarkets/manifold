@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react'
 import { noop, uniq } from 'lodash'
 
 import { Col } from 'web/components/layout/col'
-import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
+import { leaveGroup } from 'web/lib/firebase/groups'
 import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { db } from 'web/lib/supabase/db'
-import { updateUserEmbedding } from 'web/lib/firebase/api'
+import { joinGroup, updateUserEmbedding } from 'web/lib/firebase/api'
 import { getUserInterestTopics } from 'web/lib/supabase/user'
 
 export function TopicSelectorDialog(props: {
@@ -102,7 +102,7 @@ export function TopicSelectorDialog(props: {
                             uniq([...selectedTopics, subtopic])
                           )
                           if (topic === '👥 Communities' && groupId && user)
-                            joinGroup(groupId, user.id)
+                            joinGroup({ groupId })
                         }
                       }}
                     >

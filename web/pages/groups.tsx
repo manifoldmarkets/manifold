@@ -1,75 +1,43 @@
-import { UsersIcon } from '@heroicons/react/solid'
+import { FlagIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { Group, groupPath, GroupsByTopic } from 'common/group'
+import { Group, groupPath } from 'common/group'
 import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
 import { useMutation } from 'react-query'
 import { ContractsTable } from 'web/components/contract/contracts-table'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
+import DiscoverGroups from 'web/components/groups/discover-groups'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
+import YourGroups from 'web/components/groups/your-groups'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { useGroupSearchResults } from 'web/components/search/query-groups'
+import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
-import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
 import { useMemberGroupIds } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
 import { searchContract } from 'web/lib/supabase/contracts'
-import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
+import { SearchGroupInfo } from 'web/lib/supabase/groups'
 
-// TODO use trending groups
-
-export const getStaticProps = async () => {
-  const groups = await searchGroups('', 200).catch((_) => [])
-
-  return { props: { groups }, revalidate: 60 }
+function PrivateGroupsBanner() {
+  return (
+    <Row className="dark:border-indigo-00 gap- mb-4 rounded bg-indigo-200 bg-opacity-70 px-2 py-1 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100">
+      <span>
+        <FlagIcon className="mt-0.5 h-5 w-5" />
+      </span>
+      <span>Private groups are now in beta! Create a private group today</span>
+    </Row>
+  )
 }
 
 export default function Groups(props: { groups: SearchGroupInfo[] }) {
   const user = useUser()
-
-  const [query, setQuery] = useState('')
-
-  const communities = [
-    {
-      name: '🎮 Destiny.gg',
-      description: 'gamers betting on "stocks" for streamers',
-      slugs: GroupsByTopic.destiny,
-    },
-    {
-      name: '💡 EA & Rationality',
-      description: 'nerds with a math-based life philosophy',
-      slugs: GroupsByTopic.rat,
-    },
-    {
-      name: '🤖 AI',
-      description: 'robots taking over, soon-ish',
-      slugs: GroupsByTopic.ai,
-    },
-    {
-      name: '🎲 Fun',
-      description: 'degens gambling on manifold',
-      slugs: GroupsByTopic.ponzi,
-    },
-  ]
-
-  const allSpecialGroups = Object.values(GroupsByTopic).flat()
-  const otherGroups = props.groups.filter(
-    (g) => !allSpecialGroups.includes(g.slug)
-  )
-
-  const searchedGroups = useGroupSearchResults(query, 50)
-  const groups = query !== '' ? searchedGroups : otherGroups
-
-  const [selectedCommunity, setSelected] = useState<number>()
-
+  const yourGroupIds = useMemberGroupIds(user)
   return (
     <Page>
       <SEO
@@ -79,6 +47,7 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
       />
       <Col className="items-center">
         <Col className="w-full max-w-2xl px-4 sm:px-2">
+          <PrivateGroupsBanner />
           <Row className="items-start justify-between">
             <Title>Groups</Title>
             {user && (
@@ -89,29 +58,26 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
               />
             )}
           </Row>
-          <Subtitle>Top Communities</Subtitle>
-          {communities.map((c, i) => (
-            <Community
-              name={c.name}
-              description={c.description}
-              selected={i === selectedCommunity}
-              onClick={() => setSelected(i)}
-              groups={props.groups.filter((g) => c.slugs?.includes(g.slug))}
+          {user && yourGroupIds && yourGroupIds.length > 0 && (
+            <UncontrolledTabs
+              className={'mb-4'}
+              tabs={[
+                {
+                  title: 'Your Groups',
+                  content: <YourGroups yourGroupIds={yourGroupIds} />,
+                },
+                {
+                  title: 'Discover',
+                  content: <DiscoverGroups yourGroupIds={yourGroupIds} />,
+                },
+              ]}
             />
-          ))}
-          <Subtitle>Discover Groups</Subtitle>
-
-          <Input
-            type="text"
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search groups"
-            value={query}
-            className="mb-4 w-full"
-          />
-
-          <div className="grid grid-cols-1">
-            <GroupSearchResult groups={groups} />
-          </div>
+          )}{' '}
+          {!user ||
+            !yourGroupIds ||
+            (yourGroupIds.length < 1 && (
+              <DiscoverGroups yourGroupIds={yourGroupIds} />
+            ))}
         </Col>
       </Col>
     </Page>

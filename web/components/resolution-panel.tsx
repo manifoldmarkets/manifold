@@ -41,10 +41,9 @@ export function ResolutionPanel(props: {
   isCreator: boolean
   creator: User
   contract: BinaryContract
-  className?: string
   modalSetOpen?: (open: boolean) => void
 }) {
-  const { contract, className, isAdmin, isCreator, modalSetOpen } = props
+  const { contract, isAdmin, isCreator, modalSetOpen } = props
 
   // const earnedFees =
   //   contract.mechanism === 'dpm-2'

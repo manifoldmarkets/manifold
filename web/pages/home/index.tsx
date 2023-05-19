@@ -1,4 +1,4 @@
-import { PencilAltIcon, SwitchHorizontalIcon } from '@heroicons/react/solid'
+import { PencilAltIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 
 import { CPMMContract } from 'common/contract'
@@ -27,8 +27,6 @@ import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
-import { Swipe } from 'web/components/swipe/swipe'
-import { getIsNative } from 'web/lib/native/is-native'
 import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
@@ -64,7 +62,6 @@ function HomeDashboard() {
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
 
   const isLoading = !dailyChangedContracts
-
   return (
     <Page>
       <Col className="mx-auto w-full max-w-2xl gap-6 pb-8 sm:px-2 lg:pr-4">
@@ -86,31 +83,15 @@ function HomeDashboard() {
 
 function MobileHome() {
   const user = useUser()
-  const { showSwipe, toggleView, isNative } = useViewToggle()
 
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
-
   const isLoading = !dailyChangedContracts
-
-  if (showSwipe) return <Swipe toggleView={toggleView(false)} />
-
   return (
     <Page>
       <Col className="gap-2 py-2 pb-8 sm:px-2">
-        <Row className="mx-4 mb-2 items-center justify-between gap-4">
-          <Row className="items-center gap-2">
-            <Title children="Home" className="!my-0" />
-            {isNative && (
-              <SwitchHorizontalIcon
-                className="h-5 w-5"
-                onClick={toggleView(true)}
-              />
-            )}
-          </Row>
-
-          <Row className="items-center gap-4">
-            <DailyStats user={user} />
-          </Row>
+        <Row className="mx-4 mb-2 items-center gap-4">
+          <Title children="Home" className="!my-0 hidden sm:block" />
+          <DailyStats user={user} />
         </Row>
 
         {isLoading && <LoadingIndicator />}
@@ -121,34 +102,8 @@ function MobileHome() {
           </Col>
         </Col>
       </Col>
-
-      <button
-        type="button"
-        className={clsx(
-          'focus:ring-primary-500 fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
-          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r'
-        )}
-        onClick={() => {
-          Router.push('/create')
-          track('mobile create button')
-        }}
-      >
-        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
-      </button>
     </Page>
   )
-}
-
-const useViewToggle = () => {
-  const isNative = getIsNative()
-
-  const [showSwipe, setShowSwipe] = usePersistentLocalState(false, 'show-swipe')
-
-  const toggleView = (showSwipe: boolean) => () => {
-    setShowSwipe(showSwipe)
-    track('toggle swipe', { showSwipe })
-  }
-  return { showSwipe, toggleView, isNative }
 }
 
 function HomeSectionHeader(props: {
@@ -228,21 +183,19 @@ const YourFeedSection = memo(function YourFeedSection(props: {
 })
 
 const MainContent = () => {
+  const [topic, setTopic] = usePersistentLocalState('', 'your-feed-topic')
   const [isLive, setIsLive] = usePersistentInMemoryState(
     false,
     'main-content-section-is-live'
   )
-  const [topic, setTopic] = usePersistentLocalState('', 'your-feed-topic')
   const [pill, setPill] = usePersistentInMemoryState<pill_options>(
     'all',
     'live-pill'
   )
-
   const selectLive = (on: boolean) => {
     setIsLive(on)
     track('select live', { on })
   }
-
   return (
     <Col>
       <Row className="h-[48px] items-center justify-between">
@@ -257,7 +210,21 @@ const MainContent = () => {
         </Row>
       </Row>
       <YourFeedSection topic={topic} className={clsx(isLive ? 'hidden' : '')} />
-      <LiveSection className={clsx(isLive ? '' : 'hidden')} pill={pill} />
+      {isLive && <LiveSection pill={pill} />}
+      <button
+        type="button"
+        className={clsx(
+          'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
+          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
+          'bottom-[64px]'
+        )}
+        onClick={() => {
+          Router.push('/create')
+          track('mobile create button')
+        }}
+      >
+        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
+      </button>
     </Col>
   )
 }

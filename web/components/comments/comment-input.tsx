@@ -165,6 +165,7 @@ export function AnswerCommentInput(props: {
             replyToAnswerId={answerResponse.id}
             replyToUserInfo={replyTo}
             clearReply={onCancelAnswerResponse}
+            trackingLocation={'contract page'}
           />
           <button onClick={onCancelAnswerResponse}>
             <div className="bg-canvas-0 absolute -top-1 -right-2 h-4 w-4 rounded-full" />

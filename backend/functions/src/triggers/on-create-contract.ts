@@ -8,8 +8,7 @@ import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
 
 import { dalleWithDefaultParams } from 'shared/dream-utils'
-import { getImagePrompt, generateEmbeddings } from 'shared/helpers/openai-utils'
-import { createSupabaseClient } from 'shared/supabase/init'
+import { getImagePrompt } from 'shared/helpers/openai-utils'
 import { secrets } from 'common/secrets'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 
@@ -23,17 +22,23 @@ export const onCreateContract = functions
     const contract = snapshot.data() as Contract
     const { eventId } = context
 
+    await generateContractImage(contract).then((coverImageUrl) =>
+      coverImageUrl ? snapshot.ref.update({ coverImageUrl }) : null
+    )
+
     const contractCreator = await getUser(contract.creatorId)
     if (!contractCreator) throw new Error('Could not find contract creator')
 
-    const desc = contract.description as JSONContent
-    const mentioned = parseMentions(desc)
-    await addUserToContractFollowers(contract.id, contractCreator.id)
     await completeCalculatedQuestFromTrigger(
       contractCreator,
       'MARKETS_CREATED',
       eventId
     )
+
+    const desc = contract.description as JSONContent
+    const mentioned = parseMentions(desc)
+    await addUserToContractFollowers(contract.id, contractCreator.id)
+
     await createNewContractNotification(
       contractCreator,
       contract,
@@ -41,19 +46,12 @@ export const onCreateContract = functions
       richTextToString(desc),
       mentioned
     )
-    const imagePrompt = await getImagePrompt(contract.question)
-    const coverImageUrl = await dalleWithDefaultParams(
-      imagePrompt ?? contract.question
-    )
-    if (coverImageUrl)
-      await snapshot.ref.update({
-        coverImageUrl,
-      })
-
-    const embedding = await generateEmbeddings(contract.question)
-    if (!embedding) return
-
-    await createSupabaseClient()
-      .from('contract_embeddings')
-      .insert({ contract_id: contract.id, embedding: embedding as any })
   })
+
+const generateContractImage = async (contract: Contract) => {
+  const imagePrompt = await getImagePrompt(contract.question)
+  const coverImageUrl = await dalleWithDefaultParams(
+    imagePrompt ?? contract.question
+  )
+  return coverImageUrl
+}

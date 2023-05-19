@@ -2,14 +2,7 @@ import { Col } from 'web/components/layout/col'
 import { Leaderboard } from 'web/components/leaderboard'
 import { zip } from 'lodash'
 import { Page } from 'web/components/layout/page'
-import {
-  getCreatorRank,
-  getProfitRank,
-  getTopCreators,
-  getTopTraders,
-  Period,
-  User,
-} from 'web/lib/firebase/users'
+import { Period, User } from 'web/lib/firebase/users'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { Title } from 'web/components/widgets/title'
@@ -24,6 +17,12 @@ import {
   getTopReferrals,
 } from 'common/supabase/referrals'
 import { db } from 'web/lib/supabase/db'
+import {
+  getTopTraders,
+  getTopCreators,
+  getProfitRank,
+  getCreatorRank,
+} from 'web/lib/supabase/users'
 
 export async function getStaticProps() {
   const [allTime, monthly, weekly, daily] = await Promise.all([
@@ -226,7 +225,7 @@ export default function Leaderboards(props: {
         <QueryUncontrolledTabs
           className="mb-4"
           currentPageForAnalytics={'leaderboards'}
-          defaultIndex={1}
+          defaultIndex={3}
           tabs={[
             {
               title: 'Daily',

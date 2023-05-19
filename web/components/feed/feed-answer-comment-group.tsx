@@ -106,6 +106,7 @@ export function FreeResponseComments(props: {
                 commentsByParent[parent.id] ?? [],
                 (c) => c.createdTime
               )}
+              trackingLocation={'contract page'}
             />
           )
         }
@@ -140,6 +141,7 @@ export function FreeResponseComments(props: {
                   commentsByParent[parent.id] ?? [],
                   (c) => c.createdTime
                 )}
+                trackingLocation={'contract page'}
               />
             </div>
           </>
