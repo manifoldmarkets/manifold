@@ -98,11 +98,10 @@ export function useTextEditor(props: {
       store: storageStore(safeLocalStorage),
     }
   )
-  const [linkPreviewsDismissed, setLinkPreviewsDismissed] =
-    usePersistentInMemoryState<{ [url: string]: boolean }>(
-      {},
-      `${key}-link-previews-dismissed`
-    )
+  const [linkPreviewsStatus, setLinkPreviewsStatus] =
+    usePersistentInMemoryState<{
+      [url: string]: 'fetching' | 'dismissed'
+    }>({}, `${key}-link-previews-dismissed`)
   const save = useCallback(debounce(saveContent, 500), [])
 
   const editorClass = clsx(
@@ -145,7 +144,7 @@ export function useTextEditor(props: {
     doc.descendants((node, pos) => {
       if (node.type.name === 'linkPreview' && node.attrs.id === id) {
         const { url } = node.attrs
-        setLinkPreviewsDismissed((prev) => ({ ...prev, [url]: true }))
+        setLinkPreviewsStatus((prev) => ({ ...prev, [url]: 'dismissed' }))
         tr = tr.delete(pos, pos + node.nodeSize)
         return false
       }
@@ -179,7 +178,8 @@ export function useTextEditor(props: {
     )
     const links = filterDefined(linkMatches?.map((m) => m?.[0]) ?? [])
     links.forEach(async (link) => {
-      if (linkPreviewsDismissed[link]) return
+      if (linkPreviewsStatus[link]) return
+      setLinkPreviewsStatus((prev) => ({ ...prev, [link]: 'fetching' }))
       try {
         const res = await fetch('/api/v0/fetch-link-preview', {
           method: 'POST',
@@ -204,6 +204,7 @@ export function useTextEditor(props: {
           type: 'linkPreview',
           attrs: {
             ...resText,
+            url: link,
             id: crypto.randomUUID(),
           },
         }
