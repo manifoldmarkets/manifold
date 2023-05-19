@@ -1426,7 +1426,6 @@
     "@jridgewell/resolve-uri" "3.1.0"
     "@jridgewell/sourcemap-codec" "1.4.14"
 
-
 "@metascraper/helpers@^5.34.4":
   version "5.34.4"
   resolved "https://registry.yarnpkg.com/@metascraper/helpers/-/helpers-5.34.4.tgz#59faf01466938b26aa8df147f97c7f9f4d739d28"
@@ -1454,7 +1453,7 @@
     tldts "~6.0.1"
     url-regex-safe "~3.0.0"
     video-extensions "~1.2.0"
-    
+
 "@next/env@13.4.2":
   version "13.4.2"
   resolved "https://registry.yarnpkg.com/@next/env/-/env-13.4.2.tgz#cf3ebfd523a33d8404c1216e02ac8d856a73170e"
@@ -3952,7 +3951,6 @@ cssesc@^3.0.0:
   resolved "https://registry.yarnpkg.com/cssesc/-/cssesc-3.0.0.tgz#37741919903b868565e1c09ea747445cd18983ee"
   integrity sha512-/Tb/JcjK111nNScGob5MNtsntNM1aCNUDipB/TkwZFhyDrrE47SOx/18wF2bbjgc3ZzCSKW1T5nt5EbFoAz/Vg==
 
-
 cssstyle@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/cssstyle/-/cssstyle-3.0.0.tgz#17ca9c87d26eac764bb8cfd00583cff21ce0277a"
@@ -3960,7 +3958,7 @@ cssstyle@^3.0.0:
   dependencies:
     rrweb-cssom "^0.6.0"
 
-csstype@^3.0.2, csstype@^3.1.0:
+csstype@^3.0.2:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.1.0.tgz#4ddcac3718d787cf9df0d1b7d15033925c8f29f2"
   integrity sha512-uX1KG+x9h5hIJsaKR9xHUeUraxf8IODOwq9JLNPq6BwB04a/xgpq3rcx47l5BZu5zBPlgD342tdke3Hom/nJRA==
@@ -7131,7 +7129,7 @@ media-typer@0.3.0:
   resolved "https://registry.yarnpkg.com/media-typer/-/media-typer-0.3.0.tgz#8710d7af0aa626f8fffa1ce00168545263255748"
   integrity sha1-hxDXrwqmJvj/+hzgAWhUUmMlV0g=
 
-memoize-one@^6.0.0, memoize-one@~6.0.0:
+memoize-one@~6.0.0:
   version "6.0.0"
   resolved "https://registry.yarnpkg.com/memoize-one/-/memoize-one-6.0.0.tgz#b2591b871ed82948aee4727dc6abceeeac8c1045"
   integrity sha512-rkpe71W0N0c0Xz6QD0eJETuWAJGnJ9afsl1srmwPrI+yBCkge5EycXXbYRyvL29zZVUWQCY7InPRCv3GDXuZNw==
