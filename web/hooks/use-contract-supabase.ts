@@ -13,6 +13,11 @@ import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
 import { RealtimeChannel } from '@supabase/realtime-js'
+import {
+  useRealtimeChanges,
+  useRealtimeRows,
+} from 'web/lib/supabase/realtime/use-realtime'
+import { setContract } from 'web/lib/firebase/contracts'
 
 interface ContractPayload {
   schema: string
@@ -29,47 +34,6 @@ interface ContractPayload {
   errors: null
 }
 
-export function useRealtimeContract(contractId: string | undefined) {
-  const [contract, setContract] = useState<Contract | undefined | null>(
-    undefined
-  )
-
-  useEffect(() => {
-    let channel: RealtimeChannel
-    if (contractId) {
-      getContract(contractId)
-        .then((result) => setContract(result))
-        .catch((e) => console.log(e))
-      channel = db.channel(`realtime-contract-${contractId}`)
-      channel.on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'contracts',
-          filter: 'id=eq.' + contractId,
-        },
-        (payload) => {
-          const contractPayload: ContractPayload =
-            payload as unknown as ContractPayload
-          if (contractPayload) {
-            setContract(contractPayload.new['data'])
-          }
-        }
-      )
-      channel.subscribe(async (status) => {})
-    }
-    return () => {
-      if (channel) {
-        db.removeChannel(channel)
-      }
-    }
-  }, [db])
-
-  return contract
-}
-import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
-
 export const usePublicContracts = (contractIds: string[] | undefined) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
@@ -84,18 +48,36 @@ export const usePublicContracts = (contractIds: string[] | undefined) => {
   return contracts
 }
 
-export const useContracts = (contractIds: string[]) => {
-  const [contracts, setContracts] = useState<Contract[]>([])
+export function useRealtimeContract(contractId: string | undefined) {
+  const [contract, setContract] = useState<Contract | undefined | null>(
+    undefined
+  )
+  useEffectCheckEquality(() => {
+    if (contractId) {
+      getContract(contractId)
+        .then((result) => setContract(result))
+        .catch((e) => console.log(e))
+    }
+  }, [contractId])
+  const changesLength = useRef(0)
+  const changedContract = useRealtimeChanges('UPDATE', 'contracts', {
+    k: 'id',
+    v: contractId ?? '',
+  })
+  console.log(changedContract)
 
   useEffectCheckEquality(() => {
-    if (contractIds) {
-      getContracts(contractIds).then((result) => {
-        setContracts(result)
-      })
+    if (!changedContract) {
+      return
     }
-  }, [contractIds])
+    const length = changedContract.length
+    if (length > changesLength.current) {
+      setContract(changedContract[length - 1].new.data as Contract)
+      changesLength.current = length
+    }
+  }, [changedContract])
 
-  return contracts
+  return contract
 }
 
 export const useContractParams = (contractSlug: string | undefined) => {
@@ -135,6 +117,20 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
   }, [contractSlug])
 
   return contract as Contract<AnyContractType>
+}
+
+export const useContracts = (contractIds: string[]) => {
+  const [contracts, setContracts] = useState<Contract[]>([])
+
+  useEffectCheckEquality(() => {
+    if (contractIds) {
+      getContracts(contractIds).then((result) => {
+        setContracts(result)
+      })
+    }
+  }, [contractIds])
+
+  return contracts
 }
 
 export function useRealtimeContracts(limit: number) {
