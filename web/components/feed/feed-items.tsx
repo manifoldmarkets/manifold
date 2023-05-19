@@ -40,7 +40,8 @@ export const FeedItems = (props: {
   const contracts = mergePeriodic(organicContracts, boostedContracts, AD_PERIOD)
 
   const contractIds = contracts.map((c) => c.id)
-  const maxItems = 2
+  const maxBets = 2
+  const maxComments = 1
   const { parentCommentsByContractId, childCommentsByParentCommentId } =
     useFeedComments(user, contractIds)
   const recentBets = useFeedBets(user, contractIds)
@@ -51,8 +52,8 @@ export const FeedItems = (props: {
     )
     return {
       contract,
-      parentComments: parentComments.slice(0, maxItems),
-      relatedBets: relatedBets.slice(0, maxItems),
+      parentComments: parentComments.slice(0, maxComments),
+      relatedBets: relatedBets.slice(0, maxBets),
     }
   })
 
