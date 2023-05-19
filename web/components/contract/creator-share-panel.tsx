@@ -182,14 +182,15 @@ function FeedAnalytics(props: { contractId: string }) {
 
   return (
     <div className="mt-4">
-      <div className="mb-1 text-lg">
-        Feed Analytics{' '}
+      <div className="mb-2 text-lg">
+        Feed Analytics
         {(adQuery.isFetching ||
           viewQuery.isFetching ||
-          redeemQuery.isFetching) &&
-          '...'}
+          redeemQuery.isFetching) && (
+          <LoadingIndicator size="sm" className="ml-4 !inline-flex" />
+        )}
       </div>
-      <Table className="text-ink-900">
+      <Table className="text-ink-900 max-w-sm table-fixed">
         {adData && (
           <>
             <TableItem
@@ -199,37 +200,40 @@ function FeedAnalytics(props: { contractId: string }) {
             <TableItem label="Funds left" value={formatMoney(adData.funds)} />
           </>
         )}
-        {viewData && (
-          <TableItem
-            label="Impressions"
-            value={`${viewData.length} (${
-              uniqBy(viewData, 'user_id').length
-            } people)`}
-          />
-        )}
-        {isBoosted && promotedViewData && (
+
+        <TableItem
+          label="Impressions"
+          value={
+            viewData &&
+            `${viewData.length} (${uniqBy(viewData, 'user_id').length} people)`
+          }
+        />
+        {isBoosted && (
           <TableItem
             label="Boost Impressions"
-            value={`${promotedViewData.length} (${
-              uniqBy(promotedViewData, 'user_id').length
-            } people)`}
+            value={
+              promotedViewData &&
+              `${promotedViewData.length} (${
+                uniqBy(promotedViewData, 'user_id').length
+              } people)`
+            }
           />
         )}
-        {isBoosted && redeemQuery.data && (
-          <TableItem label="Redeems" value={redeemQuery.data.count} />
+        {isBoosted && (
+          <TableItem label="Redeems" value={redeemQuery.data?.count} />
         )}
-        {clickData && <TableItem label="Clicks" value={clickData.count} />}
-        {isBoosted && promotedClickData && (
-          <TableItem label="Boost Clicks" value={promotedClickData.length} />
+        <TableItem label="Clicks" value={clickData?.count} />
+        {isBoosted && (
+          <TableItem label="Boost Clicks" value={promotedClickData?.length} />
         )}
       </Table>
     </div>
   )
 }
 
-const TableItem = (props: { label: ReactNode; value: ReactNode }) => (
+const TableItem = (props: { label: ReactNode; value?: ReactNode }) => (
   <tr>
-    <td>{props.label}</td>
-    <td>{props.value}</td>
+    <td className="!pt-0 !pl-0">{props.label}</td>
+    <td className="!pt-0 !pl-0">{props.value ?? '...'}</td>
   </tr>
 )
