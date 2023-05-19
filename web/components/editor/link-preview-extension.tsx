@@ -55,7 +55,6 @@ export const LinkPreviewExtension = Node.create<LinkPreviewOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
-    console.log('HTMLAttributes', HTMLAttributes)
     return [name, mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)]
   },
 })
