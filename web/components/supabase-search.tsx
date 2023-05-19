@@ -160,6 +160,11 @@ export function SupabaseContractSearch(props: {
     }
   }, [])
 
+  // Counts as loaded if you are on the page and a query finished or if you go back in history.
+  const hasLoadedKey = `${persistPrefix}-search-has-loaded`
+  const searchHistoryStore = historyStore()
+  const hasLoaded = searchHistoryStore.get(hasLoadedKey)
+
   // Use useEvent to pass the current state to the query function
   const performQuery = useEvent(
     async (currentState, freshQuery?: boolean) =>
@@ -171,7 +176,7 @@ export function SupabaseContractSearch(props: {
     debounce(
       async (currentState, freshQuery?: boolean) =>
         query(currentState, freshQuery),
-      200
+      100
     ),
     []
   )
@@ -237,16 +242,10 @@ export function SupabaseContractSearch(props: {
     return false
   }
 
-  // Always do first query when loading search page, unless going back in history.
-  const [firstQuery, setFirstQuery] = usePersistentState(true, {
-    key: `${persistPrefix}-supabase-first-query`,
-    store: historyStore(),
-  })
-
   const onSearchParametersChanged = useRef(
     debounce((params) => {
-      if (!isEqual(searchParams.current, params) || firstQuery) {
-        setFirstQuery(false)
+      if (!isEqual(searchParams.current, params) || !hasLoaded) {
+        searchHistoryStore.set(hasLoadedKey, true)
         if (persistPrefix) {
           searchParamsStore.set(`${persistPrefix}-params`, params)
         }
@@ -418,11 +417,13 @@ function SupabaseContractSearchControls(props: {
   const isAuth = useIsAuthorized()
 
   useEffect(() => {
-    onSearchParametersChanged({
-      query: query,
-      sort: sort as Sort,
-      filter: filter as filter,
-    })
+    if (isAuth !== undefined) {
+      onSearchParametersChanged({
+        query: query,
+        sort: sort as Sort,
+        filter: filter as filter,
+      })
+    }
   }, [query, sort, filter, isAuth])
 
   return (

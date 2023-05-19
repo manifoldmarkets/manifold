@@ -434,7 +434,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
         itemsPerPage={ITEMS_PER_PAGE}
         totalItems={totalItems}
         setPage={setPage}
-        scrollToTop
+        UNSAFE_scrollToTop
       />
     </>
   )
