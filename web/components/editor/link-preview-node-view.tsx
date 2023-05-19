@@ -1,4 +1,3 @@
-// LinkPreviewNodeView.tsx
 import { Col } from 'web/components/layout/col'
 import { LinkPreviewProps } from 'web/components/editor/link-preview-extension'
 import { XIcon } from '@heroicons/react/solid'
