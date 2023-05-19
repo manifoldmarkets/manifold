@@ -8,7 +8,6 @@ import { Row } from '../layout/row'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
-import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractStatusLabel } from './contracts-table'
 import { useContract } from 'web/hooks/use-contracts'
 
@@ -58,18 +57,19 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
   const { creatorUsername, creatorAvatarUrl, question, creatorCreatedTime } =
     contract
 
-  const isClient = useIsClient()
-
   return (
-    <Link
-      href={contractPath(contract)}
+    <Col
       className={clsx(
-        'group flex flex-col gap-2 whitespace-nowrap rounded-sm py-3 px-4',
+        'group relative gap-2 whitespace-nowrap rounded-sm py-3 px-4',
         'bg-canvas-0 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors'
       )}
-      onClick={() => onContractClick?.(contract)}
     >
-      <Row className="gap-2">
+      <Link
+        href={contractPath(contract)}
+        className="absolute top-0 left-0 h-full w-full"
+        onClick={() => onContractClick?.(contract)}
+      />
+      <Row className="z-10 gap-2">
         <Avatar
           username={creatorUsername}
           avatarUrl={creatorAvatarUrl}
@@ -80,7 +80,6 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
           username={contract.creatorUsername}
           className="text-ink-400 text-sm"
           createdTime={creatorCreatedTime}
-          noLink={!isClient}
         />
       </Row>
       <div>
@@ -91,6 +90,6 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
           <ContractStatusLabel contract={contract} />
         </span>
       </div>
-    </Link>
+    </Col>
   )
 })

@@ -2,15 +2,17 @@ import { db } from './db'
 import { run, selectFrom } from 'common/supabase/utils'
 import { uniqBy } from 'lodash'
 import { User } from 'common/user'
+import { Period } from '../firebase/users'
 
 export type UserSearchResult = Awaited<ReturnType<typeof searchUsers>>[number]
+
+const defaultFields = ['id', 'name', 'username', 'avatarUrl'] as const
 
 export async function searchUsers(
   prompt: string,
   limit: number,
   extraFields?: (keyof User)[]
 ) {
-  const defaultFields: (keyof User)[] = ['id', 'name', 'username', 'avatarUrl']
   const fields = [...defaultFields, ...(extraFields ?? [])]
   if (prompt === '') {
     const { data } = await run(
@@ -78,4 +80,48 @@ export async function searchUsersNotInGroup(
     0,
     limit
   )
+}
+
+// leaderboards
+
+export async function getProfitRank(profit: number, period: Period) {
+  const { count } = await run(
+    db
+      .from('users')
+      .select('*', { head: true, count: 'exact' })
+      .gt(`data->profitCached->${period}`, profit)
+  )
+  return count + 1
+}
+
+export async function getCreatorRank(traders: number, period: Period) {
+  const { count } = await run(
+    db
+      .from('users')
+      .select('*', { head: true, count: 'exact' })
+      .gt(`data->creatorTraders->${period}`, traders)
+  )
+  return count + 1
+}
+
+export async function getTopTraders(period: Period) {
+  const { data } = await run(
+    selectFrom(db, 'users', ...defaultFields, 'profitCached', 'creatorTraders')
+      .order(`data->profitCached->${period}`, {
+        ascending: false,
+      } as any)
+      .limit(21) // add extra for @acc
+  )
+  return data
+}
+
+export async function getTopCreators(period: Period) {
+  const { data } = await run(
+    selectFrom(db, 'users', ...defaultFields, 'profitCached', 'creatorTraders')
+      .order(`data->creatorTraders->${period}`, {
+        ascending: false,
+      } as any)
+      .limit(20)
+  )
+  return data
 }

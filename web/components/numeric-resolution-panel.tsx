@@ -29,10 +29,9 @@ export function NumericResolutionPanel(props: {
   isCreator: boolean
   creator: User
   contract: NumericContract | PseudoNumericContract
-  className?: string
   modalSetOpen?: (open: boolean) => void
 }) {
-  const { contract, className, isAdmin, isCreator, modalSetOpen } = props
+  const { contract, isAdmin, isCreator, modalSetOpen } = props
   const { min, max, outcomeType, question } = contract
 
   const [outcomeMode, setOutcomeMode] = useState<

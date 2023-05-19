@@ -1,5 +1,6 @@
 import { run, SupabaseClient } from 'common/supabase/utils'
 import { User } from 'common/user'
+import { pick } from 'lodash'
 
 export async function getReferralCount(
   userId: string,
@@ -24,7 +25,7 @@ export async function getTopReferrals(db: SupabaseClient) {
     totalReferrals: r.total_referrals,
     rank: r.rank,
     totalReferredProfit: r.total_referred_profit,
-    ...(r.data as User),
+    ...pick(r.data as User, ['name', 'username', 'avatarUrl', 'id'] as const),
   }))
   return users
 }

@@ -42,7 +42,7 @@ export function UserAvatarAndBadge(props: {
       <Avatar
         avatarUrl={avatarUrl}
         username={username}
-        size={8}
+        size={'sm'}
         noLink={noLink}
       />
       <UserLink name={name} username={username} noLink={noLink} />

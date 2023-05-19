@@ -18,6 +18,7 @@ export const secrets = (
     'SUPABASE_JWT_SECRET',
     'SUPABASE_PASSWORD',
     'TEST_CREATE_USER_KEY',
+    'NEWS_API_KEY',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()

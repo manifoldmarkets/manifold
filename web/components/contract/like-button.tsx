@@ -261,7 +261,7 @@ function UserLikedPopup(props: {
 
   if (displayInfos == null) {
     return (
-      <Col className="min-w-24 items-start">
+      <Col className="min-w-[6rem] items-start">
         <div className="mb-1 font-bold">Like</div>
         <LoadingIndicator className="mx-auto my-2" size="sm" />
       </Col>
@@ -275,7 +275,7 @@ function UserLikedPopup(props: {
       : displayInfos.slice(0, LIKES_SHOWN)
 
   return (
-    <Col className="min-w-24 items-start">
+    <Col className="min-w-[6rem] items-start">
       <div className="mb-1 font-bold">Like</div>
       {shown.map((u, i) => {
         return <UserLikedItem key={i} userInfo={u} />

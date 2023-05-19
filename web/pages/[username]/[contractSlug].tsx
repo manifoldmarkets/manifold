@@ -64,6 +64,8 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { User } from 'common/user'
 import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
 import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
+import { ContractView } from 'common/events'
+import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 
 export type ContractParameters = {
   contractSlug: string
@@ -76,24 +78,25 @@ export async function getStaticProps(ctx: {
 }) {
   const { contractSlug } = ctx.params
 
-  let props: any
   try {
-    props = await getContractParams({
+    const props = await getContractParams({
       contractSlug,
       fromStaticProps: true,
     })
+    return {
+      props,
+    }
   } catch (e) {
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {
-      props = {
-        contractSlug,
-        visibility: null,
+      return {
+        props: {
+          contractSlug,
+          visibility: null,
+        },
+        revalidate: 60,
       }
-    } else {
-      throw e
     }
-  }
-  return {
-    props,
+    throw e
   }
 }
 
@@ -182,7 +185,7 @@ export function ContractPageContent(props: {
       slug: contract.slug,
       contractId: contract.id,
       creatorId: contract.creatorId,
-    },
+    } as ContractView,
     true
   )
   useSaveContractVisitsLocally(user === null, contract.id)
@@ -283,7 +286,7 @@ export function ContractPageContent(props: {
         </Head>
       )}
 
-      <Row className="w-full items-start gap-8 self-center">
+      <Row className="w-full items-start justify-center gap-8">
         <Col
           className={clsx(
             'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
@@ -307,6 +310,10 @@ export function ContractPageContent(props: {
                   src={coverImageUrl}
                   priority={true}
                 />
+                <ChangeBannerButton
+                  contract={contract}
+                  className="absolute top-12 right-4"
+                />
               </div>
             )}
             <div
@@ -317,11 +324,19 @@ export function ContractPageContent(props: {
             >
               <div className="mr-4 flex items-center truncate">
                 <BackButton />
+
                 {headerStuck && (
                   <span className="ml-4 text-white">{contract.question}</span>
                 )}
               </div>
-              <ExtraContractActionsRow contract={contract} />
+              <ExtraContractActionsRow contract={contract}>
+                {!headerStuck && !coverImageUrl && isCreator && (
+                  <ChangeBannerButton
+                    contract={contract}
+                    className="ml-3 first:ml-0"
+                  />
+                )}
+              </ExtraContractActionsRow>
             </div>
           </div>
 
@@ -329,7 +344,7 @@ export function ContractPageContent(props: {
             <Col className="gap-3 sm:gap-4">
               <div ref={titleRef}>
                 <Linkify
-                  className="text-primary-700 text-lg sm:text-2xl"
+                  className="text-primary-700 text-lg font-medium sm:text-2xl"
                   text={contract.question}
                 />
               </div>

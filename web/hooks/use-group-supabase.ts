@@ -15,7 +15,14 @@ import { getUser } from 'web/lib/supabase/user'
 import { useAdmin } from './use-admin'
 import { useIsAuthorized, useUser } from './use-user'
 import { useSupabasePolling } from 'web/hooks/use-supabase'
+import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
+import {
+  GroupAndRoleType,
+  getGroupsWhereUserHasRole,
+  listGroupsBySlug,
+} from 'web/lib/supabase/groups'
+import { useEffectCheckEquality } from './use-effect-check-equality'
 
 export function useRealtimeRole(groupId: string | undefined) {
   const [userRole, setUserRole] = useState<groupRoleType | null | undefined>(
@@ -28,27 +35,14 @@ export function useRealtimeRole(groupId: string | undefined) {
       setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
     }
   }, [user, isManifoldAdmin, groupId])
-  useEffect(() => {
-    const channel = db.channel('user-group-role-realtime')
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'group_members',
-        filter: `group_id=eq.${groupId}`,
-      },
-      (payload) => {
-        if ((payload.new as any).member_id === user?.id) {
-          setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
-        }
-      }
-    )
-    channel.subscribe(async (status) => {})
-    return () => {
-      db.removeChannel(channel)
+
+  const channelFilter = { k: 'group_id', v: groupId ?? '_' } as const
+  useRealtimeChannel('*', 'group_members', channelFilter, (change) => {
+    if ((change.new as any).member_id === user?.id) {
+      setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
     }
-  }, [db, user])
+  })
+
   return userRole
 }
 
@@ -118,25 +112,11 @@ export function useRealtimeGroupMembers(
     }
   }, [hitBottom])
 
-  useEffect(() => {
-    const channel = db.channel('group-members-realtime')
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'group_members',
-        filter: `group_id=eq.${groupId}`,
-      },
-      (payload) => {
-        fetchGroupMembers()
-      }
-    )
-    channel.subscribe(async (status) => {})
-    return () => {
-      db.removeChannel(channel)
-    }
-  }, [db])
+  const channelFilter = { k: 'group_id', v: groupId } as const
+  useRealtimeChannel('*', 'group_members', channelFilter, (_change) => {
+    fetchGroupMembers()
+  })
+
   return { admins, moderators, members, loadMore }
 }
 
@@ -210,4 +190,30 @@ export function useIsGroupMember(groupSlug: string) {
     }
   }, [isAuth])
   return isGroupMember
+}
+
+export function useListGroupsBySlug(groupSlugs: string[]) {
+  const [groups, setGroups] = useState<Group[] | null>(null)
+  useEffectCheckEquality(() => {
+    if (groupSlugs.length > 0) {
+      listGroupsBySlug(groupSlugs).then((result) => {
+        setGroups(result)
+      })
+    }
+  }, [groupSlugs])
+  return groups
+}
+
+export function useGroupsWhereUserHasRole(userId: string | undefined) {
+  const [groupsAndRoles, setGroupsAndRoles] = useState<
+    GroupAndRoleType[] | null
+  >(null)
+  useEffect(() => {
+    if (userId) {
+      getGroupsWhereUserHasRole(userId).then((result) => {
+        setGroupsAndRoles(result)
+      })
+    }
+  }, [userId])
+  return groupsAndRoles
 }

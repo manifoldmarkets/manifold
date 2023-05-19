@@ -84,7 +84,9 @@ export function ConfirmationButton(props: {
 
       <Button
         className={openModalBtn.className}
-        onClick={() => {
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
           if (disabled) {
             return
           }

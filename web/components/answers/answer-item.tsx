@@ -66,7 +66,7 @@ export function AnswerItem(props: {
         <Row className="text-ink-500 items-center gap-2 text-sm">
           <SiteLink className="relative" href={`/${username}`}>
             <Row className="items-center gap-2">
-              <Avatar avatarUrl={avatarUrl} size={6} />
+              <Avatar avatarUrl={avatarUrl} size={'xs'} />
               <div className="truncate">{name}</div>
             </Row>
           </SiteLink>

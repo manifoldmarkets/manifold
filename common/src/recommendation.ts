@@ -5,7 +5,6 @@ import { factorizeMatrix } from './util/matrix'
 export type user_data = {
   userId: string
   betOnIds: string[]
-  swipedIds: string[]
   viewedCardIds: string[]
   viewedPageIds: string[]
   likedIds: string[]
@@ -52,23 +51,14 @@ export function getMarketRecommendations(
 
   // Sparse matrix of users x contracts.
   const rows = userData.map((data) => {
-    const {
-      swipedIds,
-      viewedCardIds,
-      viewedPageIds,
-      betOnIds,
-      likedIds,
-      groupIds,
-    } = data
+    const { viewedCardIds, viewedPageIds, betOnIds, likedIds, groupIds } = data
 
     const row: Map<number, number> = new Map()
-    const viewedCardsOrSwipes = uniq([...viewedCardIds, ...swipedIds])
-    const yourViewedContractsSet = new Set(
-      viewedCardsOrSwipes.concat(viewedPageIds)
-    )
+    const viewedCards = uniq(viewedCardIds)
+    const yourViewedContractsSet = new Set(viewedCards.concat(viewedPageIds))
     const likedOrBetOnIds = uniq([...likedIds, ...betOnIds])
 
-    for (const contractId of viewedCardsOrSwipes) {
+    for (const contractId of viewedCards) {
       // If you viewed it but didn't take any action, that's evidence you're not interested.
       row.set(getColumnIndex(contractId), 0)
     }

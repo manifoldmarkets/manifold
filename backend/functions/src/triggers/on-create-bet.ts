@@ -62,8 +62,9 @@ export const onCreateBet = functions
     const { eventId } = context
 
     const bet = change.data() as Bet
-    const lastBetTime = bet.createdTime
+    if (bet.isChallenge) return
 
+    const lastBetTime = bet.createdTime
     await firestore
       .collection('contracts')
       .doc(contractId)

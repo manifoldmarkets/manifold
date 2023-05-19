@@ -6,6 +6,7 @@ import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Input } from 'web/components/widgets/input'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Select } from 'web/components/widgets/select'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Subtitle } from 'web/components/widgets/subtitle'
@@ -23,6 +24,12 @@ export default function StylePage() {
       <ButtonSection />
       <Subtitle>Toggles</Subtitle>
       <ToggleSection />
+      <Subtitle>Loading</Subtitle>
+      <div className="flex flex-wrap gap-2">
+        <LoadingIndicator size="sm" />
+        <LoadingIndicator size="md" />
+        <LoadingIndicator />
+      </div>
       <Subtitle>Inputs</Subtitle>
       TODO: number input
       <div className="mb-4 flex flex-wrap gap-2">
@@ -54,6 +61,9 @@ function ButtonSection() {
         <Button disabled={disabled} loading={loading}>
           indigo
         </Button>
+        <Button disabled={disabled} loading={loading} color="indigo-outline">
+          indigo-outline
+        </Button>
         <Button disabled={disabled} loading={loading} color="gradient">
           gradient
         </Button>
@@ -78,11 +88,20 @@ function ButtonSection() {
         <Button disabled={disabled} loading={loading} color="green">
           green
         </Button>
+        <Button disabled={disabled} loading={loading} color="green-outline">
+          green-outline
+        </Button>
         <Button disabled={disabled} loading={loading} color="yellow">
           yellow
         </Button>
+        <Button disabled={disabled} loading={loading} color="yellow-outline">
+          yellow-outline
+        </Button>
         <Button disabled={disabled} loading={loading} color="red">
           red
+        </Button>
+        <Button disabled={disabled} loading={loading} color="red-outline">
+          red-outline
         </Button>
       </div>
 

@@ -62,7 +62,6 @@ function HomeDashboard() {
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
 
   const isLoading = !dailyChangedContracts
-
   return (
     <Page>
       <Col className="mx-auto w-full max-w-2xl gap-6 pb-8 sm:px-2 lg:pr-4">
@@ -87,12 +86,11 @@ function MobileHome() {
 
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
   const isLoading = !dailyChangedContracts
-
   return (
     <Page>
       <Col className="gap-2 py-2 pb-8 sm:px-2">
         <Row className="mx-4 mb-2 items-center gap-4">
-          <Title children="Home" className="!my-0" />
+          <Title children="Home" className="!my-0 hidden sm:block" />
           <DailyStats user={user} />
         </Row>
 
@@ -104,20 +102,6 @@ function MobileHome() {
           </Col>
         </Col>
       </Col>
-
-      <button
-        type="button"
-        className={clsx(
-          'focus:ring-primary-500 fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
-          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r'
-        )}
-        onClick={() => {
-          Router.push('/create')
-          track('mobile create button')
-        }}
-      >
-        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
-      </button>
     </Page>
   )
 }
@@ -166,7 +150,11 @@ const YourDailyUpdates = memo(function YourDailyUpdates(props: {
 
   return (
     <Col>
-      <HomeSectionHeader label="Today's updates" icon="📊" />
+      <HomeSectionHeader
+        label="Today's updates"
+        icon="📊"
+        href="/todays-updates"
+      />
       <ProbChangeTable changes={changedContracts as CPMMContract[]} />
     </Col>
   )
@@ -199,21 +187,19 @@ const YourFeedSection = memo(function YourFeedSection(props: {
 })
 
 const MainContent = () => {
+  const [topic, setTopic] = usePersistentLocalState('', 'your-feed-topic')
   const [isLive, setIsLive] = usePersistentInMemoryState(
     false,
     'main-content-section-is-live'
   )
-  const [topic, setTopic] = usePersistentLocalState('', 'your-feed-topic')
   const [pill, setPill] = usePersistentInMemoryState<pill_options>(
     'all',
     'live-pill'
   )
-
   const selectLive = (on: boolean) => {
     setIsLive(on)
     track('select live', { on })
   }
-
   return (
     <Col>
       <Row className="h-[48px] items-center justify-between">
@@ -228,7 +214,21 @@ const MainContent = () => {
         </Row>
       </Row>
       <YourFeedSection topic={topic} className={clsx(isLive ? 'hidden' : '')} />
-      <LiveSection className={clsx(isLive ? '' : 'hidden')} pill={pill} />
+      {isLive && <LiveSection pill={pill} />}
+      <button
+        type="button"
+        className={clsx(
+          'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
+          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
+          'bottom-[64px]'
+        )}
+        onClick={() => {
+          Router.push('/create')
+          track('mobile create button')
+        }}
+      >
+        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
+      </button>
     </Col>
   )
 }

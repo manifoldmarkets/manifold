@@ -93,7 +93,7 @@ const UserListEntry = (props: {
   return (
     <Row className={'gap-2'}>
       <Col className={''}>
-        <Avatar avatarUrl={avatarUrl} username={username} size={12} />
+        <Avatar avatarUrl={avatarUrl} username={username} size={'lg'} />
       </Col>
       <Col className={'w-full'}>
         <Row className={'w-full justify-between gap-1'}>

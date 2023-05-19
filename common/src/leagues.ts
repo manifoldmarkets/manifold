@@ -1,4 +1,4 @@
-import { PlainTablesAndViews } from './supabase/utils'
+import { Row } from './supabase/utils'
 
 export type season = typeof SEASONS[number]
 
@@ -38,7 +38,7 @@ export const getDemotionAndPromotionCount = (division: number) => {
   return { demotion: 5, promotion: 5, doublePromotion: 0 }
 }
 
-export type league_row = PlainTablesAndViews['leagues']
+export type league_row = Row<'leagues'>
 export type league_user_info = league_row & { rank: number }
 
 export const COHORT_SIZE = 25

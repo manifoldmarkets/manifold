@@ -94,7 +94,6 @@ export function UserCommentsList(props: { user: User }) {
           itemsPerPage={pageSize}
           totalItems={numComments}
           setPage={setPageNum}
-          scrollToTop={true}
         />
       </nav>
     </Col>

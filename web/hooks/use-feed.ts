@@ -64,26 +64,41 @@ export const useFeed = (
         })
       })
 
+  const fetchRecs = async (userId: string) => {
+    if (topic?.includes(CUSTOM_TOPIC_KEY)) {
+      return getCustomEmbeddingsPromise(userId)
+    }
+    if (topic) {
+      return db.rpc('get_recommended_contracts_embeddings_topic', {
+        uid: userId,
+        p_topic: topic,
+        n: PAGE_SIZE,
+        excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
+      })
+    }
+
+    // Try fast query first.
+    const result = await db.rpc('get_recommended_contracts_embeddings_fast', {
+      uid: userId,
+      n: PAGE_SIZE,
+      excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
+    })
+    if (result.data && result.data.length >= PAGE_SIZE) {
+      return result
+    }
+
+    return await db.rpc('get_recommended_contracts_embeddings', {
+      uid: userId,
+      n: PAGE_SIZE,
+      excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
+    })
+  }
+
   const loadMore = useEvent(() => {
     if (userId) {
       requestIdRef.current++
       const requestId = requestIdRef.current
-      const promise = topic?.includes(CUSTOM_TOPIC_KEY)
-        ? getCustomEmbeddingsPromise(userId)
-        : topic
-        ? db.rpc('get_recommended_contracts_embeddings_topic', {
-            uid: userId,
-            p_topic: topic,
-            n: PAGE_SIZE,
-            excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
-          })
-        : db.rpc('get_recommended_contracts_embeddings', {
-            uid: userId,
-            n: PAGE_SIZE,
-            excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
-          })
-
-      promise.then((res) => {
+      fetchRecs(userId).then((res) => {
         if (requestIdRef.current !== requestId) return
         if (res.data) {
           const newContracts = (res.data as any[]).map(

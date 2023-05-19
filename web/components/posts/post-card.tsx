@@ -35,7 +35,7 @@ export function PostCard(props: {
             <Avatar
               username={post.creatorUsername}
               avatarUrl={post.creatorAvatarUrl}
-              size={4}
+              size={'2xs'}
             />
             <UserLink
               className="text-ink-400 text-sm"

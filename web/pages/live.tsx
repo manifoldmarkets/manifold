@@ -16,7 +16,6 @@ export default function LivePage() {
     'all',
     'live-pill'
   )
-
   return (
     <Page>
       <Col className="gap-4 sm:px-4 sm:pb-4">

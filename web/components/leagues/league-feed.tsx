@@ -12,7 +12,6 @@ import { FeedComment } from '../feed/feed-comments'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { ContractMention } from '../contract/contract-mention'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
-import { Subtitle } from '../widgets/subtitle'
 
 export function LeagueFeed(props: { season: number; cohort: string }) {
   const { season, cohort } = props
@@ -29,7 +28,6 @@ export function LeagueFeed(props: { season: number; cohort: string }) {
 
   return (
     <Col>
-      <Subtitle>Activity</Subtitle>
       <Col className="bg-canvas-0 px-4">
         {items.map((item, i) => {
           const contract = contractsById[item.contractId]

@@ -13,17 +13,14 @@ const defaultConfig = getDefaultConfig(projectRoot)
 const extraNodeModules = {
   common: path.resolve(__dirname + '/../common'),
   components: path.resolve(__dirname + '/components'),
+  lib: path.resolve(__dirname + '/lib'),
 }
-defaultConfig.watchFolders = [
-  path.resolve(__dirname + '/../common'),
-  path.resolve(__dirname + '/components'),
-  // workspaceRoot,
-]
-defaultConfig.resolver.nodeModulesPaths = [
-  path.resolve(projectRoot, 'node_modules'),
-]
 module.exports = {
   ...defaultConfig,
+  watchFolders: [
+    ...defaultConfig.watchFolders,
+    path.resolve(__dirname + '/../common'),
+  ],
   transformer: {
     ...defaultConfig.transformer,
     getTransformOptions: async () => ({
@@ -35,6 +32,7 @@ module.exports = {
   },
   resolver: {
     ...defaultConfig.resolver,
+    nodeModulesPaths: [path.resolve(projectRoot, 'node_modules')],
     extraNodeModules: new Proxy(extraNodeModules, {
       get: (target, name) =>
         //redirects dependencies referenced from common/ to local node_modules

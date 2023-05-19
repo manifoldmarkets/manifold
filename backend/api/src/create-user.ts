@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { Request } from 'express'
 
 import { PrivateUser, User } from 'common/user'
-import { getUser, getUserByUsername } from 'shared/utils'
 import { randomString } from 'common/util/random'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 
@@ -16,6 +15,7 @@ import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-url
 import { getStorage } from 'firebase-admin/storage'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
+import { RESERVED_PATHS } from 'common/envs/constants'
 import { isProd } from 'shared/utils'
 import {
   getAverageContractEmbedding,
@@ -35,7 +35,9 @@ export const createuser = authEndpoint(async (req, auth) => {
     adminToken,
     visitedContractIds,
   } = validate(bodySchema, req.body)
+
   const firebaseUser = await admin.auth().getUser(auth.uid)
+
   const isTestUser = firebaseUser.providerData[0].providerId === 'password'
   if (isTestUser && adminToken !== process.env.TEST_CREATE_USER_KEY) {
     throw new APIError(
@@ -43,93 +45,113 @@ export const createuser = authEndpoint(async (req, auth) => {
       'Must use correct TEST_CREATE_USER_KEY to create user with email/password'
     )
   }
-  const deviceToken = isTestUser ? randomString(20) : preDeviceToken
 
-  const preexistingUser = await getUser(auth.uid)
-  if (preexistingUser)
-    throw new APIError(400, 'User already exists', { user: preexistingUser })
+  const ip = getIp(req)
+  const deviceToken = isTestUser ? randomString(20) : preDeviceToken
+  const deviceUsedBefore =
+    !deviceToken || (await isPrivateUserWithDeviceToken(deviceToken))
+  const balance = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
 
   const fbUser = await admin.auth().getUser(auth.uid)
-
   const email = fbUser.email
   const emailName = email?.replace(/@.*$/, '')
 
   const rawName = fbUser.displayName || emailName || 'User' + randomString(4)
   const name = cleanDisplayName(rawName)
-  let username = cleanUsername(name)
-
-  const sameNameUser = await getUserByUsername(username)
-  if (sameNameUser) {
-    username += randomString(4)
-  }
 
   const bucket = getStorage().bucket(getStorageBucketId())
   const avatarUrl = fbUser.photoURL
     ? fbUser.photoURL
     : await generateAvatarUrl(auth.uid, name, bucket)
 
-  const deviceUsedBefore =
-    !deviceToken || (await isPrivateUserWithDeviceToken(deviceToken))
+  const { user, privateUser } = await firestore.runTransaction(
+    async (trans) => {
+      const userRef = firestore.collection('users').doc(auth.uid)
 
-  const balance = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
+      const preexistingUser = await trans.get(userRef)
+      if (preexistingUser.exists)
+        throw new APIError(400, 'User already exists', {
+          userId: auth.uid,
+        })
 
+      let username = cleanUsername(name)
+
+      const sameNameUser = await trans.get(
+        firestore.collection('users').where('username', '==', username)
+      )
+      const isReservedName = RESERVED_PATHS.includes(username)
+      if (!sameNameUser.empty || isReservedName) {
+        username += randomString(4)
+      }
+
+      // Only undefined prop should be avatarUrl
+      const user: User = removeUndefinedProps({
+        id: auth.uid,
+        name,
+        username,
+        avatarUrl,
+        balance,
+        totalDeposits: balance,
+        createdTime: Date.now(),
+        profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
+        nextLoanCached: 0,
+        followerCountCached: 0,
+        streakForgiveness: 1,
+        shouldShowWelcome: true,
+        achievements: {},
+        creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
+        isBannedFromPosting: Boolean(
+          (deviceToken && bannedDeviceTokens.includes(deviceToken)) ||
+            (ip && bannedIpAddresses.includes(ip))
+        ),
+      })
+
+      const privateUser: PrivateUser = {
+        id: auth.uid,
+        email,
+        initialIpAddress: ip,
+        initialDeviceToken: deviceToken,
+        notificationPreferences: getDefaultNotificationPreferences(),
+        blockedUserIds: [],
+        blockedByUserIds: [],
+        blockedContractIds: [],
+        blockedGroupSlugs: [],
+        weeklyTrendingEmailSent: false,
+        weeklyPortfolioUpdateEmailSent: false,
+      }
+
+      trans.create(userRef, user)
+      trans.create(
+        firestore.collection('private-users').doc(auth.uid),
+        privateUser
+      )
+
+      return { user, privateUser }
+    }
+  )
+
+  console.log('created user', user.username, 'firebase id:', auth.uid)
+  await insertUserEmbedding(auth.uid, visitedContractIds)
+  await track(auth.uid, 'create user', { username: user.username }, { ip })
+
+  return { user, privateUser }
+})
+
+async function insertUserEmbedding(
+  userId: string,
+  visitedContractIds: string[] | undefined
+): Promise<void> {
   const pg = createSupabaseDirectClient()
+
   const interestEmbedding = visitedContractIds
     ? await getAverageContractEmbedding(pg, visitedContractIds)
     : getDefaultEmbedding()
 
   await pg.none(
     `insert into user_embeddings (user_id, interest_embedding, pre_signup_interest_embedding) values ($1, $2, $3)`,
-    [auth.uid, interestEmbedding, interestEmbedding]
+    [userId, interestEmbedding, interestEmbedding]
   )
-
-  const ip = getIp(req)
-
-  // Only undefined prop should be avatarUrl
-  const user: User = removeUndefinedProps({
-    id: auth.uid,
-    name,
-    username,
-    avatarUrl,
-    balance,
-    totalDeposits: balance,
-    createdTime: Date.now(),
-    profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-    nextLoanCached: 0,
-    followerCountCached: 0,
-    streakForgiveness: 1,
-    shouldShowWelcome: true,
-    achievements: {},
-    creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-    isBannedFromPosting: Boolean(
-      (deviceToken && bannedDeviceTokens.includes(deviceToken)) ||
-        (ip && bannedIpAddresses.includes(ip))
-    ),
-  })
-
-  await firestore.collection('users').doc(auth.uid).create(user)
-  console.log('created user', username, 'firebase id:', auth.uid)
-
-  const privateUser: PrivateUser = {
-    id: auth.uid,
-    email,
-    initialIpAddress: ip,
-    initialDeviceToken: deviceToken,
-    notificationPreferences: getDefaultNotificationPreferences(),
-    blockedUserIds: [],
-    blockedByUserIds: [],
-    blockedContractIds: [],
-    blockedGroupSlugs: [],
-    weeklyTrendingEmailSent: false,
-    weeklyPortfolioUpdateEmailSent: false,
-  }
-
-  await firestore.collection('private-users').doc(auth.uid).create(privateUser)
-
-  await track(auth.uid, 'create user', { username }, { ip })
-
-  return { user, privateUser }
-})
+}
 
 const firestore = admin.firestore()
 

@@ -8,10 +8,10 @@ import {
   SEASONS,
   SEASON_END,
   getDemotionAndPromotionCount,
-  league_row,
   season,
   CURRENT_SEASON,
   getLeaguePath,
+  league_user_info,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -28,9 +28,11 @@ import { getLeagueRows } from 'web/lib/supabase/leagues'
 import { CohortTable } from 'web/components/leagues/cohort-table'
 import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { LeagueFeed } from 'web/components/leagues/league-feed'
+import { Tabs } from 'web/components/layout/tabs'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
+  console.log('rows', rows)
   return {
     props: {
       rows,
@@ -45,10 +47,10 @@ export function getStaticPaths() {
   }
 }
 
-export default function Leagues(props: { rows: league_row[] }) {
+export default function Leagues(props: { rows: league_user_info[] }) {
   useTracking('view leagues')
 
-  const [rows, setRows] = usePersistentInMemoryState<league_row[]>(
+  const [rows, setRows] = usePersistentInMemoryState<league_user_info[]>(
     props.rows,
     'league-rows'
   )
@@ -239,16 +241,29 @@ export default function Leagues(props: { rows: league_row[] }) {
           </Row>
         </Col>
 
-        <CohortTable
-          cohort={cohort}
-          rows={cohorts[cohort]}
-          highlightedUserId={highlightedUserId}
-          demotionCount={demotion}
-          promotionCount={promotion}
-          doublePromotionCount={doublePromotion}
-        />
+        <Tabs
+          key={`${season}-${division}-${cohort}`}
+          tabs={[
+            {
+              title: 'Rankings',
+              content: (
+                <CohortTable
+                  cohort={cohort}
+                  rows={cohorts[cohort]}
+                  highlightedUserId={highlightedUserId}
+                  demotionCount={demotion}
+                  promotionCount={promotion}
+                  doublePromotionCount={doublePromotion}
+                />
+              ),
+            },
 
-        <LeagueFeed season={season} cohort={cohort} />
+            {
+              title: 'Activity',
+              content: <LeagueFeed season={season} cohort={cohort} />,
+            },
+          ]}
+        />
       </Col>
     </Page>
   )

@@ -30,7 +30,6 @@ import { isIOS } from 'web/lib/util/device'
 import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { animated } from '@react-spring/web'
-import { useABTest } from 'web/hooks/use-ab-test'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -39,12 +38,10 @@ const itemClass =
 const selectedItemClass = 'bg-ink-100 text-primary-700'
 const touchItemClass = 'bg-primary-100'
 
-function getNavigation(user: User, showMarkets: boolean) {
+function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    showMarkets
-      ? { name: 'Markets', href: '/markets', icon: ScaleIcon }
-      : { name: 'Search', href: '/find', icon: SearchIcon },
+    { name: 'Search', href: '/find', icon: SearchIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
@@ -57,11 +54,9 @@ function getNavigation(user: User, showMarkets: boolean) {
   ]
 }
 
-const signedOutNavigation = (appStoreUrl: string, showMarkets: boolean) => [
+const signedOutNavigation = (appStoreUrl: string) => [
   { name: 'Home', href: '/', icon: HomeIcon },
-  showMarkets
-    ? { name: 'Markets', href: '/markets', icon: ScaleIcon }
-    : { name: 'Search', href: '/find', icon: SearchIcon },
+  { name: 'Markets', href: '/markets', icon: ScaleIcon },
   {
     name: 'Get app',
     href: appStoreUrl,
@@ -84,19 +79,14 @@ export function BottomNavBar() {
     setAppStoreUrl(isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL)
   }, [])
 
-  const showMarkets = !!useABTest('show nav bar markets', {
-    markets: true,
-    search: false,
-  })
-
   const isIframe = useIsIframe()
   if (isIframe) {
     return null
   }
 
   const navigationOptions = user
-    ? getNavigation(user, showMarkets)
-    : signedOutNavigation(appStoreUrl, showMarkets)
+    ? getNavigation(user)
+    : signedOutNavigation(appStoreUrl)
 
   return (
     <nav className="border-ink-200 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">
@@ -157,7 +147,7 @@ function NavBarItem(props: {
         <Col>
           <div className="mx-auto my-1">
             <Avatar
-              className="h-6 w-6"
+              size="xs"
               username={user.username}
               avatarUrl={user.avatarUrl}
               noLink

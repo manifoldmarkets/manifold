@@ -1,8 +1,7 @@
 import { axisBottom, axisRight } from 'd3-axis'
 import { scaleLinear } from 'd3-scale'
-import { curveLinear } from 'd3-shape'
 import { points } from 'web/pages/[username]/calibration'
-import { LinePath, SVGChart, formatPct } from './helpers'
+import { SVGChart, formatPct } from './helpers'
 
 type Point = { x: number; y: number }
 
@@ -10,10 +9,9 @@ export function CalibrationChart(props: {
   yesPoints: Point[]
   noPoints: Point[]
   width: number
+  height: number
 }) {
-  const { yesPoints, noPoints, width } = props
-
-  const height = width * 1 // square aspect ratio
+  const { yesPoints, noPoints, width, height } = props
 
   const margin = { top: 5, bottom: 30, left: 5, right: 30 }
   const innerW = width - (margin.left + margin.right)
@@ -28,12 +26,15 @@ export function CalibrationChart(props: {
 
   const tickVals = points.map((p) => p / 100)
 
+  const format = (d: number) =>
+    (d <= 0.9 || d === 0.99) && (d >= 0.1 || d === 0.01) ? formatPct(d) : ''
+
   const xAxis = axisBottom<number>(xScale)
-    .tickFormat(formatPct)
+    .tickFormat(format)
     .tickValues(tickVals)
 
   const yAxis = axisRight<number>(yScale)
-    .tickFormat(formatPct)
+    .tickFormat(format)
     .tickValues(tickVals)
 
   const px = (p: Point) => xScale(p.x)
@@ -41,20 +42,6 @@ export function CalibrationChart(props: {
 
   return (
     <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} margin={margin}>
-      <LinePath
-        data={yesPoints}
-        px={px}
-        py={py}
-        curve={curveLinear}
-        stroke="green"
-      />
-      <LinePath
-        data={noPoints}
-        px={px}
-        py={py}
-        curve={curveLinear}
-        stroke="red"
-      />
       {/* points */}
       {yesPoints.map((p, i) => (
         // triangle pointing up
@@ -78,7 +65,6 @@ export function CalibrationChart(props: {
           fill="red"
         />
       ))}
-
       {/* line x = y */}
       <line
         x1={xScale(0)}
