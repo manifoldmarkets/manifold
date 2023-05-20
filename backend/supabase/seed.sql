@@ -402,6 +402,7 @@ create table if not exists
     prob_before numeric,
     prob_after numeric,
     is_ante boolean,
+    is_api boolean,
     is_redemption boolean,
     is_challenge boolean,
     visibility text,
@@ -433,6 +434,7 @@ begin
     new.is_ante := ((new.data) -> 'isAnte')::boolean;
     new.is_redemption := ((new.data) -> 'isRedemption')::boolean;
     new.is_challenge := ((new.data) -> 'isChallenge')::boolean;
+    new.is_api:= ((new.data) -> 'isApi')::boolean;
     new.visibility := ((new.data) ->> 'visibility')::text;
   end if;
   return new;
