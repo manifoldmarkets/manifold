@@ -12,27 +12,10 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
-import { RealtimeChannel } from '@supabase/realtime-js'
 import {
   useRealtimeChanges,
   useRealtimeRows,
 } from 'web/lib/supabase/realtime/use-realtime'
-import { setContract } from 'web/lib/firebase/contracts'
-
-interface ContractPayload {
-  schema: string
-  table: string
-  commit_timestamp: string
-  eventType: string
-  new: {
-    [key: string]: any
-    data: Contract
-  }
-  old: {
-    [key: string]: any
-  }
-  errors: null
-}
 
 export const usePublicContracts = (contractIds: string[] | undefined) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
