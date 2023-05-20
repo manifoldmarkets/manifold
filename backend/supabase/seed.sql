@@ -402,7 +402,7 @@ create table if not exists
     prob_before numeric,
     prob_after numeric,
     is_ante boolean,
-    is_api boolean,
+    is_api boolean not null default false,
     is_redemption boolean,
     is_challenge boolean,
     visibility text,
