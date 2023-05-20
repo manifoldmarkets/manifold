@@ -25,6 +25,8 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   hiddenTime?: number
   hiderId?: string
   visibility: visibility
+  editedTime?: number
+  isApi?: boolean
 } & T
 
 export type OnContract = {

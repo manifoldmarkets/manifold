@@ -1,11 +1,20 @@
-import { PlainTablesAndViews } from './supabase/utils'
+import { Row } from './supabase/utils'
 
 export type season = typeof SEASONS[number]
 
 export const SEASONS = [1] as const
 export const CURRENT_SEASON = 1
 
+export const SEASON_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
 export const SEASON_END = new Date('2023-06-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
+
+export const getSeasonDates = (season: number) => {
+  const start = new Date(SEASON_START)
+  start.setMonth(start.getMonth() + season - 1)
+  const end = new Date(SEASON_START)
+  end.setMonth(end.getMonth() + season)
+  return { start, end }
+}
 
 export const DIVISION_NAMES = {
   1: 'Bronze',
@@ -29,9 +38,8 @@ export const getDemotionAndPromotionCount = (division: number) => {
   return { demotion: 5, promotion: 5, doublePromotion: 0 }
 }
 
-export type league_row = PlainTablesAndViews['leagues']
-export type league_user_info = PlainTablesAndViews['user_league_info']
-
+export type league_row = Row<'leagues'>
+export type league_user_info = league_row & { rank: number }
 
 export const COHORT_SIZE = 25
 export const MAX_COHORT_SIZE = 35
@@ -42,3 +50,13 @@ export const rewardsData = [
   [1500, 1000, 750, 600, 500, 450, 400, 350, 300],
   [2000, 1500, 1000, 750, 600, 500, 450, 400, 350, 300],
 ]
+
+export const getLeaguePath = (
+  season: number,
+  division: number,
+  cohort: string,
+  userId?: string
+) => {
+  const divisionName = DIVISION_NAMES[division].toLowerCase()
+  return `/leagues/${season}/${divisionName}/${cohort}/${userId ?? ''}`
+}

@@ -28,6 +28,7 @@ import { Title } from '../widgets/title'
 import { Tooltip } from '../widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { DepthChart } from '../charts/contract/depth-chart'
+import { SizedContainer } from '../sized-container'
 
 export function YourOrders(props: {
   contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
@@ -234,7 +235,7 @@ export function OrderBookButton(props: {
         size="xs"
         color="indigo"
       >
-        {limitBets.length} orders
+        View {limitBets.length} order{limitBets.length === 1 ? '' : 's'}
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">
@@ -246,7 +247,17 @@ export function OrderBookButton(props: {
               className="ml-1 self-center"
             />
           </Title>
-          <DepthChart contract={contract} yesBets={yesBets} noBets={noBets} />
+          <SizedContainer fullHeight={250} mobileHeight={200}>
+            {(w, h) => (
+              <DepthChart
+                contract={contract}
+                yesBets={yesBets}
+                noBets={noBets}
+                width={w}
+                height={h}
+              />
+            )}
+          </SizedContainer>
           <Row className="mt-2 items-start justify-around gap-2">
             <OrderTable
               limitBets={yesBets}

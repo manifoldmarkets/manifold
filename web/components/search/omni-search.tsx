@@ -3,6 +3,7 @@ import { ChevronRightIcon } from '@heroicons/react/outline'
 import { SparklesIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
+import { Group } from 'common/group'
 import { debounce, startCase, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
@@ -134,7 +135,7 @@ const Results = (props: { query: string }) => {
   ] = useState({
     pageHits: [] as PageData[],
     userHits: [] as UserSearchResult[],
-    groupHits: [] as SearchGroupInfo[],
+    groupHits: [] as Group[],
     sortHit: null as { sort: Sort; markets: Contract[] } | null,
     marketHits: [] as Contract[],
   })
@@ -150,7 +151,7 @@ const Results = (props: { query: string }) => {
 
     Promise.allSettled([
       searchUsers(search, userHitLimit),
-      searchGroups(search, groupHitLimit),
+      searchGroups({ term: search, limit: groupHitLimit }),
       searchContract({
         query: search,
         filter: 'all',
@@ -175,17 +176,18 @@ const Results = (props: { query: string }) => {
       })(),
     ]).then(([u, g, m, s]) => {
       const userHits = u.status === 'fulfilled' ? u.value : []
-      const groupHits = g.status === 'fulfilled' ? g.value : []
+      const groupHits = g.status === 'fulfilled' ? g.value.data : []
       const marketHits = m.status === 'fulfilled' ? m.value.data : []
       const sortHit = s.status === 'fulfilled' ? s.value : null
 
       if (thisNonce === nonce.current) {
         const pageHits = prefix ? [] : searchPages(search, 2)
         const uniqueMarketHits = uniqBy<Contract>(marketHits, 'id')
+        const uniqueGroupHits = uniqBy<Group>(groupHits, 'id')
         setSearchResults({
           pageHits,
           userHits,
-          groupHits,
+          groupHits: uniqueGroupHits,
           sortHit,
           marketHits: uniqueMarketHits,
         })

@@ -50,8 +50,6 @@ import { WarningConfirmationButton } from '../buttons/warning-confirmation-butto
 import { Button } from '../buttons/button'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
-import { SiteLink } from '../widgets/site-link'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
 import { getStonkShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { Input } from 'web/components/widgets/input'
 import { DAY_MS, MINUTE_MS } from 'common/util/time'
@@ -336,27 +334,25 @@ export function BuyPanel(props: {
         <YesNoSelector
           className="flex-1"
           btnClassName="flex-1"
-          selected={outcome}
+          selected={seeLimit ? 'LIMIT' : outcome}
           onSelect={(choice) => {
             onOptionChoice(choice)
           }}
           yesLabel={
-            isPseudoNumeric ? 'HIGHER' : isStonk ? STONK_YES : undefined
+            isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
           }
-          noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : undefined}
+          noLabel={
+            isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
+          }
         />
         {!isStonk && !initialOutcome && (
-          <button
-            className={clsx(
-              'inline-flex items-center justify-center rounded-3xl border-2 p-2',
-              seeLimit
-                ? 'border-indigo-500 bg-indigo-500 text-white'
-                : 'bg-canvas-0 border-indigo-500 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-500/10 hover:text-indigo-500'
-            )}
+          <Button
+            color={seeLimit ? 'indigo' : 'indigo-outline'}
             onClick={() => onOptionChoice('LIMIT')}
+            className="text-lg"
           >
-            <div className="h-6 w-6 text-center">%</div>
-          </button>
+            %
+          </Button>
         )}
       </Row>
 
@@ -399,7 +395,7 @@ export function BuyPanel(props: {
             <div>
               <span className="whitespace-nowrap text-lg font-semibold">
                 {isStonk
-                  ? getStonkShares(contract, currentPayout)
+                  ? getStonkShares(contract, currentPayout, 2)
                   : isPseudoNumeric
                   ? Math.floor(currentPayout)
                   : formatMoney(currentPayout)}
@@ -464,6 +460,7 @@ export function BuyPanel(props: {
             marketType="binary"
             amount={betAmount}
             warning={warning}
+            userOptedOutOfWarning={user.optOutBetWarnings}
             onSubmit={submitBet}
             isSubmitting={isSubmitting}
             disabled={betDisabled}
@@ -714,23 +711,13 @@ function LimitOrderPanel(props: {
 
   return (
     <Col className={clsx(className, hidden && 'hidden')}>
-      <Row
-        className={clsx(
-          'mb-2 w-full justify-between gap-4 self-start',
-          mobileView ? '' : 'sm:hidden'
-        )}
-      >
+      <Row className="mb-4 items-center justify-between">
+        <div>
+          Place a limit order{' '}
+          <InfoTooltip text="Limit orders let you place an order to buy at a specific probability which other users can bet against" />
+        </div>
+
         <OrderBookButton limitBets={unfilledBets} contract={contract} />
-        <SiteLink
-          className="text-ink-500 flex flex-row items-center gap-1 text-sm"
-          href={
-            // Manifold help for limit orders.
-            'https://help.manifold.markets/64cf65f9f96047c3a727489e778e5983'
-          }
-          followsLinkClass
-        >
-          What is a limit order? <ExternalLinkIcon className="h-4 w-4" />
-        </SiteLink>
       </Row>
       <Row className="mt-1 mb-4 gap-4">
         <Col className="gap-2">
@@ -745,6 +732,8 @@ function LimitOrderPanel(props: {
             placeholder="10"
           />
         </Col>
+
+        <div>or</div>
 
         <Col className="gap-2">
           <div className="text-ink-800 text-sm">
@@ -763,19 +752,7 @@ function LimitOrderPanel(props: {
             mobileView ? 'hidden' : 'hidden sm:flex',
             'ml-auto gap-4 self-start'
           )}
-        >
-          <SiteLink
-            className="text-ink-500 flex flex-row items-center gap-1 text-sm"
-            href={
-              // Manifold help for limit orders.
-              'https://help.manifold.markets/64cf65f9f96047c3a727489e778e5983'
-            }
-            followsLinkClass
-          >
-            What is a limit order? <ExternalLinkIcon className="h-4 w-4" />
-          </SiteLink>
-          <OrderBookButton limitBets={unfilledBets} contract={contract} />
-        </Row>
+        ></Row>
       </Row>
 
       {outOfRangeError && (
@@ -804,38 +781,41 @@ function LimitOrderPanel(props: {
         sliderOptions={{ show: true, wrap: false }}
         showBalance
       />
-      <Button
-        className={'mt-2'}
-        onClick={() => setAddExpiration(!addExpiration)}
-        color={'gray-white'}
-      >
-        {addExpiration ? 'Remove expiration date' : 'Add expiration date'}
-      </Button>
-      {addExpiration && (
-        <Row className="mt-4 gap-2">
-          <Input
-            type={'date'}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => {
-              setExpirationDate(e.target.value)
-              if (!expirationHoursMinutes) {
-                setExpirationHoursMinutes(initTime)
-              }
-            }}
-            min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
-            disabled={isSubmitting}
-            value={expirationDate}
-          />
-          <Input
-            type={'time'}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setExpirationHoursMinutes(e.target.value)}
-            min={'00:00'}
-            disabled={isSubmitting}
-            value={expirationHoursMinutes}
-          />
-        </Row>
-      )}
+
+      <div className="mb-4">
+        <Button
+          className={'mt-4'}
+          onClick={() => setAddExpiration(!addExpiration)}
+          color={'indigo-outline'}
+        >
+          {addExpiration ? 'Remove expiration date' : 'Add expiration date'}
+        </Button>
+        {addExpiration && (
+          <Row className="mt-4 gap-2">
+            <Input
+              type={'date'}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                setExpirationDate(e.target.value)
+                if (!expirationHoursMinutes) {
+                  setExpirationHoursMinutes(initTime)
+                }
+              }}
+              min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
+              disabled={isSubmitting}
+              value={expirationDate}
+            />
+            <Input
+              type={'time'}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setExpirationHoursMinutes(e.target.value)}
+              min={'00:00'}
+              disabled={isSubmitting}
+              value={expirationHoursMinutes}
+            />
+          </Row>
+        )}
+      </div>
 
       <Col className="mt-2 w-full gap-3">
         {(hasTwoBets || (hasYesLimitBet && yesBet.amount !== 0)) && (

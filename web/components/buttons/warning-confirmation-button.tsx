@@ -18,6 +18,7 @@ export function WarningConfirmationButton(props: {
   color: ColorType
   size: SizeType
   actionLabel: string
+  userOptedOutOfWarning: boolean | undefined
 }) {
   const {
     amount,
@@ -29,6 +30,7 @@ export function WarningConfirmationButton(props: {
     size,
     color,
     actionLabel,
+    userOptedOutOfWarning,
   } = props
 
   const buttonText = isSubmitting
@@ -39,7 +41,7 @@ export function WarningConfirmationButton(props: {
     ? 'Enter an amount'
     : actionLabel
 
-  if (!warning) {
+  if (!warning || userOptedOutOfWarning) {
     return (
       <Button
         size={size}

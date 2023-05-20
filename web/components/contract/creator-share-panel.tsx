@@ -16,6 +16,7 @@ import { db } from 'web/lib/supabase/db'
 import { useQuery } from 'react-query'
 import { Table } from '../widgets/table'
 import { uniqBy } from 'lodash'
+import { ContractCardView } from 'common/events'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -49,9 +50,9 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
 
       <div className="text-ink-500 mb-2 text-base">
         Bump up your market in the feed. We'll target it to users who like
-        questions like this. Funds go to the viewers.
+        questions like this. Some funds go to viewers as a claimable reward.
       </div>
-      <BoostAnalytics contractId={contract.id} />
+      <FeedAnalytics contractId={contract.id} />
     </GradientContainer>
   )
 }
@@ -106,8 +107,11 @@ function BoostFormRow(props: { contract: Contract }) {
   )
 }
 
-function BoostAnalytics(props: { contractId: string }) {
+function FeedAnalytics(props: { contractId: string }) {
   const { contractId } = props
+
+  // TODO rewrite these in functions.sql as a single rpc. This is ridiculous.
+
   const adQuery = useQuery(
     ['ad data', contractId],
     async () =>
@@ -122,9 +126,20 @@ function BoostAnalytics(props: { contractId: string }) {
     ['view market card data', contractId],
     async () =>
       await db
+        .from('user_seen_markets')
+        .select('user_id, data')
+        .eq('type', 'view market card')
+        .eq('contract_id', contractId),
+    { refetchInterval: false }
+  )
+
+  const clickQuery = useQuery(
+    ['click through data', contractId],
+    async () =>
+      await db
         .from('user_events')
-        .select()
-        .eq('name', 'view market card')
+        .select('*', { count: 'exact' })
+        .eq('name', 'click market card feed')
         .eq('contract_id', contractId),
     { refetchInterval: false }
   )
@@ -140,7 +155,12 @@ function BoostAnalytics(props: { contractId: string }) {
     { enabled: adQuery.isSuccess, refetchInterval: false }
   )
 
-  if (adQuery.isError || viewQuery.isError || redeemQuery.isError) {
+  if (
+    adQuery.isError ||
+    viewQuery.isError ||
+    clickQuery.isError ||
+    redeemQuery.isError
+  ) {
     return (
       <div className="bg-scarlet-100 mb-2 rounded-md p-4">
         Error loading analytics
@@ -148,61 +168,72 @@ function BoostAnalytics(props: { contractId: string }) {
     )
   }
 
+  const isBoosted = !!adQuery.data?.data?.length
+  const adData = adQuery.data?.data?.[0]
   const viewData = viewQuery.data?.data
+  const promotedViewData = viewData?.filter(
+    (v) => (v.data as ContractCardView).isPromoted
+  )
 
-  if (adQuery.data?.data?.length) {
-    const { funds, created_at, cost_per_view } = adQuery.data.data[0]
+  const clickData = clickQuery.data
+  const promotedClickData = clickData?.data?.filter(
+    (v) => (v.data as any).isPromoted
+  )
 
-    return (
-      <div className="mt-4">
-        <div className="mb-1 font-semibold">
-          Analytics{' '}
-          {(adQuery.isFetching ||
-            viewQuery.isFetching ||
-            redeemQuery.isFetching) &&
-            '...'}
-        </div>
-        <Table className="text-ink-900">
-          <TableItem
-            label="Campaign start"
-            value={new Date(created_at).toDateString()}
-          />
-          <TableItem
-            label="Funds left"
-            value={`${formatMoney(funds)} (${funds / cost_per_view} redeems)`}
-          />
-          {viewData && (
-            <>
-              <TableItem
-                label="Total Impressions"
-                value={`${viewData.length} (${
-                  uniqBy(viewData, 'user_id').length
-                } unique)`}
-              />
-              <TableItem
-                label="Impressions since campaign start"
-                value={`${
-                  viewData.filter(
-                    (i) => i.ts && Date.parse(i.ts) > Date.parse(created_at)
-                  ).length
-                }`}
-              />
-            </>
-          )}
-          {redeemQuery.data && (
-            <TableItem label="Redeems" value={redeemQuery.data.count} />
-          )}
-        </Table>
+  return (
+    <div className="mt-4">
+      <div className="mb-2 text-lg">
+        Feed Analytics
+        {(adQuery.isFetching ||
+          viewQuery.isFetching ||
+          redeemQuery.isFetching) && (
+          <LoadingIndicator size="sm" className="ml-4 !inline-flex" />
+        )}
       </div>
-    )
-  }
+      <Table className="text-ink-900 max-w-sm table-fixed">
+        {adData && (
+          <>
+            <TableItem
+              label="Campaign start"
+              value={new Date(adData.created_at).toDateString()}
+            />
+            <TableItem label="Funds left" value={formatMoney(adData.funds)} />
+          </>
+        )}
 
-  return null
+        <TableItem
+          label="Impressions"
+          value={
+            viewData &&
+            `${viewData.length} (${uniqBy(viewData, 'user_id').length} people)`
+          }
+        />
+        {isBoosted && (
+          <TableItem
+            label="Boost Impressions"
+            value={
+              promotedViewData &&
+              `${promotedViewData.length} (${
+                uniqBy(promotedViewData, 'user_id').length
+              } people)`
+            }
+          />
+        )}
+        {isBoosted && (
+          <TableItem label="Redeems" value={redeemQuery.data?.count} />
+        )}
+        <TableItem label="Clicks" value={clickData?.count} />
+        {isBoosted && (
+          <TableItem label="Boost Clicks" value={promotedClickData?.length} />
+        )}
+      </Table>
+    </div>
+  )
 }
 
-const TableItem = (props: { label: ReactNode; value: ReactNode }) => (
+const TableItem = (props: { label: ReactNode; value?: ReactNode }) => (
   <tr>
-    <td>{props.label}</td>
-    <td>{props.value}</td>
+    <td className="!pt-0 !pl-0">{props.label}</td>
+    <td className="!pt-0 !pl-0">{props.value ?? '...'}</td>
   </tr>
 )

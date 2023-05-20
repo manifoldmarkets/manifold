@@ -23,7 +23,9 @@ export async function bulkInsert<
     const columnNames = Object.keys(values[0])
     const cs = new pgp.helpers.ColumnSet(columnNames, { table })
     const query = pgp.helpers.insert(values, cs)
-    await db.none(query)
+    // Hack to properly cast jsonb values.
+    const q = query.replace(/::jsonb'/g, "'::jsonb")
+    await db.none(q)
   }
 }
 
@@ -42,7 +44,9 @@ export async function bulkUpdate<
     const cs = new pgp.helpers.ColumnSet(columnNames, { table })
     const query =
       pgp.helpers.update(values, cs) + ` WHERE v.${idField} = t.${idField}`
-    await db.none(query)
+    // Hack to properly cast jsonb values.
+    const q = query.replace(/::jsonb'/g, "'::jsonb")
+    await db.none(q)
   }
 }
 
@@ -59,7 +63,10 @@ export async function bulkUpsert<
   const columnNames = Object.keys(values[0])
   const cs = new pgp.helpers.ColumnSet(columnNames, { table })
   const baseQuery = pgp.helpers.insert(values, cs)
+  // Hack to properly cast jsonb values.
+  const baseQueryReplaced = baseQuery.replace(/::jsonb'/g, "'::jsonb")
+
   const upsertAssigns = cs.assignColumns({ from: 'excluded', skip: idField })
-  const query = `${baseQuery} on conflict(${idField}) do update set ${upsertAssigns}`
+  const query = `${baseQueryReplaced} on conflict(${idField}) do update set ${upsertAssigns}`
   await db.none(query)
 }

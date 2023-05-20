@@ -225,6 +225,19 @@ export async function getUsersRecentBetContractIds(
   return groupBy(flatMap(results), 'userId')
 }
 
+export async function getContractMetricsForContractIds(
+  db: SupabaseClient,
+  userId: string,
+  contractIds: string[]
+) {
+  const { data } = await run(
+    selectJson(db, 'user_contract_metrics')
+      .eq('user_id', userId)
+      .in('contract_id', contractIds)
+  )
+  return data.map((d) => d.data) as ContractMetrics[]
+}
+
 export async function getTotalContractMetrics(
   contractId: string,
   db: SupabaseClient

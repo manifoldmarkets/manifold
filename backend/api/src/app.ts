@@ -53,6 +53,17 @@ import { saveTopic } from './save-topic'
 import { getcontractparams } from './get-contract-params'
 import { boostmarket } from './create-market-ad'
 import { redeemboost } from './redeem-market-ad-reward'
+import { creategroupinvite } from './create-group-invite'
+import { joingroupthroughinvite } from './join-group-through-invite'
+import { joingroup } from './join-group'
+import { editcomment } from 'api/edit-comment'
+import { supabasesearchgroups } from './supabase-search-groups'
+import { leagueActivity } from './league-activity'
+import { lootbox } from './loot-box'
+import { createQAndA } from './create-q-and-a'
+import { createQAndAAnswer } from './create-q-and-a-answer'
+import { awardQAndAAnswer } from './award-q-and-a-answer'
+import { createchatmessage } from 'api/create-chat-message'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -91,12 +102,15 @@ app.get('/health', ...apiRoute(health))
 app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 
+app.post('/lootbox', ...apiRoute(lootbox))
 app.post('/auctionbid', ...apiRoute(auctionbid))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/createcomment', ...apiRoute(createcomment))
+app.post('/createchatmessage', ...apiRoute(createchatmessage))
+app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
 app.post('/placebet', ...apiRoute(placebet))
@@ -139,6 +153,14 @@ app.post(
   stripewebhook
 )
 app.post('/getcontractparams', ...apiRoute(getcontractparams))
+app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
+app.post('/joingroupthroughinvite', ...apiRoute(joingroupthroughinvite))
+app.post('/joingroup', ...apiRoute(joingroup))
+app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
+app.post('/league-activity', ...apiRoute(leagueActivity))
+app.post('/create-q-and-a', ...apiRoute(createQAndA))
+app.post('/create-q-and-a-answer', ...apiRoute(createQAndAAnswer))
+app.post('/award-q-and-a-answer', ...apiRoute(awardQAndAAnswer))
 
 // Catch 404 errors - this should be the last route
 app.use((req, res, next) => {

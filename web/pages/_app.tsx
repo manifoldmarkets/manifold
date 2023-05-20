@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/react'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import Script from 'next/script'
@@ -139,7 +138,6 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           <div />
         </div>
       </div>
-      <Analytics />
       {/* Umami, for pageview analytics on https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets */}
       <Script
         src="https://analytics.umami.is/script.js"

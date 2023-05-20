@@ -4,7 +4,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ClockIcon, StarIcon, UserIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
-
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { Col } from '../layout/col'
@@ -59,7 +58,6 @@ export const ContractCard = memo(function ContractCard(props: {
   hideQuestion?: boolean
   hideDetails?: boolean
   numAnswersFR?: number
-  trackCardViews?: boolean
   fromGroupProps?: {
     group: Group
     userRole: groupRoleType | null
@@ -82,7 +80,6 @@ export const ContractCard = memo(function ContractCard(props: {
     hideQuestion,
     hideDetails,
     numAnswersFR,
-    trackCardViews,
     fromGroupProps,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
@@ -92,18 +89,6 @@ export const ContractCard = memo(function ContractCard(props: {
   const { resolution } = contract
 
   const user = useUser()
-  const { ref } = trackCardViews
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useIsVisible(
-        () =>
-          track('view market card', {
-            contractId: contract.id,
-            creatorId: contract.creatorId,
-            slug: contract.slug,
-          } as ContractCardView),
-        true
-      )
-    : { ref: undefined }
   const marketClosed =
     (contract.closeTime || Infinity) < Date.now() || !!resolution
 
@@ -124,7 +109,6 @@ export const ContractCard = memo(function ContractCard(props: {
         hasImage ? 'ub-cover-image' : '',
         className
       )}
-      ref={ref}
     >
       <Col className="relative flex-1 gap-1 pt-2">
         {!hideDetails && (
@@ -133,7 +117,7 @@ export const ContractCard = memo(function ContractCard(props: {
               <Avatar
                 username={contract.creatorUsername}
                 avatarUrl={contract.creatorAvatarUrl}
-                size={4}
+                size={'2xs'}
                 noLink={noLinkAvatar}
               />
               <UserLink
@@ -285,24 +269,6 @@ function DescriptionRow(props: { description: string | JSONContent }) {
   )
 }
 
-export const ContractCardWithPosition = memo(function ContractCardWithPosition(
-  props: {
-    contract: CPMMContract
-    showDailyProfit?: boolean
-  } & Parameters<typeof ContractCard>[0]
-) {
-  const { contract, showDailyProfit, ...contractCardProps } = props
-
-  return (
-    <ContractCard contract={contract} {...contractCardProps}>
-      <ContractMetricsFooter
-        contract={contract}
-        showDailyProfit={showDailyProfit}
-      />
-    </ContractCard>
-  )
-})
-
 export function ContractMetricsFooter(props: {
   contract: CPMMContract
   showDailyProfit?: boolean
@@ -377,7 +343,7 @@ function LoadedMetricsFooter(props: {
 export function FeaturedPill(props: { label?: string }) {
   const label = props.label ?? 'Featured'
   return (
-    <div className="text-ink-0 from-primary-500 rounded-full bg-gradient-to-br to-fuchsia-500 px-2 py-0.5 text-xs">
+    <div className="from-primary-500 rounded-full bg-gradient-to-br to-fuchsia-500 px-2 text-white">
       {label}
     </div>
   )
@@ -386,9 +352,11 @@ export function FeaturedPill(props: { label?: string }) {
 export function ContractCardNew(props: {
   contract: Contract
   promotedData?: { adId: string; reward: number }
+  /** location of the card, to disambiguate card click events */
+  trackingPostfix?: string
   className?: string
 }) {
-  const { className, promotedData } = props
+  const { className, promotedData, trackingPostfix } = props
   const user = useUser()
 
   const contract = useContract(props.contract.id) ?? props.contract
@@ -413,9 +381,18 @@ export function ContractCardNew(props: {
         contractId: contract.id,
         creatorId: contract.creatorId,
         slug: contract.slug,
+        isPromoted: !!promotedData,
       } as ContractCardView),
     true
   )
+
+  const trackClick = () =>
+    track(('click market card ' + trackingPostfix).trim(), {
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+      slug: contract.slug,
+      isPromoted: !!promotedData,
+    })
 
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
@@ -436,6 +413,7 @@ export function ContractCardNew(props: {
       // we have other links inside this card like the username, so can't make the whole card a button or link
       tabIndex={-1}
       onClick={(e) => {
+        trackClick()
         Router.push(path)
         e.currentTarget.focus() // focus the div like a button, for style
       }}
@@ -467,7 +445,10 @@ export function ContractCardNew(props: {
             textColor
           )}
           // if open in new tab, don't open in this one
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            trackClick()
+            e.stopPropagation()
+          }}
         >
           {question}
         </Link>
@@ -500,6 +481,7 @@ export function ContractCardNew(props: {
                 size="md"
                 color="gray"
                 className="!px-0"
+                trackingLocation={'contract card (feed)'}
               />
             </div>
 
@@ -539,7 +521,7 @@ export function ContractCardNew(props: {
 }
 
 const BoostPill = () => (
-  <Tooltip text={"They're paying you to see this"}>
+  <Tooltip text="They're paying you to see this" placement="right">
     <FeaturedPill label="Boosted" />
   </Tooltip>
 )
@@ -627,7 +609,7 @@ function ClaimButton(props: {
   return (
     <button
       className={clsx(
-        'border-ink-1000 rounded-full border bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-2 px-3 text-gray-900 transition-colors',
+        'rounded-lg bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-2.5 px-6 font-semibold text-gray-900 transition-colors',
         'hover:via-yellow-100 focus:via-yellow-100',
         'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
         className

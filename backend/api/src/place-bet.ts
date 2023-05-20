@@ -161,12 +161,15 @@ export const placebet = authEndpoint(async (req, auth) => {
     }
 
     const betDoc = contractDoc.collection('bets').doc()
+    const isApi = auth.creds.kind === 'key'
+
     trans.create(betDoc, {
       id: betDoc.id,
       userId: user.id,
       userAvatarUrl: user.avatarUrl,
       userUsername: user.username,
       userName: user.name,
+      isApi,
       ...newBet,
     })
     log(`Created new bet document for ${user.username} - auth ${auth.uid}.`)
@@ -208,12 +211,12 @@ export const placebet = authEndpoint(async (req, auth) => {
       log(`Updated contract ${contract.slug} properties - auth ${auth.uid}.`)
     }
 
-    return { contract, betId: betDoc.id, makers, newBet, ordersToCancel, user }
+    return { newBet, betId: betDoc.id, contract, makers, ordersToCancel, user }
   })
 
   log(`Main transaction finished - auth ${auth.uid}.`)
 
-  const { contract, newBet, makers, ordersToCancel, user } = result
+  const { newBet, betId, contract, makers, ordersToCancel, user } = result
   const { mechanism } = contract
 
   if (
@@ -241,7 +244,7 @@ export const placebet = authEndpoint(async (req, auth) => {
     )
   }
 
-  return { ...newBet, betId: result.betId }
+  return { ...newBet, betId: betId }
 })
 
 const firestore = admin.firestore()

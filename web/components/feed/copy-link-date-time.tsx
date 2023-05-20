@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { ReactNode } from 'react'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { DateTimeTooltip } from 'web/components/widgets/datetime-tooltip'
 import Link from 'next/link'
@@ -7,6 +7,7 @@ import { LinkIcon } from '@heroicons/react/outline'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { toast } from 'react-hot-toast'
 import { trackShareEvent } from 'web/lib/service/analytics'
+import clsx from 'clsx'
 
 export function copyLinkToComment(
   contractCreatorUsername: string,
@@ -27,19 +28,23 @@ export function CopyLinkDateTimeComponent(props: {
   createdTime: number
   elementId: string
   className?: string
+  seeEditsButton?: ReactNode
 }) {
-  const { prefix, slug, elementId, createdTime, className } = props
+  const { prefix, seeEditsButton, slug, elementId, createdTime, className } =
+    props
   const isClient = useIsClient()
 
   return (
     <DateTimeTooltip className={className} time={createdTime} noTap>
+      {seeEditsButton}
       <Link
         href={`/${prefix}/${slug}#${elementId}`}
         replace
         onClick={() => copyLinkToComment(prefix, slug, elementId)}
-        className={
-          'text-ink-400 hover:bg-ink-100 mx-1 whitespace-nowrap rounded-sm px-1 text-xs transition-colors'
-        }
+        className={clsx(
+          'text-ink-400 hover:bg-ink-100 mx-1 whitespace-nowrap rounded-sm text-xs transition-colors',
+          seeEditsButton ? '' : 'px-1'
+        )}
       >
         {isClient && fromNow(createdTime)}
         <LinkIcon className="ml-1 mb-0.5 inline" height={13} />

@@ -5,19 +5,24 @@ import { getShareUrl } from 'common/util/share'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import clsx from 'clsx'
 
-export function ExtraContractActionsRow(props: { contract: Contract }) {
-  const { contract } = props
+export function ExtraContractActionsRow(props: {
+  contract: Contract
+  children?: ReactNode
+}) {
+  const { contract, children } = props
   const user = useUser()
   const privateUser = usePrivateUser()
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
     <Row className="gap-3">
+      {children}
+
       <div className="flex items-center rounded-full bg-black/60 text-white [&>div]:pr-2">
         <LikeButton
           user={user}
@@ -34,6 +39,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
             'p-2',
             isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
           )}
+          trackingLocation={'contract page'}
         />
       </div>
 

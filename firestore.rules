@@ -42,7 +42,7 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
+                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections', 'optOutAreYouSureWarnings']);
       // User referral rules
       allow update: if userId == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
@@ -138,6 +138,10 @@ service cloud.firestore {
     match /private-users/{userId}/seenMarkets/{marketId} {
       allow write: if userId == request.auth.uid;
       allow read: if userId == request.auth.uid
+    }
+
+     match /stripe-transactions/{transactionId} {
+      allow read: if resource.data.userId == request.auth.uid;
     }
 
     match /contracts/{contractId} {

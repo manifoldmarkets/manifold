@@ -21,16 +21,20 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { linkClass } from 'web/components/widgets/site-link'
-import {
-  getGroupLinksToDisplay,
-  getGroupLinkToDisplay,
-} from 'web/lib/firebase/groups'
+// import {
+//   getGroupLinksToDisplay,
+//   getGroupLinkToDisplay,
+// } from 'web/lib/firebase/groups'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { GroupLink, groupPath } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
+import {
+  getGroupLinkToDisplay,
+  getGroupLinksToDisplay,
+} from 'web/lib/firebase/groups'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -130,7 +134,7 @@ export function AuthorInfo(props: { contract: Contract }) {
         <Avatar
           username={creatorUsername}
           avatarUrl={creatorAvatarUrl}
-          size={6}
+          size={'xs'}
         />
       </div>
 
@@ -344,7 +348,7 @@ function EditableCloseDate(props: {
         <DateTimeTooltip
           text={closeTime <= Date.now() ? 'Trading ended:' : 'Trading ends:'}
           time={closeTime}
-          placement="bottom-start"
+          placement="bottom-end"
           noTap
           className="flex items-center"
         >

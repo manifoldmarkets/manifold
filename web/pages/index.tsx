@@ -41,6 +41,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
       (c) => !c.groupSlugs?.some((slug) => excludedGroupSlugs.includes(slug))
     )
     .filter((c) => c.coverImageUrl)
+    .filter((c) => c.outcomeType !== 'STONK')
     .slice(0, 7)
 
   return {

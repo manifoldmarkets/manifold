@@ -40,6 +40,7 @@ export const SORTS = [
   { label: 'Last activity', value: 'last-updated' },
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Just resolved', value: 'resolve-date' },
+  { label: '🎲 rAnDoM', value: 'random' },
 ] as const
 
 export type Sort = typeof SORTS[number]['value']
@@ -51,7 +52,6 @@ export type SupabaseSearchParameters = {
   query: string
   sort: Sort
   filter: filter
-  //   facetFilters: SearchOptions['facetFilters']
 }
 
 function getShowTime(sort: Sort) {
@@ -136,10 +136,6 @@ export function SupabaseContractSearch(props: {
     `${persistPrefix}-supabase-search`
   )
 
-  const loadMoreContracts = () => {
-    return performQuery(() => state)()
-  }
-
   const searchParams = useRef<SupabaseSearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SupabaseSearchParameters>()
   const requestId = useRef(0)
@@ -155,82 +151,87 @@ export function SupabaseContractSearch(props: {
     }
   }, [])
 
-  const performQuery = useEvent((getState) => async (freshQuery?: boolean) => {
-    const currentState = getState()
-    if (searchParams.current == null) {
+  const query = useEvent(
+    async (currentState: stateType, freshQuery?: boolean) => {
+      if (searchParams.current == null) {
+        return false
+      }
+      const { query, sort, filter } = searchParams.current
+      const id = ++requestId.current
+      const offset = freshQuery
+        ? 0
+        : currentState.contracts
+        ? currentState.contracts.length
+        : 0
+      if (freshQuery || currentState.shouldLoadMore) {
+        const results = await searchContract({
+          state: currentState,
+          query,
+          filter,
+          sort,
+          offset: offset,
+          limit: CONTRACTS_PER_PAGE,
+          group_id: additionalFilter?.groupId,
+          creator_id: additionalFilter?.creatorId,
+        })
+
+        if (id === requestId.current) {
+          const newContracts: Contract[] = results.data
+          const showTime = getShowTime(sort)
+
+          const freshContracts = freshQuery
+            ? newContracts
+            : [
+                ...(currentState.contracts ? currentState.contracts : []),
+                ...newContracts,
+              ]
+
+          // TODO: When `deleted` is a native supabase column, filter
+          // out deleted contracts in backend.
+          const freshContractsWithoutDeleted = freshContracts.filter(
+            (contract) => !contract.deleted
+          )
+
+          const newFuzzyContractOffset =
+            results.fuzzyOffset + currentState.fuzzyContractOffset
+
+          const shouldLoadMore = newContracts.length === CONTRACTS_PER_PAGE
+
+          setState({
+            fuzzyContractOffset: newFuzzyContractOffset,
+            contracts: freshContractsWithoutDeleted,
+            showTime: showTime,
+            shouldLoadMore,
+          })
+          if (freshQuery && isWholePage) window.scrollTo(0, 0)
+
+          return shouldLoadMore
+        }
+      }
       return false
     }
-    const { query, sort, filter } = searchParams.current
-    const id = ++requestId.current
-    const offset = freshQuery
-      ? 0
-      : currentState.contracts
-      ? currentState.contracts.length
-      : 0
-    if (freshQuery || currentState.shouldLoadMore) {
-      const results = await searchContract({
-        state: currentState,
-        query,
-        filter,
-        sort,
-        offset: offset,
-        limit: CONTRACTS_PER_PAGE,
-        group_id: additionalFilter?.groupId,
-        creator_id: additionalFilter?.creatorId,
-      })
+  )
 
-      if (id === requestId.current) {
-        const newContracts: Contract[] = results.data
-        const showTime = getShowTime(sort)
+  const loadMoreContracts = () => query(state)
 
-        const freshContracts = freshQuery
-          ? newContracts
-          : [
-              ...(currentState.contracts ? currentState.contracts : []),
-              ...newContracts,
-            ]
-
-        // TODO: When `deleted` is a native supabase column, filter
-        // out deleted contracts in backend.
-        const freshContractsWithoutDeleted = freshContracts.filter(
-          (contract) => !contract.deleted
-        )
-
-        const newFuzzyContractOffset =
-          results.fuzzyOffset + currentState.fuzzyContractOffset
-
-        const shouldLoadMore = newContracts.length === CONTRACTS_PER_PAGE
-
-        setState({
-          fuzzyContractOffset: newFuzzyContractOffset,
-          contracts: freshContractsWithoutDeleted,
-          showTime: showTime,
-          shouldLoadMore,
-        })
-        if (freshQuery && isWholePage) window.scrollTo(0, 0)
-
-        return shouldLoadMore
-      }
-    }
-    return false
-  })
-
-  // Always do first query when loading search page, unless going back in history.
-  const [firstQuery, setFirstQuery] = usePersistentState(true, {
-    key: `${persistPrefix}-supabase-first-query`,
-    store: historyStore(),
-  })
+  // Counts as loaded if you are on the page and a query finished or if you go back in history.
+  const hasLoadedKey = `${persistPrefix}-search-has-loaded`
+  const searchHistoryStore = historyStore()
+  const hasLoadedQuery = searchHistoryStore.get(hasLoadedKey)
 
   const onSearchParametersChanged = useRef(
     debounce((params) => {
-      if (!isEqual(searchParams.current, params) || firstQuery) {
-        setFirstQuery(false)
+      if (!isEqual(searchParams.current, params) || !hasLoadedQuery) {
+        searchHistoryStore.set(hasLoadedKey, true)
         if (persistPrefix) {
           searchParamsStore.set(`${persistPrefix}-params`, params)
         }
         searchParams.current = params
-        setState({ ...INITIAL_STATE, showTime: getShowTime(params.sort) })
-        performQuery(() => state)(true)
+        setState({
+          ...INITIAL_STATE,
+          showTime: getShowTime(params.sort),
+        })
+        query(state, true)
       }
     }, 100)
   ).current
@@ -377,12 +378,6 @@ function SupabaseContractSearchControls(props: {
       ? 'resolved'
       : filterState
 
-  useEffect(() => {
-    if (persistPrefix && sort) {
-      safeLocalStorage?.setItem(sortKey, sort as string)
-    }
-  }, [persistPrefix, query, sort, sortKey])
-
   const updateQuery = (newQuery: string) => {
     setQuery(newQuery)
   }
@@ -402,11 +397,13 @@ function SupabaseContractSearchControls(props: {
   const isAuth = useIsAuthorized()
 
   useEffect(() => {
-    onSearchParametersChanged({
-      query: query,
-      sort: sort as Sort,
-      filter: filter as filter,
-    })
+    if (isAuth !== undefined) {
+      onSearchParametersChanged({
+        query: query,
+        sort: sort as Sort,
+        filter: filter as filter,
+      })
+    }
   }, [query, sort, filter, isAuth])
 
   return (

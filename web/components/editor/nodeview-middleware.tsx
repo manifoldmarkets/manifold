@@ -11,7 +11,13 @@ export const nodeViewMiddleware = (extensions: Extensions) => {
         .extend({
           addNodeView: () =>
             ReactNodeViewRenderer((props: any) => (
-              <NodeViewWrapper className={clsx(e.name, 'contents')}>
+              <NodeViewWrapper
+                className={clsx(
+                  e.name,
+                  'contents',
+                  props.selected && '[&>*]:outline-dotted'
+                )}
+              >
                 {renderReact(props.node.attrs, props.children)}
               </NodeViewWrapper>
             )),

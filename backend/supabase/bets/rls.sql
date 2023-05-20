@@ -12,3 +12,8 @@ select
     (visibility = 'private'::text)
     and can_access_private_contract (contract_id, firebase_uid ())
   );
+
+
+create policy "Enable read access for all" on public.contract_bets for
+select
+  using (true);

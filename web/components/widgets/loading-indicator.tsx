@@ -4,12 +4,12 @@ export type SpinnerSize = 'sm' | 'md' | 'lg'
 function getSizeClass(size: SpinnerSize) {
   switch (size) {
     case 'sm':
-      return 'h-4 w-4'
+      return 'h-4 w-4 border-2'
     case 'md':
-      return 'h-6 w-6'
+      return 'h-6 w-6 border-4'
     case 'lg':
     default:
-      return 'h-8 w-8'
+      return 'h-8 w-8 border-4'
   }
 }
 
@@ -23,7 +23,7 @@ export function LoadingIndicator(props: {
     <div className={clsx('flex items-center justify-center', className)}>
       <div
         className={clsx(
-          'spinner-border border-primary-500 inline-block animate-spin rounded-full border-4 border-solid border-r-transparent',
+          'border-primary-500 inline-block animate-spin rounded-full border-solid border-r-transparent',
           getSizeClass(size),
           spinnerClassName
         )}

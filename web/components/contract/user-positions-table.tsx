@@ -218,7 +218,8 @@ export const BinaryUserPositionsTable = memo(
                       ? isStonk
                         ? getStonkShares(
                             contract,
-                            position.totalShares[outcome] ?? 0
+                            position.totalShares[outcome] ?? 0,
+                            2
                           ).toString()
                         : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
@@ -249,7 +250,8 @@ export const BinaryUserPositionsTable = memo(
                       ? isStonk
                         ? getStonkShares(
                             contract,
-                            position.totalShares[outcome] ?? 0
+                            position.totalShares[outcome] ?? 0,
+                            2
                           ).toString()
                         : formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)

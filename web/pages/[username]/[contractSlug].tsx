@@ -61,6 +61,11 @@ import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import { User } from 'common/user'
+import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
+import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
+import { ContractView } from 'common/events'
+import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 
 export type ContractParameters = {
   contractSlug: string
@@ -72,13 +77,26 @@ export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  const contractParameters = await getContractParams({
-    contractSlug,
-    fromStaticProps: true,
-  })
 
-  return {
-    props: contractParameters,
+  try {
+    const props = await getContractParams({
+      contractSlug,
+      fromStaticProps: true,
+    })
+    return {
+      props,
+    }
+  } catch (e) {
+    if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {
+      return {
+        props: {
+          contractSlug,
+          visibility: null,
+        },
+        revalidate: 60,
+      }
+    }
+    throw e
   }
 }
 
@@ -167,7 +185,7 @@ export function ContractPageContent(props: {
       slug: contract.slug,
       contractId: contract.id,
       creatorId: contract.creatorId,
-    },
+    } as ContractView,
     true
   )
   useSaveContractVisitsLocally(user === null, contract.id)
@@ -268,7 +286,7 @@ export function ContractPageContent(props: {
         </Head>
       )}
 
-      <Row className="w-full items-start gap-8 self-center">
+      <Row className="w-full items-start justify-center gap-8">
         <Col
           className={clsx(
             'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
@@ -292,6 +310,10 @@ export function ContractPageContent(props: {
                   src={coverImageUrl}
                   priority={true}
                 />
+                <ChangeBannerButton
+                  contract={contract}
+                  className="absolute top-12 right-4"
+                />
               </div>
             )}
             <div
@@ -302,11 +324,19 @@ export function ContractPageContent(props: {
             >
               <div className="mr-4 flex items-center truncate">
                 <BackButton />
+
                 {headerStuck && (
                   <span className="ml-4 text-white">{contract.question}</span>
                 )}
               </div>
-              <ExtraContractActionsRow contract={contract} />
+              <ExtraContractActionsRow contract={contract}>
+                {!headerStuck && !coverImageUrl && isCreator && (
+                  <ChangeBannerButton
+                    contract={contract}
+                    className="ml-3 first:ml-0"
+                  />
+                )}
+              </ExtraContractActionsRow>
             </div>
           </div>
 
@@ -314,7 +344,7 @@ export function ContractPageContent(props: {
             <Col className="gap-3 sm:gap-4">
               <div ref={titleRef}>
                 <Linkify
-                  className="text-primary-700 text-lg sm:text-2xl"
+                  className="text-primary-700 text-lg font-medium sm:text-2xl"
                   text={contract.question}
                 />
               </div>
@@ -339,11 +369,27 @@ export function ContractPageContent(props: {
                   />
                 </div>
               </div>
+
+              {(outcomeType === 'FREE_RESPONSE' ||
+                outcomeType === 'MULTIPLE_CHOICE') && (
+                <>
+                  <Spacer h={4} />
+                  <AnswersPanel
+                    contract={contract}
+                    onAnswerCommentClick={onAnswerCommentClick}
+                    showResolver={showResolver}
+                  />
+                  <Spacer h={4} />
+                </>
+              )}
+
               <ContractOverview
                 contract={contract}
                 bets={bets}
                 betPoints={betPoints}
               />
+
+              <SignUpFlow user={user} />
             </Col>
 
             {isCreator &&
@@ -360,6 +406,7 @@ export function ContractPageContent(props: {
               className="mt-2 xl:mt-6"
               contract={contract}
               toggleResolver={() => setShowResolver(!showResolver)}
+              showEditHistory={true}
             />
 
             <div className="my-4">
@@ -392,19 +439,6 @@ export function ContractPageContent(props: {
                   <QfResolutionPanel contract={contract} />
                 </GradientContainer>
               ) : null)}
-
-            {(outcomeType === 'FREE_RESPONSE' ||
-              outcomeType === 'MULTIPLE_CHOICE') && (
-              <>
-                <Spacer h={4} />
-                <AnswersPanel
-                  contract={contract}
-                  onAnswerCommentClick={onAnswerCommentClick}
-                  showResolver={showResolver}
-                />
-                <Spacer h={4} />
-              </>
-            )}
 
             {outcomeType === 'NUMERIC' && (
               <AlertBox
@@ -483,6 +517,19 @@ export function ContractPageContent(props: {
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>
   )
+}
+
+function SignUpFlow({ user }: { user: User | null | undefined }) {
+  if (user === null)
+    return (
+      <Col className="mt-1 w-full">
+        <BetSignUpPrompt className="xl:self-center" size="xl" />
+        <PlayMoneyDisclaimer />
+      </Col>
+    )
+  if (user === undefined) return <div className="h-[72px] w-full" />
+
+  return <></>
 }
 
 export function ContractSEO(props: {

@@ -7,9 +7,9 @@ export const getContractFromSlug = async (
   db: SupabaseClient
 ) => {
   const { data } = await run(
-    db.from('contracts').select('data').eq('slug', contractSlug).single()
+    db.from('contracts').select('data').eq('slug', contractSlug).maybeSingle()
   )
-  return data.data as Contract
+  return data ? (data.data as Contract) : null
 }
 
 export const getContracts = async (

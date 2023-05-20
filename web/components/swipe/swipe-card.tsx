@@ -220,6 +220,7 @@ function CardActions(props: {
           showTotalLikesUnder={true}
           color="white"
           isSwipe
+          trackingLocation={'swipe'}
         />
       </div>
 

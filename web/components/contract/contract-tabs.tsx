@@ -288,6 +288,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           className="mb-5"
           contract={contract}
           clearReply={clearReply}
+          trackingLocation={'contract page'}
         />
       )}
       {comments.length > 0 && (
@@ -323,6 +324,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               contract={contract}
               parentComment={parent}
               threadComments={commentsByParent[parent.id] ?? []}
+              trackingLocation={'contract page'}
             />
           ))}
       <div className="relative w-full">
@@ -432,7 +434,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
         itemsPerPage={ITEMS_PER_PAGE}
         totalItems={totalItems}
         setPage={setPage}
-        scrollToTop
+        UNSAFE_scrollToTop
       />
     </>
   )

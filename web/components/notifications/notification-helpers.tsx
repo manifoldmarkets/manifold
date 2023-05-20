@@ -14,8 +14,7 @@ import { truncateLengthType, truncateText } from '../widgets/truncate'
 import NotificationDropdown from './notification-dropdown'
 import { groupBy } from 'lodash'
 
-const notification_base_style =
-  'relative cursor-pointer text-sm transition-colors'
+const notification_base_style = 'relative text-sm transition-colors'
 export const NESTED_NOTIFICATION_STYLE = clsx(
   notification_base_style,
   'hover:bg-primary-50 p-2'
@@ -29,12 +28,12 @@ export const NOTIFICATION_STYLE = clsx(
   'p-2 hover:bg-primary-50'
 )
 export const NOTIFICATIONS_PER_PAGE = 30
-export function getHighlightClass(highlight: boolean) {
-  return highlight ? 'opacity-100' : 'opacity-70'
+function getHighlightClass(highlight: boolean) {
+  return highlight ? 'text-ink-1000' : 'text-ink-600'
 }
 export const NUM_SUMMARY_LINES = 3
 
-export const NOTIFICATION_ICON_SIZE = 10
+export const NOTIFICATION_ICON_SIZE = 'md'
 
 export function PrimaryNotificationLink(props: {
   text: string | undefined
@@ -178,10 +177,13 @@ export function NotificationFrame(props: {
     customBackground,
   } = props
   const isMobile = useIsMobile()
+  const highlightClass = getHighlightClass(highlighted)
 
   const frameObject = (
     <>
-      <Row className="text-ink-900 text-sm md:text-base">
+      <Row
+        className={clsx(highlightClass, 'cursor-pointer text-sm md:text-base')}
+      >
         <Row className="w-full gap-3">
           <Col className="w-fit">{icon}</Col>
           <Col className="font w-full">
@@ -191,7 +193,7 @@ export function NotificationFrame(props: {
               <div className="-mt-0.5 w-fit md:-mt-1">
                 <RelativeTimestampNoTooltip
                   time={notification.createdTime}
-                  className="text-ink-900 text-xs"
+                  className={clsx(highlightClass, ' text-xs')}
                 />
               </div>
             )}
@@ -201,7 +203,7 @@ export function NotificationFrame(props: {
           <Row className="mx-1 w-40 justify-end">
             <RelativeTimestampNoTooltip
               time={notification.createdTime}
-              className="text-ink-900 text-xs"
+              className={clsx(highlightClass, ' text-xs')}
             />
           </Row>
         )}
@@ -270,7 +272,7 @@ export function ParentNotificationHeader(props: {
   const highlightedClass = getHighlightClass(highlighted)
 
   return (
-    <Row className={clsx('text-ink-900 mx-2 items-center justify-start')}>
+    <Row className={clsx('mx-2 items-center justify-start')}>
       <div className={clsx(highlightedClass, 'line-clamp-3')}>{header}</div>
     </Row>
   )

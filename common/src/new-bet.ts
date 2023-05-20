@@ -156,7 +156,7 @@ export const computeFills = (
   state: CpmmState,
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
+  balanceByUserId: { [userId: string]: number | undefined }
 ) => {
   if (isNaN(betAmount)) {
     throw new Error('Invalid bet amount: ${betAmount}')
@@ -214,12 +214,15 @@ export const computeFills = (
       i++
       const { userId } = maker.bet
       const makerBalance = currentBalanceByUserId[userId]
-      if (floatingGreaterEqual(maker.amount, 0)) {
-        currentBalanceByUserId[userId] = makerBalance - maker.amount
-      }
-      if (floatingEqual(currentBalanceByUserId[userId], 0)) {
-        // Now they've insufficient balance. Cancel maker bet.
-        ordersToCancel.push(maker.bet)
+      if (makerBalance !== undefined) {
+        if (maker.amount > 0) {
+          currentBalanceByUserId[userId] = makerBalance - maker.amount
+        }
+        const adjustedMakerBalance = currentBalanceByUserId[userId]
+        if (adjustedMakerBalance !== undefined && adjustedMakerBalance <= 0) {
+          // Now they've insufficient balance. Cancel maker bet.
+          ordersToCancel.push(maker.bet)
+        }
       }
       if (floatingEqual(maker.amount, 0)) continue
 

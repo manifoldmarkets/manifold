@@ -329,7 +329,7 @@ module.exports = {
           900: '#330700',
         },
       },
-      typography: {
+      typography: (theme) => ({
         DEFAULT: {
           css: {
             'blockquote p:first-of-type::before': false,
@@ -337,9 +337,12 @@ module.exports = {
             'code::before': false,
             'code::after': false,
             '--tw-prose-bold': 'inherit',
+            '--tw-prose-invert-bold': 'inherit',
+            '--tw-prose-quote-borders': theme('colors.teal.600'),
+            '--tw-prose-invert-quote-borders': theme('colors.teal.300'),
           },
         },
-      },
+      }),
     },
   },
   plugins: [

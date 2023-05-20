@@ -126,6 +126,20 @@ export async function searchUserInGroup(
   ).slice(0, limit)
 }
 
+export const getGroupWithFields = async (groupId: string) => {
+  const { data } = await run(db.from('groups').select('*').eq('id', groupId))
+  if (data && data.length > 0) {
+    const result = data[0]
+    return {
+      ...(result.data as Group),
+      privacyStatus: result.privacy_status,
+      slug: result.slug,
+    }
+  } else {
+    return null
+  }
+}
+
 export async function getGroup(groupId: string) {
   const { data } = await run(db.from('groups').select('data').eq('id', groupId))
   if (data && data.length > 0) {

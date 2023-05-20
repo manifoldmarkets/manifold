@@ -25,13 +25,6 @@ import { formatTime } from 'web/lib/util/time'
 import { TweetButton } from '../buttons/tweet-button'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Tabs } from '../layout/tabs'
-import Image from 'next/image'
-import { uploadImage } from 'web/lib/firebase/storage'
-import { FileUploadButton } from '../buttons/file-upload-button'
-import { useMutation } from 'react-query'
-import toast from 'react-hot-toast'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { dreamDefault } from '../editor/image-modal'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { CopyLinkButton } from '../buttons/copy-link-button'
 import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
@@ -294,19 +287,8 @@ export function ContractInfoDialog(props: {
   setOpen: (open: boolean) => void
 }) {
   const { contract, user, open, setOpen } = props
-  const isCreator = user?.id === contract.creatorId
-  const isAdmin = useAdmin()
-
-  const [dreaming, setDreaming] = useState(false)
 
   const shareUrl = getShareUrl(contract, user?.username)
-
-  async function redream() {
-    setDreaming(true)
-    const url = await dreamDefault(contract.question)
-    await updateContract(contract.id, { coverImageUrl: url })
-    setDreaming(false)
-  }
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -321,46 +303,6 @@ export function ContractInfoDialog(props: {
             {
               title: 'Stats',
               content: <Stats contract={contract} user={user} />,
-            },
-            {
-              title: 'Cover image',
-              content: (
-                <div className="flex justify-center">
-                  <div className="relative shrink">
-                    {contract.coverImageUrl ? (
-                      <Image
-                        src={contract.coverImageUrl}
-                        width={400}
-                        height={400}
-                        alt=""
-                      />
-                    ) : (
-                      <div className="bg-ink-100 flex aspect-square w-[300px] shrink items-center justify-center sm:w-[400px]">
-                        No image
-                      </div>
-                    )}
-                    {(isCreator || isAdmin) && (
-                      <div className="absolute bottom-0 right-0">
-                        <Row className="gap-1">
-                          <ChangeCoverImageButton contract={contract} />
-                          <button
-                            className="flex gap-1 bg-black/20 p-2 text-white transition-all [text-shadow:_0_1px_0_rgb(0_0_0)] hover:bg-black/40"
-                            onClick={redream}
-                          >
-                            {dreaming ? (
-                              <Row className="gap-2">
-                                Dreaming <LoadingIndicator size="md" />
-                              </Row>
-                            ) : (
-                              'Redream'
-                            )}
-                          </button>
-                        </Row>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ),
             },
             {
               title: 'Share',
@@ -383,23 +325,28 @@ export function ContractInfoDialog(props: {
                     url={getShareUrl(contract, user?.username)}
                     eventTrackingName="copy market link"
                   />
+                  <Row className="mt-4 flex-wrap gap-2">
+                    {contract.mechanism === 'cpmm-1' && (
+                      <AddLiquidityButton contract={contract} />
+                    )}
+
+                    <DuplicateContractButton contract={contract} />
+
+                    <ShareEmbedButton
+                      contract={contract}
+                      className="hidden md:flex"
+                    />
+
+                    <TweetButton
+                      tweetText={getShareUrl(contract, user?.username)}
+                    />
+                  </Row>
                 </Col>
               ),
             },
           ]}
         />
 
-        <Row className="flex-wrap gap-2">
-          {contract.mechanism === 'cpmm-1' && (
-            <AddLiquidityButton contract={contract} />
-          )}
-
-          <DuplicateContractButton contract={contract} />
-
-          <ShareEmbedButton contract={contract} className="hidden md:flex" />
-
-          <TweetButton tweetText={getShareUrl(contract, user?.username)} />
-        </Row>
         <Row className={'mt-2 gap-2'}>
           <ReportButton
             report={{
@@ -414,30 +361,4 @@ export function ContractInfoDialog(props: {
       </Col>
     </Modal>
   )
-}
-
-const ChangeCoverImageButton = (props: { contract: Contract }) => {
-  const uploadMutation = useMutation(fileHandler, {
-    onSuccess(url) {
-      updateContract(props.contract.id, { coverImageUrl: url })
-    },
-    onError(error: any) {
-      toast.error(error.message ?? error)
-    },
-  })
-
-  return (
-    <FileUploadButton
-      onFiles={uploadMutation.mutate}
-      className="flex gap-1 bg-black/20 p-2 text-white transition-all [text-shadow:_0_1px_0_rgb(0_0_0)] hover:bg-black/40"
-    >
-      Change
-      {uploadMutation.isLoading && <LoadingIndicator size="md" />}
-    </FileUploadButton>
-  )
-}
-
-const fileHandler = async (files: File[]) => {
-  if (!files.length) throw new Error('No files selected')
-  return await uploadImage('default', files[0])
 }

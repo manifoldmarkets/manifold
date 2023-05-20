@@ -22,10 +22,7 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import {
-  MarketResolvedNotification,
-  MultipleAvatarIcons,
-} from './notification-types'
+import { MultipleAvatarIcons } from './notification-types'
 import { QuestRewardTxn } from 'common/txn'
 import { QUEST_DETAILS } from 'common/quest'
 import { QuestsModal } from '../quests-or-streak'
@@ -74,65 +71,6 @@ export function combineAndSumIncomeNotifications(
     }
   }
   return newNotifications
-}
-
-export function IncomeNotificationItem(props: {
-  notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
-}) {
-  const { notification, highlighted, setHighlighted } = props
-  const { sourceType } = notification
-
-  if (sourceType === 'bonus') {
-    return (
-      <UniqueBettorBonusIncomeNotification
-        notification={notification}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (sourceType === 'quest_reward') {
-    return (
-      <QuestIncomeNotification
-        notification={notification}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (sourceType === 'betting_streak_bonus') {
-    return (
-      <BettingStreakBonusIncomeNotification
-        notification={notification}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (sourceType === 'loan') {
-    return (
-      <LoanIncomeNotification
-        notification={notification}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (sourceType === 'contract') {
-    return (
-      <MarketResolvedNotification
-        highlighted={highlighted}
-        notification={notification}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (sourceType === 'user') {
-    return (
-      <UserJoinedNotification
-        notification={notification}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else return <></>
 }
 
 export function UniqueBettorBonusIncomeNotification(props: {
@@ -301,7 +239,7 @@ export function LoanIncomeNotification(props: {
   )
 }
 
-function UserJoinedNotification(props: {
+export function UserJoinedNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void

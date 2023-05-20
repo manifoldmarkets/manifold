@@ -44,6 +44,7 @@ import { extensions } from 'common/util/parse'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getGroup } from 'web/lib/supabase/group'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -105,6 +106,7 @@ export function NewContractPanel(props: {
     ante,
     newContract,
   } = useNewContract(creator, params)
+  const isAdmin = useAdmin()
 
   const [hideOptions, setHideOptions] = usePersistentLocalState(
     true,
@@ -361,7 +363,7 @@ export function NewContractPanel(props: {
               </Row>
             </div>
           )}
-          {params?.visibility != 'private' && (
+          {params?.visibility != 'private' && isAdmin && (
             <>
               <Spacer h={6} />
               <Row className="items-center gap-2">
@@ -652,6 +654,7 @@ const useNewContract = (
           answers,
           groupId: selectedGroup?.id,
           visibility,
+          utcOffset: new Date().getTimezoneOffset(),
         })
       )) as Contract
 

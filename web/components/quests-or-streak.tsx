@@ -7,11 +7,7 @@ import { formatMoney } from 'common/util/format'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { sum } from 'lodash'
-import {
-  dailyStatsClass,
-  unseenDailyStatsClass,
-} from 'web/components/daily-stats'
-import { useHasSeen } from 'web/hooks/use-has-seen'
+import { dailyStatsClass } from 'web/components/daily-stats'
 import { InfoTooltip } from './widgets/info-tooltip'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { Title } from 'web/components/widgets/title'
@@ -26,6 +22,8 @@ import { getQuestScores } from 'common/supabase/set-scores'
 import { useQuestStatus } from 'web/hooks/use-quest-status'
 import { db } from 'web/lib/supabase/db'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import Link from 'next/link'
+import { linkClass } from './widgets/site-link'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -33,19 +31,12 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   user: User | null | undefined
 }) {
   const { user } = props
-  const [seenThisWeek, setSeenThisWeek] = useHasSeen(
-    user,
-    [QUEST_STATS_CLICK_EVENT],
-    'week'
-  )
+
   const [showQuestsModal, setShowQuestsModal] = useState(false)
-  const questStatus = useQuestStatus(user)
-  const { allQuestsComplete } = questStatus ?? { allQuestsComplete: true }
 
   useEffect(() => {
     if (showQuestsModal) {
       track(QUEST_STATS_CLICK_EVENT)
-      setSeenThisWeek(true)
     }
   }, [showQuestsModal])
   if (!user) return <></>
@@ -53,17 +44,13 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   return (
     <>
       <button
-        className={clsx(
-          'cursor-pointer rounded-md',
-          dailyStatsClass,
-          seenThisWeek || allQuestsComplete ? '' : unseenDailyStatsClass
-        )}
+        className={clsx('cursor-pointer', dailyStatsClass)}
         onClick={() => setShowQuestsModal(true)}
       >
         <Col
           className={clsx(
             user && !hasCompletedStreakToday(user) && 'grayscale',
-            'items-center'
+            'items-center gap-1'
           )}
         >
           <span>🔥 {user?.currentBettingStreak ?? 0}</span>
@@ -133,6 +120,7 @@ export function QuestsModal(props: {
               BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
               BETTING_STREAK_BONUS_MAX
             )}
+            href="/markets"
           />
           <QuestRow
             emoji={'📤'}
@@ -151,6 +139,7 @@ export function QuestsModal(props: {
             complete={createStatus.currentCount >= createStatus.requiredCount}
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
+            href={'/create'}
           />
           <QuestRow
             emoji={'🏺'}
@@ -164,6 +153,7 @@ export function QuestsModal(props: {
             info={
               'This has to be a market that no other user has bet on in the last 3 months'
             }
+            href={'/ancient'}
           />{' '}
           <QuestRow
             emoji={'🙋️'}
@@ -176,6 +166,7 @@ export function QuestsModal(props: {
             info={
               'Just click the share button on a market and your referral code will be added to the link'
             }
+            href={'/referrals'}
           />
         </Col>
       </div>
@@ -190,8 +181,9 @@ const QuestRow = (props: {
   status: string
   reward: number
   info?: string
+  href?: string
 }) => {
-  const { title, complete, status, reward, emoji, info } = props
+  const { title, complete, status, reward, emoji, info, href } = props
   return (
     <Row className={'justify-between'}>
       <Col>
@@ -201,7 +193,13 @@ const QuestRow = (props: {
           </span>
           <Col>
             <span className={clsx('sm:text-xl')}>
-              {title}
+              {href ? (
+                <Link className={linkClass} href={href}>
+                  {title}
+                </Link>
+              ) : (
+                title
+              )}
               {info && (
                 <InfoTooltip className={'!mb-1 ml-1 !h-4 !w-4'} text={info} />
               )}

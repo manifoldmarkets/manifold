@@ -12,7 +12,7 @@ import {
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import React, { ReactNode, useCallback, useMemo } from 'react'
+import React, { ReactNode, useCallback, useEffect, useMemo } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
 import GridComponent from '../editor/tiptap-grid-cards'
@@ -36,6 +36,13 @@ import { DisplaySpoiler } from '../editor/spoiler'
 import { nodeViewMiddleware } from '../editor/nodeview-middleware'
 import { BasicImage, DisplayImage } from '../editor/image'
 
+import { LinkPreviewExtension } from 'web/components/editor/link-preview-extension'
+import { useEvent } from 'web/hooks/use-event'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { filterDefined } from 'common/util/array'
+
+import { Row } from 'web/components/layout/row'
+
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
     delete HTMLAttributes.class // only use our classes (don't duplicate on paste)
@@ -56,6 +63,7 @@ export const editorExtensions = (simple = false): Extensions =>
     DisplayContractMention,
     GridComponent,
     Iframe,
+    LinkPreviewExtension,
     DisplayTweet,
     TiptapSpoiler.configure({ class: 'rounded-sm bg-ink-200' }),
     Upload,
@@ -68,7 +76,7 @@ export const proseClass = (size: 'sm' | 'md' | 'lg') =>
     size === 'sm' ? 'prose-sm' : 'text-md',
     size !== 'lg' && 'prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0',
     '[&>p]:prose-li:my-0',
-    'text-ink-900 prose-blockquote:text-ink-600',
+    'text-ink-900 prose-blockquote:text-teal-700 dark:prose-blockquote:text-teal-100',
     'break-anywhere'
   )
 
@@ -78,6 +86,7 @@ export function useTextEditor(props: {
   defaultValue?: Content
   size?: 'sm' | 'md' | 'lg'
   key?: string // unique key for autosave. If set, plz call `clearContent(true)` on submit to clear autosave
+  extensions?: Extensions
 }) {
   const { placeholder, max, defaultValue, size = 'md', key } = props
   const simple = size === 'sm'
@@ -89,7 +98,10 @@ export function useTextEditor(props: {
       store: storageStore(safeLocalStorage),
     }
   )
-
+  const [linkPreviewsStatus, setLinkPreviewsStatus] =
+    usePersistentInMemoryState<{
+      [url: string]: 'fetching' | 'dismissed'
+    }>({}, `${key}-link-previews-dismissed`)
   const save = useCallback(debounce(saveContent, 500), [])
 
   const editorClass = clsx(
@@ -103,7 +115,13 @@ export function useTextEditor(props: {
     editorProps: {
       attributes: { class: editorClass, spellcheck: simple ? 'true' : 'false' },
     },
-    onUpdate: !key ? noop : ({ editor }) => save(editor.getJSON()),
+    onUpdate: !key
+      ? noop
+      : ({ editor }) => {
+          const json = editor.getJSON()
+          save(json)
+          debouncedAddPreviewIfLinkPresent(json)
+        },
     extensions: [
       ...editorExtensions(simple),
       Placeholder.configure({
@@ -112,8 +130,95 @@ export function useTextEditor(props: {
           'before:content-[attr(data-placeholder)] before:text-ink-500 before:float-left before:h-0 cursor-text',
       }),
       CharacterCount.configure({ limit: max }),
+      ...(props.extensions ?? []),
     ],
     content: defaultValue ?? (key && content ? content : ''),
+  })
+  const handleDeleteNode = useEvent((event: any) => {
+    const id = event.detail
+    if (!editor) return
+    const { state } = editor
+    const { doc } = state
+    let { tr } = state
+
+    doc.descendants((node, pos) => {
+      if (node.type.name === 'linkPreview' && node.attrs.id === id) {
+        const { url } = node.attrs
+        setLinkPreviewsStatus((prev) => ({ ...prev, [url]: 'dismissed' }))
+        tr = tr.delete(pos, pos + node.nodeSize)
+        return false
+      }
+    })
+    if (tr.docChanged) {
+      editor.view.dispatch(tr)
+    }
+  })
+
+  useEffect(() => {
+    window.addEventListener('deleteNode', handleDeleteNode)
+    return () => window.removeEventListener('deleteNode', handleDeleteNode)
+  }, [])
+
+  const debouncedAddPreviewIfLinkPresent = useCallback(
+    debounce((content: JSONContent) => addPreviewIfLinkPresent(content), 500),
+    []
+  )
+
+  const addPreviewIfLinkPresent = useEvent((content: JSONContent) => {
+    const containsLinkPreview = content.content?.some(
+      (node) => node.type === 'linkPreview'
+    )
+    if (containsLinkPreview || !editor) return
+    const linkRegExp =
+      /(?:^|[^@\w])((?:https?:\/\/)?[\w-]+(?:\.[\w-]+)+\S*[^@\s])/g
+    const linkMatches = content.content?.flatMap((node) =>
+      node.content?.flatMap((n) => {
+        return n.text ? Array.from(n.text.matchAll(linkRegExp)) : []
+      })
+    )
+    const links = filterDefined(linkMatches?.map((m) => m?.[0]) ?? [])
+    links.forEach(async (link) => {
+      if (linkPreviewsStatus[link]) return
+      setLinkPreviewsStatus((prev) => ({ ...prev, [link]: 'fetching' }))
+      try {
+        const res = await fetch('/api/v0/fetch-link-preview', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: link,
+          }),
+        })
+        const resText = await res.json()
+        if (
+          !resText ||
+          !resText.title ||
+          !resText.description ||
+          !resText.image ||
+          resText.description === 'Error' ||
+          resText.title === 'Error'
+        )
+          return
+        const linkPreviewNodeJSON = {
+          type: 'linkPreview',
+          attrs: {
+            ...resText,
+            url: link,
+            id: crypto.randomUUID(),
+          },
+        }
+        // Append to very end of doc
+        const docLength = editor.state.doc.content.size
+        editor
+          .chain()
+          .focus()
+          .insertContentAt(docLength ?? 0, linkPreviewNodeJSON)
+          .run()
+      } catch (e) {
+        console.error('error on add preview for link', link, e)
+      }
+    })
   })
 
   const upload = useUploadMutation(editor)
@@ -162,13 +267,20 @@ function isValidIframe(text: string) {
 export function TextEditor(props: {
   editor: Editor | null
   simple?: boolean // show heading in toolbar
+  hideToolbar?: boolean // hide toolbar
   children?: ReactNode // additional toolbar buttons
+  className?: string
 }) {
-  const { editor, simple, children } = props
+  const { editor, simple, hideToolbar, children, className } = props
 
   return (
     // matches input styling
-    <div className="border-ink-500 bg-canvas-0 focus-within:border-primary-500 focus-within:ring-primary-500 w-full overflow-hidden rounded-lg border shadow-sm transition-colors focus-within:ring-1">
+    <div
+      className={clsx(
+        'border-ink-500 bg-canvas-0 focus-within:border-primary-500 focus-within:ring-primary-500 w-full overflow-hidden rounded-lg border shadow-sm transition-colors focus-within:ring-1',
+        className
+      )}
+    >
       <FloatingFormatMenu editor={editor} advanced={!simple} />
       <div
         className={clsx(
@@ -178,7 +290,11 @@ export function TextEditor(props: {
       >
         <EditorContent editor={editor} />
       </div>
-      <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>
+      {!hideToolbar ? (
+        <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>
+      ) : (
+        <Row className={'justify-end p-1'}>{children}</Row>
+      )}
     </div>
   )
 }

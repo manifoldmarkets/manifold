@@ -136,7 +136,7 @@ create or replace view
       users.data ->> 'username' as username,
       users.data ->> 'avatarUrl' as avatarurl,
       (users.data ->> 'followerCountCached')::integer as follower_count,
-      user_groups.groups as groups
+      coalesce(user_groups.groups, '{}') as groups
     from
       (
         users
