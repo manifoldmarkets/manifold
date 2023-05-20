@@ -4,22 +4,14 @@ import { BinaryContract, Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney, formatPercent } from 'common/util/format'
 import {
-  Query,
   collection,
   deleteDoc,
   doc,
-  getDoc,
-  getDocs,
-  limit,
-  orderBy,
-  query,
   setDoc,
-  startAfter,
   updateDoc,
-  where,
 } from 'firebase/firestore'
 import { sum } from 'lodash'
-import { coll, getValues, listenForValue, listenForValues } from './utils'
+import { coll } from './utils'
 
 export const contracts = coll<Contract>('contracts')
 
@@ -67,69 +59,6 @@ export async function updateContract(
   update: Partial<Contract>
 ) {
   await updateDoc(doc(contracts, contractId), update)
-}
-
-export async function getContractFromId(contractId: string) {
-  const result = await getDoc(doc(contracts, contractId))
-  return result.exists() ? result.data() : undefined
-}
-
-export async function getContractFromSlug(slug: string) {
-  const q = query(contracts, where('slug', '==', slug))
-  const snapshot = await getDocs(q)
-  return snapshot.empty ? undefined : snapshot.docs[0].data()
-}
-
-export const tournamentContractsByGroupSlugQuery = (slug: string) =>
-  query(
-    contracts,
-    where('groupSlugs', 'array-contains', slug),
-    orderBy('popularityScore', 'desc')
-  )
-
-export async function listAllContracts(
-  n: number,
-  before?: string,
-  sortDescBy = 'createdTime'
-): Promise<Contract[]> {
-  let q = query(contracts, orderBy(sortDescBy, 'desc'), limit(n))
-  if (before != null) {
-    const snap = await getDoc(doc(contracts, before))
-    q = query(q, startAfter(snap))
-  }
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => doc.data())
-}
-
-export function getUserBetContracts(userId: string) {
-  return getValues<Contract>(getUserBetContractsQuery(userId))
-}
-
-export const MAX_USER_BET_CONTRACTS_LOADED = 1000
-export function getUserBetContractsQuery(userId: string) {
-  return query(
-    contracts,
-    where('uniqueBettorIds', 'array-contains', userId),
-    limit(MAX_USER_BET_CONTRACTS_LOADED)
-  ) as Query<Contract>
-}
-
-export function listenForContract(
-  contractId: string,
-  setContract: (contract: Contract | null) => void
-) {
-  const contractRef = doc(contracts, contractId)
-  return listenForValue<Contract>(contractRef, setContract)
-}
-
-export function listenForContractFollows(
-  contractId: string,
-  setFollowIds: (followIds: string[]) => void
-) {
-  const follows = collection(contracts, contractId, 'follows')
-  return listenForValues<{ id: string }>(follows, (docs) =>
-    setFollowIds(docs.map(({ id }) => id))
-  )
 }
 
 export async function followContract(contractId: string, userId: string) {

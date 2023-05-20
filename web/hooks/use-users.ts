@@ -1,7 +1,7 @@
 import { User } from 'common/user'
 import { debounce, groupBy, sortBy } from 'lodash'
 import { useEffect, useState } from 'react'
-import { getUserBetContracts } from 'web/lib/firebase/contracts'
+import { getUserBetContracts } from 'web/lib/supabase/contracts'
 import { UserSearchResult, searchUsers } from 'web/lib/supabase/users'
 
 export const useDiscoverUsers = (userId: string | null | undefined) => {
