@@ -85,7 +85,10 @@ export const sellshares = authEndpoint(async (req, auth) => {
     const sharesToSell = shares ?? maxShares
 
     if (!maxShares)
-      throw new APIError(400, `You don't have any ${chosenOutcome} shares to sell.`)
+      throw new APIError(
+        400,
+        `You don't have any ${chosenOutcome} shares to sell.`
+      )
 
     if (!floatingLesserEqual(sharesToSell, maxShares))
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
@@ -122,12 +125,15 @@ export const sellshares = authEndpoint(async (req, auth) => {
         -newBet.amount + (newBet.loanAmount ?? 0) - FLAT_TRADE_FEE
       ),
     })
+
+    const isApi = auth.creds.kind === 'key'
     transaction.create(newBetDoc, {
       id: newBetDoc.id,
       userId: user.id,
       userAvatarUrl: user.avatarUrl,
       userUsername: user.username,
       userName: user.name,
+      isApi,
       ...newBet,
     })
     transaction.update(
@@ -146,7 +152,14 @@ export const sellshares = authEndpoint(async (req, auth) => {
       })
     }
 
-    return { newBet, betId: newBetDoc.id, makers, maxShares, soldShares, contract }
+    return {
+      newBet,
+      betId: newBetDoc.id,
+      makers,
+      maxShares,
+      soldShares,
+      contract,
+    }
   })
 
   const { newBet, betId, makers, maxShares, soldShares, contract } = result
