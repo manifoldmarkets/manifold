@@ -1,19 +1,18 @@
+import { Group } from 'common/group'
 import { debounce, isEqual, uniqBy } from 'lodash'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { GroupsList } from 'web/components/groups/groups-list'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { Group } from 'common/group'
 import {
   historyStore,
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { Col } from '../layout/col'
-import { Input } from '../widgets/input'
-import { useUser } from 'web/hooks/use-user'
 import { searchGroups } from 'web/lib/supabase/groups'
-import { GroupsList } from 'web/components/groups/groups-list'
+import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
+import { Input } from '../widgets/input'
 
 const INITIAL_STATE = {
   groups: undefined,
@@ -35,7 +34,6 @@ export default function GroupSearch(props: {
   yourGroupIds?: string[]
 }) {
   const { filter, persistPrefix, yourGroupIds } = props
-  const user = useUser()
   const performQuery = useEvent(
     async (currentState, freshQuery?: boolean) =>
       (await debouncedQuery(currentState, freshQuery)) ?? false

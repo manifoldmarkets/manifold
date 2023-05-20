@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { memo } from 'react'
 
 import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
-import { useIsClient } from 'web/hooks/use-is-client'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'

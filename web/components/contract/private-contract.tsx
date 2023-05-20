@@ -1,4 +1,3 @@
-import { ContractParams } from 'common/contract'
 import { useContractParams } from 'web/hooks/use-contract-supabase'
 import { ContractPageContent } from 'web/pages/[username]/[contractSlug]'
 import {
@@ -6,11 +5,8 @@ import {
   LoadingPrivateThing,
 } from '../groups/private-group'
 
-export function PrivateContractPage(props: {
-  contractSlug: string
-  contractParams?: ContractParams
-}) {
-  const { contractSlug, contractParams } = props
+export function PrivateContractPage(props: { contractSlug: string }) {
+  const { contractSlug } = props
   const contractParameters = useContractParams(contractSlug)
 
   if (contractParameters === undefined) {
