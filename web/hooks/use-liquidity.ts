@@ -18,10 +18,7 @@ export const useLiquidity = (contractId: string) => {
   return liquidities
 }
 
-export const useUserLiquidity = (
-  contract: CPMMContract,
-  userId: string
-) => {
+export const useUserLiquidity = (contract: CPMMContract, userId: string) => {
   const liquidities = useLiquidity(contract.id)
 
   const userShares = getUserLiquidityShares(
