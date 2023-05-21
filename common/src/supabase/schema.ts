@@ -1026,25 +1026,25 @@ export interface Database {
           contract_id: string
           created_time: string
           data: Json
-          fs_updated_time: string
           type: string
           user_id: string
+          id: number
         }
         Insert: {
           contract_id: string
           created_time?: string
           data: Json
-          fs_updated_time: string
           type?: string
           user_id: string
+          id?: never
         }
         Update: {
           contract_id?: string
           created_time?: string
           data?: Json
-          fs_updated_time?: string
           type?: string
           user_id?: string
+          id?: never
         }
       }
       user_topics: {
