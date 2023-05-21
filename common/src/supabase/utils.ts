@@ -48,9 +48,6 @@ export const subcollectionTables: SubcollectionTableMapping = {
     reactions: 'user_reactions',
     notifications: 'user_notifications',
   },
-  'private-users': {
-    seenMarkets: 'user_seen_markets',
-  },
   contracts: {
     answers: 'contract_answers',
     bets: 'contract_bets',

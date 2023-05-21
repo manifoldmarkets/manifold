@@ -213,14 +213,6 @@ async function importDatabase(
       timeChunk,
       startTime
     )
-  if (shouldImport('user_seen_markets'))
-    await importCollectionGroup(
-      pg,
-      firestore.collectionGroup('seenMarkets'),
-      'user_seen_markets',
-      (_) => true,
-      2500
-    )
   if (shouldImport('user_notifications'))
     await importCollectionGroup(
       pg,
@@ -348,7 +340,7 @@ if (require.main === module) {
   if (chunk != null) log('Chunking by:', chunk, 'day(s)')
 
   runScript(async ({ pg }) => {
-    await importDatabase(pg, tables, timestamp, chunk)    
+    await importDatabase(pg, tables, timestamp, chunk)
   })
   .then(() => {
     log('Finished importing.')
