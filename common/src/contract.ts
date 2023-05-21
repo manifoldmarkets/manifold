@@ -104,7 +104,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
 export type DPMContract = Contract & DPM
 export type CPMMContract = Contract & CPMM
-export type CPMM2Contract = Contract & CPMM2
 
 export type BinaryContract = Contract & Binary
 export type DPMBinaryContract = BinaryContract & DPM
@@ -116,7 +115,6 @@ export type MultipleChoiceContract = Contract & MultipleChoice
 export type CertContract = Contract & Cert
 export type Uniswap2CertContract = CertContract & Uniswap2
 export type DpmMultipleChoiceContract = Contract & MultipleChoice & DPM
-export type CPMMMultipleChoiceContract = Contract & MultipleChoice & CPMM2
 export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
 export type CPMMStonkContract = StonkContract & CPMM
@@ -134,7 +132,8 @@ export type DPM = {
   totalBets: { [outcome: string]: number }
 }
 
-// Simple constant product market maker for a variable number of outcomes.
+// Deprecated: Simple constant product market maker for a variable number of outcomes.
+/** @deprecated */
 export type CPMM2 = {
   mechanism: 'cpmm-2'
   pool: { [outcome: string]: number }

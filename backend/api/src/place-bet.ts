@@ -15,7 +15,6 @@ import {
   BetInfo,
   getBinaryCpmmBetInfo,
   getNewMultiBetInfo,
-  getNewMultiCpmmBetInfo,
   getNumericBetsInfo,
 } from 'common/new-bet'
 import { addObjects, removeUndefinedProps } from 'common/util/object'
@@ -125,11 +124,6 @@ export const placebet = authEndpoint(async (req, auth) => {
           balanceByUserId,
           expiresAt
         )
-      } else if (outcomeType === 'MULTIPLE_CHOICE' && mechanism === 'cpmm-2') {
-        const { outcome, shortSell } = validate(freeResponseSchema, req.body)
-        if (isNaN(+outcome) || !contract.answers[+outcome])
-          throw new APIError(400, 'Invalid answer')
-        return getNewMultiCpmmBetInfo(contract, outcome, amount, !!shortSell)
       } else if (
         (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
         mechanism == 'dpm-2'
@@ -211,10 +205,7 @@ export const placebet = authEndpoint(async (req, auth) => {
   const { newBet, betId, contract, makers, ordersToCancel, user } = result
   const { mechanism } = contract
 
-  if (
-    (mechanism === 'cpmm-1' || mechanism === 'cpmm-2') &&
-    newBet.amount !== 0
-  ) {
+  if (mechanism === 'cpmm-1' && newBet.amount !== 0) {
     const userIds = uniq([
       auth.uid,
       ...(makers ?? []).map((maker) => maker.bet.userId),

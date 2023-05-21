@@ -111,44 +111,30 @@ export function calculateSharesBought(
 
 export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
   const { mechanism } = contract
-  return mechanism === 'cpmm-1' || mechanism === 'cpmm-2'
+  return mechanism === 'cpmm-1'
     ? calculateFixedPayout(contract, bet, outcome)
     : mechanism === 'dpm-2'
     ? calculateDpmPayout(contract, bet, outcome)
-    : 0
+    : bet?.amount ?? 0
 }
 
 export function resolvedPayout(contract: Contract, bet: Bet) {
   const { resolution, mechanism } = contract
   if (!resolution) throw new Error('Contract not resolved')
 
-  return mechanism === 'cpmm-1' || mechanism === 'cpmm-2'
+  return mechanism === 'cpmm-1'
     ? calculateFixedPayout(contract, bet, resolution)
     : mechanism === 'dpm-2'
     ? calculateDpmPayout(contract, bet, resolution)
-    : 0
+    : bet?.amount ?? 0
 }
 
-// Note: Works for cpmm-1 and cpmm-2.
 function getCpmmInvested(yourBets: Bet[]) {
   const totalShares: { [outcome: string]: number } = {}
   const totalSpent: { [outcome: string]: number } = {}
 
   const sortedBets = sortBy(yourBets, 'createdTime')
-  const sharePurchases = sortedBets
-    .map((bet) => {
-      const { sharesByOutcome } = bet
-      if (sharesByOutcome) {
-        const shareSum = sum(Object.values(sharesByOutcome))
-        return Object.entries(sharesByOutcome).map(([outcome, shares]) => ({
-          outcome,
-          shares,
-          amount: (bet.amount * shares) / shareSum,
-        }))
-      }
-      return [bet]
-    })
-    .flat()
+  const sharePurchases = sortedBets.map((bet) => [bet]).flat()
 
   for (const purchase of sharePurchases) {
     const { outcome, shares, amount } = purchase

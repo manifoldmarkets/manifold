@@ -1,14 +1,13 @@
 import { Dictionary, partition, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetrics } from './calculate'
 import { Bet, LimitBet } from './bet'
-import { Contract, CPMM2Contract, CPMMContract, DPMContract } from './contract'
+import { Contract, CPMMContract, DPMContract } from './contract'
 import { User } from './user'
 import { DAY_MS } from './util/time'
 import { getBinaryCpmmBetInfo, getNewMultiBetInfo } from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
-import { buy, getProb, shortSell } from './calculate-cpmm-multi'
-import { average, logit } from './util/math'
+import { logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 
 const computeInvestmentValue = (
@@ -67,8 +66,6 @@ export const computeElasticity = (
   switch (contract.mechanism) {
     case 'cpmm-1':
       return computeBinaryCpmmElasticity(unfilledBets, contract, betAmount)
-    case 'cpmm-2':
-      return computeCPMM2Elasticity(contract, betAmount)
     case 'dpm-2':
       return computeDpmElasticity(contract, betAmount)
     default: // there are some contracts on the dev DB with crazy mechanisms
@@ -149,26 +146,6 @@ export const computeBinaryCpmmElasticityFromAnte = (
   const safeNo = Number.isFinite(resultNo) ? resultNo : 0
 
   return logit(safeYes) - logit(safeNo)
-}
-
-export const computeCPMM2Elasticity = (
-  contract: CPMM2Contract,
-  betAmount: number
-) => {
-  const { pool, answers } = contract
-
-  const probDiffs = answers.map((a) => {
-    const { newPool: buyPool } = buy(pool, a.id, betAmount)
-    const { newPool: sellPool } = shortSell(pool, a.id, betAmount)
-
-    const buyProb = getProb(buyPool, a.id)
-    const sellProb = getProb(sellPool, a.id)
-    const safeBuy = Number.isFinite(buyProb) ? buyProb : 1
-    const safeSell = Number.isFinite(sellProb) ? sellProb : 0
-    return logit(safeBuy) - logit(safeSell)
-  })
-
-  return average(probDiffs)
 }
 
 export const computeDpmElasticity = (

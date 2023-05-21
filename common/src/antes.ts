@@ -6,7 +6,6 @@ import {
   DPMBinaryContract,
   FreeResponseContract,
   NumericContract,
-  CPMM2Contract,
   DpmMultipleChoiceContract,
 } from './contract'
 import { User } from './user'
@@ -41,29 +40,6 @@ export function getCpmmInitialLiquidity(
     amount: amount,
     liquidity: amount,
     pool: { YES: 0, NO: 0 },
-  }
-
-  return lp
-}
-
-export function getCpmm2InitialLiquidity(
-  providerId: string,
-  contract: CPMM2Contract,
-  anteId: string,
-  amount: number
-) {
-  const { createdTime, pool } = contract
-
-  const lp: LiquidityProvision = {
-    id: anteId,
-    userId: providerId,
-    contractId: contract.id,
-    createdTime,
-    isAnte: true,
-
-    amount: amount,
-    liquidity: amount,
-    pool,
   }
 
   return lp
