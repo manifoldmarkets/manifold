@@ -65,7 +65,9 @@ export function applyChange<T extends TableName>(
     case "INSERT": {
       const existing = rows.find(r => identical(change.new, r))
       if (existing != null) {
-        console.warn("Out-of-order subscription insert: ", change)
+        // this is likely because we established the subscription, got an insert,
+        // and then did a fetch that got the same row into the existing set. it
+        // should make no difference which one we keep.
         return rows
       }
       return [...rows, change.new]
@@ -73,7 +75,10 @@ export function applyChange<T extends TableName>(
     case "UPDATE": {
       const idx = rows.findIndex(r => identical(change.new, r))
       if (idx == -1) {
-        console.warn("Out-of-order subscription update: ", change)
+        // two possibilities: either this is an out-of-order message that came before
+        // its insert (should be impossible?) or they did a custom fetch to only
+        // get a subset of data in the subscription loader, and this is an update
+        // to something they didn't fetch. either way, do nothing
         return [...rows, change.new]
       }
       if (spec.ts(rows[idx]) < spec.ts(change.new)) {
@@ -89,7 +94,7 @@ export function applyChange<T extends TableName>(
       // by default the primary key (but configurable in postgres)
       const idx = rows.findIndex(r => identical(change.old as Row<T>, r))
       if (idx == -1) {
-        console.warn("Out-of-order subscription delete: ", change)
+        // see the note above in the UPDATE clause
         return rows
       }
       return [...rows.slice(0, idx), ...rows.slice(idx + 1)]
