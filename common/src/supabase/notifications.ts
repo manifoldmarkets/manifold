@@ -1,11 +1,11 @@
-import { SupabaseClient, run, selectJson } from 'common/supabase/utils'
+import { SupabaseClient, run } from 'common/supabase/utils'
 
 export async function getNotifications(
   db: SupabaseClient,
   userId: string,
   limit: number
 ) {
-  let q = db
+  const q = db
     .from('user_notifications')
     .select('*')
     .eq('user_id', userId)
@@ -20,7 +20,7 @@ export async function getUnseenNotifications(
   userId: string,
   limit: number
 ) {
-  let q = db
+  const q = db
     .from('user_notifications')
     .select('*')
     .eq('user_id', userId)

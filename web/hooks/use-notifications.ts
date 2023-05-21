@@ -3,15 +3,12 @@ import {
   Notification,
   NotificationReason,
 } from 'common/notification'
-import { PrivateUser } from 'common/user'
 import { first, groupBy, sortBy } from 'lodash'
 import { useEffect, useMemo } from 'react'
 import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
 import { useSubscription, usePersistentSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { getNotifications, getUnseenNotifications } from 'common/supabase/notifications'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Row } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 
