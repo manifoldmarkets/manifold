@@ -222,14 +222,14 @@ cluster on user_events_name;
 
 create table if not exists
   user_seen_markets (
+    id bigint generated always as identity primary key,
     user_id text not null,
     contract_id text not null,
     data jsonb not null,
     fs_updated_time timestamp not null,
     created_time timestamptz not null default now(),
     -- so far we have: 'view market' or 'view market card'
-    type text not null default 'view market',
-    primary key (user_id, contract_id, created_time)
+    type text not null default 'view market'
   );
 
 alter table user_seen_markets enable row level security;
