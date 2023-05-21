@@ -1093,6 +1093,8 @@ create index if not exists incoming_writes_ts on incoming_writes (ts desc);
 
 create index if not exists incoming_writes_table_id_ts on incoming_writes (table_id, ts desc);
 
+create index if not exists incoming_writes_event_id on incoming_writes (event_id);
+
 /* records all deletions of firestore documents, with the deletion timestamp */
 create table if not exists
   tombstones (
