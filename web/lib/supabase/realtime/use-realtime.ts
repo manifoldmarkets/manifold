@@ -35,7 +35,8 @@ export function useRealtimeChannel<T extends TableName, E extends Event>(
   table: T,
   filter: Filter<T> | null | undefined,
   onChange: (change: Change<T, E>) => void,
-  onStatus?: (status: SubscriptionStatus, err?: Error) => void
+  onStatus?: (status: SubscriptionStatus, err?: Error) => void,
+  onEnabled?: (enabled: boolean) => void
 ) {
   const filterString = filter ? buildFilterString(filter) : undefined
   const channelId = `${table}-${useId()}`
@@ -44,6 +45,7 @@ export function useRealtimeChannel<T extends TableName, E extends Event>(
 
   useEffect(() => {
     if (isVisible) {
+      onEnabled?.(true)
       const opts = {
         event,
         schema: 'public',
@@ -68,9 +70,12 @@ export function useRealtimeChannel<T extends TableName, E extends Event>(
           }
         })
       return () => {
+        onEnabled?.(false)
         db.removeChannel(chan)
         channel.current = undefined
       }
     }
   }, [table, filterString, isVisible])
+
+  return channel
 }
