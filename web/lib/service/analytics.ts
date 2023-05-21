@@ -48,7 +48,6 @@ async function insertSupabaseEvent(
         user_id: userId,
         contract_id: contractId,
         data: removeUndefinedProps(data) as Record<string, Json>,
-        fs_updated_time: new Date().toISOString(),
         type: name,
       })
     )
