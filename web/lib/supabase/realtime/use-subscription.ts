@@ -1,4 +1,4 @@
-import { useMemo, useReducer } from 'react'
+import { useEffect, useMemo, useReducer } from 'react'
 import { TableName, Row, run } from 'common/supabase/utils'
 import {
   Change,
@@ -7,7 +7,9 @@ import {
   applyChange,
 } from 'common/supabase/realtime'
 import { useEvent } from 'web/hooks/use-event'
+import { useIsClient } from 'web/hooks/use-is-client'
 import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
+import { Store } from 'web/lib/util/local'
 import { db } from 'web/lib/supabase/db'
 
 async function fetchSnapshot<T extends TableName>(
@@ -130,5 +132,24 @@ export function useSubscription<T extends TableName>(
   useRealtimeChannel('*', table, filter, onChange, onStatus, onEnabled)
   return state
 }
+
+export function usePersistentSubscription<T extends TableName>(
+  key: string,
+  table: T,
+  store?: Store,
+  filter?: Filter<T>,
+  fetcher?: () => PromiseLike<Row<T>[]>
+) {
+  const isClient = useIsClient()
+  const json = isClient ? store?.getItem(key) : undefined
+  const rows = json != null ? JSON.parse(json) as Row<T>[] : undefined
+  const state = useSubscription(table, filter, fetcher, rows)
+
+  useEffect(() => {
+    if (state.status === 'live') {
+      store?.setItem(key, JSON.stringify(state.rows ?? null))
+    }
+  }, [state.status, state.rows])
+
   return state
 }
