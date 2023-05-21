@@ -1,4 +1,10 @@
-function getStorageProxy(store: Storage) {
+export interface Store {
+  getItem: (key: string) => string | null
+  setItem: (key: string, val: string) => void
+  removeItem: (key: string) => void
+}
+
+function getStorageProxy(store: Storage): Store | undefined {
   try {
     store.setItem('test', '')
     store.getItem('test')
@@ -18,12 +24,12 @@ function getStorageProxy(store: Storage) {
         store.setItem(key, value)
       }
     },
-    removeItem: (key: string) => store.removeItem(key) as void,
+    removeItem: (key: string) => store.removeItem(key),
   }
 }
 
-export let safeLocalStorage: ReturnType<typeof getStorageProxy> | undefined
-export let safeSessionStorage: ReturnType<typeof getStorageProxy> | undefined
+export let safeLocalStorage: Store | undefined
+export let safeSessionStorage: Store | undefined
 
 try {
   safeLocalStorage = getStorageProxy(localStorage)
