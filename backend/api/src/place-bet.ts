@@ -11,7 +11,6 @@ import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 import { APIError, authEndpoint, validate } from './helpers'
 import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
 import { User } from 'common/user'
-import { FLAT_TRADE_FEE } from 'common/fees'
 import {
   BetInfo,
   getBinaryCpmmBetInfo,
@@ -185,14 +184,7 @@ export const placebet = authEndpoint(async (req, auth) => {
       }
     }
 
-    const balanceChange =
-      newBet.amount !== 0
-        ? // quick bet
-          newBet.amount + FLAT_TRADE_FEE
-        : // limit order
-          FLAT_TRADE_FEE
-
-    trans.update(userDoc, { balance: FieldValue.increment(-balanceChange) })
+    trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
     log(`Updated user ${user.username} balance - auth ${auth.uid}.`)
 
     if (newBet.amount !== 0) {

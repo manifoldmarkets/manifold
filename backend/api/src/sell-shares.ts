@@ -14,7 +14,6 @@ import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { redeemShares } from './redeem-shares'
 import { removeUserFromContractFollowers } from 'shared/follow-market'
-import { FLAT_TRADE_FEE } from 'common/fees'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -121,9 +120,7 @@ export const sellshares = authEndpoint(async (req, auth) => {
     updateMakers(makers, newBetDoc.id, contractDoc, transaction)
 
     transaction.update(userDoc, {
-      balance: FieldValue.increment(
-        -newBet.amount + (newBet.loanAmount ?? 0) - FLAT_TRADE_FEE
-      ),
+      balance: FieldValue.increment(-newBet.amount + (newBet.loanAmount ?? 0)),
     })
 
     const isApi = auth.creds.kind === 'key'
