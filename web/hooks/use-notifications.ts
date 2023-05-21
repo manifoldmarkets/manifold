@@ -6,76 +6,88 @@ import {
 import { PrivateUser } from 'common/user'
 import { first, groupBy, sortBy } from 'lodash'
 import { useEffect, useMemo } from 'react'
-import {
-  listenForNotifications,
-  listenForUnseenNotifications,
-} from 'web/lib/firebase/notifications'
-
+import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
+import { useSubscription, usePersistentSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { getNotifications, getUnseenNotifications } from 'common/supabase/notifications'
+import { safeLocalStorage } from 'web/lib/util/local'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { Row } from 'common/supabase/utils'
+import { db } from 'web/lib/supabase/db'
 
 export type NotificationGroup = {
   notifications: Notification[]
   groupedById: string
   isSeen: boolean
 }
-const NOTIFICATIONS_KEY = 'notifications'
-function useNotifications(privateUser: PrivateUser | null | undefined) {
-  const [notifications, setNotifications] = usePersistentLocalState<
-    Notification[] | undefined
-  >(undefined, NOTIFICATIONS_KEY)
-  useEffect(() => {
-    if (!privateUser) return
-    listenForNotifications(privateUser.id, setNotifications)
-  }, [privateUser?.id, setNotifications])
 
-  return notifications
-}
+const NOTIFICATIONS_KEY = 'notifications_1'
 
-function useUnseenNotifications(privateUser: PrivateUser) {
-  const [unseenNotifications, setUnseenNotifications] =
-    usePersistentInMemoryState<Notification[] | undefined>(
-      undefined,
-      'unseen-notifications'
-    )
-  // We also tack on the unseen notifications to the notifications state so that
-  // when you navigate to the notifications page, you see the new ones immediately
-  const [_, setNotifications] = usePersistentLocalState<
-    Notification[] | undefined
-  >(undefined, NOTIFICATIONS_KEY)
-
-  useEffect(() => {
-    listenForUnseenNotifications(privateUser.id, (unseenNotifications) => {
-      setUnseenNotifications(unseenNotifications)
-      if (unseenNotifications.length > 0) {
-        setNotifications((notifications) => {
-          return [
-            ...unseenNotifications.filter(
-              (n) => !notifications?.some((n2) => n2.id === n.id)
-            ),
-            ...(notifications ?? []),
-          ]
-        })
-      }
-    })
-  }, [privateUser.id, setNotifications, setUnseenNotifications])
-  return unseenNotifications
-}
-
-export function useGroupedNonBalanceChangeNotifications(
-  privateUser: PrivateUser | null | undefined
+export function useNotifications(
+  userId: string,
+  // Nobody's going through 10 pages of notifications, right?
+  count = 10 * NOTIFICATIONS_PER_PAGE
 ) {
-  const notifications = useNotifications(privateUser)
+  const { rows } = usePersistentSubscription(
+    NOTIFICATIONS_KEY,
+    'user_notifications',
+    safeLocalStorage,
+    { k: 'user_id', v: userId },
+    () => getNotifications(db, userId, count)
+  )
+  return useMemo(() => rows?.map(r => r.data as Notification), [rows])
+}
+
+export function useUnseenNotifications(
+  userId: string,
+  count = 10 * NOTIFICATIONS_PER_PAGE
+) {
+  const { status, rows } = useSubscription(
+    'user_notifications',
+    { k: 'user_id', v: userId },
+    () => getUnseenNotifications(db, userId, count)
+  )
+
+  // hack: we tack the unseen notifications we got onto the end of the persisted
+  // notifications state so that when you navigate to the notifications page,
+  // you see the new ones immediately
+
+  useEffect(() => {
+    if (status === 'live' && rows != null) {
+      const json = safeLocalStorage?.getItem(NOTIFICATIONS_KEY)
+      const existing = json != null ? JSON.parse(json) : []
+      const newNotifications = rows?.filter(
+        (n) => !existing.some((n2: Row<'user_notifications'>) =>
+          n2.notification_id === n.notification_id
+        )
+      ) ?? []
+      safeLocalStorage?.setItem(
+        NOTIFICATIONS_KEY,
+        JSON.stringify([...newNotifications, ...existing])
+      )
+    }
+  }, [status, rows])
+
+  return useMemo(() => {
+    return rows?.map(r => r.data as Notification).filter(r => !r.isSeen)
+  }, [rows])
+}
+
+export function useGroupedNonBalanceChangeNotifications(userId: string) {
+  const notifications = useNotifications(userId)
   const balanceChangeOnlyReasons: NotificationReason[] = ['loan_income']
   return useMemo(() => {
-    const groupedNotifications = notifications
+    const sortedNotifications = notifications != null ?
+      sortBy(notifications, n => -n.createdTime) :
+      undefined
+    const groupedNotifications = sortedNotifications
       ? groupNotifications(
-          notifications.filter(
+          sortedNotifications.filter(
             (n) => !balanceChangeOnlyReasons.includes(n.reason)
           )
         )
       : undefined
-    const mostRecentNotification = first(notifications)
+    const mostRecentNotification = first(sortedNotifications)
     return {
       groupedNotifications,
       mostRecentNotification,
@@ -83,18 +95,16 @@ export function useGroupedNonBalanceChangeNotifications(
   }, [notifications])
 }
 
-export function useGroupedBalanceChangeNotifications(
-  privateUser: PrivateUser | null | undefined
-) {
-  const notifications = useNotifications(privateUser)
+export function useGroupedBalanceChangeNotifications(userId: string) {
+  const notifications = useNotifications(userId)
   return useMemo(() => {
     if (!notifications) return undefined
     return groupBalanceChangeNotifications(notifications)
   }, [notifications])
 }
 
-export function useGroupedUnseenNotifications(privateUser: PrivateUser) {
-  const notifications = useUnseenNotifications(privateUser)
+export function useGroupedUnseenNotifications(userId: string) {
+  const notifications = useUnseenNotifications(userId)
   return useMemo(() => {
     return notifications ? groupNotifications(notifications) : undefined
   }, [notifications])

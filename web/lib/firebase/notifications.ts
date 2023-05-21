@@ -1,24 +1,12 @@
-import {
-  collection,
-  deleteField,
-  doc,
-  limit,
-  orderBy,
-  query,
-  updateDoc,
-  where,
-} from 'firebase/firestore'
+import { collection, deleteField, doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
-import { Notification } from 'common/notification'
 import {
   getPrivateUser,
   privateUsers,
   updatePrivateUser,
 } from 'web/lib/firebase/users'
 import { removeUndefinedProps } from 'common/util/object'
-import { listenForValues } from './utils'
 import { postMessageToNative } from 'web/components/native-message-listener'
-import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
 
 export const setPushToken = async (userId: string, pushToken: string) => {
   const privateUser = await getPrivateUser(userId)
@@ -65,35 +53,6 @@ export const setPushTokenRequestDenied = async (userId: string) => {
     rejectedPushNotificationsOn: Date.now(),
     interestedInPushNotifications: false,
   })
-}
-
-export function listenForNotifications(
-  userId: string,
-  setNotifictions: (notifications: Notification[]) => void,
-  // Nobody's going through 10 pages of notifications, right?
-  count = 10 * NOTIFICATIONS_PER_PAGE
-) {
-  const notifsCollection = collection(db, `/users/${userId}/notifications`)
-  const q = query(
-    notifsCollection,
-    orderBy('createdTime', 'desc'),
-    limit(count)
-  )
-  return listenForValues<Notification>(q, setNotifictions)
-}
-
-export function listenForUnseenNotifications(
-  userId: string,
-  setNotifictions: (notifications: Notification[]) => void
-) {
-  const notifsCollection = collection(db, `/users/${userId}/notifications`)
-  const q = query(
-    notifsCollection,
-    orderBy('createdTime', 'desc'),
-    where('isSeen', '==', false),
-    limit(NOTIFICATIONS_PER_PAGE * 10)
-  )
-  return listenForValues<Notification>(q, setNotifictions)
 }
 
 export const markNotificationAsSeen = async (
