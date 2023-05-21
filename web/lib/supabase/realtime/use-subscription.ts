@@ -88,14 +88,14 @@ export function useSubscription<T extends TableName>(
   table: T,
   filter?: Filter<T>,
   fetcher?: () => PromiseLike<Row<T>[]>,
-  preload?: Row<T>[],
+  preload?: Row<T>[]
 ) {
   const fetch = fetcher ?? (() => fetchSnapshot(table, filter))
   const reducer = useMemo(() => getReducer(table), [table])
   const [state, dispatch] = useReducer(reducer, {
     status: 'starting',
     rows: preload,
-    pending: []
+    pending: [],
   })
 
   const onChange = useEvent((change: Change<T>) => {
@@ -142,7 +142,7 @@ export function usePersistentSubscription<T extends TableName>(
 ) {
   const isClient = useIsClient()
   const json = isClient ? store?.getItem(key) : undefined
-  const rows = json != null ? JSON.parse(json) as Row<T>[] : undefined
+  const rows = json != null ? (JSON.parse(json) as Row<T>[]) : undefined
   const state = useSubscription(table, filter, fetcher, rows)
 
   useEffect(() => {

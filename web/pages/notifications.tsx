@@ -54,16 +54,15 @@ export default function NotificationsPage() {
     }
   }, [router.query])
 
-  const shouldShowBanner = privateUser &&
-    !privateUser.hasSeenAppBannerInNotificationsOn &&
-    !isNative
+  const shouldShowBanner =
+    privateUser && !privateUser.hasSeenAppBannerInNotificationsOn && !isNative
 
   return (
     <Page>
       <Col className="mx-auto w-full p-2 pb-0">
         <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
-        {shouldShowBanner && (<NotificationsAppBanner userId={privateUser.id} />)}
+        {shouldShowBanner && <NotificationsAppBanner userId={privateUser.id} />}
         {privateUser && router.isReady ? (
           <NotificationsContent
             privateUser={privateUser}
@@ -91,12 +90,10 @@ function NotificationsAppBanner(props: { userId: string }) {
       />
       <span className={'text-ink-600 text-sm sm:text-base'}>
         <Row className={'items-center'}>
-          We have a mobile app! Get the Manifold icon on your home
-          screen and push notifications (if you want 'em).
+          We have a mobile app! Get the Manifold icon on your home screen and
+          push notifications (if you want 'em).
           <Col
-            className={
-              'min-w-fit items-center justify-center p-2 md:flex-row'
-            }
+            className={'min-w-fit items-center justify-center p-2 md:flex-row'}
           >
             <AppBadgesOrGetAppButton />
           </Col>

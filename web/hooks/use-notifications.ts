@@ -6,8 +6,14 @@ import {
 import { first, groupBy, sortBy } from 'lodash'
 import { useEffect, useMemo } from 'react'
 import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
-import { useSubscription, usePersistentSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { getNotifications, getUnseenNotifications } from 'common/supabase/notifications'
+import {
+  useSubscription,
+  usePersistentSubscription,
+} from 'web/lib/supabase/realtime/use-subscription'
+import {
+  getNotifications,
+  getUnseenNotifications,
+} from 'common/supabase/notifications'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { Row } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
@@ -32,7 +38,7 @@ export function useNotifications(
     { k: 'user_id', v: userId },
     () => getNotifications(db, userId, count)
   )
-  return useMemo(() => rows?.map(r => r.data as Notification), [rows])
+  return useMemo(() => rows?.map((r) => r.data as Notification), [rows])
 }
 
 export function useUnseenNotifications(
@@ -53,11 +59,14 @@ export function useUnseenNotifications(
     if (status === 'live' && rows != null) {
       const json = safeLocalStorage?.getItem(NOTIFICATIONS_KEY)
       const existing = json != null ? JSON.parse(json) : []
-      const newNotifications = rows?.filter(
-        (n) => !existing.some((n2: Row<'user_notifications'>) =>
-          n2.notification_id === n.notification_id
-        )
-      ) ?? []
+      const newNotifications =
+        rows?.filter(
+          (n) =>
+            !existing.some(
+              (n2: Row<'user_notifications'>) =>
+                n2.notification_id === n.notification_id
+            )
+        ) ?? []
       safeLocalStorage?.setItem(
         NOTIFICATIONS_KEY,
         JSON.stringify([...newNotifications, ...existing])
@@ -66,7 +75,7 @@ export function useUnseenNotifications(
   }, [status, rows])
 
   return useMemo(() => {
-    return rows?.map(r => r.data as Notification).filter(r => !r.isSeen)
+    return rows?.map((r) => r.data as Notification).filter((r) => !r.isSeen)
   }, [rows])
 }
 
@@ -74,9 +83,10 @@ export function useGroupedNonBalanceChangeNotifications(userId: string) {
   const notifications = useNotifications(userId)
   const balanceChangeOnlyReasons: NotificationReason[] = ['loan_income']
   return useMemo(() => {
-    const sortedNotifications = notifications != null ?
-      sortBy(notifications, n => -n.createdTime) :
-      undefined
+    const sortedNotifications =
+      notifications != null
+        ? sortBy(notifications, (n) => -n.createdTime)
+        : undefined
     const groupedNotifications = sortedNotifications
       ? groupNotifications(
           sortedNotifications.filter(
