@@ -245,8 +245,6 @@ create policy "user can insert" on user_seen_markets for insert with check (true
 create index if not exists user_seen_markets_created_time_desc_idx
   on user_seen_markets (user_id, contract_id, created_time desc);
 
-create index if not exists user_seen_markets_data_gin on user_seen_markets using GIN (data);
-
 alter table user_seen_markets
 cluster on user_seen_markets_pkey;
 
