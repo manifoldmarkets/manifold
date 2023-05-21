@@ -22,13 +22,14 @@ async function fetchSnapshot<T extends TableName>(
 }
 
 // subscription lifecycle:
-// 1. subscribing -- when we are awaiting our channel to connect
-// 2. fetching -- when we are connected and awaiting an initial snapshot
-// 3. live -- normal operation, we are up to date with postgres
-// 4. errored -- when the subscription is dead due to an error
+// 1. starting: when we are awaiting our channel to connect
+// 2. fetching: when we are connected and awaiting an initial snapshot
+// 3. live: normal operation, we are up to date with postgres
+// 4. errored: when the channel is dead/degraded due to an error
+// 5. disabled: when the channel is dead due to being backgrounded/unmounted
 
-interface State<T extends TableName> {
-  status: 'subscribing' | 'fetching' | 'live' | 'errored'
+export interface State<T extends TableName> {
+  status: 'starting' | 'fetching' | 'live' | 'errored' | 'disabled'
   rows?: Row<T>[]
   pending: Change<T>[]
 }
@@ -36,19 +37,19 @@ interface State<T extends TableName> {
 type ActionBase<K, V = void> = V extends void ? { type: K } : { type: K } & V
 
 type Action<T extends TableName> =
+  | ActionBase<'ENABLED'>
   | ActionBase<'SUBSCRIBED'>
   | ActionBase<'FETCHED', { snapshot: Row<T>[] }>
   | ActionBase<'RECEIVED_CHANGE', { change: Change<T> }>
   | ActionBase<'RECEIVED_ERROR', { err?: Error }>
-  | ActionBase<'BACKGROUNDED'>
-  | ActionBase<'RESTARTED'>
+  | ActionBase<'DISABLED'>
 
 const getReducer =
   <T extends TableName>(table: T) =>
   (state: State<T>, action: Action<T>): State<T> => {
     switch (action.type) {
-      case 'RESTARTED': {
-        return { ...state, status: 'subscribing', pending: [] }
+      case 'ENABLED': {
+        return { ...state, status: 'starting', pending: [] }
       }
       case 'SUBSCRIBED': {
         return { ...state, status: 'fetching', pending: [] }
@@ -73,6 +74,9 @@ const getReducer =
       case 'RECEIVED_ERROR': {
         return { ...state, status: 'errored' }
       }
+      case 'DISABLED': {
+        return { ...state, status: 'disabled' }
+      }
       default:
         throw new Error('Invalid action.')
     }
@@ -80,11 +84,17 @@ const getReducer =
 
 export function useSubscription<T extends TableName>(
   table: T,
-  filter?: Filter<T>
+  filter?: Filter<T>,
+  fetcher?: () => PromiseLike<Row<T>[]>,
+  preload?: Row<T>[],
 ) {
-  const initialState = { status: 'subscribing', pending: [] } as State<T>
+  const fetch = fetcher ?? (() => fetchSnapshot(table, filter))
   const reducer = useMemo(() => getReducer(table), [table])
-  const [state, dispatch] = useReducer(reducer, initialState)
+  const [state, dispatch] = useReducer(reducer, {
+    status: 'starting',
+    rows: preload,
+    pending: []
+  })
 
   const onChange = useEvent((change: Change<T>) => {
     dispatch({ type: 'RECEIVED_CHANGE', change })
@@ -94,7 +104,7 @@ export function useSubscription<T extends TableName>(
     switch (status) {
       case 'SUBSCRIBED': {
         dispatch({ type: 'SUBSCRIBED' })
-        fetchSnapshot(table, filter).then((snapshot) => {
+        fetch().then((snapshot) => {
           dispatch({ type: 'FETCHED', snapshot })
         })
         break
@@ -113,6 +123,12 @@ export function useSubscription<T extends TableName>(
     }
   })
 
-  useRealtimeChannel('*', table, filter, onChange, onStatus)
+  const onEnabled = useEvent((enabled: boolean) => {
+    dispatch({ type: enabled ? 'ENABLED' : 'DISABLED' })
+  })
+
+  useRealtimeChannel('*', table, filter, onChange, onStatus, onEnabled)
+  return state
+}
   return state
 }
