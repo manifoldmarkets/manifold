@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 
 import { CPMMBinaryContract } from 'common/contract'
-import { useUnfilledBetsAndBalanceByUserId } from '../../hooks/use-bets'
 import { useUser } from '../../hooks/use-user'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
@@ -17,10 +16,6 @@ export function BetDialog(props: {
 }) {
   const { contract, initialOutcome, open, setOpen, trackingLocation } = props
   const user = useUser()
-  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id
-  )
-
   const { question } = contract
 
   return (
@@ -37,8 +32,6 @@ export function BetDialog(props: {
         <BuyPanel
           contract={contract}
           user={user}
-          unfilledBets={unfilledBets}
-          balanceByUserId={balanceByUserId}
           mobileView={true}
           hidden={false}
           initialOutcome={initialOutcome}
