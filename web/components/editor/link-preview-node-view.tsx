@@ -19,7 +19,7 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
   } = props
 
   const handleDelete = () => {
-    deleteNode?.()
+    deleteNode()
     linkPreviewDismissed[inputKey + url] = true
   }
   return (
@@ -118,6 +118,5 @@ export const findLinksInContent = (content: JSONContent) => {
       return n.text ? Array.from(n.text.matchAll(linkRegExp)) : []
     })
   )
-  const links = filterDefined(linkMatches?.map((m) => m?.[0]) ?? [])
-  return links
+  return filterDefined(linkMatches?.map((m) => m?.[0]) ?? [])
 }

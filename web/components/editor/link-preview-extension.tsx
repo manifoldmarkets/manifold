@@ -13,8 +13,8 @@ export type LinkPreviewProps = {
   image: string
   id: string
   inputKey: string
-  hideCloseButton?: boolean
-  deleteNode?: () => void
+  hideCloseButton: boolean
+  deleteNode: () => void
 }
 const name = 'linkPreview'
 export const LinkPreviewExtension = Node.create<LinkPreviewOptions>({
@@ -43,13 +43,13 @@ export const LinkPreviewExtension = Node.create<LinkPreviewOptions>({
       deleteCallback: {
         default: null,
       },
+      inputKey: {
+        default: null,
+      },
       hideCloseButton: {
         default: null,
       },
       deleteNode: {
-        default: null,
-      },
-      inputKey: {
         default: null,
       },
     }

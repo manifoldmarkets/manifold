@@ -19,7 +19,10 @@ export const nodeViewMiddleware = (extensions: Extensions) => {
                 )}
               >
                 {renderReact(
-                  { ...props.node.attrs, deleteNode: props.deleteNode },
+                  {
+                    ...props.node.attrs,
+                    deleteNode: props.deleteNode,
+                  },
                   props.children
                 )}
               </NodeViewWrapper>
