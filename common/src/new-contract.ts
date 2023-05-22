@@ -4,6 +4,7 @@ import {
   Cert,
   Contract,
   CPMM,
+  CPMMMulti,
   DPM,
   FreeResponse,
   MultipleChoice,
@@ -31,6 +32,10 @@ export function getNewContract(
   ante: number,
   closeTime: number,
   extraTags: string[],
+  visibility: visibility,
+
+  // twitch
+  isTwitchContract: boolean | undefined,
 
   // used for numeric markets
   bucketCount: number,
@@ -38,12 +43,6 @@ export function getNewContract(
   max: number,
   isLogScale: boolean,
 
-  // for multiple choice
-  answers: string[],
-  visibility: visibility,
-
-  // twitch
-  isTwitchContract: boolean | undefined
 ) {
   const createdTime = Date.now()
 
@@ -52,7 +51,7 @@ export function getNewContract(
     PSEUDO_NUMERIC: () =>
       getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale),
     NUMERIC: () => getNumericProps(ante, bucketCount, min, max),
-    MULTIPLE_CHOICE: () => getDpmMultipleChoiceProps(ante, answers),
+    MULTIPLE_CHOICE: () => getMultipleChoiceProps(),
     QUADRATIC_FUNDING: () => getQfProps(ante),
     CERT: () => getCertProps(ante),
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
@@ -205,7 +204,8 @@ const getFreeAnswerProps = (ante: number) => {
   return system
 }
 
-const getDpmMultipleChoiceProps = (ante: number, answers: string[]) => {
+/** @deprecated */
+const _getDpmMultipleChoiceProps = (ante: number, answers: string[]) => {
   const numAnswers = answers.length
   const betAnte = ante / numAnswers
   const betShares = Math.sqrt(ante ** 2 / numAnswers)
@@ -220,6 +220,15 @@ const getDpmMultipleChoiceProps = (ante: number, answers: string[]) => {
     totalShares: defaultValues(betShares),
     totalBets: defaultValues(betAnte),
     answers: [],
+  }
+
+  return system
+}
+
+const getMultipleChoiceProps = () => {
+  const system: CPMMMulti = {
+    mechanism: 'cpmm-multi-1',
+    outcomeType: 'MULTIPLE_CHOICE',
   }
 
   return system

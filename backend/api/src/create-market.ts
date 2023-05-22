@@ -5,18 +5,16 @@ import { uniq, zip } from 'lodash'
 import { z } from 'zod'
 import { marked } from 'marked'
 
-import { DpmAnswer, getNoneAnswer } from 'common/answer'
+import { Answer, getNoneAnswer } from 'common/answer'
 import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
-  getMultipleChoiceAntes,
   getNumericAnte,
 } from 'common/antes'
-import { Bet } from 'common/bet'
 import {
   Contract,
   CPMMBinaryContract,
-  DpmMultipleChoiceContract,
+  CPMMMultiContract,
   FreeResponseContract,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
@@ -102,13 +100,12 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       ante,
       closeTimestamp,
       tags ?? [],
+      visibility,
+      isTwitchContract ? true : undefined,
       NUMERIC_BUCKET_COUNT,
       min ?? 0,
       max ?? 0,
-      isLogScale ?? false,
-      answers ?? [],
-      visibility,
-      isTwitchContract ? true : undefined
+      isLogScale ?? false
     )
 
     trans.create(contractRef, contract)
@@ -133,15 +130,10 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
   if (group && groupId)
     await addGroupContract(groupId, group, contractRef, userId)
 
-  await generateAntes(
-    userId,
-    user,
-    contract,
-    contractRef,
-    outcomeType,
-    ante,
-    answers
-  )
+  if (contract.mechanism === 'cpmm-multi-1' && answers)
+    await createAnswers(user, contract, ante, answers)
+
+  await generateAntes(userId, user, contract, outcomeType, ante)
 
   await generateContractEmbeddings(contract)
 
@@ -408,14 +400,41 @@ async function addGroupContract(
   }
 }
 
+async function createAnswers(
+  user: User,
+  contract: CPMMMultiContract,
+  ante: number,
+  answers: string[]
+) {
+  const manaPerAnswer = ante / answers.length
+  const ids = answers.map(() => randomString())
+
+  await Promise.all(
+    answers.map((text, i) => {
+      const id = ids[i]
+      const answer: Answer = {
+        id,
+        contractId: contract.id,
+        userId: user.id,
+        text,
+        poolYes: manaPerAnswer,
+        poolNo: manaPerAnswer,
+        createdTime: Date.now(),
+      }
+      return firestore
+        .collection(`contracts/${contract.id}/answers`)
+        .doc(id)
+        .set(answer)
+    })
+  )
+}
+
 async function generateAntes(
   providerId: string,
   user: User,
   contract: Contract,
-  contractRef: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>,
   outcomeType: string,
-  ante: number,
-  answers?: string[]
+  ante: number
 ) {
   if (
     outcomeType === 'BINARY' ||
@@ -434,31 +453,6 @@ async function generateAntes(
     )
 
     await liquidityDoc.set(lp)
-  } else if (outcomeType === 'MULTIPLE_CHOICE') {
-    const betCol = firestore.collection(`contracts/${contract.id}/bets`)
-    const betDocs = (answers ?? []).map(() => betCol.doc())
-
-    const answerCol = firestore.collection(`contracts/${contract.id}/answers`)
-    const answerDocs = (answers ?? []).map((_, i) =>
-      answerCol.doc(i.toString())
-    )
-
-    const { bets, answerObjects } = getMultipleChoiceAntes(
-      user,
-      contract as DpmMultipleChoiceContract,
-      answers ?? [],
-      betDocs.map((bd) => bd.id)
-    )
-
-    await Promise.all(
-      zip(bets, betDocs).map(([bet, doc]) => doc?.create(bet as Bet))
-    )
-    await Promise.all(
-      zip(answerObjects, answerDocs).map(([answer, doc]) =>
-        doc?.create(answer as DpmAnswer)
-      )
-    )
-    await contractRef.update({ answers: answerObjects })
   } else if (outcomeType === 'FREE_RESPONSE') {
     const noneAnswerDoc = firestore
       .collection(`contracts/${contract.id}/answers`)

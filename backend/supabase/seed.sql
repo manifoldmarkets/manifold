@@ -1064,6 +1064,25 @@ create policy "public read" on q_and_a_answers for
 select
   using (true);
 
+create table if not exists
+  answers (
+    id text not null primary key,
+    contract_id text not null, -- Associated contract
+    user_id text not null, -- Creator of the answer
+    text text not null,
+    pool_yes numeric not null, -- YES shares in the pool
+    pool_no numeric not null, -- NO shares in the pool
+    created_time timestamptz not null default now()
+  );
+
+alter table answers enable row level security;
+
+drop policy if exists "public read" on answers;
+
+create policy "public read" on answers for
+select
+  using (true);
+
 begin;
 
 drop publication if exists supabase_realtime;

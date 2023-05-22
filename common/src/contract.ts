@@ -50,6 +50,7 @@ export type AnyContractType =
   | (CPMM2 & MultipleChoice)
   | QuadraticFunding
   | (CPMM & Stonk)
+  | CPMMMulti
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -104,6 +105,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
 export type DPMContract = Contract & DPM
 export type CPMMContract = Contract & CPMM
+export type CPMMMultiContract = Contract & CPMMMulti
 
 export type BinaryContract = Contract & Binary
 export type DPMBinaryContract = BinaryContract & DPM
@@ -160,6 +162,16 @@ export type Uniswap2 = {
   pool: { [outcome: string]: number }
   // The price of the token in terms of M$. Similar to prob.
   price: number
+}
+
+/**
+ * Implemented as a set of cpmm-1 binary contracts, one for each answer.
+ * The mechanism is stored among the contract's answers, which each
+ * reference this contract id.
+ */
+export type CPMMMulti = {
+  mechanism: 'cpmm-multi-1'
+  outcomeType: 'MULTIPLE_CHOICE'
 }
 
 export type Cert = {
