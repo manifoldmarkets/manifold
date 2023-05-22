@@ -4,7 +4,6 @@ import { clamp } from 'lodash'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
 
-import { useUser } from 'web/hooks/use-user'
 import {
   CPMMBinaryContract,
   PseudoNumericContract,
@@ -33,17 +32,11 @@ import {
 } from '../outcome-label'
 import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
-import { SellRow } from './sell-row'
-import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
-import { BetSignUpPrompt } from '../sign-up-prompt'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { track } from 'web/lib/service/analytics'
-import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { YourOrders, OrderBookButton } from './limit-bets'
-import { PillButton } from '../buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
@@ -54,124 +47,6 @@ import { getStonkShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { Input } from 'web/components/widgets/input'
 import { DAY_MS, MINUTE_MS } from 'common/util/time'
 import dayjs from 'dayjs'
-
-export function BetPanel(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
-  className?: string
-}) {
-  const { contract, className } = props
-  const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)
-  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id
-  )
-  const { sharesOutcome } = useSaveBinaryShares(contract, userBets)
-
-  const [isLimitOrder, setIsLimitOrder] = useState(false)
-
-  if (!user) return <></>
-
-  return (
-    <Col className={className}>
-      <SellRow
-        contract={contract}
-        user={user}
-        className={'bg-ink-100 rounded-t-md px-4 py-5'}
-      />
-      <Col
-        className={clsx(
-          'bg-canvas-0 relative rounded-b-md px-6 py-6',
-          !sharesOutcome && 'rounded-t-md',
-          className
-        )}
-      >
-        <QuickOrLimitBet
-          isLimitOrder={isLimitOrder}
-          setIsLimitOrder={setIsLimitOrder}
-          hideToggle={!user}
-        />
-        <BuyPanel
-          hidden={isLimitOrder}
-          contract={contract}
-          user={user}
-          unfilledBets={unfilledBets}
-          balanceByUserId={balanceByUserId}
-        />
-        <LimitOrderPanel
-          hidden={!isLimitOrder}
-          contract={contract}
-          user={user}
-          unfilledBets={unfilledBets}
-          balanceByUserId={balanceByUserId}
-        />
-      </Col>
-
-      {unfilledBets.length > 0 && (
-        <YourOrders className="mt-4" contract={contract} bets={unfilledBets} />
-      )}
-    </Col>
-  )
-}
-
-export function SimpleBetPanel(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
-  className?: string
-  hasShares?: boolean
-  onBetSuccess?: () => void
-}) {
-  const { contract, className, hasShares, onBetSuccess } = props
-
-  const user = useUser()
-  const [isLimitOrder, setIsLimitOrder] = useState(false)
-
-  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id
-  )
-
-  return (
-    <Col className={className}>
-      <SellRow
-        contract={contract}
-        user={user}
-        className={'bg-ink-100 rounded-t-md px-4 py-5'}
-      />
-      <Col
-        className={clsx(
-          !hasShares && 'rounded-t-md',
-          'bg-canvas-0 rounded-b-md px-8 py-6'
-        )}
-      >
-        <QuickOrLimitBet
-          isLimitOrder={isLimitOrder}
-          setIsLimitOrder={setIsLimitOrder}
-          hideToggle={!user}
-        />
-        <BuyPanel
-          hidden={isLimitOrder}
-          contract={contract}
-          user={user}
-          unfilledBets={unfilledBets}
-          balanceByUserId={balanceByUserId}
-          onBuySuccess={onBetSuccess}
-        />
-        <LimitOrderPanel
-          hidden={!isLimitOrder}
-          contract={contract}
-          user={user}
-          unfilledBets={unfilledBets}
-          balanceByUserId={balanceByUserId}
-          onBuySuccess={onBetSuccess}
-        />
-
-        <BetSignUpPrompt />
-      </Col>
-
-      {unfilledBets.length > 0 && (
-        <YourOrders className="mt-4" contract={contract} bets={unfilledBets} />
-      )}
-    </Col>
-  )
-}
 
 export type binaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -927,43 +802,5 @@ function LimitOrderPanel(props: {
         </Button>
       )}
     </Col>
-  )
-}
-
-function QuickOrLimitBet(props: {
-  isLimitOrder: boolean
-  setIsLimitOrder: (isLimitOrder: boolean) => void
-  hideToggle?: boolean
-}) {
-  const { isLimitOrder, setIsLimitOrder, hideToggle } = props
-
-  return (
-    <Row className="align-center mb-4 justify-between">
-      <div className="mr-2 -ml-2 shrink-0 text-3xl sm:-ml-0">Trade</div>
-      {!hideToggle && (
-        <Row className="mt-1 ml-1 items-center gap-1.5 sm:ml-0 sm:gap-2">
-          <PillButton
-            selected={!isLimitOrder}
-            onSelect={() => {
-              setIsLimitOrder(false)
-              track('select quick order')
-            }}
-            xs={true}
-          >
-            Quick
-          </PillButton>
-          <PillButton
-            selected={isLimitOrder}
-            onSelect={() => {
-              setIsLimitOrder(true)
-              track('select limit order')
-            }}
-            xs={true}
-          >
-            Limit
-          </PillButton>
-        </Row>
-      )}
-    </Row>
   )
 }
