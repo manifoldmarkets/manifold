@@ -91,13 +91,13 @@ export function NotificationSettings(props: {
     'resolutions_on_watched_markets',
     'resolutions_on_watched_markets_with_shares_in',
     'opt_out_all',
-
     'all_replies_to_my_comments_on_watched_markets',
     'all_replies_to_my_answers_on_watched_markets',
     'all_comments_on_my_markets',
     'all_answers_on_my_markets',
     'tagged_user',
     'some_comments_on_watched_markets',
+    'betting_streaks',
 
     // TODO: add these
     // 'limit_order_fills',

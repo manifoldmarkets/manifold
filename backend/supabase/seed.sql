@@ -76,6 +76,8 @@ where
 
 create index if not exists user_profit_cached_all_time_idx on users (((data -> 'profitCached' ->> 'allTime')::numeric));
 
+create index if not exists users_betting_streak_idx on users (((data->'currentBettingStreak')::int));
+
 alter table users
 cluster on users_pkey;
 
@@ -209,7 +211,7 @@ drop policy if exists "user can insert" on user_events;
 
 create policy "user can insert" on user_events for insert
 with
-  check (true)
+  check (true);
 create index if not exists user_events_name on user_events (user_id, name);
 
 create index if not exists user_events_ts on user_events (user_id, ts);
@@ -277,6 +279,8 @@ create index if not exists user_notifications_unseen_created_time on user_notifi
   user_id,
   (to_jsonb(data)->'isSeen'),
   (to_jsonb(data)->'createdTime') desc);
+
+
 
 alter table user_notifications cluster on user_notifications_created_time;
 
