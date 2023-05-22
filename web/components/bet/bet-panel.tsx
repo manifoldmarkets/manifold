@@ -32,6 +32,7 @@ import {
 } from '../outcome-label'
 import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
+import { useUnfilledBetsAndBalanceByUserId } from '../../hooks/use-bets'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
@@ -53,8 +54,6 @@ export type binaryOutcomes = 'YES' | 'NO' | undefined
 export function BuyPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
   user: User | null | undefined
-  unfilledBets: LimitBet[]
-  balanceByUserId: { [userId: string]: number }
   hidden: boolean
   onBuySuccess?: () => void
   mobileView?: boolean
@@ -65,8 +64,6 @@ export function BuyPanel(props: {
   const {
     contract,
     user,
-    unfilledBets,
-    balanceByUserId,
     hidden,
     onBuySuccess,
     mobileView,
@@ -79,7 +76,9 @@ export function BuyPanel(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
   const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
-
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id
+  )
   const outcome = option === 'LIMIT' ? undefined : option
   const seeLimit = option === 'LIMIT'
 
