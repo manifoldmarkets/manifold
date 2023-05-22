@@ -1,6 +1,6 @@
 import { User } from './user'
 
-export type Answer = {
+export type DpmAnswer = {
   id: string
   contractId: string
   userId: string
