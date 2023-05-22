@@ -229,12 +229,18 @@ export function ContractPageContent(props: {
   const isClosed = !!(closeTime && closeTime < Date.now())
   const trustworthy = isTrustworthy(user?.username)
 
-  const [showResolver, setShowResolver] = useState(
-    (isCreator || isAdmin || (trustworthy && isClosed)) &&
+  // show the resolver by default if the market is closed and you can resolve it
+  const [showResolver, setShowResolver] = useState(false)
+  useEffect(() => {
+    if (
+      (isCreator || isAdmin || trustworthy) &&
       !isResolved &&
       (closeTime ?? 0) < Date.now() &&
       outcomeType !== 'STONK'
-  )
+    ) {
+      setShowResolver(true)
+    }
+  }, [isAdmin, isCreator, trustworthy, closeTime])
 
   const allowTrade = tradingAllowed(contract)
 
@@ -405,13 +411,10 @@ export function ContractPageContent(props: {
             <ContractDescription
               className="mt-2 xl:mt-6"
               contract={contract}
-              toggleResolver={() => setShowResolver(!showResolver)}
+              highlightResolver={!isResolved && isClosed && !showResolver}
+              toggleResolver={() => setShowResolver((shown) => !shown)}
               showEditHistory={true}
             />
-
-            <div className="my-4">
-              <MarketGroups contract={contract} />
-            </div>
 
             {showResolver &&
               user &&
@@ -439,6 +442,10 @@ export function ContractPageContent(props: {
                   <QfResolutionPanel contract={contract} />
                 </GradientContainer>
               ) : null)}
+
+            <div className="my-4">
+              <MarketGroups contract={contract} />
+            </div>
 
             {outcomeType === 'NUMERIC' && (
               <AlertBox

@@ -20,6 +20,7 @@ import { ContractEditHistoryButton } from 'web/components/contract/contract-edit
 
 export function ContractDescription(props: {
   contract: Contract
+  highlightResolver?: boolean
   toggleResolver?: () => void
   className?: string
   showEditHistory?: boolean
@@ -29,6 +30,7 @@ export function ContractDescription(props: {
     contract,
     className,
     defaultCollapse,
+    highlightResolver,
     toggleResolver,
     showEditHistory,
   } = props
@@ -53,6 +55,7 @@ export function ContractDescription(props: {
           contract={contract}
           isOnlyAdmin={isAdmin && !isCreator}
           isOnlyTrustworthy={trustworthy && !isCreator}
+          highlightResolver={highlightResolver}
           toggleResolver={toggleResolver}
         />
       ) : (
@@ -73,9 +76,16 @@ function ContractActions(props: {
   contract: Contract
   isOnlyAdmin?: boolean
   isOnlyTrustworthy?: boolean
+  highlightResolver?: boolean
   toggleResolver: () => void
 }) {
-  const { contract, isOnlyAdmin, isOnlyTrustworthy, toggleResolver } = props
+  const {
+    contract,
+    isOnlyAdmin,
+    isOnlyTrustworthy,
+    highlightResolver,
+    toggleResolver,
+  } = props
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
 
@@ -120,7 +130,12 @@ function ContractActions(props: {
       <Row className="my-4 items-center gap-2 text-xs">
         {isOnlyAdmin && 'Admin '}
         {contract.outcomeType !== 'STONK' && (
-          <Button color={'gray'} size={'2xs'} onClick={toggleResolver}>
+          <Button
+            color={highlightResolver ? 'red' : 'gray'}
+            size="2xs"
+            className="relative"
+            onClick={toggleResolver}
+          >
             Resolve
           </Button>
         )}
