@@ -7,7 +7,6 @@ import {
 } from '@heroicons/react/outline'
 import { LinkIcon, PresentationChartBarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { difference } from 'lodash'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
