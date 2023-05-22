@@ -12,7 +12,7 @@ import {
   resolveQf,
 } from 'web/lib/firebase/api'
 import { ExpandingInput } from '../widgets/expanding-input'
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { Row } from '../layout/row'
 import clsx from 'clsx'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
@@ -136,7 +136,7 @@ function QfAnswersPanel(props: { contract: QuadraticFundingContract }) {
 
 function QfPayPanel(props: {
   contract: QuadraticFundingContract
-  answer: Answer
+  answer: DpmAnswer
   txns: QfTxn[]
 }) {
   const { contract, answer, txns } = props
@@ -218,7 +218,7 @@ function QfPayPanel(props: {
 
 function QfAnswer(props: {
   contract: QuadraticFundingContract
-  answer: Answer
+  answer: DpmAnswer
   txns: QfTxn[]
   total?: number
   match?: number

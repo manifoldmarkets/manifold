@@ -5,7 +5,7 @@ import { uniq, zip } from 'lodash'
 import { z } from 'zod'
 import { marked } from 'marked'
 
-import { Answer, getNoneAnswer } from 'common/answer'
+import { DpmAnswer, getNoneAnswer } from 'common/answer'
 import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
@@ -455,7 +455,7 @@ async function generateAntes(
     )
     await Promise.all(
       zip(answerObjects, answerDocs).map(([answer, doc]) =>
-        doc?.create(answer as Answer)
+        doc?.create(answer as DpmAnswer)
       )
     )
     await contractRef.update({ answers: answerObjects })

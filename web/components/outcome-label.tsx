@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
 import {
@@ -167,7 +167,7 @@ export function AnswerNumberLabel(props: { number: string }) {
 }
 
 export function AnswerLabel(props: {
-  answer: Answer
+  answer: DpmAnswer
   truncate: 'short' | 'medium' | 'long' | 'none'
   className?: string
 }) {

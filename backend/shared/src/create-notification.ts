@@ -15,7 +15,7 @@ import { getPrivateUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
 import { groupBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { Group } from 'common/group'
 import {
@@ -314,7 +314,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyOtherAnswerersOnContract = async () => {
-    const answers = await getValues<Answer>(
+    const answers = await getValues<DpmAnswer>(
       firestore
         .collection('contracts')
         .doc(sourceContract.id)

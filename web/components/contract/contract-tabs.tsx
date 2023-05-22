@@ -1,7 +1,7 @@
 import { groupBy, last, sortBy } from 'lodash'
 import { memo, useEffect, useMemo, useState } from 'react'
 
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -52,7 +52,7 @@ export function ContractTabs(props: {
   bets: Bet[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
-  answerResponse?: Answer | undefined
+  answerResponse?: DpmAnswer | undefined
   onCancelAnswerResponse?: () => void
   blockedUserIds: string[]
   activeIndex: number
@@ -197,7 +197,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   blockedUserIds: string[]
   setCommentsLength?: (length: number) => void
   onCancelAnswerResponse?: () => void
-  answerResponse?: Answer
+  answerResponse?: DpmAnswer
   betResponse?: Bet
   clearReply?: () => void
 }) {

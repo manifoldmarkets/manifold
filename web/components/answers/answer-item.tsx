@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -13,7 +13,7 @@ import { Input } from '../widgets/input'
 import { getOutcomeProbability } from 'common/calculate'
 
 export function AnswerItem(props: {
-  answer: Answer
+  answer: DpmAnswer
   contract: FreeResponseContract | MultipleChoiceContract
   showChoice: 'radio' | 'checkbox' | undefined
   chosenProb: number | undefined

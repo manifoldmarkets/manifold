@@ -1,4 +1,4 @@
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import {
@@ -10,7 +10,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
-import { RESERVED_PATHS } from "common/envs/constants";
+import { RESERVED_PATHS } from 'common/envs/constants'
 import * as admin from 'firebase-admin'
 import { uniq } from 'lodash'
 import { log, getUser, getUserByUsername } from 'shared/utils'
@@ -154,7 +154,7 @@ export const changeUser = async (
     `select contract_id, answer_id from contract_answers where data->>'userId' = $1`,
     [user.id]
   )
-  const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
+  const answerUpdate: Partial<DpmAnswer> = removeUndefinedProps(update)
   for (const row of answerRows) {
     const ref = firestore
       .collection('contracts')

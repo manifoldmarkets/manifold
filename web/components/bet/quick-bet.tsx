@@ -44,7 +44,7 @@ import {
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { AnswerLabel } from '../outcome-label'
 import { useChartAnswers } from '../charts/contract/choice'
 import { getAnswerColor } from '../answers/answers-panel'
@@ -526,7 +526,7 @@ export function ContractCardAnswers(props: {
 }
 
 function getAnswerType(
-  answer: Answer,
+  answer: DpmAnswer,
   resolution?: string,
   resolutions?:
     | { [outcome: string]: number }
@@ -544,7 +544,7 @@ function getAnswerType(
 
 function ContractCardAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
-  answer: Answer
+  answer: DpmAnswer
   answersArray: string[]
   type: 'winner' | 'loser' | 'contender'
 }) {

@@ -1,7 +1,7 @@
 import { PaperAirplaneIcon, XCircleIcon } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { AnyContractType, Contract } from 'common/contract'
 import { User } from 'common/user'
 import React, { useEffect, useState } from 'react'
@@ -133,7 +133,7 @@ export function CommentInput(props: {
 }
 export function AnswerCommentInput(props: {
   contract: Contract<AnyContractType>
-  answerResponse: Answer
+  answerResponse: DpmAnswer
   onCancelAnswerResponse?: () => void
   answersArray: string[]
 }) {

@@ -1,5 +1,5 @@
 import { JSONContent } from '@tiptap/core'
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getOutcomeProbability, getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
@@ -43,7 +43,7 @@ export type LiteMarket = {
 
   lastUpdatedTime?: number
 }
-export type ApiAnswer = Answer & {
+export type ApiAnswer = DpmAnswer & {
   probability?: number
 }
 export type FullMarket = LiteMarket & {
@@ -152,7 +152,7 @@ export function toFullMarket(contract: Contract): FullMarket {
 
 function augmentAnswerWithProbability(
   contract: Contract,
-  answer: Answer
+  answer: DpmAnswer
 ): ApiAnswer {
   const probability = getOutcomeProbability(contract, answer.id)
   return {

@@ -1,4 +1,4 @@
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import {
   Contract,
   FreeResponseContract,
@@ -20,7 +20,7 @@ import { useChartAnswers } from '../charts/contract/choice'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 
 export function CommentsAnswer(props: {
-  answer: Answer
+  answer: DpmAnswer
   contract: Contract
   color: string
 }) {
@@ -72,7 +72,7 @@ export function CommentsAnswer(props: {
 
 export function FreeResponseComments(props: {
   contract: FreeResponseContract | MultipleChoiceContract
-  answerResponse: Answer | undefined
+  answerResponse: DpmAnswer | undefined
   onCancelAnswerResponse?: () => void
   topLevelComments: ContractComment[]
   commentsByParent: Dictionary<[ContractComment, ...ContractComment[]]>

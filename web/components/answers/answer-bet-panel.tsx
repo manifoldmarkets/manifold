@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import React, { useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
@@ -30,7 +30,7 @@ import { getProb, shortSell } from 'common/calculate-cpmm-multi'
 import { removeUndefinedProps } from 'common/util/object'
 
 export function AnswerBetPanel(props: {
-  answer: Answer
+  answer: DpmAnswer
   contract: FreeResponseContract | MultipleChoiceContract
   mode: 'buy' | 'short-sell'
   closePanel: () => void

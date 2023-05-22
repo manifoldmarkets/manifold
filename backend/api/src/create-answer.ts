@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { getNewMultiBetInfo } from 'common/new-bet'
-import { Answer, MAX_ANSWER_LENGTH } from 'common/answer'
+import { DpmAnswer, MAX_ANSWER_LENGTH } from 'common/answer'
 import { getValues } from 'shared/utils'
 import { APIError, authEndpoint, validate } from './helpers'
 import { addUserToContractFollowers } from 'shared/follow-market'
@@ -41,7 +41,7 @@ export const createanswer = authEndpoint(async (req, auth) => {
     if (closeTime && Date.now() > closeTime)
       throw new APIError(400, 'Trading is closed')
 
-    const [lastAnswer] = await getValues<Answer>(
+    const [lastAnswer] = await getValues<DpmAnswer>(
       firestore
         .collection(`contracts/${contractId}/answers`)
         .orderBy('number', 'desc')
@@ -60,7 +60,7 @@ export const createanswer = authEndpoint(async (req, auth) => {
     const answerId = newAnswerDoc.id
     const { username, name, avatarUrl } = user
 
-    const answer: Answer = {
+    const answer: DpmAnswer = {
       id,
       number,
       contractId,

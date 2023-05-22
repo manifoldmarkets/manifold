@@ -4,7 +4,7 @@ import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 
 import { Bet } from 'common/bet'
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
 import { DAY_MS } from 'common/util/time'
@@ -51,7 +51,7 @@ const getAnswers = (contract: ChoiceContract) => {
   )
 }
 
-const getDpmBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
+const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[], topN?: number) => {
   const sortedBets = sortBy(bets, (b) => b.createdTime)
   const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
   const sharesByOutcome = Object.fromEntries(
@@ -77,7 +77,7 @@ const getDpmBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
   return points
 }
 
-const getCpmmBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
+const getCpmmBetPoints = (answers: DpmAnswer[], bets: Bet[], topN?: number) => {
   const sortedBets = sortBy(bets, (b) => b.createdTime)
   // TODO: Load liquidity provisions to update the pool.
   let pool = Object.fromEntries(answers.map((a) => [a.id, 100]))

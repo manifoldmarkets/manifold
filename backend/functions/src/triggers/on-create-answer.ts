@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import { getContract, getUser } from 'shared/utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 
 export const onCreateAnswer = functions.firestore
   .document('contracts/{contractId}/answers/{answerNumber}')
@@ -10,7 +10,7 @@ export const onCreateAnswer = functions.firestore
       contractId: string
     }
     const { eventId } = context
-    const answer = change.data() as Answer
+    const answer = change.data() as DpmAnswer
     // Ignore ante answer.
     if (answer.number === 0) return
 

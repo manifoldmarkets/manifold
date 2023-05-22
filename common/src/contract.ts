@@ -1,4 +1,4 @@
-import { Answer } from './answer'
+import { DpmAnswer } from './answer'
 import { Bet } from './bet'
 import { HistoryPoint } from './chart'
 import { Fees } from './fees'
@@ -169,7 +169,7 @@ export type Cert = {
 export type QuadraticFunding = {
   outcomeType: 'QUADRATIC_FUNDING'
   mechanism: 'qf'
-  answers: Answer[]
+  answers: DpmAnswer[]
   // Mapping of how much each user has contributed to the matching pool
   // Note: Our codebase assumes every contract has a pool, which is why this isn't just a constant
   pool: { M$: number }
@@ -200,14 +200,14 @@ export type PseudoNumeric = {
 
 export type FreeResponse = {
   outcomeType: 'FREE_RESPONSE'
-  answers: Answer[] // Used for outcomeType 'FREE_RESPONSE'.
+  answers: DpmAnswer[] // Used for outcomeType 'FREE_RESPONSE'.
   resolution?: string | 'MKT' | 'CANCEL'
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
 
 export type MultipleChoice = {
   outcomeType: 'MULTIPLE_CHOICE'
-  answers: Answer[]
+  answers: DpmAnswer[]
   resolution?: string | 'MKT' | 'CANCEL'
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }

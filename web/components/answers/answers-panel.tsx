@@ -10,7 +10,7 @@ import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { getOutcomeProbability } from 'common/calculate'
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import clsx from 'clsx'
 import { formatPercent } from 'common/util/format'
 import { Modal } from 'web/components/layout/modal'
@@ -24,7 +24,7 @@ import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
 import { GradientContainer } from '../widgets/gradient-container'
 
-export function getAnswerColor(answer: Answer, answersArray: string[]) {
+export function getAnswerColor(answer: DpmAnswer, answersArray: string[]) {
   const colorIndex = answersArray.indexOf(answer.text)
   return colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
     ? CHOICE_ANSWER_COLORS[colorIndex]
@@ -33,7 +33,7 @@ export function getAnswerColor(answer: Answer, answersArray: string[]) {
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
-  onAnswerCommentClick: (answer: Answer) => void
+  onAnswerCommentClick: (answer: DpmAnswer) => void
   showResolver?: boolean
   isInModal?: boolean
 }) {
@@ -222,9 +222,9 @@ export function AnswersPanel(props: {
 
 function OpenAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
-  answer: Answer
+  answer: DpmAnswer
   color: string
-  onAnswerCommentClick: (answer: Answer) => void
+  onAnswerCommentClick: (answer: DpmAnswer) => void
 }) {
   const { answer, contract, onAnswerCommentClick, color } = props
   const { username, avatarUrl, text } = answer

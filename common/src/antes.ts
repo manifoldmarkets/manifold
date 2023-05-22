@@ -11,7 +11,7 @@ import {
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
-import { Answer } from './answer'
+import { DpmAnswer } from './answer'
 
 export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
 export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // @ManifoldMarkets' id
@@ -77,7 +77,7 @@ export function getMultipleChoiceAntes(
 
   const { username, name, avatarUrl } = creator
 
-  const answerObjects: Answer[] = answers.map((answer, i) => ({
+  const answerObjects: DpmAnswer[] = answers.map((answer, i) => ({
     id: i.toString(),
     number: i,
     contractId: contract.id,
