@@ -2488,6 +2488,17 @@ export interface Database {
         }
         Returns: Json
       }
+      top_creators_for_user: {
+        Args: {
+          uid: string
+          excluded_ids: string[]
+          limit_n: number
+        }
+        Returns: {
+          user_id: string
+          n: number
+        }[]
+      }
       ts_to_millis:
         | {
             Args: {

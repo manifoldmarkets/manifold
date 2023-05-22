@@ -1245,3 +1245,17 @@ or replace function get_engaged_users () returns table (user_id text, username t
       HAVING COUNT(*) >= 3 AND MIN(activity_count) >= 2
   )
 $$ language sql stable;
+
+create or replace function top_creators_for_user(uid text, excluded_ids text[], limit_n int)
+  returns table (user_id text, n float)
+  language sql
+  stable parallel safe
+as $$
+  select c.creator_id as user_id, count(*) as n
+  from contract_bets as cb
+  join contracts as c on c.id = cb.contract_id
+  where cb.user_id = uid and not c.creator_id = any(excluded_ids)
+  group by c.creator_id
+  order by count(*) desc
+  limit limit_n
+$$;
