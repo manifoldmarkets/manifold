@@ -1,24 +1,23 @@
 import { useState, useEffect } from 'react'
 import { User } from 'common/user'
-import { debounce, groupBy, sortBy } from 'lodash'
-import { getUserBetContracts } from 'web/lib/firebase/contracts'
-import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
+import { debounce } from 'lodash'
+import {
+  getTopUserCreators,
+  searchUsers,
+  UserSearchResult
+} from 'web/lib/supabase/users'
 
-export const useDiscoverUsers = (userId: string | null | undefined) => {
+export const useDiscoverUsers = (
+  userId: string | null | undefined,
+  excludedUserIds: string[],
+  limit: number
+) => {
   const [discoverUserIds, setDiscoverUserIds] = useState<string[] | undefined>()
 
   useEffect(() => {
     if (userId)
-      getUserBetContracts(userId).then((contracts) => {
-        const creatorCounts = Object.entries(
-          groupBy(contracts, 'creatorId')
-        ).map(([id, contracts]) => [id, contracts.length] as const)
-
-        const topCreatorIds = sortBy(creatorCounts, ([_, i]) => i)
-          .map(([id]) => id)
-          .reverse()
-
-        setDiscoverUserIds(topCreatorIds)
+      getTopUserCreators(userId, excludedUserIds, limit).then((rows) => {
+        setDiscoverUserIds(rows.map(r => r.user_id))
       })
   }, [userId])
 

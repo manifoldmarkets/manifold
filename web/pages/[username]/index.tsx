@@ -447,19 +447,11 @@ function FollowsDialog(props: {
 
   const currentUser = useUser()
   const myFollowedIds = useFollows(currentUser?.id)
-
-  // mqp: this is a ton of work, don't fetch it unless someone looks.
-  // if you want it to be faster, then you gotta precompute stuff for it somewhere
-  const discoverUserIds = useDiscoverUsers(isOpen ? user.id : undefined)
-  const nonSuggestions = [
-    user?.id ?? '',
-    currentUser?.id ?? '',
-    ...(myFollowedIds ?? []),
-  ]
-  const suggestedUserIds =
-    discoverUserIds == null
-      ? undefined
-      : difference(discoverUserIds, nonSuggestions).slice(0, 50)
+  const suggestedUserIds = useDiscoverUsers(
+    isOpen ? user.id : undefined, // don't bother fetching this unless someone looks
+    myFollowedIds ?? [],
+    50
+  )
 
   usePrefetchUsers([
     ...(followerIds ?? []),
