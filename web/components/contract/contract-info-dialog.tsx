@@ -302,7 +302,30 @@ export function ContractInfoDialog(props: {
           tabs={[
             {
               title: 'Stats',
-              content: <Stats contract={contract} user={user} />,
+              content: (
+                <Col>
+                  <Stats contract={contract} user={user} />
+
+                  <Row className="mt-4 flex-wrap gap-2">
+                    {contract.mechanism === 'cpmm-1' && (
+                      <AddLiquidityButton contract={contract} />
+                    )}
+
+                    <DuplicateContractButton contract={contract} />
+                  </Row>
+                  <Row className="mt-4 flex-wrap gap-2">
+                    <ReportButton
+                      report={{
+                        contentId: contract.id,
+                        contentType: 'contract',
+                        contentOwnerId: contract.creatorId,
+                      }}
+                    />
+
+                    <BlockMarketButton contract={contract} />
+                  </Row>
+                </Col>
+              ),
             },
             {
               title: 'Share',
@@ -326,19 +349,13 @@ export function ContractInfoDialog(props: {
                     eventTrackingName="copy market link"
                   />
                   <Row className="mt-4 flex-wrap gap-2">
-                    {contract.mechanism === 'cpmm-1' && (
-                      <AddLiquidityButton contract={contract} />
-                    )}
-
-                    <DuplicateContractButton contract={contract} />
+                    <TweetButton
+                      tweetText={getShareUrl(contract, user?.username)}
+                    />
 
                     <ShareEmbedButton
                       contract={contract}
                       className="hidden md:flex"
-                    />
-
-                    <TweetButton
-                      tweetText={getShareUrl(contract, user?.username)}
                     />
                   </Row>
                 </Col>
@@ -347,16 +364,6 @@ export function ContractInfoDialog(props: {
           ]}
         />
 
-        <Row className={'mt-2 gap-2'}>
-          <ReportButton
-            report={{
-              contentId: contract.id,
-              contentType: 'contract',
-              contentOwnerId: contract.creatorId,
-            }}
-          />
-          <BlockMarketButton contract={contract} />
-        </Row>
         <Row className="items-center justify-start gap-4 rounded-md "></Row>
       </Col>
     </Modal>

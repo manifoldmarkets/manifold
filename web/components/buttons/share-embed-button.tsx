@@ -34,7 +34,7 @@ export function ShareEmbedButton(props: {
 
   return (
     <Button
-      size="2xs"
+      size="sm"
       color="gray-outline"
       className={clsx('gap-1', className)}
       onClick={() => {
