@@ -203,6 +203,40 @@ export function BettingStreakBonusIncomeNotification(props: {
     </NotificationFrame>
   )
 }
+export function BettingStreakExpiringNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const [open, setOpen] = useState(false)
+  const user = useUser()
+  const streakInDays = notification.data?.streak
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      isChildOfGroup={true}
+      icon={
+        <NotificationIcon
+          symbol={'⏰'}
+          symbolBackgroundClass={
+            'bg-gradient-to-br from-yellow-600 to-orange-300'
+          }
+        />
+      }
+      onClick={() => setOpen(true)}
+      subtitle={'Place a prediction in the next 3 hours to keep it.'}
+    >
+      <span className="line-clamp-3">
+        Don't let your <span>🔥 {streakInDays} day</span>{' '}
+        <PrimaryNotificationLink text="Prediction Streak" /> expire!
+      </span>
+      <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
+    </NotificationFrame>
+  )
+}
 
 export function LoanIncomeNotification(props: {
   notification: Notification

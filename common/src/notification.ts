@@ -53,6 +53,7 @@ export type notification_source_types =
   | 'bonus' // strictly unique bettor bonuses atm
   | 'challenge'
   | 'betting_streak_bonus'
+  | 'betting_streak_expiring'
   | 'loan'
   | 'tip_and_like'
   | 'badge'
@@ -142,11 +143,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: "Only answers by market creator on markets you're watching",
   },
   betting_streaks: {
-    simple: `For prediction streaks`,
-    detailed: `Bonuses for predictions made over consecutive days (Prediction streaks))`,
+    simple: `Prediction streak bonuses & expirations`,
+    detailed: `Bonuses and expiration notices for prediction streaks made over consecutive days`,
   },
   quest_payout: {
-    simple: `For quest completion rewards`,
+    simple: `Quest completion rewards`,
     detailed: `Bonuses paid out for completing quests`,
   },
   comments_by_followed_users_on_watched_markets: {
@@ -192,7 +193,7 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'Weekly portfolio updates',
   },
   referral_bonuses: {
-    simple: 'For referring new users',
+    simple: 'Referring new users',
     detailed: 'Bonuses you receive from referring a new user',
   },
   resolutions_on_watched_markets: {
@@ -233,7 +234,7 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'Weekly interesting markets',
   },
   unique_bettors_on_your_contract: {
-    simple: 'For unique predictors on your markets',
+    simple: 'Unique predictors on your markets',
     detailed: 'Bonuses for unique predictors on your markets',
   },
   your_contract_closed: {

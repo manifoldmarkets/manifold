@@ -39,6 +39,8 @@ import { GroupMember } from 'common/group-member'
 import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { getMoneyNumber } from 'common/util/format'
+import { SupabaseDirectClient } from 'shared/supabase/init'
+import * as crypto from 'crypto'
 
 const firestore = admin.firestore()
 
@@ -46,6 +48,20 @@ type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
 }
 
+const insertNotificationToSupabase = async (
+  notification: Notification,
+  pg: SupabaseDirectClient
+) => {
+  return await pg.none(
+    `insert into postgres.public.user_notifications (user_id, notification_id, data, fs_updated_time) values ($1, $2, $3, $4)`,
+    [
+      notification.userId,
+      notification.id,
+      notification,
+      new Date().toISOString(),
+    ]
+  )
+}
 export const createFollowOrMarketSubsidizedNotification = async (
   sourceId: string,
   sourceType: 'liquidity' | 'follow',
@@ -765,7 +781,7 @@ export const createBettingStreakBonusNotification = async (
   if (!privateUser) return
   const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
-    'betting_streak_incremented'
+    'betting_streaks'
   )
   if (!sendToBrowser) return
 
@@ -775,7 +791,7 @@ export const createBettingStreakBonusNotification = async (
   const notification: Notification = {
     id: idempotencyKey,
     userId: user.id,
-    reason: 'betting_streak_incremented',
+    reason: 'betting_streaks',
     createdTime: Date.now(),
     isSeen: false,
     sourceId: txnId,
@@ -798,6 +814,48 @@ export const createBettingStreakBonusNotification = async (
     } as BettingStreakData,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
+}
+
+export const createBettingStreakExpiringNotification = async (
+  userId: string,
+  streak: number,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
+    privateUser,
+    'betting_streaks'
+  )
+  if (!sendToBrowser) return
+  const id = crypto.randomUUID()
+  const notification: Notification = {
+    id,
+    userId,
+    reason: 'betting_streaks',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: id,
+    sourceText: streak.toString(),
+    sourceType: 'betting_streak_expiring',
+    sourceUpdateType: 'created',
+    sourceUserName: '',
+    sourceUserUsername: '',
+    sourceUserAvatarUrl: '',
+    sourceTitle: 'Betting Streak Expiring',
+    data: {
+      streak: streak,
+    } as BettingStreakData,
+  }
+  await insertNotificationToSupabase(notification, pg)
+  if (sendToMobile) {
+    return await createPushNotification(
+      notification,
+      privateUser,
+      `${streak} day streak expiring!`,
+      'Place a prediction in the next 3 hours to keep it.'
+    )
+  }
 }
 
 export const createLikeNotification = async (reaction: Reaction) => {

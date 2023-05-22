@@ -14,6 +14,7 @@ import { Row } from 'web/components/layout/row'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
 import {
   BettingStreakBonusIncomeNotification,
+  BettingStreakExpiringNotification,
   LoanIncomeNotification,
   QuestIncomeNotification,
   UniqueBettorBonusIncomeNotification,
@@ -68,6 +69,14 @@ export function NotificationItem(props: {
   } else if (sourceType === 'betting_streak_bonus') {
     return (
       <BettingStreakBonusIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'betting_streak_expiring') {
+    return (
+      <BettingStreakExpiringNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}

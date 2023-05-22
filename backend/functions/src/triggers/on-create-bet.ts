@@ -3,7 +3,13 @@ import * as admin from 'firebase-admin'
 import { keyBy, uniq } from 'lodash'
 
 import { Bet, LimitBet } from 'common/bet'
-import { getUser, getValues, isProd, log } from 'shared/utils'
+import {
+  currentDateBettingStreakResetTime,
+  getUser,
+  getValues,
+  isProd,
+  log,
+} from 'shared/utils'
 import {
   createBetFillNotification,
   createBettingStreakBonusNotification,
@@ -15,7 +21,6 @@ import { Contract } from 'common/contract'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
-  BETTING_STREAK_RESET_HOUR,
   MAX_TRADERS_FOR_BONUS,
   UNIQUE_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_LIQUIDITY,
@@ -344,10 +349,6 @@ const notifyUsersOfLimitFills = async (
       })
     )
   )
-}
-
-const currentDateBettingStreakResetTime = () => {
-  return new Date().setUTCHours(BETTING_STREAK_RESET_HOUR, 0, 0, 0)
 }
 
 const updateContractMetrics = async (contract: Contract, users: User[]) => {
