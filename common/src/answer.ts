@@ -1,5 +1,15 @@
 import { User } from './user'
 
+export type Answer = {
+  id: string
+  contractId: string
+  userId: string
+  text: string
+  poolYes: number
+  poolNo: number
+  createdTime: number
+}
+
 export type DpmAnswer = {
   id: string
   contractId: string

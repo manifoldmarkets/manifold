@@ -5,7 +5,7 @@ import { uniq, zip } from 'lodash'
 import { z } from 'zod'
 import { marked } from 'marked'
 
-import { DpmAnswer, getNoneAnswer } from 'common/answer'
+import { Answer, getNoneAnswer } from 'common/answer'
 import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
