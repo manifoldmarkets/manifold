@@ -2,9 +2,11 @@ import * as functions from 'firebase-functions'
 import { getContract, getUser } from 'shared/utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
+import { secrets } from 'common/secrets'
 
-export const onCreateAnswer = functions.firestore
-  .document('contracts/{contractId}/answers/{answerNumber}')
+export const onCreateAnswer = functions
+  .runWith({ secrets })
+  .firestore.document('contracts/{contractId}/answers/{answerNumber}')
   .onCreate(async (change, context) => {
     const { contractId } = context.params as {
       contractId: string
