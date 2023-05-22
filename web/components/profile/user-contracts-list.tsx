@@ -27,22 +27,6 @@ export function UserContractsList(props: { creator: User }) {
     )
   }, [creator.id, allTime])
 
-  const MarketStats = (props: {
-    title: string
-    total: string
-    subTitle?: ReactNode
-  }) => {
-    const { title, total, subTitle } = props
-    return (
-      <Col className={clsx('')}>
-        <div className="text-ink-600 text-xs sm:text-sm">{title}</div>
-        <Row className={'items-center  gap-2'}>
-          <span className="text-primary-600 text-lg sm:text-xl">{total}</span>
-          {subTitle}
-        </Row>
-      </Col>
-    )
-  }
   return (
     <Col className={'w-full'}>
       <Row className={'gap-8 pb-4'}>
@@ -56,7 +40,7 @@ export function UserContractsList(props: { creator: User }) {
           subTitle={
             unresolvedMarkets === 0 ? null : (
               <Tooltip text={'Closed and waiting for resolution'}>
-                <div className="bg-scarlet-300 text-ink-0 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3 ">
+                <div className="bg-scarlet-300 text-ink-0 min-w-[15px] cursor-pointer rounded-full p-[2px] text-center text-[10px] leading-3">
                   {`${unresolvedMarkets}`}
                 </div>
               </Tooltip>
@@ -94,6 +78,23 @@ export function UserContractsList(props: { creator: User }) {
         persistPrefix={`user-${creator.id}`}
         profile={true}
       />
+    </Col>
+  )
+}
+
+const MarketStats = (props: {
+  title: string
+  total: string
+  subTitle?: ReactNode
+}) => {
+  const { title, total, subTitle } = props
+  return (
+    <Col>
+      <div className="text-ink-600 text-xs sm:text-sm">{title}</div>
+      <Row className="items-center gap-2">
+        <span className="text-primary-600 text-lg sm:text-xl">{total}</span>
+        {subTitle}
+      </Row>
     </Col>
   )
 }
