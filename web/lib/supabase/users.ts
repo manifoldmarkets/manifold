@@ -135,8 +135,9 @@ export async function getTopUserCreators(
     db.rpc('top_creators_for_user', {
       uid: userId,
       excluded_ids: excludedUserIds,
-      limit_n: limit
-    }))
+      limit_n: limit,
+    })
+  )
   // work around rpc typing bug
-  return data as unknown as { user_id: string, n: number }[]
+  return data as unknown as { user_id: string; n: number }[]
 }

@@ -4,7 +4,7 @@ import { debounce } from 'lodash'
 import {
   getTopUserCreators,
   searchUsers,
-  UserSearchResult
+  UserSearchResult,
 } from 'web/lib/supabase/users'
 
 export const useDiscoverUsers = (
@@ -17,7 +17,7 @@ export const useDiscoverUsers = (
   useEffect(() => {
     if (userId)
       getTopUserCreators(userId, excludedUserIds, limit).then((rows) => {
-        setDiscoverUserIds(rows.map(r => r.user_id))
+        setDiscoverUserIds(rows.map((r) => r.user_id))
       })
   }, [userId])
 
