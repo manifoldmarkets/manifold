@@ -12,7 +12,7 @@ import {
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import React, { ReactNode, useCallback, useEffect, useMemo } from 'react'
+import React, { ReactNode, useCallback, useMemo, useRef } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
 import GridComponent from '../editor/tiptap-grid-cards'
@@ -38,10 +38,12 @@ import { BasicImage, DisplayImage } from '../editor/image'
 
 import { LinkPreviewExtension } from 'web/components/editor/link-preview-extension'
 import { useEvent } from 'web/hooks/use-event'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { filterDefined } from 'common/util/array'
 
 import { Row } from 'web/components/layout/row'
+import {
+  findLinksInContent,
+  insertLinkPreviews,
+} from 'web/components/editor/link-preview-node-view'
 
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
@@ -98,10 +100,8 @@ export function useTextEditor(props: {
       store: storageStore(safeLocalStorage),
     }
   )
-  const [linkPreviewsStatus, setLinkPreviewsStatus] =
-    usePersistentInMemoryState<{
-      [url: string]: 'fetching' | 'dismissed'
-    }>({}, `${key}-link-previews-dismissed`)
+  const fetchingLinks = useRef<boolean>(false)
+
   const save = useCallback(debounce(saveContent, 500), [])
 
   const editorClass = clsx(
@@ -118,9 +118,8 @@ export function useTextEditor(props: {
     onUpdate: !key
       ? noop
       : ({ editor }) => {
-          const json = editor.getJSON()
-          save(json)
-          debouncedAddPreviewIfLinkPresent(json)
+          save(editor.getJSON())
+          debouncedAddPreviewIfLinkPresent()
         },
     extensions: [
       ...editorExtensions(simple),
@@ -134,91 +133,24 @@ export function useTextEditor(props: {
     ],
     content: defaultValue ?? (key && content ? content : ''),
   })
-  const handleDeleteNode = useEvent((event: any) => {
-    const id = event.detail
-    if (!editor) return
-    const { state } = editor
-    const { doc } = state
-    let { tr } = state
-
-    doc.descendants((node, pos) => {
-      if (node.type.name === 'linkPreview' && node.attrs.id === id) {
-        const { url } = node.attrs
-        setLinkPreviewsStatus((prev) => ({ ...prev, [url]: 'dismissed' }))
-        tr = tr.delete(pos, pos + node.nodeSize)
-        return false
-      }
-    })
-    if (tr.docChanged) {
-      editor.view.dispatch(tr)
-    }
-  })
-
-  useEffect(() => {
-    window.addEventListener('deleteNode', handleDeleteNode)
-    return () => window.removeEventListener('deleteNode', handleDeleteNode)
-  }, [])
 
   const debouncedAddPreviewIfLinkPresent = useCallback(
-    debounce((content: JSONContent) => addPreviewIfLinkPresent(content), 500),
+    debounce(() => addPreviewIfLinkPresent(), 500),
     []
   )
 
-  const addPreviewIfLinkPresent = useEvent((content: JSONContent) => {
+  const addPreviewIfLinkPresent = useEvent(async () => {
+    if (!editor) return
+    const content = editor.getJSON()
     const containsLinkPreview = content.content?.some(
       (node) => node.type === 'linkPreview'
     )
-    if (containsLinkPreview || !editor) return
-    const linkRegExp =
-      /(?:^|[^@\w])((?:https?:\/\/)?[\w-]+(?:\.[\w-]+)+\S*[^@\s])/g
-    const linkMatches = content.content?.flatMap((node) =>
-      node.content?.flatMap((n) => {
-        return n.text ? Array.from(n.text.matchAll(linkRegExp)) : []
-      })
-    )
-    const links = filterDefined(linkMatches?.map((m) => m?.[0]) ?? [])
-    links.forEach(async (link) => {
-      if (linkPreviewsStatus[link]) return
-      setLinkPreviewsStatus((prev) => ({ ...prev, [link]: 'fetching' }))
-      try {
-        const res = await fetch('/api/v0/fetch-link-preview', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url: link,
-          }),
-        })
-        const resText = await res.json()
-        if (
-          !resText ||
-          !resText.title ||
-          !resText.description ||
-          !resText.image ||
-          resText.description === 'Error' ||
-          resText.title === 'Error'
-        )
-          return
-        const linkPreviewNodeJSON = {
-          type: 'linkPreview',
-          attrs: {
-            ...resText,
-            url: link,
-            id: crypto.randomUUID(),
-          },
-        }
-        // Append to very end of doc
-        const docLength = editor.state.doc.content.size
-        editor
-          .chain()
-          .focus()
-          .insertContentAt(docLength ?? 0, linkPreviewNodeJSON)
-          .run()
-      } catch (e) {
-        console.error('error on add preview for link', link, e)
-      }
-    })
+    if (containsLinkPreview) return
+    const links = findLinksInContent(content)
+    if (fetchingLinks.current) return
+    fetchingLinks.current = true
+    await insertLinkPreviews(editor, links, key)
+    fetchingLinks.current = false
   })
 
   const upload = useUploadMutation(editor)
@@ -316,6 +248,7 @@ function RichContent(props: {
         DisplayContractMention,
         GridComponent,
         Iframe,
+        LinkPreviewExtension.configure({ hideCloseButton: true }),
         DisplayTweet,
         DisplaySpoiler,
       ]),

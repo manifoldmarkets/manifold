@@ -65,6 +65,7 @@ export const extensions = [
       '[embed]' + node.attrs.src ? `(${node.attrs.src})` : '',
   }),
   skippableComponent('gridCardsComponent', '[markets]'),
+  skippableComponent('linkPreview', '[link preview]'),
   TiptapTweet.extend({ renderText: () => '[tweet]' }),
   TiptapSpoiler.extend({ renderHTML: () => ['span', '[spoiler]', 0] }),
 ]
