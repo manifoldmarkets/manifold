@@ -1,18 +1,20 @@
 import * as functions from 'firebase-functions'
 import { getContract, getUser } from 'shared/utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
-import { DpmAnswer } from 'common/answer'
+import { Answer, DpmAnswer } from 'common/answer'
+import { secrets } from 'common/secrets'
 
-export const onCreateAnswer = functions.firestore
-  .document('contracts/{contractId}/answers/{answerNumber}')
+export const onCreateAnswer = functions
+  .runWith({ secrets })
+  .firestore.document('contracts/{contractId}/answers/{answerNumber}')
   .onCreate(async (change, context) => {
     const { contractId } = context.params as {
       contractId: string
     }
     const { eventId } = context
-    const answer = change.data() as DpmAnswer
+    const answer = change.data() as Answer | DpmAnswer
     // Ignore ante answer.
-    if (answer.number === 0) return
+    if ('number' in answer && answer.number === 0) return
 
     const contract = await getContract(contractId)
     if (!contract)

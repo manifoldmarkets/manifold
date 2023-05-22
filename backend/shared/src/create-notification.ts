@@ -39,7 +39,10 @@ import { GroupMember } from 'common/group-member'
 import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { getMoneyNumber } from 'common/util/format'
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import * as crypto from 'crypto'
 
 const firestore = admin.firestore()
@@ -176,6 +179,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 ) => {
   const { repliedUsersInfo, taggedUserIds } = miscData ?? {}
+  const pg = createSupabaseDirectClient()
 
   const usersToReceivedNotifications: Record<
     string,
@@ -246,11 +250,8 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
 
     // Browser notifications
     if (sendToBrowser && !receivedNotifications.includes('browser')) {
-      const notificationRef = firestore
-        .collection(`/users/${userId}/notifications`)
-        .doc(idempotencyKey)
       const notification = constructNotification(userId, reason)
-      await notificationRef.set(notification)
+      await insertNotificationToSupabase(notification, pg)
       receivedNotifications.push('browser')
     }
 
@@ -381,7 +382,15 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     // We don't need to filter by shares in bc they auto unfollow a market upon selling out of it
     // Unhandled case sacrificed for performance: they bet in a market, sold out,
     // then re-followed it - their notification reason should not include 'with_shares_in'
-    const recipientUserIds = sourceContract.uniqueBettorIds ?? []
+    const recipientUserIds = await pg.manyOrNone(
+      `
+      select
+          distinct user_id
+      from contract_bets
+        where contract_id = $1`,
+      [sourceContract.id]
+    )
+
     await Promise.all(
       recipientUserIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
