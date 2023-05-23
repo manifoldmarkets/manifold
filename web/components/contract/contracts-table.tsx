@@ -7,7 +7,6 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatPercentShort } from 'common/util/format'
 import { IoUnlink } from 'react-icons/io5'
-import { useContract } from 'web/hooks/use-contracts'
 import { useUser } from 'web/hooks/use-user'
 import { getTextColor } from '../bet/quick-bet'
 import { ContractMinibar } from '../charts/minibar'
@@ -167,7 +166,7 @@ export function ContractsTable(props: {
   ]
 
   function ContractRow(props: { contract: Contract }) {
-    const contract = useContract(props.contract.id) ?? props.contract
+    const contract = props.contract
     const contractListEntryHighlightClass =
       'bg-gradient-to-b from-primary-100 via-ink-0 to-ink-0 outline outline-2 outline-primary-400'
 
