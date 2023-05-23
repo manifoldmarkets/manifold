@@ -477,9 +477,12 @@ export const createTopLevelLikedCommentNotification = async (
   idempotencyKey: string,
   otherLikerIds: string[]
 ) => {
-  const contractFollowerIds = (
-    await firestore.collection(`contracts/${sourceContract.id}/follows`).get()
-  ).docs.map((doc) => (doc.data() as ContractFollow).id)
+  const pg = createSupabaseDirectClient()
+  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
+    `select follow_id from contract_follows where contract_id = $1`,
+    [sourceContract.id]
+  )
+  const contractFollowerIds = followerIds.map((f) => f.follow_id)
   const constructNotification = (userId: string) => {
     const notification: Notification = {
       id: idempotencyKey,
@@ -520,19 +523,18 @@ export const createTopLevelLikedCommentNotification = async (
     const { sendToBrowser, sendToEmail, sendToMobile, notificationPreference } =
       getNotificationDestinationsForUser(privateUser, notification.reason)
 
-    const sameNotificationsSnap = await firestore
-      .collection(`/users/${userId}/notifications`)
-      .where('sourceId', '==', sourceId)
-      .count()
-      .get()
-    if (sameNotificationsSnap.data().count > 0) return
+    const sameNotificationExists = await pg.one<{ count: number }>(
+      `select count(*) from user_notifications
+                where user_id = $1
+                  and (data->>'sourceId') = $2
+                limit 1`,
+      [notification.userId, notification.sourceId]
+    )
+    if (sameNotificationExists.count > 0) return
 
     // Browser notifications
     if (sendToBrowser) {
-      const notificationRef = firestore
-        .collection(`/users/${userId}/notifications`)
-        .doc(idempotencyKey)
-      await notificationRef.set(notification)
+      await insertNotificationToSupabase(notification, pg)
     }
 
     // Mobile push notifications
@@ -590,9 +592,6 @@ export const createBetFillNotification = async (
       ? limitBet.limitProb * (contract.max - contract.min) + contract.min
       : Math.round(limitBet.limitProb * 100) + '%'
 
-  const notificationRef = firestore
-    .collection(`/users/${toUser.id}/notifications`)
-    .doc(idempotencyKey)
   const notification: Notification = {
     id: idempotencyKey,
     userId: toUser.id,
@@ -621,7 +620,8 @@ export const createBetFillNotification = async (
       outcomeType: contract.outcomeType,
     } as BetFillData,
   }
-  return await notificationRef.set(removeUndefinedProps(notification))
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
 }
 
 export const createLimitBetCanceledNotification = async (
@@ -695,9 +695,6 @@ export const createReferralNotification = async (
   )
   if (!sendToBrowser) return
 
-  const notificationRef = firestore
-    .collection(`/users/${toUser.id}/notifications`)
-    .doc(idempotencyKey)
   const notification: Notification = {
     id: idempotencyKey,
     userId: toUser.id,
@@ -731,7 +728,8 @@ export const createReferralNotification = async (
       ? referredByGroup.name
       : referredByContract?.question,
   }
-  await notificationRef.set(removeUndefinedProps(notification))
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
   // TODO send email notification
 }
 
@@ -870,11 +868,8 @@ export const createLikeNotification = async (reaction: Reaction) => {
   )
   if (!sendToBrowser) return
 
-  // Reaction ids are constructed via contentId-reactionType, so this ensures idempotency
+  // Reaction ids are constructed via contentId-reactionType to ensure idempotency
   const id = `${reaction.userId}-${reaction.id}`
-  const notificationRef = firestore
-    .collection(`/users/${reaction.contentOwnerId}/notifications`)
-    .doc(id)
   const notification: Notification = {
     id,
     userId: reaction.contentOwnerId,
@@ -896,7 +891,8 @@ export const createLikeNotification = async (reaction: Reaction) => {
     sourceSlug: reaction.slug,
     sourceTitle: reaction.title,
   }
-  return await notificationRef.set(removeUndefinedProps(notification))
+  const pg = createSupabaseDirectClient()
+  return await insertNotificationToSupabase(notification, pg)
 }
 
 export const createUniqueBettorBonusNotification = async (
@@ -917,9 +913,6 @@ export const createUniqueBettorBonusNotification = async (
   )
   if (sendToBrowser) {
     const { outcomeType } = contract
-    const notificationRef = firestore
-      .collection(`/users/${contractCreatorId}/notifications`)
-      .doc(idempotencyKey)
     const pseudoNumericData =
       outcomeType === 'PSEUDO_NUMERIC'
         ? {
@@ -959,7 +952,8 @@ export const createUniqueBettorBonusNotification = async (
         ...pseudoNumericData,
       } as UniqueBettorData),
     }
-    await notificationRef.set(removeUndefinedProps(notification))
+    const pg = createSupabaseDirectClient()
+    await insertNotificationToSupabase(notification, pg)
   }
 
   if (!sendToEmail) return
