@@ -1,11 +1,7 @@
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
-import {
-  Contract,
-  MAX_DESCRIPTION_LENGTH,
-  MAX_QUESTION_LENGTH,
-} from 'common/contract'
+import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { updateContract } from 'web/lib/firebase/contracts'
@@ -13,7 +9,6 @@ import { Row } from '../layout/row'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { Button } from '../buttons/button'
 import { Spacer } from '../layout/spacer'
-import { ExpandingInput } from '../widgets/expanding-input'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { isTrustworthy } from 'common/envs/constants'
 import { ContractEditHistoryButton } from 'web/components/contract/contract-edit-history-button'
@@ -88,7 +83,6 @@ function ContractActions(props: {
     toggleResolver,
   } = props
   const [editing, setEditing] = useState(false)
-  const [editingQ, setEditingQ] = useState(false)
 
   const editor = useTextEditor({
     max: MAX_DESCRIPTION_LENGTH,
@@ -149,62 +143,8 @@ function ContractActions(props: {
             Resolve
           </Button>
         )}
-        {!isOnlyTrustworthy && (
-          <Button color="gray" size="2xs" onClick={() => setEditingQ(true)}>
-            Edit question
-          </Button>
-        )}
         <ContractEditHistoryButton contract={contract} />
       </Row>
-      <EditQuestion
-        contract={contract}
-        editing={editingQ}
-        setEditing={setEditingQ}
-      />
     </>
   )
-}
-
-function EditQuestion(props: {
-  contract: Contract
-  editing: boolean
-  setEditing: (editing: boolean) => void
-}) {
-  const { contract, editing, setEditing } = props
-  const [text, setText] = useState(contract.question)
-
-  const onSave = async (newText: string) => {
-    setEditing(false)
-    await updateContract(contract.id, {
-      question: newText,
-    })
-  }
-
-  return editing ? (
-    <div className="mt-4">
-      <ExpandingInput
-        className="mb-1 h-24 w-full"
-        rows={2}
-        maxLength={MAX_QUESTION_LENGTH}
-        value={text}
-        onChange={(e) => setText(e.target.value || '')}
-        autoFocus
-        onFocus={(e) =>
-          // Focus starts at end of text.
-          e.target.setSelectionRange(text.length, text.length)
-        }
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-            onSave(text)
-          }
-        }}
-      />
-      <Row className="gap-2">
-        <Button onClick={() => onSave(text)}>Save</Button>
-        <Button color="gray" onClick={() => setEditing(false)}>
-          Cancel
-        </Button>
-      </Row>
-    </div>
-  ) : null
 }
