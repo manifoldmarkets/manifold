@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
-import { AD_REDEEM_FEE } from 'common/boost'
+import { AD_REDEEM_REWARD } from 'common/boost'
 import { FieldValue } from 'firebase-admin/firestore'
 import { MarketAdRedeemFeeTxn, MarketAdRedeemTxn } from 'common/txn'
 
@@ -64,7 +64,7 @@ export const redeemboost = authEndpoint(async (req, auth) => {
 
     const txnColl = firestore.collection(`txns/`)
 
-    const reward = cost - AD_REDEEM_FEE
+    const reward = AD_REDEEM_REWARD
 
     const toUserDoc = firestore.doc(`users/${auth.uid}`)
     trans.update(toUserDoc, {
@@ -78,7 +78,7 @@ export const redeemboost = authEndpoint(async (req, auth) => {
       fromId: adId,
       toType: 'USER',
       toId: auth.uid,
-      amount: reward - AD_REDEEM_FEE,
+      amount: reward,
       token: 'M$',
       description: 'Redeeming market ad',
       createdTime: Date.now(),
@@ -90,7 +90,7 @@ export const redeemboost = authEndpoint(async (req, auth) => {
       fromId: adId,
       toType: 'BANK',
       toId: 'BANK',
-      amount: AD_REDEEM_FEE,
+      amount: cost - reward,
       token: 'M$',
       description: 'Manifold fee for redeeming market ad',
       createdTime: Date.now(),
