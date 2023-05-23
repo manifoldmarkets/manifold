@@ -832,26 +832,6 @@ alter table post_comments
 cluster on post_comments_pkey;
 
 create table if not exists
-  test (
-    id text not null primary key,
-    data jsonb not null,
-    fs_updated_time timestamp not null
-  );
-
-alter table test enable row level security;
-
-drop policy if exists "public read" on test;
-
-create policy "public read" on test for
-select
-  using (true);
-
-create index if not exists test_data_gin on test using GIN (data);
-
-alter table test
-cluster on test_pkey;
-
-create table if not exists
   user_recommendation_features (
     user_id text not null primary key,
     f0 real not null,
@@ -1193,7 +1173,6 @@ begin
            when 'manalinks' then cast((null, 'id') as table_spec)
            when 'posts' then cast((null, 'id') as table_spec)
            when 'post_comments' then cast(('post_id', 'comment_id') as table_spec)
-           when 'test' then cast((null, 'id') as table_spec)
            when 'user_contract_metrics' then cast(('user_id', 'contract_id') as table_spec)
            else null
     end;
