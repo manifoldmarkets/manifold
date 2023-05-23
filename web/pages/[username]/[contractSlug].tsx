@@ -40,7 +40,6 @@ import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
-import { Linkify } from 'web/components/widgets/linkify'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
@@ -66,6 +65,7 @@ import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
 import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import { ContractView } from 'common/events'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
+import { TitleOrEdit } from 'web/components/contract/title-edit'
 
 export type ContractParameters = {
   contractSlug: string
@@ -349,9 +349,9 @@ export function ContractPageContent(props: {
           <Col className="mb-4 p-4 md:px-8 md:pb-8">
             <Col className="gap-3 sm:gap-4">
               <div ref={titleRef}>
-                <Linkify
-                  className="text-primary-700 text-lg font-medium sm:text-2xl"
-                  text={contract.question}
+                <TitleOrEdit
+                  contract={contract}
+                  canEdit={isAdmin || isCreator}
                 />
               </div>
 
