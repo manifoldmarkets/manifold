@@ -868,10 +868,10 @@ where
     WHERE fromId = market_ads.id
   )
   and market_ads.funds > 0
-  order by embedding <=> (
+   order by cost_per_view * (1 - (embedding <=> (
     select interest_embedding
     from user_embedding
-  )
+  ))) desc
   limit 50
 )
 select
