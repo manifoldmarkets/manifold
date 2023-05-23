@@ -148,7 +148,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
 
     //Balance Changes
     loan_income: constructPref(true, false, false),
-    betting_streaks: constructPref(true, false, false),
+    betting_streaks: constructPref(true, false, true),
     referral_bonuses: constructPref(true, true, false),
     unique_bettors_on_your_contract: constructPref(true, true, false),
     tipped_comments_on_watched_markets: constructPref(true, true, false),
