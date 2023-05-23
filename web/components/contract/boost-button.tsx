@@ -210,7 +210,9 @@ function FeedAnalytics(props: { contractId: string }) {
   }
 
   const isBoosted = !!adQuery.data?.data?.length
-  const adData = adQuery.data?.data?.[0]
+  const lastAdData = adQuery.data?.data?.[0]
+  const totalFunds =
+    adQuery.data?.data?.reduce((acc, v) => acc + v.funds, 0) ?? 0
   const viewData = viewQuery.data?.data
   const promotedViewData = viewData?.filter(
     (v) => (v.data as ContractCardView).isPromoted
@@ -232,13 +234,13 @@ function FeedAnalytics(props: { contractId: string }) {
         )}
       </div>
       <Table className="text-ink-900 max-w-sm table-fixed">
-        {adData && (
+        {lastAdData && (
           <>
             <TableItem
               label="Campaign start"
-              value={new Date(adData.created_at).toDateString()}
+              value={new Date(lastAdData.created_at).toDateString()}
             />
-            <TableItem label="Funds left" value={formatMoney(adData.funds)} />
+            <TableItem label="Funds left" value={formatMoney(totalFunds)} />
           </>
         )}
 

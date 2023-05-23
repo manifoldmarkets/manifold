@@ -833,7 +833,7 @@ limit match_count;
 $$;
 
 create
-or replace function get_top_market_ads (uid text) returns table (
+ or replace function get_top_market_ads (uid text) returns table (
   ad_id text,
   market_id text,
   ad_funds numeric,
@@ -858,31 +858,50 @@ user_embedding as (
 ),
 --with all the ads that haven't been redeemed, by closest to your embedding
 unredeemed_market_ads as (
-select
-  id, market_id, funds, cost_per_view
-from market_ads
-where 
-  NOT EXISTS (
-    SELECT 1
-    FROM redeemed_ad_ids
-    WHERE fromId = market_ads.id
-  )
-  and market_ads.funds >= cost_per_view 
-   order by cost_per_view * (1 - (embedding <=> (
+  select
+    id, market_id, funds, cost_per_view, embedding
+  from
+    market_ads
+  where 
+    NOT EXISTS (
+      SELECT 1
+      FROM redeemed_ad_ids
+      WHERE fromId = market_ads.id
+    )
+    and market_ads.funds >= cost_per_view 
+  order by cost_per_view * (1 - (embedding <=> (
     select interest_embedding
     from user_embedding
   ))) desc
   limit 50
+),
+--with all the unique market_ids
+unique_market_ids as (
+  select distinct market_id
+  from unredeemed_market_ads
+),
+--with the top ad for each unique market_id
+top_market_ads as (
+  select
+    id, market_id, funds, cost_per_view
+  from
+    unredeemed_market_ads
+  where
+    market_id in (select market_id from unique_market_ids)
+  order by
+    cost_per_view * (1 - (embedding <=> (select interest_embedding from user_embedding))) desc
+  limit
+    50
 )
 select
-  ma.id,
-  ma.market_id,
-  ma.funds,
-  ma.cost_per_view,
+  tma.id,
+  tma.market_id,
+  tma.funds,
+  tma.cost_per_view,
   contracts.data
 from
-  unredeemed_market_ads as ma
-  inner join contracts on contracts.id = ma.market_id
+  top_market_ads as tma
+  inner join contracts on contracts.id = tma.market_id
 where
   contracts.resolution_time is null
   and contracts.close_time > now()

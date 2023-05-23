@@ -978,7 +978,6 @@ create table if not exists
     cost_per_view numeric not null,
     created_at timestamp not null default now(),
     embedding vector (1536) not null,
-    constraint market_ads_market_id_unique unique (market_id)
   );
 
 alter table market_ads enable row level security;
