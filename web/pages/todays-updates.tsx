@@ -14,7 +14,6 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
-import { useContract } from 'web/hooks/use-contracts'
 import { useUser } from 'web/hooks/use-user'
 import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { db } from 'web/lib/supabase/db'
@@ -101,9 +100,7 @@ const ContractChangeRow = forwardRef(
     },
     ref: React.Ref<HTMLAnchorElement>
   ) => {
-    const { metrics, onContractClick, className } = props
-    const contract = (useContract(props.contract.id) ??
-      props.contract) as CPMMContract
+    const { contract, metrics, onContractClick, className } = props
     const {
       creatorUsername,
       creatorAvatarUrl,

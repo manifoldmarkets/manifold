@@ -6,7 +6,6 @@ import { ContractStatusLabel } from './contracts-table'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { forwardRef } from 'react'
-import { useContract } from 'web/hooks/use-contracts'
 import { Avatar } from '../widgets/avatar'
 import { Row } from '../layout/row'
 import { formatPercentShort } from 'common/util/format'
@@ -44,9 +43,7 @@ const ContractWithProbChange = forwardRef(
     },
     ref: React.Ref<HTMLAnchorElement>
   ) => {
-    const { onContractClick, className } = props
-    const contract = (useContract(props.contract.id) ??
-      props.contract) as CPMMContract
+    const { contract, onContractClick, className } = props
     const {
       creatorUsername,
       creatorAvatarUrl,
