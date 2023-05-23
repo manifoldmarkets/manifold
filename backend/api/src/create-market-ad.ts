@@ -6,15 +6,28 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { runTxn } from 'shared/run-txn'
 import { MarketAdCreateTxn } from 'common/txn'
 import { log } from 'shared/utils'
+import { MIN_AD_COST_PER_VIEW } from 'common/boost'
 
 const schema = z.object({
   marketId: z.string(),
-  totalCost: z.number(),
-  costPerView: z.number(),
+  totalCost: z.number().positive(),
+  costPerView: z.number().positive(),
 })
 
 export const boostmarket = authEndpoint(async (req, auth) => {
   const { marketId, totalCost, costPerView } = validate(schema, req.body)
+
+  if (costPerView < MIN_AD_COST_PER_VIEW) {
+    throw new APIError(
+      400,
+      `Cost per view must be at least ${MIN_AD_COST_PER_VIEW}`
+    )
+  }
+
+  if (totalCost < costPerView) {
+    throw new APIError(400, `Total cost must be at least ${costPerView}`)
+  }
+
   log('boosting market')
   const pg = createSupabaseDirectClient()
 

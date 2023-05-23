@@ -6,7 +6,7 @@ import { boostMarket } from 'web/lib/firebase/api'
 import { Button, ColorType, SizeType } from '../buttons/button'
 import toast from 'react-hot-toast'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { DEFAULT_AD_COST_PER_VIEW } from 'common/boost'
+import { DEFAULT_AD_COST_PER_VIEW, MIN_AD_COST_PER_VIEW } from 'common/boost'
 import { db } from 'web/lib/supabase/db'
 import { useQuery } from 'react-query'
 import { Table } from '../widgets/table'
@@ -16,6 +16,8 @@ import { Modal } from '../layout/modal'
 import { Col } from '../layout/col'
 import { Title } from '../widgets/title'
 import { Row } from '../layout/row'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export function BoostButton(props: {
   contract: Contract
@@ -57,8 +59,11 @@ export function BoostDialog(props: {
         <Title className="!mb-2" children="🚀 Boost this market" />
 
         <div className="text-ink-500 mb-2 text-base">
-          Bump up this market in the feed. We'll display it to users who like
-          questions like this. Some funds go to viewers as a claimable reward.
+          Pay to boost this market in the feed.{' '}
+          <InfoTooltip
+            text="Boosted markets are displayed to users with relevant interests. Users earn a redeemable reward
+          in exchange for clicking on the market."
+          />
         </div>
 
         <BoostFormRow contract={contract} />
@@ -72,12 +77,18 @@ function BoostFormRow(props: { contract: Contract }) {
   const { contract } = props
 
   const [loading, setLoading] = useState(false)
-  const [numViews, setNumViews] = useState<number>()
-  const views = numViews ?? 0
+  const [totalCost, setTotalCost] = useState<number>()
+  const [costPerView, setCostPerView] = useState<number | undefined>(
+    DEFAULT_AD_COST_PER_VIEW
+  )
 
-  // TODO: let user set?
-  const costPerView = DEFAULT_AD_COST_PER_VIEW
-  const totalCost = views * costPerView
+  const redeems =
+    totalCost && costPerView ? Math.floor(totalCost / costPerView) : 0
+
+  const error =
+    !costPerView || costPerView < MIN_AD_COST_PER_VIEW
+      ? `Bid at least ${formatMoney(MIN_AD_COST_PER_VIEW)}`
+      : undefined
 
   const onSubmit = async () => {
     setLoading(true)
@@ -88,7 +99,7 @@ function BoostFormRow(props: { contract: Contract }) {
         costPerView,
       })
       toast.success('Boosted!')
-      setNumViews(undefined)
+      setTotalCost(undefined)
     } catch (e) {
       toast.error(
         (e as any).message ??
@@ -101,20 +112,35 @@ function BoostFormRow(props: { contract: Contract }) {
 
   return (
     <>
-      <Row className="items-center">
+      <Row className="items-center justify-between">
+        Boost amount{' '}
         <AmountInput
-          amount={numViews}
-          onChange={setNumViews}
-          label=""
+          amount={totalCost}
+          onChange={setTotalCost}
+          label={ENV_CONFIG.moneyMoniker}
           inputClassName="mr-2 w-36"
-        />{' '}
-        redeems
+        />
       </Row>
 
+      <Row className="items-center justify-between">
+        <div>
+          Bid per redeem{' '}
+          <InfoTooltip text="Cost to get one user to redeem the reward for your market. Uses a first-price auciton mechanism" />
+        </div>
+        <AmountInput
+          amount={costPerView}
+          onChange={setCostPerView}
+          label={ENV_CONFIG.moneyMoniker}
+          error={error}
+          inputClassName="mr-2 w-36"
+        />
+      </Row>
+      {error && <div className="text-right text-red-500">{error}</div>}
+
       <span className="text-ink-800 mr-2 min-w-[180px] text-base">
-        x {formatMoney(costPerView)}/redeem = {formatMoney(totalCost)} total
+        = {redeems} redeems
       </span>
-      <Button onClick={onSubmit} disabled={totalCost === 0 || loading}>
+      <Button onClick={onSubmit} disabled={!!error || !redeems || loading}>
         Buy
       </Button>
       {loading && <LoadingIndicator />}
