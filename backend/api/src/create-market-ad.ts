@@ -49,8 +49,6 @@ export const boostmarket = authEndpoint(async (req, auth) => {
     `insert into market_ads
       (user_id, market_id, embedding, funds, cost_per_view)
       values ($1, $2, $3, $4, $5)
-      on conflict on constraint market_ads_unique_market_id
-      do update set embedding = $3, funds = market_ads.funds + $4, cost_per_view = $5
       returning id`,
     [auth.uid, marketId, embedding, totalCost, costPerView]
   )
@@ -89,5 +87,5 @@ export const boostmarket = authEndpoint(async (req, auth) => {
   }
 
   // return something
-  return { status: 'success' }
+  return { status: 'success', id }
 })
