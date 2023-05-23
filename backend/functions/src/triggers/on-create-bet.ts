@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { keyBy, uniq } from 'lodash'
+import { keyBy } from 'lodash'
 
 import { Bet, LimitBet } from 'common/bet'
 import {
@@ -53,9 +53,9 @@ import {
 import { addToLeagueIfNotInOne } from 'shared/leagues'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_TRADE_FEE } from 'common/fees'
+import { getUniqueBettorIds } from 'shared/supabase/contracts'
 
 const firestore = admin.firestore()
-const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
 
 export const onCreateBet = functions
   .runWith({ secrets, memory: '512MB', timeoutSeconds: 540 })
@@ -197,78 +197,76 @@ const updateBettingStreak = async (
   }
 }
 
-const updateUniqueBettorsAndGiveCreatorBonus = async (
+export const updateUniqueBettorsAndGiveCreatorBonus = async (
   oldContract: Contract,
   eventId: string,
   bettor: User,
   bet: Bet
 ) => {
-  const { newUniqueBettorIds } = await firestore.runTransaction(
-    async (trans) => {
-      const contractDoc = firestore.collection(`contracts`).doc(oldContract.id)
-      const contract = (await trans.get(contractDoc)).data() as Contract
-      let previousUniqueBettorIds = contract.uniqueBettorIds
-      if (!previousUniqueBettorIds) {
-        const betsSnap = await trans.get(
-          firestore.collection(`contracts/${contract.id}/bets`)
-        )
-        const contractBets = betsSnap.docs.map((doc) => doc.data() as Bet)
-
-        if (contractBets.length === 0) {
-          return { newUniqueBettorIds: undefined }
-        }
-
-        previousUniqueBettorIds = uniq(
-          contractBets
-            .filter((bet) => bet.createdTime < BONUS_START_DATE)
-            .map((bet) => bet.userId)
-        )
-      }
-
-      const isNewUniqueBettor = !previousUniqueBettorIds.includes(bettor.id)
-      const newUniqueBettorIds = uniq([...previousUniqueBettorIds, bettor.id])
-
-      // Update contract unique bettors
-      if (!contract.uniqueBettorIds || isNewUniqueBettor) {
-        log(`Got ${previousUniqueBettorIds} unique bettors`)
-        isNewUniqueBettor && log(`And a new unique bettor ${bettor.id}`)
-
-        trans.update(contractDoc, {
-          uniqueBettorIds: newUniqueBettorIds,
-          uniqueBettorCount: newUniqueBettorIds.length,
-        })
-      }
-
-      // No need to give a bonus for the creator's bet
-      if (!isNewUniqueBettor || bettor.id == contract.creatorId)
-        return { newUniqueBettorIds: undefined }
-
-      return { newUniqueBettorIds }
-    }
+  const pg = createSupabaseDirectClient()
+  // Return if they've already bet on this contract previously, but we'll check in a transaction to be safe
+  const previousBet = await pg.oneOrNone(
+    `
+    select bet_id from contract_bets
+    where contract_id = $1
+    and user_id = $2
+    and created_time < $3
+    limit 1`,
+    [oldContract.id, bettor.id, new Date(bet.createdTime).toISOString()]
   )
-
-  if (!newUniqueBettorIds || newUniqueBettorIds.length > MAX_TRADERS_FOR_BONUS)
-    return
-
-  // exclude unlisted markets from bonuses
-  if (oldContract.visibility === 'unlisted') return
-
-  // exclude bots from bonuses
-  if (BOT_USERNAMES.includes(bettor.username)) return
-
-  if (oldContract.mechanism === 'cpmm-1') {
-    await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
-  }
-
-  const bonusTxnDetails = {
-    contractId: oldContract.id,
-    uniqueNewBettorId: bettor.id,
-  }
+  if (previousBet) return
   const fromUserId = isProd()
     ? HOUSE_LIQUIDITY_PROVIDER_ID
     : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-
+  const isCreator = bettor.id == oldContract.creatorId
+  // They may still have bet on this previously, use a transaction to be sure we haven't sent creator a bonus already
   const result = await firestore.runTransaction(async (trans) => {
+    const contractDoc = firestore.collection(`contracts`).doc(oldContract.id)
+    const contract = (await trans.get(contractDoc)).data() as Contract
+
+    const txnsSnap = await firestore
+      .collection('txns')
+      .where('fromId', '==', fromUserId)
+      .where('toId', '==', contract.creatorId)
+      .where('category', '==', 'UNIQUE_BETTOR_BONUS')
+      .where('data.uniqueNewBettorId', '==', bettor.id)
+      .where('data.contractId', '==', contract.id)
+      .get()
+
+    const refs = txnsSnap.docs.map((doc) => doc.ref)
+    const txns = refs.length > 0 ? await trans.getAll(...refs) : []
+    const bonusGivenAlready = txns.length > 0
+    if (bonusGivenAlready) return
+    // two options from here:
+    //1. they're the creator, and we don't want to give them a bonus, but they may be a new bettor, so update the bettor count
+    //2. they're a new bettor, so update the bettor count and give the creator a bonus
+    // if they're the creator: if the bet is not replicated, add 1 to the count and update the count
+    const supabaseUniqueBettorIds = await getUniqueBettorIds(contract.id, pg)
+    // TODO: NOTE - this may miscount the creator temporarily as a unique bettor multiple times if they place bets
+    //  quickly bc of replication delay. It should revert to the true number once other people bet, though
+    if (!supabaseUniqueBettorIds.includes(bettor.id))
+      supabaseUniqueBettorIds.push(bettor.id)
+
+    if (
+      supabaseUniqueBettorIds.length > MAX_TRADERS_FOR_BONUS ||
+      // Exclude creator from bonuses
+      isCreator ||
+      // Exclude unlisted markets from bonuses
+      oldContract.visibility === 'unlisted' ||
+      // Exclude bots from bonuses
+      BOT_USERNAMES.includes(bettor.username)
+    ) {
+      trans.update(contractDoc, {
+        uniqueBettorCount: supabaseUniqueBettorIds.length,
+      })
+      return
+    }
+
+    const bonusTxnData = {
+      contractId: oldContract.id,
+      uniqueNewBettorId: bettor.id,
+    }
+
     const bonusTxn: TxnData = {
       fromId: fromUserId,
       fromType: 'BANK',
@@ -277,14 +275,21 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       amount: UNIQUE_BETTOR_BONUS_AMOUNT,
       token: 'M$',
       category: 'UNIQUE_BETTOR_BONUS',
-      description: JSON.stringify(bonusTxnDetails),
-      data: bonusTxnDetails,
+      description: JSON.stringify(bonusTxnData),
+      data: bonusTxnData,
     } as Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'>
 
     const { status, message, txn } = await runTxn(trans, bonusTxn)
-
-    return { status, newUniqueBettorIds, message, txn }
+    trans.update(contractDoc, {
+      uniqueBettorCount: supabaseUniqueBettorIds.length,
+    })
+    return { status, newUniqueBettorIds: supabaseUniqueBettorIds, message, txn }
   })
+  if (!result) return
+
+  if (oldContract.mechanism === 'cpmm-1') {
+    await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
+  }
 
   if (result.status != 'success' || !result.txn) {
     log(`No bonus for user: ${oldContract.creatorId} - status:`, result.status)
