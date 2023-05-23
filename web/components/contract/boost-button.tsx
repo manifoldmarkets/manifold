@@ -125,7 +125,7 @@ function BoostFormRow(props: { contract: Contract }) {
       <Row className="items-center justify-between">
         <div>
           Bid per redeem{' '}
-          <InfoTooltip text="Cost to get one user to redeem the reward for your market. Uses a first-price auciton mechanism" />
+          <InfoTooltip text="Bid more to increase the priority of your boost. Uses a first-price auction mechanism." />
         </div>
         <AmountInput
           amount={costPerView}
