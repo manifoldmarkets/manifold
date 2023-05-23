@@ -9,7 +9,6 @@ import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { ContractStatusLabel } from './contracts-table'
-import { useContract } from 'web/hooks/use-contracts'
 
 export const RelatedContractsList = memo(function RelatedContractsList(props: {
   contracts: Contract[]
@@ -51,9 +50,7 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
   contract: Contract
   onContractClick?: (contract: Contract) => void
 }) {
-  const { onContractClick } = props
-
-  const contract = useContract(props.contract.id) ?? props.contract
+  const { contract, onContractClick } = props
   const { creatorUsername, creatorAvatarUrl, question, creatorCreatedTime } =
     contract
 
