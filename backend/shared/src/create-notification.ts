@@ -13,7 +13,7 @@ import { PrivateUser, User } from 'common/user'
 import { Contract } from 'common/contract'
 import { getPrivateUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
-import { groupBy, sum, uniq } from 'lodash'
+import { groupBy, keyBy, mapValues, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
@@ -32,7 +32,6 @@ import {
   notification_destination_types,
   userIsBlocked,
 } from 'common/user-notification-preferences'
-import { ContractFollow } from 'common/follow'
 import { createPushNotification } from './create-push-notification'
 import { Reaction } from 'common/reaction'
 import { GroupMember } from 'common/group-member'
@@ -102,9 +101,6 @@ export const createFollowOrMarketSubsidizedNotification = async (
         reason
       )
       if (sendToBrowser) {
-        const notificationRef = firestore
-          .collection(`/users/${userId}/notifications`)
-          .doc(idempotencyKey)
         const notification: Notification = {
           id: idempotencyKey,
           userId,
@@ -125,7 +121,8 @@ export const createFollowOrMarketSubsidizedNotification = async (
           sourceSlug: sourceContract?.slug,
           sourceTitle: sourceContract?.question,
         }
-        await notificationRef.set(removeUndefinedProps(notification))
+        const pg = createSupabaseDirectClient()
+        await insertNotificationToSupabase(notification, pg)
       }
 
       if (!sendToEmail) continue
@@ -187,13 +184,13 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     notification_destination_types[]
   > = {}
 
-  const contractFollowersSnap = await firestore
-    .collection(`contracts/${sourceContract.id}/follows`)
-    .get()
-
-  const contractFollowersIds: { [key: string]: boolean } = {}
-  contractFollowersSnap.docs.map(
-    (doc) => (contractFollowersIds[(doc.data() as ContractFollow).id] = true)
+  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
+    `select follow_id from contract_follows where contract_id = $1`,
+    [sourceContract.id]
+  )
+  const contractFollowersIds = mapValues(
+    keyBy(followerIds, 'follow_id'),
+    () => true
   )
 
   const constructNotification = (
@@ -1217,12 +1214,11 @@ export const createContractResolvedNotifications = async (
     }
   }
 
-  const contractFollowersIds = (
-    await getValues<ContractFollow>(
-      firestore.collection(`contracts/${contract.id}/follows`)
-    )
-  ).map((follow) => follow.id)
-
+  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
+    `select follow_id from contract_follows where contract_id = $1`,
+    [contract.id]
+  )
+  const contractFollowersIds = followerIds.map((f) => f.follow_id)
   // We ignore whether users are still watching a market if they have a payout, mainly
   // bc market resolutions changes their profits, and they'll likely want to know, esp. if NA resolution
   const usersToNotify = uniq(
@@ -1291,9 +1287,7 @@ export const createWeeklyPortfolioUpdateNotification = async (
   if (!sendToBrowser) return
 
   const id = rangeEndDateSlug + 'weekly_portfolio_update'
-  const notificationRef = firestore
-    .collection(`/users/${privateUser.id}/notifications`)
-    .doc(id)
+
   const notification: Notification = {
     id,
     userId: privateUser.id,
@@ -1314,7 +1308,8 @@ export const createWeeklyPortfolioUpdateNotification = async (
       rangeEndDateSlug,
     },
   }
-  await notificationRef.set(removeUndefinedProps(notification))
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
 }
 export const createGroupStatusChangeNotification = async (
   initiator: User,
@@ -1342,11 +1337,9 @@ export const createGroupStatusChangeNotification = async (
       affectedMember.role ?? 'member'
     } to ${newStatus}`
   }
-  const notificationRef = firestore
-    .collection(`/users/${affectedMember.userId}/notifications`)
-    .doc()
+
   const notification: Notification = {
-    id: notificationRef.id,
+    id: crypto.randomUUID(),
     userId: affectedMember.userId,
     reason: 'group_role_changed',
     createdTime: Date.now(),
@@ -1362,7 +1355,8 @@ export const createGroupStatusChangeNotification = async (
     sourceTitle: group.name,
     sourceContractId: 'group' + group.id,
   }
-  return await notificationRef.set(removeUndefinedProps(notification))
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
 }
 
 export const createAddedToGroupNotification = async (
@@ -1372,11 +1366,9 @@ export const createAddedToGroupNotification = async (
 ) => {
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) return
-  const notificationRef = firestore
-    .collection(`/users/${userId}/notifications`)
-    .doc()
+
   const notification: Notification = {
-    id: notificationRef.id,
+    id: crypto.randomUUID(),
     userId: userId,
     reason: 'added_to_group',
     createdTime: Date.now(),
@@ -1392,7 +1384,8 @@ export const createAddedToGroupNotification = async (
     sourceTitle: group.name,
     sourceContractId: 'group' + group.id,
   }
-  return await notificationRef.set(removeUndefinedProps(notification))
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
 }
 
 export const createQuestPayoutNotification = async (
@@ -1409,12 +1402,9 @@ export const createQuestPayoutNotification = async (
     'quest_payout'
   )
   if (!sendToBrowser) return
-  const notificationRef = firestore
-    .collection(`/users/${user.id}/notifications`)
-    .doc(txnId)
 
   const notification: Notification = {
-    id: notificationRef.id,
+    id: txnId,
     userId: user.id,
     reason: 'quest_payout',
     createdTime: Date.now(),
@@ -1432,5 +1422,6 @@ export const createQuestPayoutNotification = async (
       questCount,
     } as QuestRewardTxn['data'],
   }
-  return await notificationRef.set(removeUndefinedProps(notification))
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
 }
