@@ -57,7 +57,7 @@ const insertNotificationToSupabase = async (
   pg: SupabaseDirectClient
 ) => {
   return await pg.none(
-    `insert into postgres.public.user_notifications (user_id, notification_id, data, fs_updated_time) values ($1, $2, $3, $4)`,
+    `insert into postgres.public.user_notifications (user_id, notification_id, data, fs_updated_time) values ($1, $2, $3, $4) on conflict do nothing`,
     [
       notification.userId,
       notification.id,
