@@ -44,6 +44,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import * as crypto from 'crypto'
+import { getUniqueBettorIds } from 'shared/supabase/contracts'
 
 const firestore = admin.firestore()
 
@@ -382,14 +383,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     // We don't need to filter by shares in bc they auto unfollow a market upon selling out of it
     // Unhandled case sacrificed for performance: they bet in a market, sold out,
     // then re-followed it - their notification reason should not include 'with_shares_in'
-    const recipientUserIds = await pg.manyOrNone(
-      `
-      select
-          distinct user_id
-      from contract_bets
-        where contract_id = $1`,
-      [sourceContract.id]
-    )
+    const recipientUserIds = await getUniqueBettorIds(sourceContract.id, pg)
 
     await Promise.all(
       recipientUserIds.map((userId) =>
