@@ -867,7 +867,7 @@ where
     FROM redeemed_ad_ids
     WHERE fromId = market_ads.id
   )
-  and market_ads.funds >= 3 --- AD_REDEEM_REWARD
+  and market_ads.funds >= cost_per_view 
    order by cost_per_view * (1 - (embedding <=> (
     select interest_embedding
     from user_embedding
