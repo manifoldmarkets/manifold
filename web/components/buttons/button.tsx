@@ -63,7 +63,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'gradient' &&
       'disabled:bg-ink-300 enabled:bg-gradient-to-r from-primary-500 to-blue-500 text-white hover:from-primary-700 hover:to-blue-700 border-primary-500',
     color === 'gradient-pink' &&
-      'disabled:bg-ink-300 enabled:bg-gradient-to-r from-primary-500 to-fuchsia-500 text-white',
+      'disabled:bg-ink-300 enabled:bg-gradient-to-r from-primary-500 to-fuchsia-500 text-white hover:from-primary-700 hover:to-fuchsia-700 border-primary-500',
     color === 'gray-white' &&
       'text-ink-600 hover:bg-ink-200 shadow-none disabled:opacity-50 border-ink-300',
     color === 'yellow-outline' &&
