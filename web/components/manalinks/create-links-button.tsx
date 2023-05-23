@@ -157,7 +157,9 @@ function CreateManalinkForm(props: {
                   defaultValue={defaultExpire}
                   onChange={(e) => {
                     setExpiresIn(e.target.value)
-                    setExpireTime(e.target.value as dayjs.ManipulateType | 'never')
+                    setExpireTime(
+                      e.target.value as dayjs.ManipulateType | 'never'
+                    )
                   }}
                 >
                   {expireOptions}
