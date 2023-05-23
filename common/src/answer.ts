@@ -5,9 +5,14 @@ export type Answer = {
   contractId: string
   userId: string
   text: string
-  poolYes: number
-  poolNo: number
   createdTime: number
+
+  // Mechanism props
+  poolYes: number // YES shares
+  poolNo: number // NO shares
+  prob: number // Computed from poolYes and poolNo.
+  totalSubsidy: number
+  subsidyPool: number // Current value of subsidy pool in Ṁ, which will be added over time to poolYes and poolNo.
 }
 
 export type DpmAnswer = {

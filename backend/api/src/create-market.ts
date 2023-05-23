@@ -417,9 +417,13 @@ async function createAnswers(
         contractId: contract.id,
         userId: user.id,
         text,
+        createdTime: Date.now(),
+
         poolYes: manaPerAnswer,
         poolNo: manaPerAnswer,
-        createdTime: Date.now(),
+        prob: 0.5,
+        subsidyPool: 0,
+        totalSubsidy: manaPerAnswer,
       }
       return firestore
         .collection(`contracts/${contract.id}/answers`)

@@ -41,8 +41,7 @@ export function getNewContract(
   bucketCount: number,
   min: number,
   max: number,
-  isLogScale: boolean,
-
+  isLogScale: boolean
 ) {
   const createdTime = Date.now()
 
@@ -229,6 +228,7 @@ const getMultipleChoiceProps = () => {
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
     outcomeType: 'MULTIPLE_CHOICE',
+    shouldAnswersSumToOne: false,
   }
 
   return system

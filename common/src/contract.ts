@@ -172,6 +172,7 @@ export type Uniswap2 = {
 export type CPMMMulti = {
   mechanism: 'cpmm-multi-1'
   outcomeType: 'MULTIPLE_CHOICE'
+  shouldAnswersSumToOne: boolean
 }
 
 export type Cert = {
