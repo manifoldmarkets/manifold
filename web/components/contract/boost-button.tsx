@@ -15,6 +15,7 @@ import { ContractCardView } from 'common/events'
 import { Modal } from '../layout/modal'
 import { Col } from '../layout/col'
 import { Title } from '../widgets/title'
+import { Row } from '../layout/row'
 
 export function BoostButton(props: {
   contract: Contract
@@ -100,14 +101,18 @@ function BoostFormRow(props: { contract: Contract }) {
 
   return (
     <>
-      <AmountInput
-        amount={numViews}
-        onChange={setNumViews}
-        label="views"
-        inputClassName="!pl-14 w-36"
-      />
+      <Row className="items-center">
+        <AmountInput
+          amount={numViews}
+          onChange={setNumViews}
+          label=""
+          inputClassName="mr-2 w-36"
+        />{' '}
+        redeems
+      </Row>
+
       <span className="text-ink-800 mr-2 min-w-[180px] text-base">
-        x {formatMoney(costPerView)}/click = {formatMoney(totalCost)} total
+        x {formatMoney(costPerView)}/redeem = {formatMoney(totalCost)} total
       </span>
       <Button onClick={onSubmit} disabled={totalCost === 0 || loading}>
         Buy
