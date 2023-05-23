@@ -32,6 +32,7 @@ import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { ReportButton } from '../buttons/report-button'
 import { Input } from '../widgets/input'
 import { unresolveMarket } from 'web/lib/firebase/api'
+import { BoostButton } from './boost-button'
 
 export const Stats = (props: {
   contract: Contract
@@ -307,6 +308,12 @@ export function ContractInfoDialog(props: {
                   <Stats contract={contract} user={user} />
 
                   <Row className="mt-4 flex-wrap gap-2">
+                    <BoostButton
+                      size="sm"
+                      contract={contract}
+                      color="indigo-outline"
+                    />
+
                     {contract.mechanism === 'cpmm-1' && (
                       <AddLiquidityButton contract={contract} />
                     )}
