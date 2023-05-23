@@ -91,7 +91,7 @@ function CreateManalinkForm(props: {
     return <option value={key}>{value}</option>
   })
 
-  function setExpireTime(timeDelta: string) {
+  function setExpireTime(timeDelta: dayjs.ManipulateType | 'never') {
     const expiresTime =
       timeDelta === 'never' ? null : dayjs().add(1, timeDelta).valueOf()
     setNewManalink((m) => {
@@ -157,7 +157,7 @@ function CreateManalinkForm(props: {
                   defaultValue={defaultExpire}
                   onChange={(e) => {
                     setExpiresIn(e.target.value)
-                    setExpireTime(e.target.value)
+                    setExpireTime(e.target.value as dayjs.ManipulateType | 'never')
                   }}
                 >
                   {expireOptions}
