@@ -1000,6 +1000,7 @@ export const createNewContractNotification = async (
   text: string,
   mentionedUserIds: string[]
 ) => {
+  const pg = createSupabaseDirectClient()
   const sendNotificationsIfSettingsAllow = async (
     userId: string,
     reason: notification_reason_types
@@ -1012,9 +1013,6 @@ export const createNewContractNotification = async (
       reason
     )
     if (sendToBrowser) {
-      const notificationRef = firestore
-        .collection(`/users/${userId}/notifications`)
-        .doc(idempotencyKey)
       const notification: Notification = {
         id: idempotencyKey,
         userId: userId,
@@ -1035,7 +1033,7 @@ export const createNewContractNotification = async (
         sourceContractTitle: contract.question,
         sourceContractCreatorUsername: contract.creatorUsername,
       }
-      await notificationRef.set(removeUndefinedProps(notification))
+      await insertNotificationToSupabase(notification, pg)
     }
     if (!sendToEmail) return
     if (reason === 'contract_from_followed_user')
@@ -1118,13 +1116,13 @@ export const createContractResolvedNotifications = async (
       return { userId, profit }
     })
     .sort((a, b) => b.profit - a.profit)
-
+  const pg = createSupabaseDirectClient()
   const constructNotification = (
     userId: string,
     reason: notification_reason_types
   ): Notification => {
     return {
-      id: idempotencyKey,
+      id: contract.id + '-resolved',
       userId,
       reason,
       createdTime: Date.now(),
@@ -1153,18 +1151,6 @@ export const createContractResolvedNotifications = async (
     }
   }
 
-  const idempotencyKey = contract.id + '-resolved'
-  const createBrowserNotification = async (
-    userId: string,
-    reason: notification_reason_types
-  ) => {
-    const notificationRef = firestore
-      .collection(`/users/${userId}/notifications`)
-      .doc(idempotencyKey)
-    const notification = constructNotification(userId, reason)
-    return await notificationRef.set(removeUndefinedProps(notification))
-  }
-
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
     reason: notification_reason_types
@@ -1176,7 +1162,10 @@ export const createContractResolvedNotifications = async (
 
     // Browser notifications
     if (sendToBrowser) {
-      await createBrowserNotification(userId, reason)
+      await insertNotificationToSupabase(
+        constructNotification(userId, reason),
+        pg
+      )
     }
 
     // Emails notifications
@@ -1260,9 +1249,6 @@ export const createMarketClosedNotification = async (
   privateUser: PrivateUser,
   idempotencyKey: string
 ) => {
-  const notificationRef = firestore
-    .collection(`/users/${creator.id}/notifications`)
-    .doc(idempotencyKey)
   const notification: Notification = {
     id: idempotencyKey,
     userId: creator.id,
@@ -1283,7 +1269,8 @@ export const createMarketClosedNotification = async (
     sourceSlug: contract.slug,
     sourceTitle: contract.question,
   }
-  await notificationRef.set(removeUndefinedProps(notification))
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
   await sendMarketCloseEmail(
     'your_contract_closed',
     creator,
