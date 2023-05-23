@@ -18,17 +18,6 @@ export const boostmarket = authEndpoint(async (req, auth) => {
   log('boosting market')
   const pg = createSupabaseDirectClient()
 
-  const { creator_id } = await pg.one(
-    `select creator_id
-    from contracts
-    where id = $1`,
-    [marketId]
-  )
-
-  if (creator_id !== auth.uid) {
-    throw new APIError(403, 'You are not the creator of this market')
-  }
-
   const { embedding } = await pg.one(
     `select embedding
     from contract_embeddings
