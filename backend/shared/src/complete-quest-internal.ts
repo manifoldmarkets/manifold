@@ -89,7 +89,7 @@ export const completeArchaeologyQuest = async (
     (bet) => -bet.createdTime
   )
   const lastBetTime =
-    sortedEarlierBets.length === 1
+    sortedEarlierBets.length < 1
       ? contract.createdTime
       : sortedEarlierBets[0].createdTime
   const threeMonthsAgo = dayjs().subtract(3, 'month').valueOf()

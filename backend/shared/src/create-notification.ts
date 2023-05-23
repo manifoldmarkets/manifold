@@ -647,11 +647,8 @@ export const createLimitBetCanceledNotification = async (
       ? limitBet.limitProb * (contract.max - contract.min) + contract.min
       : Math.round(limitBet.limitProb * 100) + '%'
 
-  const notificationRef = firestore
-    .collection(`/users/${toUserId}/notifications`)
-    .doc()
   const notification: Notification = {
-    id: notificationRef.id,
+    id: crypto.randomUUID(),
     userId: toUserId,
     reason: 'limit_order_cancelled',
     createdTime: Date.now(),
@@ -676,7 +673,8 @@ export const createLimitBetCanceledNotification = async (
       outcomeType: contract.outcomeType,
     } as BetFillData,
   }
-  return await notificationRef.set(removeUndefinedProps(notification))
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
 }
 
 export const createReferralNotification = async (
@@ -746,9 +744,6 @@ export const createLoanIncomeNotification = async (
   )
   if (!sendToBrowser) return
 
-  const notificationRef = firestore
-    .collection(`/users/${toUser.id}/notifications`)
-    .doc(idempotencyKey)
   const notification: Notification = {
     id: idempotencyKey,
     userId: toUser.id,
@@ -764,7 +759,8 @@ export const createLoanIncomeNotification = async (
     sourceText: income.toString(),
     sourceTitle: 'Loan',
   }
-  await notificationRef.set(removeUndefinedProps(notification))
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
 }
 
 const groupPath = (groupSlug: string) => `/group/${groupSlug}`
@@ -786,9 +782,6 @@ export const createBettingStreakBonusNotification = async (
   )
   if (!sendToBrowser) return
 
-  const notificationRef = firestore
-    .collection(`/users/${user.id}/notifications`)
-    .doc(idempotencyKey)
   const notification: Notification = {
     id: idempotencyKey,
     userId: user.id,
@@ -814,7 +807,8 @@ export const createBettingStreakBonusNotification = async (
       bonusAmount: amount,
     } as BettingStreakData,
   }
-  return await notificationRef.set(removeUndefinedProps(notification))
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
 }
 
 export const createBettingStreakExpiringNotification = async (
