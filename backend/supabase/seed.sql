@@ -1139,7 +1139,6 @@ begin
     table_id
            when 'users' then cast((null, 'id') as table_spec)
            when 'user_follows' then cast(('user_id', 'follow_id') as table_spec)
-           when 'user_notifications' then cast(('user_id', 'notification_id') as table_spec)
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)

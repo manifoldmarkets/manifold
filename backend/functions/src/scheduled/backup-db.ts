@@ -50,7 +50,6 @@ export const backupDbCore = async (
     'cache',
     'latency',
     'views',
-    'notifications',
     'folds',
   ]
   return await client.exportDocuments({ name, outputUriPrefix, collectionIds })
