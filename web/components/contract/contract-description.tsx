@@ -17,6 +17,7 @@ import { ExpandingInput } from '../widgets/expanding-input'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { isTrustworthy } from 'common/envs/constants'
 import { ContractEditHistoryButton } from 'web/components/contract/contract-edit-history-button'
+import { PencilIcon } from '@heroicons/react/solid'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -99,10 +100,6 @@ function ContractActions(props: {
     await updateContract(contract.id, { description: editor.getJSON() })
   }
 
-  useEffect(() => {
-    if (!editing) editor?.commands?.setContent(contract.description)
-  }, [editing, contract.description])
-
   return editing ? (
     <>
       <TextEditor editor={editor} />
@@ -126,7 +123,20 @@ function ContractActions(props: {
       <CollapsibleContent
         content={contract.description}
         stateKey={`isCollapsed-contract-${contract.id}`}
-      />
+      >
+        {!isOnlyTrustworthy && (
+          <Button
+            color="gray-white"
+            size="xs"
+            onClick={() => {
+              setEditing(true)
+              editor?.commands.focus('end')
+            }}
+          >
+            Edit description <PencilIcon className="ml-1 inline h-4 w-4" />
+          </Button>
+        )}
+      </CollapsibleContent>
       <Row className="my-4 items-center gap-2 text-xs">
         {isOnlyAdmin && 'Admin '}
         {contract.outcomeType !== 'STONK' && (
@@ -140,21 +150,9 @@ function ContractActions(props: {
           </Button>
         )}
         {!isOnlyTrustworthy && (
-          <>
-            <Button
-              color="gray"
-              size="2xs"
-              onClick={() => {
-                setEditing(true)
-                editor?.commands.focus('end')
-              }}
-            >
-              Edit description
-            </Button>
-            <Button color="gray" size="2xs" onClick={() => setEditingQ(true)}>
-              Edit question
-            </Button>
-          </>
+          <Button color="gray" size="2xs" onClick={() => setEditingQ(true)}>
+            Edit question
+          </Button>
         )}
         <ContractEditHistoryButton contract={contract} />
       </Row>
