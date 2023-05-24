@@ -1,6 +1,4 @@
-import { forwardRef, useRef, useState } from 'react'
-import Lottie from 'react-lottie'
-import * as lootbox from '../public/lottie/lootbox.json'
+import { forwardRef, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import clsx from 'clsx'
 
@@ -30,7 +28,59 @@ import { track } from 'web/lib/service/analytics'
 import { useUser } from 'web/hooks/use-user'
 import { SEO } from 'web/components/SEO'
 
+const loadLottie = () => import('react-lottie')
+const loadAnimationJson = () => import('../public/lottie/lootbox.json')
+
+let lottieLib: ReturnType<typeof loadLottie> | undefined
+let animationJson: ReturnType<typeof loadAnimationJson> | undefined
+
+export const loadImports = async () => {
+  lottieLib ??= loadLottie()
+  animationJson ??= loadAnimationJson()
+  return {
+    Lottie: (await lottieLib).default,
+    lootbox: await animationJson
+  }
+}
+
 export const getServerSideProps = redirectIfLoggedOut('/')
+
+export const LootboxAnimation = forwardRef((
+  props: { paused: boolean },
+  ref: any // mqp: this seems harder to type than anticipated?
+) => {
+  const { paused } = props
+  const [imports, setImports] = useState<Awaited<ReturnType<typeof loadImports>>>()
+
+  useEffect(() => { loadImports().then(x => setImports(x)) }, [])
+
+  if (imports == null) {
+    return null;
+  }
+  const { Lottie, lootbox } = imports
+  return (
+    <Lottie
+      ref={ref}
+      options={{
+        loop: false,
+        autoplay: false,
+        animationData: lootbox,
+        rendererSettings: {
+          preserveAspectRatio: 'xMidYMid slice',
+        },
+      }}
+      height={200}
+      width={200}
+      isStopped={false}
+      isPaused={paused}
+      style={{
+        color: '#6366f1',
+        pointerEvents: 'none',
+        background: 'transparent',
+      }}
+    />
+  )
+})
 
 export default function LootBoxPage() {
   useTracking('view loot box')
@@ -89,27 +139,7 @@ export default function LootBoxPage() {
       <Col className=" items-center">
         <Col className="bg-canvas-0 h-full max-w-xl rounded p-4 py-8 sm:p-8 sm:shadow-md">
           <Title>Loot Box</Title>
-          <Lottie
-            ref={animationRef}
-            options={{
-              loop: false,
-              autoplay: false,
-              animationData: lootbox,
-              rendererSettings: {
-                preserveAspectRatio: 'xMidYMid slice',
-              },
-            }}
-            height={200}
-            width={200}
-            isStopped={false}
-            isPaused={animationPaused}
-            style={{
-              color: '#6366f1',
-              pointerEvents: 'none',
-              background: 'transparent',
-            }}
-          />
-
+          <LootboxAnimation ref={animationRef} paused={animationPaused} />
           <div className={'mb-4'}>
             Feeling lucky? A loot box gives you random shares in markets worth
             up to {formatMoney(LOOTBOX_MAX)}!
