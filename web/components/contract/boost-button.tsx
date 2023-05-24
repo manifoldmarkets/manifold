@@ -18,6 +18,7 @@ import { Title } from '../widgets/title'
 import { Row } from '../layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { track } from 'web/lib/service/analytics'
 
 export function BoostButton(props: {
   contract: Contract
@@ -92,6 +93,7 @@ function BoostFormRow(props: { contract: Contract }) {
 
   const onSubmit = async () => {
     setLoading(true)
+
     try {
       await boostMarket({
         marketId: contract.id,
@@ -100,6 +102,12 @@ function BoostFormRow(props: { contract: Contract }) {
       })
       toast.success('Boosted!')
       setTotalCost(undefined)
+
+      track('boost market', {
+        slug: contract.slug,
+        totalCost,
+        costPerView,
+      })
     } catch (e) {
       toast.error(
         (e as any).message ??
