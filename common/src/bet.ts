@@ -97,11 +97,9 @@ export type fill = {
   isSale?: boolean
 }
 
-export type Loading<T> = T | 'loading'
-
 export type BetFilter = {
   contractId?: string
-  userId?: Loading<string>
+  userId?: string
   filterChallenges?: boolean
   filterRedemptions?: boolean
   filterAntes?: boolean

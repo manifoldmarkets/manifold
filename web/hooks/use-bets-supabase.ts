@@ -2,7 +2,6 @@ import { Bet, BetFilter } from 'common/bet'
 import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { EMPTY_USER } from 'web/components/contract/contract-tabs'
 import { getBets, getTotalBetCount } from 'common/supabase/bets'
 import { Filter } from 'common/supabase/realtime'
 import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
@@ -30,9 +29,6 @@ export function useRealtimeBets(options?: BetFilter) {
     .filter((b) => !betShouldBeFiltered(b, options))
 
   useEffectCheckEquality(() => {
-    if (options?.userId === 'loading' || options?.userId === EMPTY_USER) {
-      return
-    }
     getBets(db, { ...options, order: 'desc' })
       .then((result) => setOldBets(result))
       .catch((e) => console.log(e))
