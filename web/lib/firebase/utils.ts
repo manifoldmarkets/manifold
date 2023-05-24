@@ -6,8 +6,6 @@ import {
   Query,
   CollectionReference,
   DocumentReference,
-  query,
-  getCountFromServer,
 } from 'firebase/firestore'
 import { db } from './init'
 
