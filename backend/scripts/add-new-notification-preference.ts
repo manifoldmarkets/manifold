@@ -12,10 +12,13 @@ import { filterDefined } from 'common/util/array'
 const firestore = admin.firestore()
 
 // Add your new pref here, and be sure to add the default as well
-const NEW_PREFERENCE_KEY: notification_preference = 'quest_payout'
+const NEW_PREFERENCE_KEY: notification_preference = 'league_changed'
 
 async function main() {
   const privateUsers = filterDefined(await getAllPrivateUsers())
+  // const privateUsers = filterDefined([
+  //   await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
+  // ])
   const defaults = getDefaultNotificationPreferences(!isProd())
   console.log('Updating', privateUsers.length, 'users')
   let count = 0

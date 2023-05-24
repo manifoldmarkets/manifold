@@ -5,13 +5,14 @@ import Router from 'next/router'
 
 import { ExclamationIcon } from '@heroicons/react/outline'
 import { getDisplayProbability, getProbability } from 'common/calculate'
-import { ContractMetrics } from 'common/calculate-metrics'
-import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
+import { CPMMBinaryContract, Contract, contractPath } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { filterDefined } from 'common/util/array'
 import { formatMoney, formatPercentShort } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
 import { useEffect, useState } from 'react'
+import { SEO } from 'web/components/SEO'
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import { binaryOutcomes } from 'web/components/bet/bet-panel'
 import { Button } from 'web/components/buttons/button'
@@ -19,7 +20,6 @@ import { LikeButton } from 'web/components/contract/like-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { SEO } from 'web/components/SEO'
 import { CommentsButton } from 'web/components/swipe/swipe-comments'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
@@ -287,7 +287,7 @@ function ContractCardVersus(props: { contract: Contract; className?: string }) {
   )
 }
 
-function YourMetricsFooter(props: { metrics: ContractMetrics }) {
+function YourMetricsFooter(props: { metrics: ContractMetric }) {
   const { metrics } = props
   const { totalShares, maxSharesOutcome, profit } = metrics
   const { YES: yesShares, NO: noShares } = totalShares

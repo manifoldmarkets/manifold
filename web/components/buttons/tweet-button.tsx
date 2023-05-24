@@ -14,7 +14,7 @@ export function TweetButton(props: { tweetText: string; className?: string }) {
     <a
       // #1da1f2 is twitter blue
       className={clsx(
-        buttonClass('2xs', 'override'),
+        buttonClass('sm', 'override'),
         'hover:text-ink-0 gap-1 border-2 border-[#1da1f2] text-[#1da1f2] hover:bg-[#1da1f2]',
         className
       )}

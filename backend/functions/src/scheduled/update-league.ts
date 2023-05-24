@@ -168,6 +168,17 @@ export async function updateLeagueCore() {
       const contract = contractsById[contractId]
       if (contract.visibility === 'public') {
         const { profit } = getContractBetMetrics(contract, contractBets)
+        if (isNaN(profit)) {
+          console.error(
+            'Profit is NaN! contract',
+            contract.slug,
+            contract.id,
+            'userId',
+            userId
+          )
+          continue
+        }
+
         totalProfit += profit
       }
     }
@@ -202,11 +213,7 @@ export async function updateLeagueCore() {
     })
   }
 
-  console.log(
-    'Mana earned updates',
-    manaEarnedUpdates.length,
-    manaEarnedUpdates
-  )
+  console.log('Mana earned updates', manaEarnedUpdates.length)
 
   await bulkUpdate(pg, 'leagues', 'user_id', manaEarnedUpdates)
   await revalidateStaticProps('/leagues')

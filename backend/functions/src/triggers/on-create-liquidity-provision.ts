@@ -9,9 +9,11 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
   UNIQUE_BETTOR_LIQUIDITY_AMOUNT,
 } from 'common/antes'
+import { secrets } from 'common/secrets'
 
-export const onCreateLiquidityProvision = functions.firestore
-  .document('contracts/{contractId}/liquidity/{liquidityId}')
+export const onCreateLiquidityProvision = functions
+  .runWith({ secrets })
+  .firestore.document('contracts/{contractId}/liquidity/{liquidityId}')
   .onCreate(async (change, context) => {
     const liquidity = change.data() as LiquidityProvision
     const { eventId } = context

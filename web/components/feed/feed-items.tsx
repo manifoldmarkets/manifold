@@ -17,7 +17,7 @@ import clsx from 'clsx'
 import { Row } from '../layout/row'
 import { ContractComment } from 'common/comment'
 import { BoostsType } from 'web/hooks/use-feed'
-import { AD_PERIOD, AD_REDEEM_FEE } from 'common/boost'
+import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 
 export const FeedItems = (props: {
   contracts: Contract[]
@@ -67,7 +67,7 @@ export const FeedItems = (props: {
           contract.type === 'boost'
             ? {
                 adId: contract.ad_id,
-                reward: contract.ad_cost_per_view - AD_REDEEM_FEE,
+                reward: AD_REDEEM_REWARD,
               }
             : undefined
 

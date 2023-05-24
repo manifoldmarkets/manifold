@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { CPMM2Contract, CPMMContract } from 'common/contract'
+import { CPMMContract } from 'common/contract'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { getUserLiquidityShares } from 'common/calculate-cpmm'
 
@@ -18,10 +18,7 @@ export const useLiquidity = (contractId: string) => {
   return liquidities
 }
 
-export const useUserLiquidity = (
-  contract: CPMMContract | CPMM2Contract,
-  userId: string
-) => {
+export const useUserLiquidity = (contract: CPMMContract, userId: string) => {
   const liquidities = useLiquidity(contract.id)
 
   const userShares = getUserLiquidityShares(

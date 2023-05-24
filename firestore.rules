@@ -208,13 +208,6 @@ service cloud.firestore {
       allow list, update: if request.auth.uid == resource.data.fromId;
     }
 
-    match /users/{userId}/notifications/{notificationId} {
-      allow read;
-      allow update: if resource.data.userId == request.auth.uid
-                       && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['isSeen', 'viewTime']);
-    }
-
     match /{somePath=**}/groupMembers/{memberId} {
       allow read;
     }

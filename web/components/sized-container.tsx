@@ -30,7 +30,7 @@ export const SizedContainer = (props: {
   }, [threshold, fullHeight, mobileHeight])
   return (
     <div ref={containerRef} className={className}>
-      {width != null && height != null ? (
+      {width && height ? (
         children(width, height)
       ) : (
         <>

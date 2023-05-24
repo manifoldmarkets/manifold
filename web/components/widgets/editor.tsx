@@ -12,7 +12,7 @@ import {
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import React, { ReactNode, useCallback, useMemo } from 'react'
+import React, { ReactNode, useCallback, useMemo, useRef } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
 import GridComponent from '../editor/tiptap-grid-cards'
@@ -35,7 +35,15 @@ import { EmojiExtension } from '../editor/emoji/emoji-extension'
 import { DisplaySpoiler } from '../editor/spoiler'
 import { nodeViewMiddleware } from '../editor/nodeview-middleware'
 import { BasicImage, DisplayImage } from '../editor/image'
+
+import { LinkPreviewExtension } from 'web/components/editor/link-preview-extension'
+import { useEvent } from 'web/hooks/use-event'
+
 import { Row } from 'web/components/layout/row'
+import {
+  findLinksInContent,
+  insertLinkPreviews,
+} from 'web/components/editor/link-preview-node-view'
 
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
@@ -57,6 +65,7 @@ export const editorExtensions = (simple = false): Extensions =>
     DisplayContractMention,
     GridComponent,
     Iframe,
+    LinkPreviewExtension,
     DisplayTweet,
     TiptapSpoiler.configure({ class: 'rounded-sm bg-ink-200' }),
     Upload,
@@ -91,6 +100,7 @@ export function useTextEditor(props: {
       store: storageStore(safeLocalStorage),
     }
   )
+  const fetchingLinks = useRef<boolean>(false)
 
   const save = useCallback(debounce(saveContent, 500), [])
 
@@ -105,7 +115,12 @@ export function useTextEditor(props: {
     editorProps: {
       attributes: { class: editorClass, spellcheck: simple ? 'true' : 'false' },
     },
-    onUpdate: !key ? noop : ({ editor }) => save(editor.getJSON()),
+    onUpdate: !key
+      ? noop
+      : ({ editor }) => {
+          save(editor.getJSON())
+          debouncedAddPreviewIfLinkPresent()
+        },
     extensions: [
       ...editorExtensions(simple),
       Placeholder.configure({
@@ -117,6 +132,25 @@ export function useTextEditor(props: {
       ...(props.extensions ?? []),
     ],
     content: defaultValue ?? (key && content ? content : ''),
+  })
+
+  const debouncedAddPreviewIfLinkPresent = useCallback(
+    debounce(() => addPreviewIfLinkPresent(), 500),
+    []
+  )
+
+  const addPreviewIfLinkPresent = useEvent(async () => {
+    if (!editor) return
+    const content = editor.getJSON()
+    const containsLinkPreview = content.content?.some(
+      (node) => node.type === 'linkPreview'
+    )
+    if (containsLinkPreview) return
+    const links = findLinksInContent(content)
+    if (fetchingLinks.current) return
+    fetchingLinks.current = true
+    await insertLinkPreviews(editor, links, key)
+    fetchingLinks.current = false
   })
 
   const upload = useUploadMutation(editor)
@@ -214,6 +248,7 @@ function RichContent(props: {
         DisplayContractMention,
         GridComponent,
         Iframe,
+        LinkPreviewExtension.configure({ hideCloseButton: true }),
         DisplayTweet,
         DisplaySpoiler,
       ]),

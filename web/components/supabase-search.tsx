@@ -4,13 +4,7 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { debounce, isEqual, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-} from 'react'
+import { createContext, useContext, useEffect, useRef } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import {
@@ -58,7 +52,6 @@ export type SupabaseSearchParameters = {
   query: string
   sort: Sort
   filter: filter
-  //   facetFilters: SearchOptions['facetFilters']
 }
 
 function getShowTime(sort: Sort) {
@@ -143,8 +136,6 @@ export function SupabaseContractSearch(props: {
     `${persistPrefix}-supabase-search`
   )
 
-  const loadMoreContracts = () => performQuery(state)
-
   const searchParams = useRef<SupabaseSearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SupabaseSearchParameters>()
   const requestId = useRef(0)
@@ -160,98 +151,87 @@ export function SupabaseContractSearch(props: {
     }
   }, [])
 
+  const query = useEvent(
+    async (currentState: stateType, freshQuery?: boolean) => {
+      if (searchParams.current == null) {
+        return false
+      }
+      const { query, sort, filter } = searchParams.current
+      const id = ++requestId.current
+      const offset = freshQuery
+        ? 0
+        : currentState.contracts
+        ? currentState.contracts.length
+        : 0
+      if (freshQuery || currentState.shouldLoadMore) {
+        const results = await searchContract({
+          state: currentState,
+          query,
+          filter,
+          sort,
+          offset: offset,
+          limit: CONTRACTS_PER_PAGE,
+          group_id: additionalFilter?.groupId,
+          creator_id: additionalFilter?.creatorId,
+        })
+
+        if (id === requestId.current) {
+          const newContracts: Contract[] = results.data
+          const showTime = getShowTime(sort)
+
+          const freshContracts = freshQuery
+            ? newContracts
+            : [
+                ...(currentState.contracts ? currentState.contracts : []),
+                ...newContracts,
+              ]
+
+          // TODO: When `deleted` is a native supabase column, filter
+          // out deleted contracts in backend.
+          const freshContractsWithoutDeleted = freshContracts.filter(
+            (contract) => !contract.deleted
+          )
+
+          const newFuzzyContractOffset =
+            results.fuzzyOffset + currentState.fuzzyContractOffset
+
+          const shouldLoadMore = newContracts.length === CONTRACTS_PER_PAGE
+
+          setState({
+            fuzzyContractOffset: newFuzzyContractOffset,
+            contracts: freshContractsWithoutDeleted,
+            showTime: showTime,
+            shouldLoadMore,
+          })
+          if (freshQuery && isWholePage) window.scrollTo(0, 0)
+
+          return shouldLoadMore
+        }
+      }
+      return false
+    }
+  )
+
+  const loadMoreContracts = () => query(state)
+
   // Counts as loaded if you are on the page and a query finished or if you go back in history.
   const hasLoadedKey = `${persistPrefix}-search-has-loaded`
   const searchHistoryStore = historyStore()
-  const hasLoaded = searchHistoryStore.get(hasLoadedKey)
-
-  // Use useEvent to pass the current state to the query function
-  const performQuery = useEvent(
-    async (currentState, freshQuery?: boolean) =>
-      (await debouncedQuery(currentState, freshQuery)) ?? false
-  )
-
-  // Debounce to reduce spam
-  const debouncedQuery = useCallback(
-    debounce(
-      async (currentState, freshQuery?: boolean) =>
-        query(currentState, freshQuery),
-      100
-    ),
-    []
-  )
-  // Cancel the debounced query on unmount
-  useEffect(() => debouncedQuery.cancel, [debouncedQuery])
-
-  const query = async (currentState: stateType, freshQuery?: boolean) => {
-    if (searchParams.current == null) {
-      return false
-    }
-    const { query, sort, filter } = searchParams.current
-    const id = ++requestId.current
-    const offset = freshQuery
-      ? 0
-      : currentState.contracts
-      ? currentState.contracts.length
-      : 0
-    if (freshQuery || currentState.shouldLoadMore) {
-      const results = await searchContract({
-        state: currentState,
-        query,
-        filter,
-        sort,
-        offset: offset,
-        limit: CONTRACTS_PER_PAGE,
-        group_id: additionalFilter?.groupId,
-        creator_id: additionalFilter?.creatorId,
-      })
-
-      if (id === requestId.current) {
-        const newContracts: Contract[] = results.data
-        const showTime = getShowTime(sort)
-
-        const freshContracts = freshQuery
-          ? newContracts
-          : [
-              ...(currentState.contracts ? currentState.contracts : []),
-              ...newContracts,
-            ]
-
-        // TODO: When `deleted` is a native supabase column, filter
-        // out deleted contracts in backend.
-        const freshContractsWithoutDeleted = freshContracts.filter(
-          (contract) => !contract.deleted
-        )
-
-        const newFuzzyContractOffset =
-          results.fuzzyOffset + currentState.fuzzyContractOffset
-
-        const shouldLoadMore = newContracts.length === CONTRACTS_PER_PAGE
-
-        setState({
-          fuzzyContractOffset: newFuzzyContractOffset,
-          contracts: freshContractsWithoutDeleted,
-          showTime: showTime,
-          shouldLoadMore,
-        })
-        if (freshQuery && isWholePage) window.scrollTo(0, 0)
-
-        return shouldLoadMore
-      }
-    }
-    return false
-  }
+  const hasLoadedQuery = searchHistoryStore.get(hasLoadedKey)
 
   const onSearchParametersChanged = useRef(
     debounce((params) => {
-      if (!isEqual(searchParams.current, params) || !hasLoaded) {
+      if (!isEqual(searchParams.current, params) || !hasLoadedQuery) {
         searchHistoryStore.set(hasLoadedKey, true)
         if (persistPrefix) {
           searchParamsStore.set(`${persistPrefix}-params`, params)
         }
         searchParams.current = params
-        setState({ ...INITIAL_STATE, showTime: getShowTime(params.sort) })
-        performQuery(state, true)
+        setState({
+          ...INITIAL_STATE,
+          showTime: getShowTime(params.sort),
+        })
+        query(state, true)
       }
     }, 100)
   ).current

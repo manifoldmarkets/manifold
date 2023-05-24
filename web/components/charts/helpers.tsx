@@ -229,6 +229,11 @@ export const SVGChart = <X, TT>(props: {
     onMouseLeave?.()
   }
 
+  if (innerW <= 0 || innerH <= 0) {
+    // i.e. chart is smaller than margin
+    return null
+  }
+
   return (
     <div className="relative overflow-hidden">
       {ttParams && Tooltip && (

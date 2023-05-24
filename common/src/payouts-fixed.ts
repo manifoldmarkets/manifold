@@ -1,8 +1,8 @@
-import { mapValues, sum, sumBy } from 'lodash'
+import { mapValues, sumBy } from 'lodash'
 import { Bet } from './bet'
 import { getOutcomeProbability, getProbability } from './calculate'
 import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
-import { CPMM2Contract, CPMMContract } from './contract'
+import { CPMMContract } from './contract'
 import { noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 
@@ -29,19 +29,15 @@ export const getFixedCancelPayouts = (
 
 export const getStandardFixedPayouts = (
   outcome: string,
-  contract: CPMMContract | CPMM2Contract,
+  contract: CPMMContract,
   bets: Bet[],
   liquidities: LiquidityProvision[]
 ) => {
-  const winningBets = bets.filter(
-    (bet) =>
-      bet.outcome === outcome ||
-      (bet.sharesByOutcome && bet.sharesByOutcome[outcome])
-  )
+  const winningBets = bets.filter((bet) => bet.outcome === outcome)
 
-  const payouts = winningBets.map(({ userId, shares, sharesByOutcome }) => ({
+  const payouts = winningBets.map(({ userId, shares }) => ({
     userId,
-    payout: sharesByOutcome ? sharesByOutcome[outcome] ?? 0 : shares,
+    payout: shares,
   }))
 
   const { collectedFees } = contract
@@ -56,7 +52,7 @@ export const getStandardFixedPayouts = (
 }
 
 export const getLiquidityPoolPayouts = (
-  contract: CPMMContract | CPMM2Contract,
+  contract: CPMMContract,
   outcome: string,
   liquidities: LiquidityProvision[]
 ) => {
@@ -73,7 +69,7 @@ export const getLiquidityPoolPayouts = (
 }
 
 export const getMktFixedPayouts = (
-  contract: CPMMContract | CPMM2Contract,
+  contract: CPMMContract,
   bets: Bet[],
   liquidities: LiquidityProvision[],
   resolutionProbs?: {
@@ -99,18 +95,9 @@ export const getMktFixedPayouts = (
     )
   })()
 
-  const payouts = bets.map(({ userId, outcome, shares, sharesByOutcome }) => {
-    let payout: number
-    if (sharesByOutcome) {
-      payout = sum(
-        Object.values(
-          mapValues(sharesByOutcome, (s, o) => s * (outcomeProbs[o] ?? 0))
-        )
-      )
-    } else {
-      const p = outcomeProbs[outcome] ?? 0
-      payout = p * shares
-    }
+  const payouts = bets.map(({ userId, outcome, shares }) => {
+    const p = outcomeProbs[outcome] ?? 0
+    const payout = p * shares
     return { userId, payout }
   })
 
@@ -124,7 +111,7 @@ export const getMktFixedPayouts = (
 }
 
 export const getLiquidityPoolProbPayouts = (
-  contract: CPMMContract | CPMM2Contract,
+  contract: CPMMContract,
   outcomeProbs: { [outcome: string]: number },
   liquidities: LiquidityProvision[]
 ) => {

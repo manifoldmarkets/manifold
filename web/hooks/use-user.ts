@@ -1,17 +1,13 @@
-import { useContext, useEffect, useState } from 'react'
-import { doc } from 'firebase/firestore'
-import { listenForUser, users } from 'web/lib/firebase/users'
-import { AuthContext } from 'web/components/auth-context'
-import { ContractMetrics } from 'common/calculate-metrics'
-import { getUserContractMetricsQuery } from 'web/lib/firebase/contract-metrics'
-import { buildArray, filterDefined } from 'common/util/array'
-import { Contract, CPMMBinaryContract } from 'common/contract'
-import { useStore, useStoreItems } from './use-store'
-import { listenForValue } from 'web/lib/firebase/utils'
+import { ContractMetric } from 'common/contract-metric'
 import { PrivateUser } from 'common/user'
-import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
+import { doc } from 'firebase/firestore'
+import { useContext, useEffect, useState } from 'react'
+import { AuthContext } from 'web/components/auth-context'
+import { listenForUser, users } from 'web/lib/firebase/users'
+import { listenForValue } from 'web/lib/firebase/utils'
 import { db } from 'web/lib/supabase/db'
-import { useContracts } from './use-contract-supabase'
+import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
+import { useStore, useStoreItems } from './use-store'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -53,7 +49,7 @@ export const isBlocked = (
 export const useUserContractMetrics = (userId = '_', contractId: string) => {
   const metricsDoc = doc(users, userId, 'contract-metrics', contractId)
 
-  const data = useStore<ContractMetrics | null>(
+  const data = useStore<ContractMetric | null>(
     ['user-contract-metrics', userId, contractId].join('/'),
     (_, setValue) => listenForValue(metricsDoc, setValue)
   )

@@ -4,9 +4,11 @@ import * as admin from 'firebase-admin'
 import { getUser } from 'shared/utils'
 import { createFollowOrMarketSubsidizedNotification } from 'shared/create-notification'
 import { FieldValue } from 'firebase-admin/firestore'
+import { secrets } from 'common/secrets'
 
-export const onFollowUser = functions.firestore
-  .document('users/{userId}/follows/{followedUserId}')
+export const onFollowUser = functions
+  .runWith({ secrets })
+  .firestore.document('users/{userId}/follows/{followedUserId}')
   .onCreate(async (change, context) => {
     const { userId, followedUserId } = context.params as {
       userId: string

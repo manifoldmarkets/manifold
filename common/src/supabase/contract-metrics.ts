@@ -1,6 +1,5 @@
 import { chunk, Dictionary, flatMap, groupBy, uniqBy } from 'lodash'
 import { run, selectFrom, selectJson, SupabaseClient } from './utils'
-import { ContractMetrics } from '../calculate-metrics'
 import { getContracts } from './contracts'
 import { Contract, CPMMContract } from '../contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -37,7 +36,7 @@ export async function getTopContractMetrics(
       .limit(limit)
   )
 
-  return data ? data.map((doc) => doc.data as ContractMetrics) : []
+  return data ? data.map((doc) => doc.data as ContractMetric) : []
 }
 
 export async function getUserContractMetrics(
@@ -50,7 +49,7 @@ export async function getUserContractMetrics(
       .eq('user_id', userId)
       .eq('contract_id', contractId)
   )
-  return data.map((r) => r.data) as ContractMetrics[]
+  return data.map((r) => r.data) as ContractMetric[]
 }
 
 export async function getCPMMContractUserContractMetrics(
@@ -74,7 +73,7 @@ export async function getCPMMContractUserContractMetrics(
       throw error
     }
 
-    return data.map((doc) => doc.data as ContractMetrics)
+    return data.map((doc) => doc.data as ContractMetric)
   }
 
   try {
@@ -101,10 +100,10 @@ export async function getUserContractMetricsWithContracts(
     uid: userId,
     start,
   })
-  const metricsByContract = {} as Dictionary<ContractMetrics>
+  const metricsByContract = {} as Dictionary<ContractMetric>
   const contracts = [] as Contract[]
   flatMap(data).forEach((d) => {
-    metricsByContract[d.contract_id] = d.metrics as ContractMetrics
+    metricsByContract[d.contract_id] = d.metrics as ContractMetric
     contracts.push(d.contract as Contract)
   })
   return { metricsByContract, contracts }
@@ -155,7 +154,7 @@ export async function getBestAndWorstUserContractMetrics(
   )
   return uniqBy([...profit, ...negative], (d) => d.data.contractId).map(
     (d) => d.data
-  ) as ContractMetrics[]
+  ) as ContractMetric[]
 }
 
 //TODO: Transition this to rpc call
@@ -186,7 +185,7 @@ export async function getUsersContractMetricsOrderedByProfit(
     // We want most profitable and least profitable
     return [...profit, ...negative.reverse()].map(
       (d) => d.data
-    ) as ContractMetrics[]
+    ) as ContractMetric[]
   })
   const results = await Promise.all(promises)
   const allContractMetrics: { [key: string]: ContractMetric[] } = groupBy(
@@ -219,10 +218,23 @@ export async function getUsersRecentBetContractIds(
     return data.map((d) => ({
       userId: d.userId,
       contractId: d.contractId,
-    })) as Partial<ContractMetrics>[]
+    })) as Partial<ContractMetric>[]
   })
   const results = await Promise.all(promises)
   return groupBy(flatMap(results), 'userId')
+}
+
+export async function getContractMetricsForContractIds(
+  db: SupabaseClient,
+  userId: string,
+  contractIds: string[]
+) {
+  const { data } = await run(
+    selectJson(db, 'user_contract_metrics')
+      .eq('user_id', userId)
+      .in('contract_id', contractIds)
+  )
+  return data.map((d) => d.data) as ContractMetric[]
 }
 
 export async function getTotalContractMetrics(
@@ -263,14 +275,14 @@ export async function getContractMetricsForContractId(
 
     const { data: yesData } = await run(q)
     const { data: noData } = await run(noSharesQuery)
-    return yesData.concat(noData).map((d) => d.data) as ContractMetrics[]
+    return yesData.concat(noData).map((d) => d.data) as ContractMetric[]
   }
 
   q = q
     .neq(`data->profit`, null)
     .order(`data->profit` as any, { ascending: false })
   const { data } = await run(q)
-  return data.map((d) => d.data) as ContractMetrics[]
+  return data.map((d) => d.data) as ContractMetric[]
 }
 
 export type ShareholderStats = {

@@ -89,7 +89,7 @@ export function CopyLinkButton(props: {
             )}
           >
             {loading ? (
-              <LoadingIndicator size="mdsm" />
+              <LoadingIndicator size="md" spinnerClassName="!h-5 !w-5" />
             ) : isNative ? (
               <ArrowUpSquareIcon className={'h-5 w-5'} />
             ) : linkIconOnlyProps ? (

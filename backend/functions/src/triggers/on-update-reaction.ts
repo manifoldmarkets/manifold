@@ -10,12 +10,14 @@ import {
   createLikeNotification,
   createTopLevelLikedCommentNotification,
 } from 'shared/create-notification'
+import { secrets } from 'common/secrets'
 
 const firestore = admin.firestore()
 const MINIMUM_LIKES_TO_NOTIFY = 1
 
-export const onCreateReaction = functions.firestore
-  .document('users/{userId}/reactions/{reactionId}')
+export const onCreateReaction = functions
+  .runWith({ secrets })
+  .firestore.document('users/{userId}/reactions/{reactionId}')
   .onCreate(async (change, context) => {
     const { eventId } = context
     const reaction = change.data() as Reaction

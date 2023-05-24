@@ -8,7 +8,6 @@ import {
 import { Col } from '../layout/col'
 import { User } from 'web/lib/firebase/users'
 import { SellRow } from './sell-row'
-import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function SignedInBinaryMobileBetting(props: {
@@ -16,10 +15,6 @@ export function SignedInBinaryMobileBetting(props: {
   user: User
 }) {
   const { contract, user } = props
-  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id
-  )
-
   const isMobile = useIsMobile()
 
   return (
@@ -28,8 +23,6 @@ export function SignedInBinaryMobileBetting(props: {
         hidden={false}
         contract={contract as CPMMBinaryContract}
         user={user}
-        unfilledBets={unfilledBets}
-        balanceByUserId={balanceByUserId}
         mobileView={isMobile}
       />
       <SellRow

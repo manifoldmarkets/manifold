@@ -459,21 +459,16 @@ export function WasabiCharts() {
         Courtesy of <Linkify text="@wasabipesto" />; originally found{' '}
         <SiteLink
           className="font-bold"
-          href="https://wasabipesto.com/jupyter/manifold/"
+          href="https://wasabipesto.com/manifold/markets/"
         >
           here.
         </SiteLink>
       </p>
-      <InfoBox
-        text="This page is out of date, as of 2023-01-01"
-        title=""
-        className="bg-ink-100 mt-2"
-      />
       <Spacer h={4} />
       <iframe
         className="w-full border-0"
-        height={21000}
-        src="https://wasabipesto.com/jupyter/manifold/"
+        height={3750}
+        src="https://wasabipesto.com/manifold/markets/"
         frameBorder="0"
         allowFullScreen
       />

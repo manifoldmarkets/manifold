@@ -52,12 +52,14 @@ export function AmountInput(props: {
     <>
       <Col className={clsx('relative', error && 'mb-3', className)}>
         <label className="font-sm md:font-lg relative">
-          <span className="text-ink-400 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
-            {label}
-          </span>
+          {label && (
+            <span className="text-ink-400 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
+              {label}
+            </span>
+          )}
           <div className="flex">
             <Input
-              className={clsx('pl-9 !text-lg', inputClassName)}
+              className={clsx(label && 'pl-9', ' !text-lg', inputClassName)}
               ref={inputRef}
               type={allowFloat ? 'number' : 'text'}
               inputMode={allowFloat ? 'decimal' : 'numeric'}

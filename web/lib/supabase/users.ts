@@ -125,3 +125,19 @@ export async function getTopCreators(period: Period) {
   )
   return data
 }
+
+export async function getTopUserCreators(
+  userId: string,
+  excludedUserIds: string[],
+  limit: number
+) {
+  const { data } = await run(
+    db.rpc('top_creators_for_user', {
+      uid: userId,
+      excluded_ids: excludedUserIds,
+      limit_n: limit,
+    })
+  )
+  // work around rpc typing bug
+  return data as unknown as { user_id: string; n: number }[]
+}
