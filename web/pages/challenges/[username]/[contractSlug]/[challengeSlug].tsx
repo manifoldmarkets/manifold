@@ -67,8 +67,9 @@ export default function ChallengePage(props: {
   challenge: Challenge | null
   challengeSlug: string
 }) {
-  const contract = (useRealtimeContract(props.contract?.id) ??
-    props.contract) as BinaryContract | null
+  const contract = props.contract
+    ? (useRealtimeContract(props.contract.id) as BinaryContract)
+    : (props.contract as BinaryContract | null)
 
   const challenge =
     useChallenge(props.challengeSlug, contract?.id) ?? props.challenge

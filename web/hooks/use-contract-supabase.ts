@@ -16,6 +16,7 @@ import {
   useRealtimeChanges,
   useRealtimeRows,
 } from 'web/lib/supabase/realtime/use-realtime'
+import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
 export const usePublicContracts = (contractIds: string[] | undefined) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -31,36 +32,14 @@ export const usePublicContracts = (contractIds: string[] | undefined) => {
   return contracts
 }
 
-export function useRealtimeContract(contractId: string | undefined) {
-  const [contract, setContract] = useState<Contract | undefined | null>(
-    undefined
-  )
-  useEffectCheckEquality(() => {
-    if (contractId) {
-      getContract(contractId)
-        .then((result) => setContract(result))
-        .catch((e) => console.log(e))
-    }
-  }, [contractId])
-  const changesLength = useRef(0)
-  const changedContract = useRealtimeChanges('UPDATE', 'contracts', {
+export function useRealtimeContract(contractId: string) {
+  const { rows } = useSubscription('contracts', {
     k: 'id',
-    v: contractId ?? '',
+    v: contractId ?? '_',
   })
-  console.log(changedContract)
-
-  useEffectCheckEquality(() => {
-    if (!changedContract) {
-      return
-    }
-    const length = changedContract.length
-    if (length > changesLength.current) {
-      setContract(changedContract[length - 1].new.data as Contract)
-      changesLength.current = length
-    }
-  }, [changedContract])
-
-  return contract
+  return rows != null && rows.length > 0
+    ? (rows[0].data as Contract)
+    : undefined
 }
 
 export const useContractParams = (contractSlug: string | undefined) => {

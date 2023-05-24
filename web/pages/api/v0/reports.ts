@@ -4,7 +4,7 @@ import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { collection, getDocs, query } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import { Report } from 'common/report'
-import { contractUrl } from 'web/lib/firebase/contracts'
+import { contractUrl } from 'common/contract'
 import { filterDefined } from 'common/util/array'
 import {
   listAllComments,

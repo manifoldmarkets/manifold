@@ -55,7 +55,8 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getContractParams } from 'web/lib/firebase/api'
 import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
-import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
+import { Contract } from 'web/lib/firebase/contracts'
+import { tradingAllowed } from 'common/contract'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
@@ -162,7 +163,7 @@ export function ContractPageContent(props: {
     shareholderStats,
   } = contractParams
   const contract =
-    useRealtimeContract(contractParams.contract?.id) ?? contractParams.contract
+    useRealtimeContract(contractParams.contract.id) ?? contractParams.contract
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()

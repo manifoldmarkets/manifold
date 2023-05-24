@@ -103,7 +103,9 @@ export default function ContractEmbedPage(props: {
     historyData: null,
   }
 
-  const contract = useRealtimeContract(props.contract?.id) ?? props.contract
+  const contract = props.contract
+    ? useRealtimeContract(props.contract.id)
+    : props.contract
 
   useEffect(() => {
     if (contract?.id)
