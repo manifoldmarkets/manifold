@@ -1,4 +1,4 @@
-import { ContractMetrics } from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
 import {
   query,
   limit,
@@ -21,7 +21,7 @@ export async function getTopContractMetrics(contractId: string, count: number) {
       limit(count)
     )
   )
-  const cms = snap.docs.map((doc) => doc.data() as ContractMetrics)
+  const cms = snap.docs.map((doc) => doc.data() as ContractMetric)
 
   return cms
 }

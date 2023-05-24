@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import Router from 'next/router'
 import { sortBy } from 'lodash'
 
-import { ContractMetrics } from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
 import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
 import { ContractCardView } from 'common/events'
 import { formatMoney, formatPercentShort } from 'common/util/format'
@@ -284,7 +284,7 @@ function ContractCardVersus(props: { contract: Contract; className?: string }) {
   )
 }
 
-function YourMetricsFooter(props: { metrics: ContractMetrics }) {
+function YourMetricsFooter(props: { metrics: ContractMetric }) {
   const { metrics } = props
   const { totalShares, maxSharesOutcome, profit } = metrics
   const { YES: yesShares, NO: noShares } = totalShares
