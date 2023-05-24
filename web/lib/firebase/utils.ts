@@ -57,9 +57,3 @@ export function listenForValues<T>(
     console.error
   )
 }
-
-export async function getTotalSubs() {
-  const betsRef = query(collection(db, 'destiny-subs'))
-  const snap = await getCountFromServer(betsRef)
-  return snap.data().count
-}
