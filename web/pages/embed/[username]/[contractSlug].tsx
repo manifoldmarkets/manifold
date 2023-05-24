@@ -95,7 +95,7 @@ export async function getStaticPaths() {
 }
 
 export default function ContractEmbedPage(props: {
-  contract: Contract | null
+  contract: Contract
   historyData: HistoryData | null
 }) {
   props = usePropz(props, getStaticPropz) ?? {
@@ -103,9 +103,7 @@ export default function ContractEmbedPage(props: {
     historyData: null,
   }
 
-  const contract = props.contract
-    ? useRealtimeContract(props.contract.id)
-    : props.contract
+  const contract = useRealtimeContract(props.contract.id) ?? props.contract
 
   useEffect(() => {
     if (contract?.id)

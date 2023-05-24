@@ -1,8 +1,4 @@
-import { getDisplayProbability } from 'common/calculate'
-import { getLiquidity } from 'common/calculate-cpmm-multi'
-import { BinaryContract, Contract, contractPath } from 'common/contract'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { Contract } from 'common/contract'
 import {
   collection,
   deleteDoc,
@@ -10,7 +6,6 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore'
-import { sum } from 'lodash'
 import { coll } from './utils'
 
 export const contracts = coll<Contract>('contracts')

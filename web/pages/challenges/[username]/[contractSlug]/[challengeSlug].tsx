@@ -67,9 +67,32 @@ export default function ChallengePage(props: {
   challenge: Challenge | null
   challengeSlug: string
 }) {
-  const contract = props.contract
-    ? (useRealtimeContract(props.contract.id) as BinaryContract)
-    : (props.contract as BinaryContract | null)
+  const { contract, user, slug, bets, challenge, challengeSlug } = props
+  if (!contract) {
+    return <Custom404 />
+  } else
+    return (
+      <ChallengePageContent
+        contract={contract}
+        user={user}
+        slug={slug}
+        bets={bets}
+        challenge={challenge}
+        challengeSlug={challengeSlug}
+      />
+    )
+}
+
+export function ChallengePageContent(props: {
+  contract: BinaryContract
+  user: User
+  slug: string
+  bets: Bet[]
+  challenge: Challenge | null
+  challengeSlug: string
+}) {
+  const contract =
+    (useRealtimeContract(props.contract.id) as BinaryContract) ?? props.contract
 
   const challenge =
     useChallenge(props.challengeSlug, contract?.id) ?? props.challenge

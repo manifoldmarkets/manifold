@@ -133,11 +133,10 @@ export function NonPrivateContractPage(props: {
   const { contract, historyData, pointsString } = props.contractParams
 
   const inIframe = useIsIframe()
-  if (inIframe) {
-    return <ContractEmbedPage contract={contract} historyData={historyData} />
-  }
   if (!contract) {
     return <Custom404 customText="Unable to fetch market" />
+  } else if (inIframe) {
+    return <ContractEmbedPage contract={contract} historyData={historyData} />
   } else
     return (
       <>
