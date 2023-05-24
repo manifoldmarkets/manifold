@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 
 import { secrets } from 'common/secrets'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
-import { currentDateBettingStreakResetTime, log } from 'shared/utils'
+import { getBettingStreakResetTimeBeforeNow, log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createBettingStreakExpiringNotification } from 'shared/create-notification'
 
@@ -12,6 +12,7 @@ export const streakExpirationNotifications = functions
     timeoutSeconds: 540,
     secrets,
   })
+  // Runs at 9pm PT, 3 hours before the streak reset time
   .pubsub.schedule(`0 ${BETTING_STREAK_RESET_HOUR - 3} * * *`)
   .timeZone('Etc/UTC')
   .onRun(async () => {
@@ -19,7 +20,7 @@ export const streakExpirationNotifications = functions
   })
 
 export const streakExpirationNotificationsInternal = async () => {
-  const mostRecentResetTime = currentDateBettingStreakResetTime()
+  const mostRecentResetTime = getBettingStreakResetTimeBeforeNow()
   log('Most recent streak reset time', mostRecentResetTime)
   const pg = createSupabaseDirectClient()
   const expiringStreakBettors = await pg.manyOrNone(

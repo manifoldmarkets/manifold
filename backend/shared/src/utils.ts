@@ -18,6 +18,7 @@ import {
 } from 'firebase-admin/firestore'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
+import { DAY_MS } from 'common/util/time'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -330,6 +331,15 @@ export async function getTrendingContracts() {
   )
 }
 
-export const currentDateBettingStreakResetTime = () => {
-  return new Date().setUTCHours(BETTING_STREAK_RESET_HOUR, 0, 0, 0)
+export const getBettingStreakResetTimeBeforeNow = () => {
+  const now = Date.now()
+  const currentDateResetTime = new Date().setUTCHours(
+    BETTING_STREAK_RESET_HOUR,
+    0,
+    0,
+    0
+  )
+  // if now is before reset time, use yesterday's reset time
+  const lastDateResetTime = currentDateResetTime - DAY_MS
+  return now < currentDateResetTime ? lastDateResetTime : currentDateResetTime
 }
