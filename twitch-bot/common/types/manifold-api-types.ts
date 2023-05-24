@@ -17,7 +17,6 @@ export type LiteMarket = {
   // Market attributes. All times are in milliseconds since epoch
   closeTime?: number;
   question: string;
-  tags: string[];
   url: string;
   outcomeType: string;
   mechanism: string;

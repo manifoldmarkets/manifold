@@ -119,8 +119,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   question: string;
   description: any; // More info about what the contract is about
-  tags: string[];
-  lowercaseTags: string[];
   visibility: visibility;
 
   createdTime: number; // Milliseconds since epoch
@@ -147,12 +145,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   uniqueBettorCount: number;
   popularityScore: number;
   dailyScore: number;
-  followerCount?: number;
-  featuredOnHomeRank?: number;
-  likedByUserIds?: string[];
   likedByUserCount?: number;
-  flaggedByUsernames?: string[];
-  openCommentBounties?: number;
   unlistedById?: string;
 } & T;
 

@@ -118,10 +118,6 @@ Requires no authorization.
       "creatorAvatarUrl":"https://lh3.googleusercontent.com/a-/AOh14GiZyl1lBehuBMGyJYJhZd-N-mstaUtgE4xdI22lLw=s96-c",
       "closeTime":1653893940000,
       "question":"Will I write a new blog post today?",
-      "tags":[
-        "personal",
-        "commitments"
-        ],
       "url":"https://manifold.markets/Austin/will-i-write-a-new-blog-post-today",
       "pool":146.73022894879944,
       "probability":0.8958175225896258,
@@ -154,10 +150,6 @@ Requires no authorization.
     // Market attributes. All times are in milliseconds since epoch
     closeTime?: number // Min of creator's chosen date, and resolutionTime
     question: string
-
-    // A list of tags on each market. Any user can add tags to any market.
-    // This list also includes the predefined categories shown as filters on the home page.
-    tags: string[]
 
     // Note: This url always points to https://manifold.markets, regardless of what instance the api is running on.
     // This url includes the creator's username, but this doesn't need to be correct when constructing valid URLs.
@@ -214,7 +206,6 @@ Requires no authorization.
     "closeTime": 1655265001448,
     "question": "What is good?",
     "description": "Resolves proportionally to the answer(s) which I find most compelling. (Obviously I’ll refrain from giving my own answers)\n\n(Please have at it with philosophy, ethics, etc etc)\n\n\nContract resolved automatically.",
-    "tags": [],
     "url": "https://manifold.markets/Angela/what-is-good",
     "pool": null,
     "outcomeType": "FREE_RESPONSE",
@@ -290,10 +281,10 @@ Requires no authorization.
     textDescription: string // string description without formatting, images, or embeds
   }
   ```
-  
+
 ### `GET /v0/market/[marketId]/positions`
 
-Get positions information about a single market by ID. 
+Get positions information about a single market by ID.
 
 Parameters:
 - `order` - Optional. The field to order results by. Default: `profit`. Options: `shares` or `profit`,
@@ -413,7 +404,7 @@ Requires no authorization.
   type ContractMetric = {
   contractId: string
   from:
-    | { 
+    | {
         // includes, day, week,month
         [period: string]: {
           profit: number
@@ -458,7 +449,7 @@ Requires no authorization.
 
 ### `GET /v0/search-markets`
 
-Search markets by keywords, limited to 100 results.  
+Search markets by keywords, limited to 100 results.
 Parameters:
 
 - `terms`: Optional. A space-separated list of keywords to search for.
@@ -484,7 +475,6 @@ Requires no authorization.
         "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Ffrostmourn%2FbpATR5uUGb.cloudfront?alt=media&token=ff031d9c-26e8-4b83-972f-ad1795633fac",
         "closeTime": 1672531140000,
         "question": "Will Biden poop in his pants again by EOY 2022?",
-        "tags": [],
         "url": "https://manifold.markets/frostmourn/will-biden-poop-in-his-pants-again",
         "pool": {
             "NO": 199.4604480014367,
