@@ -536,16 +536,6 @@ end;
 end $$;
 
 create
-or replace function get_cpmm_resolved_prob (data jsonb) returns numeric language sql immutable parallel safe as $$
-select case
-    when data->>'resolution' = 'YES' then 1
-    when data->>'resolution' = 'NO' then 0
-    when data->>'resolution' = 'MKT'
-    and data ? 'resolutionProbability' then (data->'resolutionProbability')::numeric
-    else null
-  end $$;
-
-create
 or replace function ts_to_millis (ts timestamptz) returns bigint language sql immutable parallel safe as $$
 select (
     extract(
