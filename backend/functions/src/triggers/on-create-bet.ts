@@ -4,7 +4,7 @@ import { keyBy } from 'lodash'
 
 import { Bet, LimitBet } from 'common/bet'
 import {
-  currentDateBettingStreakResetTime,
+  getBettingStreakResetTimeBeforeNow,
   getUser,
   getValues,
   isProd,
@@ -31,7 +31,6 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import { User } from 'common/user'
-import { DAY_MS } from 'common/util/time'
 import {
   BettingStreakBonusTxn,
   UniqueBettorBonusTxn,
@@ -120,6 +119,11 @@ export const onCreateBet = functions
 
     // TODO: Send notification when adding a user to a league.
     await addToLeagueIfNotInOne(pg, bettor.id)
+
+    if ((bettor?.lastBetTime ?? 0) < bet.createdTime)
+      await firestore
+        .doc(`users/${bettor.id}`)
+        .update({ lastBetTime: bet.createdTime })
   })
 
 const updateBettingStreak = async (
@@ -131,12 +135,7 @@ const updateBettingStreak = async (
   const { newBettingStreak } = await firestore.runTransaction(async (trans) => {
     const userDoc = firestore.collection('users').doc(user.id)
     const bettor = (await trans.get(userDoc)).data() as User
-    const now = Date.now()
-    const currentDateResetTime = currentDateBettingStreakResetTime()
-    // if now is before reset time, use yesterday's reset time
-    const lastDateResetTime = currentDateResetTime - DAY_MS
-    const betStreakResetTime =
-      now < currentDateResetTime ? lastDateResetTime : currentDateResetTime
+    const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
     const lastBetTime = bettor?.lastBetTime ?? 0
 
     // If they've already bet after the reset time
