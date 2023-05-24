@@ -163,7 +163,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
       )}
 
       <Col className="mx-4 mt-1">
-        <Row className={clsx('flex-wrap justify-between p-1')}>
+        <Row className="flex-wrap justify-between gap-2 p-1">
           <Row className={clsx('gap-2')}>
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
@@ -209,7 +209,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
           {isCurrentUser ? (
             <DailyStats user={user} />
           ) : (
-            <Row className={'gap-2'}>
+            <Row className="items-center gap-2">
               <MoreOptionsUserButton user={user} />
               <UserFollowButton userId={user.id} />
             </Row>
