@@ -36,6 +36,7 @@ import { postMessageToNative } from 'web/components/native-message-listener'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { useUser } from 'web/hooks/use-user'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import TrophyIcon from 'web/lib/icons/trophy-icon'
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined
@@ -172,6 +173,10 @@ export function NotificationSettings(props: {
   const groups: SectionData = {
     label: 'Groups',
     subscriptionTypes: ['group_role_changed', 'added_to_group'],
+  }
+  const leagues: SectionData = {
+    label: 'Leagues',
+    subscriptionTypes: ['league_changed'],
   }
   const generalOther: SectionData = {
     label: 'Other',
@@ -446,6 +451,7 @@ export function NotificationSettings(props: {
         <Row className={'text-ink-700 gap-2 text-xl'}>
           <span>General</span>
         </Row>
+        <Section icon={<TrophyIcon className={'h-6 w-6'} />} data={leagues} />
         <Section
           icon={<UserIcon className={'h-6 w-6'} />}
           data={userInteractions}

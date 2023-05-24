@@ -3,19 +3,21 @@ initAdmin()
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import * as admin from 'firebase-admin'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { createLeagueChangedNotification } from 'shared/create-notification'
 const firestore = admin.firestore()
 
 async function testScheduledFunction() {
   const credentials = getServiceAccountCredentials(getLocalEnv())
   await loadSecretsToEnv(credentials)
-  // await getReferralCount('AJwLWoo3xue32XIiAVrL5SyR1WB2', 0, db)
   try {
     const pg = createSupabaseDirectClient()
-    const followerIds = await pg.manyOrNone(
-      `select follow_id from contract_follows where contract_id = $1`,
-      ['YxRPgMjXuT4ywJyOi6Qr']
+    await createLeagueChangedNotification(
+      'lSzNB9votdcpfputrw1xWvVzp083',
+      { season: 2, division: 3, cohort: 'Oracular-dingdong' },
+      { season: 1, division: 4, cohort: 'Oracular-Pythias' },
+      10,
+      pg
     )
-    console.log(followerIds)
   } catch (e) {
     console.error(e)
   }

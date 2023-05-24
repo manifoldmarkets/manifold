@@ -4,6 +4,7 @@ import {
   BetFillData,
   BettingStreakData,
   ContractResolutionData,
+  LeagueChangeData,
   Notification,
   NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
@@ -849,6 +850,52 @@ export const createBettingStreakExpiringNotification = async (
     )
   }
 }
+export const createLeagueChangedNotification = async (
+  userId: string,
+  previousLeague:
+    | {
+        season: number
+        division: number
+        cohort: string
+      }
+    | undefined,
+  newLeague: {
+    season: number
+    division: number
+    cohort: string
+  },
+  bonusAmount: number,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    'league_changed'
+  )
+  if (!sendToBrowser) return
+  const id = crypto.randomUUID()
+  const notification: Notification = {
+    id,
+    userId,
+    reason: 'league_changed',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: id,
+    sourceText: bonusAmount.toString(),
+    sourceType: 'league_change',
+    sourceUpdateType: 'created',
+    sourceUserName: '',
+    sourceUserUsername: '',
+    sourceUserAvatarUrl: '',
+    data: {
+      previousLeague,
+      newLeague,
+      bonusAmount,
+    } as LeagueChangeData,
+  }
+  await insertNotificationToSupabase(notification, pg)
+}
 
 export const createLikeNotification = async (reaction: Reaction) => {
   const privateUser = await getPrivateUser(reaction.contentOwnerId)
@@ -1119,7 +1166,7 @@ export const createContractResolvedNotifications = async (
     reason: notification_reason_types
   ): Notification => {
     return {
-      id: contract.id + '-resolved',
+      id: crypto.randomUUID(),
       userId,
       reason,
       createdTime: Date.now(),

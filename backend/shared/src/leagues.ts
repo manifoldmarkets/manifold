@@ -4,6 +4,7 @@ import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { COHORT_SIZE, CURRENT_SEASON, MAX_COHORT_SIZE } from 'common/leagues'
 import { getCurrentPortfolio } from './helpers/portfolio'
+import { createLeagueChangedNotification } from 'shared/create-notification'
 
 export async function assignCohorts(pg: SupabaseDirectClient) {
   const userDivisons = await pg.many<{ user_id: string; division: number }>(
@@ -257,5 +258,12 @@ export const addToLeagueIfNotInOne = async (
   const portfolio = await getCurrentPortfolio(pg, userId)
   const division = portfolio ? portfolioToDivision(portfolio) : 1
   const cohort = await addUserToLeague(pg, userId, season, division)
+  await createLeagueChangedNotification(
+    userId,
+    undefined,
+    { season, division, cohort },
+    0,
+    pg
+  )
   return { season, division, cohort }
 }
