@@ -1,7 +1,7 @@
 import { sum } from 'lodash'
 import { useEffect, useState } from 'react'
 
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import { MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
@@ -55,7 +55,7 @@ function getAnswerResolveButtonLabel(
 export function AnswerResolvePanel(props: {
   isAdmin: boolean
   isCreator: boolean
-  contract: FreeResponseContract | MultipleChoiceContract
+  contract: MultiContract
   resolveOption: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   setResolveOption: (
     option: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined

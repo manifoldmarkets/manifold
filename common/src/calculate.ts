@@ -17,13 +17,13 @@ import { calculateFixedPayout } from './calculate-fixed-payouts'
 import {
   Contract,
   BinaryContract,
-  FreeResponseContract,
   PseudoNumericContract,
-  MultipleChoiceContract,
   StonkContract,
+  MultiContract,
 } from './contract'
 import { floatingEqual } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
+import { Answer, DpmAnswer } from './answer'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
@@ -54,14 +54,14 @@ export function getInitialProbability(
 }
 
 export function getOutcomeProbability(contract: Contract, outcome: string) {
-  const { mechanism, pool } = contract
+  const { mechanism } = contract
   switch (mechanism) {
     case 'cpmm-1':
       return outcome === 'YES'
-        ? getCpmmProbability(pool, contract.p)
-        : 1 - getCpmmProbability(pool, contract.p)
+        ? getCpmmProbability(contract.pool, contract.p)
+        : 1 - getCpmmProbability(contract.pool, contract.p)
     case 'cpmm-2':
-      return getProb(pool, outcome)
+      return getProb(contract.pool, outcome)
     case 'dpm-2':
       return getDpmOutcomeProbability(contract.totalShares, outcome)
     default:
@@ -74,12 +74,12 @@ export function getOutcomeProbabilityAfterBet(
   outcome: string,
   bet: number
 ) {
-  const { mechanism, pool } = contract
+  const { mechanism } = contract
   switch (mechanism) {
     case 'cpmm-1':
       return getCpmmOutcomeProbabilityAfterBet(contract, outcome, bet)
     case 'cpmm-2':
-      return getProb(buy(pool, outcome, bet).newPool, outcome)
+      return getProb(buy(contract.pool, outcome, bet).newPool, outcome)
     case 'dpm-2':
       return getDpmOutcomeProbabilityAfterBet(
         contract.totalShares,
@@ -96,12 +96,12 @@ export function calculateSharesBought(
   outcome: string,
   amount: number
 ) {
-  const { mechanism, pool } = contract
+  const { mechanism } = contract
   switch (mechanism) {
     case 'cpmm-1':
       return calculateCpmmPurchase(contract, amount, outcome).shares
     case 'cpmm-2':
-      return buy(pool, outcome, amount).shares
+      return buy(contract.pool, outcome, amount).shares
     case 'dpm-2':
       return calculateDpmShares(contract.totalShares, amount, outcome)
     default:
@@ -272,9 +272,7 @@ export function getContractBetNullMetrics() {
   } as ContractMetric
 }
 
-export function getTopAnswer(
-  contract: FreeResponseContract | MultipleChoiceContract
-) {
+export function getTopAnswer(contract: MultiContract) {
   const { answers } = contract
   const top = maxBy(
     answers?.map((answer) => ({
@@ -286,17 +284,16 @@ export function getTopAnswer(
   return top?.answer
 }
 
-export function getTopNSortedAnswers(
-  contract: FreeResponseContract | MultipleChoiceContract,
-  n: number
-) {
+export function getTopNSortedAnswers(contract: MultiContract, n: number) {
   const { answers, resolution, resolutions } = contract
 
   const [winningAnswers, losingAnswers] = partition(
     answers,
-    (answer) =>
+    (answer: Answer | DpmAnswer) =>
       answer.id === resolution || (resolutions && resolutions[answer.id])
-  )
+    // Types were messed up with out this cast.
+  ) as [(Answer | DpmAnswer)[], (Answer | DpmAnswer)[]]
+
   const sortedAnswers = [
     ...sortBy(winningAnswers, (answer) =>
       resolutions ? -1 * resolutions[answer.id] : 0

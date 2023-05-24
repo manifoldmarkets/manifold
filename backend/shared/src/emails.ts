@@ -1,7 +1,7 @@
 import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
-import { Contract } from 'common/contract'
+import { Contract, MultiContract } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
 import {
   formatLargeNumber,
@@ -169,7 +169,9 @@ const toDisplayResolution = (
       getValueFromBucket(resolution, contract).toString()
     )
 
-  const answer = contract.answers.find((a) => a.id === resolution)
+  const answer = (contract as MultiContract).answers.find(
+    (a) => a.id === resolution
+  )
   if (answer) return answer.text
   return `#${resolution}`
 }

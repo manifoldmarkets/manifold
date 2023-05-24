@@ -5,6 +5,7 @@ import { sumBy } from 'lodash'
 import {
   Contract,
   FreeResponseContract,
+  MultiContract,
   MultipleChoiceContract,
   RESOLUTIONS,
 } from 'common/contract'
@@ -159,10 +160,7 @@ function getResolutionParams(contract: Contract, body: string) {
   throw new APIError(500, `Invalid outcome type: ${outcomeType}`)
 }
 
-function validateAnswer(
-  contract: FreeResponseContract | MultipleChoiceContract,
-  answer: number
-) {
+function validateAnswer(contract: MultiContract, answer: number) {
   const validIds = contract.answers.map((a) => a.id)
   if (!validIds.includes(answer.toString())) {
     throw new APIError(400, `${answer} is not a valid answer ID`)

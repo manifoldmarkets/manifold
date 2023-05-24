@@ -1,4 +1,4 @@
-import { DpmAnswer } from './answer'
+import { Answer, DpmAnswer } from './answer'
 import { Bet } from './bet'
 import { HistoryPoint } from './chart'
 import { Fees } from './fees'
@@ -173,6 +173,9 @@ export type CPMMMulti = {
   mechanism: 'cpmm-multi-1'
   outcomeType: 'MULTIPLE_CHOICE'
   shouldAnswersSumToOne: boolean
+
+  // NOTE: This field is stored in the answers table and must be denormalized to the client.
+  answers: Answer[]
 }
 
 export type Cert = {
@@ -237,6 +240,15 @@ export type Numeric = {
 export type Stonk = {
   outcomeType: 'STONK'
   initialProbability: number
+}
+
+export type MultiContract = (
+  | FreeResponseContract
+  | MultipleChoiceContract
+  | CPMMMultiContract
+) & {
+  answers: (DpmAnswer | Answer)[]
+  resolutions?: { [outcome: string]: number }
 }
 
 export type outcomeType = AnyOutcomeType['outcomeType']

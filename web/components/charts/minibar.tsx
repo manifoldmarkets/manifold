@@ -1,5 +1,5 @@
 import { getOutcomeProbability, getTopNSortedAnswers } from 'common/calculate'
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import { MultiContract } from 'common/contract'
 import { CHOICE_ANSWER_COLORS } from './contract/choice'
 
 /** Sparklineish bar chart. Input: array of nums that sum < 1 */
@@ -19,9 +19,7 @@ export const Minibar = (props: { probs: number[] }) => {
   )
 }
 
-export const ContractMinibar = (props: {
-  contract: FreeResponseContract | MultipleChoiceContract
-}) => {
+export const ContractMinibar = (props: { contract: MultiContract }) => {
   const { contract } = props
   const answers = getTopNSortedAnswers(contract, 5)
   return (

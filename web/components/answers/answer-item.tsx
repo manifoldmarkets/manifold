@@ -1,20 +1,21 @@
 import clsx from 'clsx'
 
-import { DpmAnswer } from 'common/answer'
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import { Answer, DpmAnswer } from 'common/answer'
+import { MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Avatar } from '../widgets/avatar'
+import { Avatar, EmptyAvatar } from '../widgets/avatar'
 import { SiteLink } from '../widgets/site-link'
 import { formatPercent } from 'common/util/format'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Linkify } from '../widgets/linkify'
 import { Input } from '../widgets/input'
 import { getOutcomeProbability } from 'common/calculate'
+import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 
 export function AnswerItem(props: {
-  answer: DpmAnswer
-  contract: FreeResponseContract | MultipleChoiceContract
+  answer: DpmAnswer | Answer
+  contract: MultiContract
   showChoice: 'radio' | 'checkbox' | undefined
   chosenProb: number | undefined
   totalChosenProb?: number
@@ -33,7 +34,8 @@ export function AnswerItem(props: {
     isInModal,
   } = props
   const { resolution, resolutions } = contract
-  const { username, avatarUrl, name, number, text } = answer
+  const { text } = answer
+  const user = useUserByIdOrAnswer(answer)
   const isChosen = chosenProb !== undefined
 
   const prob = getOutcomeProbability(contract, answer.id)
@@ -64,14 +66,20 @@ export function AnswerItem(props: {
         </div>
 
         <Row className="text-ink-500 items-center gap-2 text-sm">
-          <SiteLink className="relative" href={`/${username}`}>
-            <Row className="items-center gap-2">
-              <Avatar avatarUrl={avatarUrl} size={'xs'} />
-              <div className="truncate">{name}</div>
-            </Row>
-          </SiteLink>
+          {user ? (
+            <SiteLink className="relative" href={`/${user.username}`}>
+              <Row className="items-center gap-2">
+                <Avatar avatarUrl={user.avatarUrl} size={'xs'} />
+                <div className="truncate">{user.name}</div>
+              </Row>
+            </SiteLink>
+          ) : (
+            <EmptyAvatar />
+          )}
           {/* TODO: Show total pool? */}
-          <div className="text-base">{showChoice && '#' + number}</div>
+          {'number' in answer && (
+            <div className="text-base">{showChoice && '#' + answer.number}</div>
+          )}
         </Row>
       </Col>
 

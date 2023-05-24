@@ -229,6 +229,7 @@ const getMultipleChoiceProps = () => {
     mechanism: 'cpmm-multi-1',
     outcomeType: 'MULTIPLE_CHOICE',
     shouldAnswersSumToOne: false,
+    answers: [],
   }
 
   return system

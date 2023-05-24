@@ -2,7 +2,7 @@ import { sortBy, partition, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 import { ChatIcon } from '@heroicons/react/outline'
 
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import { MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
@@ -10,21 +10,25 @@ import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { getOutcomeProbability } from 'common/calculate'
-import { DpmAnswer } from 'common/answer'
+import { Answer, DpmAnswer } from 'common/answer'
 import clsx from 'clsx'
 import { formatPercent } from 'common/util/format'
 import { Modal } from 'web/components/layout/modal'
 import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
+import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { Linkify } from 'web/components/widgets/linkify'
 import { Button } from 'web/components/buttons/button'
 import { useAdmin } from 'web/hooks/use-admin'
 import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
 import { GradientContainer } from '../widgets/gradient-container'
+import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 
-export function getAnswerColor(answer: DpmAnswer, answersArray: string[]) {
+export function getAnswerColor(
+  answer: Answer | DpmAnswer,
+  answersArray: string[]
+) {
   const colorIndex = answersArray.indexOf(answer.text)
   return colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
     ? CHOICE_ANSWER_COLORS[colorIndex]
@@ -32,8 +36,8 @@ export function getAnswerColor(answer: DpmAnswer, answersArray: string[]) {
 }
 
 export function AnswersPanel(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
-  onAnswerCommentClick: (answer: DpmAnswer) => void
+  contract: MultiContract
+  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
   showResolver?: boolean
   isInModal?: boolean
 }) {
@@ -44,8 +48,8 @@ export function AnswersPanel(props: {
 
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
 
-  const answers = contract.answers.filter(
-    (a) => a.number != 0 || isMultipleChoice
+  const answers = (contract.answers as (DpmAnswer | Answer)[]).filter(
+    (a) => isMultipleChoice || ('number' in a && a.number !== 0)
   )
 
   const answersToHide =
@@ -221,13 +225,14 @@ export function AnswersPanel(props: {
 }
 
 function OpenAnswer(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
-  answer: DpmAnswer
+  contract: MultiContract
+  answer: Answer | DpmAnswer
   color: string
-  onAnswerCommentClick: (answer: DpmAnswer) => void
+  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
 }) {
   const { answer, contract, onAnswerCommentClick, color } = props
-  const { username, avatarUrl, text } = answer
+  const { text } = answer
+  const user = useUserByIdOrAnswer(answer)
   const prob = getOutcomeProbability(contract, answer.id)
   const probPercent = formatPercent(prob)
   const [betMode, setBetMode] = useState<'buy' | 'short-sell' | undefined>(
@@ -266,11 +271,15 @@ function OpenAnswer(props: {
       >
         <Row className="z-20 justify-between gap-2 py-1.5 px-3">
           <Row className="items-center">
-            <Avatar
-              className="mr-2 h-5 w-5 border border-transparent transition-transform hover:border-none"
-              username={username}
-              avatarUrl={avatarUrl}
-            />
+            {user ? (
+              <Avatar
+                className="mr-2 h-5 w-5 border border-transparent transition-transform hover:border-none"
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+              />
+            ) : (
+              <EmptyAvatar />
+            )}
             <Linkify className="text-md whitespace-pre-line" text={text} />
           </Row>
           <Row className="gap-2">

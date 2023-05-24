@@ -10,7 +10,7 @@ import {
   UniqueBettorData,
 } from 'common/notification'
 import { PrivateUser, User } from 'common/user'
-import { Contract } from 'common/contract'
+import { Contract, MultiContract } from 'common/contract'
 import { getPrivateUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
 import { groupBy, sum, uniq } from 'lodash'
@@ -1043,7 +1043,7 @@ export const createContractResolvedNotifications = async (
     contract.outcomeType === 'FREE_RESPONSE' ||
     contract.outcomeType === 'MULTIPLE_CHOICE'
   ) {
-    const answerText = contract.answers.find(
+    const answerText = (contract as MultiContract).answers.find(
       (answer) => answer.id === outcome
     )?.text
     if (answerText) resolutionText = answerText

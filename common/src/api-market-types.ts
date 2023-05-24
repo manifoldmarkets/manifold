@@ -28,7 +28,7 @@ export type LiteMarket = {
   outcomeType: string
   mechanism: string
 
-  pool: { [outcome: string]: number }
+  pool?: { [outcome: string]: number }
   probability?: number
   p?: number
   totalLiquidity?: number
@@ -67,7 +67,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     question,
     tags,
     slug,
-    pool,
     outcomeType,
     mechanism,
     volume,
@@ -106,7 +105,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     question,
     tags,
     url: `https://${DOMAIN}/${creatorUsername}/${slug}`,
-    pool,
+    pool: 'pool' in contract ? contract.pool : undefined,
     probability,
     p,
     totalLiquidity,
@@ -130,9 +129,9 @@ export function toFullMarket(contract: Contract): FullMarket {
   const liteMarket = toLiteMarket(contract)
   const answers =
     contract.outcomeType === 'FREE_RESPONSE' ||
-    contract.outcomeType === 'MULTIPLE_CHOICE'
+    (contract.outcomeType === 'MULTIPLE_CHOICE' && contract.answers)
       ? contract.answers.map((answer) =>
-          augmentAnswerWithProbability(contract, answer)
+          augmentAnswerWithProbability(contract, answer as DpmAnswer)
         )
       : undefined
 

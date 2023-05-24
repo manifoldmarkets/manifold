@@ -1,7 +1,7 @@
 import { PaperAirplaneIcon, XCircleIcon } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
-import { DpmAnswer } from 'common/answer'
+import { Answer, DpmAnswer } from 'common/answer'
 import { AnyContractType, Contract } from 'common/contract'
 import { User } from 'common/user'
 import React, { useEffect, useState } from 'react'
@@ -23,6 +23,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { Bet } from 'common/bet'
 import { useScrollToRefWithHeaderOffset } from 'web/hooks/use-scroll-to-ref-with-header'
+import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 
 export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
@@ -133,16 +134,19 @@ export function CommentInput(props: {
 }
 export function AnswerCommentInput(props: {
   contract: Contract<AnyContractType>
-  answerResponse: DpmAnswer
+  answerResponse: Answer | DpmAnswer
   onCancelAnswerResponse?: () => void
   answersArray: string[]
 }) {
   const { contract, answerResponse, onCancelAnswerResponse, answersArray } =
     props
-  const replyTo = {
-    id: answerResponse.id,
-    username: answerResponse.username,
-  }
+  const user = useUserByIdOrAnswer(answerResponse)
+  const replyTo = user
+    ? {
+        id: answerResponse.id,
+        username: user.username,
+      }
+    : undefined
   const color = getAnswerColor(answerResponse, answersArray)
   return (
     <>

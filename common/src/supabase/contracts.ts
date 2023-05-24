@@ -87,3 +87,14 @@ export const getContractsByUsers = async (
   }
   return null
 }
+
+export const getContractAnswers = async (db: SupabaseClient, contractId: string) => {
+  const { data } = await run(
+    db
+      .from('answers')
+      .select('*')
+      .eq('contract_id', contractId)
+      .order('prob', { ascending: false })
+  )
+  return data
+}

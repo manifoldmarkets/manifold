@@ -1,6 +1,6 @@
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { DpmAnswer } from 'common/answer'
+import { Answer, DpmAnswer } from 'common/answer'
 import { ContractParams, visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
@@ -243,12 +243,12 @@ export function ContractPageContent(props: {
     contractId: contract.id,
   })
 
-  const [answerResponse, setAnswerResponse] = useState<DpmAnswer | undefined>(
-    undefined
-  )
+  const [answerResponse, setAnswerResponse] = useState<
+    Answer | DpmAnswer | undefined
+  >(undefined)
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0)
-  const onAnswerCommentClick = useEvent((answer: DpmAnswer) => {
+  const onAnswerCommentClick = useEvent((answer: Answer | DpmAnswer) => {
     setAnswerResponse(answer)
     if (tabsContainerRef.current) {
       scrollIntoViewCentered(tabsContainerRef.current)

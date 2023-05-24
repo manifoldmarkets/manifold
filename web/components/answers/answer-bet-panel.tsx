@@ -2,8 +2,10 @@ import clsx from 'clsx'
 import React, { useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
-import { DpmAnswer } from 'common/answer'
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import { Answer, DpmAnswer } from 'common/answer'
+import {
+  MultiContract,
+} from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
 import { APIError, placeBet } from 'web/lib/firebase/api'
@@ -26,12 +28,11 @@ import {
   getOutcomeProbability,
   getOutcomeProbabilityAfterBet,
 } from 'common/calculate'
-import { getProb, shortSell } from 'common/calculate-cpmm-multi'
 import { removeUndefinedProps } from 'common/util/object'
 
 export function AnswerBetPanel(props: {
-  answer: DpmAnswer
-  contract: FreeResponseContract | MultipleChoiceContract
+  answer: DpmAnswer | Answer
+  contract: MultiContract
   mode: 'buy' | 'short-sell'
   closePanel: () => void
   className?: string
@@ -207,19 +208,8 @@ const getSimulatedBetInfo = (
   betAmount: number,
   answerId: string,
   mode: 'buy' | 'short-sell',
-  contract: FreeResponseContract | MultipleChoiceContract
+  contract: MultiContract
 ) => {
-  if (mode === 'short-sell') {
-    const { newPool, gainedShares } = shortSell(
-      contract.pool,
-      answerId,
-      betAmount
-    )
-    const resultProb = getProb(newPool, answerId)
-    const maxPayout = Math.max(...Object.values(gainedShares))
-    return { resultProb, maxPayout, gainedShares }
-  }
-
   const resultProb = getOutcomeProbabilityAfterBet(
     contract,
     answerId,
