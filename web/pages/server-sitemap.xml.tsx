@@ -10,9 +10,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     limit: 5000,
   }).then((x) => x.data)
 
+  const filteredContract = contracts.filter((x) => x.visibility === 'public')
+
   const score = (popularity: number) => Math.tanh(Math.log10(popularity + 1))
 
-  const fields = contracts.map((market) => ({
+  const fields = filteredContract.map((market) => ({
     loc: `https://manifold.markets/${market.creatorUsername}/${market.slug}`,
     changefreq: market.volume24Hours > 10 ? 'hourly' : 'daily',
     priority: score(market.popularityScore ?? 0),
