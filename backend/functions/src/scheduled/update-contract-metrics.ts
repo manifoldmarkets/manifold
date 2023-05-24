@@ -80,7 +80,7 @@ export async function updateContractMetricsCore() {
 
     if (hasChanges(contract, update)) {
       const contractDoc = firestore.collection('contracts').doc(contract.id)
-      //      writer.update(contractDoc, update)
+      writer.update(contractDoc, update)
     }
   }
 
