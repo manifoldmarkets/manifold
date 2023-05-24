@@ -5,7 +5,7 @@
 /* allow our backend and CLI users to have a long statement timeout */
 alter role postgres
 set
-  statement_timeout = '1h';
+  statement_timeout = 0;
 
 alter role service_role
 set
