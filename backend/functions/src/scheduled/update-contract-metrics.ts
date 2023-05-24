@@ -34,17 +34,20 @@ export async function updateContractMetricsCore() {
   log(`Loaded ${contracts.length} contracts.`)
 
   const now = Date.now()
-  const yesterday = now - DAY_MS
+  const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
   const monthAgo = now - 30 * DAY_MS
 
+  log('Loading current contract probabilities...')
+  const contractProbs = await getCurrentProbs(pg)
+
   log('Loading historic contract probabilities...')
-  const [yesterdayProbs, weekAgoProbs, monthAgoProbs] = await Promise.all(
-    [yesterday, weekAgo, monthAgo].map((t) => getContractProbsAt(pg, t))
+  const [dayAgoProbs, weekAgoProbs, monthAgoProbs] = await Promise.all(
+    [dayAgo, weekAgo, monthAgo].map((t) => getBetProbsAt(pg, t))
   )
 
   log('Loading volume...')
-  const volume = await getVolumeSince(pg, yesterday)
+  const volume = await getVolumeSince(pg, dayAgo)
 
   log('Loading unfilled limits...')
   const limits = await getUnfilledLimitOrders(pg)
@@ -54,13 +57,17 @@ export async function updateContractMetricsCore() {
   for (const contract of contracts) {
     let cpmmFields: Partial<CPMM> = {}
     if (contract.mechanism === 'cpmm-1') {
-      const cid = contract.id
+      const { poolProb, resProb, resTime } = contractProbs[contract.id]
+      const prob = resProb ?? poolProb
+      const dayAgoProb = dayAgoProbs[contract.id] ?? poolProb
+      const weekAgoProb = weekAgoProbs[contract.id] ?? poolProb
+      const monthAgoProb = monthAgoProbs[contract.id] ?? poolProb
       cpmmFields = {
-        prob: yesterdayProbs[cid].current,
+        prob,
         probChanges: {
-          day: yesterdayProbs[cid].current - yesterdayProbs[cid].historical,
-          week: weekAgoProbs[cid].current - weekAgoProbs[cid].historical,
-          month: monthAgoProbs[cid].current - monthAgoProbs[cid].historical,
+          day: (resTime && resTime <= dayAgo) ? 0 : (prob - dayAgoProb),
+          week: (resTime && resTime <= weekAgo) ? 0 : (prob - weekAgoProb),
+          month: (resTime && resTime <= monthAgo) ? 0 : (prob - monthAgoProb)
         },
       }
     }
@@ -73,7 +80,7 @@ export async function updateContractMetricsCore() {
 
     if (hasChanges(contract, update)) {
       const contractDoc = firestore.collection('contracts').doc(contract.id)
-      writer.update(contractDoc, update)
+      //      writer.update(contractDoc, update)
     }
   }
 
@@ -111,7 +118,32 @@ const getVolumeSince = async (pg: SupabaseDirectClient, since: number) => {
   )
 }
 
-const getContractProbsAt = async (pg: SupabaseDirectClient, when: number) => {
+const getCurrentProbs = async (pg: SupabaseDirectClient) => {
+  return Object.fromEntries(
+    await pg.map(
+      `select
+         id, resolution_time as res_time,
+         get_cpmm_pool_prob(data->'pool', (data->>'p')::numeric) as pool_prob,
+         case when resolution = 'YES' then 1
+              when resolution = 'NO' then 0
+              when resolution = 'MKT' then resolution_probability
+              else null end as res_prob
+      from contracts
+      where mechanism = 'cpmm-1'`,
+      [],
+      (r) => [
+        r.id as string,
+        {
+          resTime: r.res_time != null ? Date.parse(r.res_time as string) : null,
+          resProb: r.res_prob != null ? parseFloat(r.res_prob as string) : null,
+          poolProb: parseFloat(r.pool_prob)
+        },
+      ]
+    )
+  )
+}
+
+const getBetProbsAt = async (pg: SupabaseDirectClient, when: number) => {
   return Object.fromEntries(
     await pg.map(
       `with probs_before as (
@@ -124,30 +156,14 @@ const getContractProbsAt = async (pg: SupabaseDirectClient, when: number) => {
         from contract_bets
         where created_time >= millis_to_ts($1)
         order by contract_id, created_time asc
-      ), current_probs as (
-        select id, resolution_time,
-          get_cpmm_resolved_prob(data) as resolved_prob,
-          get_cpmm_pool_prob(data->'pool', (data->>'p')::numeric) as pool_prob
-        from contracts
-        where mechanism = 'cpmm-1'
       )
-      select id, coalesce(cp.resolved_prob, cp.pool_prob) as current_prob,
-        case
-          when resolution_time is not null and resolution_time <= millis_to_ts($1)
-          then coalesce(cp.resolved_prob, cp.pool_prob)
-          else coalesce(pa.prob, pb.prob, cp.pool_prob)
-        end as historical_prob
-      from current_probs as cp
-      left join probs_before as pb on pb.contract_id = cp.id
-      left join probs_after as pa on pa.contract_id = cp.id`,
+      select
+        coalesce(pa.contract_id, pb.contract_id) as contract_id,
+        coalesce(pa.prob, pb.prob) as prob
+      from probs_after as pa
+      full outer join probs_before as pb on pa.contract_id = pb.contract_id`,
       [when],
-      (r) => [
-        r.id as string,
-        {
-          current: parseFloat(r.current_prob as string),
-          historical: parseFloat(r.historical_prob as string),
-        },
-      ]
+      (r) => [r.contract_id as string, parseFloat(r.prob as string)]
     )
   )
 }
