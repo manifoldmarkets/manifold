@@ -4,7 +4,6 @@ import {
   Cert,
   Contract,
   CPMM,
-  CPMM2,
   DPM,
   FreeResponse,
   MultipleChoice,
@@ -31,7 +30,6 @@ export function getNewContract(
   initialProb: number,
   ante: number,
   closeTime: number,
-  extraTags: string[],
 
   // used for numeric markets
   bucketCount: number,
@@ -73,8 +71,6 @@ export function getNewContract(
 
     question: question.trim(),
     description,
-    tags: [],
-    lowercaseTags: [],
     visibility,
     unlistedById: visibility === 'unlisted' ? creator.id : undefined,
     isResolved: false,
@@ -221,42 +217,6 @@ const getDpmMultipleChoiceProps = (ante: number, answers: string[]) => {
     totalShares: defaultValues(betShares),
     totalBets: defaultValues(betAnte),
     answers: [],
-  }
-
-  return system
-}
-
-// TODO (James): Remove.
-const _getMultipleChoiceProps = (
-  creator: User,
-  ante: number,
-  answers: string[],
-  createdTime: number,
-  contractId: string
-) => {
-  const numAnswers = answers.length
-
-  const pool = Object.fromEntries(range(0, numAnswers).map((k) => [k, ante]))
-
-  const { username, name, avatarUrl } = creator
-  const answerObjects = answers.map((answer, i) => ({
-    id: i.toString(),
-    number: i,
-    contractId,
-    createdTime,
-    userId: creator.id,
-    username,
-    name,
-    avatarUrl,
-    text: answer,
-  }))
-
-  const system: CPMM2 & MultipleChoice = {
-    mechanism: 'cpmm-2',
-    outcomeType: 'MULTIPLE_CHOICE',
-    pool,
-    answers: answerObjects,
-    subsidyPool: 0,
   }
 
   return system

@@ -536,16 +536,6 @@ end;
 end $$;
 
 create
-or replace function get_cpmm_resolved_prob (data jsonb) returns numeric language sql immutable parallel safe as $$
-select case
-    when data->>'resolution' = 'YES' then 1
-    when data->>'resolution' = 'NO' then 0
-    when data->>'resolution' = 'MKT'
-    and data ? 'resolutionProbability' then (data->'resolutionProbability')::numeric
-    else null
-  end $$;
-
-create
 or replace function ts_to_millis (ts timestamptz) returns bigint language sql immutable parallel safe as $$
 select (
     extract(
@@ -833,7 +823,7 @@ limit match_count;
 $$;
 
 create
-or replace function get_top_market_ads (uid text) returns table (
+ or replace function get_top_market_ads (uid text) returns table (
   ad_id text,
   market_id text,
   ad_funds numeric,
@@ -858,31 +848,50 @@ user_embedding as (
 ),
 --with all the ads that haven't been redeemed, by closest to your embedding
 unredeemed_market_ads as (
-select
-  id, market_id, funds, cost_per_view
-from market_ads
-where 
-  NOT EXISTS (
-    SELECT 1
-    FROM redeemed_ad_ids
-    WHERE fromId = market_ads.id
-  )
-  and market_ads.funds > 0
-  order by embedding <=> (
+  select
+    id, market_id, funds, cost_per_view, embedding
+  from
+    market_ads
+  where 
+    NOT EXISTS (
+      SELECT 1
+      FROM redeemed_ad_ids
+      WHERE fromId = market_ads.id
+    )
+    and market_ads.funds >= cost_per_view 
+  order by cost_per_view * (1 - (embedding <=> (
     select interest_embedding
     from user_embedding
-  )
+  ))) desc
   limit 50
+),
+--with all the unique market_ids
+unique_market_ids as (
+  select distinct market_id
+  from unredeemed_market_ads
+),
+--with the top ad for each unique market_id
+top_market_ads as (
+  select
+    id, market_id, funds, cost_per_view
+  from
+    unredeemed_market_ads
+  where
+    market_id in (select market_id from unique_market_ids)
+  order by
+    cost_per_view * (1 - (embedding <=> (select interest_embedding from user_embedding))) desc
+  limit
+    50
 )
 select
-  ma.id,
-  ma.market_id,
-  ma.funds,
-  ma.cost_per_view,
+  tma.id,
+  tma.market_id,
+  tma.funds,
+  tma.cost_per_view,
   contracts.data
 from
-  unredeemed_market_ads as ma
-  inner join contracts on contracts.id = ma.market_id
+  top_market_ads as tma
+  inner join contracts on contracts.id = tma.market_id
 where
   contracts.resolution_time is null
   and contracts.close_time > now()
@@ -1245,3 +1254,17 @@ or replace function get_engaged_users () returns table (user_id text, username t
       HAVING COUNT(*) >= 3 AND MIN(activity_count) >= 2
   )
 $$ language sql stable;
+
+create or replace function top_creators_for_user(uid text, excluded_ids text[], limit_n int)
+  returns table (user_id text, n float)
+  language sql
+  stable parallel safe
+as $$
+  select c.creator_id as user_id, count(*) as n
+  from contract_bets as cb
+  join contracts as c on c.id = cb.contract_id
+  where cb.user_id = uid and not c.creator_id = any(excluded_ids)
+  group by c.creator_id
+  order by count(*) desc
+  limit limit_n
+$$;

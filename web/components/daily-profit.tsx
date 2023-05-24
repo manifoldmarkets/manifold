@@ -5,7 +5,7 @@ import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
-import { ContractMetrics } from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
 import { CPMMContract } from 'common/contract'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
 import { Modal } from 'web/components/layout/modal'
@@ -46,7 +46,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
   }, [user])
 
   const [data, setData] = usePersistentRevalidatedState<
-    { metrics: ContractMetrics[]; contracts: CPMMContract[] } | undefined
+    { metrics: ContractMetric[]; contracts: CPMMContract[] } | undefined
   >(
     undefined,
     {
@@ -115,7 +115,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
 function DailyProfitModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
-  metrics?: ContractMetrics[]
+  metrics?: ContractMetric[]
   contracts?: CPMMContract[]
   dailyProfit: number
   portfolio: number
@@ -170,7 +170,7 @@ function DailyProfitModal(props: {
 
 export function ProfitChangeTable(props: {
   contracts: CPMMContract[]
-  metrics: ContractMetrics[]
+  metrics: ContractMetric[]
   from: 'day' | 'week' | 'month'
   rowsPerSection: number
   showPagination: boolean

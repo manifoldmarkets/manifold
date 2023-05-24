@@ -19,7 +19,7 @@ import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { DAY_MS } from 'common/util/time'
-import { ContractMetrics } from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { ContractCardView } from 'common/events'
 import { Group } from 'common/group'
@@ -291,7 +291,7 @@ export function ContractMetricsFooter(props: {
 
 function LoadedMetricsFooter(props: {
   contract: CPMMContract
-  metrics: ContractMetrics
+  metrics: ContractMetric
   showDailyProfit?: boolean
 }) {
   const { contract, metrics, showDailyProfit } = props
@@ -571,7 +571,7 @@ function ReasonChosen(props: { contract: Contract }) {
   )
 }
 
-function YourMetricsFooter(props: { metrics: ContractMetrics }) {
+function YourMetricsFooter(props: { metrics: ContractMetric }) {
   const { metrics } = props
   const { totalShares, maxSharesOutcome, profit } = metrics
   const { YES: yesShares, NO: noShares } = totalShares

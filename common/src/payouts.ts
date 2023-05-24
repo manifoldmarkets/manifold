@@ -1,7 +1,7 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
 import { Bet, NumericBet } from './bet'
-import { Contract, CPMM2Contract, CPMMContract, DPMContract } from './contract'
+import { Contract, CPMMContract, DPMContract } from './contract'
 import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import {
@@ -56,7 +56,7 @@ export const getPayouts = (
   },
   resolutionProbability?: number
 ): PayoutInfo => {
-  if (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-2') {
+  if (contract.mechanism === 'cpmm-1') {
     return getFixedPayouts(
       outcome,
       contract,
@@ -80,7 +80,7 @@ export const getPayouts = (
 
 export const getFixedPayouts = (
   outcome: string | undefined,
-  contract: CPMMContract | CPMM2Contract,
+  contract: CPMMContract,
   bets: Bet[],
   liquidities: LiquidityProvision[],
   resolutions?: {
@@ -102,14 +102,6 @@ export const getFixedPayouts = (
       )
     default:
     case 'CANCEL':
-      if (contract.mechanism === 'cpmm-2' && outcome !== 'CANCEL')
-        return getStandardFixedPayouts(
-          outcome ?? '',
-          contract,
-          bets,
-          liquidities
-        )
-
       return getFixedCancelPayouts(bets, liquidities)
   }
 }

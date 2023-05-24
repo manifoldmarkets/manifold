@@ -6,18 +6,13 @@ import { Bet } from 'common/bet'
 import {
   getRedeemableAmount,
   getRedemptionBets,
-  getRedemptionBetMulti,
 } from 'common/redeem'
 import { floatingEqual } from 'common/util/math'
-import { poolToProbs } from 'common/calculate-cpmm-multi'
-import { CPMM2Contract, CPMMContract } from 'common/contract'
+import { CPMMContract } from 'common/contract'
 
-export const redeemShares = async (
-  userId: string,
-  contract: CPMMContract | CPMM2Contract
-) => {
+export const redeemShares = async (userId: string, contract: CPMMContract) => {
   return await firestore.runTransaction(async (trans) => {
-    const { mechanism, id: contractId } = contract
+    const { id: contractId } = contract
 
     const betsColl = firestore.collection(`contracts/${contractId}/bets`)
     const betsSnap = await trans.get(betsColl.where('userId', '==', userId))
@@ -38,30 +33,18 @@ export const redeemShares = async (
     const userDoc = firestore.collection('users').doc(userId)
     trans.update(userDoc, { balance: FieldValue.increment(netAmount) })
 
-    if (mechanism === 'cpmm-1') {
-      const lastProb = maxBy(bets, (b) => b.createdTime)?.probAfter as number
-      const [yesBet, noBet] = getRedemptionBets(
-        contract,
-        shares,
-        loanPayment,
-        lastProb
-      )
-      const yesDoc = betsColl.doc()
-      const noDoc = betsColl.doc()
+    const lastProb = maxBy(bets, (b) => b.createdTime)?.probAfter as number
+    const [yesBet, noBet] = getRedemptionBets(
+      contract,
+      shares,
+      loanPayment,
+      lastProb
+    )
+    const yesDoc = betsColl.doc()
+    const noDoc = betsColl.doc()
 
-      trans.create(yesDoc, { id: yesDoc.id, userId, ...yesBet })
-      trans.create(noDoc, { id: noDoc.id, userId, ...noBet })
-    } else {
-      const bet = getRedemptionBetMulti(
-        contract,
-        shares,
-        loanPayment,
-        poolToProbs(contract.pool)
-      )
-      const betDoc = betsColl.doc()
-      trans.create(betDoc, { id: betDoc.id, userId, ...bet })
-    }
-
+    trans.create(yesDoc, { id: yesDoc.id, userId, ...yesBet })
+    trans.create(noDoc, { id: noDoc.id, userId, ...noBet })
     return { status: 'success' }
   })
 }

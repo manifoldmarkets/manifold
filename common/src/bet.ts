@@ -38,7 +38,8 @@ export type Bet = {
   outcome: string
   shares: number // dynamic parimutuel pool weight or fixed ; negative if SELL bet
 
-  // Gain shares in multiple outcomes.
+  // Deprecated: Gain shares in multiple outcomes. Part of cpmm-2 multiple choice.
+  /** @deprecated */
   sharesByOutcome?: { [outcome: string]: number }
 
   probBefore: number

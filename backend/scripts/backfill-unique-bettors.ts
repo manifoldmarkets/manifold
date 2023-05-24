@@ -22,7 +22,6 @@ const updateUniqueBettors = async () => {
   const updates = Object.entries(bettorsByContractId).map(
     ([contractId, userIds]) => {
       const update = {
-        uniqueBettorIds: userIds,
         uniqueBettorCount: userIds.length,
       }
       const docRef = firestore.collection('contracts').doc(contractId)

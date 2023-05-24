@@ -21,7 +21,7 @@ export function AddLiquidityButton(props: {
   return (
     <a
       className={clsx(
-        buttonClass('2xs', 'override'),
+        buttonClass('sm', 'override'),
         'cursor-pointer',
         'hover:text-ink-0 gap-1 border-2 border-blue-400 text-blue-400 hover:bg-blue-400',
         className

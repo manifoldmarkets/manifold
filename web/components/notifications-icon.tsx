@@ -25,7 +25,7 @@ function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
   const [seen, setSeen] = useState(false)
   const unseenSourceIdsToNotificationIds = keyBy(
-    (useGroupedUnseenNotifications(privateUser) ?? []).flatMap(
+    (useGroupedUnseenNotifications(privateUser.id) ?? []).flatMap(
       (n) => n.notifications
     ),
     (n) => n.sourceId

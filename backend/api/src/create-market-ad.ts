@@ -6,28 +6,30 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { runTxn } from 'shared/run-txn'
 import { MarketAdCreateTxn } from 'common/txn'
 import { log } from 'shared/utils'
+import { MIN_AD_COST_PER_VIEW } from 'common/boost'
 
 const schema = z.object({
   marketId: z.string(),
-  totalCost: z.number(),
-  costPerView: z.number(),
+  totalCost: z.number().positive(),
+  costPerView: z.number().positive(),
 })
 
 export const boostmarket = authEndpoint(async (req, auth) => {
   const { marketId, totalCost, costPerView } = validate(schema, req.body)
+
+  if (costPerView < MIN_AD_COST_PER_VIEW) {
+    throw new APIError(
+      400,
+      `Cost per view must be at least ${MIN_AD_COST_PER_VIEW}`
+    )
+  }
+
+  if (totalCost < costPerView) {
+    throw new APIError(400, `Total cost must be at least ${costPerView}`)
+  }
+
   log('boosting market')
   const pg = createSupabaseDirectClient()
-
-  const { creator_id } = await pg.one(
-    `select creator_id
-    from contracts
-    where id = $1`,
-    [marketId]
-  )
-
-  if (creator_id !== auth.uid) {
-    throw new APIError(403, 'You are not the creator of this market')
-  }
 
   const { embedding } = await pg.one(
     `select embedding
@@ -47,8 +49,6 @@ export const boostmarket = authEndpoint(async (req, auth) => {
     `insert into market_ads
       (user_id, market_id, embedding, funds, cost_per_view)
       values ($1, $2, $3, $4, $5)
-      on conflict on constraint market_ads_unique_market_id
-      do update set embedding = $3, funds = market_ads.funds + $4, cost_per_view = $5
       returning id`,
     [auth.uid, marketId, embedding, totalCost, costPerView]
   )
@@ -87,5 +87,5 @@ export const boostmarket = authEndpoint(async (req, auth) => {
   }
 
   // return something
-  return { status: 'success' }
+  return { status: 'success', id }
 })

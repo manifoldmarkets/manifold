@@ -14,7 +14,6 @@ import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { redeemShares } from './redeem-shares'
 import { removeUserFromContractFollowers } from 'shared/follow-market'
-import { FLAT_TRADE_FEE } from 'common/fees'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -85,7 +84,10 @@ export const sellshares = authEndpoint(async (req, auth) => {
     const sharesToSell = shares ?? maxShares
 
     if (!maxShares)
-      throw new APIError(400, `You don't have any ${chosenOutcome} shares to sell.`)
+      throw new APIError(
+        400,
+        `You don't have any ${chosenOutcome} shares to sell.`
+      )
 
     if (!floatingLesserEqual(sharesToSell, maxShares))
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
@@ -118,16 +120,17 @@ export const sellshares = authEndpoint(async (req, auth) => {
     updateMakers(makers, newBetDoc.id, contractDoc, transaction)
 
     transaction.update(userDoc, {
-      balance: FieldValue.increment(
-        -newBet.amount + (newBet.loanAmount ?? 0) - FLAT_TRADE_FEE
-      ),
+      balance: FieldValue.increment(-newBet.amount + (newBet.loanAmount ?? 0)),
     })
+
+    const isApi = auth.creds.kind === 'key'
     transaction.create(newBetDoc, {
       id: newBetDoc.id,
       userId: user.id,
       userAvatarUrl: user.avatarUrl,
       userUsername: user.username,
       userName: user.name,
+      isApi,
       ...newBet,
     })
     transaction.update(
@@ -146,7 +149,14 @@ export const sellshares = authEndpoint(async (req, auth) => {
       })
     }
 
-    return { newBet, betId: newBetDoc.id, makers, maxShares, soldShares, contract }
+    return {
+      newBet,
+      betId: newBetDoc.id,
+      makers,
+      maxShares,
+      soldShares,
+      contract,
+    }
   })
 
   const { newBet, betId, makers, maxShares, soldShares, contract } = result

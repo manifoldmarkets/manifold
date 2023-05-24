@@ -10,7 +10,7 @@ import { Database } from './schema'
 import { User } from '../user'
 import { Contract } from '../contract'
 import { Bet } from '../bet'
-import { ContractMetrics } from '../calculate-metrics'
+import { ContractMetric } from '../contract-metric'
 import { Group, GroupMemberDoc, GroupContractDoc } from '../group'
 
 export type Schema = Database['public']
@@ -19,10 +19,11 @@ export type Views = Schema['Views']
 export type TableName = keyof Tables
 export type ViewName = keyof Views
 export type Selectable = TableName | ViewName
-export type Row<T extends Selectable> = (
-  T extends TableName ? Tables[T]['Row'] :
-  T extends ViewName ? Views[T]['Row'] :
-  never);
+export type Row<T extends Selectable> = T extends TableName
+  ? Tables[T]['Row']
+  : T extends ViewName
+  ? Views[T]['Row']
+  : never
 export type Column<T extends Selectable> = keyof Row<T> & string
 
 export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
@@ -35,7 +36,6 @@ export const collectionTables: CollectionTableMapping = {
   txns: 'txns',
   manalinks: 'manalinks',
   posts: 'posts',
-  test: 'test',
 }
 
 export type SubcollectionTableMapping = {
@@ -46,10 +46,6 @@ export const subcollectionTables: SubcollectionTableMapping = {
     'contract-metrics': 'user_contract_metrics',
     follows: 'user_follows',
     reactions: 'user_reactions',
-    notifications: 'user_notifications',
-  },
-  'private-users': {
-    seenMarkets: 'user_seen_markets',
   },
   contracts: {
     answers: 'contract_answers',
@@ -103,7 +99,7 @@ export async function run<T>(
 
 type JsonTypes = {
   users: User
-  user_contract_metrics: ContractMetrics
+  user_contract_metrics: ContractMetric
   contracts: Contract
   cotracts_rbac: Contract
   contract_bets: Bet
@@ -113,8 +109,9 @@ type JsonTypes = {
   group_contracts: GroupContractDoc
 }
 
-export type DataFor<T extends Selectable> =
-  T extends keyof JsonTypes ? JsonTypes[T] : any
+export type DataFor<T extends Selectable> = T extends keyof JsonTypes
+  ? JsonTypes[T]
+  : any
 
 export function selectJson<T extends TableName | ViewName>(
   db: SupabaseClient,

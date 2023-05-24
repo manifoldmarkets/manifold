@@ -82,11 +82,7 @@ export const getLeagueActivity = async (
       contracts.id = any($1)
       `,
     [contractIds],
-    (row) => {
-      // Exclude uniqueBettorIds to slim down the payload.
-      const { uniqueBettorIds, ...contract } = row.data
-      return contract
-    }
+    (row) => row.data
   )
   console.log('contracts', contracts.length)
 

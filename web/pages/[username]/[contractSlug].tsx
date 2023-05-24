@@ -40,7 +40,6 @@ import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
-import { Linkify } from 'web/components/widgets/linkify'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
@@ -66,6 +65,7 @@ import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
 import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import { ContractView } from 'common/events'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
+import { TitleOrEdit } from 'web/components/contract/title-edit'
 
 export type ContractParameters = {
   contractSlug: string
@@ -229,12 +229,18 @@ export function ContractPageContent(props: {
   const isClosed = !!(closeTime && closeTime < Date.now())
   const trustworthy = isTrustworthy(user?.username)
 
-  const [showResolver, setShowResolver] = useState(
-    (isCreator || isAdmin || (trustworthy && isClosed)) &&
+  // show the resolver by default if the market is closed and you can resolve it
+  const [showResolver, setShowResolver] = useState(false)
+  useEffect(() => {
+    if (
+      (isCreator || isAdmin || trustworthy) &&
       !isResolved &&
       (closeTime ?? 0) < Date.now() &&
       outcomeType !== 'STONK'
-  )
+    ) {
+      setShowResolver(true)
+    }
+  }, [isAdmin, isCreator, trustworthy, closeTime])
 
   const allowTrade = tradingAllowed(contract)
 
@@ -343,9 +349,9 @@ export function ContractPageContent(props: {
           <Col className="mb-4 p-4 md:px-8 md:pb-8">
             <Col className="gap-3 sm:gap-4">
               <div ref={titleRef}>
-                <Linkify
-                  className="text-primary-700 text-lg font-medium sm:text-2xl"
-                  text={contract.question}
+                <TitleOrEdit
+                  contract={contract}
+                  canEdit={isAdmin || isCreator}
                 />
               </div>
 
@@ -405,13 +411,10 @@ export function ContractPageContent(props: {
             <ContractDescription
               className="mt-2 xl:mt-6"
               contract={contract}
-              toggleResolver={() => setShowResolver(!showResolver)}
+              highlightResolver={!isResolved && isClosed && !showResolver}
+              toggleResolver={() => setShowResolver((shown) => !shown)}
               showEditHistory={true}
             />
-
-            <div className="my-4">
-              <MarketGroups contract={contract} />
-            </div>
 
             {showResolver &&
               user &&
@@ -439,6 +442,10 @@ export function ContractPageContent(props: {
                   <QfResolutionPanel contract={contract} />
                 </GradientContainer>
               ) : null)}
+
+            <div className="my-4">
+              <MarketGroups contract={contract} />
+            </div>
 
             {outcomeType === 'NUMERIC' && (
               <AlertBox
@@ -506,7 +513,7 @@ export function ContractPageContent(props: {
         />
       </Row>
       <RelatedContractsList
-        className="mx-auto mt-8 max-w-[600px] xl:hidden"
+        className="mx-auto mt-8 min-w-[300px] max-w-[600px] xl:hidden"
         contracts={relatedMarkets}
         onContractClick={(c) =>
           track('click related market', { contractId: c.id })

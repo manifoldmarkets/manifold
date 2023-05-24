@@ -4,6 +4,7 @@ import {
 } from 'common/economy'
 import {
   getSourceUrl,
+  LeagueChangeData,
   Notification,
   UniqueBettorData,
 } from 'common/notification'
@@ -32,6 +33,8 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { BetOutcomeLabel } from 'web/components/outcome-label'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { DIVISION_NAMES } from 'common/leagues'
+import clsx from 'clsx'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -203,6 +206,40 @@ export function BettingStreakBonusIncomeNotification(props: {
     </NotificationFrame>
   )
 }
+export function BettingStreakExpiringNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const [open, setOpen] = useState(false)
+  const user = useUser()
+  const streakInDays = notification.data?.streak
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      isChildOfGroup={true}
+      icon={
+        <NotificationIcon
+          symbol={'⏰'}
+          symbolBackgroundClass={
+            'bg-gradient-to-br from-yellow-600 to-orange-300'
+          }
+        />
+      }
+      onClick={() => setOpen(true)}
+      subtitle={'Place a prediction in the next 3 hours to keep it.'}
+    >
+      <span className="line-clamp-3">
+        Don't let your <span>🔥 {streakInDays} day</span>{' '}
+        <PrimaryNotificationLink text="Prediction Streak" /> expire!
+      </span>
+      <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
+    </NotificationFrame>
+  )
+}
 
 export function LoanIncomeNotification(props: {
   notification: Notification
@@ -304,11 +341,71 @@ export function UserJoinedNotification(props: {
   )
 }
 
-function IncomeNotificationLabel(props: { notification: Notification }) {
-  const { notification } = props
+export function LeagueChangedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { data } = notification
+  const { previousLeague, newLeague, bonusAmount } = data as LeagueChangeData
+  const newlyAdded = previousLeague === undefined
+  const improved =
+    previousLeague && previousLeague.division < newLeague.division
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <NotificationIcon
+          symbol={newlyAdded ? '🏆' : improved ? '🥇' : '🥈'}
+          symbolBackgroundClass={
+            'bg-gradient-to-br from-primary-600 to-primary-300'
+          }
+        />
+      }
+      subtitle={
+        bonusAmount > 0 ? (
+          <span>
+            You earned <IncomeNotificationLabel notification={notification} />{' '}
+            as a performance bonus!
+          </span>
+        ) : undefined
+      }
+      link={'/leagues'}
+    >
+      <div className="line-clamp-3">
+        <span>
+          {previousLeague !== undefined && improved
+            ? `You graduated from the ${
+                DIVISION_NAMES[previousLeague.division]
+              } to ${DIVISION_NAMES[newLeague.division]} league`
+            : previousLeague !== undefined && !improved
+            ? `You've been demoted from the ${
+                DIVISION_NAMES[previousLeague.division]
+              } to ${DIVISION_NAMES[newLeague.division]} league`
+            : `You were added to the ${
+                DIVISION_NAMES[newLeague.division]
+              } league! Tap here to check it out.`}
+        </span>
+      </div>
+    </NotificationFrame>
+  )
+}
+
+function IncomeNotificationLabel(props: {
+  notification: Notification
+  className?: string
+}) {
+  const { notification, className } = props
   const { sourceText } = notification
   return sourceText ? (
-    <span className="text-teal-600">{formatMoney(parseInt(sourceText))}</span>
+    <span className={clsx('text-teal-600', className)}>
+      {formatMoney(parseInt(sourceText))}
+    </span>
   ) : (
     <div />
   )

@@ -8,12 +8,14 @@ import {
 } from 'common/notification'
 import { formatMoney } from 'common/util/format'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
 import {
   BettingStreakBonusIncomeNotification,
+  BettingStreakExpiringNotification,
+  LeagueChangedNotification,
   LoanIncomeNotification,
   QuestIncomeNotification,
   UniqueBettorBonusIncomeNotification,
@@ -26,7 +28,6 @@ import {
   ProbPercentLabel,
 } from 'web/components/outcome-label'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useIsVisible } from 'web/hooks/use-is-visible'
 import { Linkify } from '../widgets/linkify'
 import {
   AvatarNotificationIcon,
@@ -39,6 +40,7 @@ import {
 } from './notification-helpers'
 import { Avatar } from 'web/components/widgets/avatar'
 import { sortBy } from 'lodash'
+import { floatingEqual } from 'common/util/math'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -68,6 +70,14 @@ export function NotificationItem(props: {
   } else if (sourceType === 'betting_streak_bonus') {
     return (
       <BettingStreakBonusIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'betting_streak_expiring') {
+    return (
+      <BettingStreakExpiringNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
@@ -185,6 +195,15 @@ export function NotificationItem(props: {
   } else if (sourceType === 'follow') {
     return (
       <FollowNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'league_change') {
+    return (
+      <LeagueChangedNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -463,17 +482,7 @@ export function MarketResolvedNotification(props: {
   const { userInvestment, userPayout, profitRank, totalShareholders } =
     (data as ContractResolutionData) ?? {}
   const profit = userPayout - userInvestment
-  const profitable = profit > 0 && userInvestment > 0
-  const [opacity, setOpacity] = useState(highlighted && profitable ? 1 : 0)
-  const [isVisible, setIsVisible] = useState(false)
-  const { ref } = useIsVisible(() => setIsVisible(true), true)
-
-  useEffect(() => {
-    if (opacity > 0 && isVisible)
-      setTimeout(() => {
-        setOpacity(opacity - 0.02)
-      }, opacity * 100)
-  }, [isVisible, opacity])
+  const profitable = profit > 0 && !floatingEqual(userInvestment, 0)
   const betterThan = (totalShareholders ?? 0) - (profitRank ?? 0)
   const comparison =
     profitRank && totalShareholders && betterThan > 0
@@ -571,18 +580,13 @@ export function MarketResolvedNotification(props: {
       </>
     )
 
-  const confettiBg =
-    highlighted && profitable ? (
-      <div
-        ref={ref}
-        className={clsx(
-          'bg-confetti-animated pointer-events-none absolute inset-0'
-        )}
-        style={{
-          opacity,
-        }}
-      />
-    ) : undefined
+  const confettiBg = profitable ? (
+    <div
+      className={clsx(
+        'bg-confetti-static pointer-events-none absolute inset-0 opacity-50'
+      )}
+    />
+  ) : undefined
 
   return (
     <NotificationFrame

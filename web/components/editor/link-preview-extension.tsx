@@ -4,6 +4,7 @@ import React from 'react'
 
 interface LinkPreviewOptions {
   HTMLAttributes: Record<string, unknown>
+  hideCloseButton?: boolean
 }
 export type LinkPreviewProps = {
   url: string
@@ -11,6 +12,9 @@ export type LinkPreviewProps = {
   description: string
   image: string
   id: string
+  inputKey: string
+  hideCloseButton: boolean
+  deleteNode: () => void
 }
 const name = 'linkPreview'
 export const LinkPreviewExtension = Node.create<LinkPreviewOptions>({
@@ -39,11 +43,25 @@ export const LinkPreviewExtension = Node.create<LinkPreviewOptions>({
       deleteCallback: {
         default: null,
       },
+      inputKey: {
+        default: null,
+      },
+      hideCloseButton: {
+        default: null,
+      },
+      deleteNode: {
+        default: null,
+      },
     }
   },
 
   renderReact(attrs: any) {
-    return <LinkPreviewNodeView {...attrs} />
+    return (
+      <LinkPreviewNodeView
+        {...attrs}
+        hideCloseButton={this.options.hideCloseButton}
+      />
+    )
   },
 
   parseHTML() {

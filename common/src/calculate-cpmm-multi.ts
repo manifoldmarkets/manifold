@@ -1,6 +1,8 @@
 import { mapValues, minBy, sumBy } from 'lodash'
 import { binarySearch } from './util/algos'
 
+// NOTE: The mechanism defined in this file (cpmm-2 multiple choice) is deprecated!
+
 // TODO: Remove min pool shares. Switch to throwing an error if k invariant is violated.
 const MIN_POOL_SHARES = 1e-20
 

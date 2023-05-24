@@ -52,6 +52,9 @@ export type notification_preferences = {
   group_role_changed: notification_destination_types[]
   added_to_group: notification_destination_types[]
 
+  //Leagues
+  league_changed: notification_destination_types[]
+
   // General
   tagged_user: notification_destination_types[]
   user_liked_your_content: notification_destination_types[]
@@ -148,7 +151,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
 
     //Balance Changes
     loan_income: constructPref(true, false, false),
-    betting_streaks: constructPref(true, false, false),
+    betting_streaks: constructPref(true, false, true),
     referral_bonuses: constructPref(true, true, false),
     unique_bettors_on_your_contract: constructPref(true, true, false),
     tipped_comments_on_watched_markets: constructPref(true, true, false),
@@ -159,6 +162,9 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     // Groups
     group_role_changed: constructPref(true, false, false),
     added_to_group: constructPref(true, false, false),
+
+    //Leagues
+    league_changed: constructPref(true, false, false),
 
     // General
     tagged_user: constructPref(true, true, false),

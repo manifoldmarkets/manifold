@@ -56,8 +56,9 @@ export function CollapsibleContent(props: {
   content: JSONContent | string
   stateKey: string
   defaultCollapse?: boolean
+  children?: React.ReactNode
 }) {
-  const { content, stateKey, defaultCollapse } = props
+  const { content, stateKey, defaultCollapse, children } = props
   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
     useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -75,12 +76,15 @@ export function CollapsibleContent(props: {
         content={content}
         stateKey={stateKey}
         defaultCollapse={defaultCollapse}
-      />
+      >
+        {children}
+      </ActuallyCollapsibleContent>
     )
   }
   return (
     <div ref={contentRef}>
       <Content content={content} />
+      <div className="text-right">{children}</div>
     </div>
   )
 }
@@ -90,8 +94,9 @@ function ActuallyCollapsibleContent(props: {
   content: JSONContent | string
   stateKey: string
   defaultCollapse?: boolean
+  children?: React.ReactNode
 }) {
-  const { content, stateKey, defaultCollapse } = props
+  const { content, stateKey, defaultCollapse, children } = props
   const [collapsed, setCollapsed] = usePersistentState<boolean>(
     defaultCollapse ?? false,
     {
@@ -121,8 +126,9 @@ function ActuallyCollapsibleContent(props: {
         )}
       </div>
       <div className="text-right">
+        {children}
         <ShowMoreLessButton
-          className="bg-transparent"
+          className="ml-2 bg-transparent"
           onClick={() => {
             if (!isCollapsed)
               window.scrollTo({

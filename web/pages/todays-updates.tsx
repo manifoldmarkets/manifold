@@ -3,7 +3,7 @@ import { sortBy } from 'lodash'
 import clsx from 'clsx'
 import Link from 'next/link'
 
-import { ContractMetrics } from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
 import { CPMMContract, Contract, contractPath } from 'common/contract'
 import { getContractMetricsForContractIds } from 'common/supabase/contract-metrics'
 import { formatPercentShort, formatMoney } from 'common/util/format'
@@ -50,7 +50,7 @@ const useContractMetrics = (
   userId: string | null | undefined,
   contracts: Contract[] | undefined
 ) => {
-  const [metrics, setMetrics] = useState<ContractMetrics[] | undefined>()
+  const [metrics, setMetrics] = useState<ContractMetric[] | undefined>()
   useEffect(() => {
     if (userId && contracts) {
       getContractMetricsForContractIds(
@@ -65,7 +65,7 @@ const useContractMetrics = (
 
 export function ContractChangeTable(props: {
   contractMetrics:
-    | { contract: CPMMContract; metrics: ContractMetrics }[]
+    | { contract: CPMMContract; metrics: ContractMetric }[]
     | undefined
 }) {
   const { contractMetrics } = props
@@ -96,7 +96,7 @@ const ContractChangeRow = forwardRef(
     props: {
       contract: CPMMContract
       onContractClick?: (contract: Contract) => void
-      metrics: ContractMetrics
+      metrics: ContractMetric
       className?: string
     },
     ref: React.Ref<HTMLAnchorElement>

@@ -21,8 +21,6 @@ export const getStaticProps = async () => {
   const contracts = (data ?? [])
     .map((row) => {
       delete (row.data as any)?.description
-      delete (row.data as any)?.uniqueBettorIds
-
       return row.data as Contract
     })
     .filter(

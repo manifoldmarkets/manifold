@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 
+/** container with a gradient border  */
 export function GradientContainer(props: {
   children: React.ReactNode
   className?: string
@@ -8,13 +9,11 @@ export function GradientContainer(props: {
   return (
     <div
       className={clsx(
-        'to-primary-400 relative rounded-lg bg-gradient-to-r from-pink-300 via-purple-300 p-4 py-4',
+        'to-primary-400 relative rounded-lg bg-gradient-to-r from-pink-300 via-purple-300 p-1 py-1 shadow-lg shadow-fuchsia-300/50',
         className
       )}
     >
-      <div className="bg-canvas-0 w-full rounded px-4 py-4 md:px-6 md:py-8">
-        {children}
-      </div>
+      <div className="bg-canvas-0 w-full rounded p-3 md:p-4">{children}</div>
     </div>
   )
 }

@@ -7,7 +7,6 @@ import {
 } from '@heroicons/react/outline'
 import { LinkIcon, PresentationChartBarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { difference } from 'lodash'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -164,7 +163,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
       )}
 
       <Col className="mx-4 mt-1">
-        <Row className={clsx('flex-wrap justify-between p-1')}>
+        <Row className="flex-wrap justify-between gap-2 p-1">
           <Row className={clsx('gap-2')}>
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
@@ -210,7 +209,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
           {isCurrentUser ? (
             <DailyStats user={user} />
           ) : (
-            <Row className={'gap-2'}>
+            <Row className="items-center gap-2">
               <MoreOptionsUserButton user={user} />
               <UserFollowButton userId={user.id} />
             </Row>
@@ -447,19 +446,11 @@ function FollowsDialog(props: {
 
   const currentUser = useUser()
   const myFollowedIds = useFollows(currentUser?.id)
-
-  // mqp: this is a ton of work, don't fetch it unless someone looks.
-  // if you want it to be faster, then you gotta precompute stuff for it somewhere
-  const discoverUserIds = useDiscoverUsers(isOpen ? user.id : undefined)
-  const nonSuggestions = [
-    user?.id ?? '',
-    currentUser?.id ?? '',
-    ...(myFollowedIds ?? []),
-  ]
-  const suggestedUserIds =
-    discoverUserIds == null
-      ? undefined
-      : difference(discoverUserIds, nonSuggestions).slice(0, 50)
+  const suggestedUserIds = useDiscoverUsers(
+    isOpen ? user.id : undefined, // don't bother fetching this unless someone looks
+    myFollowedIds ?? [],
+    50
+  )
 
   usePrefetchUsers([
     ...(followerIds ?? []),

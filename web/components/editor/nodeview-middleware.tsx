@@ -18,7 +18,13 @@ export const nodeViewMiddleware = (extensions: Extensions) => {
                   props.selected && '[&>*]:outline-dotted'
                 )}
               >
-                {renderReact(props.node.attrs, props.children)}
+                {renderReact(
+                  {
+                    ...props.node.attrs,
+                    deleteNode: props.deleteNode,
+                  },
+                  props.children
+                )}
               </NodeViewWrapper>
             )),
         })

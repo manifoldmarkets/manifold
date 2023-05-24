@@ -1026,25 +1026,25 @@ export interface Database {
           contract_id: string
           created_time: string
           data: Json
-          fs_updated_time: string
           type: string
           user_id: string
+          id: number
         }
         Insert: {
           contract_id: string
           created_time?: string
           data: Json
-          fs_updated_time: string
           type?: string
           user_id: string
+          id?: never
         }
         Update: {
           contract_id?: string
           created_time?: string
           data?: Json
-          fs_updated_time?: string
           type?: string
           user_id?: string
+          id?: never
         }
       }
       user_topics: {
@@ -2487,6 +2487,17 @@ export interface Database {
           '': Json
         }
         Returns: Json
+      }
+      top_creators_for_user: {
+        Args: {
+          uid: string
+          excluded_ids: string[]
+          limit_n: number
+        }
+        Returns: {
+          user_id: string
+          n: number
+        }[]
       }
       ts_to_millis:
         | {
