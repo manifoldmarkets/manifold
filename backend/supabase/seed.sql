@@ -529,8 +529,6 @@ select
 
 create index if not exists contract_comments_data_gin on contract_comments using GIN (data);
 
-create index contract_comments_contract_id_idx on contract_comments (contract_id);
-
 create index contract_comments_data_likes_idx on contract_comments (((data -> 'likes')::numeric));
 
 create index contract_comments_data_created_time_idx on contract_comments (((data ->> 'createdTime')::bigint));
