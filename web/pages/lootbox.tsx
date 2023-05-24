@@ -39,48 +39,53 @@ export const loadImports = async () => {
   animationJson ??= loadAnimationJson()
   return {
     Lottie: (await lottieLib).default,
-    lootbox: await animationJson
+    lootbox: await animationJson,
   }
 }
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
-export const LootboxAnimation = forwardRef((
-  props: { paused: boolean },
-  ref: any // mqp: this seems harder to type than anticipated?
-) => {
-  const { paused } = props
-  const [imports, setImports] = useState<Awaited<ReturnType<typeof loadImports>>>()
+export const LootboxAnimation = forwardRef(
+  (
+    props: { paused: boolean },
+    ref: any // mqp: this seems harder to type than anticipated?
+  ) => {
+    const { paused } = props
+    const [imports, setImports] =
+      useState<Awaited<ReturnType<typeof loadImports>>>()
 
-  useEffect(() => { loadImports().then(x => setImports(x)) }, [])
+    useEffect(() => {
+      loadImports().then((x) => setImports(x))
+    }, [])
 
-  if (imports == null) {
-    return null;
+    if (imports == null) {
+      return null
+    }
+    const { Lottie, lootbox } = imports
+    return (
+      <Lottie
+        ref={ref}
+        options={{
+          loop: false,
+          autoplay: false,
+          animationData: lootbox,
+          rendererSettings: {
+            preserveAspectRatio: 'xMidYMid slice',
+          },
+        }}
+        height={200}
+        width={200}
+        isStopped={false}
+        isPaused={paused}
+        style={{
+          color: '#6366f1',
+          pointerEvents: 'none',
+          background: 'transparent',
+        }}
+      />
+    )
   }
-  const { Lottie, lootbox } = imports
-  return (
-    <Lottie
-      ref={ref}
-      options={{
-        loop: false,
-        autoplay: false,
-        animationData: lootbox,
-        rendererSettings: {
-          preserveAspectRatio: 'xMidYMid slice',
-        },
-      }}
-      height={200}
-      width={200}
-      isStopped={false}
-      isPaused={paused}
-      style={{
-        color: '#6366f1',
-        pointerEvents: 'none',
-        background: 'transparent',
-      }}
-    />
-  )
-})
+)
 
 export default function LootBoxPage() {
   useTracking('view loot box')
