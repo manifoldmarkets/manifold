@@ -10,7 +10,7 @@ import { Database } from './schema'
 import { User } from '../user'
 import { Contract } from '../contract'
 import { Bet } from '../bet'
-import { ContractMetrics } from '../calculate-metrics'
+import { ContractMetric } from '../contract-metric'
 import { Group, GroupMemberDoc, GroupContractDoc } from '../group'
 
 export type Schema = Database['public']
@@ -99,7 +99,7 @@ export async function run<T>(
 
 type JsonTypes = {
   users: User
-  user_contract_metrics: ContractMetrics
+  user_contract_metrics: ContractMetric
   contracts: Contract
   cotracts_rbac: Contract
   contract_bets: Bet

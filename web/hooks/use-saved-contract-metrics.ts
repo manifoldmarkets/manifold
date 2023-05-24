@@ -1,4 +1,4 @@
-import { ContractMetrics } from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
 import { usePersistentState, storageStore } from './use-persistent-state'
 import { useUser, useUserContractMetrics } from './use-user'
@@ -11,7 +11,7 @@ export const useSavedContractMetrics = (contract: Contract) => {
     ? useUserContractMetrics(user?.id, contract.id)
     : null
   const [savedMetrics, setSavedMetrics] = usePersistentState<
-    ContractMetrics | undefined
+    ContractMetric | undefined
   >(undefined, {
     key: `contract-metrics-${contract.id}`,
     store: storageStore(safeLocalStorage),
@@ -22,7 +22,7 @@ export const useSavedContractMetrics = (contract: Contract) => {
       ? ({
           ...savedMetrics,
           ...contractMetrics,
-        } as ContractMetrics)
+        } as ContractMetric)
       : undefined
 
   useEffectCheckEquality(() => {

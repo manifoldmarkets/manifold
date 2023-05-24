@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMContract } from 'common/contract'
 import {
   ContractMetric,
@@ -56,7 +55,7 @@ export const BinaryUserPositionsTable = memo(
     const currentUser = useUser()
     const followedUsers = useFollows(currentUser?.id)
     const [contractMetricsByProfit, setContractMetricsByProfit] = useState<
-      ContractMetrics[] | undefined
+      ContractMetric[] | undefined
     >()
     const [shareholderStats, setShareholderStats] = useState<
       ShareholderStats | undefined

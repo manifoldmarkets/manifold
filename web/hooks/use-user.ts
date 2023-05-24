@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react'
 import { doc } from 'firebase/firestore'
 import { listenForUser, users } from 'web/lib/firebase/users'
 import { AuthContext } from 'web/components/auth-context'
-import { ContractMetrics } from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
 import { useStore, useStoreItems } from './use-store'
 import { listenForValue } from 'web/lib/firebase/utils'
 import { PrivateUser } from 'common/user'
@@ -49,7 +49,7 @@ export const isBlocked = (
 export const useUserContractMetrics = (userId = '_', contractId: string) => {
   const metricsDoc = doc(users, userId, 'contract-metrics', contractId)
 
-  const data = useStore<ContractMetrics | null>(
+  const data = useStore<ContractMetric | null>(
     ['user-contract-metrics', userId, contractId].join('/'),
     (_, setValue) => listenForValue(metricsDoc, setValue)
   )

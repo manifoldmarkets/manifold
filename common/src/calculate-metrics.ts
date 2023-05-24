@@ -216,8 +216,6 @@ export const calculateUserMetrics = (
   } as ContractMetric)
 }
 
-export type ContractMetrics = ContractMetric
-
 const calculatePeriodProfit = (
   contract: CPMMContract,
   bets: Bet[],
