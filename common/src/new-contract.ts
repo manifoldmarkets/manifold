@@ -31,7 +31,6 @@ export function getNewContract(
   initialProb: number,
   ante: number,
   closeTime: number,
-  extraTags: string[],
   visibility: visibility,
 
   // twitch
@@ -70,8 +69,6 @@ export function getNewContract(
 
     question: question.trim(),
     description,
-    tags: [],
-    lowercaseTags: [],
     visibility,
     unlistedById: visibility === 'unlisted' ? creator.id : undefined,
     isResolved: false,

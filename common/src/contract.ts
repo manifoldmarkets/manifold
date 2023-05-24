@@ -64,8 +64,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   question: string
   description: string | JSONContent // More info about what the contract is about
-  tags: string[]
-  lowercaseTags: string[]
   visibility: visibility
 
   createdTime: number // Milliseconds since epoch
@@ -94,7 +92,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   popularityScore: number
   dailyScore: number
   likedByUserCount?: number
-  flaggedByUsernames?: string[] // Deprecated as of 2023-01-05
   unlistedById?: string
   featuredLabel?: string
   isTwitchContract?: boolean

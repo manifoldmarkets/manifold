@@ -50,7 +50,6 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     description,
     descriptionHtml,
     descriptionMarkdown,
-    tags,
     closeTime,
     outcomeType,
     groupId,
@@ -99,7 +98,6 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       initialProb ?? 0,
       ante,
       closeTimestamp,
-      tags ?? [],
       visibility,
       isTwitchContract ? true : undefined,
       NUMERIC_BUCKET_COUNT,
@@ -245,7 +243,6 @@ function validateMarketBody(body: any) {
     description,
     descriptionHtml,
     descriptionMarkdown,
-    tags,
     closeTime,
     outcomeType,
     groupId,
@@ -300,7 +297,6 @@ function validateMarketBody(body: any) {
     description,
     descriptionHtml,
     descriptionMarkdown,
-    tags,
     closeTime,
     outcomeType,
     groupId,
@@ -541,7 +537,6 @@ const bodySchema = z.object({
   description: descSchema.or(z.string()).optional(),
   descriptionHtml: z.string().optional(),
   descriptionMarkdown: z.string().optional(),
-  tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
   closeTime: z
     .union([z.date(), z.number()])
     .refine(
