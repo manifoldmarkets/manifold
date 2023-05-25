@@ -1,5 +1,5 @@
 export type Stats = {
-  startDate: number
+  startDate: [number]
   dailyActiveUsers: number[]
   dailyActiveUsersWeeklyAvg: number[]
   avgDailyUserActions: number[]
@@ -20,9 +20,7 @@ export type Stats = {
   monthlyRetention: number[]
   dailyActivationRate: number[]
   dailyActivationRateWeeklyAvg: number[]
-  manaBet: {
-    daily: number[]
-    weekly: number[]
-    monthly: number[]
-  }
+  manaBetDaily: number[]
+  manaBetWeekly: number[]
+  manaBetMonthly: number[]
 }

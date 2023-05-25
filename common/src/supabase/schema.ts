@@ -772,6 +772,20 @@ export interface Database {
           user_id?: string
         }
       }
+      stats: {
+        Row: {
+          daily_values: number[] | null
+          title: string
+        }
+        Insert: {
+          daily_values?: number[] | null
+          title: string
+        }
+        Update: {
+          daily_values?: number[] | null
+          title?: string
+        }
+      }
       tombstones: {
         Row: {
           doc_id: string

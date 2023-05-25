@@ -76,7 +76,7 @@ where
 
 create index if not exists user_profit_cached_all_time_idx on users (((data -> 'profitCached' ->> 'allTime')::numeric));
 
-create index if not exists users_betting_streak_idx on users (((data->'currentBettingStreak')::int));
+create index if not exists users_betting_streak_idx on users (((data -> 'currentBettingStreak')::int));
 
 alter table users
 cluster on users_pkey;
@@ -212,6 +212,7 @@ drop policy if exists "user can insert" on user_events;
 create policy "user can insert" on user_events for insert
 with
   check (true);
+
 create index if not exists user_events_name on user_events (user_id, name);
 
 create index if not exists user_events_ts on user_events (user_id, ts);
@@ -272,21 +273,19 @@ select
   using (true);
 
 create index if not exists user_notifications_data_gin on user_notifications using GIN (data);
-create index if not exists user_notifications_created_time on user_notifications (
-  user_id,
-  (to_jsonb(data)->'createdTime') desc);
+
+create index if not exists user_notifications_created_time on user_notifications (user_id, (to_jsonb(data) -> 'createdTime') desc);
+
 create index if not exists user_notifications_unseen_created_time on user_notifications (
   user_id,
-  (to_jsonb(data)->'isSeen'),
-  (to_jsonb(data)->'createdTime') desc);
+  (to_jsonb(data) -> 'isSeen'),
+  (to_jsonb(data) -> 'createdTime') desc
+);
 
-create index if not exists user_notifications_source_id on user_notifications (
-  user_id,
-  (data->>'sourceId'));
+create index if not exists user_notifications_source_id on user_notifications (user_id, (data ->> 'sourceId'));
 
-
-
-alter table user_notifications cluster on user_notifications_created_time;
+alter table user_notifications
+cluster on user_notifications_created_time;
 
 create table if not exists
   contracts (
@@ -475,9 +474,7 @@ create index if not exists contract_bets_bet_id on contract_bets (bet_id);
 create index if not exists contract_bets_activity_feed on contract_bets (is_ante, is_redemption, created_time desc);
 
 /* serving update contract metrics */
-create index if not exists contract_bets_historical_probs
-  on contract_bets (created_time)
-  include (contract_id, prob_before, prob_after);
+create index if not exists contract_bets_historical_probs on contract_bets (created_time) include (contract_id, prob_before, prob_after);
 
 /* serving e.g. the contract page recent bets and the "bets by contract" API */
 create index if not exists contract_bets_created_time on contract_bets (contract_id, created_time desc);
@@ -1045,6 +1042,20 @@ alter table q_and_a_answers enable row level security;
 drop policy if exists "public read" on q_and_a_answers;
 
 create policy "public read" on q_and_a_answers for
+select
+  using (true);
+
+create table if not exists
+  stats (
+    title text not null primary key,
+    daily_values numeric[]
+  );
+
+alter table stats enable row level security;
+
+drop policy if exists "public read" on stats;
+
+create policy "public read" on stats for
 select
   using (true);
 
