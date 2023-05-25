@@ -12,6 +12,9 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { SVGChart, formatPct } from 'web/components/charts/helpers'
 import { formatLargeNumber } from 'common/util/format'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { Linkify } from 'web/components/widgets/linkify'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { Spacer } from 'web/components/layout/spacer'
 
 export const getStaticProps = async () => {
   const bets = await sampleResolvedBets(15, 0.02)
@@ -51,7 +54,7 @@ export default function CalibrationPage(props: {
         <Col className="max-w-[800px]">
           <Title>Platform calibration</Title>
 
-          <div>Manifold's overall track record.</div>
+          <div className='mb-4'>Manifold's overall track record.</div>
 
           <div className="bg-canvas-0 relative max-w-[800px] rounded-md p-4 pr-12">
             <div className="absolute top-0 bottom-0 right-4 flex items-center">
@@ -104,6 +107,8 @@ export default function CalibrationPage(props: {
               </li>
             </ul>
           </div>
+
+          <WasabiCharts />
         </Col>
       </Col>
     </Page>
@@ -277,4 +282,28 @@ const getXY = (probBuckets: Dictionary<number>) => {
   }
 
   return xy
+}
+
+export function WasabiCharts() {
+  return (
+    <>
+      <p className="text-ink-500 mt-8">
+        More charts courtesy of <Linkify text="@wasabipesto" />; originally found{' '}
+        <SiteLink
+          className="font-bold"
+          href="https://wasabipesto.com/manifold/markets/"
+        >
+          here.
+        </SiteLink>
+      </p>
+      <Spacer h={4} />
+      <iframe
+        className="w-full border-0"
+        height={3750}
+        src="https://wasabipesto.com/manifold/markets/"
+        frameBorder="0"
+        allowFullScreen
+      />
+    </>
+  )
 }

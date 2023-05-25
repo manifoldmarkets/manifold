@@ -89,21 +89,17 @@ export default function LabsPage() {
           <LabCard title="👥 User Search" href="/users" />
           <LabCard title="👥 Group Search" href="/groups" />
           <LabCard title="🏆 Leaderboards" href="/leaderboards" />
-          <LabCard
-            title="✏ Posts"
-            description="Go long on longform"
-            href="/latestposts"
-          />
+
           <LabCard
             title="💸 Manalinks"
             description={`Send ${ENV_CONFIG.moneyMoniker} to anyone`}
             href="/links"
           />
-          {/* <LabCard
-            title="📏 Calibration"
-            description="User bet calibration graph"
-            href="/my-calibration"
-          /> */}
+          <LabCard
+            title="📏 Platform calibration"
+            description="See how Manifold is doing"
+            href="/calibration"
+          />
         </LabSection>
         <Subtitle>🧪 Ongoing Experiments</Subtitle>
         <LabSection>
@@ -128,6 +124,11 @@ export default function LabsPage() {
             title="🔥 Swipe"
             description="Swipe-to-bet UI. Try via iOS/Android app."
             {...(isNative ? { href: '/swipe' } : appCallback)}
+          />
+          <LabCard
+            title="✏ Posts"
+            description="Go long on longform"
+            href="/latestposts"
           />
         </LabSection>
 
