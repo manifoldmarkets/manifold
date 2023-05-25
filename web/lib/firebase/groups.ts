@@ -9,20 +9,13 @@ import {
   doc,
   getDocs,
   onSnapshot,
-  orderBy,
   query,
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { partition, uniqBy } from 'lodash'
+import { partition } from 'lodash'
 import { db } from 'web/lib/firebase/init'
-import {
-  coll,
-  getValue,
-  getValues,
-  listenForValue,
-  listenForValues,
-} from './utils'
+import { coll, getValue, getValues, listenForValues } from './utils'
 import { getContract } from '../supabase/contracts'
 
 export const groups = coll<Group>('groups')
@@ -30,7 +23,7 @@ export const groupMembers = (groupId: string) =>
   collection(groups, groupId, 'groupMembers')
 export const groupContracts = (groupId: string) =>
   collection(groups, groupId, 'groupContracts')
-const openGroupsQuery = query(groups, where('anyoneCanJoin', '==', true))
+
 export const memberGroupsQuery = (userId: string) =>
   query(collectionGroup(db, 'groupMembers'), where('userId', '==', userId))
 
@@ -42,20 +35,8 @@ export function deleteFieldFromGroup(group: Group, field: string) {
   return updateDoc(doc(groups, group.id), { [field]: deleteField() })
 }
 
-export function deleteGroup(group: Group) {
-  return deleteDoc(doc(groups, group.id))
-}
-
-export async function listAllGroups() {
-  return getValues<Group>(groups)
-}
-
 export async function listGroups(groupSlugs: string[]) {
   return Promise.all(groupSlugs.map(getGroupBySlug))
-}
-
-export function listenForGroups(setGroups: (groups: Group[]) => void) {
-  return listenForValues(groups, setGroups)
 }
 
 export async function getGroupContractIds(groupId: string) {
@@ -81,10 +62,6 @@ export async function listGroupContracts(groupId: string) {
   return filterDefined(contracts)
 }
 
-export function listenForOpenGroups(setGroups: (groups: Group[]) => void) {
-  return listenForValues(openGroupsQuery, setGroups)
-}
-
 export function getGroup(groupId: string) {
   return getValue<Group>(doc(groups, groupId))
 }
@@ -93,13 +70,6 @@ export async function getGroupBySlug(slug: string) {
   const q = query(groups, where('slug', '==', slug))
   const docs = (await getDocs(q)).docs
   return docs.length === 0 ? null : docs[0].data()
-}
-
-export function listenForGroup(
-  groupId: string,
-  setGroup: (group: Group | null) => void
-) {
-  return listenForValue(doc(groups, groupId), setGroup)
 }
 
 export function listenForMemberGroupIds(
@@ -114,35 +84,6 @@ export function listenForMemberGroupIds(
 
     setGroupIds(filterDefined(values))
   })
-}
-
-export function listenForMemberGroups(
-  userId: string,
-  setGroups: (groups: Group[]) => void
-) {
-  return listenForMemberGroupIds(userId, (groupIds) => {
-    return Promise.all(groupIds.map(getGroup)).then((groups) => {
-      setGroups(filterDefined(groups))
-    })
-  })
-}
-
-export async function listAvailableGroups(userId: string) {
-  const [openGroups, memberGroupSnapshot] = await Promise.all([
-    getValues<Group>(openGroupsQuery),
-    getDocs(memberGroupsQuery(userId)),
-  ])
-  const memberGroups = filterDefined(
-    await Promise.all(
-      memberGroupSnapshot.docs.map((doc) => {
-        return doc.ref.parent.parent?.id
-          ? getGroup(doc.ref.parent.parent?.id)
-          : null
-      })
-    )
-  )
-
-  return uniqBy([...openGroups, ...memberGroups], (g) => g.id)
 }
 
 export async function leaveGroup(
@@ -179,9 +120,3 @@ export function getGroupLinksToDisplay(contract: Contract) {
   )
   return [...groupsCreatorAdded, ...otherGroups].slice(0, 3)
 }
-
-export const topFollowedGroupsQuery = query(
-  groups,
-  where('anyoneCanJoin', '==', true),
-  orderBy('totalMembers', 'desc')
-)
