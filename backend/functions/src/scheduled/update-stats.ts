@@ -219,7 +219,8 @@ export const updateStatsCore = async () => {
       if (allIds.length === 0) return 0
 
       const userIdCounts = countBy(allIds, (id) => id)
-      return median(Object.values(userIdCounts).filter((c) => c > 1))
+      const countsFiltered = Object.values(userIdCounts).filter((c) => c > 1)
+      return countsFiltered.length === 0 ? 0 : median(countsFiltered)
     }
   )
 
@@ -274,16 +275,16 @@ export const updateStatsCore = async () => {
     return intersection(engaged1, engaged2, engaged3).length
   })
 
-  const d1 = dailyUserIds.map((userIds, i) => {
+  const d1 = dailyUserIds.map((today, i) => {
     if (i === 0) return 0
+    if (today.length === 0) return 0
 
-    const uniques = new Set(userIds)
     const yesterday = dailyUserIds[i - 1]
 
     const retainedCount = sumBy(yesterday, (userId) =>
-      uniques.has(userId) ? 1 : 0
+      today.includes(userId) ? 1 : 0
     )
-    return retainedCount / uniques.size
+    return retainedCount / today.length
   })
 
   const d1WeeklyAvg = d1.map((_, i) => {
@@ -293,16 +294,16 @@ export const updateStatsCore = async () => {
   })
 
   const dailyNewUserIds = dailyNewUsers.map((users) => users.map((u) => u.id))
-  const nd1 = dailyUserIds.map((userIds, i) => {
+  const nd1 = dailyUserIds.map((today, i) => {
     if (i === 0) return 0
+    if (today.length === 0) return 0
 
-    const uniques = new Set(userIds)
     const yesterday = dailyNewUserIds[i - 1]
 
     const retainedCount = sumBy(yesterday, (userId) =>
-      uniques.has(userId) ? 1 : 0
+      today.includes(userId) ? 1 : 0
     )
-    return retainedCount / uniques.size
+    return retainedCount / today.length
   })
 
   const nd1WeeklyAvg = nd1.map((_, i) => {
@@ -324,6 +325,7 @@ export const updateStatsCore = async () => {
     const newTwoWeeksAgo = new Set<string>(
       dailyNewUserIds.slice(twoWeeksAgo.start, twoWeeksAgo.end).flat()
     )
+    if (newTwoWeeksAgo.size === 0) return 0
     const activeLastWeek = new Set<string>(
       dailyUserIds.slice(lastWeek.start, lastWeek.end).flat()
     )
@@ -346,6 +348,7 @@ export const updateStatsCore = async () => {
     const activeTwoWeeksAgo = new Set<string>(
       dailyUserIds.slice(twoWeeksAgo.start, twoWeeksAgo.end).flat()
     )
+    if (activeTwoWeeksAgo.size === 0) return 0
     const activeLastWeek = new Set<string>(
       dailyUserIds.slice(lastWeek.start, lastWeek.end).flat()
     )
@@ -368,6 +371,7 @@ export const updateStatsCore = async () => {
     const activeTwoMonthsAgo = new Set<string>(
       dailyUserIds.slice(twoMonthsAgo.start, twoMonthsAgo.end).flat()
     )
+    if (activeTwoMonthsAgo.size === 0) return 0
     const activeLastMonth = new Set<string>(
       dailyUserIds.slice(lastMonth.start, lastMonth.end).flat()
     )
@@ -387,6 +391,7 @@ export const updateStatsCore = async () => {
     }
   }
   const dailyActivationRate = dailyNewUsers.map((newUsers, i) => {
+    if (newUsers.length === 0) return 0
     const activedCount = sumBy(newUsers, (user) => {
       const firstBet = firstBetDict[user.id]
       return firstBet === i ? 1 : 0
