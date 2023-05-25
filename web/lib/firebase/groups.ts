@@ -6,7 +6,6 @@ import {
   deleteDoc,
   deleteField,
   doc,
-  orderBy,
   query,
   setDoc,
   updateDoc,
@@ -59,6 +58,56 @@ export async function joinGroup(
     createdTime: Date.now(),
   })
 }
+//   setContractDocs: (docs: GroupContractDoc[]) => void
+// ) {
+//   return listenForValues(groupContracts(groupId), setContractDocs)
+// }
+
+// export async function listGroupContracts(groupId: string) {
+//   const contractDocs = await getValues<{
+//     contractId: string
+//     createdTime: number
+//   }>(groupContracts(groupId))
+//   const contracts = await Promise.all(
+//     contractDocs.map((doc) => getContract(doc.contractId))
+//   )
+//   return filterDefined(contracts)
+// }
+
+// export function listenForOpenGroups(setGroups: (groups: Group[]) => void) {
+//   return listenForValues(openGroupsQuery, setGroups)
+// }
+
+// export function getGroup(groupId: string) {
+//   return getValue<Group>(doc(groups, groupId))
+// }
+
+// export async function getGroupBySlug(slug: string) {
+//   const q = query(groups, where('slug', '==', slug))
+//   const docs = (await getDocs(q)).docs
+//   return docs.length === 0 ? null : docs[0].data()
+// }
+
+// export function listenForGroup(
+//   groupId: string,
+//   setGroup: (group: Group | null) => void
+// ) {
+//   return listenForValue(doc(groups, groupId), setGroup)
+// }
+
+// export function listenForMemberGroupIds(
+//   userId: string,
+//   setGroupIds: (groupIds: string[]) => void
+// ) {
+//   const q = memberGroupsQuery(userId)
+//   return onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
+//     if (snapshot.metadata.fromCache) return
+
+//     const values = snapshot.docs.map((doc) => doc.ref.parent.parent?.id)
+
+//     setGroupIds(filterDefined(values))
+//   })
+// }
 
 // export async function listAllGroups() {
 //   return getValues<Group>(groups)

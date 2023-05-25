@@ -8,7 +8,6 @@ import { getPost } from 'web/lib/firebase/posts'
 import { ContractCard } from '../contract/contract-card'
 import Masonry from 'react-masonry-css'
 import { useUser } from 'web/hooks/use-user'
-import { getContractFromId } from 'web/lib/firebase/contracts'
 import { updateGroup } from 'web/lib/firebase/groups'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
@@ -20,6 +19,7 @@ import { CreatePostForm } from '../posts/create-post'
 import { PostCard, PostCardList } from '../posts/post-card'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Subtitle } from '../widgets/subtitle'
+import { getContract } from 'web/lib/supabase/contracts'
 
 export function GroupPostSection(props: {
   group: Group
@@ -92,7 +92,7 @@ function GroupFeatured(props: {
                 return <PostCard post={post as Post} />
               }
             } else if (element.type === 'contract') {
-              const contract = await getContractFromId(element.itemId)
+              const contract = await getContract(element.itemId)
               if (contract) {
                 return <ContractCard contract={contract as Contract} />
               }

@@ -70,6 +70,7 @@ export interface Database {
           data: Json
           fs_updated_time: string
           is_ante: boolean | null
+          is_api: boolean | null
           is_challenge: boolean | null
           is_redemption: boolean | null
           outcome: string | null
@@ -87,6 +88,7 @@ export interface Database {
           data: Json
           fs_updated_time: string
           is_ante?: boolean | null
+          is_api?: boolean | null
           is_challenge?: boolean | null
           is_redemption?: boolean | null
           outcome?: string | null
@@ -104,6 +106,7 @@ export interface Database {
           data?: Json
           fs_updated_time?: string
           is_ante?: boolean | null
+          is_api?: boolean | null
           is_challenge?: boolean | null
           is_redemption?: boolean | null
           outcome?: string | null
@@ -147,6 +150,7 @@ export interface Database {
           created_time: string | null
           data: Json
           fs_updated_time: string
+          is_api: boolean
           user_id: string | null
           visibility: string | null
         }
@@ -156,6 +160,7 @@ export interface Database {
           created_time?: string | null
           data: Json
           fs_updated_time: string
+          is_api?: boolean
           user_id?: string | null
           visibility?: string | null
         }
@@ -165,6 +170,7 @@ export interface Database {
           created_time?: string | null
           data?: Json
           fs_updated_time?: string
+          is_api?: boolean
           user_id?: string | null
           visibility?: string | null
         }
@@ -606,6 +612,50 @@ export interface Database {
           user_id?: string
         }
       }
+      news: {
+        Row: {
+          author: string | null
+          contract_ids: string[]
+          created_time: string
+          description: string | null
+          id: number
+          image_url: string | null
+          published_time: string
+          source_id: string | null
+          source_name: string | null
+          title: string
+          title_embedding: string
+          url: string
+        }
+        Insert: {
+          author?: string | null
+          contract_ids: string[]
+          created_time?: string
+          description?: string | null
+          id?: number
+          image_url?: string | null
+          published_time: string
+          source_id?: string | null
+          source_name?: string | null
+          title: string
+          title_embedding: string
+          url: string
+        }
+        Update: {
+          author?: string | null
+          contract_ids?: string[]
+          created_time?: string
+          description?: string | null
+          id?: number
+          image_url?: string | null
+          published_time?: string
+          source_id?: string | null
+          source_name?: string | null
+          title?: string
+          title_embedding?: string
+          url?: string
+        }
+      }
       post_comments: {
         Row: {
           comment_id: string
@@ -720,23 +770,6 @@ export interface Database {
           q_and_a_id?: string
           text?: string
           user_id?: string
-        }
-      }
-      test: {
-        Row: {
-          data: Json
-          fs_updated_time: string
-          id: string
-        }
-        Insert: {
-          data: Json
-          fs_updated_time: string
-          id: string
-        }
-        Update: {
-          data?: Json
-          fs_updated_time?: string
-          id?: string
         }
       }
       tombstones: {
@@ -1026,25 +1059,25 @@ export interface Database {
           contract_id: string
           created_time: string
           data: Json
+          id: number
           type: string
           user_id: string
-          id: number
         }
         Insert: {
           contract_id: string
           created_time?: string
           data: Json
+          id?: never
           type?: string
           user_id: string
-          id?: never
         }
         Update: {
           contract_id?: string
           created_time?: string
           data?: Json
+          id?: never
           type?: string
           user_id?: string
-          id?: never
         }
       }
       user_topics: {
@@ -1073,18 +1106,21 @@ export interface Database {
           fs_updated_time: string
           id: string
           name_username_vector: unknown | null
+          username: string | null
         }
         Insert: {
           data: Json
           fs_updated_time: string
           id: string
           name_username_vector?: unknown | null
+          username?: string | null
         }
         Update: {
           data?: Json
           fs_updated_time?: string
           id?: string
           name_username_vector?: unknown | null
+          username?: string | null
         }
       }
     }
@@ -1593,7 +1629,9 @@ export interface Database {
           created_time: string | null
           division: number | null
           mana_earned: number | null
+          mana_earned_breakdown: Json | null
           rank: number | null
+          rank_snapshot: number | null
           season: number | null
           user_id: string | null
         }
@@ -1681,18 +1719,32 @@ export interface Database {
         }
         Returns: boolean
       }
-      closest_contract_embeddings: {
-        Args: {
-          input_contract_id: string
-          similarity_threshold: number
-          match_count: number
-        }
-        Returns: {
-          contract_id: string
-          similarity: number
-          data: Json
-        }[]
-      }
+      closest_contract_embeddings:
+        | {
+            Args: {
+              input_contract_id: string
+              similarity_threshold: number
+              match_count: number
+              is_admin?: boolean
+            }
+            Returns: {
+              contract_id: string
+              similarity: number
+              data: Json
+            }[]
+          }
+        | {
+            Args: {
+              input_contract_id: string
+              similarity_threshold: number
+              match_count: number
+            }
+            Returns: {
+              contract_id: string
+              similarity: number
+              data: Json
+            }[]
+          }
       closest_contract_embeddings2: {
         Args: {
           input_contract_id: string
@@ -2120,6 +2172,30 @@ export interface Database {
           market_data: Json
         }[]
       }
+      get_top_market_ads2: {
+        Args: {
+          uid: string
+        }
+        Returns: {
+          ad_id: string
+          market_id: string
+          ad_funds: number
+          ad_cost_per_view: number
+          market_data: Json
+        }[]
+      }
+      get_top_market_ads3: {
+        Args: {
+          uid: string
+        }
+        Returns: {
+          ad_id: string
+          market_id: string
+          ad_funds: number
+          ad_cost_per_view: number
+          market_data: Json
+        }[]
+      }
       get_unseen_reply_chain_comments_matching_contracts: {
         Args: {
           contract_ids: string[]
@@ -2128,6 +2204,15 @@ export interface Database {
         Returns: {
           id: string
           contract_id: string
+          data: Json
+        }[]
+      }
+      get_user_bet_contracts: {
+        Args: {
+          this_user_id: string
+          this_limit: number
+        }
+        Returns: {
           data: Json
         }[]
       }
@@ -2158,6 +2243,23 @@ export interface Database {
       get_user_group_id_for_current_user: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_user_league_info_from_username: {
+        Args: {
+          this_season: number
+          this_username: string
+        }
+        Returns: {
+          cohort: string | null
+          created_time: string | null
+          division: number | null
+          mana_earned: number | null
+          mana_earned_breakdown: Json | null
+          rank: number | null
+          rank_snapshot: number | null
+          season: number | null
+          user_id: string | null
+        }[]
       }
       get_your_contract_ids:
         | {
@@ -2421,6 +2523,7 @@ export interface Database {
           fs_updated_time: string
           id: string
           name_username_vector: unknown | null
+          username: string | null
         }[]
       }
       search_users2: {
@@ -2433,6 +2536,7 @@ export interface Database {
           fs_updated_time: string
           id: string
           name_username_vector: unknown | null
+          username: string | null
         }[]
       }
       set_limit: {

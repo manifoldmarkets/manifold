@@ -24,7 +24,10 @@ import { CommentsButton } from 'web/components/swipe/swipe-comments'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { useContract, useContracts } from 'web/hooks/use-contracts'
+import {
+  useRealtimeContract,
+  useContracts,
+} from 'web/hooks/use-contract-supabase'
 import { useRealtimeGroupContractIds } from 'web/hooks/use-group-supabase'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
@@ -169,7 +172,7 @@ function ContractCardVersus(props: { contract: Contract; className?: string }) {
   const { className } = props
   const user = useUser()
 
-  const contract = useContract(props.contract.id) ?? props.contract
+  const contract = useRealtimeContract(props.contract.id) ?? props.contract
   const {
     question,
     coverImageUrl,

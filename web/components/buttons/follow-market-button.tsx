@@ -1,26 +1,26 @@
+import { CheckIcon, EyeIcon, EyeOffIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
+import { User } from 'common/user'
+import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
+import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
+import { Row } from 'web/components/layout/row'
+import { useRealtimeContractFollows } from 'web/hooks/use-follows-supabase'
 import {
   Contract,
   followContract,
   unFollowContract,
 } from 'web/lib/firebase/contracts'
-import toast from 'react-hot-toast'
-import { CheckIcon, EyeIcon, EyeOffIcon } from '@heroicons/react/outline'
-import clsx from 'clsx'
-import { User } from 'common/user'
-import { useContractFollows } from 'web/hooks/use-follows'
 import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
-import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
-import { useState } from 'react'
-import { Row } from 'web/components/layout/row'
 
 export const FollowMarketButton = (props: {
   contract: Contract
   user: User | undefined | null
 }) => {
   const { contract, user } = props
-  const followers = useContractFollows(contract.id)
+  const followers = useRealtimeContractFollows(contract.id)
   const [open, setOpen] = useState(false)
 
   const watching = followers?.includes(user?.id ?? 'nope')

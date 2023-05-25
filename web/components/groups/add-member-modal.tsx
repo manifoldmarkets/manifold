@@ -5,7 +5,7 @@ import { Group } from 'common/group'
 import { buildArray } from 'common/util/array'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import { usePollingGroupMemberIds } from 'web/hooks/use-group-supabase'
+import { useRealtimeGroupMemberIds } from 'web/hooks/use-group-supabase'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { addGroupMember, createGroupInvite } from 'web/lib/firebase/api'
 import { searchUsersNotInGroup } from 'web/lib/supabase/users'
@@ -68,7 +68,7 @@ export function AddMemberContent(props: {
   const requestId = useRef(0)
   const [loading, setLoading] = useState(false)
 
-  const [groupMemberIds] = usePollingGroupMemberIds(group.id)
+  const [groupMemberIds] = useRealtimeGroupMemberIds(group.id)
 
   useEffect(() => {
     const id = ++requestId.current
@@ -108,9 +108,7 @@ export function AddMemberContent(props: {
               key={user.id}
               user={user}
               group={group}
-              isDisabled={groupMemberIds?.data.some(
-                (r) => r.member_id == user.id
-              )}
+              isDisabled={groupMemberIds.includes(user.id)}
             />
           ))}
         </Col>

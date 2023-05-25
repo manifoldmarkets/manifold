@@ -6,10 +6,7 @@ import { User } from 'common/user'
 import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
 import { useMutation } from 'react-query'
-import {
-  useListGroupsBySlug,
-  useRealtimeMemberGroupIds,
-} from 'web/hooks/use-group-supabase'
+import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { searchContract } from 'web/lib/supabase/contracts'
 import { SearchGroupInfo } from 'web/lib/supabase/groups'
@@ -24,7 +21,7 @@ import { PRIVACY_STATUS_ITEMS } from './group-privacy-modal'
 import GroupSearch from './group-search'
 import { JoinOrLeaveGroupButton } from './groups-button'
 
-export default function DiscoverGroups(props: { yourGroupIds?: string[] }) {
+export default function DiscoverGroups(props: { yourGroupIds: string[] }) {
   const { yourGroupIds } = props
   const communities = [
     {
@@ -68,6 +65,7 @@ export default function DiscoverGroups(props: { yourGroupIds?: string[] }) {
               ? allSpecialGroups.filter((g) => c.slugs?.includes(g.slug))
               : []
           }
+          yourGroupIds={yourGroupIds}
         />
       ))}
       <Subtitle>Search Groups</Subtitle>
@@ -86,9 +84,18 @@ function Community(props: {
   selected: boolean
   onClick: () => void
   groups: SearchGroupInfo[]
+  yourGroupIds: string[]
   className?: string
 }) {
-  const { name, description, selected, onClick, groups, className } = props
+  const {
+    name,
+    description,
+    selected,
+    onClick,
+    groups,
+    yourGroupIds,
+    className,
+  } = props
 
   return (
     <div
@@ -103,7 +110,9 @@ function Community(props: {
         <div className="mr-4 min-w-[120px] text-xl">{name}</div>
         <div className="text-ink-700">{description}</div>
       </div>
-      {selected && <GroupPills groups={groups} autoselect />}
+      {selected && (
+        <GroupPills groups={groups} yourGroupIds={yourGroupIds} autoselect />
+      )}
     </div>
   )
 }
@@ -176,11 +185,11 @@ export function GroupLine(props: {
 
 function GroupPills(props: {
   groups: SearchGroupInfo[]
+  yourGroupIds: string[]
   autoselect?: boolean
 }) {
-  const { groups, autoselect } = props
+  const { groups, yourGroupIds, autoselect } = props
   const user = useUser()
-  const myGroupsIds = useRealtimeMemberGroupIds(user)
   const [selected, setSelected] = useState<SearchGroupInfo | null>(
     autoselect ? groups[0] : null
   )
@@ -214,7 +223,7 @@ function GroupPills(props: {
           <JoinOrLeaveGroupButton
             group={selected}
             user={user}
-            isMember={myGroupsIds?.includes(selected.id)}
+            isMember={yourGroupIds?.includes(selected.id)}
             className="w-[80px] !px-0 !py-1"
           />
         </SingleGroupInfo>

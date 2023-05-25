@@ -95,6 +95,7 @@ export const BOT_USERNAMES = [
   'MetaculusBot',
   'KevinBurke',
   'Botflux',
+  'firstuserhere',
 ]
 
 export const CORE_USERNAMES = [
@@ -163,13 +164,18 @@ export const APPLE_APP_URL =
 
 export const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 
-ENV_CONFIG.
-
-export const DESTINY_GROUP_IDS = [
+export const DESTINY_GROUP_SLUGS = [
   'destinygg',
   'destinygg-stocks',
   'eto',
   'mumbowl-stonks',
+]
+
+export const DESTINY_GROUP_IDS = [
+  'W2ES30fRo6CCbPNwMTTj', //destinygg
+  'jhtvaP3PHXY6RPIiMd8A', //destinygg-stocks
+  'IiNevwTtyukII0eSmPIB', //eto
+  'SHjwHbBTaBXQ73NWSLq0', //mumbowl-stonks
 ]
 
 export const HOME_BLOCKED_GROUP_SLUGS = [

@@ -8,7 +8,7 @@ import { BinaryContract, Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import { Dispatch, memo, SetStateAction, useEffect, useState } from 'react'
 import { LikeButton } from 'web/components/contract/like-button'
-import { useContract } from 'web/hooks/use-contracts'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import { fromNow } from 'web/lib/util/time'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -49,7 +49,7 @@ export const SwipeCard = memo(
       small,
       toggleView,
     } = props
-    const contract = (useContract(props.contract.id) ??
+    const contract = (useRealtimeContract(props.contract.id) ??
       props.contract) as BinaryContract
     const { question, coverImageUrl } = contract
 

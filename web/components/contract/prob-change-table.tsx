@@ -1,16 +1,16 @@
-import { sortBy } from 'lodash'
-import { Contract, CPMMContract, contractPath } from 'common/contract'
-import { Col } from '../layout/col'
-import { User } from 'common/user'
-import { ContractStatusLabel } from './contracts-table'
 import clsx from 'clsx'
+import { CPMMContract, Contract, contractPath } from 'common/contract'
+import { User } from 'common/user'
+import { formatPercentShort } from 'common/util/format'
+import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { forwardRef } from 'react'
-import { useContract } from 'web/hooks/use-contracts'
-import { Avatar } from '../widgets/avatar'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
+import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { formatPercentShort } from 'common/util/format'
+import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { ContractStatusLabel } from './contracts-table'
 
 export function ProbChangeTable(props: {
   changes: CPMMContract[] | undefined
@@ -45,7 +45,7 @@ const ContractWithProbChange = forwardRef(
     ref: React.Ref<HTMLAnchorElement>
   ) => {
     const { onContractClick, className } = props
-    const contract = (useContract(props.contract.id) ??
+    const contract = (useRealtimeContract(props.contract.id) ??
       props.contract) as CPMMContract
     const {
       creatorUsername,
