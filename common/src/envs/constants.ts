@@ -171,13 +171,6 @@ export const DESTINY_GROUP_SLUGS = [
   'mumbowl-stonks',
 ]
 
-export const DESTINY_GROUP_IDS = [
-  'W2ES30fRo6CCbPNwMTTj', //destinygg
-  'jhtvaP3PHXY6RPIiMd8A', //destinygg-stocks
-  'IiNevwTtyukII0eSmPIB', //eto
-  'SHjwHbBTaBXQ73NWSLq0', //mumbowl-stonks
-]
-
 export const HOME_BLOCKED_GROUP_SLUGS = [
   'fun',
   'selfresolving',
