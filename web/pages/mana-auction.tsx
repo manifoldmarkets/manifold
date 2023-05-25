@@ -1,47 +1,280 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { useTracking } from 'web/hooks/use-tracking'
 import { formatMoney } from 'common/util/format'
-import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { Row } from 'web/components/layout/row'
-import { Button } from 'web/components/buttons/button'
-import { useUser } from 'web/hooks/use-user'
 import { useEffect, useState } from 'react'
 import { Avatar } from 'web/components/widgets/avatar'
-
 import { Spacer } from 'web/components/layout/spacer'
-import { coll, getValues, listenForValues } from 'web/lib/firebase/utils'
 import { Bid } from 'common/bid'
-import { orderBy, query } from 'firebase/firestore'
 import { groupBy, max } from 'lodash'
-import { call } from 'web/lib/firebase/api'
-import { getApiUrl } from 'common/api'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { SEO } from 'web/components/SEO'
 import { buildArray } from 'common/util/array'
 
 const CUTOFF_TIME = 1680418800000 // Apr 2nd, 12 am PT
 
-export async function getStaticProps() {
-  const q = query(coll<Bid>('apr1-auction'), orderBy('createdTime', 'desc'))
-  const bids = await getValues<Bid>(q)
+// hardcoded now that it's ended
+const bids = [
+  {
+    displayName: 'Mira',
+    userId: 'ZB5wm6TsZbfYNWOoAWIjDpzjEz72',
+    createdTime: 1680418798704,
+    username: 'Mira',
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp77Pl94fzmBvwxTPgQ_k3Mo7xGmkWCjCIKOggb7NA=s96-c',
+    amount: 14000,
+  },
+  {
+    userId: 'kydVkcfg7TU4zrrMBRx1Csipwkw2',
+    username: 'Catnee',
+    amount: 12169,
+    createdTime: 1680418790493,
+    displayName: 'Catnee',
+    avatar:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FCatnee%2FeS8aCMJKmK.jpg?alt=media&token=9f3edeac-2e51-478f-8acd-fe8b57973942',
+  },
+  {
+    createdTime: 1680327249010,
+    amount: 11000,
+    userId: 'ZB5wm6TsZbfYNWOoAWIjDpzjEz72',
+    username: 'Mira',
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp77Pl94fzmBvwxTPgQ_k3Mo7xGmkWCjCIKOggb7NA=s96-c',
+    displayName: 'Mira',
+  },
+  {
+    amount: 10000,
+    displayName: 'Andrew G',
+    avatar:
+      'https://lh3.googleusercontent.com/a-/AOh14GiaKzvDVGOvUXFxGChB6G4D9spo8N6MGUqFjIRTqAk=s96-c',
+    userId: 'H6b5PWELWfRV6HhyHAlCGq7yJJu2',
+    createdTime: 1680326239652,
+    username: 'AndrewG',
+  },
+  {
+    createdTime: 1680325904653,
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    amount: 550,
+    displayName: 'SkepticIC',
+    username: 'SkepticIC',
+  },
+  {
+    userId: 'rybxBG1YfkbcoDfXsFf2QZop9ws1',
+    amount: 500,
+    displayName: '42irrationalist',
+    username: '42irrationalist',
+    avatar:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAlexanderPutilin%2FTt4GFR47qE.jpg?alt=media&token=5e7621c6-8efd-4c66-aefc-d35e6e490ade',
+    createdTime: 1680325536466,
+  },
+  {
+    userId: 'Fz12fyQzT0cnfaSp2iOYvLsYmTi1',
+    createdTime: 1680325534901,
+    username: 'EzraSchott',
+    amount: 400,
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp7Gmp2I7EPKbPCxnpoMGadeODPlpd0ZYhrymxIc=s96-c',
+    displayName: 'Ezra Schott',
+  },
+  {
+    userId: 'Xq7O5e6LEwcFPJQckXw6uy4nflf1',
+    createdTime: 1680324834201,
+    amount: 300,
+    avatar:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FTrong%2FKAhZUwrNdm.jpg?alt=media&token=edfcd113-ddd5-4c7b-92fa-7febb5419c1d',
+    displayName: 'Trong',
+    username: '8',
+  },
+  {
+    username: 'SkepticIC',
+    createdTime: 1680324551924,
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    amount: 269,
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    displayName: 'SkepticIC',
+  },
+  {
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    createdTime: 1680323911188,
+    username: 'SkepticIC',
+    displayName: 'SkepticIC',
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    amount: 237,
+  },
+  {
+    avatar:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fomnishambles%2FDyoVed-RBw.jpg?alt=media&token=c3fbcfbc-62bc-4d8e-8896-445e00b4b6ac',
+    createdTime: 1680323879119,
+    username: 'omnishambles',
+    amount: 215,
+    displayName: 'omnishambles',
+    userId: 'XMaPxw1WqFRRhme82HEb24haAMG2',
+  },
+  {
+    username: 'SkepticIC',
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    createdTime: 1680323690964,
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    displayName: 'SkepticIC',
+    amount: 195,
+  },
+  {
+    username: 'Conflux',
+    userId: 'HTbxWFlzWGeHUTiwZvvF0qm8W433',
+    createdTime: 1680323682430,
+    avatar:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FConflux%2FIaFDTz3rB-.png?alt=media&token=d064eaf3-f07d-4e16-9cdd-373b64a5cd17',
+    displayName: 'Conflux',
+    amount: 175,
+  },
+  {
+    username: 'SkepticIC',
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    displayName: 'SkepticIC',
+    amount: 150,
+    createdTime: 1680323633944,
+  },
+  {
+    displayName: 'SkepticIC',
+    createdTime: 1680323631926,
+    username: 'SkepticIC',
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    amount: 135,
+  },
+  {
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    createdTime: 1680323626059,
+    displayName: 'SkepticIC',
+    username: 'SkepticIC',
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    amount: 120,
+  },
+  {
+    createdTime: 1680323618298,
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    displayName: 'SkepticIC',
+    amount: 105,
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    username: 'SkepticIC',
+  },
+  {
+    username: 'SkepticIC',
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    displayName: 'SkepticIC',
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    amount: 95,
+    createdTime: 1680323616080,
+  },
+  {
+    displayName: 'SkepticIC',
+    amount: 85,
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    username: 'SkepticIC',
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    createdTime: 1680323614187,
+  },
+  {
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    amount: 75,
+    username: 'SkepticIC',
+    displayName: 'SkepticIC',
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    createdTime: 1680323610931,
+  },
+  {
+    username: 'SkepticIC',
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    displayName: 'SkepticIC',
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    amount: 65,
+    createdTime: 1680323609258,
+  },
+  {
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    createdTime: 1680323608060,
+    amount: 55,
+    displayName: 'SkepticIC',
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    username: 'SkepticIC',
+  },
+  {
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    displayName: 'SkepticIC',
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    createdTime: 1680323606588,
+    username: 'SkepticIC',
+    amount: 45,
+  },
+  {
+    createdTime: 1680323588899,
+    amount: 35,
+    username: 'SkepticIC',
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4m2__gqSTo0bqbJzwXNDn7WU4i0VwJ5UJA5N-g=s96-c',
+    userId: 'i7lDZK38GpaAUzWOH9dNsdOSyPi2',
+    displayName: 'SkepticIC',
+  },
+  {
+    createdTime: 1680323538337,
+    amount: 25,
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp4XGc0m49XU1EMAvWdItuunNJCxqN7eJ7o4aw=s96-c',
+    displayName: 'Aaron Lehmann',
+    username: 'AaronLehmann',
+    userId: 'KMOIYhksuFVW7sUHMBLi97F3UNt2',
+  },
+  {
+    username: 'omnishambles',
+    createdTime: 1680323487359,
+    avatar:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fomnishambles%2FDyoVed-RBw.jpg?alt=media&token=c3fbcfbc-62bc-4d8e-8896-445e00b4b6ac',
+    amount: 20,
+    displayName: 'omnishambles',
+    userId: 'XMaPxw1WqFRRhme82HEb24haAMG2',
+  },
+  {
+    userId: 'zAC0eT226KgSfWV5fQKNnaNYx9D2',
+    createdTime: 1680323420918,
+    avatar:
+      'https://lh3.googleusercontent.com/a/AEdFTp6OLVUXwucMM8cf0ZzYtkEOds3BoyY_XnkOlvym1w=s96-c',
+    username: 'Kabirden',
+    amount: 10,
+    displayName: 'Ethan W',
+  },
+  {
+    createdTime: 1680323393085,
+    userId: 'fP5OQUWYt4MW17A2giGjMGsw1uu2',
+    avatar:
+      'https://lh3.googleusercontent.com/a-/AOh14Gh_23ZmfLBMGBR2crNwb0T8hBnPAap5nkWiSKuB=s96-c',
+    displayName: 'Lars Doucet',
+    username: 'LarsDoucet',
+    amount: 1,
+  },
+]
 
-  return {
-    props: {
-      bids,
-    },
-    revalidate: 60, // regenerate after a minute
-  }
-}
-
-export default function ManaAuctionPage(props: { bids: Bid[] }) {
+export default function ManaAuctionPage() {
   useTracking('view mana auction')
-
-  const bids = useBids(props.bids)
   const maxBid = max(bids.map((b) => b.amount)) ?? 0
   const bidder = bids.find((b) => b.amount === maxBid)?.displayName ?? 'None'
   const totalRaised = Object.entries(groupBy(bids, 'userId'))
@@ -96,8 +329,6 @@ export default function ManaAuctionPage(props: { bids: Bid[] }) {
             )}
           </Row>
         </GradientContainer>
-
-        {time < CUTOFF_TIME && <BidButton maxBid={maxBid} />}
 
         <div className="prose prose-sm text-ink-600 max-w-[800px]">
           <b>Rules</b>
@@ -192,100 +423,4 @@ const BidTable = ({ bids }: { bids: Bid[] }) => {
       </Col>
     </>
   )
-}
-
-const BidButton = ({ maxBid }: { maxBid: number }) => {
-  const user = useUser()
-
-  const [amount, setAmount] = useState<number | undefined>(undefined)
-  const [error, setError] = useState<string | undefined>(undefined)
-  const [serverError, setServerError] = useState<string | undefined>(undefined)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-
-  const onAmountChange = (amount: number | undefined) => {
-    setIsSuccess(false)
-    setAmount(amount)
-
-    // Check for errors.
-    if (amount !== undefined) {
-      if (user && user.balance < amount) {
-        setError('Insufficient balance')
-      } else if (amount < 1) {
-        setError('Minimum amount: ' + formatMoney(1))
-      } else {
-        setError(undefined)
-      }
-    }
-  }
-
-  const submit = async () => {
-    if (!amount) return
-
-    setIsLoading(true)
-    setServerError(undefined)
-
-    await placeBid(amount)
-      .then(() => {
-        setIsSuccess(true)
-        setAmount(undefined)
-      })
-      .catch((e) => {
-        console.log('error', e.message)
-        setServerError(e.message)
-        setIsSuccess(false)
-      })
-
-    setIsLoading(false)
-  }
-
-  return (
-    <div className="">
-      <div className="mb-4">
-        Place your bid to win big!{' '}
-        <span className="text-xs">
-          (Minimum bid: {formatMoney(Math.ceil(maxBid * 1.1))})
-        </span>
-      </div>
-
-      <Row className="">
-        <BuyAmountInput
-          amount={amount}
-          onChange={onAmountChange}
-          error={error || serverError}
-          disabled={isLoading}
-          inputClassName="w-40"
-          setError={setError}
-        />
-        <Button
-          onClick={submit}
-          disabled={isLoading || !!error}
-          className="ml-4"
-        >
-          Bid
-        </Button>
-      </Row>
-
-      {isSuccess && amount && <div>Success! Bid placed.</div>}
-
-      {isLoading && <div>Processing...</div>}
-    </div>
-  )
-}
-
-export const useBids = (initialBids: Bid[]) => {
-  const [bids, setBids] = useState<Bid[]>(initialBids)
-
-  useEffect(() => {
-    return listenForValues<Bid>(
-      query(coll<Bid>('apr1-auction'), orderBy('createdTime', 'desc')),
-      setBids
-    )
-  }, [])
-
-  return bids
-}
-
-export function placeBid(amount: number) {
-  return call(getApiUrl('auctionbid'), 'POST', { amount })
 }
