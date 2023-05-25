@@ -11,9 +11,7 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
-import {
-  useRealtimeRows,
-} from 'web/lib/supabase/realtime/use-realtime'
+import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
 export const usePublicContracts = (contractIds: string[] | undefined) => {
