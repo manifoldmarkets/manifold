@@ -93,6 +93,15 @@ export const getUserBetsFromResolvedContracts = async (
   }) as [Contract, LimitBet[]][]
 }
 
+export const sampleResolvedBets = async (trader_threshold = 50, p = 0.01) => {
+  const  {data}  = await db.rpc('sample_resolved_bets' as any, {
+    trader_threshold,
+    p,
+  })
+
+  return data
+}
+
 export const useRecentlyBetOnContracts = (userId: string) => {
   const [savedContracts, setSavedContracts] = useState<Contract[]>()
 
