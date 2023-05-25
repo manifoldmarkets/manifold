@@ -54,7 +54,7 @@ export default function CalibrationPage(props: {
         <Col className="max-w-[800px]">
           <Title>Platform calibration</Title>
 
-          <div className='mb-4'>Manifold's overall track record.</div>
+          <div className="mb-4">Manifold's overall track record.</div>
 
           <div className="bg-canvas-0 relative max-w-[800px] rounded-md p-4 pr-12">
             <div className="absolute top-0 bottom-0 right-4 flex items-center">
@@ -288,7 +288,8 @@ export function WasabiCharts() {
   return (
     <>
       <p className="text-ink-500 mt-8">
-        More charts courtesy of <Linkify text="@wasabipesto" />; originally found{' '}
+        More charts courtesy of <Linkify text="@wasabipesto" />; originally
+        found{' '}
         <SiteLink
           className="font-bold"
           href="https://wasabipesto.com/manifold/markets/"
