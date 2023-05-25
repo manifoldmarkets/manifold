@@ -26,6 +26,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
+import { bulkUpsert } from 'shared/supabase/utils'
 
 const firestore = admin.firestore()
 
@@ -401,27 +402,27 @@ export const updateStatsCore = async () => {
   const dailySignups = dailyNewUsers.map((users) => users.length)
 
   // Total mana divided by 100.
-  const dailyManaBet = dailyBets.map((bets) => {
+  const manaBetDaily = dailyBets.map((bets) => {
     return Math.round(sumBy(bets, (bet) => bet.amount) / 100)
   })
-  const weeklyManaBet = dailyManaBet.map((_, i) => {
+  const manaBetWeekly = manaBetDaily.map((_, i) => {
     const start = Math.max(0, i - 6)
     const end = i + 1
-    const total = sum(dailyManaBet.slice(start, end))
+    const total = sum(manaBetDaily.slice(start, end))
     if (end - start < 7) return (total * 7) / (end - start)
     return total
   })
-  const monthlyManaBet = dailyManaBet.map((_, i) => {
+  const manaBetMonthly = manaBetDaily.map((_, i) => {
     const start = Math.max(0, i - 29)
     const end = i + 1
-    const total = sum(dailyManaBet.slice(start, end))
+    const total = sum(manaBetDaily.slice(start, end))
     const range = end - start
     if (range < 30) return (total * 30) / range
     return total
   })
 
   const statsData: Stats = {
-    startDate: startDate.valueOf(),
+    startDate: [startDate.valueOf()],
     dailyActiveUsers,
     dailyActiveUsersWeeklyAvg,
     avgDailyUserActions,
@@ -442,15 +443,18 @@ export const updateStatsCore = async () => {
     dailyActivationRate,
     dailyActivationRateWeeklyAvg,
     monthlyRetention,
-    manaBet: {
-      daily: dailyManaBet,
-      weekly: weeklyManaBet,
-      monthly: monthlyManaBet,
-    },
+    manaBetDaily,
+    manaBetWeekly,
+    manaBetMonthly,
   }
 
-  log('Computed stats: ', statsData)
-  await firestore.doc('stats/stats').set(statsData)
+  const rows = Object.entries(statsData).map(([title, daily_values]) => ({
+    title,
+    daily_values,
+  }))
+
+  // Write to postgres
+  await bulkUpsert(pg, 'stats', 'title', rows)
 }
 
 export const updateStats = functions

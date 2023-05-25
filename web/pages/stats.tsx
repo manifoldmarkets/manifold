@@ -5,7 +5,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { getStats } from 'web/lib/firebase/stats'
+import { getStats } from 'web/lib/supabase/stats'
 import { Stats } from 'common/stats'
 import { PLURAL_BETS } from 'common/user'
 import { capitalize } from 'lodash'
@@ -46,7 +46,6 @@ export default function Analytics() {
 
 export function CustomAnalytics(props: Stats) {
   const {
-    startDate,
     dailyActiveUsers,
     dailyActiveUsersWeeklyAvg,
     dailySales,
@@ -66,8 +65,12 @@ export function CustomAnalytics(props: Stats) {
     monthlyRetention,
     dailyActivationRate,
     dailyActivationRateWeeklyAvg,
-    manaBet,
+    manaBetDaily,
+    manaBetWeekly,
+    manaBetMonthly,
   } = props
+
+  const startDate = props.startDate[0]
 
   const dailyDividedByWeekly = dailyActiveUsers.map(
     (dailyActive, i) => dailyActive / weeklyActiveUsers[i]
@@ -430,19 +433,19 @@ export function CustomAnalytics(props: Stats) {
           {
             title: 'Daily',
             content: (
-              <DailyChart dailyValues={manaBet.daily} startDate={startDate} />
+              <DailyChart dailyValues={manaBetDaily} startDate={startDate} />
             ),
           },
           {
             title: 'Weekly',
             content: (
-              <DailyChart dailyValues={manaBet.weekly} startDate={startDate} />
+              <DailyChart dailyValues={manaBetWeekly} startDate={startDate} />
             ),
           },
           {
             title: 'Monthly',
             content: (
-              <DailyChart dailyValues={manaBet.monthly} startDate={startDate} />
+              <DailyChart dailyValues={manaBetMonthly} startDate={startDate} />
             ),
           },
         ]}

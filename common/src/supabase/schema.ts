@@ -722,21 +722,18 @@ export interface Database {
           user_id?: string
         }
       }
-      test: {
+      stats: {
         Row: {
-          data: Json
-          fs_updated_time: string
-          id: string
+          daily_values: number[] | null
+          title: string
         }
         Insert: {
-          data: Json
-          fs_updated_time: string
-          id: string
+          daily_values?: number[] | null
+          title: string
         }
         Update: {
-          data?: Json
-          fs_updated_time?: string
-          id?: string
+          daily_values?: number[] | null
+          title?: string
         }
       }
       tombstones: {
