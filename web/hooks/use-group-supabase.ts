@@ -1,4 +1,3 @@
-import { RealtimeChannel } from '@supabase/realtime-js'
 import { JSONContent } from '@tiptap/core'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
@@ -12,10 +11,7 @@ import { getUserIsGroupMember } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
 import {
   MEMBER_LOAD_NUM,
-  getGroup,
-  getGroupContractIds,
   getGroupFromSlug,
-  getGroupMemberIds,
   getGroupMembers,
   getGroupOfRole,
   getMemberRole,
@@ -26,12 +22,12 @@ import {
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
 import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
+import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { getUser } from 'web/lib/supabase/user'
 import { useAdmin } from './use-admin'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized, useUser } from './use-user'
-import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<any | undefined>(

@@ -772,6 +772,20 @@ export interface Database {
           user_id?: string
         }
       }
+      stats: {
+        Row: {
+          daily_values: number[] | null
+          title: string
+        }
+        Insert: {
+          daily_values?: number[] | null
+          title: string
+        }
+        Update: {
+          daily_values?: number[] | null
+          title?: string
+        }
+      }
       tombstones: {
         Row: {
           doc_id: string
@@ -798,17 +812,17 @@ export interface Database {
       topic_embeddings: {
         Row: {
           created_at: string
-          embedding: number[]
+          embedding: string
           topic: string
         }
         Insert: {
           created_at?: string
-          embedding: number[]
+          embedding: string
           topic: string
         }
         Update: {
           created_at?: string
-          embedding?: number[]
+          embedding?: string
           topic?: string
         }
       }
@@ -1083,19 +1097,19 @@ export interface Database {
       user_topics: {
         Row: {
           created_at: string
-          topic_embedding: number[]
+          topic_embedding: string
           topics: string[]
           user_id: string
         }
         Insert: {
           created_at?: string
-          topic_embedding: number[]
+          topic_embedding: string
           topics: string[]
           user_id: string
         }
         Update: {
           created_at?: string
-          topic_embedding?: number[]
+          topic_embedding?: string
           topics?: string[]
           user_id?: string
         }
@@ -1899,7 +1913,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database['public']['CompositeTypes']['table_spec']
+        Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_engaged_users: {
         Args: Record<PropertyKey, never>
@@ -1914,6 +1928,14 @@ export interface Database {
           p_query: string
         }
         Returns: string
+      }
+      get_group_contracts: {
+        Args: {
+          this_group_id: string
+        }
+        Returns: {
+          data: Json
+        }[]
       }
       get_last_week_long_link: {
         Args: {
@@ -1994,7 +2016,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from: {
         Args: {
           uid: string
-          p_embedding: number[]
+          p_embedding: string
           n: number
           excluded_contract_ids: string[]
           max_dist: number
@@ -2315,31 +2337,31 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -2369,7 +2391,7 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -2420,6 +2442,16 @@ export interface Database {
         Returns: {
           id: number
           succeeded: boolean
+        }[]
+      }
+      sample_resolved_bets: {
+        Args: {
+          trader_threshold: number
+          p: number
+        }
+        Returns: {
+          prob: number
+          is_yes: boolean
         }[]
       }
       save_user_topics: {
@@ -2541,7 +2573,7 @@ export interface Database {
       }
       set_limit: {
         Args: {
-          '': number
+          "": number
         }
         Returns: number
       }
@@ -2551,7 +2583,7 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
@@ -2588,7 +2620,7 @@ export interface Database {
       }
       to_jsonb: {
         Args: {
-          '': Json
+          "": Json
         }
         Returns: Json
       }
@@ -2618,37 +2650,37 @@ export interface Database {
           }
       vector_avg: {
         Args: {
-          '': number[]
+          "": number[]
         }
         Returns: string
       }
       vector_dims: {
         Args: {
-          '': string
+          "": string
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          '': string
+          "": string
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          '': unknown[]
+          "": unknown[]
         }
         Returns: number
       }
