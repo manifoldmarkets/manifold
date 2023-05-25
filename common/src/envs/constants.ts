@@ -95,6 +95,7 @@ export const BOT_USERNAMES = [
   'MetaculusBot',
   'KevinBurke',
   'Botflux',
+  'firstuserhere'
 ]
 
 export const CORE_USERNAMES = [

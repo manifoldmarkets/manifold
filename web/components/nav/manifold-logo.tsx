@@ -11,7 +11,7 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
 
   const user = useUser()
 
-  const name = ENV === 'DEV' ? 'Devoutful' : 'Manifold'
+  const name = ENV === 'DEV' ? 'DEV' : 'Markets'
 
   return (
     <Link
@@ -30,13 +30,13 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
       />
       {twoLine ? (
         <div className="font-major-mono text-ink-900 mt-1 text-lg lowercase">
-          {name}
+          Manifold
           <br />
-          Markets
+          {name}
         </div>
       ) : (
         <div className="font-major-mono text-ink-900 mt-2 text-2xl lowercase md:whitespace-nowrap">
-          {name} Markets
+          Manifold {name}
         </div>
       )}
     </Link>
