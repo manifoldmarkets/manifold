@@ -49,7 +49,7 @@ export const getStaticProps = async () => {
 }
 
 const Versus = (props: { contracts: Contract[] }) => {
-  const contractIds = useRealtimeGroupContractIds(debateGroupId)
+  const contractIds = useRealtimeGroupContractIds(debateGroupId) ?? []
   const loadedContracts = filterDefined(useContracts(contractIds))
   const contracts =
     loadedContracts.length >= props.contracts.length

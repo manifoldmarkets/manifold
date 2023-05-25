@@ -33,6 +33,7 @@ import { useAdmin } from './use-admin'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized, useUser } from './use-user'
+import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<any | undefined>(
@@ -56,6 +57,14 @@ export function useIsGroupMember(groupSlug: string) {
 export function useRealtimeMemberGroups(
   user: User | undefined | null
 ): Group[] {
+  const { rows } = useSubscription('group_members', {
+    k: 'member_id',
+    v: user?.id ?? '_',
+  })
+  const groupIds = rows?.map((r) => r.group_id) ?? []
+  return groupIds.map((groupId) => {
+    getGroup(groupId) as Group
+  })
   const [groups, setGroups] = useState<Group[]>([])
 
   const userId = user?.id
@@ -161,52 +170,11 @@ function useRealtimeMemberGroupIdsChannel(
 }
 
 export function useRealtimeGroupContractIds(groupId: string) {
-  const [contractIds, setContractIds] = useState<string[]>([])
-
-  useEffect(() => {
-    getGroupContractIds(groupId)
-      .then((result) => {
-        setContractIds(result)
-      })
-      .catch((e) => console.log(e))
-    const channel = db.channel(`group-${groupId}-contract-ids`)
-    channel.on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'group_contracts',
-        filter: `group_id=eq.${groupId}`,
-      },
-      (payload) => {
-        setContractIds((contractIds) => {
-          return [...contractIds, payload.new.contract_id]
-        })
-      }
-    )
-    channel.on(
-      'postgres_changes',
-      {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'group_contracts',
-        filter: `group_id=eq.${groupId}`,
-      },
-      (payload) => {
-        setContractIds((contractIds) => {
-          return contractIds.filter(
-            (contractId) => contractId !== payload.old.contract_id
-          )
-        })
-      }
-    )
-    channel.subscribe(async (status) => {})
-    return () => {
-      db.removeChannel(channel)
-    }
-  }, [db])
-
-  return contractIds
+  const { rows } = useSubscription('group_contracts', {
+    k: 'group_id',
+    v: groupId,
+  })
+  return rows?.map((r) => r.contract_id)
 }
 
 export const useGroupsWithContract = (contract: Contract) => {
