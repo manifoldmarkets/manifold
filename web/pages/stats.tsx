@@ -13,7 +13,6 @@ import { formatLargeNumber } from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
 import { InfoBox } from 'web/components/widgets/info-box'
 import { Linkify } from 'web/components/widgets/linkify'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { getIsNative } from 'web/lib/native/is-native'
 
 export default function Analytics() {
@@ -26,20 +25,7 @@ export default function Analytics() {
   }
   return (
     <Page>
-      <Tabs
-        className="mb-4"
-        currentPageForAnalytics={'stats'}
-        tabs={[
-          {
-            title: 'Activity',
-            content: <CustomAnalytics {...stats} />,
-          },
-          {
-            title: 'Market Stats',
-            content: <WasabiCharts />,
-          },
-        ]}
-      />
+      <CustomAnalytics {...stats} />
     </Page>
   )
 }
@@ -452,29 +438,5 @@ export function CustomAnalytics(props: Stats) {
       />
       <Spacer h={8} />
     </Col>
-  )
-}
-
-export function WasabiCharts() {
-  return (
-    <>
-      <p className="text-ink-500">
-        Courtesy of <Linkify text="@wasabipesto" />; originally found{' '}
-        <SiteLink
-          className="font-bold"
-          href="https://wasabipesto.com/manifold/markets/"
-        >
-          here.
-        </SiteLink>
-      </p>
-      <Spacer h={4} />
-      <iframe
-        className="w-full border-0"
-        height={3750}
-        src="https://wasabipesto.com/manifold/markets/"
-        frameBorder="0"
-        allowFullScreen
-      />
-    </>
   )
 }

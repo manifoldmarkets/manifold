@@ -16,9 +16,7 @@ const YOUR_GROUPS_MAX_LENGTH = 5
 export default function YourGroups(props: { yourGroupIds?: string[] }) {
   const { yourGroupIds } = props
   const isAuth = useIsAuthorized()
-  const [query, setQuery] = useState('')
   const user = useUser()
-  const userId = user?.id
   const yourGroups = useGroupsWhereUserHasRole(user?.id)
   const yourGroupsLength = yourGroups?.length
   const [showAllYourGroups, setShowAllYourGroups] = useState(false)

@@ -43,7 +43,7 @@ import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
-import { useContract } from 'web/hooks/use-contracts'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
@@ -55,7 +55,8 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getContractParams } from 'web/lib/firebase/api'
 import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
-import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
+import { Contract } from 'web/lib/firebase/contracts'
+import { tradingAllowed } from 'common/contract'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
@@ -132,11 +133,10 @@ export function NonPrivateContractPage(props: {
   const { contract, historyData, pointsString } = props.contractParams
 
   const inIframe = useIsIframe()
-  if (inIframe) {
-    return <ContractEmbedPage contract={contract} historyData={historyData} />
-  }
   if (!contract) {
     return <Custom404 customText="Unable to fetch market" />
+  } else if (inIframe) {
+    return <ContractEmbedPage contract={contract} historyData={historyData} />
   } else
     return (
       <>
@@ -162,7 +162,7 @@ export function ContractPageContent(props: {
     shareholderStats,
   } = contractParams
   const contract =
-    useContract(contractParams.contract?.id) ?? contractParams.contract
+    useRealtimeContract(contractParams.contract.id) ?? contractParams.contract
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()

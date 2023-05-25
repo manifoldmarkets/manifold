@@ -1,44 +1,45 @@
-import { memo, ReactNode, useState } from 'react'
-import clsx from 'clsx'
-import Link from 'next/link'
-import Image from 'next/image'
 import { ClockIcon, StarIcon, UserIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
-import { Row } from '../layout/row'
-import { formatMoney } from 'common/util/format'
-import { Col } from '../layout/col'
+import clsx from 'clsx'
+import Image from 'next/image'
+import Link from 'next/link'
+import { memo, ReactNode, useState } from 'react'
+
 import { Contract, contractPath, CPMMContract } from 'common/contract'
-import { MiscDetails, ShowTime } from './contract-details'
-import { QuickBet, QuickOutcomeView } from '../bet/quick-bet'
-import { useUser } from 'web/hooks/use-user'
-import { track, trackCallback } from 'web/lib/service/analytics'
-import { Tooltip } from '../widgets/tooltip'
-import { Card } from '../widgets/card'
-import { useContract } from 'web/hooks/use-contracts'
-import { ProbOrNumericChange } from './prob-change-table'
-import { Spacer } from '../layout/spacer'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
-import { DAY_MS } from 'common/util/time'
 import { ContractMetric } from 'common/contract-metric'
-import { useIsVisible } from 'web/hooks/use-is-visible'
 import { ContractCardView } from 'common/events'
 import { Group } from 'common/group'
-import { groupRoleType } from '../groups/group-member-modal'
-import { GroupContractOptions } from '../groups/group-contract-options'
-import { Avatar } from '../widgets/avatar'
-import { UserLink } from '../widgets/user-link'
-import { getLinkTarget } from 'web/components/widgets/site-link'
+import { STONK_NO, STONK_YES } from 'common/stonk'
+import { formatMoney } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
+import { DAY_MS } from 'common/util/time'
+import Router from 'next/router'
+import toast from 'react-hot-toast'
+import { getLinkTarget } from 'web/components/widgets/site-link'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
+import { useIsVisible } from 'web/hooks/use-is-visible'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useUser } from 'web/hooks/use-user'
+import { redeemBoost } from 'web/lib/firebase/api'
+import { track, trackCallback } from 'web/lib/service/analytics'
+import { fromNow } from 'web/lib/util/time'
+import { BetRow } from '../bet/bet-row'
+import { QuickBet, QuickOutcomeView } from '../bet/quick-bet'
+import { GroupContractOptions } from '../groups/group-contract-options'
+import { groupRoleType } from '../groups/group-member-modal'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { Spacer } from '../layout/spacer'
+import { CommentsButton } from '../swipe/swipe-comments'
+import { Avatar } from '../widgets/avatar'
+import { Card } from '../widgets/card'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { Tooltip } from '../widgets/tooltip'
+import { UserLink } from '../widgets/user-link'
+import { MiscDetails, ShowTime } from './contract-details'
 import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
-import { CommentsButton } from '../swipe/swipe-comments'
-import { BetRow } from '../bet/bet-row'
-import { fromNow } from 'web/lib/util/time'
-import Router from 'next/router'
-import { STONK_NO, STONK_YES } from 'common/stonk'
-import toast from 'react-hot-toast'
-import { redeemBoost } from 'web/lib/firebase/api'
-import { LoadingIndicator } from '../widgets/loading-indicator'
+import { ProbOrNumericChange } from './prob-change-table'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -82,7 +83,7 @@ export const ContractCard = memo(function ContractCard(props: {
     numAnswersFR,
     fromGroupProps,
   } = props
-  const contract = useContract(props.contract.id) ?? props.contract
+  const contract = useRealtimeContract(props.contract.id) ?? props.contract
   const { isResolved, createdTime, featuredLabel, creatorCreatedTime } =
     contract
   const { question, outcomeType } = contract
@@ -359,7 +360,7 @@ export function ContractCardNew(props: {
   const { className, promotedData, trackingPostfix } = props
   const user = useUser()
 
-  const contract = useContract(props.contract.id) ?? props.contract
+  const contract = useRealtimeContract(props.contract.id) ?? props.contract
   const {
     closeTime,
     isResolved,

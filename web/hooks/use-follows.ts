@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { listenForFollowers, listenForFollows } from 'web/lib/firebase/users'
-import { listenForContractFollows } from 'web/lib/firebase/contracts'
 import { safeLocalStorage } from 'web/lib/util/local'
 
 export const useFollows = (userId: string | null | undefined) => {
@@ -30,16 +29,4 @@ export const useFollowers = (userId: string | undefined) => {
   }, [userId])
 
   return followerIds
-}
-
-export const useContractFollows = (contractId: string | undefined) => {
-  const [followIds, setFollowIds] = useState<string[] | undefined>()
-  useEffect(() => {
-    if (!contractId) {
-      return
-    }
-    return listenForContractFollows(contractId, setFollowIds)
-  }, [contractId])
-
-  return followIds
 }

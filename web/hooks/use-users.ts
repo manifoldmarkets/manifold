@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
 import { User } from 'common/user'
 import { debounce } from 'lodash'
+import { useEffect, useState } from 'react'
 import {
+  UserSearchResult,
   getTopUserCreators,
   searchUsers,
-  UserSearchResult,
 } from 'web/lib/supabase/users'
 
 export const useDiscoverUsers = (

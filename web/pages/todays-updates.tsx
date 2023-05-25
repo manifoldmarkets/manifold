@@ -14,11 +14,11 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
-import { useContract } from 'web/hooks/use-contracts'
 import { useUser } from 'web/hooks/use-user'
 import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { db } from 'web/lib/supabase/db'
 import { getContractBetNullMetrics } from 'common/calculate'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 
 export default function TodaysUpdates() {
   const user = useUser()
@@ -102,7 +102,7 @@ const ContractChangeRow = forwardRef(
     ref: React.Ref<HTMLAnchorElement>
   ) => {
     const { metrics, onContractClick, className } = props
-    const contract = (useContract(props.contract.id) ??
+    const contract = (useRealtimeContract(props.contract.id) ??
       props.contract) as CPMMContract
     const {
       creatorUsername,
