@@ -1,7 +1,6 @@
 import { AnyContractType, Contract } from 'common/contract'
 import { useEffect, useRef, useState } from 'react'
 import {
-  getContract,
   getContractFromSlug,
   getContracts,
   getPublicContractIds,
@@ -13,7 +12,6 @@ import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
 import {
-  useRealtimeChanges,
   useRealtimeRows,
 } from 'web/lib/supabase/realtime/use-realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
