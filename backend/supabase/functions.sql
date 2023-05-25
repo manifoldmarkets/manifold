@@ -648,11 +648,9 @@ where contracts.resolution_time is not null
 limit count offset start $$;
 
 create or replace function sample_resolved_bets(trader_threshold int, p numeric) 
-returns table (contract_id text, bet_id text, prob numeric, is_yes boolean) 
+returns table (prob numeric, is_yes boolean) 
 stable parallel safe language sql as $$
-select contract_id, 
-       contract_bets.bet_id as bet_id, 
-       0.5 * ((contract_bets.data->>'probBefore')::numeric + (contract_bets.data->>'probAfter')::numeric)  as prob, 
+select  0.5 * ((contract_bets.data->>'probBefore')::numeric + (contract_bets.data->>'probAfter')::numeric)  as prob, 
        ((contracts.data->>'resolution')::text = 'YES')::boolean as is_yes
 from contract_bets
   join contracts on contracts.id = contract_bets.contract_id

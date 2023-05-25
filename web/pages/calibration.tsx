@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Dictionary, range } from 'lodash'
 import { axisBottom, axisRight } from 'd3-axis'
 import { scaleLinear } from 'd3-scale'
@@ -14,11 +15,12 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export const getStaticProps = async () => {
   const bets = await sampleResolvedBets(15, 0.02)
+  const n = bets?.length ?? 0
+  console.log('loaded', n, 'sampled bets')
 
   const buckets = getCalibrationPoints(bets ?? [])
   const points = !bets ? [] : getXY(buckets)
   const score = !bets ? 0 : brierScore(buckets)
-  const n = bets?.length ?? 0
 
   return {
     props: {
@@ -95,7 +97,7 @@ export default function CalibrationPage(props: {
               </li>
 
               <li>
-                <InfoTooltip text="Mean squared error of forecasted probability compared to the final outcome.">
+                <InfoTooltip text="Mean squared error of forecasted probability compared to expected probability.">
                   Brier score
                 </InfoTooltip>
                 : {Math.round(score * 1e5) / 1e5}
@@ -144,12 +146,67 @@ export function CalibrationChart(props: {
   const px = (p: Point) => xScale(p.x)
   const py = (p: Point) => yScale(p.y)
 
+  const [tooltip, setTooltip] = useState<Point | null>(null)
+
   return (
     <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} margin={margin}>
       {/* points */}
       {points.map((p, i) => (
-        <circle key={i} cx={px(p)} cy={py(p)} r={5} fill="indigo" />
+        <circle
+          key={i}
+          cx={px(p)}
+          cy={py(p)}
+          r={10}
+          fill="indigo"
+          onMouseEnter={() => setTooltip(p)}
+          onMouseLeave={() => setTooltip(null)}
+          style={{ cursor: 'pointer' }}
+        />
       ))}
+      {/* tooltip */}
+      {tooltip && (
+        <>
+          {tooltip.x > 0.9 ? (
+            <>
+              <rect
+                x={px(tooltip) - 110}
+                y={py(tooltip) - 10}
+                width={100}
+                height={20}
+                fill="white"
+                style={{ zIndex: 100 }}
+              />
+              <text
+                x={px(tooltip) - 60}
+                y={py(tooltip) + 5}
+                textAnchor="middle"
+                style={{ fill: 'blue', zIndex: 100 }}
+              >
+                ({formatPct(tooltip.x)}, {formatPct(tooltip.y)})
+              </text>
+            </>
+          ) : (
+            <>
+              <rect
+                x={px(tooltip) - 30}
+                y={py(tooltip) - 25}
+                width={100}
+                height={20}
+                fill="white"
+                style={{ zIndex: 100 }}
+              />
+              <text
+                x={px(tooltip)}
+                y={py(tooltip) - 10}
+                textAnchor="bottom"
+                style={{ fill: 'blue', zIndex: 100 }}
+              >
+                ({formatPct(tooltip.x)}, {formatPct(tooltip.y)})
+              </text>
+            </>
+          )}
+        </>
+      )}
       {/* line x = y */}
       <line
         x1={xScale(0)}
