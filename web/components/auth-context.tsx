@@ -147,7 +147,8 @@ export function AuthProvider(props: {
           setUserCookie(undefined)
           setAuthUser(null)
           nativeSignOut()
-          localStorage.clear()
+          // Clear local storage only if we were signed in, otherwise we'll clear referral info
+          if (safeLocalStorage?.getItem(CACHED_USER_KEY)) localStorage.clear()
         }
       },
       (e) => {
