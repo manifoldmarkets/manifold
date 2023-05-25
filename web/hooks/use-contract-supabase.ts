@@ -1,7 +1,9 @@
 import { AnyContractType, Contract } from 'common/contract'
 import { useEffect, useRef, useState } from 'react'
 import {
+  getContract,
   getContractFromSlug,
+  getContracts,
   getPublicContractIds,
   getPublicContracts,
 } from 'web/lib/supabase/contracts'
@@ -10,7 +12,11 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
-import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
+import {
+  useRealtimeChanges,
+  useRealtimeRows,
+} from 'web/lib/supabase/realtime/use-realtime'
+import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
 export const usePublicContracts = (contractIds: string[] | undefined) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -24,6 +30,16 @@ export const usePublicContracts = (contractIds: string[] | undefined) => {
   }, [contractIds])
 
   return contracts
+}
+
+export function useRealtimeContract(contractId: string) {
+  const { rows } = useSubscription('contracts', {
+    k: 'id',
+    v: contractId ?? '_',
+  })
+  return rows != null && rows.length > 0
+    ? (rows[0].data as Contract)
+    : undefined
 }
 
 export const useContractParams = (contractSlug: string | undefined) => {
@@ -63,6 +79,20 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
   }, [contractSlug])
 
   return contract as Contract<AnyContractType>
+}
+
+export const useContracts = (contractIds: string[]) => {
+  const [contracts, setContracts] = useState<Contract[]>([])
+
+  useEffectCheckEquality(() => {
+    if (contractIds) {
+      getContracts(contractIds).then((result) => {
+        setContracts(result)
+      })
+    }
+  }, [contractIds])
+
+  return contracts
 }
 
 export function useRealtimeContracts(limit: number) {

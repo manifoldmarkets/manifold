@@ -4,7 +4,7 @@ import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { collection, getDocs, query } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import { Report } from 'common/report'
-import { contractUrl, getContractFromId } from 'web/lib/firebase/contracts'
+import { contractUrl } from 'common/contract'
 import { filterDefined } from 'common/util/array'
 import {
   listAllComments,
@@ -14,6 +14,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { getPost, postPath } from 'web/lib/firebase/posts'
 import { richTextToString } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
+import { getContract } from 'web/lib/supabase/contracts'
 type LiteReport = {
   reportedById: string
   slug: string
@@ -51,7 +52,7 @@ export default async function handler(
         let partialReport: { slug: string; text: string } | null = null
         // Reported contract
         if (contentType === 'contract') {
-          const contract = await getContractFromId(contentId)
+          const contract = await getContract(contentId)
           partialReport = contract
             ? {
                 slug: contractUrl(contract),
@@ -64,7 +65,7 @@ export default async function handler(
           parentType === 'contract' &&
           parentId
         ) {
-          const contract = await getContractFromId(parentId)
+          const contract = await getContract(parentId)
           if (contract) {
             const comments = (await listAllComments(contract.id)).filter(
               (comment) => comment.id === contentId

@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import Confetti from 'react-confetti'
-
-import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { SiteLink } from 'web/components/widgets/site-link'
@@ -25,15 +23,16 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { BinaryContract, contractPath } from 'common/contract'
 import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useContract } from 'web/hooks/use-contracts'
 import { getBets } from 'common/supabase/bets'
 import { db } from 'web/lib/supabase/db'
+import { getContractFromSlug } from 'common/supabase/contracts'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 
 export async function getStaticProps(props: {
   params: { username: string; contractSlug: string; challengeSlug: string }
 }) {
   const { username, contractSlug, challengeSlug } = props.params
-  const contract = (await getContractFromSlug(contractSlug)) || null
+  const contract = (await getContractFromSlug(contractSlug, db)) || null
   const user = (await getUserByUsername(username)) || null
   const bets = contract?.id
     ? await getBets(db, { contractId: contract.id })
@@ -68,8 +67,32 @@ export default function ChallengePage(props: {
   challenge: Challenge | null
   challengeSlug: string
 }) {
-  const contract = (useContract(props.contract?.id) ??
-    props.contract) as BinaryContract | null
+  const { contract, user, slug, bets, challenge, challengeSlug } = props
+  if (!contract) {
+    return <Custom404 />
+  } else
+    return (
+      <ChallengePageContent
+        contract={contract}
+        user={user}
+        slug={slug}
+        bets={bets}
+        challenge={challenge}
+        challengeSlug={challengeSlug}
+      />
+    )
+}
+
+export function ChallengePageContent(props: {
+  contract: BinaryContract
+  user: User
+  slug: string
+  bets: Bet[]
+  challenge: Challenge | null
+  challengeSlug: string
+}) {
+  const contract =
+    (useRealtimeContract(props.contract.id) as BinaryContract) ?? props.contract
 
   const challenge =
     useChallenge(props.challengeSlug, contract?.id) ?? props.challenge

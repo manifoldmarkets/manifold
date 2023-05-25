@@ -6,14 +6,16 @@ import { SEASON_START, SEASON_END } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { User } from 'common/user'
 import { Row } from '../layout/row'
-import { usePublicContracts } from 'web/hooks/use-contract-supabase'
+import {
+  usePublicContracts,
+  useRealtimeContract,
+} from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { UserAvatarAndBadge } from '../widgets/user-link'
-import { useContract } from 'web/hooks/use-contracts'
 import { Contract, contractPath } from 'common/contract'
 import { ContractBetsTable } from '../bet/bets-list'
 import { Bet } from 'common/bet'
@@ -167,7 +169,7 @@ const ContractBetsEntry = (props: {
 }) => {
   const { bets, metrics } = props
 
-  const contract = useContract(props.contract.id) ?? props.contract
+  const contract = useRealtimeContract(props.contract.id) ?? props.contract
   const { profit, profitPercent } = metrics
 
   return (

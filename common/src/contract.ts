@@ -7,6 +7,11 @@ import { GroupLink } from 'common/group'
 import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
 import { ShareholderStats } from './supabase/contract-metrics'
 import { ContractComment } from './comment'
+import { ENV_CONFIG } from './envs/constants'
+import { formatMoney, formatPercent } from './util/format'
+import { getLiquidity } from './calculate-cpmm-multi'
+import { sum } from 'lodash'
+import { getDisplayProbability } from 'common/calculate'
 
 /************************************************
 
@@ -235,6 +240,38 @@ export const OUTCOME_TYPES = [
   'QUADRATIC_FUNDING',
   'STONK',
 ] as const
+
+export function contractPathWithoutContract(
+  creatorUsername: string,
+  slug: string
+) {
+  return `/${creatorUsername}/${slug}`
+}
+
+export function contractUrl(contract: Contract) {
+  return `https://${ENV_CONFIG.domain}${contractPath(contract)}`
+}
+
+export function contractPool(contract: Contract) {
+  return contract.mechanism === 'cpmm-1'
+    ? formatMoney(contract.totalLiquidity)
+    : contract.mechanism === 'cpmm-2'
+    ? formatMoney(getLiquidity(contract.pool))
+    : contract.mechanism === 'dpm-2'
+    ? formatMoney(sum(Object.values(contract.pool)))
+    : 'Empty pool'
+}
+
+export function getBinaryProbPercent(contract: BinaryContract) {
+  return formatPercent(getDisplayProbability(contract))
+}
+
+export function tradingAllowed(contract: Contract) {
+  return (
+    !contract.isResolved &&
+    (!contract.closeTime || contract.closeTime > Date.now())
+  )
+}
 
 export const MAX_QUESTION_LENGTH = 120
 export const MAX_DESCRIPTION_LENGTH = 16000

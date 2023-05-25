@@ -56,10 +56,6 @@ export function PinnedSelectModal(props: {
     selectItem(post.id, 'post')
   }
 
-  async function selectGroup(group: Group) {
-    selectItem(group.id, 'group')
-  }
-
   async function selectItem(itemId: string, type: string) {
     setSelectedItem({ itemId: itemId, type: type })
   }

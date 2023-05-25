@@ -1,13 +1,13 @@
-import { useContext, useEffect, useState } from 'react'
-import { doc } from 'firebase/firestore'
-import { listenForUser, users } from 'web/lib/firebase/users'
-import { AuthContext } from 'web/components/auth-context'
 import { ContractMetric } from 'common/contract-metric'
-import { useStore, useStoreItems } from './use-store'
-import { listenForValue } from 'web/lib/firebase/utils'
 import { PrivateUser } from 'common/user'
-import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
+import { doc } from 'firebase/firestore'
+import { useContext, useEffect, useState } from 'react'
+import { AuthContext } from 'web/components/auth-context'
+import { listenForUser, users } from 'web/lib/firebase/users'
+import { listenForValue } from 'web/lib/firebase/utils'
 import { db } from 'web/lib/supabase/db'
+import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
+import { useStore, useStoreItems } from './use-store'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)

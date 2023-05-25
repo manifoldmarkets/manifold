@@ -1070,6 +1070,9 @@ alter publication supabase_realtime
 add table posts;
 
 alter publication supabase_realtime
+add table contract_follows;
+
+alter publication supabase_realtime
 add table chat_messages;
 
 alter publication supabase_realtime

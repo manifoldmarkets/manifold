@@ -15,7 +15,6 @@ import {
   where,
 } from 'firebase/firestore'
 import { partition, uniqBy } from 'lodash'
-import { getContractFromId } from 'web/lib/firebase/contracts'
 import { db } from 'web/lib/firebase/init'
 import {
   coll,
@@ -24,6 +23,7 @@ import {
   listenForValue,
   listenForValues,
 } from './utils'
+import { getContract } from '../supabase/contracts'
 
 export const groups = coll<Group>('groups')
 export const groupMembers = (groupId: string) =>
@@ -76,7 +76,7 @@ export async function listGroupContracts(groupId: string) {
     createdTime: number
   }>(groupContracts(groupId))
   const contracts = await Promise.all(
-    contractDocs.map((doc) => getContractFromId(doc.contractId))
+    contractDocs.map((doc) => getContract(doc.contractId))
   )
   return filterDefined(contracts)
 }
