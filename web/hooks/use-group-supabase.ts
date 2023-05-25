@@ -41,7 +41,7 @@ export function useIsGroupMember(groupSlug: string) {
       setIsMember(false)
     } else if (isAuthorized) {
       getUserIsGroupMember({ groupSlug: groupSlug }).then((result) => {
-        setIsMember(result)
+        setIsMember(result.isGroupMember)
       })
     }
   }, [groupSlug, isAuthorized])
