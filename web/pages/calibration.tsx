@@ -16,14 +16,17 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Spacer } from 'web/components/layout/spacer'
 
+const TRADER_THRESHOLD = 10
+const SAMPLING_P = 0.02
+
 export const getStaticProps = async () => {
-  const bets = await sampleResolvedBets(15, 0.02)
+  const bets = await sampleResolvedBets(TRADER_THRESHOLD, SAMPLING_P)
   const n = bets?.length ?? 0
   console.log('loaded', n, 'sampled bets')
 
   const buckets = getCalibrationPoints(bets ?? [])
   const points = !bets ? [] : getXY(buckets)
-  const score = !bets ? 0 : brierScore(buckets)
+  const score = !bets ? 0 : brierScore(bets)
 
   return {
     props: {
@@ -84,12 +87,12 @@ export default function CalibrationPage(props: {
               </li>
 
               <li>
-                Methodology: Two percent of all past bets in public resolved
-                binary markets with 15 or more traders are sampled to get the
-                average probability before and after the bet. This probability
-                is then bucketed and used to compute the proportion of markets
-                that resolve YES. Sample size: {formatLargeNumber(n)} bets.
-                Updates every hour.
+                Methodology: {formatPct(SAMPLING_P)} of all past bets in public
+                resolved binary markets with {TRADER_THRESHOLD} or more traders
+                are sampled to get the average probability before and after the
+                bet. This probability is then bucketed and used to compute the
+                proportion of markets that resolve YES. Sample size:{' '}
+                {formatLargeNumber(n)} bets. Updates every hour.
               </li>
 
               <li>
@@ -100,7 +103,7 @@ export default function CalibrationPage(props: {
               </li>
 
               <li>
-                <InfoTooltip text="Mean squared error of forecasted probability compared to expected probability.">
+                <InfoTooltip text="Mean squared error of forecasted probability compared to the true outcome.">
                   Brier score
                 </InfoTooltip>
                 : {Math.round(score * 1e5) / 1e5}
@@ -259,17 +262,14 @@ const getCalibrationPoints = (data: BetSample[]) => {
   return buckets
 }
 
-const brierScore = (buckets: { [key: number]: number }): number => {
-  const squaredErrors = Object.entries(buckets).map(([point, prob]) => {
-    const binaryProb = Number(point) / 100
-    const error = binaryProb - prob
-    return error * error
-  })
+const brierScore = (data: BetSample[]) => {
+  let total = 0
 
-  const meanSquaredError =
-    squaredErrors.reduce((sum, error) => sum + error, 0) / squaredErrors.length
-
-  return meanSquaredError
+  for (const { prob, is_yes } of data) {
+    const outcome = is_yes ? 1 : 0
+    total += (outcome - prob) ** 2
+  }
+  return !data.length ? 0 : total / data.length
 }
 
 const getXY = (probBuckets: Dictionary<number>) => {
