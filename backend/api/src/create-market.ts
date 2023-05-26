@@ -422,7 +422,7 @@ async function createAnswers(
         totalSubsidy: manaPerAnswer,
       }
       return firestore
-        .collection(`contracts/${contract.id}/answers`)
+        .collection(`contracts/${contract.id}/answersCpmm`)
         .doc(id)
         .set(answer)
     })

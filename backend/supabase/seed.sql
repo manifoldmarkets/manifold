@@ -76,7 +76,7 @@ where
 
 create index if not exists user_profit_cached_all_time_idx on users (((data -> 'profitCached' ->> 'allTime')::numeric));
 
-create index if not exists users_betting_streak_idx on users (((data->'currentBettingStreak')::int));
+create index if not exists users_betting_streak_idx on users (((data -> 'currentBettingStreak')::int));
 
 alter table users
 cluster on users_pkey;
@@ -212,6 +212,7 @@ drop policy if exists "user can insert" on user_events;
 create policy "user can insert" on user_events for insert
 with
   check (true);
+
 create index if not exists user_events_name on user_events (user_id, name);
 
 create index if not exists user_events_ts on user_events (user_id, ts);
@@ -272,21 +273,19 @@ select
   using (true);
 
 create index if not exists user_notifications_data_gin on user_notifications using GIN (data);
-create index if not exists user_notifications_created_time on user_notifications (
-  user_id,
-  (to_jsonb(data)->'createdTime') desc);
+
+create index if not exists user_notifications_created_time on user_notifications (user_id, (to_jsonb(data) -> 'createdTime') desc);
+
 create index if not exists user_notifications_unseen_created_time on user_notifications (
   user_id,
-  (to_jsonb(data)->'isSeen'),
-  (to_jsonb(data)->'createdTime') desc);
+  (to_jsonb(data) -> 'isSeen'),
+  (to_jsonb(data) -> 'createdTime') desc
+);
 
-create index if not exists user_notifications_source_id on user_notifications (
-  user_id,
-  (data->>'sourceId'));
+create index if not exists user_notifications_source_id on user_notifications (user_id, (data ->> 'sourceId'));
 
-
-
-alter table user_notifications cluster on user_notifications_created_time;
+alter table user_notifications
+cluster on user_notifications_created_time;
 
 create table if not exists
   contracts (
@@ -1052,12 +1051,18 @@ select
 create table if not exists
   answers (
     id text not null primary key,
-    contract_id text not null, -- Associated contract
-    user_id text not null, -- Creator of the answer
-    text text not null,
-    pool_yes numeric not null, -- YES shares in the pool
-    pool_no numeric not null, -- NO shares in the pool
-    created_time timestamptz not null default now()
+    contract_id text, -- Associated contract
+    user_id text, -- Creator of the answer
+    text text,
+    created_time timestamptz default now(),
+    -- Mechanism props
+    pool_yes numeric, -- YES shares in the pool
+    pool_no numeric, -- NO shares in the pool
+    prob numeric, -- Probability of YES computed from pool_yes and pool_no
+    total_subsidy numeric, -- Total subsidy for this answer
+    subsidy_pool numeric, -- Current value of subsidy pool in Ṁ, which will be added over time to poolYes and poolNo
+    data jsonb not null,
+    fs_updated_time timestamp not null
   );
 
 alter table answers enable row level security;
@@ -1067,6 +1072,32 @@ drop policy if exists "public read" on answers;
 create policy "public read" on answers for
 select
   using (true);
+
+create
+or replace function answers_populate_cols () returns trigger language plpgsql as $$
+begin
+  if new.data is not null then
+    new.contract_id := (new.data) ->> 'contractId';
+    new.user_id := (new.data) ->> 'userId';
+    new.text := ((new.data) ->> 'text')::text;
+    new.text := ((new.data) ->> 'text')::text;
+    new.created_time :=
+        case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
+
+    new.pool_yes := ((new.data) ->> 'poolYes')::numeric;
+    new.pool_no := ((new.data) ->> 'poolNo')::numeric;
+    new.prob := ((new.data) ->> 'prob')::numeric;
+    new.total_subsidy := ((new.data) ->> 'totalSubsidy')::numeric;
+    new.subsidy_pool := ((new.data) ->> 'subsidyPool')::numeric;
+  end if;
+  return new;
+end
+$$;
+
+create trigger answers_populate before insert
+or
+update on answers for each row
+execute function answers_populate_cols ();
 
 begin;
 
@@ -1158,6 +1189,7 @@ begin
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)
+           when 'answers' then cast((null, 'id') as table_spec)
            when 'contract_bets' then cast(('contract_id', 'bet_id') as table_spec)
            when 'contract_comments' then cast(('contract_id', 'comment_id') as table_spec)
            when 'contract_follows' then cast(('contract_id', 'follow_id') as table_spec)

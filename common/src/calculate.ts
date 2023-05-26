@@ -64,6 +64,8 @@ export function getOutcomeProbability(contract: Contract, outcome: string) {
       return getProb(contract.pool, outcome)
     case 'dpm-2':
       return getDpmOutcomeProbability(contract.totalShares, outcome)
+    case 'cpmm-multi-1':
+      return 0
     default:
       throw new Error('getOutcomeProbability not implemented')
   }
@@ -86,6 +88,8 @@ export function getOutcomeProbabilityAfterBet(
         outcome,
         bet
       )
+    case 'cpmm-multi-1':
+      return 0
     default:
       throw new Error('getOutcomeProbabilityAfterBet not implemented')
   }
@@ -104,6 +108,8 @@ export function calculateSharesBought(
       return buy(contract.pool, outcome, amount).shares
     case 'dpm-2':
       return calculateDpmShares(contract.totalShares, amount, outcome)
+    case 'cpmm-multi-1':
+      return 0
     default:
       throw new Error('calculateSharesBought not implemented')
   }

@@ -163,6 +163,9 @@ export function ContractPageContent(props: {
   } = contractParams
   const contract =
     useContract(contractParams.contract?.id) ?? contractParams.contract
+  if ('answers' in contractParams.contract) {
+    ;(contract as any).answers = contractParams.contract.answers
+  }
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()

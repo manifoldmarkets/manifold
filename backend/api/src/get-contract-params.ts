@@ -84,7 +84,7 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
   if (contract.mechanism === 'cpmm-multi-1') {
     // Denormalize answers for CPMM multi.
     const answers = await getContractAnswers(db, contract.id)
-    contract.answers = answers
+    if (answers) contract.answers = answers
   }
 
   const totalBets = await getTotalBetCount(contract.id, db)
