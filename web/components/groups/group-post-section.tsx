@@ -41,8 +41,8 @@ export function GroupPosts(props: { posts: Post[]; group: Group }) {
   const user = useUser()
 
   const createPost = (
-    <Modal size="xl" open={showCreatePost} setOpen={setShowCreatePost}>
-      <div className="bg-canvas-0 w-full py-10">
+    <Modal size="lg" open={showCreatePost} setOpen={setShowCreatePost}>
+      <div className="bg-canvas-0 rounded-lg px-4 py-8">
         <CreatePostForm group={group} />
       </div>
     </Modal>
