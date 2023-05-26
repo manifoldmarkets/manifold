@@ -288,6 +288,47 @@ alter table user_notifications
 cluster on user_notifications_created_time;
 
 create table if not exists
+  user_feed (
+              id bigint generated always as identity primary key,
+              created_time timestamptz not null default now(),
+              seen_time timestamptz null, -- null means unseen
+              user_id text not null,
+              event_time timestamptz not null,
+              -- TODO: should we just combine data_type and reason?
+              data_type text not null, -- 'comment', 'contract', 'answer', 'bet', 'news'
+              reason text not null, -- new contract from followed user, new comment on followed contract, etc
+              data jsonb null,
+              contract_id text null,
+              comment_id text null,
+              answer_id text null,
+              creator_id text null,
+              bet_id text null,
+              news_id text null,
+              group_id text null
+);
+
+alter table user_feed enable row level security;
+
+drop policy if exists "public read" on user_feed;
+
+create policy "public read" on user_feed for
+  select
+  using (true);
+
+create index if not exists user_feed_data_gin on user_feed using GIN (data);
+create index if not exists user_feed_created_time on user_feed (
+                                                                user_id,
+                                                                created_time desc);
+
+create index if not exists user_feed_unseen_created_time on user_feed (
+                                                                       user_id,
+                                                                       seen_time desc nulls first,
+                                                                       created_time desc);
+
+alter table user_feed cluster on user_feed_created_time;
+
+
+create table if not exists
   contracts (
     id text not null primary key,
     slug text,

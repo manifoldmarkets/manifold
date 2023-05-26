@@ -936,6 +936,53 @@ export interface Database {
           user_id?: string | null
         }
       }
+      user_feed: {
+        Row: {
+          answer_id: string | null
+          bet_id: string | null
+          comment_id: string | null
+          contract_id: string | null
+          created_time: string
+          creator_id: string | null
+          data: Json | null
+          data_type: string
+          event_time: string
+          id: number
+          news_id: string | null
+          seen_time: string | null
+          user_id: string
+        }
+        Insert: {
+          answer_id?: string | null
+          bet_id?: string | null
+          comment_id?: string | null
+          contract_id?: string | null
+          created_time?: string
+          creator_id?: string | null
+          data?: Json | null
+          data_type: string
+          event_time: string
+          id?: never
+          news_id?: string | null
+          seen_time?: string | null
+          user_id: string
+        }
+        Update: {
+          answer_id?: string | null
+          bet_id?: string | null
+          comment_id?: string | null
+          contract_id?: string | null
+          created_time?: string
+          creator_id?: string | null
+          data?: Json | null
+          data_type?: string
+          event_time?: string
+          id?: never
+          news_id?: string | null
+          seen_time?: string | null
+          user_id?: string
+        }
+      }
       user_follows: {
         Row: {
           data: Json

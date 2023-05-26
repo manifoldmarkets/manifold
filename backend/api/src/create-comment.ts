@@ -11,6 +11,7 @@ import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
 import { APIError, authEndpoint, validate } from './helpers'
+import { addCommentOnContractToFeed } from 'shared/create-feed'
 
 export const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -117,6 +118,7 @@ export const createcomment = authEndpoint(async (req, auth) => {
       totalDeposits: FieldValue.increment(-FLAT_COMMENT_FEE),
     })
   }
+  await addCommentOnContractToFeed(contractId, comment)
 
   return { status: 'success', comment }
 })

@@ -41,6 +41,7 @@ import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import { createSupabaseClient } from 'shared/supabase/init'
+import { addContractToFeed } from 'shared/create-feed'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -142,6 +143,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
   )
 
   await generateContractEmbeddings(contract)
+  await addContractToFeed(contract)
 
   return contract
 }
