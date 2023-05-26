@@ -52,12 +52,17 @@ export function AnswersPanel(props: {
     (a) => isMultipleChoice || ('number' in a && a.number !== 0)
   )
 
+  const answerProbs = answers.map((answer) =>
+    'prob' in answer ? answer.prob : getOutcomeProbability(contract, answer.id)
+  )
+  const answerToProb = Object.fromEntries(
+    answers.map((answer, i) => [answer.id, answerProbs[i]])
+  )
+
   const answersToHide =
     isMultipleChoice || answers.length <= 5
       ? []
-      : answers.filter(
-          (answer) => getOutcomeProbability(contract, answer.id) < 0.01
-        )
+      : answers.filter((answer) => answerToProb[answer.id] < 0.01)
 
   const [winningAnswers, losingAnswers] = partition(
     answers.filter((answer) =>
@@ -72,13 +77,13 @@ export function AnswersPanel(props: {
     ),
     ...sortBy(
       resolution ? [] : losingAnswers,
-      (answer) => -1 * getOutcomeProbability(contract, answer.id)
+      (answer) => -1 * answerToProb[answer.id]
     ),
   ]
 
   const answerItems = sortBy(
     losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
-    (answer) => -getOutcomeProbability(contract, answer.id)
+    (answer) => -answerToProb[answer.id]
   )
 
   const user = useUser()
@@ -233,27 +238,28 @@ function OpenAnswer(props: {
   const { answer, contract, onAnswerCommentClick, color } = props
   const { text } = answer
   const user = useUserByIdOrAnswer(answer)
-  const prob = getOutcomeProbability(contract, answer.id)
+  const prob =
+    'prob' in answer ? answer.prob : getOutcomeProbability(contract, answer.id)
   const probPercent = formatPercent(prob)
-  const [betMode, setBetMode] = useState<'buy' | 'short-sell' | undefined>(
-    undefined
-  )
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
   const colorWidth = 100 * Math.max(prob, 0.01)
+  const isCpmm = contract.mechanism === 'cpmm-multi-1'
   const isDpm = contract.mechanism === 'dpm-2'
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
 
   return (
     <div>
       <Modal
-        open={!!betMode}
-        setOpen={(open) => setBetMode(open ? 'buy' : undefined)}
+        open={!!outcome}
+        setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
       >
-        {betMode && (
+        {outcome && (
           <AnswerBetPanel
+            answers={isCpmm ? contract.answers : undefined}
             answer={answer}
+            outcome={outcome}
             contract={contract}
-            mode={betMode}
-            closePanel={() => setBetMode(undefined)}
+            closePanel={() => setOutcome(undefined)}
             className="sm:max-w-84 bg-canvas-0 text-ink-1000 !rounded-md !px-8 !py-6"
             isModal={true}
           />
@@ -289,7 +295,7 @@ function OpenAnswer(props: {
                 <Button
                   size="2xs"
                   color="gray-outline"
-                  onClick={() => setBetMode('buy')}
+                  onClick={() => setOutcome('YES')}
                   className="my-auto"
                 >
                   Bet
@@ -299,7 +305,7 @@ function OpenAnswer(props: {
                   <Button
                     size="2xs"
                     color="green"
-                    onClick={() => setBetMode('buy')}
+                    onClick={() => setOutcome('YES')}
                     className="my-auto"
                   >
                     YES
@@ -307,7 +313,7 @@ function OpenAnswer(props: {
                   <Button
                     size="2xs"
                     color="red"
-                    onClick={() => setBetMode('short-sell')}
+                    onClick={() => setOutcome('NO')}
                     className="my-auto"
                   >
                     NO

@@ -3,9 +3,7 @@ import React, { useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer, DpmAnswer } from 'common/answer'
-import {
-  MultiContract,
-} from 'common/contract'
+import { MultiContract } from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
 import { APIError, placeBet } from 'web/lib/firebase/api'
@@ -25,21 +23,29 @@ import { BetSignUpPrompt } from '../sign-up-prompt'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import {
   calculateSharesBought,
+  calculateSharesBoughtMulti,
+  getAnswerProbability,
   getOutcomeProbability,
   getOutcomeProbabilityAfterBet,
+  getOutcomeProbabilityAfterBetMulti,
 } from 'common/calculate'
 import { removeUndefinedProps } from 'common/util/object'
 
 export function AnswerBetPanel(props: {
   answer: DpmAnswer | Answer
   contract: MultiContract
-  mode: 'buy' | 'short-sell'
+  outcome: 'YES' | 'NO'
   closePanel: () => void
+  answers?: Answer[]
   className?: string
   isModal?: boolean
 }) {
-  const { answer, contract, closePanel, className, isModal, mode } = props
+  const { answer, contract, closePanel, answers, className, isModal, outcome } =
+    props
   const { id: answerId } = answer
+
+  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  if (isCpmmMulti && !answers) throw new Error('Answers required for cpmm')
 
   const user = useUser()
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
@@ -56,9 +62,9 @@ export function AnswerBetPanel(props: {
     placeBet(
       removeUndefinedProps({
         amount: betAmount,
-        outcome: answerId,
+        answerId,
         contractId: contract.id,
-        shortSell: mode === 'short-sell' ? true : undefined,
+        outcome,
       })
     )
       .then((r) => {
@@ -83,20 +89,22 @@ export function AnswerBetPanel(props: {
       slug: contract.slug,
       contractId: contract.id,
       amount: betAmount,
-      outcome: answerId,
+      answerId,
+      outcome,
     })
   }
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb = getOutcomeProbability(contract, answer.id)
+  const initialProb =
+    isCpmmMulti && answers
+      ? getAnswerProbability(answers, answer.id)
+      : getOutcomeProbability(contract, answer.id)
 
-  const { resultProb, shares, maxPayout } = getSimulatedBetInfo(
-    betAmount ?? 0,
-    answerId,
-    mode,
-    contract
-  )
+  const { resultProb, shares, maxPayout } =
+    isCpmmMulti && answers
+      ? getSimulatedBetInfoCpmm(answers, answer.id, outcome, betAmount ?? 0)
+      : getSimulatedBetInfo(betAmount ?? 0, outcome, contract)
 
   const maxReturn = betAmount ? (maxPayout - betAmount) / betAmount : 0
   const maxReturnPercent = formatPercent(maxReturn)
@@ -116,7 +124,11 @@ export function AnswerBetPanel(props: {
     <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
       <Row className="items-center justify-between self-stretch">
         <div className="text-xl">
-          {mode === 'buy' ? 'Bet on' : 'Sell'}{' '}
+          {isCpmmMulti
+            ? outcome === 'YES'
+              ? 'Bet Yes on'
+              : 'Bet No on'
+            : 'Bet on'}{' '}
           {isModal ? `"${answer.text}"` : 'this answer'}
         </div>
 
@@ -207,7 +219,6 @@ export function AnswerBetPanel(props: {
 const getSimulatedBetInfo = (
   betAmount: number,
   answerId: string,
-  mode: 'buy' | 'short-sell',
   contract: MultiContract
 ) => {
   const resultProb = getOutcomeProbabilityAfterBet(
@@ -229,4 +240,27 @@ const getSimulatedBetInfo = (
     : 0
 
   return { resultProb, maxPayout, shares }
+}
+
+const getSimulatedBetInfoCpmm = (
+  answers: Answer[],
+  answerId: string,
+  outcome: 'YES' | 'NO',
+  betAmount: number
+) => {
+  const resultProb = getOutcomeProbabilityAfterBetMulti(
+    answers,
+    answerId,
+    outcome,
+    betAmount
+  )
+
+  const shares = calculateSharesBoughtMulti(
+    answers,
+    answerId,
+    outcome,
+    betAmount
+  )
+
+  return { resultProb, maxPayout: shares, shares }
 }
