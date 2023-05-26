@@ -47,11 +47,6 @@ module.exports = {
         permanent: false,
       },
       {
-        source: '/about',
-        destination: ABOUT_PAGE_URL,
-        permanent: false,
-      },
-      {
         source: '/analytics',
         destination: '/stats',
         permanent: true,

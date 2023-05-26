@@ -182,6 +182,6 @@ const bottomNav = (
           : SparklesIcon,
       onClick: toggleTheme,
     },
-    { name: 'Sitemap', href: '/sitemap', icon: MapIcon },
+    { name: 'About', href: '/about', icon: MapIcon },
     loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )

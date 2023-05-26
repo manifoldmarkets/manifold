@@ -29,6 +29,7 @@ import { PrivacyAndTerms } from 'web/components/privacy-terms'
 import clsx from 'clsx'
 import { ContractCardNew } from 'web/components/contract/contract-card'
 import { formatMoney } from 'common/util/format'
+import { SiteLink } from 'web/components/widgets/site-link'
 
 const excludedGroupSlugs = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
@@ -68,6 +69,11 @@ export default function Home(props: {
             <LogoSEO />
 
             <div className="hidden items-center gap-2 lg:flex">
+              <SiteLink href="/about">
+                <Button color="gray-white" size="xs">
+                  About
+                </Button>
+              </SiteLink>
               <Button
                 color="gray-white"
                 size="xs"
