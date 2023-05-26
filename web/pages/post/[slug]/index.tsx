@@ -21,7 +21,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { listAllCommentsOnPost } from 'web/lib/firebase/comments'
 import { PostComment } from 'common/comment'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
-import { groupBy, set, sortBy } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 import {
   PostCommentInput,
   PostCommentThread,
