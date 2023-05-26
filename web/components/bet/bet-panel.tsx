@@ -158,9 +158,9 @@ export function BuyPanel(props: {
     isSubmitting || !betAmount || !!error || outcome === undefined
 
   const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
+    contract,
     outcome ?? 'YES',
     betAmount ?? 0,
-    contract,
     undefined,
     unfilledBets,
     balanceByUserId
@@ -557,9 +557,9 @@ function LimitOrderPanel(props: {
     totalFees: yesFees,
     newBet: yesBet,
   } = getBinaryBetStats(
+    contract,
     'YES',
     yesAmount,
-    contract,
     yesLimitProb ?? initialProb,
     unfilledBets,
     balanceByUserId
@@ -572,9 +572,9 @@ function LimitOrderPanel(props: {
     totalFees: noFees,
     newBet: noBet,
   } = getBinaryBetStats(
+    contract,
     'NO',
     noAmount,
-    contract,
     noLimitProb ?? initialProb,
     unfilledBets,
     balanceByUserId

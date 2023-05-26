@@ -15,6 +15,7 @@ import {
   BetInfo,
   getBinaryCpmmBetInfo,
   getNewMultiBetInfo,
+  getNewMultiCpmmBetInfo,
   getNumericBetsInfo,
 } from 'common/new-bet'
 import { addObjects, removeUndefinedProps } from 'common/util/object'
@@ -24,6 +25,7 @@ import { redeemShares } from './redeem-shares'
 import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { createLimitBetCanceledNotification } from 'shared/create-notification'
+import { Answer } from 'common/answer'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -36,9 +38,13 @@ const binarySchema = z.object({
   expiresAt: z.number().optional(),
 })
 
-const freeResponseSchema = z.object({
-  outcome: z.string(),
-  shortSell: z.boolean().optional(),
+const multipleChoiceSchema = z.object({
+  answerId: z.string(),
+
+  // Used for new multiple choice contracts (cpmm-multi-1).
+  outcome: z.enum(['YES', 'NO']).optional(),
+  limitProb: z.number().gte(0).lte(1).optional(),
+  expiresAt: z.number().optional(),
 })
 
 const numericSchema = z.object({
@@ -116,9 +122,9 @@ export const placebet = authEndpoint(async (req, auth) => {
           await getUnfilledBetsAndUserBalances(trans, contractDoc, auth.uid)
 
         return getBinaryCpmmBetInfo(
+          contract,
           outcome,
           amount,
-          contract,
           limitProb,
           unfilledBets,
           balanceByUserId,
@@ -128,11 +134,41 @@ export const placebet = authEndpoint(async (req, auth) => {
         (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
         mechanism == 'dpm-2'
       ) {
-        const { outcome } = validate(freeResponseSchema, req.body)
-        const answerDoc = contractDoc.collection('answers').doc(outcome)
+        const { answerId } = validate(multipleChoiceSchema, req.body)
+        const answerDoc = contractDoc.collection('answers').doc(answerId)
         const answerSnap = await trans.get(answerDoc)
-        if (!answerSnap.exists) throw new APIError(400, 'Invalid answer')
-        return getNewMultiBetInfo(outcome, amount, contract)
+        if (!answerSnap.exists) throw new APIError(400, 'Invalid answerId')
+        return getNewMultiBetInfo(answerId, amount, contract)
+      } else if (
+        outcomeType === 'MULTIPLE_CHOICE' &&
+        mechanism == 'cpmm-multi-1'
+      ) {
+        const {
+          answerId,
+          outcome = 'YES',
+          limitProb,
+          expiresAt,
+        } = validate(multipleChoiceSchema, req.body)
+        const answersSnap = await trans.get(
+          contractDoc.collection('answersCpmm')
+        )
+        const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+        const answer = answers.find((a) => a.id === answerId)
+        if (!answer) throw new APIError(400, 'Invalid answerId')
+
+        const { unfilledBets, balanceByUserId } =
+          await getUnfilledBetsAndUserBalances(trans, contractDoc, auth.uid)
+
+        return getNewMultiCpmmBetInfo(
+          contract,
+          answer,
+          outcome,
+          amount,
+          limitProb,
+          unfilledBets,
+          balanceByUserId,
+          expiresAt
+        )
       } else if (outcomeType == 'NUMERIC' && mechanism == 'dpm-2') {
         const { outcome, value } = validate(numericSchema, req.body)
         return getNumericBetsInfo(value, outcome, amount, contract)
@@ -182,18 +218,38 @@ export const placebet = authEndpoint(async (req, auth) => {
     log(`Updated user ${user.username} balance - auth ${auth.uid}.`)
 
     if (newBet.amount !== 0) {
-      trans.update(
-        contractDoc,
-        removeUndefinedProps({
-          pool: newPool,
-          p: newP,
-          totalShares: newTotalShares,
-          totalBets: newTotalBets,
-          totalLiquidity: newTotalLiquidity,
-          collectedFees: addObjects(newBet.fees, collectedFees),
-          volume: volume + newBet.amount,
-        })
-      )
+      // Multi-cpmm-1 contracts:
+      if (newBet.answerId) {
+        trans.update(
+          contractDoc,
+          removeUndefinedProps({
+            volume: volume + newBet.amount,
+          })
+        )
+        const poolYes = newPool?.YES
+        const poolNo = newPool?.NO
+        trans.update(
+          contractDoc.collection('answersCpmm').doc(newBet.answerId),
+          removeUndefinedProps({
+            poolYes,
+            poolNo,
+            prob: newBet.probAfter,
+          })
+        )
+      } else {
+        trans.update(
+          contractDoc,
+          removeUndefinedProps({
+            pool: newPool,
+            p: newP,
+            totalShares: newTotalShares,
+            totalBets: newTotalBets,
+            totalLiquidity: newTotalLiquidity,
+            collectedFees: addObjects(newBet.fees, collectedFees),
+            volume: volume + newBet.amount,
+          })
+        )
+      }
       log(`Updated contract ${contract.slug} properties - auth ${auth.uid}.`)
     }
 

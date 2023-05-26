@@ -128,8 +128,10 @@ export function calculateCpmmAmountToProb(
   const k = y ** p * n ** (1 - p)
   return outcome === 'YES'
     ? // https://www.wolframalpha.com/input?i=-1+%2B+t+-+((-1+%2B+p)+t+(k%2F(n+%2B+b))^(1%2Fp))%2Fp+solve+b
-      ((p * (prob - 1)) / ((p - 1) * prob)) ** (-p)*(k - n * ((p * (prob - 1)) / ((p - 1) * prob)) ** p)
-    : (((1 - p) * (prob - 1)) / ((-p) * prob)) ** (p-1)*(k - y * (((1 - p) * (prob - 1)) / ((-p) * prob)) ** (1 - p))
+      ((p * (prob - 1)) / ((p - 1) * prob)) ** -p *
+        (k - n * ((p * (prob - 1)) / ((p - 1) * prob)) ** p)
+    : (((1 - p) * (prob - 1)) / (-p * prob)) ** (p - 1) *
+        (k - y * (((1 - p) * (prob - 1)) / (-p * prob)) ** (1 - p))
 }
 
 function calculateAmountToBuyShares(
@@ -143,9 +145,9 @@ function calculateAmountToBuyShares(
   // Min share price is Ṁ0, and max is Ṁ1 each.
   return binarySearch(0, shares, (amount) => {
     const { takers } = computeFills(
+      state,
       outcome,
       amount,
-      state,
       undefined,
       unfilledBets,
       balanceByUserId
@@ -177,9 +179,9 @@ export function calculateCpmmSale(
   )
 
   const { cpmmState, makers, takers, totalFees, ordersToCancel } = computeFills(
+    state,
     oppositeOutcome,
     buyAmount,
-    state,
     undefined,
     unfilledBets,
     balanceByUserId

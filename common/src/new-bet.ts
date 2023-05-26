@@ -16,6 +16,7 @@ import {
 } from './calculate-cpmm'
 import {
   CPMMBinaryContract,
+  CPMMMultiContract,
   DPMBinaryContract,
   DPMContract,
   NumericContract,
@@ -30,6 +31,7 @@ import {
   floatingGreaterEqual,
   floatingLesserEqual,
 } from './util/math'
+import { Answer } from './answer'
 
 export type CandidateBet<T extends Bet = Bet> = Omit<
   T,
@@ -149,9 +151,9 @@ const computeFill = (
 }
 
 export const computeFills = (
+  state: CpmmState,
   outcome: 'YES' | 'NO',
   betAmount: number,
-  state: CpmmState,
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number | undefined }
@@ -236,46 +238,91 @@ export const computeFills = (
   return { takers, makers, totalFees, cpmmState, ordersToCancel }
 }
 
-export const getBinaryCpmmBetInfo = (
+export const computeCpmmBet = (
+  cpmmState: CpmmState,
   outcome: 'YES' | 'NO',
   betAmount: number,
-  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract,
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number },
-  expiresAt?: number
+  balanceByUserId: { [userId: string]: number }
 ) => {
-  const { pool, p } = contract
-  const { takers, makers, cpmmState, totalFees, ordersToCancel } = computeFills(
+  const {
+    takers,
+    makers,
+    cpmmState: afterCpmmState,
+    ordersToCancel,
+  } = computeFills(
+    cpmmState,
     outcome,
     betAmount,
-    { pool, p },
     limitProb,
     unfilledBets,
     balanceByUserId
   )
-  const probBefore = getCpmmProbability(contract.pool, contract.p)
-  const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const probBefore = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const probAfter = getCpmmProbability(afterCpmmState.pool, afterCpmmState.p)
 
   const takerAmount = sumBy(takers, 'amount')
   const takerShares = sumBy(takers, 'shares')
   const isFilled = floatingEqual(betAmount, takerAmount)
 
-  const newBet: CandidateBet = removeUndefinedProps({
-    orderAmount: betAmount,
+  return {
     amount: takerAmount,
     shares: takerShares,
+    isFilled,
+    fills: takers,
+    probBefore,
+    probAfter,
+    makers,
+    ordersToCancel,
+    ...afterCpmmState,
+  }
+}
+
+export const getBinaryCpmmBetInfo = (
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract,
+  outcome: 'YES' | 'NO',
+  betAmount: number,
+  limitProb: number | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+  expiresAt?: number
+) => {
+  const cpmmState = { pool: contract.pool, p: contract.p }
+  const {
+    amount,
+    shares,
+    isFilled,
+    fills,
+    probBefore,
+    probAfter,
+    makers,
+    ordersToCancel,
+    pool,
+    p,
+  } = computeCpmmBet(
+    cpmmState,
+    outcome,
+    betAmount,
+    limitProb,
+    unfilledBets,
+    balanceByUserId
+  )
+  const newBet: CandidateBet = removeUndefinedProps({
+    orderAmount: betAmount,
+    amount,
+    shares,
     limitProb,
     isFilled,
     isCancelled: false,
-    fills: takers,
+    fills,
     contractId: contract.id,
     outcome,
     probBefore,
     probAfter,
     loanAmount: 0,
     createdTime: Date.now(),
-    fees: totalFees,
+    fees: noFees,
     isAnte: false,
     isRedemption: false,
     isChallenge: false,
@@ -283,31 +330,27 @@ export const getBinaryCpmmBetInfo = (
     expiresAt,
   })
 
-  const { liquidityFee } = totalFees
-  const newTotalLiquidity = (contract.totalLiquidity ?? 0) + liquidityFee
-
   return {
     newBet,
-    newPool: cpmmState.pool,
-    newP: cpmmState.p,
-    newTotalLiquidity,
+    newPool: pool,
+    newP: p,
     makers,
     ordersToCancel,
   }
 }
 
 export const getBinaryBetStats = (
+  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract,
   outcome: 'YES' | 'NO',
   betAmount: number,
-  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract,
   limitProb: number,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number }
 ) => {
   const { newBet } = getBinaryCpmmBetInfo(
+    contract,
     outcome,
     betAmount ?? 0,
-    contract,
     limitProb,
     unfilledBets,
     balanceByUserId
@@ -459,4 +502,66 @@ export const getNumericBetsInfo = (
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }
+}
+
+export const getNewMultiCpmmBetInfo = (
+  contract: CPMMMultiContract,
+  answer: Answer,
+  outcome: 'YES' | 'NO',
+  betAmount: number,
+  limitProb: number | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+  expiresAt?: number
+) => {
+  const { poolYes, poolNo } = answer
+  const pool = { YES: poolYes, NO: poolNo }
+  const cpmmState = { pool, p: 0.5 }
+
+  const answerUnfilledBets = unfilledBets.filter(
+    (b) => b.answerId === answer.id
+  )
+
+  const {
+    amount,
+    fills,
+    isFilled,
+    makers,
+    ordersToCancel,
+    probAfter,
+    probBefore,
+    shares,
+    pool: newPool,
+  } = computeCpmmBet(
+    cpmmState,
+    outcome,
+    betAmount,
+    limitProb,
+    answerUnfilledBets,
+    balanceByUserId
+  )
+
+  const newBet: CandidateBet = removeUndefinedProps({
+    contractId: contract.id,
+    outcome,
+    orderAmount: betAmount,
+    limitProb,
+    amount,
+    loanAmount: 0,
+    shares,
+    answerId: answer.id,
+    fills,
+    isFilled,
+    probBefore,
+    probAfter,
+    createdTime: Date.now(),
+    fees: noFees,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
+    visibility: contract.visibility,
+    expiresAt,
+  })
+
+  return { newBet, newPool, ordersToCancel, makers }
 }
