@@ -2,7 +2,10 @@
 id: api
 slug: /api
 ---
-# API
+# Manifold API
+
+
+Programatic access to [Manifold Markets](https://manifold.markets).
 
 :::caution
 
