@@ -13,6 +13,7 @@ import { searchGroups } from 'web/lib/supabase/groups'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import { Input } from '../widgets/input'
+import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 const INITIAL_STATE = {
   groups: undefined,
@@ -46,7 +47,7 @@ export default function GroupSearch(props: {
   const loadMoreGroups = () => performQuery(state)
 
   const searchTerm = useRef<string>('')
-  const [inputTerm, setInputTerm] = useState<string>('')
+  const [inputTerm, setInputTerm] = useState<string | undefined>(undefined)
   const searchTermStore = inMemoryStore<string>()
 
   const requestId = useRef(0)
@@ -58,6 +59,7 @@ export default function GroupSearch(props: {
     ),
     []
   )
+
   const query = async (currentState: groupStateType, freshQuery?: boolean) => {
     const id = ++requestId.current
     const offset = freshQuery
@@ -126,6 +128,7 @@ export default function GroupSearch(props: {
     onSearchTermChanged(inputTerm)
   }, [inputTerm])
 
+  console.log(state.groups, groups)
   return (
     <Col>
       <Input

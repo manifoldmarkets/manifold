@@ -88,7 +88,7 @@ export type stateType = {
   showTime: ShowTime | null
 }
 
-export function SupabaseContractSearch(props: {
+export function  SupabaseContractSearch(props: {
   persistPrefix: string
   defaultSort?: Sort
   defaultFilter?: filter
