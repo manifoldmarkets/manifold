@@ -128,7 +128,6 @@ export default function GroupSearch(props: {
     onSearchTermChanged(inputTerm)
   }, [inputTerm])
 
-  console.log(state.groups, groups)
   return (
     <Col>
       <Input
