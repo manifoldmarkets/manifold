@@ -5,10 +5,12 @@ import { updateData } from 'shared/supabase/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { isAdmin } from 'common/envs/constants'
+import { contentSchema } from 'shared/zod-types'
+import { MAX_ABOUT_LENGTH } from 'common/group'
 
 const schema = z.object({
   id: z.string(),
-  aboutPostId: z.string().optional(),
+  about: contentSchema.or(z.string().max(MAX_ABOUT_LENGTH)).optional(),
   bannerUrl: z.string().optional(),
 })
 

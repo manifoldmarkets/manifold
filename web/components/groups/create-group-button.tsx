@@ -18,22 +18,6 @@ import { Title } from '../widgets/title'
 import { savePost } from './group-about-section'
 import { PrivacyStatusView } from './group-privacy-modal'
 
-export function editorHasContent(editor: Editor | null) {
-  if (!editor) {
-    return false
-  }
-  const editorJSON = editor.getJSON()
-  if (!editorJSON || !editorJSON.content) {
-    return false
-  }
-  return (
-    editorJSON.content.length >= 1 &&
-    editorJSON.content.some(
-      (content) => content.attrs || content.content || content.text
-    )
-  )
-}
-
 export function CreateGroupButton(props: {
   user: User
   className?: string
@@ -92,8 +76,8 @@ export function CreateGroupButton(props: {
       setIsSubmitting(false)
       return false
     }
-    if (editorHasContent(editor)) {
-      savePost(editor, result.group, null)
+    if (editor && !editor.isEmpty) {
+      savePost(editor, result.group)
     }
     editor?.commands.clearContent(true)
 
