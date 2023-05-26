@@ -97,7 +97,7 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
       ? await getPost(group.aboutPostId)
       : null
 
-    const posts = (await getPosts(group.postIds)).filter(
+    const posts = (await getPosts(group.postIds ?? [])).filter(
       (p) => p.id !== group.aboutPostId
     ) as Post[]
     return {
