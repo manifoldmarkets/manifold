@@ -221,6 +221,7 @@ export function AddMemberWidget(props: {
             error: errorMessage,
           }
         )
+        setDisabled(true)
       },
     },
     {
@@ -238,6 +239,7 @@ export function AddMemberWidget(props: {
             error: errorMessage,
           }
         )
+        setDisabled(true)
       },
     }
   )
@@ -280,15 +282,18 @@ export function AddMemberWidget(props: {
           Icon={
             <ChevronDownIcon
               className={clsx(
-                'text-primary-500 group-hover:text-canvas-50 h-5 w-5'
+                disabled
+                  ? 'text-ink-300 cursor-not-allowed'
+                  : 'text-primary-500 group-hover:text-canvas-50',
+                'h-5 w-5'
               )}
             />
           }
           menuWidth={'w-40'}
           buttonClass={clsx(
-            buttonClass('2xs', 'indigo-outline'),
-            'rounded-l-none border-l-0 px-1 py-[6px] group'
+            'border-primary-500 border-2 border-l-0 px-1 py-[4px] group rounded-l-none rounded-md disabled:border-ink-300 enabled:hover:bg-primary-500'
           )}
+          buttonDisabled={disabled}
         />
       </Row>
     </Row>
