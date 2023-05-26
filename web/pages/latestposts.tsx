@@ -3,7 +3,6 @@ import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { useTracking } from 'web/hooks/use-tracking'
-import { useAllPosts } from 'web/hooks/use-post'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Masonry from 'react-masonry-css'
 import { Post } from 'common/post'
@@ -12,10 +11,20 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { buttonClass } from 'web/components/buttons/button'
 import Link from 'next/link'
+import { getAllPosts } from 'web/lib/supabase/post'
 
-export default function LatestPostsPage() {
+export async function getStaticProps() {
+  const posts = await getAllPosts()
+  return {
+    props: {
+      posts,
+    },
+  }
+}
+
+export default function LatestPostsPage(props: { posts: Post[] }) {
   useTracking('view latest posts page')
-  const posts = useAllPosts(true)
+  const { posts } = props
   const user = useUser()
 
   return (
