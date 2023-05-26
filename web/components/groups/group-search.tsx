@@ -13,7 +13,6 @@ import { searchGroups } from 'web/lib/supabase/groups'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import { Input } from '../widgets/input'
-import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 const INITIAL_STATE = {
   groups: undefined,
