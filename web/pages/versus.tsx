@@ -25,22 +25,22 @@ import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
-  useContracts,
   useRealtimeContract,
+  useContracts,
 } from 'web/hooks/use-contract-supabase'
-import { useGroupContractIds } from 'web/hooks/use-group'
+import { useRealtimeGroupContractIds } from 'web/hooks/use-group-supabase'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { createDebate } from 'web/lib/firebase/api'
-import { listGroupContracts } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
+import { getGroupContracts } from 'web/lib/supabase/groups'
 
 const debateGroupId = '0i8ozKhPq5qJ89DG9tCW'
 
 export const getStaticProps = async () => {
-  const contracts = await listGroupContracts(debateGroupId)
+  const contracts = await getGroupContracts(debateGroupId)
   const openContracts = contracts.filter(
     (contract) => contract.isResolved === false
   )
@@ -52,7 +52,7 @@ export const getStaticProps = async () => {
 }
 
 const Versus = (props: { contracts: Contract[] }) => {
-  const contractIds = useGroupContractIds(debateGroupId)
+  const contractIds = useRealtimeGroupContractIds(debateGroupId) ?? []
   const loadedContracts = filterDefined(useContracts(contractIds))
   const contracts =
     loadedContracts.length >= props.contracts.length

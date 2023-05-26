@@ -11,7 +11,7 @@ import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
-import { useMemberGroupIds } from 'web/hooks/use-group'
+import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
 
 function PrivateGroupsBanner() {
@@ -27,7 +27,7 @@ function PrivateGroupsBanner() {
 
 export default function Groups() {
   const user = useUser()
-  const yourGroupIds = useMemberGroupIds(user)
+  const yourGroupIds = useRealtimeMemberGroupIds(user)
   return (
     <Page>
       <SEO

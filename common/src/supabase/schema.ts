@@ -1929,6 +1929,14 @@ export interface Database {
         }
         Returns: string
       }
+      get_group_contracts: {
+        Args: {
+          this_group_id: string
+        }
+        Returns: {
+          data: Json
+        }[]
+      }
       get_last_week_long_link: {
         Args: {
           this_group_id: string
@@ -2434,6 +2442,16 @@ export interface Database {
         Returns: {
           id: number
           succeeded: boolean
+        }[]
+      }
+      sample_resolved_bets: {
+        Args: {
+          trader_threshold: number
+          p: number
+        }
+        Returns: {
+          prob: number
+          is_yes: boolean
         }[]
       }
       save_user_topics: {

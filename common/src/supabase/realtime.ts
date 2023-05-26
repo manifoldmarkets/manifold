@@ -50,6 +50,14 @@ export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
     pk: ['id'],
     ts: (r) => Date.parse(r.fs_updated_time),
   },
+  group_members: {
+    pk: ['group_id', 'member_id'],
+    ts: (r) => Date.parse(r.fs_updated_time),
+  },
+  group_contracts: {
+    pk: ['group_id', 'contract_id'],
+    ts: (r) => Date.parse(r.fs_updated_time),
+  },
 }
 
 export function buildFilterString<T extends TableName>(filter: Filter<T>) {
