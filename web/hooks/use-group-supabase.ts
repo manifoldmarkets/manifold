@@ -30,10 +30,9 @@ import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized, useUser } from './use-user'
 
 export function useIsGroupMember(groupSlug: string) {
-  const [isMember, setIsMember] = usePersistentInMemoryState<any | undefined>(
-    undefined,
-    'is-member-' + groupSlug
-  )
+  const [isMember, setIsMember] = usePersistentInMemoryState<
+    boolean | undefined
+  >(undefined, 'is-member-' + groupSlug)
   const isAuthorized = useIsAuthorized()
   useEffect(() => {
     // if there is no user
