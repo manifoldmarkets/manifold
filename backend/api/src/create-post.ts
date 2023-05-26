@@ -5,36 +5,13 @@ import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
 import { Post, MAX_POST_TITLE_LENGTH } from 'common/post'
 import { APIError, authEndpoint, validate } from './helpers'
-import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
 import { removeUndefinedProps } from 'common/util/object'
 import { createMarketHelper } from './create-market'
 import { DAY_MS } from 'common/util/time'
 import { runTxn } from 'shared/run-txn'
 import { PostAdCreateTxn } from 'common/txn'
-
-const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
-  z.intersection(
-    z.record(z.any()),
-    z.object({
-      type: z.string().optional(),
-      attrs: z.record(z.any()).optional(),
-      content: z.array(contentSchema).optional(),
-      marks: z
-        .array(
-          z.intersection(
-            z.record(z.any()),
-            z.object({
-              type: z.string(),
-              attrs: z.record(z.any()).optional(),
-            })
-          )
-        )
-        .optional(),
-      text: z.string().optional(),
-    })
-  )
-)
+import { contentSchema } from 'shared/zod-types'
 
 const postSchema = z
   .object({
