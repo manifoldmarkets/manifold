@@ -1,6 +1,6 @@
 import { Page } from 'web/components/layout/page'
-
-import { postPath, getPostBySlug, updatePost } from 'web/lib/firebase/posts'
+import { getPostBySlug } from 'web/lib/supabase/post'
+import { postPath, updatePost } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
 import { Title } from 'web/components/widgets/title'
 import { Spacer } from 'web/components/layout/spacer'
@@ -21,14 +21,13 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { listAllCommentsOnPost } from 'web/lib/firebase/comments'
 import { PostComment } from 'common/comment'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, set, sortBy } from 'lodash'
 import {
   PostCommentInput,
   PostCommentThread,
 } from 'web/components/posts/post-comments'
 import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useUser } from 'web/hooks/use-user'
-import { usePost } from 'web/hooks/use-post'
 import { SEO } from 'web/components/SEO'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
 import { richTextToString } from 'common/util/parse'
@@ -79,9 +78,8 @@ export default function PostPage(props: {
   watched?: string[] //user ids
   skipped?: string[] //user ids
 }) {
-  const { creator, watched = [], skipped = [] } = props
-  const postId = props.post?.id ?? '_'
-  const post = usePost(postId) ?? props.post
+  const { creator, watched = [], skipped = [], post } = props
+  const postId = post?.id ?? '_'
 
   const tips = useTipTxns({ postId })
   const updatedComments = useCommentsOnPost(postId)
@@ -237,6 +235,7 @@ export function RichEditPost(props: {
 }) {
   const { post, canEdit, children } = props
   const [editing, setEditing] = useState(false)
+  const [contentCache, setContentCache] = useState(post.content)
 
   const editor = useTextEditor({
     defaultValue: post.content,
@@ -247,9 +246,11 @@ export function RichEditPost(props: {
   async function savePost() {
     if (!editor) return
 
+    setContentCache(editor.getJSON())
     await updatePost(post, {
       content: editor.getJSON(),
     })
+    setEditing(false)
   }
 
   return editing ? (
@@ -257,14 +258,7 @@ export function RichEditPost(props: {
       <TextEditor editor={editor} />
       <Spacer h={2} />
       <Row className="gap-2">
-        <Button
-          onClick={async () => {
-            await savePost()
-            setEditing(false)
-          }}
-        >
-          Save
-        </Button>
+        <Button onClick={savePost}>Save</Button>
         <Button color="gray" onClick={() => setEditing(false)}>
           Cancel
         </Button>
@@ -272,7 +266,7 @@ export function RichEditPost(props: {
     </>
   ) : (
     <Col>
-      <Content size="lg" content={post.content} />
+      <Content size="lg" content={contentCache} />
       {canEdit && (
         <Row className="place-content-end">
           <Button

@@ -145,7 +145,6 @@ export const createpost = authEndpoint(async (req, auth) => {
     creatorName: creator.name,
     creatorUsername: creator.username,
     creatorAvatarUrl: creator.avatarUrl,
-    itemType: 'post',
     visibility: 'public',
     groupId,
   })

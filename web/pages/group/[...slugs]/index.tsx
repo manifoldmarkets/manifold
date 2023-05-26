@@ -41,12 +41,10 @@ import {
 } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { usePosts } from 'web/hooks/use-post'
 import { useRealtimePost } from 'web/hooks/use-post-supabase'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { listPosts } from 'web/lib/firebase/posts'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
-import { getPost } from 'web/lib/supabase/post'
+import { getPost, getPosts } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
@@ -99,8 +97,8 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
       ? await getPost(group.aboutPostId)
       : null
 
-    const posts = ((group && (await listPosts(group.postIds))) ?? []).filter(
-      (p) => p != null
+    const posts = (await getPosts(group.postIds)).filter(
+      (p) => p.id !== group.aboutPostId
     ) as Post[]
     return {
       props: {
@@ -190,7 +188,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
   const aboutPost =
     useRealtimePost(group?.aboutPostId) ?? groupParams?.aboutPost
-  const groupPosts = usePosts(group?.postIds ?? []) ?? groupParams?.posts ?? []
+  const groupPosts = groupParams?.posts ?? []
   const creator = useGroupCreator(group) ?? groupParams?.creator
   const topTraders =
     useToTopUsers((group && group.cachedLeaderboard?.topTraders) ?? []) ??

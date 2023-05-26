@@ -1,6 +1,4 @@
 import { Page } from 'web/components/layout/page'
-
-import { getDateDocs } from 'web/lib/firebase/posts'
 import type { DateDoc } from 'common/post'
 import { Title } from 'web/components/widgets/title'
 import { Col } from 'web/components/layout/col'
@@ -10,14 +8,13 @@ import { buttonClass } from 'web/components/buttons/button'
 import { getUser, User } from 'web/lib/firebase/users'
 import { DateDocPost } from './[username]'
 import { NoSEO } from 'web/components/NoSEO'
-import { useDateDocs } from 'web/hooks/use-post'
 import { useTracking } from 'web/hooks/use-tracking'
 import Link from 'next/link'
 import clsx from 'clsx'
-import { sortBy } from 'lodash'
+import { getDateDocs } from 'web/lib/supabase/post'
 
 export async function getStaticProps() {
-  const dateDocs = sortBy(await getDateDocs(), 'createdTime').reverse()
+  const dateDocs = await getDateDocs()
   const docCreators = await Promise.all(
     dateDocs.map((d) => getUser(d.creatorId))
   )
@@ -36,10 +33,8 @@ export default function DatePage(props: {
   dateDocs: DateDoc[]
   docCreators: User[]
 }) {
-  const { docCreators } = props
+  const { docCreators, dateDocs } = props
   const user = useUser()
-
-  const dateDocs = useDateDocs() ?? props.dateDocs
 
   const hasDoc = dateDocs.some((d) => d.creatorId === user?.id)
   useTracking('view date docs page')
