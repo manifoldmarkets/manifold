@@ -221,7 +221,7 @@ service cloud.firestore {
     }
 
     match /groups/{groupId} {
-      allow read;
+      allow read: if (resource.data.privacyStatus!='private' || isGroupMember(groupId) || isAdmin());
       allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                         && request.resource.data.diff(resource.data)
                         .affectedKeys()
