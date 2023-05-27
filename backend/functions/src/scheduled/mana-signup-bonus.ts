@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as dayjs from 'dayjs'
 
-import { getPrivateUser, isProd } from 'shared/utils'
+import { getPrivateUser } from 'shared/utils'
 import {
   MANIFOLD_AVATAR_URL,
   MANIFOLD_USER_NAME,
@@ -12,10 +12,6 @@ import {
 import { Notification } from 'common/notification'
 import { STARTING_BONUS } from 'common/economy'
 import { SignupBonusTxn } from 'common/txn'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
 import { APIError } from 'common/api'
 import { userOptedOutOfBrowserNotifications } from 'common/user-notification-preferences'
 import { runTxn, TxnData } from 'shared/run-txn'
@@ -59,15 +55,13 @@ export async function sendOneWeekManaBonuses() {
 
       console.log('sending m$ bonus to', user.username)
       const signupBonusTxn: TxnData = {
+        fromId: 'BANK',
         fromType: 'BANK',
         amount: STARTING_BONUS,
         category: 'SIGNUP_BONUS',
         toId: user.id,
         token: 'M$',
         toType: 'USER',
-        fromId: isProd()
-          ? HOUSE_LIQUIDITY_PROVIDER_ID
-          : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
         description: 'Signup bonus',
         data: {},
       } as SignupBonusTxn

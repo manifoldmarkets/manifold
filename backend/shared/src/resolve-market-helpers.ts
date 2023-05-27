@@ -212,9 +212,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
       const bonusTxn: TxnData = {
         fromId: contract.creatorId,
         fromType: 'USER',
-        toId: isProd()
-          ? HOUSE_LIQUIDITY_PROVIDER_ID
-          : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+        toId: 'BANK',
         toType: 'BANK',
         amount: totalBonusAmount,
         token: 'M$',

@@ -5,10 +5,6 @@ import { q_and_a_answer, q_and_a } from 'common/q-and-a'
 import { QAndAAwardTxn } from 'common/txn'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import {
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
 import { runTxn } from 'shared/run-txn'
 import { isProd } from 'shared/utils'
 
@@ -64,9 +60,7 @@ export const awardQAndAAnswer = authEndpoint(async (req, auth) => {
   const ref = firestore.collection('txns').doc()
   const data: QAndAAwardTxn = {
     id: ref.id,
-    fromId: isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+    fromId: 'BANK',
     fromType: 'BANK',
     toId: auth.uid,
     toType: 'USER',

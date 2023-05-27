@@ -7,7 +7,6 @@ import {
   getBettingStreakResetTimeBeforeNow,
   getUser,
   getValues,
-  isProd,
   log,
 } from 'shared/utils'
 import {
@@ -26,10 +25,6 @@ import {
   UNIQUE_BETTOR_LIQUIDITY,
   REFERRAL_AMOUNT,
 } from 'common/economy'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
 import { User } from 'common/user'
 import {
   BettingStreakBonusTxn,
@@ -156,15 +151,13 @@ const updateBettingStreak = async (
       BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
       BETTING_STREAK_BONUS_MAX
     )
-    const fromUserId = isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+
     const bonusTxnDetails = {
       currentBettingStreak: newBettingStreak,
     }
 
     const bonusTxn: TxnData = {
-      fromId: fromUserId,
+      fromId: 'BANK',
       fromType: 'BANK',
       toId: user.id,
       toType: 'USER',
@@ -214,9 +207,7 @@ export const updateUniqueBettorsAndGiveCreatorBonus = async (
     [oldContract.id, bettor.id, new Date(bet.createdTime).toISOString()]
   )
   if (previousBet) return
-  const fromUserId = isProd()
-    ? HOUSE_LIQUIDITY_PROVIDER_ID
-    : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+
   const isCreator = bettor.id == oldContract.creatorId
   // They may still have bet on this previously, use a transaction to be sure we haven't sent creator a bonus already
   const result = await firestore.runTransaction(async (trans) => {
@@ -225,7 +216,6 @@ export const updateUniqueBettorsAndGiveCreatorBonus = async (
 
     const txnsSnap = await firestore
       .collection('txns')
-      .where('fromId', '==', fromUserId)
       .where('toId', '==', contract.creatorId)
       .where('category', '==', 'UNIQUE_BETTOR_BONUS')
       .where('data.uniqueNewBettorId', '==', bettor.id)
@@ -267,7 +257,7 @@ export const updateUniqueBettorsAndGiveCreatorBonus = async (
     }
 
     const bonusTxn: TxnData = {
-      fromId: fromUserId,
+      fromId: 'BANK',
       fromType: 'BANK',
       toId: oldContract.creatorId,
       toType: 'USER',
@@ -433,13 +423,12 @@ async function handleReferral(staleUser: User, eventId: string) {
       }
     }
     console.log('creating referral txns')
-    const fromId = HOUSE_LIQUIDITY_PROVIDER_ID
 
     // if they're updating their referredId, create a txn for both
     const txn: ReferralTxn = {
       id: eventId,
       createdTime: Date.now(),
-      fromId,
+      fromId: 'BANK',
       fromType: 'BANK',
       toId: referredByUserId,
       toType: 'USER',
