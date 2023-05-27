@@ -1,10 +1,16 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
+
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxn } from 'shared/run-txn'
 import { randomString } from 'common/util/random'
 import { QAndACreateTxn } from 'common/txn'
+import { isProd } from 'shared/utils'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 import {
   MIN_BOUNTY,
   MAX_QA_QUESTION_LENGTH,
@@ -49,7 +55,9 @@ export const createQAndA = authEndpoint(async (req, auth) => {
     id: ref.id,
     fromId: auth.uid,
     fromType: 'USER',
-    toId: 'BANK',
+    toId: isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
     toType: 'BANK',
     amount: bounty,
     token: 'M$',

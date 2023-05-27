@@ -15,47 +15,27 @@ export async function runTxn(
   fbTransaction: admin.firestore.Transaction,
   data: TxnData
 ) {
-  const { amount, fromId, fromType, toId, toType, token } = data
+  const { amount, fromId, toId, toType } = data
 
   if (!isFinite(amount) || amount <= 0) {
     return { status: 'error', message: 'Invalid amount' }
   }
 
-  if (fromType === 'USER') {
-    if (token !== 'M$') {
-      return { status: 'error', message: 'only M$ txns supported so far' }
-    }
+  const fromDoc = firestore.doc(`users/${fromId}`)
+  const fromSnap = await fbTransaction.get(fromDoc)
+  if (!fromSnap.exists) {
+    return { status: 'error', message: 'User not found' }
+  }
+  const fromUser = fromSnap.data() as User
 
-    const fromDoc = firestore.doc(`users/${fromId}`)
-    const fromSnap = await fbTransaction.get(fromDoc)
-    if (!fromSnap.exists) {
-      return { status: 'error', message: 'User not found' }
+  if (fromUser.balance < amount) {
+    return {
+      status: 'error',
+      message: `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance} `,
     }
-    const fromUser = fromSnap.data() as User
-
-    if (fromUser.balance < amount) {
-      return {
-        status: 'error',
-        message: `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance} `,
-      }
-    }
-
-    fbTransaction.update(fromDoc, {
-      balance: FieldValue.increment(-amount),
-      totalDeposits: FieldValue.increment(-amount),
-    })
   }
 
-  if (fromType === 'CONTRACT') {
-    return { status: 'error', message: 'TODO: txns from contracts' }
-  }
-
-  if (fromType === 'AD') {
-    return { status: 'error', message: 'TODO: txns from ads' }
-  }
-
-  // do nothing if fromType is BANK
-
+  // TODO: Track payments received by charities, bank, contracts too.
   if (toType === 'USER') {
     const toDoc = firestore.doc(`users/${toId}`)
     fbTransaction.update(toDoc, {
@@ -64,15 +44,13 @@ export async function runTxn(
     })
   }
 
-  if (toType === 'CONTRACT' || toType === 'CHARITY' || toType === 'AD') {
-    return { status: 'error', message: 'TODO: recieving txns to ' + toType }
-  }
-
-  // do nothing if toType is BANK
-
   const newTxnDoc = firestore.collection(`txns/`).doc()
   const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...data }
   fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
+  fbTransaction.update(fromDoc, {
+    balance: FieldValue.increment(-amount),
+    totalDeposits: FieldValue.increment(-amount),
+  })
 
   return { status: 'success', txn }
 }

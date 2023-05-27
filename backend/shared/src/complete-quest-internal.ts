@@ -2,7 +2,11 @@ import * as admin from 'firebase-admin'
 const firestore = admin.firestore()
 import { User } from 'common/user'
 import { QUEST_DETAILS, QuestType } from 'common/quest'
-import { getValues } from 'shared/utils'
+import { getValues, isProd } from 'shared/utils'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 import { QuestRewardTxn } from 'common/txn'
 import { runTxn } from 'shared/run-txn'
 import { createSupabaseClient } from 'shared/supabase/init'
@@ -177,6 +181,9 @@ const awardQuestBonus = async (
         message: 'Already awarded quest bonus',
       }
     }
+    const fromUserId = isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
 
     const rewardAmount = QUEST_DETAILS[questType].rewardAmount
 
@@ -186,7 +193,7 @@ const awardQuestBonus = async (
     }
 
     const bonusTxn = {
-      fromId: 'BANK',
+      fromId: fromUserId,
       fromType: 'BANK',
       toId: user.id,
       toType: 'USER',

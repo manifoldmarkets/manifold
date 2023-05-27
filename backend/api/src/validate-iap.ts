@@ -4,6 +4,10 @@ import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { track } from 'shared/analytics'
 import * as admin from 'firebase-admin'
 import { IapTransaction, PurchaseData } from 'common/iap'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 import { ManaPurchaseTxn } from 'common/txn'
 import { sendThankYouEmail } from 'shared/emails'
 import { runTxn } from 'shared/run-txn'
@@ -93,7 +97,9 @@ export const validateiap = authEndpoint(async (req, auth) => {
   await firestore.collection('iaps').doc(iapTransRef.id).set(iapTransaction)
 
   const manaPurchaseTxn = {
-    fromId: 'EXTERNAL',
+    fromId: isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
     fromType: 'BANK',
     toId: userId,
     toType: 'USER',
