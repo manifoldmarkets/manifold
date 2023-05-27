@@ -97,9 +97,7 @@ export const validateiap = authEndpoint(async (req, auth) => {
   await firestore.collection('iaps').doc(iapTransRef.id).set(iapTransaction)
 
   const manaPurchaseTxn = {
-    fromId: isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+    fromId: 'EXTERNAL',
     fromType: 'BANK',
     toId: userId,
     toType: 'USER',
