@@ -99,14 +99,12 @@ export default function Home(props: {
 
           <Row className="w-full gap-2 sm:gap-4">
             <InfoCard
-              link="https://help.manifold.markets/introduction-to-manifold-markets/what-are-prediction-markets"
               icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
               text="What is a prediction market?"
               modal={<PredictionMarketExplainer />}
             />
 
             <InfoCard
-              link="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"
               icon={<div className="text-2xl">{ENV_CONFIG.moneyMoniker}</div>}
               text="What is mana?"
               modal={<ManaExplainer />}
@@ -155,7 +153,6 @@ export function LinkInfoCard(props: {
 }
 
 export function InfoCard(props: {
-  link: string
   icon: ReactNode
   text: string
   externalLink?: boolean

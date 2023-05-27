@@ -11,6 +11,7 @@ import {
   StarIcon,
   UserGroupIcon,
   FireIcon,
+  QuestionMarkCircleIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -182,6 +183,6 @@ const bottomNav = (
           : SparklesIcon,
       onClick: toggleTheme,
     },
-    { name: 'About', href: '/about', icon: MapIcon },
+    { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )
