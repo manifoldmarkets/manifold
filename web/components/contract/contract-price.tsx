@@ -35,7 +35,7 @@ export function BinaryResolutionOrChance(props: {
   const spring = useAnimatedNumber(getDisplayProbability(contract))
 
   return (
-    <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
+    <Row className={clsx('items-baseline gap-2 text-2xl sm:text-3xl', className)}>
       {resolution ? (
         <>
           <div className={clsx('text-base')}>
