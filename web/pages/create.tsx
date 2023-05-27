@@ -8,7 +8,6 @@ import {
   NewContractPanel,
   NewQuestionParams,
 } from 'web/components/new-contract-panel'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { useUser } from 'web/hooks/use-user'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 

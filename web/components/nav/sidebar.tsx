@@ -4,7 +4,6 @@ import {
   HomeIcon,
   LogoutIcon,
   ScaleIcon,
-  MapIcon,
   MoonIcon,
   SunIcon,
   SparklesIcon,
