@@ -26,7 +26,7 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'PSEUDO_NUMERIC')
     return <PseudoNumericOutcomeLabel outcome={outcome as any} />
 
-  if (outcomeType === 'BINARY')
+  if (outcomeType === 'BINARY' || contract.mechanism === 'cpmm-multi-1')
     return <BinaryOutcomeLabel outcome={outcome as any} />
 
   if (outcomeType === 'NUMERIC')

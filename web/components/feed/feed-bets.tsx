@@ -11,7 +11,12 @@ import {
 } from 'web/components/widgets/avatar'
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
-import { OutcomeLabel } from 'web/components/outcome-label'
+import {
+  AnswerLabel,
+  NoLabel,
+  OutcomeLabel,
+  YesLabel,
+} from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -176,6 +181,7 @@ export function BetStatusText(props: {
   const self = useUser()
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
   const isCPMM2 = mechanism === 'cpmm-2'
+  const isCpmmMulti = mechanism === 'cpmm-multi-1'
   const { amount, outcome, createdTime, shares } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
@@ -233,13 +239,24 @@ export function BetStatusText(props: {
         </>
       ) : (
         <>
-          {bought} {money} {isCPMM2 && (isShortSell ? 'NO of ' : 'YES of')}{' '}
-          <OutcomeLabel
-            outcome={outcome}
-            value={(bet as any).value}
-            contract={contract}
-            truncate="short"
-          />{' '}
+          {bought} {money}{' '}
+          {isCpmmMulti && (
+            <>{outcome === 'YES' ? <YesLabel /> : <NoLabel />} of</>
+          )}
+          {isCPMM2 && (isShortSell ? 'NO of ' : 'YES of')}{' '}
+          {isCpmmMulti ? (
+            <AnswerLabel
+              answer={contract.answers.find((a) => a.id === bet.answerId)!}
+              truncate="short"
+            />
+          ) : (
+            <OutcomeLabel
+              outcome={isCpmmMulti ? bet.answerId ?? '' : outcome}
+              value={(bet as any).value}
+              contract={contract}
+              truncate="short"
+            />
+          )}{' '}
           {fromProb === toProb
             ? `at ${fromProb}`
             : `from ${fromProb} to ${toProb}`}
