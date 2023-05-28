@@ -23,29 +23,20 @@ import { BetSignUpPrompt } from '../sign-up-prompt'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import {
   calculateSharesBought,
-  calculateSharesBoughtMulti,
-  getAnswerProbability,
   getOutcomeProbability,
   getOutcomeProbabilityAfterBet,
-  getOutcomeProbabilityAfterBetMulti,
 } from 'common/calculate'
 import { removeUndefinedProps } from 'common/util/object'
 
 export function AnswerBetPanel(props: {
   answer: DpmAnswer | Answer
   contract: MultiContract
-  outcome: 'YES' | 'NO'
   closePanel: () => void
-  answers?: Answer[]
   className?: string
   isModal?: boolean
 }) {
-  const { answer, contract, closePanel, answers, className, isModal, outcome } =
-    props
+  const { answer, contract, closePanel, className, isModal } = props
   const { id: answerId } = answer
-
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
-  if (isCpmmMulti && !answers) throw new Error('Answers required for cpmm')
 
   const user = useUser()
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
@@ -64,7 +55,6 @@ export function AnswerBetPanel(props: {
         amount: betAmount,
         answerId,
         contractId: contract.id,
-        outcome,
       })
     )
       .then((r) => {
@@ -90,21 +80,18 @@ export function AnswerBetPanel(props: {
       contractId: contract.id,
       amount: betAmount,
       answerId,
-      outcome,
     })
   }
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb =
-    isCpmmMulti && answers
-      ? getAnswerProbability(answers, answer.id)
-      : getOutcomeProbability(contract, answer.id)
+  const initialProb = getOutcomeProbability(contract, answer.id)
 
-  const { resultProb, shares, maxPayout } =
-    isCpmmMulti && answers
-      ? getSimulatedBetInfoCpmm(answers, answer.id, outcome, betAmount ?? 0)
-      : getSimulatedBetInfo(betAmount ?? 0, outcome, contract)
+  const { resultProb, shares, maxPayout } = getSimulatedBetInfo(
+    betAmount ?? 0,
+    answerId,
+    contract
+  )
 
   const maxReturn = betAmount ? (maxPayout - betAmount) / betAmount : 0
   const maxReturnPercent = formatPercent(maxReturn)
@@ -121,15 +108,10 @@ export function AnswerBetPanel(props: {
       : undefined
 
   return (
-    <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
+    <Col className={clsx(className)}>
       <Row className="items-center justify-between self-stretch">
         <div className="text-xl">
-          {isCpmmMulti
-            ? outcome === 'YES'
-              ? 'Bet Yes on'
-              : 'Bet No on'
-            : 'Bet on'}{' '}
-          {isModal ? `"${answer.text}"` : 'this answer'}
+          Bet on {isModal ? `"${answer.text}"` : 'this answer'}
         </div>
 
         {!isModal && (
@@ -240,27 +222,4 @@ const getSimulatedBetInfo = (
     : 0
 
   return { resultProb, maxPayout, shares }
-}
-
-const getSimulatedBetInfoCpmm = (
-  answers: Answer[],
-  answerId: string,
-  outcome: 'YES' | 'NO',
-  betAmount: number
-) => {
-  const resultProb = getOutcomeProbabilityAfterBetMulti(
-    answers,
-    answerId,
-    outcome,
-    betAmount
-  )
-
-  const shares = calculateSharesBoughtMulti(
-    answers,
-    answerId,
-    outcome,
-    betAmount
-  )
-
-  return { resultProb, maxPayout: shares, shares }
 }

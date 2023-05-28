@@ -1,4 +1,4 @@
-import { sortBy, sum, sumBy } from 'lodash'
+import { sortBy, sumBy } from 'lodash'
 
 import { Bet, fill, LimitBet, NumericBet } from './bet'
 import {
@@ -267,6 +267,7 @@ export const computeCpmmBet = (
   const isFilled = floatingEqual(betAmount, takerAmount)
 
   return {
+    orderAmount: betAmount,
     amount: takerAmount,
     shares: takerShares,
     isFilled,
@@ -290,6 +291,7 @@ export const getBinaryCpmmBetInfo = (
 ) => {
   const cpmmState = { pool: contract.pool, p: contract.p }
   const {
+    orderAmount,
     amount,
     shares,
     isFilled,
@@ -309,7 +311,7 @@ export const getBinaryCpmmBetInfo = (
     balanceByUserId
   )
   const newBet: CandidateBet = removeUndefinedProps({
-    orderAmount: betAmount,
+    orderAmount,
     amount,
     shares,
     limitProb,
@@ -337,34 +339,6 @@ export const getBinaryCpmmBetInfo = (
     makers,
     ordersToCancel,
   }
-}
-
-export const getBinaryBetStats = (
-  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract,
-  outcome: 'YES' | 'NO',
-  betAmount: number,
-  limitProb: number,
-  unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
-) => {
-  const { newBet } = getBinaryCpmmBetInfo(
-    contract,
-    outcome,
-    betAmount ?? 0,
-    limitProb,
-    unfilledBets,
-    balanceByUserId
-  )
-  const remainingMatched =
-    ((newBet.orderAmount ?? 0) - newBet.amount) /
-    (outcome === 'YES' ? limitProb : 1 - limitProb)
-  const currentPayout = newBet.shares + remainingMatched
-
-  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
-
-  const totalFees = sum(Object.values(newBet.fees))
-
-  return { currentPayout, currentReturn, totalFees, newBet }
 }
 
 export const getNewBinaryDpmBetInfo = (
@@ -546,6 +520,7 @@ export const getNewMultiCpmmBetInfo = (
     outcome,
     orderAmount: betAmount,
     limitProb,
+    isCancelled: false,
     amount,
     loanAmount: 0,
     shares,

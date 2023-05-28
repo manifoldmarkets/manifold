@@ -13,7 +13,7 @@ import { getOutcomeProbability } from 'common/calculate'
 import { Answer, DpmAnswer } from 'common/answer'
 import clsx from 'clsx'
 import { formatPercent } from 'common/util/format'
-import { Modal } from 'web/components/layout/modal'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
 import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
@@ -24,6 +24,9 @@ import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
 import { GradientContainer } from '../widgets/gradient-container'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { BuyPanel } from '../bet/bet-panel'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { Subtitle } from '../widgets/subtitle'
 
 export function getAnswerColor(
   answer: Answer | DpmAnswer,
@@ -237,7 +240,7 @@ function OpenAnswer(props: {
 }) {
   const { answer, contract, onAnswerCommentClick, color } = props
   const { text } = answer
-  const user = useUserByIdOrAnswer(answer)
+  const answerCreator = useUserByIdOrAnswer(answer)
   const prob =
     'prob' in answer ? answer.prob : getOutcomeProbability(contract, answer.id)
   const probPercent = formatPercent(prob)
@@ -247,23 +250,43 @@ function OpenAnswer(props: {
   const isDpm = contract.mechanism === 'dpm-2'
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
 
+  const user = useUser()
+  const isMobile = useIsMobile()
+
   return (
     <div>
       <Modal
         open={!!outcome}
         setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
+        className={clsx(MODAL_CLASS, 'pointer-events-auto')}
       >
-        {outcome && (
-          <AnswerBetPanel
-            answers={isCpmm ? contract.answers : undefined}
-            answer={answer}
-            outcome={outcome}
-            contract={contract}
-            closePanel={() => setOutcome(undefined)}
-            className="sm:max-w-84 bg-canvas-0 text-ink-1000 !rounded-md !px-8 !py-6"
-            isModal={true}
-          />
-        )}
+        {outcome &&
+          (isCpmm ? (
+            <Col className="gap-2">
+              <Row className="justify-between">
+                <Subtitle className="!mt-0">{answer.text}</Subtitle>
+                <div className="text-xl">{formatPercent((answer as Answer).prob)}</div>
+              </Row>
+              <BuyPanel
+                contract={contract}
+                multiProps={{
+                  answers: contract.answers,
+                  answerToBuy: answer as Answer,
+                }}
+                user={user}
+                initialOutcome={outcome}
+                hidden={false}
+                mobileView={isMobile}
+              />
+            </Col>
+          ) : (
+            <AnswerBetPanel
+              answer={answer}
+              contract={contract}
+              closePanel={() => setOutcome(undefined)}
+              isModal={true}
+            />
+          ))}
       </Modal>
 
       <div
@@ -277,11 +300,11 @@ function OpenAnswer(props: {
       >
         <Row className="z-20 justify-between gap-2 py-1.5 px-3">
           <Row className="items-center">
-            {user ? (
+            {answerCreator ? (
               <Avatar
                 className="mr-2 h-5 w-5 border border-transparent transition-transform hover:border-none"
-                username={user.username}
-                avatarUrl={user.avatarUrl}
+                username={answerCreator.username}
+                avatarUrl={answerCreator.avatarUrl}
               />
             ) : (
               <EmptyAvatar />

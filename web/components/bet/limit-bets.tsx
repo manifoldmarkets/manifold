@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { LimitBet } from 'common/bet'
 import {
   CPMMBinaryContract,
+  CPMMMultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -31,7 +32,11 @@ import { DepthChart } from '../charts/contract/depth-chart'
 import { SizedContainer } from '../sized-container'
 
 export function YourOrders(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
+  contract:
+    | CPMMBinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
   bets: LimitBet[]
   className?: string
 }) {
@@ -59,7 +64,11 @@ export function YourOrders(props: {
 
 export function OrderTable(props: {
   limitBets: LimitBet[]
-  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
+  contract:
+    | CPMMBinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
   isYou: boolean
   side?: 'YES' | 'NO'
 }) {
@@ -126,7 +135,11 @@ export function OrderTable(props: {
 }
 
 function OrderRow(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
+  contract:
+    | CPMMBinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
   bet: LimitBet
   isYou: boolean
   showOutcome?: boolean
@@ -211,7 +224,11 @@ function OrderRow(props: {
 
 export function OrderBookButton(props: {
   limitBets: LimitBet[]
-  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
+  contract:
+    | CPMMBinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
   className?: string
 }) {
   const { limitBets, contract, className } = props
@@ -225,6 +242,8 @@ export function OrderBookButton(props: {
 
   const yesBets = sortedBets.filter((bet) => bet.outcome === 'YES')
   const noBets = sortedBets.filter((bet) => bet.outcome === 'NO').reverse()
+
+  const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
 
   return (
     <>
@@ -247,31 +266,66 @@ export function OrderBookButton(props: {
               className="ml-1 self-center"
             />
           </Title>
-          <SizedContainer fullHeight={250} mobileHeight={200}>
-            {(w, h) => (
-              <DepthChart
+          {!isCPMMMulti && (
+            <SizedContainer fullHeight={250} mobileHeight={200}>
+              {(w, h) => (
+                <DepthChart
+                  contract={contract}
+                  yesBets={yesBets}
+                  noBets={noBets}
+                  width={w}
+                  height={h}
+                />
+              )}
+            </SizedContainer>
+          )}
+          {isCPMMMulti ? (
+            contract.answers.map((answer) => {
+              const answerYesBets = yesBets.filter(
+                (bet) => bet.answerId === answer.id
+              )
+              const answerNoBets = noBets.filter(
+                (bet) => bet.answerId === answer.id
+              )
+              if (answerYesBets.length === 0 && answerNoBets.length === 0) {
+                return null
+              }
+              return (
+                <Col key={answer.id} className="gap-2">
+                  {answer.text}
+                  <Row className="mt-2 items-start justify-around gap-2">
+                    <OrderTable
+                      limitBets={answerYesBets}
+                      contract={contract}
+                      isYou={false}
+                      side="YES"
+                    />
+                    <OrderTable
+                      limitBets={answerNoBets}
+                      contract={contract}
+                      isYou={false}
+                      side="NO"
+                    />
+                  </Row>
+                </Col>
+              )
+            })
+          ) : (
+            <Row className="mt-2 items-start justify-around gap-2">
+              <OrderTable
+                limitBets={yesBets}
                 contract={contract}
-                yesBets={yesBets}
-                noBets={noBets}
-                width={w}
-                height={h}
+                isYou={false}
+                side="YES"
               />
-            )}
-          </SizedContainer>
-          <Row className="mt-2 items-start justify-around gap-2">
-            <OrderTable
-              limitBets={yesBets}
-              contract={contract}
-              isYou={false}
-              side="YES"
-            />
-            <OrderTable
-              limitBets={noBets}
-              contract={contract}
-              isYou={false}
-              side="NO"
-            />
-          </Row>
+              <OrderTable
+                limitBets={noBets}
+                contract={contract}
+                isYou={false}
+                side="NO"
+              />
+            </Row>
+          )}
         </Col>
       </Modal>
     </>
