@@ -258,6 +258,32 @@ export interface Database {
           liquidity_id?: string
         }
       }
+      contract_positions: {
+        Row: {
+          basis: number
+          contract_id: string
+          outcome: string
+          shares: number
+          updated_time: string
+          user_id: string
+        }
+        Insert: {
+          basis: number
+          contract_id: string
+          outcome: string
+          shares: number
+          updated_time?: string
+          user_id: string
+        }
+        Update: {
+          basis?: number
+          contract_id?: string
+          outcome?: string
+          shares?: number
+          updated_time?: string
+          user_id?: string
+        }
+      }
       contract_recommendation_features: {
         Row: {
           contract_id: string

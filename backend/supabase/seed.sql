@@ -132,6 +132,25 @@ alter table user_contract_metrics
 cluster on user_contract_metrics_pkey;
 
 create table if not exists
+  contract_positions (
+    contract_id text not null,
+    user_id text not null,
+    outcome text not null,
+    basis numeric not null,
+    shares numeric not null check (shares >= 0),
+    updated_time timestamptz not null default now(),
+    primary key (contract_id, user_id, outcome)
+  );
+
+create index if not exists contract_positions_user on contract_positions (user_id);
+
+alter table contract_positions enable row level security;
+drop policy if exists "public read" on contract_positions;
+create policy "public read" on contract_positions for select using (true);
+
+alter table contract_positions cluster on contract_positions_pkey;
+
+create table if not exists
   user_follows (
     user_id text not null,
     follow_id text not null,
@@ -1073,6 +1092,9 @@ add table contract_bets;
 
 alter publication supabase_realtime
 add table contract_comments;
+
+alter publication supabase_realtime
+add table contract_positions;
 
 alter publication supabase_realtime
 add table group_members;
