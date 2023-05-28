@@ -69,13 +69,13 @@ export const updateRecommendedMarkets = async () => {
   await bulkUpsert(
     pg,
     'user_recommendation_features',
-    'user_id',
+    ['user_id'],
     userFeatureRows
   )
   await bulkUpsert(
     pg,
     'contract_recommendation_features',
-    'contract_id',
+    ['contract_id'],
     contractFeatureRows
   )
   console.log('Done.')

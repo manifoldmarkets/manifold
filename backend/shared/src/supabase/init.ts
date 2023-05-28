@@ -3,12 +3,12 @@ import { createClient, getInstanceHostname } from 'common/supabase/utils'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { isProd } from '../utils'
-import { IDatabase } from 'pg-promise'
+import { IBaseProtocol } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 
 export const pgp = pgPromise()
 
-export type SupabaseDirectClient = ReturnType<typeof createSupabaseDirectClient>
+export type SupabaseDirectClient = IBaseProtocol<IClient>
 
 export function createSupabaseClient() {
   const instanceId =
@@ -27,7 +27,7 @@ export function createSupabaseClient() {
 }
 
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
-let pgpDirect: IDatabase<IClient> | null = null
+let pgpDirect: SupabaseDirectClient | null = null
 export function createSupabaseDirectClient(
   instanceId?: string,
   password?: string
