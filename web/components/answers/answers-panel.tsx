@@ -279,7 +279,9 @@ function OpenAnswer(props: {
                 initialOutcome={outcome}
                 hidden={false}
                 mobileView={isMobile}
-                onBuySuccess={() => setTimeout(() => setOutcome(undefined), 500)}
+                onBuySuccess={() =>
+                  setTimeout(() => setOutcome(undefined), 500)
+                }
                 location={'contract page answer'}
               />
             </Col>
@@ -304,15 +306,16 @@ function OpenAnswer(props: {
       >
         <Row className="z-20 justify-between gap-2 py-1.5 px-3">
           <Row className="items-center">
-            {answerCreator ? (
-              <Avatar
-                className="mr-2 h-5 w-5 border border-transparent transition-transform hover:border-none"
-                username={answerCreator.username}
-                avatarUrl={answerCreator.avatarUrl}
-              />
-            ) : (
-              <EmptyAvatar />
-            )}
+            {isFreeResponse &&
+              (answerCreator ? (
+                <Avatar
+                  className="mr-2 h-5 w-5 border border-transparent transition-transform hover:border-none"
+                  username={answerCreator.username}
+                  avatarUrl={answerCreator.avatarUrl}
+                />
+              ) : (
+                <EmptyAvatar />
+              ))}
             <Linkify className="text-md whitespace-pre-line" text={text} />
           </Row>
           <Row className="gap-2">
