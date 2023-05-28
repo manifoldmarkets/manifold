@@ -172,6 +172,21 @@ function getDpmInvested(yourBets: Bet[]) {
   })
 }
 
+export function getUserPositions(userBets: Bet[]) {
+  const totalShares: { [outcome: string]: number } = {}
+  for (const bet of userBets) {
+    const { outcome, shares, sharesByOutcome } = bet
+    if (sharesByOutcome) {
+      for (const [o, s] of Object.entries(sharesByOutcome)) {
+        totalShares[o] = (totalShares[o] ?? 0) + s
+      }
+    } else {
+      totalShares[outcome] = (totalShares[outcome] ?? 0) + shares
+    }
+  }
+  return totalShares
+}
+
 export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const sortedBets = sortBy(yourBets, 'createdTime')
   const { resolution, mechanism } = contract
@@ -182,27 +197,10 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   let loan = 0
   let saleValue = 0
   let redeemed = 0
-  const totalShares: { [outcome: string]: number } = {}
+  const totalShares = getUserPositions(sortedBets)
 
   for (const bet of sortedBets) {
-    const {
-      isSold,
-      sale,
-      amount,
-      loanAmount,
-      isRedemption,
-      shares,
-      sharesByOutcome,
-      outcome,
-    } = bet
-
-    if (sharesByOutcome) {
-      for (const [o, s] of Object.entries(sharesByOutcome)) {
-        totalShares[o] = (totalShares[o] ?? 0) + s
-      }
-    } else {
-      totalShares[outcome] = (totalShares[outcome] ?? 0) + shares
-    }
+    const { isSold, sale, amount, loanAmount, isRedemption } = bet
 
     if (isSold) {
       totalInvested += amount
