@@ -1,4 +1,4 @@
-import { maxBy, partition, sortBy, sum, sumBy } from 'lodash'
+import { mapValues, maxBy, partition, sortBy, sum, sumBy } from 'lodash'
 import { Bet } from './bet'
 import {
   getCpmmProbability,
@@ -172,19 +172,33 @@ function getDpmInvested(yourBets: Bet[]) {
   })
 }
 
+type UserPosition = { shares: number, basis: number }
+
 export function getUserPositions(userBets: Bet[]) {
-  const totalShares: { [outcome: string]: number } = {}
+  const positions: { [outcome: string]: UserPosition } = {}
   for (const bet of userBets) {
-    const { outcome, shares, sharesByOutcome } = bet
+    const { amount, sharesByOutcome } = bet
     if (sharesByOutcome) {
-      for (const [o, s] of Object.entries(sharesByOutcome)) {
-        totalShares[o] = (totalShares[o] ?? 0) + s
+      const entries = Object.entries(sharesByOutcome)
+      for (const [o, s] of entries) {
+        let currPosition = positions[o]
+        if (currPosition == null) {
+          currPosition = positions[o] = { shares: 0, basis: 0 }
+        }
+        currPosition.shares += s
+        currPosition.basis += amount / entries.length
       }
     } else {
-      totalShares[outcome] = (totalShares[outcome] ?? 0) + shares
+      const { outcome, shares } = bet
+      let currPosition = positions[outcome]
+      if (currPosition == null) {
+        currPosition = positions[outcome] = { shares: 0, basis: 0 }
+      }
+      currPosition.shares += shares
+      currPosition.basis += amount
     }
   }
-  return totalShares
+  return positions
 }
 
 export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
@@ -197,7 +211,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   let loan = 0
   let saleValue = 0
   let redeemed = 0
-  const totalShares = getUserPositions(sortedBets)
+  const positions = getUserPositions(sortedBets)
 
   for (const bet of sortedBets) {
     const { isSold, sale, amount, loanAmount, isRedemption } = bet
@@ -228,6 +242,8 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const invested = isCpmm
     ? getCpmmInvested(sortedBets)
     : getDpmInvested(sortedBets)
+
+  const totalShares = mapValues(positions, ({ shares }) => shares)
   const hasShares = Object.values(totalShares).some(
     (shares) => !floatingEqual(shares, 0)
   )

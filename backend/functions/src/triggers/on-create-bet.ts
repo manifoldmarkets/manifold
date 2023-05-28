@@ -16,6 +16,7 @@ import {
   createUniqueBettorBonusNotification,
   createReferralNotification,
 } from 'shared/create-notification'
+import { floatingEqual } from 'common/util/math'
 import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
 import {
@@ -40,9 +41,14 @@ import { addHouseSubsidy } from 'shared/helpers/add-house-subsidy'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { calculateUserMetrics } from 'common/calculate-metrics'
+import { getUserPositions } from 'common/calculate'
 import { runTxn, TxnData } from 'shared/run-txn'
 import { Group } from 'common/group'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  SupabaseDirectClient,
+  createSupabaseDirectClient
+} from 'shared/supabase/init'
+import { bulkUpsert } from 'shared/supabase/utils'
 import { secrets } from 'common/secrets'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import {
@@ -63,6 +69,7 @@ export const onCreateBet = functions
     const { contractId } = context.params as { contractId: string }
     const { eventId } = context
 
+    const pg = createSupabaseDirectClient()
     const bet = change.data() as Bet
     if (bet.isChallenge) return
 
@@ -84,7 +91,8 @@ export const onCreateBet = functions
       eventId,
       bettor
     )
-    await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
+    const impactedUsers = [bettor, ...(notifiedUsers ?? [])]
+    await updateContractMetrics(pg, contract, impactedUsers)
 
     const isApiOrBot = bet.isApi || BOT_USERNAMES.includes(bettor.username)
     if (isApiOrBot) {
@@ -114,7 +122,6 @@ export const onCreateBet = functions
 
     await completeArchaeologyQuest(bet, bettor, contract, eventId)
 
-    const pg = createSupabaseDirectClient()
     await updateUserInterestEmbedding(pg, bettor.id)
 
     // TODO: Send notification when adding a user to a league.
@@ -355,8 +362,13 @@ const notifyUsersOfLimitFills = async (
   )
 }
 
-const updateContractMetrics = async (contract: Contract, users: User[]) => {
-  await Promise.all(
+const updateContractMetrics = async (
+  pg: SupabaseDirectClient,
+  contract: Contract,
+  users: User[]
+) => {
+  const fsWriter = firestore.bulkWriter({ throttling: false })
+  const userBets = await Promise.all(
     users.map(async (user) => {
       const betSnap = await firestore
         .collection(`contracts/${contract.id}/bets`)
@@ -364,13 +376,35 @@ const updateContractMetrics = async (contract: Contract, users: User[]) => {
         .get()
 
       const bets = betSnap.docs.map((doc) => doc.data() as Bet)
-      const newMetrics = calculateUserMetrics(contract, bets, user)
-
-      await firestore
-        .collection(`users/${user.id}/contract-metrics`)
-        .doc(contract.id)
-        .set(newMetrics)
+      return { user, bets }
     })
+  )
+  for (const { user, bets } of userBets) {
+    const newMetrics = calculateUserMetrics(contract, bets, user)
+    const doc = firestore
+      .collection(`users/${user.id}/contract-metrics`)
+      .doc(contract.id)
+    fsWriter.set(doc, newMetrics)
+  }
+  await fsWriter.close()
+
+  const positionRows = userBets.map(({ user, bets }) => {
+    const positions = getUserPositions(bets)
+    const rows = Object.entries(positions).map(([outcome, position]) => ({
+      user_id: user.id,
+      contract_id: contract.id,
+      outcome,
+      basis: position.basis,
+      shares: position.shares
+    }))
+    return rows.filter(r => !floatingEqual(r.shares, 0))
+  }).flat()
+
+  await bulkUpsert(
+    pg,
+    'contract_positions',
+    ['user_id', 'contract_id', 'outcome'],
+    positionRows
   )
 }
 
