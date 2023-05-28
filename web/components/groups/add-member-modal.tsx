@@ -68,7 +68,7 @@ export function AddMemberContent(props: {
   const requestId = useRef(0)
   const [loading, setLoading] = useState(false)
 
-  const [groupMemberIds] = usePollingGroupMemberIds(group.id)
+  const groupMemberIds = usePollingGroupMemberIds(group.id)
 
   useEffect(() => {
     const id = ++requestId.current

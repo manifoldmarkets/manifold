@@ -14,7 +14,7 @@ import {
 import { getUser } from 'web/lib/supabase/user'
 import { useAdmin } from './use-admin'
 import { useIsAuthorized, useUser } from './use-user'
-import { useSupabasePolling } from 'web/hooks/use-supabase'
+import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
 import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
 import {
@@ -125,7 +125,7 @@ export function useRealtimeNumGroupMembers(groupId: string) {
     .from('group_members')
     .select('*', { head: true, count: 'exact' })
     .eq('group_id', groupId)
-  return useSupabasePolling(q)[0]?.count
+  return useSupabasePolling(q)?.count
 }
 
 export async function setTranslatedMemberRole(

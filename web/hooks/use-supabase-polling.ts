@@ -54,5 +54,5 @@ export function useSupabasePolling<T>(
     }
   }, deps)
 
-  return [results, setResults] as const
+  return results
 }
