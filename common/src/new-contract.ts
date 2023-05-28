@@ -40,7 +40,8 @@ export function getNewContract(
   bucketCount: number,
   min: number,
   max: number,
-  isLogScale: boolean
+  isLogScale: boolean,
+  shouldAnswersSumToOne: boolean | undefined
 ) {
   const createdTime = Date.now()
 
@@ -49,7 +50,7 @@ export function getNewContract(
     PSEUDO_NUMERIC: () =>
       getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale),
     NUMERIC: () => getNumericProps(ante, bucketCount, min, max),
-    MULTIPLE_CHOICE: () => getMultipleChoiceProps(),
+    MULTIPLE_CHOICE: () => getMultipleChoiceProps(shouldAnswersSumToOne),
     QUADRATIC_FUNDING: () => getQfProps(ante),
     CERT: () => getCertProps(ante),
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
@@ -221,11 +222,11 @@ const _getDpmMultipleChoiceProps = (ante: number, answers: string[]) => {
   return system
 }
 
-const getMultipleChoiceProps = () => {
+const getMultipleChoiceProps = (shouldAnswersSumToOne: boolean | undefined) => {
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
     outcomeType: 'MULTIPLE_CHOICE',
-    shouldAnswersSumToOne: false,
+    shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
     answers: [],
   }
 

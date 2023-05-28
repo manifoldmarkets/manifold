@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { JSONContent } from '@tiptap/core'
 import { FieldValue, Transaction } from 'firebase-admin/firestore'
-import { uniq, zip } from 'lodash'
+import { uniq } from 'lodash'
 import { z } from 'zod'
 import { marked } from 'marked'
 
@@ -17,7 +17,6 @@ import {
   CPMMMultiContract,
   FreeResponseContract,
   MAX_QUESTION_LENGTH,
-  MAX_TAG_LENGTH,
   NumericContract,
   OUTCOME_TYPES,
   VISIBILITIES,
@@ -61,6 +60,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     initialProb,
     isLogScale,
     answers,
+    shouldAnswersSumToOne,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -103,7 +103,8 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       NUMERIC_BUCKET_COUNT,
       min ?? 0,
       max ?? 0,
-      isLogScale ?? false
+      isLogScale ?? false,
+      shouldAnswersSumToOne
     )
 
     trans.create(contractRef, contract)
@@ -255,7 +256,8 @@ function validateMarketBody(body: any) {
     max: number | undefined,
     initialProb: number | undefined,
     isLogScale: boolean | undefined,
-    answers: string[] | undefined
+    answers: string[] | undefined,
+    shouldAnswersSumToOne: boolean | undefined
 
   if (visibility == 'private' && !groupId) {
     throw new APIError(
@@ -289,7 +291,7 @@ function validateMarketBody(body: any) {
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
-    ;({ answers } = validate(multipleChoiceSchema, body))
+    ;({ answers, shouldAnswersSumToOne } = validate(multipleChoiceSchema, body))
   }
 
   return {
@@ -308,6 +310,7 @@ function validateMarketBody(body: any) {
     initialProb,
     isLogScale,
     answers,
+    shouldAnswersSumToOne,
   }
 }
 
@@ -402,8 +405,29 @@ async function createAnswers(
   ante: number,
   answers: string[]
 ) {
+  const { shouldAnswersSumToOne } = contract
   const manaPerAnswer = ante / answers.length
   const ids = answers.map(() => randomString())
+
+  let poolYes = ante
+  let poolNo = ante
+
+  if (shouldAnswersSumToOne) {
+    // Maximize use of ante given constraint that one answer resolves YES and
+    // the rest resolve NO.
+    // Means that:
+    //   ante = poolYes + (n - 1) * poolNo
+    // because this pays out ante mana to winners in this case.
+    // Also, cpmm identity for probability:
+    //   1 / n = poolNo / (poolYes + poolNo)
+    const n = answers.length
+    poolNo = ante / (2 * n - 2)
+    poolYes = ante - (n - 1) * poolNo
+
+    // Naive solution that doesn't maximize liquidity:
+    // poolYes = ante * prob
+    // poolNo = ante * (prob ** 2 / (1 - prob))
+  }
 
   await Promise.all(
     answers.map((text, i) => {
@@ -415,8 +439,8 @@ async function createAnswers(
         text,
         createdTime: Date.now(),
 
-        poolYes: manaPerAnswer,
-        poolNo: manaPerAnswer,
+        poolYes,
+        poolNo,
         prob: 0.5,
         subsidyPool: 0,
         totalLiquidity: manaPerAnswer,
@@ -567,6 +591,7 @@ const numericSchema = z.object({
 
 const multipleChoiceSchema = z.object({
   answers: z.string().trim().min(1).array().min(2),
+  shouldAnswersSumToOne: z.boolean().optional(),
 })
 
 type schema = z.infer<typeof bodySchema> &
