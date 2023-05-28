@@ -98,7 +98,11 @@ export const getContractAnswers = async (
     .eq('contract_id', contractId)
     .order('prob', { ascending: false })
   if (!data) return null
-  return data.map((row) => ({
+  return data.map(parseDbAnswer)
+}
+
+const parseDbAnswer = (row: any) => {
+  return {
     id: row.id,
     contractId: row.contract_id,
     userId: row.user_id,
@@ -110,5 +114,5 @@ export const getContractAnswers = async (
     prob: +row.prob,
     totalSubsidy: +row.total_subsidy,
     subsidyPool: +row.subsidy_pool,
-  }))
+  }
 }

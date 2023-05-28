@@ -66,6 +66,7 @@ import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import { ContractView } from 'common/events'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { TitleOrEdit } from 'web/components/contract/title-edit'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 export type ContractParameters = {
   contractSlug: string
@@ -163,8 +164,13 @@ export function ContractPageContent(props: {
   } = contractParams
   const contract =
     useContract(contractParams.contract?.id) ?? contractParams.contract
-  if ('answers' in contractParams.contract) {
-    ;(contract as any).answers = contractParams.contract.answers
+  if (
+    'answers' in contractParams.contract &&
+    contract.mechanism === 'cpmm-multi-1'
+  ) {
+    ;(contract as any).answers =
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      useAnswersCpmm(contract.id) ?? contractParams.contract.answers
   }
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)

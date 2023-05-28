@@ -265,7 +265,9 @@ function OpenAnswer(props: {
             <Col className="gap-2">
               <Row className="justify-between">
                 <Subtitle className="!mt-0">{answer.text}</Subtitle>
-                <div className="text-xl">{formatPercent((answer as Answer).prob)}</div>
+                <div className="text-xl">
+                  {formatPercent((answer as Answer).prob)}
+                </div>
               </Row>
               <BuyPanel
                 contract={contract}
@@ -277,6 +279,8 @@ function OpenAnswer(props: {
                 initialOutcome={outcome}
                 hidden={false}
                 mobileView={isMobile}
+                onBuySuccess={() => setTimeout(() => setOutcome(undefined), 500)}
+                location={'contract page answer'}
               />
             </Col>
           ) : (

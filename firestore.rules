@@ -180,6 +180,9 @@ service cloud.firestore {
       allow read;
     }
 
+    match /{somePath=**}/answersCpmm/{answerId} {
+      allow read;
+    }
 
     match /{somePath=**}/followers/{userId} {
       allow read;
