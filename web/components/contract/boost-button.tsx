@@ -149,7 +149,7 @@ function BoostFormRow(props: { contract: Contract }) {
           {error && <div className="text-right text-red-500">{error}</div>}
         </>
       )}
-      
+
       <Col className="mb-2 gap-2">
         <span className="text-ink-800 mr-2 text-lg">
           = <strong>{redeems} clicks</strong>
@@ -297,7 +297,10 @@ function FeedAnalytics(props: { contractId: string }) {
         )}
         <TableItem label="Clickthroughs" value={clickData?.count} />
         {isBoosted && (
-          <TableItem label="Boost clickthroughs" value={promotedClickData?.length} />
+          <TableItem
+            label="Boost clickthroughs"
+            value={promotedClickData?.length}
+          />
         )}
       </Table>
     </div>
