@@ -409,10 +409,12 @@ async function createAnswers(
   const manaPerAnswer = ante / answers.length
   const ids = answers.map(() => randomString())
 
+  let prob = 0.5
   let poolYes = ante
   let poolNo = ante
 
   if (shouldAnswersSumToOne) {
+    prob = 1 / answers.length
     // Maximize use of ante given constraint that one answer resolves YES and
     // the rest resolve NO.
     // Means that:
@@ -441,7 +443,7 @@ async function createAnswers(
 
         poolYes,
         poolNo,
-        prob: 0.5,
+        prob,
         subsidyPool: 0,
         totalLiquidity: manaPerAnswer,
       }
