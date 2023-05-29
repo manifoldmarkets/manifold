@@ -134,16 +134,18 @@ export function calculateCpmmAmountToProb(
         (k - y * (((1 - p) * (prob - 1)) / (-p * prob)) ** (1 - p))
 }
 
-function calculateAmountToBuyShares(
+export function calculateAmountToBuyShares(
   state: CpmmState,
   shares: number,
   outcome: 'YES' | 'NO',
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number }
 ) {
-  // Search for amount between bounds (0, shares).
-  // Min share price is Ṁ0, and max is Ṁ1 each.
-  return binarySearch(0, shares, (amount) => {
+  const prob = getCpmmProbability(state.pool, state.p)
+  const minAmount = shares * (outcome === 'YES' ? prob : 1 - prob)
+  // Search for amount between bounds.
+  // Min share price is based on current probability, and max is Ṁ1 each.
+  return binarySearch(minAmount, shares, (amount) => {
     const { takers } = computeFills(
       state,
       outcome,
