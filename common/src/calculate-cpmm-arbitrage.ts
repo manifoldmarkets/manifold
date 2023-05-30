@@ -2,7 +2,7 @@ import { Dictionary, groupBy, sum, sumBy } from 'lodash'
 import { Answer } from './answer'
 import { LimitBet } from './bet'
 import {
-  calculateAmountToBuyShares,
+  calculateAmountToBuySharesFixedP,
   getCpmmProbability,
 } from './calculate-cpmm'
 import { binarySearch } from './util/algos'
@@ -107,7 +107,7 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
 ) => {
   const otherAnswers = answers.filter((a) => a.id !== answerToBuy.id)
   const noAmounts = otherAnswers.map(({ id, poolYes, poolNo }) =>
-    calculateAmountToBuyShares(
+    calculateAmountToBuySharesFixedP(
       { pool: { YES: poolYes, NO: poolNo }, p: 0.5 },
       noShares,
       'NO',

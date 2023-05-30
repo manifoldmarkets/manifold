@@ -5,6 +5,7 @@ import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
 import { binarySearch } from './util/algos'
+import { floatingEqual } from './util/math'
 
 export type CpmmState = {
   pool: { [outcome: string]: number }
@@ -134,6 +135,90 @@ export function calculateCpmmAmountToProb(
         (k - y * (((1 - p) * (prob - 1)) / (-p * prob)) ** (1 - p))
 }
 
+export function calculateCpmmAmountToBuySharesFixedP(
+  state: CpmmState,
+  shares: number,
+  outcome: 'YES' | 'NO'
+) {
+  if (!floatingEqual(state.p, 0.5)) {
+    throw new Error(
+      'calculateAmountToBuySharesFixedP only works for p = 0.5, got ' + state.p
+    )
+  }
+
+  const { YES: y, NO: n } = state.pool
+  if (outcome === 'YES') {
+    // https://www.wolframalpha.com/input?i=%28y%2Bb-s%29%5E0.5+*+%28n%2Bb%29%5E0.5+%3D+y+%5E+0.5+*+n+%5E+0.5%2C+solve+b
+    return (
+      (shares - y - n + Math.sqrt(4 * n * shares + (y + n - shares) ** 2)) / 2
+    )
+  }
+  return (
+    (shares - y - n + Math.sqrt(4 * y * shares + (y + n - shares) ** 2)) / 2
+  )
+}
+
+// Faster version assuming p = 0.5
+export function calculateAmountToBuySharesFixedP(
+  state: CpmmState,
+  shares: number,
+  outcome: 'YES' | 'NO',
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
+) {
+  const maxAmount = shares
+  const { takers } = computeFills(
+    state,
+    outcome,
+    maxAmount,
+    undefined,
+    unfilledBets,
+    balanceByUserId
+  )
+
+  let currShares = 0
+  let currAmount = 0
+  for (const fill of takers) {
+    const { amount: fillAmount, shares: fillShares, matchedBetId } = fill
+
+    if (floatingEqual(currShares + fillShares, shares)) {
+      return currAmount + fillAmount
+    }
+    if (currShares + fillShares > shares) {
+      // First fill that goes over the required shares.
+      if (matchedBetId) {
+        // Match a portion of the fill to get the exact shares.
+        const remainingShares = shares - currShares
+        const remainingAmount = fillAmount * (remainingShares / fillShares)
+        return currAmount + remainingAmount
+      }
+      // Last fill was from AMM. Break to compute the cpmmState at this point.
+      break
+    }
+
+    currShares += fillShares
+    currAmount += fillAmount
+  }
+
+  const remaningShares = shares - currShares
+
+  // Recompute up to currAmount to get the current cpmmState.
+  const { cpmmState } = computeFills(
+    state,
+    outcome,
+    currAmount,
+    undefined,
+    unfilledBets,
+    balanceByUserId
+  )
+  const fillAmount = calculateCpmmAmountToBuySharesFixedP(
+    cpmmState,
+    remaningShares,
+    outcome
+  )
+  return currAmount + fillAmount
+}
+
 export function calculateAmountToBuyShares(
   state: CpmmState,
   shares: number,
@@ -143,6 +228,7 @@ export function calculateAmountToBuyShares(
 ) {
   const prob = getCpmmProbability(state.pool, state.p)
   const minAmount = shares * (outcome === 'YES' ? prob : 1 - prob)
+
   // Search for amount between bounds.
   // Min share price is based on current probability, and max is Ṁ1 each.
   return binarySearch(minAmount, shares, (amount) => {
