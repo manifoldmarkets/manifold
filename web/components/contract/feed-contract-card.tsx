@@ -203,7 +203,6 @@ export function FeedContractCard(props: {
   )
 }
 
-
 export function ContractMetricsFooter(props: {
   contract: CPMMContract
   showDailyProfit?: boolean

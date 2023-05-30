@@ -338,4 +338,3 @@ export function FeaturedPill(props: { label?: string }) {
     </div>
   )
 }
-
