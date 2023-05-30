@@ -52,73 +52,69 @@ export function CreatePostForm(props: { group?: Group }) {
     }
   }
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      <div className="rounded-lg px-6 py-4 sm:py-0">
-        <Title>Create a post</Title>
-        {canCreate ? (
-          <>
-            <form>
-              <div className="flex w-full flex-col">
-                <label className="px-1 py-2">
-                  <span className="mb-1">
-                    Title<span className={'text-scarlet-500'}> *</span>
-                  </span>
-                </label>
-                <ExpandingInput
-                  placeholder="e.g. Elon Mania Post"
-                  autoFocus
-                  maxLength={MAX_POST_TITLE_LENGTH}
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value || '')}
-                />
-                <Spacer h={6} />
-                <label className="px-1 py-2">
-                  <span className="mb-1">
-                    Content<span className={'text-scarlet-500'}> *</span>
-                  </span>
-                </label>
-                <TextEditor editor={editor} />
-                <Spacer h={6} />
+    <div className="mx-auto w-full max-w-3xl px-4">
+      <Title>Create a post</Title>
+      {canCreate ? (
+        <>
+          <form>
+            <div className="flex w-full flex-col">
+              <label className="px-1 py-2">
+                <span className="mb-1">
+                  Title<span className={'text-scarlet-500'}> *</span>
+                </span>
+              </label>
+              <ExpandingInput
+                placeholder="e.g. Elon Mania Post"
+                autoFocus
+                maxLength={MAX_POST_TITLE_LENGTH}
+                value={title}
+                onChange={(e) => setTitle(e.target.value || '')}
+              />
+              <Spacer h={6} />
+              <label className="px-1 py-2">
+                <span className="mb-1">
+                  Content<span className={'text-scarlet-500'}> *</span>
+                </span>
+              </label>
+              <TextEditor editor={editor} />
+              <Spacer h={6} />
 
-                {error !== '' && (
-                  <div className="text-scarlet-500">{error}</div>
-                )}
-              </div>
-            </form>
-            <Button
-              type="submit"
-              size="xl"
-              loading={isSubmitting}
-              disabled={!isValid || editor.storage.upload.mutation.isLoading}
-              onClick={async () => {
-                setIsSubmitting(true)
-                await savePost(title)
-                setIsSubmitting(false)
-              }}
+              {error !== '' && <div className="text-scarlet-500">{error}</div>}
+            </div>
+          </form>
+          <Button
+            type="submit"
+            size="xl"
+            loading={isSubmitting}
+            disabled={!isValid || editor.storage.upload.mutation.isLoading}
+            onClick={async () => {
+              setIsSubmitting(true)
+              await savePost(title)
+              setIsSubmitting(false)
+            }}
+          >
+            {isSubmitting ? 'Creating...' : 'Create post'}
+          </Button>
+        </>
+      ) : (
+        <div className="">
+          <p>
+            Due to high amounts of spam, posts can now only be created with
+            accounts more than 30 days old. (Or with the API.)
+          </p>
+          <br />
+          <p>
+            Did you mean to{' '}
+            <SiteLink
+              href="/create"
+              className={clsx(linkClass, 'text-primary-700')}
             >
-              {isSubmitting ? 'Creating...' : 'Create post'}
-            </Button>
-          </>
-        ) : (
-          <div className="">
-            <p>
-              Due to high amounts of spam, posts can now only be created with
-              accounts more than 30 days old. (Or with the API.)
-            </p>
-            <br />
-            <p>
-              Did you mean to{' '}
-              <SiteLink
-                href="/create"
-                className={clsx(linkClass, 'text-primary-700')}
-              >
-                create a market
-              </SiteLink>{' '}
-              instead?
-            </p>
-          </div>
-        )}
-      </div>
+              create a market
+            </SiteLink>{' '}
+            instead?
+          </p>
+        </div>
+      )}
     </div>
   )
 }

@@ -868,7 +868,8 @@ unredeemed_market_ads as (
   from
     market_ads
   where 
-    NOT EXISTS (
+    market_ads.user_id != uid -- hide your own ads; comment out to debug
+    and not exists (
       SELECT 1
       FROM redeemed_ad_ids
       WHERE fromId = market_ads.id

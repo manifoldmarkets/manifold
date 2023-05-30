@@ -12,29 +12,8 @@ import { removeUndefinedProps } from 'common/util/object'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
 import { APIError, authEndpoint, validate } from './helpers'
 import { addCommentOnContractToFeed } from 'shared/create-feed'
+import { contentSchema } from 'shared/zod-types'
 
-export const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
-  z.intersection(
-    z.record(z.any()),
-    z.object({
-      type: z.string().optional(),
-      attrs: z.record(z.any()).optional(),
-      content: z.array(contentSchema).optional(),
-      marks: z
-        .array(
-          z.intersection(
-            z.record(z.any()),
-            z.object({
-              type: z.string(),
-              attrs: z.record(z.any()).optional(),
-            })
-          )
-        )
-        .optional(),
-      text: z.string().optional(),
-    })
-  )
-)
 
 const postSchema = z.object({
   contractId: z.string(),

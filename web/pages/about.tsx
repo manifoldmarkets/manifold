@@ -55,15 +55,15 @@ export default function AboutPage() {
 
         <LabCard
           title="📈 What is a prediction market?"
-          href="https://help.manifold.markets/introduction-to-manifold-markets/what-are-prediction-markets"
+          href="https://docs.manifold.markets/faq#what-is-a-prediction-market"
         />
         <LabCard
           title="💰 What is mana (Ṁ)?"
-          href="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"
+          href="https://docs.manifold.markets/faq#what-is-mana-m"
         />
         <LabCard
           title="🙋‍♂️ Learn more in our FAQ"
-          href="https://help.manifold.markets/manifold-101"
+          href="https://docs.manifold.markets/faq"
         />
 
         <Subtitle>🌎 Stay connected</Subtitle>

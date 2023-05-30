@@ -53,7 +53,7 @@ export const lootbox = authEndpoint(async (req, auth) => {
 
     transaction.update(userDoc, {
       balance: FieldValue.increment(-LOOTBOX_COST),
-      totalDeposits: FieldValue.increment(-LOOTBOX_COST),
+      // don't change totalDeposits; user is receiving shares of equal value
     })
 
     const newTxnDoc = firestore.collection('txns').doc()

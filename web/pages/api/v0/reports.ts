@@ -11,7 +11,8 @@ import {
   listAllCommentsOnPost,
 } from 'web/lib/firebase/comments'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { getPost, postPath } from 'web/lib/firebase/posts'
+import { postPath } from 'web/lib/firebase/posts'
+import { getPost } from 'web/lib/supabase/post'
 import { richTextToString } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
 import { getContract } from 'web/lib/supabase/contracts'

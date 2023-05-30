@@ -42,9 +42,10 @@ export function PostCard(props: {
               name={post.creatorName}
               username={post.creatorUsername}
             />
-            <span className="text-ink-400 mx-1">•</span>
-            <span className="text-ink-400">{fromNow(post.createdTime)}</span>
           </Row>
+          <span className="text-ink-400 text-sm">
+            Created {fromNow(post.createdTime)}
+          </span>
           {pinned && <FeaturedPill label={post.featuredLabel} />}
         </Row>
         <div className="text-md text-ink-900 mb-1 font-medium">

@@ -18,7 +18,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useComments } from 'web/hooks/use-comments'
 import { useEvent } from 'web/hooks/use-event'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
@@ -44,6 +43,7 @@ import { ControlledTabs } from '../layout/tabs'
 import { CertInfo, CertTrades } from './cert-overview'
 import { QfTrades } from './qf-overview'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
+import { useBets } from 'web/hooks/use-bets'
 
 export const EMPTY_USER = '_'
 
@@ -94,14 +94,12 @@ export function ContractTabs(props: {
 
   const user = useUser()
 
-  const userBets = useRealtimeBets(
-    {
+  const userBets =
+    useBets({
       contractId: contract.id,
       userId: user === undefined ? 'loading' : user?.id ?? EMPTY_USER,
       filterAntes: true,
-    },
-    true
-  )
+    }) ?? []
 
   const betsTitle =
     totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`

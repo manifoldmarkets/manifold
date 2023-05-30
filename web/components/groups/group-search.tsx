@@ -46,7 +46,7 @@ export default function GroupSearch(props: {
   const loadMoreGroups = () => performQuery(state)
 
   const searchTerm = useRef<string>('')
-  const [inputTerm, setInputTerm] = useState<string>('')
+  const [inputTerm, setInputTerm] = useState<string | undefined>(undefined)
   const searchTermStore = inMemoryStore<string>()
 
   const requestId = useRef(0)
@@ -58,6 +58,7 @@ export default function GroupSearch(props: {
     ),
     []
   )
+
   const query = async (currentState: groupStateType, freshQuery?: boolean) => {
     const id = ++requestId.current
     const offset = freshQuery

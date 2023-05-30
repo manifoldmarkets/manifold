@@ -1,10 +1,9 @@
-import { getDateDoc } from 'web/lib/firebase/posts'
+import { getDateDoc } from 'web/lib/supabase/post'
 import { ArrowLeftIcon, LinkIcon } from '@heroicons/react/outline'
 import { Page } from 'web/components/layout/page'
 import dayjs from 'dayjs'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
-
 import { DateDoc } from 'common/post'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -18,10 +17,10 @@ import { track } from 'web/lib/service/analytics'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { useUser } from 'web/hooks/use-user'
 import { PostCommentsActivity, RichEditPost } from '../post/[slug]/index'
-import { usePost } from 'web/hooks/use-post'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { NoSEO } from 'web/components/NoSEO'
+import { usePost } from 'web/hooks/use-post-supabase'
 
 export async function getStaticProps(props: { params: { username: string } }) {
   const { username } = props.params
