@@ -407,8 +407,8 @@ export function ContractCardNew(props: {
     <div
       className={clsx(
         'relative',
-        'border-ink-200 group my-2 flex cursor-pointer flex-col overflow-hidden rounded-xl border',
-        'hover:border-ink-400 focus:border-ink-400 outline-none transition-colors',
+        'group my-2 flex cursor-pointer flex-col overflow-hidden',
+        'outline-none transition-colors',
         className
       )}
       // we have other links inside this card like the username, so can't make the whole card a button or link

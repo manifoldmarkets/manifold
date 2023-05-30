@@ -75,7 +75,7 @@ export const FeedItems = (props: {
           <Col
             key={contract.id + 'feed'}
             className={
-              'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
+              'border-ink-200 hover:border-ink-400 my-1 overflow-y-hidden rounded-xl border'
             }
           >
             <ContractCardNew
