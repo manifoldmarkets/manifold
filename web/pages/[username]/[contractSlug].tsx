@@ -42,7 +42,6 @@ import { AlertBox } from 'web/components/widgets/alert-box'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
@@ -67,6 +66,7 @@ import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import { ContractView } from 'common/events'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { TitleOrEdit } from 'web/components/contract/title-edit'
+import { useBets } from 'web/hooks/use-bets'
 
 export type ContractParameters = {
   contractSlug: string
@@ -192,7 +192,7 @@ export function ContractPageContent(props: {
 
   // Static props load bets in descending order by time
   const lastBetTime = first(contractParams.historyData.bets)?.createdTime
-  const newBets = useRealtimeBets({
+  const newBets = useBets({
     contractId: contract.id,
     afterTime: lastBetTime,
     ...CONTRACT_BET_FILTER,
