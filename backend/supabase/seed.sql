@@ -78,6 +78,11 @@ create index if not exists user_profit_cached_all_time_idx on users (((data -> '
 
 create index if not exists users_betting_streak_idx on users (((data -> 'currentBettingStreak')::int));
 
+create index concurrently if not exists contracts_cpmm_daily_score on contracts (((data->'dailyScore')::numeric))
+where mechanism = 'cpmm-1'
+  and visibility != 'private'
+  and jsonb_typeof((data->'dailyScore')) != 'null';
+
 alter table users
 cluster on users_pkey;
 
@@ -253,7 +258,7 @@ with
 create index if not exists user_seen_markets_created_time_desc_idx on user_seen_markets (user_id, contract_id, created_time desc);
 
 alter table user_seen_markets
-cluster on user_seen_markets_pkey;
+cluster on user_seen_markets_created_time_desc_idx;
 
 create table if not exists
   user_notifications (
@@ -294,9 +299,8 @@ create table if not exists
               seen_time timestamptz null, -- null means unseen
               user_id text not null,
               event_time timestamptz not null,
-              -- TODO: should we just combine data_type and reason?
-              data_type text not null, -- 'comment', 'contract', 'answer', 'bet', 'news'
-              reason text not null, -- new contract from followed user, new comment on followed contract, etc
+              data_type text not null, -- 'new_comment', 'new_contract', 'news'
+              reason text null, --  follow_user, follow_contract, etc
               data jsonb null,
               contract_id text null,
               comment_id text null,
@@ -304,7 +308,8 @@ create table if not exists
               creator_id text null,
               bet_id text null,
               news_id text null,
-              group_id text null
+              group_id text null,
+              reaction_id text null
 );
 
 alter table user_feed enable row level security;

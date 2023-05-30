@@ -11,6 +11,7 @@ import {
   createTopLevelLikedCommentNotification,
 } from 'shared/create-notification'
 import { secrets } from 'common/secrets'
+import { addLikedCommentOnContractToFeed } from 'shared/create-feed'
 
 const firestore = admin.firestore()
 const MINIMUM_LIKES_TO_NOTIFY = 1
@@ -99,6 +100,7 @@ const handleTopLevelCommentLike = async (
     .get()
   if (!contractSnap.exists) return
   const contract = contractSnap.data() as Contract
+  await addLikedCommentOnContractToFeed(contract.id, reaction, comment)
   await createTopLevelLikedCommentNotification(
     comment.id,
     user,

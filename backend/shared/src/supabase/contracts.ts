@@ -1,6 +1,10 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { uniq } from 'lodash'
-import { getUserIdsInterestedInUser } from 'shared/supabase/users'
+import { fromPairs, map, merge } from 'lodash'
+import {
+  getUserFollowerIds,
+  getUserWithSimilarInterestVectorToUser,
+} from 'shared/supabase/users'
+import { FEED_REASON_TYPES } from 'common/feed'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -28,20 +32,11 @@ export const getContractFollowerIds = async (
   return followerIds.map((f) => f.follow_id)
 }
 
-export const getContractFollowerIdsMinusCreator = async (
-  contractId: string,
-  creatorId: string,
-  pg: SupabaseDirectClient
-) => {
-  const contractFollowerIds = await getContractFollowerIds(contractId, pg)
-  return contractFollowerIds.filter((userId) => userId !== creatorId)
-}
-
 export const getContractLikerIds = async (
   contractId: string,
   pg: SupabaseDirectClient
 ) => {
-  const likedUserIds = await pg.manyOrNone<{ user_id: string[] }>(
+  const likedUserIds = await pg.manyOrNone<{ user_id: string }>(
     `select user_id from user_reactions 
                where (data->>'contentId') = $1
                and (data->>'type') = 'like'
@@ -51,11 +46,12 @@ export const getContractLikerIds = async (
   return likedUserIds.map((r) => r.user_id)
 }
 
+// TODO: explain analyze this query after repacking - the table was packed around the wrong index
 export const getContractViewerIds = async (
   contractId: string,
   pg: SupabaseDirectClient
 ) => {
-  const viewerIds = await pg.manyOrNone<{ user_id: string[] }>(
+  const viewerIds = await pg.manyOrNone<{ user_id: string }>(
     `select distinct user_id from user_seen_markets
                 where contract_id = $1
                 and type = 'view market'`,
@@ -64,6 +60,8 @@ export const getContractViewerIds = async (
   return viewerIds.map((r) => r.user_id)
 }
 
+//TODO: perhaps we should also factor in the member's interest vector for e.g.
+// the huge groups like economics-default
 export const getContractGroupMemberIds = async (
   contractId: string,
   pg: SupabaseDirectClient
@@ -73,7 +71,7 @@ export const getContractGroupMemberIds = async (
                 where contract_id = $1`,
     [contractId]
   )
-  const contractGroupMemberIds = await pg.manyOrNone(
+  const contractGroupMemberIds = await pg.manyOrNone<{ member_id: string }>(
     `select distinct member_id from group_members
                 where group_id = any($1)`,
     [contractGroups.map((cg) => cg.group_id)]
@@ -81,53 +79,67 @@ export const getContractGroupMemberIds = async (
   return contractGroupMemberIds.map((r) => r.member_id)
 }
 
-const getUsersWithInterestVectorsNearToContract = async (
+const getUsersWithSimilarInterestVectorsToContract = async (
   contractId: string,
   pg: SupabaseDirectClient
-) => {
+): Promise<string[]> => {
   const userIdsAndDistances = await pg.manyOrNone(
-    `with ce as (select embedding
-                 from contract_embeddings
-                 where contract_id = $1)
-           select ue.user_id,
-                  (select embedding from ce) <=> ue.interest_embedding as distance
-           from user_embeddings as ue
-           where (select embedding from ce) <=> ue.interest_embedding < 0.25
-           order by (select embedding from ce) <=> ue.interest_embedding
-           limit 10000;
+    `with ce as (
+        select embedding
+        from contract_embeddings
+        where contract_id = $1
+    )
+     select user_id, distance
+     from (
+              select ue.user_id, (select embedding from ce) <=> ue.interest_embedding as distance
+              from user_embeddings as ue
+          ) as distances
+     where distance < 0.25
+     order by distance
+     limit 10000;
     `,
     [contractId]
   )
   return userIdsAndDistances.map((r) => r.user_id)
 }
 
-// TODO: attach reasons to user ids ('similar interests', 'follows creator', 'liked contract', etc)
-export const getUserIdsInterestedInContract = async (
+export const getUserToReasonsInterestedInContractAndUser = async (
   contractId: string,
-  creatorId: string,
-  pg: SupabaseDirectClient
-) => {
-  const [
-    contractFollowerIds,
-    contractLikerUserIds,
-    contractViewerIds,
-    contractGroupMemberIds,
-    usersWithNearInterestVectors,
-    userIdsInterestedInUser,
-  ] = await Promise.all([
-    getContractFollowerIds(contractId, pg),
-    getContractLikerIds(contractId, pg),
-    getContractViewerIds(contractId, pg),
-    getContractGroupMemberIds(contractId, pg),
-    getUsersWithInterestVectorsNearToContract(contractId, pg),
-    getUserIdsInterestedInUser(creatorId, pg),
-  ])
-  return uniq([
-    ...contractFollowerIds,
-    ...contractLikerUserIds,
-    ...contractViewerIds,
-    ...contractGroupMemberIds,
-    ...usersWithNearInterestVectors,
-    ...userIdsInterestedInUser,
-  ])
+  userId: string,
+  pg: SupabaseDirectClient,
+  reasonsToInclude?: FEED_REASON_TYPES[]
+): Promise<{ [userId: string]: FEED_REASON_TYPES }> => {
+  const reasonsToUserIdFunctions: {
+    [key in FEED_REASON_TYPES]: Promise<string[]>
+  } = {
+    contract_in_group_you_are_in: getContractGroupMemberIds(contractId, pg),
+    similar_interest_vector_to_creator: getUserWithSimilarInterestVectorToUser(
+      userId,
+      pg
+    ),
+    similar_interest_vector_to_contract:
+      getUsersWithSimilarInterestVectorsToContract(contractId, pg),
+    viewed_contract: getContractViewerIds(contractId, pg),
+    follow_creator: getUserFollowerIds(userId, pg),
+    liked_contract: getContractLikerIds(contractId, pg),
+    follow_contract: getContractFollowerIds(contractId, pg),
+  }
+
+  const promises = Object.entries(reasonsToUserIdFunctions)
+    .filter(([reason]) =>
+      reasonsToInclude
+        ? reasonsToInclude.includes(reason as FEED_REASON_TYPES)
+        : true
+    )
+    .map(([_, promise]) => promise)
+
+  const results = await Promise.all(promises)
+
+  return merge(
+    {},
+    ...results.map((result, index) => {
+      const reason = Object.keys(reasonsToUserIdFunctions)[index]
+      return fromPairs(map(result, (key) => [key, reason]))
+    })
+  )
 }

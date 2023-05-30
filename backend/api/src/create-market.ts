@@ -143,7 +143,12 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
   )
 
   await generateContractEmbeddings(contract)
-  await addContractToFeed(contract)
+  // TODO: move to on_create_contract trigger
+  await addContractToFeed(contract, [
+    'follow_creator',
+    'similar_interest_vector_to_creator',
+    'similar_interest_vector_to_contract',
+  ])
 
   return contract
 }

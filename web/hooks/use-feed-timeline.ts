@@ -71,9 +71,11 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
       newsId: item.news_id,
       createdTime: new Date(item.created_time).valueOf(),
     }))
+    // This can include new contracts and contracts with probability updates
     const contractIds = uniq(
       filterDefined(timelineItems.map((item) => item.contractId))
     )
+    // This can include new comments and comments with new likes
     const commentIds = uniq(
       filterDefined(timelineItems.map((item) => item.commentId))
     )
