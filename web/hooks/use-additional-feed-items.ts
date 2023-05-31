@@ -60,7 +60,7 @@ export const useFeedBets = (
       getBetsOnContracts(contractIds, {
         afterTime: Date.now() - DAY_MS,
         filterAntes: true,
-        filterChallenges: true,
+        filterChallenges: false,
         filterRedemptions: true,
       }).then((result) => {
         if (user) result = result.filter((b) => b.userId !== user.id)

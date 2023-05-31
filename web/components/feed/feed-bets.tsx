@@ -25,6 +25,7 @@ import { MINUTE_MS } from 'common/util/time'
 import { sort } from 'd3-array'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { SiteLink } from '../widgets/site-link'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -177,7 +178,7 @@ export function BetStatusText(props: {
   const self = useUser()
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
   const isCPMM2 = mechanism === 'cpmm-2'
-  const { amount, outcome, createdTime, shares, isApi } = bet
+  const { amount, outcome, createdTime, shares, isApi, isChallenge } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const isShortSell = isCPMM2 && amount > 0 && shares === 0
@@ -248,6 +249,11 @@ export function BetStatusText(props: {
             : `from ${fromProb} to ${toProb}`}
         </span>
       )}{' '}
+      {isChallenge && (
+        <InfoTooltip text="Loot box purchase">
+          <SiteLink href="/lootbox">🎁</SiteLink>
+        </InfoTooltip>
+      )}
       {isApi && (
         <InfoTooltip text="This bet was placed programmatically through the API">
           🤖
