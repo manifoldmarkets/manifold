@@ -22,6 +22,7 @@ import { mergePeriodic } from 'web/components/feed/feed-items'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { filterDefined } from 'common/util/array'
 import { useUnseenReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
+import { ContractMention } from 'web/components/contract/contract-mention'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
@@ -125,7 +126,16 @@ export const FeedTimelineItems = (props: {
             </Col>
           )
         } else if ('news' in item) {
-          return <Col>News</Col>
+          const { news } = item
+          if (!news) return null
+          return (
+            <Col>
+              {news.title}
+              {item.contracts?.map((contract) => (
+                <ContractMention contract={contract} />
+              ))}
+            </Col>
+          )
         }
       })}
     </Col>

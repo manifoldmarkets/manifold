@@ -8,9 +8,9 @@ import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { getBoosts } from 'web/lib/supabase/ads'
 import { BoostsType } from 'web/hooks/use-feed'
-import { run } from 'common/supabase/utils'
+import { Row, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { last, uniq, uniqBy } from 'lodash'
+import { groupBy, last, sortBy, uniq, uniqBy } from 'lodash'
 import { News } from 'common/news'
 import { FEED_DATA_TYPES, FEED_REASON_TYPES, getExplanation } from 'common/feed'
 import { isContractBlocked } from 'web/lib/firebase/users'
@@ -21,15 +21,16 @@ export type FeedTimelineItem = {
   // These are stored in the db
   dataType: FEED_DATA_TYPES
   reason: FEED_REASON_TYPES
+  createdTime: number
   contractId: string | null
   commentId: string | null
   newsId: string | null
-  createdTime: number
   // These are fetched/generated at runtime
-  contract: Contract | undefined
-  comments: ContractComment[] | undefined
-  news: News | undefined
-  reasonDescription: string | undefined
+  contract?: Contract
+  contracts?: Contract[]
+  comments?: ContractComment[]
+  news?: News
+  reasonDescription?: string
 }
 export const useFeedTimeline = (user: User | null | undefined, key: string) => {
   const [boosts, setBoosts] = useState<BoostsType>()
@@ -81,13 +82,15 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
         .from('news')
         .select('*')
         .in('id', newsIds)
-        .then(
-          (res) =>
-            res.data?.map((news) => ({
-              ...news,
-              id: news.id.toString(),
-              urlToImage: news.image_url,
-            })) as News[]
+        .then((res) =>
+          res.data?.map(
+            (news) =>
+              ({
+                ...news,
+                id: news.id.toString(),
+                urlToImage: news.image_url,
+              } as News)
+          )
         ),
     ])
     const filteredContracts = contracts?.filter(
@@ -96,31 +99,17 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
     const filteredComments = comments?.filter(
       (c) => !privateUser?.blockedUserIds?.includes(c.userId)
     )
-    const timelineItems = data.map((item) => ({
-      dataType: item.data_type as FEED_DATA_TYPES,
-      reason: item.reason as FEED_REASON_TYPES,
-      contractId: item.contract_id,
-      commentId: item.comment_id,
-      newsId: item.news_id,
-      reasonDescription: getExplanation(
-        item.data_type as FEED_DATA_TYPES,
-        item.reason as FEED_REASON_TYPES
-      ),
-      createdTime: new Date(item.created_time).valueOf(),
-      contract: filteredContracts?.find(
-        (contract) => contract.id === item.contract_id
-      ),
-      comments: filteredComments?.filter(
-        (comment) => comment.contractId === item.contract_id
-      ),
-      news: news?.find((news) => news.id === item.news_id),
-    }))
+    const timelineItems = createFeedTimelineItems(
+      data,
+      filteredContracts,
+      filteredComments,
+      news
+    )
 
     const lastItem = last(timelineItems)
     lastCreatedTime.current = lastItem?.createdTime ?? lastCreatedTime.current
     return {
-      // TODO: The uniqBy will coalesce reason descriptions non-deterministically
-      timelineItems: uniqBy(timelineItems, 'contractId'),
+      timelineItems,
     }
   }
 
@@ -141,4 +130,66 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
     boosts,
     feedTimelineItems: savedFeedItems,
   }
+}
+
+const getBaseTimelineItem = (item: Row<'user_feed'>) => ({
+  dataType: item.data_type as FEED_DATA_TYPES,
+  reason: item.reason as FEED_REASON_TYPES,
+  reasonDescription: getExplanation(
+    item.data_type as FEED_DATA_TYPES,
+    item.reason as FEED_REASON_TYPES
+  ),
+  createdTime: new Date(item.created_time).valueOf(),
+})
+
+function createFeedTimelineItems(
+  data: Row<'user_feed'>[],
+  contracts: Contract[] | undefined,
+  comments: ContractComment[] | undefined,
+  news: News[] | undefined
+): (FeedTimelineItem | undefined)[] {
+  const newsData = Object.entries(groupBy(data, (item) => item.news_id)).map(
+    ([newsId, newsItems]) => {
+      const contractIds = data
+        .filter((item) => item.news_id === newsId)
+        .map((i) => i.contract_id)
+      return {
+        ...getBaseTimelineItem(newsItems[0]),
+        newsId,
+        contracts: contracts?.filter((contract) =>
+          contractIds.includes(contract.id)
+        ),
+        news: news?.find((news) => news.id === newsId),
+      } as FeedTimelineItem
+    }
+  )
+  // TODO: The uniqBy will coalesce reason descriptions non-deterministically
+  const nonNewsTimelineItems = uniqBy(
+    data.map((item) => {
+      const dataType = item.data_type as FEED_DATA_TYPES
+      if (
+        dataType === 'contract_probability_changed' ||
+        dataType === 'new_comment' ||
+        dataType === 'new_contract' ||
+        dataType === 'popular_comment'
+      ) {
+        return {
+          ...getBaseTimelineItem(item),
+          contractId: item.contract_id,
+          commentId: item.comment_id,
+          contract: contracts?.find(
+            (contract) => contract.id === item.contract_id
+          ),
+          comments: comments?.filter(
+            (comment) => comment.contractId === item.contract_id
+          ),
+        } as FeedTimelineItem
+      }
+    }),
+    'contractId'
+  )
+  return sortBy(
+    filterDefined([...newsData, ...nonNewsTimelineItems]),
+    'createdTime'
+  ).reverse()
 }
