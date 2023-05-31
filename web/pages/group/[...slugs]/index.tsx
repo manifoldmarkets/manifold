@@ -291,7 +291,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
           <Row className="mb-2 gap-4">
             <GroupMembersWidget
               group={group}
-              canEdit={isManifoldAdmin || userRole === 'admin'}
+              canEdit={userRole === 'admin'}
               onMemberClick={onMemberClick}
               open={openMemberModal}
               setOpen={setOpenMemberModal}
