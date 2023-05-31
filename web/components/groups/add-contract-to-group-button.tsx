@@ -33,10 +33,7 @@ export function getAddContractToGroupPermission(
   if (privacyStatus == 'public') {
     return 'new'
   }
-  if (
-    privacyStatus == 'private' &&
-    (userRole == 'admin' || userRole == 'moderator')
-  ) {
+  if (privacyStatus == 'private') {
     return 'private'
   }
   return 'none'
