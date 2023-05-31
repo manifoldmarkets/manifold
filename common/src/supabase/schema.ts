@@ -951,6 +951,9 @@ export interface Database {
           news_id: string | null
           seen_time: string | null
           user_id: string
+          reason: string | null
+          reaction_id: string | null
+          group_id: string | null
         }
         Insert: {
           answer_id?: string | null
@@ -966,6 +969,9 @@ export interface Database {
           news_id?: string | null
           seen_time?: string | null
           user_id: string
+          reason?: string | null
+          reaction_id?: string | null
+          group_id?: string | null
         }
         Update: {
           answer_id?: string | null
@@ -981,6 +987,9 @@ export interface Database {
           news_id?: string | null
           seen_time?: string | null
           user_id?: string
+          reason?: string | null
+          reaction_id?: string | null
+          group_id?: string | null
         }
       }
       user_follows: {

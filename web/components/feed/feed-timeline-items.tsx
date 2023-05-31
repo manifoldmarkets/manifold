@@ -18,96 +18,115 @@ import { Row } from '../layout/row'
 import { ContractComment } from 'common/comment'
 import { BoostsType } from 'web/hooks/use-feed'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
-import { News } from 'common/news'
 import { mergePeriodic } from 'web/components/feed/feed-items'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { filterDefined } from 'common/util/array'
+import { useUnseenReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
 
+const MAX_BETS_PER_FEED_ITEM = 2
+const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const FeedTimelineItems = (props: {
-  contracts: Contract[]
-  comments: ContractComment[]
-  news: News[]
+  feedTimelineItems: FeedTimelineItem[]
   boosts?: BoostsType
   user: User | null | undefined
 }) => {
-  const { user, boosts, comments, news } = props
-
-  const organicContracts = props.contracts.map((c) => ({
-    ...c,
-    type: 'contract' as const,
-  }))
+  const { user, boosts, feedTimelineItems: savedFeedTimelineItems } = props
+  const savedFeedComments = filterDefined(
+    savedFeedTimelineItems.map((item) => item.comments)
+  ).flat()
 
   const boostedContracts =
     boosts?.map((boost) => {
       const { market_data, ...rest } = boost
-      return { ...market_data, ...rest, type: 'boost' as const }
+      return { ...market_data, ...rest, dataType: 'boosted_contract' as const }
     }) ?? []
 
-  const contracts = mergePeriodic(organicContracts, boostedContracts, AD_PERIOD)
-
-  const contractIds = contracts.map((c) => c.id)
-  const maxBets = 2
-  const maxComments = 1
-  const { parentCommentsByContractId, childCommentsByParentCommentId } =
-    groupCommentsByContractsAndParents(comments)
-  const recentBets = useFeedBets(user, contractIds)
-  const groupedItems = contracts.map((contract) => {
-    const parentComments = parentCommentsByContractId[contract.id] ?? []
-    const relatedBets = recentBets.filter(
-      (bet) => bet.contractId === contract.id
+  const contractIdsWithoutComments = filterDefined(
+    savedFeedTimelineItems.map((item) =>
+      item.contractId && !item.comments ? item.contractId : null
     )
-    return {
-      contract,
-      parentComments: parentComments.slice(0, maxComments),
-      relatedBets: relatedBets.slice(0, maxBets),
-    }
-  })
+  ).concat(boostedContracts.map((c) => c.id))
+
+  const recentComments = useUnseenReplyChainCommentsOnContracts(
+    contractIdsWithoutComments,
+    user?.id ?? '_'
+  )
+
+  const { parentCommentsByContractId, childCommentsByParentCommentId } =
+    groupCommentsByContractsAndParents(savedFeedComments.concat(recentComments))
+  const recentBets = useFeedBets(user, contractIdsWithoutComments)
+  const feedTimelineItems = mergePeriodic(
+    savedFeedTimelineItems,
+    boostedContracts,
+    AD_PERIOD
+  )
 
   return (
     <Col>
-      {groupedItems.map((itemGroup) => {
-        const { contract, parentComments, relatedBets } = itemGroup
-        const hasItems = parentComments.length > 0 || recentBets.length > 0
+      {feedTimelineItems.map((item) => {
+        // boosted contract or organic feed contract
+        if ('contract' in item || item.dataType === 'boosted_contract') {
+          const { contract, reasonDescription } =
+            item.dataType === 'boosted_contract'
+              ? {
+                  contract: item,
+                  reasonDescription: undefined,
+                }
+              : item
+          if (!contract) return null
+          const parentComments = (
+            parentCommentsByContractId[contract.id] ?? []
+          ).slice(0, MAX_PARENT_COMMENTS_PER_FEED_ITEM)
+          const relatedBets = recentBets
+            .filter((bet) => bet.contractId === contract.id)
+            .slice(0, MAX_BETS_PER_FEED_ITEM)
+          const hasItems = parentComments.length > 0 || relatedBets.length > 0
 
-        const promotedData =
-          contract.type === 'boost'
-            ? {
-                adId: contract.ad_id,
-                reward: AD_REDEEM_REWARD,
+          const promotedData =
+            item.dataType === 'boosted_contract'
+              ? {
+                  adId: item.ad_id,
+                  reward: AD_REDEEM_REWARD,
+                }
+              : undefined
+
+          return (
+            <Col
+              key={contract.id + 'feed'}
+              className={
+                'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
               }
-            : undefined
-
-        return (
-          <Col
-            key={contract.id + 'feed'}
-            className={
-              'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
-            }
-          >
-            <ContractCardNew
-              contract={contract}
-              className={clsx(
-                'my-0 border-0',
-                hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
-              )}
-              promotedData={promotedData}
-              trackingPostfix="feed"
-            />
-            <Row className="bg-canvas-0">
-              <FeedCommentItem
+            >
+              <ContractCardNew
                 contract={contract}
-                commentThreads={parentComments.map((parentComment) => ({
-                  parentComment,
-                  childComments:
-                    childCommentsByParentCommentId[parentComment.id] ?? [],
-                }))}
+                className={clsx(
+                  'my-0 border-0',
+                  hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
+                )}
+                promotedData={promotedData}
+                trackingPostfix="feed"
+                reason={reasonDescription}
               />
-            </Row>
-            <Row className="bg-canvas-0">
-              {parentComments.length === 0 && (
-                <FeedBetsItem contract={contract} bets={relatedBets} />
-              )}
-            </Row>
-          </Col>
-        )
+              <Row className="bg-canvas-0">
+                <FeedCommentItem
+                  contract={contract}
+                  commentThreads={parentComments.map((parentComment) => ({
+                    parentComment,
+                    childComments:
+                      childCommentsByParentCommentId[parentComment.id] ?? [],
+                  }))}
+                />
+              </Row>
+              <Row className="bg-canvas-0">
+                {parentComments.length === 0 && (
+                  <FeedBetsItem contract={contract} bets={relatedBets} />
+                )}
+              </Row>
+            </Col>
+          )
+        } else if ('news' in item) {
+          return <Col>News</Col>
+        }
       })}
     </Col>
   )

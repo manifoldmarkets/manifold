@@ -356,8 +356,9 @@ export function ContractCardNew(props: {
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
   className?: string
+  reason?: string
 }) {
-  const { className, promotedData, trackingPostfix } = props
+  const { className, promotedData, reason, trackingPostfix } = props
   const user = useUser()
 
   const contract = useRealtimeContract(props.contract.id) ?? props.contract
@@ -435,7 +436,11 @@ export function ContractCardNew(props: {
             />
           </Row>
           <div className="flex-1" />
-          {promotedData ? <BoostPill /> : <ReasonChosen contract={contract} />}
+          {promotedData ? (
+            <BoostPill />
+          ) : (
+            <ReasonChosen contract={contract} reason={reason} />
+          )}
         </Row>
 
         {/* Title is link to contract for open in new tab and a11y */}
@@ -527,19 +532,20 @@ const BoostPill = () => (
   </Tooltip>
 )
 
-function ReasonChosen(props: { contract: Contract }) {
+function ReasonChosen(props: { contract: Contract; reason?: string }) {
   const { contract } = props
   const { createdTime, closeTime, uniqueBettorCount } = contract
 
   const now = Date.now()
-  const reason =
-    createdTime > now - DAY_MS
-      ? 'New'
-      : closeTime && closeTime < now + DAY_MS
-      ? 'Closing soon'
-      : !uniqueBettorCount || uniqueBettorCount <= 5
-      ? 'For you'
-      : 'Trending'
+  const reason = props.reason
+    ? props.reason
+    : createdTime > now - DAY_MS
+    ? 'New'
+    : closeTime && closeTime < now + DAY_MS
+    ? 'Closing soon'
+    : !uniqueBettorCount || uniqueBettorCount <= 5
+    ? 'For you'
+    : 'Trending'
 
   return (
     <Row className="gap-3">

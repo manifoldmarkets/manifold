@@ -58,21 +58,16 @@ const MainContent = () => {
 }
 function FeedTimelineContent() {
   const user = useUser()
-  const { contracts, boosts, comments, news, loadMore } = useFeedTimeline(
-    user,
-    'feed'
-  )
+  const { boosts, feedTimelineItems, loadMore } = useFeedTimeline(user, 'feed')
 
-  if (!contracts || !comments || !news || !boosts) return <LoadingIndicator />
+  if (!boosts || !feedTimelineItems) return <LoadingIndicator />
 
   return (
     <Col>
       <FeedTimelineItems
-        comments={comments}
-        news={news}
-        contracts={contracts}
         boosts={boosts}
         user={user}
+        feedTimelineItems={feedTimelineItems}
       />
 
       <div className="relative">
@@ -82,7 +77,7 @@ function FeedTimelineContent() {
         />
       </div>
 
-      {contracts.length === 0 && (
+      {feedTimelineItems.length === 0 && (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
           We're fresh out of cards!
           <SiteLink
