@@ -24,6 +24,7 @@ import { groupBy, maxBy, partition, sumBy } from 'lodash'
 import { MINUTE_MS } from 'common/util/time'
 import { sort } from 'd3-array'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -176,7 +177,7 @@ export function BetStatusText(props: {
   const self = useUser()
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
   const isCPMM2 = mechanism === 'cpmm-2'
-  const { amount, outcome, createdTime, shares } = bet
+  const { amount, outcome, createdTime, shares, isApi } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const isShortSell = isCPMM2 && amount > 0 && shares === 0
@@ -245,6 +246,11 @@ export function BetStatusText(props: {
             : `from ${fromProb} to ${toProb}`}
         </>
       )}{' '}
+      {isApi && (
+        <InfoTooltip text="This bet was placed programmatically through the API">
+          🤖
+        </InfoTooltip>
+      )}
       <RelativeTimestamp time={createdTime} />
     </div>
   )
