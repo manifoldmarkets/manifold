@@ -48,9 +48,10 @@ import { getStonkShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { Input } from 'web/components/widgets/input'
 import { DAY_MS, MINUTE_MS } from 'common/util/time'
 import { Answer } from 'common/answer'
-import { CpmmState } from 'common/calculate-cpmm'
+import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { getProbability } from 'common/calculate'
 import { removeUndefinedProps } from 'common/util/object'
+import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 
 export type binaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -174,28 +175,47 @@ export function BuyPanel(props: {
   const betDisabled =
     isSubmitting || !betAmount || !!error || outcome === undefined
 
-  const cpmmState = isCpmmMulti
-    ? {
-        pool: {
-          YES: multiProps!.answerToBuy.poolYes,
-          NO: multiProps!.answerToBuy.poolNo,
-        },
-        p: 0.5,
-      }
-    : { pool: contract.pool, p: contract.p }
+  let currentPayout: number
+  let probBefore: number
+  let probAfter: number
+  if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
+    const { answers, answerToBuy } = multiProps
+    const { shares, newBetResult } = calculateCpmmMultiArbitrageBet(
+      answers,
+      answerToBuy,
+      outcome ?? 'YES',
+      betAmount ?? 0,
+      undefined,
+      unfilledBets,
+      balanceByUserId
+    )
+    const { pool, p } = newBetResult.cpmmState
+    currentPayout = shares
+    probBefore = answerToBuy.prob
+    probAfter = getCpmmProbability(pool, p)
+  } else {
+    const cpmmState = isCpmmMulti
+      ? {
+          pool: {
+            YES: multiProps!.answerToBuy.poolYes,
+            NO: multiProps!.answerToBuy.poolNo,
+          },
+          p: 0.5,
+        }
+      : { pool: contract.pool, p: contract.p }
 
-  const {
-    shares: currentPayout,
-    probBefore,
-    probAfter,
-  } = computeCpmmBet(
-    cpmmState,
-    outcome ?? 'YES',
-    betAmount ?? 0,
-    undefined,
-    unfilledBets,
-    balanceByUserId
-  )
+    const result = computeCpmmBet(
+      cpmmState,
+      outcome ?? 'YES',
+      betAmount ?? 0,
+      undefined,
+      unfilledBets,
+      balanceByUserId
+    )
+    currentPayout = result.shares
+    probBefore = result.probBefore
+    probAfter = result.probAfter
+  }
 
   const probStayedSame = formatPercent(probAfter) === formatPercent(probBefore)
   const probChange = Math.abs(probAfter - probBefore)

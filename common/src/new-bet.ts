@@ -32,6 +32,7 @@ import {
   floatingLesserEqual,
 } from './util/math'
 import { Answer } from './answer'
+import { calculateCpmmMultiArbitrageBet } from './calculate-cpmm-arbitrage'
 
 export type CandidateBet<T extends Bet = Bet> = Omit<
   T,
@@ -480,6 +481,7 @@ export const getNumericBetsInfo = (
 
 export const getNewMultiCpmmBetInfo = (
   contract: CPMMMultiContract,
+  answers: Answer[],
   answer: Answer,
   outcome: 'YES' | 'NO',
   betAmount: number,
@@ -488,6 +490,20 @@ export const getNewMultiCpmmBetInfo = (
   balanceByUserId: { [userId: string]: number },
   expiresAt?: number
 ) => {
+  if (contract.shouldAnswersSumToOne) {
+    return getNewMultiCpmmBetInfoSumsToOne(
+      contract,
+      answers,
+      answer,
+      outcome,
+      betAmount,
+      limitProb,
+      unfilledBets,
+      balanceByUserId,
+      expiresAt
+    )
+  }
+
   const { poolYes, poolNo } = answer
   const pool = { YES: poolYes, NO: poolNo }
   const cpmmState = { pool, p: 0.5 }
@@ -538,5 +554,104 @@ export const getNewMultiCpmmBetInfo = (
     expiresAt,
   })
 
-  return { newBet, newPool, ordersToCancel, makers }
+  const newPoolsByAnswerId = {
+    [answer.id]: newPool,
+  }
+
+  return { newBet, newPoolsByAnswerId, ordersToCancel, makers }
+}
+
+const getNewMultiCpmmBetInfoSumsToOne = (
+  contract: CPMMMultiContract,
+  answers: Answer[],
+  answer: Answer,
+  outcome: 'YES' | 'NO',
+  betAmount: number,
+  limitProb: number | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+  expiresAt?: number
+) => {
+  const { newBetResult, otherBetResults, shares, newPoolsByAnswerId } =
+    calculateCpmmMultiArbitrageBet(
+      answers,
+      answer,
+      outcome,
+      betAmount,
+      limitProb,
+      unfilledBets,
+      balanceByUserId
+    )
+  const makers = [
+    newBetResult.makers,
+    ...otherBetResults.map((r) => r.makers),
+  ].flat()
+  const ordersToCancel = [
+    newBetResult.ordersToCancel,
+    ...otherBetResults.map((r) => r.ordersToCancel),
+  ].flat()
+
+  const now = Date.now()
+
+  const { takers, cpmmState } = newBetResult
+  const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
+
+  // TODO: handle limit bets that are partially filled.
+  const newBet: CandidateBet = removeUndefinedProps({
+    contractId: contract.id,
+    outcome,
+    orderAmount: betAmount,
+    isCancelled: false,
+    amount: betAmount,
+    loanAmount: 0,
+    shares,
+    answerId: answer.id,
+    fills: takers,
+    isFilled: true,
+    probBefore: answer.prob,
+    probAfter,
+    createdTime: now,
+    fees: noFees,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
+    visibility: contract.visibility,
+    expiresAt,
+  })
+
+  const otherBets = otherBetResults.map((result) => {
+    const { answer, takers, cpmmState, outcome } = result
+    const probBefore = answer.prob
+    const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
+
+    const bet: CandidateBet = removeUndefinedProps({
+      contractId: contract.id,
+      outcome,
+      orderAmount: 0,
+      isCancelled: false,
+      amount: 0,
+      loanAmount: 0,
+      shares: 0,
+      answerId: answer.id,
+      fills: takers,
+      isFilled: true,
+      probBefore,
+      probAfter,
+      createdTime: now,
+      fees: noFees,
+      isAnte: false,
+      isRedemption: true,
+      isChallenge: false,
+      visibility: contract.visibility,
+    })
+    return bet
+  })
+
+  return {
+    newBet,
+    otherBets,
+    newPoolsByAnswerId,
+    makers,
+    ordersToCancel,
+  }
 }

@@ -13,19 +13,21 @@ import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
 import { User } from 'common/user'
 import {
   BetInfo,
+  CandidateBet,
   getBinaryCpmmBetInfo,
   getNewMultiBetInfo,
   getNewMultiCpmmBetInfo,
   getNumericBetsInfo,
 } from 'common/new-bet'
 import { addObjects, removeUndefinedProps } from 'common/util/object'
-import { LimitBet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { redeemShares } from './redeem-shares'
 import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
+import { getCpmmProbability } from 'common/calculate-cpmm'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -79,7 +81,9 @@ export const placebet = authEndpoint(async (req, auth) => {
 
     const {
       newBet,
+      otherBets,
       newPool,
+      newPoolsByAnswerId,
       newTotalShares,
       newTotalBets,
       newTotalLiquidity,
@@ -90,6 +94,10 @@ export const placebet = authEndpoint(async (req, auth) => {
       BetInfo & {
         makers?: maker[]
         ordersToCancel?: LimitBet[]
+        otherBets?: CandidateBet<Bet>[]
+        newPoolsByAnswerId?: {
+          [answerId: string]: { [outcome: string]: number }
+        }
       }
     > => {
       if (
@@ -161,6 +169,7 @@ export const placebet = authEndpoint(async (req, auth) => {
 
         return getNewMultiCpmmBetInfo(
           contract,
+          answers,
           answer,
           outcome,
           amount,
@@ -203,6 +212,35 @@ export const placebet = authEndpoint(async (req, auth) => {
     })
     log(`Created new bet document for ${user.username} - auth ${auth.uid}.`)
 
+    if (otherBets) {
+      for (const bet of otherBets) {
+        const betDoc = contractDoc.collection('bets').doc()
+        trans.create(betDoc, {
+          id: betDoc.id,
+          userId: user.id,
+          userAvatarUrl: user.avatarUrl,
+          userUsername: user.username,
+          userName: user.name,
+          isApi,
+          ...bet,
+        })
+      }
+    }
+    if (newPoolsByAnswerId) {
+      for (const [answerId, pool] of Object.entries(newPoolsByAnswerId)) {
+        const { YES: poolYes, NO: poolNo } = pool
+        const prob = getCpmmProbability(pool, 0.5)
+        trans.update(
+          contractDoc.collection('answersCpmm').doc(answerId),
+          removeUndefinedProps({
+            poolYes,
+            poolNo,
+            prob,
+          })
+        )
+      }
+    }
+
     if (makers) {
       updateMakers(makers, betDoc.id, contractDoc, trans)
     }
@@ -226,16 +264,6 @@ export const placebet = authEndpoint(async (req, auth) => {
             volume: volume + newBet.amount,
           })
         )
-        const poolYes = newPool?.YES
-        const poolNo = newPool?.NO
-        trans.update(
-          contractDoc.collection('answersCpmm').doc(newBet.answerId),
-          removeUndefinedProps({
-            poolYes,
-            poolNo,
-            prob: newBet.probAfter,
-          })
-        )
       } else {
         trans.update(
           contractDoc,
@@ -250,6 +278,7 @@ export const placebet = authEndpoint(async (req, auth) => {
           })
         )
       }
+
       log(`Updated contract ${contract.slug} properties - auth ${auth.uid}.`)
     }
 
