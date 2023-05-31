@@ -51,8 +51,8 @@ export const addContractsWithLargeProbChangesToFeed = async () => {
             userId,
             Date.now(),
             'contract_probability_changed',
+            usersToReasons[userId],
             {
-              reason: usersToReasons[userId],
               contractId: contract.id,
               creatorId: contract.creator_id,
             },

@@ -18,12 +18,14 @@ import { isContractBlocked } from 'web/lib/firebase/users'
 const PAGE_SIZE = 20
 
 export type FeedTimelineItem = {
+  // These are stored in the db
   dataType: FEED_DATA_TYPES
-  reason: FEED_REASON_TYPES | null
+  reason: FEED_REASON_TYPES
   contractId: string | null
   commentId: string | null
   newsId: string | null
   createdTime: number
+  // These are fetched/generated at runtime
   contract: Contract | undefined
   comments: ContractComment[] | undefined
   news: News | undefined

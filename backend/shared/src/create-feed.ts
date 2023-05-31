@@ -12,8 +12,8 @@ export const insertDataToUserFeed = async (
   userId: string,
   eventTime: number,
   dataType: FEED_DATA_TYPES,
+  reason: FEED_REASON_TYPES,
   dataProps: {
-    reason?: FEED_REASON_TYPES
     contractId?: string
     commentId?: string
     answerId?: string
@@ -36,7 +36,6 @@ export const insertDataToUserFeed = async (
     betId,
     newsId,
     data,
-    reason,
     reactionId,
   } = dataProps
   await pg.none(
@@ -80,8 +79,8 @@ export const addCommentOnContractToFeed = async (
         userId,
         comment.createdTime,
         'new_comment',
+        usersToReasonsInterestedInContract[userId],
         {
-          reason: usersToReasonsInterestedInContract[userId],
           contractId,
           commentId: comment.id,
           creatorId: comment.userId,
@@ -115,8 +114,8 @@ export const addLikedCommentOnContractToFeed = async (
         userId,
         reaction.createdTime,
         'popular_comment',
+        usersToReasonsInterestedInContract[userId],
         {
-          reason: usersToReasonsInterestedInContract[userId],
           contractId,
           commentId: comment.id,
           creatorId: reaction.userId,
@@ -148,8 +147,8 @@ export const addContractToFeed = async (
         userId,
         contract.createdTime,
         'new_contract',
+        usersToReasonsInterestedInContract[userId],
         {
-          reason: usersToReasonsInterestedInContract[userId],
           contractId: contract.id,
           creatorId: contract.creatorId,
         },

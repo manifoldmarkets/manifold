@@ -78,8 +78,7 @@ export const FeedExplanationDictionary: Record<
 
 export function getExplanation(
   feedDataType: FEED_DATA_TYPES,
-  feedReasonType: FEED_REASON_TYPES | null
+  feedReasonType: FEED_REASON_TYPES
 ): string | undefined {
-  if (!feedReasonType) return undefined
   return FeedExplanationDictionary[feedDataType][feedReasonType]
 }

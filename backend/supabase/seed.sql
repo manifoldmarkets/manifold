@@ -300,7 +300,7 @@ create table if not exists
               user_id text not null,
               event_time timestamptz not null,
               data_type text not null, -- 'new_comment', 'new_contract', 'news'
-              reason text null, --  follow_user, follow_contract, etc
+              reason text not null, --  follow_user, follow_contract, etc
               data jsonb null,
               contract_id text null,
               comment_id text null,
