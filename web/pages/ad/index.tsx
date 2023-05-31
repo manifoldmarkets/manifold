@@ -22,7 +22,7 @@ import { uniq } from 'lodash'
 import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
-import { postPath } from 'web/lib/firebase/posts'
+import { postPath } from 'web/lib/supabase/post'
 import toast from 'react-hot-toast'
 
 export async function getStaticProps() {

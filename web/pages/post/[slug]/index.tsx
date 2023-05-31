@@ -1,6 +1,6 @@
 import { Page } from 'web/components/layout/page'
-import { getPostBySlug } from 'web/lib/supabase/post'
-import { postPath, updatePost } from 'web/lib/firebase/posts'
+import { getPostBySlug, postPath } from 'web/lib/supabase/post'
+import { updatePost } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
 import { Title } from 'web/components/widgets/title'
 import { Spacer } from 'web/components/layout/spacer'

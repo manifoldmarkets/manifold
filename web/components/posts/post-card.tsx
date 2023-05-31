@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { Post } from 'common/post'
 import Link from 'next/link'
-import { postPath } from 'web/lib/firebase/posts'
+import { postPath } from 'web/lib/supabase/post'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../widgets/avatar'
 import { Card } from '../widgets/card'

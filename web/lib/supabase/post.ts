@@ -3,6 +3,10 @@ import { run } from 'common/supabase/utils'
 import { db } from './db'
 import { getUserByUsername } from 'web/lib/supabase/users'
 
+export function postPath(postSlug: string) {
+  return `/post/${postSlug}`
+}
+
 export async function getPost(postId: string) {
   const { data: post } = await run(
     db.from('posts').select('data').eq('id', postId)

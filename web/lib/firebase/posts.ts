@@ -4,10 +4,6 @@ import { coll } from './utils'
 
 const posts = coll<Post>('posts')
 
-export function postPath(postSlug: string) {
-  return `/post/${postSlug}`
-}
-
 export function updatePost(post: Post, updates: Partial<Post>) {
   return updateDoc(doc(posts, post.id), updates)
 }
