@@ -225,6 +225,6 @@ export const PRIVACY_STATUS_ITEMS = {
     bigIcon: <LockClosedIcon className="h-6 w-6" />,
     status: 'Private',
     descriptor:
-      'The content in this group is not viewable by the public. Only approved users can join this group, and only admins and moderators can add/remove markets',
+      'The content in this group is not viewable by the public. Only approved users can join this group.',
   },
 }
