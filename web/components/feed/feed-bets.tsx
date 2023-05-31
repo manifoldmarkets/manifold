@@ -205,18 +205,20 @@ export function BetStatusText(props: {
       ? getFormattedMappedValue(contract, bet.probAfter)
       : getFormattedMappedValue(contract, bet.limitProb ?? bet.probAfter)
 
+  const textClass = clsx(
+    absAmount >= 100 && 'font-bold',
+    absAmount >= 500 && 'text-base'
+  )
+
   return (
-    <div
-      className={clsx('text-ink-500', className)}
-      style={{ fontSize: 14 + Math.min(absAmount / 1000, 40) }}
-    >
+    <div className={clsx('text-ink-500 text-sm', className)}>
       {!hideUser ? (
         <UserLink name={bet.userName} username={bet.userUsername} />
       ) : (
         <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>
       )}{' '}
       {orderAmount ? (
-        <>
+        <span className={textClass}>
           {anyFilled ? (
             <>
               filled limit order {money}/{orderAmount}
@@ -231,9 +233,9 @@ export function BetStatusText(props: {
             truncate="short"
           />{' '}
           at {toProb} {bet.isCancelled && !allFilled ? '(cancelled)' : ''}
-        </>
+        </span>
       ) : (
-        <>
+        <span className={textClass}>
           {bought} {money} {isCPMM2 && (isShortSell ? 'NO of ' : 'YES of')}{' '}
           <OutcomeLabel
             outcome={outcome}
@@ -244,7 +246,7 @@ export function BetStatusText(props: {
           {fromProb === toProb
             ? `at ${fromProb}`
             : `from ${fromProb} to ${toProb}`}
-        </>
+        </span>
       )}{' '}
       {isApi && (
         <InfoTooltip text="This bet was placed programmatically through the API">
