@@ -9,8 +9,6 @@ import { z } from 'zod'
 import { removeUndefinedProps } from 'common/util/object'
 import { createMarketHelper } from './create-market'
 import { DAY_MS } from 'common/util/time'
-import { runTxn } from 'shared/run-txn'
-import { PostAdCreateTxn } from 'common/txn'
 import { contentSchema } from 'shared/zod-types'
 
 const postSchema = z
@@ -27,11 +25,6 @@ const postSchema = z
         bounty: z.number(),
         birthday: z.number(),
         question: z.string(),
-      }),
-      z.object({
-        type: z.literal('ad'),
-        totalCost: z.number().min(0),
-        costPerView: z.number().min(0),
       }),
       z.object({}), //base
     ])
@@ -78,36 +71,6 @@ export const createpost = authEndpoint(async (req, auth) => {
     }
   }
 
-  // if this is an advertisement, subtract amount from user's balance and write txn
-  let funds
-  if ('type' in otherProps && otherProps.type === 'ad') {
-    const cost = otherProps.totalCost
-
-    if (!cost) {
-      throw new APIError(403, 'totalCost required')
-    }
-
-    // deduct from user
-    await firestore.runTransaction(async (trans) => {
-      const result = await runTxn(trans, {
-        category: 'AD_CREATE',
-        fromType: 'USER',
-        fromId: creator.id,
-        toType: 'AD',
-        toId: postRef.id,
-        amount: cost,
-        token: 'M$',
-        description: 'Creating ad',
-      } as PostAdCreateTxn)
-      if (result.status == 'error') {
-        throw new APIError(500, result.message ?? 'An unknown error occurred')
-      }
-    })
-
-    // init current funds
-    funds = cost
-  }
-
   const post: Post = removeUndefinedProps({
     ...otherProps,
     id: postRef.id,
@@ -118,7 +81,6 @@ export const createpost = authEndpoint(async (req, auth) => {
     createdTime: Date.now(),
     content: content,
     contractSlug,
-    funds,
     creatorName: creator.name,
     creatorUsername: creator.username,
     creatorAvatarUrl: creator.avatarUrl,
