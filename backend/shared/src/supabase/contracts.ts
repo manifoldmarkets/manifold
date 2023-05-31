@@ -109,7 +109,7 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   pg: SupabaseDirectClient,
   reasonsToInclude?: FEED_REASON_TYPES[]
 ): Promise<{ [userId: string]: FEED_REASON_TYPES }> => {
-  const reasonsToUserIdFunctions: {
+  const reasonsToRelevantUserIdsFunctions: {
     [key in FEED_REASON_TYPES]: Promise<string[]>
   } = {
     contract_in_group_you_are_in: getContractGroupMemberIds(contractId, pg),
@@ -124,21 +124,20 @@ export const getUserToReasonsInterestedInContractAndUser = async (
     liked_contract: getContractLikerIds(contractId, pg),
     follow_contract: getContractFollowerIds(contractId, pg),
   }
+  const reasons = reasonsToInclude
+    ? reasonsToInclude
+    : (Object.keys(reasonsToRelevantUserIdsFunctions) as FEED_REASON_TYPES[])
 
-  const promises = Object.entries(reasonsToUserIdFunctions)
-    .filter(([reason]) =>
-      reasonsToInclude
-        ? reasonsToInclude.includes(reason as FEED_REASON_TYPES)
-        : true
-    )
-    .map(([_, promise]) => promise)
+  const promises = reasons.map(
+    (reason) => reasonsToRelevantUserIdsFunctions[reason]
+  )
 
   const results = await Promise.all(promises)
 
   return merge(
     {},
     ...results.map((result, index) => {
-      const reason = Object.keys(reasonsToUserIdFunctions)[index]
+      const reason = reasons[index]
       return fromPairs(map(result, (key) => [key, reason]))
     })
   )

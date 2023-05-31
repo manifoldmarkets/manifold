@@ -158,6 +158,52 @@ export const addContractToFeed = async (
   )
 }
 
+export const insertContractRelatedDataToUsersFeeds = async (
+  contracts: {
+    id: string
+    creatorId: string
+  }[],
+  dataType: FEED_DATA_TYPES,
+  reasonsToInclude: FEED_REASON_TYPES[],
+  eventTime: number,
+  pg: SupabaseDirectClient,
+  dataProps?: {
+    newsId?: string
+  }
+) => {
+  return await Promise.all(
+    contracts.map(async (contract) => {
+      const usersToReasons = await getUserToReasonsInterestedInContractAndUser(
+        contract.id,
+        contract.creatorId,
+        pg,
+        reasonsToInclude
+      )
+      console.log(
+        'found users interested in contract',
+        contract.id,
+        Object.keys(usersToReasons).length
+      )
+      return await Promise.all(
+        Object.keys(usersToReasons).map(async (userId) => {
+          await insertDataToUserFeed(
+            userId,
+            eventTime,
+            dataType,
+            usersToReasons[userId],
+            {
+              contractId: contract.id,
+              creatorId: contract.creatorId,
+              ...dataProps,
+            },
+            pg
+          )
+        })
+      )
+    })
+  )
+}
+
 // Currently creating feed items for:
 // - New comments on contracts you follow/liked/viewed/from users you follow
 // - Liked comments from likers you follow/have similar interest vectors to and

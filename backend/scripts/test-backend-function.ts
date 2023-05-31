@@ -2,7 +2,11 @@ import { getLocalEnv, initAdmin } from 'shared/init-admin'
 initAdmin()
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import * as admin from 'firebase-admin'
-import { addContractsWithLargeProbChangesToFeed } from 'functions/scheduled/add-market-probability-changes-to-feed'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { processNews } from 'shared/process-news'
 const firestore = admin.firestore()
 
 async function testScheduledFunction() {
@@ -10,7 +14,17 @@ async function testScheduledFunction() {
   await loadSecretsToEnv(credentials)
   try {
     // const pg = createSupabaseDirectClient()
-    await addContractsWithLargeProbChangesToFeed()
+    // await addContractsWithLargeProbChangesToFeed()
+    const pg = createSupabaseDirectClient()
+    const db = createSupabaseClient()
+
+    const apiKey = process.env.NEWS_API_KEY
+    if (!apiKey) {
+      throw new Error('Missing NEWS_API_KEY')
+    }
+
+    console.log('Polling news...')
+    await processNews(apiKey, db, pg)
   } catch (e) {
     console.error(e)
   }
