@@ -86,13 +86,15 @@ export function BuyPanel(props: {
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
   const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     contract.id,
-    multiProps?.answerToBuy.id
+    shouldAnswersSumToOne ? undefined : multiProps?.answerToBuy.id
   )
   const outcome = option === 'LIMIT' ? undefined : option
   const seeLimit = option === 'LIMIT'
@@ -169,6 +171,7 @@ export function BuyPanel(props: {
       amount: betAmount,
       outcome,
       isLimitOrder: false,
+      answerId: multiProps?.answerToBuy.id,
     })
   }
 
@@ -602,6 +605,7 @@ function LimitOrderPanel(props: {
         limitProb: yesLimitProb,
         isLimitOrder: true,
         isRangeOrder: hasTwoBets,
+        answerId: multiProps?.answerToBuy.id,
       })
     }
     if (hasNoLimitBet) {
@@ -615,6 +619,7 @@ function LimitOrderPanel(props: {
         limitProb: noLimitProb,
         isLimitOrder: true,
         isRangeOrder: hasTwoBets,
+        answerId: multiProps?.answerToBuy.id,
       })
     }
   }
@@ -633,6 +638,9 @@ function LimitOrderPanel(props: {
     ? multiProps!.answerToBuy.prob
     : getProbability(contract)
 
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
+
   const {
     currentPayout: yesPayout,
     currentReturn: yesReturn,
@@ -644,7 +652,8 @@ function LimitOrderPanel(props: {
     yesAmount,
     yesLimitProb ?? initialProb,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    shouldAnswersSumToOne ? multiProps : undefined
   )
   const yesReturnPercent = formatPercent(yesReturn)
 
@@ -659,7 +668,8 @@ function LimitOrderPanel(props: {
     noAmount,
     noLimitProb ?? initialProb,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    multiProps
   )
   const noReturnPercent = formatPercent(noReturn)
 
@@ -890,16 +900,36 @@ const getBetReturns = (
   betAmount: number,
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
+  balanceByUserId: { [userId: string]: number },
+  arbitrageProps?: {
+    answers: Answer[]
+    answerToBuy: Answer
+  }
 ) => {
-  const { orderAmount, amount, shares } = computeCpmmBet(
-    cpmmState,
-    outcome,
-    betAmount,
-    limitProb,
-    unfilledBets,
-    balanceByUserId
-  )
+  const orderAmount = betAmount
+  let amount = 0
+  let shares: number
+  if (arbitrageProps) {
+    const { answers, answerToBuy } = arbitrageProps
+    ;({ amount, shares } = calculateCpmmMultiArbitrageBet(
+      answers,
+      answerToBuy,
+      outcome,
+      betAmount,
+      limitProb,
+      unfilledBets,
+      balanceByUserId
+    ))
+  } else {
+    ;({ amount, shares } = computeCpmmBet(
+      cpmmState,
+      outcome,
+      betAmount,
+      limitProb,
+      unfilledBets,
+      balanceByUserId
+    ))
+  }
 
   const remainingMatched = limitProb
     ? ((orderAmount ?? 0) - amount) /

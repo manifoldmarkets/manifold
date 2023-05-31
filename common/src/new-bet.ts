@@ -572,7 +572,7 @@ const getNewMultiCpmmBetInfoSumsToOne = (
   balanceByUserId: { [userId: string]: number },
   expiresAt?: number
 ) => {
-  const { newBetResult, otherBetResults, shares, newPoolsByAnswerId } =
+  const { newBetResult, otherBetResults, newPoolsByAnswerId, shares, amount } =
     calculateCpmmMultiArbitrageBet(
       answers,
       answer,
@@ -601,13 +601,14 @@ const getNewMultiCpmmBetInfoSumsToOne = (
     contractId: contract.id,
     outcome,
     orderAmount: betAmount,
+    limitProb,
     isCancelled: false,
-    amount: betAmount,
+    amount,
     loanAmount: 0,
     shares,
     answerId: answer.id,
     fills: takers,
-    isFilled: true,
+    isFilled: floatingEqual(amount, betAmount),
     probBefore: answer.prob,
     probAfter,
     createdTime: now,
