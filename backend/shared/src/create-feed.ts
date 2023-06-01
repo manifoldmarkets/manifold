@@ -23,6 +23,7 @@ export const insertDataToUserFeed = async (
     data?: any
     groupId?: string
     reactionId?: string
+    idempotencyKey?: string
   },
   pg: SupabaseDirectClient
 ) => {
@@ -37,11 +38,12 @@ export const insertDataToUserFeed = async (
     newsId,
     data,
     reactionId,
+    idempotencyKey,
   } = dataProps
   await pg.none(
     `insert into user_feed 
-    (user_id, data_type, reason, contract_id, comment_id, answer_id, creator_id, bet_id, news_id, group_id, event_time, data, reaction_id)
-    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
+    (user_id, data_type, reason, contract_id, comment_id, answer_id, creator_id, bet_id, news_id, group_id, event_time, data, reaction_id, idempotency_key)
+    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
     on conflict do nothing`,
     [
       userId,
@@ -57,13 +59,16 @@ export const insertDataToUserFeed = async (
       eventTimeTz,
       data,
       reactionId,
+      idempotencyKey,
     ]
   )
 }
 
 export const addCommentOnContractToFeed = async (
   contractId: string,
-  comment: Comment
+  comment: Comment,
+  userIdsToExclude: string[],
+  idempotencyKey?: string
 ) => {
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
@@ -74,20 +79,23 @@ export const addCommentOnContractToFeed = async (
       ['follow_contract', 'viewed_contract', 'follow_creator', 'liked_contract']
     )
   await Promise.all(
-    Object.keys(usersToReasonsInterestedInContract).map((userId) =>
-      insertDataToUserFeed(
-        userId,
-        comment.createdTime,
-        'new_comment',
-        usersToReasonsInterestedInContract[userId],
-        {
-          contractId,
-          commentId: comment.id,
-          creatorId: comment.userId,
-        },
-        pg
+    Object.keys(usersToReasonsInterestedInContract)
+      .filter((userId) => !userIdsToExclude.includes(userId))
+      .map((userId) =>
+        insertDataToUserFeed(
+          userId,
+          comment.createdTime,
+          'new_comment',
+          usersToReasonsInterestedInContract[userId],
+          {
+            contractId,
+            commentId: comment.id,
+            creatorId: comment.userId,
+            idempotencyKey,
+          },
+          pg
+        )
       )
-    )
   )
 }
 export const addLikedCommentOnContractToFeed = async (
@@ -130,7 +138,9 @@ export const addLikedCommentOnContractToFeed = async (
 // TODO: run this when a contract gets its 1st comment, 5th bet, 1st like
 export const addContractToFeed = async (
   contract: Contract,
-  reasonsToInclude: FEED_REASON_TYPES[]
+  reasonsToInclude: FEED_REASON_TYPES[],
+  dataType: FEED_DATA_TYPES,
+  idempotencyKey?: string
 ) => {
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
@@ -146,11 +156,12 @@ export const addContractToFeed = async (
       insertDataToUserFeed(
         userId,
         contract.createdTime,
-        'new_contract',
+        dataType,
         usersToReasonsInterestedInContract[userId],
         {
           contractId: contract.id,
           creatorId: contract.creatorId,
+          idempotencyKey,
         },
         pg
       )

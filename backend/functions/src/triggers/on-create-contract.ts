@@ -11,6 +11,7 @@ import { dalleWithDefaultParams } from 'shared/dream-utils'
 import { getImagePrompt } from 'shared/helpers/openai-utils'
 import { secrets } from 'common/secrets'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
+import { addContractToFeed } from 'shared/create-feed'
 
 export const onCreateContract = functions
   .runWith({
@@ -38,7 +39,16 @@ export const onCreateContract = functions
     const desc = contract.description as JSONContent
     const mentioned = parseMentions(desc)
     await addUserToContractFollowers(contract.id, contractCreator.id)
-
+    await addContractToFeed(
+      contract,
+      [
+        'follow_creator',
+        'similar_interest_vector_to_creator',
+        'similar_interest_vector_to_contract',
+      ],
+      'new_contract',
+      eventId
+    )
     await createNewContractNotification(
       contractCreator,
       contract,

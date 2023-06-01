@@ -309,7 +309,8 @@ create table if not exists
               bet_id text null,
               news_id text null,
               group_id text null,
-              reaction_id text null
+              reaction_id text null,
+              idempotency_key text null unique
 );
 
 alter table user_feed enable row level security;

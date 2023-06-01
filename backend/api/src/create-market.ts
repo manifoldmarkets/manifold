@@ -43,7 +43,6 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { addContractToFeed } from 'shared/create-feed'
 import { contentSchema } from 'shared/zod-types'
 
-
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
 })
@@ -144,12 +143,6 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
   )
 
   await generateContractEmbeddings(contract)
-  // TODO: move to on_create_contract trigger
-  await addContractToFeed(contract, [
-    'follow_creator',
-    'similar_interest_vector_to_creator',
-    'similar_interest_vector_to_contract',
-  ])
 
   return contract
 }

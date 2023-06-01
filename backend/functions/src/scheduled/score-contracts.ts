@@ -16,6 +16,7 @@ import { getRecentContractLikes } from 'shared/supabase/likes'
 import { logit } from 'common/util/math'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { secrets } from 'common/secrets'
+import { addContractToFeed } from 'shared/create-feed'
 
 export const scoreContracts = functions
   .runWith({
@@ -97,7 +98,7 @@ export async function scoreContractsInternal() {
       !wasCreatedToday
     ) {
       const { prob, probChanges } = contract
-      const yesterdayProb = clamp(prob + probChanges.day, 0.01, 0.99)
+      const yesterdayProb = clamp(prob - probChanges.day, 0.01, 0.99)
       const todayProb = clamp(prob, 0.01, 0.99)
       const logOddsChange = Math.abs(logit(yesterdayProb) - logit(todayProb))
       dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
@@ -107,6 +108,24 @@ export async function scoreContractsInternal() {
       contract.popularityScore !== popularityScore ||
       contract.dailyScore !== dailyScore
     ) {
+      if (dailyScore > 1 && Math.abs(dailyScore - contract.dailyScore) > 1) {
+        log(
+          'adding contract to feed',
+          contract.id,
+          'with daily score',
+          dailyScore
+        )
+        await addContractToFeed(
+          contract,
+          [
+            'follow_contract',
+            'liked_contract',
+            'viewed_contract',
+            'follow_creator',
+          ],
+          'contract_probability_changed'
+        )
+      }
       await firestore
         .collection('contracts')
         .doc(contract.id)
@@ -119,10 +138,7 @@ export async function scoreContractsInternal() {
     })
   }
 
-  console.log(
-    'performing bulk update of freshness scores',
-    contractScoreUpdates.length
-  )
+  log('performing bulk update of freshness scores', contractScoreUpdates.length)
   return await bulkUpdate(
     pg,
     'contract_recommendation_features',

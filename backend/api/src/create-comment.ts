@@ -14,7 +14,6 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { addCommentOnContractToFeed } from 'shared/create-feed'
 import { contentSchema } from 'shared/zod-types'
 
-
 const postSchema = z.object({
   contractId: z.string(),
   content: contentSchema.optional(),
@@ -97,7 +96,6 @@ export const createcomment = authEndpoint(async (req, auth) => {
       totalDeposits: FieldValue.increment(-FLAT_COMMENT_FEE),
     })
   }
-  await addCommentOnContractToFeed(contractId, comment)
 
   return { status: 'success', comment }
 })
