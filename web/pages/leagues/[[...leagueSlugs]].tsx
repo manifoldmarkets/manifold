@@ -33,7 +33,7 @@ import { Tabs } from 'web/components/layout/tabs'
 import { formatTime } from 'web/lib/util/time'
 
 export async function getStaticProps() {
-  const rows = await getLeagueRows()
+  const rows = (await getLeagueRows()).filter((r) => r.season === 1)
   return {
     props: {
       rows,
@@ -57,7 +57,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   )
 
   useEffect(() => {
-    getLeagueRows().then(setRows)
+    getLeagueRows().then((r) => setRows(r.filter((r) => r.season === 1)))
   }, [])
 
   const cohorts = groupBy(rows, 'cohort')
