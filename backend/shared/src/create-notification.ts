@@ -40,11 +40,13 @@ import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { getMoneyNumber } from 'common/util/format'
 import {
+  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import * as crypto from 'crypto'
 import { getUniqueBettorIds } from 'shared/supabase/contracts'
+import { getGroupMemberIds } from 'common/supabase/groups'
 
 const firestore = admin.firestore()
 
@@ -1049,6 +1051,7 @@ export const createNewContractNotification = async (
     userId: string,
     reason: notification_reason_types
   ) => {
+    console.log('sending notification', userId)
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
     if (userIsBlocked(privateUser, contractCreator.id)) return
@@ -1097,6 +1100,22 @@ export const createNewContractNotification = async (
     })
   )
 
+  let privateMemberIds: string[] = []
+
+  if (
+    contract.visibility === 'private' &&
+    contract.groupLinks &&
+    contract.groupLinks.length > 0
+  ) {
+    console.log('getting private group members')
+    const db = createSupabaseClient()
+    privateMemberIds = await getGroupMemberIds(
+      db,
+      contract.groupLinks[0].groupId
+    )
+    console.log('privateMemberIds', privateMemberIds)
+  }
+
   // As it is coded now, the tag notification usurps the new contract notification
   // It'd be easy to append the reason to the eventId if desired
   if (contract.visibility === 'public') {
@@ -1109,6 +1128,14 @@ export const createNewContractNotification = async (
   }
   for (const mentionedUserId of mentionedUserIds) {
     await sendNotificationsIfSettingsAllow(mentionedUserId, 'tagged_user')
+  }
+  if (contract.visibility === 'private') {
+    for (const privateMemberId of privateMemberIds) {
+      await sendNotificationsIfSettingsAllow(
+        privateMemberId,
+        'contract_from_private_group'
+      )
+    }
   }
 }
 

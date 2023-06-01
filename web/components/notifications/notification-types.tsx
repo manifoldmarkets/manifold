@@ -147,6 +147,16 @@ export function NotificationItem(props: {
           setHighlighted={setHighlighted}
         />
       )
+    }
+    if (reason === 'contract_from_private_group') {
+      return (
+        <NewPrivateMarketNotification
+          notification={notification}
+          isChildOfGroup={isChildOfGroup}
+          highlighted={highlighted}
+          setHighlighted={setHighlighted}
+        />
+      )
     } else if (reason === 'tagged_user') {
       return (
         <TaggedUserNotification
@@ -675,6 +685,40 @@ function NewMarketNotification(props: {
         <span>
           asked <PrimaryNotificationLink text={sourceContractTitle} />
         </span>
+      </div>
+    </NotificationFrame>
+  )
+}
+
+function NewPrivateMarketNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceContractTitle, sourceUserName, sourceUserUsername } =
+    notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'🌟'} />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        <UserLink
+          name={sourceUserName || ''}
+          username={sourceUserUsername || ''}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
+        />{' '}
+        <span>
+          asked <PrimaryNotificationLink text={sourceContractTitle} />
+        </span> in private group 
       </div>
     </NotificationFrame>
   )

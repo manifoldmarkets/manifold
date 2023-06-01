@@ -51,6 +51,7 @@ export type notification_preferences = {
   // Groups
   group_role_changed: notification_destination_types[]
   added_to_group: notification_destination_types[]
+  contract_from_private_group: notification_destination_types[]
 
   //Leagues
   league_changed: notification_destination_types[]
@@ -162,6 +163,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     // Groups
     group_role_changed: constructPref(true, false, false),
     added_to_group: constructPref(true, false, false),
+    contract_from_private_group: constructPref(true, true, false),
 
     //Leagues
     league_changed: constructPref(true, false, false),

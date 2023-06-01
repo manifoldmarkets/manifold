@@ -76,6 +76,7 @@ export type notification_reason_types =
   | 'tagged_user'
   | 'on_new_follow'
   | 'contract_from_followed_user'
+  | 'contract_from_private_group'
   | 'you_referred_user'
   | 'user_joined_to_bet_on_your_market'
   | 'unique_bettors_on_your_contract'
@@ -159,6 +160,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   contract_from_followed_user: {
     simple: 'New markets from users you follow',
     detailed: 'New markets from users you follow',
+  },
+  contract_from_private_group: {
+    simple: 'New markets from private groups',
+    detailed: 'New markets from private groups you are a member of',
   },
   limit_order_fills: {
     simple: 'Limit order fills',

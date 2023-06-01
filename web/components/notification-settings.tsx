@@ -69,6 +69,7 @@ export function NotificationSettings(props: {
 
     'tagged_user', // missing tagged on contract description email
     'contract_from_followed_user',
+    'contract_from_private_group',
     'unique_bettors_on_your_contract',
     'profit_loss_updates',
     'opt_out_all',
@@ -172,7 +173,11 @@ export function NotificationSettings(props: {
   }
   const groups: SectionData = {
     label: 'Groups',
-    subscriptionTypes: ['group_role_changed', 'added_to_group'],
+    subscriptionTypes: [
+      'group_role_changed',
+      'added_to_group',
+      'contract_from_private_group',
+    ],
   }
   const leagues: SectionData = {
     label: 'Leagues',
