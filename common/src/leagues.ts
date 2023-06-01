@@ -7,6 +7,8 @@ export const CURRENT_SEASON = 1
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
 
+const SEASON_END_TIMES = [new Date('2023-06-01T12:06:23-07:00')]
+
 export const getSeasonMonth = (season: number) => {
   return getSeasonDates(season).start.toLocaleString('default', {
     month: 'long',
@@ -16,8 +18,15 @@ export const getSeasonMonth = (season: number) => {
 export const getSeasonDates = (season: number) => {
   const start = new Date(LEAGUES_START)
   start.setMonth(start.getMonth() + season - 1)
-  const end = new Date(LEAGUES_START)
-  end.setMonth(end.getMonth() + season)
+
+  let end: Date
+  if (SEASON_END_TIMES[season - 1]) {
+    end = new Date(SEASON_END_TIMES[season - 1])
+  } else {
+    end = new Date(LEAGUES_START)
+    end.setMonth(end.getMonth() + season)
+  }
+
   return { start, end }
 }
 

@@ -203,20 +203,20 @@ export default function Leagues(props: { rows: league_user_info[] }) {
               <Row className="items-center gap-1.5">
                 <ClockIcon className="text-ink-1000 h-4 w-4" />{' '}
                 <Row className={' gap-1 text-sm'}>
-                  <InfoTooltip
-                    text={
-                      'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
-                    }
-                  >
-                    {new Date() > seasonEnd ? (
-                      'Ended at ' + formatTime(seasonEnd)
-                    ) : (
+                  {new Date() > seasonEnd ? (
+                    'Ended. Finalized ' + formatTime(seasonEnd)
+                  ) : (
+                    <InfoTooltip
+                      text={
+                        'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
+                      }
+                    >
                       <>
                         'Ends in'
                         <Countdown className=" text-sm" endDate={seasonEnd} />
                       </>
-                    )}
-                  </InfoTooltip>
+                    </InfoTooltip>
+                  )}
                 </Row>
               </Row>
             </Col>
