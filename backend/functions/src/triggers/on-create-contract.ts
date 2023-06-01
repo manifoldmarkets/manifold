@@ -23,9 +23,8 @@ export const onCreateContract = functions
     const contract = snapshot.data() as Contract
     const { eventId } = context
 
-    await generateContractImage(contract).then((coverImageUrl) =>
-      coverImageUrl ? snapshot.ref.update({ coverImageUrl }) : null
-    )
+    const coverImageUrl = await generateContractImage(contract)
+    if (coverImageUrl) await snapshot.ref.update({ coverImageUrl })
 
     const contractCreator = await getUser(contract.creatorId)
     if (!contractCreator) throw new Error('Could not find contract creator')

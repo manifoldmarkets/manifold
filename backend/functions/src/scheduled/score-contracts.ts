@@ -17,6 +17,7 @@ import { logit } from 'common/util/math'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { secrets } from 'common/secrets'
 import { addContractToFeed } from 'shared/create-feed'
+import { buildArray } from 'common/util/array'
 
 export const scoreContracts = functions
   .runWith({
@@ -118,12 +119,12 @@ export async function scoreContractsInternal() {
         // TODO: should we store the probability change in the feed item's data column?
         await addContractToFeed(
           contract,
-          [
-            'follow_contract',
+          buildArray([
+            !contract.isResolved && 'follow_contract',
             'liked_contract',
             'viewed_contract',
-            'follow_user',
-          ],
+            'similar_interest_vector_to_contract',
+          ]),
           'contract_probability_changed'
         )
       }

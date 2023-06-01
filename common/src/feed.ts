@@ -50,16 +50,16 @@ export const FeedExplanationDictionary: Record<
     follow_user: 'New contract by a creator you follow',
   },
   contract_probability_changed: {
-    follow_contract: 'Big probability change on contract you follow',
-    liked_contract: 'Big probability change on contract you liked',
-    viewed_contract: 'Big probability change on contract you viewed',
+    follow_contract: 'Large probability change on contract you follow',
+    liked_contract: 'Large probability change on contract you liked',
+    viewed_contract: 'Large probability change on contract you viewed',
     contract_in_group_you_are_in:
-      'Big probability change on contract in a group you are in',
+      'Large probability change on contract in a group you are in',
     similar_interest_vector_to_user:
-      'Big probability change on contract by a creator with similar interests to yours',
+      'Large probability change on contract by a creator with similar interests to yours',
     similar_interest_vector_to_contract:
-      'Big probability change on contract with similar interests to yours',
-    follow_user: 'Big probability change on contract by a creator you follow',
+      'Large probability change on contract with similar interests to yours',
+    follow_user: 'Large probability change on contract by a creator you follow',
   },
   popular_comment: {
     follow_contract: 'Popular comment on contract you follow',

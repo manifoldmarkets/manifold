@@ -64,7 +64,7 @@ function FeedTimelineContent() {
     savedFeedItems,
     loadMoreOlder,
   } = useFeedTimeline(user, 'feed-timeline')
-  const isVisible = useIsPageVisible()
+  const pageVisible = useIsPageVisible()
   const [lastSeen, setLastSeen] = usePersistentLocalState(
     Date.now(),
     'last-seen-feed-timeline' + user?.id
@@ -79,10 +79,10 @@ function FeedTimelineContent() {
   }
   useEffect(() => {
     const now = Date.now()
-    if (isVisible && now - lastSeen > MINUTE_MS) checkForNewerFeedItems()
-    if (!isVisible) setLastSeen(now)
+    if (pageVisible && now - lastSeen > MINUTE_MS) checkForNewerFeedItems()
+    if (!pageVisible) setLastSeen(now)
     return () => setLastSeen(Date.now())
-  }, [isVisible])
+  }, [pageVisible])
 
   if (!boosts || !savedFeedItems) return <LoadingIndicator />
 
@@ -95,6 +95,7 @@ function FeedTimelineContent() {
             if (visible && scrolledDown) {
               addTimelineItems(newerTimelineItems, { new: true })
               setNewerTimelineItems([])
+              setScrolledDown(false)
             }
             if (!visible) setScrolledDown(true)
           }}
