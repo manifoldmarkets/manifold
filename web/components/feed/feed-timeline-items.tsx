@@ -93,7 +93,7 @@ export const FeedTimelineItems = (props: {
 
           return (
             <Col
-              key={contract.id + 'feed'}
+              key={contract.id + 'feed-timeline-item'}
               className={
                 'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
               }
@@ -129,10 +129,13 @@ export const FeedTimelineItems = (props: {
           const { news } = item
           if (!news) return null
           return (
-            <Col>
+            <Col key={news.id + 'feed-timeline-item'}>
               {news.title}
               {item.contracts?.map((contract) => (
-                <ContractMention contract={contract} />
+                <ContractMention
+                  contract={contract}
+                  key={`news-${news.id}-contract-${contract.id}`}
+                />
               ))}
             </Col>
           )

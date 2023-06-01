@@ -1,7 +1,7 @@
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { ContractComment } from 'common/comment'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { buildArray, filterDefined } from 'common/util/array'
 import { usePrivateUser } from './use-user'
 import { useEvent } from './use-event'
@@ -33,7 +33,10 @@ export type FeedTimelineItem = {
   reasonDescription?: string
 }
 export const useFeedTimeline = (user: User | null | undefined, key: string) => {
-  const [boosts, setBoosts] = useState<BoostsType>()
+  const [boosts, setBoosts] = usePersistentInMemoryState<BoostsType|undefined>(
+    undefined,
+    `boosts-${user?.id}-${key}`
+  )
   useEffect(() => {
     if (user) getBoosts(user.id).then(setBoosts as any)
   }, [user?.id])
@@ -45,20 +48,32 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
 
   const privateUser = usePrivateUser()
   const userId = user?.id
-  const lastCreatedTime = useRef(Date.now())
+  // Supabase timestamptz has more precision than js Date, so we need to store the oldest and newest timestamps as strings
+  const oldestCreatedTimestamp = useRef(new Date().toISOString())
+  const newestCreatedTimestamp =  useRef(new Date().toISOString())
 
-  const fetchRecs = async (userId: string) => {
+  const fetchRecs = async (
+    userId: string,
+    options: {
+      newerThan?: string
+      olderThan?: string
+    }
+  ) => {
     // TODO: we could turn this into separate db rpc calls, i.e.:
     // get_contracts_for_user_feed, get_comments_for_user_feed, get_news_for_user_feed
-    const { data } = await run(
-      db
-        .from('user_feed')
-        .select('*')
-        .eq('user_id', userId)
-        .lt('created_time', new Date(lastCreatedTime.current).toISOString())
-        .order('created_time', { ascending: false })
-        .limit(PAGE_SIZE)
-    )
+    const time =
+      options.newerThan ?? options.olderThan ?? oldestCreatedTimestamp.current
+    let query = db
+      .from('user_feed')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_time', { ascending: false })
+      .limit(PAGE_SIZE)
+    options.olderThan
+      ? (query = query.lt('created_time', time))
+      : (query = query.gt('created_time', time))
+
+    const { data } = await run(query)
 
     // This can include new contracts and contracts with probability updates
     const contractIds = uniq(
@@ -106,27 +121,36 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
       news
     )
 
-    const lastItem = last(timelineItems)
-    lastCreatedTime.current = lastItem?.createdTime ?? lastCreatedTime.current
-    return {
-      timelineItems,
-    }
+    if (options.newerThan || !savedFeedItems?.length)
+      newestCreatedTimestamp.current = data[0]?.created_time ?? newestCreatedTimestamp.current
+
+    if (options.olderThan || !savedFeedItems?.length)
+      oldestCreatedTimestamp.current = last(data)?.created_time ?? oldestCreatedTimestamp.current
+
+    return { timelineItems }
   }
 
-  const loadMore = useEvent(() => {
-    if (!userId) return
-    fetchRecs(userId).then((res) => {
-      const { timelineItems } = res
-      setSavedFeedItems(buildArray(savedFeedItems, timelineItems))
-    })
-  })
+  const loadMore = useEvent(
+    async (options: { newerThan?: string; olderThan?: string }) => {
+      if (!userId) return
+      return fetchRecs(userId, options).then((res) => {
+        const { timelineItems } = res
+        if (options.newerThan)
+          setSavedFeedItems(buildArray(timelineItems,savedFeedItems))
+        else
+          setSavedFeedItems(buildArray(savedFeedItems,timelineItems))
+      })
+    }
+  )
 
   useEffect(() => {
-    loadMore()
-  }, [userId])
+    if (savedFeedItems?.length || !userId) return
+    loadMore({ olderThan: oldestCreatedTimestamp.current })
+  }, [loadMore, userId])
 
   return {
-    loadMore,
+    loadMoreNewer: async ()=>loadMore({ newerThan: newestCreatedTimestamp.current }),
+    loadMoreOlder: async ()=>loadMore({ olderThan: oldestCreatedTimestamp.current }),
     boosts,
     feedTimelineItems: savedFeedItems,
   }
@@ -163,7 +187,7 @@ function createFeedTimelineItems(
       } as FeedTimelineItem
     }
   )
-  // TODO: The uniqBy will coalesce reason descriptions non-deterministically
+  // TODO: The uniqBy will coalesce contract-based feed timeline elements non-deterministically
   const nonNewsTimelineItems = uniqBy(
     data.map((item) => {
       const dataType = item.data_type as FEED_DATA_TYPES
@@ -185,6 +209,7 @@ function createFeedTimelineItems(
           ),
         } as FeedTimelineItem
       }
+      // Add new feed timeline data types here
     }),
     'contractId'
   )
