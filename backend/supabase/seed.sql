@@ -1174,8 +1174,6 @@ begin
            when 'group_members' then cast(('group_id', 'member_id') as table_spec)
            when 'txns' then cast((null, 'id') as table_spec)
            when 'manalinks' then cast((null, 'id') as table_spec)
-           when 'posts' then cast((null, 'id') as table_spec)
-           when 'post_comments' then cast(('post_id', 'comment_id') as table_spec)
            when 'user_contract_metrics' then cast(('user_id', 'contract_id') as table_spec)
            else null
     end;
