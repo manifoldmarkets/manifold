@@ -30,6 +30,7 @@ import { CohortTable } from 'web/components/leagues/cohort-table'
 import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { Tabs } from 'web/components/layout/tabs'
+import { formatTime } from 'web/lib/util/time'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
@@ -207,8 +208,14 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                       'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
                     }
                   >
-                    {new Date() > seasonEnd ? 'Ended' : 'Ends in'}{' '}
-                    <Countdown className=" text-sm" endDate={seasonEnd} />
+                    {new Date() > seasonEnd ? (
+                      'Ended at ' + formatTime(seasonEnd)
+                    ) : (
+                      <>
+                        'Ends in'
+                        <Countdown className=" text-sm" endDate={seasonEnd} />
+                      </>
+                    )}
                   </InfoTooltip>
                 </Row>
               </Row>

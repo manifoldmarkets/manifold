@@ -12,10 +12,6 @@ import { bulkUpdate } from 'shared/supabase/utils'
 import { secrets } from 'common/secrets'
 import { CURRENT_SEASON, getSeasonDates } from 'common/leagues'
 import { getContractBetMetrics } from 'common/calculate'
-import { DAY_MS } from 'common/util/time'
-
-// Disable updates between freezing a season and starting the next one.
-const DISABLED = false
 
 export const updateLeague = functions
   .runWith({
@@ -34,7 +30,8 @@ export async function updateLeagueCore() {
   const season = CURRENT_SEASON
   const { start, end } = getSeasonDates(season)
   const seasonStart = start.getTime()
-  const seasonEnd = end.getTime() + DAY_MS
+  const seasonEnd = end.getTime()
+
   log('Loading users...')
   const userIds = await pg.map(
     `select id from users
@@ -219,12 +216,8 @@ export async function updateLeagueCore() {
 
   console.log('Mana earned updates', manaEarnedUpdates.length)
 
-  if (!DISABLED) {
-    await bulkUpdate(pg, 'leagues', 'user_id', manaEarnedUpdates)
-    await revalidateStaticProps('/leagues')
-  } else {
-    log('Skipping writing update because DISABLED=true')
-  }
+  await bulkUpdate(pg, 'leagues', 'user_id', manaEarnedUpdates)
+  await revalidateStaticProps('/leagues')
   log('Done.')
 }
 

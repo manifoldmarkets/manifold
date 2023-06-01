@@ -17,8 +17,8 @@ if (require.main === module) {
     // console.log('Completed updateUsersCardViewEmbeddings')
 
     // await addUserToLeague(pg, 'abc', 1, 1)
-    // await updateLeagueCore()
+    await updateLeagueCore()
     // await getLeagueActivity(pg, 1, 'Oracular-Pythias')
-    await updateLeagueRanksCore()
+    // await updateLeagueRanksCore()
   })
 }
