@@ -182,6 +182,11 @@ export default function AboutPage() {
             description="Go long on longform"
             href="/latestposts"
           />
+          <LabCard
+            title="⏳ Timeline"
+            description="Live feed"
+            href="/feed-timeline"
+          />
         </LabSection>
 
         <Subtitle>👨‍💻️ Developers</Subtitle>
