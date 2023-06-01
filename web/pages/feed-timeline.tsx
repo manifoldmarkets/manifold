@@ -8,14 +8,17 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 import Router from 'next/router'
-import { PencilAltIcon } from '@heroicons/react/solid'
+import { ArrowUpIcon, PencilAltIcon } from '@heroicons/react/solid'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { useFeedTimeline } from 'web/hooks/use-feed-timeline'
+import { FeedTimelineItem, useFeedTimeline } from 'web/hooks/use-feed-timeline'
 import { FeedTimelineItems } from 'web/components/feed/feed-timeline-items'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { Avatar } from 'web/components/widgets/avatar'
+import { uniq } from 'lodash'
+import { filterDefined } from 'common/util/array'
 import { MINUTE_MS } from 'common/util/time'
 
 export default function FeedTimeline() {
@@ -54,28 +57,34 @@ export default function FeedTimeline() {
 }
 function FeedTimelineContent() {
   const user = useUser()
-  const { boosts, feedTimelineItems, loadMoreOlder, loadMoreNewer } =
-    useFeedTimeline(user, 'feed-timeline')
+  const {
+    boosts,
+    checkForNewer,
+    addTimelineItems,
+    savedFeedItems,
+    loadMoreOlder,
+  } = useFeedTimeline(user, 'feed-timeline')
   const isVisible = useIsPageVisible()
   const [lastSeen, setLastSeen] = usePersistentLocalState(
     Date.now(),
     'last-seen-feed-timeline' + user?.id
   )
   const [scrolledDown, setScrolledDown] = useState(false)
-  const [loadingNewer, setLoadingNewer] = useState(false)
-  const checkForNewerFeedItems = () => {
-    console.log(
-      'TODO: a while has elapsed, check for new feed items and show floating button'
-    )
+  const [newerTimelineItems, setNewerTimelineItems] = useState<
+    FeedTimelineItem[]
+  >([])
+  const checkForNewerFeedItems = async () => {
+    const newerTimelineItems = await checkForNewer()
+    setNewerTimelineItems(newerTimelineItems)
   }
   useEffect(() => {
     const now = Date.now()
-    if (isVisible && now - lastSeen > 5 * MINUTE_MS) checkForNewerFeedItems()
+    if (isVisible && now - lastSeen > MINUTE_MS) checkForNewerFeedItems()
     if (!isVisible) setLastSeen(now)
     return () => setLastSeen(Date.now())
   }, [isVisible])
 
-  if (!boosts || !feedTimelineItems) return <LoadingIndicator />
+  if (!boosts || !savedFeedItems) return <LoadingIndicator />
 
   return (
     <Col>
@@ -84,23 +93,21 @@ function FeedTimelineContent() {
           className="pointer-events-none absolute top-0 h-5 w-full select-none "
           onVisibilityUpdated={(visible) => {
             if (visible && scrolledDown) {
-              setLoadingNewer(true)
-              loadMoreNewer().then(() => {
-                setLoadingNewer(false)
-                setScrolledDown(false)
-              })
+              addTimelineItems(newerTimelineItems, { new: true })
+              setNewerTimelineItems([])
             }
             if (!visible) setScrolledDown(true)
           }}
         />
-        {loadingNewer && <LoadingIndicator />}
       </div>
       <FeedTimelineItems
         boosts={boosts}
         user={user}
-        feedTimelineItems={feedTimelineItems}
+        feedTimelineItems={savedFeedItems}
       />
-
+      {newerTimelineItems.length > 0 && scrolledDown && (
+        <NewActivityButton newFeedTimelineItems={newerTimelineItems} />
+      )}
       <div className="relative">
         <VisibilityObserver
           className="pointer-events-none absolute bottom-0 h-5 w-full select-none "
@@ -108,7 +115,7 @@ function FeedTimelineContent() {
         />
       </div>
 
-      {feedTimelineItems.length === 0 && (
+      {savedFeedItems.length === 0 && (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
           We're fresh out of cards!
           <SiteLink
@@ -120,5 +127,37 @@ function FeedTimelineContent() {
         </div>
       )}
     </Col>
+  )
+}
+
+const NewActivityButton = (props: {
+  newFeedTimelineItems: FeedTimelineItem[]
+}) => {
+  const { newFeedTimelineItems } = props
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  }
+  const avatarUrls = uniq(
+    filterDefined(newFeedTimelineItems.map((item) => item.avatarUrl))
+  ).slice(0, 3)
+
+  return (
+    <button
+      className={clsx(
+        'bg-canvas-50 border-ink-200 hover:bg-ink-200 rounded-full border py-2 pr-3 pl-2 text-sm transition-colors',
+        'fixed left-3 bottom-16'
+      )}
+      onClick={scrollToTop}
+    >
+      <Row className="text-ink-600 align-middle">
+        <ArrowUpIcon className="text-ink-400 mr-3 h-5 w-5" />
+        {avatarUrls.map((url) => (
+          <Avatar size={'xs'} className={'-ml-2'} avatarUrl={url} />
+        ))}
+      </Row>
+    </button>
   )
 }

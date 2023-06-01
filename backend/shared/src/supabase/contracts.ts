@@ -1,5 +1,5 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { fromPairs, map, merge } from 'lodash'
+import { fromPairs, map, merge, sortBy } from 'lodash'
 import {
   getUserFollowerIds,
   getUsersWithSimilarInterestVectorToUser,
@@ -110,35 +110,62 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   reasonsToInclude?: FEED_REASON_TYPES[]
 ): Promise<{ [userId: string]: FEED_REASON_TYPES }> => {
   const reasonsToRelevantUserIdsFunctions: {
-    [key in FEED_REASON_TYPES]: Promise<string[]>
+    [key in FEED_REASON_TYPES]: {
+      promise: Promise<string[]>
+      importance: number
+    }
   } = {
-    contract_in_group_you_are_in: getContractGroupMemberIds(contractId, pg),
-    similar_interest_vector_to_user: getUsersWithSimilarInterestVectorToUser(
-      userId,
-      pg
-    ),
-    similar_interest_vector_to_contract:
-      getUsersWithSimilarInterestVectorsToContract(contractId, pg),
-    viewed_contract: getContractViewerIds(contractId, pg),
-    follow_user: getUserFollowerIds(userId, pg),
-    liked_contract: getContractLikerIds(contractId, pg),
-    follow_contract: getContractFollowerIds(contractId, pg),
+    follow_contract: {
+      promise: getContractFollowerIds(contractId, pg),
+      importance: 1,
+    },
+    liked_contract: {
+      promise: getContractLikerIds(contractId, pg),
+      importance: 2,
+    },
+    viewed_contract: {
+      promise: getContractViewerIds(contractId, pg),
+      importance: 3,
+    },
+    follow_user: {
+      promise: getUserFollowerIds(userId, pg),
+      importance: 4,
+    },
+    contract_in_group_you_are_in: {
+      promise: getContractGroupMemberIds(contractId, pg),
+      importance: 5,
+    },
+    similar_interest_vector_to_user: {
+      promise: getUsersWithSimilarInterestVectorToUser(userId, pg),
+      importance: 6,
+    },
+    similar_interest_vector_to_contract: {
+      promise: getUsersWithSimilarInterestVectorsToContract(contractId, pg),
+      importance: 7,
+    },
   }
-  const reasons = reasonsToInclude
-    ? reasonsToInclude
-    : (Object.keys(reasonsToRelevantUserIdsFunctions) as FEED_REASON_TYPES[])
+
+  const reasons = sortBy(
+    reasonsToInclude
+      ? reasonsToInclude
+      : (Object.keys(reasonsToRelevantUserIdsFunctions) as FEED_REASON_TYPES[]),
+    (reason) => reasonsToRelevantUserIdsFunctions[reason].importance
+  )
 
   const promises = reasons.map(
-    (reason) => reasonsToRelevantUserIdsFunctions[reason]
+    (reason) => reasonsToRelevantUserIdsFunctions[reason].promise
   )
 
   const results = await Promise.all(promises)
 
   return merge(
     {},
-    ...results.map((result, index) => {
-      const reason = reasons[index]
-      return fromPairs(map(result, (key) => [key, reason]))
-    })
+    ...results
+      .map((result, index) => {
+        const reason = reasons[index]
+        return fromPairs(map(result, (key) => [key, reason]))
+      })
+      // We reverse the list as merge will overwrite prior keys with later keys
+      .reverse()
   )
 }

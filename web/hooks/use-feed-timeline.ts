@@ -10,7 +10,7 @@ import { getBoosts } from 'web/lib/supabase/ads'
 import { BoostsType } from 'web/hooks/use-feed'
 import { Row, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { groupBy, last, sortBy, uniq, uniqBy } from 'lodash'
+import { first, groupBy, last, sortBy, uniq, uniqBy } from 'lodash'
 import { News } from 'common/news'
 import { FEED_DATA_TYPES, FEED_REASON_TYPES, getExplanation } from 'common/feed'
 import { isContractBlocked } from 'web/lib/firebase/users'
@@ -23,10 +23,12 @@ export type FeedTimelineItem = {
   dataType: FEED_DATA_TYPES
   reason: FEED_REASON_TYPES
   createdTime: number
+  supabaseTimestamp: string
   contractId: string | null
   commentId: string | null
   newsId: string | null
   // These are fetched/generated at runtime
+  avatarUrl: string | null
   contract?: Contract
   contracts?: Contract[]
   comments?: ContractComment[]
@@ -34,10 +36,9 @@ export type FeedTimelineItem = {
   reasonDescription?: string
 }
 export const useFeedTimeline = (user: User | null | undefined, key: string) => {
-  const [boosts, setBoosts] = usePersistentInMemoryState<BoostsType|undefined>(
-    undefined,
-    `boosts-${user?.id}-${key}`
-  )
+  const [boosts, setBoosts] = usePersistentInMemoryState<
+    BoostsType | undefined
+  >(undefined, `boosts-${user?.id}-${key}`)
   useEffect(() => {
     if (user) getBoosts(user.id).then(setBoosts as any)
   }, [user?.id])
@@ -49,28 +50,34 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
   const privateUser = usePrivateUser()
   const userId = user?.id
   // Supabase timestamptz has more precision than js Date, so we need to store the oldest and newest timestamps as strings
-  const oldestCreatedTimestamp = useRef(new Date().toISOString())
-  const newestCreatedTimestamp =  useRef(new Date().toISOString())
+  const newestCreatedTimestamp = useRef(
+    first(savedFeedItems)?.supabaseTimestamp ?? new Date().toISOString()
+  )
+  const oldestCreatedTimestamp = useRef(
+    last(savedFeedItems)?.supabaseTimestamp ?? new Date().toISOString()
+  )
 
-  const fetchRecs = async (
+  const fetchFeedItems = async (
     userId: string,
     options: {
+      new?: boolean
       newerThan?: string
-      olderThan?: string
+      old?: boolean
     }
   ) => {
-
-    const time =
-      options.newerThan ?? options.olderThan ?? oldestCreatedTimestamp.current
+    const time = options.new
+      ? new Date().toISOString()
+      : oldestCreatedTimestamp.current
     let query = db
       .from('user_feed')
       .select('*')
       .eq('user_id', userId)
+      .lt('created_time', time)
       .order('created_time', { ascending: false })
       .limit(PAGE_SIZE)
-    options.olderThan
-      ? (query = query.lt('created_time', time))
-      : (query = query.gt('created_time', time))
+    if (options.newerThan) {
+      query = query.gt('created_time', options.newerThan)
+    }
 
     const { data } = await run(query)
 
@@ -118,69 +125,99 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
       news
     )
 
-    if (options.newerThan || !savedFeedItems?.length)
-      newestCreatedTimestamp.current = data[0]?.created_time ?? newestCreatedTimestamp.current
-
-    if (options.olderThan || !savedFeedItems?.length)
-      oldestCreatedTimestamp.current = last(data)?.created_time ?? oldestCreatedTimestamp.current
-
     return { timelineItems }
   }
 
+  const addTimelineItems = useEvent(
+    (
+      timelineItems: FeedTimelineItem[],
+      options: { new?: boolean; old?: boolean }
+    ) => {
+      if (options.new || !savedFeedItems?.length)
+        newestCreatedTimestamp.current =
+          first(timelineItems)?.supabaseTimestamp ??
+          newestCreatedTimestamp.current
+      if (!options.new || options.old || !savedFeedItems?.length)
+        oldestCreatedTimestamp.current =
+          last(timelineItems)?.supabaseTimestamp ??
+          oldestCreatedTimestamp.current
+      if (options.new) {
+        setSavedFeedItems(
+          uniqBy(buildArray(timelineItems, savedFeedItems), 'id')
+        )
+      } else
+        setSavedFeedItems(
+          uniqBy(buildArray(savedFeedItems, timelineItems), 'id')
+        )
+    }
+  )
+
   const loadMore = useEvent(
-    async (options: { newerThan?: string; olderThan?: string }) => {
+    async (options: { new?: boolean; old?: boolean; newerThan?: string }) => {
       if (!userId) return
-      return fetchRecs(userId, options).then((res) => {
+      return fetchFeedItems(userId, options).then((res) => {
         const { timelineItems } = res
-        if (options.newerThan)
-          setSavedFeedItems(buildArray(timelineItems,savedFeedItems))
-        else
-          setSavedFeedItems(buildArray(savedFeedItems,timelineItems))
+        addTimelineItems(timelineItems, options)
       })
     }
   )
 
+  const checkForNewer = useEvent(async () => {
+    if (!userId) return []
+    const { timelineItems } = await fetchFeedItems(userId, {
+      new: true,
+      newerThan: newestCreatedTimestamp.current,
+    })
+    return timelineItems
+  })
+
   useEffect(() => {
     if (savedFeedItems?.length || !userId) return
-    loadMore({ olderThan: oldestCreatedTimestamp.current })
+    loadMore({ new: true })
   }, [loadMore, userId])
 
   return {
-    loadMoreNewer: async ()=>loadMore({ newerThan: newestCreatedTimestamp.current }),
-    loadMoreOlder: async ()=>loadMore({ olderThan: oldestCreatedTimestamp.current }),
+    loadNew: async () => loadMore({ new: true }),
+    loadMoreOlder: async () => loadMore({ old: true }),
+    checkForNewer: async () => checkForNewer(),
+    addTimelineItems,
     boosts,
-    feedTimelineItems: savedFeedItems,
+    savedFeedItems,
   }
 }
 
-const getBaseTimelineItem = (item: Row<'user_feed'>) => ({
-  id: item.id,
-  dataType: item.data_type as FEED_DATA_TYPES,
-  reason: item.reason as FEED_REASON_TYPES,
-  reasonDescription: getExplanation(
-    item.data_type as FEED_DATA_TYPES,
-    item.reason as FEED_REASON_TYPES
-  ),
-  createdTime: new Date(item.created_time).valueOf(),
-})
+const getBaseTimelineItem = (item: Row<'user_feed'>) =>
+  ({
+    id: item.id,
+    dataType: item.data_type as FEED_DATA_TYPES,
+    reason: item.reason as FEED_REASON_TYPES,
+    reasonDescription: getExplanation(
+      item.data_type as FEED_DATA_TYPES,
+      item.reason as FEED_REASON_TYPES
+    ),
+    createdTime: new Date(item.created_time).valueOf(),
+    supabaseTimestamp: item.created_time,
+  } as FeedTimelineItem)
 
 function createFeedTimelineItems(
   data: Row<'user_feed'>[],
   contracts: Contract[] | undefined,
   comments: ContractComment[] | undefined,
   news: News[] | undefined
-): (FeedTimelineItem | undefined)[] {
+): FeedTimelineItem[] {
   const newsData = Object.entries(groupBy(data, (item) => item.news_id)).map(
     ([newsId, newsItems]) => {
       const contractIds = data
         .filter((item) => item.news_id === newsId)
         .map((i) => i.contract_id)
+      const relevantContracts = contracts?.filter((contract) =>
+        contractIds.includes(contract.id)
+      )
       return {
         ...getBaseTimelineItem(newsItems[0]),
         newsId,
-        contracts: contracts?.filter((contract) =>
-          contractIds.includes(contract.id)
-        ),
+        avatarUrl: relevantContracts?.[0]?.creatorAvatarUrl,
+        contracts: relevantContracts,
         news: news?.find((news) => news.id === newsId),
       } as FeedTimelineItem
     }
@@ -195,16 +232,21 @@ function createFeedTimelineItems(
         dataType === 'new_contract' ||
         dataType === 'popular_comment'
       ) {
+        const relevantContract = contracts?.find(
+          (contract) => contract.id === item.contract_id
+        )
+        const relevantComments = comments?.filter(
+          (comment) => comment.contractId === item.contract_id
+        )
         return {
           ...getBaseTimelineItem(item),
           contractId: item.contract_id,
           commentId: item.comment_id,
-          contract: contracts?.find(
-            (contract) => contract.id === item.contract_id
-          ),
-          comments: comments?.filter(
-            (comment) => comment.contractId === item.contract_id
-          ),
+          avatarUrl: item.comment_id
+            ? relevantComments?.[0]?.userAvatarUrl
+            : relevantContract?.creatorAvatarUrl,
+          contract: relevantContract,
+          comments: relevantComments,
         } as FeedTimelineItem
       }
       // Add new feed timeline data types here
