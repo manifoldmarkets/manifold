@@ -42,7 +42,6 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
     if (user) getBoosts(user.id).then(setBoosts as any)
   }, [user?.id])
 
-  // I could get new contracts, new comments on contracts, contract probability changes, news articles with relevant contracts
   const [savedFeedItems, setSavedFeedItems] = usePersistentInMemoryState<
     FeedTimelineItem[] | undefined
   >(undefined, `timeline-items-${user?.id}-${key}`)
@@ -60,8 +59,7 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
       olderThan?: string
     }
   ) => {
-    // TODO: we could turn this into separate db rpc calls, i.e.:
-    // get_contracts_for_user_feed, get_comments_for_user_feed, get_news_for_user_feed
+
     const time =
       options.newerThan ?? options.olderThan ?? oldestCreatedTimestamp.current
     let query = db
