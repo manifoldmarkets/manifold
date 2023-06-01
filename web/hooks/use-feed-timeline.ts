@@ -74,11 +74,9 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
 
     const { data } = await run(query)
 
-    // This can include new contracts and contracts with probability updates
     const contractIds = uniq(
       filterDefined(data.map((item) => item.contract_id))
     )
-    // This can include new comments and comments with new likes
     const commentIds = uniq(filterDefined(data.map((item) => item.comment_id)))
     const newsIds = uniq(filterDefined(data.map((item) => item.news_id)))
     const [comments, contracts, news] = await Promise.all([
