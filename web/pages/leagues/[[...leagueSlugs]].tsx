@@ -161,6 +161,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     getDemotionAndPromotionCount(division)
 
   const MARKER = '●️'
+  const seasonEnd = getSeasonDates(CURRENT_SEASON).end
 
   return (
     <Page>
@@ -206,11 +207,8 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                       'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
                     }
                   >
-                    Ends in{' '}
-                    <Countdown
-                      className=" text-sm"
-                      endDate={getSeasonDates(CURRENT_SEASON).end}
-                    />
+                    {new Date() > seasonEnd ? 'Ended' : 'Ends in'}{' '}
+                    <Countdown className=" text-sm" endDate={seasonEnd} />
                   </InfoTooltip>
                 </Row>
               </Row>
