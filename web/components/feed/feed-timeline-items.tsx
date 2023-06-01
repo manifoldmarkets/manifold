@@ -1,6 +1,5 @@
 import { Contract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
-import { ContractCardNew } from 'web/components/contract/contract-card'
 import {
   groupCommentsByContractsAndParents,
   useFeedBets,
@@ -26,6 +25,7 @@ import { ContractMention } from 'web/components/contract/contract-mention'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
 import { run } from 'common/supabase/utils'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
@@ -102,7 +102,7 @@ export const FeedTimelineItems = (props: {
                 'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
               }
             >
-              <ContractCardNew
+              <FeedContractCard
                 contract={contract}
                 className={clsx(
                   'my-0 border-0',
