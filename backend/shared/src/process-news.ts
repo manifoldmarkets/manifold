@@ -141,7 +141,7 @@ const processNewsArticle = async (
   )
   await insertContractRelatedDataToUsersFeeds(
     questions,
-    'news',
+    'news_with_related_contracts',
     [
       'follow_contract',
       'liked_contract',

@@ -296,7 +296,7 @@ create table if not exists
               seen_time timestamptz null, -- null means unseen
               user_id text not null,
               event_time timestamptz not null,
-              data_type text not null, -- 'new_comment', 'new_contract', 'news'
+              data_type text not null, -- 'new_comment', 'new_contract', 'news_with_related_contracts'
               reason text not null, --  follow_user, follow_contract, etc
               data jsonb null,
               contract_id text null,

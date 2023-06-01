@@ -1,6 +1,6 @@
 export type FEED_DATA_TYPES =
   | 'new_comment'
-  | 'news'
+  | 'news_with_related_contracts'
   | 'new_contract'
   | 'contract_probability_changed'
   | 'popular_comment'
@@ -30,7 +30,7 @@ export const FeedExplanationDictionary: Record<
       'New comment on a contract with similar interests to yours',
     follow_user: 'New comment by a creator you follow',
   },
-  news: {
+  news_with_related_contracts: {
     follow_contract: 'News about contract you follow',
     liked_contract: 'News about contract you liked',
     viewed_contract: 'News about contract you viewed',
