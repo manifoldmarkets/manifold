@@ -1100,43 +1100,35 @@ export const createNewContractNotification = async (
     })
   )
 
-  let privateMemberIds: string[] = []
-
-  if (
-    contract.visibility === 'private' &&
+  const db = createSupabaseClient()
+  const privateMemberIds =
+    contract.visibility == 'private' &&
     contract.groupLinks &&
     contract.groupLinks.length > 0
-  ) {
-    console.log('getting private group members')
-    const db = createSupabaseClient()
-    privateMemberIds = await getGroupMemberIds(
-      db,
-      contract.groupLinks[0].groupId
-    )
-    console.log('privateMemberIds', privateMemberIds)
-  }
+      ? await getGroupMemberIds(db, contract.groupLinks[0].groupId)
+      : []
 
   // As it is coded now, the tag notification usurps the new contract notification
   // It'd be easy to append the reason to the eventId if desired
-  if (contract.visibility === 'public') {
-    for (const followerUserId of followerUserIds) {
-      await sendNotificationsIfSettingsAllow(
-        followerUserId,
-        'contract_from_followed_user'
-      )
-    }
+  // if (contract.visibility == 'public') {
+  for (const followerUserId of followerUserIds) {
+    await sendNotificationsIfSettingsAllow(
+      followerUserId,
+      'contract_from_followed_user'
+    )
   }
-  for (const mentionedUserId of mentionedUserIds) {
-    await sendNotificationsIfSettingsAllow(mentionedUserId, 'tagged_user')
-  }
-  if (contract.visibility === 'private') {
-    for (const privateMemberId of privateMemberIds) {
-      await sendNotificationsIfSettingsAllow(
-        privateMemberId,
-        'contract_from_private_group'
-      )
-    }
-  }
+  // }
+  // for (const mentionedUserId of mentionedUserIds) {
+  //   await sendNotificationsIfSettingsAllow(mentionedUserId, 'tagged_user')
+  // }
+  // if (contract.visibility == 'private') {
+  //   for (const privateMemberId of privateMemberIds) {
+  //     await sendNotificationsIfSettingsAllow(
+  //       privateMemberId,
+  //       'contract_from_private_group'
+  //     )
+  //   }
+  // }
 }
 
 export const createContractResolvedNotifications = async (

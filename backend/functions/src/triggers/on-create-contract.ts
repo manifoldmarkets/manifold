@@ -22,6 +22,7 @@ export const onCreateContract = functions
     const contract = snapshot.data() as Contract
     const { eventId } = context
 
+    console.log('CREATINGGGG')
     await generateContractImage(contract).then((coverImageUrl) =>
       coverImageUrl ? snapshot.ref.update({ coverImageUrl }) : null
     )

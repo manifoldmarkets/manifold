@@ -718,7 +718,8 @@ function NewPrivateMarketNotification(props: {
         />{' '}
         <span>
           asked <PrimaryNotificationLink text={sourceContractTitle} />
-        </span> in private group 
+        </span>{' '}
+        in private group
       </div>
     </NotificationFrame>
   )
