@@ -783,8 +783,8 @@ create table if not exists
     visibility text,
     group_id text,
     creator_id text,
-    created_time timestamptz,
-    fs_updated_time timestamp not null
+    created_time timestamptz not null default now(),
+    fs_updated_time timestamp
   );
 
 alter table posts enable row level security;
@@ -794,6 +794,16 @@ drop policy if exists "public read" on posts;
 create policy "public read" on posts for
 select
   using (true);
+
+drop policy if exists "user update" on posts;
+
+create policy "user update" on posts
+for update
+  using (auth.uid () = creator_id);
+
+drop policy if exists "user delete" on posts;
+
+create policy "user delete" on posts for delete using (auth.uid () = creator_id);
 
 create index if not exists posts_data_gin on posts using GIN (data);
 
@@ -805,10 +815,10 @@ create table if not exists
     post_id text not null,
     comment_id text not null,
     data jsonb not null,
-    fs_updated_time timestamp not null,
+    fs_updated_time timestamp,
     visibility text,
     user_id text,
-    created_time timestamptz,
+    created_time timestamptz not null default now(),
     primary key (post_id, comment_id)
   );
 

@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { ContractComment, PostComment } from 'common/comment'
-import {
-  listenForCommentsOnContract,
-  listenForCommentsOnPost,
-} from 'web/lib/firebase/comments'
+import { listenForCommentsOnContract } from 'web/lib/firebase/comments'
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
+import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
 
 export const useComments = (contractId: string) => {
   const [comments, setComments] = usePersistentState<
@@ -21,11 +19,7 @@ export const useComments = (contractId: string) => {
   return comments
 }
 export const useCommentsOnPost = (postId: string | undefined) => {
-  const [comments, setComments] = useState<PostComment[] | undefined>()
-
-  useEffect(() => {
-    if (postId) return listenForCommentsOnPost(postId, setComments)
-  }, [postId])
-
-  return comments
+  return useRealtimeRows('post_comments')
+    .filter((c) => c.post_id === postId)
+    .map((c) => c.data as PostComment)
 }

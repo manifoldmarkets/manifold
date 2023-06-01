@@ -10,10 +10,8 @@ import { SEO } from 'web/components/SEO'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
 import Custom404, { Custom404Content } from '../../404'
-
 import { ArrowLeftIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { GroupComment } from 'common/comment'
 import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { BETTORS, PrivateUser } from 'common/user'
@@ -59,7 +57,6 @@ type GroupParams = {
   creator: User | null
   topTraders: { user: User; score: number }[]
   topCreators: { user: User; score: number }[]
-  messages: GroupComment[] | null
   aboutPost: Post | null
   posts: Post[]
 }

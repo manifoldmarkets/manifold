@@ -7,6 +7,19 @@ export function postPath(postSlug: string) {
   return `/post/${postSlug}`
 }
 
+export function updatePost(post: Post, updates: Partial<Post>) {
+  db.from('posts')
+    .update({ data: JSON.stringify(updates) })
+    .eq('id', post.id)
+}
+
+export function deletePost(post: Post) {
+  // we don't delete comments but this matters little.
+  // this function is only used to delete group about posts....
+
+  db.from('posts').delete().eq('id', post.id)
+}
+
 export async function getPost(postId: string) {
   const { data: post } = await run(
     db.from('posts').select('data').eq('id', postId)

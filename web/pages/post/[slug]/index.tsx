@@ -1,6 +1,6 @@
 import { Page } from 'web/components/layout/page'
 import { getPostBySlug, postPath } from 'web/lib/supabase/post'
-import { updatePost } from 'web/lib/firebase/posts'
+import { updatePost } from 'web/lib/supabase/post'
 import { Post } from 'common/post'
 import { Title } from 'web/components/widgets/title'
 import { Spacer } from 'web/components/layout/spacer'
@@ -18,7 +18,6 @@ import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/widgets/user-link'
-import { listAllCommentsOnPost } from 'web/lib/firebase/comments'
 import { PostComment } from 'common/comment'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { groupBy, sortBy } from 'lodash'
@@ -37,13 +36,14 @@ import { formatMoney } from 'common/util/format'
 import { Ad } from 'common/ad'
 import { TimerClaimBox } from 'web/pages/ad'
 import { useRouter } from 'next/router'
+import { getCommentsOnPost } from 'web/lib/supabase/comments'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
 
   const post = await getPostBySlug(slug)
   const creator = post ? await getUser(post.creatorId) : null
-  const comments = post && (await listAllCommentsOnPost(post.id))
+  const comments = post && (await getCommentsOnPost(post.id))
 
   let watched: string[] = []
   let skipped: string[] = []
@@ -247,9 +247,7 @@ export function RichEditPost(props: {
     if (!editor) return
 
     setContentCache(editor.getJSON())
-    await updatePost(post, {
-      content: editor.getJSON(),
-    })
+    await updatePost(post, { content: editor.getJSON() })
     setEditing(false)
   }
 

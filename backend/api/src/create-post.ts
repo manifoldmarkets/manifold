@@ -10,6 +10,8 @@ import { removeUndefinedProps } from 'common/util/object'
 import { createMarketHelper } from './create-market'
 import { DAY_MS } from 'common/util/time'
 import { contentSchema } from 'shared/zod-types'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { randomUUID } from 'crypto'
 
 const postSchema = z
   .object({
@@ -32,6 +34,8 @@ const postSchema = z
 
 export const createpost = authEndpoint(async (req, auth) => {
   const firestore = admin.firestore()
+  const pg = createSupabaseDirectClient()
+
   const { title, content, isGroupAboutPost, groupId, ...otherProps } = validate(
     postSchema,
     req.body
@@ -44,8 +48,6 @@ export const createpost = authEndpoint(async (req, auth) => {
   console.log('creating post owned by', creator.username, 'titled', title)
 
   const slug = await getSlug(title)
-
-  const postRef = firestore.collection('posts').doc()
 
   // If this is a date doc, create a market for it.
   let contractSlug
@@ -73,7 +75,7 @@ export const createpost = authEndpoint(async (req, auth) => {
 
   const post: Post = removeUndefinedProps({
     ...otherProps,
-    id: postRef.id,
+    id: randomUUID(),
     creatorId: creator.id,
     slug,
     title,
@@ -88,7 +90,8 @@ export const createpost = authEndpoint(async (req, auth) => {
     groupId,
   })
 
-  await postRef.create(post)
+  // TODO: lock. or migrate groups.
+
   if (groupId) {
     const groupRef = firestore.collection('groups').doc(groupId)
     const group = await groupRef.get()
@@ -96,15 +99,16 @@ export const createpost = authEndpoint(async (req, auth) => {
       const groupData = group.data()
       if (groupData) {
         const postIds = groupData.postIds ?? []
-        postIds.push(postRef.id)
+        postIds.push(post.id)
         await groupRef.update({ postIds })
-        await postRef.update({
-          visibility:
-            groupData.privacyStatus == 'private' ? 'private' : 'public',
-        })
+        post.visibility =
+          groupData.privacyStatus == 'private' ? 'private' : 'public'
       }
     }
   }
+
+  // currently uses the trigger to populate group_id, creator_id, created_time.
+  pg.none(`insert into posts (id, data) values ($1, $2)`, [post.id, post])
 
   return { status: 'success', post }
 })
@@ -112,17 +116,18 @@ export const createpost = authEndpoint(async (req, auth) => {
 export const getSlug = async (title: string) => {
   const proposedSlug = slugify(title)
 
-  const preexistingPost = await getPostFromSlug(proposedSlug)
+  const preexistingPost = await postExists(proposedSlug)
 
   return preexistingPost ? proposedSlug + '-' + randomString() : proposedSlug
 }
 
-export async function getPostFromSlug(slug: string) {
-  const firestore = admin.firestore()
-  const snap = await firestore
-    .collection('posts')
-    .where('slug', '==', slug)
-    .get()
+// TODO: migrate slug in new column with unique constraint
+export async function postExists(slug: string) {
+  const pg = createSupabaseDirectClient()
+  const post = await pg.oneOrNone(
+    `select 1 from posts where data->>'slug' = $1`,
+    [slug]
+  )
 
-  return snap.empty ? undefined : (snap.docs[0].data() as Post)
+  return !!post
 }

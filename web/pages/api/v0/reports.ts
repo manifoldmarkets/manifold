@@ -6,10 +6,8 @@ import { db } from 'web/lib/firebase/init'
 import { Report } from 'common/report'
 import { contractUrl } from 'common/contract'
 import { filterDefined } from 'common/util/array'
-import {
-  listAllComments,
-  listAllCommentsOnPost,
-} from 'web/lib/firebase/comments'
+import { listAllComments } from 'web/lib/firebase/comments'
+import { getCommentsOnPost } from 'web/lib/supabase/comments'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { postPath } from 'web/lib/supabase/post'
 import { getPost } from 'web/lib/supabase/post'
@@ -90,7 +88,7 @@ export default async function handler(
         ) {
           const post = await getPost(parentId)
           if (post) {
-            const comments = (await listAllCommentsOnPost(post.id)).filter(
+            const comments = (await getCommentsOnPost(post.id)).filter(
               (comment) => comment.id === contentId
             )
             partialReport =
