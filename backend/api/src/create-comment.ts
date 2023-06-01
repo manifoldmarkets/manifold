@@ -11,7 +11,6 @@ import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
 import { APIError, authEndpoint, validate } from './helpers'
-import { addCommentOnContractToFeed } from 'shared/create-feed'
 import { contentSchema } from 'shared/zod-types'
 
 const postSchema = z.object({
