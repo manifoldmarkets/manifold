@@ -13,6 +13,9 @@ import { secrets } from 'common/secrets'
 import { CURRENT_SEASON, getSeasonDates } from 'common/leagues'
 import { getContractBetMetrics } from 'common/calculate'
 
+// Disable updates between freezing a season and starting the next one.
+const DISABLED = true
+
 export const updateLeague = functions
   .runWith({
     memory: '1GB',
@@ -216,8 +219,12 @@ export async function updateLeagueCore() {
 
   console.log('Mana earned updates', manaEarnedUpdates.length)
 
-  await bulkUpdate(pg, 'leagues', 'user_id', manaEarnedUpdates)
-  await revalidateStaticProps('/leagues')
+  if (!DISABLED) {
+    await bulkUpdate(pg, 'leagues', 'user_id', manaEarnedUpdates)
+    await revalidateStaticProps('/leagues')
+  } else {
+    log('Skipping writing update because DISABLED=true')
+  }
   log('Done.')
 }
 
