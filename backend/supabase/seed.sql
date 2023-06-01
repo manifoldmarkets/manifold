@@ -228,6 +228,8 @@ where
 
 create index if not exists user_events_comment_view on user_events (user_id, name, comment_id);
 
+create index if not exists user_events_contract_name on user_events (user_id, contract_id, name);
+
 alter table user_events
 cluster on user_events_name;
 

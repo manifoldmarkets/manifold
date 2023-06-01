@@ -98,6 +98,11 @@ export const addCommentOnContractToFeed = async (
       )
   )
 }
+//TODO: before adding, exclude those users who:
+// - have it in their notifications: users in reply thread, mentioned, creator of the contract
+// - creator of the comment & reaction
+// - have already seen the comment
+// - already have the comment in their feed (unique by contract id, comment id, user id)
 export const addLikedCommentOnContractToFeed = async (
   contractId: string,
   reaction: Reaction,
@@ -137,7 +142,11 @@ export const addLikedCommentOnContractToFeed = async (
   )
 }
 
-// TODO: run this when a contract gets its 1st comment, 5th bet, 1st like
+//TODO: run this when a contract gets its 1st comment, 5th bet, 1st like
+// excluding those who:
+// - have already seen this contract
+// - already have it in their feed:  (unique by contract id, user id)
+// - creator of the contract & reaction
 export const addContractToFeed = async (
   contract: Contract,
   reasonsToInclude: FEED_REASON_TYPES[],
@@ -222,14 +231,10 @@ export const insertContractRelatedDataToUsersFeeds = async (
 // - Liked comments from likers you follow/have similar interest vectors to and
 // on contracts that you've similar interest vectors to/groups you're in
 // - New contracts with similar interest vector/from users you follow/you have similar interest vectors to
-// - Every 12 hours, check if large probability change on contracts you follow/liked/viewed/from users you follow
+// - Contracts with large prob changes
 
 // TODO:
 // Create feed items from:
 // - Popular new markets
 // - Large bets by interesting users
-// - News articles
-// Deduplicate feed items
 // Remove comment notifications
-// Show reason why item is on feed
-// Show recent change for contract prob change feed items
