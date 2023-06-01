@@ -6,12 +6,13 @@ import { useRouter } from 'next/router'
 import {
   DIVISION_NAMES,
   SEASONS,
-  SEASON_END,
   getDemotionAndPromotionCount,
   season,
   CURRENT_SEASON,
   getLeaguePath,
   league_user_info,
+  getSeasonMonth,
+  getSeasonDates,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -32,7 +33,6 @@ import { Tabs } from 'web/components/layout/tabs'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
-  console.log('rows', rows)
   return {
     props: {
       rows,
@@ -192,7 +192,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
               >
                 {SEASONS.map((season) => (
                   <option key={season} value={season}>
-                    Season {season}: May
+                    Season {season}: {getSeasonMonth(season)}
                   </option>
                 ))}
               </Select>
@@ -207,7 +207,10 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                     }
                   >
                     Ends in{' '}
-                    <Countdown className=" text-sm" endDate={SEASON_END} />
+                    <Countdown
+                      className=" text-sm"
+                      endDate={getSeasonDates(CURRENT_SEASON).end}
+                    />
                   </InfoTooltip>
                 </Row>
               </Row>
