@@ -6,12 +6,13 @@ import { useRouter } from 'next/router'
 import {
   DIVISION_NAMES,
   SEASONS,
-  SEASON_END,
   getDemotionAndPromotionCount,
   season,
   CURRENT_SEASON,
   getLeaguePath,
   league_user_info,
+  getSeasonMonth,
+  getSeasonDates,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -32,7 +33,6 @@ import { Tabs } from 'web/components/layout/tabs'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
-  console.log('rows', rows)
   return {
     props: {
       rows,
@@ -161,6 +161,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     getDemotionAndPromotionCount(division)
 
   const MARKER = '●️'
+  const seasonEnd = getSeasonDates(CURRENT_SEASON).end
 
   return (
     <Page>
@@ -192,7 +193,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
               >
                 {SEASONS.map((season) => (
                   <option key={season} value={season}>
-                    Season {season}: May
+                    Season {season}: {getSeasonMonth(season)}
                   </option>
                 ))}
               </Select>
@@ -206,8 +207,8 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                       'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
                     }
                   >
-                    Ends in{' '}
-                    <Countdown className=" text-sm" endDate={SEASON_END} />
+                    {new Date() > seasonEnd ? 'Ended' : 'Ends in'}{' '}
+                    <Countdown className=" text-sm" endDate={seasonEnd} />
                   </InfoTooltip>
                 </Row>
               </Row>

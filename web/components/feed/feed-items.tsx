@@ -1,6 +1,6 @@
 import { Contract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
-import { ContractCardNew } from 'web/components/contract/contract-card'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import {
   useFeedBets,
   useFeedComments,
@@ -75,10 +75,10 @@ export const FeedItems = (props: {
           <Col
             key={contract.id + 'feed'}
             className={
-              'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
+              'border-ink-200 hover:border-ink-400 my-2 overflow-y-hidden rounded-xl border'
             }
           >
-            <ContractCardNew
+            <FeedContractCard
               contract={contract}
               className={clsx(
                 'my-0 border-0',

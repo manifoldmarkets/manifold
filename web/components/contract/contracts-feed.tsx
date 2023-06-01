@@ -14,7 +14,7 @@ export function ContractsFeed(props: { topic?: string }) {
   if (!contracts) return <LoadingIndicator />
 
   return (
-    <Col>
+    <Col className="mt-2">
       <FeedItems contracts={contracts} boosts={boosts} user={user} />
 
       <div className="relative">

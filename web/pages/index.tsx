@@ -27,7 +27,7 @@ import { LogoSEO } from 'web/components/LogoSEO'
 import { db } from 'web/lib/supabase/db'
 import { PrivacyAndTerms } from 'web/components/privacy-terms'
 import clsx from 'clsx'
-import { ContractCardNew } from 'web/components/contract/contract-card'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { formatMoney } from 'common/util/format'
 import { SiteLink } from 'web/components/widgets/site-link'
 
@@ -254,7 +254,13 @@ const ContractsSection = memo(function ContractsSection(props: {
   return (
     <Col className={clsx('max-w-2xl', className)}>
       {contracts.map((contract) => (
-        <ContractCardNew key={contract.id} contract={contract} />
+        <div
+          className={
+            'border-ink-200 hover:border-ink-400 my-2 overflow-y-hidden rounded-xl border'
+          }
+        >
+          <FeedContractCard key={contract.id} contract={contract} />
+        </div>
       ))}
     </Col>
   )

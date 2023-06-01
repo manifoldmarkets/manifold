@@ -4,7 +4,7 @@ import { BetFilter } from 'common/bet'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
-  filterChallenges: true,
+  filterChallenges: false,
   filterAntes: false,
 }
 

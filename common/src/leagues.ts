@@ -5,13 +5,18 @@ export type season = typeof SEASONS[number]
 export const SEASONS = [1] as const
 export const CURRENT_SEASON = 1
 
-export const SEASON_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
-export const SEASON_END = new Date('2023-06-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
+export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
+
+export const getSeasonMonth = (season: number) => {
+  return getSeasonDates(season).start.toLocaleString('default', {
+    month: 'long',
+  })
+}
 
 export const getSeasonDates = (season: number) => {
-  const start = new Date(SEASON_START)
+  const start = new Date(LEAGUES_START)
   start.setMonth(start.getMonth() + season - 1)
-  const end = new Date(SEASON_START)
+  const end = new Date(LEAGUES_START)
   end.setMonth(end.getMonth() + season)
   return { start, end }
 }
@@ -36,6 +41,25 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 5, promotion: 6, doublePromotion: 0 }
   }
   return { demotion: 5, promotion: 5, doublePromotion: 0 }
+}
+
+export const getDivisionChange = (
+  division: number,
+  rank: number,
+  cohortSize: number
+) => {
+  const { demotion, promotion, doublePromotion } =
+    getDemotionAndPromotionCount(division)
+  if (rank <= doublePromotion) {
+    return 2
+  }
+  if (rank <= promotion) {
+    return 1
+  }
+  if (rank > cohortSize - demotion) {
+    return -1
+  }
+  return 0
 }
 
 export type league_row = Row<'leagues'>

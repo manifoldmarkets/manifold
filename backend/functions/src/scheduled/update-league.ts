@@ -166,7 +166,7 @@ export async function updateLeagueCore() {
 
     for (const [contractId, contractBets] of Object.entries(betsByContract)) {
       const contract = contractsById[contractId]
-      if (contract.visibility === 'public') {
+      if (contract.visibility === 'public' && !EXCLUDED_CONTRACT_SLUGS.has(contract.slug)) {
         const { profit } = getContractBetMetrics(contract, contractBets)
         if (isNaN(profit)) {
           console.error(
@@ -228,3 +228,9 @@ const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
     (r) => r.data as Contract
   )
 }
+
+const EXCLUDED_CONTRACT_SLUGS = new Set([
+  'will-there-be-another-wellrecognize-393de260ec26',
+  'will-there-be-another-wellrecognize-511a499bd82e',
+  'will-there-be-another-wellrecognize',
+])
