@@ -11,7 +11,7 @@ export const getUserFollowerIds = async (
   return userFollowerIds.map((r) => r.follow_id)
 }
 
-export const getUserWithSimilarInterestVectorToUser = async (
+export const getUsersWithSimilarInterestVectorToUser = async (
   userId: string,
   pg: SupabaseDirectClient
 ) => {

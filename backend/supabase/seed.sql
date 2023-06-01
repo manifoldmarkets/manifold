@@ -78,11 +78,6 @@ create index if not exists user_profit_cached_all_time_idx on users (((data -> '
 
 create index if not exists users_betting_streak_idx on users (((data -> 'currentBettingStreak')::int));
 
-create index concurrently if not exists contracts_cpmm_daily_score on contracts (((data->'dailyScore')::numeric))
-where mechanism = 'cpmm-1'
-  and visibility != 'private'
-  and jsonb_typeof((data->'dailyScore')) != 'null';
-
 alter table users
 cluster on users_pkey;
 

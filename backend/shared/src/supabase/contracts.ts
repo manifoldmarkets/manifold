@@ -2,7 +2,7 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs, map, merge } from 'lodash'
 import {
   getUserFollowerIds,
-  getUserWithSimilarInterestVectorToUser,
+  getUsersWithSimilarInterestVectorToUser,
 } from 'shared/supabase/users'
 import { FEED_REASON_TYPES } from 'common/feed'
 
@@ -113,7 +113,7 @@ export const getUserToReasonsInterestedInContractAndUser = async (
     [key in FEED_REASON_TYPES]: Promise<string[]>
   } = {
     contract_in_group_you_are_in: getContractGroupMemberIds(contractId, pg),
-    similar_interest_vector_to_user: getUserWithSimilarInterestVectorToUser(
+    similar_interest_vector_to_user: getUsersWithSimilarInterestVectorToUser(
       userId,
       pg
     ),
