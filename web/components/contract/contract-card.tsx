@@ -134,7 +134,6 @@ export const ContractCard = memo(function ContractCard(props: {
             </Row>
           </Row>
         )}
-
         {/* overlay question on image */}
         {hasImage && !hideQuestion && (
           <div className="relative mb-2">
