@@ -1110,25 +1110,25 @@ export const createNewContractNotification = async (
 
   // As it is coded now, the tag notification usurps the new contract notification
   // It'd be easy to append the reason to the eventId if desired
-  // if (contract.visibility == 'public') {
-  for (const followerUserId of followerUserIds) {
-    await sendNotificationsIfSettingsAllow(
-      followerUserId,
-      'contract_from_followed_user'
-    )
+  if (contract.visibility == 'public') {
+    for (const followerUserId of followerUserIds) {
+      await sendNotificationsIfSettingsAllow(
+        followerUserId,
+        'contract_from_followed_user'
+      )
+    }
   }
-  // }
-  // for (const mentionedUserId of mentionedUserIds) {
-  //   await sendNotificationsIfSettingsAllow(mentionedUserId, 'tagged_user')
-  // }
-  // if (contract.visibility == 'private') {
-  //   for (const privateMemberId of privateMemberIds) {
-  //     await sendNotificationsIfSettingsAllow(
-  //       privateMemberId,
-  //       'contract_from_private_group'
-  //     )
-  //   }
-  // }
+  for (const mentionedUserId of mentionedUserIds) {
+    await sendNotificationsIfSettingsAllow(mentionedUserId, 'tagged_user')
+  }
+  if (contract.visibility == 'private') {
+    for (const privateMemberId of privateMemberIds) {
+      await sendNotificationsIfSettingsAllow(
+        privateMemberId,
+        'contract_from_private_group'
+      )
+    }
+  }
 }
 
 export const createContractResolvedNotifications = async (
