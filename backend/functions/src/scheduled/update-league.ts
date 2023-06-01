@@ -1,6 +1,5 @@
 import * as functions from 'firebase-functions'
 import { groupBy, sum, uniq, zipObject } from 'lodash'
-import * as dayjs from 'dayjs'
 
 import { log, revalidateStaticProps } from 'shared/utils'
 import { Bet } from 'common/bet'
@@ -11,8 +10,12 @@ import {
 } from 'shared/supabase/init'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { secrets } from 'common/secrets'
-import { SEASONS } from 'common/leagues'
+import { CURRENT_SEASON, getSeasonDates } from 'common/leagues'
 import { getContractBetMetrics } from 'common/calculate'
+import { DAY_MS } from 'common/util/time'
+
+// Disable updates between freezing a season and starting the next one.
+const DISABLED = false
 
 export const updateLeague = functions
   .runWith({
@@ -28,12 +31,10 @@ export const updateLeague = functions
 export async function updateLeagueCore() {
   const pg = createSupabaseDirectClient()
 
-  const season = SEASONS[SEASONS.length - 1]
-  const seasonStart = dayjs('2023-05-01')
-    .add(season - 1, 'month')
-    .valueOf()
-  const seasonEnd = dayjs('2023-05-01').add(season, 'month').valueOf()
-
+  const season = CURRENT_SEASON
+  const { start, end } = getSeasonDates(season)
+  const seasonStart = start.getTime()
+  const seasonEnd = end.getTime() + DAY_MS
   log('Loading users...')
   const userIds = await pg.map(
     `select id from users
@@ -166,7 +167,10 @@ export async function updateLeagueCore() {
 
     for (const [contractId, contractBets] of Object.entries(betsByContract)) {
       const contract = contractsById[contractId]
-      if (contract.visibility === 'public' && !EXCLUDED_CONTRACT_SLUGS.has(contract.slug)) {
+      if (
+        contract.visibility === 'public' &&
+        !EXCLUDED_CONTRACT_SLUGS.has(contract.slug)
+      ) {
         const { profit } = getContractBetMetrics(contract, contractBets)
         if (isNaN(profit)) {
           console.error(
@@ -215,8 +219,12 @@ export async function updateLeagueCore() {
 
   console.log('Mana earned updates', manaEarnedUpdates.length)
 
-  await bulkUpdate(pg, 'leagues', 'user_id', manaEarnedUpdates)
-  await revalidateStaticProps('/leagues')
+  if (!DISABLED) {
+    await bulkUpdate(pg, 'leagues', 'user_id', manaEarnedUpdates)
+    await revalidateStaticProps('/leagues')
+  } else {
+    log('Skipping writing update because DISABLED=true')
+  }
   log('Done.')
 }
 
