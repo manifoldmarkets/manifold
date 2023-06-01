@@ -39,17 +39,17 @@ export const FeedTimelineItems = (props: {
     savedFeedTimelineItems.map((item) => item.comments)
   ).flat()
 
-  const boostedContracts =
+  const boostedContractItems =
     boosts?.map((boost) => {
       const { market_data, ...rest } = boost
-      return { ...market_data, ...rest, dataType: 'boosted_contract' as const }
+      return { contract: { ...market_data }, ...rest }
     }) ?? []
 
   const contractIdsWithoutComments = filterDefined(
     savedFeedTimelineItems.map((item) =>
       item.contractId && !item.comments ? item.contractId : null
     )
-  ).concat(boostedContracts.map((c) => c.id))
+  ).concat(boostedContractItems.map((c) => c.contract.id))
 
   const recentComments = useUnseenReplyChainCommentsOnContracts(
     contractIdsWithoutComments,
@@ -61,7 +61,7 @@ export const FeedTimelineItems = (props: {
   const recentBets = useFeedBets(user, contractIdsWithoutComments)
   const feedTimelineItems = mergePeriodic(
     savedFeedTimelineItems,
-    boostedContracts,
+    boostedContractItems,
     AD_PERIOD
   )
 
@@ -69,15 +69,8 @@ export const FeedTimelineItems = (props: {
     <Col>
       {feedTimelineItems.map((item) => {
         // boosted contract or organic feed contract
-        if ('contract' in item || item.dataType === 'boosted_contract') {
-          const { contract, reasonDescription } =
-            item.dataType === 'boosted_contract'
-              ? {
-                  contract: item,
-                  reasonDescription: undefined,
-                }
-              : item
-          if (!contract) return null
+        if ('contract' in item && item.contract) {
+          const { contract } = item
           const parentComments = (
             parentCommentsByContractId[contract.id] ?? []
           ).slice(0, MAX_PARENT_COMMENTS_PER_FEED_ITEM)
@@ -87,7 +80,7 @@ export const FeedTimelineItems = (props: {
           const hasItems = parentComments.length > 0 || relatedBets.length > 0
 
           const promotedData =
-            item.dataType === 'boosted_contract'
+            'ad_id' in item
               ? {
                   adId: item.ad_id,
                   reward: AD_REDEEM_REWARD,
@@ -96,7 +89,7 @@ export const FeedTimelineItems = (props: {
 
           return (
             <FeedItemFrame
-              item={item.dataType !== 'boosted_contract' ? item : undefined}
+              item={'ad_id' in item ? undefined : item}
               key={contract.id + 'feed-timeline-item'}
               className={
                 'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
@@ -110,7 +103,11 @@ export const FeedTimelineItems = (props: {
                 )}
                 promotedData={promotedData}
                 trackingPostfix="feed"
-                reason={reasonDescription}
+                reason={
+                  'reasonDescription' in item
+                    ? item.reasonDescription
+                    : undefined
+                }
               />
               <Row className="bg-canvas-0">
                 <FeedCommentItem
