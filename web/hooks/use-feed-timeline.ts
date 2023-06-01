@@ -19,6 +19,7 @@ const PAGE_SIZE = 20
 
 export type FeedTimelineItem = {
   // These are stored in the db
+  id: number
   dataType: FEED_DATA_TYPES
   reason: FEED_REASON_TYPES
   createdTime: number
@@ -157,6 +158,7 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
 }
 
 const getBaseTimelineItem = (item: Row<'user_feed'>) => ({
+  id: item.id,
   dataType: item.data_type as FEED_DATA_TYPES,
   reason: item.reason as FEED_REASON_TYPES,
   reasonDescription: getExplanation(

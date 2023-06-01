@@ -23,6 +23,9 @@ import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { filterDefined } from 'common/util/array'
 import { useUnseenReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
 import { ContractMention } from 'web/components/contract/contract-mention'
+import { useIsVisible } from 'web/hooks/use-is-visible'
+import { db } from 'web/lib/supabase/db'
+import { run } from 'common/supabase/utils'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
@@ -92,7 +95,8 @@ export const FeedTimelineItems = (props: {
               : undefined
 
           return (
-            <Col
+            <FeedItemFrame
+              item={item.dataType !== 'boosted_contract' ? item : undefined}
               key={contract.id + 'feed-timeline-item'}
               className={
                 'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
@@ -123,13 +127,12 @@ export const FeedTimelineItems = (props: {
                   <FeedBetsItem contract={contract} bets={relatedBets} />
                 )}
               </Row>
-            </Col>
+            </FeedItemFrame>
           )
-        } else if ('news' in item) {
+        } else if ('news' in item && item.news) {
           const { news } = item
-          if (!news) return null
           return (
-            <Col key={news.id + 'feed-timeline-item'}>
+            <FeedItemFrame item={item} key={news.id + 'feed-timeline-item'}>
               {news.title}
               {item.contracts?.map((contract) => (
                 <ContractMention
@@ -137,10 +140,43 @@ export const FeedTimelineItems = (props: {
                   key={`news-${news.id}-contract-${contract.id}`}
                 />
               ))}
-            </Col>
+            </FeedItemFrame>
           )
         }
       })}
+    </Col>
+  )
+}
+
+const FeedItemFrame = (props: {
+  item: FeedTimelineItem | undefined
+  children: React.ReactNode
+  className?: string
+}) => {
+  const { item, children, className } = props
+  const maybeVisibleHook =
+    item &&
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useIsVisible(
+      () =>
+        // TODO: should we keep updating them or just do it once?
+        run(
+          db
+            .from('user_feed')
+            .update({ seen_time: new Date().toISOString() })
+            .eq('id', item.id)
+        )
+          .then(() => {
+            console.log('updated feed item as seen')
+          })
+          .catch((e) => {
+            console.error('failed to update feed item as seen', e)
+          }),
+      true
+    )
+  return (
+    <Col ref={maybeVisibleHook?.ref} className={className}>
+      {children}
     </Col>
   )
 }

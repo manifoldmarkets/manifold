@@ -254,7 +254,7 @@ drop policy if exists "user can insert" on user_seen_markets;
 
 create policy "user can insert" on user_seen_markets for insert
 with
-  check (true)
+  check (true);
 create index if not exists user_seen_markets_created_time_desc_idx on user_seen_markets (user_id, contract_id, created_time desc);
 
 alter table user_seen_markets
@@ -319,6 +319,12 @@ drop policy if exists "public read" on user_feed;
 
 create policy "public read" on user_feed for
   select
+  using (true);
+
+drop policy if exists "user can update" on user_feed;
+
+create policy "user can update" on user_feed for
+  update
   using (true);
 
 create index if not exists user_feed_data_gin on user_feed using GIN (data);
