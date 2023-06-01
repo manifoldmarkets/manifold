@@ -40,7 +40,6 @@ import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { addContractToFeed } from 'shared/create-feed'
 import { contentSchema } from 'shared/zod-types'
 
 export const createmarket = authEndpoint(async (req, auth) => {
