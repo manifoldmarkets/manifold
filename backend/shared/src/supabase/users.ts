@@ -5,7 +5,7 @@ export const getUserFollowerIds = async (
   pg: SupabaseDirectClient
 ) => {
   const userFollowerIds = await pg.manyOrNone<{ follow_id: string }>(
-    `select follow_id from user_follows where user_id = $1`,
+    `select user_id from user_follows where follow_id = $1`,
     [userId]
   )
   return userFollowerIds.map((r) => r.follow_id)
