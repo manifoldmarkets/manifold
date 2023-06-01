@@ -267,7 +267,7 @@ export function SupabaseContractSearch(props: {
           listViewDisabled={listViewDisabled}
         />
         {contracts && contracts.length === 0 ? (
-          profile ? (
+          profile || fromGroupProps ? (
             <p className="text-ink-500 mx-2">No markets found</p>
           ) : (
             <p className="text-ink-500 mx-2">
