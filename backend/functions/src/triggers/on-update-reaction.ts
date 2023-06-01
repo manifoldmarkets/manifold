@@ -100,7 +100,7 @@ const handleTopLevelCommentLike = async (
     .get()
   if (!contractSnap.exists) return
   const contract = contractSnap.data() as Contract
-  await addLikedCommentOnContractToFeed(contract.id, reaction, comment)
+  await addLikedCommentOnContractToFeed(contract.id, reaction, comment, eventId)
   await createTopLevelLikedCommentNotification(
     comment.id,
     user,

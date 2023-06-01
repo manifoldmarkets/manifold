@@ -115,6 +115,7 @@ export async function scoreContractsInternal() {
           'with daily score',
           dailyScore
         )
+        // TODO: should we store the probability change in the feed item's data column?
         await addContractToFeed(
           contract,
           [

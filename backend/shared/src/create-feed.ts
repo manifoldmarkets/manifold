@@ -101,7 +101,8 @@ export const addCommentOnContractToFeed = async (
 export const addLikedCommentOnContractToFeed = async (
   contractId: string,
   reaction: Reaction,
-  comment: Comment
+  comment: Comment,
+  idempotencyKey?: string
 ) => {
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
@@ -128,6 +129,7 @@ export const addLikedCommentOnContractToFeed = async (
           commentId: comment.id,
           creatorId: reaction.userId,
           reactionId: reaction.id,
+          idempotencyKey,
         },
         pg
       )
