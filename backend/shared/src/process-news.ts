@@ -146,7 +146,7 @@ const processNewsArticle = async (
       'follow_contract',
       'liked_contract',
       'viewed_contract',
-      'follow_creator',
+      'follow_user',
       'similar_interest_vector_to_contract',
     ],
     publishedAtDate.valueOf(),

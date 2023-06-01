@@ -76,7 +76,7 @@ export const addCommentOnContractToFeed = async (
       contractId,
       comment.userId,
       pg,
-      ['follow_contract', 'viewed_contract', 'follow_creator', 'liked_contract']
+      ['follow_contract', 'viewed_contract', 'follow_user', 'liked_contract']
     )
   await Promise.all(
     Object.keys(usersToReasonsInterestedInContract)
@@ -111,8 +111,8 @@ export const addLikedCommentOnContractToFeed = async (
       reaction.userId,
       pg,
       [
-        'follow_creator',
-        'similar_interest_vector_to_creator',
+        'follow_user',
+        'similar_interest_vector_to_user',
         'contract_in_group_you_are_in',
         'similar_interest_vector_to_contract',
       ]

@@ -122,7 +122,7 @@ export async function scoreContractsInternal() {
             'follow_contract',
             'liked_contract',
             'viewed_contract',
-            'follow_creator',
+            'follow_user',
           ],
           'contract_probability_changed'
         )

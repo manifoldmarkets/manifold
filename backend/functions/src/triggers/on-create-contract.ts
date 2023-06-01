@@ -42,8 +42,8 @@ export const onCreateContract = functions
     await addContractToFeed(
       contract,
       [
-        'follow_creator',
-        'similar_interest_vector_to_creator',
+        'follow_user',
+        'similar_interest_vector_to_user',
         'similar_interest_vector_to_contract',
       ],
       'new_contract',

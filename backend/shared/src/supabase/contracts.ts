@@ -113,14 +113,14 @@ export const getUserToReasonsInterestedInContractAndUser = async (
     [key in FEED_REASON_TYPES]: Promise<string[]>
   } = {
     contract_in_group_you_are_in: getContractGroupMemberIds(contractId, pg),
-    similar_interest_vector_to_creator: getUserWithSimilarInterestVectorToUser(
+    similar_interest_vector_to_user: getUserWithSimilarInterestVectorToUser(
       userId,
       pg
     ),
     similar_interest_vector_to_contract:
       getUsersWithSimilarInterestVectorsToContract(contractId, pg),
     viewed_contract: getContractViewerIds(contractId, pg),
-    follow_creator: getUserFollowerIds(userId, pg),
+    follow_user: getUserFollowerIds(userId, pg),
     liked_contract: getContractLikerIds(contractId, pg),
     follow_contract: getContractFollowerIds(contractId, pg),
   }
