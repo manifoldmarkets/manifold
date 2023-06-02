@@ -94,3 +94,49 @@ export const getLeaguePath = (
   const divisionName = DIVISION_NAMES[division].toLowerCase()
   return `/leagues/${season}/${divisionName}/${cohort}/${userId ?? ''}`
 }
+
+export const parseLeaguePath = (
+  slugs: string[],
+  rowsBySeason: { [season: number]: league_user_info[] },
+  userId?: string
+) => {
+  const [seasonSlug, divisionSlug, cohortSlug, userIdSlug] = slugs
+  let season = +seasonSlug
+  if (!SEASONS.includes(season as season)) {
+    season = CURRENT_SEASON
+  }
+
+  const seasonRows = rowsBySeason[season]
+  const userIdToFind = userIdSlug || userId
+  const userRow = seasonRows.find((row) => row.user_id === userIdToFind)
+
+  let division: number
+  if (Object.keys(DIVISION_NAMES).includes(divisionSlug)) {
+    division = +divisionSlug
+  } else {
+    const divisionMatchingName = Object.keys(DIVISION_NAMES).find(
+      (key) =>
+        DIVISION_NAMES[key]?.toLowerCase() === divisionSlug?.toLowerCase()
+    )
+    if (divisionMatchingName) division = +divisionMatchingName
+    else if (userRow) division = userRow.division
+    else division = Math.max(...seasonRows.map((r) => r.division))
+  }
+
+  const divisionRows = seasonRows.filter((row) => row.division === division)
+  const cohorts = divisionRows.map((row) => row.cohort)
+
+  const cohort =
+    cohorts.find((c) => c?.toLowerCase() === cohortSlug?.toLowerCase()) ??
+    (userRow && userRow.division === division ? userRow.cohort : cohorts[0])
+
+  const highlightedUserId =
+    userRow && cohort === userRow.cohort ? userRow.user_id : undefined
+
+  return {
+    season,
+    division,
+    cohort,
+    highlightedUserId,
+  }
+}
