@@ -86,5 +86,9 @@ export const getLeagueActivity = async (
   )
   console.log('contracts', contracts.length)
 
-  return { bets, comments, contracts }
+  return {
+    bets: bets.filter((bet) => bet.visibility === 'public'),
+    comments: comments.filter((comment) => comment.visibility === 'public'),
+    contracts: contracts.filter((contract) => contract.visibility === 'public'),
+  }
 }
