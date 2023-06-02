@@ -351,8 +351,9 @@ export function LeagueChangedNotification(props: {
   const { data } = notification
   const { previousLeague, newLeague, bonusAmount } = data as LeagueChangeData
   const newlyAdded = previousLeague === undefined
-  const improved =
+  const promoted =
     previousLeague && previousLeague.division < newLeague.division
+  const demoted = previousLeague && previousLeague.division > newLeague.division
   return (
     <NotificationFrame
       notification={notification}
@@ -361,7 +362,7 @@ export function LeagueChangedNotification(props: {
       setHighlighted={setHighlighted}
       icon={
         <NotificationIcon
-          symbol={newlyAdded ? '🏆' : improved ? '🥇' : '🥈'}
+          symbol={newlyAdded ? '🏆' : promoted ? '🥇' : '🥈'}
           symbolBackgroundClass={
             'bg-gradient-to-br from-primary-600 to-primary-300'
           }
@@ -384,11 +385,11 @@ export function LeagueChangedNotification(props: {
     >
       <div className="line-clamp-3">
         <span>
-          {previousLeague !== undefined && improved
+          {previousLeague !== undefined && promoted
             ? `You've been promoted from ${
                 DIVISION_NAMES[previousLeague.division]
               } to ${DIVISION_NAMES[newLeague.division]} league!`
-            : previousLeague !== undefined && !improved
+            : previousLeague !== undefined && demoted
             ? `You've been demoted from ${
                 DIVISION_NAMES[previousLeague.division]
               } to ${DIVISION_NAMES[newLeague.division]} league.`
