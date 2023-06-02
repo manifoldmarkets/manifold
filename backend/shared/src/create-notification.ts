@@ -1157,8 +1157,9 @@ export const createNewContractInFromPrivateGroupNotification = async (
       }
       await insertNotificationToSupabase(notification, pg)
     }
-    if (!sendToEmail) return
-    await sendNewFollowedMarketEmail(reason, userId, privateUser, contract)
+    // TODO: send private market email
+    // if (!sendToEmail) return
+    // await sendNewFollowedMarketEmail(reason, userId, privateUser, contract)
   }
 
   const privateMemberIds = await getGroupMemberIds(db, group.id)
