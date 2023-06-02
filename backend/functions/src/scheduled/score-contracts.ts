@@ -109,20 +109,24 @@ export async function scoreContractsInternal() {
       contract.popularityScore !== popularityScore ||
       contract.dailyScore !== dailyScore
     ) {
-      if (dailyScore > 1 && Math.abs(dailyScore - contract.dailyScore) > 1) {
+      // If it's popular & just undergone a large prob change, add it to the feed
+      if (dailyScore > 1.5 && dailyScore - contract.dailyScore > 1) {
         log(
           'adding contract to feed',
           contract.id,
           'with daily score',
-          dailyScore
+          dailyScore,
+          'prev score',
+          contract.dailyScore
         )
-        // TODO: should we store the probability change in the feed item's data column?
         await addContractToFeed(
           contract,
           buildArray([
+            // You'll see it in your notifs
             !contract.isResolved && 'follow_contract',
-            'liked_contract',
+            // TODO: viewed might not be signal enough, what about viewed 2x/3x?
             'viewed_contract',
+            'liked_contract',
             'similar_interest_vector_to_contract',
           ]),
           'contract_probability_changed'
