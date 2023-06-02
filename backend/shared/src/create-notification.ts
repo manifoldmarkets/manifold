@@ -47,6 +47,8 @@ import {
 import * as crypto from 'crypto'
 import { getUniqueBettorIds } from 'shared/supabase/contracts'
 import { getGroupMemberIds } from 'common/supabase/groups'
+import { richTextToString } from 'common/util/parse'
+import { JSONContent } from '@tiptap/core'
 
 const firestore = admin.firestore()
 
@@ -1051,7 +1053,6 @@ export const createNewContractNotification = async (
     userId: string,
     reason: notification_reason_types
   ) => {
-    console.log('sending notification', userId)
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
     if (userIsBlocked(privateUser, contractCreator.id)) return
@@ -1100,14 +1101,6 @@ export const createNewContractNotification = async (
     })
   )
 
-  const db = createSupabaseClient()
-  const privateMemberIds =
-    contract.visibility == 'private' &&
-    contract.groupLinks &&
-    contract.groupLinks.length > 0
-      ? await getGroupMemberIds(db, contract.groupLinks[0].groupId)
-      : []
-
   // As it is coded now, the tag notification usurps the new contract notification
   // It'd be easy to append the reason to the eventId if desired
   if (contract.visibility == 'public') {
@@ -1121,13 +1114,58 @@ export const createNewContractNotification = async (
   for (const mentionedUserId of mentionedUserIds) {
     await sendNotificationsIfSettingsAllow(mentionedUserId, 'tagged_user')
   }
-  if (contract.visibility == 'private') {
-    for (const privateMemberId of privateMemberIds) {
-      await sendNotificationsIfSettingsAllow(
-        privateMemberId,
-        'contract_from_private_group'
-      )
+}
+
+export const createNewContractInFromPrivateGroupNotification = async (
+  contractCreator: User,
+  contract: Contract,
+  group: Group
+) => {
+  const pg = createSupabaseDirectClient()
+  const db = createSupabaseClient()
+  const reason = 'contract_from_private_group'
+  const sendNewContractInFromPrivateGroupNotificationsIfSettingsAllow = async (
+    userId: string
+  ) => {
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
+    if (userIsBlocked(privateUser, contractCreator.id)) return
+    const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
+      privateUser,
+      reason
+    )
+    if (sendToBrowser) {
+      const notification: Notification = {
+        id: crypto.randomUUID(),
+        userId: userId,
+        reason,
+        createdTime: Date.now(),
+        isSeen: false,
+        sourceId: contract.id,
+        sourceType: 'contract',
+        sourceUpdateType: 'created',
+        sourceUserName: contractCreator.name,
+        sourceUserUsername: contractCreator.username,
+        sourceUserAvatarUrl: contractCreator.avatarUrl,
+        sourceText: richTextToString(contract.description as JSONContent),
+        sourceSlug: contract.slug,
+        sourceTitle: contract.question,
+        sourceContractSlug: contract.slug,
+        sourceContractId: contract.id,
+        sourceContractTitle: contract.question,
+        sourceContractCreatorUsername: contract.creatorUsername,
+      }
+      await insertNotificationToSupabase(notification, pg)
     }
+    if (!sendToEmail) return
+    await sendNewFollowedMarketEmail(reason, userId, privateUser, contract)
+  }
+
+  const privateMemberIds = await getGroupMemberIds(db, group.id)
+  for (const privateMemberId of privateMemberIds) {
+    await sendNewContractInFromPrivateGroupNotificationsIfSettingsAllow(
+      privateMemberId
+    )
   }
 }
 
