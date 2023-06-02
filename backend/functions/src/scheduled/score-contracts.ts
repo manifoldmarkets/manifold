@@ -144,7 +144,7 @@ export async function scoreContractsInternal() {
   return await bulkUpdate(
     pg,
     'contract_recommendation_features',
-    'contract_id',
+    ['contract_id'],
     contractScoreUpdates
   )
 }

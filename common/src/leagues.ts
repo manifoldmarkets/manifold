@@ -2,7 +2,7 @@ import { Row } from './supabase/utils'
 
 export type season = typeof SEASONS[number]
 
-export const SEASONS = [1] as const
+export const SEASONS = [1, 2] as const
 export const CURRENT_SEASON = 1
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
@@ -35,9 +35,10 @@ export const DIVISION_NAMES = {
   2: 'Silver',
   3: 'Gold',
   4: 'Platinum',
+  5: 'Diamond',
 } as { [key: number | string]: string }
 
-export const SECRET_NEXT_DIVISION = 'Diamond'
+export const SECRET_NEXT_DIVISION = '???'
 
 export const getDemotionAndPromotionCount = (division: number) => {
   if (division === 1) {

@@ -33,11 +33,12 @@ export async function updateLeagueRanksCore() {
   const rankUpdates = userIds.map((u) => {
     return {
       user_id: u.id,
+      season,
       rank_snapshot: +u.rank,
     }
   })
 
-  await bulkUpdate(pg, 'leagues', 'user_id', rankUpdates)
+  await bulkUpdate(pg, 'leagues', ['user_id', 'season'], rankUpdates)
   await revalidateStaticProps('/leagues')
   log('Done.')
 }

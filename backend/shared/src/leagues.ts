@@ -4,11 +4,11 @@ import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import {
   COHORT_SIZE,
-  CURRENT_SEASON,
   getDivisionChange,
   getSeasonDates,
   league_user_info,
   MAX_COHORT_SIZE,
+  SEASONS,
 } from 'common/leagues'
 import { getCurrentPortfolio } from './helpers/portfolio'
 import { createLeagueChangedNotification } from 'shared/create-notification'
@@ -69,7 +69,7 @@ export async function generateNextSeason(
     ` on conflict (user_id, season) do update set
     division = excluded.division,
     cohort = excluded.cohort`
-  // await pg.none(insertStatement)
+  await pg.none(insertStatement)
 }
 
 const generateDivisions = (
@@ -83,11 +83,13 @@ const generateDivisions = (
   console.log('rows', rows.length, 'active rows', activeRows.length)
 
   for (const row of activeRows) {
-    const { user_id, division, cohort, rank } = row
+    const { user_id, division, cohort, rank, mana_earned } = row
 
     const cohortRows = rowsByCohort[cohort]
 
-    const change = getDivisionChange(division, rank, cohortRows.length)
+    let change = getDivisionChange(division, rank, cohortRows.length)
+    if (change > 0 && mana_earned <= 0) change = 0
+
     const newDivision = division + change
 
     if (!usersByNewDivision[newDivision]) usersByNewDivision[newDivision] = []
@@ -256,7 +258,7 @@ export const addToLeagueIfNotInOne = async (
   pg: SupabaseDirectClient,
   userId: string
 ) => {
-  const season = CURRENT_SEASON
+  const season = SEASONS[SEASONS.length - 1]
 
   const existingLeague = await pg.oneOrNone<{
     season: number
