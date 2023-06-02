@@ -385,14 +385,18 @@ export function LeagueChangedNotification(props: {
     >
       <div className="line-clamp-3">
         <span>
-          {previousLeague !== undefined && promoted
+          {previousLeague && promoted
             ? `You've been promoted from ${
                 DIVISION_NAMES[previousLeague.division]
               } to ${DIVISION_NAMES[newLeague.division]} league!`
-            : previousLeague !== undefined && demoted
+            : previousLeague && demoted
             ? `You've been demoted from ${
                 DIVISION_NAMES[previousLeague.division]
               } to ${DIVISION_NAMES[newLeague.division]} league.`
+            : previousLeague
+            ? `You retained your spot in ${
+                DIVISION_NAMES[previousLeague.division]
+              } league!`
             : `You were added to ${
                 DIVISION_NAMES[newLeague.division]
               } league! Tap here to check it out.`}
