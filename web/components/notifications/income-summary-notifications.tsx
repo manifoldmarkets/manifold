@@ -371,8 +371,13 @@ export function LeagueChangedNotification(props: {
         bonusAmount > 0 ? (
           <span>
             You earned <IncomeNotificationLabel notification={notification} />{' '}
-            as a performance bonus!
+            as a prize
+            {previousLeague &&
+              ` for placing Rank ${previousLeague.rank} this season`}
+            .
           </span>
+        ) : previousLeague ? (
+          <span>You placed Rank {previousLeague.rank} this season.</span>
         ) : undefined
       }
       link={'/leagues'}
@@ -380,14 +385,14 @@ export function LeagueChangedNotification(props: {
       <div className="line-clamp-3">
         <span>
           {previousLeague !== undefined && improved
-            ? `You graduated from the ${
+            ? `You've been promoted from ${
                 DIVISION_NAMES[previousLeague.division]
-              } to ${DIVISION_NAMES[newLeague.division]} league`
+              } to ${DIVISION_NAMES[newLeague.division]} league!`
             : previousLeague !== undefined && !improved
-            ? `You've been demoted from the ${
+            ? `You've been demoted from ${
                 DIVISION_NAMES[previousLeague.division]
-              } to ${DIVISION_NAMES[newLeague.division]} league`
-            : `You were added to the ${
+              } to ${DIVISION_NAMES[newLeague.division]} league.`
+            : `You were added to ${
                 DIVISION_NAMES[newLeague.division]
               } league! Tap here to check it out.`}
         </span>

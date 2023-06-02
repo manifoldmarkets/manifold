@@ -82,12 +82,18 @@ export type league_user_info = league_row & { rank: number }
 export const COHORT_SIZE = 25
 export const MAX_COHORT_SIZE = 35
 
-export const rewardsData = [
+export const prizesByDivisionAndRank = [
   [500, 400, 300, 250, 200, 150, 100],
   [1000, 750, 600, 500, 450, 400, 350, 300],
   [1500, 1000, 750, 600, 500, 450, 400, 350, 300],
   [2000, 1500, 1000, 750, 600, 500, 450, 400, 350, 300],
 ]
+
+export const getLeaguePrize = (division: number, rank: number) => {
+  const divisionPrizes = prizesByDivisionAndRank[division - 1]
+  if (!divisionPrizes) return 0
+  return divisionPrizes[rank - 1] || 0
+}
 
 export const getLeaguePath = (
   season: number,

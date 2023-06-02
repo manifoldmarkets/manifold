@@ -2,6 +2,7 @@
 // Shortened from "transaction" to distinguish from Firebase transactions (and save chars)
 
 import { QuestType } from 'common/quest'
+import { league_user_info } from './leagues'
 
 type AnyTxnType =
   | Donation
@@ -31,6 +32,7 @@ type AnyTxnType =
   | QuestReward
   | QAndACreate
   | QAndAAward
+  | LeaguePrize
 
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
@@ -284,6 +286,13 @@ type QAndAAward = {
   }
 }
 
+type LeaguePrize = {
+  category: 'LEAGUE_PRIZE'
+  fromType: 'BANK'
+  toType: 'USER'
+  data: league_user_info
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -314,3 +323,4 @@ export type QuestRewardTxn = Txn & QuestReward
 export type LootBoxPuchaseTxn = Txn & LootBoxPurchase
 export type QAndACreateTxn = Txn & QAndACreate
 export type QAndAAwardTxn = Txn & QAndAAward
+export type LeaguePrizeTxn = Txn & LeaguePrize
