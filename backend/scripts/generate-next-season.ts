@@ -1,5 +1,5 @@
 import { runScript } from 'run-script'
-import { generateNextSeason } from 'shared/leagues'
+import { generateNextSeason } from 'shared/generate-leagues'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
