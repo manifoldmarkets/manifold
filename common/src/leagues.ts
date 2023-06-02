@@ -31,6 +31,7 @@ export const getSeasonDates = (season: number) => {
 }
 
 export const DIVISION_NAMES = {
+  0: 'Bots',
   1: 'Bronze',
   2: 'Silver',
   3: 'Gold',
@@ -41,6 +42,9 @@ export const DIVISION_NAMES = {
 export const SECRET_NEXT_DIVISION = '???'
 
 export const getDemotionAndPromotionCount = (division: number) => {
+  if (division === 0) {
+    return { demotion: 0, promotion: 0, doublePromotion: 0 }
+  }
   if (division === 1) {
     return { demotion: 0, promotion: 10, doublePromotion: 2 }
   }
