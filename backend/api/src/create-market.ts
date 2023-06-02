@@ -43,7 +43,6 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
 import {
   createNewContractInFromPrivateGroupNotification,
-  createNewContractNotification,
 } from 'shared/create-notification'
 
 export const createmarket = authEndpoint(async (req, auth) => {

@@ -1,6 +1,7 @@
 import { AnyContractType, Contract } from 'common/contract'
 import { useEffect, useRef, useState } from 'react'
 import {
+  getContract,
   getContractFromSlug,
   getContracts,
   getPublicContractIds,
@@ -13,6 +14,7 @@ import { getContractParams } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
 import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { Group } from 'common/group'
 
 export const usePublicContracts = (contractIds: string[] | undefined) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -89,6 +91,22 @@ export const useContracts = (contractIds: string[]) => {
   }, [contractIds])
 
   return contracts
+}
+
+export const useContract = (contractId: string | undefined) => {
+  const [contract, setContract] = useState<Contract | undefined | null>(
+    undefined
+  )
+
+  useEffect(() => {
+    if (contractId) {
+      getContract(contractId).then((result) => {
+        setContract(result)
+      })
+    }
+  }, [contractId])
+
+  return contract
 }
 
 export function useRealtimeContracts(limit: number) {

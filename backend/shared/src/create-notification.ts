@@ -1163,9 +1163,11 @@ export const createNewContractInFromPrivateGroupNotification = async (
 
   const privateMemberIds = await getGroupMemberIds(db, group.id)
   for (const privateMemberId of privateMemberIds) {
-    await sendNewContractInFromPrivateGroupNotificationsIfSettingsAllow(
-      privateMemberId
-    )
+    if (privateMemberId != contract.creatorId) {
+      await sendNewContractInFromPrivateGroupNotificationsIfSettingsAllow(
+        privateMemberId
+      )
+    }
   }
 }
 
