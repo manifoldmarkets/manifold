@@ -51,13 +51,6 @@ export async function getGroupMembers(
   return followers
 }
 
-export async function getGroupMemberIds(groupId: string) {
-  const { data } = await run(
-    db.from('group_members').select('member_id').eq('group_id', groupId)
-  )
-  return data ? data.map((member) => member.member_id) : []
-}
-
 export async function getMemberRole(user: User, groupId: string) {
   const followers = await run(
     db

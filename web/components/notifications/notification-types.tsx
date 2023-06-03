@@ -41,6 +41,12 @@ import {
 import { Avatar } from 'web/components/widgets/avatar'
 import { sortBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
+import { getContract } from 'web/lib/supabase/contracts'
+import { getGroup } from 'common/supabase/groups'
+import { useContract } from 'web/hooks/use-contract-supabase'
+import { useGroup, useGroupsWithContract } from 'web/hooks/use-group-supabase'
+import Link from 'next/link'
+import { linkClass, SiteLink } from '../widgets/site-link'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -141,6 +147,16 @@ export function NotificationItem(props: {
     if (reason === 'contract_from_followed_user') {
       return (
         <NewMarketNotification
+          notification={notification}
+          isChildOfGroup={isChildOfGroup}
+          highlighted={highlighted}
+          setHighlighted={setHighlighted}
+        />
+      )
+    }
+    if (reason === 'contract_from_private_group') {
+      return (
+        <NewPrivateMarketNotification
           notification={notification}
           isChildOfGroup={isChildOfGroup}
           highlighted={highlighted}
@@ -675,6 +691,57 @@ function NewMarketNotification(props: {
         <span>
           asked <PrimaryNotificationLink text={sourceContractTitle} />
         </span>
+      </div>
+    </NotificationFrame>
+  )
+}
+
+function NewPrivateMarketNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const {
+    sourceContractTitle,
+    sourceUserName,
+    sourceUserUsername,
+    sourceContractId,
+  } = notification
+  const contract = useContract(sourceContractId)
+  const privateGroup = useGroupsWithContract(contract)
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'🌟'} />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        <UserLink
+          name={sourceUserName || ''}
+          username={sourceUserUsername || ''}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
+        />{' '}
+        <span>
+          asked <PrimaryNotificationLink text={sourceContractTitle} />
+        </span>{' '}
+        in private group,{' '}
+        {privateGroup && privateGroup.length > 0 ? (
+          <SiteLink
+            className={clsx(linkClass, 'hover:text-primary-500 font-semibold')}
+            href={`group/${privateGroup[0].slug}`}
+          >
+            {privateGroup[0].name}
+          </SiteLink>
+        ) : (
+          'a private group'
+        )}
       </div>
     </NotificationFrame>
   )

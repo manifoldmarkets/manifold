@@ -1,19 +1,20 @@
 import { AnyContractType, Contract, visibility } from 'common/contract'
 import { useEffect, useRef, useState } from 'react'
+import { getContractParams } from 'web/lib/firebase/api'
 import {
+  getContract,
   getContractFromSlug,
   getContracts,
   getPublicContractIds,
   getPublicContracts,
 } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
-import { useEffectCheckEquality } from './use-effect-check-equality'
-import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
-import { getContractParams } from 'web/lib/firebase/api'
-import { useIsAuthorized } from './use-user'
 import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { useContract } from './use-contract-firebase'
+import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
+import { useEffectCheckEquality } from './use-effect-check-equality'
+import { useIsAuthorized } from './use-user'
+import { useContractFirebase } from './use-contract-firebase'
 
 export const usePublicContracts = (contractIds: string[] | undefined) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -92,6 +93,22 @@ export const useContracts = (contractIds: string[]) => {
   return contracts
 }
 
+export const useContract = (contractId: string | undefined) => {
+  const [contract, setContract] = useState<Contract | undefined | null>(
+    undefined
+  )
+
+  useEffect(() => {
+    if (contractId) {
+      getContract(contractId).then((result) => {
+        setContract(result)
+      })
+    }
+  }, [contractId])
+
+  return contract
+}
+
 export function useRealtimeContracts(limit: number) {
   const [oldContracts, setOldContracts] = useState<Contract[]>([])
   const newContracts = useRealtimeRows('contracts').map(
@@ -113,7 +130,7 @@ export function useFirebasePublicAndRealtimePrivateContract(
 ) {
   const contract =
     visibility != 'private'
-      ? useContract(contractId)
+      ? useContractFirebase(contractId)
       : useRealtimeContract(contractId)
 
   return contract
