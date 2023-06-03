@@ -55,12 +55,6 @@ export function PostCard(props: {
           className="line-clamp-5 text-ink-600 text-sm"
           text={richTextToString(post.content)}
         />
-        <Row className="gap-2 pt-1">
-          <Row className="text-ink-400 gap-1 text-sm">
-            <div className="font-semibold">{post.commentCount ?? 0}</div>
-            <div className="font-normal">comments</div>
-          </Row>
-        </Row>
       </Col>
       {onPostClick ? (
         <a

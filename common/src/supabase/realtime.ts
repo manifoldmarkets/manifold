@@ -30,13 +30,12 @@ export type SubscriptionStatus = `${REALTIME_SUBSCRIBE_STATES}`
 // matching rows, and it needs an update timestamp we can use to order changes
 export type TableSpec<T extends TableName> = {
   pk: Column<T>[]
-  ts: (row: Row<T>) => number
+  ts?: (row: Row<T>) => number
 }
 
 export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
   posts: {
     pk: ['id'],
-    ts: (r) => Date.parse(r.fs_updated_time),
   },
   contract_bets: {
     pk: ['contract_id', 'bet_id'],
@@ -100,7 +99,7 @@ export function applyChange<T extends TableName>(
         // to something they didn't fetch. either way, do nothing
         return [...rows, change.new]
       }
-      if (spec.ts(rows[idx]) < spec.ts(change.new)) {
+      if (!spec.ts || spec.ts(rows[idx]) < spec.ts(change.new)) {
         // replace the existing row with the updated row
         return [...rows.slice(0, idx), change.new, ...rows.slice(idx + 1)]
       } else {

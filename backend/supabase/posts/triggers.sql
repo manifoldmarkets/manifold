@@ -16,9 +16,6 @@ or replace function post_populate_cols () returns trigger language plpgsql as $$
     new.visibility := (new.data)->>'visibility';
     new.group_id := (new.data)->>'groupId';
     new.creator_id := (new.data)->>'creatorId';
-    new.created_time := case
-  when new.data ? 'createdTime' then millis_to_ts(((new.data)->>'createdTime')::bigint)
-    else null
 end;
     end if;
     return new;

@@ -18,8 +18,14 @@ export const useComments = (contractId: string) => {
 
   return comments
 }
-export const useCommentsOnPost = (postId: string | undefined) => {
-  return useRealtimeRows('post_comments')
-    .filter((c) => c.post_id === postId)
-    .map((c) => c.data as PostComment)
+
+export const useNewCommentsOnPost = (postId: string) => {
+  return useRealtimeRows('post_comments', { k: 'post_id', v: postId }).map(
+    (c) =>
+      ({
+        ...(c.data as any),
+        id: c.comment_id,
+        createdTime: c.created_time && Date.parse(c.created_time),
+      } as PostComment)
+  )
 }

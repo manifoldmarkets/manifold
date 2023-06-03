@@ -54,8 +54,7 @@ export async function createPostComment(
   user: User,
   replyToCommentId?: string
 ) {
-  const comment: Omit<PostComment, 'createdTime'> = {
-    id: 'TODO',
+  const comment: Omit<PostComment, 'createdTime' | 'id'> = {
     userId: user.id,
     content,
     userName: user.name,
@@ -69,13 +68,12 @@ export async function createPostComment(
 
   await db.from('post_comments').insert({
     post_id: comment.postId,
-    comment_id: comment.id,
     data: comment,
   })
 
   track('post message', {
     user,
-    commentId: comment.id,
+    // commentId: comment.id,
     surfaceId: post.id,
     replyToCommentId,
   })
@@ -85,10 +83,17 @@ export async function getCommentsOnPost(postId: string) {
   const { data } = await run(
     db
       .from('post_comments')
-      .select('data')
+      .select('data, comment_id, created_time')
       .eq('post_id', postId)
       .order('created_time', { ascending: false } as any)
   )
 
-  return data.map((c) => c.data as PostComment)
+  return data.map(
+    (c) =>
+      ({
+        ...(c.data as any),
+        id: c.comment_id,
+        createdTime: c.created_time && Date.parse(c.created_time),
+      } as PostComment)
+  )
 }

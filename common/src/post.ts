@@ -20,6 +20,7 @@ export type Post = {
   likedByUserIds?: string[]
   likedByUserCount?: number
 
+  /** @deprecated */
   commentCount?: number
   isGroupAboutPost?: boolean
   groupId?: string

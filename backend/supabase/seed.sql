@@ -778,12 +778,12 @@ cluster on manalinks_pkey;
 
 create table if not exists
   posts (
-    id text not null primary key,
+    id text not null primary key default uuid_generate_v4 (),
     data jsonb not null,
     visibility text,
     group_id text,
     creator_id text,
-    created_time timestamptz not null default now(),
+    created_time timestamptz default now(),
     fs_updated_time timestamp
   );
 
@@ -799,11 +799,11 @@ drop policy if exists "user update" on posts;
 
 create policy "user update" on posts
 for update
-  using (auth.uid () = creator_id);
+  using (auth.uid ()::text = creator_id);
 
 drop policy if exists "user delete" on posts;
 
-create policy "user delete" on posts for delete using (auth.uid () = creator_id);
+create policy "user delete" on posts for delete using (auth.uid ()::text = creator_id);
 
 create index if not exists posts_data_gin on posts using GIN (data);
 
@@ -813,12 +813,12 @@ cluster on posts_pkey;
 create table if not exists
   post_comments (
     post_id text not null,
-    comment_id text not null,
+    comment_id text not null default uuid_generate_v4 (),
     data jsonb not null,
     fs_updated_time timestamp,
     visibility text,
     user_id text,
-    created_time timestamptz not null default now(),
+    created_time timestamptz default now(),
     primary key (post_id, comment_id)
   );
 

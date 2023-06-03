@@ -25,7 +25,7 @@ import {
   PostCommentInput,
   PostCommentThread,
 } from 'web/components/posts/post-comments'
-import { useCommentsOnPost } from 'web/hooks/use-comments'
+import { useNewCommentsOnPost } from 'web/hooks/use-comments'
 import { useUser } from 'web/hooks/use-user'
 import { SEO } from 'web/components/SEO'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
@@ -81,9 +81,11 @@ export default function PostPage(props: {
   const { creator, watched = [], skipped = [], post } = props
   const postId = post?.id ?? '_'
 
+  console.log(props.comments)
+
   const tips = useTipTxns({ postId })
-  const updatedComments = useCommentsOnPost(postId)
-  const comments = updatedComments ?? props.comments
+  const updatedComments = useNewCommentsOnPost(postId)
+  const comments = [...props.comments, ...updatedComments]
   const user = useUser()
 
   if (!post) {
