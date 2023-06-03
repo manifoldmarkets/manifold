@@ -27,7 +27,7 @@ export default function FeedTimeline() {
   return (
     <Page>
       <Col className="gap-2 py-2 pb-8 sm:px-2">
-        <Row className="mx-4 mb-2 items-center gap-4">
+        <Row className="mx-4 mb-2 items-center justify-between gap-4">
           <Title children="Home" className="!my-0 hidden sm:block" />
           <DailyStats user={user} />
         </Row>

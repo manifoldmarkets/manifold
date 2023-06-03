@@ -30,6 +30,7 @@ import { UserLink } from '../widgets/user-link'
 import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { QuickOutcomeView } from '../bet/quick-bet'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -107,6 +108,22 @@ export function FeedContractCard(props: {
     >
       <Col className="bg-canvas-0 gap-2 p-4 py-2">
         {/* Title is link to contract for open in new tab and a11y */}
+        <Row className="justify-between">
+          <Row onClick={(e) => e.stopPropagation()} className="gap-2">
+            <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
+            <Col>
+              <UserLink
+                name={creatorName}
+                username={creatorUsername}
+                createdTime={creatorCreatedTime}
+              />
+              <div className="text-ink-500 text-sm">
+                created {fromNow(contract.createdTime)}
+              </div>
+            </Col>
+          </Row>
+          {promotedData && <BoostPill />}
+        </Row>
         <Link
           href={path}
           className={clsx(
@@ -123,62 +140,14 @@ export function FeedContractCard(props: {
           {question}
         </Link>
 
-        <Row className="text-ink-600 items-center gap-3 overflow-hidden text-sm">
-          <Row className="gap-2" onClick={(e) => e.stopPropagation()}>
-            <Avatar
-              username={creatorUsername}
-              avatarUrl={creatorAvatarUrl}
-              size="xs"
-            />
-            <UserLink
-              name={creatorName}
-              username={creatorUsername}
-              className="text-ink-600 h-[24px] text-sm"
-              createdTime={creatorCreatedTime}
-            />
-          </Row>
-          <div className="flex-1" />
-          {promotedData ? (
-            <BoostPill />
-          ) : (
-            <ReasonChosen contract={contract} reason={reason} />
-          )}
-        </Row>
-
         <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
-          <div className="text-base font-semibold">
-            <ContractStatusLabel contract={contract} chanceLabel />
-          </div>
+          <QuickOutcomeView contract={contract} />
 
           {isBinaryCpmm && (
             <div className="flex gap-2">
-              <BetRow contract={contract} noUser={!user} />
+              <BetRow contract={contract} user={user} />
             </div>
           )}
-
-          <Row
-            className="ml-auto items-center gap-1"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-1.5 p-1">
-              <LikeButton
-                contentId={contract.id}
-                contentCreatorId={contract.creatorId}
-                user={user}
-                contentType={'contract'}
-                totalLikes={contract.likedByUserCount ?? 0}
-                contract={contract}
-                contentText={question}
-                showTotalLikesUnder
-                size="md"
-                color="gray"
-                className="!px-0"
-                trackingLocation={'contract card (feed)'}
-              />
-            </div>
-
-            <CommentsButton contract={contract} user={user} />
-          </Row>
         </Row>
 
         {isBinaryCpmm && metrics && metrics.hasShares && (
@@ -208,6 +177,26 @@ export function FeedContractCard(props: {
           </div>
         </>
       )}
+      <Row className="justify-between" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1.5 p-1">
+          <LikeButton
+            contentId={contract.id}
+            contentCreatorId={contract.creatorId}
+            user={user}
+            contentType={'contract'}
+            totalLikes={contract.likedByUserCount ?? 0}
+            contract={contract}
+            contentText={question}
+            showTotalLikesUnder
+            size="md"
+            color="gray"
+            className="!px-0"
+            trackingLocation={'contract card (feed)'}
+          />
+        </div>
+
+        <CommentsButton contract={contract} user={user} />
+      </Row>
     </div>
   )
 }

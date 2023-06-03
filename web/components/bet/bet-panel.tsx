@@ -57,6 +57,7 @@ export function BuyPanel(props: {
   hidden: boolean
   onBuySuccess?: () => void
   mobileView?: boolean
+  singularView?: 'YES' | 'NO'
   initialOutcome?: binaryOutcomes
   location?: string
   className?: string
@@ -67,6 +68,7 @@ export function BuyPanel(props: {
     hidden,
     onBuySuccess,
     mobileView,
+    singularView,
     initialOutcome,
     location = 'bet panel',
     className,
@@ -204,7 +206,12 @@ export function BuyPanel(props: {
 
   return (
     <Col className={clsx(className, hidden ? 'hidden' : '')}>
-      <Row className="mb-2 w-full items-center gap-3">
+      <Row
+        className={clsx(
+          'mb-2 w-full items-center gap-3',
+          singularView ? 'hidden' : ''
+        )}
+      >
         <YesNoSelector
           className="flex-1"
           btnClassName="flex-1"
@@ -232,30 +239,18 @@ export function BuyPanel(props: {
 
       <Col
         className={clsx(
-          outcome === 'NO'
-            ? 'bg-red-500/10'
-            : outcome === 'YES'
-            ? 'bg-teal-500/10'
-            : 'hidden',
-          'rounded-lg px-4 py-2'
+          !singularView
+            ? outcome === 'NO'
+              ? 'bg-red-500/10'
+              : outcome === 'YES'
+              ? 'bg-teal-500/10'
+              : 'hidden'
+            : '',
+          'rounded-lg',
+          singularView ? '' : ' px-4 py-2'
         )}
       >
-        <div className="text-ink-800 mt-2 mb-1 text-sm">Amount</div>
-
-        <BuyAmountInput
-          inputClassName="w-full max-w-none"
-          amount={betAmount}
-          onChange={onBetChange}
-          error={displayError ? error : undefined}
-          setError={setError}
-          disabled={isSubmitting}
-          inputRef={inputRef}
-          sliderOptions={{ show: true, wrap: false }}
-          binaryOutcome={outcome}
-          showBalance
-        />
-
-        <Row className="mt-8 w-full">
+        <Row className=" w-full">
           <Col className="w-1/2 text-sm">
             <Col className="text-ink-800 flex-nowrap whitespace-nowrap text-sm">
               <div>
@@ -327,8 +322,22 @@ export function BuyPanel(props: {
             )}
           </Col>
         </Row>
+        <Spacer h={2} />
+        <div className="text-ink-800 mt-2 mb-1 text-sm">Amount</div>
 
-        <Spacer h={8} />
+        <BuyAmountInput
+          inputClassName="w-full max-w-none"
+          amount={betAmount}
+          onChange={onBetChange}
+          error={displayError ? error : undefined}
+          setError={setError}
+          disabled={isSubmitting}
+          inputRef={inputRef}
+          sliderOptions={{ show: true, wrap: false }}
+          binaryOutcome={outcome}
+          showBalance
+        />
+        <Spacer h={6} />
         {user && (
           <WarningConfirmationButton
             marketType="binary"
