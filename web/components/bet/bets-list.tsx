@@ -369,8 +369,10 @@ function ContractBets(props: {
 }) {
   const { metrics, displayMetric, isYourBets, userId } = props
   const contract =
-    useFirebasePublicAndRealtimePrivateContract(props.contract.visibility, props.contract.id) ??
-    props.contract
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
   const { resolution, closeTime, outcomeType, isResolved } = contract
 
   const user = useUser()
