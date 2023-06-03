@@ -41,9 +41,7 @@ import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
-import {
-  createNewContractInFromPrivateGroupNotification,
-} from 'shared/create-notification'
+import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -136,7 +134,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     if (contract.visibility == 'private') {
       const contractCreator = await getUser(contract.creatorId)
       if (!contractCreator) throw new Error('Could not find contract creator')
-      await createNewContractInFromPrivateGroupNotification(
+      await createNewContractFromPrivateGroupNotification(
         contractCreator,
         contract,
         group

@@ -89,7 +89,7 @@ export const useGroupsWithContract = (
       listGroupsBySlug(uniq(contract.groupSlugs)).then((groups) =>
         setGroups(filterDefined(groups))
       )
-  }, [contract])
+  }, [contract?.groupSlugs])
 
   return groups
 }

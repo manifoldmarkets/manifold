@@ -1110,7 +1110,7 @@ export const createNewContractNotification = async (
   }
 }
 
-export const createNewContractInFromPrivateGroupNotification = async (
+export const createNewContractFromPrivateGroupNotification = async (
   contractCreator: User,
   contract: Contract,
   group: Group
@@ -1151,7 +1151,6 @@ export const createNewContractInFromPrivateGroupNotification = async (
       }
       await insertNotificationToSupabase(notification, pg)
     }
-    // TODO: send private market email
     if (!sendToEmail) return
     await sendNewPrivateMarketEmail(
       reason,
