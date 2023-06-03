@@ -106,7 +106,7 @@ export function FeedContractCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Col className="bg-canvas-0 gap-2 p-4 py-2">
+      <Col className=" bg-canvas-0 gap-2 p-4 py-2">
         {/* Title is link to contract for open in new tab and a11y */}
         <Row className="justify-between">
           <Row onClick={(e) => e.stopPropagation()} className="gap-2">
@@ -162,7 +162,7 @@ export function FeedContractCard(props: {
       </Col>
 
       {showImage && (
-        <>
+        <div className="relative">
           <div className="flex h-40 w-full items-center justify-center">
             {promotedData && <ClaimButton {...promotedData} className="mt-2" />}
           </div>
@@ -175,9 +175,12 @@ export function FeedContractCard(props: {
               src={coverImageUrl}
             />
           </div>
-        </>
+        </div>
       )}
-      <Row className="justify-between" onClick={(e) => e.stopPropagation()}>
+      <Row
+        className="bg-canvas-0 justify-between gap-2 px-4 py-2"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center gap-1.5 p-1">
           <LikeButton
             contentId={contract.id}
