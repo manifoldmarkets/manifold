@@ -25,6 +25,7 @@ import {
   sendNewAnswerEmail,
   sendNewCommentEmail,
   sendNewFollowedMarketEmail,
+  sendNewPrivateMarketEmail,
   sendNewUniqueBettorsEmail,
 } from './emails'
 import { filterDefined } from 'common/util/array'
@@ -1151,8 +1152,14 @@ export const createNewContractInFromPrivateGroupNotification = async (
       await insertNotificationToSupabase(notification, pg)
     }
     // TODO: send private market email
-    // if (!sendToEmail) return
-    // await sendNewFollowedMarketEmail(reason, userId, privateUser, contract)
+    if (!sendToEmail) return
+    await sendNewPrivateMarketEmail(
+      reason,
+      userId,
+      privateUser,
+      contract,
+      group
+    )
   }
 
   const privateMemberIds = await getGroupMemberIds(db, group.id)

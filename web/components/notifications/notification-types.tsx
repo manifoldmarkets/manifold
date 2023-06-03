@@ -46,7 +46,7 @@ import { getGroup } from 'common/supabase/groups'
 import { useContract } from 'web/hooks/use-contract-supabase'
 import { useGroup, useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import Link from 'next/link'
-import { SiteLink } from '../widgets/site-link'
+import { linkClass, SiteLink } from '../widgets/site-link'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -731,9 +731,12 @@ function NewPrivateMarketNotification(props: {
         <span>
           asked <PrimaryNotificationLink text={sourceContractTitle} />
         </span>{' '}
-        in{' '}
+        in private group,{' '}
         {privateGroup && privateGroup.length > 0 ? (
-          <SiteLink href={`group/${privateGroup[0].slug}`}>
+          <SiteLink
+            className={clsx(linkClass, 'hover:text-primary-500 font-semibold')}
+            href={`group/${privateGroup[0].slug}`}
+          >
             {privateGroup[0].name}
           </SiteLink>
         ) : (

@@ -14,6 +14,7 @@ import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { useIsAuthorized } from './use-user'
+import { useContractFirebase } from './use-contract-firebase'
 
 export const usePublicContracts = (contractIds: string[] | undefined) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -129,7 +130,7 @@ export function useFirebasePublicAndRealtimePrivateContract(
 ) {
   const contract =
     visibility != 'private'
-      ? useContract(contractId)
+      ? useContractFirebase(contractId)
       : useRealtimeContract(contractId)
 
   return contract
