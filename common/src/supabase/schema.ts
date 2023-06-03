@@ -936,6 +936,65 @@ export interface Database {
           user_id?: string | null
         }
       }
+      user_feed: {
+        Row: {
+          answer_id: string | null
+          bet_id: string | null
+          comment_id: string | null
+          contract_id: string | null
+          created_time: string
+          creator_id: string | null
+          data: Json | null
+          data_type: string
+          event_time: string
+          id: number
+          news_id: string | null
+          seen_time: string | null
+          user_id: string
+          reason: string
+          reaction_id: string | null
+          group_id: string | null
+          idempotency_key: string | null
+        }
+        Insert: {
+          answer_id?: string | null
+          bet_id?: string | null
+          comment_id?: string | null
+          contract_id?: string | null
+          created_time?: string
+          creator_id?: string | null
+          data?: Json | null
+          data_type: string
+          event_time: string
+          id?: never
+          news_id?: string | null
+          seen_time?: string | null
+          user_id: string
+          reason: string
+          reaction_id?: string | null
+          group_id?: string | null
+          idempotency_key?: string | null
+        }
+        Update: {
+          answer_id?: string | null
+          bet_id?: string | null
+          comment_id?: string | null
+          contract_id?: string | null
+          created_time?: string
+          creator_id?: string | null
+          data?: Json | null
+          data_type?: string
+          event_time?: string
+          id?: never
+          news_id?: string | null
+          seen_time?: string | null
+          user_id?: string
+          reason?: string
+          reaction_id?: string | null
+          group_id?: string | null
+          idempotency_key?: string | null
+        }
+      }
       user_follows: {
         Row: {
           data: Json

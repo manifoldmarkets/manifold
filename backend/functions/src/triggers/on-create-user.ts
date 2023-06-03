@@ -13,7 +13,7 @@ import {
 } from 'shared/emails'
 import { secrets } from 'common/secrets'
 import { CURRENT_SEASON } from 'common/leagues'
-import { addUserToLeague } from 'shared/leagues'
+import { addUserToLeague } from 'shared/generate-leagues'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const onCreateUser = functions

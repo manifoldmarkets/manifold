@@ -149,7 +149,7 @@ service cloud.firestore {
       // allow read if contract is not private
       allow read: if resource.data.visibility!='private';
       // allow read if contract is private and user is member of associated private group
-      allow read: if resource.data.visibility=='private' && resource.data.groupLinks!=null && isGroupMember(resource.data.groupLinks[0].groupId);                    
+      // allow read: if resource.data.visibility=='private' && resource.data.groupLinks!=null && isGroupMember(resource.data.groupLinks[0].groupId);                                                     
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['description', 'closeTime', 'question', 'visibility', 'unlistedById', 'coverImageUrl'])
                        && resource.data.creatorId == request.auth.uid;

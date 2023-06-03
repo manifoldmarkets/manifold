@@ -110,7 +110,7 @@ export const FeedItems = (props: {
 }
 
 // every period items in A, insert an item from B
-function mergePeriodic<A, B>(a: A[], b: B[], period: number): (A | B)[] {
+export function mergePeriodic<A, B>(a: A[], b: B[], period: number): (A | B)[] {
   const merged = []
   let j = 0
   for (let i = 0; i < a.length; ++i) {

@@ -49,7 +49,7 @@ import {
   completeArchaeologyQuest,
   completeReferralsQuest,
 } from 'shared/complete-quest-internal'
-import { addToLeagueIfNotInOne } from 'shared/leagues'
+import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { getUniqueBettorIds } from 'shared/supabase/contracts'

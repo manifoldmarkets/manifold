@@ -3,6 +3,7 @@ import { groupPath } from './group'
 import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
 import { Bet } from 'common/bet'
+import { league_user_info } from './leagues'
 
 export type Notification = {
   id: string
@@ -302,18 +303,8 @@ export type BettingStreakData = {
   bonusAmount: number
 }
 export type LeagueChangeData = {
-  previousLeague:
-    | {
-        season: number
-        division: number
-        cohort: string
-      }
-    | undefined
-  newLeague: {
-    season: number
-    division: number
-    cohort: string
-  }
+  previousLeague: league_user_info | undefined
+  newLeague: { season: number; division: number; cohort: string }
   bonusAmount: number
 }
 

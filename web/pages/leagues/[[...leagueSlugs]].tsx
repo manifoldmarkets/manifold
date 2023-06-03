@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { groupBy, sortBy } from 'lodash'
 import { ClockIcon } from '@heroicons/react/outline'
 import { useRouter } from 'next/router'
@@ -6,12 +6,14 @@ import { useRouter } from 'next/router'
 import {
   DIVISION_NAMES,
   SEASONS,
-  SEASON_END,
   getDemotionAndPromotionCount,
   season,
   CURRENT_SEASON,
   getLeaguePath,
   league_user_info,
+  getSeasonMonth,
+  getSeasonDates,
+  parseLeaguePath,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -29,10 +31,10 @@ import { CohortTable } from 'web/components/leagues/cohort-table'
 import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { Tabs } from 'web/components/layout/tabs'
+import { formatTime } from 'web/lib/util/time'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
-  console.log('rows', rows)
   return {
     props: {
       rows,
@@ -59,7 +61,12 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     getLeagueRows().then(setRows)
   }, [])
 
-  const cohorts = groupBy(rows, 'cohort')
+  const rowsBySeason = useMemo(() => groupBy(rows, 'season'), [rows])
+
+  const [season, setSeason] = useState<number>(CURRENT_SEASON)
+  const seasonRows = rowsBySeason[season]
+
+  const cohorts = groupBy(seasonRows, 'cohort')
   const cohortNames = sortBy(Object.keys(cohorts), (cohort) =>
     cohort.toLowerCase()
   )
@@ -72,8 +79,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     (division) => division
   ).reverse()
 
-  const [season, setSeason] = useState<number>(1)
-  const [division, setDivision] = useState<number>(4)
+  const [division, setDivision] = useState<number>(5)
   const [cohort, setCohort] = useState(divisionToCohorts[4][0])
   const [highlightedUserId, setHighlightedUserId] = useState<
     string | undefined
@@ -84,11 +90,27 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   }
 
   const user = useUser()
+  const userRow = seasonRows.find((row) => row.user_id === user?.id)
+  const userDivision = userRow?.division
+  const userCohort = userRow?.cohort
+
   const { query, isReady, replace } = useRouter()
   const { leagueSlugs } = query as { leagueSlugs: string[] }
 
+  const onSetSeason = (newSeason: number) => {
+    const { season, division, cohort } = parseLeaguePath(
+      [newSeason.toString()],
+      rowsBySeason,
+      user?.id
+    )
+
+    replace(getLeaguePath(season, division, cohort), undefined, {
+      shallow: true,
+    })
+  }
+
   const onSetDivision = (division: number) => {
-    const userRow = rows.find(
+    const userRow = seasonRows.find(
       (row) => row.user_id === user?.id && row.division === division
     )
     const cohort = userRow ? userRow.cohort : divisionToCohorts[division][0]
@@ -104,63 +126,25 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     })
   }
 
-  const userRow = rows.find((row) => row.user_id === user?.id)
-  const userDivision = userRow?.division
-  const userCohort = userRow?.cohort
-
   useEffect(() => {
     if (!isReady) return
 
-    if (leagueSlugs) {
-      const [season, division, cohort, userId] = leagueSlugs
-      if (SEASONS.includes(+season as season)) {
-        setSeason(+season)
-      } else {
-        setSeason(CURRENT_SEASON)
-      }
-
-      let divisionNum: number | undefined
-      if (Object.keys(DIVISION_NAMES).includes(division)) {
-        divisionNum = +division
-      } else {
-        const divisionName = Object.keys(DIVISION_NAMES).find(
-          (key) =>
-            DIVISION_NAMES[key]?.toLowerCase() === division?.toLowerCase()
-        )
-        if (divisionName) divisionNum = +divisionName
-      }
-
-      if (divisionNum) {
-        setDivision(divisionNum)
-
-        const cohorts = divisionToCohorts[divisionNum] ?? []
-        const matchedCohort = cohorts.find(
-          (c) => c?.toLowerCase() === cohort?.toLowerCase()
-        )
-        if (matchedCohort) {
-          setCohort(matchedCohort)
-
-          if (
-            userId &&
-            rows.find(
-              (row) => row.user_id === userId && row.division === divisionNum
-            )
-          ) {
-            setHighlightedUserId(userId)
-          }
-        }
-      }
-    } else if (userRow) {
-      setDivision(userRow.division)
-      setCohort(userRow.cohort)
-      setHighlightedUserId(userRow.user_id)
-    }
+    const { season, division, cohort, highlightedUserId } = parseLeaguePath(
+      leagueSlugs ?? [],
+      rowsBySeason,
+      user?.id
+    )
+    setSeason(season)
+    setDivision(division)
+    setCohort(cohort)
+    setHighlightedUserId(highlightedUserId)
   }, [isReady, leagueSlugs, user])
 
   const { demotion, promotion, doublePromotion } =
     getDemotionAndPromotionCount(division)
 
   const MARKER = '●️'
+  const seasonEnd = getSeasonDates(season).end
 
   return (
     <Page>
@@ -188,11 +172,11 @@ export default function Leagues(props: { rows: league_user_info[] }) {
               <Select
                 className="!border-ink-200 !h-10"
                 value={season}
-                onChange={(e) => setSeason(+e.target.value as season)}
+                onChange={(e) => onSetSeason(+e.target.value as season)}
               >
                 {SEASONS.map((season) => (
                   <option key={season} value={season}>
-                    Season {season}: May
+                    Season {season}: {getSeasonMonth(season)}
                   </option>
                 ))}
               </Select>
@@ -201,14 +185,20 @@ export default function Leagues(props: { rows: league_user_info[] }) {
               <Row className="items-center gap-1.5">
                 <ClockIcon className="text-ink-1000 h-4 w-4" />{' '}
                 <Row className={' gap-1 text-sm'}>
-                  <InfoTooltip
-                    text={
-                      'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
-                    }
-                  >
-                    Ends in{' '}
-                    <Countdown className=" text-sm" endDate={SEASON_END} />
-                  </InfoTooltip>
+                  {new Date() > seasonEnd ? (
+                    'Ended. Finalized ' + formatTime(seasonEnd)
+                  ) : (
+                    <InfoTooltip
+                      text={
+                        'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
+                      }
+                    >
+                      <>
+                        Ends in{' '}
+                        <Countdown className=" text-sm" endDate={seasonEnd} />
+                      </>
+                    </InfoTooltip>
+                  )}
                 </Row>
               </Row>
             </Col>
@@ -232,7 +222,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
               value={cohort}
               onChange={(e) => onSetCohort(e.target.value)}
             >
-              {divisionToCohorts[division].map((cohort) => (
+              {divisionToCohorts[division]?.map((cohort) => (
                 <option key={cohort} value={cohort}>
                   {cohort === userCohort && MARKER} {toLabel(cohort)}
                 </option>
@@ -246,7 +236,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
           tabs={[
             {
               title: 'Rankings',
-              content: (
+              content: cohorts[cohort] && (
                 <CohortTable
                   cohort={cohort}
                   rows={cohorts[cohort]}

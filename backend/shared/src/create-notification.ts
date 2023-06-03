@@ -49,6 +49,7 @@ import { getUniqueBettorIds } from 'shared/supabase/contracts'
 import { getGroupMemberIds } from 'common/supabase/groups'
 import { richTextToString } from 'common/util/parse'
 import { JSONContent } from '@tiptap/core'
+import { league_user_info } from 'common/leagues'
 
 const firestore = admin.firestore()
 
@@ -856,18 +857,8 @@ export const createBettingStreakExpiringNotification = async (
 }
 export const createLeagueChangedNotification = async (
   userId: string,
-  previousLeague:
-    | {
-        season: number
-        division: number
-        cohort: string
-      }
-    | undefined,
-  newLeague: {
-    season: number
-    division: number
-    cohort: string
-  },
+  previousLeague: league_user_info | undefined,
+  newLeague: { season: number; division: number; cohort: string },
   bonusAmount: number,
   pg: SupabaseDirectClient
 ) => {
@@ -878,7 +869,13 @@ export const createLeagueChangedNotification = async (
     'league_changed'
   )
   if (!sendToBrowser) return
+
   const id = crypto.randomUUID()
+  const data: LeagueChangeData = {
+    previousLeague,
+    newLeague,
+    bonusAmount,
+  }
   const notification: Notification = {
     id,
     userId,
@@ -892,11 +889,7 @@ export const createLeagueChangedNotification = async (
     sourceUserName: '',
     sourceUserUsername: '',
     sourceUserAvatarUrl: '',
-    data: {
-      previousLeague,
-      newLeague,
-      bonusAmount,
-    } as LeagueChangeData,
+    data,
   }
   await insertNotificationToSupabase(notification, pg)
 }

@@ -12,7 +12,6 @@ import { ContractCardView } from 'common/events'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { formatMoney } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -30,6 +29,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -37,11 +37,16 @@ export function FeedContractCard(props: {
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
   className?: string
+  reason?: string
 }) {
-  const { className, promotedData, trackingPostfix } = props
+  const { className, promotedData, reason, trackingPostfix } = props
   const user = useUser()
 
-  const contract = useRealtimeContract(props.contract.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
   const {
     closeTime,
     isResolved,
@@ -133,7 +138,11 @@ export function FeedContractCard(props: {
             />
           </Row>
           <div className="flex-1" />
-          {promotedData ? <BoostPill /> : <ReasonChosen contract={contract} />}
+          {promotedData ? (
+            <BoostPill />
+          ) : (
+            <ReasonChosen contract={contract} reason={reason} />
+          )}
         </Row>
 
         <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
@@ -289,19 +298,20 @@ const BoostPill = () => (
   </Tooltip>
 )
 
-function ReasonChosen(props: { contract: Contract }) {
+function ReasonChosen(props: { contract: Contract; reason?: string }) {
   const { contract } = props
   const { createdTime, closeTime, uniqueBettorCount } = contract
 
   const now = Date.now()
-  const reason =
-    createdTime > now - DAY_MS
-      ? 'New'
-      : closeTime && closeTime < now + DAY_MS
-      ? 'Closing soon'
-      : !uniqueBettorCount || uniqueBettorCount <= 5
-      ? 'For you'
-      : 'Trending'
+  const reason = props.reason
+    ? props.reason
+    : createdTime > now - DAY_MS
+    ? 'New'
+    : closeTime && closeTime < now + DAY_MS
+    ? 'Closing soon'
+    : !uniqueBettorCount || uniqueBettorCount <= 5
+    ? 'For you'
+    : 'Trending'
 
   return (
     <Row className="gap-3">
