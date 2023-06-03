@@ -7,8 +7,8 @@ import { formatMoney } from 'common/util/format'
 import { User } from 'common/user'
 import { Row } from '../layout/row'
 import {
+  useFirebasePublicAndRealtimePrivateContract,
   usePublicContracts,
-  useRealtimeContract,
 } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
@@ -170,7 +170,11 @@ const ContractBetsEntry = (props: {
 }) => {
   const { bets, metrics } = props
 
-  const contract = useRealtimeContract(props.contract.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
   const { profit, profitPercent } = metrics
 
   return (

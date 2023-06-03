@@ -42,7 +42,6 @@ import { AlertBox } from 'web/components/widgets/alert-box'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
@@ -67,6 +66,7 @@ import { ContractView } from 'common/events'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { TitleOrEdit } from 'web/components/contract/title-edit'
 import { useBets } from 'web/hooks/use-bets'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 
 export type ContractParameters = {
   contractSlug: string
@@ -162,7 +162,10 @@ export function ContractPageContent(props: {
     shareholderStats,
   } = contractParams
   const contract =
-    useRealtimeContract(contractParams.contract.id) ?? contractParams.contract
+    useFirebasePublicAndRealtimePrivateContract(
+      contractParams.contract.visibility,
+      contractParams.contract.id
+    ) ?? contractParams.contract
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()

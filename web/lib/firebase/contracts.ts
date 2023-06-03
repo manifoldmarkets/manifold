@@ -6,7 +6,7 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore'
-import { coll } from './utils'
+import { coll, listenForValue } from './utils'
 
 export const contracts = coll<Contract>('contracts')
 
@@ -35,4 +35,12 @@ export async function followContract(contractId: string, userId: string) {
 export async function unFollowContract(contractId: string, userId: string) {
   const followDoc = doc(collection(contracts, contractId, 'follows'), userId)
   await deleteDoc(followDoc)
+}
+
+export function listenForContract(
+  contractId: string,
+  setContract: (contract: Contract | null) => void
+) {
+  const contractRef = doc(contracts, contractId)
+  return listenForValue<Contract>(contractRef, setContract)
 }
