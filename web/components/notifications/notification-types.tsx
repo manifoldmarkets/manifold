@@ -41,11 +41,8 @@ import {
 import { Avatar } from 'web/components/widgets/avatar'
 import { sortBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
-import { getContract } from 'web/lib/supabase/contracts'
-import { getGroup } from 'common/supabase/groups'
 import { useContract } from 'web/hooks/use-contract-supabase'
-import { useGroup, useGroupsWithContract } from 'web/hooks/use-group-supabase'
-import Link from 'next/link'
+import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { linkClass, SiteLink } from '../widgets/site-link'
 
 export function NotificationItem(props: {
