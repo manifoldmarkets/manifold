@@ -365,6 +365,7 @@ async function getGroup(
       isManifoldAdmin: isManifoldId(userId) || isAdmin(firebaseUser.email),
       isTrustworthy: isTrustworthy(user?.username),
       userGroupRole: groupMemberRole,
+      isGroupMember: userGroupMemberDoc.length >= 1 ? true : false,
     })
   ) {
     throw new APIError(
