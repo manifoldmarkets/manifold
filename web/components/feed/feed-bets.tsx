@@ -29,6 +29,8 @@ import { groupBy, maxBy, partition, sumBy } from 'lodash'
 import { MINUTE_MS } from 'common/util/time'
 import { sort } from 'd3-array'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { InfoTooltip } from '../widgets/info-tooltip'
+import { SiteLink } from '../widgets/site-link'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -182,7 +184,7 @@ export function BetStatusText(props: {
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
   const isCPMM2 = mechanism === 'cpmm-2'
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
-  const { amount, outcome, createdTime, shares } = bet
+  const { amount, outcome, createdTime, shares, isChallenge, isApi } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const isShortSell = isCPMM2 && amount > 0 && shares === 0
@@ -210,18 +212,20 @@ export function BetStatusText(props: {
       ? getFormattedMappedValue(contract, bet.probAfter)
       : getFormattedMappedValue(contract, bet.limitProb ?? bet.probAfter)
 
+  const textClass = clsx(
+    absAmount >= 100 && 'font-bold',
+    absAmount >= 500 && 'text-base'
+  )
+
   return (
-    <div
-      className={clsx('text-ink-500', className)}
-      style={{ fontSize: 14 + Math.min(absAmount / 1000, 40) }}
-    >
+    <div className={clsx('text-ink-500 text-sm', className)}>
       {!hideUser ? (
         <UserLink name={bet.userName} username={bet.userUsername} />
       ) : (
         <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>
       )}{' '}
       {orderAmount ? (
-        <>
+        <span className={textClass}>
           {anyFilled ? (
             <>
               filled limit order {money}/{orderAmount}
@@ -236,7 +240,7 @@ export function BetStatusText(props: {
             truncate="short"
           />{' '}
           at {toProb} {bet.isCancelled && !allFilled ? '(cancelled)' : ''}
-        </>
+        </span>
       ) : (
         <>
           {bought} {money}{' '}
@@ -262,6 +266,16 @@ export function BetStatusText(props: {
             : `from ${fromProb} to ${toProb}`}
         </>
       )}{' '}
+      {isChallenge && (
+        <InfoTooltip text="Loot box purchase">
+          <SiteLink href="/lootbox">🎁</SiteLink>
+        </InfoTooltip>
+      )}
+      {isApi && (
+        <InfoTooltip text="This bet was placed programmatically through the API">
+          🤖
+        </InfoTooltip>
+      )}
       <RelativeTimestamp time={createdTime} />
     </div>
   )

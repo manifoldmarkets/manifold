@@ -1,4 +1,4 @@
-import { rewardsData } from 'common/leagues'
+import { prizesByDivisionAndRank } from 'common/leagues'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../widgets/title'
@@ -40,12 +40,12 @@ export function PrizesModal(props: {
                       <td className="border border-gray-300 px-4 py-2 text-center font-black">
                         {i + 1}
                       </td>
-                      {rewardsData.map((columnData, j) => (
+                      {prizesByDivisionAndRank.map((divisonPrizes, j) => (
                         <td
                           key={j}
                           className="border border-gray-300 px-4 py-2 text-center"
                         >
-                          {columnData[i]}
+                          {divisonPrizes[i]}
                         </td>
                       ))}
                     </tr>

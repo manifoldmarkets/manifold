@@ -536,16 +536,6 @@ end;
 end $$;
 
 create
-or replace function get_cpmm_resolved_prob (data jsonb) returns numeric language sql immutable parallel safe as $$
-select case
-    when data->>'resolution' = 'YES' then 1
-    when data->>'resolution' = 'NO' then 0
-    when data->>'resolution' = 'MKT'
-    and data ? 'resolutionProbability' then (data->'resolutionProbability')::numeric
-    else null
-  end $$;
-
-create
 or replace function ts_to_millis (ts timestamptz) returns bigint language sql immutable parallel safe as $$
 select (
     extract(
@@ -656,6 +646,21 @@ from (
 where contracts.resolution_time is not null
   and contracts.outcome_type = 'BINARY'
 limit count offset start $$;
+
+create or replace function sample_resolved_bets(trader_threshold int, p numeric) 
+returns table (prob numeric, is_yes boolean) 
+stable parallel safe language sql as $$
+select  0.5 * ((contract_bets.data->>'probBefore')::numeric + (contract_bets.data->>'probAfter')::numeric)  as prob, 
+       ((contracts.data->>'resolution')::text = 'YES')::boolean as is_yes
+from contract_bets
+  join contracts on contracts.id = contract_bets.contract_id
+where contracts.outcome_type = 'BINARY'
+  and (contracts.resolution = 'YES' or contracts.resolution = 'NO')
+  and amount > 0
+  and (contracts.data->>'uniqueBettorCount')::int >= trader_threshold
+  and contracts.visibility = 'public'
+  and random() < p
+$$;
 
 create
 or replace function get_contracts_by_creator_ids (creator_ids text[], created_time bigint) returns table (creator_id text, contracts jsonb) stable parallel safe language sql as $$
@@ -863,7 +868,8 @@ unredeemed_market_ads as (
   from
     market_ads
   where 
-    NOT EXISTS (
+    market_ads.user_id != uid -- hide your own ads; comment out to debug
+    and not exists (
       SELECT 1
       FROM redeemed_ad_ids
       WHERE fromId = market_ads.id

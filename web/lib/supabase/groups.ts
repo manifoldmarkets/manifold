@@ -2,6 +2,7 @@ import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { run, selectJson, SupabaseClient } from 'common/supabase/utils'
 import { db } from './db'
+import { Contract } from '../firebase/contracts'
 import { groupStateType } from 'web/components/groups/group-search'
 import { supabaseSearchGroups } from '../firebase/api'
 export type SearchGroupInfo = Pick<
@@ -14,6 +15,18 @@ export type SearchGroupInfo = Pick<
   | 'totalMembers'
   | 'privacyStatus'
 >
+
+export async function getGroupContracts(groupId: string) {
+  const { data } = await run(
+    db.rpc('get_group_contracts', {
+      this_group_id: groupId,
+    })
+  )
+  if (data && data.length > 0) {
+    return data.map((contract) => (contract as any).data as Contract)
+  }
+  return []
+}
 
 export async function searchGroups(props: {
   state?: groupStateType
@@ -105,10 +118,7 @@ export async function searchGroupsFuzzy(props: {
 
 export async function getMemberGroups(userId: string, db: SupabaseClient) {
   const groupIds = await getMemberGroupIds(userId, db)
-  const query = selectJson(db, 'groups').in(
-    'id',
-    groupIds.map((d: { group_id: string }) => d.group_id)
-  )
+  const query = selectJson(db, 'groups').in('id', groupIds)
 
   return (await run(query)).data.map((d) => d.data as Group)
 }
@@ -122,10 +132,7 @@ export async function getShouldBlockDestiny(
     db
       .from('groups')
       .select('data')
-      .in(
-        'id',
-        groupIds.map((d: { group_id: string }) => d.group_id)
-      )
+      .in('id', groupIds)
       .in('slug', DESTINY_GROUP_SLUGS)
   )
 
@@ -137,7 +144,7 @@ export async function getMemberGroupIds(userId: string, db: SupabaseClient) {
     db.from('group_members').select('group_id').eq('member_id', userId)
   )
 
-  return groupIds
+  return groupIds ? groupIds.map((groupId) => groupId.group_id) : []
 }
 
 export async function getMemberGroupsCount(userId: string) {

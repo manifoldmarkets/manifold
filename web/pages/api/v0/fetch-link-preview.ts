@@ -1,11 +1,11 @@
-import { Metadata, NextApiRequest, NextApiResponse } from 'next'
 import metascraper from 'metascraper'
 import metascraperDescription from 'metascraper-description'
 import metascraperImage from 'metascraper-image'
 import metascraperTitle from 'metascraper-title'
 import metascraperUrl from 'metascraper-url'
+import { Metadata, NextApiRequest, NextApiResponse } from 'next'
+import { CORS_UNRESTRICTED, applyCorsHeaders } from 'web/lib/api/cors'
 import { ApiError } from 'web/pages/api/v0/_types'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 
 export default async function handler(
   req: NextApiRequest,

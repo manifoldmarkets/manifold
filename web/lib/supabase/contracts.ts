@@ -13,9 +13,38 @@ import { supabaseSearchContracts } from '../firebase/api'
 import { db } from './db'
 import { chunk } from 'lodash'
 
+// A function to retrieve all contracts a user has bet on.
+export async function getUserBetContracts(
+  userId: string,
+  limit?: number
+): Promise<any[]> {
+  const { data } = await run(
+    db.rpc('get_user_bet_contracts', {
+      this_user_id: userId,
+      this_limit: limit ?? 1000,
+    })
+  )
+  if (data && data.length > 0) {
+    return data.map((d) => (d as any).data as Contract)
+  } else {
+    return []
+  }
+}
+
 export async function getPublicContractIds(contractIds: string[]) {
   const { data } = await run(
     db.from('public_contracts').select('data').in('id', contractIds)
+  )
+  if (data && data.length > 0) {
+    return data.map((d) => d.data as Contract)
+  } else {
+    return []
+  }
+}
+
+export async function getContracts(contractIds: string[]) {
+  const { data } = await run(
+    db.from('contracts').select('data').in('id', contractIds)
   )
   if (data && data.length > 0) {
     return data.map((d) => d.data as Contract)

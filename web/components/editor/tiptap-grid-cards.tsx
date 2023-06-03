@@ -1,10 +1,9 @@
 import { mergeAttributes, Node } from '@tiptap/core'
-import React from 'react'
 import { ContractsGrid } from '../contract/contracts-grid'
 
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { useContracts } from 'web/hooks/use-contracts'
 import { filterDefined } from 'common/util/array'
+import { useContracts } from 'web/hooks/use-contract-supabase'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export default Node.create({
   name: 'gridCardsComponent',

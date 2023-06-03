@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getGroup } from 'web/lib/firebase/groups'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { getGroup } from 'web/lib/supabase/group'
 
 export default async function handler(
   req: NextApiRequest,

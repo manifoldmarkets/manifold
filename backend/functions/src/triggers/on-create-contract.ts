@@ -11,6 +11,7 @@ import { dalleWithDefaultParams } from 'shared/dream-utils'
 import { getImagePrompt } from 'shared/helpers/openai-utils'
 import { secrets } from 'common/secrets'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
+import { addContractToFeed } from 'shared/create-feed'
 
 export const onCreateContract = functions
   .runWith({
@@ -22,9 +23,8 @@ export const onCreateContract = functions
     const contract = snapshot.data() as Contract
     const { eventId } = context
 
-    await generateContractImage(contract).then((coverImageUrl) =>
-      coverImageUrl ? snapshot.ref.update({ coverImageUrl }) : null
-    )
+    const coverImageUrl = await generateContractImage(contract)
+    if (coverImageUrl) await snapshot.ref.update({ coverImageUrl })
 
     const contractCreator = await getUser(contract.creatorId)
     if (!contractCreator) throw new Error('Could not find contract creator')
@@ -38,7 +38,16 @@ export const onCreateContract = functions
     const desc = contract.description as JSONContent
     const mentioned = parseMentions(desc)
     await addUserToContractFollowers(contract.id, contractCreator.id)
-
+    await addContractToFeed(
+      contract,
+      [
+        'follow_user',
+        'similar_interest_vector_to_user',
+        'similar_interest_vector_to_contract',
+      ],
+      'new_contract',
+      eventId
+    )
     await createNewContractNotification(
       contractCreator,
       contract,

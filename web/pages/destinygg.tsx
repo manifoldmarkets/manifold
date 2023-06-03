@@ -19,14 +19,11 @@ import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { ManaExplainer } from '.'
 import { Modal } from 'web/components/layout/modal'
 import GoToIcon from 'web/lib/icons/go-to-icon'
-import { getTotalSubs } from 'web/lib/firebase/utils'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { Contract } from 'common/contract'
 import { searchContract } from 'web/lib/supabase/contracts'
 
 export async function getStaticProps() {
-  const subCount = await getTotalSubs()
-
   const trendingContracts = (
     await searchContract({
       query: '',
@@ -39,7 +36,6 @@ export async function getStaticProps() {
 
   return {
     props: {
-      subCount,
       trendingContracts,
     },
     revalidate: 60, // regenerate after a minute
@@ -47,10 +43,9 @@ export async function getStaticProps() {
 }
 
 export default function DestinyLandingPage(props: {
-  subCount: number
   trendingContracts: Contract[]
 }) {
-  const { subCount, trendingContracts } = props
+  const { trendingContracts } = props
 
   useSaveReferral()
   useTracking('view destiny landing page')
@@ -71,7 +66,8 @@ export default function DestinyLandingPage(props: {
         </div>
 
         <div className="mt-4 pt-6 sm:mt-0">
-          Total subs claimed: {subCount} / 1,000
+          {/* hard coded correct answer, now that redemption is over */}
+          Final total subs claimed: 501
         </div>
 
         <Spacer h={2} />
@@ -90,7 +86,7 @@ export default function DestinyLandingPage(props: {
               text="Welcome Explanation"
             />
             <InfoCard
-              link="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"
+              link="https://docs.manifold.markets/faq#what-is-mana-m"
               icon={<div className="text-2xl">{ENV_CONFIG.moneyMoniker}</div>}
               text="What is Mana?"
               modal={<ManaExplainer />}

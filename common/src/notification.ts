@@ -3,6 +3,7 @@ import { groupPath } from './group'
 import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
 import { Bet } from 'common/bet'
+import { league_user_info } from './leagues'
 
 export type Notification = {
   id: string
@@ -62,6 +63,7 @@ export type notification_source_types =
   | 'contract_like'
   | 'weekly_portfolio_update'
   | 'quest_reward'
+  | 'league_change'
 
 export type notification_source_update_types =
   | 'created'
@@ -213,6 +215,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'When another use tags you',
     verb: 'tagged you',
   },
+  league_changed: {
+    simple: 'Your league changed',
+    detailed: 'When you join, move up, or move down a league',
+  },
   thank_you_for_purchases: {
     simple: 'Thank you notes for your purchases',
     detailed: 'Thank you notes for your purchases',
@@ -289,6 +295,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
 
 export type BettingStreakData = {
   streak: number
+  bonusAmount: number
+}
+export type LeagueChangeData = {
+  previousLeague: league_user_info | undefined
+  newLeague: { season: number; division: number; cohort: string }
   bonusAmount: number
 }
 

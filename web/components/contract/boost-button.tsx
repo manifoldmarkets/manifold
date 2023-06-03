@@ -18,6 +18,7 @@ import { Title } from '../widgets/title'
 import { Row } from '../layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { track } from 'web/lib/service/analytics'
 
 export function BoostButton(props: {
   contract: Contract
@@ -77,6 +78,7 @@ function BoostFormRow(props: { contract: Contract }) {
   const { contract } = props
 
   const [loading, setLoading] = useState(false)
+  const [showBid, setShowBid] = useState(false)
   const [totalCost, setTotalCost] = useState<number>()
   const [costPerView, setCostPerView] = useState<number | undefined>(
     DEFAULT_AD_COST_PER_VIEW
@@ -100,6 +102,12 @@ function BoostFormRow(props: { contract: Contract }) {
       })
       toast.success('Boosted!')
       setTotalCost(undefined)
+
+      track('boost market', {
+        slug: contract.slug,
+        totalCost,
+        costPerView,
+      })
     } catch (e) {
       toast.error(
         (e as any).message ??
@@ -122,24 +130,45 @@ function BoostFormRow(props: { contract: Contract }) {
         />
       </Row>
 
-      <Row className="items-center justify-between">
-        <div>
-          Bid per redeem{' '}
-          <InfoTooltip text="Bid more to increase the priority of your boost. Uses a first-price auction mechanism." />
-        </div>
-        <AmountInput
-          amount={costPerView}
-          onChange={setCostPerView}
-          label={ENV_CONFIG.moneyMoniker}
-          error={error}
-          inputClassName="mr-2 w-36"
-        />
-      </Row>
-      {error && <div className="text-right text-red-500">{error}</div>}
+      {showBid && (
+        <>
+          <Row className="items-center justify-between">
+            <div>
+              Bid per click{' '}
+              <InfoTooltip text="Bid more to increase the priority of your boost. Uses a first-price auction mechanism." />
+            </div>
+            <AmountInput
+              amount={costPerView}
+              onChange={setCostPerView}
+              label={ENV_CONFIG.moneyMoniker}
+              error={error}
+              inputClassName="mr-2 w-36"
+            />
+          </Row>
+          {error && <div className="text-right text-red-500">{error}</div>}
+        </>
+      )}
 
-      <span className="text-ink-800 mr-2 min-w-[180px] text-base">
-        = {redeems} redeems
-      </span>
+      <Col className="mb-2 gap-2">
+        <span className="text-ink-800 mr-2 text-lg">
+          = <strong>{redeems} clicks</strong>
+        </span>
+
+        {!showBid && (
+          <Row className="items-center text-sm">
+            at {formatMoney(costPerView ?? 0)} per click
+            <Button
+              onClick={() => setShowBid(true)}
+              size="2xs"
+              color="gray-outline"
+              className="ml-1"
+            >
+              Change
+            </Button>
+          </Row>
+        )}
+      </Col>
+
       <Button onClick={onSubmit} disabled={!!error || !redeems || loading}>
         Buy
       </Button>
@@ -263,11 +292,14 @@ function FeedAnalytics(props: { contractId: string }) {
           />
         )}
         {isBoosted && (
-          <TableItem label="Redeems" value={redeemQuery.data?.count} />
+          <TableItem label="Boost clicks" value={redeemQuery.data?.count} />
         )}
-        <TableItem label="Clicks" value={clickData?.count} />
+        <TableItem label="Clickthroughs" value={clickData?.count} />
         {isBoosted && (
-          <TableItem label="Boost Clicks" value={promotedClickData?.length} />
+          <TableItem
+            label="Boost clickthroughs"
+            value={promotedClickData?.length}
+          />
         )}
       </Table>
     </div>

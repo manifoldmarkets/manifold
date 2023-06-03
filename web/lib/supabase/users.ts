@@ -8,6 +8,15 @@ export type UserSearchResult = Awaited<ReturnType<typeof searchUsers>>[number]
 
 const defaultFields = ['id', 'name', 'username', 'avatarUrl'] as const
 
+export async function getUserByUsername(username: string) {
+  const { data } = await run(
+    selectFrom(db, 'users', ...defaultFields).eq('username', username)
+  )
+  if (data.length === 0) return null
+
+  return data[0] as User
+}
+
 export async function searchUsers(
   prompt: string,
   limit: number,

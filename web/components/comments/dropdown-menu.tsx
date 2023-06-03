@@ -16,8 +16,10 @@ export default function DropdownMenu(props: {
   menuWidth?: string
   buttonClass?: string
   className?: string
+  buttonDisabled?: boolean
 }) {
-  const { Items, Icon, menuWidth, buttonClass, className } = props
+  const { Items, Icon, menuWidth, buttonClass, className, buttonDisabled } =
+    props
   const icon = Icon ?? (
     <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
   )
@@ -28,12 +30,13 @@ export default function DropdownMenu(props: {
     >
       <Menu.Button
         className={clsx(
-          'text-ink-400 hover:text-ink-600 flex items-center rounded-full',
+          'text-ink-400 hover:text-ink-600 flex items-center',
           buttonClass
         )}
         onClick={(e: any) => {
           e.stopPropagation()
         }}
+        disabled={buttonDisabled}
       >
         <span className="sr-only">Open options</span>
         {icon}

@@ -1,7 +1,8 @@
-import { AnyContractType, Contract } from 'common/contract'
+import { AnyContractType, Contract, visibility } from 'common/contract'
 import { useEffect, useRef, useState } from 'react'
 import {
   getContractFromSlug,
+  getContracts,
   getPublicContractIds,
   getPublicContracts,
 } from 'web/lib/supabase/contracts'
@@ -11,6 +12,8 @@ import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { getContractParams } from 'web/lib/firebase/api'
 import { useIsAuthorized } from './use-user'
 import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
+import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { useContract } from './use-contract-firebase'
 
 export const usePublicContracts = (contractIds: string[] | undefined) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -24,6 +27,16 @@ export const usePublicContracts = (contractIds: string[] | undefined) => {
   }, [contractIds])
 
   return contracts
+}
+
+export function useRealtimeContract(contractId: string) {
+  const { rows } = useSubscription('contracts', {
+    k: 'id',
+    v: contractId ?? '_',
+  })
+  return rows != null && rows.length > 0
+    ? (rows[0].data as Contract)
+    : undefined
 }
 
 export const useContractParams = (contractSlug: string | undefined) => {
@@ -65,6 +78,20 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
   return contract as Contract<AnyContractType>
 }
 
+export const useContracts = (contractIds: string[]) => {
+  const [contracts, setContracts] = useState<Contract[]>([])
+
+  useEffectCheckEquality(() => {
+    if (contractIds) {
+      getContracts(contractIds).then((result) => {
+        setContracts(result)
+      })
+    }
+  }, [contractIds])
+
+  return contracts
+}
+
 export function useRealtimeContracts(limit: number) {
   const [oldContracts, setOldContracts] = useState<Contract[]>([])
   const newContracts = useRealtimeRows('contracts').map(
@@ -78,4 +105,16 @@ export function useRealtimeContracts(limit: number) {
   }, [])
 
   return [...oldContracts, ...newContracts].slice(-limit)
+}
+
+export function useFirebasePublicAndRealtimePrivateContract(
+  visibility: visibility,
+  contractId: string
+) {
+  const contract =
+    visibility != 'private'
+      ? useContract(contractId)
+      : useRealtimeContract(contractId)
+
+  return contract
 }

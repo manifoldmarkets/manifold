@@ -1,4 +1,5 @@
-import { sortBy } from 'lodash'
+import { partition, sortBy } from 'lodash'
+import { Contract } from './contract'
 
 export type Group = {
   id: string
@@ -119,4 +120,30 @@ export const GroupsByTopic = {
   ],
   ponzi: ['fun', 'selfresolving', 'whale-watching', 'permanent markets'],
   // grey: ['cgp-grey'],
+}
+
+export function getGroupLinkToDisplay(contract: Contract) {
+  const { groupLinks } = contract
+  const sortedGroupLinks = groupLinks?.sort(
+    (a, b) => b.createdTime - a.createdTime
+  )
+  const groupCreatorAdded = sortedGroupLinks?.find(
+    (g) => g.userId === contract.creatorId
+  )
+  const groupToDisplay = groupCreatorAdded
+    ? groupCreatorAdded
+    : sortedGroupLinks?.[0] ?? null
+  return groupToDisplay
+}
+
+export function getGroupLinksToDisplay(contract: Contract) {
+  const { groupLinks } = contract
+  const sortedGroupLinks =
+    groupLinks?.sort((a, b) => b.createdTime - a.createdTime) ?? []
+
+  const [groupsCreatorAdded, otherGroups] = partition(
+    sortedGroupLinks,
+    (g) => g.userId === contract.creatorId
+  )
+  return [...groupsCreatorAdded, ...otherGroups].slice(0, 3)
 }

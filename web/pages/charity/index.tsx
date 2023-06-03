@@ -139,7 +139,7 @@ export default function Charity(props: {
             donations at a ratio of{' '}
             <strong className="semibold">{formatMoney(100)} : $1</strong>.
             <SiteLink
-              href="https://help.manifold.markets/manifold-charitable-donation-program"
+              href="https://manifoldmarkets.notion.site/Charitable-donation-program-668d55f4ded147cf8cf1282a007fb005"
               className="text-primary-700 ml-2"
             >
               Read more here.

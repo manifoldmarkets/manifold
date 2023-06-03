@@ -5,7 +5,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { getStats } from 'web/lib/firebase/stats'
+import { getStats } from 'web/lib/supabase/stats'
 import { Stats } from 'common/stats'
 import { PLURAL_BETS } from 'common/user'
 import { capitalize } from 'lodash'
@@ -13,7 +13,6 @@ import { formatLargeNumber } from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
 import { InfoBox } from 'web/components/widgets/info-box'
 import { Linkify } from 'web/components/widgets/linkify'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { getIsNative } from 'web/lib/native/is-native'
 
 export default function Analytics() {
@@ -26,27 +25,13 @@ export default function Analytics() {
   }
   return (
     <Page>
-      <Tabs
-        className="mb-4"
-        currentPageForAnalytics={'stats'}
-        tabs={[
-          {
-            title: 'Activity',
-            content: <CustomAnalytics {...stats} />,
-          },
-          {
-            title: 'Market Stats',
-            content: <WasabiCharts />,
-          },
-        ]}
-      />
+      <CustomAnalytics {...stats} />
     </Page>
   )
 }
 
 export function CustomAnalytics(props: Stats) {
   const {
-    startDate,
     dailyActiveUsers,
     dailyActiveUsersWeeklyAvg,
     dailySales,
@@ -66,8 +51,12 @@ export function CustomAnalytics(props: Stats) {
     monthlyRetention,
     dailyActivationRate,
     dailyActivationRateWeeklyAvg,
-    manaBet,
+    manaBetDaily,
+    manaBetWeekly,
+    manaBetMonthly,
   } = props
+
+  const startDate = props.startDate[0]
 
   const dailyDividedByWeekly = dailyActiveUsers.map(
     (dailyActive, i) => dailyActive / weeklyActiveUsers[i]
@@ -430,48 +419,24 @@ export function CustomAnalytics(props: Stats) {
           {
             title: 'Daily',
             content: (
-              <DailyChart dailyValues={manaBet.daily} startDate={startDate} />
+              <DailyChart dailyValues={manaBetDaily} startDate={startDate} />
             ),
           },
           {
             title: 'Weekly',
             content: (
-              <DailyChart dailyValues={manaBet.weekly} startDate={startDate} />
+              <DailyChart dailyValues={manaBetWeekly} startDate={startDate} />
             ),
           },
           {
             title: 'Monthly',
             content: (
-              <DailyChart dailyValues={manaBet.monthly} startDate={startDate} />
+              <DailyChart dailyValues={manaBetMonthly} startDate={startDate} />
             ),
           },
         ]}
       />
       <Spacer h={8} />
     </Col>
-  )
-}
-
-export function WasabiCharts() {
-  return (
-    <>
-      <p className="text-ink-500">
-        Courtesy of <Linkify text="@wasabipesto" />; originally found{' '}
-        <SiteLink
-          className="font-bold"
-          href="https://wasabipesto.com/manifold/markets/"
-        >
-          here.
-        </SiteLink>
-      </p>
-      <Spacer h={4} />
-      <iframe
-        className="w-full border-0"
-        height={3750}
-        src="https://wasabipesto.com/manifold/markets/"
-        frameBorder="0"
-        allowFullScreen
-      />
-    </>
   )
 }

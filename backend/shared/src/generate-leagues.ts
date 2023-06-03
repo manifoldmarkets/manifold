@@ -2,74 +2,122 @@ import { groupBy } from 'lodash'
 import { pgp, SupabaseDirectClient } from './supabase/init'
 import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES } from 'common/envs/constants'
-import { COHORT_SIZE, CURRENT_SEASON, MAX_COHORT_SIZE } from 'common/leagues'
+import {
+  COHORT_SIZE,
+  getDivisionChange,
+  getSeasonDates,
+  league_user_info,
+  MAX_COHORT_SIZE,
+  SEASONS,
+} from 'common/leagues'
 import { getCurrentPortfolio } from './helpers/portfolio'
+import { createLeagueChangedNotification } from 'shared/create-notification'
 
-export async function assignCohorts(pg: SupabaseDirectClient) {
-  const userDivisons = await pg.many<{ user_id: string; division: number }>(
-    `
-  with user_bet_count as (
-    select users.id as user_id, count(*) as bet_count
-    from users
-    join contract_bets on contract_bets.user_id = users.id
-    where created_time > (now() - interval '2 weeks')
-    and coalesce(users.data->>'isBannedFromPosting', 'false') = 'false'
-    and users.data->>'username' not in ($1:csv)
-    group by users.id
-  ), user_profit as (
-    select
-      user_id,
-      bet_count,
-      (users.data->'profitCached'->>'allTime')::numeric
-      + coalesce((users.data->'creatorTraders'->>'allTime')::numeric, 0) * 5
-       as profit,
-      ntile(100) over (order by (users.data->'profitCached'->>'allTime')::numeric) / 100.0 as profit_rank
-    from user_bet_count
+export async function generateNextSeason(
+  pg: SupabaseDirectClient,
+  currSeason: number
+) {
+  const startDate = getSeasonDates(currSeason).start
+  const rows = await pg.manyOrNone<league_user_info>(
+    `select * from user_league_info
+    where season = $1
+    order by mana_earned desc`,
+    [currSeason]
+  )
+
+  const activeUserIds = await pg.manyOrNone<{ user_id: string }>(
+    `with active_user_ids as (
+      select distinct user_id
+      from contract_bets
+      where contract_bets.created_time > $1
+    )
+    select user_id from active_user_ids
     join users on users.id = user_id
-    where bet_count > 0
-  ), user_score as (
-    select
-      user_id,
-      bet_count,
-      profit,
-      profit_rank,
-      log(bet_count + 5) * pow(profit_rank, 2) as score,
-      percent_rank() over (order by log(bet_count + 5) * pow(profit_rank, 2) desc) as score_percentile
-    from user_profit
+    where coalesce(users.data->>'isBannedFromPosting', 'false') = 'false'
+    and coalesce(users.data->>'userDeleted', 'false') = 'false'
+    and users.data->>'username' not in ($2:csv)
+    `,
+    [startDate, BOT_USERNAMES]
   )
-  select
-    user_id,
-    bet_count,
-    profit,
-    profit_rank,
-    score,
-    case
-      when score_percentile < 0.111 then 4
-      when score_percentile >= 0.111 and score_percentile < 0.333 then 3
-      when score_percentile >= 0.333 and score_percentile < 0.555 then 2
-      else 1
-    end as division
-  from user_score
-  order by score desc`,
-    [BOT_USERNAMES]
-  )
+  const activeUserIdsSet = new Set(activeUserIds.map((u) => u.user_id))
 
-  const usersByDivision = groupBy(userDivisons, 'division')
+  const usersByDivision = generateDivisions(rows, activeUserIdsSet)
+  console.log('usersByDivision', usersByDivision)
+
+  const userCohorts = await generateCohorts(pg, usersByDivision)
+  console.log('user cohorts', userCohorts)
+
+  const nextSeason = currSeason + 1
+  const leagueInserts = Object.entries(userCohorts).map(
+    ([userId, { division, cohort }]) => ({
+      user_id: userId,
+      season: nextSeason,
+      division,
+      cohort,
+    })
+  )
+  console.log('league inserts', leagueInserts)
+  console.log('Inserting', leagueInserts.length, 'cohort rows')
+
+  // Bulk insert leagues.
+  const insertStatement =
+    pgp.helpers.insert(
+      leagueInserts,
+      Object.keys(leagueInserts[0]),
+      'leagues'
+    ) +
+    ` on conflict (user_id, season) do update set
+    division = excluded.division,
+    cohort = excluded.cohort`
+  await pg.none(insertStatement)
+}
+
+const generateDivisions = (
+  rows: league_user_info[],
+  activeUserIds: Set<string>
+) => {
+  const usersByNewDivision: Record<number, string[]> = {}
+
+  const rowsByCohort = groupBy(rows, 'cohort')
+  const activeRows = rows.filter((r) => activeUserIds.has(r.user_id))
+  console.log('rows', rows.length, 'active rows', activeRows.length)
+
+  for (const row of activeRows) {
+    const { user_id, division, cohort, rank, mana_earned } = row
+
+    const cohortRows = rowsByCohort[cohort]
+
+    let change = getDivisionChange(division, rank, cohortRows.length)
+    if (change > 0 && mana_earned <= 0) change = 0
+
+    const newDivision = division + change
+
+    if (!usersByNewDivision[newDivision]) usersByNewDivision[newDivision] = []
+    usersByNewDivision[newDivision].push(user_id)
+  }
+
+  return usersByNewDivision
+}
+
+const generateCohorts = async (
+  pg: SupabaseDirectClient,
+  usersByDivision: { [division: number]: string[] }
+) => {
   const userCohorts: {
     [userId: string]: { division: number; cohort: string }
   } = {}
   const cohortSet = new Set<string>()
 
   for (const divisionStr in usersByDivision) {
-    const divisionUsers = usersByDivision[divisionStr]
+    const divisionUserIds = usersByDivision[divisionStr]
     const division = Number(divisionStr)
-    const numCohorts = Math.ceil(divisionUsers.length / COHORT_SIZE)
-    const usersPerCohort = Math.ceil(divisionUsers.length / numCohorts)
+    const numCohorts = Math.ceil(divisionUserIds.length / COHORT_SIZE)
+    const usersPerCohort = Math.ceil(divisionUserIds.length / numCohorts)
     const cohortsWithOneLess =
-      usersPerCohort * numCohorts - divisionUsers.length
+      usersPerCohort * numCohorts - divisionUserIds.length
     console.log(
       'division users',
-      divisionUsers.length,
+      divisionUserIds.length,
       'numCohorts',
       numCohorts,
       'usersPerCohort',
@@ -78,7 +126,7 @@ export async function assignCohorts(pg: SupabaseDirectClient) {
       cohortsWithOneLess
     )
 
-    let remainingUserIds = divisionUsers.map((u) => u.user_id)
+    let remainingUserIds = divisionUserIds.concat()
     const jamesId = '5LZ4LgYuySdL1huCWe7bti02ghx2'
     if (remainingUserIds.includes(jamesId)) {
       remainingUserIds = [
@@ -107,43 +155,13 @@ export async function assignCohorts(pg: SupabaseDirectClient) {
       for (const user of cohortOfUsers) {
         userCohorts[user.user_id] = { division, cohort }
       }
-      remainingUserIds = divisionUsers
-        .map((u) => u.user_id)
-        .filter((uid) => !userCohorts[uid])
+      remainingUserIds = divisionUserIds.filter((uid) => !userCohorts[uid])
       i++
       console.log('cohort', cohort, cohortOfUsers.length)
     }
   }
 
-  const leagueInserts = Object.entries(userCohorts).map(
-    ([userId, { division, cohort }]) => ({
-      user_id: userId,
-      season: 1,
-      division,
-      cohort,
-    })
-  )
-  console.log('league inserts', leagueInserts)
-  console.log('Inserting', leagueInserts.length, 'cohort rows')
-
-  await deleteSeason(pg, 1)
-
-  // Bulk insert leagues.
-  const insertStatement =
-    pgp.helpers.insert(
-      leagueInserts,
-      Object.keys(leagueInserts[0]),
-      'leagues'
-    ) +
-    ` on conflict (user_id, season) do update set
-    division = excluded.division,
-    cohort = excluded.cohort`
-  await pg.none(insertStatement)
-}
-
-// Be careful with this one.
-export const deleteSeason = (pg: SupabaseDirectClient, season: number) => {
-  return pg.none('delete from leagues where season = $1', [season])
+  return userCohorts
 }
 
 const getSmallestCohort = async (
@@ -240,7 +258,7 @@ export const addToLeagueIfNotInOne = async (
   pg: SupabaseDirectClient,
   userId: string
 ) => {
-  const season = CURRENT_SEASON
+  const season = SEASONS[SEASONS.length - 1]
 
   const existingLeague = await pg.oneOrNone<{
     season: number
@@ -257,5 +275,12 @@ export const addToLeagueIfNotInOne = async (
   const portfolio = await getCurrentPortfolio(pg, userId)
   const division = portfolio ? portfolioToDivision(portfolio) : 1
   const cohort = await addUserToLeague(pg, userId, season, division)
+  await createLeagueChangedNotification(
+    userId,
+    undefined,
+    { season, division, cohort },
+    0,
+    pg
+  )
   return { season, division, cohort }
 }

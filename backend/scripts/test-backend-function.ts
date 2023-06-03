@@ -2,20 +2,29 @@ import { getLocalEnv, initAdmin } from 'shared/init-admin'
 initAdmin()
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import * as admin from 'firebase-admin'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { processNews } from 'shared/process-news'
 const firestore = admin.firestore()
 
 async function testScheduledFunction() {
   const credentials = getServiceAccountCredentials(getLocalEnv())
   await loadSecretsToEnv(credentials)
-  // await getReferralCount('AJwLWoo3xue32XIiAVrL5SyR1WB2', 0, db)
   try {
+    // const pg = createSupabaseDirectClient()
+    // await addContractsWithLargeProbChangesToFeed()
     const pg = createSupabaseDirectClient()
-    const followerIds = await pg.manyOrNone(
-      `select follow_id from contract_follows where contract_id = $1`,
-      ['YxRPgMjXuT4ywJyOi6Qr']
-    )
-    console.log(followerIds)
+    const db = createSupabaseClient()
+
+    const apiKey = process.env.NEWS_API_KEY
+    if (!apiKey) {
+      throw new Error('Missing NEWS_API_KEY')
+    }
+
+    console.log('Polling news...')
+    await processNews(apiKey, db, pg)
   } catch (e) {
     console.error(e)
   }

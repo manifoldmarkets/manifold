@@ -93,7 +93,11 @@ export function ResolutionPanel(props: {
           ADMIN
         </span>
       )}
-      {!modalSetOpen && <div className="mb-6">Resolve your market</div>}
+      {!modalSetOpen && (
+        <div className="mb-6">
+          Resolve {isCreator ? 'your' : "this user's"} market
+        </div>
+      )}
       {modalSetOpen && (
         <div className="mb-6">Resolve "{contract.question}"</div>
       )}

@@ -188,7 +188,9 @@ export function NotificationFrame(props: {
           <Col className="w-fit">{icon}</Col>
           <Col className="font w-full">
             <span>{children}</span>
-            <div className="mt-1 text-xs md:text-sm">{subtitle}</div>
+            <div className="line-clamp-3 mt-1 text-xs md:text-sm">
+              {subtitle}
+            </div>
             {isMobile && (
               <div className="-mt-0.5 w-fit md:-mt-1">
                 <RelativeTimestampNoTooltip

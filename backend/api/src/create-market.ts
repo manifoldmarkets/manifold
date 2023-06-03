@@ -38,6 +38,7 @@ import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import { createSupabaseClient } from 'shared/supabase/init'
+import { contentSchema } from 'shared/zod-types'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -533,34 +534,9 @@ async function generateAntes(
   }
 }
 
-/* Zod schema */
-
-const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
-  z.intersection(
-    z.record(z.any()),
-    z.object({
-      type: z.string().optional(),
-      attrs: z.record(z.any()).optional(),
-      content: z.array(descSchema).optional(),
-      marks: z
-        .array(
-          z.intersection(
-            z.record(z.any()),
-            z.object({
-              type: z.string(),
-              attrs: z.record(z.any()).optional(),
-            })
-          )
-        )
-        .optional(),
-      text: z.string().optional(),
-    })
-  )
-)
-
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
-  description: descSchema.or(z.string()).optional(),
+  description: contentSchema.or(z.string()).optional(),
   descriptionHtml: z.string().optional(),
   descriptionMarkdown: z.string().optional(),
   closeTime: z

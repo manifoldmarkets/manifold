@@ -1,28 +1,82 @@
 import { JSONContent } from '@tiptap/core'
+import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { User } from 'common/user'
+import { filterDefined } from 'common/util/array'
+import { uniq } from 'lodash'
 import { useEffect, useState } from 'react'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
+import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
+import { getUserIsGroupMember } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
 import {
+  MEMBER_LOAD_NUM,
   getGroupFromSlug,
   getGroupMembers,
   getGroupOfRole,
   getMemberRole,
-  MEMBER_LOAD_NUM,
 } from 'web/lib/supabase/group'
-import { getUser } from 'web/lib/supabase/user'
-import { useAdmin } from './use-admin'
-import { useIsAuthorized, useUser } from './use-user'
-import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
-import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
-import { getUserIsGroupMember } from 'web/lib/firebase/api'
 import {
   GroupAndRoleType,
   getGroupsWhereUserHasRole,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
+import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
+import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { getUser } from 'web/lib/supabase/user'
+import { useAdmin } from './use-admin'
 import { useEffectCheckEquality } from './use-effect-check-equality'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { useIsAuthorized, useUser } from './use-user'
+
+export function useIsGroupMember(groupSlug: string) {
+  const [isMember, setIsMember] = usePersistentInMemoryState<
+    boolean | undefined
+  >(undefined, 'is-member-' + groupSlug)
+  const isAuthorized = useIsAuthorized()
+  useEffect(() => {
+    // if there is no user
+    if (isAuthorized === false) {
+      setIsMember(false)
+    } else if (isAuthorized) {
+      getUserIsGroupMember({ groupSlug: groupSlug }).then((result) => {
+        setIsMember(result.isGroupMember)
+      })
+    }
+  }, [groupSlug, isAuthorized])
+  return isMember
+}
+
+export function useRealtimeMemberGroupIds(
+  user: User | undefined | null
+): string[] {
+  const { rows } = useSubscription('group_members', {
+    k: 'member_id',
+    v: user?.id ?? '_',
+  })
+  return rows?.map((row) => row.group_id) ?? []
+}
+
+export function useRealtimeGroupContractIds(groupId: string) {
+  const { rows } = useSubscription('group_contracts', {
+    k: 'group_id',
+    v: groupId,
+  })
+  return rows?.map((r) => r.contract_id)
+}
+
+export const useGroupsWithContract = (contract: Contract) => {
+  const [groups, setGroups] = useState<Group[]>()
+
+  useEffect(() => {
+    if (contract.groupSlugs)
+      listGroupsBySlug(uniq(contract.groupSlugs)).then((groups) =>
+        setGroups(filterDefined(groups))
+      )
+  }, [contract.groupSlugs])
+
+  return groups
+}
 
 export function useRealtimeRole(groupId: string | undefined) {
   const [userRole, setUserRole] = useState<groupRoleType | null | undefined>(
@@ -46,9 +100,12 @@ export function useRealtimeRole(groupId: string | undefined) {
   return userRole
 }
 
-export function usePollingGroupMemberIds(groupId: string) {
-  const q = db.from('group_role').select('member_id').eq('group_id', groupId)
-  return useSupabasePolling(q)
+export function useRealtimeGroupMemberIds(groupId: string) {
+  const { rows } = useSubscription('group_members', {
+    k: 'group_id',
+    v: groupId,
+  })
+  return rows?.map((row) => row.member_id) ?? []
 }
 
 export function useRealtimeGroupMembers(
@@ -120,7 +177,7 @@ export function useRealtimeGroupMembers(
   return { admins, moderators, members, loadMore }
 }
 
-export function useRealtimeNumGroupMembers(groupId: string) {
+export function usePollingNumGroupMembers(groupId: string) {
   const q = db
     .from('group_members')
     .select('*', { head: true, count: 'exact' })
@@ -177,19 +234,6 @@ export function useGroupCreator(group?: Group | null) {
     }
   }, [group])
   return creator
-}
-
-export function useIsGroupMember(groupSlug: string) {
-  const [isGroupMember, setIsGroupMember] = useState<boolean>(false)
-  const isAuth = useIsAuthorized()
-  useEffect(() => {
-    if (isAuth) {
-      getUserIsGroupMember({ groupSlug }).then((result) => {
-        setIsGroupMember(result.isGroupMember)
-      })
-    }
-  }, [isAuth])
-  return isGroupMember
 }
 
 export function useListGroupsBySlug(groupSlugs: string[]) {

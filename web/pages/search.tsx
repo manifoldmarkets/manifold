@@ -4,10 +4,13 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { SupabaseContractSearch } from 'web/components/supabase-search'
 import { Title } from 'web/components/widgets/title'
-import { useMemberGroups } from 'web/hooks/use-group'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useTracking } from 'web/hooks/use-tracking'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import {
+  usePrivateUser,
+  useShouldBlockDestiny,
+  useUser,
+} from 'web/hooks/use-user'
 
 export default function Search() {
   const user = useUser()
@@ -21,10 +24,7 @@ export default function Search() {
   // Allow users to browse without keyboard popping up on mobile.
   const autoFocus = !isMobile && !q && !s
 
-  const followedGroups = useMemberGroups(user?.id)
-  const shouldFilterDestiny = !followedGroups?.find((g) =>
-    DESTINY_GROUP_SLUGS.includes(g.slug)
-  )
+  const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
 
   return (
     <Page>

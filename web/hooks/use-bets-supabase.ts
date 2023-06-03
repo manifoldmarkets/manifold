@@ -14,7 +14,7 @@ function getFilteredQuery(filteredParam: string, filterId?: string) {
   return undefined
 }
 
-export function useRealtimeBets(options?: BetFilter, printUser?: boolean) {
+export function useRealtimeBets(options?: BetFilter) {
   let filteredParam
   let filteredQuery: Filter<'contract_bets'> | undefined
   if (options) {

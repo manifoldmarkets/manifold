@@ -92,7 +92,7 @@ export function MemberTab(props: {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search members"
-        className={clsx('placeholder:text-ink-400 w-full')}
+        className={clsx('placeholder:text-ink-400 flex w-full flex-shrink-0')}
       />
       {query !== '' && (
         <SearchGroupMemberModalContent

@@ -2,11 +2,7 @@ import Link from 'next/link'
 import { track } from 'web/lib/service/analytics'
 
 export const PrivacyAndTerms = () => (
-  <div className="text-ink-400 mt-8 w-full text-center text-sm">
-    <Link href="https://help.manifold.markets/" className="hover:underline">
-      Help & About
-    </Link>
-    <span className="mx-2">&bull;</span>
+  <div className="text-ink-400 mt-8 mb-4 w-full text-center text-sm">
     <Link
       href="/terms"
       className="hover:underline"

@@ -14,10 +14,8 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
-import { useContract } from 'web/hooks/use-contracts'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useUser } from 'web/hooks/use-user'
@@ -36,6 +34,8 @@ import {
 import { HistoryPoint } from 'common/chart'
 import { getBets } from 'common/supabase/bets'
 import { db } from 'web/lib/supabase/db'
+import { getContractFromSlug } from 'common/supabase/contracts'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 
 type HistoryData = { bets?: Bet[]; points?: HistoryPoint<Partial<Bet>>[] }
 
@@ -80,7 +80,7 @@ export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = props.params
-  const contract = (await getContractFromSlug(contractSlug)) || null
+  const contract = (await getContractFromSlug(contractSlug, db)) || null
   if (contract == null) {
     return { notFound: true, revalidate: 60 }
   }
@@ -95,7 +95,7 @@ export async function getStaticPaths() {
 }
 
 export default function ContractEmbedPage(props: {
-  contract: Contract | null
+  contract: Contract
   historyData: HistoryData | null
 }) {
   props = usePropz(props, getStaticPropz) ?? {
@@ -103,7 +103,11 @@ export default function ContractEmbedPage(props: {
     historyData: null,
   }
 
-  const contract = useContract(props.contract?.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
 
   useEffect(() => {
     if (contract?.id)
