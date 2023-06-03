@@ -12,7 +12,6 @@ import { ContractCardView } from 'common/events'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { formatMoney } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -30,6 +29,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -42,7 +42,11 @@ export function FeedContractCard(props: {
   const { className, promotedData, reason, trackingPostfix } = props
   const user = useUser()
 
-  const contract = useRealtimeContract(props.contract.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
   const {
     closeTime,
     isResolved,

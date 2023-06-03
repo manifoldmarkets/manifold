@@ -25,7 +25,7 @@ import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
-  useRealtimeContract,
+  useFirebasePublicAndRealtimePrivateContract,
   useContracts,
 } from 'web/hooks/use-contract-supabase'
 import { useRealtimeGroupContractIds } from 'web/hooks/use-group-supabase'
@@ -172,7 +172,11 @@ function ContractCardVersus(props: { contract: Contract; className?: string }) {
   const { className } = props
   const user = useUser()
 
-  const contract = useRealtimeContract(props.contract.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
   const {
     question,
     coverImageUrl,
