@@ -31,22 +31,15 @@ export const useUnfilledBets = (contractId: string) => {
   return unfilledBets
 }
 
-export const useUnfilledBetsAndBalanceByUserId = (
-  contractId: string,
-  filterToAnswerId?: string
-) => {
+export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
   const unfilledBets = useUnfilledBets(contractId) ?? []
-  const filteredBets = filterToAnswerId
-    ? unfilledBets.filter((b) => b.answerId === filterToAnswerId)
-    : unfilledBets
-
-  const userIds = uniq(filteredBets.map((b) => b.userId))
+  const userIds = uniq(unfilledBets.map((b) => b.userId))
   const users = filterDefined(useUsersById(userIds))
 
   const balanceByUserId = Object.fromEntries(
     users.map((user) => [user.id, user.balance])
   )
-  return { unfilledBets: filteredBets, balanceByUserId }
+  return { unfilledBets, balanceByUserId }
 }
 
 export const useRecentBets = (contractId: string, limit: number) => {

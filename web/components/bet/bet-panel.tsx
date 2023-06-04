@@ -92,10 +92,18 @@ export function BuyPanel(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
   const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
-  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id,
-    shouldAnswersSumToOne ? undefined : multiProps?.answerToBuy.id
+  const { unfilledBets: allUnfilledBets, balanceByUserId } =
+    useUnfilledBetsAndBalanceByUserId(contract.id)
+
+  const unfilledBetsMatchingAnswer = allUnfilledBets.filter(
+    (b) => b.answerId === multiProps?.answerToBuy?.id
   )
+  const unfilledBets =
+    isCpmmMulti && !shouldAnswersSumToOne
+      ? // Always filter to answer for non-sum-to-one cpmm multi
+        unfilledBetsMatchingAnswer
+      : allUnfilledBets
+
   const outcome = option === 'LIMIT' ? undefined : option
   const seeLimit = option === 'LIMIT'
 
@@ -418,7 +426,7 @@ export function BuyPanel(props: {
           <YourOrders
             className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
             contract={contract}
-            bets={unfilledBets as LimitBet[]}
+            bets={unfilledBetsMatchingAnswer}
           />
         </>
       )}
@@ -675,6 +683,10 @@ function LimitOrderPanel(props: {
 
   const profitIfBothFilled = shares - (yesAmount + noAmount)
 
+  const unfilledBetsMatchingAnswer = unfilledBets.filter(
+    (b) => b.answerId === multiProps?.answerToBuy?.id
+  )
+
   return (
     <Col className={clsx(className, hidden && 'hidden')}>
       <Row className="mb-4 items-center justify-between">
@@ -683,7 +695,10 @@ function LimitOrderPanel(props: {
           <InfoTooltip text="Limit orders let you place an order to buy at a specific probability which other users can bet against" />
         </div>
 
-        <OrderBookButton limitBets={unfilledBets} contract={contract} />
+        <OrderBookButton
+          limitBets={unfilledBetsMatchingAnswer}
+          contract={contract}
+        />
       </Row>
       <Row className="mt-1 mb-4 gap-4">
         <Col className="gap-2">
