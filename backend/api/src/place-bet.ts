@@ -256,8 +256,8 @@ export const placebet = authEndpoint(async (req, auth) => {
     log(`Updated user ${user.username} balance - auth ${auth.uid}.`)
 
     if (newBet.amount !== 0) {
-      // Multi-cpmm-1 contracts:
       if (newBet.answerId) {
+        // Multi-cpmm-1 contract
         trans.update(
           contractDoc,
           removeUndefinedProps({

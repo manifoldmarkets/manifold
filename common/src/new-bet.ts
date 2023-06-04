@@ -572,16 +572,15 @@ const getNewMultiCpmmBetInfoSumsToOne = (
   balanceByUserId: { [userId: string]: number },
   expiresAt?: number
 ) => {
-  const { newBetResult, otherBetResults, newPoolsByAnswerId, shares, amount } =
-    calculateCpmmMultiArbitrageBet(
-      answers,
-      answer,
-      outcome,
-      betAmount,
-      limitProb,
-      unfilledBets,
-      balanceByUserId
-    )
+  const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+    answers,
+    answer,
+    outcome,
+    betAmount,
+    limitProb,
+    unfilledBets,
+    balanceByUserId
+  )
   const makers = [
     newBetResult.makers,
     ...otherBetResults.map((r) => r.makers),
@@ -595,8 +594,9 @@ const getNewMultiCpmmBetInfoSumsToOne = (
 
   const { takers, cpmmState } = newBetResult
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const amount = sumBy(takers, 'amount')
+  const shares = sumBy(takers, 'shares')
 
-  // TODO: handle limit bets that are partially filled.
   const newBet: CandidateBet = removeUndefinedProps({
     contractId: contract.id,
     outcome,
@@ -647,6 +647,11 @@ const getNewMultiCpmmBetInfoSumsToOne = (
     })
     return bet
   })
+
+  const newPoolsByAnswerId = Object.fromEntries([
+    [answer.id, cpmmState.pool] as const,
+    ...otherBetResults.map((r) => [r.answer.id, r.cpmmState.pool] as const),
+  ])
 
   return {
     newBet,

@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
-import { clamp } from 'lodash'
+import { clamp, sumBy } from 'lodash'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
 import dayjs from 'dayjs'
@@ -183,7 +183,7 @@ export function BuyPanel(props: {
   let probAfter: number
   if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
     const { answers, answerToBuy } = multiProps
-    const { shares, newBetResult } = calculateCpmmMultiArbitrageBet(
+    const { newBetResult } = calculateCpmmMultiArbitrageBet(
       answers,
       answerToBuy,
       outcome ?? 'YES',
@@ -193,7 +193,7 @@ export function BuyPanel(props: {
       balanceByUserId
     )
     const { pool, p } = newBetResult.cpmmState
-    currentPayout = shares
+    currentPayout = sumBy(newBetResult.takers, 'shares')
     probBefore = answerToBuy.prob
     probAfter = getCpmmProbability(pool, p)
   } else {
@@ -911,7 +911,7 @@ const getBetReturns = (
   let shares: number
   if (arbitrageProps) {
     const { answers, answerToBuy } = arbitrageProps
-    ;({ amount, shares } = calculateCpmmMultiArbitrageBet(
+    const { newBetResult } = calculateCpmmMultiArbitrageBet(
       answers,
       answerToBuy,
       outcome,
@@ -919,7 +919,9 @@ const getBetReturns = (
       limitProb,
       unfilledBets,
       balanceByUserId
-    ))
+    )
+    amount = sumBy(newBetResult.takers, 'amount')
+    shares = sumBy(newBetResult.takers, 'shares')
   } else {
     ;({ amount, shares } = computeCpmmBet(
       cpmmState,

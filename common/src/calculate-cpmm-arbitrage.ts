@@ -8,6 +8,8 @@ import {
 import { binarySearch } from './util/algos'
 import { computeFills } from './new-bet'
 
+const DEBUG = false
+
 export function calculateCpmmMultiArbitrageBet(
   answers: Answer[],
   answerToBuy: Answer,
@@ -88,52 +90,51 @@ function calculateCpmmMultiArbitrageBetYes(
   }
 
   const { noBetResults, yesBetResult } = result
-  const yesAmount = sumBy(yesBetResult.takers, 'amount')
-  const yesShares = sumBy(yesBetResult.takers, 'shares')
-  const shares = yesShares + noShares
-  const noAmount = sumBy(noBetResults, (r) => sumBy(r.takers, 'amount'))
-  const amount = yesAmount + noAmount
-  const newPoolsByAnswerId = Object.fromEntries([
-    ...noBetResults.map((r) => [r.answer.id, r.cpmmState.pool] as const),
-    [yesBetResult.answer.id, yesBetResult.cpmmState.pool] as const,
-  ])
-  const newPools = Object.values(newPoolsByAnswerId)
 
-  const endTime = Date.now()
-  console.log('time', endTime - startTime, 'ms')
+  if (DEBUG) {
+    const endTime = Date.now()
 
-  console.log(
-    'bet amount',
-    betAmount,
-    'no bet amounts',
-    noBetResults.map((r) => r.takers.map((t) => t.amount)),
-    'yes bet amount',
-    yesAmount
-  )
+    const newPools = [
+      ...noBetResults.map((r) => r.cpmmState.pool),
+      yesBetResult.cpmmState.pool,
+    ]
 
-  console.log(
-    'getBinaryBuyYes before',
-    answers.map((a) => a.prob),
-    answers.map((a) => `${a.poolYes}, ${a.poolNo}`),
-    'answerToBuy',
-    answerToBuy
-  )
-  console.log(
-    'getBinaryBuyYes after',
-    newPools,
-    newPools.map((pool) => getCpmmProbability(pool, 0.5)),
-    'prob total',
-    sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)),
-    'pool shares',
-    newPools.map((pool) => `${pool.YES}, ${pool.NO}`),
-    'no shares',
-    noShares,
-    'yes shares',
-    shares
-  )
+    console.log('time', endTime - startTime, 'ms')
+
+    console.log(
+      'bet amount',
+      betAmount,
+      'no bet amounts',
+      noBetResults.map((r) => r.takers.map((t) => t.amount)),
+      'yes bet amount',
+      sumBy(yesBetResult.takers, 'amount')
+    )
+
+    console.log(
+      'getBinaryBuyYes before',
+      answers.map((a) => a.prob),
+      answers.map((a) => `${a.poolYes}, ${a.poolNo}`),
+      'answerToBuy',
+      answerToBuy
+    )
+    console.log(
+      'getBinaryBuyYes after',
+      newPools,
+      newPools.map((pool) => getCpmmProbability(pool, 0.5)),
+      'prob total',
+      sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)),
+      'pool shares',
+      newPools.map((pool) => `${pool.YES}, ${pool.NO}`),
+      'no shares',
+      noShares,
+      'yes shares',
+      sumBy(yesBetResult.takers, 'shares')
+    )
+  }
+
   const newBetResult = { ...yesBetResult, outcome: 'YES' }
   const otherBetResults = noBetResults.map((r) => ({ ...r, outcome: 'NO' }))
-  return { newBetResult, otherBetResults, newPoolsByAnswerId, shares, amount }
+  return { newBetResult, otherBetResults }
 }
 
 const buyNoSharesInOtherAnswersThenYesInAnswer = (
@@ -175,10 +176,20 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
 
   // Identity: No shares in all other answers is equal to noShares * (n-2) mana + yes shares in answerToBuy (quantity: noShares)
   const redeemedAmount = noShares * (answers.length - 2)
-  const yesBetAmount = betAmount - totalNoAmount + redeemedAmount
+  const netNoAmount = totalNoAmount - redeemedAmount
+  const yesBetAmount = betAmount - netNoAmount
 
   if (yesBetAmount < 0) {
     return undefined
+  }
+  for (const noBetResult of noBetResults) {
+    const redemptionFill = {
+      matchedBetId: null,
+      amount: -sumBy(noBetResult.takers, 'amount'),
+      shares: -sumBy(noBetResult.takers, 'shares'),
+      timestamp: Date.now(),
+    }
+    noBetResult.takers.push(redemptionFill)
   }
 
   const pool = { YES: answerToBuy.poolYes, NO: answerToBuy.poolNo }
@@ -193,6 +204,15 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
     ),
     answer: answerToBuy,
   }
+
+  // Redeem NO shares in other answers to YES shares in this answer.
+  const redemptionFill = {
+    matchedBetId: null,
+    amount: netNoAmount,
+    shares: noShares,
+    timestamp: Date.now(),
+  }
+  yesBetResult.takers.push(redemptionFill)
 
   return { noBetResults, yesBetResult }
 }
@@ -248,53 +268,50 @@ function calculateCpmmMultiArbitrageBetNo(
   }
   const { yesBetResults, noBetResult } = result
 
-  const noAmount = sumBy(noBetResult.takers, 'amount')
-  const noShares = sumBy(noBetResult.takers, 'shares')
-  // Identity: yes shares in every other answer = no shares in this answer.
-  const shares = yesShares + noShares
-  const yesAmount = sumBy(yesBetResults, (r) => sumBy(r.takers, 'amount'))
-  const amount = yesAmount + noAmount
-  const newPoolsByAnswerId = Object.fromEntries([
-    ...yesBetResults.map((r) => [r.answer.id, r.cpmmState.pool] as const),
-    [noBetResult.answer.id, noBetResult.cpmmState.pool] as const,
-  ])
-  const newPools = Object.values(newPoolsByAnswerId)
+  if (DEBUG) {
+    const endTime = Date.now()
 
-  const endTime = Date.now()
-  console.log('time', endTime - startTime, 'ms')
+    const newPools = [
+      ...yesBetResults.map((r) => r.cpmmState.pool),
+      noBetResult.cpmmState.pool,
+    ]
 
-  console.log(
-    'bet amount',
-    betAmount,
-    'yes bet amounts',
-    yesBetResults.map((r) => r.takers.map((t) => t.amount)),
-    'no bet amount',
-    noAmount
-  )
+    console.log('time', endTime - startTime, 'ms')
 
-  console.log(
-    'getBinaryBuyYes before',
-    answers.map((a) => a.prob),
-    answers.map((a) => `${a.poolYes}, ${a.poolNo}`),
-    'answerToBuy',
-    answerToBuy
-  )
-  console.log(
-    'getBinaryBuyNo after',
-    newPools,
-    newPools.map((pool) => getCpmmProbability(pool, 0.5)),
-    'prob total',
-    sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)),
-    'pool shares',
-    newPools.map((pool) => `${pool.YES}, ${pool.NO}`),
-    'yes shares',
-    yesShares,
-    'no shares',
-    shares
-  )
+    console.log(
+      'bet amount',
+      betAmount,
+      'yes bet amounts',
+      yesBetResults.map((r) => r.takers.map((t) => t.amount)),
+      'no bet amount',
+      sumBy(noBetResult.takers, 'amount')
+    )
+
+    console.log(
+      'getBinaryBuyYes before',
+      answers.map((a) => a.prob),
+      answers.map((a) => `${a.poolYes}, ${a.poolNo}`),
+      'answerToBuy',
+      answerToBuy
+    )
+    console.log(
+      'getBinaryBuyNo after',
+      newPools,
+      newPools.map((pool) => getCpmmProbability(pool, 0.5)),
+      'prob total',
+      sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)),
+      'pool shares',
+      newPools.map((pool) => `${pool.YES}, ${pool.NO}`),
+      'yes shares',
+      yesShares,
+      'no shares',
+      sumBy(noBetResult.takers, 'shares')
+    )
+  }
+
   const newBetResult = { ...noBetResult, outcome: 'NO' }
   const otherBetResults = yesBetResults.map((r) => ({ ...r, outcome: 'YES' }))
-  return { newBetResult, otherBetResults, newPoolsByAnswerId, shares, amount }
+  return { newBetResult, otherBetResults }
 }
 
 const buyYesSharesInOtherAnswersThenNoInAnswer = (
@@ -339,6 +356,15 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
   if (noBetAmount < 0) {
     return undefined
   }
+  for (const yesBetResult of yesBetResults) {
+    const redemptionFill = {
+      matchedBetId: null,
+      amount: -sumBy(yesBetResult.takers, 'amount'),
+      shares: -sumBy(yesBetResult.takers, 'shares'),
+      timestamp: Date.now(),
+    }
+    yesBetResult.takers.push(redemptionFill)
+  }
 
   const pool = { YES: answerToBuy.poolYes, NO: answerToBuy.poolNo }
   const noBetResult = {
@@ -352,6 +378,14 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
     ),
     answer: answerToBuy,
   }
+  // Redeem YES shares in other answers to NO shares in this answer.
+  const redemptionFill = {
+    matchedBetId: null,
+    amount: totalYesAmount,
+    shares: yesShares,
+    timestamp: Date.now(),
+  }
+  noBetResult.takers.push(redemptionFill)
 
   return { yesBetResults, noBetResult }
 }
