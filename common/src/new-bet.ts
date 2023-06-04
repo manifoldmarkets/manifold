@@ -554,11 +554,7 @@ export const getNewMultiCpmmBetInfo = (
     expiresAt,
   })
 
-  const newPoolsByAnswerId = {
-    [answer.id]: newPool,
-  }
-
-  return { newBet, newPoolsByAnswerId, ordersToCancel, makers }
+  return { newBet, newPool, makers, ordersToCancel }
 }
 
 const getNewMultiCpmmBetInfoSumsToOne = (
@@ -581,15 +577,6 @@ const getNewMultiCpmmBetInfoSumsToOne = (
     unfilledBets,
     balanceByUserId
   )
-  const makers = [
-    newBetResult.makers,
-    ...otherBetResults.map((r) => r.makers),
-  ].flat()
-  const ordersToCancel = [
-    newBetResult.ordersToCancel,
-    ...otherBetResults.map((r) => r.ordersToCancel),
-  ].flat()
-
   const now = Date.now()
 
   const { takers, cpmmState } = newBetResult
@@ -620,7 +607,7 @@ const getNewMultiCpmmBetInfoSumsToOne = (
     expiresAt,
   })
 
-  const otherBets = otherBetResults.map((result) => {
+  const otherResultsWithBet = otherBetResults.map((result) => {
     const { answer, takers, cpmmState, outcome } = result
     const probBefore = answer.prob
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -645,19 +632,17 @@ const getNewMultiCpmmBetInfoSumsToOne = (
       isChallenge: false,
       visibility: contract.visibility,
     })
-    return bet
+    return {
+      ...result,
+      bet,
+    }
   })
-
-  const newPoolsByAnswerId = Object.fromEntries([
-    [answer.id, cpmmState.pool] as const,
-    ...otherBetResults.map((r) => [r.answer.id, r.cpmmState.pool] as const),
-  ])
 
   return {
     newBet,
-    otherBets,
-    newPoolsByAnswerId,
-    makers,
-    ordersToCancel,
+    newPool: cpmmState.pool,
+    makers: newBetResult.makers,
+    ordersToCancel: newBetResult.ordersToCancel,
+    otherBetResults: otherResultsWithBet,
   }
 }

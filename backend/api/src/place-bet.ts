@@ -27,7 +27,7 @@ import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
-import { getCpmmProbability } from 'common/calculate-cpmm'
+import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -81,9 +81,8 @@ export const placebet = authEndpoint(async (req, auth) => {
 
     const {
       newBet,
-      otherBets,
+      otherBetResults,
       newPool,
-      newPoolsByAnswerId,
       newTotalShares,
       newTotalBets,
       newTotalLiquidity,
@@ -94,10 +93,13 @@ export const placebet = authEndpoint(async (req, auth) => {
       BetInfo & {
         makers?: maker[]
         ordersToCancel?: LimitBet[]
-        otherBets?: CandidateBet<Bet>[]
-        newPoolsByAnswerId?: {
-          [answerId: string]: { [outcome: string]: number }
-        }
+        otherBetResults?: {
+          answer: Answer
+          bet: CandidateBet<Bet>
+          cpmmState: CpmmState
+          makers: maker[]
+          ordersToCancel: LimitBet[]
+        }[]
       }
     > => {
       if (
@@ -212,35 +214,6 @@ export const placebet = authEndpoint(async (req, auth) => {
     })
     log(`Created new bet document for ${user.username} - auth ${auth.uid}.`)
 
-    if (otherBets) {
-      for (const bet of otherBets) {
-        const betDoc = contractDoc.collection('bets').doc()
-        trans.create(betDoc, {
-          id: betDoc.id,
-          userId: user.id,
-          userAvatarUrl: user.avatarUrl,
-          userUsername: user.username,
-          userName: user.name,
-          isApi,
-          ...bet,
-        })
-      }
-    }
-    if (newPoolsByAnswerId) {
-      for (const [answerId, pool] of Object.entries(newPoolsByAnswerId)) {
-        const { YES: poolYes, NO: poolNo } = pool
-        const prob = getCpmmProbability(pool, 0.5)
-        trans.update(
-          contractDoc.collection('answersCpmm').doc(answerId),
-          removeUndefinedProps({
-            poolYes,
-            poolNo,
-            prob,
-          })
-        )
-      }
-    }
-
     if (makers) {
       updateMakers(makers, betDoc.id, contractDoc, trans)
     }
@@ -264,6 +237,18 @@ export const placebet = authEndpoint(async (req, auth) => {
             volume: volume + newBet.amount,
           })
         )
+        if (newPool) {
+          const { YES: poolYes, NO: poolNo } = newPool
+          const prob = getCpmmProbability(newPool, 0.5)
+          trans.update(
+            contractDoc.collection('answersCpmm').doc(newBet.answerId),
+            removeUndefinedProps({
+              poolYes,
+              poolNo,
+              prob,
+            })
+          )
+        }
       } else {
         trans.update(
           contractDoc,
@@ -277,6 +262,38 @@ export const placebet = authEndpoint(async (req, auth) => {
             volume: volume + newBet.amount,
           })
         )
+      }
+
+      if (otherBetResults) {
+        for (const result of otherBetResults) {
+          const { answer, bet, cpmmState, makers, ordersToCancel } = result
+          const betDoc = contractDoc.collection('bets').doc()
+          trans.create(betDoc, {
+            id: betDoc.id,
+            userId: user.id,
+            userAvatarUrl: user.avatarUrl,
+            userUsername: user.username,
+            userName: user.name,
+            isApi,
+            ...bet,
+          })
+          const { YES: poolYes, NO: poolNo } = cpmmState.pool
+          const prob = getCpmmProbability(cpmmState.pool, 0.5)
+          trans.update(
+            contractDoc.collection('answersCpmm').doc(answer.id),
+            removeUndefinedProps({
+              poolYes,
+              poolNo,
+              prob,
+            })
+          )
+          updateMakers(makers, betDoc.id, contractDoc, trans)
+          for (const bet of ordersToCancel) {
+            trans.update(contractDoc.collection('bets').doc(bet.id), {
+              isCancelled: true,
+            })
+          }
+        }
       }
 
       log(`Updated contract ${contract.slug} properties - auth ${auth.uid}.`)
