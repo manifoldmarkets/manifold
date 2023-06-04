@@ -337,11 +337,11 @@ const notifyUsersOfLimitFills = async (
 
   return filterDefined(
     await Promise.all(
-      matchedBets.map((matchedBet) => {
+      matchedBets.map(async (matchedBet) => {
         const matchedUser = betUsersById[matchedBet.userId]
-        if (!matchedUser) return
+        if (!matchedUser) return undefined
 
-        createBetFillNotification(
+        await createBetFillNotification(
           user,
           matchedUser,
           bet,
