@@ -76,7 +76,8 @@ export const addCommentOnContractToFeed = async (
       contractId,
       comment.userId,
       pg,
-      ['follow_contract', 'viewed_contract', 'follow_user', 'liked_contract']
+      ['follow_contract', 'viewed_contract', 'follow_user', 'liked_contract'],
+      0.15
     )
   await Promise.all(
     Object.keys(usersToReasonsInterestedInContract)
