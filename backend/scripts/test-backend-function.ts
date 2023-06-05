@@ -2,29 +2,22 @@ import { getLocalEnv, initAdmin } from 'shared/init-admin'
 initAdmin()
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import * as admin from 'firebase-admin'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
-import { processNews } from 'shared/process-news'
+
+import { getUsersWithSimilarInterestVectorToUser } from 'shared/supabase/users'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 const firestore = admin.firestore()
 
 async function testScheduledFunction() {
   const credentials = getServiceAccountCredentials(getLocalEnv())
   await loadSecretsToEnv(credentials)
   try {
-    // const pg = createSupabaseDirectClient()
-    // await addContractsWithLargeProbChangesToFeed()
     const pg = createSupabaseDirectClient()
-    const db = createSupabaseClient()
-
-    const apiKey = process.env.NEWS_API_KEY
-    if (!apiKey) {
-      throw new Error('Missing NEWS_API_KEY')
-    }
-
-    console.log('Polling news...')
-    await processNews(apiKey, db, pg)
+    // await addContractsWithLargeProbChangesToFeed()
+    const userIds = await getUsersWithSimilarInterestVectorToUser(
+      'AJwLWoo3xue32XIiAVrL5SyR1WB2',
+      pg
+    )
+    console.log('userids', userIds.length)
   } catch (e) {
     console.error(e)
   }

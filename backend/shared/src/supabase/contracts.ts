@@ -5,6 +5,7 @@ import {
   getUsersWithSimilarInterestVectorToUser,
 } from 'shared/supabase/users'
 import { FEED_REASON_TYPES } from 'common/feed'
+import { DEFAULT_EMBEDDING_DISTANCE_PROBES } from 'common/embeddings'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -81,10 +82,23 @@ export const getContractGroupMemberIds = async (
 
 const getUsersWithSimilarInterestVectorsToContract = async (
   contractId: string,
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  // -- distance of .125, probes at 10, lists at 500
+  // -- chatbot 2k traders: 2k users, contract id: 5ssg7ccYrrsEwZLYh9tP
+  // -- isaac king 40 traders: 1.8k users, contract id:  CPa23v0jJykJMhUjgT9J
+  // -- taiwan fighter 5 traders, 500 users, contract id:  a4tsshKK3MCE8PvS7Yfv
+  distanceThreshold = 0.125,
+  // -- contract id used: 5ssg7ccYrrsEwZLYh9tP, distance: .125
+  // -- probes at 10: 2k rows, 200 ms
+  // -- probes at 5: 600 rows, 65 ms
+  // -- probes at 1: 71 rows, 10ms
+  // If you go higher than 11 the planner will stop using the index and likely 2/3x your execution time
+  probes = 10
 ): Promise<string[]> => {
-  const userIdsAndDistances = await pg.manyOrNone(
-    `with ce as (
+  const userIdsAndDistances = await pg.tx(async (t) => {
+    await t.none('SET ivfflat.probes = $1', [probes])
+    const res = await t.manyOrNone(
+      `with ce as (
         select embedding
         from contract_embeddings
         where contract_id = $1
@@ -94,12 +108,15 @@ const getUsersWithSimilarInterestVectorsToContract = async (
               select ue.user_id, (select embedding from ce) <=> ue.interest_embedding as distance
               from user_embeddings as ue
           ) as distances
-     where distance < 0.25
+     where distance < $2
      order by distance
-     limit 10000;
+     limit 5000;
     `,
-    [contractId]
-  )
+      [contractId, distanceThreshold]
+    )
+    await t.none('SET ivfflat.probes = $1', [DEFAULT_EMBEDDING_DISTANCE_PROBES])
+    return res
+  })
   return userIdsAndDistances.map((r) => r.user_id)
 }
 
@@ -107,7 +124,8 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   contractId: string,
   userId: string,
   pg: SupabaseDirectClient,
-  reasonsToInclude?: FEED_REASON_TYPES[]
+  reasonsToInclude?: FEED_REASON_TYPES[],
+  userToContractDistanceThreshold?: number
 ): Promise<{ [userId: string]: FEED_REASON_TYPES }> => {
   const reasonsToRelevantUserIdsFunctions: {
     [key in FEED_REASON_TYPES]: {
@@ -140,7 +158,11 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       importance: 6,
     },
     similar_interest_vector_to_contract: {
-      promise: getUsersWithSimilarInterestVectorsToContract(contractId, pg),
+      promise: getUsersWithSimilarInterestVectorsToContract(
+        contractId,
+        pg,
+        userToContractDistanceThreshold
+      ),
       importance: 7,
     },
   }
