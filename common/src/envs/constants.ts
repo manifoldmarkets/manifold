@@ -82,7 +82,6 @@ export const BOT_USERNAMES = [
   'SmartBot',
   'ShifraGazsi',
   'Bot',
-  'Catnee',
   'Mason',
   'VersusBot',
   'GPT4',
@@ -93,7 +92,6 @@ export const BOT_USERNAMES = [
   'Turbot',
   'MiraBot',
   'MetaculusBot',
-  'KevinBurke',
   'Botflux',
   '7'
 ]
