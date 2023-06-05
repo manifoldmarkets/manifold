@@ -945,7 +945,7 @@ create policy "admin write access" on user_embeddings as PERMISSIVE for all to s
 
 create index if not exists user_embeddings_interest_embedding on user_embeddings using ivfflat (interest_embedding vector_cosine_ops)
 with
-  (lists = 100);
+  (lists = 500);
 
 create table if not exists
   contract_embeddings (
@@ -971,7 +971,7 @@ set
 
 create index if not exists contract_embeddings_embedding on contract_embeddings using ivfflat (embedding vector_cosine_ops)
 with
-  (lists = 100);
+  (lists = 500);
 
 create table if not exists
   topic_embeddings (

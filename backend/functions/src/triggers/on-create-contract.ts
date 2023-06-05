@@ -46,7 +46,7 @@ export const onCreateContract = functions
         'similar_interest_vector_to_contract',
       ],
       'new_contract',
-      eventId
+      { idempotencyKey: eventId }
     )
     await createNewContractNotification(
       contractCreator,

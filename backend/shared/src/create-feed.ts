@@ -151,15 +151,20 @@ export const addContractToFeed = async (
   contract: Contract,
   reasonsToInclude: FEED_REASON_TYPES[],
   dataType: FEED_DATA_TYPES,
-  idempotencyKey?: string
+  options: {
+    idempotencyKey?: string
+    userToContractDistanceThreshold?: number
+  }
 ) => {
+  const { idempotencyKey, userToContractDistanceThreshold } = options
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
       contract.id,
       contract.creatorId,
       pg,
-      reasonsToInclude
+      reasonsToInclude,
+      userToContractDistanceThreshold
     )
 
   await Promise.all(

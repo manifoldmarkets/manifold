@@ -129,7 +129,10 @@ export async function scoreContractsInternal() {
             'liked_contract',
             'similar_interest_vector_to_contract',
           ]),
-          'contract_probability_changed'
+          'contract_probability_changed',
+          {
+            userToContractDistanceThreshold: 0.12,
+          }
         )
       }
       await firestore
