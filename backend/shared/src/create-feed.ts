@@ -82,7 +82,7 @@ export const addCommentOnContractToFeed = async (
   await Promise.all(
     Object.keys(usersToReasonsInterestedInContract)
       .filter((userId) => !userIdsToExclude.includes(userId))
-      .map((userId) =>
+      .map(async (userId) =>
         insertDataToUserFeed(
           userId,
           comment.createdTime,
@@ -124,7 +124,7 @@ export const addLikedCommentOnContractToFeed = async (
       ]
     )
   await Promise.all(
-    Object.keys(usersToReasonsInterestedInContract).map((userId) =>
+    Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
       insertDataToUserFeed(
         userId,
         reaction.createdTime,
@@ -169,7 +169,7 @@ export const addContractToFeed = async (
     )
 
   await Promise.all(
-    Object.keys(usersToReasonsInterestedInContract).map((userId) =>
+    Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
       insertDataToUserFeed(
         userId,
         contract.createdTime,
