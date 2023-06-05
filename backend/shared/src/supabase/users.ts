@@ -5,11 +5,11 @@ export const getUserFollowerIds = async (
   userId: string,
   pg: SupabaseDirectClient
 ) => {
-  const userFollowerIds = await pg.manyOrNone<{ follow_id: string }>(
+  const userFollowerIds = await pg.manyOrNone<{ user_id: string }>(
     `select user_id from user_follows where follow_id = $1`,
     [userId]
   )
-  return userFollowerIds.map((r) => r.follow_id)
+  return userFollowerIds.map((r) => r.user_id)
 }
 
 export const getUsersWithSimilarInterestVectorToUser = async (
