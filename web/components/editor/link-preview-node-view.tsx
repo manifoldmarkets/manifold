@@ -41,7 +41,7 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
             <XIcon className={'text-ink-900 h-4'} />
           </button>
         )}
-        <a className={'absolute inset-0 z-10'} href={url} />
+        <a className={'absolute inset-0 z-10'} href={url} target="_blank" />
         <Col className="bg-canvas-0 border-ink-300 rounded-b-lg border border-t-0 p-2 hover:underline">
           <div className="line-clamp-2 text-ink-900 text-base">{title}</div>
           <div className="line-clamp-3 text-ink-600 text-xs">{description}</div>
