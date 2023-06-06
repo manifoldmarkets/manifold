@@ -27,12 +27,10 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
-import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { QuickOutcomeView } from '../bet/quick-bet'
 import { TradesButton } from './trades-button'
-import { getGroupLinksToDisplay } from 'common/group'
 import { PublicMarketGroups } from './contract-details'
 
 export function FeedContractCard(props: {

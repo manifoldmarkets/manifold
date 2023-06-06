@@ -5,7 +5,6 @@ import { User, firebaseLogin } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { Subtitle } from '../widgets/subtitle'
 import { BuyPanel, binaryOutcomes } from './bet-panel'
 
 export function BetRow(props: {
