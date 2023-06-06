@@ -53,6 +53,7 @@ export const NativeMessageListener = () => {
       await setPushToken(userId, token)
     } else if (type === 'notification') {
       const notification = data as Notification
+      // TODO: mark the notification as seen
       const sourceUrl = getSourceUrl(notification)
       console.log('sourceUrl', sourceUrl)
       try {
