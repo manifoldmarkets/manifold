@@ -253,6 +253,7 @@ function GroupDisplay(props: {
       legacyBehavior
       onClick={(e) => {
         e.preventDefault()
+        e.stopPropagation()
       }}
     >
       <a

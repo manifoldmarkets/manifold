@@ -86,12 +86,8 @@ export const FeedItems = (props: {
               )}
               promotedData={promotedData}
               trackingPostfix="feed"
+              hasItems={hasItems}
             />
-            {hasItems && (
-              <div className="bg-canvas-0 w-full">
-                <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
-              </div>
-            )}
             <Row className="bg-canvas-0">
               <FeedCommentItem
                 contract={contract}

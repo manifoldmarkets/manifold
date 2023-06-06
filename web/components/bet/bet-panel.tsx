@@ -250,16 +250,14 @@ export function BuyPanel(props: {
           singularView ? '' : ' px-4 py-2'
         )}
       >
-        <Row className=" w-full">
-          <Col className="w-1/2 text-sm">
-            <Col className="text-ink-800 flex-nowrap whitespace-nowrap text-sm">
-              <div>
-                {isPseudoNumeric || isStonk ? (
-                  'Shares'
-                ) : (
-                  <>Payout if {outcome ?? 'YES'}</>
-                )}
-              </div>
+        <Row className="border-ink-200 w-full rounded border px-4 py-2">
+          <Col className="w-1/2">
+            <Col className="text-ink-400 flex-nowrap whitespace-nowrap text-xs">
+              {isPseudoNumeric || isStonk ? (
+                'Shares'
+              ) : (
+                <>Payout if {outcome ?? 'YES'}</>
+              )}
             </Col>
             <div>
               <span className="whitespace-nowrap text-lg font-semibold">
@@ -276,7 +274,7 @@ export function BuyPanel(props: {
           </Col>
           <Col className="w-1/2 text-sm">
             <Row>
-              <span className="text-ink-800 whitespace-nowrap text-sm">
+              <span className="text-ink-400 whitespace-nowrap text-xs">
                 {isPseudoNumeric
                   ? 'Estimated value'
                   : isStonk
@@ -286,7 +284,8 @@ export function BuyPanel(props: {
               {!isPseudoNumeric && !isStonk && (
                 <InfoTooltip
                   text={`The probability of YES after your ${SINGULAR_BET}`}
-                  className="ml-1"
+                  className="text-ink-400 ml-1"
+                  size="sm"
                 />
               )}
             </Row>

@@ -42,8 +42,9 @@ export function FeedContractCard(props: {
   trackingPostfix?: string
   className?: string
   reason?: string
+  hasItems?: boolean
 }) {
-  const { className, promotedData, reason, trackingPostfix } = props
+  const { className, promotedData, reason, trackingPostfix, hasItems } = props
   const user = useUser()
 
   const contract =
@@ -173,38 +174,42 @@ export function FeedContractCard(props: {
       )}
       <PublicMarketGroups
         contract={contract}
-        className={'px-4 pt-2 pb-4'}
+        className={'px-4 py-2'}
         justGroups={true}
       />
-      {!showImage ||
-        (contract.groupLinks && (
-          <div className="w-full">
-            <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
+      <div className=" mt-2 w-full">
+        <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
+      </div>
+      <Col className="relative">
+        <Row
+          className="justify-between gap-2 px-4 py-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <TradesButton contract={contract} />
+          <div className="flex items-center gap-1.5 p-1">
+            <LikeButton
+              contentId={contract.id}
+              contentCreatorId={contract.creatorId}
+              user={user}
+              contentType={'contract'}
+              totalLikes={contract.likedByUserCount ?? 0}
+              contract={contract}
+              contentText={question}
+              showTotalLikesUnder
+              size="md"
+              color="gray"
+              className="!px-0"
+              trackingLocation={'contract card (feed)'}
+            />
           </div>
-        ))}
-      <Row
-        className="justify-between gap-2 px-4 py-1"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <TradesButton contract={contract} />
-        <div className="flex items-center gap-1.5 p-1">
-          <LikeButton
-            contentId={contract.id}
-            contentCreatorId={contract.creatorId}
-            user={user}
-            contentType={'contract'}
-            totalLikes={contract.likedByUserCount ?? 0}
-            contract={contract}
-            contentText={question}
-            showTotalLikesUnder
-            size="md"
-            color="gray"
-            className="!px-0"
-            trackingLocation={'contract card (feed)'}
-          />
+          <CommentsButton contract={contract} user={user} />
+        </Row>
+      </Col>
+      {hasItems && (
+        <div className=" w-full">
+          <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
         </div>
-        <CommentsButton contract={contract} user={user} />
-      </Row>
+      )}
     </div>
   )
 }

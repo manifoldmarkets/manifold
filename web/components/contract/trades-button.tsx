@@ -40,15 +40,15 @@ export function TradesButton(props: { contract: Contract }) {
             <UserIcon className={clsx('h-5 w-5')} />
             <div>{uniqueTraders > 0 ? uniqueTraders : ''}</div>
           </Row>
+          <Modal
+            open={modalOpen}
+            setOpen={setModalOpen}
+            className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}
+          >
+            <BetsModalContent contract={contract} />
+          </Modal>
         </button>
       </Tooltip>
-      <Modal
-        open={modalOpen}
-        setOpen={setModalOpen}
-        className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}
-      >
-        <BetsModalContent contract={contract} />
-      </Modal>
     </>
   )
 }
