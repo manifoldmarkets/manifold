@@ -453,6 +453,18 @@ const App = () => {
     },
   })
 
+  const handleExternalLink = (url: string) => {
+    if (
+      !url.startsWith(baseUri) ||
+      EXTERNAL_REDIRECTS.some((u) => url.endsWith(u))
+    ) {
+      webview.current?.stopLoading()
+      WebBrowser.openBrowserAsync(url)
+      return false
+    }
+    return true
+  }
+
   return (
     <>
       <SplashAuth
@@ -493,17 +505,13 @@ const App = () => {
             ref={webview}
             onError={(e) => handleWebviewError(e, resetWebView)}
             renderError={(e) => handleRenderError(e, width, height)}
+            onShouldStartLoadWithRequest={(r) =>
+              r.mainDocumentURL ? handleExternalLink(r.mainDocumentURL) : true
+            }
             // On navigation state change changes on every url change
-            onNavigationStateChange={(navState) => {
-              const { url } = navState
-              if (
-                !url.startsWith(baseUri) ||
-                EXTERNAL_REDIRECTS.some((u) => url.endsWith(u))
-              ) {
-                webview.current?.stopLoading()
-                WebBrowser.openBrowserAsync(url)
-              }
-            }}
+            onNavigationStateChange={(navState) =>
+              handleExternalLink(navState.url)
+            }
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
             onContentProcessDidTerminate={(e) =>
               handleWebviewKilled(e, resetWebView)
