@@ -10,7 +10,13 @@ import {
   notification_reason_types,
   UniqueBettorData,
 } from 'common/notification'
-import { PrivateUser, User } from 'common/user'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+  PrivateUser,
+  User,
+} from 'common/user'
 import { Contract } from 'common/contract'
 import { getPrivateUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
@@ -33,6 +39,7 @@ import {
   getNotificationDestinationsForUser,
   notification_destination_types,
   userIsBlocked,
+  userOptedOutOfBrowserNotifications,
 } from 'common/user-notification-preferences'
 import { createPushNotification } from './create-push-notification'
 import { Reaction } from 'common/reaction'
@@ -1527,6 +1534,32 @@ export const createQuestPayoutNotification = async (
       questType,
       questCount,
     } as QuestRewardTxn['data'],
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}
+
+export const createSignupBonusNotification = async (
+  user: User,
+  txnId: string,
+  bonusAmount: number
+) => {
+  const privateUser = await getPrivateUser(user.id)
+  if (!privateUser) return
+  if (userOptedOutOfBrowserNotifications(privateUser)) return
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: user.id,
+    reason: 'onboarding_flow',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'signup_bonus',
+    sourceUpdateType: 'created',
+    sourceUserName: MANIFOLD_USER_NAME,
+    sourceUserUsername: MANIFOLD_USER_USERNAME,
+    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+    sourceText: bonusAmount.toString(),
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)

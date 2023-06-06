@@ -3,13 +3,7 @@ import * as admin from 'firebase-admin'
 import * as dayjs from 'dayjs'
 
 import { getPrivateUser, isProd } from 'shared/utils'
-import {
-  MANIFOLD_AVATAR_URL,
-  MANIFOLD_USER_NAME,
-  MANIFOLD_USER_USERNAME,
-  User,
-} from 'common/user'
-import { Notification } from 'common/notification'
+import { User } from 'common/user'
 import { STARTING_BONUS } from 'common/economy'
 import { SignupBonusTxn } from 'common/txn'
 import {
@@ -17,9 +11,9 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import { APIError } from 'common/api'
-import { userOptedOutOfBrowserNotifications } from 'common/user-notification-preferences'
 import { runTxn, TxnData } from 'shared/run-txn'
 import { secrets } from 'common/secrets'
+import { createSignupBonusNotification } from 'shared/create-notification'
 
 // TODO: delete email mana signup bonus
 export const manasignupbonus = functions
@@ -84,27 +78,7 @@ export async function sendOneWeekManaBonuses() {
       })
       if (!result.txn) throw new Error(`txn not created ${result.message}`)
 
-      // Only don't send if opted out, otherwise they'll wonder where the 500 mana came from
-      if (userOptedOutOfBrowserNotifications(privateUser)) return
-
-      const notificationRef = firestore
-        .collection(`/users/${user.id}/notifications`)
-        .doc()
-      const notification: Notification = {
-        id: notificationRef.id,
-        userId: user.id,
-        reason: 'onboarding_flow',
-        createdTime: Date.now(),
-        isSeen: false,
-        sourceId: result.txn.id,
-        sourceType: 'signup_bonus',
-        sourceUpdateType: 'created',
-        sourceUserName: MANIFOLD_USER_NAME,
-        sourceUserUsername: MANIFOLD_USER_USERNAME,
-        sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-        sourceText: STARTING_BONUS.toString(),
-      }
-      return await notificationRef.set(notification)
+      await createSignupBonusNotification(user, result.txn.id, STARTING_BONUS)
     })
   )
 }
