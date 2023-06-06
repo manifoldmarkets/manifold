@@ -423,7 +423,7 @@ function ClaimButton(props: {
       {claimed ? (
         'Claimed!'
       ) : loading ? (
-        <LoadingIndicator />
+        <LoadingIndicator size={'sm'} />
       ) : (
         `Claim ${formatMoney(reward)} Boost`
       )}
