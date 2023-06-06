@@ -119,6 +119,12 @@ export async function scoreContractsInternal() {
           'prev score',
           contract.dailyScore
         )
+        const nowDate = new Date(now)
+        // Prevent same contract from being added to feed multiple times in a day
+        // TODO: Should we turn this into a select query and remove idempotency keys?
+        const idempotencyKey = `${
+          contract.id
+        }-prob-change-${nowDate.getFullYear()}-${nowDate.getMonth()}-${nowDate.getDate()}`
         await addContractToFeed(
           contract,
           buildArray([
@@ -129,7 +135,11 @@ export async function scoreContractsInternal() {
             'liked_contract',
             'similar_interest_vector_to_contract',
           ]),
-          'contract_probability_changed'
+          'contract_probability_changed',
+          {
+            userToContractDistanceThreshold: 0.12,
+            idempotencyKey,
+          }
         )
       }
       await firestore

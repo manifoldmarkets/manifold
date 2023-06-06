@@ -76,12 +76,13 @@ export const addCommentOnContractToFeed = async (
       contractId,
       comment.userId,
       pg,
-      ['follow_contract', 'viewed_contract', 'follow_user', 'liked_contract']
+      ['follow_contract', 'viewed_contract', 'follow_user', 'liked_contract'],
+      0.15
     )
   await Promise.all(
     Object.keys(usersToReasonsInterestedInContract)
       .filter((userId) => !userIdsToExclude.includes(userId))
-      .map((userId) =>
+      .map(async (userId) =>
         insertDataToUserFeed(
           userId,
           comment.createdTime,
@@ -123,7 +124,7 @@ export const addLikedCommentOnContractToFeed = async (
       ]
     )
   await Promise.all(
-    Object.keys(usersToReasonsInterestedInContract).map((userId) =>
+    Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
       insertDataToUserFeed(
         userId,
         reaction.createdTime,
@@ -151,19 +152,24 @@ export const addContractToFeed = async (
   contract: Contract,
   reasonsToInclude: FEED_REASON_TYPES[],
   dataType: FEED_DATA_TYPES,
-  idempotencyKey?: string
+  options: {
+    idempotencyKey?: string
+    userToContractDistanceThreshold?: number
+  }
 ) => {
+  const { idempotencyKey, userToContractDistanceThreshold } = options
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
       contract.id,
       contract.creatorId,
       pg,
-      reasonsToInclude
+      reasonsToInclude,
+      userToContractDistanceThreshold
     )
 
   await Promise.all(
-    Object.keys(usersToReasonsInterestedInContract).map((userId) =>
+    Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
       insertDataToUserFeed(
         userId,
         contract.createdTime,

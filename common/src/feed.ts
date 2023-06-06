@@ -25,9 +25,9 @@ export const FeedExplanationDictionary: Record<
     contract_in_group_you_are_in:
       'New comment on contract in a group you are in',
     similar_interest_vector_to_user:
-      'New comment by a creator with similar interests to yours',
+      'New comment by a creator you may be interested in',
     similar_interest_vector_to_contract:
-      'New comment on a contract with similar interests to yours',
+      'New comment on a contract you may be interested in',
     follow_user: 'New comment by a creator you follow',
   },
   news_with_related_contracts: {
@@ -36,30 +36,30 @@ export const FeedExplanationDictionary: Record<
     viewed_contract: 'News about contract you viewed',
     contract_in_group_you_are_in: 'News about contract in a group you are in',
     similar_interest_vector_to_user:
-      'News by a creator with similar interests to yours',
+      'News related to a creator you may be interested in',
     similar_interest_vector_to_contract:
-      'News about a contract with similar interests to yours',
+      'News related to a contract you may be interested in',
     follow_user: 'News about a contract by a creator you follow',
   },
   new_contract: {
     contract_in_group_you_are_in: 'New contract in a group you are in',
     similar_interest_vector_to_user:
-      'New contract by a creator with similar interests to yours',
+      'New contract by a creator you may be interested in',
     similar_interest_vector_to_contract:
-      'New contract with similar interests to yours',
+      'New contract you may be interested in',
     follow_user: 'New contract by a creator you follow',
   },
   contract_probability_changed: {
-    follow_contract: 'Large probability change on contract you follow',
-    liked_contract: 'Large probability change on contract you liked',
-    viewed_contract: 'Large probability change on contract you viewed',
+    follow_contract: 'Market movement on contract you follow',
+    liked_contract: 'Market movement on contract you liked',
+    viewed_contract: 'Market movement on contract you viewed',
     contract_in_group_you_are_in:
-      'Large probability change on contract in a group you are in',
+      'Market movement on contract in a group you are in',
     similar_interest_vector_to_user:
-      'Large probability change on contract by a creator with similar interests to yours',
+      'Market movement on contract by a creator you may be interested in',
     similar_interest_vector_to_contract:
-      'Large probability change on contract with similar interests to yours',
-    follow_user: 'Large probability change on contract by a creator you follow',
+      'Market movement on contract you may be interested in',
+    follow_user: 'Market movement on contract by a creator you follow',
   },
   popular_comment: {
     follow_contract: 'Popular comment on contract you follow',
@@ -68,9 +68,9 @@ export const FeedExplanationDictionary: Record<
     contract_in_group_you_are_in:
       'Popular comment on contract in a group you are in',
     similar_interest_vector_to_user:
-      'Popular comment by a creator with similar interests to yours',
+      'Popular comment by a creator you may be interested in',
     similar_interest_vector_to_contract:
-      'Popular comment on a contract with similar interests to yours',
+      'Popular comment on a contract you may be interested in',
     follow_user: 'Popular comment by a creator you follow',
   },
 }
