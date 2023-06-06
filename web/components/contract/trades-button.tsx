@@ -59,7 +59,6 @@ export function TradesButton(props: { contract: Contract }) {
 
 function BetsModalContent(props: { contract: Contract }) {
   const { contract } = props
-  console.log('BETS')
   const bets = useBets({ contractId: contract.id })
   if (bets === undefined) return <LoadingIndicator />
   else if (bets.length === 0) return <div>No bets yet</div>
