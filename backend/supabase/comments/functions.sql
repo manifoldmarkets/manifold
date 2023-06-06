@@ -48,16 +48,16 @@ $$ language plpgsql;
 create or replace function get_reply_chain_comments_for_comment_ids (
     comment_ids text[]
 ) returns table (id text, contract_id text, data JSONB) as $$
-WITH matching_comments AS (
-    SELECT
-        c1.comment_id AS id,
-        c1.contract_id,
-        c1.data
-    FROM
-        contract_comments c1
-    WHERE
-        c1.comment_id = ANY(comment_ids)
-),
+    WITH matching_comments AS (
+        SELECT
+            c1.comment_id AS id,
+            c1.contract_id,
+            c1.data
+        FROM
+            contract_comments c1
+        WHERE
+            c1.comment_id = ANY(comment_ids)
+    ),
      reply_chain_comments AS (
          SELECT
              c2.comment_id AS id,
@@ -71,7 +71,6 @@ WITH matching_comments AS (
                           AND c2.comment_id != mc.id
                           and c2.comment_id <> ALL(comment_ids)
      ),
-
      parent_comments AS (
          SELECT
              c3.comment_id AS id,
@@ -83,12 +82,13 @@ WITH matching_comments AS (
                       ON c3.contract_id = mc.contract_id
                           AND c3.comment_id = mc.data ->> 'replyToCommentId'
                           and c3.comment_id <> ALL(comment_ids)
-
-     )
-
-SELECT * FROM matching_comments
-UNION ALL
-SELECT * FROM parent_comments
-UNION ALL
-SELECT * FROM reply_chain_comments;
+     ),
+      all_comments AS (
+        SELECT * FROM matching_comments
+        UNION ALL
+        SELECT * FROM parent_comments
+        UNION ALL
+        SELECT * FROM reply_chain_comments
+      )
+SELECT DISTINCT ON (id) * FROM all_comments;
 $$ language sql;
