@@ -166,7 +166,7 @@ const Results = (props: { query: string }) => {
             await searchContract({
               query: '',
               filter: 'all',
-              sort: 'score',
+              sort: sort,
               limit: 3,
             })
           ).data
