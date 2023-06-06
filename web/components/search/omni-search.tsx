@@ -155,7 +155,7 @@ const Results = (props: { query: string }) => {
       searchContract({
         query: search,
         filter: 'all',
-        sort: 'relevance',
+        sort: 'score',
         limit: marketHitLimit,
       }),
       (async () => {
@@ -436,4 +436,4 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
 }
 
 const marketSearchSlug = (query: string) =>
-  `/markets?s=relevance&f=all&q=${encodeURIComponent(query)}`
+  `/markets?s=score&f=all&q=${encodeURIComponent(query)}`
