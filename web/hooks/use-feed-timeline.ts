@@ -81,10 +81,26 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
 
     const { data } = await run(query)
 
-    const contractIds = uniq(
-      filterDefined(data.map((item) => item.contract_id))
+    // Filter out already saved ones to reduce bandwidth and avoid duplicates
+    const alreadySavedContractIds = filterDefined(
+      savedFeedItems?.map((item) => item.contractId) ?? []
     )
-    const commentIds = uniq(filterDefined(data.map((item) => item.comment_id)))
+
+    const contractIds = uniq(
+      filterDefined(data.map((item) => item.contract_id)).filter(
+        (id) => !alreadySavedContractIds.includes(id)
+      )
+    )
+    const commentIds = uniq(
+      filterDefined(
+        data.map((item) =>
+          alreadySavedContractIds.includes(item.contract_id ?? '_')
+            ? undefined
+            : item.comment_id
+        )
+      )
+    )
+
     const newsIds = uniq(filterDefined(data.map((item) => item.news_id)))
     const [comments, contracts, news] = await Promise.all([
       db

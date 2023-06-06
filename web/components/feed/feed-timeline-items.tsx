@@ -162,13 +162,7 @@ const FeedItemFrame = (props: {
             .from('user_feed')
             .update({ seen_time: new Date().toISOString() })
             .eq('id', item.id)
-        )
-          .then(() => {
-            console.log('updated feed item as seen')
-          })
-          .catch((e) => {
-            console.error('failed to update feed item as seen', e)
-          }),
+        ),
       true
     )
   return (
