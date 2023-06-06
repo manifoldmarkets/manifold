@@ -240,7 +240,7 @@ export const updateUniqueBettorsAndGiveCreatorBonus = async (
     //2. they're a new bettor, so update the bettor count and give the creator a bonus
     // if they're the creator: if the bet is not replicated, add 1 to the count and update the count
     const supabaseUniqueBettorIds = await getUniqueBettorIds(contract.id, pg)
-    // TODO: NOTE - this may miscount the creator temporarily as a unique bettor multiple times if they place bets
+    // NOTE: this may miscount the creator temporarily as a unique bettor multiple times if they place bets
     //  quickly bc of replication delay. It should revert to the true number once other people bet, though
     if (!supabaseUniqueBettorIds.includes(bettor.id))
       supabaseUniqueBettorIds.push(bettor.id)
