@@ -108,6 +108,7 @@ export const FeedTimelineItems = (props: {
                     ? item.reasonDescription
                     : undefined
                 }
+                hasItems={hasItems}
               />
               <Row className="bg-canvas-0">
                 <FeedCommentItem

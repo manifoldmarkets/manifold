@@ -48,7 +48,7 @@ function FeedBetButton(props: {
     <>
       <button
         className={clsx(
-          'border-ink-300 hover:text-canvas-0 border px-2 py-1 transition-colors',
+          'border-ink-300 hover:text-canvas-0 whitespace-nowrap border px-2 py-1 transition-colors',
           outcome == 'YES'
             ? 'rounded-l border-r-0 text-teal-500 hover:bg-teal-500'
             : 'text-scarlet-500 hover:bg-scarlet-500 rounded-r'
@@ -62,7 +62,7 @@ function FeedBetButton(props: {
           setDialogueThatIsOpen(outcome)
         }}
       >
-        {outcome}
+        Bet <span>{outcome}</span>
       </button>
 
       <Modal
