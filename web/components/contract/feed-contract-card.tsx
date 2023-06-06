@@ -197,6 +197,7 @@ export function FeedContractCard(props: {
           onClick={(e) => e.stopPropagation()}
         >
           <TradesButton contract={contract} />
+          <CommentsButton contract={contract} user={user} />
           <div className="flex items-center gap-1.5 p-1">
             <LikeButton
               contentId={contract.id}
@@ -213,7 +214,6 @@ export function FeedContractCard(props: {
               trackingLocation={'contract card (feed)'}
             />
           </div>
-          <CommentsButton contract={contract} user={user} />
         </Row>
       </Col>
       {hasItems && (

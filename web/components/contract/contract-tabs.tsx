@@ -339,8 +339,9 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract
   bets: Bet[]
   setReplyToBet?: (bet: Bet) => void
+  scrollToTop?: boolean
 }) {
-  const { contract, setReplyToBet } = props
+  const { contract, setReplyToBet, scrollToTop = true } = props
   const [olderBets, setOlderBets] = useState<Bet[]>([])
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
@@ -426,7 +427,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         itemsPerPage={ITEMS_PER_PAGE}
         totalItems={totalItems}
         setPage={setPage}
-        UNSAFE_scrollToTop
+        UNSAFE_scrollToTop={scrollToTop}
       />
     </>
   )

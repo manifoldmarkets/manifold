@@ -180,6 +180,7 @@ export const LikeButton = memo(function LikeButton(props: {
           user={user}
           userLiked={liked}
           setOpen={setModalOpen}
+          titleName={contentText}
         />
       )}
       {showTotalLikesUnder && totalLikes > 0 && (
@@ -226,8 +227,9 @@ function UserLikedFullList(props: {
   user?: User | null
   userLiked?: boolean
   setOpen: (isOpen: boolean) => void
+  titleName?: string
 }) {
-  const { contentType, contentId, user, userLiked, setOpen } = props
+  const { contentType, contentId, user, userLiked, setOpen, titleName } = props
   const reacts = useLikesOnContent(contentType, contentId)
   const displayInfos = reacts
     ? getLikeDisplayList(reacts, user, userLiked)
@@ -236,8 +238,12 @@ function UserLikedFullList(props: {
   return (
     <MultiUserTransactionModal
       userInfos={displayInfos}
-      modalLabel={`💖 Liked this ${
-        contentType === 'contract' ? 'market' : contentType
+      modalLabel={`💖 Liked ${
+        titleName
+          ? titleName
+          : contentType === 'contract'
+          ? 'this market'
+          : `this ${contentType}`
       }`}
       open={true}
       setOpen={setOpen}

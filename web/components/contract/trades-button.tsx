@@ -1,14 +1,13 @@
-import { Contract } from 'common/contract'
-import { useEffect, useState } from 'react'
-import { Tooltip } from '../widgets/tooltip'
 import { UserIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Row } from '../layout/row'
-import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import { FeedBet } from '../feed/feed-bets'
+import { Contract } from 'common/contract'
+import { useEffect, useState } from 'react'
 import { useBets } from 'web/hooks/use-bets-supabase'
-import { BetsTabContent } from './contract-tabs'
+import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
+import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { Tooltip } from '../widgets/tooltip'
+import { BetsTabContent } from './contract-tabs'
 
 export function TradesButton(props: { contract: Contract }) {
   const { contract } = props
@@ -43,9 +42,14 @@ export function TradesButton(props: { contract: Contract }) {
           <Modal
             open={modalOpen}
             setOpen={setModalOpen}
-            className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}
+            className={clsx(MODAL_CLASS)}
           >
-            <BetsModalContent contract={contract} />
+            <div className={'bg-canvas-0 sticky top-0 py-2'}>
+              Bets on <span className="font-bold">{contract.question}</span>
+            </div>
+            <div className={SCROLLABLE_MODAL_CLASS}>
+              <BetsModalContent contract={contract} />
+            </div>
           </Modal>
         </button>
       </Tooltip>
@@ -55,8 +59,9 @@ export function TradesButton(props: { contract: Contract }) {
 
 function BetsModalContent(props: { contract: Contract }) {
   const { contract } = props
+  console.log('BETS')
   const bets = useBets({ contractId: contract.id })
   if (bets === undefined) return <LoadingIndicator />
   else if (bets.length === 0) return <div>No bets yet</div>
-  return <BetsTabContent contract={contract} bets={bets} />
+  return <BetsTabContent contract={contract} bets={bets} scrollToTop={false} />
 }

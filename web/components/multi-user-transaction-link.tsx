@@ -55,7 +55,7 @@ export function MultiUserTransactionModal(props: {
   return (
     <Modal open={open} setOpen={setOpen} size={'sm'}>
       <Col className="bg-canvas-0 text-ink-1000 relative items-start gap-4 rounded-md p-6">
-        <span className={'sticky top-0 text-xl'}>{modalLabel}</span>
+        <span className={'sticky top-0'}>{modalLabel}</span>
         {userInfos == null ? (
           <LoadingIndicator />
         ) : userInfos.length > 0 ? (
