@@ -3,8 +3,9 @@ initAdmin()
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import * as admin from 'firebase-admin'
 
-import { getUsersWithSimilarInterestVectorToUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { addContractToFeed } from 'shared/create-feed'
+import { getContract } from 'shared/utils'
 const firestore = admin.firestore()
 
 async function testScheduledFunction() {
@@ -13,11 +14,20 @@ async function testScheduledFunction() {
   try {
     const pg = createSupabaseDirectClient()
     // await addContractsWithLargeProbChangesToFeed()
-    const userIds = await getUsersWithSimilarInterestVectorToUser(
-      'AJwLWoo3xue32XIiAVrL5SyR1WB2',
-      pg
+
+    const contract = await getContract('qGUa5xkW2XDoZdZebpfi')
+    if (!contract) throw new Error('Could not find contract')
+    await addContractToFeed(
+      contract,
+      [
+        'follow_user',
+        // 'similar_interest_vector_to_user',
+        // 'similar_interest_vector_to_contract',
+      ],
+      'new_contract',
+      [],
+      {}
     )
-    console.log('userids', userIds.length)
   } catch (e) {
     console.error(e)
   }

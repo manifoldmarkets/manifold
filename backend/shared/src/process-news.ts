@@ -151,6 +151,7 @@ const processNewsArticle = async (
     ],
     publishedAtDate.valueOf(),
     pg,
+    [],
     { newsId }
   )
 }

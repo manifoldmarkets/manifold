@@ -134,6 +134,8 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
     const filteredComments = comments?.filter(
       (c) => !privateUser?.blockedUserIds?.includes(c.userId)
     )
+
+    // It's possible we're missing contracts for news items bc of the duplicate filter
     const timelineItems = createFeedTimelineItems(
       data,
       filteredContracts,

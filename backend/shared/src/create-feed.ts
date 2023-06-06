@@ -13,6 +13,7 @@ export const insertDataToUserFeed = async (
   eventTime: number,
   dataType: FEED_DATA_TYPES,
   reason: FEED_REASON_TYPES,
+  userIdsToExclude: string[],
   dataProps: {
     contractId?: string
     commentId?: string
@@ -27,6 +28,7 @@ export const insertDataToUserFeed = async (
   },
   pg: SupabaseDirectClient
 ) => {
+  if (userIdsToExclude.includes(userId)) return
   const eventTimeTz = new Date(eventTime).toISOString()
   const {
     groupId,
@@ -80,23 +82,22 @@ export const addCommentOnContractToFeed = async (
       0.15
     )
   await Promise.all(
-    Object.keys(usersToReasonsInterestedInContract)
-      .filter((userId) => !userIdsToExclude.includes(userId))
-      .map(async (userId) =>
-        insertDataToUserFeed(
-          userId,
-          comment.createdTime,
-          'new_comment',
-          usersToReasonsInterestedInContract[userId],
-          {
-            contractId,
-            commentId: comment.id,
-            creatorId: comment.userId,
-            idempotencyKey,
-          },
-          pg
-        )
+    Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
+      insertDataToUserFeed(
+        userId,
+        comment.createdTime,
+        'new_comment',
+        usersToReasonsInterestedInContract[userId],
+        userIdsToExclude,
+        {
+          contractId,
+          commentId: comment.id,
+          creatorId: comment.userId,
+          idempotencyKey,
+        },
+        pg
       )
+    )
   )
 }
 //TODO: before adding, exclude those users who:
@@ -108,6 +109,7 @@ export const addLikedCommentOnContractToFeed = async (
   contractId: string,
   reaction: Reaction,
   comment: Comment,
+  userIdsToExclude: string[],
   idempotencyKey?: string
 ) => {
   const pg = createSupabaseDirectClient()
@@ -130,6 +132,7 @@ export const addLikedCommentOnContractToFeed = async (
         reaction.createdTime,
         'popular_comment',
         usersToReasonsInterestedInContract[userId],
+        userIdsToExclude,
         {
           contractId,
           commentId: comment.id,
@@ -152,6 +155,7 @@ export const addContractToFeed = async (
   contract: Contract,
   reasonsToInclude: FEED_REASON_TYPES[],
   dataType: FEED_DATA_TYPES,
+  userIdsToExclude: string[],
   options: {
     idempotencyKey?: string
     userToContractDistanceThreshold?: number
@@ -175,6 +179,7 @@ export const addContractToFeed = async (
         contract.createdTime,
         dataType,
         usersToReasonsInterestedInContract[userId],
+        userIdsToExclude,
         {
           contractId: contract.id,
           creatorId: contract.creatorId,
@@ -195,7 +200,8 @@ export const insertContractRelatedDataToUsersFeeds = async (
   reasonsToInclude: FEED_REASON_TYPES[],
   eventTime: number,
   pg: SupabaseDirectClient,
-  dataProps?: {
+  userIdsToExclude: string[],
+  options: {
     newsId?: string
   }
 ) => {
@@ -219,10 +225,11 @@ export const insertContractRelatedDataToUsersFeeds = async (
             eventTime,
             dataType,
             usersToReasons[userId],
+            userIdsToExclude,
             {
               contractId: contract.id,
               creatorId: contract.creatorId,
-              ...dataProps,
+              ...options,
             },
             pg
           )
