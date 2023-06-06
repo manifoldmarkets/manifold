@@ -1,60 +1,96 @@
-import { useState } from 'react'
+import clsx from 'clsx'
 import { CPMMBinaryContract } from 'common/contract'
-import { Button } from '../buttons/button'
-import { BetDialog } from './bet-dialog'
-import { binaryOutcomes } from './bet-panel'
-import { firebaseLogin } from 'web/lib/firebase/users'
+import { useState } from 'react'
+import { User, firebaseLogin } from 'web/lib/firebase/users'
+import { Col } from '../layout/col'
+import { MODAL_CLASS, Modal } from '../layout/modal'
+import { Row } from '../layout/row'
+import { Subtitle } from '../widgets/subtitle'
+import { BuyPanel, binaryOutcomes } from './bet-panel'
 
 export function BetRow(props: {
   contract: CPMMBinaryContract
-  noUser?: boolean
+  user: User | null | undefined
 }) {
-  const { contract, noUser } = props
-  const [outcome, setOutcome] = useState<binaryOutcomes>()
-  const [betDialogOpen, setBetDialogOpen] = useState(false)
+  const { contract, user } = props
+  const [dialogueThatIsOpen, setDialogueThatIsOpen] =
+    useState<binaryOutcomes>(undefined)
+  return (
+    <Row>
+      <FeedBetButton
+        dialogueThatIsOpen={dialogueThatIsOpen}
+        setDialogueThatIsOpen={setDialogueThatIsOpen}
+        contract={contract}
+        outcome="YES"
+        user={user}
+      />
+      <FeedBetButton
+        dialogueThatIsOpen={dialogueThatIsOpen}
+        setDialogueThatIsOpen={setDialogueThatIsOpen}
+        contract={contract}
+        outcome="NO"
+        user={user}
+      />
+    </Row>
+  )
+}
 
+function FeedBetButton(props: {
+  dialogueThatIsOpen: binaryOutcomes
+  setDialogueThatIsOpen: (outcome: binaryOutcomes) => void
+  contract: CPMMBinaryContract
+  outcome: 'YES' | 'NO'
+  user?: User | null | undefined
+}) {
+  const { dialogueThatIsOpen, setDialogueThatIsOpen, contract, outcome, user } =
+    props
   return (
     <>
-      <Button
-        size="2xs"
-        color="gray-outline"
-        className="!ring-1"
+      <button
+        className={clsx(
+          'border-ink-300 hover:text-canvas-0 whitespace-nowrap border px-2 py-1 transition-colors',
+          outcome == 'YES'
+            ? 'rounded-l border-r-0 text-teal-500 hover:bg-teal-500'
+            : 'text-scarlet-500 hover:bg-scarlet-500 rounded-r'
+        )}
         onClick={(e) => {
           e.stopPropagation()
-          if (noUser) {
+          if (!user) {
             firebaseLogin()
             return
           }
-          setOutcome('YES')
-          setBetDialogOpen(true)
+          setDialogueThatIsOpen(outcome)
         }}
       >
-        Bet YES
-      </Button>
-      <Button
-        size="2xs"
-        color="gray-outline"
-        className="!ring-1"
-        onClick={(e) => {
-          e.stopPropagation()
-          if (noUser) {
-            firebaseLogin()
-            return
-          }
-          setOutcome('NO')
-          setBetDialogOpen(true)
-        }}
-      >
-        Bet NO
-      </Button>
+        Bet <span>{outcome}</span>
+      </button>
 
-      <BetDialog
-        contract={contract}
-        initialOutcome={outcome}
-        open={betDialogOpen}
-        setOpen={setBetDialogOpen}
-        trackingLocation="contract card"
-      />
+      <Modal
+        open={dialogueThatIsOpen == outcome}
+        setOpen={(open) => {
+          setDialogueThatIsOpen(open ? outcome : undefined)
+        }}
+        className={clsx(
+          MODAL_CLASS,
+          'pointer-events-auto max-h-[32rem] overflow-auto'
+        )}
+      >
+        <Col>
+          <div className="!mt-0 !mb-4 !text-xl">{contract.question}</div>
+          <BuyPanel
+            contract={contract}
+            user={user}
+            mobileView={true}
+            hidden={false}
+            initialOutcome={outcome}
+            onBuySuccess={() =>
+              setTimeout(() => setDialogueThatIsOpen(undefined), 500)
+            }
+            location={'feed card'}
+            singularView={outcome}
+          />
+        </Col>
+      </Modal>
     </>
   )
 }

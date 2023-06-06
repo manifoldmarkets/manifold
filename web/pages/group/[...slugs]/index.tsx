@@ -260,7 +260,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
             key={group.id}
           />
         </div>
-        <Col className="bg-canvas-0 absolute bottom-0 w-full bg-opacity-80 px-4">
+        <Col className="bg-canvas-0 absolute bottom-0 w-full bg-opacity-90 px-4">
           <Row className="mt-4 mb-2 w-full justify-between gap-1">
             <div className="text-ink-900 text-2xl font-normal sm:text-3xl">
               {group.name}

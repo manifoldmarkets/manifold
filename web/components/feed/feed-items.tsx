@@ -18,6 +18,7 @@ import { Row } from '../layout/row'
 import { ContractComment } from 'common/comment'
 import { BoostsType } from 'web/hooks/use-feed'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
+import { useState } from 'react'
 
 export const FeedItems = (props: {
   contracts: Contract[]
@@ -82,10 +83,11 @@ export const FeedItems = (props: {
               contract={contract}
               className={clsx(
                 'my-0 border-0',
-                hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
+                hasItems ? 'rounded-t-xl rounded-b-none' : ''
               )}
               promotedData={promotedData}
               trackingPostfix="feed"
+              hasItems={hasItems}
             />
             <Row className="bg-canvas-0">
               <FeedCommentItem
