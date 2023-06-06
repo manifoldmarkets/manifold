@@ -14,6 +14,7 @@ import { AD_RATE_LIMIT } from 'common/boost'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
+import { Post } from 'common/post'
 
 export async function call(url: string, method: string, params?: any) {
   const user = auth.currentUser
@@ -145,6 +146,14 @@ export function createPost(params: {
   isGroupAboutPost?: boolean
 }) {
   return call(getApiUrl('createpost'), 'POST', params)
+}
+
+export function updatePost(
+  params: {
+    id: string
+  } & Partial<Post>
+) {
+  return call(getApiUrl('updatepost'), 'POST', params)
 }
 
 export function boostMarket(params: any) {

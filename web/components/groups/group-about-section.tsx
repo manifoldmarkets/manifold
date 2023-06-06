@@ -14,7 +14,8 @@ import toast from 'react-hot-toast'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { createPost } from 'web/lib/firebase/api'
 import { deleteFieldFromGroup, updateGroup } from 'web/lib/firebase/groups'
-import { deletePost, updatePost } from 'web/lib/supabase/post'
+import { deletePost } from 'web/lib/supabase/post'
+import { updatePost } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -96,7 +97,7 @@ export async function savePost(
       aboutPostId: result.post.id,
     })
   } else {
-    await updatePost(post, { content: newPost.content })
+    await updatePost({ id: post.id, content: newPost.content })
   }
 }
 

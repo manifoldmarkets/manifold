@@ -1,6 +1,6 @@
 import { Page } from 'web/components/layout/page'
 import { getPostBySlug, postPath } from 'web/lib/supabase/post'
-import { updatePost } from 'web/lib/supabase/post'
+import { updatePost } from 'web/lib/firebase/api'
 import { Post } from 'common/post'
 import { Title } from 'web/components/widgets/title'
 import { Spacer } from 'web/components/layout/spacer'
@@ -81,8 +81,6 @@ export default function PostPage(props: {
   const { creator, watched = [], skipped = [], post } = props
   const postId = post?.id ?? '_'
 
-  console.log(props.comments)
-
   const tips = useTipTxns({ postId })
   const updatedComments = useNewCommentsOnPost(postId)
   const comments = [...props.comments, ...updatedComments]
@@ -106,7 +104,7 @@ export default function PostPage(props: {
         <EditInPlaceInput
           className="-m-px px-2 !text-3xl"
           initialValue={post.title}
-          onSave={(title) => updatePost(post, { title })}
+          onSave={(title) => updatePost({ id: post.id, title })}
           disabled={!canEdit}
         >
           {(value) => <Title className="!my-0 p-2" children={value} />}
@@ -249,7 +247,7 @@ export function RichEditPost(props: {
     if (!editor) return
 
     setContentCache(editor.getJSON())
-    await updatePost(post, { content: editor.getJSON() })
+    await updatePost({ id: post.id, content: editor.getJSON() })
     setEditing(false)
   }
 

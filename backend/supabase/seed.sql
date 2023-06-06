@@ -795,12 +795,6 @@ create policy "public read" on posts for
 select
   using (true);
 
-drop policy if exists "user update" on posts;
-
-create policy "user update" on posts
-for update
-  using (auth.uid ()::text = creator_id);
-
 drop policy if exists "user delete" on posts;
 
 create policy "user delete" on posts for delete using (auth.uid ()::text = creator_id);
