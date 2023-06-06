@@ -1,6 +1,5 @@
 import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
 import {
-  DotsCircleHorizontalIcon,
   FireIcon,
   LockClosedIcon,
   PencilIcon,
@@ -32,6 +31,7 @@ import {
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
+import { IoEllipsisHorizontal } from 'react-icons/io5'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -214,14 +214,15 @@ export function PublicMarketGroups(props: {
             }}
           >
             {groupsToDisplay.length ? (
-              <DotsCircleHorizontalIcon className="text-ink-400 hover:text-ink-400/75 h-6" />
+              <IoEllipsisHorizontal className="text-ink-1000 bg-ink-100 hover:bg-ink-200 h-6 w-6 rounded-full bg-opacity-90 px-1" />
             ) : (
               <span
                 className={clsx(
                   'bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-sm'
                 )}
               >
-                <PlusIcon className="mr-1 h-4 w-4" /> Group
+                <PlusIcon className="text-ink-1000 bg-ink-100 hover:bg-ink-200 mr-1 h-4 w-4" />{' '}
+                Group
               </span>
             )}
           </button>
@@ -258,7 +259,7 @@ function GroupDisplay(props: {
     >
       <a
         className={clsx(
-          'w-fit max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-sm sm:max-w-[250px]',
+          'text-ink-1000 bg-ink-100 hover:bg-ink-200 w-fit max-w-[200px] truncate whitespace-nowrap rounded-full bg-opacity-90 py-0.5 px-2 text-sm sm:max-w-[250px]',
           isPrivate
             ? 'text-ink-1000 bg-indigo-200 dark:bg-indigo-700'
             : 'bg-ink-400 text-ink-0'

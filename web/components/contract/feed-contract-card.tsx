@@ -160,8 +160,8 @@ export function FeedContractCard(props: {
       </Col>
 
       {showImage && (
-        <div className="relative">
-          <div className="absolute inset-0 bg-transparent transition-all group-hover:saturate-150">
+        <div className="relative mt-1 h-40 w-full">
+          <div className="absolute inset-0 mt-2 bg-transparent transition-all group-hover:saturate-150">
             <Image
               fill
               alt=""
@@ -170,16 +170,27 @@ export function FeedContractCard(props: {
               src={coverImageUrl}
             />
           </div>
+          <div className="absolute bottom-0">
+            <PublicMarketGroups
+              contract={contract}
+              className={'px-4 py-2'}
+              justGroups={true}
+            />
+          </div>
         </div>
       )}
-      <PublicMarketGroups
-        contract={contract}
-        className={'px-4 py-2'}
-        justGroups={true}
-      />
-      <div className=" mt-2 w-full">
-        <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
-      </div>
+      {!showImage && (
+        <PublicMarketGroups
+          contract={contract}
+          className={'px-4 py-2'}
+          justGroups={true}
+        />
+      )}
+      {!showImage && (
+        <div className="w-full">
+          <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
+        </div>
+      )}
       <Col className="relative">
         <Row
           className="justify-between gap-2 px-4 py-1"

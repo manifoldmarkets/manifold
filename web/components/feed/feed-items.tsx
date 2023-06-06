@@ -18,6 +18,7 @@ import { Row } from '../layout/row'
 import { ContractComment } from 'common/comment'
 import { BoostsType } from 'web/hooks/use-feed'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
+import { useState } from 'react'
 
 export const FeedItems = (props: {
   contracts: Contract[]
