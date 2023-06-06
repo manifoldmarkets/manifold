@@ -30,7 +30,7 @@ import { useIsAuthorized } from 'web/hooks/use-user'
 const CONTRACTS_PER_PAGE = 20
 
 export const SORTS = [
-  { label: 'No Sort', value: 'relevance' },
+  { label: 'Relevance', value: 'relevance' },
   { label: 'New', value: 'newest' },
   { label: 'Trending', value: 'score' },
   { label: 'Daily change', value: 'daily-score' },
