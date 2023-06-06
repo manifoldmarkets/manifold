@@ -412,7 +412,7 @@ export function ContractPageContent(props: {
               )}
 
             <ContractDescription
-              className="mt-2 xl:mt-6"
+              className="mt-2"
               contract={contract}
               highlightResolver={!isResolved && isClosed && !showResolver}
               toggleResolver={() => setShowResolver((shown) => !shown)}
