@@ -15,7 +15,6 @@ import { runTxn, TxnData } from 'shared/run-txn'
 import { secrets } from 'common/secrets'
 import { createSignupBonusNotification } from 'shared/create-notification'
 
-// TODO: delete email mana signup bonus
 export const manasignupbonus = functions
   .runWith({ secrets })
   .pubsub.schedule('0 9 * * 1-7')

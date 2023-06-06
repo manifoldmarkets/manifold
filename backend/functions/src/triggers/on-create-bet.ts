@@ -117,7 +117,6 @@ export const onCreateBet = functions
     const pg = createSupabaseDirectClient()
     await updateUserInterestEmbedding(pg, bettor.id)
 
-    // TODO: Send notification when adding a user to a league.
     await addToLeagueIfNotInOne(pg, bettor.id)
 
     if ((bettor?.lastBetTime ?? 0) < bet.createdTime)
