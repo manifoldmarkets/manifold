@@ -5,7 +5,7 @@ import {
   getProbability,
   getTopAnswer,
   getTopNSortedAnswers,
-  getContractBetMetrics,
+  getInvested,
 } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
 import { User } from 'common/user'
@@ -201,7 +201,7 @@ function SignedInQuickBet(props: {
       contractId: contract.id,
     })
   }
-  const { invested } = getContractBetMetrics(contract, userBets)
+  const invested = getInvested(contract, userBets)
   const { hasYesShares, hasNoShares } = useSaveBinaryShares(contract, userBets)
   const hasYesInvestment =
     hasYesShares === true && invested != undefined && floor(invested) > 0
