@@ -27,7 +27,6 @@ import { db } from 'web/lib/supabase/db'
 import { run } from 'common/supabase/utils'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { LinkPreviewNodeView } from '../editor/link-preview-node-view'
-import { Spacer } from '../layout/spacer'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
