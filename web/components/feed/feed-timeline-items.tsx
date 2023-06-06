@@ -135,7 +135,7 @@ export const FeedTimelineItems = (props: {
               key={news.id + 'feed-timeline-item'}
               className="bg-canvas-0 my-4 p-4"
             >
-              <Row className="mb-4">
+              <Row className="mb-4" key={news.id + 'feed-timeline-item-news'}>
                 <LinkPreviewNodeView
                   image={news.urlToImage}
                   inputKey={''}
