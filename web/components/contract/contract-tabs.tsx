@@ -335,7 +335,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
 })
 
-const BetsTabContent = memo(function BetsTabContent(props: {
+export const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract
   bets: Bet[]
   setReplyToBet?: (bet: Bet) => void

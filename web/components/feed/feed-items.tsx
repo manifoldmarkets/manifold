@@ -82,11 +82,16 @@ export const FeedItems = (props: {
               contract={contract}
               className={clsx(
                 'my-0 border-0',
-                hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
+                hasItems ? 'rounded-t-xl rounded-b-none' : ''
               )}
               promotedData={promotedData}
               trackingPostfix="feed"
             />
+            {hasItems && (
+              <div className="bg-canvas-0 w-full">
+                <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
+              </div>
+            )}
             <Row className="bg-canvas-0">
               <FeedCommentItem
                 contract={contract}

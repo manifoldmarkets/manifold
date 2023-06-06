@@ -31,6 +31,9 @@ import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { QuickOutcomeView } from '../bet/quick-bet'
+import { TradesButton } from './trades-button'
+import { getGroupLinksToDisplay } from 'common/group'
+import { PublicMarketGroups } from './contract-details'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -94,7 +97,7 @@ export function FeedContractCard(props: {
     <div
       className={clsx(
         'relative',
-        'group flex cursor-pointer flex-col overflow-hidden',
+        'bg-canvas-0 group flex cursor-pointer flex-col overflow-hidden',
         'outline-none transition-colors',
         className
       )}
@@ -122,7 +125,7 @@ export function FeedContractCard(props: {
               </div>
             </Col>
           </Row>
-          {promotedData && <BoostPill />}
+          {promotedData && <ClaimButton {...promotedData} />}
         </Row>
         <Link
           href={path}
@@ -153,20 +156,11 @@ export function FeedContractCard(props: {
         {isBinaryCpmm && metrics && metrics.hasShares && (
           <YourMetricsFooter metrics={metrics} />
         )}
-
-        {!showImage && promotedData && (
-          <div className="flex justify-center">
-            <ClaimButton {...promotedData} />
-          </div>
-        )}
       </Col>
 
       {showImage && (
         <div className="relative">
-          <div className="flex h-40 w-full items-center justify-center">
-            {promotedData && <ClaimButton {...promotedData} className="mt-2" />}
-          </div>
-          <div className="absolute inset-0 -z-10 transition-all group-hover:saturate-150">
+          <div className="absolute inset-0 bg-transparent transition-all group-hover:saturate-150">
             <Image
               fill
               alt=""
@@ -177,10 +171,22 @@ export function FeedContractCard(props: {
           </div>
         </div>
       )}
+      <PublicMarketGroups
+        contract={contract}
+        className={'px-4 pt-2 pb-4'}
+        justGroups={true}
+      />
+      {!showImage ||
+        (contract.groupLinks && (
+          <div className="w-full">
+            <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
+          </div>
+        ))}
       <Row
-        className="bg-canvas-0 justify-between gap-2 px-4 py-2"
+        className="justify-between gap-2 px-4 py-1"
         onClick={(e) => e.stopPropagation()}
       >
+        <TradesButton contract={contract} />
         <div className="flex items-center gap-1.5 p-1">
           <LikeButton
             contentId={contract.id}
@@ -197,7 +203,6 @@ export function FeedContractCard(props: {
             trackingLocation={'contract card (feed)'}
           />
         </div>
-
         <CommentsButton contract={contract} user={user} />
       </Row>
     </div>
@@ -374,10 +379,11 @@ function ClaimButton(props: {
   return (
     <button
       className={clsx(
-        'rounded-lg bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-2.5 px-6 font-semibold text-gray-900 transition-colors',
+        'h-min rounded-full bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-1 px-2 font-semibold text-gray-900 transition-colors',
         'hover:via-yellow-100 focus:via-yellow-100',
         'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
-        className
+        className,
+        'text-sm'
       )}
       disabled={loading || claimed}
       onClick={async (e) => {
@@ -403,7 +409,7 @@ function ClaimButton(props: {
       ) : loading ? (
         <LoadingIndicator />
       ) : (
-        `Claim ${formatMoney(reward)}`
+        `Claim ${formatMoney(reward)} Boost`
       )}
     </button>
   )
