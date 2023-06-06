@@ -26,6 +26,8 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
 import { run } from 'common/supabase/utils'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { LinkPreviewNodeView } from '../editor/link-preview-node-view'
+import { Spacer } from '../layout/spacer'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
@@ -129,8 +131,20 @@ export const FeedTimelineItems = (props: {
         } else if ('news' in item && item.news) {
           const { news } = item
           return (
-            <FeedItemFrame item={item} key={news.id + 'feed-timeline-item'}>
-              {news.title}
+            <FeedItemFrame
+              item={item}
+              key={news.id + 'feed-timeline-item'}
+              className="bg-canvas-0 my-4 p-4"
+            >
+              <Row className="mb-4">
+                <LinkPreviewNodeView
+                  image={news.urlToImage}
+                  inputKey={''}
+                  hideCloseButton
+                  deleteNode={() => {}}
+                  {...news}
+                />
+              </Row>
               {item.contracts?.map((contract) => (
                 <ContractMention
                   contract={contract}
