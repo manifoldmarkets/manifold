@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -46,7 +46,7 @@ export function MultiUserTransactionLink(props: {
 
 export function MultiUserTransactionModal(props: {
   userInfos: MultiUserLinkInfo[] | null
-  modalLabel: string
+  modalLabel: string | ReactNode
   open: boolean
   setOpen: (open: boolean) => void
   short?: boolean

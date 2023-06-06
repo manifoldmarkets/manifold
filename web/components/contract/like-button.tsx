@@ -238,13 +238,18 @@ function UserLikedFullList(props: {
   return (
     <MultiUserTransactionModal
       userInfos={displayInfos}
-      modalLabel={`💖 Liked ${
-        titleName
-          ? titleName
-          : contentType === 'contract'
-          ? 'this market'
-          : `this ${contentType}`
-      }`}
+      modalLabel={
+        <span>
+          💖 Liked{' '}
+          <span className="font-bold">
+            {titleName
+              ? titleName
+              : contentType === 'contract'
+              ? 'this market'
+              : `this ${contentType}`}
+          </span>
+        </span>
+      }
       open={true}
       setOpen={setOpen}
       short={true}
