@@ -90,7 +90,7 @@ const processNewsArticle = async (
   const { data } = await db.rpc('search_contract_embeddings' as any, {
     query_embedding: embedding,
     similarity_threshold: 0.825, // hand-selected; don't change unless you know what you're doing
-    match_count: 5,
+    match_count: 20,
   })
 
   const getContract = (cid: string) =>
@@ -102,7 +102,17 @@ const processNewsArticle = async (
 
   const contractsIds = (data as any).map((d: any) => d.contract_id)
 
-  const questions: Contract[] = await Promise.all(contractsIds.map(getContract))
+  const contracts: Contract[] = await Promise.all(contractsIds.map(getContract))
+
+  const questions = contracts
+    .filter((c) => c.outcomeType !== 'STONK')
+    .filter((c) => {
+      if (!c.resolutionTime) return true
+      // keep only if resolved in last 5 days
+      return (Date.now() - c.resolutionTime) / (1000 * 3600 * 24) < 5
+    })
+    .slice(0, 5)
+
   if (questions.length === 0) {
     console.log('No related markets found\n\n')
     return
