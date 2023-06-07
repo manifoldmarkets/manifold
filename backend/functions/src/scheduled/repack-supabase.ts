@@ -16,7 +16,7 @@ export const repackSupabaseScheduled = functions.pubsub
   })
 
 export const repacksupabase = onRequest(
-  { timeoutSeconds: 3600, memory: '128MiB' },
+  { timeoutSeconds: 3600, memory: '256MiB' },
   async (_req, res) => {
     console.log('Running repackSupabase...')
     await runRepackSupabase()
