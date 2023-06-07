@@ -69,7 +69,7 @@ function FeedTimelineContent() {
     Date.now(),
     'last-seen-feed-timeline' + user?.id
   )
-  const [scrolledDown, setScrolledDown] = useState(false)
+  const [topWasVisible, setTopWasVisible] = useState(false)
   const [newerTimelineItems, setNewerTimelineItems] = useState<
     FeedTimelineItem[]
   >([])
@@ -85,22 +85,25 @@ function FeedTimelineContent() {
   }, [pageVisible])
 
   if (!boosts || !savedFeedItems) return <LoadingIndicator />
+  const newAvatarUrls = uniq(
+    filterDefined(newerTimelineItems.map((item) => item.avatarUrl))
+  ).slice(0, 3)
 
   return (
     <Col className={'relative items-center'}>
       <VisibilityObserver
         className="pointer-events-none absolute top-0 h-5 w-full select-none "
         onVisibilityUpdated={(visible) => {
-          if (visible && scrolledDown) {
+          if (visible && !topWasVisible) {
             addTimelineItems(newerTimelineItems, { new: true })
             setNewerTimelineItems([])
-            setScrolledDown(false)
+            setTopWasVisible(true)
           }
-          if (!visible) setScrolledDown(true)
+          if (!visible) setTopWasVisible(false)
         }}
       />
-      {newerTimelineItems.length > 0 && scrolledDown && (
-        <NewActivityButton newFeedTimelineItems={newerTimelineItems} />
+      {newAvatarUrls.length > 0 && !topWasVisible && (
+        <NewActivityButton avatarUrls={newAvatarUrls} />
       )}
       <FeedTimelineItems
         boosts={boosts}
@@ -129,19 +132,14 @@ function FeedTimelineContent() {
   )
 }
 
-const NewActivityButton = (props: {
-  newFeedTimelineItems: FeedTimelineItem[]
-}) => {
-  const { newFeedTimelineItems } = props
+const NewActivityButton = (props: { avatarUrls: string[] }) => {
+  const { avatarUrls } = props
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
     })
   }
-  const avatarUrls = uniq(
-    filterDefined(newFeedTimelineItems.map((item) => item.avatarUrl))
-  ).slice(0, 3)
 
   return (
     <button

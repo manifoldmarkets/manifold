@@ -223,36 +223,43 @@ function createFeedTimelineItems(
   comments: ContractComment[] | undefined,
   news: News[] | undefined
 ): FeedTimelineItem[] {
-  const newsData = Object.entries(groupBy(data, (item) => item.news_id)).map(
-    ([newsId, newsItems]) => {
-      const contractIds = data
-        .filter((item) => item.news_id === newsId)
-        .map((i) => i.contract_id)
-      const relevantContracts = contracts?.filter((contract) =>
-        contractIds.includes(contract.id)
-      )
-      return {
-        ...getBaseTimelineItem(newsItems[0]),
-        newsId,
-        avatarUrl: relevantContracts?.[0]?.creatorAvatarUrl,
-        contracts: relevantContracts,
-        news: news?.find((news) => news.id === newsId),
-      } as FeedTimelineItem
-    }
-  )
+  const newsData = Object.entries(
+    groupBy(
+      data.filter((d) => d.news_id),
+      (item) => item.news_id
+    )
+  ).map(([newsId, newsItems]) => {
+    const contractIds = data
+      .filter((item) => item.news_id === newsId)
+      .map((i) => i.contract_id)
+    const relevantContracts = contracts?.filter((contract) =>
+      contractIds.includes(contract.id)
+    )
+    return {
+      ...getBaseTimelineItem(newsItems[0]),
+      newsId,
+      avatarUrl: relevantContracts?.[0]?.creatorAvatarUrl,
+      contracts: relevantContracts,
+      news: news?.find((news) => news.id === newsId),
+    } as FeedTimelineItem
+  })
   // TODO: The uniqBy will coalesce contract-based feed timeline elements non-deterministically
   const nonNewsTimelineItems = uniqBy(
     data.map((item) => {
       const dataType = item.data_type as FEED_DATA_TYPES
+      // Parse new feed timeline data types here
       if (
         dataType === 'contract_probability_changed' ||
         dataType === 'new_comment' ||
         dataType === 'new_contract' ||
-        dataType === 'popular_comment'
+        dataType === 'popular_comment' ||
+        dataType === 'trending_contract'
       ) {
         const relevantContract = contracts?.find(
           (contract) => contract.id === item.contract_id
         )
+        // We may not find a relevant contract if they've already seen the contract in their feed
+        if (!relevantContract) return
         const relevantComments = comments?.filter(
           (comment) => comment.contractId === item.contract_id
         )
@@ -267,7 +274,6 @@ function createFeedTimelineItems(
           comments: relevantComments,
         } as FeedTimelineItem
       }
-      // Add new feed timeline data types here
     }),
     'contractId'
   )
