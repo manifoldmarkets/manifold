@@ -77,6 +77,11 @@ const processNewsArticle = async (
     return
   }
 
+  if (url.includes('youtube.com')) {
+    console.log('Skipping youtube video', title)
+    return
+  }
+
   const cleanTitle = title.split(' - ')[0]
   console.log(cleanTitle)
 
@@ -105,12 +110,10 @@ const processNewsArticle = async (
   const contracts: Contract[] = await Promise.all(contractsIds.map(getContract))
 
   const questions = contracts
-    .filter((c) => c.outcomeType !== 'STONK')
-    .filter((c) => {
-      if (!c.resolutionTime) return true
-      // keep only if resolved in last 5 days
-      return (Date.now() - c.resolutionTime) / (1000 * 3600 * 24) < 5
-    })
+    .filter(
+      (c) =>
+        c.outcomeType !== 'STONK' && !c.isResolved && c.visibility === 'public'
+    )
     .slice(0, 5)
 
   if (questions.length === 0) {
