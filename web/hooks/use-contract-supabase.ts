@@ -1,5 +1,5 @@
 import { AnyContractType, Contract, visibility } from 'common/contract'
-import { use, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getContractParams } from 'web/lib/firebase/api'
 import {
   getContract,
