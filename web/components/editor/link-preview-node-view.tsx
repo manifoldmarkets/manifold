@@ -23,31 +23,29 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
     linkPreviewDismissed[inputKey + url] = true
   }
   return (
-    <>
-      <Col className=" relative w-[17rem] sm:w-[22rem] md:w-[25rem]" key={id}>
-        <img
-          className=" border-ink-300 m-0 rounded-t-lg border object-contain "
-          src={image}
-          alt={title}
-          height={200}
-        />
-        {!hideCloseButton && (
-          <button
-            className={
-              ' bg-canvas-50 absolute top-2 right-2 z-20 rounded-full p-0.5 hover:invert'
-            }
-            onClick={handleDelete}
-          >
-            <XIcon className={'text-ink-900 h-4'} />
-          </button>
-        )}
-        <a className={'absolute inset-0 z-10'} href={url} />
-        <Col className="bg-canvas-0 border-ink-300 rounded-b-lg border border-t-0 p-2 hover:underline">
-          <div className="line-clamp-2 text-ink-900 text-base">{title}</div>
-          <div className="line-clamp-3 text-ink-600 text-xs">{description}</div>
-        </Col>
+    <Col className="relative w-[17rem] sm:w-[22rem] md:w-[25rem]" key={id}>
+      <img
+        className="border-ink-300 m-0 rounded-t-lg border object-contain "
+        src={image}
+        alt={title}
+        height={200}
+      />
+      {!hideCloseButton && (
+        <button
+          className={
+            ' bg-canvas-50 absolute top-2 right-2 z-20 rounded-full p-0.5 hover:invert'
+          }
+          onClick={handleDelete}
+        >
+          <XIcon className={'text-ink-900 h-4'} />
+        </button>
+      )}
+      <a className={'absolute inset-0 z-10'} href={url} target="_blank" />
+      <Col className="bg-canvas-0 border-ink-300 rounded-b-lg border border-t-0 p-2 hover:underline">
+        <div className="line-clamp-2 text-ink-900 text-base">{title}</div>
+        <div className="line-clamp-3 text-ink-600 text-xs">{description}</div>
       </Col>
-    </>
+    </Col>
   )
 }
 

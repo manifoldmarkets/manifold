@@ -47,15 +47,11 @@ export GOOGLE_APPLICATION_CREDENTIALS_DEV=~/dev-mantic-market.json
 
 ## Developing locally
 
-- In root directory run `$ ./dev.sh dev` to start the emulator for the functions, along with the /api docker image and /web frontend. Note the database is the dev db.
+- In root directory run `$ ./dev.sh dev` to start the dev functions, the /api docker image, and /web frontend. Note the database is the dev db.
 
   - Or `$ yarn serve` in this directory to start the functions only
 
-- If you change db trigger code, you have to start (doesn't have to complete) the deploy of it to dev to cause a hard emulator code refresh
-  - `$ firebase deploy --only functions:dbTriggerNameHere`
-  - TODO: find a better way to get the emulator to refresh
 - If you want to test a scheduled function replace your function in [test-backend-function.ts](../scripts/test-backend-function.ts) and run the file
-- If your emulators won't start, try running `export JAVA_TOOL_OPTIONS="-Xmx4g"` to give them more memory (4gb in this example)
 
 ## Developing with localdb
 

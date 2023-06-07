@@ -2,6 +2,8 @@ import { SupabaseClient } from 'common/supabase/utils'
 import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
+import { insertContractRelatedDataToUsersFeeds } from 'shared/create-feed'
+import { Contract } from 'common/contract'
 
 export const processNews = async (
   apiKey: string,
@@ -75,6 +77,11 @@ const processNewsArticle = async (
     return
   }
 
+  if (url.includes('youtube.com')) {
+    console.log('Skipping youtube video', title)
+    return
+  }
+
   const cleanTitle = title.split(' - ')[0]
   console.log(cleanTitle)
 
@@ -88,7 +95,7 @@ const processNewsArticle = async (
   const { data } = await db.rpc('search_contract_embeddings' as any, {
     query_embedding: embedding,
     similarity_threshold: 0.825, // hand-selected; don't change unless you know what you're doing
-    match_count: 5,
+    match_count: 20,
   })
 
   const getContract = (cid: string) =>
@@ -100,7 +107,15 @@ const processNewsArticle = async (
 
   const contractsIds = (data as any).map((d: any) => d.contract_id)
 
-  const questions = await Promise.all(contractsIds.map(getContract))
+  const contracts: Contract[] = await Promise.all(contractsIds.map(getContract))
+
+  const questions = contracts
+    .filter(
+      (c) =>
+        c.outcomeType !== 'STONK' && !c.isResolved && c.visibility === 'public'
+    )
+    .slice(0, 5)
+
   if (questions.length === 0) {
     console.log('No related markets found\n\n')
     return
@@ -112,10 +127,9 @@ const processNewsArticle = async (
   }
   console.log()
   console.log()
-
-  await pg
-    .none(
-      'insert into news (title, url, published_time, author, description, image_url, source_id, source_name, title_embedding, contract_ids) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+  const newsRowJustId = await pg
+    .one<{ id: number }>(
+      'insert into news (title, url, published_time, author, description, image_url, source_id, source_name, title_embedding, contract_ids) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id',
       [
         cleanTitle,
         url,
@@ -130,4 +144,27 @@ const processNewsArticle = async (
       ]
     )
     .catch((err) => console.error(err))
+  const newsId = newsRowJustId?.id.toString()
+  if (!newsId) return
+  console.log(
+    'inserted news with id:',
+    newsId,
+    'adding to feed now with published date',
+    publishedAtDate.toISOString()
+  )
+  await insertContractRelatedDataToUsersFeeds(
+    questions,
+    'news_with_related_contracts',
+    [
+      'follow_contract',
+      'liked_contract',
+      'viewed_contract',
+      'follow_user',
+      'similar_interest_vector_to_contract',
+    ],
+    publishedAtDate.valueOf(),
+    pg,
+    [],
+    { newsId }
+  )
 }

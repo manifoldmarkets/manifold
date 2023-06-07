@@ -5,6 +5,7 @@ import {
   run,
   selectJson,
   selectFrom,
+  Tables,
 } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import { Sort, filter } from 'web/components/supabase-search'
@@ -77,6 +78,25 @@ export const getContractWithFields = async (id: string) => {
     return null
   }
 }
+
+// Only fetches contracts with 'public' visibility
+export const getPublicContractRows = async (options: {
+  limit: number
+  beforeTime?: number
+  order?: 'asc' | 'desc'
+}) => {
+  let q = db.from('public_contracts').select('*')
+  q = q.order('created_time', {
+    ascending: options?.order === 'asc',
+  } as any)
+  if (options.beforeTime) {
+    q = q.lt('created_time', millisToTs(options.beforeTime))
+  }
+  q = q.limit(options.limit)
+  const { data } = await run(q)
+  return data as Tables['contracts']['Row'][]
+}
+
 // Only fetches contracts with 'public' visibility
 export const getPublicContracts = async (options: {
   limit: number
@@ -308,4 +328,15 @@ export async function getWatchedContractsCount(userId: string) {
       .eq('follow_id', userId)
   )
   return count
+}
+
+export async function getIsPrivateContractMember(
+  userId: string,
+  contractId: string
+) {
+  const { data } = await db.rpc('is_private_contract_member', {
+    this_contract_id: contractId,
+    this_member_id: userId,
+  })
+  return data as boolean | null
 }

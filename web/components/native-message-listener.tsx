@@ -3,7 +3,6 @@ import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { getSourceUrl, Notification } from 'common/notification'
 import {
   handlePushNotificationPermissionStatus,
-  markNotificationAsSeen,
   setPushToken,
 } from 'web/lib/firebase/notifications'
 import { useRouter } from 'next/router'
@@ -54,7 +53,7 @@ export const NativeMessageListener = () => {
       await setPushToken(userId, token)
     } else if (type === 'notification') {
       const notification = data as Notification
-      if (privateUser) markNotificationAsSeen(privateUser.id, notification.id)
+      // TODO: mark the notification as seen
       const sourceUrl = getSourceUrl(notification)
       console.log('sourceUrl', sourceUrl)
       try {

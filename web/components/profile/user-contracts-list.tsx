@@ -18,7 +18,12 @@ export function UserContractsList(props: { creator: User }) {
   const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
   const [creatorRank, setCreatorRank] = useState<number | undefined>()
   const [unresolvedMarkets, setUnresolvedMarkets] = useState<number>(0)
-
+  useEffect(() => {
+    console.log('mounted')
+    return () => {
+      console.log('unmounted')
+    }
+  }, [])
   useEffect(() => {
     getTotalContractCreated(creator.id).then(setMarketsCreated)
     getCreatorRank(allTime, 'allTime').then(setCreatorRank)
@@ -75,7 +80,7 @@ export function UserContractsList(props: { creator: User }) {
         additionalFilter={{
           creatorId: creator.id,
         }}
-        persistPrefix={`user-${creator.id}`}
+        persistPrefix={`user-contracts-list-${creator.id}`}
         profile={true}
       />
     </Col>

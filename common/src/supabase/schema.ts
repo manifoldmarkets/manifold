@@ -2347,6 +2347,12 @@ export interface Database {
         }
         Returns: unknown
       }
+      is_admin: {
+        Args: {
+          input_string: string
+        }
+        Returns: boolean
+      }
       is_group_admin: {
         Args: {
           this_group_id: string

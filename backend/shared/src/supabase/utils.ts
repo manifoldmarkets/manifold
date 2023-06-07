@@ -36,14 +36,15 @@ export async function bulkUpdate<
 >(
   db: SupabaseDirectClient,
   table: T,
-  idField: string & keyof Row,
+  idFields: (string & keyof Row)[],
   values: ColumnValues[]
 ) {
   if (values.length) {
     const columnNames = Object.keys(values[0])
     const cs = new pgp.helpers.ColumnSet(columnNames, { table })
+    const clause = idFields.map((f) => `v.${f} = t.${f}`).join(' and ')
     const query =
-      pgp.helpers.update(values, cs) + ` WHERE v.${idField} = t.${idField}`
+      pgp.helpers.update(values, cs) + ` WHERE ${clause}`
     // Hack to properly cast jsonb values.
     const q = query.replace(/::jsonb'/g, "'::jsonb")
     await db.none(q)

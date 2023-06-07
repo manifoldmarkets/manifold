@@ -21,6 +21,7 @@ import { User } from 'common/user'
 import { secrets } from 'common/secrets'
 import { HOUR_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
+import { addCommentOnContractToFeed } from 'shared/create-feed'
 
 const firestore = admin.firestore()
 
@@ -150,11 +151,17 @@ export const onCreateCommentOnContract = functions
       await change.ref.update(fields)
     }
 
-    await handleCommentNotifications(
+    const repliedOrMentionedUserIds = await handleCommentNotifications(
       comment,
       contract,
       commentCreator,
       bet,
+      eventId
+    )
+    await addCommentOnContractToFeed(
+      contractId,
+      comment,
+      repliedOrMentionedUserIds.concat([contract.creatorId, comment.userId]),
       eventId
     )
   })
@@ -237,7 +244,7 @@ export const handleCommentNotifications = async (
       })
     }
   }
-
+  // TODO: after feed goes live, remove non replied/mentioned users from notifications
   await createCommentOrAnswerOrUpdatedContractNotification(
     comment.id,
     'comment',
@@ -251,4 +258,5 @@ export const handleCommentNotifications = async (
       taggedUserIds: mentionedUsers,
     }
   )
+  return [...mentionedUsers, ...Object.keys(repliedUsers)]
 }

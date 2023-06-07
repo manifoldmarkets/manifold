@@ -21,3 +21,5 @@ ios/Manifold.xcodeproj/project.pbxproj
 # macOS
 .DS_Store
 sentry.properties
+# simulator build
+*.tar.gz

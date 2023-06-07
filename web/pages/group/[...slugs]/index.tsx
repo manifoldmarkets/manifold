@@ -177,7 +177,8 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const user = useUser()
   const isManifoldAdmin = useAdmin()
   const group = useGroupFromSlug(slugs[0]) ?? groupParams?.group
-  const userRole = useRealtimeRole(group?.id)
+  const realtimeRole = useRealtimeRole(group?.id)
+  const userRole = isManifoldAdmin ? 'admin' : realtimeRole
   const isMobile = useIsMobile()
   const privateUser = usePrivateUser()
   const [writingNewAbout, setWritingNewAbout] = useState(false)
@@ -226,10 +227,16 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     setDefaultMemberTab(MEMBER_INVITE_INDEX)
     setOpenMemberModal(true)
   }
-
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
   return (
     <>
+      {!realtimeRole && isManifoldAdmin && (
+        <Row className="fixed top-14 z-50 w-full justify-end sm:top-0 lg:left-0 lg:justify-center">
+          <div className="rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500 lg:ml-[47rem]">
+            ADMIN
+          </div>
+        </Row>
+      )}
       <AddContractButton
         group={group}
         user={user}
@@ -257,7 +264,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
             key={group.id}
           />
         </div>
-        <Col className="bg-canvas-0 absolute bottom-0 w-full bg-opacity-80 px-4">
+        <Col className="bg-canvas-0 absolute bottom-0 w-full bg-opacity-90 px-4">
           <Row className="mt-4 mb-2 w-full justify-between gap-1">
             <div className="text-ink-900 text-2xl font-normal sm:text-3xl">
               {group.name}
@@ -288,7 +295,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
           <Row className="mb-2 gap-4">
             <GroupMembersWidget
               group={group}
-              canEdit={isManifoldAdmin || userRole === 'admin'}
+              canEdit={userRole === 'admin'}
               onMemberClick={onMemberClick}
               open={openMemberModal}
               setOpen={setOpenMemberModal}

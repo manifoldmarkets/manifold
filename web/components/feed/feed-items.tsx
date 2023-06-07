@@ -82,10 +82,11 @@ export const FeedItems = (props: {
               contract={contract}
               className={clsx(
                 'my-0 border-0',
-                hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
+                hasItems ? 'rounded-t-xl rounded-b-none' : ''
               )}
               promotedData={promotedData}
               trackingPostfix="feed"
+              hasItems={hasItems}
             />
             <Row className="bg-canvas-0">
               <FeedCommentItem
@@ -110,7 +111,7 @@ export const FeedItems = (props: {
 }
 
 // every period items in A, insert an item from B
-function mergePeriodic<A, B>(a: A[], b: B[], period: number): (A | B)[] {
+export function mergePeriodic<A, B>(a: A[], b: B[], period: number): (A | B)[] {
   const merged = []
   let j = 0
   for (let i = 0; i < a.length; ++i) {

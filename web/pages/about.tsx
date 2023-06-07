@@ -182,6 +182,11 @@ export default function AboutPage() {
             description="Go long on longform"
             href="/latestposts"
           />
+          <LabCard
+            title="⏳ Timeline"
+            description="Live feed"
+            href="/feed-timeline"
+          />
         </LabSection>
 
         <Subtitle>👨‍💻️ Developers</Subtitle>
@@ -274,7 +279,7 @@ export default function AboutPage() {
             description="An old version of market boosts that let you advertise anything. View ads for mana!"
             href="/ad"
           />
-          <LabCard title="🐮 Cowp" description="???" href="/cowp" />
+          <LabCard title="🐮 Moolinda" description="???" href="/cowp" />
         </LabSection>
         <Spacer h={8} />
       </Col>

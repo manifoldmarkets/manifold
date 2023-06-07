@@ -55,6 +55,8 @@ function calculateCpmmShares(
   bet: number,
   betChoice: string
 ) {
+  if (bet === 0) return 0
+
   const { YES: y, NO: n } = pool
   const k = y ** p * n ** (1 - p)
 
@@ -128,8 +130,10 @@ export function calculateCpmmAmountToProb(
   const k = y ** p * n ** (1 - p)
   return outcome === 'YES'
     ? // https://www.wolframalpha.com/input?i=-1+%2B+t+-+((-1+%2B+p)+t+(k%2F(n+%2B+b))^(1%2Fp))%2Fp+solve+b
-      ((p * (prob - 1)) / ((p - 1) * prob)) ** (-p)*(k - n * ((p * (prob - 1)) / ((p - 1) * prob)) ** p)
-    : (((1 - p) * (prob - 1)) / ((-p) * prob)) ** (p-1)*(k - y * (((1 - p) * (prob - 1)) / ((-p) * prob)) ** (1 - p))
+      ((p * (prob - 1)) / ((p - 1) * prob)) ** -p *
+        (k - n * ((p * (prob - 1)) / ((p - 1) * prob)) ** p)
+    : (((1 - p) * (prob - 1)) / (-p * prob)) ** (p - 1) *
+        (k - y * (((1 - p) * (prob - 1)) / (-p * prob)) ** (1 - p))
 }
 
 function calculateAmountToBuyShares(

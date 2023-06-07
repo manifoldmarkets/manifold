@@ -91,7 +91,7 @@ export function AddMemberContent(props: {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search users"
-          className={clsx('placeholder:text-ink-400 w-full')}
+          className={clsx('placeholder:text-ink-400 flex w-full flex-shrink-0')}
         />
         <Col
           className={clsx(

@@ -34,7 +34,6 @@ import { searchInAny } from 'common/util/parse'
 import { Input } from 'web/components/widgets/input'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useBets } from 'web/hooks/use-bets-supabase'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import {
   inMemoryStore,
   usePersistentState,
@@ -63,6 +62,7 @@ import { Table } from '../widgets/table'
 import { BetsSummary } from './bet-summary'
 import { OrderTable } from './limit-bets'
 import { SellRow } from './sell-row'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 
 type BetSort =
   | 'newest'
@@ -368,7 +368,11 @@ function ContractBets(props: {
   userId: string
 }) {
   const { metrics, displayMetric, isYourBets, userId } = props
-  const contract = useRealtimeContract(props.contract.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
   const { resolution, closeTime, outcomeType, isResolved } = contract
 
   const user = useUser()

@@ -2,8 +2,8 @@ import { ClockIcon, StarIcon, UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
 import Router from 'next/router'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
 
 import { Contract, contractPath, CPMMContract } from 'common/contract'
@@ -12,7 +12,7 @@ import { ContractCardView } from 'common/events'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { formatMoney } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -20,6 +20,7 @@ import { redeemBoost } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { fromNow } from 'web/lib/util/time'
 import { BetRow } from '../bet/bet-row'
+import { QuickOutcomeView } from '../bet/quick-bet'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
@@ -28,8 +29,9 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
-import { ContractStatusLabel } from './contracts-table'
+import { PublicMarketGroups } from './contract-details'
 import { LikeButton } from './like-button'
+import { TradesButton } from './trades-button'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -37,11 +39,17 @@ export function FeedContractCard(props: {
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
   className?: string
+  reason?: string
+  hasItems?: boolean
 }) {
-  const { className, promotedData, trackingPostfix } = props
+  const { className, promotedData, reason, trackingPostfix, hasItems } = props
   const user = useUser()
 
-  const contract = useRealtimeContract(props.contract.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
   const {
     closeTime,
     isResolved,
@@ -88,7 +96,7 @@ export function FeedContractCard(props: {
     <div
       className={clsx(
         'relative',
-        'group flex cursor-pointer flex-col overflow-hidden',
+        'bg-canvas-0 group flex cursor-pointer flex-col overflow-hidden',
         'outline-none transition-colors',
         className
       )}
@@ -100,8 +108,28 @@ export function FeedContractCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Col className="bg-canvas-0 gap-2 p-4 py-2">
+      <Col className=" bg-canvas-0 gap-2 p-4 py-2">
         {/* Title is link to contract for open in new tab and a11y */}
+        <Row className="justify-between">
+          <Row onClick={(e) => e.stopPropagation()} className="gap-2">
+            <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
+            <Col>
+              <UserLink
+                name={creatorName}
+                username={creatorUsername}
+                createdTime={creatorCreatedTime}
+              />
+              <div className="text-ink-500 text-sm">
+                created {fromNow(contract.createdTime)}
+              </div>
+            </Col>
+          </Row>
+          {promotedData ? (
+            <ClaimButton {...promotedData} />
+          ) : (
+            reason && <ReasonChosen contract={contract} reason={reason} />
+          )}
+        </Row>
         <Link
           href={path}
           className={clsx(
@@ -118,77 +146,24 @@ export function FeedContractCard(props: {
           {question}
         </Link>
 
-        <Row className="text-ink-600 items-center gap-3 overflow-hidden text-sm">
-          <Row className="gap-2" onClick={(e) => e.stopPropagation()}>
-            <Avatar
-              username={creatorUsername}
-              avatarUrl={creatorAvatarUrl}
-              size="xs"
-            />
-            <UserLink
-              name={creatorName}
-              username={creatorUsername}
-              className="text-ink-600 h-[24px] text-sm"
-              createdTime={creatorCreatedTime}
-            />
-          </Row>
-          <div className="flex-1" />
-          {promotedData ? <BoostPill /> : <ReasonChosen contract={contract} />}
-        </Row>
-
         <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
-          <div className="text-base font-semibold">
-            <ContractStatusLabel contract={contract} chanceLabel />
-          </div>
+          <QuickOutcomeView contract={contract} />
 
           {isBinaryCpmm && (
             <div className="flex gap-2">
-              <BetRow contract={contract} noUser={!user} />
+              <BetRow contract={contract} user={user} />
             </div>
           )}
-
-          <Row
-            className="ml-auto items-center gap-1"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-1.5 p-1">
-              <LikeButton
-                contentId={contract.id}
-                contentCreatorId={contract.creatorId}
-                user={user}
-                contentType={'contract'}
-                totalLikes={contract.likedByUserCount ?? 0}
-                contract={contract}
-                contentText={question}
-                showTotalLikesUnder
-                size="md"
-                color="gray"
-                className="!px-0"
-                trackingLocation={'contract card (feed)'}
-              />
-            </div>
-
-            <CommentsButton contract={contract} user={user} />
-          </Row>
         </Row>
 
         {isBinaryCpmm && metrics && metrics.hasShares && (
           <YourMetricsFooter metrics={metrics} />
         )}
-
-        {!showImage && promotedData && (
-          <div className="flex justify-center">
-            <ClaimButton {...promotedData} />
-          </div>
-        )}
       </Col>
 
       {showImage && (
-        <>
-          <div className="flex h-40 w-full items-center justify-center">
-            {promotedData && <ClaimButton {...promotedData} className="mt-2" />}
-          </div>
-          <div className="absolute inset-0 -z-10 transition-all group-hover:saturate-150">
+        <div className="relative mt-1 h-40 w-full">
+          <div className="absolute inset-0 mt-2 bg-transparent transition-all group-hover:saturate-150">
             <Image
               fill
               alt=""
@@ -197,7 +172,56 @@ export function FeedContractCard(props: {
               src={coverImageUrl}
             />
           </div>
-        </>
+          <div className="absolute bottom-0">
+            <PublicMarketGroups
+              contract={contract}
+              className={'px-4 py-2'}
+              justGroups={true}
+            />
+          </div>
+        </div>
+      )}
+      {!showImage && (
+        <PublicMarketGroups
+          contract={contract}
+          className={'px-4 py-2'}
+          justGroups={true}
+        />
+      )}
+      {!showImage && (
+        <div className="w-full">
+          <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
+        </div>
+      )}
+      <Col className="relative">
+        <Row
+          className="justify-between gap-2 px-4 py-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <TradesButton contract={contract} />
+          <CommentsButton contract={contract} user={user} />
+          <div className="flex items-center gap-1.5 p-1">
+            <LikeButton
+              contentId={contract.id}
+              contentCreatorId={contract.creatorId}
+              user={user}
+              contentType={'contract'}
+              totalLikes={contract.likedByUserCount ?? 0}
+              contract={contract}
+              contentText={question}
+              showTotalLikesUnder
+              size="md"
+              color="gray"
+              className="!px-0"
+              trackingLocation={'contract card (feed)'}
+            />
+          </div>
+        </Row>
+      </Col>
+      {hasItems && (
+        <div className=" w-full">
+          <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
+        </div>
       )}
     </div>
   )
@@ -283,29 +307,24 @@ export function FeaturedPill(props: { label?: string }) {
   )
 }
 
-const BoostPill = () => (
-  <Tooltip text="They're paying you to see this" placement="right">
-    <FeaturedPill label="Boosted" />
-  </Tooltip>
-)
-
-function ReasonChosen(props: { contract: Contract }) {
+function ReasonChosen(props: { contract: Contract; reason?: string }) {
   const { contract } = props
   const { createdTime, closeTime, uniqueBettorCount } = contract
 
   const now = Date.now()
-  const reason =
-    createdTime > now - DAY_MS
-      ? 'New'
-      : closeTime && closeTime < now + DAY_MS
-      ? 'Closing soon'
-      : !uniqueBettorCount || uniqueBettorCount <= 5
-      ? 'For you'
-      : 'Trending'
+  const reason = props.reason
+    ? props.reason
+    : createdTime > now - DAY_MS
+    ? 'New'
+    : closeTime && closeTime < now + DAY_MS
+    ? 'Closing soon'
+    : !uniqueBettorCount || uniqueBettorCount <= 5
+    ? 'For you'
+    : 'Trending'
 
   return (
-    <Row className="gap-3">
-      <div className="flex items-center gap-1">
+    <Row className="text-ink-500 gap-3 text-xs">
+      <div className="flex items-center gap-1 text-right">
         {reason}
         {reason === 'New' && <StarIcon className="h-4 w-4" />}
       </div>
@@ -372,10 +391,11 @@ function ClaimButton(props: {
   return (
     <button
       className={clsx(
-        'rounded-lg bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-2.5 px-6 font-semibold text-gray-900 transition-colors',
+        'h-min rounded-full bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-1 px-2 font-semibold text-gray-900 transition-colors',
         'hover:via-yellow-100 focus:via-yellow-100',
         'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
-        className
+        className,
+        'text-sm'
       )}
       disabled={loading || claimed}
       onClick={async (e) => {
@@ -399,9 +419,9 @@ function ClaimButton(props: {
       {claimed ? (
         'Claimed!'
       ) : loading ? (
-        <LoadingIndicator />
+        <LoadingIndicator size={'sm'} />
       ) : (
-        `Claim ${formatMoney(reward)}`
+        `Claim ${formatMoney(reward)} Boost`
       )}
     </button>
   )

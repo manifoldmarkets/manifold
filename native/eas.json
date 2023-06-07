@@ -27,6 +27,20 @@
       },
       "ios": {}
     },
+    "prod-development-simulator": {
+      "developmentClient": true,
+      "channel": "dev",
+      "distribution": "internal",
+      "env": {
+        "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
+      },
+      "android": {
+        "credentialsSource": "local"
+      },
+      "ios": {
+        "simulator": true
+      }
+    },
     "preview": {
       "channel": "preview",
       "distribution": "internal",

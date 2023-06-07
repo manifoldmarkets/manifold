@@ -8,7 +8,6 @@ import { createContext, useContext, useEffect, useRef } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import {
-  historyStore,
   inMemoryStore,
   urlParamStore,
   usePersistentState,
@@ -30,7 +29,7 @@ import { useIsAuthorized } from 'web/hooks/use-user'
 const CONTRACTS_PER_PAGE = 20
 
 export const SORTS = [
-  { label: 'No Sort', value: 'relevance' },
+  { label: 'Relevance', value: 'relevance' },
   { label: 'New', value: 'newest' },
   { label: 'Trending', value: 'score' },
   { label: 'Daily change', value: 'daily-score' },
@@ -215,14 +214,15 @@ export function SupabaseContractSearch(props: {
   const loadMoreContracts = () => query(state)
 
   // Counts as loaded if you are on the page and a query finished or if you go back in history.
-  const hasLoadedKey = `${persistPrefix}-search-has-loaded`
-  const searchHistoryStore = historyStore()
-  const hasLoadedQuery = searchHistoryStore.get(hasLoadedKey)
+  const [hasLoadedQuery, setHasLoadedQuery] = usePersistentInMemoryState(
+    false,
+    `${persistPrefix}-search-has-loaded`
+  )
 
   const onSearchParametersChanged = useRef(
     debounce((params) => {
       if (!isEqual(searchParams.current, params) || !hasLoadedQuery) {
-        searchHistoryStore.set(hasLoadedKey, true)
+        setHasLoadedQuery(true)
         if (persistPrefix) {
           searchParamsStore.set(`${persistPrefix}-params`, params)
         }
@@ -267,7 +267,7 @@ export function SupabaseContractSearch(props: {
           listViewDisabled={listViewDisabled}
         />
         {contracts && contracts.length === 0 ? (
-          profile ? (
+          profile || fromGroupProps ? (
             <p className="text-ink-500 mx-2">No markets found</p>
           ) : (
             <p className="text-ink-500 mx-2">

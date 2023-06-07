@@ -17,7 +17,6 @@ export async function getUserIsMember(
   userId: string | undefined | null
 ) {
   if (!userId || !groupId) return false
-
   const { data } = await run(
     db
       .from('group_members')
@@ -27,4 +26,11 @@ export async function getUserIsMember(
       .limit(1)
   )
   return data && data.length > 0
+}
+
+export async function getGroupMemberIds(db: SupabaseClient, groupId: string) {
+  const { data } = await run(
+    db.from('group_members').select('member_id').eq('group_id', groupId)
+  )
+  return data ? data.map((member) => member.member_id) : []
 }

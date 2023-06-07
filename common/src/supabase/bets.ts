@@ -4,7 +4,7 @@ import { BetFilter } from 'common/bet'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
-  filterChallenges: true,
+  filterChallenges: false,
   filterAntes: false,
 }
 
@@ -19,6 +19,14 @@ export async function getTotalBetCount(contractId: string, db: SupabaseClient) {
       .eq('is_ante', false)
   )
   return count as number
+}
+
+export const getBetRows = async (db: SupabaseClient, options?: BetFilter) => {
+  let q = db.from('contract_bets').select('*')
+  q = q.order('created_time', { ascending: options?.order === 'asc' })
+  q = applyBetsFilter(q, options)
+  const { data } = await run(q)
+  return data
 }
 
 export const getBets = async (db: SupabaseClient, options?: BetFilter) => {

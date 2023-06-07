@@ -12,7 +12,6 @@ import { formatMoney } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
 import { DAY_MS } from 'common/util/time'
 import { getLinkTarget } from 'web/components/widgets/site-link'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track, trackCallback } from 'web/lib/service/analytics'
@@ -28,6 +27,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { MiscDetails, ShowTime } from './contract-details'
 import { ProbOrNumericChange } from './prob-change-table'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -71,7 +71,11 @@ export const ContractCard = memo(function ContractCard(props: {
     numAnswersFR,
     fromGroupProps,
   } = props
-  const contract = useRealtimeContract(props.contract.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
   const { isResolved, createdTime, featuredLabel, creatorCreatedTime } =
     contract
   const { question, outcomeType } = contract
@@ -134,7 +138,6 @@ export const ContractCard = memo(function ContractCard(props: {
             </Row>
           </Row>
         )}
-
         {/* overlay question on image */}
         {hasImage && !hideQuestion && (
           <div className="relative mb-2">

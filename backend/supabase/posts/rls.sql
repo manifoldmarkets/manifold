@@ -12,3 +12,7 @@ select
     visibility = 'private'::text
     and is_group_member (group_id, firebase_uid ())
   );
+
+create policy "Enable all read access for manifold members" on public.posts for
+select
+  using (is_admin (public.firebase_uid ()));

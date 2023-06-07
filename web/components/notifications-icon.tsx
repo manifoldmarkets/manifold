@@ -7,7 +7,6 @@ import { useRouter } from 'next/router'
 import { useGroupedUnseenNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
 import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
-import { markNotificationAsSeen } from 'web/lib/firebase/notifications'
 import { keyBy } from 'lodash'
 
 export default function NotificationsIcon(props: { className?: string }) {
@@ -40,10 +39,7 @@ function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
     // If a user navigates to an unseen notification's source id, mark it as seen
     const possibleSourceId = asPath.split('#')[1]
     if (unseenSourceIdsToNotificationIds[possibleSourceId]) {
-      markNotificationAsSeen(
-        privateUser.id,
-        unseenSourceIdsToNotificationIds[possibleSourceId].id
-      )
+      // TODO: mark the notification as seen
     }
   }, [asPath, isReady, pathname, privateUser.id, unseenNotifs])
 

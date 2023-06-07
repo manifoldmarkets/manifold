@@ -48,7 +48,12 @@ function getSearchGroupSQL(groupInput: {
   const emptyTerm = term.length === 0
 
   // make sure when perusing groups, only non private ones are shown
-  const discoverGroupSearchWhereSQL = "where privacy_status != 'private'"
+  function discoverGroupSearchWhereSQL(groupTable: string) {
+    const privateGroupWhereSQL = uid
+      ? `or is_group_member(${groupTable}.id,'${uid}') or is_admin('${uid}'))`
+      : ')'
+    return `where (privacy_status != 'private' ${privateGroupWhereSQL}`
+  }
   const discoverGroupOrderBySQL = 'order by total_members desc'
 
   // if looking for your own groups
@@ -104,7 +109,7 @@ function getSearchGroupSQL(groupInput: {
       query = `
         select data
         from groups
-        ${discoverGroupSearchWhereSQL}
+        ${discoverGroupSearchWhereSQL('groups')}
         ${discoverGroupOrderBySQL}
       `
     }
@@ -117,7 +122,7 @@ function getSearchGroupSQL(groupInput: {
             similarity(groups.name,$1) AS similarity_score
         FROM groups 
       ) AS groupz
-      ${discoverGroupSearchWhereSQL}
+       ${discoverGroupSearchWhereSQL('groupz')}
       and groupz.similarity_score > ${SIMILARITY_THRESHOLD}
       ${discoverGroupOrderBySQL}
       `
@@ -126,7 +131,7 @@ function getSearchGroupSQL(groupInput: {
         SELECT groups.*
         FROM groups,
         websearch_to_tsquery('english',  $1) as query
-        ${discoverGroupSearchWhereSQL}
+       ${discoverGroupSearchWhereSQL('groups')}
         and groups.name_fts @@ query
         ${discoverGroupOrderBySQL}
       `

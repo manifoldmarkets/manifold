@@ -1,13 +1,13 @@
 import { Comment, ContractComment } from 'common/comment'
 import { Json } from 'common/supabase/schema'
 import { useEffect, useState } from 'react'
-import { getComments, getNumUserComments } from 'web/lib/supabase/comments'
+import { getCommentRows, getNumUserComments } from 'web/lib/supabase/comments'
 import { db } from 'web/lib/supabase/db'
 import { uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getAllComments } from 'common/supabase/comments'
 import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
-import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
+import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
 export function useComments(contractId: string, limit: number) {
   const [comments, setComments] = useState<Json[]>([])
@@ -76,15 +76,8 @@ export function useNumUserComments(userId: string) {
 }
 
 export function useRealtimeComments(limit: number): Comment[] {
-  const [oldComments, setOldComments] = useState<Comment[]>([])
-  const rows = useRealtimeRows('contract_comments')
-  const newComments = rows.map((r) => r.data as Comment)
-
-  useEffect(() => {
-    getComments(limit)
-      .then((result) => setOldComments(result))
-      .catch((e) => console.log(e))
-  }, [])
-
-  return [...oldComments, ...newComments].slice(-limit)
+  const { rows } = useSubscription('contract_comments', undefined, () =>
+    getCommentRows(limit)
+  )
+  return (rows ?? []).map((r) => r.data as Comment)
 }

@@ -61,7 +61,7 @@ export function ContractGroupsList(props: {
                 <span
                   key={groupLink.groupId}
                   className={clsx(
-                    'bg-ink-600 text-ink-0 hover:bg-primary-600 group relative rounded-full p-1 px-4 text-sm transition-colors'
+                    'text-ink-1000 bg-ink-100 hover:bg-ink-200 group relative rounded-full p-1 px-4 text-sm transition-colors'
                   )}
                 >
                   <GroupLinkItem group={groupLink} />

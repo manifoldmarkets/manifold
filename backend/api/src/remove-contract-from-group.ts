@@ -60,6 +60,7 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
           ? (groupMember.role as 'admin' | 'moderator')
           : undefined,
         isTrustworthy: isTrustworthy(user?.username),
+        isGroupMember: !!groupMember,
       })
     ) {
       throw new APIError(

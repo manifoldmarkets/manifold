@@ -6,6 +6,19 @@ import { Post } from 'common/post'
 import { User } from 'common/user'
 import { track } from '../service/analytics'
 
+export async function getCommentRows(limit: number) {
+  const { data } = await run(
+    db
+      .from('contract_comments')
+      .select('*')
+      .order('created_time', {
+        ascending: false,
+      })
+      .limit(limit)
+  )
+  return data
+}
+
 export async function getComments(limit: number) {
   const q = selectJson(db, 'contract_comments')
     .order('created_time', { ascending: false } as any)

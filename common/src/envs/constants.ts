@@ -81,8 +81,8 @@ export const BOT_USERNAMES = [
   'Botmageddon',
   'SmartBot',
   'ShifraGazsi',
+  'NiciusBot',
   'Bot',
-  'Catnee',
   'Mason',
   'VersusBot',
   'GPT4',
@@ -93,8 +93,10 @@ export const BOT_USERNAMES = [
   'Turbot',
   'MiraBot',
   'MetaculusBot',
-  'KevinBurke',
+  'burkebot',
   'Botflux',
+  '7',
+  'hyperkaehler'
 ]
 
 export const CORE_USERNAMES = [
@@ -148,6 +150,7 @@ export const CHECK_USERNAMES = [
   'KatjaGrace',
   'AndrewG',
   'MarcusAbramovitch',
+  'KevinBurke',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'

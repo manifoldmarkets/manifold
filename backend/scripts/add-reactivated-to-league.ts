@@ -1,7 +1,7 @@
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { groupBy, mapValues } from 'lodash'
 import { runScript } from 'run-script'
-import { addToLeagueIfNotInOne, getUsersNotInLeague } from 'shared/leagues'
+import { addToLeagueIfNotInOne, getUsersNotInLeague } from 'shared/generate-leagues'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
 if (require.main === module) {
