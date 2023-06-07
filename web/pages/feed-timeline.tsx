@@ -87,28 +87,26 @@ function FeedTimelineContent() {
   if (!boosts || !savedFeedItems) return <LoadingIndicator />
 
   return (
-    <Col>
-      <div className="relative">
-        <VisibilityObserver
-          className="pointer-events-none absolute top-0 h-5 w-full select-none "
-          onVisibilityUpdated={(visible) => {
-            if (visible && scrolledDown) {
-              addTimelineItems(newerTimelineItems, { new: true })
-              setNewerTimelineItems([])
-              setScrolledDown(false)
-            }
-            if (!visible) setScrolledDown(true)
-          }}
-        />
-      </div>
+    <Col className={'relative items-center'}>
+      <VisibilityObserver
+        className="pointer-events-none absolute top-0 h-5 w-full select-none "
+        onVisibilityUpdated={(visible) => {
+          if (visible && scrolledDown) {
+            addTimelineItems(newerTimelineItems, { new: true })
+            setNewerTimelineItems([])
+            setScrolledDown(false)
+          }
+          if (!visible) setScrolledDown(true)
+        }}
+      />
+      {newerTimelineItems.length > 0 && scrolledDown && (
+        <NewActivityButton newFeedTimelineItems={newerTimelineItems} />
+      )}
       <FeedTimelineItems
         boosts={boosts}
         user={user}
         feedTimelineItems={savedFeedItems}
       />
-      {newerTimelineItems.length > 0 && scrolledDown && (
-        <NewActivityButton newFeedTimelineItems={newerTimelineItems} />
-      )}
       <div className="relative">
         <VisibilityObserver
           className="pointer-events-none absolute bottom-0 h-5 w-full select-none "
@@ -148,8 +146,8 @@ const NewActivityButton = (props: {
   return (
     <button
       className={clsx(
-        'bg-canvas-50 border-ink-200 hover:bg-ink-200 rounded-full border py-2 pr-3 pl-2 text-sm transition-colors',
-        'fixed left-3 bottom-16'
+        'bg-canvas-50 border-ink-200 hover:bg-ink-200 rounded-full border-2 py-2 pr-3 pl-2 text-sm transition-colors',
+        'sticky top-7 z-10'
       )}
       onClick={scrollToTop}
     >
