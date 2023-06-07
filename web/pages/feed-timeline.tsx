@@ -145,7 +145,7 @@ const NewActivityButton = (props: { avatarUrls: string[] }) => {
     <button
       className={clsx(
         'bg-canvas-50 border-ink-200 hover:bg-ink-200 rounded-full border-2 py-2 pr-3 pl-2 text-sm transition-colors',
-        'sticky top-7 z-10'
+        'sticky top-7 z-20'
       )}
       onClick={scrollToTop}
     >
