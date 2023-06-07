@@ -8,7 +8,6 @@ import { createContext, useContext, useEffect, useRef } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import {
-  historyStore,
   inMemoryStore,
   urlParamStore,
   usePersistentState,
@@ -215,14 +214,15 @@ export function SupabaseContractSearch(props: {
   const loadMoreContracts = () => query(state)
 
   // Counts as loaded if you are on the page and a query finished or if you go back in history.
-  const hasLoadedKey = `${persistPrefix}-search-has-loaded`
-  const searchHistoryStore = historyStore()
-  const hasLoadedQuery = searchHistoryStore.get(hasLoadedKey)
+  const [hasLoadedQuery, setHasLoadedQuery] = usePersistentInMemoryState(
+    false,
+    `${persistPrefix}-search-has-loaded`
+  )
 
   const onSearchParametersChanged = useRef(
     debounce((params) => {
       if (!isEqual(searchParams.current, params) || !hasLoadedQuery) {
-        searchHistoryStore.set(hasLoadedKey, true)
+        setHasLoadedQuery(true)
         if (persistPrefix) {
           searchParamsStore.set(`${persistPrefix}-params`, params)
         }
