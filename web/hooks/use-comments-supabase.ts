@@ -1,7 +1,7 @@
 import { Comment, ContractComment } from 'common/comment'
 import { Json } from 'common/supabase/schema'
 import { useEffect, useState } from 'react'
-import { getComments, getNumUserComments } from 'web/lib/supabase/comments'
+import { getCommentRows, getNumUserComments } from 'web/lib/supabase/comments'
 import { db } from 'web/lib/supabase/db'
 import { uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -77,7 +77,7 @@ export function useNumUserComments(userId: string) {
 
 export function useRealtimeComments(limit: number): Comment[] {
   const { rows } = useSubscription('contract_comments', undefined, () =>
-    getComments(limit).then((rows) => rows.map((data) => ({ data } as any)))
+    getCommentRows(limit)
   )
   return (rows ?? []).map((r) => r.data as Comment)
 }

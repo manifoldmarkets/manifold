@@ -7,7 +7,7 @@ import {
   getContracts,
   getIsPrivateContractMember,
   getPublicContractIds,
-  getPublicContracts,
+  getPublicContractRows,
 } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
@@ -123,14 +123,7 @@ export const useContract = (contractId: string | undefined) => {
 
 export function useRealtimeContracts(limit: number) {
   const { rows } = useSubscription('contracts', undefined, () =>
-    getPublicContracts({ limit, order: 'desc' }).then((rows) =>
-      rows.map(
-        (data) =>
-          ({
-            data,
-          } as any)
-      )
-    )
+    getPublicContractRows({ limit, order: 'desc' })
   )
   return (rows ?? []).map((r) => r.data as Contract)
 }

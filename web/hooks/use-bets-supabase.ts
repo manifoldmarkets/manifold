@@ -2,7 +2,7 @@ import { Bet, BetFilter } from 'common/bet'
 import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { getBets, getTotalBetCount } from 'common/supabase/bets'
+import { getBetRows, getBets, getTotalBetCount } from 'common/supabase/bets'
 import { Filter } from 'common/supabase/realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
@@ -23,9 +23,7 @@ export function useRealtimeBets(options?: BetFilter) {
     }
   }
   const { rows } = useSubscription('contract_bets', filteredQuery, () =>
-    getBets(db, { ...options, order: 'desc' }).then((rows) =>
-      rows.map((data) => ({ data } as any))
-    )
+    getBetRows(db, { ...options, order: 'desc' })
   )
   const newBets = (rows ?? [])
     .map((r) => r.data as Bet)

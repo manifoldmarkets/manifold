@@ -2,6 +2,19 @@ import { ContractComment } from 'common/comment'
 import { run, selectJson } from 'common/supabase/utils'
 import { db } from './db'
 
+export async function getCommentRows(limit: number) {
+  const { data } = await run(
+    db
+      .from('contract_comments')
+      .select('*')
+      .order('created_time', {
+        ascending: false,
+      })
+      .limit(limit)
+  )
+  return data
+}
+
 export async function getComments(limit: number) {
   let q = selectJson(db, 'contract_comments')
   q = q
