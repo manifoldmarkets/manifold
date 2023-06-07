@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
-import { getCloudRunServiceUrl } from 'common/api'
-import { invokeFunction } from 'shared/utils'
+import { getReplicatorUrl } from 'common/api'
+import { invokeFunction, log } from 'shared/utils'
 import { onRequest } from 'firebase-functions/v2/https'
 
 export const repackSupabaseScheduled = functions.pubsub
@@ -25,7 +25,9 @@ export const repacksupabase = onRequest(
 )
 
 export async function runRepackSupabase() {
-  return fetch(getCloudRunServiceUrl('supabase-replicator') + '/repack', {
+  const url = getReplicatorUrl() + '/repack'
+  log('Calling repack endpoint', url)
+  return fetch(url, {
     headers: {
       'Content-Type': 'application/json',
     },
