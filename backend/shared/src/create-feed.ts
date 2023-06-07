@@ -7,6 +7,8 @@ import { getUserToReasonsInterestedInContractAndUser } from 'shared/supabase/con
 import { Contract } from 'common/contract'
 import { FEED_DATA_TYPES, FEED_REASON_TYPES } from 'common/feed'
 import { Reaction } from 'common/reaction'
+import { log } from 'shared/utils'
+import { buildArray } from 'common/util/array'
 
 export const insertDataToUserFeed = async (
   userId: string,
@@ -238,6 +240,76 @@ export const insertContractRelatedDataToUsersFeeds = async (
     })
   )
 }
+export const insertMarketMovementContractToUsersFeeds = async (
+  contract: Contract,
+  dailyScore: number
+) => {
+  log(
+    'adding contract to feed',
+    contract.id,
+    'with daily score',
+    dailyScore,
+    'prev score',
+    contract.dailyScore
+  )
+  const nowDate = new Date()
+  // Prevent same contract from being added to feed multiple times in a day
+  // TODO: Should we turn this into a select query and remove the idempotency key?
+  const idempotencyKey = `${
+    contract.id
+  }-prob-change-${nowDate.getFullYear()}-${nowDate.getMonth()}-${nowDate.getDate()}`
+  await addContractToFeed(
+    contract,
+    buildArray([
+      // You'll see it in your notifs
+      !contract.isResolved && 'follow_contract',
+      // TODO: viewed might not be signal enough, what about viewed 2x/3x?
+      'viewed_contract',
+      'liked_contract',
+      'similar_interest_vector_to_contract',
+    ]),
+    'contract_probability_changed',
+    [],
+    {
+      userToContractDistanceThreshold: 0.12,
+      idempotencyKey,
+    }
+  )
+}
+export const insertTrendingContractToUsersFeeds = async (
+  contract: Contract,
+  popularityScore: number
+) => {
+  log(
+    'adding contract to feed',
+    contract.id,
+    'with popularity score',
+    popularityScore,
+    'prev score',
+    contract.popularityScore
+  )
+  const nowDate = new Date()
+  // Prevent same contract from being added to feed multiple times in a day
+  // TODO: Should we turn this into a select query and remove the idempotency key?
+  const idempotencyKey = `${
+    contract.id
+  }-popularity-score-change-${nowDate.getFullYear()}-${nowDate.getMonth()}-${nowDate.getDate()}`
+  await addContractToFeed(
+    contract,
+    buildArray([
+      'follow_contract',
+      'viewed_contract',
+      'liked_contract',
+      'similar_interest_vector_to_contract',
+    ]),
+    'trending_contract',
+    [],
+    {
+      userToContractDistanceThreshold: 0.125,
+      idempotencyKey,
+    }
+  )
+}
 
 // Currently creating feed items for:
 // - New comments on contracts you follow/liked/viewed/from users you follow
@@ -248,6 +320,5 @@ export const insertContractRelatedDataToUsersFeeds = async (
 
 // TODO:
 // Create feed items from:
-// - Popular new markets
 // - Large bets by interesting users
 // Remove comment notifications

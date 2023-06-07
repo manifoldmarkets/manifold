@@ -141,6 +141,9 @@ export const FeedTimelineItems = (props: {
             >
               <Row className="mb-4" key={news.id + 'feed-timeline-item-news'}>
                 <NewsArticle {...news} />
+                <span className={'text-ink-500 text-right text-xs'}>
+                  {item.reasonDescription}
+                </span>
               </Row>
               {item.contracts?.map((contract) => (
                 <ContractMention

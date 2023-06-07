@@ -4,6 +4,7 @@ export type FEED_DATA_TYPES =
   | 'new_contract'
   | 'contract_probability_changed'
   | 'popular_comment'
+  | 'trending_contract'
 
 export type FEED_REASON_TYPES =
   | 'follow_contract'
@@ -72,6 +73,17 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'Popular comment on a contract you may be interested in',
     follow_user: 'Popular comment by a creator you follow',
+  },
+  trending_contract: {
+    follow_contract: 'Trending contract you follow',
+    liked_contract: 'Trending contract you liked',
+    viewed_contract: 'Trending contract you viewed',
+    contract_in_group_you_are_in: 'Trending contract in a group you are in',
+    similar_interest_vector_to_user:
+      'Trending contract by a creator you may be interested in',
+    similar_interest_vector_to_contract:
+      'Trending contract you may be interested in',
+    follow_user: 'Trending contract by a creator you follow',
   },
 }
 
