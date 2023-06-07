@@ -234,8 +234,8 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   return (
     <>
       {!realtimeRole && isManifoldAdmin && (
-        <Row className="sticky top-0 z-50 justify-end">
-          <div className="rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500">
+        <Row className="fixed top-14 z-50 w-full justify-end sm:top-0 lg:left-0 lg:justify-center">
+          <div className="rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500 lg:ml-[47rem]">
             ADMIN
           </div>
         </Row>

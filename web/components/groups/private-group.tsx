@@ -47,11 +47,11 @@ export function InaccessiblePrivateThing(props: { thing: string }) {
 export function PrivateGroupPage(props: { slugs: string[] }) {
   const { slugs } = props
   const isManifoldAdmin = useAdmin()
-  const isMember = useIsGroupMember(slugs[0]) || isManifoldAdmin
+  const isMember = useIsGroupMember(slugs[0])
   if (isMember === undefined) {
     return <LoadingPrivateThing />
   }
-  if (isMember === false) {
+  if (isMember === false && !isManifoldAdmin) {
     return <InaccessiblePrivateThing thing="group" />
   }
   return <GroupPageContent />
