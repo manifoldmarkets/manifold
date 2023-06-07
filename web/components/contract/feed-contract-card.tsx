@@ -124,7 +124,11 @@ export function FeedContractCard(props: {
               </div>
             </Col>
           </Row>
-          {promotedData && <ClaimButton {...promotedData} />}
+          {promotedData ? (
+            <ClaimButton {...promotedData} />
+          ) : (
+            reason && <ReasonChosen contract={contract} reason={reason} />
+          )}
         </Row>
         <Link
           href={path}
@@ -319,8 +323,8 @@ function ReasonChosen(props: { contract: Contract; reason?: string }) {
     : 'Trending'
 
   return (
-    <Row className="gap-3">
-      <div className="flex items-center gap-1">
+    <Row className="text-ink-500 gap-3 text-xs">
+      <div className="flex items-center gap-1 text-right">
         {reason}
         {reason === 'New' && <StarIcon className="h-4 w-4" />}
       </div>
