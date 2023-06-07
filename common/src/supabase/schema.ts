@@ -812,17 +812,17 @@ export interface Database {
       topic_embeddings: {
         Row: {
           created_at: string
-          embedding: number[]
+          embedding: string
           topic: string
         }
         Insert: {
           created_at?: string
-          embedding: number[]
+          embedding: string
           topic: string
         }
         Update: {
           created_at?: string
-          embedding?: number[]
+          embedding?: string
           topic?: string
         }
       }
@@ -947,14 +947,14 @@ export interface Database {
           data: Json | null
           data_type: string
           event_time: string
+          group_id: string | null
           id: number
+          idempotency_key: string | null
           news_id: string | null
+          reaction_id: string | null
+          reason: string
           seen_time: string | null
           user_id: string
-          reason: string
-          reaction_id: string | null
-          group_id: string | null
-          idempotency_key: string | null
         }
         Insert: {
           answer_id?: string | null
@@ -966,14 +966,14 @@ export interface Database {
           data?: Json | null
           data_type: string
           event_time: string
+          group_id?: string | null
           id?: never
+          idempotency_key?: string | null
           news_id?: string | null
+          reaction_id?: string | null
+          reason: string
           seen_time?: string | null
           user_id: string
-          reason: string
-          reaction_id?: string | null
-          group_id?: string | null
-          idempotency_key?: string | null
         }
         Update: {
           answer_id?: string | null
@@ -985,14 +985,14 @@ export interface Database {
           data?: Json | null
           data_type?: string
           event_time?: string
+          group_id?: string | null
           id?: never
+          idempotency_key?: string | null
           news_id?: string | null
+          reaction_id?: string | null
+          reason?: string
           seen_time?: string | null
           user_id?: string
-          reason?: string
-          reaction_id?: string | null
-          group_id?: string | null
-          idempotency_key?: string | null
         }
       }
       user_follows: {
@@ -1156,19 +1156,19 @@ export interface Database {
       user_topics: {
         Row: {
           created_at: string
-          topic_embedding: number[]
+          topic_embedding: string
           topics: string[]
           user_id: string
         }
         Insert: {
           created_at?: string
-          topic_embedding: number[]
+          topic_embedding: string
           topics: string[]
           user_id: string
         }
         Update: {
           created_at?: string
-          topic_embedding?: number[]
+          topic_embedding?: string
           topics?: string[]
           user_id?: string
         }
@@ -1972,7 +1972,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database['public']['CompositeTypes']['table_spec']
+        Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_engaged_users: {
         Args: Record<PropertyKey, never>
@@ -2075,7 +2075,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from: {
         Args: {
           uid: string
-          p_embedding: number[]
+          p_embedding: string
           n: number
           excluded_contract_ids: string[]
           max_dist: number
@@ -2225,6 +2225,16 @@ export interface Database {
           start: number
         }
         Returns: unknown
+      }
+      get_reply_chain_comments_for_comment_ids: {
+        Args: {
+          comment_ids: string[]
+        }
+        Returns: {
+          id: string
+          contract_id: string
+          data: Json
+        }[]
       }
       get_reply_chain_comments_matching_contracts: {
         Args: {
@@ -2396,36 +2406,42 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       install_available_extensions_and_test: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_admin: {
+        Args: {
+          input_string: string
+        }
         Returns: boolean
       }
       is_group_admin: {
@@ -2442,6 +2458,13 @@ export interface Database {
         }
         Returns: boolean
       }
+      is_private_contract_member: {
+        Args: {
+          this_contract_id: string
+          this_member_id: string
+        }
+        Returns: boolean
+      }
       is_valid_contract: {
         Args: {
           ct: unknown
@@ -2450,7 +2473,7 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -2632,7 +2655,7 @@ export interface Database {
       }
       set_limit: {
         Args: {
-          '': number
+          "": number
         }
         Returns: number
       }
@@ -2642,7 +2665,7 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
@@ -2679,7 +2702,7 @@ export interface Database {
       }
       to_jsonb: {
         Args: {
-          '': Json
+          "": Json
         }
         Returns: Json
       }
@@ -2709,37 +2732,37 @@ export interface Database {
           }
       vector_avg: {
         Args: {
-          '': number[]
+          "": number[]
         }
         Returns: string
       }
       vector_dims: {
         Args: {
-          '': string
+          "": string
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          '': string
+          "": string
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          '': unknown[]
+          "": unknown[]
         }
         Returns: number
       }
