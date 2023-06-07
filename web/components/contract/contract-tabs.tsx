@@ -73,6 +73,10 @@ export function ContractTabs(props: {
     userPositionsByOutcome,
     shareholderStats,
   } = props
+  const betsWithoutAntes = useMemo(
+    () => bets.filter((bet) => !bet.isAnte),
+    [bets]
+  )
   const comments = useMemo(
     () =>
       props.comments.filter(
@@ -160,7 +164,7 @@ export function ContractTabs(props: {
             <Col className={'gap-4'}>
               <BetsTabContent
                 contract={contract}
-                bets={bets}
+                bets={betsWithoutAntes}
                 setReplyToBet={setReplyToBet}
               />
             </Col>
@@ -387,7 +391,8 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
     if (!shouldLoadMore) return
     getOlderBets(contract.id, oldestBetTime, limit)
       .then((olderBets) => {
-        setOlderBets((bets) => [...bets, ...olderBets])
+        const filteredBets = olderBets.filter((bet) => !bet.isAnte)
+        setOlderBets((bets) => [...bets, ...filteredBets])
       })
       .catch((err) => {
         console.error(err)
