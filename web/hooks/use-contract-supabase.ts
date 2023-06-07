@@ -9,7 +9,6 @@ import {
   getPublicContracts,
 } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
-import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { useEffectCheckEquality } from './use-effect-check-equality'
@@ -110,18 +109,17 @@ export const useContract = (contractId: string | undefined) => {
 }
 
 export function useRealtimeContracts(limit: number) {
-  const [oldContracts, setOldContracts] = useState<Contract[]>([])
-  const newContracts = useRealtimeRows('contracts').map(
-    (r) => r.data as Contract
+  const { rows } = useSubscription('contracts', undefined, () =>
+    getPublicContracts({ limit, order: 'desc' }).then((rows) =>
+      rows.map(
+        (data) =>
+          ({
+            data,
+          } as any)
+      )
+    )
   )
-
-  useEffect(() => {
-    getPublicContracts({ limit, order: 'desc' })
-      .then((result) => setOldContracts(result))
-      .catch((e) => console.log(e))
-  }, [])
-
-  return [...oldContracts, ...newContracts].slice(-limit)
+  return (rows ?? []).map((r) => r.data as Contract)
 }
 
 export function useFirebasePublicAndRealtimePrivateContract(
