@@ -309,3 +309,14 @@ export async function getWatchedContractsCount(userId: string) {
   )
   return count
 }
+
+export async function getIsPrivateContractMember(
+  userId: string,
+  contractId: string
+) {
+  const { data } = await db.rpc('is_private_contract_member', {
+    this_contract_id: contractId,
+    this_member_id: userId,
+  })
+  return data as boolean | null
+}

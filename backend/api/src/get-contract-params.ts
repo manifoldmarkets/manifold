@@ -24,6 +24,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
+import { getIsAdmin } from 'common/supabase/is-admin'
 
 const bodySchema = z.object({
   contractSlug: z.string(),
@@ -68,7 +69,10 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
         groupId &&
         (await getUserIsMember(db, groupId, auth?.uid))))
 
-  if (!canAccessContract) {
+  const isAdmin = await getIsAdmin(db, auth?.uid)
+  console.log(isAdmin)
+
+  if (!canAccessContract && !isAdmin) {
     return contract && !contract.deleted
       ? { contractSlug: contract.slug, visibility: contract.visibility }
       : { contractSlug, visibility: null }

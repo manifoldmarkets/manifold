@@ -178,7 +178,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   }, [tabIndex])
 
   const user = useUser()
-  console.log(user?.id)
   const isManifoldAdmin = useAdmin()
   const group = useGroupFromSlug(slugs[0]) ?? groupParams?.group
   const realtimeRole = useRealtimeRole(group?.id)
@@ -234,6 +233,13 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
   return (
     <>
+      {!realtimeRole && isManifoldAdmin && (
+        <Row className="sticky top-0 z-50 justify-end">
+          <div className="rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500">
+            ADMIN
+          </div>
+        </Row>
+      )}
       <AddContractButton
         group={group}
         user={user}

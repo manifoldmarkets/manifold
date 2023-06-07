@@ -1,10 +1,11 @@
 import { AnyContractType, Contract, visibility } from 'common/contract'
-import { useEffect, useRef, useState } from 'react'
+import { use, useEffect, useRef, useState } from 'react'
 import { getContractParams } from 'web/lib/firebase/api'
 import {
   getContract,
   getContractFromSlug,
   getContracts,
+  getIsPrivateContractMember,
   getPublicContractIds,
   getPublicContracts,
 } from 'web/lib/supabase/contracts'
@@ -37,6 +38,18 @@ export function useRealtimeContract(contractId: string) {
   return rows != null && rows.length > 0
     ? (rows[0].data as Contract)
     : undefined
+}
+
+export function useIsPrivateContractMember(userId: string, contractId: string) {
+  const [isPrivateContractMember, setIsPrivateContractMember] = useState<
+    boolean | undefined | null
+  >(undefined)
+  useEffect(() => {
+    getIsPrivateContractMember(userId, contractId).then((result) => {
+      setIsPrivateContractMember(result)
+    })
+  }, [userId, contractId])
+  return isPrivateContractMember
 }
 
 export const useContractParams = (contractSlug: string | undefined) => {
