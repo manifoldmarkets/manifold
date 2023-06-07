@@ -71,8 +71,8 @@ export const FeedTimelineItems = (props: {
   return (
     <Col>
       {feedTimelineItems.map((item) => {
-        // boosted contract or organic feed contract
-        if ('contract' in item && item.contract) {
+        // Boosted contract
+        if ('ad_id' in item) {
           const { contract } = item
           const parentComments = (
             parentCommentsByContractId[contract.id] ?? []
@@ -80,19 +80,15 @@ export const FeedTimelineItems = (props: {
           const relatedBets = recentBets
             .filter((bet) => bet.contractId === contract.id)
             .slice(0, MAX_BETS_PER_FEED_ITEM)
-          const hasItems = parentComments.length > 0 || relatedBets.length > 0
-
-          const promotedData =
-            'ad_id' in item
-              ? {
-                  adId: item.ad_id,
-                  reward: AD_REDEEM_REWARD,
-                }
-              : undefined
-
+          const hasRelatedItems =
+            parentComments.length > 0 || relatedBets.length > 0
+          const promotedData = {
+            adId: item.ad_id,
+            reward: AD_REDEEM_REWARD,
+          }
           return (
             <FeedItemFrame
-              item={'ad_id' in item ? undefined : item}
+              item={undefined}
               key={contract.id + 'feed-timeline-item'}
               className={
                 'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
@@ -102,16 +98,58 @@ export const FeedTimelineItems = (props: {
                 contract={contract}
                 className={clsx(
                   'my-0 border-0',
-                  hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
+                  hasRelatedItems ? 'rounded-t-xl rounded-b-none  ' : ''
                 )}
                 promotedData={promotedData}
                 trackingPostfix="feed"
-                reason={
-                  'reasonDescription' in item
-                    ? item.reasonDescription
-                    : undefined
-                }
-                hasItems={hasItems}
+                hasItems={hasRelatedItems}
+              />
+              <Row className="bg-canvas-0">
+                <FeedCommentItem
+                  contract={contract}
+                  commentThreads={parentComments.map((parentComment) => ({
+                    parentComment,
+                    childComments:
+                      childCommentsByParentCommentId[parentComment.id] ?? [],
+                  }))}
+                />
+              </Row>
+              <Row className="bg-canvas-0">
+                {parentComments.length === 0 && (
+                  <FeedBetsItem contract={contract} bets={relatedBets} />
+                )}
+              </Row>
+            </FeedItemFrame>
+          )
+        }
+        // Organic feed item with a contract
+        else if ('contract' in item && item.contract) {
+          const { contract } = item
+          const parentComments = (
+            parentCommentsByContractId[contract.id] ?? []
+          ).slice(0, MAX_PARENT_COMMENTS_PER_FEED_ITEM)
+          const relatedBets = recentBets
+            .filter((bet) => bet.contractId === contract.id)
+            .slice(0, MAX_BETS_PER_FEED_ITEM)
+          const hasRelatedItems =
+            parentComments.length > 0 || relatedBets.length > 0
+          return (
+            <FeedItemFrame
+              item={item}
+              key={contract.id + 'feed-timeline-item'}
+              className={
+                'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
+              }
+            >
+              <FeedContractCard
+                contract={contract}
+                className={clsx(
+                  'my-0 border-0',
+                  hasRelatedItems ? 'rounded-t-xl rounded-b-none  ' : ''
+                )}
+                trackingPostfix="feed"
+                reason={item.reasonDescription}
+                hasItems={hasRelatedItems}
               />
               <Row className="bg-canvas-0">
                 <FeedCommentItem

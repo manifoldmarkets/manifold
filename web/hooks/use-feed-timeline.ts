@@ -258,7 +258,7 @@ function createFeedTimelineItems(
         const relevantContract = contracts?.find(
           (contract) => contract.id === item.contract_id
         )
-        // We may not find a relevant contract if they've already seen the contract in their feed
+        // We may not find a relevant contract if they've already seen the same contract in their feed
         if (!relevantContract) return
         const relevantComments = comments?.filter(
           (comment) => comment.contractId === item.contract_id
@@ -279,6 +279,6 @@ function createFeedTimelineItems(
   )
   return sortBy(
     filterDefined([...newsData, ...nonNewsTimelineItems]),
-    'createdTime'
-  ).reverse()
+    (i) => -i.createdTime
+  )
 }
