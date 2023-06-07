@@ -913,6 +913,37 @@ where
   and contracts.close_time > now()
 $$;
 
+
+CREATE OR REPLACE FUNCTION user_top_news(uid TEXT, similarity numeric, n numeric)
+RETURNS TABLE (
+  id numeric,
+    created_time timestamp,
+    title text,
+    url text,
+    published_time timestamp,
+    author text,
+    description text,
+    image_url text,
+    source_id text,
+    source_name text,
+    contract_ids text[]
+) AS $$
+with 
+user_embedding as (
+  select interest_embedding
+  from user_embeddings
+  where user_id = uid
+)
+  SELECT
+    id, created_time, title, url, published_time, author, description, image_url, source_id, source_name, contract_ids
+  FROM
+    news
+  where
+    1 - (title_embedding <=> (select interest_embedding from user_embedding)) > similarity
+  ORDER BY published_time DESC
+  LIMIT n;
+$$ LANGUAGE SQL;
+
 create
 or replace function save_user_topics (p_user_id text, p_topics text[]) returns void language sql as $$ with chosen_embedding as (
     select avg(embedding) as average
