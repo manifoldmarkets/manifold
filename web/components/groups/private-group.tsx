@@ -1,11 +1,10 @@
 import { LockClosedIcon } from '@heroicons/react/solid'
 import Lottie from 'react-lottie'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useIsGroupMember } from 'web/hooks/use-group-supabase'
 import { GroupPageContent } from 'web/pages/group/[...slugs]'
 import * as unlocking from '../../public/lottie/unlocking-icon.json'
 import { Col } from '../layout/col'
-import { useIsGroupMember } from 'web/hooks/use-group-supabase'
-import { isAdmin } from 'common/envs/constants'
-import { useAdmin } from 'web/hooks/use-admin'
 
 export function LoadingPrivateThing() {
   return (
