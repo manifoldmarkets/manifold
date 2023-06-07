@@ -2428,6 +2428,12 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_admin: {
+        Args: {
+          input_string: string
+        }
+        Returns: boolean
+      }
       is_group_admin: {
         Args: {
           this_group_id: string
@@ -2439,6 +2445,13 @@ export interface Database {
         Args: {
           this_group_id: string
           this_user_id: string
+        }
+        Returns: boolean
+      }
+      is_private_contract_member: {
+        Args: {
+          this_contract_id: string
+          this_member_id: string
         }
         Returns: boolean
       }

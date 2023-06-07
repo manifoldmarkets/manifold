@@ -2,8 +2,8 @@ import { ClockIcon, StarIcon, UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
 import Router from 'next/router'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
 
 import { Contract, contractPath, CPMMContract } from 'common/contract'
@@ -12,6 +12,7 @@ import { ContractCardView } from 'common/events'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { formatMoney } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -19,6 +20,7 @@ import { redeemBoost } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { fromNow } from 'web/lib/util/time'
 import { BetRow } from '../bet/bet-row'
+import { QuickOutcomeView } from '../bet/quick-bet'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
@@ -27,11 +29,9 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
-import { LikeButton } from './like-button'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
-import { QuickOutcomeView } from '../bet/quick-bet'
-import { TradesButton } from './trades-button'
 import { PublicMarketGroups } from './contract-details'
+import { LikeButton } from './like-button'
+import { TradesButton } from './trades-button'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -302,12 +302,6 @@ export function FeaturedPill(props: { label?: string }) {
     </div>
   )
 }
-
-const BoostPill = () => (
-  <Tooltip text="They're paying you to see this" placement="right">
-    <FeaturedPill label="Boosted" />
-  </Tooltip>
-)
 
 function ReasonChosen(props: { contract: Contract; reason?: string }) {
   const { contract } = props

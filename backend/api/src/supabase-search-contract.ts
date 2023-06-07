@@ -354,7 +354,8 @@ function getSearchContractWhereSQL(
   const sortFilter = sort == 'close-date' ? 'AND close_time > NOW()' : ''
   const otherVisibilitySQL = `
   OR (visibility = 'unlisted' AND creator_id='${uid}') 
-  OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))`
+  OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))
+  `
 
   const visibilitySQL = `AND (visibility = 'public' ${
     uid ? otherVisibilitySQL : ''

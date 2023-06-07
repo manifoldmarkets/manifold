@@ -17,7 +17,6 @@ export async function getUserIsMember(
   userId: string | undefined | null
 ) {
   if (!userId || !groupId) return false
-
   const { data } = await run(
     db
       .from('group_members')
