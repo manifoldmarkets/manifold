@@ -69,7 +69,7 @@ const useNews = () => {
   useEffect(() => {
     db.rpc('user_top_news' as any, {
       uid: user?.id || '',
-      similarity: 0.8,
+      similarity: 0.82,
       n: 50,
     }).then(({ data }) => setArticles(data ?? []))
   }, [user?.id])
