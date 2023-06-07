@@ -70,7 +70,6 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
         (await getUserIsMember(db, groupId, auth?.uid))))
 
   const isAdmin = await getIsAdmin(db, auth?.uid)
-  console.log(isAdmin)
 
   if (!canAccessContract && !isAdmin) {
     return contract && !contract.deleted
