@@ -13,15 +13,18 @@ import {
 } from 'shared/create-feed'
 import { removeUndefinedProps } from 'common/util/object'
 import { bulkUpdate } from 'shared/supabase/utils'
+import { BOT_USERNAMES } from 'common/envs/constants'
 
 const getContractTraders = async (pg: SupabaseDirectClient, since: number) => {
   return Object.fromEntries(
     await pg.map(
-      `select contract_id, count(distinct user_id)::int as n
-      from contract_bets
-      where created_time >= millis_to_ts($1)
-      group by contract_id`,
-      [since],
+      `select cb.contract_id, count(distinct cb.user_id)::int as n
+       from contract_bets cb
+                join users u on cb.user_id = u.id
+       where cb.created_time >= millis_to_ts($1)
+         and u.username <> ANY(ARRAY[$2])
+       group by cb.contract_id`,
+      [since, BOT_USERNAMES],
       (r) => [r.contract_id as string, r.n as number]
     )
   )
