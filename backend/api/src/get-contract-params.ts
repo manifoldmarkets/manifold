@@ -1,10 +1,6 @@
 import { Bet } from 'common/bet'
 import { getInitialProbability } from 'common/calculate'
-import {
-  BinaryContract,
-  Contract,
-  PseudoNumericContract,
-} from 'common/contract'
+import { BinaryContract, PseudoNumericContract } from 'common/contract'
 import { HistoryPoint } from 'common/src/chart'
 import {
   CONTRACT_BET_FILTER,

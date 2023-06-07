@@ -17,6 +17,8 @@ export async function getUserIsMember(
   userId: string | undefined | null
 ) {
   if (!userId || !groupId) return false
+  const { data: is_admin } = await db.rpc('is_admin', { input_string: userId })
+  console.log('IS ADMIN', is_admin)
 
   const { data } = await run(
     db
@@ -26,7 +28,7 @@ export async function getUserIsMember(
       .eq('member_id', userId)
       .limit(1)
   )
-  return data && data.length > 0
+  return (data && data.length > 0) || is_admin
 }
 
 export async function getGroupMemberIds(db: SupabaseClient, groupId: string) {

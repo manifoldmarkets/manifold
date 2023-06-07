@@ -178,9 +178,11 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   }, [tabIndex])
 
   const user = useUser()
+  console.log(user?.id)
   const isManifoldAdmin = useAdmin()
   const group = useGroupFromSlug(slugs[0]) ?? groupParams?.group
-  const userRole = useRealtimeRole(group?.id)
+  const realtimeRole = useRealtimeRole(group?.id)
+  const userRole = isManifoldAdmin ? 'admin' : realtimeRole
   const isMobile = useIsMobile()
   const privateUser = usePrivateUser()
   const [writingNewAbout, setWritingNewAbout] = useState(false)
@@ -229,7 +231,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     setDefaultMemberTab(MEMBER_INVITE_INDEX)
     setOpenMemberModal(true)
   }
-
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
   return (
     <>

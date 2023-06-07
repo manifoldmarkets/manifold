@@ -4,6 +4,8 @@ import { GroupPageContent } from 'web/pages/group/[...slugs]'
 import * as unlocking from '../../public/lottie/unlocking-icon.json'
 import { Col } from '../layout/col'
 import { useIsGroupMember } from 'web/hooks/use-group-supabase'
+import { isAdmin } from 'common/envs/constants'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export function LoadingPrivateThing() {
   return (
@@ -44,7 +46,8 @@ export function InaccessiblePrivateThing(props: { thing: string }) {
 
 export function PrivateGroupPage(props: { slugs: string[] }) {
   const { slugs } = props
-  const isMember = useIsGroupMember(slugs[0])
+  const isManifoldAdmin = useAdmin()
+  const isMember = useIsGroupMember(slugs[0]) || isManifoldAdmin
   if (isMember === undefined) {
     return <LoadingPrivateThing />
   }
