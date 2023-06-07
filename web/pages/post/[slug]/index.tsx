@@ -25,7 +25,6 @@ import {
   PostCommentInput,
   PostCommentThread,
 } from 'web/components/posts/post-comments'
-import { useNewCommentsOnPost } from 'web/hooks/use-comments'
 import { useUser } from 'web/hooks/use-user'
 import { SEO } from 'web/components/SEO'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
@@ -37,6 +36,7 @@ import { Ad } from 'common/ad'
 import { TimerClaimBox } from 'web/pages/ad'
 import { useRouter } from 'next/router'
 import { getCommentsOnPost } from 'web/lib/supabase/comments'
+import { useRealtimePostComments } from 'web/hooks/use-comments-supabase'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -82,8 +82,7 @@ export default function PostPage(props: {
   const postId = post?.id ?? '_'
 
   const tips = useTipTxns({ postId })
-  const updatedComments = useNewCommentsOnPost(postId)
-  const comments = [...props.comments, ...updatedComments]
+  const comments = useRealtimePostComments(postId) || props.comments
   const user = useUser()
 
   if (!post) {

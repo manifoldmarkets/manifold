@@ -92,16 +92,20 @@ export async function createPostComment(
   })
 }
 
-export async function getCommentsOnPost(postId: string) {
+export async function getPostCommentRows(postId: string) {
   const { data } = await run(
     db
       .from('post_comments')
-      .select('data, comment_id, created_time')
+      .select()
       .eq('post_id', postId)
       .order('created_time', { ascending: false } as any)
   )
+  return data
+}
 
-  return data.map(
+export async function getCommentsOnPost(postId: string) {
+  const rows = await getPostCommentRows(postId)
+  return rows.map(
     (c) =>
       ({
         ...(c.data as any),

@@ -18,11 +18,11 @@ import { copyToClipboard } from 'web/lib/util/copy'
 import { useUser } from 'web/hooks/use-user'
 import { PostCommentsActivity, RichEditPost } from '../post/[slug]/index'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
-import { useNewCommentsOnPost } from 'web/hooks/use-comments'
 import { NoSEO } from 'web/components/NoSEO'
 import { usePost } from 'web/hooks/use-post-supabase'
 import { getCommentsOnPost } from 'web/lib/supabase/comments'
 import { PostComment } from 'common/comment'
+import { useRealtimePostComments } from 'web/hooks/use-comments-supabase'
 
 export async function getStaticProps(props: { params: { username: string } }) {
   const { username } = props.params
@@ -68,7 +68,7 @@ function DateDocPage(props: {
 
   const tips = useTipTxns({ postId: post.id })
 
-  const comments = [...props.comments, ...useNewCommentsOnPost(post.id)]
+  const comments = useRealtimePostComments(post.id) || props.comments
 
   return (
     <Page>
