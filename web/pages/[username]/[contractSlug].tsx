@@ -65,7 +65,7 @@ import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import { ContractView } from 'common/events'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { TitleOrEdit } from 'web/components/contract/title-edit'
-import { useBets } from 'web/hooks/use-bets'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 
 export type ContractParameters = {
@@ -195,7 +195,7 @@ export function ContractPageContent(props: {
 
   // Static props load bets in descending order by time
   const lastBetTime = first(contractParams.historyData.bets)?.createdTime
-  const newBets = useBets({
+  const newBets = useRealtimeBets({
     contractId: contract.id,
     afterTime: lastBetTime,
     ...CONTRACT_BET_FILTER,
