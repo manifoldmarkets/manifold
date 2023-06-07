@@ -178,7 +178,11 @@ export const FeedTimelineItems = (props: {
               className="bg-canvas-0 my-4 p-4"
             >
               <Row className="mb-4" key={news.id + 'feed-timeline-item-news'}>
-                <NewsArticle {...news} />
+                <NewsArticle
+                  author={(news as any)?.author}
+                  published_time={(news as any)?.published_time}
+                  {...news}
+                />
                 <span className={'text-ink-500 text-right text-xs'}>
                   {item.reasonDescription}
                 </span>
