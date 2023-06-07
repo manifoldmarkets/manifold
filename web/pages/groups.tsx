@@ -63,11 +63,9 @@ export default function Groups() {
               ]}
             />
           )}{' '}
-          {!user ||
-            !yourGroupIds ||
-            (yourGroupIds.length < 1 && (
-              <DiscoverGroups yourGroupIds={yourGroupIds} />
-            ))}
+          {(!user || !yourGroupIds || yourGroupIds.length < 1) && (
+            <DiscoverGroups yourGroupIds={yourGroupIds} />
+          )}
         </Col>
       </Col>
     </Page>
