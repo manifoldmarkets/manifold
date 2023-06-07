@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { Col } from 'web/components/layout/col'
 
 export const NewsArticle = (props: {
@@ -5,8 +6,10 @@ export const NewsArticle = (props: {
   urlToImage: string
   url: string
   description: string
+  author: string
+  published_time: number
 }) => {
-  const { title, urlToImage, url, description } = props
+  const { title, urlToImage, url, description, published_time, author } = props
 
   return (
     <Col className="relative w-full">
@@ -20,7 +23,11 @@ export const NewsArticle = (props: {
       <a className={'absolute inset-0 z-10'} href={url} target="_blank" />
       <Col className="bg-canvas-0 border-ink-300 rounded-b-lg border border-t-0 p-2 hover:underline">
         <div className="line-clamp-2 text-ink-900 text-lg">{title}</div>
-        <div className="line-clamp-3 text-ink-600 text-sm">{description}</div>
+        <div className="line-clamp-3 text-ink-600 text-xs">
+          {author && `${author} / `}
+          {dayjs.utc(published_time).fromNow()}
+        </div>
+        <div className="line-clamp-3 text-ink-600 text-xs">{description}</div>
       </Col>
     </Col>
   )
