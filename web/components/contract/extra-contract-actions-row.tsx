@@ -9,6 +9,7 @@ import { ReactNode, useState } from 'react'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import clsx from 'clsx'
+import { DotsVerticalIcon } from '@heroicons/react/solid'
 
 export function ExtraContractActionsRow(props: {
   contract: Contract
@@ -18,12 +19,18 @@ export function ExtraContractActionsRow(props: {
   const user = useUser()
   const privateUser = usePrivateUser()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const hasCoverImage = !!contract.coverImageUrl
 
   return (
-    <Row className="gap-3">
+    <Row className={hasCoverImage ? 'gap-3' : ''}>
       {children}
 
-      <div className="flex items-center rounded-full bg-black/60 text-white [&>div]:pr-2">
+      <div
+        className={clsx(
+          'flex items-center [&>div]:pr-2',
+          hasCoverImage ? 'rounded-full bg-black/60' : ''
+        )}
+      >
         <LikeButton
           user={user}
           contract={contract}
@@ -34,7 +41,7 @@ export function ExtraContractActionsRow(props: {
           contentText={contract.question}
           showTotalLikesUnder
           size="sm"
-          color="white"
+          color={hasCoverImage ? 'white' : 'gray'}
           className={clsx(
             'p-2',
             isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
@@ -48,18 +55,27 @@ export function ExtraContractActionsRow(props: {
         linkIconOnlyProps={{
           tooltip: 'Copy market share link',
           //TODO: less spaghetti way of styling the button and icon
-          className:
-            'rounded-full bg-black/60 !p-2 !text-white hover:bg-black/80 [&_svg]:h-4 [&_svg]:w-4',
+          className: clsx(
+            '!p-2 [&_svg]:h-4 [&_svg]:w-4',
+            contract.coverImageUrl
+              ? 'rounded-full bg-black/60 !p-2 !text-white hover:bg-black/80 '
+              : ''
+          ),
         }}
         eventTrackingName="copy market link"
       />
 
       <Tooltip text="Market details" placement="bottom" noTap>
         <button
-          className="rounded-full bg-black/60 p-2 transition-colors hover:bg-black/80"
+          className={clsx(
+            'p-2 transition-colors',
+            hasCoverImage
+              ? 'rounded-full bg-black/60  text-white hover:bg-black/80'
+              : 'text-ink-500 hover:text-ink-600'
+          )}
           onClick={() => setDialogOpen(true)}
         >
-          <DotsHorizontalIcon className="h-4 w-4 text-white" aria-hidden />
+          <DotsVerticalIcon className={clsx('h-4 w-4')} aria-hidden />
         </button>
       </Tooltip>
       <ContractInfoDialog

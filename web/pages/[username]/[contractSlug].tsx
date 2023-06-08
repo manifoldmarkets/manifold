@@ -312,8 +312,11 @@ export function ContractPageContent(props: {
           <div
             className={clsx(
               'sticky z-50 flex items-end',
-              !coverImageUrl ? 'bg-canvas-100 top-0' : 'top-[-92px] h-[140px]'
+              !coverImageUrl
+                ? 'bg-canvas-100 top-0 w-full'
+                : ' top-[-92px] h-[140px]'
             )}
+            style={coverImageUrl ? { width: '100%' } : {}}
           >
             {coverImageUrl && (
               <div className="absolute bottom-0 left-0 right-0 -top-10 -z-10">
@@ -338,14 +341,14 @@ export function ContractPageContent(props: {
               )}
             >
               <div className="mr-4 flex items-center truncate">
-                <BackButton />
+                <BackButton hasCoverImage={!!coverImageUrl} />
 
                 {headerStuck && (
                   <span className="ml-4 text-white">{contract.question}</span>
                 )}
               </div>
               <ExtraContractActionsRow contract={contract}>
-                {!headerStuck && !coverImageUrl && isCreator && (
+                {!coverImageUrl && isCreator && (
                   <ChangeBannerButton
                     contract={contract}
                     className="ml-3 first:ml-0"
