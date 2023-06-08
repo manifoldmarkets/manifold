@@ -47,7 +47,6 @@ export const getContractLikerIds = async (
   return likedUserIds.map((r) => r.user_id)
 }
 
-// TODO: explain analyze this query after repacking - the table was packed around the wrong index
 export const getContractViewerIds = async (
   contractId: string,
   pg: SupabaseDirectClient
