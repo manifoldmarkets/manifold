@@ -197,9 +197,9 @@ function YourGroupsList(props: {
   )
   return (
     <>
-      <Row className="text-ink-300 mt-4 w-full items-center text-xs font-semibold">
+      <Row className="text-ink-400 mt-4 w-full items-center text-xs font-semibold">
         <div className="whitespace-nowrap">PRIVATE GROUPS</div>
-        <hr className="border-ink-300 mx-2 w-full" />
+        <hr className="border-ink-400 mx-2 w-full" />
       </Row>
       <GroupsList
         groups={privateGroupsYouModerate.map((g) => g.group)}
@@ -212,9 +212,9 @@ function YourGroupsList(props: {
         yourGroupIds={yourGroupIds}
         stateIsEmpty={false}
       />
-      <Row className="text-ink-300 mt-4 w-full items-center text-xs font-semibold">
+      <Row className="text-ink-400 mt-4 w-full items-center text-xs font-semibold">
         <div className="whitespace-nowrap">NON-PRIVATE GROUPS</div>
-        <hr className="border-ink-300 mx-2 w-full" />
+        <hr className="border-ink-400 mx-2 w-full" />
       </Row>
       <GroupsList
         groups={nonPrivateGroupsYouModerate.map((g) => g.group)}

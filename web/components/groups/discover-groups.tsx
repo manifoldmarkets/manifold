@@ -167,7 +167,7 @@ export function GroupLine(props: {
               className="ml-1 w-min opacity-60"
             />
           )}
-          {!isPrivate && (
+          {!isPrivate && !isCreator && (
             <JoinOrLeaveGroupButton
               group={group}
               user={user}
