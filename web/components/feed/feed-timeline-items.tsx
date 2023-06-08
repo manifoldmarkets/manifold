@@ -21,12 +21,12 @@ import { mergePeriodic } from 'web/components/feed/feed-items'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { filterDefined } from 'common/util/array'
 import { useUnseenReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
-import { ContractMention } from 'web/components/contract/contract-mention'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
 import { run } from 'common/supabase/utils'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { NewsArticle } from '../news-article'
+import { SimpleContractRow } from '../simple-contract-row'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
@@ -183,12 +183,12 @@ export const FeedTimelineItems = (props: {
                   published_time={(news as any)?.published_time}
                   {...news}
                 />
-                <span className={'text-ink-500 text-right text-xs'}>
+                {/* <span className={'text-ink-500 text-right text-xs'}>
                   {item.reasonDescription}
-                </span>
+                </span> */}
               </Row>
               {item.contracts?.map((contract) => (
-                <ContractMention
+                <SimpleContractRow
                   contract={contract}
                   key={`news-${news.id}-contract-${contract.id}`}
                 />
