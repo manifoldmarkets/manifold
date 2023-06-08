@@ -319,7 +319,7 @@ export function MemberRoleTag(props: {
     return <></>
   }
   return (
-    <div
+    <span
       className={clsx(
         'text-ink-0 h-min w-full rounded px-1 py-0.5 text-xs font-semibold',
         isCreator
@@ -331,7 +331,7 @@ export function MemberRoleTag(props: {
       )}
     >
       {isCreator ? 'CREATOR' : `${role.toLocaleUpperCase()}`}
-    </div>
+    </span>
   )
 }
 

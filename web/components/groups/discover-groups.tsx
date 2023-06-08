@@ -161,13 +161,11 @@ export function GroupLine(props: {
         {group.name}
         <Row className="gap-4">
           {(role || isCreator) && (
-            <span>
-              <MemberRoleTag
-                role={role}
-                isCreator={!!isCreator}
-                className="w-min opacity-70"
-              />
-            </span>
+            <MemberRoleTag
+              role={role}
+              isCreator={!!isCreator}
+              className="ml-1 w-min opacity-60"
+            />
           )}
           {!isPrivate && (
             <JoinOrLeaveGroupButton
