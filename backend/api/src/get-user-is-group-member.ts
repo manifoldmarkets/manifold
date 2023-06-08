@@ -11,10 +11,14 @@ export const getuserisgroupmember = authEndpoint(async (req, auth) => {
     return { isGroupMember: false }
   }
   const pg = createSupabaseDirectClient()
+  const { id: groupId } = await pg.one(
+    'select id from groups where slug = $1',
+    [groupSlug]
+  )
   const userIsMember = await pg.one(
     `select exists(
-        select * from group_role
-        where group_slug = '${groupSlug}'
+        select * from group_members
+        where group_id = '${groupId}'
         and member_id='${auth.uid}')`
   )
   return { isGroupMember: userIsMember.exists }
