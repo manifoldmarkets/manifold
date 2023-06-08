@@ -5,15 +5,25 @@ import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { GroupLine } from './discover-groups'
+import { GroupAndRoleType } from 'web/lib/supabase/groups'
+import { groupRoleType } from './group-member-modal'
 
 export function GroupsList(props: {
   groups: Group[] | undefined
   loadMore?: () => Promise<boolean>
   yourGroupIds?: string[]
   className?: string
+  yourGroupRoles?: GroupAndRoleType[] | null
+  stateIsEmpty?: boolean
 }) {
-  const { groups, loadMore, yourGroupIds, className } = props
-  const [expandedId, setExpandeId] = useState<string | null>(null)
+  const {
+    groups,
+    loadMore,
+    yourGroupIds,
+    className,
+    yourGroupRoles,
+    stateIsEmpty = true,
+  } = props
 
   const user = useUser()
 
@@ -22,7 +32,10 @@ export function GroupsList(props: {
   }
 
   if (groups.length === 0) {
-    return <div>No groups found</div>
+    if (stateIsEmpty) {
+      return <div>No groups found</div>
+    }
+    return <></>
   }
   return (
     <Col className={className}>
@@ -33,8 +46,7 @@ export function GroupsList(props: {
             group={group as Group}
             user={user}
             isMember={!!yourGroupIds?.includes(group.id)}
-            expandedId={expandedId}
-            setExpandedId={setExpandeId}
+            yourGroupRoles={yourGroupRoles}
           />
         ))}
 

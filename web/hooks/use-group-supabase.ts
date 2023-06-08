@@ -20,6 +20,8 @@ import {
   GroupAndRoleType,
   getGroup,
   getGroupsWhereUserHasRole,
+  getMemberPrivateGroups,
+  getYourNonPrivateNonModeratorGroups,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
 import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
@@ -276,4 +278,30 @@ export function useGroupsWhereUserHasRole(userId: string | undefined) {
     }
   }, [userId])
   return groupsAndRoles
+}
+
+export function useMemberPrivateGroups(userId: string | undefined) {
+  const [memberPrivateGroups, setMemberPrivateGroups] = useState<
+    Group[] | undefined
+  >(undefined)
+  useEffect(() => {
+    if (userId) {
+      getMemberPrivateGroups(userId).then((result) => {
+        setMemberPrivateGroups(result)
+      })
+    }
+  }, [userId])
+  return memberPrivateGroups
+}
+
+export function useYourNonPrivateNonModeratorGroups(userId: string) {
+  const [groups, setGroups] = useState<Group[] | undefined>(undefined)
+  useEffect(() => {
+    if (userId) {
+      getYourNonPrivateNonModeratorGroups(userId).then((result) => {
+        setGroups(result)
+      })
+    }
+  }, [userId])
+  return groups
 }
