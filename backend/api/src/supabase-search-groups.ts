@@ -29,6 +29,7 @@ export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
     yourGroups,
     uid: auth?.uid,
   })
+  console.log(searchGroupSQL)
   const groups = await pg.map(searchGroupSQL, [term], (r) => r.data as Group)
 
   return (groups ?? []) as unknown as Json
@@ -71,7 +72,6 @@ function getSearchGroupSQL(groupInput: {
         group_members.data as gm_data from groups
         join group_members on group_members.group_id = groups.id
         where group_members.member_id = '${uid}'
-        and groups.creator_id != '${uid}'
       ) as groupz
       order by groupz.gm_data->>'createdTime' desc
       `
@@ -100,7 +100,6 @@ function getSearchGroupSQL(groupInput: {
         websearch_to_tsquery('english',  $1) as query
       where group_members.member_id = '${uid}'
       and groups.name_fts @@ query
-      and groups.creator_id != '${uid}'
       `
     }
     // if in discover groups
