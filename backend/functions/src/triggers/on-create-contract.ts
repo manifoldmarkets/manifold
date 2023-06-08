@@ -23,10 +23,6 @@ export const onCreateContract = functions
   .onCreate(async (snapshot, context) => {
     const contract = snapshot.data() as Contract
     const { eventId } = context
-
-    const coverImageUrl = await generateContractImage(contract)
-    if (coverImageUrl) await snapshot.ref.update({ coverImageUrl })
-
     const contractCreator = await getUser(contract.creatorId)
     if (!contractCreator) throw new Error('Could not find contract creator')
 
@@ -63,11 +59,3 @@ export const onCreateContract = functions
       mentioned
     )
   })
-
-const generateContractImage = async (contract: Contract) => {
-  const imagePrompt = await getImagePrompt(contract.question)
-  const coverImageUrl = await dalleWithDefaultParams(
-    imagePrompt ?? contract.question
-  )
-  return coverImageUrl
-}
