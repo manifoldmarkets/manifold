@@ -21,7 +21,7 @@ export function TradesButton(props: { contract: Contract }) {
   return (
     <>
       <Tooltip
-        text={'Unique Traders'}
+        text={'Traders'}
         placement={'bottom'}
         className={clsx('flex flex-row items-center')}
       >

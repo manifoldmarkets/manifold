@@ -124,7 +124,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
       </span>
       <MultiUserNotificationModal
         notification={notification}
-        modalLabel={'Unique traders'}
+        modalLabel={'Traders'}
         open={open}
         setOpen={setOpen}
       />

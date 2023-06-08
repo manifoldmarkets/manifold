@@ -53,7 +53,7 @@ export function UserContractsList(props: { creator: User }) {
           }
         />
         <MarketStats
-          title={'Unique traders'}
+          title={'Traders'}
           total={formatWithCommas(allTime ?? 0)}
           subTitle={
             allTime === 0 ? (
