@@ -10,6 +10,8 @@ import {
   UNIQUE_BETTOR_LIQUIDITY_AMOUNT,
 } from 'common/antes'
 import { secrets } from 'common/secrets'
+import { addContractToFeed } from 'shared/create-feed'
+import { INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 
 export const onCreateLiquidityProvision = functions
   .runWith({ secrets })
@@ -37,7 +39,23 @@ export const onCreateLiquidityProvision = functions
     const liquidityProvider = await getUser(liquidity.userId)
     if (!liquidityProvider) throw new Error('Could not find liquidity provider')
     await addUserToContractFollowers(contract.id, liquidityProvider.id)
-
+    if (liquidity.amount > 100)
+      await addContractToFeed(
+        contract,
+        [
+          'similar_interest_vector_to_contract',
+          'similar_interest_vector_to_user',
+          'follow_user',
+          'contract_in_group_you_are_in',
+        ],
+        'new_subsidy',
+        [contract.creatorId, liquidity.userId],
+        {
+          minUserInterestDistanceToContract:
+            INTEREST_DISTANCE_THRESHOLDS.new_subsidy,
+          userIdResponsibleForEvent: liquidity.userId,
+        }
+      )
     await createFollowOrMarketSubsidizedNotification(
       contract.id,
       'liquidity',

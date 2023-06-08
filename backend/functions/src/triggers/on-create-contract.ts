@@ -12,6 +12,7 @@ import { getImagePrompt } from 'shared/helpers/openai-utils'
 import { secrets } from 'common/secrets'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { addContractToFeed } from 'shared/create-feed'
+import { INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 
 export const onCreateContract = functions
   .runWith({
@@ -49,7 +50,8 @@ export const onCreateContract = functions
       [contractCreator.id],
       {
         idempotencyKey: eventId,
-        userToContractDistanceThreshold: 0.15,
+        minUserInterestDistanceToContract:
+          INTEREST_DISTANCE_THRESHOLDS.new_contract,
       }
     )
     // TODO: after feed goes live, remove non mentioned users from notifications

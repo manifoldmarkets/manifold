@@ -9,6 +9,7 @@ import {
   CONTRACT_OR_USER_FEED_REASON_TYPES,
   FEED_DATA_TYPES,
   FEED_REASON_TYPES,
+  INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
 import { Reaction } from 'common/reaction'
 import { log } from 'shared/utils'
@@ -86,7 +87,7 @@ export const addCommentOnContractToFeed = async (
       comment.userId,
       pg,
       ['follow_contract', 'viewed_contract', 'follow_user', 'liked_contract'],
-      0.15
+      INTEREST_DISTANCE_THRESHOLDS.new_comment
     )
   await Promise.all(
     Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
@@ -130,7 +131,8 @@ export const addLikedCommentOnContractToFeed = async (
         'similar_interest_vector_to_user',
         'contract_in_group_you_are_in',
         'similar_interest_vector_to_contract',
-      ]
+      ],
+      INTEREST_DISTANCE_THRESHOLDS.popular_comment
     )
   await Promise.all(
     Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
@@ -164,19 +166,24 @@ export const addContractToFeed = async (
   dataType: FEED_DATA_TYPES,
   userIdsToExclude: string[],
   options: {
+    minUserInterestDistanceToContract: number
+    userIdResponsibleForEvent?: string
     idempotencyKey?: string
-    userToContractDistanceThreshold?: number
   }
 ) => {
-  const { idempotencyKey, userToContractDistanceThreshold } = options
+  const {
+    idempotencyKey,
+    minUserInterestDistanceToContract,
+    userIdResponsibleForEvent,
+  } = options
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
       contract.id,
-      contract.creatorId,
+      userIdResponsibleForEvent ?? contract.creatorId,
       pg,
       reasonsToInclude,
-      userToContractDistanceThreshold
+      minUserInterestDistanceToContract
     )
 
   await Promise.all(
@@ -269,7 +276,8 @@ export const insertMarketMovementContractToUsersFeeds = async (
     'contract_probability_changed',
     [],
     {
-      userToContractDistanceThreshold: 0.12,
+      minUserInterestDistanceToContract:
+        INTEREST_DISTANCE_THRESHOLDS.contract_probability_changed,
       idempotencyKey,
     }
   )
@@ -303,7 +311,8 @@ export const insertTrendingContractToUsersFeeds = async (
     'trending_contract',
     [],
     {
-      userToContractDistanceThreshold: 0.125,
+      minUserInterestDistanceToContract:
+        INTEREST_DISTANCE_THRESHOLDS.trending_contract,
       idempotencyKey,
     }
   )
@@ -319,4 +328,5 @@ export const insertTrendingContractToUsersFeeds = async (
 // TODO:
 // Create feed items from:
 // - Large bets by interesting users
+// - large subsidies
 // Remove comment notifications

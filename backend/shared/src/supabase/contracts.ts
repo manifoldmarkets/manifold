@@ -122,8 +122,8 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   contractId: string,
   userId: string,
   pg: SupabaseDirectClient,
-  reasonsToInclude?: CONTRACT_OR_USER_FEED_REASON_TYPES[],
-  userToContractDistanceThreshold?: number
+  reasonsToInclude: CONTRACT_OR_USER_FEED_REASON_TYPES[],
+  userToContractDistanceThreshold: number
 ): Promise<{ [userId: string]: CONTRACT_OR_USER_FEED_REASON_TYPES }> => {
   const reasonsToRelevantUserIdsFunctions: {
     [key in CONTRACT_OR_USER_FEED_REASON_TYPES]: {

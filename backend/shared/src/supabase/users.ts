@@ -1,7 +1,7 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { DEFAULT_EMBEDDING_DISTANCE_PROBES } from 'common/embeddings'
 import { fromPairs } from 'lodash'
-import { FEED_REASON_TYPES } from 'common/feed'
+import { FEED_REASON_TYPES, INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 
 export const getUserFollowerIds = async (
   userId: string,
@@ -72,10 +72,10 @@ export const getUsersWithSimilarInterestVectorToNews = async (
              select ue.user_id, (select title_embedding from ce) <=> ue.interest_embedding as distance
              from user_embeddings as ue
          ) as distances
-    where distance < 0.175
+    where distance < $2
     limit 10000;
   `,
-    [newsId]
+    [newsId, INTEREST_DISTANCE_THRESHOLDS.news_with_related_contracts]
   )
   return fromPairs(
     userIdsAndDistances.map((r) => [
