@@ -127,12 +127,7 @@ export function GroupSummary(props: { group: Group }) {
         <UsersIcon className="mr-0.5 h-4 w-4" />
         {shortenNumber(group.totalMembers)}
       </span>
-      <Row
-        className={clsx(
-          'items-center gap-0.5',
-          group.privacyStatus == 'private' ? 'text-primary-500' : ''
-        )}
-      >
+      <Row className={clsx('items-center gap-0.5')}>
         {icon}
         {status}
       </Row>
