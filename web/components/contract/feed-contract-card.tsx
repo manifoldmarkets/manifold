@@ -6,10 +6,9 @@ import Router from 'next/router'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 
-import { Contract, contractPath, CPMMContract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
-import { STONK_NO, STONK_YES } from 'common/stonk'
 import { formatMoney } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
@@ -23,7 +22,6 @@ import { BetRow } from '../bet/bet-row'
 import { QuickOutcomeView } from '../bet/quick-bet'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import { CommentsButton } from '../swipe/swipe-comments'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -223,77 +221,6 @@ export function FeedContractCard(props: {
           <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
         </div>
       )}
-    </div>
-  )
-}
-
-export function ContractMetricsFooter(props: {
-  contract: CPMMContract
-  showDailyProfit?: boolean
-}) {
-  const { contract, showDailyProfit } = props
-
-  const user = useUser()
-  const metrics = useSavedContractMetrics(contract)
-
-  return user && metrics && metrics.hasShares ? (
-    <LoadedMetricsFooter
-      contract={contract}
-      metrics={metrics}
-      showDailyProfit={showDailyProfit}
-    />
-  ) : (
-    <Spacer h={2} />
-  )
-}
-
-function LoadedMetricsFooter(props: {
-  contract: CPMMContract
-  metrics: ContractMetric
-  showDailyProfit?: boolean
-}) {
-  const { contract, metrics, showDailyProfit } = props
-  const { totalShares, maxSharesOutcome, from } = metrics
-  const { YES: yesShares, NO: noShares } = totalShares
-  const dailyProfit = from ? from.day.profit : 0
-  const profit = showDailyProfit ? dailyProfit : metrics.profit
-  const { outcomeType } = contract
-
-  const yesOutcomeLabel =
-    outcomeType === 'PSEUDO_NUMERIC'
-      ? 'HIGHER'
-      : outcomeType === 'STONK'
-      ? STONK_YES
-      : 'YES'
-  const noOutcomeLabel =
-    outcomeType === 'PSEUDO_NUMERIC'
-      ? 'LOWER'
-      : outcomeType === 'STONK'
-      ? STONK_NO
-      : 'NO'
-
-  return (
-    <div className="bg-ink-100 columns-2 items-center gap-4 rounded-b-[7px] px-4 pt-1 pb-2 text-sm">
-      <Col>
-        <span className="text-ink-400 text-xs">Payout</span>
-        <div className="text-ink-600 text-sm">
-          <span className="font-semibold">
-            {maxSharesOutcome === 'YES'
-              ? formatMoney(yesShares)
-              : formatMoney(noShares)}{' '}
-          </span>
-          on {maxSharesOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
-        </div>
-      </Col>
-      <Col>
-        <div className="text-ink-400 text-xs">
-          {' '}
-          {showDailyProfit ? 'daily' : 'total'} Profit{' '}
-        </div>
-        <div className={clsx('text-ink-600 text-sm font-semibold')}>
-          {profit ? formatMoney(profit) : '--'}
-        </div>
-      </Col>
     </div>
   )
 }
