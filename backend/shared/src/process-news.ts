@@ -2,7 +2,7 @@ import { SupabaseClient } from 'common/supabase/utils'
 import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
-import { insertContractRelatedDataToUsersFeeds } from 'shared/create-feed'
+import { insertNewsContractsToUsersFeeds } from 'shared/create-feed'
 import { Contract } from 'common/contract'
 
 export const processNews = async (
@@ -152,19 +152,10 @@ const processNewsArticle = async (
     'adding to feed now with published date',
     publishedAtDate.toISOString()
   )
-  await insertContractRelatedDataToUsersFeeds(
+  await insertNewsContractsToUsersFeeds(
+    newsId,
     questions,
-    'news_with_related_contracts',
-    [
-      'follow_contract',
-      'liked_contract',
-      'viewed_contract',
-      'follow_user',
-      'similar_interest_vector_to_contract',
-    ],
     publishedAtDate.valueOf(),
-    pg,
-    [],
-    { newsId }
+    pg
   )
 }

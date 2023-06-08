@@ -6,7 +6,7 @@ export type FEED_DATA_TYPES =
   | 'popular_comment'
   | 'trending_contract'
 
-export type FEED_REASON_TYPES =
+export type CONTRACT_OR_USER_FEED_REASON_TYPES =
   | 'follow_contract'
   | 'liked_contract'
   | 'viewed_contract'
@@ -14,6 +14,10 @@ export type FEED_REASON_TYPES =
   | 'similar_interest_vector_to_user'
   | 'similar_interest_vector_to_contract'
   | 'follow_user'
+
+export type FEED_REASON_TYPES =
+  | CONTRACT_OR_USER_FEED_REASON_TYPES
+  | 'similar_interest_vector_to_news_vector'
 
 export const FeedExplanationDictionary: Record<
   FEED_DATA_TYPES,
@@ -41,6 +45,7 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'News related to a question you may be interested in',
     follow_user: 'News about a question by a creator you follow',
+    similar_interest_vector_to_news_vector: 'News you may be interested in',
   },
   new_contract: {
     contract_in_group_you_are_in: 'New question in a group you are in',

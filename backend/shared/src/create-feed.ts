@@ -5,10 +5,15 @@ import {
 import { Comment } from 'common/comment'
 import { getUserToReasonsInterestedInContractAndUser } from 'shared/supabase/contracts'
 import { Contract } from 'common/contract'
-import { FEED_DATA_TYPES, FEED_REASON_TYPES } from 'common/feed'
+import {
+  CONTRACT_OR_USER_FEED_REASON_TYPES,
+  FEED_DATA_TYPES,
+  FEED_REASON_TYPES,
+} from 'common/feed'
 import { Reaction } from 'common/reaction'
 import { log } from 'shared/utils'
 import { buildArray } from 'common/util/array'
+import { getUsersWithSimilarInterestVectorToNews } from 'shared/supabase/users'
 
 export const insertDataToUserFeed = async (
   userId: string,
@@ -155,7 +160,7 @@ export const addLikedCommentOnContractToFeed = async (
 // - creator of the contract & reaction
 export const addContractToFeed = async (
   contract: Contract,
-  reasonsToInclude: FEED_REASON_TYPES[],
+  reasonsToInclude: CONTRACT_OR_USER_FEED_REASON_TYPES[],
   dataType: FEED_DATA_TYPES,
   userIdsToExclude: string[],
   options: {
@@ -193,45 +198,38 @@ export const addContractToFeed = async (
   )
 }
 
-export const insertContractRelatedDataToUsersFeeds = async (
+export const insertNewsContractsToUsersFeeds = async (
+  newsId: string,
   contracts: {
     id: string
     creatorId: string
   }[],
-  dataType: FEED_DATA_TYPES,
-  reasonsToInclude: FEED_REASON_TYPES[],
   eventTime: number,
-  pg: SupabaseDirectClient,
-  userIdsToExclude: string[],
-  options: {
-    newsId?: string
-  }
+  pg: SupabaseDirectClient
 ) => {
+  const usersToReasons = await getUsersWithSimilarInterestVectorToNews(
+    newsId,
+    pg
+  )
+  console.log(
+    'found users interested in news id',
+    newsId,
+    Object.keys(usersToReasons).length
+  )
   return await Promise.all(
-    contracts.map(async (contract) => {
-      const usersToReasons = await getUserToReasonsInterestedInContractAndUser(
-        contract.id,
-        contract.creatorId,
-        pg,
-        reasonsToInclude
-      )
-      console.log(
-        'found users interested in contract',
-        contract.id,
-        Object.keys(usersToReasons).length
-      )
+    Object.keys(usersToReasons).map(async (userId) => {
       return await Promise.all(
-        Object.keys(usersToReasons).map(async (userId) => {
+        contracts.map(async (contract) => {
           await insertDataToUserFeed(
             userId,
             eventTime,
-            dataType,
+            'news_with_related_contracts',
             usersToReasons[userId],
-            userIdsToExclude,
+            [],
             {
               contractId: contract.id,
               creatorId: contract.creatorId,
-              ...options,
+              newsId,
             },
             pg
           )
