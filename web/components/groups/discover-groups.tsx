@@ -181,6 +181,7 @@ export function GroupLine(props: {
                     : 'bg-primary-500 hover:bg-primary-600'
                   : 'w-[80px] !px-0 !py-1'
               )}
+              iconClassName={'text-canvas-50 '}
               isMobile={isMobile}
             />
           )}
