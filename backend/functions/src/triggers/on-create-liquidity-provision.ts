@@ -54,6 +54,7 @@ export const onCreateLiquidityProvision = functions
           minUserInterestDistanceToContract:
             INTEREST_DISTANCE_THRESHOLDS.new_subsidy,
           userIdResponsibleForEvent: liquidity.userId,
+          idempotencyKey: eventId,
         }
       )
     await createFollowOrMarketSubsidizedNotification(
