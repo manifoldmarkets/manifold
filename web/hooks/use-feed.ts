@@ -57,7 +57,7 @@ export const useFeed = (
       .then(({ data }) => {
         return db.rpc('get_recommended_contracts_embeddings_from', {
           uid: userId,
-          p_embedding: data?.length ? data[0].topic_embedding : [],
+          p_embedding: (data?.length ? data[0].topic_embedding : []) as any,
           max_dist: 0.5,
           n: PAGE_SIZE,
           excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
