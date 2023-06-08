@@ -75,8 +75,8 @@ export async function scoreContractsInternal(
     const thisWeekScore =
       (thisWeekLikesByContract[contract.id] ?? 0) +
       (thisWeekTradersByContract[contract.id] ?? 0)
-
-    const popularityScore = todayScore + thisWeekScore / 10
+    const thisWeekScoreWeight = thisWeekScore / 10
+    const popularityScore = todayScore + thisWeekScoreWeight
     const freshnessScore = 1 + Math.log(1 + popularityScore)
     const wasCreatedToday = contract.createdTime > dayAgo
 
@@ -92,7 +92,26 @@ export async function scoreContractsInternal(
       const logOddsChange = Math.abs(logit(yesterdayProb) - logit(todayProb))
       dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
     }
-
+    // This is a newly trending contract, and should be at the top of most users' feeds
+    if (todayScore > 10 && todayScore / thisWeekScore > 0.5) {
+      log('inserting specifically today trending contract', contract.id)
+      await insertTrendingContractToUsersFeeds(contract, dayAgo)
+    }
+    // If it's already popular but has had 5 new traders in the past hour, add it to the feed
+    else if (
+      popularityScore > 10 &&
+      todayScore - (contract.popularityScore - thisWeekScoreWeight) > 5
+    ) {
+      log(
+        'inserting generally trending, recently popular contract',
+        contract.id,
+        'with popularity score',
+        popularityScore,
+        'prev score',
+        contract.popularityScore
+      )
+      await insertTrendingContractToUsersFeeds(contract, weekAgo)
+    }
     if (
       contract.popularityScore !== popularityScore ||
       contract.dailyScore !== dailyScore
@@ -100,13 +119,6 @@ export async function scoreContractsInternal(
       // If it's just undergone a large prob change, add it to the feed
       if (dailyScore > 1.5 && dailyScore - contract.dailyScore > 1) {
         await insertMarketMovementContractToUsersFeeds(contract, dailyScore)
-      }
-      // If it's fairly popular and had 3 new traders in the past hour, add it to the feed
-      if (
-        popularityScore > 5 &&
-        popularityScore - contract.popularityScore > 3
-      ) {
-        await insertTrendingContractToUsersFeeds(contract, popularityScore)
       }
       await firestore
         .collection('contracts')
