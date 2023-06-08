@@ -170,7 +170,7 @@ export default function AboutPage() {
           <LabCard
             title="📰 News"
             description="Breaking news + markets"
-            href='/news'
+            href="/news"
           />
           <LabCard
             title="🔥 Swipe"
