@@ -12,7 +12,6 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { getAllComments } from 'common/supabase/comments'
 import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { getCommentsOnPost } from 'web/lib/supabase/comments'
 
 export function useComments(contractId: string, limit: number) {
   const [comments, setComments] = useState<Json[]>([])
