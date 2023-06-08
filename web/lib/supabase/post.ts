@@ -3,6 +3,17 @@ import { run } from 'common/supabase/utils'
 import { db } from './db'
 import { getUserByUsername } from 'web/lib/supabase/users'
 
+export function postPath(postSlug: string) {
+  return `/post/${postSlug}`
+}
+
+export function deletePost(post: Post) {
+  // we don't delete comments but this matters little.
+  // this function is only used to delete group about posts....
+
+  return run(db.from('posts').delete().eq('id', post.id))
+}
+
 export async function getPost(postId: string) {
   const { data: post } = await run(
     db.from('posts').select('data').eq('id', postId)

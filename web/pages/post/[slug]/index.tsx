@@ -1,6 +1,6 @@
 import { Page } from 'web/components/layout/page'
-import { getPostBySlug } from 'web/lib/supabase/post'
-import { postPath, updatePost } from 'web/lib/firebase/posts'
+import { getPostBySlug, postPath } from 'web/lib/supabase/post'
+import { updatePost } from 'web/lib/firebase/api'
 import { Post } from 'common/post'
 import { Title } from 'web/components/widgets/title'
 import { Spacer } from 'web/components/layout/spacer'
@@ -18,7 +18,6 @@ import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/widgets/user-link'
-import { listAllCommentsOnPost } from 'web/lib/firebase/comments'
 import { PostComment } from 'common/comment'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { groupBy, sortBy } from 'lodash'
@@ -26,7 +25,6 @@ import {
   PostCommentInput,
   PostCommentThread,
 } from 'web/components/posts/post-comments'
-import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useUser } from 'web/hooks/use-user'
 import { SEO } from 'web/components/SEO'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
@@ -37,13 +35,15 @@ import { formatMoney } from 'common/util/format'
 import { Ad } from 'common/ad'
 import { TimerClaimBox } from 'web/pages/ad'
 import { useRouter } from 'next/router'
+import { getCommentsOnPost } from 'web/lib/supabase/comments'
+import { useRealtimePostComments } from 'web/hooks/use-comments-supabase'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
 
   const post = await getPostBySlug(slug)
   const creator = post ? await getUser(post.creatorId) : null
-  const comments = post && (await listAllCommentsOnPost(post.id))
+  const comments = post && (await getCommentsOnPost(post.id))
 
   let watched: string[] = []
   let skipped: string[] = []
@@ -82,8 +82,7 @@ export default function PostPage(props: {
   const postId = post?.id ?? '_'
 
   const tips = useTipTxns({ postId })
-  const updatedComments = useCommentsOnPost(postId)
-  const comments = updatedComments ?? props.comments
+  const comments = useRealtimePostComments(postId) || props.comments
   const user = useUser()
 
   if (!post) {
@@ -104,7 +103,7 @@ export default function PostPage(props: {
         <EditInPlaceInput
           className="-m-px px-2 !text-3xl"
           initialValue={post.title}
-          onSave={(title) => updatePost(post, { title })}
+          onSave={(title) => updatePost({ id: post.id, title })}
           disabled={!canEdit}
         >
           {(value) => <Title className="!my-0 p-2" children={value} />}
@@ -247,9 +246,7 @@ export function RichEditPost(props: {
     if (!editor) return
 
     setContentCache(editor.getJSON())
-    await updatePost(post, {
-      content: editor.getJSON(),
-    })
+    await updatePost({ id: post.id, content: editor.getJSON() })
     setEditing(false)
   }
 

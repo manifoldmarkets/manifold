@@ -1,13 +1,18 @@
-import { Comment, ContractComment } from 'common/comment'
+import { Comment, ContractComment, PostComment } from 'common/comment'
 import { Json } from 'common/supabase/schema'
 import { useEffect, useState } from 'react'
-import { getCommentRows, getNumUserComments } from 'web/lib/supabase/comments'
+import {
+  getCommentRows,
+  getNumUserComments,
+  getPostCommentRows,
+} from 'web/lib/supabase/comments'
 import { db } from 'web/lib/supabase/db'
 import { uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getAllComments } from 'common/supabase/comments'
 import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { getCommentsOnPost } from 'web/lib/supabase/comments'
 
 export function useComments(contractId: string, limit: number) {
   const [comments, setComments] = useState<Json[]>([])
@@ -80,4 +85,23 @@ export function useRealtimeComments(limit: number): Comment[] {
     getCommentRows(limit)
   )
   return (rows ?? []).map((r) => r.data as Comment)
+}
+
+export const useRealtimePostComments = (postId: string) => {
+  const { rows } = useSubscription(
+    'post_comments',
+    { k: 'post_id', v: postId },
+    () => getPostCommentRows(postId)
+  )
+
+  console.log(rows)
+
+  return (rows ?? []).map(
+    (c) =>
+      ({
+        ...(c.data as any),
+        id: c.comment_id,
+        createdTime: c.created_time && Date.parse(c.created_time),
+      } as PostComment)
+  )
 }

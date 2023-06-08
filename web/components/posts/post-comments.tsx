@@ -15,9 +15,9 @@ import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { createCommentOnPost } from 'web/lib/firebase/comments'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
+import { createPostComment } from 'web/lib/supabase/comments'
 
 export function PostCommentThread(props: {
   post: Post
@@ -85,7 +85,7 @@ export function PostCommentInput(props: {
       track('sign in to comment')
       return await firebaseLogin()
     }
-    await createCommentOnPost(post, editor.getJSON(), user, parentCommentId)
+    await createPostComment(post, editor.getJSON(), user, parentCommentId)
     props.onSubmitComment?.()
   }
 

@@ -64,6 +64,7 @@ import { createQAndA } from './create-q-and-a'
 import { createQAndAAnswer } from './create-q-and-a-answer'
 import { awardQAndAAnswer } from './award-q-and-a-answer'
 import { createchatmessage } from 'api/create-chat-message'
+import { updatepost } from './update-post'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -125,6 +126,7 @@ app.post('/resolvemarket', ...apiRoute(resolvemarket))
 app.post('/closemarket', ...apiRoute(closemarket))
 app.post('/savetwitchcredentials', ...apiRoute(savetwitchcredentials))
 app.post('/createpost', ...apiRoute(createpost))
+app.post('/updatepost', ...apiRoute(updatepost))
 app.post('/validateIap', ...apiRoute(validateiap))
 app.post('/markallnotifications', ...apiRoute(markallnotifications))
 app.post('/updatememberrole', ...apiRoute(updatememberrole))

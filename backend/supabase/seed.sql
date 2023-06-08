@@ -829,13 +829,13 @@ cluster on manalinks_pkey;
 
 create table if not exists
   posts (
-    id text not null primary key,
+    id text not null primary key default uuid_generate_v4 (),
     data jsonb not null,
     visibility text,
     group_id text,
     creator_id text,
-    created_time timestamptz,
-    fs_updated_time timestamp not null
+    created_time timestamptz default now(),
+    fs_updated_time timestamp
   );
 
 alter table posts enable row level security;
@@ -846,6 +846,10 @@ create policy "public read" on posts for
 select
   using (true);
 
+drop policy if exists "user delete" on posts;
+
+create policy "user delete" on posts for delete using (auth.uid ()::text = creator_id);
+
 create index if not exists posts_data_gin on posts using GIN (data);
 
 alter table posts
@@ -854,12 +858,12 @@ cluster on posts_pkey;
 create table if not exists
   post_comments (
     post_id text not null,
-    comment_id text not null,
+    comment_id text not null default uuid_generate_v4 (),
     data jsonb not null,
-    fs_updated_time timestamp not null,
+    fs_updated_time timestamp,
     visibility text,
     user_id text,
-    created_time timestamptz,
+    created_time timestamptz default now(),
     primary key (post_id, comment_id)
   );
 
@@ -1132,6 +1136,9 @@ alter publication supabase_realtime
 add table posts;
 
 alter publication supabase_realtime
+add table post_comments;
+
+alter publication supabase_realtime
 add table group_contracts;
 
 alter publication supabase_realtime
@@ -1215,8 +1222,6 @@ begin
            when 'group_members' then cast(('group_id', 'member_id') as table_spec)
            when 'txns' then cast((null, 'id') as table_spec)
            when 'manalinks' then cast((null, 'id') as table_spec)
-           when 'posts' then cast((null, 'id') as table_spec)
-           when 'post_comments' then cast(('post_id', 'comment_id') as table_spec)
            when 'user_contract_metrics' then cast(('user_id', 'contract_id') as table_spec)
            else null
     end;

@@ -11,9 +11,6 @@ import {
 } from 'web/lib/supabase/ads'
 import type { Ad as AdType } from 'common/src/ad'
 import { Content } from 'web/components/widgets/editor'
-import { useCommentsOnPost } from 'web/hooks/use-comments'
-import { useTipTxns } from 'web/hooks/use-tip-txns'
-import { PostCommentsActivity } from '../post/[slug]'
 import { UserLink } from 'web/components/widgets/user-link'
 import { APIError, redeemAd } from 'web/lib/firebase/api'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -22,7 +19,7 @@ import { uniq } from 'lodash'
 import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
-import { postPath } from 'web/lib/firebase/posts'
+import { postPath } from 'web/lib/supabase/post'
 import toast from 'react-hot-toast'
 
 export async function getStaticProps() {
@@ -73,9 +70,6 @@ export default function AdsPage(props: { ads: AdType[] }) {
 function Ad(props: { ad: AdType; onNext: () => void }) {
   const { ad, onNext } = props
 
-  const comments = useCommentsOnPost(ad.id) ?? []
-  const tips = useTipTxns({ postId: ad.id })
-
   const shareUrl = `https://${ENV_CONFIG.domain}${postPath(ad.slug)}`
 
   return (
@@ -97,8 +91,6 @@ function Ad(props: { ad: AdType; onNext: () => void }) {
       </div>
 
       <TimerClaimBox ad={ad} onNext={onNext} className="my-5" />
-
-      <PostCommentsActivity post={ad} comments={comments} tips={tips} />
 
       {/* <div className="h-8" />
       <CreateBanner /> */}
