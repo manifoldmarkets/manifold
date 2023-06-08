@@ -1,12 +1,10 @@
 import { Group } from 'common/group'
-import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
+import { GroupAndRoleType } from 'web/lib/supabase/groups'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { GroupLine } from './discover-groups'
-import { GroupAndRoleType } from 'web/lib/supabase/groups'
-import { groupRoleType } from './group-member-modal'
 
 export function GroupsList(props: {
   groups: Group[] | undefined

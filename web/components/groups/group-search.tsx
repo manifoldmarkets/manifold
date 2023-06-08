@@ -15,11 +15,7 @@ import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import {
-  GroupAndRoleType,
-  getYourNonPrivateNonModeratorGroups,
-  searchGroups,
-} from 'web/lib/supabase/groups'
+import { GroupAndRoleType, searchGroups } from 'web/lib/supabase/groups'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
