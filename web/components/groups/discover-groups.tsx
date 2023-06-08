@@ -1,4 +1,4 @@
-import { ChevronUpIcon, UsersIcon } from '@heroicons/react/solid'
+import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group, GroupsByTopic, groupPath } from 'common/group'
@@ -7,20 +7,20 @@ import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
 import { useMutation } from 'react-query'
 import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { searchContract } from 'web/lib/supabase/contracts'
 import { GroupAndRoleType, SearchGroupInfo } from 'web/lib/supabase/groups'
 import { shortenNumber } from 'web/lib/util/shortenNumber'
-import { IconButton } from '../buttons/button'
 import { ContractsTable } from '../contract/contracts-table'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { SiteLink } from '../widgets/site-link'
 import { Subtitle } from '../widgets/subtitle'
+import { MemberRoleTag, groupRoleType } from './group-member-modal'
 import { PRIVACY_STATUS_ITEMS } from './group-privacy-modal'
 import GroupSearch from './group-search'
 import { JoinOrLeaveGroupButton } from './groups-button'
-import { groupRoleType } from './group-member-modal'
 
 export default function DiscoverGroups(props: { yourGroupIds: string[] }) {
   const { yourGroupIds } = props
@@ -148,6 +148,10 @@ export function GroupLine(props: {
 }) {
   const { group, isMember, user, yourGroupRoles } = props
   const role = yourGroupRoles?.find((r) => r.group.id == group.id)?.role
+  const isCreator = user?.id == group.creatorId
+  const isMobile = useIsMobile()
+  const isPrivate = group.privacyStatus == 'private'
+
   return (
     <Link
       href={groupPath(group.slug)}
@@ -155,22 +159,34 @@ export function GroupLine(props: {
     >
       <div className={clsx('flex cursor-pointer items-center justify-between')}>
         {group.name}
-        <div className="flex sm:gap-2">
-          {!role && (
+        <Row className="gap-4">
+          {(role || isCreator) && (
+            <span>
+              <MemberRoleTag
+                role={role}
+                isCreator={!!isCreator}
+                className="w-min opacity-70"
+              />
+            </span>
+          )}
+          {!isPrivate && (
             <JoinOrLeaveGroupButton
               group={group}
               user={user}
-              disabled={user?.id == group.creatorId}
+              disabled={isCreator}
               isMember={isMember}
-              className="w-[80px] !px-0 !py-1"
+              className={clsx(
+                isMobile ? 'rounded p-1' : '',
+                isMobile
+                  ? isMember
+                    ? 'dark:bg-ink-400 hover:bg-ink-700 bg-gray-500'
+                    : 'bg-primary-500 hover:bg-primary-600'
+                  : 'w-[80px] !px-0 !py-1'
+              )}
+              isMobile={isMobile}
             />
           )}
-          {role && (
-            <Row className="h-min w-fit whitespace-nowrap rounded bg-indigo-400 bg-opacity-20 px-2 py-0.5 text-sm text-indigo-700 dark:text-indigo-400">
-              {group.creatorId == user?.id ? 'CREATOR' : role.toUpperCase()}
-            </Row>
-          )}
-        </div>
+        </Row>
       </div>
       <GroupSummary group={group} />
     </Link>

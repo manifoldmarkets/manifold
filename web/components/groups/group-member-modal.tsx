@@ -312,8 +312,9 @@ export function MemberRoleHeader(props: {
 export function MemberRoleTag(props: {
   role: any | undefined
   isCreator: boolean
+  className?: string
 }) {
-  const { role, isCreator } = props
+  const { role, isCreator, className } = props
   if (!role) {
     return <></>
   }
@@ -325,7 +326,8 @@ export function MemberRoleTag(props: {
           ? 'bg-primary-400'
           : role === 'admin'
           ? 'bg-primary-300'
-          : 'bg-ink-300'
+          : 'bg-ink-300',
+        className
       )}
     >
       {isCreator ? 'CREATOR' : `${role.toLocaleUpperCase()}`}
