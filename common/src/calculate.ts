@@ -307,19 +307,12 @@ export function getProfitMetrics(contract: Contract, yourBets: Bet[]) {
   return getCpmmOrDpmProfit(contract, yourBets)
 }
 
-export const getContractBetMetrics = (contract: Contract, yourBets: Bet[]) => {
+export function getCpmmShares(yourBets: Bet[]) {
   const totalShares: { [outcome: string]: number } = {}
   for (const bet of yourBets) {
     const { shares, outcome } = bet
     totalShares[outcome] = (totalShares[outcome] ?? 0) + shares
   }
-
-  const { profit, profitPercent, payout } = getProfitMetrics(
-    contract,
-    yourBets
-  )
-  const invested = getInvested(contract, yourBets)
-  const loan = sumBy(yourBets, 'loanAmount')
 
   const hasShares = Object.values(totalShares).some(
     (shares) => !floatingEqual(shares, 0)
@@ -328,6 +321,40 @@ export const getContractBetMetrics = (contract: Contract, yourBets: Bet[]) => {
   const { YES: yesShares, NO: noShares } = totalShares
   const hasYesShares = yesShares >= 1
   const hasNoShares = noShares >= 1
+
+  return {
+    totalShares,
+    hasShares,
+    hasYesShares,
+    hasNoShares,
+  }
+}
+
+export function getCpmmMultiShares(yourBets: Bet[]) {
+  const betsByAnswerId = groupBy(yourBets, 'answerId')
+  const sharesByAnswerId = mapValues(betsByAnswerId, (bets) =>
+    getCpmmShares(bets)
+  )
+
+  const hasShares = Object.values(sharesByAnswerId).some(
+    (shares) => shares.hasShares
+  )
+
+  return {
+    hasShares,
+    sharesByAnswerId,
+  }
+}
+
+export const getContractBetMetrics = (contract: Contract, yourBets: Bet[]) => {
+  const { mechanism } = contract
+  const isCpmmMulti = mechanism === 'cpmm-multi-1'
+  const { profit, profitPercent, payout } = getProfitMetrics(contract, yourBets)
+  const invested = getInvested(contract, yourBets)
+  const loan = sumBy(yourBets, 'loanAmount')
+
+  const { totalShares, hasShares, hasYesShares, hasNoShares } =
+    getCpmmShares(yourBets)
   const lastBetTime = Math.max(...yourBets.map((b) => b.createdTime))
   const maxSharesOutcome = hasShares
     ? maxBy(Object.keys(totalShares), (outcome) => totalShares[outcome])
@@ -340,7 +367,7 @@ export const getContractBetMetrics = (contract: Contract, yourBets: Bet[]) => {
     profit,
     profitPercent,
     totalShares,
-    hasShares,
+    hasShares: isCpmmMulti ? getCpmmMultiShares(yourBets).hasShares : hasShares,
     hasYesShares,
     hasNoShares,
     maxSharesOutcome,
