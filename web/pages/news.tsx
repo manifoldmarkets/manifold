@@ -70,12 +70,14 @@ const useNews = () => {
   const user = useUser()
 
   useEffect(() => {
+    if (user === undefined) return
+
     db.rpc('user_top_news' as any, {
       uid: user?.id || 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2',
       similarity: user?.id ? 0.82 : 0,
       n: 50,
     }).then(({ data }) => setArticles(data ?? []))
-  }, [user?.id])
+  }, [user])
 
   const contractIds = articles.flatMap((c) => c.contract_ids.slice(0, 3))
   const contracts = useContracts(contractIds).filter(
