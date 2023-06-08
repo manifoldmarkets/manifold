@@ -29,7 +29,6 @@ export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
     yourGroups,
     uid: auth?.uid,
   })
-  console.log(searchGroupSQL)
   const groups = await pg.map(searchGroupSQL, [term], (r) => r.data as Group)
 
   return (groups ?? []) as unknown as Json

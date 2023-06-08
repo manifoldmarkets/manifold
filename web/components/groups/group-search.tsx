@@ -151,8 +151,6 @@ export default function GroupSearch(props: {
         className="w-full"
       />
       <Spacer h={1} />
-      {/* {!inputTerm || inputTerm === '' ? (
-        )} */}
       {user && filter?.yourGroups && (!inputTerm || inputTerm === '') ? (
         <>
           <YourGroupsList

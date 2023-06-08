@@ -47,7 +47,6 @@ export function PrivateGroupPage(props: { slugs: string[] }) {
   const { slugs } = props
   const isManifoldAdmin = useAdmin()
   const isMember = useIsGroupMember(slugs[0])
-  console.log('isMember', isMember)
   if (isMember === undefined) {
     return <LoadingPrivateThing />
   }
