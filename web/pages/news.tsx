@@ -12,11 +12,10 @@ import { NewsArticle } from 'web/components/news-article'
 import { useContracts } from 'web/hooks/use-contract-supabase'
 import { ContractMention } from 'web/components/contract/contract-mention'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useTracking } from 'web/hooks/use-tracking'
+import { SEO } from 'web/components/SEO'
 
 export default function NewsPage() {
-  useRedirectIfSignedOut()
   useTracking('view news page')
   const { articles, contracts } = useNews()
 
@@ -51,6 +50,10 @@ export default function NewsPage() {
 
   return (
     <Page>
+      <SEO
+        title="News"
+        description="Breaking news meets the wisdom of the market"
+      />
       <Col className="mx-auto w-full gap-6 pb-8 sm:px-2 lg:pr-4">
         <Row className="mx-4 mb-2 items-center justify-between gap-4">
           <Title children="News" className="!my-0 hidden sm:block" />
@@ -68,8 +71,8 @@ const useNews = () => {
 
   useEffect(() => {
     db.rpc('user_top_news' as any, {
-      uid: user?.id || '',
-      similarity: 0.8,
+      uid: user?.id || 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2',
+      similarity: user?.id ? 0.82 : 0,
       n: 50,
     }).then(({ data }) => setArticles(data ?? []))
   }, [user?.id])

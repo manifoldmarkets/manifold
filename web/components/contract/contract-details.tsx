@@ -221,8 +221,7 @@ export function PublicMarketGroups(props: {
                   'bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-sm'
                 )}
               >
-                <PlusIcon className="text-ink-1000 bg-ink-100 hover:bg-ink-200 mr-1 h-4 w-4" />{' '}
-                Group
+                <PlusIcon className="mr-1 h-4 w-4" /> Group
               </span>
             )}
           </button>
