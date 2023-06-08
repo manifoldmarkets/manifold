@@ -26,8 +26,8 @@ export default function FeedTimeline() {
 
   return (
     <Page>
-      <Col className="gap-2 py-2 pb-8 sm:px-2">
-        <Row className="mx-4 mb-2 items-center gap-4">
+      <Col className="mx-auto w-full max-w-2xl gap-6 pb-8 sm:px-2 lg:pr-4">
+        <Row className="mx-4 mb-2 items-center justify-between gap-4">
           <Title children="Home" className="!my-0 hidden sm:block" />
           <DailyStats user={user} />
         </Row>
@@ -69,7 +69,7 @@ function FeedTimelineContent() {
     Date.now(),
     'last-seen-feed-timeline' + user?.id
   )
-  const [scrolledDown, setScrolledDown] = useState(false)
+  const [topWasVisible, setTopWasVisible] = useState(false)
   const [newerTimelineItems, setNewerTimelineItems] = useState<
     FeedTimelineItem[]
   >([])
@@ -85,30 +85,31 @@ function FeedTimelineContent() {
   }, [pageVisible])
 
   if (!boosts || !savedFeedItems) return <LoadingIndicator />
+  const newAvatarUrls = uniq(
+    filterDefined(newerTimelineItems.map((item) => item.avatarUrl))
+  ).slice(0, 3)
 
   return (
-    <Col>
-      <div className="relative">
-        <VisibilityObserver
-          className="pointer-events-none absolute top-0 h-5 w-full select-none "
-          onVisibilityUpdated={(visible) => {
-            if (visible && scrolledDown) {
-              addTimelineItems(newerTimelineItems, { new: true })
-              setNewerTimelineItems([])
-              setScrolledDown(false)
-            }
-            if (!visible) setScrolledDown(true)
-          }}
-        />
-      </div>
+    <Col className={'relative items-center'}>
+      <VisibilityObserver
+        className="pointer-events-none absolute top-0 h-5 w-full select-none "
+        onVisibilityUpdated={(visible) => {
+          if (visible && !topWasVisible) {
+            addTimelineItems(newerTimelineItems, { new: true })
+            setNewerTimelineItems([])
+            setTopWasVisible(true)
+          }
+          if (!visible) setTopWasVisible(false)
+        }}
+      />
+      {newAvatarUrls.length > 0 && !topWasVisible && (
+        <NewActivityButton avatarUrls={newAvatarUrls} />
+      )}
       <FeedTimelineItems
         boosts={boosts}
         user={user}
         feedTimelineItems={savedFeedItems}
       />
-      {newerTimelineItems.length > 0 && scrolledDown && (
-        <NewActivityButton newFeedTimelineItems={newerTimelineItems} />
-      )}
       <div className="relative">
         <VisibilityObserver
           className="pointer-events-none absolute bottom-0 h-5 w-full select-none "
@@ -131,25 +132,20 @@ function FeedTimelineContent() {
   )
 }
 
-const NewActivityButton = (props: {
-  newFeedTimelineItems: FeedTimelineItem[]
-}) => {
-  const { newFeedTimelineItems } = props
+const NewActivityButton = (props: { avatarUrls: string[] }) => {
+  const { avatarUrls } = props
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
     })
   }
-  const avatarUrls = uniq(
-    filterDefined(newFeedTimelineItems.map((item) => item.avatarUrl))
-  ).slice(0, 3)
 
   return (
     <button
       className={clsx(
-        'bg-canvas-50 border-ink-200 hover:bg-ink-200 rounded-full border py-2 pr-3 pl-2 text-sm transition-colors',
-        'fixed left-3 bottom-16'
+        'bg-canvas-50 border-ink-200 hover:bg-ink-200 rounded-full border-2 py-2 pr-3 pl-2 text-sm transition-colors',
+        'sticky top-7 z-20'
       )}
       onClick={scrollToTop}
     >

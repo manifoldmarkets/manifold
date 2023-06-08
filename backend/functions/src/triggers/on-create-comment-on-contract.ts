@@ -161,7 +161,7 @@ export const onCreateCommentOnContract = functions
     await addCommentOnContractToFeed(
       contractId,
       comment,
-      repliedOrMentionedUserIds,
+      repliedOrMentionedUserIds.concat([contract.creatorId, comment.userId]),
       eventId
     )
   })
@@ -258,5 +258,5 @@ export const handleCommentNotifications = async (
       taggedUserIds: mentionedUsers,
     }
   )
-  return [...mentionedUsers, ...Object.keys(repliedUsers), contract.creatorId]
+  return [...mentionedUsers, ...Object.keys(repliedUsers)]
 }

@@ -35,7 +35,6 @@ export const collectionTables: CollectionTableMapping = {
   groups: 'groups',
   txns: 'txns',
   manalinks: 'manalinks',
-  posts: 'posts',
 }
 
 export type SubcollectionTableMapping = {
@@ -58,9 +57,6 @@ export const subcollectionTables: SubcollectionTableMapping = {
   groups: {
     groupContracts: 'group_contracts',
     groupMembers: 'group_members',
-  },
-  posts: {
-    comments: 'post_comments',
   },
 }
 

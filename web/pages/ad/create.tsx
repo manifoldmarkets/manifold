@@ -14,7 +14,7 @@ import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { createPost } from 'web/lib/firebase/api'
-import { postPath } from 'web/lib/firebase/posts'
+import { postPath } from 'web/lib/supabase/post'
 
 const PRICE_PER_USER = 5
 

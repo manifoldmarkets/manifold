@@ -4,6 +4,7 @@ export type FEED_DATA_TYPES =
   | 'new_contract'
   | 'contract_probability_changed'
   | 'popular_comment'
+  | 'trending_contract'
 
 export type FEED_REASON_TYPES =
   | 'follow_contract'
@@ -19,59 +20,70 @@ export const FeedExplanationDictionary: Record<
   Partial<Record<FEED_REASON_TYPES, string>>
 > = {
   new_comment: {
-    follow_contract: 'New comment on contract you follow',
-    liked_contract: 'New comment on contract you liked',
-    viewed_contract: 'New comment on contract you viewed',
+    follow_contract: 'New comment on question you follow',
+    liked_contract: 'New comment on question you liked',
+    viewed_contract: 'New comment on question you viewed',
     contract_in_group_you_are_in:
-      'New comment on contract in a group you are in',
+      'New comment on question in a group you are in',
     similar_interest_vector_to_user:
-      'New comment by a creator with similar interests to yours',
+      'New comment by a creator you may be interested in',
     similar_interest_vector_to_contract:
-      'New comment on a contract with similar interests to yours',
+      'New comment on a question you may be interested in',
     follow_user: 'New comment by a creator you follow',
   },
   news_with_related_contracts: {
-    follow_contract: 'News about contract you follow',
-    liked_contract: 'News about contract you liked',
-    viewed_contract: 'News about contract you viewed',
-    contract_in_group_you_are_in: 'News about contract in a group you are in',
+    follow_contract: 'News about question you follow',
+    liked_contract: 'News about question you liked',
+    viewed_contract: 'News about question you viewed',
+    contract_in_group_you_are_in: 'News about question in a group you are in',
     similar_interest_vector_to_user:
-      'News by a creator with similar interests to yours',
+      'News related to a creator you may be interested in',
     similar_interest_vector_to_contract:
-      'News about a contract with similar interests to yours',
-    follow_user: 'News about a contract by a creator you follow',
+      'News related to a question you may be interested in',
+    follow_user: 'News about a question by a creator you follow',
   },
   new_contract: {
-    contract_in_group_you_are_in: 'New contract in a group you are in',
+    contract_in_group_you_are_in: 'New question in a group you are in',
     similar_interest_vector_to_user:
-      'New contract by a creator with similar interests to yours',
+      'New question by a creator you may be interested in',
     similar_interest_vector_to_contract:
-      'New contract with similar interests to yours',
-    follow_user: 'New contract by a creator you follow',
+      'New question you may be interested in',
+    follow_user: 'New question by a creator you follow',
   },
   contract_probability_changed: {
-    follow_contract: 'Large probability change on contract you follow',
-    liked_contract: 'Large probability change on contract you liked',
-    viewed_contract: 'Large probability change on contract you viewed',
+    follow_contract: 'Market movement on question you follow',
+    liked_contract: 'Market movement on question you liked',
+    viewed_contract: 'Market movement on question you viewed',
     contract_in_group_you_are_in:
-      'Large probability change on contract in a group you are in',
+      'Market movement on question in a group you are in',
     similar_interest_vector_to_user:
-      'Large probability change on contract by a creator with similar interests to yours',
+      'Market movement on question by a creator you may be interested in',
     similar_interest_vector_to_contract:
-      'Large probability change on contract with similar interests to yours',
-    follow_user: 'Large probability change on contract by a creator you follow',
+      'Market movement on question you may be interested in',
+    follow_user: 'Market movement on question by a creator you follow',
   },
   popular_comment: {
-    follow_contract: 'Popular comment on contract you follow',
-    liked_contract: 'Popular comment on contract you liked',
-    viewed_contract: 'Popular comment on contract you viewed',
+    follow_contract: 'Popular comment on question you follow',
+    liked_contract: 'Popular comment on question you liked',
+    viewed_contract: 'Popular comment on question you viewed',
     contract_in_group_you_are_in:
-      'Popular comment on contract in a group you are in',
+      'Popular comment on question in a group you are in',
     similar_interest_vector_to_user:
-      'Popular comment by a creator with similar interests to yours',
+      'Popular comment by a creator you may be interested in',
     similar_interest_vector_to_contract:
-      'Popular comment on a contract with similar interests to yours',
+      'Popular comment on a question you may be interested in',
     follow_user: 'Popular comment by a creator you follow',
+  },
+  trending_contract: {
+    follow_contract: 'Trending question you follow',
+    liked_contract: 'Trending question you liked',
+    viewed_contract: 'Trending question you viewed',
+    contract_in_group_you_are_in: 'Trending question in a group you are in',
+    similar_interest_vector_to_user:
+      'Trending question by a creator you may be interested in',
+    similar_interest_vector_to_contract:
+      'Trending question you may be interested in',
+    follow_user: 'Trending question by a creator you follow',
   },
 }
 

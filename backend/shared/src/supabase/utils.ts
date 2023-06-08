@@ -71,3 +71,15 @@ export async function bulkUpsert<
   const query = `${baseQueryReplaced} on conflict(${idField}) do update set ${upsertAssigns}`
   await db.none(query)
 }
+
+// Replacement for firebase updateDoc. Updates just the data field (what firebase would've replicated to)
+export async function updateData<
+  T extends TableName,
+  K extends Record<string, any>
+>(db: SupabaseDirectClient, table: T, id: string, data: Partial<K>) {
+  await db.none(`
+  update ${table}
+  set data = data || '${JSON.stringify(data)}'
+  where id = '${id}'
+`)
+}

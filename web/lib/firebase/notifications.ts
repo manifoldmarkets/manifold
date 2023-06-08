@@ -1,5 +1,4 @@
-import { collection, deleteField, doc, updateDoc } from 'firebase/firestore'
-import { db } from 'web/lib/firebase/init'
+import { deleteField, doc, updateDoc } from 'firebase/firestore'
 import {
   getPrivateUser,
   privateUsers,
@@ -52,20 +51,5 @@ export const setPushTokenRequestDenied = async (userId: string) => {
   await updatePrivateUser(userId, {
     rejectedPushNotificationsOn: Date.now(),
     interestedInPushNotifications: false,
-  })
-}
-
-export const markNotificationAsSeen = async (
-  userId: string,
-  notificationId: string
-) => {
-  console.log('marking notification as seen', userId, notificationId)
-  const notificationsCollection = collection(
-    db,
-    `/users/${userId}/notifications`
-  )
-  await updateDoc(doc(notificationsCollection, notificationId), {
-    isSeen: true,
-    viewTime: Date.now(),
   })
 }

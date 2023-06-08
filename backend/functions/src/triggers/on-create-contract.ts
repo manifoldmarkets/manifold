@@ -46,8 +46,13 @@ export const onCreateContract = functions
         'similar_interest_vector_to_contract',
       ],
       'new_contract',
-      eventId
+      [contractCreator.id],
+      {
+        idempotencyKey: eventId,
+        userToContractDistanceThreshold: 0.15,
+      }
     )
+    // TODO: after feed goes live, remove non mentioned users from notifications
     await createNewContractNotification(
       contractCreator,
       contract,

@@ -39,7 +39,6 @@ export const resetWeeklyQuestStatsInternal = async () => {
   console.log(`Resetting quest stats for ${usersSnap.docs.length} users`)
   const userIds = usersSnap.docs.map((d) => d.id)
   const db = createSupabaseClient()
-  // TODO: test on prod
   const chunks = chunk(userIds, 1000)
   await Promise.all(
     chunks.map(async (chunk) => {

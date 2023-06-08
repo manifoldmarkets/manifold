@@ -506,7 +506,7 @@ export function ContractCardAnswers(props: {
     return <div>No answers yet...</div>
   }
   return (
-    <Col className="gap-2">
+    <Col className="w-full gap-2">
       {answers.map((answer) => (
         <ContractCardAnswer
           key={answer.id}

@@ -168,6 +168,11 @@ export default function AboutPage() {
             />
           )}
           <LabCard
+            title="📰 News"
+            description="Breaking news + markets"
+            href="/news"
+          />
+          <LabCard
             title="🔥 Swipe"
             description="Swipe-to-bet UI. Try via iOS/Android app."
             {...(isNative ? { href: '/swipe' } : appCallback)}

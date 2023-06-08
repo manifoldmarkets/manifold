@@ -271,11 +271,7 @@ export function BetStatusText(props: {
           <SiteLink href="/lootbox">🎁</SiteLink>
         </InfoTooltip>
       )}
-      {isApi && (
-        <InfoTooltip text="This bet was placed programmatically through the API">
-          🤖
-        </InfoTooltip>
-      )}
+      {isApi && <InfoTooltip text="Placed via the API">🤖</InfoTooltip>}
       <RelativeTimestamp time={createdTime} />
     </div>
   )

@@ -21,17 +21,20 @@ export const redeemad = authEndpoint(async (req, auth) => {
   if (!user)
     throw new APIError(400, 'No user exists with the authenticated user ID')
 
-  const postRef = firestore.collection('posts').doc(adId)
-  const post = await postRef.get()
+  const pg = createSupabaseDirectClient()
 
-  if (!post.exists) {
+  const postData = await pg.oneOrNone(`select * from posts where id = $1`, [
+    adId,
+  ])
+
+  if (!postData) {
     throw new APIError(404, 'Could not find ad')
   }
 
-  const ad = post.data() as Ad
+  const ad = postData[0].data as Ad
 
   // calculate total funds from txns
-  const pg = createSupabaseDirectClient()
+
   const txns = await pg.map(
     `select data from txns
        where data->>'category' = 'AD_REDEEM'
@@ -64,7 +67,7 @@ export const redeemad = authEndpoint(async (req, auth) => {
     runRedeemAdRewardTxn(transaction, {
       category: 'AD_REDEEM',
       fromType: 'AD',
-      fromId: post.id,
+      fromId: ad.id,
       toType: 'USER',
       toId: user.id,
       amount: costPerView,
@@ -73,5 +76,5 @@ export const redeemad = authEndpoint(async (req, auth) => {
     })
   })
 
-  return { status: 'success', post }
+  return { status: 'success' }
 })

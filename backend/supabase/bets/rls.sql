@@ -10,7 +10,7 @@ create policy "Enable read access for private bets with permissions" on public.c
 select
   using (
     (visibility = 'private'::text)
-    and can_access_private_contract (contract_id, firebase_uid ())
+    and can_access_private_contract(contract_id, firebase_uid ())
   );
 
 

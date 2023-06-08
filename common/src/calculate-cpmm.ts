@@ -56,6 +56,8 @@ function calculateCpmmShares(
   bet: number,
   betChoice: string
 ) {
+  if (bet === 0) return 0
+
   const { YES: y, NO: n } = pool
   const k = y ** p * n ** (1 - p)
 

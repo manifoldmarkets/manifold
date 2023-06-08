@@ -75,6 +75,7 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
           ? (groupMember.role as 'admin' | 'moderator')
           : undefined,
         isTrustworthy: isTrustworthy(user?.username),
+        isGroupMember: !!groupMember,
       })
     ) {
       throw new APIError(
@@ -110,6 +111,7 @@ export function canUserAddGroupToMarket(props: {
   isManifoldAdmin: boolean
   isTrustworthy: boolean
   userGroupRole?: 'admin' | 'moderator'
+  isGroupMember: boolean
 }) {
   const {
     userId,
@@ -118,6 +120,7 @@ export function canUserAddGroupToMarket(props: {
     isManifoldAdmin,
     userGroupRole,
     isTrustworthy,
+    isGroupMember,
   } = props
   return (
     isManifoldAdmin ||
@@ -127,6 +130,11 @@ export function canUserAddGroupToMarket(props: {
     // if user is creator of group
     group.creatorId === userId ||
     // if user owns the contract and is a public group
-    (group.privacyStatus == 'public' ? isMarketCreator || isTrustworthy : false)
+    (group.privacyStatus == 'public'
+      ? isMarketCreator || isTrustworthy
+      : false) ||
+    (group.privacyStatus == 'private'
+      ? isMarketCreator && isGroupMember
+      : false)
   )
 }

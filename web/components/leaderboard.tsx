@@ -23,7 +23,6 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
   maxToShow?: number
   highlightUsername?: string
 }) {
-  // TODO: Ideally, highlight your own entry on the leaderboard
   const { title, columns, className, highlightUsername } = props
   const maxToShow = props.maxToShow ?? props.entries.length
 

@@ -26,9 +26,11 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
 import { run } from 'common/supabase/utils'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { NewsArticle } from '../news-article'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
+
 export const FeedTimelineItems = (props: {
   feedTimelineItems: FeedTimelineItem[]
   boosts?: BoostsType
@@ -58,6 +60,7 @@ export const FeedTimelineItems = (props: {
 
   const { parentCommentsByContractId, childCommentsByParentCommentId } =
     groupCommentsByContractsAndParents(savedFeedComments.concat(recentComments))
+
   const recentBets = useFeedBets(user, contractIdsWithoutComments)
   const feedTimelineItems = mergePeriodic(
     savedFeedTimelineItems,
@@ -68,8 +71,8 @@ export const FeedTimelineItems = (props: {
   return (
     <Col>
       {feedTimelineItems.map((item) => {
-        // boosted contract or organic feed contract
-        if ('contract' in item && item.contract) {
+        // Boosted contract
+        if ('ad_id' in item) {
           const { contract } = item
           const parentComments = (
             parentCommentsByContractId[contract.id] ?? []
@@ -77,19 +80,15 @@ export const FeedTimelineItems = (props: {
           const relatedBets = recentBets
             .filter((bet) => bet.contractId === contract.id)
             .slice(0, MAX_BETS_PER_FEED_ITEM)
-          const hasItems = parentComments.length > 0 || relatedBets.length > 0
-
-          const promotedData =
-            'ad_id' in item
-              ? {
-                  adId: item.ad_id,
-                  reward: AD_REDEEM_REWARD,
-                }
-              : undefined
-
+          const hasRelatedItems =
+            parentComments.length > 0 || relatedBets.length > 0
+          const promotedData = {
+            adId: item.ad_id,
+            reward: AD_REDEEM_REWARD,
+          }
           return (
             <FeedItemFrame
-              item={'ad_id' in item ? undefined : item}
+              item={undefined}
               key={contract.id + 'feed-timeline-item'}
               className={
                 'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
@@ -99,15 +98,58 @@ export const FeedTimelineItems = (props: {
                 contract={contract}
                 className={clsx(
                   'my-0 border-0',
-                  hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
+                  hasRelatedItems ? 'rounded-t-xl rounded-b-none  ' : ''
                 )}
                 promotedData={promotedData}
                 trackingPostfix="feed"
-                reason={
-                  'reasonDescription' in item
-                    ? item.reasonDescription
-                    : undefined
-                }
+                hasItems={hasRelatedItems}
+              />
+              <Row className="bg-canvas-0">
+                <FeedCommentItem
+                  contract={contract}
+                  commentThreads={parentComments.map((parentComment) => ({
+                    parentComment,
+                    childComments:
+                      childCommentsByParentCommentId[parentComment.id] ?? [],
+                  }))}
+                />
+              </Row>
+              <Row className="bg-canvas-0">
+                {parentComments.length === 0 && (
+                  <FeedBetsItem contract={contract} bets={relatedBets} />
+                )}
+              </Row>
+            </FeedItemFrame>
+          )
+        }
+        // Organic feed item with a contract
+        else if ('contract' in item && item.contract) {
+          const { contract } = item
+          const parentComments = (
+            parentCommentsByContractId[contract.id] ?? []
+          ).slice(0, MAX_PARENT_COMMENTS_PER_FEED_ITEM)
+          const relatedBets = recentBets
+            .filter((bet) => bet.contractId === contract.id)
+            .slice(0, MAX_BETS_PER_FEED_ITEM)
+          const hasRelatedItems =
+            parentComments.length > 0 || relatedBets.length > 0
+          return (
+            <FeedItemFrame
+              item={item}
+              key={contract.id + 'feed-timeline-item'}
+              className={
+                'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
+              }
+            >
+              <FeedContractCard
+                contract={contract}
+                className={clsx(
+                  'my-0 border-0',
+                  hasRelatedItems ? 'rounded-t-xl rounded-b-none  ' : ''
+                )}
+                trackingPostfix="feed"
+                reason={item.reasonDescription}
+                hasItems={hasRelatedItems}
               />
               <Row className="bg-canvas-0">
                 <FeedCommentItem
@@ -128,9 +170,23 @@ export const FeedTimelineItems = (props: {
           )
         } else if ('news' in item && item.news) {
           const { news } = item
+          console.log('news', news.title)
           return (
-            <FeedItemFrame item={item} key={news.id + 'feed-timeline-item'}>
-              {news.title}
+            <FeedItemFrame
+              item={item}
+              key={news.id + 'feed-timeline-item'}
+              className="bg-canvas-0 my-4 p-4"
+            >
+              <Row className="mb-4" key={news.id + 'feed-timeline-item-news'}>
+                <NewsArticle
+                  author={(news as any)?.author}
+                  published_time={(news as any)?.published_time}
+                  {...news}
+                />
+                <span className={'text-ink-500 text-right text-xs'}>
+                  {item.reasonDescription}
+                </span>
+              </Row>
               {item.contracts?.map((contract) => (
                 <ContractMention
                   contract={contract}
@@ -162,13 +218,7 @@ const FeedItemFrame = (props: {
             .from('user_feed')
             .update({ seen_time: new Date().toISOString() })
             .eq('id', item.id)
-        )
-          .then(() => {
-            console.log('updated feed item as seen')
-          })
-          .catch((e) => {
-            console.error('failed to update feed item as seen', e)
-          }),
+        ),
       true
     )
   return (

@@ -81,10 +81,26 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
 
     const { data } = await run(query)
 
-    const contractIds = uniq(
-      filterDefined(data.map((item) => item.contract_id))
+    // Filter out already saved ones to reduce bandwidth and avoid duplicates
+    const alreadySavedContractIds = filterDefined(
+      savedFeedItems?.map((item) => item.contractId) ?? []
     )
-    const commentIds = uniq(filterDefined(data.map((item) => item.comment_id)))
+
+    const contractIds = uniq(
+      filterDefined(data.map((item) => item.contract_id)).filter(
+        (id) => !alreadySavedContractIds.includes(id)
+      )
+    )
+    const commentIds = uniq(
+      filterDefined(
+        data.map((item) =>
+          alreadySavedContractIds.includes(item.contract_id ?? '_')
+            ? undefined
+            : item.comment_id
+        )
+      )
+    )
+
     const newsIds = uniq(filterDefined(data.map((item) => item.news_id)))
     const [comments, contracts, news] = await Promise.all([
       db
@@ -118,6 +134,8 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
     const filteredComments = comments?.filter(
       (c) => !privateUser?.blockedUserIds?.includes(c.userId)
     )
+
+    // It's possible we're missing contracts for news items bc of the duplicate filter
     const timelineItems = createFeedTimelineItems(
       data,
       filteredContracts,
@@ -205,36 +223,43 @@ function createFeedTimelineItems(
   comments: ContractComment[] | undefined,
   news: News[] | undefined
 ): FeedTimelineItem[] {
-  const newsData = Object.entries(groupBy(data, (item) => item.news_id)).map(
-    ([newsId, newsItems]) => {
-      const contractIds = data
-        .filter((item) => item.news_id === newsId)
-        .map((i) => i.contract_id)
-      const relevantContracts = contracts?.filter((contract) =>
-        contractIds.includes(contract.id)
-      )
-      return {
-        ...getBaseTimelineItem(newsItems[0]),
-        newsId,
-        avatarUrl: relevantContracts?.[0]?.creatorAvatarUrl,
-        contracts: relevantContracts,
-        news: news?.find((news) => news.id === newsId),
-      } as FeedTimelineItem
-    }
-  )
+  const newsData = Object.entries(
+    groupBy(
+      data.filter((d) => d.news_id),
+      (item) => item.news_id
+    )
+  ).map(([newsId, newsItems]) => {
+    const contractIds = data
+      .filter((item) => item.news_id === newsId)
+      .map((i) => i.contract_id)
+    const relevantContracts = contracts?.filter((contract) =>
+      contractIds.includes(contract.id)
+    )
+    return {
+      ...getBaseTimelineItem(newsItems[0]),
+      newsId,
+      avatarUrl: relevantContracts?.[0]?.creatorAvatarUrl,
+      contracts: relevantContracts,
+      news: news?.find((news) => news.id === newsId),
+    } as FeedTimelineItem
+  })
   // TODO: The uniqBy will coalesce contract-based feed timeline elements non-deterministically
   const nonNewsTimelineItems = uniqBy(
     data.map((item) => {
       const dataType = item.data_type as FEED_DATA_TYPES
+      // Parse new feed timeline data types here
       if (
         dataType === 'contract_probability_changed' ||
         dataType === 'new_comment' ||
         dataType === 'new_contract' ||
-        dataType === 'popular_comment'
+        dataType === 'popular_comment' ||
+        dataType === 'trending_contract'
       ) {
         const relevantContract = contracts?.find(
           (contract) => contract.id === item.contract_id
         )
+        // We may not find a relevant contract if they've already seen the same contract in their feed
+        if (!relevantContract) return
         const relevantComments = comments?.filter(
           (comment) => comment.contractId === item.contract_id
         )
@@ -249,12 +274,11 @@ function createFeedTimelineItems(
           comments: relevantComments,
         } as FeedTimelineItem
       }
-      // Add new feed timeline data types here
     }),
     'contractId'
   )
   return sortBy(
     filterDefined([...newsData, ...nonNewsTimelineItems]),
-    'createdTime'
-  ).reverse()
+    (i) => -i.createdTime
+  )
 }

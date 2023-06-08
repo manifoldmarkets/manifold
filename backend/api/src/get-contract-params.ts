@@ -1,10 +1,6 @@
 import { Bet } from 'common/bet'
 import { getInitialProbability } from 'common/calculate'
-import {
-  BinaryContract,
-  Contract,
-  PseudoNumericContract,
-} from 'common/contract'
+import { BinaryContract, PseudoNumericContract } from 'common/contract'
 import { HistoryPoint } from 'common/src/chart'
 import {
   CONTRACT_BET_FILTER,
@@ -31,6 +27,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
+import { getIsAdmin } from 'common/supabase/is-admin'
 
 const bodySchema = z.object({
   contractSlug: z.string(),
@@ -75,7 +72,9 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
         groupId &&
         (await getUserIsMember(db, groupId, auth?.uid))))
 
-  if (!canAccessContract) {
+  const isAdmin = await getIsAdmin(db, auth?.uid)
+
+  if (!canAccessContract && !isAdmin) {
     return contract && !contract.deleted
       ? { contractSlug: contract.slug, visibility: contract.visibility }
       : { contractSlug, visibility: null }

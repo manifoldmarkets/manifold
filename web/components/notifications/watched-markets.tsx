@@ -91,7 +91,6 @@ export const UserWatchedContractsButton = memo(
                         watchedContract.slug,
                         user
                       )
-                      // TODO: unwatch
                       setWatchedContracts(
                         filteredWatchedContracts.filter(
                           (c) => c.id !== watchedContract.id

@@ -11,12 +11,15 @@ We're using Expo to help with android and ios builds. You can find more informat
 
 ## Developing  
 1. Connect your phone to your computer  
-2. **iOS**: You have to build a dev client: `yarn build:ios:dev` or `yarn build:ios:devdev` and drag it onto your iPhone to install it.
-   - Then you can run `yarn start` and scan the QR code
-   - It's handy to keep dev client builds around in the native directory so you can just drag and drop them onto your phone to install them
-3. **Android**: `yarn android:dev` or `yarn android:prod`   
-4. Scan the QR code with the app (it opens automatically after installing)    
-**Note:** when switching between dev and prod you'll have to run `yarn clear` & Ctrl+C to clear the env variable.
+2. **iOS**:   
+   - `yarn build:ios:client:prod` or `yarn build:ios:client:dev` to build a dev client and drag it onto your iPhone to install it.
+   - `yarn start` and scan the QR code with camera
+   - Keep a dev client build in the native directory so you can just drag and drop them onto your phone to install them
+3. **Android**:
+   - `yarn android:dev` or `yarn android:prod` builds and installs the dev client on your device automatically
+   - Scan the QR code with the app (it opens automatically after installing)
+
+- **Note:** when switching between dev and prod you'll have to run `yarn clear` & Ctrl+C to clear the env variable.
 - Want to see console logs? (Only works on android):
    - `$ ngrok http 3000` in a separate terminal
    - Change the `baseUri` in `App.tsx` to the ngrok url

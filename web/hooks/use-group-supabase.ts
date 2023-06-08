@@ -18,6 +18,7 @@ import {
 } from 'web/lib/supabase/group'
 import {
   GroupAndRoleType,
+  getGroup,
   getGroupsWhereUserHasRole,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
@@ -28,6 +29,19 @@ import { useAdmin } from './use-admin'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized, useUser } from './use-user'
+
+export const useGroup = (groupId: string | undefined) => {
+  const [group, setGroup] = useState<Group | undefined | null>(undefined)
+
+  useEffect(() => {
+    if (groupId)
+      getGroup(groupId).then((result) => {
+        setGroup(result)
+      })
+  }, [groupId])
+
+  return group
+}
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<
@@ -65,15 +79,17 @@ export function useRealtimeGroupContractIds(groupId: string) {
   return rows?.map((r) => r.contract_id)
 }
 
-export const useGroupsWithContract = (contract: Contract) => {
+export const useGroupsWithContract = (
+  contract: Contract | undefined | null
+) => {
   const [groups, setGroups] = useState<Group[]>()
 
-  useEffect(() => {
-    if (contract.groupSlugs)
+  useEffectCheckEquality(() => {
+    if (contract && contract.groupSlugs)
       listGroupsBySlug(uniq(contract.groupSlugs)).then((groups) =>
         setGroups(filterDefined(groups))
       )
-  }, [contract.groupSlugs])
+  }, [contract?.groupSlugs])
 
   return groups
 }

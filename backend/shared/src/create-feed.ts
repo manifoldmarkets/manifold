@@ -7,12 +7,15 @@ import { getUserToReasonsInterestedInContractAndUser } from 'shared/supabase/con
 import { Contract } from 'common/contract'
 import { FEED_DATA_TYPES, FEED_REASON_TYPES } from 'common/feed'
 import { Reaction } from 'common/reaction'
+import { log } from 'shared/utils'
+import { buildArray } from 'common/util/array'
 
 export const insertDataToUserFeed = async (
   userId: string,
   eventTime: number,
   dataType: FEED_DATA_TYPES,
   reason: FEED_REASON_TYPES,
+  userIdsToExclude: string[],
   dataProps: {
     contractId?: string
     commentId?: string
@@ -27,6 +30,7 @@ export const insertDataToUserFeed = async (
   },
   pg: SupabaseDirectClient
 ) => {
+  if (userIdsToExclude.includes(userId)) return
   const eventTimeTz = new Date(eventTime).toISOString()
   const {
     groupId,
@@ -76,26 +80,26 @@ export const addCommentOnContractToFeed = async (
       contractId,
       comment.userId,
       pg,
-      ['follow_contract', 'viewed_contract', 'follow_user', 'liked_contract']
+      ['follow_contract', 'viewed_contract', 'follow_user', 'liked_contract'],
+      0.15
     )
   await Promise.all(
-    Object.keys(usersToReasonsInterestedInContract)
-      .filter((userId) => !userIdsToExclude.includes(userId))
-      .map((userId) =>
-        insertDataToUserFeed(
-          userId,
-          comment.createdTime,
-          'new_comment',
-          usersToReasonsInterestedInContract[userId],
-          {
-            contractId,
-            commentId: comment.id,
-            creatorId: comment.userId,
-            idempotencyKey,
-          },
-          pg
-        )
+    Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
+      insertDataToUserFeed(
+        userId,
+        comment.createdTime,
+        'new_comment',
+        usersToReasonsInterestedInContract[userId],
+        userIdsToExclude,
+        {
+          contractId,
+          commentId: comment.id,
+          creatorId: comment.userId,
+          idempotencyKey,
+        },
+        pg
       )
+    )
   )
 }
 //TODO: before adding, exclude those users who:
@@ -107,6 +111,7 @@ export const addLikedCommentOnContractToFeed = async (
   contractId: string,
   reaction: Reaction,
   comment: Comment,
+  userIdsToExclude: string[],
   idempotencyKey?: string
 ) => {
   const pg = createSupabaseDirectClient()
@@ -123,12 +128,13 @@ export const addLikedCommentOnContractToFeed = async (
       ]
     )
   await Promise.all(
-    Object.keys(usersToReasonsInterestedInContract).map((userId) =>
+    Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
       insertDataToUserFeed(
         userId,
         reaction.createdTime,
         'popular_comment',
         usersToReasonsInterestedInContract[userId],
+        userIdsToExclude,
         {
           contractId,
           commentId: comment.id,
@@ -151,24 +157,31 @@ export const addContractToFeed = async (
   contract: Contract,
   reasonsToInclude: FEED_REASON_TYPES[],
   dataType: FEED_DATA_TYPES,
-  idempotencyKey?: string
+  userIdsToExclude: string[],
+  options: {
+    idempotencyKey?: string
+    userToContractDistanceThreshold?: number
+  }
 ) => {
+  const { idempotencyKey, userToContractDistanceThreshold } = options
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
       contract.id,
       contract.creatorId,
       pg,
-      reasonsToInclude
+      reasonsToInclude,
+      userToContractDistanceThreshold
     )
 
   await Promise.all(
-    Object.keys(usersToReasonsInterestedInContract).map((userId) =>
+    Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
       insertDataToUserFeed(
         userId,
         contract.createdTime,
         dataType,
         usersToReasonsInterestedInContract[userId],
+        userIdsToExclude,
         {
           contractId: contract.id,
           creatorId: contract.creatorId,
@@ -189,7 +202,8 @@ export const insertContractRelatedDataToUsersFeeds = async (
   reasonsToInclude: FEED_REASON_TYPES[],
   eventTime: number,
   pg: SupabaseDirectClient,
-  dataProps?: {
+  userIdsToExclude: string[],
+  options: {
     newsId?: string
   }
 ) => {
@@ -213,16 +227,87 @@ export const insertContractRelatedDataToUsersFeeds = async (
             eventTime,
             dataType,
             usersToReasons[userId],
+            userIdsToExclude,
             {
               contractId: contract.id,
               creatorId: contract.creatorId,
-              ...dataProps,
+              ...options,
             },
             pg
           )
         })
       )
     })
+  )
+}
+export const insertMarketMovementContractToUsersFeeds = async (
+  contract: Contract,
+  dailyScore: number
+) => {
+  log(
+    'adding contract to feed',
+    contract.id,
+    'with daily score',
+    dailyScore,
+    'prev score',
+    contract.dailyScore
+  )
+  const nowDate = new Date()
+  // Prevent same contract from being added to feed multiple times in a day
+  // TODO: Should we turn this into a select query and remove the idempotency key?
+  const idempotencyKey = `${
+    contract.id
+  }-prob-change-${nowDate.getFullYear()}-${nowDate.getMonth()}-${nowDate.getDate()}`
+  await addContractToFeed(
+    contract,
+    buildArray([
+      // You'll see it in your notifs
+      !contract.isResolved && 'follow_contract',
+      // TODO: viewed might not be signal enough, what about viewed 2x/3x?
+      'viewed_contract',
+      'liked_contract',
+      'similar_interest_vector_to_contract',
+    ]),
+    'contract_probability_changed',
+    [],
+    {
+      userToContractDistanceThreshold: 0.12,
+      idempotencyKey,
+    }
+  )
+}
+export const insertTrendingContractToUsersFeeds = async (
+  contract: Contract,
+  popularityScore: number
+) => {
+  log(
+    'adding contract to feed',
+    contract.id,
+    'with popularity score',
+    popularityScore,
+    'prev score',
+    contract.popularityScore
+  )
+  const nowDate = new Date()
+  // Prevent same contract from being added to feed multiple times in a day
+  // TODO: Should we turn this into a select query and remove the idempotency key?
+  const idempotencyKey = `${
+    contract.id
+  }-popularity-score-change-${nowDate.getFullYear()}-${nowDate.getMonth()}-${nowDate.getDate()}`
+  await addContractToFeed(
+    contract,
+    buildArray([
+      'follow_contract',
+      'viewed_contract',
+      'liked_contract',
+      'similar_interest_vector_to_contract',
+    ]),
+    'trending_contract',
+    [],
+    {
+      userToContractDistanceThreshold: 0.125,
+      idempotencyKey,
+    }
   )
 }
 
@@ -235,6 +320,5 @@ export const insertContractRelatedDataToUsersFeeds = async (
 
 // TODO:
 // Create feed items from:
-// - Popular new markets
 // - Large bets by interesting users
 // Remove comment notifications

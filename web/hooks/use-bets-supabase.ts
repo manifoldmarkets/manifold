@@ -2,10 +2,9 @@ import { Bet, BetFilter } from 'common/bet'
 import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { EMPTY_USER } from 'web/components/contract/contract-tabs'
-import { getBets, getTotalBetCount } from 'common/supabase/bets'
+import { getBetRows, getBets, getTotalBetCount } from 'common/supabase/bets'
 import { Filter } from 'common/supabase/realtime'
-import { useRealtimeRows } from 'web/lib/supabase/realtime/use-realtime'
+import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
 function getFilteredQuery(filteredParam: string, filterId?: string) {
   if (filteredParam === 'contractId' && filterId) {
@@ -23,22 +22,14 @@ export function useRealtimeBets(options?: BetFilter) {
       filteredQuery = getFilteredQuery(filteredParam, options.contractId)
     }
   }
-  const [oldBets, setOldBets] = useState<Bet[]>([])
-  const rows = useRealtimeRows('contract_bets', filteredQuery)
-  const newBets = rows
+  const { rows } = useSubscription('contract_bets', filteredQuery, () =>
+    getBetRows(db, { ...options, order: 'desc' })
+  )
+  const newBets = (rows ?? [])
     .map((r) => r.data as Bet)
     .filter((b) => !betShouldBeFiltered(b, options))
 
-  useEffectCheckEquality(() => {
-    if (options?.userId === 'loading' || options?.userId === EMPTY_USER) {
-      return
-    }
-    getBets(db, { ...options, order: 'desc' })
-      .then((result) => setOldBets(result))
-      .catch((e) => console.log(e))
-  }, [options, db])
-
-  return [...oldBets, ...newBets]
+  return newBets
 }
 
 function betShouldBeFiltered(bet: Bet, options?: BetFilter) {

@@ -39,6 +39,7 @@ import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
+import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -127,8 +128,18 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     ante || 0
   )
 
-  if (group && groupId)
+  if (group && groupId) {
     await addGroupContract(groupId, group, contractRef, userId)
+    if (contract.visibility == 'private') {
+      const contractCreator = await getUser(contract.creatorId)
+      if (!contractCreator) throw new Error('Could not find contract creator')
+      await createNewContractFromPrivateGroupNotification(
+        contractCreator,
+        contract,
+        group
+      )
+    }
+  }
 
   if (contract.mechanism === 'cpmm-multi-1' && answers)
     await createAnswers(user, contract, ante, answers)
@@ -361,6 +372,7 @@ async function getGroup(
       isManifoldAdmin: isManifoldId(userId) || isAdmin(firebaseUser.email),
       isTrustworthy: isTrustworthy(user?.username),
       userGroupRole: groupMemberRole,
+      isGroupMember: userGroupMemberDoc.length >= 1 ? true : false,
     })
   ) {
     throw new APIError(
