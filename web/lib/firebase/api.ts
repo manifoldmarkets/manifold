@@ -267,10 +267,6 @@ export function updateUserEmbedding(params: { userId: string }) {
   return call(getApiUrl('update-user-embedding'), 'POST', params)
 }
 
-export function createDebate(params: { topic1: string; topic2: string }) {
-  return call(getApiUrl('create-debate'), 'POST', params) as Promise<Contract>
-}
-
 export function createCommentOnContract(params: {
   contractId: string
   content: JSONContent
