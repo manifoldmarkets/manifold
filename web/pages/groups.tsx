@@ -1,6 +1,7 @@
 import { FlagIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { groupPath } from 'common/group'
+import { User } from 'common/user'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import DiscoverGroups from 'web/components/groups/discover-groups'
 import YourGroups from 'web/components/groups/your-groups'
@@ -9,6 +10,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
@@ -27,7 +29,6 @@ function PrivateGroupsBanner() {
 
 export default function Groups() {
   const user = useUser()
-  const yourGroupIds = useRealtimeMemberGroupIds(user)
   return (
     <Page>
       <SEO
@@ -48,27 +49,37 @@ export default function Groups() {
               />
             )}
           </Row>
-          {user && yourGroupIds && yourGroupIds.length > 0 && (
-            <UncontrolledTabs
-              className={'mb-4'}
-              tabs={[
-                {
-                  title: 'Your Groups',
-                  content: <YourGroups yourGroupIds={yourGroupIds} />,
-                },
-                {
-                  title: 'Discover',
-                  content: <DiscoverGroups yourGroupIds={yourGroupIds} />,
-                },
-              ]}
-            />
-          )}{' '}
-          {(!user || !yourGroupIds || yourGroupIds.length < 1) && (
-            <DiscoverGroups yourGroupIds={yourGroupIds} />
-          )}
+          <GroupsPageContent user={user} />
         </Col>
       </Col>
     </Page>
+  )
+}
+
+export function GroupsPageContent(props: { user: User | null | undefined }) {
+  const { user } = props
+  const yourGroupIds = useRealtimeMemberGroupIds(user)
+  if (user === undefined || yourGroupIds === undefined) {
+    return <LoadingIndicator />
+  }
+  if (user === null || (yourGroupIds && yourGroupIds.length < 1)) {
+    return <DiscoverGroups yourGroupIds={yourGroupIds} />
+  }
+
+  return (
+    <UncontrolledTabs
+      className={'mb-4'}
+      tabs={[
+        {
+          title: 'Your Groups',
+          content: <YourGroups yourGroupIds={yourGroupIds} />,
+        },
+        {
+          title: 'Discover',
+          content: <DiscoverGroups yourGroupIds={yourGroupIds} />,
+        },
+      ]}
+    />
   )
 }
 

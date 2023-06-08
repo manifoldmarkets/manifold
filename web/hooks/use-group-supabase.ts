@@ -63,12 +63,12 @@ export function useIsGroupMember(groupSlug: string) {
 
 export function useRealtimeMemberGroupIds(
   user: User | undefined | null
-): string[] {
+): string[] | undefined {
   const { rows } = useSubscription('group_members', {
     k: 'member_id',
     v: user?.id ?? '_',
   })
-  return rows?.map((row) => row.group_id) ?? []
+  return rows?.map((row) => row.group_id) ?? undefined
 }
 
 export function useRealtimeGroupContractIds(groupId: string) {
