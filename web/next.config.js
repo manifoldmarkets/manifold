@@ -50,6 +50,16 @@ module.exports = {
         permanent: true,
       },
       {
+        source: '/labs',
+        destination: '/about',
+        permanent: true,
+      },
+      {
+        source: '/sitemap',
+        destination: '/about',
+        permanent: false,
+      },
+      {
         source: '/versus',
         destination: '/VersusBot?tab=markets',
         permanent: false,
