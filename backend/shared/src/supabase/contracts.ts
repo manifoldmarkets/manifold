@@ -4,7 +4,7 @@ import {
   getUserFollowerIds,
   getUsersWithSimilarInterestVectorToUser,
 } from 'shared/supabase/users'
-import { FEED_REASON_TYPES } from 'common/feed'
+import { CONTRACT_OR_USER_FEED_REASON_TYPES } from 'common/feed'
 import { DEFAULT_EMBEDDING_DISTANCE_PROBES } from 'common/embeddings'
 
 export const getUniqueBettorIds = async (
@@ -47,7 +47,6 @@ export const getContractLikerIds = async (
   return likedUserIds.map((r) => r.user_id)
 }
 
-// TODO: explain analyze this query after repacking - the table was packed around the wrong index
 export const getContractViewerIds = async (
   contractId: string,
   pg: SupabaseDirectClient
@@ -119,16 +118,15 @@ const getUsersWithSimilarInterestVectorsToContract = async (
   })
   return userIdsAndDistances.map((r) => r.user_id)
 }
-
 export const getUserToReasonsInterestedInContractAndUser = async (
   contractId: string,
   userId: string,
   pg: SupabaseDirectClient,
-  reasonsToInclude?: FEED_REASON_TYPES[],
-  userToContractDistanceThreshold?: number
-): Promise<{ [userId: string]: FEED_REASON_TYPES }> => {
+  reasonsToInclude: CONTRACT_OR_USER_FEED_REASON_TYPES[],
+  userToContractDistanceThreshold: number
+): Promise<{ [userId: string]: CONTRACT_OR_USER_FEED_REASON_TYPES }> => {
   const reasonsToRelevantUserIdsFunctions: {
-    [key in FEED_REASON_TYPES]: {
+    [key in CONTRACT_OR_USER_FEED_REASON_TYPES]: {
       promise: Promise<string[]>
       importance: number
     }
@@ -170,7 +168,9 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   const reasons = sortBy(
     reasonsToInclude
       ? reasonsToInclude
-      : (Object.keys(reasonsToRelevantUserIdsFunctions) as FEED_REASON_TYPES[]),
+      : (Object.keys(
+          reasonsToRelevantUserIdsFunctions
+        ) as CONTRACT_OR_USER_FEED_REASON_TYPES[]),
     (reason) => reasonsToRelevantUserIdsFunctions[reason].importance
   )
 

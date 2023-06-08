@@ -5,8 +5,9 @@ export type FEED_DATA_TYPES =
   | 'contract_probability_changed'
   | 'popular_comment'
   | 'trending_contract'
+  | 'new_subsidy'
 
-export type FEED_REASON_TYPES =
+export type CONTRACT_OR_USER_FEED_REASON_TYPES =
   | 'follow_contract'
   | 'liked_contract'
   | 'viewed_contract'
@@ -14,6 +15,20 @@ export type FEED_REASON_TYPES =
   | 'similar_interest_vector_to_user'
   | 'similar_interest_vector_to_contract'
   | 'follow_user'
+
+export type FEED_REASON_TYPES =
+  | CONTRACT_OR_USER_FEED_REASON_TYPES
+  | 'similar_interest_vector_to_news_vector'
+
+export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
+  contract_probability_changed: 0.12,
+  trending_contract: 0.175,
+  new_contract: 0.15,
+  new_comment: 0.15,
+  news_with_related_contracts: 0.175, // used to compare user interest vector to news title embedding
+  popular_comment: 0.175, // Not yet in use
+  new_subsidy: 0.175,
+}
 
 export const FeedExplanationDictionary: Record<
   FEED_DATA_TYPES,
@@ -41,6 +56,7 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'News related to a question you may be interested in',
     follow_user: 'News about a question by a creator you follow',
+    similar_interest_vector_to_news_vector: 'News you may be interested in',
   },
   new_contract: {
     contract_in_group_you_are_in: 'New question in a group you are in',
@@ -84,6 +100,15 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'Trending question you may be interested in',
     follow_user: 'Trending question by a creator you follow',
+  },
+  new_subsidy: {
+    contract_in_group_you_are_in:
+      'New subsidy on question in a group you are in',
+    similar_interest_vector_to_user:
+      'New subsidy by a creator you may be interested in',
+    similar_interest_vector_to_contract:
+      'New subsidy on a question you may be interested in',
+    follow_user: 'New subsidy by a creator you follow',
   },
 }
 
