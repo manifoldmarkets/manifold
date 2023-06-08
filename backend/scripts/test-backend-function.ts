@@ -26,7 +26,9 @@ async function testScheduledFunction() {
       ],
       'new_contract',
       [],
-      {}
+      {
+        minUserInterestDistanceToContract: 0.5,
+      }
     )
   } catch (e) {
     console.error(e)
