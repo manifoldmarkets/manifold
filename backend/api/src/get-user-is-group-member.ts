@@ -18,8 +18,9 @@ export const getuserisgroupmember = authEndpoint(async (req, auth) => {
   const userIsMember = await pg.one(
     `select exists(
         select * from group_members
-        where group_id = '${groupId}'
-        and member_id='${auth.uid}')`
+        where group_id = $1
+        and member_id= $2)`,
+    [groupId, auth.uid]
   )
   return { isGroupMember: userIsMember.exists }
 })
