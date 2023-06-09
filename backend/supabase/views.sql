@@ -110,7 +110,7 @@ create or replace view
       gp.slug as group_slug,
       gp.creator_id as creator_id,
       users.data ->> 'name' as name,
-      users.data ->> 'username' as username,
+      users.username as username,
       users.data ->> 'avatarUrl' as avatar_url,
       (
         select
@@ -119,11 +119,12 @@ create or replace view
             else (gm.data ->> 'role')
           end
       ) as role,
-      (gm.data ->> 'createdTime')::bigint as createdTime
+      (gm.data ->> 'createdTime')::bigint as createdTime,
+      gp.privacy_status as privacy_status
     from
       (
         group_members gm
-        join groups gp on gp.id = gm.group_id
+        join groups_rbac gp on gp.id = gm.group_id
       )
       join users on users.id = gm.member_id
   );
@@ -175,7 +176,7 @@ select
 from
   groups
 where
-  groups.data ->> 'privacyStatus' <> 'private'
+  groups.privacy_status <> 'private'
   or (
     (
       exists (
@@ -190,7 +191,8 @@ where
           )
       )
     )
-  );
+  )
+  or (is_admin (firebase_uid ()));
 
 create view
   user_referrals as

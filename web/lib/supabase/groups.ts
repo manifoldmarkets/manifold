@@ -239,3 +239,35 @@ export async function listGroupsBySlug(groupSlugs: string[]) {
   }
   return []
 }
+
+export async function getMemberPrivateGroups(userId: string) {
+  const { data } = await run(
+    db
+      .from('group_role')
+      .select('group_data')
+      .eq('privacy_status', 'private')
+      .eq('member_id', userId)
+  )
+  if (data && data.length > 0) {
+    return data.map((group) => group.group_data as Group)
+  }
+  return []
+}
+
+export async function getYourNonPrivateNonModeratorGroups(userId: string) {
+  const { data } = await run(
+    db
+      .from('group_role')
+      .select('*')
+      .eq('member_id', userId)
+      .neq('privacy_status', 'private')
+      .order('createdtime', { ascending: false })
+  )
+  if (data) {
+    const filteredData = data
+      .filter((item) => item.role !== 'admin' && item.role !== 'moderator')
+      .map((item) => item.group_data) // map to get only group_data
+    return filteredData as Group[]
+  }
+  return []
+}
