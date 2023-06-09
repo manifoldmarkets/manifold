@@ -45,7 +45,6 @@ import { redeemad } from './redeem-ad-reward'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
-import { createDebate } from './create-debate'
 import { auctionbid } from './auction-bid'
 import { supabasesearchcontracts } from './supabase-search-contract'
 import { deleteMarket } from './delete-market'
@@ -139,7 +138,6 @@ app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/redeemad', ...apiRoute(redeemad))
 app.post('/completequest', ...apiRoute(completequest))
 app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
-app.post('/create-debate', ...apiRoute(createDebate))
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
 app.post('/supabasesearchcontracts', ...apiRoute(supabasesearchcontracts))
 app.post('/delete-market', ...apiRoute(deleteMarket))

@@ -74,6 +74,37 @@ export const insertDataToUserFeed = async (
   )
 }
 
+const findDuplicateContractsInFeed = async (
+  contractId: string,
+  userId: string,
+  seenTime: number,
+  pg: SupabaseDirectClient
+) => {
+  const rowIds = await pg.manyOrNone<{
+    id: string
+    seen_time: Date | null
+  }>(
+    `select id, seen_time from user_feed 
+          where contract_id = $1 and 
+                user_id = $2 and 
+                created_time > $3
+                `,
+    [contractId, userId, new Date(seenTime).toISOString()]
+  )
+  return rowIds.map((row) => ({
+    id: parseInt(row.id),
+    seenTime: row.seen_time ? new Date(row.seen_time) : null,
+  }))
+}
+
+const deleteRowsFromUserFeed = async (
+  rowIds: number[],
+  pg: SupabaseDirectClient
+) => {
+  if (rowIds.length === 0) return
+  await pg.none(`delete from user_feed where id = any($1)`, [rowIds])
+}
+
 export const addCommentOnContractToFeed = async (
   contractId: string,
   comment: Comment,
@@ -86,7 +117,7 @@ export const addCommentOnContractToFeed = async (
       contractId,
       comment.userId,
       pg,
-      ['follow_contract', 'viewed_contract', 'follow_user', 'liked_contract'],
+      ['follow_contract', 'follow_user', 'liked_contract'],
       INTEREST_DISTANCE_THRESHOLDS.new_comment
     )
   await Promise.all(
@@ -204,6 +235,60 @@ export const addContractToFeed = async (
     )
   )
 }
+export const addContractToFeedIfUnseenAndDeleteDuplicates = async (
+  contract: Contract,
+  reasonsToInclude: CONTRACT_OR_USER_FEED_REASON_TYPES[],
+  dataType: FEED_DATA_TYPES,
+  userIdsToExclude: string[],
+  unseenNewerThanTime: number,
+  options: {
+    minUserInterestDistanceToContract: number
+  }
+) => {
+  const { minUserInterestDistanceToContract } = options
+  const pg = createSupabaseDirectClient()
+  const usersToReasonsInterestedInContract =
+    await getUserToReasonsInterestedInContractAndUser(
+      contract.id,
+      contract.creatorId,
+      pg,
+      reasonsToInclude,
+      minUserInterestDistanceToContract
+    )
+  const userIds = Object.keys(usersToReasonsInterestedInContract)
+  await Promise.all(
+    userIds.map(async (userId) => {
+      const previousContractFeedRows = await findDuplicateContractsInFeed(
+        contract.id,
+        userId,
+        unseenNewerThanTime,
+        pg
+      )
+      const seenContractFeedRows = previousContractFeedRows.filter(
+        (row) => row.seenTime !== null
+      )
+
+      // If they've a duplicate row they've already seen, don't insert
+      if (seenContractFeedRows.length > 0) return
+      await deleteRowsFromUserFeed(
+        previousContractFeedRows.map((row) => row.id),
+        pg
+      )
+      return await insertDataToUserFeed(
+        userId,
+        contract.createdTime,
+        dataType,
+        usersToReasonsInterestedInContract[userId],
+        userIdsToExclude,
+        {
+          contractId: contract.id,
+          creatorId: contract.creatorId,
+        },
+        pg
+      )
+    })
+  )
+}
 
 export const insertNewsContractsToUsersFeeds = async (
   newsId: string,
@@ -258,8 +343,8 @@ export const insertMarketMovementContractToUsersFeeds = async (
     contract.dailyScore
   )
   const nowDate = new Date()
-  // Prevent same contract from being added to feed multiple times in a day
-  // TODO: Should we turn this into a select query and remove the idempotency key?
+  //TODO: Turn this into a select query, remove the idempotency key, add to top of feed
+  //  as in trending contracts
   const idempotencyKey = `${
     contract.id
   }-prob-change-${nowDate.getFullYear()}-${nowDate.getMonth()}-${nowDate.getDate()}`
@@ -284,36 +369,22 @@ export const insertMarketMovementContractToUsersFeeds = async (
 }
 export const insertTrendingContractToUsersFeeds = async (
   contract: Contract,
-  popularityScore: number
+  unseenNewerThanTime: number
 ) => {
-  log(
-    'adding contract to feed',
-    contract.id,
-    'with popularity score',
-    popularityScore,
-    'prev score',
-    contract.popularityScore
-  )
-  const nowDate = new Date()
-  // Prevent same contract from being added to feed multiple times in a day
-  // TODO: Should we turn this into a select query and remove the idempotency key?
-  const idempotencyKey = `${
-    contract.id
-  }-popularity-score-change-${nowDate.getFullYear()}-${nowDate.getMonth()}-${nowDate.getDate()}`
-  await addContractToFeed(
+  await addContractToFeedIfUnseenAndDeleteDuplicates(
     contract,
-    buildArray([
+    [
       'follow_contract',
       'viewed_contract',
       'liked_contract',
       'similar_interest_vector_to_contract',
-    ]),
+    ],
     'trending_contract',
-    [],
+    [contract.creatorId],
+    unseenNewerThanTime,
     {
       minUserInterestDistanceToContract:
         INTEREST_DISTANCE_THRESHOLDS.trending_contract,
-      idempotencyKey,
     }
   )
 }
@@ -328,5 +399,4 @@ export const insertTrendingContractToUsersFeeds = async (
 // TODO:
 // Create feed items from:
 // - Large bets by interesting users
-// - large subsidies
 // Remove comment notifications
