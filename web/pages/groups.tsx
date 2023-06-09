@@ -31,7 +31,7 @@ export default function Groups() {
   const user = useUser()
   return (
     <Page>
-    <SEO
+      <SEO
         title="Groups"
         description="Topics and communities centered prediction markets."
         url="/groups"
