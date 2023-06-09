@@ -4,7 +4,8 @@ import { useRouter } from 'next/router'
 import clsx from 'clsx'
 
 // meant to be used over a cover image
-export function BackButton(hasCoverImage?: boolean) {
+export function BackButton(props: { hasCoverImage?: boolean }) {
+  const { hasCoverImage } = props
   const router = useRouter()
   const [canGoBack, setCanGoBack] = React.useState(false)
 

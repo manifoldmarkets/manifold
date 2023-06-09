@@ -360,7 +360,10 @@ export function ContractPageContent(props: {
 
           <Col className="mb-4 p-4 md:px-8 md:pb-8">
             <Col className="gap-3 sm:gap-4">
-              <div ref={titleRef}>
+              <div
+                ref={titleRef}
+                className={clsx(coverImageUrl ? '' : 'absolute top-2 z-50')}
+              >
                 <TitleOrEdit
                   contract={contract}
                   canEdit={isAdmin || isCreator}
