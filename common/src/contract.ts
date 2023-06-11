@@ -175,6 +175,10 @@ export type CPMMMulti = {
   outcomeType: 'MULTIPLE_CHOICE'
   shouldAnswersSumToOne: boolean
 
+  // Answers chosen on resolution, with the weights of each answer.
+  // Weights sum to 1 if shouldAnswersSumToOne is true. Otherwise, range from 0 to 1 for each answerId.
+  resolutions?: { [answerId: string]: number }
+
   // NOTE: This field is stored in the answers table and must be denormalized to the client.
   answers: Answer[]
 }

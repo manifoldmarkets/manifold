@@ -2,7 +2,7 @@ import { mapValues, sumBy } from 'lodash'
 import { Bet } from './bet'
 import { getOutcomeProbability, getProbability } from './calculate'
 import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
-import { CPMMContract } from './contract'
+import { CPMMContract, CPMMMultiContract } from './contract'
 import { noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 
@@ -49,6 +49,29 @@ export const getStandardFixedPayouts = (
   )
 
   return { payouts, creatorPayout, liquidityPayouts, collectedFees }
+}
+
+export const getMultiFixedPayouts = (
+  contract: CPMMMultiContract,
+  resolutions: { [answerId: string]: number },
+  bets: Bet[],
+  liquidities: LiquidityProvision[]
+) => {
+  const payouts = bets.map(({ userId, shares, answerId, outcome }) => {
+    const weight = answerId ? resolutions[answerId] ?? 0 : 0
+    const outcomeWeight = outcome === 'YES' ? weight : 1 - weight
+    const payout = shares * outcomeWeight
+    return {
+      userId,
+      payout,
+    }
+  })
+  .filter(({ payout }) => payout !== 0)
+
+  // TODO: Calculate liquidity payouts.
+  const liquidityPayouts: any[] = []
+
+  return { payouts, liquidityPayouts, creatorPayout: 0, collectedFees: noFees }
 }
 
 export const getLiquidityPoolPayouts = (

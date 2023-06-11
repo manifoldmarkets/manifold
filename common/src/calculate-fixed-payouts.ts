@@ -1,9 +1,9 @@
 import { Bet } from './bet'
 import { getProbability } from './calculate'
-import { CPMMContract } from './contract'
+import { CPMMContract, CPMMMultiContract } from './contract'
 
 export function calculateFixedPayout(
-  contract: CPMMContract,
+  contract: CPMMContract | CPMMMultiContract,
   bet: Bet,
   outcome: string
 ) {
@@ -24,16 +24,33 @@ export function calculateStandardFixedPayout(bet: Bet, outcome: string) {
   return shares
 }
 
-function calculateFixedMktPayout(contract: CPMMContract, bet: Bet) {
+function calculateFixedMktPayout(
+  contract: CPMMContract | CPMMMultiContract,
+  bet: Bet
+) {
+  let prob = 0
+
+  if (contract.mechanism === 'cpmm-multi-1') {
+    const { answerId } = bet
+    if (answerId) {
+      const { resolutions } = contract
+      if (resolutions) {
+        prob = resolutions[answerId] ?? 0
+      } else {
+        const { answers } = contract
+        const answer = answers.find((a) => a.id === answerId)
+        if (answer) prob = answer.prob
+      }
+    }
+  } else {
+    const { resolutionProbability } = contract
+    prob =
+      resolutionProbability !== undefined
+        ? resolutionProbability
+        : getProbability(contract)
+  }
+
   const { outcome, shares } = bet
-
-  const { resolutionProbability } = contract
-  const p =
-    resolutionProbability !== undefined
-      ? resolutionProbability
-      : getProbability(contract)
-
-  const betP = outcome === 'YES' ? p : 1 - p
-
+  const betP = outcome === 'YES' ? prob : 1 - prob
   return betP * shares
 }

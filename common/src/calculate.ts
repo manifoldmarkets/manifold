@@ -146,8 +146,6 @@ export function calculateSharesBought(
       return buy(contract.pool, outcome, amount).shares
     case 'dpm-2':
       return calculateDpmShares(contract.totalShares, amount, outcome)
-    case 'cpmm-multi-1':
-      return 0
     default:
       throw new Error('calculateSharesBought not implemented')
   }
@@ -172,7 +170,7 @@ export function calculateSharesBoughtMulti(
 
 export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
   const { mechanism } = contract
-  return mechanism === 'cpmm-1'
+  return mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
     ? calculateFixedPayout(contract, bet, outcome)
     : mechanism === 'dpm-2'
     ? calculateDpmPayout(contract, bet, outcome)
@@ -183,7 +181,7 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
   const { resolution, mechanism } = contract
   if (!resolution) throw new Error('Contract not resolved')
 
-  return mechanism === 'cpmm-1'
+  return mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
     ? calculateFixedPayout(contract, bet, resolution)
     : mechanism === 'dpm-2'
     ? calculateDpmPayout(contract, bet, resolution)

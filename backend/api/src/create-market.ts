@@ -427,7 +427,8 @@ async function createAnswers(
   let poolNo = ante
 
   if (shouldAnswersSumToOne) {
-    prob = 1 / answers.length
+    const n = answers.length
+    prob = 1 / n
     // Maximize use of ante given constraint that one answer resolves YES and
     // the rest resolve NO.
     // Means that:
@@ -435,7 +436,6 @@ async function createAnswers(
     // because this pays out ante mana to winners in this case.
     // Also, cpmm identity for probability:
     //   1 / n = poolNo / (poolYes + poolNo)
-    const n = answers.length
     poolNo = ante / (2 * n - 2)
     poolYes = ante - (n - 1) * poolNo
 
