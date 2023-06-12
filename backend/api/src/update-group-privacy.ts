@@ -3,8 +3,8 @@ import { z } from 'zod'
 
 import { isAdmin, isManifoldId } from 'common/envs/constants'
 import { Group } from 'common/group'
-import { GroupMember } from 'common/group-member'
 import { APIError, authEndpoint, validate } from './helpers'
+import { createSupabaseClient } from 'shared/supabase/init'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -14,28 +14,40 @@ const bodySchema = z.object({
 export const updategroupprivacy = authEndpoint(async (req, auth) => {
   const { groupId, privacy } = validate(bodySchema, req.body)
 
+  // get group membership and role TODO: move to single supabase transaction
+  const db = createSupabaseClient()
+
+  const userMembership = (
+    await db
+      .from('group_members')
+      .select()
+      .eq('member_id', auth.uid)
+      .eq('group_id', groupId)
+      .limit(1)
+  ).data
+
+  const requester = userMembership?.length ? userMembership[0] : null
+
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {
-    const requesterDoc = firestore.doc(
-      `groups/${groupId}/groupMembers/${auth.uid}`
-    )
     const groupDoc = firestore.doc(`groups/${groupId}`)
     const requesterUserDoc = firestore.doc(`users/${auth.uid}`)
-    const [requesterSnap, groupSnap, requesterUserSnap] =
-      await transaction.getAll(requesterDoc, groupDoc, requesterUserDoc)
+    const [groupSnap, requesterUserSnap] = await transaction.getAll(
+      groupDoc,
+      requesterUserDoc
+    )
     if (!groupSnap.exists) throw new APIError(400, 'Group cannot be found')
-    if (!requesterSnap.exists)
+    if (!userMembership?.length)
       throw new APIError(400, 'You cannot be found in group')
     if (!requesterUserSnap.exists)
       throw new APIError(400, 'You cannot be found')
 
-    const requester = requesterSnap.data() as GroupMember
     const group = groupSnap.data() as Group
     const firebaseUser = await admin.auth().getUser(auth.uid)
 
     if (
-      requester.role !== 'admin' &&
-      requester.userId !== group.creatorId &&
+      requester?.role !== 'admin' &&
+      auth.uid !== group.creatorId &&
       !isManifoldId(auth.uid) &&
       !isAdmin(firebaseUser.email)
     )

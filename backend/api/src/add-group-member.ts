@@ -2,12 +2,10 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { isAdmin, isManifoldId } from 'common/envs/constants'
-import { Group } from 'common/group'
-import { User } from 'common/user'
-import { GroupMember } from 'common/group-member'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createAddedToGroupNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -17,46 +15,57 @@ const bodySchema = z.object({
 
 export const addgroupmember = authEndpoint(async (req, auth) => {
   const { groupId, userId, role } = validate(bodySchema, req.body)
+  return addGroupMemberHelper(groupId, userId, auth.uid, role)
+})
 
-  // run as transaction to prevent race conditions
-  return await firestore.runTransaction(async (transaction) => {
-    const requesterDoc = firestore.doc(
-      `groups/${groupId}/groupMembers/${auth.uid}`
-    )
-    const groupDoc = firestore.doc(`groups/${groupId}`)
-    const requesterUserDoc = firestore.doc(`users/${auth.uid}`)
-    const userMemberDoc = firestore.doc(
-      `groups/${groupId}/groupMembers/${userId}`
+export async function addGroupMemberHelper(
+  groupId: string,
+  userId: string,
+  myId: string,
+  role?: string
+) {
+  const db = createSupabaseDirectClient()
+
+  // the old firebase code did this as a transaction to prevent race conditions
+  // and idk if that's still necessary but I did it here too
+  return db.tx(async (tx) => {
+    const requester = await tx.oneOrNone(
+      `select gm.role, u.data
+      from group_members gm join users u
+      on gm.user_id = u.id
+      where users.id = $1`,
+      [myId]
     )
 
-    const [requesterSnap, groupSnap, requesterUserSnap, userMemberSnap] =
-      await transaction.getAll(
-        requesterDoc,
-        groupDoc,
-        requesterUserDoc,
-        userMemberDoc
-      )
-    if (!groupSnap.exists) throw new APIError(400, 'Group cannot be found')
-    if (userMemberSnap.exists)
+    const newMemberExists = await tx.oneOrNone(
+      'select 1 from group_members where user_id = $1',
+      [userId]
+    )
+
+    const group = await tx.oneOrNone('select * from groups where id = $1', [
+      groupId,
+    ])
+
+    if (!group) throw new APIError(400, 'Group cannot be found')
+    if (newMemberExists)
       throw new APIError(400, 'User already exists in group!')
-    if (!requesterUserSnap.exists)
-      throw new APIError(400, 'You cannot be found')
 
-    const requesterUser = requesterUserSnap.data() as User
-    const group = groupSnap.data() as Group
-    const firebaseUser = await admin.auth().getUser(auth.uid)
+    const isAdminRequest = isAdmin((await admin.auth().getUser(myId)).email)
 
-    if (userId !== auth.uid) {
-      if (!requesterSnap.exists) {
-        if (!isManifoldId(auth.uid) && !isAdmin(firebaseUser.email)) {
+    if (userId === myId) {
+      if (group.privacy_status === 'private') {
+        throw new APIError(400, 'You can not add yourself to a private group!')
+      }
+    } else {
+      if (!requester) {
+        if (!isManifoldId(myId) || !isAdminRequest) {
           throw new APIError(
             400,
             'User does not have permission to add members'
           )
         }
       } else {
-        const requester = requesterSnap?.data() as GroupMember
-        if (requester.role !== 'admin' && requester.userId !== group.creatorId)
+        if (requester.role !== 'admin' && myId !== group.creator_id)
           throw new APIError(
             400,
             'User does not have permission to add members'
@@ -64,21 +73,18 @@ export const addgroupmember = authEndpoint(async (req, auth) => {
       }
     }
 
-    const member = removeUndefinedProps({
-      userId,
-      createdTime: Date.now(),
-      role: role,
-    })
-    firestore
-      .collection(`groups/${groupId}/groupMembers`)
-      .doc(userId)
-      .create(member)
+    const member = removeUndefinedProps({ userId, role })
+    // insert and return row
+    const ret = await tx.one(
+      `insert into group_members($1:name) values($1:csv)
+      returning *`,
+      [member]
+    )
 
-    if (requesterUser && auth.uid != userId) {
-      await createAddedToGroupNotification(requesterUser, userId, group)
+    if (requester && myId !== userId) {
+      await createAddedToGroupNotification(requester.data, userId, group.data)
     }
-    return { status: 'success', member }
-  })
-})
 
-const firestore = admin.firestore()
+    return { status: 'success', member: ret }
+  })
+}

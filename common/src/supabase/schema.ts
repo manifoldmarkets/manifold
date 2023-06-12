@@ -40,6 +40,7 @@ export interface Database {
           user_name?: string
           user_username?: string
         }
+        Relationships: []
       }
       contract_answers: {
         Row: {
@@ -60,6 +61,7 @@ export interface Database {
           data?: Json
           fs_updated_time?: string
         }
+        Relationships: []
       }
       contract_bets: {
         Row: {
@@ -116,6 +118,7 @@ export interface Database {
           user_id?: string | null
           visibility?: string | null
         }
+        Relationships: []
       }
       contract_comment_edits: {
         Row: {
@@ -142,6 +145,7 @@ export interface Database {
           editor_id?: string
           id?: number
         }
+        Relationships: []
       }
       contract_comments: {
         Row: {
@@ -174,6 +178,7 @@ export interface Database {
           user_id?: string | null
           visibility?: string | null
         }
+        Relationships: []
       }
       contract_edits: {
         Row: {
@@ -200,6 +205,7 @@ export interface Database {
           id?: number
           idempotency_key?: string | null
         }
+        Relationships: []
       }
       contract_embeddings: {
         Row: {
@@ -217,6 +223,7 @@ export interface Database {
           created_at?: string
           embedding?: string
         }
+        Relationships: []
       }
       contract_follows: {
         Row: {
@@ -237,6 +244,7 @@ export interface Database {
           follow_id?: string
           fs_updated_time?: string
         }
+        Relationships: []
       }
       contract_liquidity: {
         Row: {
@@ -257,6 +265,7 @@ export interface Database {
           fs_updated_time?: string
           liquidity_id?: string
         }
+        Relationships: []
       }
       contract_recommendation_features: {
         Row: {
@@ -286,6 +295,7 @@ export interface Database {
           f4?: number
           freshness_score?: number | null
         }
+        Relationships: []
       }
       contracts: {
         Row: {
@@ -348,6 +358,7 @@ export interface Database {
           slug?: string | null
           visibility?: string | null
         }
+        Relationships: []
       }
       discord_messages_markets: {
         Row: {
@@ -374,6 +385,7 @@ export interface Database {
           message_id?: string
           thread_id?: string | null
         }
+        Relationships: []
       }
       discord_users: {
         Row: {
@@ -391,6 +403,7 @@ export interface Database {
           discord_user_id?: string
           user_id?: string | null
         }
+        Relationships: []
       }
       group_contracts: {
         Row: {
@@ -411,6 +424,7 @@ export interface Database {
           fs_updated_time?: string
           group_id?: string
         }
+        Relationships: []
       }
       group_invites: {
         Row: {
@@ -446,26 +460,53 @@ export interface Database {
           max_uses?: number | null
           uses?: number
         }
+        Relationships: [
+          {
+            foreignKeyName: 'group_invites_group_id_fkey'
+            columns: ['group_id']
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_invites_group_id_fkey'
+            columns: ['group_id']
+            referencedRelation: 'group_role'
+            referencedColumns: ['group_id']
+          },
+          {
+            foreignKeyName: 'group_invites_group_id_fkey'
+            columns: ['group_id']
+            referencedRelation: 'groups_rbac'
+            referencedColumns: ['id']
+          }
+        ]
       }
       group_members: {
         Row: {
+          created_time: string | null
           data: Json
           fs_updated_time: string
           group_id: string
           member_id: string
+          role: string | null
         }
         Insert: {
+          created_time?: string | null
           data: Json
           fs_updated_time: string
           group_id: string
           member_id: string
+          role?: string | null
         }
         Update: {
+          created_time?: string | null
           data?: Json
           fs_updated_time?: string
           group_id?: string
           member_id?: string
+          role?: string | null
         }
+        Relationships: []
       }
       groups: {
         Row: {
@@ -501,6 +542,7 @@ export interface Database {
           slug?: string | null
           total_members?: number | null
         }
+        Relationships: []
       }
       incoming_writes: {
         Row: {
@@ -533,6 +575,7 @@ export interface Database {
           ts?: string
           write_kind?: string
         }
+        Relationships: []
       }
       leagues: {
         Row: {
@@ -565,6 +608,7 @@ export interface Database {
           season?: number
           user_id?: string
         }
+        Relationships: []
       }
       manalinks: {
         Row: {
@@ -582,6 +626,7 @@ export interface Database {
           fs_updated_time?: string
           id?: string
         }
+        Relationships: []
       }
       market_ads: {
         Row: {
@@ -611,6 +656,50 @@ export interface Database {
           market_id?: string
           user_id?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'contracts_rbac'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'contracts_view'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'listed_open_contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'public_contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'public_open_contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'trending_contracts'
+            referencedColumns: ['id']
+          }
+        ]
       }
       news: {
         Row: {
@@ -655,6 +744,7 @@ export interface Database {
           title_embedding?: string
           url?: string
         }
+        Relationships: []
       }
       post_comments: {
         Row: {
@@ -684,6 +774,7 @@ export interface Database {
           user_id?: string | null
           visibility?: string | null
         }
+        Relationships: []
       }
       posts: {
         Row: {
@@ -713,6 +804,7 @@ export interface Database {
           id?: string
           visibility?: string | null
         }
+        Relationships: []
       }
       q_and_a: {
         Row: {
@@ -742,6 +834,7 @@ export interface Database {
           question?: string
           user_id?: string
         }
+        Relationships: []
       }
       q_and_a_answers: {
         Row: {
@@ -771,6 +864,7 @@ export interface Database {
           text?: string
           user_id?: string
         }
+        Relationships: []
       }
       stats: {
         Row: {
@@ -785,6 +879,7 @@ export interface Database {
           daily_values?: number[] | null
           title?: string
         }
+        Relationships: []
       }
       tombstones: {
         Row: {
@@ -808,6 +903,7 @@ export interface Database {
           parent_id?: string | null
           table_id?: string
         }
+        Relationships: []
       }
       topic_embeddings: {
         Row: {
@@ -825,6 +921,7 @@ export interface Database {
           embedding?: string
           topic?: string
         }
+        Relationships: []
       }
       txns: {
         Row: {
@@ -842,6 +939,7 @@ export interface Database {
           fs_updated_time?: string
           id?: string
         }
+        Relationships: []
       }
       user_contract_metrics: {
         Row: {
@@ -880,6 +978,7 @@ export interface Database {
           total_shares_yes?: number | null
           user_id?: string
         }
+        Relationships: []
       }
       user_embeddings: {
         Row: {
@@ -903,6 +1002,7 @@ export interface Database {
           pre_signup_interest_embedding?: string | null
           user_id?: string
         }
+        Relationships: []
       }
       user_events: {
         Row: {
@@ -935,6 +1035,7 @@ export interface Database {
           ts?: string | null
           user_id?: string | null
         }
+        Relationships: []
       }
       user_feed: {
         Row: {
@@ -994,6 +1095,7 @@ export interface Database {
           seen_time?: string | null
           user_id?: string
         }
+        Relationships: []
       }
       user_follows: {
         Row: {
@@ -1014,6 +1116,7 @@ export interface Database {
           fs_updated_time?: string
           user_id?: string
         }
+        Relationships: []
       }
       user_notifications: {
         Row: {
@@ -1034,6 +1137,7 @@ export interface Database {
           notification_id?: string
           user_id?: string
         }
+        Relationships: []
       }
       user_portfolio_history: {
         Row: {
@@ -1060,6 +1164,7 @@ export interface Database {
           ts?: string | null
           user_id?: string
         }
+        Relationships: []
       }
       user_quest_metrics: {
         Row: {
@@ -1080,6 +1185,7 @@ export interface Database {
           score_value?: number
           user_id?: string
         }
+        Relationships: []
       }
       user_reactions: {
         Row: {
@@ -1100,6 +1206,7 @@ export interface Database {
           reaction_id?: string
           user_id?: string
         }
+        Relationships: []
       }
       user_recommendation_features: {
         Row: {
@@ -1126,6 +1233,7 @@ export interface Database {
           f4?: number
           user_id?: string
         }
+        Relationships: []
       }
       user_seen_markets: {
         Row: {
@@ -1152,6 +1260,7 @@ export interface Database {
           type?: string
           user_id?: string
         }
+        Relationships: []
       }
       user_topics: {
         Row: {
@@ -1172,6 +1281,7 @@ export interface Database {
           topics?: string[]
           user_id?: string
         }
+        Relationships: []
       }
       users: {
         Row: {
@@ -1195,6 +1305,7 @@ export interface Database {
           name_username_vector?: unknown | null
           username?: string | null
         }
+        Relationships: []
       }
     }
     Views: {
@@ -1250,6 +1361,7 @@ export interface Database {
           user_id?: string | null
           visibility?: string | null
         }
+        Relationships: []
       }
       contract_distance: {
         Row: {
@@ -1257,6 +1369,7 @@ export interface Database {
           id1: string | null
           id2: string | null
         }
+        Relationships: []
       }
       contracts_rbac: {
         Row: {
@@ -1313,6 +1426,7 @@ export interface Database {
           slug?: string | null
           visibility?: string | null
         }
+        Relationships: []
       }
       contracts_view: {
         Row: {
@@ -1342,6 +1456,7 @@ export interface Database {
           outcome_type?: never
           visibility?: never
         }
+        Relationships: []
       }
       group_role: {
         Row: {
@@ -1354,26 +1469,47 @@ export interface Database {
           group_slug: string | null
           member_id: string | null
           name: string | null
+          privacy_status: string | null
           role: string | null
           username: string | null
         }
+        Relationships: []
       }
       groups_rbac: {
         Row: {
+          creator_id: string | null
           data: Json | null
           fs_updated_time: string | null
           id: string | null
+          name: string | null
+          name_fts: unknown | null
+          privacy_status: string | null
+          slug: string | null
+          total_members: number | null
         }
         Insert: {
+          creator_id?: string | null
           data?: Json | null
           fs_updated_time?: string | null
           id?: string | null
+          name?: string | null
+          name_fts?: unknown | null
+          privacy_status?: string | null
+          slug?: string | null
+          total_members?: number | null
         }
         Update: {
+          creator_id?: string | null
           data?: Json | null
           fs_updated_time?: string | null
           id?: string | null
+          name?: string | null
+          name_fts?: unknown | null
+          privacy_status?: string | null
+          slug?: string | null
+          total_members?: number | null
         }
+        Relationships: []
       }
       liked_sorted_comments: {
         Row: {
@@ -1394,6 +1530,7 @@ export interface Database {
           data?: Json | null
           user_id?: never
         }
+        Relationships: []
       }
       listed_open_contracts: {
         Row: {
@@ -1447,6 +1584,7 @@ export interface Database {
           slug?: string | null
           visibility?: string | null
         }
+        Relationships: []
       }
       private_contract_comments: {
         Row: {
@@ -1455,6 +1593,7 @@ export interface Database {
           data: Json | null
           fs_updated_time: string | null
         }
+        Relationships: []
       }
       public_contract_bets: {
         Row: {
@@ -1508,6 +1647,7 @@ export interface Database {
           user_id?: string | null
           visibility?: string | null
         }
+        Relationships: []
       }
       public_contracts: {
         Row: {
@@ -1564,6 +1704,7 @@ export interface Database {
           slug?: string | null
           visibility?: string | null
         }
+        Relationships: []
       }
       public_open_contracts: {
         Row: {
@@ -1617,6 +1758,7 @@ export interface Database {
           slug?: string | null
           visibility?: string | null
         }
+        Relationships: []
       }
       related_contracts: {
         Row: {
@@ -1625,6 +1767,7 @@ export interface Database {
           distance: number | null
           from_contract_id: string | null
         }
+        Relationships: []
       }
       trending_contracts: {
         Row: {
@@ -1678,6 +1821,7 @@ export interface Database {
           slug?: string | null
           visibility?: string | null
         }
+        Relationships: []
       }
       user_contract_distance: {
         Row: {
@@ -1685,6 +1829,7 @@ export interface Database {
           distance: number | null
           user_id: string | null
         }
+        Relationships: []
       }
       user_groups: {
         Row: {
@@ -1695,6 +1840,7 @@ export interface Database {
           name: string | null
           username: string | null
         }
+        Relationships: []
       }
       user_league_info: {
         Row: {
@@ -1708,6 +1854,7 @@ export interface Database {
           season: number | null
           user_id: string | null
         }
+        Relationships: []
       }
       user_referrals: {
         Row: {
@@ -1716,6 +1863,7 @@ export interface Database {
           rank: number | null
           total_referrals: number | null
         }
+        Relationships: []
       }
       user_referrals_profit: {
         Row: {
@@ -1725,6 +1873,7 @@ export interface Database {
           total_referrals: number | null
           total_referred_profit: number | null
         }
+        Relationships: []
       }
       user_trending_contract: {
         Row: {
@@ -1735,6 +1884,7 @@ export interface Database {
           popularity_score: number | null
           user_id: string | null
         }
+        Relationships: []
       }
     }
     Functions: {
@@ -1833,6 +1983,13 @@ export interface Database {
           data: Json
         }
         Returns: Record<string, unknown>
+      }
+      count_users_above_similarity: {
+        Args: {
+          nid: number
+          similarity: number
+        }
+        Returns: number
       }
       extract_text_from_rich_text_json: {
         Args: {

@@ -344,20 +344,23 @@ async function getGroup(
   const user = await getUser(userId)
 
   const group = groupDoc.data() as Group
-  const groupMembersSnap = await firestore
-    .collection(`groups/${groupId}/groupMembers`)
-    .get()
-  const groupMemberDocs = groupMembersSnap.docs.map(
-    (doc) =>
-      doc.data() as { userId: string; createdTime: number; role?: string }
-  )
-  const userGroupMemberDoc = groupMemberDocs.filter((m) => m.userId === userId)
-  const groupMemberRole =
-    userGroupMemberDoc.length >= 1
-      ? userGroupMemberDoc[0].role
-        ? (userGroupMemberDoc[0].role as 'admin' | 'moderator')
-        : undefined
-      : undefined
+
+  const db = createSupabaseClient()
+
+  const userMembership = (
+    await db
+      .from('group_members')
+      .select()
+      .eq('member_id', userId)
+      .eq('group_id', groupId)
+      .limit(1)
+  ).data
+
+  const isGroupMember = !!userMembership && userMembership.length >= 1
+
+  const groupMemberRole = isGroupMember
+    ? userMembership[0].role ?? undefined
+    : undefined
 
   if (
     (group.privacyStatus == 'private' && visibility != 'private') ||
@@ -371,12 +374,12 @@ async function getGroup(
   if (
     !canUserAddGroupToMarket({
       userId,
-      group: group,
+      group,
       isMarketCreator: true,
       isManifoldAdmin: isManifoldId(userId) || isAdmin(firebaseUser.email),
       isTrustworthy: isTrustworthy(user?.username),
-      userGroupRole: groupMemberRole,
-      isGroupMember: userGroupMemberDoc.length >= 1 ? true : false,
+      userGroupRole: groupMemberRole as any,
+      isGroupMember,
     })
   ) {
     throw new APIError(

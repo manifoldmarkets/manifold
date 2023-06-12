@@ -1430,7 +1430,7 @@ export const createGroupStatusChangeNotification = async (
   group: Group,
   newStatus: string
 ) => {
-  const privateUser = await getPrivateUser(affectedMember.userId)
+  const privateUser = await getPrivateUser(affectedMember.member_id)
   if (!privateUser) return
   let sourceText = `changed your role to ${newStatus}`
   if (
@@ -1453,7 +1453,7 @@ export const createGroupStatusChangeNotification = async (
 
   const notification: Notification = {
     id: crypto.randomUUID(),
-    userId: affectedMember.userId,
+    userId: affectedMember.member_id,
     reason: 'group_role_changed',
     createdTime: Date.now(),
     isSeen: false,
