@@ -1,11 +1,14 @@
 import * as admin from 'firebase-admin'
-import { writeCsv } from 'shared/helpers/file'
+import * as fs from 'fs'
+import { Parser } from 'json2csv'
 
 import { initAdmin } from 'shared/init-admin'
 
 initAdmin()
 
 const firestore = admin.firestore()
+const [outputDir] = process.argv.slice(2)
+const outputPath = `${outputDir}.csv`
 
 async function main() {
   const emailSnap = await firestore
@@ -23,23 +26,17 @@ async function main() {
     .orderBy('createdTime', 'desc')
     .get()
 
-  const users = usersSnap.docs.slice(20000).map((doc) => ({
+  const users = usersSnap.docs.slice(0, -20000).map((doc) => ({
     id: doc.id,
     username: doc.data().username || '',
     email: emailData[doc.id] || '',
   }))
 
-  const data = users.map((user) => ({
-    username: user.username,
-    email: user.email,
-  }))
+  const parser = new Parser({ fields: ['username', 'email'] })
+  const csv = parser.parse(users)
 
-  const filePath =
-    'C:\\Users\\d4vid\\OneDrive\\Documents\\Manifold emails\\user-emails.csv'
-  const fields = ['username', 'email']
-
-  await writeCsv(filePath, fields, data)
-  console.log('User emails have been exported to user-emails.csv')
+  fs.writeFileSync(outputPath, csv)
+  console.log(`Emails exported to '${outputPath}'.`)
 }
 
 if (require.main === module) {
