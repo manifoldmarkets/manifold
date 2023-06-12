@@ -18,6 +18,3 @@ create trigger group_members_populate before insert
 or
 update on group_members for each row
 execute function group_member_populate_cols ();
-
-
-update group_members set fs_updated_time = fs_updated_time;
