@@ -22,15 +22,10 @@ export function ExtraContractActionsRow(props: {
   const hasCoverImage = !!contract.coverImageUrl
 
   return (
-    <Row className={hasCoverImage ? 'gap-3' : ''}>
+    <Row>
       {children}
 
-      <div
-        className={clsx(
-          'flex items-center [&>div]:pr-2',
-          hasCoverImage ? 'rounded-full bg-black/60' : ''
-        )}
-      >
+      <div className={clsx('flex items-center [&>div]:pr-2')}>
         <LikeButton
           user={user}
           contract={contract}
@@ -41,7 +36,7 @@ export function ExtraContractActionsRow(props: {
           contentText={contract.question}
           showTotalLikesUnder
           size="sm"
-          color={hasCoverImage ? 'white' : 'gray'}
+          color={'gray'}
           className={clsx(
             'p-2',
             isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
@@ -55,12 +50,8 @@ export function ExtraContractActionsRow(props: {
         linkIconOnlyProps={{
           tooltip: 'Copy market share link',
           //TODO: less spaghetti way of styling the button and icon
-          className: clsx(
-            '!p-2 [&_svg]:h-4 [&_svg]:w-4',
-            contract.coverImageUrl
-              ? 'rounded-full bg-black/60 !p-2 !text-white hover:bg-black/80 '
-              : ''
-          ),
+          className:
+            '!p-2 [&_svg]:h-4 [&_svg]:w-4 text-ink-500 hover:text-ink-600',
         }}
         eventTrackingName="copy market link"
       />
@@ -68,10 +59,8 @@ export function ExtraContractActionsRow(props: {
       <Tooltip text="Market details" placement="bottom" noTap>
         <button
           className={clsx(
-            'p-2 transition-colors',
+            'text-ink-500 hover:text-ink-600 p-2 transition-colors',
             hasCoverImage
-              ? 'rounded-full bg-black/60  text-white hover:bg-black/80'
-              : 'text-ink-500 hover:text-ink-600'
           )}
           onClick={() => setDialogOpen(true)}
         >

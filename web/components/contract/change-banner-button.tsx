@@ -45,12 +45,7 @@ export function ChangeBannerButton(props: {
         className={className}
       >
         <button
-          className={clsx(
-            'flex p-2 transition-colors',
-            hasCoverImage
-              ? 'rounded-full bg-black/60 hover:bg-black/80'
-              : 'text-ink-500 hover:text-ink-600'
-          )}
+          className={clsx('transition-color flex p-2 text-white')}
           onClick={() => setOpen(true)}
         >
           {canEdit ? (

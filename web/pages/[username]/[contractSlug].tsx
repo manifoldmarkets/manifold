@@ -290,6 +290,7 @@ export function ContractPageContent(props: {
     return () => observer.unobserve(element)
   }, [titleRef])
 
+  console.log(headerStuck)
   return (
     <>
       {creatorTwitter && (
@@ -313,10 +314,9 @@ export function ContractPageContent(props: {
             className={clsx(
               'sticky z-50 flex items-end',
               !coverImageUrl
-                ? 'bg-canvas-100 top-0 w-full'
+                ? 'bg-canvas-0 top-0 w-full'
                 : ' top-[-92px] h-[140px]'
             )}
-            style={coverImageUrl ? { width: '100%' } : {}}
           >
             {coverImageUrl && (
               <div className="absolute bottom-0 left-0 right-0 -top-10 -z-10">
@@ -337,7 +337,7 @@ export function ContractPageContent(props: {
             <div
               className={clsx(
                 'sticky -top-px z-50 mt-px flex w-full justify-between py-2 px-4 transition-colors',
-                headerStuck ? 'bg-black/20 backdrop-blur-2xl' : ''
+                headerStuck ? 'bg-black/50 backdrop-blur-2xl' : ''
               )}
             >
               <div className="mr-4 flex items-center truncate">
@@ -347,28 +347,41 @@ export function ContractPageContent(props: {
                   <span className="ml-4 text-white">{contract.question}</span>
                 )}
               </div>
-              <ExtraContractActionsRow contract={contract}>
-                {!coverImageUrl && isCreator && (
-                  <ChangeBannerButton
-                    contract={contract}
-                    className="ml-3 first:ml-0"
-                  />
-                )}
-              </ExtraContractActionsRow>
+              {headerStuck && (
+                <ExtraContractActionsRow contract={contract}>
+                  {!coverImageUrl && isCreator && (
+                    <ChangeBannerButton
+                      contract={contract}
+                      className="ml-3 first:ml-0"
+                    />
+                  )}
+                </ExtraContractActionsRow>
+              )}
             </div>
           </div>
-
-          <Col className="mb-4 p-4 md:px-8 md:pb-8">
+          <Col
+            className={clsx(
+              'mb-4 p-4 md:px-8 md:pb-8',
+              !!coverImageUrl ? '' : '-mt-4'
+            )}
+          >
             <Col className="gap-3 sm:gap-4">
-              <div
-                ref={titleRef}
-                className={clsx(coverImageUrl ? '' : 'absolute top-2 z-50')}
-              >
+              <Row ref={titleRef} className="justify-between">
                 <TitleOrEdit
                   contract={contract}
                   canEdit={isAdmin || isCreator}
                 />
-              </div>
+                <Col className="justify-start">
+                  <ExtraContractActionsRow contract={contract}>
+                    {!coverImageUrl && isCreator && (
+                      <ChangeBannerButton
+                        contract={contract}
+                        className="ml-3 first:ml-0"
+                      />
+                    )}
+                  </ExtraContractActionsRow>
+                </Col>
+              </Row>
 
               <div className="text-ink-600 flex items-center justify-between text-sm">
                 <AuthorInfo contract={contract} />
