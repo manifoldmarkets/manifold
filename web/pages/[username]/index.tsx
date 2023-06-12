@@ -321,7 +321,7 @@ export function UserProfile(props: {
                   <>
                     <Spacer h={4} />
                     <PortfolioValueSection userId={user.id} />
-                    <Spacer h={8} />
+                    <Spacer h={4} />
                     <BetsList user={user} />
                   </>
                 ),
