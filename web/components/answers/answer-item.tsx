@@ -33,7 +33,7 @@ export function AnswerItem(props: {
     onDeselect,
     isInModal,
   } = props
-  const { resolution, resolutions, mechanism } = contract
+  const { resolution, resolutions, mechanism, outcomeType } = contract
   const { text } = answer
   const isCpmm = mechanism === 'cpmm-multi-1'
   const user = useUserByIdOrAnswer(answer)
@@ -55,7 +55,7 @@ export function AnswerItem(props: {
         wasResolvedTo
           ? resolution === 'MKT'
             ? 'mb-2 bg-blue-500/20'
-            : 'mb-10 flex flex-col gap-4 rounded bg-teal-500/20 p-4'
+            : 'flex flex-col gap-4 rounded bg-teal-500/20 p-4'
           : chosenProb === undefined
           ? 'bg-canvas-50'
           : showChoice === 'radio'
@@ -68,22 +68,26 @@ export function AnswerItem(props: {
           <Linkify text={text} />
         </div>
 
-        <Row className="text-ink-500 items-center gap-2 text-sm">
-          {user ? (
-            <SiteLink className="relative" href={`/${user.username}`}>
-              <Row className="items-center gap-2">
-                <Avatar avatarUrl={user.avatarUrl} size={'xs'} />
-                <div className="truncate">{user.name}</div>
-              </Row>
-            </SiteLink>
-          ) : (
-            <EmptyAvatar />
-          )}
-          {/* TODO: Show total pool? */}
-          {'number' in answer && (
-            <div className="text-base">{showChoice && '#' + answer.number}</div>
-          )}
-        </Row>
+        {outcomeType === 'FREE_RESPONSE' && (
+          <Row className="text-ink-500 items-center gap-2 text-sm">
+            {user ? (
+              <SiteLink className="relative" href={`/${user.username}`}>
+                <Row className="items-center gap-2">
+                  <Avatar avatarUrl={user.avatarUrl} size={'xs'} />
+                  <div className="truncate">{user.name}</div>
+                </Row>
+              </SiteLink>
+            ) : (
+              <EmptyAvatar />
+            )}
+            {/* TODO: Show total pool? */}
+            {'number' in answer && (
+              <div className="text-base">
+                {showChoice && '#' + answer.number}
+              </div>
+            )}
+          </Row>
+        )}
       </Col>
 
       <Row
@@ -169,7 +173,6 @@ export function AnswerItem(props: {
                 Chosen{' '}
                 {resolutions ? `${Math.round(resolutions[answer.id])}%` : ''}
               </div>
-              <div className="text-ink-500 text-2xl">{probPercent}</div>
             </Col>
           )
         )}

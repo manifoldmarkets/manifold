@@ -26,7 +26,7 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'PSEUDO_NUMERIC')
     return <PseudoNumericOutcomeLabel outcome={outcome as any} />
 
-  if (outcomeType === 'BINARY' || contract.mechanism === 'cpmm-multi-1')
+  if (outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
 
   if (outcomeType === 'NUMERIC')
@@ -102,7 +102,8 @@ export function FreeResponseOutcomeLabel(props: {
   const { contract, resolution, truncate, answerClassName } = props
 
   if (resolution === 'CANCEL') return <CancelLabel />
-  if (resolution === 'MKT') return <MultiLabel />
+  if (resolution === 'MKT' || resolution === 'CHOOSE_MULTIPLE')
+    return <MultiLabel />
 
   const chosen = contract.answers?.find((answer) => answer.id === resolution)
   if (!chosen) return <AnswerNumberLabel number={resolution} />

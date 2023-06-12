@@ -51,7 +51,7 @@ import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
-import { OutcomeLabel } from '../outcome-label'
+import { BinaryOutcomeLabel, OutcomeLabel } from '../outcome-label'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { ProfitBadge } from '../profit-badge'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -719,6 +719,8 @@ function BetRow(props: {
         {isCPMM2 && (isShortSell ? 'NO ' : 'YES ')}
         {bet.isAnte ? (
           'ANTE'
+        ) : isCpmmMulti ? (
+          <BinaryOutcomeLabel outcome={outcome as any} />
         ) : (
           <OutcomeLabel
             outcome={outcome}
