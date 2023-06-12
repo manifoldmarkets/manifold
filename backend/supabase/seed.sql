@@ -749,29 +749,6 @@ alter table group_contracts
 cluster on group_contracts_pkey;
 
 create table if not exists
-  group_members (
-    group_id text not null,
-    member_id text not null,
-    data jsonb not null,
-    fs_updated_time timestamp not null,
-    role text,
-    created_time timestamptz,
-    primary key (group_id, member_id)
-  );
-
-alter table group_members enable row level security;
-
-drop policy if exists "public read" on group_members;
-
-create policy "public read" on group_members for
-select
-  using (true);
-
-
-alter table group_members
-cluster on group_members_pkey;
-
-create table if not exists
   user_quest_metrics (
     user_id text not null,
     score_id text not null,
