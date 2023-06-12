@@ -114,8 +114,6 @@ const parseDbAnswer = (row: any) => {
     poolNo: +row.pool_no,
     poolYes: +row.pool_yes,
     prob: +row.prob,
-    totalLiquidity: +row.total_subsidy,
-    subsidyPool: +row.subsidy_pool,
   }
   return answer
 }

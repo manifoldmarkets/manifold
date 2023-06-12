@@ -419,7 +419,6 @@ async function createAnswers(
   answers: string[]
 ) {
   const { shouldAnswersSumToOne } = contract
-  const manaPerAnswer = ante / answers.length
   const ids = answers.map(() => randomString())
 
   let prob = 0.5
@@ -457,8 +456,6 @@ async function createAnswers(
         poolYes,
         poolNo,
         prob,
-        subsidyPool: 0,
-        totalLiquidity: manaPerAnswer,
       }
       return firestore
         .collection(`contracts/${contract.id}/answersCpmm`)
@@ -478,7 +475,8 @@ async function generateAntes(
   if (
     outcomeType === 'BINARY' ||
     outcomeType === 'PSEUDO_NUMERIC' ||
-    outcomeType === 'STONK'
+    outcomeType === 'STONK' ||
+    outcomeType === 'MULTIPLE_CHOICE'
   ) {
     const liquidityDoc = firestore
       .collection(`contracts/${contract.id}/liquidity`)
@@ -486,7 +484,7 @@ async function generateAntes(
 
     const lp = getCpmmInitialLiquidity(
       providerId,
-      contract as CPMMBinaryContract,
+      contract as CPMMBinaryContract | CPMMMultiContract,
       liquidityDoc.id,
       ante
     )

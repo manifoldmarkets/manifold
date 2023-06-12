@@ -50,7 +50,7 @@ export function getNewContract(
     PSEUDO_NUMERIC: () =>
       getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale),
     NUMERIC: () => getNumericProps(ante, bucketCount, min, max),
-    MULTIPLE_CHOICE: () => getMultipleChoiceProps(shouldAnswersSumToOne),
+    MULTIPLE_CHOICE: () => getMultipleChoiceProps(shouldAnswersSumToOne, ante),
     QUADRATIC_FUNDING: () => getQfProps(ante),
     CERT: () => getCertProps(ante),
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
@@ -222,12 +222,17 @@ const _getDpmMultipleChoiceProps = (ante: number, answers: string[]) => {
   return system
 }
 
-const getMultipleChoiceProps = (shouldAnswersSumToOne: boolean | undefined) => {
+const getMultipleChoiceProps = (
+  shouldAnswersSumToOne: boolean | undefined,
+  ante: number
+) => {
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
     outcomeType: 'MULTIPLE_CHOICE',
     shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
     answers: [],
+    totalLiquidity: ante,
+    subsidyPool: 0,
   }
 
   return system

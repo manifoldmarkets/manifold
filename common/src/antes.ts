@@ -7,11 +7,13 @@ import {
   FreeResponseContract,
   NumericContract,
   DpmMultipleChoiceContract,
+  CPMMMultiContract,
 } from './contract'
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
 import { DpmAnswer } from './answer'
+import { removeUndefinedProps } from './util/object'
 
 export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
 export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // @ManifoldMarkets' id
@@ -24,13 +26,15 @@ type NormalizedBet<T extends Bet = Bet> = Omit<
 
 export function getCpmmInitialLiquidity(
   providerId: string,
-  contract: CPMMBinaryContract,
+  contract: CPMMBinaryContract | CPMMMultiContract,
   anteId: string,
   amount: number
 ) {
-  const { createdTime } = contract
+  const { createdTime, mechanism } = contract
 
-  const lp: LiquidityProvision = {
+  const pool = mechanism === 'cpmm-1' ? { YES: 0, NO: 0 } : undefined
+
+  const lp: LiquidityProvision = removeUndefinedProps({
     id: anteId,
     userId: providerId,
     contractId: contract.id,
@@ -39,8 +43,8 @@ export function getCpmmInitialLiquidity(
 
     amount: amount,
     liquidity: amount,
-    pool: { YES: 0, NO: 0 },
-  }
+    pool,
+  })
 
   return lp
 }

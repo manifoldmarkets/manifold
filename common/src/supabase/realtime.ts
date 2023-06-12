@@ -77,7 +77,9 @@ export function applyChange<T extends TableName>(
 ) {
   const spec = REALTIME_TABLES[table]
   if (spec == null) {
-    throw new Error('No key and timestamp columns specified for subscription.')
+    throw new Error(
+      'No key and timestamp columns specified for subscription: ' + table
+    )
   }
   const identical = (a: Row<T>, b: Row<T>) => {
     return !spec.pk.some((col) => a[col] !== b[col])

@@ -348,6 +348,53 @@ export function addCpmmLiquidity(
   return { newPool, liquidity, newP }
 }
 
+export function addCpmmMultiLiquidity(
+  pools: { [answerId: string]: { [outcome: string]: number } },
+  amount: number
+) {
+  const numAnswers = Object.keys(pools).length
+
+  // Assuming one answer resolves YES:
+  const maxYesAdded = amount
+  const maxNoAdded = amount / (numAnswers - 1)
+
+  const newPools: typeof pools = {}
+  for (const [answerId, pool] of Object.entries(pools)) {
+    const { YES: y, NO: n } = pool
+    const p = getCpmmProbability(pool, 0.5)
+    let newYes: number
+    let newNo: number
+
+    // Add up to max YES or NO shares without changing the probability p.
+    // p = n / (y + n)
+    // py = n(1 - p)
+    // y = n(1 - p) / p
+    // n = py / (1 - p)
+    if (n + maxNoAdded > ((y + maxYesAdded) * p) / (1 - p)) {
+      newYes = y + maxYesAdded
+      newNo = ((y + maxYesAdded) * p) / (1 - p)
+    } else {
+      newYes = ((n + maxNoAdded) * (1 - p)) / p
+      newNo = n + maxNoAdded
+    }
+
+    const newPool = { YES: newYes, NO: newNo }
+    console.log(
+      'prev pool',
+      pool,
+      'new pool',
+      newPool,
+      'p',
+      p,
+      'new p',
+      getCpmmProbability(newPool, 0.5)
+    )
+    newPools[answerId] = newPool
+  }
+
+  return newPools
+}
+
 export function getCpmmLiquidityPoolWeights(liquidities: LiquidityProvision[]) {
   const userAmounts = groupBy(liquidities, (w) => w.userId)
   const totalAmount = sumBy(liquidities, (w) => w.amount)

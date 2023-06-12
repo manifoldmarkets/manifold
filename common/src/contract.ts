@@ -174,6 +174,8 @@ export type CPMMMulti = {
   mechanism: 'cpmm-multi-1'
   outcomeType: 'MULTIPLE_CHOICE'
   shouldAnswersSumToOne: boolean
+  totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
+  subsidyPool: number // current value of subsidy pool in Ṁ
 
   // Answers chosen on resolution, with the weights of each answer.
   // Weights sum to 1 if shouldAnswersSumToOne is true. Otherwise, range from 0 to 1 for each answerId.

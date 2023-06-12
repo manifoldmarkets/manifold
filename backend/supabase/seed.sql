@@ -1111,8 +1111,6 @@ create table if not exists
     pool_yes numeric, -- YES shares in the pool
     pool_no numeric, -- NO shares in the pool
     prob numeric, -- Probability of YES computed from pool_yes and pool_no
-    total_liquidity numeric, -- // for historical reasons, this the total subsidy amount added in Ṁ
-    subsidy_pool numeric, -- Current value of subsidy pool in Ṁ, which will be added over time to poolYes and poolNo
     data jsonb not null,
     fs_updated_time timestamp not null
   );
@@ -1139,8 +1137,6 @@ begin
     new.pool_yes := ((new.data) ->> 'poolYes')::numeric;
     new.pool_no := ((new.data) ->> 'poolNo')::numeric;
     new.prob := ((new.data) ->> 'prob')::numeric;
-    new.total_liquidity := ((new.data) ->> 'totalLiquidity')::numeric;
-    new.subsidy_pool := ((new.data) ->> 'subsidyPool')::numeric;
   end if;
   return new;
 end

@@ -249,13 +249,15 @@ export function BetStatusText(props: {
           )}
           {isCPMM2 && (isShortSell ? 'NO of ' : 'YES of')}{' '}
           {isCpmmMulti ? (
-            <AnswerLabel
-              answer={contract.answers.find((a) => a.id === bet.answerId)!}
-              truncate="short"
-            />
+            contract.answers.find((a) => a.id === bet.answerId) && (
+              <AnswerLabel
+                answer={contract.answers.find((a) => a.id === bet.answerId)!}
+                truncate="short"
+              />
+            )
           ) : (
             <OutcomeLabel
-              outcome={isCpmmMulti ? bet.answerId ?? '' : outcome}
+              outcome={outcome}
               value={(bet as any).value}
               contract={contract}
               truncate="short"

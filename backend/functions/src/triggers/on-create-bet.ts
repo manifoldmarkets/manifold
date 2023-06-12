@@ -285,7 +285,10 @@ export const updateUniqueBettorsAndGiveCreatorBonus = async (
   })
   if (!result) return
 
-  if (oldContract.mechanism === 'cpmm-1') {
+  if (
+    oldContract.mechanism === 'cpmm-1' ||
+    oldContract.mechanism === 'cpmm-multi-1'
+  ) {
     await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
   }
 

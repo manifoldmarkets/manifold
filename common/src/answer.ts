@@ -11,8 +11,6 @@ export type Answer = {
   poolYes: number // YES shares
   poolNo: number // NO shares
   prob: number // Computed from poolYes and poolNo.
-  totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
-  subsidyPool: number // Current value of subsidy pool in Ṁ, which will be added over time to poolYes and poolNo.
 }
 
 export type DpmAnswer = {
