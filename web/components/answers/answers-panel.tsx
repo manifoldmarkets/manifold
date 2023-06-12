@@ -93,7 +93,7 @@ export function AnswersPanel(props: {
   const privateUser = usePrivateUser()
 
   const [resolveOption, setResolveOption] = useState<
-    'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
+    'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   >()
   const [chosenAnswers, setChosenAnswers] = useState<{
     [answerId: string]: number
@@ -102,7 +102,7 @@ export function AnswersPanel(props: {
   const chosenTotal = sum(Object.values(chosenAnswers))
 
   const onChoose = (answerId: string, prob: number) => {
-    if (resolveOption === 'CHOOSE') {
+    if (resolveOption === 'CHOOSE_ONE') {
       setChosenAnswers({ [answerId]: prob })
     } else {
       setChosenAnswers((chosenAnswers) => {
@@ -128,7 +128,7 @@ export function AnswersPanel(props: {
 
   const showChoice = resolution
     ? undefined
-    : resolveOption === 'CHOOSE'
+    : resolveOption === 'CHOOSE_ONE'
     ? 'radio'
     : resolveOption === 'CHOOSE_MULTIPLE'
     ? 'checkbox'

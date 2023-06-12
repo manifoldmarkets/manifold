@@ -161,7 +161,8 @@ const toDisplayResolution = (
     return formatNumericProbability(getProbability(contract), contract)
   }
 
-  if (resolution === 'MKT' && resolutions) return 'MULTI'
+  if ((resolution === 'MKT' && resolutions) || resolution === 'CHOOSE_MULTIPLE')
+    return 'MULTI'
   if (resolution === 'CANCEL') return 'N/A'
 
   if (contract.outcomeType === 'NUMERIC' && contract.mechanism === 'dpm-2')

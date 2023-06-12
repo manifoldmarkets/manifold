@@ -21,7 +21,10 @@ import {
   getDpmOutcomeProbabilityAfterBet,
   calculateDpmShares,
 } from './calculate-dpm'
-import { calculateFixedPayout } from './calculate-fixed-payouts'
+import {
+  calculateFixedPayout,
+  calculateFixedPayoutMulti,
+} from './calculate-fixed-payouts'
 import {
   Contract,
   BinaryContract,
@@ -170,8 +173,10 @@ export function calculateSharesBoughtMulti(
 
 export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
   const { mechanism } = contract
-  return mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
+  return mechanism === 'cpmm-1'
     ? calculateFixedPayout(contract, bet, outcome)
+    : mechanism === 'cpmm-multi-1'
+    ? calculateFixedPayoutMulti(contract, bet, outcome)
     : mechanism === 'dpm-2'
     ? calculateDpmPayout(contract, bet, outcome)
     : bet?.amount ?? 0
@@ -181,8 +186,10 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
   const { resolution, mechanism } = contract
   if (!resolution) throw new Error('Contract not resolved')
 
-  return mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
+  return mechanism === 'cpmm-1'
     ? calculateFixedPayout(contract, bet, resolution)
+    : mechanism === 'cpmm-multi-1'
+    ? calculateFixedPayoutMulti(contract, bet, resolution)
     : mechanism === 'dpm-2'
     ? calculateDpmPayout(contract, bet, resolution)
     : bet?.amount ?? 0
