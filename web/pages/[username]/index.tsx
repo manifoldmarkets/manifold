@@ -63,6 +63,7 @@ import {
   getCalibrationPoints,
   getGrade,
 } from 'web/pages/[username]/calibration'
+import { DailyLeagueStat } from 'web/components/daily-league-stat'
 
 export const getStaticProps = async (props: {
   params: {
@@ -180,7 +181,7 @@ export function UserProfile(props: {
       )}
 
       <Col className="mx-4 mt-1">
-        <Row className="flex-wrap justify-between gap-2 p-1">
+        <Row className="flex-wrap justify-between gap-2 py-1">
           <Row className={clsx('gap-2')}>
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
@@ -222,34 +223,21 @@ export function UserProfile(props: {
               </span>
             </Col>
           </Row>
-
           {isCurrentUser ? (
-            <SiteLink
-              href={'/' + user.username + '/calibration'}
-              className={clsx(
-                'cursor-pointer text-sm',
-                'bg-ink-100 rounded-lg px-2',
-                'hover:bg-ink-200'
-              )}
-            >
-              <Col className="h-full w-full items-center justify-center">
-                <span>{getGrade(score)}</span>
-                Calibration
-              </Col>
-            </SiteLink>
+            <DailyLeagueStat user={user} />
           ) : (
-            <Row className="items-center gap-2">
-              <MoreOptionsUserButton user={user} />
+            <Row className="items-center gap-1 sm:gap-2">
               <UserFollowButton userId={user.id} />
+              <MoreOptionsUserButton user={user} />
             </Row>
           )}
         </Row>
-
         <Col className={'mt-1 px-1'}>
           <ProfilePublicStats
             className=""
             user={user}
             isCurrentUser={isCurrentUser}
+            score={score}
           />
           {user.bio && (
             <div className="sm:text-md mt-1 text-sm">
@@ -380,9 +368,10 @@ type FollowsDialogTab = 'following' | 'followers'
 function ProfilePublicStats(props: {
   user: User
   isCurrentUser: boolean
+  score: number
   className?: string
 }) {
-  const { user, className, isCurrentUser } = props
+  const { user, score, className, isCurrentUser } = props
   const [isOpen, setIsOpen] = useState(false)
   const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
   const followingIds = useFollows(user.id)
@@ -397,7 +386,7 @@ function ProfilePublicStats(props: {
   return (
     <Row
       className={clsx(
-        'text-ink-600 flex-wrap items-center gap-3 text-sm',
+        'text-ink-600 flex-wrap items-center space-x-2 text-sm',
         className
       )}
     >
@@ -428,13 +417,19 @@ function ProfilePublicStats(props: {
             user.id
           )}
         >
-          <TrophyIcon className="mr-1 inline h-4 w-4" />
+          <TrophyIcon className="mr-1 mb-1 inline h-4 w-4" />
           <span className={clsx('font-semibold')}>
             {DIVISION_NAMES[leagueInfo.division ?? '']}
           </span>{' '}
           Rank {leagueInfo.rank}
         </Link>
       )}
+      <SiteLink
+        href={'/' + user.username + '/calibration'}
+        className={clsx(linkClass, 'cursor-pointer text-sm')}
+      >
+        {getGrade(score)} Score
+      </SiteLink>
 
       <FollowsDialog
         user={user}
