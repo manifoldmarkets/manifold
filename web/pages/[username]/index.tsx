@@ -428,7 +428,8 @@ function ProfilePublicStats(props: {
         href={'/' + user.username + '/calibration'}
         className={clsx(linkClass, 'cursor-pointer text-sm')}
       >
-        {getGrade(score)} Score
+        <span className={clsx('font-semibold')}>{getGrade(score)}</span>{' '}
+        Calibration
       </SiteLink>
 
       <FollowsDialog
