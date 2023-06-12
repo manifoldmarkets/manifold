@@ -56,7 +56,7 @@ export const TitleOrEdit = (props: {
   ) : (
     <span>
       <Linkify
-        className="text-primary-700 text-lg font-medium sm:text-2xl"
+        className="text-primary-700 text-xl font-medium sm:text-2xl"
         text={contract.question}
       />
       {canEdit && (

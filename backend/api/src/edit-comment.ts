@@ -1,10 +1,11 @@
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { contentSchema, validateComment } from 'api/create-comment'
+import { validateComment } from 'api/create-comment'
 import { Comment } from 'common/comment'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { run } from 'common/supabase/utils'
+import { contentSchema } from 'shared/zod-types'
 
 const editSchema = z.object({
   contractId: z.string(),

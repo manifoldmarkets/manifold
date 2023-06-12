@@ -1,35 +1,11 @@
 import { z } from 'zod'
-import { JSONContent } from '@tiptap/core'
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import * as admin from 'firebase-admin'
 import { removeUndefinedProps } from 'common/util/object'
 import { getUser } from 'shared/utils'
-import { ChatMessage } from 'common/chat-message'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { Json } from 'common/supabase/schema'
-
-export const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
-  z.intersection(
-    z.record(z.any()),
-    z.object({
-      type: z.string().optional(),
-      attrs: z.record(z.any()).optional(),
-      content: z.array(contentSchema).optional(),
-      marks: z
-        .array(
-          z.intersection(
-            z.record(z.any()),
-            z.object({
-              type: z.string(),
-              attrs: z.record(z.any()).optional(),
-            })
-          )
-        )
-        .optional(),
-      text: z.string().optional(),
-    })
-  )
-)
+import { contentSchema } from 'shared/zod-types'
 
 const postSchema = z.object({
   content: contentSchema.optional(),

@@ -1,4 +1,11 @@
-# API
+---
+id: api
+slug: /api
+---
+# Manifold API
+
+
+Programatic access to [Manifold Markets](https://manifold.markets).
 
 :::caution
 
@@ -38,6 +45,11 @@ response was a 4xx or 5xx.)
 Feel free to use the API for any purpose you'd like. We ask that you:
 - Keep your bets to less than 10 per minute, amortized (transient spikes of over 10/min are okay).
 - Keep your reads to less than 100 per second.
+
+## Fees
+
+- A non-refundable transaction fee of M0.25 will be levied on any bet, sell, or limit order placed through the API, or by any account marked as a bot.
+- Comments placed through the API will incur a M1 transaction fee.
 
 ## Endpoints
 

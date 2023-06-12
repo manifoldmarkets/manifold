@@ -10,7 +10,13 @@ import {
   notification_reason_types,
   UniqueBettorData,
 } from 'common/notification'
-import { PrivateUser, User } from 'common/user'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+  PrivateUser,
+  User,
+} from 'common/user'
 import { Contract } from 'common/contract'
 import { getPrivateUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
@@ -25,6 +31,7 @@ import {
   sendNewAnswerEmail,
   sendNewCommentEmail,
   sendNewFollowedMarketEmail,
+  sendNewPrivateMarketEmail,
   sendNewUniqueBettorsEmail,
 } from './emails'
 import { filterDefined } from 'common/util/array'
@@ -32,6 +39,7 @@ import {
   getNotificationDestinationsForUser,
   notification_destination_types,
   userIsBlocked,
+  userOptedOutOfBrowserNotifications,
 } from 'common/user-notification-preferences'
 import { createPushNotification } from './create-push-notification'
 import { Reaction } from 'common/reaction'
@@ -40,11 +48,16 @@ import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { getMoneyNumber } from 'common/util/format'
 import {
+  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import * as crypto from 'crypto'
 import { getUniqueBettorIds } from 'shared/supabase/contracts'
+import { getGroupMemberIds } from 'common/supabase/groups'
+import { richTextToString } from 'common/util/parse'
+import { JSONContent } from '@tiptap/core'
+import { league_user_info } from 'common/leagues'
 
 const firestore = admin.firestore()
 
@@ -852,18 +865,8 @@ export const createBettingStreakExpiringNotification = async (
 }
 export const createLeagueChangedNotification = async (
   userId: string,
-  previousLeague:
-    | {
-        season: number
-        division: number
-        cohort: string
-      }
-    | undefined,
-  newLeague: {
-    season: number
-    division: number
-    cohort: string
-  },
+  previousLeague: league_user_info | undefined,
+  newLeague: { season: number; division: number; cohort: string },
   bonusAmount: number,
   pg: SupabaseDirectClient
 ) => {
@@ -874,7 +877,13 @@ export const createLeagueChangedNotification = async (
     'league_changed'
   )
   if (!sendToBrowser) return
+
   const id = crypto.randomUUID()
+  const data: LeagueChangeData = {
+    previousLeague,
+    newLeague,
+    bonusAmount,
+  }
   const notification: Notification = {
     id,
     userId,
@@ -888,11 +897,7 @@ export const createLeagueChangedNotification = async (
     sourceUserName: '',
     sourceUserUsername: '',
     sourceUserAvatarUrl: '',
-    data: {
-      previousLeague,
-      newLeague,
-      bonusAmount,
-    } as LeagueChangeData,
+    data,
   }
   await insertNotificationToSupabase(notification, pg)
 }
@@ -1099,7 +1104,7 @@ export const createNewContractNotification = async (
 
   // As it is coded now, the tag notification usurps the new contract notification
   // It'd be easy to append the reason to the eventId if desired
-  if (contract.visibility === 'public') {
+  if (contract.visibility == 'public') {
     for (const followerUserId of followerUserIds) {
       await sendNotificationsIfSettingsAllow(
         followerUserId,
@@ -1109,6 +1114,67 @@ export const createNewContractNotification = async (
   }
   for (const mentionedUserId of mentionedUserIds) {
     await sendNotificationsIfSettingsAllow(mentionedUserId, 'tagged_user')
+  }
+}
+
+export const createNewContractFromPrivateGroupNotification = async (
+  contractCreator: User,
+  contract: Contract,
+  group: Group
+) => {
+  const pg = createSupabaseDirectClient()
+  const db = createSupabaseClient()
+  const reason = 'contract_from_private_group'
+  const sendNewContractInFromPrivateGroupNotificationsIfSettingsAllow = async (
+    userId: string
+  ) => {
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
+    if (userIsBlocked(privateUser, contractCreator.id)) return
+    const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
+      privateUser,
+      reason
+    )
+    if (sendToBrowser) {
+      const notification: Notification = {
+        id: crypto.randomUUID(),
+        userId: userId,
+        reason,
+        createdTime: Date.now(),
+        isSeen: false,
+        sourceId: contract.id,
+        sourceType: 'contract',
+        sourceUpdateType: 'created',
+        sourceUserName: contractCreator.name,
+        sourceUserUsername: contractCreator.username,
+        sourceUserAvatarUrl: contractCreator.avatarUrl,
+        sourceText: richTextToString(contract.description as JSONContent),
+        sourceSlug: contract.slug,
+        sourceTitle: contract.question,
+        sourceContractSlug: contract.slug,
+        sourceContractId: contract.id,
+        sourceContractTitle: contract.question,
+        sourceContractCreatorUsername: contract.creatorUsername,
+      }
+      await insertNotificationToSupabase(notification, pg)
+    }
+    if (!sendToEmail) return
+    await sendNewPrivateMarketEmail(
+      reason,
+      userId,
+      privateUser,
+      contract,
+      group
+    )
+  }
+
+  const privateMemberIds = await getGroupMemberIds(db, group.id)
+  for (const privateMemberId of privateMemberIds) {
+    if (privateMemberId != contract.creatorId) {
+      await sendNewContractInFromPrivateGroupNotificationsIfSettingsAllow(
+        privateMemberId
+      )
+    }
   }
 }
 
@@ -1468,6 +1534,32 @@ export const createQuestPayoutNotification = async (
       questType,
       questCount,
     } as QuestRewardTxn['data'],
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}
+
+export const createSignupBonusNotification = async (
+  user: User,
+  txnId: string,
+  bonusAmount: number
+) => {
+  const privateUser = await getPrivateUser(user.id)
+  if (!privateUser) return
+  if (userOptedOutOfBrowserNotifications(privateUser)) return
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: user.id,
+    reason: 'onboarding_flow',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'signup_bonus',
+    sourceUpdateType: 'created',
+    sourceUserName: MANIFOLD_USER_NAME,
+    sourceUserUsername: MANIFOLD_USER_USERNAME,
+    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+    sourceText: bonusAmount.toString(),
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)

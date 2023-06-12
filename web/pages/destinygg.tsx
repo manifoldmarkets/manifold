@@ -86,7 +86,7 @@ export default function DestinyLandingPage(props: {
               text="Welcome Explanation"
             />
             <InfoCard
-              link="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"
+              link="https://docs.manifold.markets/faq#what-is-mana-m"
               icon={<div className="text-2xl">{ENV_CONFIG.moneyMoniker}</div>}
               text="What is Mana?"
               modal={<ManaExplainer />}

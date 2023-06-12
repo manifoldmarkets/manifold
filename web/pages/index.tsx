@@ -27,8 +27,9 @@ import { LogoSEO } from 'web/components/LogoSEO'
 import { db } from 'web/lib/supabase/db'
 import { PrivacyAndTerms } from 'web/components/privacy-terms'
 import clsx from 'clsx'
-import { ContractCardNew } from 'web/components/contract/contract-card'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { formatMoney } from 'common/util/format'
+import { SiteLink } from 'web/components/widgets/site-link'
 
 const excludedGroupSlugs = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
@@ -68,6 +69,11 @@ export default function Home(props: {
             <LogoSEO />
 
             <div className="hidden items-center gap-2 lg:flex">
+              <SiteLink href="/about">
+                <Button color="gray-white" size="xs">
+                  About
+                </Button>
+              </SiteLink>
               <Button
                 color="gray-white"
                 size="xs"
@@ -93,14 +99,12 @@ export default function Home(props: {
 
           <Row className="w-full gap-2 sm:gap-4">
             <InfoCard
-              link="https://help.manifold.markets/introduction-to-manifold-markets/what-are-prediction-markets"
               icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
               text="What is a prediction market?"
               modal={<PredictionMarketExplainer />}
             />
 
             <InfoCard
-              link="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"
               icon={<div className="text-2xl">{ENV_CONFIG.moneyMoniker}</div>}
               text="What is mana?"
               modal={<ManaExplainer />}
@@ -149,7 +153,6 @@ export function LinkInfoCard(props: {
 }
 
 export function InfoCard(props: {
-  link: string
   icon: ReactNode
   text: string
   externalLink?: boolean
@@ -251,7 +254,13 @@ const ContractsSection = memo(function ContractsSection(props: {
   return (
     <Col className={clsx('max-w-2xl', className)}>
       {contracts.map((contract) => (
-        <ContractCardNew key={contract.id} contract={contract} />
+        <div
+          className={
+            'border-ink-200 hover:border-ink-400 my-2 overflow-y-hidden rounded-xl border'
+          }
+        >
+          <FeedContractCard key={contract.id} contract={contract} />
+        </div>
       ))}
     </Col>
   )

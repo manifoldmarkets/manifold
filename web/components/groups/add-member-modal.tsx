@@ -5,11 +5,11 @@ import { Group } from 'common/group'
 import { buildArray } from 'common/util/array'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import { usePollingGroupMemberIds } from 'web/hooks/use-group-supabase'
+import { useRealtimeGroupMemberIds } from 'web/hooks/use-group-supabase'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { addGroupMember, createGroupInvite } from 'web/lib/firebase/api'
 import { searchUsersNotInGroup } from 'web/lib/supabase/users'
-import { Button, buttonClass } from '../buttons/button'
+import { Button } from '../buttons/button'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -68,7 +68,7 @@ export function AddMemberContent(props: {
   const requestId = useRef(0)
   const [loading, setLoading] = useState(false)
 
-  const [groupMemberIds] = usePollingGroupMemberIds(group.id)
+  const [groupMemberIds] = useRealtimeGroupMemberIds(group.id)
 
   useEffect(() => {
     const id = ++requestId.current
@@ -91,7 +91,7 @@ export function AddMemberContent(props: {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search users"
-          className={clsx('placeholder:text-ink-400 w-full')}
+          className={clsx('placeholder:text-ink-400 flex w-full flex-shrink-0')}
         />
         <Col
           className={clsx(
@@ -108,9 +108,7 @@ export function AddMemberContent(props: {
               key={user.id}
               user={user}
               group={group}
-              isDisabled={groupMemberIds?.data.some(
-                (r) => r.member_id == user.id
-              )}
+              isDisabled={groupMemberIds.includes(user.id)}
             />
           ))}
         </Col>
@@ -223,6 +221,7 @@ export function AddMemberWidget(props: {
             error: errorMessage,
           }
         )
+        setDisabled(true)
       },
     },
     {
@@ -240,6 +239,7 @@ export function AddMemberWidget(props: {
             error: errorMessage,
           }
         )
+        setDisabled(true)
       },
     }
   )
@@ -282,15 +282,18 @@ export function AddMemberWidget(props: {
           Icon={
             <ChevronDownIcon
               className={clsx(
-                'text-primary-500 group-hover:text-canvas-50 h-5 w-5'
+                disabled
+                  ? 'text-ink-300 cursor-not-allowed'
+                  : 'text-primary-500 group-hover:text-canvas-50',
+                'h-5 w-5'
               )}
             />
           }
           menuWidth={'w-40'}
           buttonClass={clsx(
-            buttonClass('2xs', 'indigo-outline'),
-            'rounded-l-none border-l-0 px-1 py-[6px] group'
+            'border-primary-500 border-2 border-l-0 px-1 py-[4px] group rounded-l-none rounded-md disabled:border-ink-300 enabled:hover:bg-primary-500'
           )}
+          buttonDisabled={disabled}
         />
       </Row>
     </Row>

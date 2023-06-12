@@ -34,7 +34,6 @@ import { searchInAny } from 'common/util/parse'
 import { Input } from 'web/components/widgets/input'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useBets } from 'web/hooks/use-bets-supabase'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import {
   inMemoryStore,
   usePersistentState,
@@ -53,7 +52,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { OutcomeLabel } from '../outcome-label'
-import { AddFundsButton } from '../profile/add-funds-button'
 import { ProfitBadge } from '../profit-badge'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Pagination } from '../widgets/pagination'
@@ -63,6 +61,7 @@ import { Table } from '../widgets/table'
 import { BetsSummary } from './bet-summary'
 import { OrderTable } from './limit-bets'
 import { SellRow } from './sell-row'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 
 type BetSort =
   | 'newest'
@@ -227,50 +226,9 @@ export function BetsList(props: { user: User }) {
 
   const displayedContracts = filteredContracts.slice(start, end)
 
-  const unsettled = contracts.filter(
-    (c) => !c.isResolved && nullableMetricsByContract[c.id].invested !== 0
-  )
-
-  const currentInvested = sumBy(
-    unsettled,
-    (c) => nullableMetricsByContract[c.id].invested
-  )
-  const currentBetsValue = sumBy(
-    unsettled,
-    (c) => nullableMetricsByContract[c.id].payout
-  )
-  const currentLoan = sumBy(
-    unsettled,
-    (c) => nullableMetricsByContract[c.id].loan
-  )
-
-  const investedProfitPercent =
-    ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
-
   return (
     <Col>
       <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
-        <Row className="mr-2 gap-4">
-          <Col className={'shrink-0'}>
-            <div className="text-ink-600 text-xs sm:text-sm">
-              Investment value
-            </div>
-            <div className="text-lg">
-              {formatMoney(currentBetsValue)}{' '}
-              <ProfitBadge profitPercent={investedProfitPercent} />
-            </div>
-          </Col>
-          <Col className={'shrink-0'}>
-            <div className="text-ink-600 text-xs sm:text-sm">Total loans</div>
-            <div className="text-lg">{formatMoney(currentLoan)}</div>
-          </Col>
-
-          <AddFundsButton
-            userId={user.id}
-            className="ml-2 self-center sm:hidden"
-          />
-        </Row>
-
         <div className="flex grow gap-2 max-[480px]:flex-col">
           <Input
             placeholder="Search"
@@ -368,7 +326,11 @@ function ContractBets(props: {
   userId: string
 }) {
   const { metrics, displayMetric, isYourBets, userId } = props
-  const contract = useRealtimeContract(props.contract.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
   const { resolution, closeTime, outcomeType, isResolved } = contract
 
   const user = useUser()

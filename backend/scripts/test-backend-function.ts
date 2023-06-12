@@ -2,8 +2,10 @@ import { getLocalEnv, initAdmin } from 'shared/init-admin'
 initAdmin()
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import * as admin from 'firebase-admin'
+
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { createLeagueChangedNotification } from 'shared/create-notification'
+import { addContractToFeed } from 'shared/create-feed'
+import { getContract } from 'shared/utils'
 const firestore = admin.firestore()
 
 async function testScheduledFunction() {
@@ -11,12 +13,22 @@ async function testScheduledFunction() {
   await loadSecretsToEnv(credentials)
   try {
     const pg = createSupabaseDirectClient()
-    await createLeagueChangedNotification(
-      'lSzNB9votdcpfputrw1xWvVzp083',
-      { season: 2, division: 3, cohort: 'Oracular-dingdong' },
-      { season: 1, division: 4, cohort: 'Oracular-Pythias' },
-      10,
-      pg
+    // await addContractsWithLargeProbChangesToFeed()
+
+    const contract = await getContract('qGUa5xkW2XDoZdZebpfi')
+    if (!contract) throw new Error('Could not find contract')
+    await addContractToFeed(
+      contract,
+      [
+        'follow_user',
+        // 'similar_interest_vector_to_user',
+        // 'similar_interest_vector_to_contract',
+      ],
+      'new_contract',
+      [],
+      {
+        minUserInterestDistanceToContract: 0.5,
+      }
     )
   } catch (e) {
     console.error(e)

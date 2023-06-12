@@ -6,19 +6,14 @@ import { useEffect } from 'react'
 import { Bet } from 'common/bet'
 import { getBetsOnContracts } from 'web/lib/supabase/bets'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { ContractComment } from 'common/comment'
 
-export const useFeedComments = (
-  user: User | null | undefined,
-  contractIds: string[]
+export const groupCommentsByContractsAndParents = (
+  comments: ContractComment[]
 ) => {
-  const unseenCommentThreads = useUnseenReplyChainCommentsOnContracts(
-    contractIds,
-    user?.id ?? '_'
-  )
-
   // Grid cards make for huge, unwieldy comment threads
   const ignoredCommentTypes = ['gridCardsComponent']
-  const filteredUnseenCommentThreads = unseenCommentThreads.filter(
+  const filteredUnseenCommentThreads = comments.filter(
     (ct) =>
       !ct.content?.content?.some((c) =>
         ignoredCommentTypes.includes(c.type ?? '')
@@ -40,11 +35,21 @@ export const useFeedComments = (
     ),
     (c) => c.replyToCommentId
   )
-
   return {
     parentCommentsByContractId,
     childCommentsByParentCommentId,
   }
+}
+export const useFeedComments = (
+  user: User | null | undefined,
+  contractIds: string[]
+) => {
+  const unseenCommentThreads = useUnseenReplyChainCommentsOnContracts(
+    contractIds,
+    user?.id ?? '_'
+  )
+
+  return groupCommentsByContractsAndParents(unseenCommentThreads)
 }
 
 export const useFeedBets = (
@@ -60,7 +65,7 @@ export const useFeedBets = (
       getBetsOnContracts(contractIds, {
         afterTime: Date.now() - DAY_MS,
         filterAntes: true,
-        filterChallenges: true,
+        filterChallenges: false,
         filterRedemptions: true,
       }).then((result) => {
         if (user) result = result.filter((b) => b.userId !== user.id)

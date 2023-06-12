@@ -21,6 +21,7 @@ import { Dictionary } from 'lodash'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { buildOgUrl } from 'common/util/og'
 import { removeUndefinedProps } from 'common/util/object'
+import { Group } from 'common/group'
 
 export type PerContractInvestmentsData = {
   questionTitle: string
@@ -529,6 +530,46 @@ export const sendNewFollowedMarketEmail = async (
       questionTitle: contract.question,
       questionUrl: contractUrl(contract),
       questionImgSrc,
+    },
+    {
+      from: `${creatorName} on Manifold <no-reply@manifold.markets>`,
+    }
+  )
+}
+
+export const sendNewPrivateMarketEmail = async (
+  reason: notification_reason_types,
+  userId: string,
+  privateUser: PrivateUser,
+  contract: Contract,
+  group: Group
+) => {
+  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
+  if (!privateUser.email || !sendToEmail) return
+  const user = await getUser(privateUser.id)
+  if (!user) return
+
+  const { name } = user
+  const firstName = name.split(' ')[0]
+  const creatorName = contract.creatorName
+
+  const questionImgSrc = imageSourceUrl(contract)
+  console.log('questionImgSrc', questionImgSrc)
+  return await sendTemplateEmail(
+    privateUser.email,
+    `${creatorName} asked ${contract.question} in private group, ${group.name}`,
+    'new-market-from-private-group',
+    {
+      name: firstName,
+      creatorName,
+      unsubscribeUrl,
+      questionTitle: contract.question,
+      questionUrl: contractUrl(contract),
+      questionImgSrc,
+      groupName: group.name,
     },
     {
       from: `${creatorName} on Manifold <no-reply@manifold.markets>`,

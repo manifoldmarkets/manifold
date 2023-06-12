@@ -25,7 +25,7 @@ const pages: PageData[] = [
   { label: 'Charity', slug: '/charity', keywords: ['donate', 'for good'] },
   { label: 'Referrals', slug: '/referrals', keywords: ['invite', 'share'] },
   { label: 'Live feed', slug: '/live' },
-  { label: 'About & Help', slug: 'https://help.manifold.markets' },
+  { label: 'About', slug: '/about' },
   { label: 'Ads', slug: '/ad', keywords: ['advertisement'] },
 
   { label: 'Markets', slug: '/markets' },

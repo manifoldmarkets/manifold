@@ -124,7 +124,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
       </span>
       <MultiUserNotificationModal
         notification={notification}
-        modalLabel={'Unique traders'}
+        modalLabel={'Traders'}
         open={open}
         setOpen={setOpen}
       />
@@ -351,8 +351,9 @@ export function LeagueChangedNotification(props: {
   const { data } = notification
   const { previousLeague, newLeague, bonusAmount } = data as LeagueChangeData
   const newlyAdded = previousLeague === undefined
-  const improved =
+  const promoted =
     previousLeague && previousLeague.division < newLeague.division
+  const demoted = previousLeague && previousLeague.division > newLeague.division
   return (
     <NotificationFrame
       notification={notification}
@@ -361,7 +362,7 @@ export function LeagueChangedNotification(props: {
       setHighlighted={setHighlighted}
       icon={
         <NotificationIcon
-          symbol={newlyAdded ? '🏆' : improved ? '🥇' : '🥈'}
+          symbol={newlyAdded ? '🏆' : promoted ? '🥇' : '🥈'}
           symbolBackgroundClass={
             'bg-gradient-to-br from-primary-600 to-primary-300'
           }
@@ -371,23 +372,32 @@ export function LeagueChangedNotification(props: {
         bonusAmount > 0 ? (
           <span>
             You earned <IncomeNotificationLabel notification={notification} />{' '}
-            as a performance bonus!
+            as a prize
+            {previousLeague &&
+              ` for placing Rank ${previousLeague.rank} this season`}
+            .
           </span>
+        ) : previousLeague ? (
+          <span>You placed Rank {previousLeague.rank} this season.</span>
         ) : undefined
       }
       link={'/leagues'}
     >
       <div className="line-clamp-3">
         <span>
-          {previousLeague !== undefined && improved
-            ? `You graduated from the ${
+          {previousLeague && promoted
+            ? `You've been promoted from ${
                 DIVISION_NAMES[previousLeague.division]
-              } to ${DIVISION_NAMES[newLeague.division]} league`
-            : previousLeague !== undefined && !improved
-            ? `You've been demoted from the ${
+              } to ${DIVISION_NAMES[newLeague.division]} league!`
+            : previousLeague && demoted
+            ? `You've been demoted from ${
                 DIVISION_NAMES[previousLeague.division]
-              } to ${DIVISION_NAMES[newLeague.division]} league`
-            : `You were added to the ${
+              } to ${DIVISION_NAMES[newLeague.division]} league.`
+            : previousLeague
+            ? `You retained your spot in ${
+                DIVISION_NAMES[previousLeague.division]
+              } league!`
+            : `You were added to ${
                 DIVISION_NAMES[newLeague.division]
               } league! Tap here to check it out.`}
         </span>

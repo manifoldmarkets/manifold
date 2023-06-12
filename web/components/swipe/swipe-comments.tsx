@@ -3,7 +3,7 @@ import { ChatIcon } from '@heroicons/react/outline'
 import { ChatIcon as ChatIconSolid } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { Modal, MODAL_CLASS } from '../layout/modal'
+import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Col } from '../layout/col'
 import { useComments } from 'web/hooks/use-comments'
 import { CommentsTabContent } from '../contract/contract-tabs'
@@ -99,15 +99,11 @@ function CommentsDialog(props: {
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
   return (
-    <Modal
-      open={open}
-      setOpen={setOpen}
-      className={clsx(
-        MODAL_CLASS,
-        'pointer-events-auto max-h-[32rem] overflow-auto'
-      )}
-    >
-      <Col>
+    <Modal open={open} setOpen={setOpen} className={clsx(MODAL_CLASS)}>
+      <div className="mb-2">
+        Comments on <span className="font-bold">{contract.question}</span>
+      </div>
+      <Col className={SCROLLABLE_MODAL_CLASS}>
         <CommentsTabContent
           contract={contract}
           comments={comments}

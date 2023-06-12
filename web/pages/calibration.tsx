@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Dictionary, range } from 'lodash'
 import { axisBottom, axisRight } from 'd3-axis'
 import { scaleLinear } from 'd3-scale'
@@ -11,14 +12,21 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { SVGChart, formatPct } from 'web/components/charts/helpers'
 import { formatLargeNumber } from 'common/util/format'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { Linkify } from 'web/components/widgets/linkify'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { Spacer } from 'web/components/layout/spacer'
+
+const TRADER_THRESHOLD = 10
+const SAMPLING_P = 0.02
 
 export const getStaticProps = async () => {
-  const bets = await sampleResolvedBets(15, 0.02)
+  const bets = await sampleResolvedBets(TRADER_THRESHOLD, SAMPLING_P)
+  const n = bets?.length ?? 0
+  console.log('loaded', n, 'sampled bets')
 
   const buckets = getCalibrationPoints(bets ?? [])
   const points = !bets ? [] : getXY(buckets)
-  const score = !bets ? 0 : brierScore(buckets)
-  const n = bets?.length ?? 0
+  const score = !bets ? 0 : brierScore(bets)
 
   return {
     props: {
@@ -49,7 +57,7 @@ export default function CalibrationPage(props: {
         <Col className="max-w-[800px]">
           <Title>Platform calibration</Title>
 
-          <div>Manifold's overall track record.</div>
+          <div className="mb-4">Manifold's overall track record.</div>
 
           <div className="bg-canvas-0 relative max-w-[800px] rounded-md p-4 pr-12">
             <div className="absolute top-0 bottom-0 right-4 flex items-center">
@@ -79,12 +87,12 @@ export default function CalibrationPage(props: {
               </li>
 
               <li>
-                Methodology: Two percent of all past bets in public resolved
-                binary markets with 15 or more traders are sampled to get the
-                average probability before and after the bet. This probability
-                is then bucketed and used to compute the proportion of markets
-                that resolve YES. Sample size: {formatLargeNumber(n)} bets.
-                Updates every hour.
+                Methodology: {formatPct(SAMPLING_P)} of all past bets in public
+                resolved binary markets with {TRADER_THRESHOLD} or more traders
+                are sampled to get the average probability before and after the
+                bet. This probability is then bucketed and used to compute the
+                proportion of markets that resolve YES. Sample size:{' '}
+                {formatLargeNumber(n)} bets. Updates every hour.
               </li>
 
               <li>
@@ -95,13 +103,15 @@ export default function CalibrationPage(props: {
               </li>
 
               <li>
-                <InfoTooltip text="Mean squared error of forecasted probability compared to the final outcome.">
+                <InfoTooltip text="Mean squared error of forecasted probability compared to the true outcome.">
                   Brier score
                 </InfoTooltip>
                 : {Math.round(score * 1e5) / 1e5}
               </li>
             </ul>
           </div>
+
+          <WasabiCharts />
         </Col>
       </Col>
     </Page>
@@ -144,12 +154,67 @@ export function CalibrationChart(props: {
   const px = (p: Point) => xScale(p.x)
   const py = (p: Point) => yScale(p.y)
 
+  const [tooltip, setTooltip] = useState<Point | null>(null)
+
   return (
     <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} margin={margin}>
       {/* points */}
       {points.map((p, i) => (
-        <circle key={i} cx={px(p)} cy={py(p)} r={5} fill="indigo" />
+        <circle
+          key={i}
+          cx={px(p)}
+          cy={py(p)}
+          r={10}
+          fill="indigo"
+          onMouseEnter={() => setTooltip(p)}
+          onMouseLeave={() => setTooltip(null)}
+          style={{ cursor: 'pointer' }}
+        />
       ))}
+      {/* tooltip */}
+      {tooltip && (
+        <>
+          {tooltip.x > 0.9 ? (
+            <>
+              <rect
+                x={px(tooltip) - 110}
+                y={py(tooltip) - 10}
+                width={100}
+                height={20}
+                fill="white"
+                style={{ zIndex: 100 }}
+              />
+              <text
+                x={px(tooltip) - 60}
+                y={py(tooltip) + 5}
+                textAnchor="middle"
+                style={{ fill: 'blue', zIndex: 100 }}
+              >
+                ({formatPct(tooltip.x)}, {formatPct(tooltip.y)})
+              </text>
+            </>
+          ) : (
+            <>
+              <rect
+                x={px(tooltip) - 30}
+                y={py(tooltip) - 25}
+                width={100}
+                height={20}
+                fill="white"
+                style={{ zIndex: 100 }}
+              />
+              <text
+                x={px(tooltip)}
+                y={py(tooltip) - 10}
+                textAnchor="bottom"
+                style={{ fill: 'blue', zIndex: 100 }}
+              >
+                ({formatPct(tooltip.x)}, {formatPct(tooltip.y)})
+              </text>
+            </>
+          )}
+        </>
+      )}
       {/* line x = y */}
       <line
         x1={xScale(0)}
@@ -197,17 +262,14 @@ const getCalibrationPoints = (data: BetSample[]) => {
   return buckets
 }
 
-const brierScore = (buckets: { [key: number]: number }): number => {
-  const squaredErrors = Object.entries(buckets).map(([point, prob]) => {
-    const binaryProb = Number(point) / 100
-    const error = binaryProb - prob
-    return error * error
-  })
+const brierScore = (data: BetSample[]) => {
+  let total = 0
 
-  const meanSquaredError =
-    squaredErrors.reduce((sum, error) => sum + error, 0) / squaredErrors.length
-
-  return meanSquaredError
+  for (const { prob, is_yes } of data) {
+    const outcome = is_yes ? 1 : 0
+    total += (outcome - prob) ** 2
+  }
+  return !data.length ? 0 : total / data.length
 }
 
 const getXY = (probBuckets: Dictionary<number>) => {
@@ -220,4 +282,29 @@ const getXY = (probBuckets: Dictionary<number>) => {
   }
 
   return xy
+}
+
+export function WasabiCharts() {
+  return (
+    <>
+      <p className="text-ink-500 mt-8">
+        More charts courtesy of <Linkify text="@wasabipesto" />; originally
+        found{' '}
+        <SiteLink
+          className="font-bold"
+          href="https://wasabipesto.com/manifold/markets/"
+        >
+          here.
+        </SiteLink>
+      </p>
+      <Spacer h={4} />
+      <iframe
+        className="w-full border-0"
+        height={3750}
+        src="https://wasabipesto.com/manifold/markets/"
+        frameBorder="0"
+        allowFullScreen
+      />
+    </>
+  )
 }

@@ -1,7 +1,5 @@
 const API_DOCS_URL = 'https://docs.manifold.markets/api'
 
-const ABOUT_PAGE_URL = 'https://help.manifold.markets/'
-
 /** @type {import('next').NextConfig} */
 module.exports = {
   productionBrowserSourceMaps: true,
@@ -47,14 +45,24 @@ module.exports = {
         permanent: false,
       },
       {
-        source: '/about',
-        destination: ABOUT_PAGE_URL,
-        permanent: false,
-      },
-      {
         source: '/analytics',
         destination: '/stats',
         permanent: true,
+      },
+      {
+        source: '/labs',
+        destination: '/about',
+        permanent: true,
+      },
+      {
+        source: '/sitemap',
+        destination: '/about',
+        permanent: false,
+      },
+      {
+        source: '/versus',
+        destination: '/VersusBot?tab=markets',
+        permanent: false,
       },
       {
         source: '/privacy',

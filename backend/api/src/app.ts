@@ -45,7 +45,6 @@ import { redeemad } from './redeem-ad-reward'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
-import { createDebate } from './create-debate'
 import { auctionbid } from './auction-bid'
 import { supabasesearchcontracts } from './supabase-search-contract'
 import { deleteMarket } from './delete-market'
@@ -64,6 +63,7 @@ import { createQAndA } from './create-q-and-a'
 import { createQAndAAnswer } from './create-q-and-a-answer'
 import { awardQAndAAnswer } from './award-q-and-a-answer'
 import { createchatmessage } from 'api/create-chat-message'
+import { updatepost } from './update-post'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -125,6 +125,7 @@ app.post('/resolvemarket', ...apiRoute(resolvemarket))
 app.post('/closemarket', ...apiRoute(closemarket))
 app.post('/savetwitchcredentials', ...apiRoute(savetwitchcredentials))
 app.post('/createpost', ...apiRoute(createpost))
+app.post('/updatepost', ...apiRoute(updatepost))
 app.post('/validateIap', ...apiRoute(validateiap))
 app.post('/markallnotifications', ...apiRoute(markallnotifications))
 app.post('/updatememberrole', ...apiRoute(updatememberrole))
@@ -137,7 +138,6 @@ app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/redeemad', ...apiRoute(redeemad))
 app.post('/completequest', ...apiRoute(completequest))
 app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
-app.post('/create-debate', ...apiRoute(createDebate))
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
 app.post('/supabasesearchcontracts', ...apiRoute(supabasesearchcontracts))
 app.post('/delete-market', ...apiRoute(deleteMarket))

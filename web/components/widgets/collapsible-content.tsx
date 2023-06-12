@@ -106,6 +106,23 @@ function ActuallyCollapsibleContent(props: {
   )
   const [overrideCollaped, setOverrideCollaped] = useState(defaultCollapse)
   const isCollapsed = overrideCollaped ?? collapsed
+
+  const button = (
+    <ShowMoreLessButton
+      className="ml-2 bg-transparent"
+      onClick={() => {
+        if (!isCollapsed)
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+          })
+        setCollapsed(!isCollapsed)
+        setOverrideCollaped(!isCollapsed)
+      }}
+      isCollapsed={isCollapsed}
+    />
+  )
+
   return (
     <div>
       <div
@@ -115,6 +132,7 @@ function ActuallyCollapsibleContent(props: {
         )}
       >
         <div>
+          <Row className="justify-end">{button}</Row>
           <Content content={content} />
         </div>
         {isCollapsed && (
@@ -124,22 +142,7 @@ function ActuallyCollapsibleContent(props: {
             </div>
           </>
         )}
-      </div>
-      <div className="text-right">
-        {children}
-        <ShowMoreLessButton
-          className="ml-2 bg-transparent"
-          onClick={() => {
-            if (!isCollapsed)
-              window.scrollTo({
-                top: 0,
-                behavior: 'smooth',
-              })
-            setCollapsed(!isCollapsed)
-            setOverrideCollaped(!isCollapsed)
-          }}
-          isCollapsed={isCollapsed}
-        />
+        {!isCollapsed && <div className="text-right">{children}</div>}
       </div>
     </div>
   )

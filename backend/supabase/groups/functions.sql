@@ -39,3 +39,10 @@ begin
     return is_accessible;
 end;
 $$ language plpgsql immutable parallel safe;
+
+create
+or replace function get_group_contracts (this_group_id text) returns table (data JSON) immutable parallel safe language sql as $$
+select contracts.data from 
+    contracts join group_contracts on group_contracts.contract_id = contracts.id
+    where group_contracts.group_id = this_group_id 
+    $$;

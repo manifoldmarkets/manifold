@@ -36,14 +36,15 @@ export async function bulkUpdate<
 >(
   db: SupabaseDirectClient,
   table: T,
-  idField: string & keyof Row,
+  idFields: (string & keyof Row)[],
   values: ColumnValues[]
 ) {
   if (values.length) {
     const columnNames = Object.keys(values[0])
     const cs = new pgp.helpers.ColumnSet(columnNames, { table })
+    const clause = idFields.map((f) => `v.${f} = t.${f}`).join(' and ')
     const query =
-      pgp.helpers.update(values, cs) + ` WHERE v.${idField} = t.${idField}`
+      pgp.helpers.update(values, cs) + ` WHERE ${clause}`
     // Hack to properly cast jsonb values.
     const q = query.replace(/::jsonb'/g, "'::jsonb")
     await db.none(q)
@@ -69,4 +70,16 @@ export async function bulkUpsert<
   const upsertAssigns = cs.assignColumns({ from: 'excluded', skip: idField })
   const query = `${baseQueryReplaced} on conflict(${idField}) do update set ${upsertAssigns}`
   await db.none(query)
+}
+
+// Replacement for firebase updateDoc. Updates just the data field (what firebase would've replicated to)
+export async function updateData<
+  T extends TableName,
+  K extends Record<string, any>
+>(db: SupabaseDirectClient, table: T, id: string, data: Partial<K>) {
+  await db.none(`
+  update ${table}
+  set data = data || '${JSON.stringify(data)}'
+  where id = '${id}'
+`)
 }

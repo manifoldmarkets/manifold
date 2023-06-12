@@ -92,7 +92,7 @@ export function MemberTab(props: {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search members"
-        className={clsx('placeholder:text-ink-400 w-full')}
+        className={clsx('placeholder:text-ink-400 flex w-full flex-shrink-0')}
       />
       {query !== '' && (
         <SearchGroupMemberModalContent
@@ -312,24 +312,26 @@ export function MemberRoleHeader(props: {
 export function MemberRoleTag(props: {
   role: any | undefined
   isCreator: boolean
+  className?: string
 }) {
-  const { role, isCreator } = props
+  const { role, isCreator, className } = props
   if (!role) {
     return <></>
   }
   return (
-    <div
+    <span
       className={clsx(
         'text-ink-0 h-min w-full rounded px-1 py-0.5 text-xs font-semibold',
         isCreator
           ? 'bg-primary-400'
           : role === 'admin'
           ? 'bg-primary-300'
-          : 'bg-ink-300'
+          : 'bg-ink-300',
+        className
       )}
     >
       {isCreator ? 'CREATOR' : `${role.toLocaleUpperCase()}`}
-    </div>
+    </span>
   )
 }
 

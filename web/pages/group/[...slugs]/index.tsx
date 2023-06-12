@@ -10,10 +10,8 @@ import { SEO } from 'web/components/SEO'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
 import Custom404, { Custom404Content } from '../../404'
-
 import { ArrowLeftIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { GroupComment } from 'common/comment'
 import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { BETTORS, PrivateUser } from 'common/user'
@@ -41,12 +39,10 @@ import {
 } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { usePosts } from 'web/hooks/use-post'
 import { useRealtimePost } from 'web/hooks/use-post-supabase'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { listPosts } from 'web/lib/firebase/posts'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
-import { getPost } from 'web/lib/supabase/post'
+import { getPost, getPosts } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
@@ -61,7 +57,6 @@ type GroupParams = {
   creator: User | null
   topTraders: { user: User; score: number }[]
   topCreators: { user: User; score: number }[]
-  messages: GroupComment[] | null
   aboutPost: Post | null
   posts: Post[]
 }
@@ -99,8 +94,8 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
       ? await getPost(group.aboutPostId)
       : null
 
-    const posts = ((group && (await listPosts(group.postIds))) ?? []).filter(
-      (p) => p != null
+    const posts = (await getPosts(group.postIds ?? [])).filter(
+      (p) => p.id !== group.aboutPostId
     ) as Post[]
     return {
       props: {
@@ -182,7 +177,8 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const user = useUser()
   const isManifoldAdmin = useAdmin()
   const group = useGroupFromSlug(slugs[0]) ?? groupParams?.group
-  const userRole = useRealtimeRole(group?.id)
+  const realtimeRole = useRealtimeRole(group?.id)
+  const userRole = isManifoldAdmin ? 'admin' : realtimeRole
   const isMobile = useIsMobile()
   const privateUser = usePrivateUser()
   const [writingNewAbout, setWritingNewAbout] = useState(false)
@@ -190,7 +186,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
   const aboutPost =
     useRealtimePost(group?.aboutPostId) ?? groupParams?.aboutPost
-  const groupPosts = usePosts(group?.postIds ?? []) ?? groupParams?.posts ?? []
+  const groupPosts = groupParams?.posts ?? []
   const creator = useGroupCreator(group) ?? groupParams?.creator
   const topTraders =
     useToTopUsers((group && group.cachedLeaderboard?.topTraders) ?? []) ??
@@ -231,10 +227,16 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     setDefaultMemberTab(MEMBER_INVITE_INDEX)
     setOpenMemberModal(true)
   }
-
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
   return (
     <>
+      {!realtimeRole && isManifoldAdmin && (
+        <Row className="fixed top-14 z-50 w-full justify-end sm:top-0 lg:left-0 lg:justify-center">
+          <div className="rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500 lg:ml-[47rem]">
+            ADMIN
+          </div>
+        </Row>
+      )}
       <AddContractButton
         group={group}
         user={user}
@@ -262,7 +264,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
             key={group.id}
           />
         </div>
-        <Col className="bg-canvas-0 absolute bottom-0 w-full bg-opacity-80 px-4">
+        <Col className="bg-canvas-0 absolute bottom-0 w-full bg-opacity-90 px-4">
           <Row className="mt-4 mb-2 w-full justify-between gap-1">
             <div className="text-ink-900 text-2xl font-normal sm:text-3xl">
               {group.name}
@@ -293,7 +295,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
           <Row className="mb-2 gap-4">
             <GroupMembersWidget
               group={group}
-              canEdit={isManifoldAdmin || userRole === 'admin'}
+              canEdit={userRole === 'admin'}
               onMemberClick={onMemberClick}
               open={openMemberModal}
               setOpen={setOpenMemberModal}

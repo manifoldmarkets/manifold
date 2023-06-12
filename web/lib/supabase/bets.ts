@@ -93,7 +93,10 @@ export const getUserBetsFromResolvedContracts = async (
   }) as [Contract, LimitBet[]][]
 }
 
-export const sampleResolvedBets = async (trader_threshold = 50, p = 0.01) => {
+export const sampleResolvedBets = async (
+  trader_threshold: number,
+  p: number
+) => {
   const { data } = await db.rpc('sample_resolved_bets' as any, {
     trader_threshold,
     p,

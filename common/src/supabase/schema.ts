@@ -661,16 +661,16 @@ export interface Database {
           comment_id: string
           created_time: string | null
           data: Json
-          fs_updated_time: string
+          fs_updated_time: string | null
           post_id: string
           user_id: string | null
           visibility: string | null
         }
         Insert: {
-          comment_id: string
+          comment_id?: string
           created_time?: string | null
           data: Json
-          fs_updated_time: string
+          fs_updated_time?: string | null
           post_id: string
           user_id?: string | null
           visibility?: string | null
@@ -679,7 +679,7 @@ export interface Database {
           comment_id?: string
           created_time?: string | null
           data?: Json
-          fs_updated_time?: string
+          fs_updated_time?: string | null
           post_id?: string
           user_id?: string | null
           visibility?: string | null
@@ -690,7 +690,7 @@ export interface Database {
           created_time: string | null
           creator_id: string | null
           data: Json
-          fs_updated_time: string
+          fs_updated_time: string | null
           group_id: string | null
           id: string
           visibility: string | null
@@ -699,16 +699,16 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data: Json
-          fs_updated_time: string
+          fs_updated_time?: string | null
           group_id?: string | null
-          id: string
+          id?: string
           visibility?: string | null
         }
         Update: {
           created_time?: string | null
           creator_id?: string | null
           data?: Json
-          fs_updated_time?: string
+          fs_updated_time?: string | null
           group_id?: string | null
           id?: string
           visibility?: string | null
@@ -772,6 +772,20 @@ export interface Database {
           user_id?: string
         }
       }
+      stats: {
+        Row: {
+          daily_values: number[] | null
+          title: string
+        }
+        Insert: {
+          daily_values?: number[] | null
+          title: string
+        }
+        Update: {
+          daily_values?: number[] | null
+          title?: string
+        }
+      }
       tombstones: {
         Row: {
           doc_id: string
@@ -798,17 +812,17 @@ export interface Database {
       topic_embeddings: {
         Row: {
           created_at: string
-          embedding: number[]
+          embedding: string
           topic: string
         }
         Insert: {
           created_at?: string
-          embedding: number[]
+          embedding: string
           topic: string
         }
         Update: {
           created_at?: string
-          embedding?: number[]
+          embedding?: string
           topic?: string
         }
       }
@@ -920,6 +934,65 @@ export interface Database {
           name?: string
           ts?: string | null
           user_id?: string | null
+        }
+      }
+      user_feed: {
+        Row: {
+          answer_id: string | null
+          bet_id: string | null
+          comment_id: string | null
+          contract_id: string | null
+          created_time: string
+          creator_id: string | null
+          data: Json | null
+          data_type: string
+          event_time: string
+          group_id: string | null
+          id: number
+          idempotency_key: string | null
+          news_id: string | null
+          reaction_id: string | null
+          reason: string
+          seen_time: string | null
+          user_id: string
+        }
+        Insert: {
+          answer_id?: string | null
+          bet_id?: string | null
+          comment_id?: string | null
+          contract_id?: string | null
+          created_time?: string
+          creator_id?: string | null
+          data?: Json | null
+          data_type: string
+          event_time: string
+          group_id?: string | null
+          id?: never
+          idempotency_key?: string | null
+          news_id?: string | null
+          reaction_id?: string | null
+          reason: string
+          seen_time?: string | null
+          user_id: string
+        }
+        Update: {
+          answer_id?: string | null
+          bet_id?: string | null
+          comment_id?: string | null
+          contract_id?: string | null
+          created_time?: string
+          creator_id?: string | null
+          data?: Json | null
+          data_type?: string
+          event_time?: string
+          group_id?: string | null
+          id?: never
+          idempotency_key?: string | null
+          news_id?: string | null
+          reaction_id?: string | null
+          reason?: string
+          seen_time?: string | null
+          user_id?: string
         }
       }
       user_follows: {
@@ -1083,19 +1156,19 @@ export interface Database {
       user_topics: {
         Row: {
           created_at: string
-          topic_embedding: number[]
+          topic_embedding: string
           topics: string[]
           user_id: string
         }
         Insert: {
           created_at?: string
-          topic_embedding: number[]
+          topic_embedding: string
           topics: string[]
           user_id: string
         }
         Update: {
           created_at?: string
-          topic_embedding?: number[]
+          topic_embedding?: string
           topics?: string[]
           user_id?: string
         }
@@ -1671,33 +1744,6 @@ export interface Database {
         }
         Returns: string
       }
-      blah: {
-        Args: {
-          input_contract_id: string
-          similarity_threshold: number
-          match_count: number
-        }
-        Returns: {
-          data: Json
-        }[]
-      }
-      build_tsquery_with_prefix: {
-        Args: {
-          search_config: unknown
-          search_term: string
-        }
-        Returns: Record<string, unknown>
-      }
-      build_tsquery_with_prefix2: {
-        Args: {
-          p_config: unknown
-          p_query: string
-        }
-        Returns: {
-          exact_tsquery: unknown
-          prefix_tsquery: unknown
-        }[]
-      }
       can_access_private_contract: {
         Args: {
           this_contract_id: string
@@ -1915,6 +1961,14 @@ export interface Database {
         }
         Returns: string
       }
+      get_group_contracts: {
+        Args: {
+          this_group_id: string
+        }
+        Returns: {
+          data: Json
+        }[]
+      }
       get_last_week_long_link: {
         Args: {
           this_group_id: string
@@ -1994,7 +2048,7 @@ export interface Database {
       get_recommended_contracts_embeddings_from: {
         Args: {
           uid: string
-          p_embedding: number[]
+          p_embedding: string
           n: number
           excluded_contract_ids: string[]
           max_dist: number
@@ -2145,6 +2199,16 @@ export interface Database {
         }
         Returns: unknown
       }
+      get_reply_chain_comments_for_comment_ids: {
+        Args: {
+          comment_ids: string[]
+        }
+        Returns: {
+          id: string
+          contract_id: string
+          data: Json
+        }[]
+      }
       get_reply_chain_comments_matching_contracts: {
         Args: {
           contract_ids: string[]
@@ -2161,30 +2225,6 @@ export interface Database {
         Returns: number
       }
       get_top_market_ads: {
-        Args: {
-          uid: string
-        }
-        Returns: {
-          ad_id: string
-          market_id: string
-          ad_funds: number
-          ad_cost_per_view: number
-          market_data: Json
-        }[]
-      }
-      get_top_market_ads2: {
-        Args: {
-          uid: string
-        }
-        Returns: {
-          ad_id: string
-          market_id: string
-          ad_funds: number
-          ad_cost_per_view: number
-          market_data: Json
-        }[]
-      }
-      get_top_market_ads3: {
         Args: {
           uid: string
         }
@@ -2347,6 +2387,12 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_admin: {
+        Args: {
+          input_string: string
+        }
+        Returns: boolean
+      }
       is_group_admin: {
         Args: {
           this_group_id: string
@@ -2358,6 +2404,13 @@ export interface Database {
         Args: {
           this_group_id: string
           this_user_id: string
+        }
+        Returns: boolean
+      }
+      is_private_contract_member: {
+        Args: {
+          this_contract_id: string
+          this_member_id: string
         }
         Returns: boolean
       }
@@ -2420,6 +2473,16 @@ export interface Database {
         Returns: {
           id: number
           succeeded: boolean
+        }[]
+      }
+      sample_resolved_bets: {
+        Args: {
+          trader_threshold: number
+          p: number
+        }
+        Returns: {
+          prob: number
+          is_yes: boolean
         }[]
       }
       save_user_topics: {
@@ -2526,19 +2589,6 @@ export interface Database {
           username: string | null
         }[]
       }
-      search_users2: {
-        Args: {
-          query: string
-          count: number
-        }
-        Returns: {
-          data: Json
-          fs_updated_time: string
-          id: string
-          name_username_vector: unknown | null
-          username: string | null
-        }[]
-      }
       set_limit: {
         Args: {
           '': number
@@ -2603,6 +2653,37 @@ export interface Database {
           n: number
         }[]
       }
+      top_news:
+        | {
+            Args: {
+              uid: string
+            }
+            Returns: {
+              title: string
+              description: string
+            }[]
+          }
+        | {
+            Args: {
+              uid: string
+              similarity: number
+            }
+            Returns: {
+              title: string
+              description: string
+            }[]
+          }
+        | {
+            Args: {
+              uid: string
+              similarity: number
+              n: number
+            }
+            Returns: {
+              title: string
+              description: string
+            }[]
+          }
       ts_to_millis:
         | {
             Args: {
@@ -2616,6 +2697,26 @@ export interface Database {
             }
             Returns: number
           }
+      user_top_news: {
+        Args: {
+          uid: string
+          similarity: number
+          n: number
+        }
+        Returns: {
+          id: number
+          created_time: string
+          title: string
+          url: string
+          published_time: string
+          author: string
+          description: string
+          image_url: string
+          source_id: string
+          source_name: string
+          contract_ids: string[]
+        }[]
+      }
       vector_avg: {
         Args: {
           '': number[]

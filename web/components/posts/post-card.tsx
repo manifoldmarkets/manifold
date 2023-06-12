@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { Post } from 'common/post'
 import Link from 'next/link'
-import { postPath } from 'web/lib/firebase/posts'
+import { postPath } from 'web/lib/supabase/post'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../widgets/avatar'
 import { Card } from '../widgets/card'
@@ -42,9 +42,10 @@ export function PostCard(props: {
               name={post.creatorName}
               username={post.creatorUsername}
             />
-            <span className="text-ink-400 mx-1">•</span>
-            <span className="text-ink-400">{fromNow(post.createdTime)}</span>
           </Row>
+          <span className="text-ink-400 text-sm">
+            Created {fromNow(post.createdTime)}
+          </span>
           {pinned && <FeaturedPill label={post.featuredLabel} />}
         </Row>
         <div className="text-md text-ink-900 mb-1 font-medium">
@@ -54,12 +55,6 @@ export function PostCard(props: {
           className="line-clamp-5 text-ink-600 text-sm"
           text={richTextToString(post.content)}
         />
-        <Row className="gap-2 pt-1">
-          <Row className="text-ink-400 gap-1 text-sm">
-            <div className="font-semibold">{post.commentCount ?? 0}</div>
-            <div className="font-normal">comments</div>
-          </Row>
-        </Row>
       </Col>
       {onPostClick ? (
         <a

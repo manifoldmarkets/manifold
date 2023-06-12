@@ -152,8 +152,8 @@ export const LikeButton = memo(function LikeButton(props: {
                   'text-ink-0 absolute rounded-full text-center',
                   size === 'md' &&
                     '-bottom-1.5 -right-1.5 min-w-[15px] p-[1.5px] text-[10px] leading-3',
-                  // size === 'xl' &&
-                  //   'bottom-0 right-0 min-w-[24px] p-0.5 text-sm',
+                  size === 'xl' &&
+                    'bottom-0 right-0 min-w-[24px] p-0.5 text-sm',
                   color === 'white' && 'text-white'
                 )}
               >
@@ -180,6 +180,7 @@ export const LikeButton = memo(function LikeButton(props: {
           user={user}
           userLiked={liked}
           setOpen={setModalOpen}
+          titleName={contentText}
         />
       )}
       {showTotalLikesUnder && totalLikes > 0 && (
@@ -226,8 +227,9 @@ function UserLikedFullList(props: {
   user?: User | null
   userLiked?: boolean
   setOpen: (isOpen: boolean) => void
+  titleName?: string
 }) {
-  const { contentType, contentId, user, userLiked, setOpen } = props
+  const { contentType, contentId, user, userLiked, setOpen, titleName } = props
   const reacts = useLikesOnContent(contentType, contentId)
   const displayInfos = reacts
     ? getLikeDisplayList(reacts, user, userLiked)
@@ -236,9 +238,18 @@ function UserLikedFullList(props: {
   return (
     <MultiUserTransactionModal
       userInfos={displayInfos}
-      modalLabel={`💖 Liked this ${
-        contentType === 'contract' ? 'market' : contentType
-      }`}
+      modalLabel={
+        <span>
+          💖 Liked{' '}
+          <span className="font-bold">
+            {titleName
+              ? titleName
+              : contentType === 'contract'
+              ? 'this market'
+              : `this ${contentType}`}
+          </span>
+        </span>
+      }
       open={true}
       setOpen={setOpen}
       short={true}

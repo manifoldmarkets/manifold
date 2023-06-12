@@ -9,13 +9,13 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useGroupsWithContract } from 'web/hooks/use-group'
 import {
   addContractToGroup,
   removeContractFromGroup,
 } from 'web/lib/firebase/api'
 import { GroupLinkItem } from 'web/pages/groups'
 import { GroupSelector } from './group-selector'
+import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
 
 export function ContractGroupsList(props: {
@@ -61,7 +61,7 @@ export function ContractGroupsList(props: {
                 <span
                   key={groupLink.groupId}
                   className={clsx(
-                    'bg-ink-600 text-ink-0 hover:bg-primary-600 group relative rounded-full p-1 px-4 text-sm transition-colors'
+                    'text-ink-1000 bg-ink-100 hover:bg-ink-200 group relative rounded-full p-1 px-4 text-sm transition-colors'
                   )}
                 >
                   <GroupLinkItem group={groupLink} />

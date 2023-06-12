@@ -1,10 +1,9 @@
-import { getDateDoc } from 'web/lib/firebase/posts'
+import { getDateDoc } from 'web/lib/supabase/post'
 import { ArrowLeftIcon, LinkIcon } from '@heroicons/react/outline'
 import { Page } from 'web/components/layout/page'
 import dayjs from 'dayjs'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
-
 import { DateDoc } from 'common/post'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -18,10 +17,12 @@ import { track } from 'web/lib/service/analytics'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { useUser } from 'web/hooks/use-user'
 import { PostCommentsActivity, RichEditPost } from '../post/[slug]/index'
-import { usePost } from 'web/hooks/use-post'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
-import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { NoSEO } from 'web/components/NoSEO'
+import { usePost } from 'web/hooks/use-post-supabase'
+import { getCommentsOnPost } from 'web/lib/supabase/comments'
+import { PostComment } from 'common/comment'
+import { useRealtimePostComments } from 'web/hooks/use-comments-supabase'
 
 export async function getStaticProps(props: { params: { username: string } }) {
   const { username } = props.params
@@ -30,10 +31,13 @@ export async function getStaticProps(props: { params: { username: string } }) {
     post: null,
   }
 
+  const comments = post && (await getCommentsOnPost(post.id))
+
   return {
     props: {
       creator,
       post,
+      comments,
     },
     revalidate: 5, // regenerate after five seconds
   }
@@ -46,19 +50,25 @@ export async function getStaticPaths() {
 export default function DateDocPageHelper(props: {
   creator: User | null
   post: DateDoc | null
+  comments?: PostComment[]
 }) {
-  const { creator, post } = props
+  const { creator, post, comments = [] } = props
 
   if (!creator || !post) return <Custom404 />
 
-  return <DateDocPage creator={creator} post={post} />
+  return <DateDocPage creator={creator} post={post} comments={comments} />
 }
 
-function DateDocPage(props: { creator: User; post: DateDoc }) {
+function DateDocPage(props: {
+  creator: User
+  post: DateDoc
+  comments: PostComment[]
+}) {
   const { creator, post } = props
 
   const tips = useTipTxns({ postId: post.id })
-  const comments = useCommentsOnPost(post.id) ?? []
+
+  const comments = useRealtimePostComments(post.id) || props.comments
 
   return (
     <Page>

@@ -648,11 +648,9 @@ where contracts.resolution_time is not null
 limit count offset start $$;
 
 create or replace function sample_resolved_bets(trader_threshold int, p numeric) 
-returns table (contract_id text, bet_id text, prob numeric, is_yes boolean) 
+returns table (prob numeric, is_yes boolean) 
 stable parallel safe language sql as $$
-select contract_id, 
-       contract_bets.bet_id as bet_id, 
-       0.5 * ((contract_bets.data->>'probBefore')::numeric + (contract_bets.data->>'probAfter')::numeric)  as prob, 
+select  0.5 * ((contract_bets.data->>'probBefore')::numeric + (contract_bets.data->>'probAfter')::numeric)  as prob, 
        ((contracts.data->>'resolution')::text = 'YES')::boolean as is_yes
 from contract_bets
   join contracts on contracts.id = contract_bets.contract_id
@@ -870,7 +868,8 @@ unredeemed_market_ads as (
   from
     market_ads
   where 
-    NOT EXISTS (
+    market_ads.user_id != uid -- hide your own ads; comment out to debug
+    and not exists (
       SELECT 1
       FROM redeemed_ad_ids
       WHERE fromId = market_ads.id
@@ -913,6 +912,37 @@ where
   contracts.resolution_time is null
   and contracts.close_time > now()
 $$;
+
+
+CREATE OR REPLACE FUNCTION user_top_news(uid TEXT, similarity numeric, n numeric)
+RETURNS TABLE (
+  id numeric,
+    created_time timestamp,
+    title text,
+    url text,
+    published_time timestamp,
+    author text,
+    description text,
+    image_url text,
+    source_id text,
+    source_name text,
+    contract_ids text[]
+) AS $$
+with 
+user_embedding as (
+  select interest_embedding
+  from user_embeddings
+  where user_id = uid
+)
+  SELECT
+    id, created_time, title, url, published_time, author, description, image_url, source_id, source_name, contract_ids
+  FROM
+    news
+  where
+    1 - (title_embedding <=> (select interest_embedding from user_embedding)) > similarity
+  ORDER BY published_time DESC
+  LIMIT n;
+$$ LANGUAGE SQL;
 
 create
 or replace function save_user_topics (p_user_id text, p_topics text[]) returns void language sql as $$ with chosen_embedding as (

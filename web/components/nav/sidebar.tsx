@@ -4,13 +4,13 @@ import {
   HomeIcon,
   LogoutIcon,
   ScaleIcon,
-  MapIcon,
   MoonIcon,
   SunIcon,
   SparklesIcon,
   StarIcon,
   UserGroupIcon,
   FireIcon,
+  QuestionMarkCircleIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -34,6 +34,7 @@ import { ProfileSummary } from './profile-menu'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
 import { getIsNative } from 'web/lib/native/is-native'
+import { NewspaperIcon } from '@heroicons/react/solid'
 
 export default function Sidebar(props: {
   className?: string
@@ -152,6 +153,7 @@ const getMobileNav = (toggleModal: () => void) => {
     { name: 'Markets', href: '/markets', icon: ScaleIcon },
     getIsNative() && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    { name: 'News', href: '/news', icon: NewspaperIcon },
     {
       name: 'Groups',
       icon: UserGroupIcon,
@@ -182,6 +184,6 @@ const bottomNav = (
           : SparklesIcon,
       onClick: toggleTheme,
     },
-    { name: 'Sitemap', href: '/sitemap', icon: MapIcon },
+    { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )

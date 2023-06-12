@@ -14,6 +14,7 @@ import { AD_RATE_LIMIT } from 'common/boost'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
+import { Post } from 'common/post'
 
 export async function call(url: string, method: string, params?: any) {
   const user = auth.currentUser
@@ -147,6 +148,14 @@ export function createPost(params: {
   return call(getApiUrl('createpost'), 'POST', params)
 }
 
+export function updatePost(
+  params: {
+    id: string
+  } & Partial<Post>
+) {
+  return call(getApiUrl('updatepost'), 'POST', params)
+}
+
 export function boostMarket(params: any) {
   return call(getApiUrl('boost-market'), 'POST', params)
 }
@@ -256,10 +265,6 @@ export function getSupabaseToken() {
 
 export function updateUserEmbedding(params: { userId: string }) {
   return call(getApiUrl('update-user-embedding'), 'POST', params)
-}
-
-export function createDebate(params: { topic1: string; topic2: string }) {
-  return call(getApiUrl('create-debate'), 'POST', params) as Promise<Contract>
 }
 
 export function createCommentOnContract(params: {

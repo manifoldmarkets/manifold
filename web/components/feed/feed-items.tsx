@@ -1,6 +1,6 @@
 import { Contract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
-import { ContractCardNew } from 'web/components/contract/contract-card'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import {
   useFeedBets,
   useFeedComments,
@@ -75,17 +75,18 @@ export const FeedItems = (props: {
           <Col
             key={contract.id + 'feed'}
             className={
-              'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
+              'border-ink-200 hover:border-ink-400 my-2 overflow-y-hidden rounded-xl border'
             }
           >
-            <ContractCardNew
+            <FeedContractCard
               contract={contract}
               className={clsx(
                 'my-0 border-0',
-                hasItems ? 'rounded-t-xl rounded-b-none  ' : ''
+                hasItems ? 'rounded-t-xl rounded-b-none' : ''
               )}
               promotedData={promotedData}
               trackingPostfix="feed"
+              hasItems={hasItems}
             />
             <Row className="bg-canvas-0">
               <FeedCommentItem
@@ -110,7 +111,7 @@ export const FeedItems = (props: {
 }
 
 // every period items in A, insert an item from B
-function mergePeriodic<A, B>(a: A[], b: B[], period: number): (A | B)[] {
+export function mergePeriodic<A, B>(a: A[], b: B[], period: number): (A | B)[] {
   const merged = []
   let j = 0
   for (let i = 0; i < a.length; ++i) {

@@ -212,7 +212,7 @@ export function PortfolioValueSkeleton(props: {
     <>
       <Row
         className={clsx(
-          'mb-1 items-start gap-2 sm:mb-2',
+          'mb-1 items-start gap-0 sm:mb-2',
           placement === 'bottom' ? 'ml-2 gap-8' : ''
         )}
       >
@@ -242,7 +242,7 @@ export function PortfolioValueSkeleton(props: {
             track('Trading Profits Clicked')
           }}
         >
-          <div className="text-ink-600 text-xs sm:text-sm">Trading profits</div>
+          <div className="text-ink-600 text-xs sm:text-sm">Profit</div>
           {profitElement}
         </Col>
 
@@ -258,11 +258,14 @@ export function PortfolioValueSkeleton(props: {
             track('Graph Balance Clicked')
           }}
         >
-          <div className="text-ink-600 text-xs sm:text-sm">Cash balance</div>
+          <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
           {balanceElement}
         </Col>
 
-        <AddFundsButton userId={userId} className="self-center max-sm:hidden" />
+        <AddFundsButton
+          userId={userId}
+          className=" self-center whitespace-nowrap"
+        />
 
         {!placement && !hideSwitcher && (
           <TimeRangePicker

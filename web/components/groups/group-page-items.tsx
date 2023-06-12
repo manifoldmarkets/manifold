@@ -1,7 +1,7 @@
 import { UserGroupIcon } from '@heroicons/react/solid'
 import { Group } from 'common/group'
 import { useState } from 'react'
-import { useRealtimeNumGroupMembers } from 'web/hooks/use-group-supabase'
+import { usePollingNumGroupMembers } from 'web/hooks/use-group-supabase'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { GroupMemberModalContent } from './group-member-modal'
@@ -53,7 +53,7 @@ export function GroupMembersWidget(props: {
   defaultTab: 0 | 1
 }) {
   const { group, canEdit, onMemberClick, open, setOpen, defaultTab } = props
-  const numMembers = useRealtimeNumGroupMembers(group.id)
+  const numMembers = usePollingNumGroupMembers(group.id)
   return (
     <>
       <button onClick={onMemberClick}>

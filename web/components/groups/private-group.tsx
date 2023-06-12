@@ -1,6 +1,7 @@
 import { LockClosedIcon } from '@heroicons/react/solid'
 import Lottie from 'react-lottie'
-import { useIsGroupMember } from 'web/hooks/use-group'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useIsGroupMember } from 'web/hooks/use-group-supabase'
 import { GroupPageContent } from 'web/pages/group/[...slugs]'
 import * as unlocking from '../../public/lottie/unlocking-icon.json'
 import { Col } from '../layout/col'
@@ -44,11 +45,12 @@ export function InaccessiblePrivateThing(props: { thing: string }) {
 
 export function PrivateGroupPage(props: { slugs: string[] }) {
   const { slugs } = props
+  const isManifoldAdmin = useAdmin()
   const isMember = useIsGroupMember(slugs[0])
   if (isMember === undefined) {
     return <LoadingPrivateThing />
   }
-  if (isMember === false) {
+  if (isMember === false && !isManifoldAdmin) {
     return <InaccessiblePrivateThing thing="group" />
   }
   return <GroupPageContent />

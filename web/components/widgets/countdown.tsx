@@ -7,6 +7,8 @@ export function Countdown(props: { endDate: Date; className?: string }) {
 
   const [countdown, setCountdown] = useState('')
   useEffect(() => {
+    setCountdown(getCountdownString(endDate))
+
     const intervalId = setInterval(() => {
       setCountdown(getCountdownString(endDate))
     }, 1000)

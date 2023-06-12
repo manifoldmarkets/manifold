@@ -18,7 +18,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useComments } from 'web/hooks/use-comments'
 import { useEvent } from 'web/hooks/use-event'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
@@ -44,6 +43,7 @@ import { ControlledTabs } from '../layout/tabs'
 import { CertInfo, CertTrades } from './cert-overview'
 import { QfTrades } from './qf-overview'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 
 export const EMPTY_USER = '_'
 
@@ -73,6 +73,10 @@ export function ContractTabs(props: {
     userPositionsByOutcome,
     shareholderStats,
   } = props
+  const betsWithoutAntes = useMemo(
+    () => bets.filter((bet) => !bet.isAnte),
+    [bets]
+  )
   const comments = useMemo(
     () =>
       props.comments.filter(
@@ -94,14 +98,12 @@ export function ContractTabs(props: {
 
   const user = useUser()
 
-  const userBets = useRealtimeBets(
-    {
+  const userBets =
+    useRealtimeBets({
       contractId: contract.id,
       userId: user === undefined ? 'loading' : user?.id ?? EMPTY_USER,
       filterAntes: true,
-    },
-    true
-  )
+    }) ?? []
 
   const betsTitle =
     totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`
@@ -162,7 +164,7 @@ export function ContractTabs(props: {
             <Col className={'gap-4'}>
               <BetsTabContent
                 contract={contract}
-                bets={bets}
+                bets={betsWithoutAntes}
                 setReplyToBet={setReplyToBet}
               />
             </Col>
@@ -337,25 +339,20 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
 })
 
-const BetsTabContent = memo(function BetsTabContent(props: {
+export const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract
   bets: Bet[]
   setReplyToBet?: (bet: Bet) => void
+  scrollToTop?: boolean
 }) {
-  const { contract, setReplyToBet } = props
-  const [bets, setBets] = useState(() => props.bets.filter((b) => !b.isAnte))
+  const { contract, setReplyToBet, scrollToTop = true } = props
+  const [olderBets, setOlderBets] = useState<Bet[]>([])
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
+  const bets = [...props.bets, ...olderBets]
   const oldestBet = last(bets)
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
-
-  useEffect(() => {
-    const newBets = props.bets.filter(
-      (b) => b.createdTime > (bets[0]?.createdTime ?? 0)
-    )
-    if (newBets.length > 0) setBets([...newBets, ...bets])
-  }, [props.bets])
 
   const lps = useLiquidity(contract.id) ?? []
   const visibleLps = lps.filter(
@@ -394,7 +391,8 @@ const BetsTabContent = memo(function BetsTabContent(props: {
     if (!shouldLoadMore) return
     getOlderBets(contract.id, oldestBetTime, limit)
       .then((olderBets) => {
-        setBets((bets) => [...bets, ...olderBets])
+        const filteredBets = olderBets.filter((bet) => !bet.isAnte)
+        setOlderBets((bets) => [...bets, ...filteredBets])
       })
       .catch((err) => {
         console.error(err)
@@ -434,7 +432,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
         itemsPerPage={ITEMS_PER_PAGE}
         totalItems={totalItems}
         setPage={setPage}
-        UNSAFE_scrollToTop
+        UNSAFE_scrollToTop={scrollToTop}
       />
     </>
   )

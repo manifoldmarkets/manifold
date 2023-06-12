@@ -1,6 +1,5 @@
 import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
 import {
-  DotsCircleHorizontalIcon,
   FireIcon,
   LockClosedIcon,
   PencilIcon,
@@ -21,16 +20,18 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { linkClass } from 'web/components/widgets/site-link'
-import {
-  getGroupLinksToDisplay,
-  getGroupLinkToDisplay,
-} from 'web/lib/firebase/groups'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { GroupLink, groupPath } from 'common/group'
+import {
+  GroupLink,
+  getGroupLinkToDisplay,
+  getGroupLinksToDisplay,
+  groupPath,
+} from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
+import { IoEllipsisHorizontal } from 'react-icons/io5'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -179,25 +180,47 @@ export function CloseOrResolveTime(props: {
   } else return <></>
 }
 
-function PublicMarketGroups(props: { contract: Contract }) {
+export function PublicMarketGroups(props: {
+  contract: Contract
+  className?: string
+  justGroups?: boolean
+}) {
   const [open, setOpen] = useState(false)
   const user = useUser()
-  const { contract } = props
+  const { contract, className, justGroups } = props
   const groupsToDisplay = getGroupLinksToDisplay(contract)
 
   return (
     <>
-      <Row className="w-full flex-wrap items-end gap-1">
+      <Row
+        className={clsx(
+          'w-full flex-wrap items-end gap-1',
+          (!groupsToDisplay || groupsToDisplay.length == 0) && justGroups
+            ? 'hidden'
+            : '',
+          className
+        )}
+      >
         {groupsToDisplay.map((group) => (
           <GroupDisplay key={group.groupId} groupToDisplay={group} />
         ))}
 
         {user && (
-          <button onClick={() => setOpen(true)}>
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setOpen(true)
+            }}
+          >
             {groupsToDisplay.length ? (
-              <DotsCircleHorizontalIcon className="text-ink-400 hover:text-ink-400/75 h-6" />
+              <IoEllipsisHorizontal className="text-ink-1000 bg-ink-100 hover:bg-ink-200 h-6 w-6 rounded-full bg-opacity-90 px-1" />
             ) : (
-              <span className="bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-sm">
+              <span
+                className={clsx(
+                  'bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-sm'
+                )}
+              >
                 <PlusIcon className="mr-1 h-4 w-4" /> Group
               </span>
             )}
@@ -224,10 +247,18 @@ function GroupDisplay(props: {
   const { groupToDisplay, isPrivate } = props
 
   return (
-    <Link prefetch={false} href={groupPath(groupToDisplay.slug)} legacyBehavior>
+    <Link
+      prefetch={false}
+      href={groupPath(groupToDisplay.slug)}
+      legacyBehavior
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+      }}
+    >
       <a
         className={clsx(
-          'w-fit max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-sm sm:max-w-[250px]',
+          'text-ink-1000 bg-ink-100 hover:bg-ink-200 w-fit max-w-[200px] truncate whitespace-nowrap rounded-full bg-opacity-90 py-0.5 px-2 text-sm sm:max-w-[250px]',
           isPrivate
             ? 'text-ink-1000 bg-indigo-200 dark:bg-indigo-700'
             : 'bg-ink-400 text-ink-0'

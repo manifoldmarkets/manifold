@@ -64,17 +64,17 @@ const config = {
           src: 'https://manifold.markets/logo.svg',
         },
         items: [
-          {
-            type: 'doc',
-            docId: 'about',
-            position: 'left',
-            label: 'Docs',
-          },
-          {
-            href: 'https://github.com/manifoldmarkets/manifold/tree/main/docs/docs',
-            label: 'GitHub',
-            position: 'right',
-          },
+          // {
+          //   type: 'doc',
+          //   docId: 'api',
+          //   position: 'left',
+          //   label: 'Docs',
+          // },
+          // {
+          //   href: 'https://github.com/manifoldmarkets/manifold/tree/main/docs/docs',
+          //   label: 'GitHub',
+          //   position: 'right',
+          // },
         ],
       },
       footer: {

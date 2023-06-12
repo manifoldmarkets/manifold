@@ -12,7 +12,7 @@ export const pollNews = functions
     timeoutSeconds: 540,
     secrets,
   })
-  .pubsub.schedule('every 60 minutes')
+  .pubsub.schedule('every 5 minutes')
   .onRun(async () => {
     const pg = createSupabaseDirectClient()
     const db = createSupabaseClient()
