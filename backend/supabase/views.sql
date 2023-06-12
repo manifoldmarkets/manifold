@@ -109,6 +109,7 @@ create or replace view
       gp.name as group_name,
       gp.slug as group_slug,
       gp.creator_id as creator_id,
+      gp.total_members as total_members,
       users.data ->> 'name' as name,
       users.username as username,
       users.data ->> 'avatarUrl' as avatar_url,

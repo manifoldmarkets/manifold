@@ -33,32 +33,6 @@ export const onDeleteGroupContract = functions.firestore
         })
   })
 
-export const onCreateGroupMember = functions.firestore
-  .document('groups/{groupId}/groupMembers/{memberId}')
-  .onCreate(async (change) => {
-    const groupId = change.ref.parent.parent?.id
-    if (groupId)
-      await firestore
-        .collection('groups')
-        .doc(groupId)
-        .update({
-          totalMembers: admin.firestore.FieldValue.increment(1),
-        })
-  })
-
-export const onDeleteGroupMember = functions.firestore
-  .document('groups/{groupId}/groupMembers/{memberId}')
-  .onDelete(async (change) => {
-    const groupId = change.ref.parent.parent?.id
-    if (groupId)
-      await firestore
-        .collection('groups')
-        .doc(groupId)
-        .update({
-          totalMembers: admin.firestore.FieldValue.increment(-1),
-        })
-  })
-
 export async function removeGroupLinks(group: Group, contractIds: string[]) {
   for (const contractId of contractIds) {
     const contract = await getContract(contractId)

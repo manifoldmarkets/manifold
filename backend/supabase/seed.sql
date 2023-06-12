@@ -710,7 +710,7 @@ create table if not exists
     name text,
     name_fts tsvector generated always as (to_tsvector('english'::regconfig, name)) stored,
     creator_id text,
-    total_members numeric
+    total_members numeric default 0
   );
 
 alter table groups enable row level security;
