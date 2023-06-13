@@ -21,7 +21,7 @@ import {
   OUTCOME_TYPES,
   VISIBILITIES,
 } from 'common/contract'
-import { ANTES } from 'common/economy'
+import { getAnte } from 'common/economy'
 import { isAdmin, isManifoldId, isTrustworthy } from 'common/envs/constants'
 import { Group, GroupLink, MAX_ID_LENGTH } from 'common/group'
 import { getNewContract } from 'common/new-contract'
@@ -71,7 +71,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
   const contractRef = firestore.collection('contracts').doc()
 
-  const ante = ANTES[outcomeType]
+  const ante = getAnte(outcomeType, answers?.length)
 
   const closeTimestamp = await getCloseTimestamp(closeTime, question, utcOffset)
 
