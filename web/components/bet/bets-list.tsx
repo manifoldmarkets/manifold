@@ -318,7 +318,7 @@ function UserBetsTable(props: {
       -(
         metricsByContractId[c.id].payout +
         (filter === 'limit_bet'
-          ? sum(openLimitBetsByContract[c.id].map((b) => b.amount))
+          ? sum(openLimitBetsByContract[c.id].map((b) => b.orderAmount))
           : 0)
       ),
     newest: (c) =>
