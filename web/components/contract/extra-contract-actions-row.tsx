@@ -14,18 +14,19 @@ import { DotsVerticalIcon } from '@heroicons/react/solid'
 export function ExtraContractActionsRow(props: {
   contract: Contract
   children?: ReactNode
+  className?: string
 }) {
-  const { contract, children } = props
+  const { contract, children, className } = props
   const user = useUser()
   const privateUser = usePrivateUser()
   const [dialogOpen, setDialogOpen] = useState(false)
   const hasCoverImage = !!contract.coverImageUrl
 
   return (
-    <Row>
+    <Row className={className}>
       {children}
 
-      <div className={clsx('flex items-center [&>div]:pr-2')}>
+      <div className={'flex items-center [&>div]:pr-2'}>
         <LikeButton
           user={user}
           contract={contract}

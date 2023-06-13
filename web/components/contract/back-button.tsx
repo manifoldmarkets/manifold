@@ -28,7 +28,9 @@ export function BackButton(props: { hasCoverImage?: boolean }) {
   if (!canGoBack) return <div />
   return (
     <button
-      className={clsx('flex text-white transition-colors lg:hidden')}
+      className={clsx(
+        'text-ink-500 hover:text-ink-600 flex transition-colors lg:hidden'
+      )}
       onClick={router.back}
     >
       <ArrowLeftIcon className="h-4 w-4" aria-hidden />

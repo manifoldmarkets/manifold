@@ -289,8 +289,6 @@ export function ContractPageContent(props: {
     observer.observe(element)
     return () => observer.unobserve(element)
   }, [titleRef])
-
-  console.log(headerStuck)
   return (
     <>
       {creatorTwitter && (
@@ -334,21 +332,36 @@ export function ContractPageContent(props: {
                 />
               </div>
             )}
-            <div
+            <Row
               className={clsx(
-                'sticky -top-px z-50 mt-px flex w-full justify-between py-2 px-4 transition-colors',
-                headerStuck ? 'bg-black/50 backdrop-blur-2xl' : ''
+                'sticky -top-px z-50 mt-px flex h-12 w-full justify-between py-2 px-4 transition-colors',
+                headerStuck
+                  ? coverImageUrl
+                    ? 'dark:bg-canvas-50/80 bg-white/80'
+                    : 'bg-canvas-50'
+                  : ''
               )}
             >
-              <div className="mr-4 flex items-center truncate">
-                <BackButton hasCoverImage={!!coverImageUrl} />
-
-                {headerStuck && (
-                  <span className="ml-4 text-white">{contract.question}</span>
+              <Row>
+                {(headerStuck || !coverImageUrl) && (
+                  <Col className="my-auto">
+                    <BackButton hasCoverImage={!!coverImageUrl} />
+                  </Col>
                 )}
-              </div>
-              {headerStuck && (
-                <ExtraContractActionsRow contract={contract}>
+                {headerStuck && (
+                  <div className="mr-4 flex items-center truncate">
+                    <span className="text-ink-1000 ml-4">
+                      {contract.question}
+                    </span>
+                  </div>
+                )}
+              </Row>
+
+              {(headerStuck || !coverImageUrl) && (
+                <ExtraContractActionsRow
+                  contract={contract}
+                  className={clsx(!headerStuck ? 'lg:hidden' : '')}
+                >
                   {!coverImageUrl && isCreator && (
                     <ChangeBannerButton
                       contract={contract}
@@ -357,21 +370,39 @@ export function ContractPageContent(props: {
                   )}
                 </ExtraContractActionsRow>
               )}
-            </div>
+            </Row>
           </div>
           <Col
             className={clsx(
-              'mb-4 p-4 md:px-8 md:pb-8',
-              !!coverImageUrl ? '' : '-mt-4'
+              'mb-4 p-4 pt-0 md:pb-8 lg:px-8',
+              coverImageUrl ? 'pt-4' : ''
             )}
           >
-            <Col className="gap-3 sm:gap-4">
-              <Row ref={titleRef} className="justify-between">
+            <Col className="w-full gap-3 lg:gap-4">
+              {/* {!coverImageUrl && (
+                <Row className="-my-3 w-full justify-between lg:hidden">
+                  <Col className="my-auto">
+                    <BackButton hasCoverImage={!!coverImageUrl} />
+                  </Col>
+                  <ExtraContractActionsRow
+                    contract={contract}
+                    className={clsx(!headerStuck ? 'lg:hidden' : '')}
+                  >
+                    {!coverImageUrl && isCreator && (
+                      <ChangeBannerButton
+                        contract={contract}
+                        className="ml-3 first:ml-0"
+                      />
+                    )}
+                  </ExtraContractActionsRow>
+                </Row>
+              )} */}
+              <Row className="w-full justify-between" ref={titleRef}>
                 <TitleOrEdit
                   contract={contract}
                   canEdit={isAdmin || isCreator}
                 />
-                <Col className="justify-start">
+                <Col className="hidden justify-start lg:inline">
                   <ExtraContractActionsRow contract={contract}>
                     {!coverImageUrl && isCreator && (
                       <ChangeBannerButton
