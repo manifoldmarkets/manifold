@@ -53,7 +53,11 @@ export function SellRow(props: {
             className="!py-1"
             size="xs"
             color="gray-outline"
-            onClick={() => setShowSellModal(true)}
+            onClick={(e) => {
+              setShowSellModal(true)
+              // Necessary in the profile page to prevent the row from being toggled
+              e.stopPropagation()
+            }}
           >
             Sell
           </Button>
