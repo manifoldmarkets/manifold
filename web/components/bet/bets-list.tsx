@@ -402,7 +402,6 @@ function UserBetsTable(props: {
           </Row>
         </Header>
       ),
-      id: 'question',
       renderCell: (q: Contract) => (
         <Col>
           <SiteLink
@@ -432,7 +431,6 @@ function UserBetsTable(props: {
     },
     {
       header: <Header id="probChangeDay">1d%</Header>,
-      id: 'probChangeDay',
       renderCell: (c: Contract) => {
         let change: string | undefined
         if (c.mechanism === 'cpmm-1') {
@@ -450,17 +448,14 @@ function UserBetsTable(props: {
     },
     {
       header: <Header id="value">Value</Header>,
-      id: 'value',
       renderCell: (n: number) => <Cell num={n} />,
     },
     {
       header: <Header id="profit">All</Header>,
-      id: 'profit',
       renderCell: (n: number) => <Cell num={n} change={true} />,
     },
     {
       header: <Header id="day">1d</Header>,
-      id: 'day',
       renderCell: (n: number) => <Cell num={n} change={true} />,
     },
   ]
@@ -511,7 +506,7 @@ function UserBetsTable(props: {
         >
           {columns.map((c, i) => (
             <span
-              key={c.id}
+              key={c.header.props.id}
               className={clsx(
                 i == 0
                   ? 'col-span-8'
@@ -535,6 +530,7 @@ function UserBetsTable(props: {
           ) as LimitBet[]
           return (
             <Row
+              key={contract.id + 'bets-table-row'}
               className={
                 'border-ink-300 hover:bg-canvas-100 cursor-pointer border-b py-2'
               }
@@ -553,13 +549,13 @@ function UserBetsTable(props: {
                           ? 'col-span-3'
                           : 'col-span-2'
                       )}
-                      key={c.id + contract.id + 'row'}
+                      key={c.header.props.id + contract.id + 'row'}
                     >
                       {c.renderCell(d[i] as any)}
                     </span>
                   ))}
                 </Row>
-                <Row key={contract.id + 'bets-table'}>
+                <Row>
                   {expandedIds.includes(contract.id) ? (
                     bets === undefined ? (
                       <Col className={'w-full items-center justify-center'}>
