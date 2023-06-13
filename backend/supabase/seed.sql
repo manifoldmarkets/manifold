@@ -859,6 +859,12 @@ create policy "public read" on post_comments for
 select
   using (true);
 
+drop policy if exists "user can insert" on post_comments;
+
+create policy "user can insert" on post_comments for insert
+with
+  check (true);
+
 create index if not exists post_comments_data_gin on post_comments using GIN (data);
 
 alter table post_comments
