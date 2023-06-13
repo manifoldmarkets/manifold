@@ -289,6 +289,7 @@ export function ContractPageContent(props: {
     observer.observe(element)
     return () => observer.unobserve(element)
   }, [titleRef])
+  console.log('coverImageUrl', coverImageUrl, !coverImageUrl)
   return (
     <>
       {creatorTwitter && (
@@ -334,7 +335,7 @@ export function ContractPageContent(props: {
             )}
             <Row
               className={clsx(
-                'sticky -top-px z-50 mt-px flex h-12 w-full justify-between py-2 px-4 transition-colors',
+                ' sticky -top-px z-50 mt-px flex h-12 w-full py-2 px-4 transition-colors',
                 headerStuck
                   ? coverImageUrl
                     ? 'dark:bg-canvas-50/80 bg-white/80'
@@ -342,18 +343,16 @@ export function ContractPageContent(props: {
                   : ''
               )}
             >
-              <Row>
+              <Row className=" mr-4 grow">
                 {(headerStuck || !coverImageUrl) && (
                   <Col className="my-auto">
                     <BackButton hasCoverImage={!!coverImageUrl} />
                   </Col>
                 )}
                 {headerStuck && (
-                  <div className="mr-4 flex items-center truncate">
-                    <span className="text-ink-1000 ml-4">
-                      {contract.question}
-                    </span>
-                  </div>
+                  <span className="text-ink-1000 ml-4 mt-1 w-full min-w-0 overflow-hidden break-all">
+                    {contract.question}
+                  </span>
                 )}
               </Row>
 
@@ -379,7 +378,7 @@ export function ContractPageContent(props: {
             )}
           >
             <Col className="w-full gap-3 lg:gap-4">
-              {/* {!coverImageUrl && (
+              {coverImageUrl && (
                 <Row className="-my-3 w-full justify-between lg:hidden">
                   <Col className="my-auto">
                     <BackButton hasCoverImage={!!coverImageUrl} />
@@ -396,7 +395,7 @@ export function ContractPageContent(props: {
                     )}
                   </ExtraContractActionsRow>
                 </Row>
-              )} */}
+              )}
               <Row className="w-full justify-between" ref={titleRef}>
                 <TitleOrEdit
                   contract={contract}
