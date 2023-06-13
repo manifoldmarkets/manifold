@@ -27,9 +27,7 @@ export function BackButton() {
   if (!canGoBack) return <div />
   return (
     <button
-      className={clsx(
-        'text-ink-500 hover:text-ink-600 flex transition-colors lg:hidden'
-      )}
+      className={clsx('text-ink-500 hover:text-ink-600 flex transition-colors')}
       onClick={router.back}
     >
       <ArrowLeftIcon className="h-4 w-4" aria-hidden />
