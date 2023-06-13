@@ -1,4 +1,4 @@
-import { CPMMContract } from 'common/contract'
+import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
@@ -14,7 +14,7 @@ import { Title } from '../widgets/title'
 import { ENV_CONFIG } from 'common/envs/constants'
 
 export function LiquidityModal(props: {
-  contract: CPMMContract
+  contract: CPMMContract | CPMMMultiContract
   isOpen: boolean
   setOpen: (open: boolean) => void
 }) {
@@ -27,13 +27,13 @@ export function LiquidityModal(props: {
         <Title className="!mb-2" children="💧 Add liquidity" />
 
         <div>Total liquidity subsidies: {formatMoney(totalLiquidity)}</div>
-        <AddLiquidityPanel contract={contract as CPMMContract} />
+        <AddLiquidityPanel contract={contract} />
       </Col>
     </Modal>
   )
 }
 
-function AddLiquidityPanel(props: { contract: CPMMContract }) {
+function AddLiquidityPanel(props: { contract: CPMMContract | CPMMMultiContract }) {
   const { contract } = props
   const { id: contractId, slug } = contract
 

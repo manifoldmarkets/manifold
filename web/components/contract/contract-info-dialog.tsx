@@ -175,7 +175,7 @@ export const Stats = (props: {
         <tr>
           <td>Liquidity subsidies</td>
           <td>
-            {mechanism === 'cpmm-1'
+            {mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
               ? `${formatMoney(
                   contract.totalLiquidity - contract.subsidyPool
                 )} / ${formatMoney(contract.totalLiquidity)}`
@@ -318,7 +318,8 @@ export function ContractInfoDialog(props: {
                       color="indigo-outline"
                     />
 
-                    {contract.mechanism === 'cpmm-1' && (
+                    {(contract.mechanism === 'cpmm-1' ||
+                      contract.mechanism === 'cpmm-multi-1') && (
                       <AddLiquidityButton contract={contract} />
                     )}
 
