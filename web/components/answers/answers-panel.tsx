@@ -244,7 +244,9 @@ function OpenAnswer(props: {
   const prob =
     'prob' in answer ? answer.prob : getOutcomeProbability(contract, answer.id)
   const probPercent = formatPercent(prob)
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(undefined)
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
+    undefined
+  )
   const colorWidth = 100 * Math.max(prob, 0.01)
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
   const isDpm = contract.mechanism === 'dpm-2'
