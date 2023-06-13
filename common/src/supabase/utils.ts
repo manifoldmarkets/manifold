@@ -55,7 +55,6 @@ export const subcollectionTables: SubcollectionTableMapping = {
   },
   groups: {
     groupContracts: 'group_contracts',
-    groupMembers: 'group_members',
   },
 }
 
