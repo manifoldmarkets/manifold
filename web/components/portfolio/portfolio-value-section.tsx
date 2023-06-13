@@ -18,9 +18,13 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
 
 export const PortfolioValueSection = memo(
-  function PortfolioValueSection(props: { userId: string }) {
-    const { userId } = props
-    const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('daily')
+  function PortfolioValueSection(props: {
+    userId: string
+    defaultTimePeriod: Period
+  }) {
+    const { userId, defaultTimePeriod } = props
+    const [currentTimePeriod, setCurrentTimePeriod] =
+      useState<Period>(defaultTimePeriod)
     const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
     const [graphMode, setGraphMode] = useState<GraphMode>('profit')
     const graphPoints = useMemo(

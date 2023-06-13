@@ -312,7 +312,10 @@ export function UserProfile(props: {
                 content: (
                   <>
                     <Spacer h={4} />
-                    <PortfolioValueSection userId={user.id} />
+                    <PortfolioValueSection
+                      userId={user.id}
+                      defaultTimePeriod={isCurrentUser ? 'daily' : 'allTime'}
+                    />
                     <Spacer h={4} />
                     <BetsList user={user} />
                   </>
