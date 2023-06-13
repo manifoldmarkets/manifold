@@ -1203,7 +1203,6 @@ begin
            when 'contract_liquidity' then cast(('contract_id', 'liquidity_id') as table_spec)
            when 'groups' then cast((null, 'id') as table_spec)
            when 'group_contracts' then cast(('group_id', 'contract_id') as table_spec)
-           when 'group_members' then cast(('group_id', 'member_id') as table_spec)
            when 'txns' then cast((null, 'id') as table_spec)
            when 'manalinks' then cast((null, 'id') as table_spec)
            when 'user_contract_metrics' then cast(('user_id', 'contract_id') as table_spec)

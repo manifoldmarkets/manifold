@@ -100,7 +100,9 @@ create or replace view
       popularity_score desc
   );
 
-create or replace view
+drop view if exists group_role;
+
+create view
   group_role as (
     select
       member_id,

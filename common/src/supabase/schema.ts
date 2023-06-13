@@ -484,24 +484,24 @@ export interface Database {
       group_members: {
         Row: {
           created_time: string | null
-          data: Json
-          fs_updated_time: string
+          data: Json | null
+          fs_updated_time: string | null
           group_id: string
           member_id: string
           role: string | null
         }
         Insert: {
           created_time?: string | null
-          data: Json
-          fs_updated_time: string
+          data?: Json | null
+          fs_updated_time?: string | null
           group_id: string
           member_id: string
           role?: string | null
         }
         Update: {
           created_time?: string | null
-          data?: Json
-          fs_updated_time?: string
+          data?: Json | null
+          fs_updated_time?: string | null
           group_id?: string
           member_id?: string
           role?: string | null
@@ -1471,6 +1471,7 @@ export interface Database {
           name: string | null
           privacy_status: string | null
           role: string | null
+          total_members: number | null
           username: string | null
         }
         Relationships: []
