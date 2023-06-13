@@ -417,7 +417,11 @@ function UserBetsTable(props: {
               )}
               contract={q}
             />
-            <UserLink name={q.creatorName} username={q.creatorUsername} />
+            <UserLink
+              className={'text-ink-500 text-sm'}
+              name={q.creatorName}
+              username={q.creatorUsername}
+            />
           </Row>
         </Col>
       ),
