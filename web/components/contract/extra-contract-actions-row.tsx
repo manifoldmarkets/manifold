@@ -1,15 +1,14 @@
-import { Row } from '../layout/row'
-import { Contract } from 'web/lib/firebase/contracts'
-import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
+import { DotsVerticalIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { getShareUrl } from 'common/util/share'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
-import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import { ReactNode, useState } from 'react'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { Contract } from 'web/lib/firebase/contracts'
+import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
-import clsx from 'clsx'
-import { DotsVerticalIcon } from '@heroicons/react/solid'
 
 export function ExtraContractActionsRow(props: {
   contract: Contract

@@ -9,9 +9,8 @@ import { Linkify } from '../widgets/linkify'
 export const TitleOrEdit = (props: {
   contract: Contract
   canEdit?: boolean
-  className?: string
 }) => {
-  const { contract, canEdit, className } = props
+  const { contract, canEdit } = props
 
   const [isEditing, setEditing] = useState(false)
   const [text, setText] = useState(props.contract.question)
@@ -62,7 +61,7 @@ export const TitleOrEdit = (props: {
       />
       {canEdit && (
         <button onClick={edit} className="ml-1 p-1">
-          <PencilIcon className=" h-4 w-4" />
+          <PencilIcon className=" text-ink-500 hover:text-ink-600 h-4 w-4" />
         </button>
       )}
     </span>

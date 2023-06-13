@@ -289,7 +289,6 @@ export function ContractPageContent(props: {
     observer.observe(element)
     return () => observer.unobserve(element)
   }, [titleRef])
-  console.log('coverImageUrl', coverImageUrl, !coverImageUrl)
   return (
     <>
       {creatorTwitter && (
@@ -342,7 +341,7 @@ export function ContractPageContent(props: {
               <Row className=" mr-4 grow">
                 {(headerStuck || !coverImageUrl) && (
                   <Col className="my-auto">
-                    <BackButton hasCoverImage={!!coverImageUrl} />
+                    <BackButton />
                   </Col>
                 )}
                 {headerStuck && (
@@ -372,9 +371,9 @@ export function ContractPageContent(props: {
           >
             <Col className="w-full gap-3 lg:gap-4">
               {coverImageUrl && (
-                <Row className="-my-3 w-full justify-between">
+                <Row className=" w-full justify-between">
                   <Col className="my-auto">
-                    <BackButton hasCoverImage={!!coverImageUrl} />
+                    <BackButton />
                   </Col>
                   <ExtraContractActionsRow contract={contract}>
                     {!coverImageUrl && isCreator && (
@@ -386,7 +385,7 @@ export function ContractPageContent(props: {
                   </ExtraContractActionsRow>
                 </Row>
               )}
-              <div ref={titleRef}>
+              <div ref={titleRef} className="-my-3">
                 <TitleOrEdit
                   contract={contract}
                   canEdit={isAdmin || isCreator}
