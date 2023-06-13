@@ -144,7 +144,7 @@ export const CHECK_USERNAMES = [
   'Tetraspace',
   'BoltonBailey',
   'MatthewBarnett',
-  'JacyAnthis',
+  'Jacy',
   'Gabrielle',
   'CGPGrey',
   'KatjaGrace',
