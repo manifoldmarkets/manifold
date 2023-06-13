@@ -75,7 +75,7 @@ export const FeedItems = (props: {
           <Col
             key={contract.id + 'feed'}
             className={
-              'border-ink-200 hover:border-ink-400 my-2 overflow-y-hidden rounded-xl border'
+              ' hover:border-ink-400 my-2 overflow-y-hidden rounded-xl'
             }
           >
             <FeedContractCard
@@ -168,13 +168,13 @@ const FeedCommentItem = (props: {
           className={'relative w-full'}
           key={ct.parentComment.id + 'feed-thread'}
         >
-          {index === 0 && firstCommentIsReplyToBet ? (
+          {/* {index === 0 && firstCommentIsReplyToBet ? (
             <div />
           ) : index !== commentThreads.length - 1 ? (
             <div className="border-ink-200 b-[50%] absolute top-0 ml-7 h-[100%] border-l-2" />
           ) : (
             <div className="border-ink-200 absolute top-0 ml-7 h-3 border-l-2" />
-          )}
+          )} */}
 
           <Col className={'w-full p-3'}>
             <FeedCommentThread
@@ -183,6 +183,7 @@ const FeedCommentItem = (props: {
               parentComment={ct.parentComment}
               collapseMiddle={true}
               trackingLocation={'feed'}
+              inTimeline={true}
             />
           </Col>
         </Row>

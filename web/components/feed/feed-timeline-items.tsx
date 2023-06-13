@@ -86,6 +86,13 @@ export const FeedTimelineItems = (props: {
             adId: item.ad_id,
             reward: AD_REDEEM_REWARD,
           }
+
+          console.log(
+            contract.question,
+            hasRelatedItems,
+            parentComments,
+            relatedBets
+          )
           return (
             <FeedItemFrame
               item={undefined}
@@ -97,21 +104,24 @@ export const FeedTimelineItems = (props: {
                 trackingPostfix="feed"
                 hasItems={hasRelatedItems}
               />
-              <FeedRelatedItemFrame>
-                <FeedCommentItem
-                  contract={contract}
-                  commentThreads={parentComments.map((parentComment) => ({
-                    parentComment,
-                    childComments:
-                      childCommentsByParentCommentId[parentComment.id] ?? [],
-                  }))}
-                />
-              </FeedRelatedItemFrame>
-              <Row className="bg-canvas-0 rounded-xl">
-                {parentComments.length === 0 && (
-                  <FeedBetsItem contract={contract} bets={relatedBets} />
+              {parentComments.length !== 0 && (
+                <FeedRelatedItemFrame>
+                  <FeedCommentItem
+                    contract={contract}
+                    commentThreads={parentComments.map((parentComment) => ({
+                      parentComment,
+                      childComments:
+                        childCommentsByParentCommentId[parentComment.id] ?? [],
+                    }))}
+                  />
+                </FeedRelatedItemFrame>
+              )}
+              {(!parentComments || parentComments.length === 0) &&
+                relatedBets.length > 0 && (
+                  <FeedRelatedItemFrame>
+                    <FeedBetsItem contract={contract} bets={relatedBets} />
+                  </FeedRelatedItemFrame>
                 )}
-              </Row>
             </FeedItemFrame>
           )
         }
@@ -186,7 +196,7 @@ function FeedRelatedItemFrame(props: {
 }) {
   const { children, className } = props
   return (
-    <Row className="bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 -mt-4 rounded-2xl border">
+    <Row className="bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 mb-4 -mt-4 rounded-2xl border">
       {children}
     </Row>
   )
@@ -227,6 +237,7 @@ const FeedBetsItem = (props: { contract: Contract; bets: Bet[] }) => {
   const groupedBetsByTime = groupBetsByCreatedTimeAndUserId(bets).filter(
     (bets) => sumBy(bets, (bet) => Math.abs(bet.amount)) > MIN_BET_AMOUNT
   )
+  console.log(contract.question, 'groupedBetsByTime', groupedBetsByTime)
   return (
     <Col>
       {groupedBetsByTime.map((bets, index) => (
@@ -263,14 +274,14 @@ const FeedCommentItem = (props: {
           className={'relative w-full'}
           key={ct.parentComment.id + 'feed-thread'}
         >
-          {index === 0 && firstCommentIsReplyToBet ? (
+          {/* {index === 0 && firstCommentIsReplyToBet ? (
             <div />
           ) : index !== commentThreads.length - 1 ? (
             <div className="border-ink-200 b-[50%] absolute top-0 ml-7 h-[100%] border-l-2" />
           ) : (
             // <div className="border-ink-200 absolute top-0 ml-7 h-3 border-l-2" />
             <></>
-          )}
+          )} */}
 
           <Col className={'w-full p-3'}>
             <FeedCommentThread

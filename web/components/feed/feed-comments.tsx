@@ -537,12 +537,7 @@ function FeedCommentHeader(props: {
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
-    <div
-      className={clsx(
-        'mt-0.5 flex flex-wrap text-sm',
-        inTimeline ? 'flex flex-col' : 'text-ink-600 flex-row items-end '
-      )}
-    >
+    <Col className={clsx('mt-1 text-sm ', inTimeline ? '' : 'text-ink-600')}>
       <Row className="justify-between">
         <span>
           <UserLink
@@ -550,31 +545,30 @@ function FeedCommentHeader(props: {
             name={userName}
             marketCreator={marketCreator}
           />
+          {bettorUsername == undefined && !inTimeline && (
+            <span className="text-ink-400 ml-1">
+              <CommentStatus contract={contract} comment={comment} />
+              {bought} {money}
+              {shouldDisplayOutcome && (
+                <>
+                  {' '}
+                  of{' '}
+                  <OutcomeLabel
+                    outcome={betOutcome ? betOutcome : ''}
+                    contract={contract}
+                    truncate="short"
+                  />
+                </>
+              )}
+            </span>
+          )}
           {inTimeline && <span> commented</span>}
         </span>
         <DotMenu comment={comment} contract={contract} />
       </Row>
       {/* Hide my status if replying to a bet, it's too much clutter*/}
-      {bettorUsername == undefined && !inTimeline && (
-        <span className="text-ink-400 ml-1">
-          <CommentStatus contract={contract} comment={comment} />
-          {bought} {money}
-          {shouldDisplayOutcome && (
-            <>
-              {' '}
-              of{' '}
-              <OutcomeLabel
-                outcome={betOutcome ? betOutcome : ''}
-                contract={contract}
-                truncate="short"
-              />
-            </>
-          )}
-        </span>
-      )}
       {<div className="text-ink-500">{fromNow(createdTime)}</div>}
-      {!inTimeline && <DotMenu comment={comment} contract={contract} />}
-    </div>
+    </Col>
   )
 }
 
