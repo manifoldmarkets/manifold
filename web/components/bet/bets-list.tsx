@@ -548,6 +548,7 @@ function UserBetsTable(props: {
               className={
                 'border-ink-300 hover:bg-canvas-100 cursor-pointer border-b py-2'
               }
+              onClick={() => setNewExpandedId(contract.id)}
             >
               <Col className={'w-full'}>
                 {/* Contract title*/}
@@ -555,10 +556,7 @@ function UserBetsTable(props: {
                   {columns[0].renderCell(d[0] as any)}
                 </Row>
                 {/* Contract Metrics details*/}
-                <Row
-                  className={'grid-cols-16 mt-1 grid w-full pt-2'}
-                  onClick={() => setNewExpandedId(contract.id)}
-                >
+                <Row className={'grid-cols-16 mt-1 grid w-full pt-2'}>
                   {columns.slice(1).map((c, i) => (
                     <span
                       className={clsx(getColSpan(i + 1))}
