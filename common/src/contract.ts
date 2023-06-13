@@ -290,6 +290,14 @@ export function contractPool(contract: Contract) {
     ? formatMoney(getLiquidity(contract.pool))
     : contract.mechanism === 'dpm-2'
     ? formatMoney(sum(Object.values(contract.pool)))
+    : contract.mechanism === 'cpmm-multi-1'
+    ? formatMoney(
+        sum(
+          contract.answers.map((a) =>
+            getLiquidity({ YES: a.poolYes, NO: a.poolNo })
+          )
+        )
+      )
     : 'Empty pool'
 }
 

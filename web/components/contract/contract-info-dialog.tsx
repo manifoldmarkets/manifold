@@ -89,7 +89,7 @@ export const Stats = (props: {
                     text={`Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins.`}
                   />
                 </>
-              ) : mechanism === 'cpmm-2' ? (
+              ) : mechanism === 'cpmm-2' || mechanism === 'cpmm-multi-1' ? (
                 <>
                   Fixed{' '}
                   <InfoTooltip

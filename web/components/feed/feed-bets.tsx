@@ -13,6 +13,7 @@ import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import {
   AnswerLabel,
+  BinaryOutcomeLabel,
   NoLabel,
   OutcomeLabel,
   YesLabel,
@@ -233,12 +234,16 @@ export function BetStatusText(props: {
           ) : (
             <>created limit order for {orderAmount}</>
           )}{' '}
-          <OutcomeLabel
-            outcome={outcome}
-            value={(bet as any).value}
-            contract={contract}
-            truncate="short"
-          />{' '}
+          {isCpmmMulti ? (
+            <BinaryOutcomeLabel outcome={outcome as any} />
+          ) : (
+            <OutcomeLabel
+              outcome={outcome}
+              value={(bet as any).value}
+              contract={contract}
+              truncate="short"
+            />
+          )}{' '}
           at {toProb} {bet.isCancelled && !allFilled ? '(cancelled)' : ''}
         </span>
       ) : (
