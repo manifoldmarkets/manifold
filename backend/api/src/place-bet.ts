@@ -307,7 +307,10 @@ export const placebet = authEndpoint(async (req, auth) => {
   const { newBet, betId, contract, makers, ordersToCancel, user } = result
   const { mechanism } = contract
 
-  if (mechanism === 'cpmm-1' && newBet.amount !== 0) {
+  if (
+    (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') &&
+    newBet.amount !== 0
+  ) {
     const userIds = uniq([
       auth.uid,
       ...(makers ?? []).map((maker) => maker.bet.userId),

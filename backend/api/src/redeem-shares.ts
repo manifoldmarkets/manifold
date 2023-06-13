@@ -1,16 +1,16 @@
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
-import { maxBy } from 'lodash'
+import { groupBy, maxBy, sum, sumBy } from 'lodash'
 
 import { Bet } from 'common/bet'
-import {
-  getRedeemableAmount,
-  getRedemptionBets,
-} from 'common/redeem'
+import { getBinaryRedeemableAmount, getRedemptionBets } from 'common/redeem'
 import { floatingEqual } from 'common/util/math'
-import { CPMMContract } from 'common/contract'
+import { CPMMContract, CPMMMultiContract } from 'common/contract'
 
-export const redeemShares = async (userId: string, contract: CPMMContract) => {
+export const redeemShares = async (
+  userId: string,
+  contract: CPMMContract | CPMMMultiContract
+) => {
   return await firestore.runTransaction(async (trans) => {
     const { id: contractId } = contract
 
@@ -18,33 +18,42 @@ export const redeemShares = async (userId: string, contract: CPMMContract) => {
     const betsSnap = await trans.get(betsColl.where('userId', '==', userId))
     const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
 
-    const { shares, loanPayment, netAmount } = getRedeemableAmount(
-      contract,
-      bets
-    )
-    if (floatingEqual(shares, 0)) {
-      return { status: 'success' }
-    }
+    const betsByAnswerId = groupBy(bets, (bet) => bet.answerId)
+    let totalAmount = 0
 
-    if (!isFinite(netAmount)) {
-      throw new Error('Invalid redemption amount, no clue what happened here.')
+    for (const [answerId, bets] of Object.entries(betsByAnswerId)) {
+      const { shares, loanPayment, netAmount } = getBinaryRedeemableAmount(bets)
+      if (floatingEqual(shares, 0)) {
+        continue
+      }
+      if (!isFinite(netAmount)) {
+        throw new Error(
+          'Invalid redemption amount, no clue what happened here.'
+        )
+      }
+
+      totalAmount += netAmount
+
+      const lastProb = maxBy(bets, (b) => b.createdTime)?.probAfter as number
+      const [yesBet, noBet] = getRedemptionBets(
+        contract,
+        shares,
+        loanPayment,
+        lastProb,
+        answerId
+      )
+      const yesDoc = betsColl.doc()
+      const noDoc = betsColl.doc()
+
+      trans.create(yesDoc, { id: yesDoc.id, userId, ...yesBet })
+      trans.create(noDoc, { id: noDoc.id, userId, ...noBet })
+
+      console.log('redeemed', shares, 'shares for', netAmount)
     }
 
     const userDoc = firestore.collection('users').doc(userId)
-    trans.update(userDoc, { balance: FieldValue.increment(netAmount) })
+    trans.update(userDoc, { balance: FieldValue.increment(totalAmount) })
 
-    const lastProb = maxBy(bets, (b) => b.createdTime)?.probAfter as number
-    const [yesBet, noBet] = getRedemptionBets(
-      contract,
-      shares,
-      loanPayment,
-      lastProb
-    )
-    const yesDoc = betsColl.doc()
-    const noDoc = betsColl.doc()
-
-    trans.create(yesDoc, { id: yesDoc.id, userId, ...yesBet })
-    trans.create(noDoc, { id: noDoc.id, userId, ...noBet })
     return { status: 'success' }
   })
 }
