@@ -5,15 +5,14 @@ import {
   getProbability,
   getTopAnswer,
   getTopNSortedAnswers,
-  getContractBetMetrics,
+  getInvested,
 } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
 import { User } from 'common/user'
 import {
   BinaryContract,
   Contract,
-  FreeResponseContract,
-  MultipleChoiceContract,
+  MultiContract,
   NumericContract,
   PseudoNumericContract,
   resolution,
@@ -44,7 +43,7 @@ import {
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
-import { Answer } from 'common/answer'
+import { Answer, DpmAnswer } from 'common/answer'
 import { AnswerLabel } from '../outcome-label'
 import { useChartAnswers } from '../charts/contract/choice'
 import { getAnswerColor } from '../answers/answers-panel'
@@ -202,7 +201,7 @@ function SignedInQuickBet(props: {
       contractId: contract.id,
     })
   }
-  const { invested } = getContractBetMetrics(contract, userBets)
+  const invested = getInvested(contract, userBets)
   const { hasYesShares, hasNoShares } = useSaveBinaryShares(contract, userBets)
   const hasYesInvestment =
     hasYesShares === true && invested != undefined && floor(invested) > 0
@@ -495,7 +494,7 @@ function cardText(contract: Contract, previewProb?: number) {
 }
 
 export function ContractCardAnswers(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
+  contract: MultiContract
   numAnswersFR?: number
 }) {
   const { contract, numAnswersFR } = props
@@ -526,7 +525,7 @@ export function ContractCardAnswers(props: {
 }
 
 function getAnswerType(
-  answer: Answer,
+  answer: Answer | DpmAnswer,
   resolution?: string,
   resolutions?:
     | { [outcome: string]: number }
@@ -543,8 +542,8 @@ function getAnswerType(
 }
 
 function ContractCardAnswer(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
-  answer: Answer
+  contract: MultiContract
+  answer: Answer | DpmAnswer
   answersArray: string[]
   type: 'winner' | 'loser' | 'contender'
 }) {

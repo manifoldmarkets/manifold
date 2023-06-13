@@ -2,8 +2,8 @@ import clsx from 'clsx'
 import React, { useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
-import { Answer } from 'common/answer'
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import { Answer, DpmAnswer } from 'common/answer'
+import { MultiContract } from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
 import { APIError, placeBet } from 'web/lib/firebase/api'
@@ -26,18 +26,16 @@ import {
   getOutcomeProbability,
   getOutcomeProbabilityAfterBet,
 } from 'common/calculate'
-import { getProb, shortSell } from 'common/calculate-cpmm-multi'
 import { removeUndefinedProps } from 'common/util/object'
 
 export function AnswerBetPanel(props: {
-  answer: Answer
-  contract: FreeResponseContract | MultipleChoiceContract
-  mode: 'buy' | 'short-sell'
+  answer: DpmAnswer | Answer
+  contract: MultiContract
   closePanel: () => void
   className?: string
   isModal?: boolean
 }) {
-  const { answer, contract, closePanel, className, isModal, mode } = props
+  const { answer, contract, closePanel, className, isModal } = props
   const { id: answerId } = answer
 
   const user = useUser()
@@ -55,9 +53,8 @@ export function AnswerBetPanel(props: {
     placeBet(
       removeUndefinedProps({
         amount: betAmount,
-        outcome: answerId,
+        answerId,
         contractId: contract.id,
-        shortSell: mode === 'short-sell' ? true : undefined,
       })
     )
       .then((r) => {
@@ -82,7 +79,7 @@ export function AnswerBetPanel(props: {
       slug: contract.slug,
       contractId: contract.id,
       amount: betAmount,
-      outcome: answerId,
+      answerId,
     })
   }
 
@@ -93,7 +90,6 @@ export function AnswerBetPanel(props: {
   const { resultProb, shares, maxPayout } = getSimulatedBetInfo(
     betAmount ?? 0,
     answerId,
-    mode,
     contract
   )
 
@@ -112,11 +108,10 @@ export function AnswerBetPanel(props: {
       : undefined
 
   return (
-    <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
+    <Col className={clsx(className)}>
       <Row className="items-center justify-between self-stretch">
         <div className="text-xl">
-          {mode === 'buy' ? 'Bet on' : 'Sell'}{' '}
-          {isModal ? `"${answer.text}"` : 'this answer'}
+          Bet on {isModal ? `"${answer.text}"` : 'this answer'}
         </div>
 
         {!isModal && (
@@ -206,20 +201,8 @@ export function AnswerBetPanel(props: {
 const getSimulatedBetInfo = (
   betAmount: number,
   answerId: string,
-  mode: 'buy' | 'short-sell',
-  contract: FreeResponseContract | MultipleChoiceContract
+  contract: MultiContract
 ) => {
-  if (mode === 'short-sell') {
-    const { newPool, gainedShares } = shortSell(
-      contract.pool,
-      answerId,
-      betAmount
-    )
-    const resultProb = getProb(newPool, answerId)
-    const maxPayout = Math.max(...Object.values(gainedShares))
-    return { resultProb, maxPayout, gainedShares }
-  }
-
   const resultProb = getOutcomeProbabilityAfterBet(
     contract,
     answerId,

@@ -55,7 +55,7 @@ import { formatTimeShort } from 'web/lib/util/time'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
-import { OutcomeLabel } from '../outcome-label'
+import { BinaryOutcomeLabel, OutcomeLabel } from '../outcome-label'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { SiteLink } from '../widgets/site-link'
 import { Table } from '../widgets/table'
@@ -666,6 +666,7 @@ export function ContractBetsTable(props: {
 
   const isCPMM = mechanism === 'cpmm-1'
   const isCPMM2 = mechanism === 'cpmm-2'
+  const isCpmmMulti = mechanism === 'cpmm-multi-1'
   const isDPM = mechanism === 'dpm-2'
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -716,6 +717,7 @@ export function ContractBetsTable(props: {
               <th></th>
             )}
             {isCPMM && <th>Type</th>}
+            {isCpmmMulti && <th>Answer</th>}
             <th>Outcome</th>
             <th>Amount</th>
             {isDPM && !isNumeric && (
@@ -773,6 +775,7 @@ function BetRow(props: {
 
   const isCPMM = mechanism === 'cpmm-1'
   const isCPMM2 = mechanism === 'cpmm-2'
+  const isCpmmMulti = mechanism === 'cpmm-multi-1'
   const isShortSell = isCPMM2 && bet.amount > 0 && bet.shares === 0
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -817,10 +820,7 @@ function BetRow(props: {
       ? ''
       : ` / ${formatMoney(bet.orderAmount)}`
 
-  const sharesOrShortSellShares =
-    isShortSell && bet.sharesByOutcome
-      ? -Math.max(...Object.values(bet.sharesByOutcome))
-      : Math.abs(shares)
+  const sharesOrShortSellShares = Math.abs(shares)
 
   return (
     <tr>
@@ -832,10 +832,17 @@ function BetRow(props: {
         </td>
       )}
       {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
+      {isCpmmMulti && (
+        <td>
+          {contract.answers.find((a) => a.id === bet.answerId)?.text ?? ''}
+        </td>
+      )}
       <td>
         {isCPMM2 && (isShortSell ? 'NO ' : 'YES ')}
         {bet.isAnte ? (
           'ANTE'
+        ) : isCpmmMulti ? (
+          <BinaryOutcomeLabel outcome={outcome as any} />
         ) : (
           <OutcomeLabel
             outcome={outcome}

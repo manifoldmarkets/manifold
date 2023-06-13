@@ -1,4 +1,12 @@
-import { maxBy, partition, sortBy, sum, sumBy } from 'lodash'
+import {
+  groupBy,
+  mapValues,
+  maxBy,
+  partition,
+  sortBy,
+  sum,
+  sumBy,
+} from 'lodash'
 import { Bet } from './bet'
 import {
   getCpmmProbability,
@@ -13,17 +21,20 @@ import {
   getDpmOutcomeProbabilityAfterBet,
   calculateDpmShares,
 } from './calculate-dpm'
-import { calculateFixedPayout } from './calculate-fixed-payouts'
+import {
+  calculateFixedPayout,
+  calculateFixedPayoutMulti,
+} from './calculate-fixed-payouts'
 import {
   Contract,
   BinaryContract,
-  FreeResponseContract,
   PseudoNumericContract,
-  MultipleChoiceContract,
   StonkContract,
+  MultiContract,
 } from './contract'
 import { floatingEqual } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
+import { Answer, DpmAnswer } from './answer'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
@@ -54,19 +65,30 @@ export function getInitialProbability(
 }
 
 export function getOutcomeProbability(contract: Contract, outcome: string) {
-  const { mechanism, pool } = contract
+  const { mechanism } = contract
   switch (mechanism) {
     case 'cpmm-1':
       return outcome === 'YES'
-        ? getCpmmProbability(pool, contract.p)
-        : 1 - getCpmmProbability(pool, contract.p)
+        ? getCpmmProbability(contract.pool, contract.p)
+        : 1 - getCpmmProbability(contract.pool, contract.p)
     case 'cpmm-2':
-      return getProb(pool, outcome)
+      return getProb(contract.pool, outcome)
     case 'dpm-2':
       return getDpmOutcomeProbability(contract.totalShares, outcome)
+    case 'cpmm-multi-1':
+      return 0
     default:
       throw new Error('getOutcomeProbability not implemented')
   }
+}
+
+export function getAnswerProbability(answers: Answer[], answerId: string) {
+  const answer = answers.find((a) => a.id === answerId)
+  if (!answer) throw new Error('Answer not found')
+
+  const { poolYes, poolNo } = answer
+  const pool = { YES: poolYes, NO: poolNo }
+  return getCpmmProbability(pool, 0.5)
 }
 
 export function getOutcomeProbabilityAfterBet(
@@ -74,21 +96,44 @@ export function getOutcomeProbabilityAfterBet(
   outcome: string,
   bet: number
 ) {
-  const { mechanism, pool } = contract
+  const { mechanism } = contract
   switch (mechanism) {
     case 'cpmm-1':
       return getCpmmOutcomeProbabilityAfterBet(contract, outcome, bet)
     case 'cpmm-2':
-      return getProb(buy(pool, outcome, bet).newPool, outcome)
+      return getProb(buy(contract.pool, outcome, bet).newPool, outcome)
     case 'dpm-2':
       return getDpmOutcomeProbabilityAfterBet(
         contract.totalShares,
         outcome,
         bet
       )
+    case 'cpmm-multi-1':
+      return 0
     default:
       throw new Error('getOutcomeProbabilityAfterBet not implemented')
   }
+}
+
+export function getOutcomeProbabilityAfterBetMulti(
+  answers: Answer[],
+  answerId: string,
+  outcome: 'YES' | 'NO',
+  amount: number
+) {
+  const answer = answers.find((a) => a.id === answerId)
+  if (!answer) throw new Error('Answer not found')
+
+  const { poolYes, poolNo } = answer
+
+  return getCpmmOutcomeProbabilityAfterBet(
+    {
+      pool: { YES: poolYes, NO: poolNo },
+      p: 0.5,
+    },
+    outcome,
+    amount
+  )
 }
 
 export function calculateSharesBought(
@@ -96,23 +141,42 @@ export function calculateSharesBought(
   outcome: string,
   amount: number
 ) {
-  const { mechanism, pool } = contract
+  const { mechanism } = contract
   switch (mechanism) {
     case 'cpmm-1':
       return calculateCpmmPurchase(contract, amount, outcome).shares
     case 'cpmm-2':
-      return buy(pool, outcome, amount).shares
+      return buy(contract.pool, outcome, amount).shares
     case 'dpm-2':
       return calculateDpmShares(contract.totalShares, amount, outcome)
     default:
       throw new Error('calculateSharesBought not implemented')
   }
 }
+export function calculateSharesBoughtMulti(
+  answers: Answer[],
+  answerId: string,
+  outcome: 'YES' | 'NO',
+  amount: number
+) {
+  const answer = answers.find((a) => a.id === answerId)
+  if (!answer) throw new Error('Answer not found')
+
+  const { poolYes, poolNo } = answer
+
+  return calculateCpmmPurchase(
+    { pool: { YES: poolYes, NO: poolNo }, p: 0.5 },
+    amount,
+    outcome
+  ).shares
+}
 
 export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
   const { mechanism } = contract
   return mechanism === 'cpmm-1'
     ? calculateFixedPayout(contract, bet, outcome)
+    : mechanism === 'cpmm-multi-1'
+    ? calculateFixedPayoutMulti(contract, bet, outcome)
     : mechanism === 'dpm-2'
     ? calculateDpmPayout(contract, bet, outcome)
     : bet?.amount ?? 0
@@ -124,6 +188,8 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
 
   return mechanism === 'cpmm-1'
     ? calculateFixedPayout(contract, bet, resolution)
+    : mechanism === 'cpmm-multi-1'
+    ? calculateFixedPayoutMulti(contract, bet, resolution)
     : mechanism === 'dpm-2'
     ? calculateDpmPayout(contract, bet, resolution)
     : bet?.amount ?? 0
@@ -172,37 +238,27 @@ function getDpmInvested(yourBets: Bet[]) {
   })
 }
 
-export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
-  const sortedBets = sortBy(yourBets, 'createdTime')
-  const { resolution, mechanism } = contract
-  const isCpmm = mechanism === 'cpmm-1'
+export function getInvested(contract: Contract, yourBets: Bet[]) {
+  const { mechanism } = contract
+  if (mechanism === 'cpmm-1') return getCpmmInvested(yourBets)
+  if (mechanism === 'cpmm-multi-1') {
+    const betsByAnswerId = groupBy(yourBets, 'answerId')
+    const investedByAnswerId = mapValues(betsByAnswerId, getCpmmInvested)
+    return sum(Object.values(investedByAnswerId))
+  }
+  return getDpmInvested(yourBets)
+}
+
+function getCpmmOrDpmProfit(contract: Contract, yourBets: Bet[]) {
+  const { resolution } = contract
 
   let totalInvested = 0
   let payout = 0
-  let loan = 0
   let saleValue = 0
   let redeemed = 0
-  const totalShares: { [outcome: string]: number } = {}
 
-  for (const bet of sortedBets) {
-    const {
-      isSold,
-      sale,
-      amount,
-      loanAmount,
-      isRedemption,
-      shares,
-      sharesByOutcome,
-      outcome,
-    } = bet
-
-    if (sharesByOutcome) {
-      for (const [o, s] of Object.entries(sharesByOutcome)) {
-        totalShares[o] = (totalShares[o] ?? 0) + s
-      }
-    } else {
-      totalShares[outcome] = (totalShares[outcome] ?? 0) + shares
-    }
+  for (const bet of yourBets) {
+    const { isSold, sale, amount, isRedemption } = bet
 
     if (isSold) {
       totalInvested += amount
@@ -217,7 +273,6 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
         saleValue -= amount
       }
 
-      loan += loanAmount ?? 0
       payout += resolution
         ? calculatePayout(contract, bet, resolution)
         : calculatePayout(contract, bet, 'MKT')
@@ -227,9 +282,43 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const profit = payout + saleValue + redeemed - totalInvested
   const profitPercent = totalInvested === 0 ? 0 : (profit / totalInvested) * 100
 
-  const invested = isCpmm
-    ? getCpmmInvested(sortedBets)
-    : getDpmInvested(sortedBets)
+  return {
+    profit,
+    profitPercent,
+    totalInvested,
+    payout,
+  }
+}
+
+export function getProfitMetrics(contract: Contract, yourBets: Bet[]) {
+  const { mechanism } = contract
+  if (mechanism === 'cpmm-multi-1') {
+    const betsByAnswerId = groupBy(yourBets, 'answerId')
+    const profitMetricsPerAnswer = Object.values(betsByAnswerId).map((bets) =>
+      getCpmmOrDpmProfit(contract, bets)
+    )
+    const profit = sumBy(profitMetricsPerAnswer, 'profit')
+    const totalInvested = sumBy(profitMetricsPerAnswer, 'totalInvested')
+    const profitPercent =
+      totalInvested === 0 ? 0 : (profit / totalInvested) * 100
+    const payout = sumBy(profitMetricsPerAnswer, 'payout')
+    return {
+      profit,
+      profitPercent,
+      totalInvested,
+      payout,
+    }
+  }
+  return getCpmmOrDpmProfit(contract, yourBets)
+}
+
+export function getCpmmShares(yourBets: Bet[]) {
+  const totalShares: { [outcome: string]: number } = {}
+  for (const bet of yourBets) {
+    const { shares, outcome } = bet
+    totalShares[outcome] = (totalShares[outcome] ?? 0) + shares
+  }
+
   const hasShares = Object.values(totalShares).some(
     (shares) => !floatingEqual(shares, 0)
   )
@@ -237,7 +326,41 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const { YES: yesShares, NO: noShares } = totalShares
   const hasYesShares = yesShares >= 1
   const hasNoShares = noShares >= 1
-  const lastBetTime = Math.max(...sortedBets.map((b) => b.createdTime))
+
+  return {
+    totalShares,
+    hasShares,
+    hasYesShares,
+    hasNoShares,
+  }
+}
+
+export function getCpmmMultiShares(yourBets: Bet[]) {
+  const betsByAnswerId = groupBy(yourBets, 'answerId')
+  const sharesByAnswerId = mapValues(betsByAnswerId, (bets) =>
+    getCpmmShares(bets)
+  )
+
+  const hasShares = Object.values(sharesByAnswerId).some(
+    (shares) => shares.hasShares
+  )
+
+  return {
+    hasShares,
+    sharesByAnswerId,
+  }
+}
+
+export const getContractBetMetrics = (contract: Contract, yourBets: Bet[]) => {
+  const { mechanism } = contract
+  const isCpmmMulti = mechanism === 'cpmm-multi-1'
+  const { profit, profitPercent, payout } = getProfitMetrics(contract, yourBets)
+  const invested = getInvested(contract, yourBets)
+  const loan = sumBy(yourBets, 'loanAmount')
+
+  const { totalShares, hasShares, hasYesShares, hasNoShares } =
+    getCpmmShares(yourBets)
+  const lastBetTime = Math.max(...yourBets.map((b) => b.createdTime))
   const maxSharesOutcome = hasShares
     ? maxBy(Object.keys(totalShares), (outcome) => totalShares[outcome])
     : null
@@ -249,7 +372,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     profit,
     profitPercent,
     totalShares,
-    hasShares,
+    hasShares: isCpmmMulti ? getCpmmMultiShares(yourBets).hasShares : hasShares,
     hasYesShares,
     hasNoShares,
     maxSharesOutcome,
@@ -271,10 +394,7 @@ export function getContractBetNullMetrics() {
     maxSharesOutcome: null,
   } as ContractMetric
 }
-
-export function getTopAnswer(
-  contract: FreeResponseContract | MultipleChoiceContract
-) {
+export function getTopAnswer(contract: MultiContract) {
   const { answers } = contract
   const top = maxBy(
     answers?.map((answer) => ({
@@ -286,17 +406,16 @@ export function getTopAnswer(
   return top?.answer
 }
 
-export function getTopNSortedAnswers(
-  contract: FreeResponseContract | MultipleChoiceContract,
-  n: number
-) {
+export function getTopNSortedAnswers(contract: MultiContract, n: number) {
   const { answers, resolution, resolutions } = contract
 
   const [winningAnswers, losingAnswers] = partition(
     answers,
-    (answer) =>
+    (answer: Answer | DpmAnswer) =>
       answer.id === resolution || (resolutions && resolutions[answer.id])
-  )
+    // Types were messed up with out this cast.
+  ) as [(Answer | DpmAnswer)[], (Answer | DpmAnswer)[]]
+
   const sortedAnswers = [
     ...sortBy(winningAnswers, (answer) =>
       resolutions ? -1 * resolutions[answer.id] : 0

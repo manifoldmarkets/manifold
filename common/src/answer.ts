@@ -2,6 +2,19 @@ import { User } from './user'
 
 export type Answer = {
   id: string
+  contractId: string
+  userId: string
+  text: string
+  createdTime: number
+
+  // Mechanism props
+  poolYes: number // YES shares
+  poolNo: number // NO shares
+  prob: number // Computed from poolYes and poolNo.
+}
+
+export type DpmAnswer = {
+  id: string
   number: number
   contractId: string
   createdTime: number

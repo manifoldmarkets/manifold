@@ -9,6 +9,44 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      answers: {
+        Row: {
+          contract_id: string
+          created_time: string
+          id: string
+          pool_no: number
+          pool_yes: number
+          prob: number
+          subsidy_pool: number
+          text: string
+          total_subsidy: number
+          user_id: string
+        }
+        Insert: {
+          contract_id: string
+          created_time?: string
+          id: string
+          pool_no: number
+          pool_yes: number
+          prob: number
+          subsidy_pool: number
+          text: string
+          total_subsidy: number
+          user_id: string
+        }
+        Update: {
+          contract_id?: string
+          created_time?: string
+          id?: string
+          pool_no?: number
+          pool_yes?: number
+          prob?: number
+          subsidy_pool?: number
+          text?: string
+          total_subsidy?: number
+          user_id?: string
+        }
+      }
       chat_messages: {
         Row: {
           channel_id: string

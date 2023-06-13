@@ -1,6 +1,6 @@
 import { APIError } from 'common/api'
 import { Bet, LimitBet } from 'common/bet'
-import { getContractBetMetrics, getProbability } from 'common/calculate'
+import { getInvested, getProbability } from 'common/calculate'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { CPMMContract } from 'common/contract'
 import { getMappedValue, getFormattedMappedValue } from 'common/pseudo-numeric'
@@ -80,7 +80,7 @@ export function SellPanel(props: {
   const loanPaid = saleFrac * loanAmount
   const isLoadPaid = loanPaid === 0
 
-  const { invested } = getContractBetMetrics(contract, userBets)
+  const invested = getInvested(contract, userBets)
   const costBasis = invested * saleFrac
 
   async function submitSell() {

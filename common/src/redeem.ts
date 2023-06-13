@@ -1,16 +1,17 @@
 import { partition, sumBy } from 'lodash'
 
 import { Bet } from './bet'
-import { CPMMContract, Contract } from './contract'
+import { Contract } from './contract'
 import { noFees } from './fees'
 import { CandidateBet } from './new-bet'
+import { removeUndefinedProps } from './util/object'
 
 type RedeemableBet = Pick<
   Bet,
   'outcome' | 'shares' | 'sharesByOutcome' | 'loanAmount'
 >
 
-const getBinaryRedeemableAmount = (bets: RedeemableBet[]) => {
+export const getBinaryRedeemableAmount = (bets: RedeemableBet[]) => {
   const [yesBets, noBets] = partition(bets, (b) => b.outcome === 'YES')
   const yesShares = sumBy(yesBets, (b) => b.shares)
   const noShares = sumBy(noBets, (b) => b.shares)
@@ -24,21 +25,15 @@ const getBinaryRedeemableAmount = (bets: RedeemableBet[]) => {
   return { shares, loanPayment, netAmount }
 }
 
-export const getRedeemableAmount = (
-  contract: CPMMContract,
-  bets: RedeemableBet[]
-) => {
-  return getBinaryRedeemableAmount(bets)
-}
-
 export const getRedemptionBets = (
   contract: Contract,
   shares: number,
   loanPayment: number,
-  prob: number
+  prob: number,
+  answerId: string | undefined
 ) => {
   const createdTime = Date.now()
-  const yesBet: CandidateBet = {
+  const yesBet: CandidateBet = removeUndefinedProps({
     contractId: contract.id,
     amount: prob * -shares,
     shares: -shares,
@@ -52,8 +47,9 @@ export const getRedemptionBets = (
     isRedemption: true,
     isChallenge: false,
     visibility: contract.visibility,
-  }
-  const noBet: CandidateBet = {
+    answerId,
+  })
+  const noBet: CandidateBet = removeUndefinedProps({
     contractId: contract.id,
     amount: (1 - prob) * -shares,
     shares: -shares,
@@ -67,6 +63,7 @@ export const getRedemptionBets = (
     isRedemption: true,
     isChallenge: false,
     visibility: contract.visibility,
-  }
+    answerId,
+  })
   return [yesBet, noBet]
 }

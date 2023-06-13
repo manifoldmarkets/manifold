@@ -10,7 +10,7 @@ import { getUserId, initAdmin, safeGet } from '../_firebase-utils'
 import { validate } from '../_validate'
 import { QuadraticFundingContract } from 'common/contract'
 import { User } from 'common/user'
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 
 export const config = { api: { bodyParser: true } }
 
@@ -54,7 +54,7 @@ async function createAnswer(req: NextApiRequest, userId: string) {
   const answerUserId = receiverId ?? userId
   const answerUser = await safeGet<User>(`users/${answerUserId}`)
 
-  const newAnswer: Answer = {
+  const newAnswer: DpmAnswer = {
     id: `${qf.answers.length}`,
     number: qf.answers.length,
     contractId: qfId,

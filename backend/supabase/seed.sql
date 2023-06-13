@@ -1091,6 +1091,53 @@ select
   using (true);
 
 create table if not exists
+  answers (
+    id text not null primary key,
+    contract_id text, -- Associated contract
+    user_id text, -- Creator of the answer
+    text text,
+    created_time timestamptz default now(),
+    -- Mechanism props
+    pool_yes numeric, -- YES shares in the pool
+    pool_no numeric, -- NO shares in the pool
+    prob numeric, -- Probability of YES computed from pool_yes and pool_no
+    data jsonb not null,
+    fs_updated_time timestamp not null
+  );
+
+alter table answers enable row level security;
+
+drop policy if exists "public read" on answers;
+
+create policy "public read" on answers for
+select
+  using (true);
+
+create
+or replace function answers_populate_cols () returns trigger language plpgsql as $$
+begin
+  if new.data is not null then
+    new.contract_id := (new.data) ->> 'contractId';
+    new.user_id := (new.data) ->> 'userId';
+    new.text := ((new.data) ->> 'text')::text;
+    new.text := ((new.data) ->> 'text')::text;
+    new.created_time :=
+        case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
+
+    new.pool_yes := ((new.data) ->> 'poolYes')::numeric;
+    new.pool_no := ((new.data) ->> 'poolNo')::numeric;
+    new.prob := ((new.data) ->> 'prob')::numeric;
+  end if;
+  return new;
+end
+$$;
+
+create trigger answers_populate before insert
+or
+update on answers for each row
+execute function answers_populate_cols ();
+
+create table if not exists
   stats (
     title text not null primary key,
     daily_values numeric[]
@@ -1203,6 +1250,7 @@ begin
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)
+           when 'answers' then cast((null, 'id') as table_spec)
            when 'contract_bets' then cast(('contract_id', 'bet_id') as table_spec)
            when 'contract_comments' then cast(('contract_id', 'comment_id') as table_spec)
            when 'contract_follows' then cast(('contract_id', 'follow_id') as table_spec)

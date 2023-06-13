@@ -11,7 +11,7 @@ import {
   outcomeType,
   visibility,
 } from 'common/contract'
-import { ANTES, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
+import { UNIQUE_BETTOR_BONUS_AMOUNT, getAnte } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Group, groupPath } from 'common/group'
 import { User } from 'common/user'
@@ -181,7 +181,8 @@ export function NewContractPanel(props: {
               choicesMap={{
                 'Yes\xa0/ No': 'BINARY', // non-breaking space
                 Stock: 'STONK',
-                'Multi choice': 'MULTIPLE_CHOICE',
+                // TODO: Re-enable after testing that it works!
+                // 'Multi choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
               }}
@@ -519,7 +520,7 @@ const useNewContract = (
       })
   }, [creator.id, params?.groupId])
 
-  const ante = ANTES[outcomeType]
+  const ante = getAnte(outcomeType, answers.length)
 
   // If params.closeTime is set, extract out the specified date and time
   // By default, close the market a week from today

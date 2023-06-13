@@ -1,20 +1,21 @@
 import clsx from 'clsx'
 
-import { Answer } from 'common/answer'
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import { Answer, DpmAnswer } from 'common/answer'
+import { MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Avatar } from '../widgets/avatar'
+import { Avatar, EmptyAvatar } from '../widgets/avatar'
 import { SiteLink } from '../widgets/site-link'
 import { formatPercent } from 'common/util/format'
 import { tradingAllowed } from 'common/contract'
 import { Linkify } from '../widgets/linkify'
 import { Input } from '../widgets/input'
-import { getOutcomeProbability } from 'common/calculate'
+import { getAnswerProbability, getOutcomeProbability } from 'common/calculate'
+import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 
 export function AnswerItem(props: {
-  answer: Answer
-  contract: FreeResponseContract | MultipleChoiceContract
+  answer: DpmAnswer | Answer
+  contract: MultiContract
   showChoice: 'radio' | 'checkbox' | undefined
   chosenProb: number | undefined
   totalChosenProb?: number
@@ -32,11 +33,15 @@ export function AnswerItem(props: {
     onDeselect,
     isInModal,
   } = props
-  const { resolution, resolutions } = contract
-  const { username, avatarUrl, name, number, text } = answer
+  const { resolution, resolutions, mechanism, outcomeType } = contract
+  const { text } = answer
+  const isCpmm = mechanism === 'cpmm-multi-1'
+  const user = useUserByIdOrAnswer(answer)
   const isChosen = chosenProb !== undefined
 
-  const prob = getOutcomeProbability(contract, answer.id)
+  const prob = isCpmm
+    ? getAnswerProbability(contract.answers, answer.id)
+    : getOutcomeProbability(contract, answer.id)
   const roundedProb = Math.round(prob * 100)
   const probPercent = formatPercent(prob)
   const wasResolvedTo =
@@ -50,7 +55,7 @@ export function AnswerItem(props: {
         wasResolvedTo
           ? resolution === 'MKT'
             ? 'mb-2 bg-blue-500/20'
-            : 'mb-10 flex flex-col gap-4 rounded bg-teal-500/20 p-4'
+            : 'flex flex-col gap-4 rounded bg-teal-500/20 p-4'
           : chosenProb === undefined
           ? 'bg-canvas-50'
           : showChoice === 'radio'
@@ -63,16 +68,26 @@ export function AnswerItem(props: {
           <Linkify text={text} />
         </div>
 
-        <Row className="text-ink-500 items-center gap-2 text-sm">
-          <SiteLink className="relative" href={`/${username}`}>
-            <Row className="items-center gap-2">
-              <Avatar avatarUrl={avatarUrl} size={'xs'} />
-              <div className="truncate">{name}</div>
-            </Row>
-          </SiteLink>
-          {/* TODO: Show total pool? */}
-          <div className="text-base">{showChoice && '#' + number}</div>
-        </Row>
+        {outcomeType === 'FREE_RESPONSE' && (
+          <Row className="text-ink-500 items-center gap-2 text-sm">
+            {user ? (
+              <SiteLink className="relative" href={`/${user.username}`}>
+                <Row className="items-center gap-2">
+                  <Avatar avatarUrl={user.avatarUrl} size={'xs'} />
+                  <div className="truncate">{user.name}</div>
+                </Row>
+              </SiteLink>
+            ) : (
+              <EmptyAvatar />
+            )}
+            {/* TODO: Show total pool? */}
+            {'number' in answer && (
+              <div className="text-base">
+                {showChoice && '#' + answer.number}
+              </div>
+            )}
+          </Row>
+        )}
       </Col>
 
       <Row
@@ -158,7 +173,6 @@ export function AnswerItem(props: {
                 Chosen{' '}
                 {resolutions ? `${Math.round(resolutions[answer.id])}%` : ''}
               </div>
-              <div className="text-ink-500 text-2xl">{probPercent}</div>
             </Col>
           )
         )}

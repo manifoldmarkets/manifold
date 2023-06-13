@@ -91,8 +91,8 @@ export function YesNoCancelSelector(props: {
 }
 
 export function ChooseCancelSelector(props: {
-  selected: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
-  onSelect: (selected: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL') => void
+  selected: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
+  onSelect: (selected: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL') => void
 }) {
   const { selected, onSelect } = props
 
@@ -102,9 +102,9 @@ export function ChooseCancelSelector(props: {
   return (
     <div className="flex flex-col gap-1 sm:flex-row">
       <Button
-        color={selected === 'CHOOSE' ? 'green' : 'gray'}
+        color={selected === 'CHOOSE_ONE' ? 'green' : 'gray'}
         size="xl"
-        onClick={() => onSelect('CHOOSE')}
+        onClick={() => onSelect('CHOOSE_ONE')}
         className={btnClassName}
       >
         Choose answer

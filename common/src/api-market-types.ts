@@ -1,5 +1,5 @@
 import { JSONContent } from '@tiptap/core'
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getOutcomeProbability, getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
@@ -27,7 +27,7 @@ export type LiteMarket = {
   outcomeType: string
   mechanism: string
 
-  pool: { [outcome: string]: number }
+  pool?: { [outcome: string]: number }
   probability?: number
   p?: number
   totalLiquidity?: number
@@ -42,7 +42,7 @@ export type LiteMarket = {
 
   lastUpdatedTime?: number
 }
-export type ApiAnswer = Answer & {
+export type ApiAnswer = DpmAnswer & {
   probability?: number
 }
 export type FullMarket = LiteMarket & {
@@ -65,7 +65,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     closeTime,
     question,
     slug,
-    pool,
     outcomeType,
     mechanism,
     volume,
@@ -103,7 +102,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
         : closeTime,
     question,
     url: `https://${DOMAIN}/${creatorUsername}/${slug}`,
-    pool,
+    pool: 'pool' in contract ? contract.pool : undefined,
     probability,
     p,
     totalLiquidity,
@@ -127,9 +126,9 @@ export function toFullMarket(contract: Contract): FullMarket {
   const liteMarket = toLiteMarket(contract)
   const answers =
     contract.outcomeType === 'FREE_RESPONSE' ||
-    contract.outcomeType === 'MULTIPLE_CHOICE'
+    (contract.outcomeType === 'MULTIPLE_CHOICE' && contract.answers)
       ? contract.answers.map((answer) =>
-          augmentAnswerWithProbability(contract, answer)
+          augmentAnswerWithProbability(contract, answer as DpmAnswer)
         )
       : undefined
 
@@ -149,7 +148,7 @@ export function toFullMarket(contract: Contract): FullMarket {
 
 function augmentAnswerWithProbability(
   contract: Contract,
-  answer: Answer
+  answer: DpmAnswer
 ): ApiAnswer {
   const probability = getOutcomeProbability(contract, answer.id)
   return {

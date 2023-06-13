@@ -1,12 +1,11 @@
 import clsx from 'clsx'
-import { Answer } from 'common/answer'
+import { Answer, DpmAnswer } from 'common/answer'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
 import {
   BinaryContract,
   Contract,
-  FreeResponseContract,
-  MultipleChoiceContract,
+  MultiContract,
   outcomeType,
   resolution,
 } from 'common/contract'
@@ -95,7 +94,7 @@ export function BinaryContractOutcomeLabel(props: {
 }
 
 export function FreeResponseOutcomeLabel(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
+  contract: MultiContract
   resolution: string | 'CANCEL' | 'MKT'
   truncate: 'short' | 'long' | 'none'
   answerClassName?: string
@@ -103,7 +102,8 @@ export function FreeResponseOutcomeLabel(props: {
   const { contract, resolution, truncate, answerClassName } = props
 
   if (resolution === 'CANCEL') return <CancelLabel />
-  if (resolution === 'MKT') return <MultiLabel />
+  if (resolution === 'MKT' || resolution === 'CHOOSE_MULTIPLE')
+    return <MultiLabel />
 
   const chosen = contract.answers?.find((answer) => answer.id === resolution)
   if (!chosen) return <AnswerNumberLabel number={resolution} />
@@ -167,7 +167,7 @@ export function AnswerNumberLabel(props: { number: string }) {
 }
 
 export function AnswerLabel(props: {
-  answer: Answer
+  answer: Answer | DpmAnswer
   truncate: 'short' | 'medium' | 'long' | 'none'
   className?: string
 }) {

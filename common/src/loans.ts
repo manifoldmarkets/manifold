@@ -1,7 +1,12 @@
 import { Dictionary, sumBy, minBy } from 'lodash'
 import { Bet } from './bet'
-import { getContractBetMetrics } from './calculate'
-import { Contract, CPMMContract, DPMContract } from './contract'
+import { getInvested } from './calculate'
+import {
+  Contract,
+  CPMMContract,
+  CPMMMultiContract,
+  DPMContract,
+} from './contract'
 import { filterDefined } from './util/array'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 
@@ -40,7 +45,7 @@ const calculateLoanBetUpdates = (
   return contracts
     .map((c) => {
       const bets = betsByContractId[c.id]
-      if (c.mechanism === 'cpmm-1') {
+      if (c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1') {
         return getCpmmContractLoanUpdate(c, bets) ?? []
       } else if (c.mechanism === 'dpm-2')
         return filterDefined(getDpmContractLoanUpdate(c, bets))
@@ -53,10 +58,10 @@ const calculateLoanBetUpdates = (
 }
 
 const getCpmmContractLoanUpdate = (
-  contract: CPMMContract,
+  contract: CPMMContract | CPMMMultiContract,
   bets: Bet[]
 ) => {
-  const { invested } = getContractBetMetrics(contract, bets)
+  const invested = getInvested(contract, bets)
   const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
   const oldestBet = minBy(bets, (bet) => bet.createdTime)
 

@@ -1,7 +1,7 @@
 import { sum } from 'lodash'
 import { useEffect, useState } from 'react'
 
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import { MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
@@ -18,7 +18,7 @@ function getAnswerResolveButtonColor(
 ) {
   return resolveOption === 'CANCEL'
     ? 'yellow'
-    : resolveOption === 'CHOOSE' && answers.length
+    : resolveOption === 'CHOOSE_ONE' && answers.length
     ? 'green'
     : resolveOption === 'CHOOSE_MULTIPLE' &&
       answers.length > 1 &&
@@ -33,7 +33,7 @@ function getAnswerResolveButtonDisabled(
   chosenAnswers: { [answerId: string]: number }
 ) {
   return (
-    (resolveOption === 'CHOOSE' && !answers.length) ||
+    (resolveOption === 'CHOOSE_ONE' && !answers.length) ||
     (resolveOption === 'CHOOSE_MULTIPLE' &&
       (!(answers.length > 1) ||
         !answers.every((answer) => chosenAnswers[answer] > 0)))
@@ -47,7 +47,7 @@ function getAnswerResolveButtonLabel(
 ) {
   return resolveOption === 'CANCEL'
     ? 'N/A'
-    : resolveOption === 'CHOOSE'
+    : resolveOption === 'CHOOSE_ONE'
     ? chosenText
     : `${answers.length} answers`
 }
@@ -55,10 +55,10 @@ function getAnswerResolveButtonLabel(
 export function AnswerResolvePanel(props: {
   isAdmin: boolean
   isCreator: boolean
-  contract: FreeResponseContract | MultipleChoiceContract
-  resolveOption: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
+  contract: MultiContract
+  resolveOption: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   setResolveOption: (
-    option: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
+    option: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   ) => void
   chosenAnswers: { [answerId: string]: number }
   isInModal?: boolean
@@ -72,16 +72,20 @@ export function AnswerResolvePanel(props: {
     isCreator,
     isInModal,
   } = props
-  const answers = Object.keys(chosenAnswers)
+  const isCpmm = contract.mechanism === 'cpmm-multi-1'
+  const answerIds = Object.keys(chosenAnswers)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
   const [warning, setWarning] = useState<string | undefined>(undefined)
 
-  const chosenText =
-    contract.answers[
-      (contract.outcomeType === 'FREE_RESPONSE' ? -1 : 0) + parseInt(answers[0])
-    ]?.text ?? 'an answer'
+  const answer = isCpmm
+    ? contract.answers.find((a) => a.id === answerIds[0])
+    : contract.answers[
+        (contract.outcomeType === 'FREE_RESPONSE' ? -1 : 0) +
+          parseInt(answerIds[0])
+      ]
+  const chosenText = answer?.text ?? 'an answer'
 
   useEffect(() => {
     if (resolveOption === 'CANCEL') {
@@ -92,27 +96,39 @@ export function AnswerResolvePanel(props: {
   }, [resolveOption])
 
   const onResolve = async () => {
-    if (resolveOption === 'CHOOSE' && answers.length !== 1) return
-    if (resolveOption === 'CHOOSE_MULTIPLE' && answers.length < 2) return
+    if (resolveOption === 'CHOOSE_ONE' && answerIds.length !== 1) return
+    if (resolveOption === 'CHOOSE_MULTIPLE' && answerIds.length < 2) return
 
     setIsSubmitting(true)
 
     const totalProb = sum(Object.values(chosenAnswers))
-    const resolutions = Object.entries(chosenAnswers).map(([i, p]) => {
-      return { answer: parseInt(i), pct: (100 * p) / totalProb }
-    })
+    const resolutions = isCpmm
+      ? Object.entries(chosenAnswers).map(([answerId, p]) => {
+          return { answerId, pct: (100 * p) / totalProb }
+        })
+      : Object.entries(chosenAnswers).map(([i, p]) => {
+          return { answer: parseInt(i), pct: (100 * p) / totalProb }
+        })
 
-    const resolutionProps = removeUndefinedProps({
-      outcome:
-        resolveOption === 'CHOOSE'
-          ? parseInt(answers[0])
-          : resolveOption === 'CHOOSE_MULTIPLE'
-          ? 'MKT'
-          : 'CANCEL',
-      resolutions:
-        resolveOption === 'CHOOSE_MULTIPLE' ? resolutions : undefined,
-      contractId: contract.id,
-    })
+    const resolutionProps = isCpmm
+      ? removeUndefinedProps({
+          contractId: contract.id,
+          outcome: resolveOption,
+          resolutions:
+            resolveOption === 'CHOOSE_MULTIPLE' ? resolutions : undefined,
+          answerId: resolveOption === 'CHOOSE_ONE' ? answerIds[0] : undefined,
+        })
+      : removeUndefinedProps({
+          contractId: contract.id,
+          outcome:
+            resolveOption === 'CHOOSE_ONE'
+              ? parseInt(answerIds[0])
+              : resolveOption === 'CHOOSE_MULTIPLE'
+              ? 'MKT'
+              : 'CANCEL',
+          resolutions:
+            resolveOption === 'CHOOSE_MULTIPLE' ? resolutions : undefined,
+        })
 
     try {
       const result = await resolveMarket(resolutionProps)
@@ -165,18 +181,18 @@ export function AnswerResolvePanel(props: {
             <ResolveConfirmationButton
               color={getAnswerResolveButtonColor(
                 resolveOption,
-                answers,
+                answerIds,
                 chosenAnswers
               )}
               label={getAnswerResolveButtonLabel(
                 resolveOption,
                 chosenText,
-                answers
+                answerIds
               )}
               marketTitle={contract.question}
               disabled={getAnswerResolveButtonDisabled(
                 resolveOption,
-                answers,
+                answerIds,
                 chosenAnswers
               )}
               onResolve={onResolve}
@@ -187,14 +203,14 @@ export function AnswerResolvePanel(props: {
             <Button
               color={getAnswerResolveButtonColor(
                 resolveOption,
-                answers,
+                answerIds,
                 chosenAnswers
               )}
               disabled={
                 isSubmitting ||
                 getAnswerResolveButtonDisabled(
                   resolveOption,
-                  answers,
+                  answerIds,
                   chosenAnswers
                 )
               }
@@ -206,7 +222,7 @@ export function AnswerResolvePanel(props: {
                   {getAnswerResolveButtonLabel(
                     resolveOption,
                     chosenText,
-                    answers
+                    answerIds
                   )}
                 </>
               </>

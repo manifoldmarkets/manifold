@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 
-import { CPMMContract } from 'common/contract'
+import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { isProd } from 'shared/utils'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -22,7 +22,7 @@ export const addHouseSubsidy = (contractId: string, amount: number) => {
 
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const snap = await contractDoc.get()
-    const contract = snap.data() as CPMMContract
+    const contract = snap.data() as CPMMContract | CPMMMultiContract
 
     const { newLiquidityProvision, newTotalLiquidity, newSubsidyPool } =
       getNewLiquidityProvision(

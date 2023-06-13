@@ -6,7 +6,7 @@ import { filterDefined } from 'common/util/array'
 import { uniq } from 'lodash'
 import { useEffect, useState } from 'react'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
-import { useSupabasePolling } from 'web/hooks/use-supabase'
+import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
 import {
@@ -200,7 +200,7 @@ export function usePollingNumGroupMembers(groupId: string) {
     .from('group_members')
     .select('*', { head: true, count: 'exact' })
     .eq('group_id', groupId)
-  return useSupabasePolling(q)[0]?.count
+  return useSupabasePolling(q)?.count
 }
 
 export async function setTranslatedMemberRole(

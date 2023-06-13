@@ -62,7 +62,6 @@ export const Stats = (props: {
     outcomeType,
     id,
     elasticity,
-    pool,
   } = contract
 
   const typeDisplay =
@@ -90,7 +89,7 @@ export const Stats = (props: {
                     text={`Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins.`}
                   />
                 </>
-              ) : mechanism === 'cpmm-2' ? (
+              ) : mechanism === 'cpmm-2' || mechanism === 'cpmm-multi-1' ? (
                 <>
                   Fixed{' '}
                   <InfoTooltip
@@ -189,9 +188,13 @@ export const Stats = (props: {
             <td>Pool</td>
             <td>
               {mechanism === 'cpmm-1' && outcomeType === 'BINARY'
-                ? `${Math.round(pool.YES)} YES, ${Math.round(pool.NO)} NO`
+                ? `${Math.round(contract.pool.YES)} YES, ${Math.round(
+                    contract.pool.NO
+                  )} NO`
                 : mechanism === 'cpmm-1' && outcomeType === 'PSEUDO_NUMERIC'
-                ? `${Math.round(pool.YES)} HIGHER, ${Math.round(pool.NO)} LOWER`
+                ? `${Math.round(contract.pool.YES)} HIGHER, ${Math.round(
+                    contract.pool.NO
+                  )} LOWER`
                 : contractPool(contract)}
             </td>
           </tr>
