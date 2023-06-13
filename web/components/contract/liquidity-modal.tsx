@@ -33,7 +33,9 @@ export function LiquidityModal(props: {
   )
 }
 
-function AddLiquidityPanel(props: { contract: CPMMContract | CPMMMultiContract }) {
+function AddLiquidityPanel(props: {
+  contract: CPMMContract | CPMMMultiContract
+}) {
   const { contract } = props
   const { id: contractId, slug } = contract
 
