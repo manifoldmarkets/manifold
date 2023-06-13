@@ -1,29 +1,31 @@
-import { Row } from '../layout/row'
-import { Contract } from 'web/lib/firebase/contracts'
-import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
+import { DotsVerticalIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { getShareUrl } from 'common/util/share'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
-import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import { ReactNode, useState } from 'react'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { Contract } from 'web/lib/firebase/contracts'
+import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
-import clsx from 'clsx'
 
 export function ExtraContractActionsRow(props: {
   contract: Contract
   children?: ReactNode
+  className?: string
 }) {
-  const { contract, children } = props
+  const { contract, children, className } = props
   const user = useUser()
   const privateUser = usePrivateUser()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const hasCoverImage = !!contract.coverImageUrl
 
   return (
-    <Row className="gap-3">
+    <Row className={className}>
       {children}
 
-      <div className="flex items-center rounded-full bg-black/60 text-white [&>div]:pr-2">
+      <div className={'flex items-center [&>div]:pr-2'}>
         <LikeButton
           user={user}
           contract={contract}
@@ -34,7 +36,7 @@ export function ExtraContractActionsRow(props: {
           contentText={contract.question}
           showTotalLikesUnder
           size="sm"
-          color="white"
+          color={'gray'}
           className={clsx(
             'p-2',
             isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
@@ -49,17 +51,20 @@ export function ExtraContractActionsRow(props: {
           tooltip: 'Copy market share link',
           //TODO: less spaghetti way of styling the button and icon
           className:
-            'rounded-full bg-black/60 !p-2 !text-white hover:bg-black/80 [&_svg]:h-4 [&_svg]:w-4',
+            '!p-2 [&_svg]:h-4 [&_svg]:w-4 text-ink-500 hover:text-ink-600',
         }}
         eventTrackingName="copy market link"
       />
 
       <Tooltip text="Market details" placement="bottom" noTap>
         <button
-          className="rounded-full bg-black/60 p-2 transition-colors hover:bg-black/80"
+          className={clsx(
+            'text-ink-500 hover:text-ink-600 p-2 transition-colors',
+            hasCoverImage
+          )}
           onClick={() => setDialogOpen(true)}
         >
-          <DotsHorizontalIcon className="h-4 w-4 text-white" aria-hidden />
+          <DotsVerticalIcon className={clsx('h-4 w-4')} aria-hidden />
         </button>
       </Tooltip>
       <ContractInfoDialog

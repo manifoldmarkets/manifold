@@ -15,6 +15,7 @@ import { useMutation } from 'react-query'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { FileUploadButton } from '../buttons/file-upload-button'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { TbCameraPlus } from 'react-icons/tb'
 
 export function ChangeBannerButton(props: {
   contract?: Contract
@@ -28,22 +29,36 @@ export function ChangeBannerButton(props: {
   const isCreator = user?.id === contract?.creatorId
   const isAdmin = useAdmin()
   const canEdit = isCreator || isAdmin
+  const hasCoverImage = !!contract?.coverImageUrl
 
   return (
     <>
       <Tooltip
-        text={canEdit ? 'Change banner' : 'See full banner'}
+        text={
+          canEdit
+            ? hasCoverImage
+              ? 'Change banner'
+              : 'Add banner'
+            : 'See full banner'
+        }
         noTap
         className={className}
       >
         <button
           className={clsx(
-            'flex rounded-full bg-black/60 p-2 text-white transition-colors hover:bg-black/80'
+            'flex p-2 transition-colors',
+            hasCoverImage
+              ? 'rounded-full bg-black/60 text-white hover:bg-black/80'
+              : 'text-ink-500 hover:text-ink-600'
           )}
           onClick={() => setOpen(true)}
         >
           {canEdit ? (
-            <CameraIcon className="h-4 w-4" />
+            hasCoverImage ? (
+              <CameraIcon className="h-4 w-4" />
+            ) : (
+              <TbCameraPlus className="h-4 w-4" />
+            )
           ) : (
             <ArrowsExpandIcon className="h-4 w-4" />
           )}
