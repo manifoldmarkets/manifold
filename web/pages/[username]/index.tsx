@@ -64,6 +64,7 @@ import {
   getGrade,
 } from 'web/pages/[username]/calibration'
 import { DailyLeagueStat } from 'web/components/daily-league-stat'
+import { QuestsOrStreak } from 'web/components/quests-or-streak'
 
 export const getStaticProps = async (props: {
   params: {
@@ -224,7 +225,10 @@ export function UserProfile(props: {
             </Col>
           </Row>
           {isCurrentUser ? (
-            <DailyLeagueStat user={user} />
+            <Row className={'gap-1 sm:gap-2'}>
+              <DailyLeagueStat user={user} />
+              <QuestsOrStreak user={user} />
+            </Row>
           ) : (
             <Row className="items-center gap-1 sm:gap-2">
               <UserFollowButton userId={user.id} />

@@ -4,8 +4,8 @@ import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 
 import { Bet } from 'common/bet'
-import { Answer } from 'common/answer'
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import { Answer, DpmAnswer } from 'common/answer'
+import { MultiContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
 import { DAY_MS } from 'common/util/time'
 import {
@@ -18,11 +18,8 @@ import {
 import { MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { buy, poolToProbs, shortSell } from 'common/calculate-cpmm-multi'
 import { buildArray } from 'common/util/array'
 import { MultiPoint } from 'common/chart'
-
-type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
 export const CHOICE_ANSWER_COLORS = [
   '#77AADDB3',
@@ -40,7 +37,7 @@ const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
 const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
-const getAnswers = (contract: ChoiceContract) => {
+const getAnswers = (contract: MultiContract) => {
   const { answers, outcomeType } = contract
   const validAnswers = (answers ?? []).filter(
     (answer) => answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE'
@@ -51,7 +48,7 @@ const getAnswers = (contract: ChoiceContract) => {
   )
 }
 
-const getDpmBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
+const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[], topN?: number) => {
   const sortedBets = sortBy(bets, (b) => b.createdTime)
   const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
   const sharesByOutcome = Object.fromEntries(
@@ -77,28 +74,9 @@ const getDpmBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
   return points
 }
 
-const getCpmmBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
-  const sortedBets = sortBy(bets, (b) => b.createdTime)
-  // TODO: Load liquidity provisions to update the pool.
-  let pool = Object.fromEntries(answers.map((a) => [a.id, 100]))
-
-  const points: MultiPoint<Bet>[] = []
-  for (const bet of sortedBets) {
-    const { outcome, amount, sharesByOutcome } = bet
-    const { newPool } = sharesByOutcome
-      ? shortSell(pool, outcome, amount)
-      : buy(pool, outcome, amount)
-    pool = newPool
-    const probs = answers.map((a) => poolToProbs(newPool)[a.id])
-
-    if (topN != null && probs.length > topN) {
-      const y = [...probs.slice(0, topN), sum(probs.slice(topN))]
-      points.push({ x: bet.createdTime, y, obj: bet })
-    } else {
-      points.push({ x: bet.createdTime, y: probs, obj: bet })
-    }
-  }
-  return points
+// TODO: implement
+const getMultiBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
+  return []
 }
 
 type LegendItem = { color: string; label: string; value?: string }
@@ -124,12 +102,12 @@ const Legend = (props: { className?: string; items: LegendItem[] }) => {
   )
 }
 
-export function useChartAnswers(contract: ChoiceContract) {
+export function useChartAnswers(contract: MultiContract) {
   return useMemo(() => getAnswers(contract), [contract])
 }
 
 export const ChoiceContractChart = (props: {
-  contract: ChoiceContract
+  contract: MultiContract
   bets: Bet[]
   width: number
   height: number
@@ -144,8 +122,8 @@ export const ChoiceContractChart = (props: {
   const betPoints = useMemo(
     () =>
       isDpm
-        ? getDpmBetPoints(answers, bets, topN)
-        : getCpmmBetPoints(answers, bets, topN),
+        ? getDpmBetPoints(answers as DpmAnswer[], bets, topN)
+        : getMultiBetPoints(answers as Answer[], bets, topN),
     [answers, bets, topN, isDpm]
   )
   const endProbs = useMemo(

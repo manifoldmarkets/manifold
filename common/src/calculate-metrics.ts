@@ -4,7 +4,10 @@ import { Bet, LimitBet } from './bet'
 import { Contract, CPMMContract, DPMContract } from './contract'
 import { User } from './user'
 import { DAY_MS } from './util/time'
-import { getBinaryCpmmBetInfo, getNewMultiBetInfo } from './new-bet'
+import {
+  computeFills,
+  getNewMultiBetInfo,
+} from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { logit } from './util/math'
@@ -86,20 +89,29 @@ export const computeBinaryCpmmElasticity = (
     userIds.map((id) => [id, Number.MAX_SAFE_INTEGER])
   )
 
-  const { newPool: poolY, newP: pY } = getBinaryCpmmBetInfo(
+  const cpmmState = {
+    pool: contract.pool,
+    p: contract.p,
+  }
+
+  const {
+    cpmmState: { pool: poolY, p: pY },
+  } = computeFills(
+    cpmmState,
     'YES',
     betAmount,
-    contract,
     undefined,
     sortedBets,
     userBalances
   )
   const resultYes = getCpmmProbability(poolY, pY)
 
-  const { newPool: poolN, newP: pN } = getBinaryCpmmBetInfo(
+  const {
+    cpmmState: { pool: poolN, p: pN },
+  } = computeFills(
+    cpmmState,
     'NO',
     betAmount,
-    contract,
     undefined,
     sortedBets,
     userBalances
@@ -119,26 +131,20 @@ export const computeBinaryCpmmElasticityFromAnte = (
 ) => {
   const pool = { YES: ante, NO: ante }
   const p = 0.5
-  const contract = { pool, p } as any
 
-  const { newPool: poolY, newP: pY } = getBinaryCpmmBetInfo(
-    'YES',
-    betAmount,
-    contract,
-    undefined,
-    [],
-    {}
-  )
+  const cpmmState = {
+    pool,
+    p,
+  }
+
+  const {
+    cpmmState: { pool: poolY, p: pY },
+  } = computeFills(cpmmState,'YES', betAmount, undefined, [], {})
   const resultYes = getCpmmProbability(poolY, pY)
 
-  const { newPool: poolN, newP: pN } = getBinaryCpmmBetInfo(
-    'NO',
-    betAmount,
-    contract,
-    undefined,
-    [],
-    {}
-  )
+  const {
+    cpmmState: { pool: poolN, p: pN },
+  } = computeFills(cpmmState, 'NO', betAmount, undefined, [], {})
   const resultNo = getCpmmProbability(poolN, pN)
 
   // handle AMM overflow

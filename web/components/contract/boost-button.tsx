@@ -94,7 +94,6 @@ function BoostFormRow(props: { contract: Contract }) {
 
   const onSubmit = async () => {
     setLoading(true)
-
     try {
       await boostMarket({
         marketId: contract.id,

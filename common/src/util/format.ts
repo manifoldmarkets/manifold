@@ -1,6 +1,7 @@
 import { ENV_CONFIG } from '../envs/constants'
 import {
   BinaryContract,
+  CPMMMultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -119,10 +120,17 @@ export function toCamelCase(words: string) {
 }
 
 export const formatOutcomeLabel = (
-  contract: BinaryContract | PseudoNumericContract | StonkContract,
+  contract:
+    | BinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract,
   outcomeLabel: 'YES' | 'NO'
 ) => {
-  if (contract.outcomeType === 'BINARY') {
+  if (
+    contract.outcomeType === 'BINARY' ||
+    contract.mechanism === 'cpmm-multi-1'
+  ) {
     return outcomeLabel
   }
   if (contract.outcomeType === 'STONK') {

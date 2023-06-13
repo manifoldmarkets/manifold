@@ -1,13 +1,20 @@
 export const FIXED_ANTE = 50
-export const ANTES = {
+const ANTES = {
   BINARY: FIXED_ANTE,
-  MULTIPLE_CHOICE: FIXED_ANTE * 2,
+  MULTIPLE_CHOICE: FIXED_ANTE / 2, // Amount per answer.
   FREE_RESPONSE: FIXED_ANTE * 2,
   PSEUDO_NUMERIC: FIXED_ANTE * 5,
   NUMERIC: FIXED_ANTE * 5,
   CERT: FIXED_ANTE * 10,
   QUADRATIC_FUNDING: FIXED_ANTE * 10,
   STONK: FIXED_ANTE,
+}
+
+export const getAnte = (outcomeType: string, numAnswers?: number) => {
+  const ante = ANTES[outcomeType as keyof typeof ANTES] ?? FIXED_ANTE
+  return outcomeType === 'MULTIPLE_CHOICE' && numAnswers
+    ? ante * numAnswers
+    : ante
 }
 
 export const STARTING_BALANCE = 500

@@ -11,7 +11,7 @@ import {
 import { bulkUpdate } from 'shared/supabase/utils'
 import { secrets } from 'common/secrets'
 import { getSeasonDates } from 'common/leagues'
-import { getContractBetMetrics } from 'common/calculate'
+import { getProfitMetrics } from 'common/calculate'
 
 // Disable updates between freezing a season and starting the next one.
 const DISABLED = false
@@ -171,7 +171,7 @@ export async function updateLeagueCore() {
         contract.visibility === 'public' &&
         !EXCLUDED_CONTRACT_SLUGS.has(contract.slug)
       ) {
-        const { profit } = getContractBetMetrics(contract, contractBets)
+        const { profit } = getProfitMetrics(contract, contractBets)
         if (isNaN(profit)) {
           console.error(
             'Profit is NaN! contract',

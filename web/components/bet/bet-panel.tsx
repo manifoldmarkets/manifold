@@ -1,11 +1,13 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
-import { clamp } from 'lodash'
+import { clamp, sumBy } from 'lodash'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
+import dayjs from 'dayjs'
 
 import {
   CPMMBinaryContract,
+  CPMMMultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -18,7 +20,7 @@ import {
   formatOutcomeLabel,
   formatPercent,
 } from 'common/util/format'
-import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
+import { computeCpmmBet } from 'common/new-bet'
 import { User } from 'web/lib/firebase/users'
 import { LimitBet } from 'common/bet'
 import { APIError, placeBet } from 'web/lib/firebase/api'
@@ -30,10 +32,8 @@ import {
   NoLabel,
   YesLabel,
 } from '../outcome-label'
-import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUnfilledBetsAndBalanceByUserId } from '../../hooks/use-bets'
-import { getCpmmProbability } from 'common/calculate-cpmm'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { track } from 'web/lib/service/analytics'
@@ -47,12 +47,21 @@ import { SINGULAR_BET } from 'common/user'
 import { getStonkShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { Input } from 'web/components/widgets/input'
 import { DAY_MS, MINUTE_MS } from 'common/util/time'
-import dayjs from 'dayjs'
+import { Answer } from 'common/answer'
+import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
+import { getProbability } from 'common/calculate'
+import { removeUndefinedProps } from 'common/util/object'
+import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 
 export type binaryOutcomes = 'YES' | 'NO' | undefined
 
 export function BuyPanel(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
+  contract:
+    | CPMMBinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
+  multiProps?: { answers: Answer[]; answerToBuy: Answer }
   user: User | null | undefined
   hidden: boolean
   onBuySuccess?: () => void
@@ -64,6 +73,7 @@ export function BuyPanel(props: {
 }) {
   const {
     contract,
+    multiProps,
     user,
     hidden,
     onBuySuccess,
@@ -74,13 +84,28 @@ export function BuyPanel(props: {
     className,
   } = props
 
-  const initialProb = getProbability(contract)
+  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  if (isCpmmMulti && !multiProps) {
+    throw new Error('multiProps must be defined for cpmm-multi-1')
+  }
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
+
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
   const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
-  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id
+  const { unfilledBets: allUnfilledBets, balanceByUserId } =
+    useUnfilledBetsAndBalanceByUserId(contract.id)
+
+  const unfilledBetsMatchingAnswer = allUnfilledBets.filter(
+    (b) => b.answerId === multiProps?.answerToBuy?.id
   )
+  const unfilledBets =
+    isCpmmMulti && !shouldAnswersSumToOne
+      ? // Always filter to answer for non-sum-to-one cpmm multi
+        unfilledBetsMatchingAnswer
+      : allUnfilledBets
+
   const outcome = option === 'LIMIT' ? undefined : option
   const seeLimit = option === 'LIMIT'
 
@@ -119,11 +144,14 @@ export function BuyPanel(props: {
 
     setError(undefined)
     setIsSubmitting(true)
-    placeBet({
-      outcome,
-      amount: betAmount,
-      contractId: contract.id,
-    })
+    placeBet(
+      removeUndefinedProps({
+        outcome,
+        amount: betAmount,
+        contractId: contract.id,
+        answerId: multiProps?.answerToBuy.id,
+      })
+    )
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
@@ -153,32 +181,62 @@ export function BuyPanel(props: {
       amount: betAmount,
       outcome,
       isLimitOrder: false,
+      answerId: multiProps?.answerToBuy.id,
     })
   }
 
   const betDisabled =
     isSubmitting || !betAmount || !!error || outcome === undefined
 
-  const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
-    outcome ?? 'YES',
-    betAmount ?? 0,
-    contract,
-    undefined,
-    unfilledBets,
-    balanceByUserId
-  )
+  let currentPayout: number
+  let probBefore: number
+  let probAfter: number
+  if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
+    const { answers, answerToBuy } = multiProps
+    const { newBetResult } = calculateCpmmMultiArbitrageBet(
+      answers,
+      answerToBuy,
+      outcome ?? 'YES',
+      betAmount ?? 0,
+      undefined,
+      unfilledBets,
+      balanceByUserId
+    )
+    const { pool, p } = newBetResult.cpmmState
+    currentPayout = sumBy(newBetResult.takers, 'shares')
+    probBefore = answerToBuy.prob
+    probAfter = getCpmmProbability(pool, p)
+  } else {
+    const cpmmState = isCpmmMulti
+      ? {
+          pool: {
+            YES: multiProps!.answerToBuy.poolYes,
+            NO: multiProps!.answerToBuy.poolNo,
+          },
+          p: 0.5,
+        }
+      : { pool: contract.pool, p: contract.p }
 
-  const resultProb = getCpmmProbability(newPool, newP)
-  const probStayedSame =
-    formatPercent(resultProb) === formatPercent(initialProb)
+    const result = computeCpmmBet(
+      cpmmState,
+      outcome ?? 'YES',
+      betAmount ?? 0,
+      undefined,
+      unfilledBets,
+      balanceByUserId
+    )
+    currentPayout = result.shares
+    probBefore = result.probBefore
+    probAfter = result.probAfter
+  }
 
-  const probChange = Math.abs(resultProb - initialProb)
-  const currentPayout = newBet.shares
+  const probStayedSame = formatPercent(probAfter) === formatPercent(probBefore)
+  const probChange = Math.abs(probAfter - probBefore)
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
   const rawDifference = Math.abs(
-    getMappedValue(contract, resultProb) - getMappedValue(contract, initialProb)
+    getMappedValue(contract, probAfter) - getMappedValue(contract, probBefore)
   )
   const displayedDifference = isPseudoNumeric
     ? formatLargeNumber(rawDifference)
@@ -226,7 +284,7 @@ export function BuyPanel(props: {
             isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
           }
         />
-        {!isStonk && !initialOutcome && (
+        {!isStonk && (
           <Button
             color={seeLimit ? 'indigo' : 'indigo-outline'}
             onClick={() => onOptionChoice('LIMIT')}
@@ -291,12 +349,12 @@ export function BuyPanel(props: {
             </Row>
             {probStayedSame ? (
               <div className="text-lg font-semibold">
-                {getFormattedMappedValue(contract, initialProb)}
+                {getFormattedMappedValue(contract, probBefore)}
               </div>
             ) : (
               <div>
                 <span className="text-lg font-semibold">
-                  {getFormattedMappedValue(contract, resultProb)}
+                  {getFormattedMappedValue(contract, probAfter)}
                 </span>
                 <span
                   className={clsx(
@@ -312,7 +370,7 @@ export function BuyPanel(props: {
                       {outcome != 'NO' && '+'}
                       {getFormattedMappedValue(
                         contract,
-                        resultProb - initialProb
+                        probAfter - probBefore
                       )}
                     </>
                   )}
@@ -364,8 +422,9 @@ export function BuyPanel(props: {
         <>
           <LimitOrderPanel
             className="rounded-lg bg-indigo-400/10 px-4 py-2"
-            hidden={!seeLimit}
             contract={contract}
+            multiProps={multiProps}
+            hidden={!seeLimit}
             user={user}
             unfilledBets={unfilledBets}
             balanceByUserId={balanceByUserId}
@@ -375,7 +434,7 @@ export function BuyPanel(props: {
           <YourOrders
             className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
             contract={contract}
-            bets={unfilledBets as LimitBet[]}
+            bets={unfilledBetsMatchingAnswer}
           />
         </>
       )}
@@ -392,7 +451,12 @@ export function BuyPanel(props: {
 }
 
 function LimitOrderPanel(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
+  contract:
+    | CPMMBinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
+  multiProps?: { answers: Answer[]; answerToBuy: Answer }
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
@@ -403,6 +467,7 @@ function LimitOrderPanel(props: {
 }) {
   const {
     contract,
+    multiProps,
     user,
     unfilledBets,
     balanceByUserId,
@@ -412,7 +477,10 @@ function LimitOrderPanel(props: {
     className,
   } = props
 
-  const initialProb = getProbability(contract)
+  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  if (isCpmmMulti && !multiProps) {
+    throw new Error('multiProps must be defined for cpmm-multi-1')
+  }
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
@@ -487,30 +555,41 @@ function LimitOrderPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
+    const answerId = multiProps?.answerToBuy.id
+
     const betsPromise = hasTwoBets
       ? Promise.all([
-          placeBet({
-            outcome: 'YES',
-            amount: yesAmount,
-            limitProb: yesLimitProb,
-            contractId: contract.id,
-            expiresAt,
-          }),
-          placeBet({
-            outcome: 'NO',
-            amount: noAmount,
-            limitProb: noLimitProb,
-            contractId: contract.id,
-            expiresAt,
-          }),
+          placeBet(
+            removeUndefinedProps({
+              outcome: 'YES',
+              amount: yesAmount,
+              limitProb: yesLimitProb,
+              contractId: contract.id,
+              answerId,
+              expiresAt,
+            })
+          ),
+          placeBet(
+            removeUndefinedProps({
+              outcome: 'NO',
+              amount: noAmount,
+              limitProb: noLimitProb,
+              contractId: contract.id,
+              answerId,
+              expiresAt,
+            })
+          ),
         ])
-      : placeBet({
-          outcome: hasYesLimitBet ? 'YES' : 'NO',
-          amount: betAmount,
-          contractId: contract.id,
-          limitProb: hasYesLimitBet ? yesLimitProb : noLimitProb,
-          expiresAt,
-        })
+      : placeBet(
+          removeUndefinedProps({
+            outcome: hasYesLimitBet ? 'YES' : 'NO',
+            amount: betAmount,
+            contractId: contract.id,
+            answerId,
+            limitProb: hasYesLimitBet ? yesLimitProb : noLimitProb,
+            expiresAt,
+          })
+        )
 
     betsPromise
       .catch((e) => {
@@ -542,6 +621,7 @@ function LimitOrderPanel(props: {
         limitProb: yesLimitProb,
         isLimitOrder: true,
         isRangeOrder: hasTwoBets,
+        answerId: multiProps?.answerToBuy.id,
       })
     }
     if (hasNoLimitBet) {
@@ -555,41 +635,65 @@ function LimitOrderPanel(props: {
         limitProb: noLimitProb,
         isLimitOrder: true,
         isRangeOrder: hasTwoBets,
+        answerId: multiProps?.answerToBuy.id,
       })
     }
   }
 
+  const cpmmState = isCpmmMulti
+    ? {
+        pool: {
+          YES: multiProps!.answerToBuy.poolYes,
+          NO: multiProps!.answerToBuy.poolNo,
+        },
+        p: 0.5,
+      }
+    : { pool: contract.pool, p: contract.p }
+
+  const initialProb = isCpmmMulti
+    ? multiProps!.answerToBuy.prob
+    : getProbability(contract)
+
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
+
   const {
     currentPayout: yesPayout,
     currentReturn: yesReturn,
-    totalFees: yesFees,
-    newBet: yesBet,
-  } = getBinaryBetStats(
+    orderAmount: yesOrderAmount,
+    amount: yesFilledAmount,
+  } = getBetReturns(
+    cpmmState,
     'YES',
     yesAmount,
-    contract,
     yesLimitProb ?? initialProb,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    shouldAnswersSumToOne ? multiProps : undefined
   )
   const yesReturnPercent = formatPercent(yesReturn)
 
   const {
     currentPayout: noPayout,
     currentReturn: noReturn,
-    totalFees: noFees,
-    newBet: noBet,
-  } = getBinaryBetStats(
+    orderAmount: noOrderAmount,
+    amount: noFilledAmount,
+  } = getBetReturns(
+    cpmmState,
     'NO',
     noAmount,
-    contract,
     noLimitProb ?? initialProb,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    multiProps
   )
   const noReturnPercent = formatPercent(noReturn)
 
-  const profitIfBothFilled = shares - (yesAmount + noAmount) - yesFees - noFees
+  const profitIfBothFilled = shares - (yesAmount + noAmount)
+
+  const unfilledBetsMatchingAnswer = unfilledBets.filter(
+    (b) => b.answerId === multiProps?.answerToBuy?.id
+  )
 
   return (
     <Col className={clsx(className, hidden && 'hidden')}>
@@ -599,7 +703,10 @@ function LimitOrderPanel(props: {
           <InfoTooltip text="Limit orders let you place an order to buy at a specific probability which other users can bet against" />
         </div>
 
-        <OrderBookButton limitBets={unfilledBets} contract={contract} />
+        <OrderBookButton
+          limitBets={unfilledBetsMatchingAnswer}
+          contract={contract}
+        />
       </Row>
       <Row className="mt-1 mb-4 gap-4">
         <Col className="gap-2">
@@ -700,7 +807,7 @@ function LimitOrderPanel(props: {
       </div>
 
       <Col className="mt-2 w-full gap-3">
-        {(hasTwoBets || (hasYesLimitBet && yesBet.amount !== 0)) && (
+        {(hasTwoBets || (hasYesLimitBet && yesFilledAmount !== 0)) && (
           <Row className="items-center justify-between gap-2 text-sm">
             <div className="text-ink-500 whitespace-nowrap">
               {isPseudoNumeric ? (
@@ -711,12 +818,11 @@ function LimitOrderPanel(props: {
               filled now
             </div>
             <div className="mr-2 whitespace-nowrap">
-              {formatMoney(yesBet.amount)} of{' '}
-              {formatMoney(yesBet.orderAmount ?? 0)}
+              {formatMoney(yesFilledAmount)} of {formatMoney(yesOrderAmount)}
             </div>
           </Row>
         )}
-        {(hasTwoBets || (hasNoLimitBet && noBet.amount !== 0)) && (
+        {(hasTwoBets || (hasNoLimitBet && noFilledAmount !== 0)) && (
           <Row className="items-center justify-between gap-2 text-sm">
             <div className="text-ink-500 whitespace-nowrap">
               {isPseudoNumeric ? (
@@ -727,8 +833,7 @@ function LimitOrderPanel(props: {
               filled now
             </div>
             <div className="mr-2 whitespace-nowrap">
-              {formatMoney(noBet.amount)} of{' '}
-              {formatMoney(noBet.orderAmount ?? 0)}
+              {formatMoney(noFilledAmount)} of {formatMoney(noOrderAmount)}
             </div>
           </Row>
         )}
@@ -810,4 +915,53 @@ function LimitOrderPanel(props: {
       )}
     </Col>
   )
+}
+
+const getBetReturns = (
+  cpmmState: CpmmState,
+  outcome: 'YES' | 'NO',
+  betAmount: number,
+  limitProb: number | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+  arbitrageProps?: {
+    answers: Answer[]
+    answerToBuy: Answer
+  }
+) => {
+  const orderAmount = betAmount
+  let amount = 0
+  let shares: number
+  if (arbitrageProps) {
+    const { answers, answerToBuy } = arbitrageProps
+    const { newBetResult } = calculateCpmmMultiArbitrageBet(
+      answers,
+      answerToBuy,
+      outcome,
+      betAmount,
+      limitProb,
+      unfilledBets,
+      balanceByUserId
+    )
+    amount = sumBy(newBetResult.takers, 'amount')
+    shares = sumBy(newBetResult.takers, 'shares')
+  } else {
+    ;({ amount, shares } = computeCpmmBet(
+      cpmmState,
+      outcome,
+      betAmount,
+      limitProb,
+      unfilledBets,
+      balanceByUserId
+    ))
+  }
+
+  const remainingMatched = limitProb
+    ? ((orderAmount ?? 0) - amount) /
+      (outcome === 'YES' ? limitProb : 1 - limitProb)
+    : 0
+  const currentPayout = shares + remainingMatched
+  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
+
+  return { orderAmount, amount, shares, currentPayout, currentReturn }
 }

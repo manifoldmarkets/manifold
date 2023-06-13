@@ -33,7 +33,6 @@ export const useUnfilledBets = (contractId: string) => {
 
 export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
   const unfilledBets = useUnfilledBets(contractId) ?? []
-
   const userIds = uniq(unfilledBets.map((b) => b.userId))
   const users = filterDefined(useUsersById(userIds))
 

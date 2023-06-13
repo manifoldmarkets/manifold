@@ -14,6 +14,7 @@ import {
 import {
   getFixedCancelPayouts,
   getMktFixedPayouts,
+  getMultiFixedPayouts,
   getStandardFixedPayouts,
 } from './payouts-fixed'
 
@@ -74,6 +75,16 @@ export const getPayouts = (
       resolutions,
       resolutionProbability
     )
+  }
+  if (contract.mechanism === 'cpmm-multi-1') {
+    if (outcome === 'CANCEL') {
+      return getFixedCancelPayouts(bets, liquidities)
+    }
+    if (!resolutions) {
+      throw new Error('getPayouts: resolutions required for cpmm-multi-1')
+    }
+    // Includes equivalent of 'MKT' and 'YES/NO' resolutions.
+    return getMultiFixedPayouts(contract, resolutions, bets, liquidities)
   }
   throw new Error('getPayouts not implemented')
 }

@@ -1,5 +1,9 @@
-import { getOutcomeProbability, getTopNSortedAnswers } from 'common/calculate'
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import {
+  getAnswerProbability,
+  getOutcomeProbability,
+  getTopNSortedAnswers,
+} from 'common/calculate'
+import { MultiContract } from 'common/contract'
 import { CHOICE_ANSWER_COLORS } from './contract/choice'
 
 /** Sparklineish bar chart. Input: array of nums that sum < 1 */
@@ -19,14 +23,12 @@ export const Minibar = (props: { probs: number[] }) => {
   )
 }
 
-export const ContractMinibar = (props: {
-  contract: FreeResponseContract | MultipleChoiceContract
-}) => {
+export const ContractMinibar = (props: { contract: MultiContract }) => {
   const { contract } = props
   const answers = getTopNSortedAnswers(contract, 5)
-  return (
-    <Minibar
-      probs={answers.map((a) => getOutcomeProbability(contract, a.id))}
-    />
-  )
+  const probs =
+    contract.mechanism === 'cpmm-multi-1'
+      ? answers.map((a) => getAnswerProbability(contract.answers, a.id))
+      : answers.map((a) => getOutcomeProbability(contract, a.id))
+  return <Minibar probs={probs} />
 }

@@ -1,6 +1,7 @@
 import { chunk } from 'lodash'
 import { run, millisToTs, selectJson, SupabaseClient } from './utils'
 import { Contract } from '../contract'
+import { Answer } from 'common/answer'
 
 export const getContractFromSlug = async (
   contractSlug: string,
@@ -87,4 +88,32 @@ export const getContractsByUsers = async (
     console.log(e)
   }
   return null
+}
+
+export const getContractAnswers = async (
+  db: SupabaseClient,
+  contractId: string
+) => {
+  const { data } = await db
+    .from('answers')
+    .select('*')
+    .eq('contract_id', contractId)
+    .order('prob', { ascending: false })
+  if (!data) return null
+  return data.map(parseDbAnswer)
+}
+
+const parseDbAnswer = (row: any) => {
+  const answer: Answer = {
+    id: row.id,
+    contractId: row.contract_id,
+    userId: row.user_id,
+    text: row.text,
+    createdTime: new Date(row.created_time).getTime(),
+
+    poolNo: +row.pool_no,
+    poolYes: +row.pool_yes,
+    prob: +row.prob,
+  }
+  return answer
 }

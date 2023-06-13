@@ -4,7 +4,7 @@ import { q_and_a, q_and_a_answer } from 'common/q-and-a'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { db } from 'web/lib/supabase/db'
 import { sum } from 'lodash'
-import { useSupabasePolling } from 'web/hooks/use-supabase'
+import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
 
 export const getQuestionsAnswers = async () => {
   const [questions, answers] = await Promise.all([
@@ -27,7 +27,7 @@ export const getQuestionsAnswers = async () => {
 }
 
 export const useQAndA = () => {
-  const [questionsData] = useSupabasePolling(
+  const questionsData = useSupabasePolling(
     db.from('q_and_a').select('*').order('created_time', {
       ascending: false,
     }),
@@ -36,7 +36,7 @@ export const useQAndA = () => {
       ms: 1000 * 2,
     }
   )
-  const [answersData] = useSupabasePolling(
+  const answersData = useSupabasePolling(
     db.from('q_and_a_answers').select('*').order('created_time', {
       ascending: false,
     }),

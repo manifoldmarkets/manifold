@@ -1,4 +1,4 @@
-import { Contract } from './contract'
+import { Contract, MultiContract } from './contract'
 import { getFormattedMappedValue } from './pseudo-numeric'
 import {
   getDisplayProbability,
@@ -24,7 +24,7 @@ export const getContractOGProps = (
   const topAnswer =
     outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
       ? resolution
-        ? contract.answers.find((a) => a.id === resolution)
+        ? (contract as MultiContract).answers.find((a) => a.id === resolution)
         : getTopAnswer(contract)
       : undefined
 

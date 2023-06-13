@@ -1,6 +1,6 @@
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Answer } from 'common/answer'
+import { Answer, DpmAnswer } from 'common/answer'
 import { ContractParams, visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
@@ -65,6 +65,7 @@ import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import { ContractView } from 'common/events'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { TitleOrEdit } from 'web/components/contract/title-edit'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import {
   useFirebasePublicAndRealtimePrivateContract,
@@ -169,6 +170,14 @@ export function ContractPageContent(props: {
       contractParams.contract.visibility,
       contractParams.contract.id
     ) ?? contractParams.contract
+  if (
+    'answers' in contractParams.contract &&
+    contract.mechanism === 'cpmm-multi-1'
+  ) {
+    ;(contract as any).answers =
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      useAnswersCpmm(contract.id) ?? contractParams.contract.answers
+  }
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
@@ -238,15 +247,16 @@ export function ContractPageContent(props: {
   // show the resolver by default if the market is closed and you can resolve it
   const [showResolver, setShowResolver] = useState(false)
   useEffect(() => {
-    if (
+    // Close resolve panel if you just resolved it.
+    if (isResolved) setShowResolver(false)
+    else if (
       (isCreator || isAdmin || trustworthy) &&
-      !isResolved &&
       (closeTime ?? 0) < Date.now() &&
       outcomeType !== 'STONK'
     ) {
       setShowResolver(true)
     }
-  }, [isAdmin, isCreator, trustworthy, closeTime])
+  }, [isAdmin, isCreator, trustworthy, closeTime, isResolved])
 
   const allowTrade = tradingAllowed(contract)
 
@@ -255,12 +265,12 @@ export function ContractPageContent(props: {
     contractId: contract.id,
   })
 
-  const [answerResponse, setAnswerResponse] = useState<Answer | undefined>(
-    undefined
-  )
+  const [answerResponse, setAnswerResponse] = useState<
+    Answer | DpmAnswer | undefined
+  >(undefined)
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0)
-  const onAnswerCommentClick = useEvent((answer: Answer) => {
+  const onAnswerCommentClick = useEvent((answer: Answer | DpmAnswer) => {
     setAnswerResponse(answer)
     if (tabsContainerRef.current) {
       scrollIntoViewCentered(tabsContainerRef.current)

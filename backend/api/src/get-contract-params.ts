@@ -15,7 +15,10 @@ import {
   getTopContractMetrics,
   getTotalContractMetrics,
 } from 'common/supabase/contract-metrics'
-import { getContractFromSlug } from 'common/supabase/contracts'
+import {
+  getContractAnswers,
+  getContractFromSlug,
+} from 'common/supabase/contracts'
 import { getUserIsMember } from 'common/supabase/groups'
 import { getRelatedContracts } from 'common/supabase/related-contracts'
 import { removeUndefinedProps } from 'common/util/object'
@@ -75,6 +78,12 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
     return contract && !contract.deleted
       ? { contractSlug: contract.slug, visibility: contract.visibility }
       : { contractSlug, visibility: null }
+  }
+
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // Denormalize answers for CPMM multi.
+    const answers = await getContractAnswers(db, contract.id)
+    if (answers) contract.answers = answers
   }
 
   const totalBets = await getTotalBetCount(contract.id, db)

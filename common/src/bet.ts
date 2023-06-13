@@ -31,6 +31,7 @@ export type Bet = {
   userName: string
 
   contractId: string
+  answerId?: string // For multi-binary contracts
   createdTime: number
 
   amount: number // bet size; negative if SELL bet

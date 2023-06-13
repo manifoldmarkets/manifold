@@ -17,12 +17,12 @@ import {
   PrivateUser,
   User,
 } from 'common/user'
-import { Contract } from 'common/contract'
+import { Contract, MultiContract } from 'common/contract'
 import { getPrivateUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
 import { groupBy, keyBy, mapValues, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
-import { Answer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { Group } from 'common/group'
 import {
@@ -343,7 +343,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyOtherAnswerersOnContract = async () => {
-    const answers = await getValues<Answer>(
+    const answers = await getValues<DpmAnswer>(
       firestore
         .collection('contracts')
         .doc(sourceContract.id)
@@ -1200,7 +1200,7 @@ export const createContractResolvedNotifications = async (
     contract.outcomeType === 'FREE_RESPONSE' ||
     contract.outcomeType === 'MULTIPLE_CHOICE'
   ) {
-    const answerText = contract.answers.find(
+    const answerText = (contract as MultiContract).answers.find(
       (answer) => answer.id === outcome
     )?.text
     if (answerText) resolutionText = answerText

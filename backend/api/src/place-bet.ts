@@ -13,17 +13,21 @@ import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
 import { User } from 'common/user'
 import {
   BetInfo,
+  CandidateBet,
   getBinaryCpmmBetInfo,
   getNewMultiBetInfo,
+  getNewMultiCpmmBetInfo,
   getNumericBetsInfo,
 } from 'common/new-bet'
 import { addObjects, removeUndefinedProps } from 'common/util/object'
-import { LimitBet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { redeemShares } from './redeem-shares'
 import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { createLimitBetCanceledNotification } from 'shared/create-notification'
+import { Answer } from 'common/answer'
+import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -36,9 +40,13 @@ const binarySchema = z.object({
   expiresAt: z.number().optional(),
 })
 
-const freeResponseSchema = z.object({
-  outcome: z.string(),
-  shortSell: z.boolean().optional(),
+const multipleChoiceSchema = z.object({
+  answerId: z.string(),
+
+  // Used for new multiple choice contracts (cpmm-multi-1).
+  outcome: z.enum(['YES', 'NO']).optional(),
+  limitProb: z.number().gte(0).lte(1).optional(),
+  expiresAt: z.number().optional(),
 })
 
 const numericSchema = z.object({
@@ -73,6 +81,7 @@ export const placebet = authEndpoint(async (req, auth) => {
 
     const {
       newBet,
+      otherBetResults,
       newPool,
       newTotalShares,
       newTotalBets,
@@ -84,6 +93,13 @@ export const placebet = authEndpoint(async (req, auth) => {
       BetInfo & {
         makers?: maker[]
         ordersToCancel?: LimitBet[]
+        otherBetResults?: {
+          answer: Answer
+          bet: CandidateBet<Bet>
+          cpmmState: CpmmState
+          makers: maker[]
+          ordersToCancel: LimitBet[]
+        }[]
       }
     > => {
       if (
@@ -116,9 +132,9 @@ export const placebet = authEndpoint(async (req, auth) => {
           await getUnfilledBetsAndUserBalances(trans, contractDoc, auth.uid)
 
         return getBinaryCpmmBetInfo(
+          contract,
           outcome,
           amount,
-          contract,
           limitProb,
           unfilledBets,
           balanceByUserId,
@@ -128,11 +144,42 @@ export const placebet = authEndpoint(async (req, auth) => {
         (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
         mechanism == 'dpm-2'
       ) {
-        const { outcome } = validate(freeResponseSchema, req.body)
-        const answerDoc = contractDoc.collection('answers').doc(outcome)
+        const { answerId } = validate(multipleChoiceSchema, req.body)
+        const answerDoc = contractDoc.collection('answers').doc(answerId)
         const answerSnap = await trans.get(answerDoc)
-        if (!answerSnap.exists) throw new APIError(400, 'Invalid answer')
-        return getNewMultiBetInfo(outcome, amount, contract)
+        if (!answerSnap.exists) throw new APIError(400, 'Invalid answerId')
+        return getNewMultiBetInfo(answerId, amount, contract)
+      } else if (
+        outcomeType === 'MULTIPLE_CHOICE' &&
+        mechanism == 'cpmm-multi-1'
+      ) {
+        const {
+          answerId,
+          outcome = 'YES',
+          limitProb,
+          expiresAt,
+        } = validate(multipleChoiceSchema, req.body)
+        const answersSnap = await trans.get(
+          contractDoc.collection('answersCpmm')
+        )
+        const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+        const answer = answers.find((a) => a.id === answerId)
+        if (!answer) throw new APIError(400, 'Invalid answerId')
+
+        const { unfilledBets, balanceByUserId } =
+          await getUnfilledBetsAndUserBalances(trans, contractDoc, auth.uid)
+
+        return getNewMultiCpmmBetInfo(
+          contract,
+          answers,
+          answer,
+          outcome,
+          amount,
+          limitProb,
+          unfilledBets,
+          balanceByUserId,
+          expiresAt
+        )
       } else if (outcomeType == 'NUMERIC' && mechanism == 'dpm-2') {
         const { outcome, value } = validate(numericSchema, req.body)
         return getNumericBetsInfo(value, outcome, amount, contract)
@@ -182,18 +229,73 @@ export const placebet = authEndpoint(async (req, auth) => {
     log(`Updated user ${user.username} balance - auth ${auth.uid}.`)
 
     if (newBet.amount !== 0) {
-      trans.update(
-        contractDoc,
-        removeUndefinedProps({
-          pool: newPool,
-          p: newP,
-          totalShares: newTotalShares,
-          totalBets: newTotalBets,
-          totalLiquidity: newTotalLiquidity,
-          collectedFees: addObjects(newBet.fees, collectedFees),
-          volume: volume + newBet.amount,
-        })
-      )
+      if (newBet.answerId) {
+        // Multi-cpmm-1 contract
+        trans.update(
+          contractDoc,
+          removeUndefinedProps({
+            volume: volume + newBet.amount,
+          })
+        )
+        if (newPool) {
+          const { YES: poolYes, NO: poolNo } = newPool
+          const prob = getCpmmProbability(newPool, 0.5)
+          trans.update(
+            contractDoc.collection('answersCpmm').doc(newBet.answerId),
+            removeUndefinedProps({
+              poolYes,
+              poolNo,
+              prob,
+            })
+          )
+        }
+      } else {
+        trans.update(
+          contractDoc,
+          removeUndefinedProps({
+            pool: newPool,
+            p: newP,
+            totalShares: newTotalShares,
+            totalBets: newTotalBets,
+            totalLiquidity: newTotalLiquidity,
+            collectedFees: addObjects(newBet.fees, collectedFees),
+            volume: volume + newBet.amount,
+          })
+        )
+      }
+
+      if (otherBetResults) {
+        for (const result of otherBetResults) {
+          const { answer, bet, cpmmState, makers, ordersToCancel } = result
+          const betDoc = contractDoc.collection('bets').doc()
+          trans.create(betDoc, {
+            id: betDoc.id,
+            userId: user.id,
+            userAvatarUrl: user.avatarUrl,
+            userUsername: user.username,
+            userName: user.name,
+            isApi,
+            ...bet,
+          })
+          const { YES: poolYes, NO: poolNo } = cpmmState.pool
+          const prob = getCpmmProbability(cpmmState.pool, 0.5)
+          trans.update(
+            contractDoc.collection('answersCpmm').doc(answer.id),
+            removeUndefinedProps({
+              poolYes,
+              poolNo,
+              prob,
+            })
+          )
+          updateMakers(makers, betDoc.id, contractDoc, trans)
+          for (const bet of ordersToCancel) {
+            trans.update(contractDoc.collection('bets').doc(bet.id), {
+              isCancelled: true,
+            })
+          }
+        }
+      }
+
       log(`Updated contract ${contract.slug} properties - auth ${auth.uid}.`)
     }
 
@@ -205,7 +307,10 @@ export const placebet = authEndpoint(async (req, auth) => {
   const { newBet, betId, contract, makers, ordersToCancel, user } = result
   const { mechanism } = contract
 
-  if (mechanism === 'cpmm-1' && newBet.amount !== 0) {
+  if (
+    (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') &&
+    newBet.amount !== 0
+  ) {
     const userIds = uniq([
       auth.uid,
       ...(makers ?? []).map((maker) => maker.bet.userId),

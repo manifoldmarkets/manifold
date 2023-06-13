@@ -1,4 +1,4 @@
-import { Answer } from './answer'
+import { Answer, DpmAnswer } from './answer'
 import { Bet } from './bet'
 import { HistoryPoint } from './chart'
 import { Fees } from './fees'
@@ -55,6 +55,7 @@ export type AnyContractType =
   | (CPMM2 & MultipleChoice)
   | QuadraticFunding
   | (CPMM & Stonk)
+  | CPMMMulti
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -105,6 +106,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
 export type DPMContract = Contract & DPM
 export type CPMMContract = Contract & CPMM
+export type CPMMMultiContract = Contract & CPMMMulti
 
 export type BinaryContract = Contract & Binary
 export type DPMBinaryContract = BinaryContract & DPM
@@ -163,6 +165,26 @@ export type Uniswap2 = {
   price: number
 }
 
+/**
+ * Implemented as a set of cpmm-1 binary contracts, one for each answer.
+ * The mechanism is stored among the contract's answers, which each
+ * reference this contract id.
+ */
+export type CPMMMulti = {
+  mechanism: 'cpmm-multi-1'
+  outcomeType: 'MULTIPLE_CHOICE'
+  shouldAnswersSumToOne: boolean
+  totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
+  subsidyPool: number // current value of subsidy pool in Ṁ
+
+  // Answers chosen on resolution, with the weights of each answer.
+  // Weights sum to 1 if shouldAnswersSumToOne is true. Otherwise, range from 0 to 1 for each answerId.
+  resolutions?: { [answerId: string]: number }
+
+  // NOTE: This field is stored in the answers table and must be denormalized to the client.
+  answers: Answer[]
+}
+
 export type Cert = {
   outcomeType: 'CERT'
 }
@@ -170,7 +192,7 @@ export type Cert = {
 export type QuadraticFunding = {
   outcomeType: 'QUADRATIC_FUNDING'
   mechanism: 'qf'
-  answers: Answer[]
+  answers: DpmAnswer[]
   // Mapping of how much each user has contributed to the matching pool
   // Note: Our codebase assumes every contract has a pool, which is why this isn't just a constant
   pool: { M$: number }
@@ -201,14 +223,14 @@ export type PseudoNumeric = {
 
 export type FreeResponse = {
   outcomeType: 'FREE_RESPONSE'
-  answers: Answer[] // Used for outcomeType 'FREE_RESPONSE'.
+  answers: DpmAnswer[] // Used for outcomeType 'FREE_RESPONSE'.
   resolution?: string | 'MKT' | 'CANCEL'
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
 
 export type MultipleChoice = {
   outcomeType: 'MULTIPLE_CHOICE'
-  answers: Answer[]
+  answers: DpmAnswer[]
   resolution?: string | 'MKT' | 'CANCEL'
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
@@ -225,6 +247,15 @@ export type Numeric = {
 export type Stonk = {
   outcomeType: 'STONK'
   initialProbability: number
+}
+
+export type MultiContract = (
+  | FreeResponseContract
+  | MultipleChoiceContract
+  | CPMMMultiContract
+) & {
+  answers: (DpmAnswer | Answer)[]
+  resolutions?: { [outcome: string]: number }
 }
 
 export type outcomeType = AnyOutcomeType['outcomeType']
@@ -259,6 +290,14 @@ export function contractPool(contract: Contract) {
     ? formatMoney(getLiquidity(contract.pool))
     : contract.mechanism === 'dpm-2'
     ? formatMoney(sum(Object.values(contract.pool)))
+    : contract.mechanism === 'cpmm-multi-1'
+    ? formatMoney(
+        sum(
+          contract.answers.map((a) =>
+            getLiquidity({ YES: a.poolYes, NO: a.poolNo })
+          )
+        )
+      )
     : 'Empty pool'
 }
 

@@ -1,4 +1,4 @@
-import { Answer } from 'common/answer'
+import { Answer, DpmAnswer } from 'common/answer'
 import {
   Contract,
   FreeResponseContract,
@@ -18,15 +18,17 @@ import { getAnswerColor } from '../answers/answers-panel'
 import Curve from 'web/public/custom-components/curve'
 import { useChartAnswers } from '../charts/contract/choice'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
+import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 
 export function CommentsAnswer(props: {
-  answer: Answer
+  answer: Answer | DpmAnswer
   contract: Contract
   color: string
 }) {
   const { answer, contract, color } = props
-  const { username, name, text } = answer
+  const { text } = answer
   const answerElementId = `answer-${answer.id}`
+  const user = useUserByIdOrAnswer(answer)
 
   const { isReady, asPath } = useRouter()
   const [highlighted, setHighlighted] = useState(false)
@@ -55,7 +57,11 @@ export function CommentsAnswer(props: {
       <Col className="bg-ink-100 w-fit py-1 pl-2 pr-2">
         <Row className="gap-2">
           <div className="text-ink-400 text-xs">
-            <UserLink username={username} name={name} /> answered
+            {user && (
+              <>
+                <UserLink username={user.username} name={user.name} /> answered
+              </>
+            )}
             <CopyLinkDateTimeComponent
               prefix={contract.creatorUsername}
               slug={contract.slug}
@@ -72,7 +78,7 @@ export function CommentsAnswer(props: {
 
 export function FreeResponseComments(props: {
   contract: FreeResponseContract | MultipleChoiceContract
-  answerResponse: Answer | undefined
+  answerResponse: Answer | DpmAnswer | undefined
   onCancelAnswerResponse?: () => void
   topLevelComments: ContractComment[]
   commentsByParent: Dictionary<[ContractComment, ...ContractComment[]]>

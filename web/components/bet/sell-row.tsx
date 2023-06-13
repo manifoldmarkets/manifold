@@ -1,6 +1,6 @@
 import { CPMMContract } from 'common/contract'
 import { User } from 'common/user'
-import { getContractBetMetrics } from 'common/calculate'
+import { getInvested } from 'common/calculate'
 import { useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -53,7 +53,11 @@ export function SellRow(props: {
             className="!py-1"
             size="xs"
             color="gray-outline"
-            onClick={() => setShowSellModal(true)}
+            onClick={(e) => {
+              setShowSellModal(true)
+              // Necessary in the profile page to prevent the row from being toggled
+              e.stopPropagation()
+            }}
           >
             Sell
           </Button>
@@ -72,7 +76,7 @@ export function SellRow(props: {
             <TweetButton
               tweetText={getPositionTweet(
                 (sharesOutcome === 'NO' ? -1 : 1) * shares,
-                getContractBetMetrics(contract, userBets).invested,
+                getInvested(contract, userBets),
                 contract,
                 user.username
               )}

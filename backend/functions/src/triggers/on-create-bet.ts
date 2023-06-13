@@ -285,7 +285,10 @@ export const updateUniqueBettorsAndGiveCreatorBonus = async (
   })
   if (!result) return
 
-  if (oldContract.mechanism === 'cpmm-1') {
+  if (
+    oldContract.mechanism === 'cpmm-1' ||
+    oldContract.mechanism === 'cpmm-multi-1'
+  ) {
     await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
   }
 
@@ -336,11 +339,11 @@ const notifyUsersOfLimitFills = async (
 
   return filterDefined(
     await Promise.all(
-      matchedBets.map((matchedBet) => {
+      matchedBets.map(async (matchedBet) => {
         const matchedUser = betUsersById[matchedBet.userId]
-        if (!matchedUser) return
+        if (!matchedUser) return undefined
 
-        createBetFillNotification(
+        await createBetFillNotification(
           user,
           matchedUser,
           bet,

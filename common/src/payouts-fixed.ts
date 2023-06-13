@@ -2,7 +2,7 @@ import { mapValues, sumBy } from 'lodash'
 import { Bet } from './bet'
 import { getOutcomeProbability, getProbability } from './calculate'
 import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
-import { CPMMContract } from './contract'
+import { CPMMContract, CPMMMultiContract } from './contract'
 import { noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 
@@ -51,6 +51,33 @@ export const getStandardFixedPayouts = (
   return { payouts, creatorPayout, liquidityPayouts, collectedFees }
 }
 
+export const getMultiFixedPayouts = (
+  contract: CPMMMultiContract,
+  resolutions: { [answerId: string]: number },
+  bets: Bet[],
+  liquidities: LiquidityProvision[]
+) => {
+  const payouts = bets
+    .map(({ userId, shares, answerId, outcome }) => {
+      const weight = answerId ? resolutions[answerId] ?? 0 : 0
+      const outcomeWeight = outcome === 'YES' ? weight : 1 - weight
+      const payout = shares * outcomeWeight
+      return {
+        userId,
+        payout,
+      }
+    })
+    .filter(({ payout }) => payout !== 0)
+
+  const liquidityPayouts = getMultiLiquidityPoolPayouts(
+    contract,
+    resolutions,
+    liquidities
+  )
+
+  return { payouts, liquidityPayouts, creatorPayout: 0, collectedFees: noFees }
+}
+
 export const getLiquidityPoolPayouts = (
   contract: CPMMContract,
   outcome: string,
@@ -66,6 +93,26 @@ export const getLiquidityPoolPayouts = (
     userId: providerId,
     payout: weight * finalPool,
   }))
+}
+
+export const getMultiLiquidityPoolPayouts = (
+  contract: CPMMMultiContract,
+  resolutions: { [answerId: string]: number },
+  liquidities: LiquidityProvision[]
+) => {
+  const { answers } = contract
+  const totalPayout = sumBy(answers, (answer) => {
+    const weight = resolutions[answer.id] ?? 0
+    const { poolYes, poolNo } = answer
+    return weight * poolYes + (1 - weight) * poolNo
+  })
+  const weightsByUser = getCpmmLiquidityPoolWeights(liquidities)
+  return Object.entries(weightsByUser)
+    .map(([userId, weight]) => ({
+      userId,
+      payout: weight * totalPayout,
+    }))
+    .filter(({ payout }) => payout >= 1e-3)
 }
 
 export const getMktFixedPayouts = (
