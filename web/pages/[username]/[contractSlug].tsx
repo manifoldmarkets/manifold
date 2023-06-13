@@ -368,31 +368,33 @@ export function ContractPageContent(props: {
           <Col
             className={clsx(
               'mb-4 p-4 pt-0 md:pb-8 lg:px-8',
-              coverImageUrl ? 'pt-4' : ''
+              coverImageUrl ? 'pt-2' : ''
             )}
           >
             <Col className="w-full gap-3 lg:gap-4">
-              {coverImageUrl && (
-                <Row className=" w-full justify-between">
-                  <Col className="my-auto">
-                    <BackButton />
-                  </Col>
-                  <ExtraContractActionsRow contract={contract}>
-                    {!coverImageUrl && isCreator && (
-                      <ChangeBannerButton
-                        contract={contract}
-                        className="ml-3 first:ml-0"
-                      />
-                    )}
-                  </ExtraContractActionsRow>
-                </Row>
-              )}
-              <div ref={titleRef}>
-                <TitleOrEdit
-                  contract={contract}
-                  canEdit={isAdmin || isCreator}
-                />
-              </div>
+              <Col>
+                {coverImageUrl && (
+                  <Row className=" w-full justify-between">
+                    <Col className="my-auto">
+                      <BackButton />
+                    </Col>
+                    <ExtraContractActionsRow contract={contract}>
+                      {!coverImageUrl && isCreator && (
+                        <ChangeBannerButton
+                          contract={contract}
+                          className="ml-3 first:ml-0"
+                        />
+                      )}
+                    </ExtraContractActionsRow>
+                  </Row>
+                )}
+                <div ref={titleRef}>
+                  <TitleOrEdit
+                    contract={contract}
+                    canEdit={isAdmin || isCreator}
+                  />
+                </div>
+              </Col>
 
               <div className="text-ink-600 flex items-center justify-between text-sm">
                 <AuthorInfo contract={contract} />
