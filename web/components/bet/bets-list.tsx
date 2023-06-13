@@ -4,6 +4,7 @@ import {
   max,
   partition,
   sortBy,
+  sum,
   sumBy,
   uniqBy,
 } from 'lodash'
@@ -313,7 +314,10 @@ function UserBetsTable(props: {
   // Most of these are descending sorts by default.
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     profit: (c) => -metricsByContractId[c.id].profit,
-    value: (c) => -metricsByContractId[c.id].payout,
+    value: (c) =>
+      -(metricsByContractId[c.id].payout + filter === 'limit_bet'
+        ? sum(openLimitBetsByContract[c.id].map((b) => b.amount))
+        : 0),
     newest: (c) =>
       metricsByContractId[c.id].lastBetTime ??
       max(openLimitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
