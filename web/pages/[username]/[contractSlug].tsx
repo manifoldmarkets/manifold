@@ -299,7 +299,6 @@ export function ContractPageContent(props: {
     observer.observe(element)
     return () => observer.unobserve(element)
   }, [titleRef])
-
   return (
     <>
       {creatorTwitter && (
@@ -322,7 +321,9 @@ export function ContractPageContent(props: {
           <div
             className={clsx(
               'sticky z-50 flex items-end',
-              !coverImageUrl ? 'bg-canvas-100 top-0' : 'top-[-92px] h-[140px]'
+              !coverImageUrl
+                ? 'bg-canvas-0 top-0 w-full'
+                : ' top-[-92px] h-[140px]'
             )}
           >
             {coverImageUrl && (
@@ -341,38 +342,69 @@ export function ContractPageContent(props: {
                 />
               </div>
             )}
-            <div
+            <Row
               className={clsx(
-                'sticky -top-px z-50 mt-px flex w-full justify-between py-2 px-4 transition-colors',
-                headerStuck ? 'bg-black/20 backdrop-blur-2xl' : ''
+                ' sticky -top-px z-50 mt-px flex h-12 w-full py-2 px-4 transition-colors',
+                headerStuck
+                  ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
+                  : ''
               )}
             >
-              <div className="mr-4 flex items-center truncate">
-                <BackButton />
-
+              <Row className=" mr-4 grow">
+                {(headerStuck || !coverImageUrl) && (
+                  <Col className="my-auto">
+                    <BackButton />
+                  </Col>
+                )}
                 {headerStuck && (
-                  <span className="ml-4 text-white">{contract.question}</span>
+                  <span className="text-ink-1000 ml-4 mt-1 w-full min-w-0 overflow-hidden break-all">
+                    {contract.question}
+                  </span>
                 )}
-              </div>
-              <ExtraContractActionsRow contract={contract}>
-                {!headerStuck && !coverImageUrl && isCreator && (
-                  <ChangeBannerButton
-                    contract={contract}
-                    className="ml-3 first:ml-0"
-                  />
-                )}
-              </ExtraContractActionsRow>
-            </div>
-          </div>
+              </Row>
 
-          <Col className="mb-4 p-4 md:px-8 md:pb-8">
-            <Col className="gap-3 sm:gap-4">
-              <div ref={titleRef}>
-                <TitleOrEdit
-                  contract={contract}
-                  canEdit={isAdmin || isCreator}
-                />
-              </div>
+              {(headerStuck || !coverImageUrl) && (
+                <ExtraContractActionsRow contract={contract}>
+                  {!coverImageUrl && isCreator && (
+                    <ChangeBannerButton
+                      contract={contract}
+                      className="ml-3 first:ml-0"
+                    />
+                  )}
+                </ExtraContractActionsRow>
+              )}
+            </Row>
+          </div>
+          <Col
+            className={clsx(
+              'mb-4 p-4 pt-0 md:pb-8 lg:px-8',
+              coverImageUrl ? 'pt-2' : ''
+            )}
+          >
+            <Col className="w-full gap-3 lg:gap-4">
+              <Col>
+                {coverImageUrl && (
+                  <Row className=" w-full justify-between">
+                    <Col className="my-auto">
+                      <BackButton />
+                    </Col>
+                    <ExtraContractActionsRow contract={contract}>
+                      {!coverImageUrl && isCreator && (
+                        <ChangeBannerButton
+                          contract={contract}
+                          className="ml-3 first:ml-0"
+                        />
+                      )}
+                    </ExtraContractActionsRow>
+                  </Row>
+                )}
+                <div ref={titleRef}>
+                  <TitleOrEdit
+                    contract={contract}
+                    canEdit={isAdmin || isCreator}
+                  />
+                </div>
+              </Col>
 
               <div className="text-ink-600 flex items-center justify-between text-sm">
                 <AuthorInfo contract={contract} />

@@ -252,10 +252,15 @@ drop policy if exists "user can insert" on user_seen_markets;
 create policy "user can insert" on user_seen_markets for insert
 with
   check (true);
+
 create index if not exists user_seen_markets_created_time_desc_idx on user_seen_markets (user_id, contract_id, created_time desc);
 
-create index concurrently if not exists user_seen_markets_type_created_time_desc_idx on user_seen_markets
-    (user_id, contract_id, type, created_time desc);
+create index concurrently if not exists user_seen_markets_type_created_time_desc_idx on user_seen_markets (
+  user_id,
+  contract_id,
+  type,
+  created_time desc
+);
 
 alter table user_seen_markets
 cluster on user_seen_markets_type_created_time_desc_idx;
@@ -294,52 +299,52 @@ cluster on user_notifications_created_time;
 
 create table if not exists
   user_feed (
-              id bigint generated always as identity primary key,
-              created_time timestamptz not null default now(),
-              seen_time timestamptz null, -- null means unseen
-              user_id text not null,
-              event_time timestamptz not null,
-              data_type text not null, -- 'new_comment', 'new_contract', 'news_with_related_contracts'
-              reason text not null, --  follow_user, follow_contract, etc
-              data jsonb null,
-              contract_id text null,
-              comment_id text null,
-              answer_id text null,
-              creator_id text null,
-              bet_id text null,
-              news_id text null,
-              group_id text null,
-              reaction_id text null,
-              idempotency_key text null,
-              unique (user_id, idempotency_key)
-);
+    id bigint generated always as identity primary key,
+    created_time timestamptz not null default now(),
+    seen_time timestamptz null, -- null means unseen
+    user_id text not null,
+    event_time timestamptz not null,
+    data_type text not null, -- 'new_comment', 'new_contract', 'news_with_related_contracts'
+    reason text not null, --  follow_user, follow_contract, etc
+    data jsonb null,
+    contract_id text null,
+    comment_id text null,
+    answer_id text null,
+    creator_id text null,
+    bet_id text null,
+    news_id text null,
+    group_id text null,
+    reaction_id text null,
+    idempotency_key text null,
+    unique (user_id, idempotency_key)
+  );
 
 alter table user_feed enable row level security;
 
 drop policy if exists "public read" on user_feed;
 
 create policy "public read" on user_feed for
-  select
+select
   using (true);
 
 drop policy if exists "user can update" on user_feed;
 
-create policy "user can update" on user_feed for
-  update
+create policy "user can update" on user_feed
+for update
   using (true);
 
 create index if not exists user_feed_data_gin on user_feed using GIN (data);
-create index if not exists user_feed_created_time on user_feed (
-                                                                user_id,
-                                                                created_time desc);
+
+create index if not exists user_feed_created_time on user_feed (user_id, created_time desc);
 
 create index if not exists user_feed_unseen_created_time on user_feed (
-                                                                       user_id,
-                                                                       seen_time desc nulls first,
-                                                                       created_time desc);
+  user_id,
+  seen_time desc nulls first,
+  created_time desc
+);
 
-alter table user_feed cluster on user_feed_created_time;
-
+alter table user_feed
+cluster on user_feed_created_time;
 
 create table if not exists
   contracts (
@@ -744,30 +749,6 @@ alter table group_contracts
 cluster on group_contracts_pkey;
 
 create table if not exists
-  group_members (
-    group_id text not null,
-    member_id text not null,
-    data jsonb not null,
-    fs_updated_time timestamp not null,
-    primary key (group_id, member_id)
-  );
-
-alter table group_members enable row level security;
-
-drop policy if exists "public read" on group_members;
-
-create policy "public read" on group_members for
-select
-  using (true);
-
-create index if not exists group_members_data_gin on group_members using GIN (data);
-
-create index group_members_member_id_idx on group_members (member_id);
-
-alter table group_members
-cluster on group_members_pkey;
-
-create table if not exists
   user_quest_metrics (
     user_id text not null,
     score_id text not null,
@@ -877,6 +858,12 @@ drop policy if exists "public read" on post_comments;
 create policy "public read" on post_comments for
 select
   using (true);
+
+drop policy if exists "user can insert" on post_comments;
+
+create policy "user can insert" on post_comments for insert
+with
+  check (true);
 
 create index if not exists post_comments_data_gin on post_comments using GIN (data);
 

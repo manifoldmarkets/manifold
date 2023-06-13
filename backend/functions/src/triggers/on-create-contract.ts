@@ -7,8 +7,6 @@ import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
 
-import { dalleWithDefaultParams } from 'shared/dream-utils'
-import { getImagePrompt } from 'shared/helpers/openai-utils'
 import { secrets } from 'common/secrets'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { addContractToFeed } from 'shared/create-feed'
@@ -23,10 +21,6 @@ export const onCreateContract = functions
   .onCreate(async (snapshot, context) => {
     const contract = snapshot.data() as Contract
     const { eventId } = context
-
-    const coverImageUrl = await generateContractImage(contract)
-    if (coverImageUrl) await snapshot.ref.update({ coverImageUrl })
-
     const contractCreator = await getUser(contract.creatorId)
     if (!contractCreator) throw new Error('Could not find contract creator')
 
@@ -63,11 +57,3 @@ export const onCreateContract = functions
       mentioned
     )
   })
-
-const generateContractImage = async (contract: Contract) => {
-  const imagePrompt = await getImagePrompt(contract.question)
-  const coverImageUrl = await dalleWithDefaultParams(
-    imagePrompt ?? contract.question
-  )
-  return coverImageUrl
-}

@@ -1,7 +1,14 @@
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
-import { Dictionary, max, partition, sortBy, sumBy, uniqBy } from 'lodash'
-import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import {
+  Dictionary,
+  groupBy,
+  max,
+  partition,
+  sortBy,
+  sum,
+  sumBy,
+  uniqBy,
+} from 'lodash'
+import React, { ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { LimitBet } from 'common/bet'
 import {
@@ -15,10 +22,10 @@ import {
   getDpmProbabilityAfterSale,
 } from 'common/calculate-dpm'
 import {
-  CPMMBinaryContract,
   DPMContract,
-  NumericContract,
+  CPMMContract,
   contractPath,
+  CPMMBinaryContract,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
@@ -29,11 +36,10 @@ import {
   formatMoney,
   formatPercent,
   formatWithCommas,
+  shortFormatNumber,
 } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import { Input } from 'web/components/widgets/input'
-import { UserLink } from 'web/components/widgets/user-link'
-import { useBets } from 'web/hooks/use-bets-supabase'
 import {
   inMemoryStore,
   usePersistentState,
@@ -42,39 +48,39 @@ import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { sellBet } from 'web/lib/firebase/api'
 import { Bet } from 'web/lib/firebase/bets'
 import { Contract } from 'web/lib/firebase/contracts'
-import { getBinaryProbPercent } from 'common/contract'
 import { User } from 'web/lib/firebase/users'
 import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { formatTimeShort } from 'web/lib/util/time'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
-import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { BinaryOutcomeLabel, OutcomeLabel } from '../outcome-label'
-import { AddFundsButton } from '../profile/add-funds-button'
-import { ProfitBadge } from '../profit-badge'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { Pagination } from '../widgets/pagination'
-import { Select } from '../widgets/select'
 import { SiteLink } from '../widgets/site-link'
 import { Table } from '../widgets/table'
-import { BetsSummary } from './bet-summary'
-import { OrderTable } from './limit-bets'
-import { SellRow } from './sell-row'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
-
+import { Row } from 'web/components/layout/row'
+import { Select } from 'web/components/widgets/select'
+import { Pagination } from 'web/components/widgets/pagination'
+import { getBets } from 'common/supabase/bets'
+import clsx from 'clsx'
+import { ContractStatusLabel } from 'web/components/contract/contracts-table'
+import { UserLink } from 'web/components/widgets/user-link'
+import { SellRow } from 'web/components/bet/sell-row'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { OrderTable } from 'web/components/bet/limit-bets'
 type BetSort =
   | 'newest'
   | 'profit'
-  | 'loss'
   | 'closeTime'
   | 'value'
-  | 'liquidity'
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'probChangeDay'
 
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
-const CONTRACTS_PER_PAGE = 50
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -125,10 +131,6 @@ export function BetsList(props: { user: User }) {
     })
   }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
-  const [sort, setSort] = usePersistentState<BetSort>('newest', {
-    key: 'bets-list-sort',
-    store: inMemoryStore(),
-  })
   const [filter, setFilter] = usePersistentState<BetFilter>('open', {
     key: 'bets-list-filter',
     store: inMemoryStore(),
@@ -139,18 +141,10 @@ export function BetsList(props: { user: User }) {
   })
   const [query, setQuery] = useState('')
 
-  const onSetSort = (s: BetSort) => {
-    setSort(s)
-    setPage(0)
-  }
-
   const onSetFilter = (f: BetFilter) => {
     setFilter(f)
     setPage(0)
   }
-
-  const start = page * CONTRACTS_PER_PAGE
-  const end = start + CONTRACTS_PER_PAGE
 
   const nullableMetricsByContract = useMemo(() => {
     if (!metricsByContract || !initialContracts) {
@@ -197,99 +191,55 @@ export function BetsList(props: { user: User }) {
     limit_bet: (c) => FILTERS.open(c),
   }
 
-  const SORTS: Record<BetSort, (c: Contract) => number> = {
-    profit: (c) => nullableMetricsByContract[c.id].profit,
-    loss: (c) => -nullableMetricsByContract[c.id].profit,
-    value: (c) => nullableMetricsByContract[c.id].payout,
-    newest: (c) =>
-      nullableMetricsByContract[c.id].lastBetTime ??
-      max(openLimitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
-      0,
-    liquidity: (c) => -c.elasticity ?? 1,
-    closeTime: (c) =>
-      // This is in fact the intuitive sort direction.
-      (filter === 'open' ? -1 : 1) *
-      (c.resolutionTime ?? c.closeTime ?? Infinity),
-  }
-  const filteredContracts = sortBy(contracts, SORTS[sort])
-    .reverse()
-    .filter(FILTERS[filter])
-    .filter((c) => {
-      if (filter === 'all') return true
-
-      const { hasShares } = nullableMetricsByContract[c.id]
-
-      if (filter === 'sold') return !hasShares
-      if (filter === 'limit_bet')
-        return openLimitBetsByContract[c.id]?.length > 0
-      return hasShares
-    })
-
-  const displayedContracts = filteredContracts.slice(start, end)
+  const filteredContracts = contracts.filter(FILTERS[filter]).filter((c) => {
+    if (filter === 'all') return true
+    const { hasShares } = nullableMetricsByContract[c.id]
+    if (filter === 'sold') return !hasShares
+    if (filter === 'limit_bet') return openLimitBetsByContract[c.id]?.length > 0
+    return hasShares
+  })
 
   return (
     <Col>
       <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
-        <div className="flex grow gap-2 max-[480px]:flex-col">
+        <Row className="grow gap-2 ">
           <Input
             placeholder="Search"
             className={'w-full min-w-[30px]'}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <Row className="gap-2">
-            <Select
-              value={filter}
-              onChange={(e) => onSetFilter(e.target.value as BetFilter)}
-              className="!h-full grow py-1"
-            >
-              <option value="open">Active</option>
-              <option value="limit_bet">Limit orders</option>
-              <option value="sold">Sold</option>
-              <option value="closed">Closed</option>
-              <option value="resolved">Resolved</option>
-              <option value="all">All</option>
-            </Select>
-            <Select
-              value={sort}
-              onChange={(e) => onSetSort(e.target.value as BetSort)}
-              className="!h-full grow py-1"
-            >
-              <option value="newest">Recent</option>
-              <option value="value">Value</option>
-              <option value="profit">Profit</option>
-              <option value="loss">Loss</option>
-              <option value="liquidity">High stakes</option>
-              <option value="closeTime">Close date</option>
-            </Select>
-          </Row>
-        </div>
+          <Select
+            value={filter}
+            onChange={(e) => onSetFilter(e.target.value as BetFilter)}
+            className="py-1"
+          >
+            <option value="open">Active</option>
+            <option value="limit_bet">Limit orders</option>
+            <option value="sold">Sold</option>
+            <option value="closed">Closed</option>
+            <option value="resolved">Resolved</option>
+            <option value="all">All</option>
+          </Select>
+        </Row>
       </div>
 
       <Col className="divide-ink-300 mt-6 divide-y">
-        {displayedContracts.length === 0 ? (
+        {filteredContracts.length === 0 ? (
           <NoMatchingBets />
         ) : (
-          <>
-            {displayedContracts.map((contract) => (
-              <ContractBets
-                key={contract.id}
-                contract={contract}
-                metrics={nullableMetricsByContract[contract.id]}
-                displayMetric={
-                  sort === 'profit' || sort === 'loss' ? 'profit' : 'value'
-                }
-                isYourBets={isYourBets}
-                userId={user.id}
-              />
-            ))}
-            <Pagination
+          nullableMetricsByContract && (
+            <UserBetsTable
+              contracts={filteredContracts as CPMMContract[]}
+              metricsByContractId={nullableMetricsByContract}
+              openLimitBetsByContract={openLimitBetsByContract}
               page={page}
-              itemsPerPage={CONTRACTS_PER_PAGE}
-              totalItems={filteredContracts.length}
+              user={user}
+              areYourBets={isYourBets}
               setPage={setPage}
+              filter={filter}
             />
-          </>
+          )
         )}
       </Col>
     </Col>
@@ -319,148 +269,348 @@ const NoMatchingBets = () => (
   </div>
 )
 
-function ContractBets(props: {
-  contract: Contract
-  metrics: ContractMetric
-  displayMetric: 'profit' | 'value'
-  isYourBets: boolean
-  userId: string
+function UserBetsTable(props: {
+  contracts: CPMMContract[]
+  metricsByContractId: { [key: string]: ContractMetric }
+  openLimitBetsByContract: { [key: string]: LimitBet[] }
+  page: number
+  setPage: (page: number) => void
+  filter: BetFilter
+  user: User
+  areYourBets: boolean
 }) {
-  const { metrics, displayMetric, isYourBets, userId } = props
-  const contract =
-    useFirebasePublicAndRealtimePrivateContract(
-      props.contract.visibility,
-      props.contract.id
-    ) ?? props.contract
-  const { resolution, closeTime, outcomeType, isResolved } = contract
+  const {
+    metricsByContractId,
+    page,
+    setPage,
+    filter,
+    openLimitBetsByContract,
+    areYourBets,
+    user,
+  } = props
 
-  const user = useUser()
+  const [sort, setSort] = usePersistentState<{
+    field: BetSort
+    direction: 'asc' | 'desc'
+  }>(
+    { field: 'newest', direction: 'desc' },
+    {
+      key: 'bets-list-sort',
+      store: inMemoryStore(),
+    }
+  )
+  const onSetSort = (field: BetSort) => {
+    if (sort.field === field) {
+      setSort((prevSort) => ({
+        ...prevSort,
+        direction: prevSort.direction === 'asc' ? 'desc' : 'asc',
+      }))
+    } else {
+      setSort({ field, direction: 'asc' })
+    }
+    setPage(0)
+  }
 
-  const hideBetsBefore = isYourBets ? 0 : JUNE_1_2022
+  // Most of these are descending sorts by default.
+  const SORTS: Record<BetSort, (c: Contract) => number> = {
+    profit: (c) => -metricsByContractId[c.id].profit,
+    value: (c) =>
+      -(
+        metricsByContractId[c.id].payout +
+        (filter === 'limit_bet'
+          ? sum(openLimitBetsByContract[c.id].map((b) => b.orderAmount))
+          : 0)
+      ),
+    newest: (c) =>
+      metricsByContractId[c.id].lastBetTime ??
+      max(openLimitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
+      0,
+    probChangeDay: (c) => {
+      if (c.mechanism === 'cpmm-1') {
+        return -(c as CPMMContract).probChanges.day
+      }
+      return 0
+    },
+    day: (c) => -(metricsByContractId[c.id].from?.day.profit ?? 0),
+    week: (c) => -(metricsByContractId[c.id].from?.week.profit ?? 0),
+    month: (c) => -(metricsByContractId[c.id].from?.month.profit ?? 0),
+    closeTime: (c) =>
+      // This is in fact the intuitive sort direction.
+      (filter === 'open' ? -1 : 1) *
+      (c.resolutionTime ?? c.closeTime ?? Infinity),
+  }
+  const contracts =
+    sort.direction === 'asc'
+      ? sortBy(props.contracts, SORTS[sort.field])
+      : sortBy(props.contracts, SORTS[sort.field]).reverse()
+  const rowsPerSection = 50
+  const currentSlice = page * rowsPerSection
+  const Cell = (props: { num: number; change?: boolean }) => {
+    const { num, change } = props
+    const formattedNum =
+      num < 1000 && num > -1000
+        ? formatMoney(num)
+        : ENV_CONFIG.moneyMoniker + shortFormatNumber(num)
+    return (
+      <Row className="items-start justify-end ">
+        {change ? (
+          num > 0 ? (
+            <span className="text-teal-500">{formattedNum}</span>
+          ) : (
+            <span className="text-scarlet-500">{formattedNum}</span>
+          )
+        ) : (
+          <span>{formatMoney(num)}</span>
+        )}
+      </Row>
+    )
+  }
+  const Header = (props: {
+    children: ReactNode
+    id: BetSort
+    className?: string
+  }) => {
+    const { id, className } = props
+    return (
+      <Row
+        className={clsx(
+          className ? className : 'justify-end',
+          'cursor-pointer',
+          sort.field === id && id !== 'newest'
+            ? sort.direction === 'asc'
+              ? 'text-teal-500'
+              : 'text-scarlet-500'
+            : ''
+        )}
+        onClick={() => onSetSort(id)}
+      >
+        <span>{props.children}</span>
+      </Row>
+    )
+  }
+  const columns = [
+    {
+      header: (
+        <Header id="newest" className={'justify-start'}>
+          <Row className={'items-center gap-1'}>
+            Trades
+            {sort.field === 'newest'
+              ? sort.direction === 'desc'
+                ? ' (new) '
+                : ' (old)'
+              : null}
+          </Row>
+        </Header>
+      ),
+      renderCell: (q: Contract) => (
+        <Col>
+          <SiteLink
+            href={contractPath(q)}
+            className={'line-clamp-2 pr-2 sm:pr-1'}
+            onClick={(e) => e.stopPropagation()}
+            followsLinkClass
+          >
+            {q.question}
+          </SiteLink>
+          <Row className={'gap-2'}>
+            <ContractStatusLabel
+              className={clsx(
+                q.isResolved ? '' : 'text-indigo-500',
+                'font-bold'
+              )}
+              contract={q}
+            />
+            <UserLink
+              className={'text-ink-500 text-sm'}
+              name={q.creatorName}
+              username={q.creatorUsername}
+            />
+          </Row>
+        </Col>
+      ),
+    },
+    {
+      header: <Header id="probChangeDay">1d%</Header>,
+      renderCell: (c: Contract) => {
+        let change: string | undefined
+        if (c.mechanism === 'cpmm-1') {
+          const probChange = Math.round(
+            (c as CPMMContract).probChanges.day * 100
+          )
+          change = (probChange > 0 ? '+' : '') + probChange + '%'
+        }
+        return (
+          <Row className={'text-ink-500 items-start justify-end'}>
+            {change !== undefined ? change : 'n/a'}
+          </Row>
+        )
+      },
+    },
+    {
+      header: <Header id="value">Value</Header>,
+      renderCell: (n: number) => <Cell num={n} />,
+    },
+    {
+      header: <Header id="profit">All</Header>,
+      renderCell: (n: number) => <Cell num={n} change={true} />,
+    },
+    {
+      header: <Header id="day">1d</Header>,
+      renderCell: (n: number) => <Cell num={n} change={true} />,
+    },
+  ]
+  const data = [
+    ...contracts.map((contract) => {
+      const cm = metricsByContractId[contract.id]
+      return [
+        contract,
+        contract,
+        cm.payout,
+        cm.profit,
+        cm.from?.day.profit ?? 0,
+        cm.from?.month.profit ?? 0,
+      ] as [Contract, Contract, number, number, number, number]
+    }),
+  ]
+  const [expandedIds, setExpandedIds] = useState<string[]>([])
+  const [userBets, setUserBets] = useState<Dictionary<Bet[]>>({})
+  const hideBetsBefore = areYourBets ? 0 : JUNE_1_2022
 
-  const bets = useBets({
-    contractId: contract.id,
-    userId,
-    afterTime: hideBetsBefore,
-  })
-
-  const limitBets = (bets ?? []).filter(
-    (bet) => bet.limitProb !== undefined && !bet.isCancelled && !bet.isFilled
-  ) as LimitBet[]
-  const resolutionValue = (contract as NumericContract).resolutionValue
-
-  const [collapsed, setCollapsed] = useState(true)
-
-  const isBinary = outcomeType == 'BINARY'
-  const isClosed = closeTime && closeTime < Date.now()
-
-  const { payout, profit, profitPercent } = metrics
+  const setNewExpandedId = async (id: string) => {
+    if (!userBets[id]) {
+      getBets(db, {
+        contractId: id,
+        userId: user.id,
+        afterTime: hideBetsBefore,
+      }).then((newBets) =>
+        setUserBets((oldBets) => ({
+          ...oldBets,
+          ...groupBy(newBets, 'contractId'),
+        }))
+      )
+    }
+    setExpandedIds((oldIds) =>
+      oldIds.includes(id)
+        ? oldIds.filter((oldId) => oldId !== id)
+        : [...oldIds, id]
+    )
+  }
 
   return (
-    <div tabIndex={0} className="bg-canvas-0 relative p-4 pr-6">
-      <Row
-        className="cursor-pointer flex-wrap gap-2"
-        onClick={() => setCollapsed((collapsed) => !collapsed)}
-      >
-        <Col className="flex-[2] gap-1">
-          <Row className="mr-2 max-w-lg">
-            <Link
-              href={contractPath(contract)}
-              className="text-primary-700 hover:decoration-primary-400 font-medium hover:underline hover:decoration-2"
-              onClick={(e) => e.stopPropagation()}
+    <Col className="mb-4 flex-1 gap-4">
+      <Col className={'w-full'}>
+        <Row
+          className={
+            'grid-cols-16 bg-canvas-100 sticky top-0 z-10 grid w-full px-1 py-2'
+          }
+        >
+          {columns.map((c, i) => (
+            <span
+              key={c.header.props.id}
+              className={clsx(
+                i == 0
+                  ? 'col-span-8'
+                  : i === 1
+                  ? 'col-span-1'
+                  : i === 2
+                  ? 'col-span-3'
+                  : 'col-span-2'
+              )}
             >
-              {contract.question}
-            </Link>
+              {c.header}
+            </span>
+          ))}
+        </Row>
+        {data.slice(currentSlice, currentSlice + rowsPerSection).map((d) => {
+          const contract = d[0]
+          const bets: Bet[] | undefined = userBets[contract.id]
+          const limitBets = (bets ?? []).filter(
+            (bet) =>
+              bet.limitProb !== undefined && !bet.isCancelled && !bet.isFilled
+          ) as LimitBet[]
+          return (
+            <Row
+              key={contract.id + 'bets-table-row'}
+              className={
+                'border-ink-300 hover:bg-canvas-100 cursor-pointer border-b py-2'
+              }
+              onClick={() => setNewExpandedId(contract.id)}
+            >
+              <Col className={'w-full'}>
+                <Row className={'grid-cols-16 grid w-full'}>
+                  {columns.map((c, i) => (
+                    <span
+                      className={clsx(
+                        i == 0
+                          ? 'col-span-8'
+                          : i === 1
+                          ? 'col-span-1'
+                          : i === 2
+                          ? 'col-span-3'
+                          : 'col-span-2'
+                      )}
+                      key={c.header.props.id + contract.id + 'row'}
+                    >
+                      {c.renderCell(d[i] as any)}
+                    </span>
+                  ))}
+                </Row>
+                <Row>
+                  {expandedIds.includes(contract.id) ? (
+                    bets === undefined ? (
+                      <Col className={'w-full items-center justify-center'}>
+                        <LoadingIndicator />
+                      </Col>
+                    ) : (
+                      <Col className={'mt-1 w-full gap-1'}>
+                        {areYourBets &&
+                          !contract.isResolved &&
+                          (contract.closeTime ?? 0) > Date.now() &&
+                          contract.outcomeType === 'BINARY' && (
+                            <SellRow
+                              className="mt-1 items-start"
+                              contract={contract as CPMMBinaryContract}
+                              user={user}
+                              showTweet={false}
+                            />
+                          )}
+                        {contract.mechanism === 'cpmm-1' &&
+                          limitBets.length > 0 && (
+                            <div className="max-w-md">
+                              <div className="bg-canvas-100 mt-4 px-4 py-2">
+                                Limit orders
+                              </div>
+                              <OrderTable
+                                contract={contract}
+                                limitBets={limitBets}
+                                isYou={areYourBets}
+                              />
+                            </div>
+                          )}
+                        <ContractBetsTable
+                          key={contract.id + 'bets-table'}
+                          contract={contract}
+                          bets={bets}
+                          isYourBets={areYourBets}
+                        />
+                      </Col>
+                    )
+                  ) : null}
+                </Row>
+              </Col>
+            </Row>
+          )
+        })}
+      </Col>
 
-            {/* Show carrot for collapsing. Hack the positioning. */}
-            {collapsed ? (
-              <ChevronDownIcon className="absolute top-5 right-4 h-6 w-6" />
-            ) : (
-              <ChevronUpIcon className="absolute top-5 right-4 h-6 w-6" />
-            )}
-          </Row>
-          <Row className="text-ink-500 flex-1 items-center gap-2 text-sm">
-            {resolution ? (
-              <>
-                <div>
-                  Resolved{' '}
-                  <OutcomeLabel
-                    outcome={resolution}
-                    value={resolutionValue}
-                    contract={contract}
-                    truncate="short"
-                  />
-                </div>
-                <div>•</div>
-              </>
-            ) : isBinary ? (
-              <>
-                <div className="text-lg text-teal-500">
-                  {getBinaryProbPercent(contract)}
-                </div>
-                <div>•</div>
-              </>
-            ) : null}
-            <UserLink
-              name={contract.creatorName}
-              username={contract.creatorUsername}
-            />
-          </Row>
-        </Col>
-
-        <Col className="mr-5 sm:mr-8">
-          <div className="whitespace-nowrap text-right text-lg">
-            {formatMoney(displayMetric === 'profit' ? profit : payout)}
-          </div>
-          <ProfitBadge className="text-right" profitPercent={profitPercent} />
-        </Col>
-      </Row>
-
-      {!collapsed && (
-        <div className="bg-canvas-0">
-          <BetsSummary
-            className="mt-8 mr-5 flex-1 sm:mr-8"
-            contract={contract}
-            metrics={metrics}
-            hideTweet
-          />
-
-          {isYourBets &&
-            !isResolved &&
-            !isClosed &&
-            contract.outcomeType === 'BINARY' && (
-              <SellRow
-                className="mt-4 items-start"
-                contract={contract as CPMMBinaryContract}
-                user={user}
-                showTweet
-              />
-            )}
-
-          {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
-            <div className="max-w-md">
-              <div className="bg-canvas-0 mt-4 px-4 py-2">Limit orders</div>
-              <OrderTable
-                contract={contract}
-                limitBets={limitBets}
-                isYou={isYourBets}
-              />
-            </div>
-          )}
-
-          <div className="bg-canvas-0 mt-4 px-4 py-2">Bets</div>
-          {bets ? (
-            <ContractBetsTable
-              contract={contract}
-              bets={bets}
-              isYourBets={isYourBets}
-            />
-          ) : (
-            <LoadingIndicator />
-          )}
-        </div>
-      )}
-    </div>
+      <Pagination
+        page={page}
+        itemsPerPage={rowsPerSection}
+        totalItems={contracts.length}
+        setPage={setPage}
+        UNSAFE_scrollToTop={true}
+      />
+    </Col>
   )
 }
 
@@ -534,7 +684,7 @@ export function ContractBetsTable(props: {
 
       {!hideRedemptionAndLoanMessages && !isResolved && amountLoaned > 0 && (
         <>
-          <div className="text-ink-500 pl-2 text-sm">
+          <div className="text-ink-500 pl-0 text-sm">
             {isYourBets ? (
               <>You currently have a loan of {formatMoney(amountLoaned)}.</>
             ) : (
