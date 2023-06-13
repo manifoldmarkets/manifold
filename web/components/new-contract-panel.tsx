@@ -181,7 +181,8 @@ export function NewContractPanel(props: {
               choicesMap={{
                 'Yes\xa0/ No': 'BINARY', // non-breaking space
                 Stock: 'STONK',
-                'Multi choice': 'MULTIPLE_CHOICE',
+                // TODO: Re-enable after testing that it works!
+                // 'Multi choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
               }}
