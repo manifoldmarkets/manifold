@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { noop, uniq } from 'lodash'
-
 import { Col } from 'web/components/layout/col'
-import { leaveGroup } from 'web/lib/firebase/groups'
+import { leaveGroup } from 'web/lib/supabase/groups'
 import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
