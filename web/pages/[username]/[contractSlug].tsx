@@ -247,15 +247,16 @@ export function ContractPageContent(props: {
   // show the resolver by default if the market is closed and you can resolve it
   const [showResolver, setShowResolver] = useState(false)
   useEffect(() => {
-    if (
+    // Close resolve panel if you just resolved it.
+    if (isResolved) setShowResolver(false)
+    else if (
       (isCreator || isAdmin || trustworthy) &&
-      !isResolved &&
       (closeTime ?? 0) < Date.now() &&
       outcomeType !== 'STONK'
     ) {
       setShowResolver(true)
     }
-  }, [isAdmin, isCreator, trustworthy, closeTime])
+  }, [isAdmin, isCreator, trustworthy, closeTime, isResolved])
 
   const allowTrade = tradingAllowed(contract)
 
