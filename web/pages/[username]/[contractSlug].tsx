@@ -335,12 +335,8 @@ export function ContractPageContent(props: {
             )}
             <Row
               className={clsx(
-                ' sticky -top-px z-50 mt-px flex h-12 w-full py-2 px-4 transition-colors',
-                headerStuck
-                  ? coverImageUrl
-                    ? 'dark:bg-canvas-50/80 bg-white/80'
-                    : 'bg-canvas-50'
-                  : ''
+                ' sticky -top-px z-50 mt-px flex h-12 w-full py-2 px-4 transition-colors ',
+                headerStuck ? 'dark:bg-canvas-50/80 bg-white/80' : ''
               )}
             >
               <Row className=" mr-4 grow">
@@ -357,10 +353,7 @@ export function ContractPageContent(props: {
               </Row>
 
               {(headerStuck || !coverImageUrl) && (
-                <ExtraContractActionsRow
-                  contract={contract}
-                  className={clsx(!headerStuck ? 'lg:hidden' : '')}
-                >
+                <ExtraContractActionsRow contract={contract}>
                   {!coverImageUrl && isCreator && (
                     <ChangeBannerButton
                       contract={contract}
@@ -379,14 +372,11 @@ export function ContractPageContent(props: {
           >
             <Col className="w-full gap-3 lg:gap-4">
               {coverImageUrl && (
-                <Row className="-my-3 w-full justify-between lg:hidden">
+                <Row className="-my-3 w-full justify-between">
                   <Col className="my-auto">
                     <BackButton hasCoverImage={!!coverImageUrl} />
                   </Col>
-                  <ExtraContractActionsRow
-                    contract={contract}
-                    className={clsx(!headerStuck ? 'lg:hidden' : '')}
-                  >
+                  <ExtraContractActionsRow contract={contract}>
                     {!coverImageUrl && isCreator && (
                       <ChangeBannerButton
                         contract={contract}
@@ -396,22 +386,12 @@ export function ContractPageContent(props: {
                   </ExtraContractActionsRow>
                 </Row>
               )}
-              <Row className="w-full justify-between" ref={titleRef}>
+              <div ref={titleRef}>
                 <TitleOrEdit
                   contract={contract}
                   canEdit={isAdmin || isCreator}
                 />
-                <Col className="hidden justify-start lg:inline">
-                  <ExtraContractActionsRow contract={contract}>
-                    {!coverImageUrl && isCreator && (
-                      <ChangeBannerButton
-                        contract={contract}
-                        className="ml-3 first:ml-0"
-                      />
-                    )}
-                  </ExtraContractActionsRow>
-                </Col>
-              </Row>
+              </div>
 
               <div className="text-ink-600 flex items-center justify-between text-sm">
                 <AuthorInfo contract={contract} />

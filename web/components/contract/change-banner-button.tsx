@@ -48,7 +48,7 @@ export function ChangeBannerButton(props: {
           className={clsx(
             'flex p-2 transition-colors',
             hasCoverImage
-              ? 'rounded-full bg-black/60 hover:bg-black/80'
+              ? 'rounded-full bg-black/60 text-white hover:bg-black/80'
               : 'text-ink-500 hover:text-ink-600'
           )}
           onClick={() => setOpen(true)}
