@@ -244,7 +244,7 @@ function OpenAnswer(props: {
   const prob =
     'prob' in answer ? answer.prob : getOutcomeProbability(contract, answer.id)
   const probPercent = formatPercent(prob)
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(undefined)
   const colorWidth = 100 * Math.max(prob, 0.01)
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
   const isDpm = contract.mechanism === 'dpm-2'
@@ -279,6 +279,7 @@ function OpenAnswer(props: {
                 initialOutcome={outcome}
                 hidden={false}
                 mobileView={isMobile}
+                singularView={outcome}
                 onBuySuccess={() =>
                   setTimeout(() => setOutcome(undefined), 500)
                 }
@@ -338,7 +339,7 @@ function OpenAnswer(props: {
                     onClick={() => setOutcome('YES')}
                     className="my-auto"
                   >
-                    YES
+                    BUY
                   </Button>
                   <Button
                     size="2xs"
@@ -346,7 +347,15 @@ function OpenAnswer(props: {
                     onClick={() => setOutcome('NO')}
                     className="my-auto"
                   >
-                    NO
+                    SELL
+                  </Button>
+                  <Button
+                    size="2xs"
+                    color="indigo-outline"
+                    onClick={() => setOutcome('LIMIT')}
+                    className="my-auto"
+                  >
+                    %
                   </Button>
                 </Row>
               ))}

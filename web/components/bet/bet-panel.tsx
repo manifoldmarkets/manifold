@@ -66,8 +66,8 @@ export function BuyPanel(props: {
   hidden: boolean
   onBuySuccess?: () => void
   mobileView?: boolean
-  singularView?: 'YES' | 'NO'
-  initialOutcome?: binaryOutcomes
+  singularView?: 'YES' | 'NO' | 'LIMIT'
+  initialOutcome?: binaryOutcomes | 'LIMIT'
   location?: string
   className?: string
 }) {
@@ -295,6 +295,27 @@ export function BuyPanel(props: {
         )}
       </Row>
 
+      {option !== 'LIMIT' && (
+        <>
+          <div className="text-ink-800 mt-2 mb-1 text-sm">Amount</div>
+
+          <BuyAmountInput
+            inputClassName="w-full max-w-none"
+            amount={betAmount}
+            onChange={onBetChange}
+            error={displayError ? error : undefined}
+            setError={setError}
+            disabled={isSubmitting}
+            inputRef={inputRef}
+            sliderOptions={{ show: true, wrap: false }}
+            binaryOutcome={outcome}
+            showBalance
+          />
+
+          <Spacer h={6} />
+        </>
+      )}
+
       <Col
         className={clsx(
           !singularView
@@ -305,12 +326,13 @@ export function BuyPanel(props: {
               : 'hidden'
             : '',
           'rounded-lg',
-          singularView ? '' : ' px-4 py-2'
+          singularView ? '' : ' px-4 py-2',
+          singularView && option === 'LIMIT' ? 'hidden' : ''
         )}
       >
         <Row className="border-ink-200 w-full rounded border px-4 py-2">
           <Col className="w-1/2">
-            <Col className="text-ink-400 flex-nowrap whitespace-nowrap text-xs">
+            <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-xs">
               {isPseudoNumeric || isStonk ? (
                 'Shares'
               ) : (
@@ -332,7 +354,7 @@ export function BuyPanel(props: {
           </Col>
           <Col className="w-1/2 text-sm">
             <Row>
-              <span className="text-ink-400 whitespace-nowrap text-xs">
+              <span className="text-ink-700 whitespace-nowrap text-xs">
                 {isPseudoNumeric
                   ? 'Estimated value'
                   : isStonk
@@ -380,21 +402,7 @@ export function BuyPanel(props: {
           </Col>
         </Row>
         <Spacer h={2} />
-        <div className="text-ink-800 mt-2 mb-1 text-sm">Amount</div>
 
-        <BuyAmountInput
-          inputClassName="w-full max-w-none"
-          amount={betAmount}
-          onChange={onBetChange}
-          error={displayError ? error : undefined}
-          setError={setError}
-          disabled={isSubmitting}
-          inputRef={inputRef}
-          sliderOptions={{ show: true, wrap: false }}
-          binaryOutcome={outcome}
-          showBalance
-        />
-        <Spacer h={6} />
         {user && (
           <WarningConfirmationButton
             marketType="binary"
