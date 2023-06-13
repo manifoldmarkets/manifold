@@ -8,6 +8,7 @@ import {
   ContractUndoResolutionPayoutTxn,
   Txn,
 } from 'common/txn'
+import { createSupabaseDirectClient } from './supabase/init'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
@@ -112,10 +113,9 @@ export function runRedeemAdRewardTxn(
 ) {
   const { amount, toId, fromId } = txnData
 
-  const fromDoc = firestore.doc(`posts/${fromId}`)
-  fbTransaction.update(fromDoc, {
-    funds: FieldValue.increment(-amount),
-  })
+  // TODO: lock
+  const db = createSupabaseDirectClient()
+  db.none('update posts set funds = funds - $1 where id = $2', [amount, fromId])
 
   const toDoc = firestore.doc(`users/${toId}`)
   fbTransaction.update(toDoc, {

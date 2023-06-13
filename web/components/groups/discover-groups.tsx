@@ -1,4 +1,4 @@
-import { ChevronUpIcon, UsersIcon } from '@heroicons/react/solid'
+import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group, GroupsByTopic, groupPath } from 'common/group'
@@ -7,16 +7,17 @@ import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
 import { useMutation } from 'react-query'
 import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { searchContract } from 'web/lib/supabase/contracts'
-import { SearchGroupInfo } from 'web/lib/supabase/groups'
+import { GroupAndRoleType, SearchGroupInfo } from 'web/lib/supabase/groups'
 import { shortenNumber } from 'web/lib/util/shortenNumber'
-import { IconButton } from '../buttons/button'
 import { ContractsTable } from '../contract/contracts-table'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { SiteLink } from '../widgets/site-link'
 import { Subtitle } from '../widgets/subtitle'
+import { MemberRoleTag } from './group-member-modal'
 import { PRIVACY_STATUS_ITEMS } from './group-privacy-modal'
 import GroupSearch from './group-search'
 import { JoinOrLeaveGroupButton } from './groups-button'
@@ -121,12 +122,12 @@ export function GroupSummary(props: { group: Group }) {
   const { group } = props
   const { icon, status } = PRIVACY_STATUS_ITEMS[group.privacyStatus]
   return (
-    <Row className="text-ink-500 gap- gap-2 text-sm">
+    <Row className={clsx('text-ink-500 gap- gap-2 text-sm')}>
       <span className="flex items-center">
         <UsersIcon className="mr-0.5 h-4 w-4" />
         {shortenNumber(group.totalMembers)}
       </span>
-      <Row className="gap-0.5">
+      <Row className={clsx('items-center gap-0.5')}>
         {icon}
         {status}
       </Row>
@@ -138,47 +139,50 @@ export function GroupLine(props: {
   group: Group
   isMember: boolean
   user: User | undefined | null
-  expandedId: string | null
-  setExpandedId: (slug: string | null) => void
+  yourGroupRoles?: GroupAndRoleType[] | null
 }) {
-  const { group, isMember, user, expandedId, setExpandedId } = props
-  const isExpanded = expandedId == group.id
+  const { group, isMember, user, yourGroupRoles } = props
+  const role = yourGroupRoles?.find((r) => r.group.id == group.id)?.role
+  const isCreator = user?.id == group.creatorId
+  const isMobile = useIsMobile()
+  const isPrivate = group.privacyStatus == 'private'
 
   return (
     <Link
       href={groupPath(group.slug)}
-      className={clsx(
-        isExpanded ? 'bg-canvas-0' : 'hover:bg-canvas-0',
-        'rounded-md p-2'
-      )}
+      className={clsx('hover:bg-canvas-0', 'rounded-md p-2')}
     >
-      <div className="flex cursor-pointer items-center justify-between">
+      <div className={clsx('flex cursor-pointer items-center justify-between')}>
         {group.name}
-        <div className="flex sm:gap-2">
-          <JoinOrLeaveGroupButton
-            group={group}
-            user={user}
-            disabled={user?.id == group.creatorId}
-            isMember={isMember}
-            className="w-[80px] !px-0 !py-1"
-          />
-          <IconButton
-            size="2xs"
-            className={clsx(
-              !isExpanded && '-rotate-180',
-              'transition-transform'
-            )}
-            onClick={(e) => {
-              e.preventDefault()
-              setExpandedId(expandedId == group.id ? null : group.id)
-            }}
-          >
-            <ChevronUpIcon className="h-5 w-5" />
-          </IconButton>
-        </div>
+        <Row className="gap-4">
+          {(role || isCreator) && (
+            <MemberRoleTag
+              role={role}
+              isCreator={!!isCreator}
+              className="ml-1 w-min opacity-60"
+            />
+          )}
+          {!isPrivate && !isCreator && (
+            <JoinOrLeaveGroupButton
+              group={group}
+              user={user}
+              disabled={isCreator}
+              isMember={isMember}
+              className={clsx(
+                isMobile ? 'rounded p-1' : '',
+                isMobile
+                  ? isMember
+                    ? 'dark:bg-ink-400 hover:bg-ink-700 bg-gray-500'
+                    : 'bg-primary-500 hover:bg-primary-600'
+                  : 'w-[80px] !px-0 !py-1'
+              )}
+              iconClassName={'text-canvas-50 '}
+              isMobile={isMobile}
+            />
+          )}
+        </Row>
       </div>
       <GroupSummary group={group} />
-      {isExpanded && <SingleGroupInfo group={group} />}
     </Link>
   )
 }

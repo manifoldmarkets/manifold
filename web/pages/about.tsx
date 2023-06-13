@@ -252,7 +252,7 @@ export default function AboutPage() {
           <LabCard
             title="⚔️ Versus"
             description="Create mana-battles between two ideas"
-            href="/versus"
+            href="/VersusBot?tab=markets"
           />
           <LabCard
             title="🎴 Manifold: The Gambling"

@@ -5,7 +5,7 @@ import {
   PencilIcon,
   ScaleIcon,
 } from '@heroicons/react/outline'
-import { LinkIcon, PresentationChartBarIcon } from '@heroicons/react/solid'
+import { LinkIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
@@ -51,13 +51,19 @@ import {
 } from 'web/components/widgets/user-link'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Subtitle } from 'web/components/widgets/subtitle'
-import { DailyStats } from 'web/components/daily-stats'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import { getPostsByUser } from 'web/lib/supabase/post'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
+import { getUserBetsFromResolvedContracts } from 'web/lib/supabase/bets'
+import {
+  calculateScore,
+  getCalibrationPoints,
+  getGrade,
+} from 'web/pages/[username]/calibration'
+import { DailyLeagueStat } from 'web/components/daily-league-stat'
 
 export const getStaticProps = async (props: {
   params: {
@@ -67,14 +73,20 @@ export const getStaticProps = async (props: {
   const { username } = props.params
   const user = await getUserByUsername(username)
   const posts = user ? await getPostsByUser(user?.id) : []
+  const bets = user
+    ? await getUserBetsFromResolvedContracts(user.id, 10000)
+    : []
+  const { yesBuckets, noBuckets } = getCalibrationPoints(bets)
+  const score = calculateScore(yesBuckets, noBuckets)
 
   return {
     props: {
       user,
       username,
       posts,
+      score,
     },
-    revalidate: 60, // Regenerate after 60 second
+    revalidate: 60 * 5, // Regenerate after 5 minutes
   }
 }
 
@@ -86,8 +98,9 @@ export default function UserPage(props: {
   user: User | null
   username: string
   posts: Post[]
+  score: number
 }) {
-  const { user, username, posts } = props
+  const { user, username, posts, score } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
@@ -101,7 +114,7 @@ export default function UserPage(props: {
   return privateUser && blockedByCurrentUser ? (
     <BlockedUser user={user} privateUser={privateUser} />
   ) : (
-    <UserProfile user={user} posts={posts} />
+    <UserProfile user={user} posts={posts} score={score} />
   )
 }
 
@@ -124,8 +137,13 @@ const DeletedUser = () => {
   )
 }
 
-export function UserProfile(props: { user: User; posts: Post[] }) {
+export function UserProfile(props: {
+  user: User
+  posts: Post[]
+  score: number
+}) {
   const user = useUserById(props.user.id) ?? props.user
+  const { score } = props
 
   const router = useRouter()
   const currentUser = useUser()
@@ -163,7 +181,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
       )}
 
       <Col className="mx-4 mt-1">
-        <Row className="flex-wrap justify-between gap-2 p-1">
+        <Row className="flex-wrap justify-between gap-2 py-1">
           <Row className={clsx('gap-2')}>
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
@@ -205,25 +223,24 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
               </span>
             </Col>
           </Row>
-
           {isCurrentUser ? (
-            <DailyStats user={user} />
+            <DailyLeagueStat user={user} />
           ) : (
-            <Row className="items-center gap-2">
-              <MoreOptionsUserButton user={user} />
+            <Row className="items-center gap-1 sm:gap-2">
               <UserFollowButton userId={user.id} />
+              <MoreOptionsUserButton user={user} />
             </Row>
           )}
         </Row>
-
-        <Col className={'px-1'}>
+        <Col className={'mt-1 px-1'}>
           <ProfilePublicStats
             className=""
             user={user}
             isCurrentUser={isCurrentUser}
+            score={score}
           />
           {user.bio && (
-            <div className="sm:text-md mt-2 text-sm">
+            <div className="sm:text-md mt-1 text-sm">
               <Linkify text={user.bio}></Linkify>
             </div>
           )}
@@ -292,7 +309,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   <>
                     <Spacer h={4} />
                     <PortfolioValueSection userId={user.id} />
-                    <Spacer h={8} />
+                    <Spacer h={4} />
                     <BetsList user={user} />
                   </>
                 ),
@@ -351,9 +368,10 @@ type FollowsDialogTab = 'following' | 'followers'
 function ProfilePublicStats(props: {
   user: User
   isCurrentUser: boolean
+  score: number
   className?: string
 }) {
-  const { user, className, isCurrentUser } = props
+  const { user, score, className, isCurrentUser } = props
   const [isOpen, setIsOpen] = useState(false)
   const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
   const followingIds = useFollows(user.id)
@@ -368,7 +386,7 @@ function ProfilePublicStats(props: {
   return (
     <Row
       className={clsx(
-        'text-ink-600 flex-wrap items-center gap-3 text-sm',
+        'text-ink-600 flex-wrap items-center space-x-2 text-sm',
         className
       )}
     >
@@ -388,15 +406,6 @@ function ProfilePublicStats(props: {
       {isCurrentUser && (
         <UserLikedContractsButton user={user} className={className} />
       )}
-      <SiteLink
-        href={'/' + user.username + '/calibration'}
-        className={clsx(linkClass, 'cursor-pointer items-center text-sm')}
-      >
-        <Row className="items-center gap-1">
-          <PresentationChartBarIcon className="h-4 w-4" />
-          Calibration
-        </Row>
-      </SiteLink>
 
       {!isCurrentUser && leagueInfo && (
         <Link
@@ -408,13 +417,20 @@ function ProfilePublicStats(props: {
             user.id
           )}
         >
-          <TrophyIcon className="mr-1 inline h-4 w-4" />
+          <TrophyIcon className="mr-1 mb-1 inline h-4 w-4" />
           <span className={clsx('font-semibold')}>
             {DIVISION_NAMES[leagueInfo.division ?? '']}
           </span>{' '}
           Rank {leagueInfo.rank}
         </Link>
       )}
+      <SiteLink
+        href={'/' + user.username + '/calibration'}
+        className={clsx(linkClass, 'cursor-pointer text-sm')}
+      >
+        <span className={clsx('font-semibold')}>{getGrade(score)}</span>{' '}
+        Calibration
+      </SiteLink>
 
       <FollowsDialog
         user={user}

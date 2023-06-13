@@ -2,7 +2,7 @@ import { SupabaseClient } from 'common/supabase/utils'
 import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
-import { insertContractRelatedDataToUsersFeeds } from 'shared/create-feed'
+import { insertNewsContractsToUsersFeeds } from 'shared/create-feed'
 import { Contract } from 'common/contract'
 
 export const processNews = async (
@@ -95,7 +95,7 @@ const processNewsArticle = async (
   const { data } = await db.rpc('search_contract_embeddings' as any, {
     query_embedding: embedding,
     similarity_threshold: 0.825, // hand-selected; don't change unless you know what you're doing
-    match_count: 20,
+    match_count: 10,
   })
 
   const getContract = (cid: string) =>
@@ -112,8 +112,12 @@ const processNewsArticle = async (
   const questions = contracts
     .filter(
       (c) =>
-        c.outcomeType !== 'STONK' && !c.isResolved && c.visibility === 'public'
+        c.outcomeType !== 'STONK' &&
+        !c.isResolved &&
+        c.visibility === 'public' &&
+        c.uniqueBettorCount >= 5
     )
+    .sort((a, b) => b.popularityScore - a.popularityScore)
     .slice(0, 5)
 
   if (questions.length === 0) {
@@ -152,19 +156,10 @@ const processNewsArticle = async (
     'adding to feed now with published date',
     publishedAtDate.toISOString()
   )
-  await insertContractRelatedDataToUsersFeeds(
+  await insertNewsContractsToUsersFeeds(
+    newsId,
     questions,
-    'news_with_related_contracts',
-    [
-      'follow_contract',
-      'liked_contract',
-      'viewed_contract',
-      'follow_user',
-      'similar_interest_vector_to_contract',
-    ],
     publishedAtDate.valueOf(),
-    pg,
-    [],
-    { newsId }
+    pg
   )
 }

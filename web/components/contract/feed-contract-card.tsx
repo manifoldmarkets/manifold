@@ -1,4 +1,4 @@
-import { ClockIcon, StarIcon, UserIcon } from '@heroicons/react/solid'
+import { ClockIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -25,7 +25,6 @@ import { Row } from '../layout/row'
 import { CommentsButton } from '../swipe/swipe-comments'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { PublicMarketGroups } from './contract-details'
 import { LikeButton } from './like-button'
@@ -122,11 +121,10 @@ export function FeedContractCard(props: {
               </div>
             </Col>
           </Row>
-          {promotedData ? (
-            <ClaimButton {...promotedData} />
-          ) : (
-            reason && <ReasonChosen contract={contract} reason={reason} />
-          )}
+          <ReasonChosen
+            contract={contract}
+            reason={promotedData ? 'Boosted' : reason}
+          />
         </Row>
         <Link
           href={path}
@@ -160,7 +158,7 @@ export function FeedContractCard(props: {
       </Col>
 
       {showImage && (
-        <div className="relative mt-1 h-40 w-full">
+        <Col className="relative mt-1 h-40 w-full items-center justify-center">
           <div className="absolute inset-0 mt-2 bg-transparent transition-all group-hover:saturate-150">
             <Image
               fill
@@ -170,14 +168,15 @@ export function FeedContractCard(props: {
               src={coverImageUrl}
             />
           </div>
-          <div className="absolute bottom-0">
+          <Row className="absolute bottom-0 left-0">
             <PublicMarketGroups
               contract={contract}
               className={'px-4 py-2'}
               justGroups={true}
             />
-          </div>
-        </div>
+          </Row>
+          {promotedData && <ClaimButton {...promotedData} className={'z-10'} />}
+        </Col>
       )}
       {!showImage && (
         <PublicMarketGroups
@@ -263,18 +262,6 @@ function ReasonChosen(props: { contract: Contract; reason?: string }) {
           </>
         )}
         {reason === 'New' && fromNow(createdTime)}
-        {reason === 'Trending' && (
-          <Tooltip
-            text={`${uniqueBettorCount ?? 0} unique traders`}
-            placement="bottom"
-            className={'z-10'}
-          >
-            <Row className={'shrink-0 items-center gap-1'}>
-              <UserIcon className={'h-4 w-4'} />
-              <div>{uniqueBettorCount ?? 0}</div>
-            </Row>
-          </Tooltip>
-        )}
       </Row>
     </Row>
   )
@@ -318,7 +305,7 @@ function ClaimButton(props: {
   return (
     <button
       className={clsx(
-        'h-min rounded-full bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-1 px-2 font-semibold text-gray-900 transition-colors',
+        'h-10 rounded-md bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-1 px-2 font-semibold text-gray-900 transition-colors',
         'hover:via-yellow-100 focus:via-yellow-100',
         'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
         className,

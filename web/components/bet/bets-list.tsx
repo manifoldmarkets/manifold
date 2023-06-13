@@ -227,50 +227,9 @@ export function BetsList(props: { user: User }) {
 
   const displayedContracts = filteredContracts.slice(start, end)
 
-  const unsettled = contracts.filter(
-    (c) => !c.isResolved && nullableMetricsByContract[c.id].invested !== 0
-  )
-
-  const currentInvested = sumBy(
-    unsettled,
-    (c) => nullableMetricsByContract[c.id].invested
-  )
-  const currentBetsValue = sumBy(
-    unsettled,
-    (c) => nullableMetricsByContract[c.id].payout
-  )
-  const currentLoan = sumBy(
-    unsettled,
-    (c) => nullableMetricsByContract[c.id].loan
-  )
-
-  const investedProfitPercent =
-    ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
-
   return (
     <Col>
       <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
-        <Row className="mr-2 gap-4">
-          <Col className={'shrink-0'}>
-            <div className="text-ink-600 text-xs sm:text-sm">
-              Investment value
-            </div>
-            <div className="text-lg">
-              {formatMoney(currentBetsValue)}{' '}
-              <ProfitBadge profitPercent={investedProfitPercent} />
-            </div>
-          </Col>
-          <Col className={'shrink-0'}>
-            <div className="text-ink-600 text-xs sm:text-sm">Total loans</div>
-            <div className="text-lg">{formatMoney(currentLoan)}</div>
-          </Col>
-
-          <AddFundsButton
-            userId={user.id}
-            className="ml-2 self-center sm:hidden"
-          />
-        </Row>
-
         <div className="flex grow gap-2 max-[480px]:flex-col">
           <Input
             placeholder="Search"
