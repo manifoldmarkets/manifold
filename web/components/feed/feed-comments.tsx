@@ -22,6 +22,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { CommentInput } from '../comments/comment-input'
 import {
   DotsHorizontalIcon,
+  DotsVerticalIcon,
   ReplyIcon,
   XCircleIcon,
 } from '@heroicons/react/solid'
@@ -49,6 +50,7 @@ import { CommentView } from 'common/events'
 import { Tooltip } from '../widgets/tooltip'
 import { EditCommentModal } from 'web/components/comments/edit-comment-modal'
 import { CommentEditHistoryButton } from 'web/components/comments/comment-edit-history-button'
+import { fromNow } from 'web/lib/util/time'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -60,6 +62,7 @@ export function FeedCommentThread(props: {
   parentComment: ContractComment
   trackingLocation: string
   collapseMiddle?: boolean
+  inTimeline?: boolean
 }) {
   const {
     contract,
@@ -67,6 +70,7 @@ export function FeedCommentThread(props: {
     parentComment,
     collapseMiddle,
     trackingLocation,
+    inTimeline,
   } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
   const [seeReplies, setSeeReplies] = useState(true)
@@ -82,7 +86,7 @@ export function FeedCommentThread(props: {
     collapseMiddle && threadComments.length > 2 ? threadComments.length - 2 : -1
   )
   return (
-    <Col className="w-full items-stretch gap-3 pb-2">
+    <Col className="w-full items-stretch gap-3">
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
@@ -94,6 +98,7 @@ export function FeedCommentThread(props: {
         onSeeReplyClick={onSeeRepliesClick}
         onReplyClick={onReplyClick}
         trackingLocation={trackingLocation}
+        inTimeline={inTimeline}
       />
       {seeReplies &&
         threadComments.map((comment, _commentIdx) =>
@@ -150,6 +155,7 @@ export const FeedComment = memo(function FeedComment(props: {
   onReplyClick?: (comment: ContractComment) => void
   children?: ReactNode
   className?: string
+  inTimeline?: boolean
 }) {
   const {
     contract,
@@ -160,6 +166,7 @@ export const FeedComment = memo(function FeedComment(props: {
     onReplyClick,
     children,
     trackingLocation,
+    inTimeline,
   } = props
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
@@ -181,7 +188,6 @@ export const FeedComment = memo(function FeedComment(props: {
       )}
     >
       <Avatar
-        size={children ? 'sm' : 'xs'}
         username={userUsername}
         avatarUrl={userAvatarUrl}
         className={clsx(marketCreator ? 'shadow shadow-amber-300' : '', 'z-10')}
@@ -190,7 +196,11 @@ export const FeedComment = memo(function FeedComment(props: {
         {isReplyToBet(comment) && (
           <FeedCommentReplyHeader comment={comment} contract={contract} />
         )}
-        <FeedCommentHeader comment={comment} contract={contract} />
+        <FeedCommentHeader
+          comment={comment}
+          contract={contract}
+          inTimeline={inTimeline}
+        />
 
         <HideableContent comment={comment} />
         <Row className={children ? 'justify-between' : 'justify-end'}>
@@ -218,6 +228,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   onReplyClick?: (comment: ContractComment) => void
   onSeeReplyClick: () => void
   trackingLocation: string
+  inTimeline?: boolean
 }) {
   const {
     contract,
@@ -229,6 +240,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     seeReplies,
     numReplies,
     trackingLocation,
+    inTimeline,
   } = props
   const { userUsername } = comment
   const { ref } = useIsVisible(
@@ -249,6 +261,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       showLike={showLike}
       className={clsx('gap-2', commentKind)}
       trackingLocation={trackingLocation}
+      inTimeline={inTimeline}
     >
       <div ref={ref} />
       <ReplyToggle
@@ -304,7 +317,7 @@ export function DotMenu(props: {
         label={'Comment'}
       />
       <DropdownMenu
-        Icon={<DotsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
+        Icon={<DotsVerticalIcon className="h-4 w-4" aria-hidden="true" />}
         Items={buildArray(
           {
             name: 'Copy Link',
@@ -375,7 +388,7 @@ export function CommentActions(props: {
       {user && onReplyClick && (
         <Tooltip text="Reply" placement="bottom">
           <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
-            <ReplyIcon className="h-5 w-5" />
+            <ReplyIcon className="h-4 w-4" />
           </IconButton>
         </Tooltip>
       )}
@@ -391,6 +404,7 @@ export function CommentActions(props: {
           className={
             isBlocked(privateUser, comment.userId) ? 'pointer-events-none' : ''
           }
+          size={'sm'}
           trackingLocation={trackingLocation}
         />
       )}
@@ -504,8 +518,9 @@ export function ContractCommentInput(props: {
 function FeedCommentHeader(props: {
   comment: ContractComment
   contract: Contract
+  inTimeline?: boolean
 }) {
-  const { comment, contract } = props
+  const { comment, contract, inTimeline } = props
   const {
     userUsername,
     userName,
@@ -522,14 +537,25 @@ function FeedCommentHeader(props: {
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
-    <Row className="text-ink-600 mt-0.5 flex-wrap items-end text-sm">
-      <UserLink
-        username={userUsername}
-        name={userName}
-        marketCreator={marketCreator}
-      />
+    <div
+      className={clsx(
+        'mt-0.5 flex flex-wrap text-sm',
+        inTimeline ? 'flex flex-col' : 'text-ink-600 flex-row items-end '
+      )}
+    >
+      <Row className="justify-between">
+        <span>
+          <UserLink
+            username={userUsername}
+            name={userName}
+            marketCreator={marketCreator}
+          />
+          {inTimeline && <span> commented</span>}
+        </span>
+        <DotMenu comment={comment} contract={contract} />
+      </Row>
       {/* Hide my status if replying to a bet, it's too much clutter*/}
-      {bettorUsername == undefined && (
+      {bettorUsername == undefined && !inTimeline && (
         <span className="text-ink-400 ml-1">
           <CommentStatus contract={contract} comment={comment} />
           {bought} {money}
@@ -546,15 +572,9 @@ function FeedCommentHeader(props: {
           )}
         </span>
       )}
-      <CopyLinkDateTimeComponent
-        prefix={contract.creatorUsername}
-        slug={contract.slug}
-        createdTime={editedTime ? editedTime : createdTime}
-        elementId={comment.id}
-        seeEditsButton={<CommentEditHistoryButton comment={comment} />}
-      />
-      <DotMenu comment={comment} contract={contract} />
-    </Row>
+      {<div className="text-ink-500">{fromNow(createdTime)}</div>}
+      {!inTimeline && <DotMenu comment={comment} contract={contract} />}
+    </div>
   )
 }
 

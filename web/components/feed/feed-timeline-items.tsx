@@ -69,7 +69,7 @@ export const FeedTimelineItems = (props: {
   )
 
   return (
-    <Col>
+    <Col className="gap-3">
       {feedTimelineItems.map((item) => {
         // Boosted contract
         if ('ad_id' in item) {
@@ -90,21 +90,14 @@ export const FeedTimelineItems = (props: {
             <FeedItemFrame
               item={undefined}
               key={contract.id + 'feed-timeline-item'}
-              className={
-                'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
-              }
             >
               <FeedContractCard
                 contract={contract}
-                className={clsx(
-                  'my-0 border-0',
-                  hasRelatedItems ? 'rounded-t-xl rounded-b-none  ' : ''
-                )}
                 promotedData={promotedData}
                 trackingPostfix="feed"
                 hasItems={hasRelatedItems}
               />
-              <Row className="bg-canvas-0">
+              <FeedRelatedItemFrame>
                 <FeedCommentItem
                   contract={contract}
                   commentThreads={parentComments.map((parentComment) => ({
@@ -113,8 +106,8 @@ export const FeedTimelineItems = (props: {
                       childCommentsByParentCommentId[parentComment.id] ?? [],
                   }))}
                 />
-              </Row>
-              <Row className="bg-canvas-0">
+              </FeedRelatedItemFrame>
+              <Row className="bg-canvas-0 rounded-xl">
                 {parentComments.length === 0 && (
                   <FeedBetsItem contract={contract} bets={relatedBets} />
                 )}
@@ -134,24 +127,14 @@ export const FeedTimelineItems = (props: {
           const hasRelatedItems =
             parentComments.length > 0 || relatedBets.length > 0
           return (
-            <FeedItemFrame
-              item={item}
-              key={contract.id + 'feed-timeline-item'}
-              className={
-                'border-ink-200 my-1 overflow-y-hidden rounded-xl border'
-              }
-            >
+            <FeedItemFrame item={item} key={contract.id + 'feed-timeline-item'}>
               <FeedContractCard
                 contract={contract}
-                className={clsx(
-                  'my-0 border-0',
-                  hasRelatedItems ? 'rounded-t-xl rounded-b-none  ' : ''
-                )}
                 trackingPostfix="feed"
                 reason={item.reasonDescription}
                 hasItems={hasRelatedItems}
               />
-              <Row className="bg-canvas-0">
+              <FeedRelatedItemFrame>
                 <FeedCommentItem
                   contract={contract}
                   commentThreads={parentComments.map((parentComment) => ({
@@ -160,8 +143,8 @@ export const FeedTimelineItems = (props: {
                       childCommentsByParentCommentId[parentComment.id] ?? [],
                   }))}
                 />
-              </Row>
-              <Row className="bg-canvas-0">
+              </FeedRelatedItemFrame>
+              <Row className="bg-canvas-0 mr-4 rounded-2xl">
                 {parentComments.length === 0 && (
                   <FeedBetsItem contract={contract} bets={relatedBets} />
                 )}
@@ -172,21 +155,17 @@ export const FeedTimelineItems = (props: {
           const { news } = item
           console.log('news', news.title)
           return (
-            <FeedItemFrame
-              item={item}
-              key={news.id + 'feed-timeline-item'}
-              className="bg-canvas-0 my-4 p-4"
-            >
-              <Row className="mb-4" key={news.id + 'feed-timeline-item-news'}>
+            <FeedItemFrame item={item} key={news.id + 'feed-timeline-item'}>
+              <FeedRelatedItemFrame
+                className="rounded-xl"
+                key={news.id + 'feed-timeline-item-news'}
+              >
                 <NewsArticle
                   author={(news as any)?.author}
                   published_time={(news as any)?.published_time}
                   {...news}
                 />
-                {/* <span className={'text-ink-500 text-right text-xs'}>
-                  {item.reasonDescription}
-                </span> */}
-              </Row>
+              </FeedRelatedItemFrame>
               {item.contracts?.map((contract) => (
                 <SimpleContractRow
                   contract={contract}
@@ -198,6 +177,18 @@ export const FeedTimelineItems = (props: {
         }
       })}
     </Col>
+  )
+}
+
+function FeedRelatedItemFrame(props: {
+  children: React.ReactNode
+  className?: string
+}) {
+  const { children, className } = props
+  return (
+    <Row className="bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 -mt-4 rounded-2xl border">
+      {children}
+    </Row>
   )
 }
 
@@ -277,7 +268,8 @@ const FeedCommentItem = (props: {
           ) : index !== commentThreads.length - 1 ? (
             <div className="border-ink-200 b-[50%] absolute top-0 ml-7 h-[100%] border-l-2" />
           ) : (
-            <div className="border-ink-200 absolute top-0 ml-7 h-3 border-l-2" />
+            // <div className="border-ink-200 absolute top-0 ml-7 h-3 border-l-2" />
+            <></>
           )}
 
           <Col className={'w-full p-3'}>
@@ -287,6 +279,7 @@ const FeedCommentItem = (props: {
               parentComment={ct.parentComment}
               collapseMiddle={true}
               trackingLocation={'feed'}
+              inTimeline={true}
             />
           </Col>
         </Row>
