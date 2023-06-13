@@ -387,7 +387,7 @@ export function ContractPageContent(props: {
                   </ExtraContractActionsRow>
                 </Row>
               )}
-              <div ref={titleRef} className="-my-3">
+              <div ref={titleRef}>
                 <TitleOrEdit
                   contract={contract}
                   canEdit={isAdmin || isCreator}
