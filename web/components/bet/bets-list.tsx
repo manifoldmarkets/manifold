@@ -69,6 +69,8 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { SellRow } from 'web/components/bet/sell-row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { OrderTable } from 'web/components/bet/limit-bets'
+import { TinyRelativeTimestamp } from 'web/components/relative-timestamp'
+import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
 type BetSort =
   | 'newest'
   | 'profit'
@@ -306,7 +308,7 @@ function UserBetsTable(props: {
         direction: prevSort.direction === 'asc' ? 'desc' : 'asc',
       }))
     } else {
-      setSort({ field, direction: 'asc' })
+      setSort({ field, direction: 'desc' })
     }
     setPage(0)
   }
@@ -322,9 +324,11 @@ function UserBetsTable(props: {
           : 0)
       ),
     newest: (c) =>
-      metricsByContractId[c.id].lastBetTime ??
-      max(openLimitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
-      0,
+      -(
+        metricsByContractId[c.id].lastBetTime ??
+        max(openLimitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
+        0
+      ),
     probChangeDay: (c) => {
       if (c.mechanism === 'cpmm-1') {
         return -(c as CPMMContract).probChanges.day
@@ -340,7 +344,7 @@ function UserBetsTable(props: {
       (c.resolutionTime ?? c.closeTime ?? Infinity),
   }
   const contracts =
-    sort.direction === 'asc'
+    sort.direction === 'desc'
       ? sortBy(props.contracts, SORTS[sort.field])
       : sortBy(props.contracts, SORTS[sort.field]).reverse()
   const rowsPerSection = 50
@@ -375,15 +379,22 @@ function UserBetsTable(props: {
       <Row
         className={clsx(
           className ? className : 'justify-end',
-          'cursor-pointer',
-          sort.field === id && id !== 'newest'
-            ? sort.direction === 'asc'
-              ? 'text-teal-500'
-              : 'text-scarlet-500'
-            : ''
+          'cursor-pointer'
         )}
         onClick={() => onSetSort(id)}
       >
+        {sort.field === id ? (
+          sort.direction === 'asc' ? (
+            <BiCaretUp className=" h-4" />
+          ) : (
+            <BiCaretDown className="mt-1.5 h-4" />
+          )
+        ) : (
+          <Col className={'items-center justify-center'}>
+            <BiCaretUp className="text-ink-300 -mb-2 h-4" />
+            <BiCaretDown className="text-ink-300 h-4" />
+          </Col>
+        )}
         <span>{props.children}</span>
       </Row>
     )
@@ -392,70 +403,82 @@ function UserBetsTable(props: {
     {
       header: (
         <Header id="newest" className={'justify-start'}>
-          <Row className={'items-center gap-1'}>
-            Trades
-            {sort.field === 'newest'
-              ? sort.direction === 'desc'
-                ? ' (new) '
-                : ' (old)'
-              : null}
-          </Row>
+          <div />
         </Header>
       ),
-      renderCell: (q: Contract) => (
+      renderCell: (c: Contract) => (
         <Col>
           <SiteLink
-            href={contractPath(q)}
+            href={contractPath(c)}
             className={'line-clamp-2 pr-2 sm:pr-1'}
             onClick={(e) => e.stopPropagation()}
             followsLinkClass
           >
-            {q.question}
+            {c.question}
           </SiteLink>
-          <Row className={'gap-2'}>
-            <ContractStatusLabel
-              className={clsx(
-                q.isResolved ? '' : 'text-indigo-500',
-                'font-bold'
-              )}
-              contract={q}
-            />
-            <UserLink
-              className={'text-ink-500 text-sm'}
-              name={q.creatorName}
-              username={q.creatorUsername}
-            />
-          </Row>
+          <UserLink
+            className={'text-ink-500 w-fit text-sm'}
+            name={c.creatorName}
+            username={c.creatorUsername}
+          />
         </Col>
       ),
     },
     {
-      header: <Header id="probChangeDay">1d%</Header>,
+      header: (
+        <Header id="probChangeDay" className={'justify-left'}>
+          Prob
+        </Header>
+      ),
       renderCell: (c: Contract) => {
         let change: string | undefined
         if (c.mechanism === 'cpmm-1') {
           const probChange = Math.round(
             (c as CPMMContract).probChanges.day * 100
           )
-          change = (probChange > 0 ? '+' : '') + probChange + '%'
+          change =
+            probChange !== 0
+              ? (probChange > 0 ? '+' : '') + probChange + '%'
+              : ''
         }
         return (
-          <Row className={'text-ink-500 items-start justify-end'}>
-            {change !== undefined ? change : 'n/a'}
+          <Row className={'justify-left relative items-center'}>
+            <ContractStatusLabel
+              className={clsx(
+                c.isResolved ? '' : 'text-indigo-500',
+                'font-bold'
+              )}
+              contract={c}
+            />
+            <span className={'text-ink-500 text-xs'}>
+              {change !== undefined ? change : 'n/a'}
+            </span>
           </Row>
         )
       },
+    },
+    {
+      header: (
+        <Header id="newest" className={'justify-center'}>
+          Time
+        </Header>
+      ),
+      renderCell: (t: number) => (
+        <Row className={'justify-center'}>
+          <TinyRelativeTimestamp className={'ml-5'} time={t} />
+        </Row>
+      ),
     },
     {
       header: <Header id="value">Value</Header>,
       renderCell: (n: number) => <Cell num={n} />,
     },
     {
-      header: <Header id="profit">All</Header>,
+      header: <Header id="profit">Profit</Header>,
       renderCell: (n: number) => <Cell num={n} change={true} />,
     },
     {
-      header: <Header id="day">1d</Header>,
+      header: <Header id="day">1d Profit</Header>,
       renderCell: (n: number) => <Cell num={n} change={true} />,
     },
   ]
@@ -465,11 +488,12 @@ function UserBetsTable(props: {
       return [
         contract,
         contract,
+        cm.lastBetTime,
         cm.payout,
         cm.profit,
         cm.from?.day.profit ?? 0,
         cm.from?.month.profit ?? 0,
-      ] as [Contract, Contract, number, number, number, number]
+      ] as [Contract, Contract, number, number, number, number, number]
     }),
   ]
   const [expandedIds, setExpandedIds] = useState<string[]>([])
@@ -495,6 +519,7 @@ function UserBetsTable(props: {
         : [...oldIds, id]
     )
   }
+  const getColSpan = (i: number) => (i === 5 ? 'col-span-4' : 'col-span-3')
 
   return (
     <Col className="mb-4 flex-1 gap-4">
@@ -504,19 +529,8 @@ function UserBetsTable(props: {
             'grid-cols-16 bg-canvas-100 sticky top-0 z-10 grid w-full px-1 py-2'
           }
         >
-          {columns.map((c, i) => (
-            <span
-              key={c.header.props.id}
-              className={clsx(
-                i == 0
-                  ? 'col-span-8'
-                  : i === 1
-                  ? 'col-span-1'
-                  : i === 2
-                  ? 'col-span-3'
-                  : 'col-span-2'
-              )}
-            >
+          {columns.slice(1).map((c, i) => (
+            <span key={c.header.props.id} className={clsx(getColSpan(i + 1))}>
               {c.header}
             </span>
           ))}
@@ -534,24 +548,23 @@ function UserBetsTable(props: {
               className={
                 'border-ink-300 hover:bg-canvas-100 cursor-pointer border-b py-2'
               }
-              onClick={() => setNewExpandedId(contract.id)}
             >
               <Col className={'w-full'}>
-                <Row className={'grid-cols-16 grid w-full'}>
-                  {columns.map((c, i) => (
+                {/* Contract title*/}
+                <Row className={'-mb-2'}>
+                  {columns[0].renderCell(d[0] as any)}
+                </Row>
+                {/* Contract Metrics details*/}
+                <Row
+                  className={'grid-cols-16 mt-1 grid w-full pt-2'}
+                  onClick={() => setNewExpandedId(contract.id)}
+                >
+                  {columns.slice(1).map((c, i) => (
                     <span
-                      className={clsx(
-                        i == 0
-                          ? 'col-span-8'
-                          : i === 1
-                          ? 'col-span-1'
-                          : i === 2
-                          ? 'col-span-3'
-                          : 'col-span-2'
-                      )}
+                      className={clsx(getColSpan(i + 1))}
                       key={c.header.props.id + contract.id + 'row'}
                     >
-                      {c.renderCell(d[i] as any)}
+                      {c.renderCell(d[i + 1] as any)}
                     </span>
                   ))}
                 </Row>
