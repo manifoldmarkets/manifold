@@ -7,6 +7,7 @@ import {
 } from './calculate-cpmm'
 import { binarySearch } from './util/algos'
 import { computeFills } from './new-bet'
+import { floatingEqual } from './util/math'
 
 const DEBUG = false
 
@@ -19,23 +20,40 @@ export function calculateCpmmMultiArbitrageBet(
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number }
 ) {
-  return outcome === 'YES'
-    ? calculateCpmmMultiArbitrageBetYes(
-        answers,
-        answerToBuy,
-        betAmount,
-        limitProb,
-        unfilledBets,
-        balanceByUserId
-      )
-    : calculateCpmmMultiArbitrageBetNo(
-        answers,
-        answerToBuy,
-        betAmount,
-        limitProb,
-        unfilledBets,
-        balanceByUserId
-      )
+  const result =
+    outcome === 'YES'
+      ? calculateCpmmMultiArbitrageBetYes(
+          answers,
+          answerToBuy,
+          betAmount,
+          limitProb,
+          unfilledBets,
+          balanceByUserId
+        )
+      : calculateCpmmMultiArbitrageBetNo(
+          answers,
+          answerToBuy,
+          betAmount,
+          limitProb,
+          unfilledBets,
+          balanceByUserId
+        )
+  if (floatingEqual(sumBy(result.newBetResult.takers, 'amount'), 0)) {
+    // No trades matched.
+    const { outcome, answer } = result.newBetResult
+    return {
+      newBetResult: {
+        outcome,
+        answer,
+        takers: [],
+        makers: [],
+        ordersToCancel: [],
+        cpmmState: { pool: { YES: answer.poolYes, NO: answer.poolNo }, p: 0.5 },
+      },
+      otherBetResults: [],
+    }
+  }
+  return result
 }
 
 function calculateCpmmMultiArbitrageBetYes(
