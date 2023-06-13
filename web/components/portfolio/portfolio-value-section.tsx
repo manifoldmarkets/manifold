@@ -20,9 +20,9 @@ import { track } from 'web/lib/service/analytics'
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
     const { userId } = props
-    const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('weekly')
+    const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('daily')
     const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
-    const [graphMode, setGraphMode] = useState<GraphMode>('value')
+    const [graphMode, setGraphMode] = useState<GraphMode>('profit')
     const graphPoints = useMemo(
       () =>
         portfolioHistory?.map((p) => ({
@@ -169,6 +169,7 @@ export const PortfolioValueSection = memo(
                   height={height}
                   viewScaleProps={graphView}
                   onMouseOver={handleGraphDisplayChange}
+                  negativeThreshold={graphPoints[0].y}
                 />
               )
         }
@@ -218,20 +219,6 @@ export function PortfolioValueSkeleton(props: {
       >
         <Col
           className={clsx(
-            'w-24 cursor-pointer sm:w-28',
-            graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
-          )}
-          onClick={() => {
-            onClickNumber('value')
-            track('Portfolio Value Clicked')
-          }}
-        >
-          <div className="text-ink-600 text-xs sm:text-sm">Portfolio</div>
-          {valueElement}
-        </Col>
-
-        <Col
-          className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
             graphMode != 'profit'
               ? 'cursor-pointer opacity-40 hover:opacity-80'
@@ -244,6 +231,20 @@ export function PortfolioValueSkeleton(props: {
         >
           <div className="text-ink-600 text-xs sm:text-sm">Profit</div>
           {profitElement}
+        </Col>
+
+        <Col
+          className={clsx(
+            'w-24 cursor-pointer sm:w-28',
+            graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+          )}
+          onClick={() => {
+            onClickNumber('value')
+            track('Portfolio Value Clicked')
+          }}
+        >
+          <div className="text-ink-600 text-xs sm:text-sm">Portfolio</div>
+          {valueElement}
         </Col>
 
         <Col
