@@ -7,8 +7,6 @@ import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
 
-import { dalleWithDefaultParams } from 'shared/dream-utils'
-import { getImagePrompt } from 'shared/helpers/openai-utils'
 import { secrets } from 'common/secrets'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { addContractToFeed } from 'shared/create-feed'
