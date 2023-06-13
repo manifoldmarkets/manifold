@@ -31,8 +31,9 @@ export function isClosed(contract: Contract) {
 export function ContractStatusLabel(props: {
   contract: Contract
   chanceLabel?: boolean
+  className?: string
 }) {
-  const { contract, chanceLabel } = props
+  const { contract, chanceLabel, className } = props
   const probTextColor = getTextColor(contract)
   const { outcomeType } = contract
 
@@ -44,7 +45,7 @@ export function ContractStatusLabel(props: {
           resolution={contract.resolution}
         />
       ) : (
-        <span className={probTextColor}>
+        <span className={clsx(probTextColor, className)}>
           {formatPercentShort(getDisplayProbability(contract))}
           {chanceLabel && (
             <span className="text-ink-500 text-sm font-normal"> chance</span>
@@ -55,7 +56,7 @@ export function ContractStatusLabel(props: {
     case 'STONK': {
       const val = getDisplayProbability(contract)
       return (
-        <span className={probTextColor}>
+        <span className={clsx(probTextColor, className)}>
           {ENV_CONFIG.moneyMoniker + getFormattedMappedValue(contract, val)}
         </span>
       )
@@ -63,7 +64,7 @@ export function ContractStatusLabel(props: {
     case 'PSEUDO_NUMERIC': {
       const val = getDisplayProbability(contract)
       return (
-        <span className={probTextColor}>
+        <span className={clsx(probTextColor, className)}>
           {getFormattedMappedValue(contract, val)}
         </span>
       )
@@ -71,7 +72,7 @@ export function ContractStatusLabel(props: {
     case 'NUMERIC': {
       const val = contract.resolutionValue ?? getValueFromBucket('', contract)
       return (
-        <span className={probTextColor}>
+        <span className={clsx(probTextColor, className)}>
           {getFormattedMappedValue(contract, val)}
         </span>
       )
