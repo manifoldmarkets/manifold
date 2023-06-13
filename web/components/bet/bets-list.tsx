@@ -315,9 +315,12 @@ function UserBetsTable(props: {
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     profit: (c) => -metricsByContractId[c.id].profit,
     value: (c) =>
-      -(metricsByContractId[c.id].payout + filter === 'limit_bet'
-        ? sum(openLimitBetsByContract[c.id].map((b) => b.amount))
-        : 0),
+      -(
+        metricsByContractId[c.id].payout +
+        (filter === 'limit_bet'
+          ? sum(openLimitBetsByContract[c.id].map((b) => b.amount))
+          : 0)
+      ),
     newest: (c) =>
       metricsByContractId[c.id].lastBetTime ??
       max(openLimitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
@@ -344,20 +347,20 @@ function UserBetsTable(props: {
   const currentSlice = page * rowsPerSection
   const Cell = (props: { num: number; change?: boolean }) => {
     const { num, change } = props
+    const formattedNum =
+      num < 1000 && num > -1000
+        ? formatMoney(num)
+        : ENV_CONFIG.moneyMoniker + shortFormatNumber(num)
     return (
       <Row className="items-start justify-end ">
         {change ? (
           num > 0 ? (
-            <span className="text-teal-500">{formatMoney(num)}</span>
+            <span className="text-teal-500">{formattedNum}</span>
           ) : (
-            <span className="text-scarlet-500">{formatMoney(num)}</span>
+            <span className="text-scarlet-500">{formattedNum}</span>
           )
         ) : (
-          <span>
-            {num < 1000
-              ? formatMoney(num)
-              : ENV_CONFIG.moneyMoniker + shortFormatNumber(num)}
-          </span>
+          <span>{formatMoney(num)}</span>
         )}
       </Row>
     )
@@ -404,7 +407,7 @@ function UserBetsTable(props: {
         <Col>
           <SiteLink
             href={contractPath(q)}
-            className={'line-clamp-2'}
+            className={'line-clamp-2 pr-2 sm:pr-1'}
             onClick={(e) => e.stopPropagation()}
             followsLinkClass
           >
@@ -428,7 +431,7 @@ function UserBetsTable(props: {
       ),
     },
     {
-      header: <Header id="probChangeDay">1d %</Header>,
+      header: <Header id="probChangeDay">1d%</Header>,
       id: 'probChangeDay',
       renderCell: (c: Contract) => {
         let change: string | undefined
@@ -509,7 +512,15 @@ function UserBetsTable(props: {
           {columns.map((c, i) => (
             <span
               key={c.id}
-              className={clsx(i == 0 ? 'col-span-8' : 'col-span-2')}
+              className={clsx(
+                i == 0
+                  ? 'col-span-8'
+                  : i === 1
+                  ? 'col-span-1'
+                  : i === 2
+                  ? 'col-span-3'
+                  : 'col-span-2'
+              )}
             >
               {c.header}
             </span>
@@ -533,7 +544,15 @@ function UserBetsTable(props: {
                 <Row className={'grid-cols-16 grid w-full'}>
                   {columns.map((c, i) => (
                     <span
-                      className={clsx(i === 0 ? 'col-span-8' : 'col-span-2')}
+                      className={clsx(
+                        i == 0
+                          ? 'col-span-8'
+                          : i === 1
+                          ? 'col-span-1'
+                          : i === 2
+                          ? 'col-span-3'
+                          : 'col-span-2'
+                      )}
                       key={c.id + contract.id + 'row'}
                     >
                       {c.renderCell(d[i] as any)}
