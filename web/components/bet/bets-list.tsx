@@ -66,7 +66,6 @@ import clsx from 'clsx'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserLink } from 'web/components/widgets/user-link'
 import { SellRow } from 'web/components/bet/sell-row'
-import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { OrderTable } from 'web/components/bet/limit-bets'
 type BetSort =
@@ -387,14 +386,12 @@ function UserBetsTable(props: {
       header: (
         <Header id="newest" className={'justify-start'}>
           <Row className={'items-center gap-1'}>
-            Question
-            {sort.field === 'newest' ? (
-              sort.direction === 'desc' ? (
-                <BiCaretDown className={'h-4 w-4'} />
-              ) : (
-                <BiCaretUp className={'h-4 w-4'} />
-              )
-            ) : null}
+            Trades
+            {sort.field === 'newest'
+              ? sort.direction === 'desc'
+                ? ' (new) '
+                : ' (old)'
+              : null}
           </Row>
         </Header>
       ),
