@@ -53,7 +53,11 @@ export function ProbabilityInput(props: {
 }
 
 export function ProbabilityOrNumericInput(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract | CPMMMultiContract
+  contract:
+    | CPMMBinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
   prob: number | undefined
   setProb: (prob: number | undefined) => void
   isSubmitting: boolean
