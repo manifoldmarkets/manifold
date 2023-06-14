@@ -30,6 +30,7 @@ import { PublicMarketGroups } from './contract-details'
 import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -183,145 +184,152 @@ function DetailedCard(props: {
   const showImage = !!coverImageUrl
   const metrics = useSavedContractMetrics(contract)
   return (
-    <>
-      <ReasonChosen
-        contract={contract}
-        reason={promotedData ? 'Boosted' : reason}
-        className={'mx-4 my-2'}
-      />
-      <div
-        className={clsx(
-          'relative rounded-xl',
-          'bg-canvas-0 group flex cursor-pointer flex-col overflow-hidden',
-          'border-canvas-0 hover:border-primary-300 border outline-none transition-colors ',
-          className
-        )}
-        // we have other links inside this card like the username, so can't make the whole card a button or link
-        tabIndex={-1}
-        onClick={(e) => {
-          trackClick()
-          Router.push(path)
-          e.currentTarget.focus() // focus the div like a button, for style
-        }}
-      >
-        <Col className="gap-2 p-4 py-2">
-          {/* Title is link to contract for open in new tab and a11y */}
-          <Row className="justify-between">
-            <Row onClick={(e) => e.stopPropagation()} className="gap-2">
-              <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
-              <Col>
+    // <>
+    //   <ReasonChosen
+    //     contract={contract}
+    //     reason={promotedData ? 'Boosted' : reason}
+    //     className={'mx-4 my-2'}
+    //   />
+    <div
+      className={clsx(
+        'relative rounded-xl',
+        'bg-canvas-0 group flex cursor-pointer flex-col overflow-hidden',
+        'border-canvas-0 hover:border-primary-300 border outline-none transition-colors ',
+        className
+      )}
+      // we have other links inside this card like the username, so can't make the whole card a button or link
+      tabIndex={-1}
+      onClick={(e) => {
+        trackClick()
+        Router.push(path)
+        e.currentTarget.focus() // focus the div like a button, for style
+      }}
+    >
+      <Col className="gap-2 p-4 py-2">
+        {/* Title is link to contract for open in new tab and a11y */}
+        <Row className="justify-between">
+          <Row onClick={(e) => e.stopPropagation()} className="gap-2">
+            <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
+            <Col className="w-full">
+              <span>
                 <span className="text-sm">
                   <UserLink
                     name={creatorName}
                     username={creatorUsername}
                     createdTime={creatorCreatedTime}
                     className={'font-semibold'}
-                  />{' '}
-                  <span>created a market</span>
+                  />
+                  <span> created a market </span>
                 </span>
-                <div className="text-ink-500 text-sm">
-                  {fromNow(contract.createdTime)}
-                </div>
-              </Col>
-            </Row>
-          </Row>
-          <Link
-            href={path}
-            className={clsx(
-              'text-lg',
-              'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
-              textColor
-            )}
-            // if open in new tab, don't open in this one
-            onClick={(e) => {
-              trackClick()
-              e.stopPropagation()
-            }}
-          >
-            {question}
-          </Link>
-
-          <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
-            <QuickOutcomeView contract={contract} />
-
-            {isBinaryCpmm && (
-              <div className="flex gap-2">
-                <BetRow contract={contract} user={user} />
+                <span className="text-ink-500 text-sm">
+                  {shortenedFromNow(contract.createdTime)}
+                </span>
+              </span>
+              <div className="text-ink-500 text-sm">
+                {contract.closeTime ? (
+                  <>closes {fromNow(contract.closeTime)}</>
+                ) : (
+                  'Never closes'
+                )}
               </div>
-            )}
+            </Col>
           </Row>
-
-          {isBinaryCpmm && metrics && metrics.hasShares && (
-            <YourMetricsFooter metrics={metrics} />
+        </Row>
+        <Link
+          href={path}
+          className={clsx(
+            'text-lg',
+            'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
+            textColor
           )}
-        </Col>
+          // if open in new tab, don't open in this one
+          onClick={(e) => {
+            trackClick()
+            e.stopPropagation()
+          }}
+        >
+          {question}
+        </Link>
 
-        {showImage && (
-          <Col className="relative mt-1 h-40 w-full items-center justify-center">
-            <div className="absolute inset-0 mt-2 bg-transparent transition-all group-hover:saturate-150">
-              <Image
-                fill
-                alt=""
-                sizes="100vw"
-                className="object-cover"
-                src={coverImageUrl}
-              />
+        <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
+          <QuickOutcomeView contract={contract} />
+
+          {isBinaryCpmm && (
+            <div className="flex gap-2">
+              <BetRow contract={contract} user={user} />
             </div>
-            <Row className="absolute bottom-0 left-0">
-              <PublicMarketGroups
-                contract={contract}
-                className={'px-4 py-2'}
-                justGroups={true}
-              />
-            </Row>
-            {promotedData && (
-              <ClaimButton {...promotedData} className={'z-10'} />
-            )}
-          </Col>
+          )}
+        </Row>
+
+        {isBinaryCpmm && metrics && metrics.hasShares && (
+          <YourMetricsFooter metrics={metrics} />
         )}
-        {!showImage && (
-          <PublicMarketGroups
-            contract={contract}
-            className={'px-4 py-2'}
-            justGroups={true}
-          />
-        )}
-        {!showImage && (
-          <div className="w-full">
-            <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
+      </Col>
+
+      {showImage && (
+        <Col className="relative mt-1 h-40 w-full items-center justify-center">
+          <div className="absolute inset-0 mt-2 bg-transparent transition-all group-hover:saturate-150">
+            <Image
+              fill
+              alt=""
+              sizes="100vw"
+              className="object-cover"
+              src={coverImageUrl}
+            />
           </div>
-        )}
-        <Col className="relative">
-          <Row
-            className="justify-between gap-2 px-4 py-1"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <TradesButton contract={contract} />
-            <CommentsButton contract={contract} user={user} />
-            <div className="flex items-center gap-1.5 p-1">
-              <LikeButton
-                contentId={contract.id}
-                contentCreatorId={contract.creatorId}
-                user={user}
-                contentType={'contract'}
-                totalLikes={contract.likedByUserCount ?? 0}
-                contract={contract}
-                contentText={question}
-                size="md"
-                color="gray"
-                className="!px-0"
-                trackingLocation={'contract card (feed)'}
-              />
-            </div>
+          <Row className="absolute bottom-0 left-0">
+            <PublicMarketGroups
+              contract={contract}
+              className={'px-4 py-2'}
+              justGroups={true}
+            />
           </Row>
+          {promotedData && <ClaimButton {...promotedData} className={'z-10'} />}
         </Col>
-        {hasItems && (
-          <div className=" w-full">
-            <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
+      )}
+      {!showImage && (
+        <PublicMarketGroups
+          contract={contract}
+          className={'px-4 py-2'}
+          justGroups={true}
+        />
+      )}
+      {!showImage && (
+        <div className="w-full">
+          <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
+        </div>
+      )}
+      <Col className="relative">
+        <Row
+          className="justify-between gap-2 px-4 py-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <TradesButton contract={contract} />
+          <CommentsButton contract={contract} user={user} />
+          <div className="flex items-center gap-1.5 p-1">
+            <LikeButton
+              contentId={contract.id}
+              contentCreatorId={contract.creatorId}
+              user={user}
+              contentType={'contract'}
+              totalLikes={contract.likedByUserCount ?? 0}
+              contract={contract}
+              contentText={question}
+              size="md"
+              color="gray"
+              className="!px-0"
+              trackingLocation={'contract card (feed)'}
+            />
           </div>
-        )}
-      </div>
-    </>
+        </Row>
+      </Col>
+      {hasItems && (
+        <div className=" w-full">
+          <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
+        </div>
+      )}
+    </div>
+    // </>
   )
 }
 

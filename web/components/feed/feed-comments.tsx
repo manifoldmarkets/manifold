@@ -51,6 +51,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { EditCommentModal } from 'web/components/comments/edit-comment-modal'
 import { CommentEditHistoryButton } from 'web/components/comments/comment-edit-history-button'
 import { fromNow } from 'web/lib/util/time'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -544,6 +545,7 @@ function FeedCommentHeader(props: {
             username={userUsername}
             name={userName}
             marketCreator={marketCreator}
+            className={'font-semibold'}
           />
           {bettorUsername == undefined && !inTimeline && (
             <span className="text-ink-400 ml-1">
@@ -562,12 +564,16 @@ function FeedCommentHeader(props: {
               )}
             </span>
           )}
-          {inTimeline && <span> commented</span>}
+          {inTimeline && <span> commented</span>}{' '}
+          {
+            <span className="text-ink-500">
+              {shortenedFromNow(createdTime)}
+            </span>
+          }
         </span>
         <DotMenu comment={comment} contract={contract} />
       </Row>
       {/* Hide my status if replying to a bet, it's too much clutter*/}
-      {<div className="text-ink-500">{fromNow(createdTime)}</div>}
     </Col>
   )
 }

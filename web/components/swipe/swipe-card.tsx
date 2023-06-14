@@ -219,7 +219,6 @@ function CardActions(props: {
           contract={contract}
           contentText={contract.question}
           size={'xl'}
-          showTotalLikesUnder={true}
           color="white"
           isSwipe
           trackingLocation={'swipe'}

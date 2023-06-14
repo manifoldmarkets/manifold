@@ -148,28 +148,35 @@ export const SummarizeBets = memo(function SummarizeBets(props: {
 
   // group bets by userid made within 30 minutes of each other
   return (
-    <Col className={'w-full'}>
-      <Row className={'justify-between'}>
-        <Row className={clsx(className, 'items-center gap-2')}>
-          {showUser ? (
-            <Avatar
-              size={avatarSize}
-              avatarUrl={userAvatarUrl}
-              username={userUsername}
-              className="z-10"
-            />
-          ) : (
-            <EmptyAvatar className="mx-1" />
-          )}
-          <BetStatusText
-            bet={bet}
-            contract={contract}
-            hideUser={!showUser}
-            className="flex-1"
-          />
-        </Row>
-      </Row>
-    </Col>
+    <Row className={'w-full gap-2'}>
+      {showUser ? (
+        <Avatar
+          size={avatarSize}
+          avatarUrl={userAvatarUrl}
+          username={userUsername}
+          className="z-10"
+        />
+      ) : (
+        <EmptyAvatar className="mx-1" />
+      )}
+      <Col>
+        <span>
+          <UserLink
+            name={bet.userName}
+            username={bet.userUsername}
+            className="text-ink-1000 font-semibold"
+          />{' '}
+          bet
+          <RelativeTimestamp time={createdTime} shortened={true} />
+        </span>
+        <BetStatusText
+          bet={bet}
+          contract={contract}
+          hideUser={!showUser}
+          className="flex-1"
+        />
+      </Col>
+    </Row>
   )
 })
 
@@ -220,11 +227,6 @@ export function BetStatusText(props: {
 
   return (
     <div className={clsx('text-ink-500 text-sm', className)}>
-      {!hideUser ? (
-        <UserLink name={bet.userName} username={bet.userUsername} />
-      ) : (
-        <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>
-      )}{' '}
       {orderAmount ? (
         <span className={textClass}>
           {anyFilled ? (
@@ -279,7 +281,6 @@ export function BetStatusText(props: {
         </InfoTooltip>
       )}
       {isApi && <InfoTooltip text="Placed via the API">🤖</InfoTooltip>}
-      <RelativeTimestamp time={createdTime} />
     </div>
   )
 }

@@ -27,9 +27,12 @@ import { run } from 'common/supabase/utils'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { NewsArticle } from '../news-article'
 import { SimpleContractRow } from '../simple-contract-row'
+import { FeedCommentItem } from './feed-comment-item'
+import { FeedBetsItem } from './feed-bet-item'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
+export const MIN_BET_AMOUNT = 20
 
 export const FeedTimelineItems = (props: {
   feedTimelineItems: FeedTimelineItem[]
@@ -72,7 +75,7 @@ export const FeedTimelineItems = (props: {
     <Col className="gap-3">
       {feedTimelineItems.map((item) => {
         // Boosted contract
-        if ('ad_id' in item) {
+        if (item.contract && ('ad_id' in item || 'contract' in item)) {
           const { contract } = item
           const parentComments = (
             parentCommentsByContractId[contract.id] ?? []
@@ -80,19 +83,22 @@ export const FeedTimelineItems = (props: {
           const relatedBets = recentBets
             .filter((bet) => bet.contractId === contract.id)
             .slice(0, MAX_BETS_PER_FEED_ITEM)
-          const hasRelatedItems =
-            parentComments.length > 0 || relatedBets.length > 0
-          const promotedData = {
-            adId: item.ad_id,
-            reward: AD_REDEEM_REWARD,
-          }
-
-          console.log(
-            contract.question,
-            hasRelatedItems,
-            parentComments,
+          const groupedBetsByTime = groupBetsByCreatedTimeAndUserId(
             relatedBets
+          ).filter(
+            (bets) =>
+              sumBy(bets, (bet) => Math.abs(bet.amount)) > MIN_BET_AMOUNT
           )
+          const hasRelatedItems =
+            parentComments.length > 0 || groupedBetsByTime.length > 0
+
+          let promotedData = undefined
+          if ('ad_id' in item) {
+            promotedData = {
+              adId: item.ad_id,
+              reward: AD_REDEEM_REWARD,
+            }
+          }
           return (
             <FeedItemFrame
               item={undefined}
@@ -104,47 +110,7 @@ export const FeedTimelineItems = (props: {
                 trackingPostfix="feed"
                 hasItems={hasRelatedItems}
               />
-              {parentComments.length !== 0 && (
-                <FeedRelatedItemFrame>
-                  <FeedCommentItem
-                    contract={contract}
-                    commentThreads={parentComments.map((parentComment) => ({
-                      parentComment,
-                      childComments:
-                        childCommentsByParentCommentId[parentComment.id] ?? [],
-                    }))}
-                  />
-                </FeedRelatedItemFrame>
-              )}
-              {(!parentComments || parentComments.length === 0) &&
-                relatedBets.length > 0 && (
-                  <FeedRelatedItemFrame>
-                    <FeedBetsItem contract={contract} bets={relatedBets} />
-                  </FeedRelatedItemFrame>
-                )}
-            </FeedItemFrame>
-          )
-        }
-        // Organic feed item with a contract
-        else if ('contract' in item && item.contract) {
-          const { contract } = item
-          const parentComments = (
-            parentCommentsByContractId[contract.id] ?? []
-          ).slice(0, MAX_PARENT_COMMENTS_PER_FEED_ITEM)
-          const relatedBets = recentBets
-            .filter((bet) => bet.contractId === contract.id)
-            .slice(0, MAX_BETS_PER_FEED_ITEM)
-          const hasRelatedItems =
-            parentComments.length > 0 || relatedBets.length > 0
-          return (
-            <FeedItemFrame item={item} key={contract.id + 'feed-timeline-item'}>
-              <FeedContractCard
-                contract={contract}
-                trackingPostfix="feed"
-                reason={item.reasonDescription}
-                hasItems={hasRelatedItems}
-              />
-              <FeedRelatedItemFrame>
+              {parentComments.length > 0 && (
                 <FeedCommentItem
                   contract={contract}
                   commentThreads={parentComments.map((parentComment) => ({
@@ -153,12 +119,14 @@ export const FeedTimelineItems = (props: {
                       childCommentsByParentCommentId[parentComment.id] ?? [],
                   }))}
                 />
-              </FeedRelatedItemFrame>
-              <Row className="bg-canvas-0 mr-4 rounded-2xl">
-                {parentComments.length === 0 && (
-                  <FeedBetsItem contract={contract} bets={relatedBets} />
+              )}
+              {(!parentComments || parentComments.length === 0) &&
+                groupedBetsByTime.length > 0 && (
+                  <FeedBetsItem
+                    contract={contract}
+                    groupedBets={groupedBetsByTime}
+                  />
                 )}
-              </Row>
             </FeedItemFrame>
           )
         } else if ('news' in item && item.news) {
@@ -166,16 +134,11 @@ export const FeedTimelineItems = (props: {
           console.log('news', news.title)
           return (
             <FeedItemFrame item={item} key={news.id + 'feed-timeline-item'}>
-              <FeedRelatedItemFrame
-                className="rounded-xl"
-                key={news.id + 'feed-timeline-item-news'}
-              >
-                <NewsArticle
-                  author={(news as any)?.author}
-                  published_time={(news as any)?.published_time}
-                  {...news}
-                />
-              </FeedRelatedItemFrame>
+              <NewsArticle
+                author={(news as any)?.author}
+                published_time={(news as any)?.published_time}
+                {...news}
+              />
               {item.contracts?.map((contract) => (
                 <SimpleContractRow
                   contract={contract}
@@ -190,15 +153,15 @@ export const FeedTimelineItems = (props: {
   )
 }
 
-function FeedRelatedItemFrame(props: {
+export function FeedRelatedItemFrame(props: {
   children: React.ReactNode
   className?: string
 }) {
   const { children, className } = props
   return (
-    <Row className="bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 mb-4 -mt-4 rounded-2xl border">
+    <Col className="bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 mb-4 -mt-4 mr-4 rounded-2xl border">
       {children}
-    </Row>
+    </Col>
   )
 }
 
@@ -225,76 +188,6 @@ const FeedItemFrame = (props: {
   return (
     <Col ref={maybeVisibleHook?.ref} className={className}>
       {children}
-    </Col>
-  )
-}
-
-//TODO: we can't yet respond to summarized bets yet bc we're just combining bets in the feed and
-// not combining bet amounts on the backend (where the values are filled in on the comment)
-const FeedBetsItem = (props: { contract: Contract; bets: Bet[] }) => {
-  const { contract, bets } = props
-  const MIN_BET_AMOUNT = 20
-  const groupedBetsByTime = groupBetsByCreatedTimeAndUserId(bets).filter(
-    (bets) => sumBy(bets, (bet) => Math.abs(bet.amount)) > MIN_BET_AMOUNT
-  )
-  console.log(contract.question, 'groupedBetsByTime', groupedBetsByTime)
-  return (
-    <Col>
-      {groupedBetsByTime.map((bets, index) => (
-        <Row className={'relative w-full p-3'} key={bets[0].id + 'summary'}>
-          {index !== groupedBetsByTime.length - 1 ? (
-            <div className="border-ink-200 b-[50%] absolute top-0 ml-4 h-[100%] border-l-2" />
-          ) : (
-            <div className="border-ink-200 absolute top-0 ml-4 h-3 border-l-2" />
-          )}
-          <SummarizeBets
-            betsBySameUser={bets}
-            contract={contract}
-            avatarSize={'sm'}
-          />
-        </Row>
-      ))}
-    </Col>
-  )
-}
-const FeedCommentItem = (props: {
-  contract: Contract
-  commentThreads: {
-    parentComment: ContractComment
-    childComments: ContractComment[]
-  }[]
-}) => {
-  const { contract, commentThreads } = props
-  const firstCommentIsReplyToBet =
-    commentThreads[0] && isReplyToBet(commentThreads[0].parentComment)
-  return (
-    <Col className={clsx('w-full', firstCommentIsReplyToBet ? 'sm:mt-4' : '')}>
-      {commentThreads.map((ct, index) => (
-        <Row
-          className={'relative w-full'}
-          key={ct.parentComment.id + 'feed-thread'}
-        >
-          {/* {index === 0 && firstCommentIsReplyToBet ? (
-            <div />
-          ) : index !== commentThreads.length - 1 ? (
-            <div className="border-ink-200 b-[50%] absolute top-0 ml-7 h-[100%] border-l-2" />
-          ) : (
-            // <div className="border-ink-200 absolute top-0 ml-7 h-3 border-l-2" />
-            <></>
-          )} */}
-
-          <Col className={'w-full p-3'}>
-            <FeedCommentThread
-              contract={contract}
-              threadComments={ct.childComments}
-              parentComment={ct.parentComment}
-              collapseMiddle={true}
-              trackingLocation={'feed'}
-              inTimeline={true}
-            />
-          </Col>
-        </Row>
-      ))}
     </Col>
   )
 }
