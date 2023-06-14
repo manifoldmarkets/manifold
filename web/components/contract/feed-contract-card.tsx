@@ -91,47 +91,40 @@ export function FeedContractCard(props: {
       <Col className=" grow-y justify-end">
         <div className="dark:border-ink-200 border-ink-300 ml-2 h-1/3 w-4 rounded-tl-xl border-2 border-b-0 border-r-0 sm:ml-4 sm:w-6" />
       </Col>
-      <Col
+      <Link
         className={clsx(
           'relative',
           'bg-canvas-100 dark:border-ink-200 border-ink-300 group mt-2 grow cursor-pointer justify-between overflow-hidden border-l-4 py-2 pl-2 pr-4 dark:bg-opacity-20',
           'outline-none transition-colors'
         )}
-        // we have other links inside this card like the username, so can't make the whole card a button or link
-        tabIndex={-1}
         onClick={(e) => {
           trackClick()
-          Router.push(path)
-          e.currentTarget.focus() // focus the div like a button, for style
+          e.stopPropagation()
         }}
+        href={contractPath(contract)}
       >
+        <span className="text-ink-700 text-sm">
+          <UserLink
+            name={contract.creatorName}
+            username={contract.creatorUsername}
+            className="font-semibold"
+          />{' '}
+          asked
+        </span>
         <Row className="w-full justify-between gap-4">
-          <Row onClick={(e) => e.stopPropagation()} className="gap-2">
-            <Avatar
-              username={creatorUsername}
-              avatarUrl={creatorAvatarUrl}
-              size={'xs'}
-            />
-            <Link
-              href={path}
-              className={clsx(
-                'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
-                textColor
-              )}
-              // if open in new tab, don't open in this one
-              onClick={(e) => {
-                trackClick()
-                e.stopPropagation()
-              }}
-            >
-              {question}
-            </Link>
-          </Row>
+          <div
+            className={clsx(
+              'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
+              textColor
+            )}
+          >
+            {question}
+          </div>
           <div className="font-semibold">
             <ContractStatusLabel contract={contract} />
           </div>
         </Row>
-      </Col>
+      </Link>
     </Row>
   )
 }
@@ -196,7 +189,7 @@ function DetailedCard(props: {
                     createdTime={creatorCreatedTime}
                     className={'font-semibold'}
                   />
-                  <span> created a market </span>
+                  <span> asked </span>
                 </span>
                 <span className="text-ink-500 text-sm">
                   {shortenedFromNow(contract.createdTime)}
