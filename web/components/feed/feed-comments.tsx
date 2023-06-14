@@ -49,6 +49,7 @@ import { CommentView } from 'common/events'
 import { Tooltip } from '../widgets/tooltip'
 import { EditCommentModal } from 'web/components/comments/edit-comment-modal'
 import { CommentEditHistoryButton } from 'web/components/comments/comment-edit-history-button'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -516,6 +517,7 @@ function FeedCommentHeader(props: {
     betAmount,
     userId,
     editedTime,
+    isApi,
   } = comment
 
   const marketCreator = contract.creatorId === userId
@@ -553,6 +555,11 @@ function FeedCommentHeader(props: {
         elementId={comment.id}
         seeEditsButton={<CommentEditHistoryButton comment={comment} />}
       />
+      {isApi && (
+        <InfoTooltip text="Placed via API" className="mr-1">
+          🤖
+        </InfoTooltip>
+      )}
       <DotMenu comment={comment} contract={contract} />
     </Row>
   )
