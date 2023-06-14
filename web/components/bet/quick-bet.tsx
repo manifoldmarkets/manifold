@@ -6,6 +6,7 @@ import {
   getTopAnswer,
   getTopNSortedAnswers,
   getInvested,
+  getAnswerProbability,
 } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
 import { User } from 'common/user'
@@ -548,8 +549,11 @@ function ContractCardAnswer(props: {
   type: 'winner' | 'loser' | 'contender'
 }) {
   const { contract, answer, answersArray, type } = props
-  const prob = getOutcomeProbability(contract, answer.id)
-  const display = formatPercent(getOutcomeProbability(contract, answer.id))
+  const isCpmm = contract.mechanism === 'cpmm-multi-1'
+  const prob = isCpmm
+    ? getAnswerProbability(contract.answers, answer.id)
+    : getOutcomeProbability(contract, answer.id)
+  const display = formatPercent(prob)
   const isClosed = (contract.closeTime ?? Infinity) < Date.now()
   const answerColor = getAnswerColor(answer, answersArray)
   const color =
