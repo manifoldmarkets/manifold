@@ -6,17 +6,14 @@ import { CURRENT_SEASON, getSeasonDates } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { User } from 'common/user'
 import { Row } from '../layout/row'
-import {
-  useFirebasePublicAndRealtimePrivateContract,
-  usePublicContracts,
-} from 'web/hooks/use-contract-supabase'
+import { usePublicContracts } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { UserAvatarAndBadge } from '../widgets/user-link'
-import { Contract, contractPath } from 'common/contract'
+import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
 import { Bet } from 'common/bet'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { ProfitBadge } from '../profit-badge'
@@ -25,6 +22,7 @@ import { useBets } from 'web/hooks/use-bets-supabase'
 import ShortToggle from '../widgets/short-toggle'
 import { useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+import { useAnswersForContracts } from 'web/hooks/use-answers'
 
 export const ManaEarnedBreakdown = (props: {
   user: User
@@ -58,10 +56,18 @@ export const ManaEarnedBreakdown = (props: {
   })
   const bets = loadingBets ?? []
 
-  const contracts = usePublicContracts(
-    loadingBets ? uniq(loadingBets.map((b) => b.contractId)) : undefined
-  )
+  const contractIds = loadingBets
+    ? uniq(loadingBets.map((b) => b.contractId))
+    : undefined
+  const contracts = usePublicContracts(contractIds)
+  const answersByContractId = useAnswersForContracts(contractIds) ?? {}
   const contractsById = keyBy(contracts, 'id')
+  for (const [contractId, answers] of Object.entries(answersByContractId)) {
+    const contract = contractsById[contractId]
+    if (contract) {
+      ;(contract as CPMMMultiContract).answers = answers
+    }
+  }
 
   const betsByContract = groupBy(bets, 'contractId')
   const metricsByContract =
@@ -168,13 +174,7 @@ const ContractBetsEntry = (props: {
   bets: Bet[]
   metrics: ContractMetric
 }) => {
-  const { bets, metrics } = props
-
-  const contract =
-    useFirebasePublicAndRealtimePrivateContract(
-      props.contract.visibility,
-      props.contract.id
-    ) ?? props.contract
+  const { bets, metrics, contract } = props
   const { profit, profitPercent } = metrics
 
   return (

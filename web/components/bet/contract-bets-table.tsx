@@ -46,7 +46,7 @@ export function ContractBetsTable(props: {
   )
 
   const [redemptions, normalBets] = partition(
-    mechanism === 'cpmm-1' ? bets : buys,
+    mechanism === 'dpm-2' ? buys : bets,
     (b) => b.isRedemption
   )
   const firstOutcome = redemptions[0]?.outcome

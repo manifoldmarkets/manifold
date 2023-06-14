@@ -341,7 +341,7 @@ function OpenAnswer(props: {
                     onClick={() => setOutcome('YES')}
                     className="my-auto"
                   >
-                    BUY
+                    YES
                   </Button>
                   <Button
                     size="2xs"
@@ -349,7 +349,7 @@ function OpenAnswer(props: {
                     onClick={() => setOutcome('NO')}
                     className="my-auto"
                   >
-                    SELL
+                    NO
                   </Button>
                   <Button
                     size="2xs"

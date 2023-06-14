@@ -45,6 +45,7 @@ import { Button, IconButton } from '../buttons/button'
 import { CommentInput } from '../comments/comment-input'
 import { ReplyToggle } from '../comments/reply-toggle'
 import { Content } from '../widgets/editor'
+import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 
 export type ReplyToUserInfo = { id: string; username: string }
@@ -525,6 +526,8 @@ function FeedCommentHeader(props: {
     answerOutcome,
     betAmount,
     userId,
+    editedTime,
+    isApi,
   } = comment
 
   const marketCreator = contract.creatorId === userId
@@ -565,6 +568,11 @@ function FeedCommentHeader(props: {
             </span>
           }
         </span>
+        {isApi && (
+          <InfoTooltip text="Placed via API" className="mr-1">
+            🤖
+          </InfoTooltip>
+        )}
         <DotMenu comment={comment} contract={contract} />
       </Row>
     </Col>
