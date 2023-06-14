@@ -104,7 +104,7 @@ export const LikeButton = memo(function LikeButton(props: {
   const showList = otherLikes > 0
 
   return (
-    <Row className={clsx(size === 'sm' ? 'w-8 gap-0' : '')}>
+    <>
       <Tooltip
         text={
           showList ? (
@@ -122,21 +122,20 @@ export const LikeButton = memo(function LikeButton(props: {
         placement={'bottom'}
         noTap
         hasSafePolygon={showList}
-        className={clsx('flex flex-row items-center')}
       >
         <button
           disabled={disabled}
           className={clsx(
-            'transition-transform disabled:cursor-not-allowed',
+            'flex flex-row items-center gap-1 transition-transform disabled:cursor-not-allowed',
             color === 'white' ? 'text-ink-0' : 'text-ink-500 ',
             totalLikes === 0 &&
               !user &&
               color === 'gray' &&
               'disabled:opacity-50',
             !disabled && color === 'gray' ? 'hover:text-ink-600' : '',
-            size === 'sm' && 'px-1',
-            size === 'md' && 'px-2',
-            size === 'xl' && 'px-4',
+            size === 'sm' && 'w-8 px-1',
+            size === 'md' && ' px-2',
+            size === 'xl' && ' px-4',
             className
           )}
           onClick={(e) => e.preventDefault()}
@@ -154,6 +153,19 @@ export const LikeButton = memo(function LikeButton(props: {
               )}
             />
           </div>
+          <div
+            className={clsx(
+              ' my-auto h-5 disabled:opacity-50',
+              size === 'xl'
+                ? 'text-lg'
+                : size === 'sm'
+                ? 'mt-[6px] text-xs'
+                : 'text-sm',
+              color === 'white' ? 'text-white' : 'text-ink-500'
+            )}
+          >
+            {totalLikes > 0 ? totalLikes : ''}
+          </div>
         </button>
       </Tooltip>
       {modalOpen && (
@@ -166,20 +178,7 @@ export const LikeButton = memo(function LikeButton(props: {
           titleName={contentText}
         />
       )}
-      <div
-        className={clsx(
-          ' h-5 disabled:opacity-50',
-          size === 'xl'
-            ? 'text-lg'
-            : size === 'sm'
-            ? 'mt-[6px] text-xs'
-            : 'text-sm',
-          color === 'white' ? 'text-white' : 'text-ink-500'
-        )}
-      >
-        {totalLikes > 0 ? totalLikes : ''}
-      </div>
-    </Row>
+    </>
   )
 })
 

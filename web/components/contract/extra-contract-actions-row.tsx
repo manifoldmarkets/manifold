@@ -34,7 +34,6 @@ export function ExtraContractActionsRow(props: {
           contentCreatorId={contract.creatorId}
           totalLikes={contract.likedByUserCount ?? 0}
           contentText={contract.question}
-          size="sm"
           color={'gray'}
           className={clsx(
             'p-2',
