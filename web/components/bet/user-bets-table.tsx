@@ -36,6 +36,8 @@ import { TinyRelativeTimestamp } from 'web/components/relative-timestamp'
 import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
 import { BetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+import { ProfitBadge } from 'web/components/profit-badge'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 type BetSort =
   | 'newest'
@@ -46,6 +48,8 @@ type BetSort =
   | 'week'
   | 'month'
   | 'probChangeDay'
+  | 'profitPercent'
+  | 'dayPercent'
 
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
@@ -281,6 +285,8 @@ function BetsTable(props: {
   // Most of these are descending sorts by default.
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     profit: (c) => -metricsByContractId[c.id].profit,
+    profitPercent: (c) =>
+      -(metricsByContractId[c.id].profit / metricsByContractId[c.id].invested),
     value: (c) =>
       -(
         metricsByContractId[c.id].payout +
@@ -301,6 +307,11 @@ function BetsTable(props: {
       return 0
     },
     day: (c) => -(metricsByContractId[c.id].from?.day.profit ?? 0),
+    dayPercent: (c) =>
+      -(
+        (metricsByContractId[c.id].from?.day.profit ?? 0) /
+        metricsByContractId[c.id].invested
+      ),
     week: (c) => -(metricsByContractId[c.id].from?.week.profit ?? 0),
     month: (c) => -(metricsByContractId[c.id].from?.month.profit ?? 0),
     closeTime: (c) =>
@@ -314,7 +325,8 @@ function BetsTable(props: {
       : sortBy(props.contracts, SORTS[sort.field]).reverse()
   const rowsPerSection = 50
   const currentSlice = page * rowsPerSection
-  const Cell = (props: { num: number; change?: boolean }) => {
+  const isMobile = useIsMobile(600)
+  const NumberCell = (props: { num: number; change?: boolean }) => {
     const { num, change } = props
     const formattedNum =
       num < 1000 && num > -1000
@@ -364,37 +376,15 @@ function BetsTable(props: {
       </Row>
     )
   }
-  const columns = [
-    {
-      header: (
-        <Header id="newest" className={'justify-start'}>
-          <div />
-        </Header>
-      ),
-      renderCell: (c: Contract) => (
-        <Col>
-          <SiteLink
-            href={contractPath(c)}
-            className={'line-clamp-2 pr-2 sm:pr-1'}
-            onClick={(e) => e.stopPropagation()}
-            followsLinkClass
-          >
-            {c.question}
-          </SiteLink>
-          <UserLink
-            className={'text-ink-500 w-fit text-sm'}
-            name={c.creatorName}
-            username={c.creatorUsername}
-          />
-        </Col>
-      ),
-    },
+
+  const dataColumns = buildArray([
     {
       header: (
         <Header id="probChangeDay" className={'justify-left'}>
           Prob
         </Header>
       ),
+      span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => {
         let change: string | undefined
         if (c.mechanism === 'cpmm-1') {
@@ -427,42 +417,101 @@ function BetsTable(props: {
     {
       header: (
         <Header id="newest" className={'justify-center'}>
-          Time
+          Bet
         </Header>
       ),
-      renderCell: (t: number) => (
+      span: isMobile ? 3 : 2,
+      renderCell: (c: Contract) => (
         <Row className={'justify-center'}>
-          <TinyRelativeTimestamp className={'ml-5'} time={t} />
+          <TinyRelativeTimestamp
+            className={'ml-5'}
+            time={metricsByContractId[c.id].lastBetTime}
+          />
         </Row>
       ),
     },
+    !isMobile && {
+      header: <Header id="closeTime">Close</Header>,
+      span: 2,
+      renderCell: (c: Contract) => {
+        const date = new Date(c.resolutionTime ?? c.closeTime ?? Infinity)
+        const isThisYear = new Date().getFullYear() === date.getFullYear()
+        const dateString = date.toLocaleDateString('en-US', {
+          month: '2-digit',
+          day: '2-digit',
+          year: !isThisYear ? '2-digit' : undefined,
+        })
+        return (
+          <Row className={'justify-end'}>
+            <span className={'text-ink-400'}>{dateString}</span>
+          </Row>
+        )
+      },
+    },
     {
       header: <Header id="value">Value</Header>,
-      renderCell: (n: number) => <Cell num={n} />,
+      span: 3,
+      renderCell: (c: Contract) => (
+        <NumberCell num={metricsByContractId[c.id].payout} />
+      ),
     },
     {
       header: <Header id="profit">Profit</Header>,
-      renderCell: (n: number) => <Cell num={n} change={true} />,
+      span: isMobile ? 3 : 2,
+      renderCell: (c: Contract) => (
+        <NumberCell num={metricsByContractId[c.id].profit} change={true} />
+      ),
+    },
+    !isMobile && {
+      header: <Header id="profitPercent">%</Header>,
+      span: 1,
+      renderCell: (c: Contract) => {
+        const cm = metricsByContractId[c.id]
+        return (
+          <ProfitBadge
+            className={'!px-1'}
+            profitPercent={(cm.profit / (cm.invested ?? 1)) * 100}
+            round={true}
+          />
+        )
+      },
     },
     {
       header: <Header id="day">1d Profit</Header>,
-      renderCell: (n: number) => <Cell num={n} change={true} />,
+      span: isMobile ? 4 : 3,
+      renderCell: (c: Contract) => (
+        <NumberCell
+          num={metricsByContractId[c.id].from?.day.profit ?? 0}
+          change={true}
+        />
+      ),
     },
-  ]
-  const data = [
-    ...contracts.map((contract) => {
-      const cm = metricsByContractId[contract.id]
-      return [
-        contract,
-        contract,
-        cm.lastBetTime,
-        cm.payout,
-        cm.profit,
-        cm.from?.day.profit ?? 0,
-        cm.from?.month.profit ?? 0,
-      ] as [Contract, Contract, number, number, number, number, number]
-    }),
-  ]
+    !isMobile && {
+      header: <Header id="dayPercent">%</Header>,
+      span: 1,
+      renderCell: (c: Contract) => {
+        const cm = metricsByContractId[c.id]
+        return (
+          <ProfitBadge
+            className={'!px-1'}
+            profitPercent={
+              ((cm.from?.day.profit ?? 0) / (cm.invested ?? 1)) * 100
+            }
+            round={true}
+          />
+        )
+      },
+    },
+  ])
+  const getColSpan = (i: number) =>
+    i === 4
+      ? 'col-span-4'
+      : i === 3
+      ? 'col-span-3'
+      : i === 2
+      ? 'col-span-2'
+      : 'col-span-1'
+
   const [expandedIds, setExpandedIds] = useState<string[]>([])
   const [userBets, setUserBets] = useState<Dictionary<Bet[]>>({})
   const hideBetsBefore = areYourBets ? 0 : JUNE_1_2022
@@ -486,7 +535,7 @@ function BetsTable(props: {
         : [...oldIds, id]
     )
   }
-  const getColSpan = (i: number) => (i === 5 ? 'col-span-4' : 'col-span-3')
+
   return (
     <Col className="mb-4 flex-1 gap-4">
       <Col className={'w-full'}>
@@ -495,93 +544,108 @@ function BetsTable(props: {
             'grid-cols-16 bg-canvas-100 sticky top-0 z-10 grid w-full py-2 pr-1'
           }
         >
-          {columns.slice(1).map((c, i) => (
-            <span key={c.header.props.id} className={clsx(getColSpan(i + 1))}>
+          {dataColumns.map((c) => (
+            <span key={c.header?.props.id} className={clsx(getColSpan(c.span))}>
               {c.header}
             </span>
           ))}
         </Row>
-        {data.slice(currentSlice, currentSlice + rowsPerSection).map((d) => {
-          const contract = d[0]
-          const bets: Bet[] | undefined = userBets[contract.id]
-          const limitBets = (bets ?? []).filter(
-            (bet) =>
-              bet.limitProb !== undefined && !bet.isCancelled && !bet.isFilled
-          ) as LimitBet[]
-          const includeSellButtonForUser =
-            areYourBets &&
-            !contract.isResolved &&
-            (contract.closeTime ?? 0) > Date.now() &&
-            contract.outcomeType === 'BINARY'
-              ? signedInUser
-              : undefined
-          return (
-            <Row
-              key={contract.id + 'bets-table-row'}
-              className={
-                'border-ink-300 hover:bg-canvas-100 cursor-pointer border-b py-2'
-              }
-              onClick={() => setNewExpandedId(contract.id)}
-            >
-              <Col className={'w-full'}>
-                {/* Contract title*/}
-                <Row className={'-mb-2'}>
-                  {columns[0].renderCell(d[0] as any)}
-                </Row>
-                {/* Contract Metrics details*/}
-                <Row className={'grid-cols-16 mt-1 grid w-full pt-2'}>
-                  {columns.slice(1).map((c, i) => (
-                    <span
-                      className={clsx(getColSpan(i + 1))}
-                      key={c.header.props.id + contract.id + 'row'}
-                    >
-                      {c.renderCell(d[i + 1] as any)}
-                    </span>
-                  ))}
-                </Row>
-                <Row>
-                  {expandedIds.includes(contract.id) &&
-                    (bets === undefined ? (
-                      <Col className={'w-full items-center justify-center'}>
-                        <LoadingIndicator />
-                      </Col>
-                    ) : (
-                      <Col className={'mt-1 w-full gap-1'}>
-                        <BetsSummary
-                          className="mt-6 !mb-6 flex"
-                          contract={contract}
-                          metrics={metricsByContractId[contract.id]}
-                          hideTweet
-                          includeSellButton={includeSellButtonForUser}
-                          hideProfit={true}
-                          hideValue={true}
-                        />
-                        {contract.mechanism === 'cpmm-1' &&
-                          limitBets.length > 0 && (
-                            <div className="max-w-md">
-                              <div className="bg-canvas-100 mt-4 px-4 py-2">
-                                Limit orders
-                              </div>
-                              <OrderTable
-                                contract={contract}
-                                limitBets={limitBets}
-                                isYou={areYourBets}
-                              />
-                            </div>
-                          )}
-                        <ContractBetsTable
-                          key={contract.id + 'bets-table'}
-                          contract={contract}
-                          bets={bets}
-                          isYourBets={areYourBets}
-                        />
-                      </Col>
+        {contracts
+          .slice(currentSlice, currentSlice + rowsPerSection)
+          .map((contract) => {
+            const bets: Bet[] | undefined = userBets[contract.id]
+            const limitBets = (bets ?? []).filter(
+              (bet) =>
+                bet.limitProb !== undefined && !bet.isCancelled && !bet.isFilled
+            ) as LimitBet[]
+            const includeSellButtonForUser =
+              areYourBets &&
+              !contract.isResolved &&
+              (contract.closeTime ?? 0) > Date.now() &&
+              contract.outcomeType === 'BINARY'
+                ? signedInUser
+                : undefined
+            return (
+              <Row
+                key={contract.id + 'bets-table-row'}
+                className={
+                  'border-ink-300 hover:bg-canvas-100 cursor-pointer border-b py-2'
+                }
+                onClick={() => setNewExpandedId(contract.id)}
+              >
+                <Col className={'w-full'}>
+                  {/* Contract title*/}
+                  <Row className={'-mb-2'}>
+                    <Col>
+                      <SiteLink
+                        href={contractPath(contract)}
+                        className={'line-clamp-2 pr-2 sm:pr-1'}
+                        onClick={(e) => e.stopPropagation()}
+                        followsLinkClass
+                      >
+                        {contract.question}
+                      </SiteLink>
+                      <UserLink
+                        className={'text-ink-500 w-fit text-sm'}
+                        name={contract.creatorName}
+                        username={contract.creatorUsername}
+                      />
+                    </Col>
+                  </Row>
+                  {/* Contract Metrics details*/}
+                  <Row className={'grid-cols-16 mt-1 grid w-full pt-2'}>
+                    {dataColumns.map((c, i) => (
+                      <div
+                        className={clsx(getColSpan(c.span))}
+                        key={c.header?.props.id + contract.id + 'row'}
+                      >
+                        {c.renderCell(contract)}
+                      </div>
                     ))}
-                </Row>
-              </Col>
-            </Row>
-          )
-        })}
+                  </Row>
+                  <Row>
+                    {expandedIds.includes(contract.id) &&
+                      (bets === undefined ? (
+                        <Col className={'w-full items-center justify-center'}>
+                          <LoadingIndicator />
+                        </Col>
+                      ) : (
+                        <Col className={'mt-1 w-full gap-1'}>
+                          <BetsSummary
+                            className="mt-6 !mb-6 flex"
+                            contract={contract}
+                            metrics={metricsByContractId[contract.id]}
+                            hideTweet
+                            includeSellButton={includeSellButtonForUser}
+                            hideProfit={true}
+                            hideValue={true}
+                          />
+                          {contract.mechanism === 'cpmm-1' &&
+                            limitBets.length > 0 && (
+                              <div className="max-w-md">
+                                <div className="bg-canvas-100 mt-4 px-4 py-2">
+                                  Limit orders
+                                </div>
+                                <OrderTable
+                                  contract={contract}
+                                  limitBets={limitBets}
+                                  isYou={areYourBets}
+                                />
+                              </div>
+                            )}
+                          <ContractBetsTable
+                            key={contract.id + 'bets-table'}
+                            contract={contract}
+                            bets={bets}
+                            isYourBets={areYourBets}
+                          />
+                        </Col>
+                      ))}
+                  </Row>
+                </Col>
+              </Row>
+            )
+          })}
       </Col>
 
       <Pagination
