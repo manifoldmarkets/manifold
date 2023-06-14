@@ -285,8 +285,7 @@ function BetsTable(props: {
   // Most of these are descending sorts by default.
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     profit: (c) => -metricsByContractId[c.id].profit,
-    profitPercent: (c) =>
-      -(metricsByContractId[c.id].profit / metricsByContractId[c.id].invested),
+    profitPercent: (c) => -metricsByContractId[c.id].profitPercent,
     value: (c) =>
       -(
         metricsByContractId[c.id].payout +
@@ -308,10 +307,7 @@ function BetsTable(props: {
     },
     day: (c) => -(metricsByContractId[c.id].from?.day.profit ?? 0),
     dayPercent: (c) =>
-      -(
-        (metricsByContractId[c.id].from?.day.profit ?? 0) /
-        metricsByContractId[c.id].invested
-      ),
+      -(metricsByContractId[c.id].from?.day.profitPercent ?? 0),
     week: (c) => -(metricsByContractId[c.id].from?.week.profit ?? 0),
     month: (c) => -(metricsByContractId[c.id].from?.month.profit ?? 0),
     closeTime: (c) =>
@@ -326,6 +322,7 @@ function BetsTable(props: {
   const rowsPerSection = 50
   const currentSlice = page * rowsPerSection
   const isMobile = useIsMobile(600)
+
   const NumberCell = (props: { num: number; change?: boolean }) => {
     const { num, change } = props
     const formattedNum =
@@ -334,7 +331,7 @@ function BetsTable(props: {
         : ENV_CONFIG.moneyMoniker + shortFormatNumber(num)
     return (
       <Row className="items-start justify-end ">
-        {change ? (
+        {change && formattedNum !== formatMoney(0) ? (
           num > 0 ? (
             <span className="text-teal-500">{formattedNum}</span>
           ) : (
@@ -470,8 +467,9 @@ function BetsTable(props: {
         return (
           <ProfitBadge
             className={'!px-1'}
-            profitPercent={(cm.profit / (cm.invested ?? 1)) * 100}
+            profitPercent={cm.profitPercent}
             round={true}
+            grayColor={formatMoney(cm.profit ?? 0) === formatMoney(0)}
           />
         )
       },
@@ -491,13 +489,15 @@ function BetsTable(props: {
       span: 1,
       renderCell: (c: Contract) => {
         const cm = metricsByContractId[c.id]
+        const profitPercent = cm.from?.day.profitPercent ?? 0
+        // Gives ~infinite returns
+        if ((cm.from?.day.invested ?? 0) < 0.01) return <div />
         return (
           <ProfitBadge
             className={'!px-1'}
-            profitPercent={
-              ((cm.from?.day.profit ?? 0) / (cm.invested ?? 1)) * 100
-            }
+            profitPercent={profitPercent}
             round={true}
+            grayColor={formatMoney(cm.from?.day.profit ?? 0) === formatMoney(0)}
           />
         )
       },
