@@ -159,8 +159,8 @@ export function NewContractPanel(props: {
             setOutcomeType(choice as outcomeType)
           }}
           choicesMap={{
-            'Multiple choice': 'MULTIPLE_CHOICE',
             'Yes\xa0/ No': 'BINARY', // non-breaking space
+            'Multiple choice': 'MULTIPLE_CHOICE',
             // Stock: 'STONK',
             // 'Free response': 'FREE_RESPONSE',
             // Numeric: 'PSEUDO_NUMERIC',
@@ -447,7 +447,7 @@ const useNewContract = (
   params: NewQuestionParams | undefined
 ) => {
   const [outcomeType, setOutcomeType] = usePersistentLocalState<outcomeType>(
-    (params?.outcomeType as outcomeType) ?? 'MULTIPLE_CHOICE',
+    (params?.outcomeType as outcomeType) ?? 'BINARY',
     'new-outcome-type'
   )
   const [minString, setMinString] = usePersistentLocalState(
