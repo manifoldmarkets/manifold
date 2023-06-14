@@ -327,7 +327,7 @@ function SupabaseContractSearchControls(props: {
 }) {
   const {
     className,
-    defaultSort = 'relevance',
+    defaultSort = 'score',
     defaultFilter = 'open',
     persistPrefix,
     hideOrderSelector,
