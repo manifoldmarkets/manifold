@@ -2,8 +2,7 @@ import clsx from 'clsx'
 import Image from 'next/image'
 import Link from 'next/link'
 import Router from 'next/router'
-import { MutableRefObject, useState } from 'react'
-import toast from 'react-hot-toast'
+import { MutableRefObject } from 'react'
 
 import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -13,10 +12,10 @@ import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contr
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
-import { redeemBoost } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { fromNow } from 'web/lib/util/time'
+import { ClaimButton } from '../ad/claim-ad-button'
 import { BetRow } from '../bet/bet-row'
 import { QuickOutcomeView } from '../bet/quick-bet'
 import { ReasonChosen } from '../feed/feed-reason-chosen'
@@ -24,13 +23,11 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { CommentsButton } from '../swipe/swipe-comments'
 import { Avatar } from '../widgets/avatar'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from '../widgets/user-link'
 import { PublicMarketGroups } from './contract-details'
 import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
-import { ClaimButton } from '../ad/claim-ad-button'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -56,8 +53,7 @@ export function FeedContractCard(props: {
       props.contract.visibility,
       props.contract.id
     ) ?? props.contract
-  const { closeTime, isResolved, creatorUsername, creatorAvatarUrl, question } =
-    contract
+  const { closeTime, isResolved } = contract
 
   const { ref } = useIsVisible(
     () =>

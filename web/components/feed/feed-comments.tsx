@@ -526,7 +526,6 @@ function FeedCommentHeader(props: {
     answerOutcome,
     betAmount,
     userId,
-    editedTime,
     isApi,
   } = comment
 
@@ -562,17 +561,17 @@ function FeedCommentHeader(props: {
             </span>
           )}
           {inTimeline && <span> commented</span>}{' '}
+          {isApi && (
+            <InfoTooltip text="Placed via API" className="mr-1">
+              🤖
+            </InfoTooltip>
+          )}
           {
             <span className="text-ink-500">
               {shortenedFromNow(createdTime)}
             </span>
           }
         </span>
-        {isApi && (
-          <InfoTooltip text="Placed via API" className="mr-1">
-            🤖
-          </InfoTooltip>
-        )}
         <DotMenu comment={comment} contract={contract} />
       </Row>
     </Col>

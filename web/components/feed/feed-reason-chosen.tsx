@@ -1,8 +1,8 @@
+import { StarIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { DAY_MS } from 'common/util/time'
 import { Row } from '../layout/row'
-import { ClockIcon, StarIcon } from '@heroicons/react/solid'
-import clsx from 'clsx'
 
 export function ReasonChosen(props: {
   contract: Contract
