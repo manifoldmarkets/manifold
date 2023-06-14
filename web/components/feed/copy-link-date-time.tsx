@@ -60,7 +60,6 @@ export function CopyLinkDateTimeComponent(props: {
         )}
       >
         {isClient && fromNow(createdTime)}
-        {/* <LinkIcon className="ml-1 mb-0.5 inline" height={13} /> */}
       </Link>
     </DateTimeTooltip>
   )

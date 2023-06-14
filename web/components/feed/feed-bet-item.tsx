@@ -1,7 +1,7 @@
 //TODO: we can't yet respond to summarized bets yet bc we're just combining bets in the feed and
 
 import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { FeedRelatedItemFrame } from './feed-timeline-items'
 import { Row } from '../layout/row'
 import { SummarizeBets } from './feed-bets'
@@ -17,7 +17,8 @@ export const FeedBetsItem = (props: {
     return <></>
   }
   return (
-    <FeedRelatedItemFrame href={`${contract.creatorUsername}/${contract.slug}`}>
+    // TODO: make more specific link
+    <FeedRelatedItemFrame href={contractPath(contract)}>
       {groupedBets.map((bets, index) => (
         <Row
           className={'relative w-full px-4 py-2'}

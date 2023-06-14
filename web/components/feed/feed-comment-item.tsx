@@ -1,11 +1,10 @@
 import { ContractComment } from 'common/comment'
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { FeedCommentThread, isReplyToBet } from './feed-comments'
 import { Col } from '../layout/col'
 import clsx from 'clsx'
 import { Row } from '../layout/row'
 import { FeedRelatedItemFrame } from './feed-timeline-items'
-import { getCommentLink } from './copy-link-date-time'
 
 export const FeedCommentItem = (props: {
   contract: Contract
@@ -18,7 +17,8 @@ export const FeedCommentItem = (props: {
   const firstCommentIsReplyToBet =
     commentThreads[0] && isReplyToBet(commentThreads[0].parentComment)
   return (
-    <FeedRelatedItemFrame href={`${contract.creatorUsername}/${contract.slug}`}>
+    // TODO: make more specific link
+    <FeedRelatedItemFrame href={contractPath(contract)}>
       <Col
         className={clsx('w-full', firstCommentIsReplyToBet ? 'sm:mt-4' : '')}
       >

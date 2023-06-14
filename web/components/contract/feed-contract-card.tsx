@@ -17,6 +17,7 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { redeemBoost } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { fromNow } from 'web/lib/util/time'
 import { BetRow } from '../bet/bet-row'
 import { QuickOutcomeView } from '../bet/quick-bet'
@@ -30,8 +31,6 @@ import { PublicMarketGroups } from './contract-details'
 import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
-import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
-import Curve from 'web/public/custom-components/curve'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -49,18 +48,8 @@ export function FeedContractCard(props: {
       props.contract.visibility,
       props.contract.id
     ) ?? props.contract
-  const {
-    closeTime,
-    isResolved,
-    creatorUsername,
-    creatorAvatarUrl,
-    creatorName,
-    question,
-    coverImageUrl,
-    outcomeType,
-    mechanism,
-    creatorCreatedTime,
-  } = contract
+  const { closeTime, isResolved, creatorUsername, creatorAvatarUrl, question } =
+    contract
 
   const { ref } = useIsVisible(
     () =>
@@ -81,11 +70,8 @@ export function FeedContractCard(props: {
       isPromoted: !!promotedData,
     })
 
-  const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
-
-  const showImage = !!coverImageUrl
 
   const path = contractPath(contract)
 
@@ -113,7 +99,6 @@ export function FeedContractCard(props: {
           'relative',
           'bg-canvas-100 dark:border-ink-200 border-ink-300 group mt-2 grow cursor-pointer justify-between overflow-hidden border-l-4 py-2 pl-2 pr-4 dark:bg-opacity-20',
           'outline-none transition-colors'
-          // className
         )}
         // we have other links inside this card like the username, so can't make the whole card a button or link
         tabIndex={-1}
@@ -194,12 +179,6 @@ function DetailedCard(props: {
   const showImage = !!coverImageUrl
   const metrics = useSavedContractMetrics(contract)
   return (
-    // <>
-    //   <ReasonChosen
-    //     contract={contract}
-    //     reason={promotedData ? 'Boosted' : reason}
-    //     className={'mx-4 my-2'}
-    //   />
     <div
       className={clsx(
         'relative rounded-xl',
@@ -339,7 +318,6 @@ function DetailedCard(props: {
         </div>
       )}
     </div>
-    // </>
   )
 }
 
