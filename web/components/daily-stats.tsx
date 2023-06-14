@@ -8,7 +8,6 @@ import { formatMoney } from 'common/util/format'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { LoansModal } from 'web/components/profile/loans-modal'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { DailyProfit } from 'web/components/daily-profit'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { DailyLeagueStat } from './daily-league-stat'
 
@@ -27,7 +26,6 @@ export function DailyStats(props: {
 
   return (
     <Row className={'z-30 flex-shrink-0 items-center gap-3'}>
-      <DailyProfit user={user} />
       <DailyLeagueStat user={user} />
       <QuestsOrStreak user={user} />
 

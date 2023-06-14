@@ -20,15 +20,20 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { MINUTE_MS } from 'common/util/time'
+import { ProfileSummary } from 'web/components/nav/profile-menu'
+import { Spacer } from 'web/components/layout/spacer'
 
 export default function FeedTimeline() {
   const user = useUser()
 
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-2xl gap-6 pb-8 sm:px-2 lg:pr-4">
+      <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
         <Row className="mx-4 mb-2 items-center justify-between gap-4">
           <Title children="Home" className="!my-0 hidden sm:block" />
+          <div className="flex sm:hidden">
+            {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
+          </div>
           <DailyStats user={user} />
         </Row>
 
