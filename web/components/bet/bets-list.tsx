@@ -526,7 +526,7 @@ function UserBetsTable(props: {
       <Col className={'w-full'}>
         <Row
           className={
-            'grid-cols-16 bg-canvas-100 sticky top-0 z-10 grid w-full px-1 py-2'
+            'grid-cols-16 bg-canvas-100 sticky top-0 z-10 grid w-full py-2 pr-1'
           }
         >
           {columns.slice(1).map((c, i) => (

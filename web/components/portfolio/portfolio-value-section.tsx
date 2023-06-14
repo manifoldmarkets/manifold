@@ -18,11 +18,15 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
 
 export const PortfolioValueSection = memo(
-  function PortfolioValueSection(props: { userId: string }) {
-    const { userId } = props
-    const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('weekly')
+  function PortfolioValueSection(props: {
+    userId: string
+    defaultTimePeriod: Period
+  }) {
+    const { userId, defaultTimePeriod } = props
+    const [currentTimePeriod, setCurrentTimePeriod] =
+      useState<Period>(defaultTimePeriod)
     const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
-    const [graphMode, setGraphMode] = useState<GraphMode>('value')
+    const [graphMode, setGraphMode] = useState<GraphMode>('profit')
     const graphPoints = useMemo(
       () =>
         portfolioHistory?.map((p) => ({
@@ -169,6 +173,7 @@ export const PortfolioValueSection = memo(
                   height={height}
                   viewScaleProps={graphView}
                   onMouseOver={handleGraphDisplayChange}
+                  negativeThreshold={graphPoints[0].y}
                 />
               )
         }
@@ -213,23 +218,9 @@ export function PortfolioValueSkeleton(props: {
       <Row
         className={clsx(
           'mb-1 items-start gap-0 sm:mb-2',
-          placement === 'bottom' ? 'ml-2 gap-8' : ''
+          placement === 'bottom' ? 'gap-8' : ''
         )}
       >
-        <Col
-          className={clsx(
-            'w-24 cursor-pointer sm:w-28',
-            graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
-          )}
-          onClick={() => {
-            onClickNumber('value')
-            track('Portfolio Value Clicked')
-          }}
-        >
-          <div className="text-ink-600 text-xs sm:text-sm">Portfolio</div>
-          {valueElement}
-        </Col>
-
         <Col
           className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
@@ -244,6 +235,20 @@ export function PortfolioValueSkeleton(props: {
         >
           <div className="text-ink-600 text-xs sm:text-sm">Profit</div>
           {profitElement}
+        </Col>
+
+        <Col
+          className={clsx(
+            'w-24 cursor-pointer sm:w-28',
+            graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+          )}
+          onClick={() => {
+            onClickNumber('value')
+            track('Portfolio Value Clicked')
+          }}
+        >
+          <div className="text-ink-600 text-xs sm:text-sm">Portfolio</div>
+          {valueElement}
         </Col>
 
         <Col
@@ -286,7 +291,7 @@ export function PortfolioValueSkeleton(props: {
           setCurrentTimePeriod={setCurrentTimePeriod}
           color={switcherColor}
           disabled={disabled}
-          className="mx-2 mt-1"
+          className="mt-1"
           toggleClassName="grow justify-center"
         />
       )}

@@ -9,7 +9,7 @@ import { ControllableSingleValueHistoryChart } from 'web/components/charts/gener
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { HistoryPoint, viewScale } from 'common/chart'
 
-const MARGIN = { top: 12, right: 48, bottom: 20, left: 12 }
+const MARGIN = { top: 12, right: 42, bottom: 20, left: 6 }
 const MARGIN_X = MARGIN.left + MARGIN.right
 const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
@@ -35,6 +35,7 @@ export const PortfolioGraph = (props: {
   height: number
   viewScaleProps: viewScale
   onMouseOver?: (p: HistoryPoint<Partial<PortfolioMetrics>> | undefined) => void
+  negativeThreshold?: number
 }) => {
   const { mode, points, onMouseOver, width, height, viewScaleProps } = props
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
@@ -48,7 +49,7 @@ export const PortfolioGraph = (props: {
     const maxValue = max(points.map((d) => d.y))!
     return { minDate, maxDate, minValue, maxValue }
   }, [points])
-
+  const negativeThreshold = props.negativeThreshold ?? 0
   return (
     <ControllableSingleValueHistoryChart
       w={width}
@@ -64,7 +65,8 @@ export const PortfolioGraph = (props: {
       onMouseOver={onMouseOver}
       color={
         mode === 'profit'
-          ? (p: HistoryPoint) => (p.y >= 0 ? '#14b8a6' : '#FFA799')
+          ? (p: HistoryPoint) =>
+              p.y >= negativeThreshold ? '#14b8a6' : '#FFA799'
           : mode === 'balance'
           ? '#3B82F6'
           : '#4f46e5'

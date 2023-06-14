@@ -236,7 +236,7 @@ export function UserProfile(props: {
             </Row>
           )}
         </Row>
-        <Col className={'mt-1 px-1'}>
+        <Col className={'mt-1'}>
           <ProfilePublicStats
             className=""
             user={user}
@@ -312,7 +312,10 @@ export function UserProfile(props: {
                 content: (
                   <>
                     <Spacer h={4} />
-                    <PortfolioValueSection userId={user.id} />
+                    <PortfolioValueSection
+                      userId={user.id}
+                      defaultTimePeriod={isCurrentUser ? 'daily' : 'allTime'}
+                    />
                     <Spacer h={4} />
                     <BetsList user={user} />
                   </>

@@ -1,4 +1,4 @@
-import { chunk } from 'lodash'
+import { chunk, groupBy } from 'lodash'
 import { run, millisToTs, selectJson, SupabaseClient } from './utils'
 import { Contract } from '../contract'
 import { Answer } from 'common/answer'
@@ -101,6 +101,19 @@ export const getContractAnswers = async (
     .order('prob', { ascending: false })
   if (!data) return null
   return data.map(parseDbAnswer)
+}
+
+export const getAnswersForContracts = async (
+  db: SupabaseClient,
+  contractIds: string[]
+) => {
+  const { data } = await db
+    .from('answers')
+    .select('*')
+    .in('contract_id', contractIds)
+  if (!data) return {}
+  const answers = data.map(parseDbAnswer)
+  return groupBy(answers, 'contractId')
 }
 
 const parseDbAnswer = (row: any) => {

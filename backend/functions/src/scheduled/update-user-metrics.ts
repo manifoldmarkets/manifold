@@ -4,7 +4,7 @@ import { groupBy, mapValues, uniq } from 'lodash'
 
 import { log, revalidateStaticProps } from 'shared/utils'
 import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { CPMMMultiContract, Contract } from 'common/contract'
 import { User } from 'common/user'
 import { DAY_MS } from 'common/util/time'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
@@ -16,10 +16,12 @@ import { hasChanges } from 'common/util/object'
 import { filterDefined } from 'common/util/array'
 import {
   SupabaseDirectClient,
+  createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { bulkInsert } from 'shared/supabase/utils'
 import { secrets } from 'common/secrets'
+import { getAnswersForContracts } from 'common/supabase/contracts'
 
 const firestore = admin.firestore()
 
@@ -40,6 +42,7 @@ export async function updateUserMetricsCore() {
   const weekAgo = now - DAY_MS * 7
   const monthAgo = now - DAY_MS * 30
   const pg = createSupabaseDirectClient()
+  const db = createSupabaseClient()
   const writer = firestore.bulkWriter()
 
   log('Loading users...')
@@ -87,7 +90,17 @@ export async function updateUserMetricsCore() {
   log('Loading contracts...')
   const allBets = Object.values(metricRelevantBets).flat()
   const contracts = await getRelevantContracts(pg, allBets)
+  const answersByContractId = await getAnswersForContracts(
+    db,
+    contracts.filter((c) => c.mechanism === 'cpmm-multi-1').map((c) => c.id)
+  )
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
+
+  for (const [contractId, answers] of Object.entries(answersByContractId)) {
+    // Denormalize answers onto the contract.
+    ;(contractsById[contractId] as CPMMMultiContract).answers = answers
+  }
+
   log(`Loaded ${contracts.length} contracts.`)
 
   // We need to update metrics for contracts that resolved up through a month ago,

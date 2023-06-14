@@ -30,7 +30,7 @@ export function BackButton() {
       className={clsx('text-ink-500 hover:text-ink-600 flex transition-colors')}
       onClick={router.back}
     >
-      <ArrowLeftIcon className="h-4 w-4" aria-hidden />
+      <ArrowLeftIcon className="h-5 w-5" aria-hidden />
       <div className="sr-only">Back</div>
     </button>
   )

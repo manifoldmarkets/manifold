@@ -2,11 +2,11 @@ import { useState } from 'react'
 import clsx from 'clsx'
 
 import { buttonClass } from 'web/components/buttons/button'
-import { CPMMContract } from 'common/contract'
+import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { LiquidityModal } from './liquidity-modal'
 
 export function AddLiquidityButton(props: {
-  contract: CPMMContract
+  contract: CPMMContract | CPMMMultiContract
   className?: string
 }) {
   const { contract, className } = props
