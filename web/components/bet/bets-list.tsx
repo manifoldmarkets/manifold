@@ -21,12 +21,7 @@ import {
   calculateDpmSaleAmount,
   getDpmProbabilityAfterSale,
 } from 'common/calculate-dpm'
-import {
-  DPMContract,
-  CPMMContract,
-  contractPath,
-  CPMMBinaryContract,
-} from 'common/contract'
+import { DPMContract, CPMMContract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkShares } from 'common/stonk'
@@ -66,11 +61,11 @@ import { getBets } from 'common/supabase/bets'
 import clsx from 'clsx'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserLink } from 'web/components/widgets/user-link'
-import { SellRow } from 'web/components/bet/sell-row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { OrderTable } from 'web/components/bet/limit-bets'
 import { TinyRelativeTimestamp } from 'web/components/relative-timestamp'
 import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
+import { BetsSummary } from 'web/components/bet/bet-summary'
 type BetSort =
   | 'newest'
   | 'profit'
@@ -237,9 +232,9 @@ export function BetsList(props: { user: User }) {
               openLimitBetsByContract={openLimitBetsByContract}
               page={page}
               user={user}
-              areYourBets={isYourBets}
               setPage={setPage}
               filter={filter}
+              signedInUser={signedInUser}
             />
           )
         )}
@@ -279,7 +274,7 @@ function UserBetsTable(props: {
   setPage: (page: number) => void
   filter: BetFilter
   user: User
-  areYourBets: boolean
+  signedInUser: User | null | undefined
 }) {
   const {
     metricsByContractId,
@@ -287,10 +282,10 @@ function UserBetsTable(props: {
     setPage,
     filter,
     openLimitBetsByContract,
-    areYourBets,
     user,
+    signedInUser,
   } = props
-
+  const areYourBets = user.id === signedInUser?.id
   const [sort, setSort] = usePersistentState<{
     field: BetSort
     direction: 'asc' | 'desc'
@@ -522,7 +517,6 @@ function UserBetsTable(props: {
     )
   }
   const getColSpan = (i: number) => (i === 5 ? 'col-span-4' : 'col-span-3')
-
   return (
     <Col className="mb-4 flex-1 gap-4">
       <Col className={'w-full'}>
@@ -544,6 +538,13 @@ function UserBetsTable(props: {
             (bet) =>
               bet.limitProb !== undefined && !bet.isCancelled && !bet.isFilled
           ) as LimitBet[]
+          const includeSellButtonForUser =
+            areYourBets &&
+            !contract.isResolved &&
+            (contract.closeTime ?? 0) > Date.now() &&
+            contract.outcomeType === 'BINARY'
+              ? signedInUser
+              : undefined
           return (
             <Row
               key={contract.id + 'bets-table-row'}
@@ -576,17 +577,15 @@ function UserBetsTable(props: {
                       </Col>
                     ) : (
                       <Col className={'mt-1 w-full gap-1'}>
-                        {areYourBets &&
-                          !contract.isResolved &&
-                          (contract.closeTime ?? 0) > Date.now() &&
-                          contract.outcomeType === 'BINARY' && (
-                            <SellRow
-                              className="mt-1 items-start"
-                              contract={contract as CPMMBinaryContract}
-                              user={user}
-                              showTweet={false}
-                            />
-                          )}
+                        <BetsSummary
+                          className="mt-6 !mb-6 flex"
+                          contract={contract}
+                          metrics={metricsByContractId[contract.id]}
+                          hideTweet
+                          includeSellButton={includeSellButtonForUser}
+                          hideProfit={true}
+                          hideValue={true}
+                        />
                         {contract.mechanism === 'cpmm-1' &&
                           limitBets.length > 0 && (
                             <div className="max-w-md">

@@ -22,8 +22,9 @@ export function SellRow(props: {
   user: User | null | undefined
   className?: string
   showTweet?: boolean
+  hideStatus?: boolean
 }) {
-  const { className, contract, user, showTweet } = props
+  const { className, contract, user, showTweet, hideStatus } = props
   const isStonk = contract.outcomeType === 'STONK'
 
   const userBets = useUserContractBets(user?.id, contract.id)
@@ -36,18 +37,20 @@ export function SellRow(props: {
     return (
       <Col className={className}>
         <Row className="items-center justify-between gap-4">
-          <div>
-            {isStonk ? (
-              <>You have {getStonkShares(contract, shares, 2)} shares of </>
-            ) : (
-              <>You'll get {formatMoney(shares)} on </>
-            )}
-            <OutcomeLabel
-              outcome={sharesOutcome}
-              contract={contract}
-              truncate={'short'}
-            />{' '}
-          </div>
+          {!hideStatus && (
+            <div>
+              {isStonk ? (
+                <>You have {getStonkShares(contract, shares, 2)} shares of </>
+              ) : (
+                <>You'll get {formatMoney(shares)} on </>
+              )}
+              <OutcomeLabel
+                outcome={sharesOutcome}
+                contract={contract}
+                truncate={'short'}
+              />{' '}
+            </div>
+          )}
 
           <Button
             className="!py-1"

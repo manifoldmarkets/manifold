@@ -12,18 +12,27 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
+import { CPMMBinaryContract } from 'common/contract'
+import { SellRow } from 'web/components/bet/sell-row'
+import { User } from 'common/user'
 
 export function UserBetsSummary(props: {
   contract: Contract
   initialMetrics?: ContractMetric
   className?: string
+  includeSellButton?: User | null | undefined
 }) {
-  const { contract, className } = props
+  const { contract, className, includeSellButton } = props
   const metrics = useSavedContractMetrics(contract) ?? props.initialMetrics
 
   if (!metrics) return <></>
   return (
-    <BetsSummary contract={contract} metrics={metrics} className={className} />
+    <BetsSummary
+      contract={contract}
+      metrics={metrics}
+      className={className}
+      includeSellButton={includeSellButton}
+    />
   )
 }
 
@@ -32,8 +41,19 @@ export function BetsSummary(props: {
   metrics: ContractMetric
   className?: string
   hideTweet?: boolean
+  hideProfit?: boolean
+  hideValue?: boolean
+  includeSellButton?: User | null | undefined
 }) {
-  const { contract, metrics, className, hideTweet } = props
+  const {
+    contract,
+    metrics,
+    className,
+    hideTweet,
+    hideProfit,
+    includeSellButton,
+    hideValue,
+  } = props
   const { resolution, outcomeType } = contract
   const userBets = useUserContractBets(metrics.userId, contract.id)
   const username = metrics.userUsername
@@ -57,7 +77,7 @@ export function BetsSummary(props: {
 
   return (
     <Col className={clsx('mb-8', className)}>
-      <Row className="flex-wrap gap-4 sm:flex-nowrap sm:gap-6">
+      <Row className="flex-wrap gap-6 sm:flex-nowrap">
         {resolution ? (
           <Col>
             <div className="text-ink-500 text-sm">Payout</div>
@@ -86,28 +106,41 @@ export function BetsSummary(props: {
                 )} otherwise).`}
               />
             </div>
-            <div className="whitespace-nowrap">
-              {position > 1e-7 ? (
-                <>
-                  {formatMoney(position)} on <YesLabel />
-                </>
-              ) : position < -1e-7 ? (
-                <>
-                  {formatMoney(-position)} on <NoLabel />
-                </>
-              ) : (
-                '——'
+            <Row className={' gap-1'}>
+              <div className="whitespace-nowrap">
+                {position > 1e-7 ? (
+                  <>
+                    {formatMoney(position)} on <YesLabel />
+                  </>
+                ) : position < -1e-7 ? (
+                  <>
+                    {formatMoney(-position)} on <NoLabel />
+                  </>
+                ) : (
+                  '——'
+                )}
+              </div>
+              {includeSellButton && (
+                <SellRow
+                  contract={contract as CPMMBinaryContract}
+                  user={includeSellButton}
+                  showTweet={false}
+                  hideStatus={true}
+                  className={'-mt-1'}
+                />
               )}
-            </div>
+            </Row>
           </Col>
         ) : (
-          <Col className="hidden sm:inline">
-            <div className="text-ink-500 whitespace-nowrap text-sm">
-              Expected value{' '}
-              <InfoTooltip text="How much your position in the market is worth right now according to the current market probability." />
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(payout)}</div>
-          </Col>
+          !hideValue && (
+            <Col className="hidden sm:inline">
+              <div className="text-ink-500 whitespace-nowrap text-sm">
+                Expected value{' '}
+                <InfoTooltip text="How much your position in the market is worth right now according to the current market probability." />
+              </div>
+              <div className="whitespace-nowrap">{formatMoney(payout)}</div>
+            </Col>
+          )
         )}
 
         <Col>
@@ -118,7 +151,7 @@ export function BetsSummary(props: {
           <div className="whitespace-nowrap">{formatMoney(invested)}</div>
         </Col>
 
-        {isBinary && !resolution && (
+        {isBinary && !resolution && !hideValue && (
           <Col className="hidden sm:inline">
             <div className="text-ink-500 whitespace-nowrap text-sm">
               Expected value{' '}
@@ -128,16 +161,18 @@ export function BetsSummary(props: {
           </Col>
         )}
 
-        <Col>
-          <div className="text-ink-500 whitespace-nowrap text-sm">
-            Profit{' '}
-            <InfoTooltip text="How much you've made or lost (includes both realized & unrealized profits)." />
-          </div>
-          <div className="whitespace-nowrap">
-            {formatMoney(profit)}
-            <ProfitBadge profitPercent={profitPercent} />
-          </div>
-        </Col>
+        {!hideProfit && (
+          <Col>
+            <div className="text-ink-500 whitespace-nowrap text-sm">
+              Profit{' '}
+              <InfoTooltip text="How much you've made or lost (includes both realized & unrealized profits)." />
+            </div>
+            <div className="whitespace-nowrap">
+              {formatMoney(profit)}
+              <ProfitBadge profitPercent={profitPercent} round={true} />
+            </div>
+          </Col>
+        )}
       </Row>
 
       {!hideTweet && resolution && profit >= 1 && (
