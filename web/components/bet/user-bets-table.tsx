@@ -1,9 +1,9 @@
-import { Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
+import { Dictionary, groupBy, keyBy, max, sortBy, sum, uniqBy } from 'lodash'
 import React, { ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { LimitBet } from 'common/bet'
 import { getContractBetNullMetrics } from 'common/calculate'
-import { contractPath, CPMMContract } from 'common/contract'
+import { contractPath, CPMMContract, CPMMMultiContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
 import { buildArray } from 'common/util/array'
@@ -38,6 +38,7 @@ import { BetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { ProfitBadge } from 'web/components/profit-badge'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useAnswersForContracts } from 'web/hooks/use-answers'
 
 type BetSort =
   | 'newest'
@@ -101,6 +102,20 @@ export function UserBetsTable(props: { user: User }) {
       )
     })
   }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
+
+  const answersByContractId =
+    useAnswersForContracts(
+      (initialContracts ?? [])
+        .filter((c) => c.mechanism === 'cpmm-multi-1')
+        .map((c) => c.id)
+    ) ?? {}
+  const contractsById = keyBy(initialContracts, 'id')
+  for (const [contractId, answers] of Object.entries(answersByContractId)) {
+    const contract = contractsById[contractId]
+    if (contract) {
+      ;(contract as CPMMMultiContract).answers = answers
+    }
+  }
 
   const [filter, setFilter] = usePersistentState<BetFilter>('open', {
     key: 'bets-list-filter',
@@ -405,7 +420,7 @@ function BetsTable(props: {
               contract={c}
             />
             <span className={'text-ink-500 text-xs'}>
-              {change !== undefined ? change : 'n/a'}
+              {change !== undefined ? change : ''}
             </span>
           </Row>
         )
