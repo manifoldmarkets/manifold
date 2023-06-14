@@ -14,6 +14,8 @@ import { slugify } from 'common/util/slugify'
 import { getUser } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { bulkInsert } from 'shared/supabase/utils'
 
 const bodySchema = z.object({
   name: z.string().min(1).max(MAX_GROUP_NAME_LENGTH),
@@ -32,6 +34,8 @@ export const creategroup = authEndpoint(async (req, auth) => {
   const creator = await getUser(auth.uid)
   if (!creator)
     throw new APIError(400, 'No user exists with the authenticated user ID.')
+
+  const pg = createSupabaseDirectClient()
 
   // Add creator id to member ids for convenience
   if (!memberIds.includes(creator.id)) memberIds.push(creator.id)
@@ -70,22 +74,16 @@ export const creategroup = authEndpoint(async (req, auth) => {
 
   await groupRef.create(group)
 
-  // create a GroupMemberDoc for each member
-  await Promise.all(
-    memberIds.map((memberId) => {
-      if (memberId === creator.id) {
-        groupRef.collection('groupMembers').doc(memberId).create({
-          userId: memberId,
-          createdTime: Date.now(),
-          role: 'admin',
-        })
-      } else {
-        groupRef.collection('groupMembers').doc(memberId).create({
-          userId: memberId,
-          createdTime: Date.now(),
-        })
-      }
-    })
+  await bulkInsert(
+    pg,
+    'group_members',
+    memberIds.map((memberId) =>
+      removeUndefinedProps({
+        group_id: group.id,
+        member_id: memberId,
+        role: memberId === creator.id ? 'admin' : undefined,
+      })
+    )
   )
 
   return { status: 'success', group: group }

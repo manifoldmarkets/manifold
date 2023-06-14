@@ -17,7 +17,6 @@ import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 import { Contract, contractPath } from 'common/contract'
-import { ContractBetsTable } from '../bet/bets-list'
 import { Bet } from 'common/bet'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { ProfitBadge } from '../profit-badge'
@@ -25,6 +24,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { useBets } from 'web/hooks/use-bets-supabase'
 import ShortToggle from '../widgets/short-toggle'
 import { useState } from 'react'
+import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 
 export const ManaEarnedBreakdown = (props: {
   user: User

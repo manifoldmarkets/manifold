@@ -7,8 +7,8 @@ import {
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { User } from 'web/lib/firebase/users'
-import { SellRow } from './sell-row'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { UserBetsSummary } from 'web/components/bet/bet-summary'
 
 export function SignedInBinaryMobileBetting(props: {
   contract: BinaryContract | PseudoNumericContract | StonkContract
@@ -25,10 +25,10 @@ export function SignedInBinaryMobileBetting(props: {
         user={user}
         mobileView={isMobile}
       />
-      <SellRow
-        contract={contract as CPMMBinaryContract}
-        user={user}
-        className={'border-ink-200 mt-2 rounded-md border-2 px-4 py-2'}
+      <UserBetsSummary
+        className="border-ink-200 mt-2 !mb-2 "
+        contract={contract}
+        includeSellButton={user}
       />
     </Col>
   )

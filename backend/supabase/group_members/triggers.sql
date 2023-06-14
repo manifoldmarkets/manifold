@@ -1,20 +1,19 @@
-alter table group_members add role text;
-
-alter table group_members add created_time timestamptz;
-
+-- Keep total members up to date
 create
-or replace function group_member_populate_cols () returns trigger language plpgsql as $$ begin 
-    if new.data is not null then 
-    new.role := (new.data)->>'role';
-    new.created_time := case
-        when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint)
-        else null
-        end;
-    end if;
+or replace function increment_group_members () returns trigger language plpgsql as $$ begin 
+    update groups set total_members = total_members + 1 where id = new.group_id;
     return new;
 end $$;
 
-create trigger group_members_populate before insert
-or
-update on group_members for each row
-execute function group_member_populate_cols ();
+create trigger increment_group
+after insert on group_members for each row
+execute procedure increment_group_members ();
+
+create
+or replace function decrement_group_members () returns trigger language plpgsql as $$ begin 
+    update groups set total_members = total_members - 1 where id = old.group_id;
+    return old;
+end $$;
+
+create trigger decrement_group before delete on group_members for each row
+execute procedure decrement_group_members ();

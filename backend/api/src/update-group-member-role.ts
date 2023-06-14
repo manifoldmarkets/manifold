@@ -2,83 +2,80 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { isAdmin, isManifoldId } from 'common/envs/constants'
-import { Group } from 'common/group'
-import { User } from 'common/user'
-import { GroupMember } from 'common/group-member'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createGroupStatusChangeNotification } from 'shared/create-notification'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const bodySchema = z.object({
   groupId: z.string(),
   memberId: z.string(),
-  role: z.string(),
+  role: z.enum(['admin', 'member', 'moderator']),
 })
 
 export const updatememberrole = authEndpoint(async (req, auth) => {
   const { groupId, memberId, role } = validate(bodySchema, req.body)
 
-  // run as transaction to prevent race conditions
-  return await firestore.runTransaction(async (transaction) => {
-    const requesterDoc = firestore.doc(
-      `groups/${groupId}/groupMembers/${auth.uid}`
-    )
-    const affectedMemberDoc = firestore.doc(
-      `groups/${groupId}/groupMembers/${memberId}`
-    )
-    const groupDoc = firestore.doc(`groups/${groupId}`)
-    const requesterUserDoc = firestore.doc(`users/${auth.uid}`)
-    const [requesterSnap, affectedMemberSnap, groupSnap, requesterUserSnap] =
-      await transaction.getAll(
-        requesterDoc,
-        affectedMemberDoc,
-        groupDoc,
-        requesterUserDoc
-      )
-    if (!groupSnap.exists) throw new APIError(400, 'Group cannot be found')
-    if (!affectedMemberSnap.exists)
-      throw new APIError(400, 'Member cannot be found in group')
-    if (!requesterUserSnap.exists)
-      throw new APIError(400, 'You cannot be found')
-    const requesterUser = requesterUserSnap.data() as User
-    const affectedMember = affectedMemberSnap.data() as GroupMember
-    const group = groupSnap.data() as Group
-    const firebaseUser = await admin.auth().getUser(auth.uid)
+  const db = createSupabaseDirectClient()
 
-    if (!requesterSnap.exists) {
-      if (!isManifoldId(auth.uid) && !isAdmin(firebaseUser.email)) {
+  return db.tx(async (tx) => {
+    const requesterMembership = await tx.oneOrNone(
+      'select * from group_members where member_id = $1 and group_id = $2',
+      [auth.uid, groupId]
+    )
+    const affectedMember = await tx.oneOrNone(
+      'select * from group_members where member_id = $1 and group_id = $2',
+      [memberId, groupId]
+    )
+
+    const group = await tx.oneOrNone('select * from groups where id = $1', [
+      groupId,
+    ])
+
+    const requesterUser = await tx.oneOrNone(
+      `select data from users where id = $1`,
+      [auth.uid]
+    )
+
+    if (!group) throw new APIError(400, 'Group cannot be found')
+    if (!affectedMember)
+      throw new APIError(400, 'Member cannot be found in group')
+    if (!requesterUser) throw new APIError(400, 'You cannot be found')
+
+    const isAdminRequest = isAdmin((await admin.auth().getUser(auth.uid)).email)
+
+    if (!requesterMembership) {
+      if (!isManifoldId(auth.uid) && !isAdminRequest) {
         throw new APIError(400, 'User does not have permission to change roles')
       }
     } else {
-      const requester = requesterSnap?.data() as GroupMember
       if (
-        requester.role !== 'admin' &&
-        requester.userId !== group.creatorId &&
-        auth.uid != affectedMember.userId
+        requesterMembership.role !== 'admin' &&
+        requesterMembership.member_id !== group.creator_id &&
+        auth.uid !== affectedMember.member_id
       )
         throw new APIError(400, 'User does not have permission to change roles')
     }
 
-    if (auth.uid == affectedMember.userId && role !== 'member')
+    if (auth.uid === affectedMember.member_id && role !== 'member')
       throw new APIError(400, 'User can only change their role to a lower role')
 
-    if (role == 'member') {
-      transaction.update(affectedMemberDoc, {
-        role: admin.firestore.FieldValue.delete(),
-      })
-    } else {
-      transaction.update(affectedMemberDoc, { role: role })
-    }
+    const realRole = role === 'member' ? null : role
+    const ret = await tx.one(
+      `update group_members
+       set role = $1 where member_id = $2 and group_id = $3
+       returning *`,
+      [realRole, memberId, groupId]
+    )
 
     if (requesterUser && auth.uid != memberId) {
       await createGroupStatusChangeNotification(
         requesterUser,
         affectedMember,
-        group,
+        group.data,
         role
       )
     }
-    return affectedMember
+
+    return { status: 'success', member: ret }
   })
 })
-
-const firestore = admin.firestore()

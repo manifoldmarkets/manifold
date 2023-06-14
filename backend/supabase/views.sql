@@ -100,7 +100,9 @@ create or replace view
       popularity_score desc
   );
 
-create or replace view
+drop view if exists group_role;
+
+create view
   group_role as (
     select
       member_id,
@@ -109,6 +111,7 @@ create or replace view
       gp.name as group_name,
       gp.slug as group_slug,
       gp.creator_id as creator_id,
+      gp.total_members as total_members,
       users.data ->> 'name' as name,
       users.username as username,
       users.data ->> 'avatarUrl' as avatar_url,
@@ -116,10 +119,10 @@ create or replace view
         select
           case
             when gp.creator_id = member_id then 'admin'
-            else (gm.data ->> 'role')
+            else gm.role
           end
       ) as role,
-      (gm.data ->> 'createdTime')::bigint as createdTime,
+      ts_to_millis (gm.created_time) as createdTime,
       gp.privacy_status as privacy_status
     from
       (

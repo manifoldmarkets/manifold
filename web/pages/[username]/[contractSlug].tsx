@@ -13,7 +13,6 @@ import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
-import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
@@ -529,12 +528,6 @@ export function ContractPageContent(props: {
                 <Spacer h={12} />
               </>
             )}
-
-            <UserBetsSummary
-              className="mt-4 mb-2 px-2"
-              contract={contract}
-              initialMetrics={contractMetrics}
-            />
 
             <div ref={tabsContainerRef}>
               <ContractTabs

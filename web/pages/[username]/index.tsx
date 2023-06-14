@@ -25,7 +25,7 @@ import { usePostsByUser } from 'web/hooks/use-post'
 import { usePrefetchUsers, useUser, useUserById } from 'web/hooks/use-user'
 import { useDiscoverUsers } from 'web/hooks/use-users'
 import { track } from 'web/lib/service/analytics'
-import { BetsList } from 'web/components/bet/bets-list'
+import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { buttonClass } from 'web/components/buttons/button'
 import { TextButton } from 'web/components/buttons/text-button'
 import { UserFollowButton } from 'web/components/buttons/follow-button'
@@ -317,7 +317,7 @@ export function UserProfile(props: {
                       defaultTimePeriod={isCurrentUser ? 'daily' : 'allTime'}
                     />
                     <Spacer h={4} />
-                    <BetsList user={user} />
+                    <UserBetsTable user={user} />
                   </>
                 ),
               },

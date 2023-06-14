@@ -24,7 +24,6 @@ import GoToIcon from 'web/lib/icons/go-to-icon'
 import { track } from 'web/lib/service/analytics'
 import { Title } from 'web/components/widgets/title'
 
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
 import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
@@ -34,14 +33,15 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { TopicSelector } from 'web/components/topic-selector'
 import ShortToggle from 'web/components/widgets/short-toggle'
+import { ProfileSummary } from 'web/components/nav/profile-menu'
+import { Spacer } from 'web/components/layout/spacer'
 
 export default function Home() {
   const isClient = useIsClient()
-  const isMobile = useIsMobile()
 
   useRedirectIfSignedOut()
   useSaveReferral()
-  useTracking('view home', { kind: isMobile ? 'swipe' : 'desktop' })
+  useTracking('view home', { kind: 'desktop' })
 
   if (!isClient)
     return (
@@ -50,9 +50,6 @@ export default function Home() {
       </Page>
     )
 
-  if (isMobile) {
-    return <MobileHome />
-  }
   return <HomeDashboard />
 }
 
@@ -64,9 +61,12 @@ function HomeDashboard() {
   const isLoading = !dailyChangedContracts
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-2xl gap-6 pb-8 sm:px-2 lg:pr-4">
-        <Row className={'w-full items-center justify-between gap-4'}>
-          <Title children="Home" className="!my-0" />
+      <Col className="mx-auto w-full max-w-2xl gap-2 pb-8 sm:gap-6 sm:px-2 lg:pr-4">
+        <Row className="mx-2 mb-2 items-center justify-between gap-4 sm:mx-0">
+          <Title children="Home" className="!my-0 hidden sm:block" />
+          <div className="flex sm:hidden">
+            {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
+          </div>
           <DailyStats user={user} />
         </Row>
 
@@ -75,31 +75,6 @@ function HomeDashboard() {
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
           <MainContent />
-        </Col>
-      </Col>
-    </Page>
-  )
-}
-
-function MobileHome() {
-  const user = useUser()
-
-  const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
-  const isLoading = !dailyChangedContracts
-  return (
-    <Page>
-      <Col className="gap-2 py-2 pb-8 sm:px-2">
-        <Row className="mx-4 mb-2 items-center gap-4">
-          <Title children="Home" className="!my-0 hidden sm:block" />
-          <DailyStats user={user} />
-        </Row>
-
-        {isLoading && <LoadingIndicator />}
-        <Col className={clsx('gap-6', isLoading && 'hidden')}>
-          <YourDailyUpdates contracts={dailyChangedContracts} />
-          <Col>
-            <MainContent />
-          </Col>
         </Col>
       </Col>
     </Page>

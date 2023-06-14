@@ -1,5 +1,3 @@
-export type GroupMember = {
-  createdTime: number
-  userId: string
-  role?: string
-}
+import { Row } from './supabase/utils'
+
+export type GroupMember = Row<'group_members'>

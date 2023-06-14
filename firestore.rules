@@ -211,20 +211,12 @@ service cloud.firestore {
       allow list, update: if request.auth.uid == resource.data.fromId;
     }
 
-    match /{somePath=**}/groupMembers/{memberId} {
-      allow read;
-    }
-
     match /{somePath=**}/groupContracts/{contractId} {
       allow read;
     }
 
-    function isGroupMember(groupId) {
-      return exists(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid));
-    }
-
     match /groups/{groupId} {
-      allow read: if (resource.data.privacyStatus!='private' || isGroupMember(groupId) || isAdmin());
+      allow read;
       allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                         && request.resource.data.diff(resource.data)
                         .affectedKeys()
@@ -232,25 +224,7 @@ service cloud.firestore {
       allow delete: if request.auth.uid == resource.data.creatorId;
 
       match /groupContracts/{contractId} {
-        allow write: 
-        if (
-        request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || 
-        isAdmin() || 
-        (
-        isGroupMember(groupId) && 
-        (
-        get(/databases/$(database)/documents/contracts/$(contractId)).data.creatorId == request.auth.uid || 
-        ['admin','contributor'].includes(get(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid)).data.role)
-        )
-        )
-        );
-      }
-
-      match /groupMembers/{memberId}{
-        allow read;
-        allow create: if request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || (request.auth.uid == request.resource.data.userId);
-        allow update: if isAdmin() || request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || get(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid)).data.role == 'admin' || request.auth.uid == resource.data.userId;
-        allow delete: if request.auth.uid == resource.data.userId;
+        allow write;
       }
 
       match /comments/{commentId} {
