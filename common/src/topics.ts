@@ -1,12 +1,6 @@
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
-  '👥 Communities': [
-    // '🤓 CGP Grey',
-    // '📜 ACX',
-    '💗 Effective Altruism',
-    '🎮 Destiny.gg',
-    // '🦔 Proofniks',
-    // '🎰 Wall Street Bets',
-  ],
+  '🗳️ US Politics': ['🙋 2024 US Elections', '🟠 Trump', '🇺🇸 US Politics'],
+
   '💻 Technology': [
     '🤖 AI',
     '🪙 Crypto',
@@ -18,7 +12,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '☢️ Nuclear',
     '🚀 Space',
   ],
-  '🗳️ US Politics': ['🙋 2024 US Elections', '🟠 Trump', '🇺🇸 US Politics'],
+
   '🏟️ Sports': [
     '🏀 Basketball',
     '🏈 NFL',
@@ -28,6 +22,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🏎️ Racing',
     '🏅 Sports',
   ],
+
   '🍿 Media': [
     '🎬 Movies',
     '📺 TV Shows',
@@ -62,6 +57,15 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🌍 Europe',
     '🌎 Latin America',
     '🌍 Middle East',
+  ],
+
+  '👥 Communities': [
+    // '🤓 CGP Grey',
+    // '📜 ACX',
+    '💗 Effective Altruism',
+    '🎮 Destiny.gg',
+    // '🦔 Proofniks',
+    // '🎰 Wall Street Bets',
   ],
 }
 
