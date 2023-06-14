@@ -82,7 +82,6 @@ export function FeedContractCard(props: {
         path={path}
         promotedData={promotedData}
         className={className}
-        reason={reason}
         hasItems={hasItems}
       />
     )

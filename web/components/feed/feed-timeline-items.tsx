@@ -21,6 +21,7 @@ import { FeedBetsItem } from './feed-bet-item'
 import { groupBetsByCreatedTimeAndUserId } from './feed-bets'
 import { FeedCommentItem } from './feed-comment-item'
 import Link from 'next/link'
+import clsx from 'clsx'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
