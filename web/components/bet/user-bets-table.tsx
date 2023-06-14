@@ -427,24 +427,17 @@ function BetsTable(props: {
       },
     },
     {
-      header: (
-        <Header id="newest" className={'justify-center'}>
-          Bet
-        </Header>
-      ),
-      span: isMobile ? 3 : 2,
+      header: <Header id="newest">Bet</Header>,
+      span: isMobile ? 2 : 1,
       renderCell: (c: Contract) => (
-        <Row className={'justify-center'}>
-          <TinyRelativeTimestamp
-            className={'ml-5'}
-            time={metricsByContractId[c.id].lastBetTime}
-          />
+        <Row className={'justify-end'}>
+          <TinyRelativeTimestamp time={metricsByContractId[c.id].lastBetTime} />
         </Row>
       ),
     },
     !isMobile && {
       header: <Header id="closeTime">Close</Header>,
-      span: 2,
+      span: 3,
       renderCell: (c: Contract) => {
         const date = new Date(c.resolutionTime ?? c.closeTime ?? Infinity)
         const isThisYear = new Date().getFullYear() === date.getFullYear()
@@ -462,7 +455,7 @@ function BetsTable(props: {
     },
     {
       header: <Header id="value">Value</Header>,
-      span: 3,
+      span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => (
         <NumberCell num={metricsByContractId[c.id].payout} />
       ),
@@ -480,18 +473,22 @@ function BetsTable(props: {
       renderCell: (c: Contract) => {
         const cm = metricsByContractId[c.id]
         return (
-          <ProfitBadge
-            className={'!px-1'}
-            profitPercent={cm.profitPercent}
-            round={true}
-            grayColor={formatMoney(cm.profit ?? 0) === formatMoney(0)}
-          />
+          <span
+            className={'flex-inline -mr-3 flex justify-end md:-mr-2 lg:mr-0'}
+          >
+            <ProfitBadge
+              className={'!px-1'}
+              profitPercent={cm.profitPercent}
+              round={true}
+              grayColor={formatMoney(cm.profit ?? 0) === formatMoney(0)}
+            />
+          </span>
         )
       },
     },
     {
       header: <Header id="day">1d Profit</Header>,
-      span: isMobile ? 4 : 3,
+      span: isMobile ? 4 : 2,
       renderCell: (c: Contract) => (
         <NumberCell
           num={metricsByContractId[c.id].from?.day.profit ?? 0}
@@ -508,12 +505,18 @@ function BetsTable(props: {
         // Gives ~infinite returns
         if ((cm.from?.day.invested ?? 0) < 0.01) return <div />
         return (
-          <ProfitBadge
-            className={'!px-1'}
-            profitPercent={profitPercent}
-            round={true}
-            grayColor={formatMoney(cm.from?.day.profit ?? 0) === formatMoney(0)}
-          />
+          <span
+            className={'flex-inline -mr-3 flex justify-end md:-mr-2 lg:mr-0'}
+          >
+            <ProfitBadge
+              className={'!px-1'}
+              profitPercent={profitPercent}
+              round={true}
+              grayColor={
+                formatMoney(cm.from?.day.profit ?? 0) === formatMoney(0)
+              }
+            />
+          </span>
         )
       },
     },
@@ -556,7 +559,7 @@ function BetsTable(props: {
       <Col className={'w-full'}>
         <Row
           className={
-            'grid-cols-16 bg-canvas-100 sticky top-0 z-10 grid w-full py-2 pr-1'
+            'grid-cols-15 bg-canvas-100 sticky top-0 z-10 grid w-full py-2 pr-1'
           }
         >
           {dataColumns.map((c) => (
@@ -608,7 +611,7 @@ function BetsTable(props: {
                     </Col>
                   </Row>
                   {/* Contract Metrics details*/}
-                  <Row className={'grid-cols-16 mt-1 grid w-full pt-2'}>
+                  <Row className={'grid-cols-15 mt-1 grid w-full pt-2'}>
                     {dataColumns.map((c) => (
                       <div
                         className={clsx(getColSpan(c.span))}
