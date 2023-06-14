@@ -9,11 +9,11 @@ import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
-import { leaveGroup } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import {
+  leaveGroup,
   SearchGroupInfo,
   getMemberGroups,
   getMemberGroupsCount,

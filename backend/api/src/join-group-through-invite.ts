@@ -2,12 +2,13 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { GroupInvite } from 'common/src/group-invite'
-import { joinGroupHelper } from './join-group'
+import { addGroupMemberHelper } from './add-group-member'
 
 const schema = z.object({
   inviteId: z.string(),
 })
 
+// TODO: this whole thing should be a transaction
 export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
   const { inviteId } = validate(schema, req.body)
   const pg = createSupabaseDirectClient()
@@ -25,7 +26,8 @@ export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
   if (invite.is_max_uses_reached) {
     throw new APIError(404, 'The max uses has been reached for this link')
   }
-  const member = await joinGroupHelper(invite.group_id, true, auth)
+  const ret = await addGroupMemberHelper(invite.group_id, auth.uid, auth.uid)
+
   try {
     const result = await pg.result(
       `update group_invites set uses = $1 + 1 where id = $2`,
@@ -37,5 +39,5 @@ export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
   } catch (error) {
     throw new APIError(500, 'Failed to update group invite')
   }
-  return { status: 'success', member }
+  return ret
 })
