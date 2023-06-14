@@ -61,7 +61,7 @@ function HomeDashboard() {
   const isLoading = !dailyChangedContracts
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-2xl gap-2 sm:gap-6 pb-8 sm:px-2 lg:pr-4">
+      <Col className="mx-auto w-full max-w-2xl gap-2 pb-8 sm:gap-6 sm:px-2 lg:pr-4">
         <Row className="mx-2 mb-2 items-center justify-between gap-4 sm:mx-0">
           <Title children="Home" className="!my-0 hidden sm:block" />
           <div className="flex sm:hidden">
