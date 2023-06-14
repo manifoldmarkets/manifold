@@ -1,32 +1,31 @@
-import { ClockIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Image from 'next/image'
 import Link from 'next/link'
 import Router from 'next/router'
-import { useState } from 'react'
-import toast from 'react-hot-toast'
+import { MutableRefObject } from 'react'
 
 import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { formatMoney } from 'common/util/format'
-import { DAY_MS } from 'common/util/time'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
-import { redeemBoost } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { fromNow } from 'web/lib/util/time'
+import { ClaimButton } from '../ad/claim-ad-button'
 import { BetRow } from '../bet/bet-row'
 import { QuickOutcomeView } from '../bet/quick-bet'
+import { ReasonChosen } from '../feed/feed-reason-chosen'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { CommentsButton } from '../swipe/swipe-comments'
 import { Avatar } from '../widgets/avatar'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from '../widgets/user-link'
 import { PublicMarketGroups } from './contract-details'
+import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 
@@ -38,29 +37,23 @@ export function FeedContractCard(props: {
   className?: string
   reason?: string
   hasItems?: boolean
+  showReason?: boolean
 }) {
-  const { className, promotedData, reason, trackingPostfix, hasItems } = props
-  const user = useUser()
+  const {
+    className,
+    promotedData,
+    reason,
+    trackingPostfix,
+    hasItems,
+    showReason,
+  } = props
 
   const contract =
     useFirebasePublicAndRealtimePrivateContract(
       props.contract.visibility,
       props.contract.id
     ) ?? props.contract
-  const {
-    closeTime,
-    isResolved,
-    creatorCreatedTime,
-    creatorName,
-    creatorUsername,
-    creatorAvatarUrl,
-    question,
-    coverImageUrl,
-    outcomeType,
-    mechanism,
-  } = contract
-
-  const metrics = useSavedContractMetrics(contract)
+  const { closeTime, isResolved } = contract
 
   const { ref } = useIsVisible(
     () =>
@@ -81,20 +74,150 @@ export function FeedContractCard(props: {
       isPromoted: !!promotedData,
     })
 
+  const isClosed = closeTime && closeTime < Date.now()
+  const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
+  const path = contractPath(contract)
+
+  if (!hasItems) {
+    return (
+      <Col>
+        {showReason && (
+          <ReasonChosen
+            contract={contract}
+            reason={promotedData ? 'Boosted' : reason}
+            className="mb-1"
+          />
+        )}
+        <DetailedCard
+          ref={ref}
+          contract={contract}
+          trackClick={trackClick}
+          path={path}
+          promotedData={promotedData}
+          className={className}
+          hasItems={hasItems}
+        />
+      </Col>
+    )
+  }
+  return (
+    <SimpleCard
+      contract={contract}
+      textColor={textColor}
+      trackClick={trackClick}
+      promotedData={promotedData}
+      reason={reason}
+      showReason={showReason}
+    />
+  )
+}
+
+function SimpleCard(props: {
+  contract: Contract
+  textColor: string
+  trackClick: () => void
+  promotedData?: { adId: string; reward: number }
+  /** location of the card, to disambiguate card click events */
+  reason?: string
+  showReason?: boolean
+}) {
+  const { contract, textColor, trackClick, promotedData, reason, showReason } =
+    props
+  const { question } = contract
+  return (
+    <Row>
+      <Col className=" grow-y justify-end">
+        <div className="dark:border-ink-200 border-ink-300 ml-2 h-1/3 w-4 rounded-tl-xl border-2 border-b-0 border-r-0 sm:ml-4 sm:w-6" />
+      </Col>
+      <Col className="mt-2 grow">
+        {showReason && (
+          <ReasonChosen
+            contract={contract}
+            reason={promotedData ? 'Boosted' : reason}
+            className="mb-1"
+          />
+        )}
+        <Link
+          className={clsx(
+            'relative',
+            'bg-canvas-100 dark:border-ink-200 border-ink-300 group cursor-pointer justify-between overflow-hidden border-l-4 py-2 pl-2 pr-4 dark:bg-opacity-20',
+            'outline-none transition-colors'
+          )}
+          onClick={(e) => {
+            trackClick()
+            e.stopPropagation()
+          }}
+          href={contractPath(contract)}
+        >
+          <Row className="mb-1 justify-between">
+            <Col className="justify-end">
+              <span className="text-ink-500">
+                <UserLink
+                  name={contract.creatorName}
+                  username={contract.creatorUsername}
+                />{' '}
+                asked
+              </span>
+            </Col>
+            {promotedData && (
+              <ClaimButton {...promotedData} className={'z-10'} />
+            )}
+          </Row>
+          <Row className="w-full justify-between gap-4">
+            <div
+              className={clsx(
+                'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
+                textColor
+              )}
+            >
+              {question}
+            </div>
+            <div className="font-semibold">
+              <ContractStatusLabel contract={contract} />
+            </div>
+          </Row>
+        </Link>
+      </Col>
+    </Row>
+  )
+}
+
+function DetailedCard(props: {
+  ref: MutableRefObject<HTMLDivElement | null>
+  contract: Contract
+  trackClick: () => void
+  path: string
+  promotedData?: { adId: string; reward: number }
+  className?: string
+  hasItems?: boolean
+}) {
+  const { ref, contract, trackClick, path, promotedData, className, hasItems } =
+    props
+  const {
+    closeTime,
+    isResolved,
+    creatorCreatedTime,
+    creatorName,
+    creatorUsername,
+    creatorAvatarUrl,
+    question,
+    coverImageUrl,
+    outcomeType,
+    mechanism,
+  } = contract
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
+  const user = useUser()
 
   const showImage = !!coverImageUrl
-
-  const path = contractPath(contract)
-
+  const metrics = useSavedContractMetrics(contract)
   return (
     <div
       className={clsx(
-        'relative',
+        'relative rounded-xl',
         'bg-canvas-0 group flex cursor-pointer flex-col overflow-hidden',
-        'outline-none transition-colors',
+        'border-canvas-0 hover:border-primary-300 border outline-none transition-colors ',
         className
       )}
       // we have other links inside this card like the username, so can't make the whole card a button or link
@@ -105,26 +228,36 @@ export function FeedContractCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Col className=" bg-canvas-0 gap-2 p-4 py-2">
+      <Col className="gap-2 p-4 py-2">
         {/* Title is link to contract for open in new tab and a11y */}
         <Row className="justify-between">
           <Row onClick={(e) => e.stopPropagation()} className="gap-2">
             <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
-            <Col>
-              <UserLink
-                name={creatorName}
-                username={creatorUsername}
-                createdTime={creatorCreatedTime}
-              />
+            <Col className="w-full">
+              <span>
+                <span className="text-sm">
+                  <UserLink
+                    name={creatorName}
+                    username={creatorUsername}
+                    createdTime={creatorCreatedTime}
+                    className={'font-semibold'}
+                  />
+                  <span> asked </span>
+                </span>
+                <span className="text-ink-500 text-sm">
+                  {shortenedFromNow(contract.createdTime)}
+                </span>
+              </span>
               <div className="text-ink-500 text-sm">
-                created {fromNow(contract.createdTime)}
+                {contract.closeTime ? (
+                  <>closes {fromNow(contract.closeTime)}</>
+                ) : (
+                  'Never closes'
+                )}
               </div>
             </Col>
           </Row>
-          <ReasonChosen
-            contract={contract}
-            reason={promotedData ? 'Boosted' : reason}
-          />
+          {promotedData && <ClaimButton {...promotedData} className={'z-10'} />}
         </Row>
         <Link
           href={path}
@@ -175,7 +308,6 @@ export function FeedContractCard(props: {
               justGroups={true}
             />
           </Row>
-          {promotedData && <ClaimButton {...promotedData} className={'z-10'} />}
         </Col>
       )}
       {!showImage && (
@@ -206,7 +338,6 @@ export function FeedContractCard(props: {
               totalLikes={contract.likedByUserCount ?? 0}
               contract={contract}
               contentText={question}
-              showTotalLikesUnder
               size="md"
               color="gray"
               className="!px-0"
@@ -233,40 +364,6 @@ export function FeaturedPill(props: { label?: string }) {
   )
 }
 
-function ReasonChosen(props: { contract: Contract; reason?: string }) {
-  const { contract } = props
-  const { createdTime, closeTime, uniqueBettorCount } = contract
-
-  const now = Date.now()
-  const reason = props.reason
-    ? props.reason
-    : createdTime > now - DAY_MS
-    ? 'New'
-    : closeTime && closeTime < now + DAY_MS
-    ? 'Closing soon'
-    : !uniqueBettorCount || uniqueBettorCount <= 5
-    ? 'For you'
-    : 'Trending'
-
-  return (
-    <Row className="text-ink-500 gap-3 text-xs">
-      <div className="flex items-center gap-1 text-right">
-        {reason}
-        {reason === 'New' && <StarIcon className="h-4 w-4" />}
-      </div>
-      <Row className="shrink-0 items-center gap-1 whitespace-nowrap">
-        {reason === 'Closing soon' && (
-          <>
-            <ClockIcon className="h-4 w-4" />
-            {fromNow(closeTime || 0)}
-          </>
-        )}
-        {reason === 'New' && fromNow(createdTime)}
-      </Row>
-    </Row>
-  )
-}
-
 function YourMetricsFooter(props: { metrics: ContractMetric }) {
   const { metrics } = props
   const { totalShares, maxSharesOutcome, profit } = metrics
@@ -289,54 +386,5 @@ function YourMetricsFooter(props: { metrics: ContractMetric }) {
         </div>
       </Row>
     </Row>
-  )
-}
-
-function ClaimButton(props: {
-  adId: string
-  reward: number
-  className?: string
-}) {
-  const { adId, reward, className } = props
-
-  const [claimed, setClaimed] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  return (
-    <button
-      className={clsx(
-        'h-10 rounded-md bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-1 px-2 font-semibold text-gray-900 transition-colors',
-        'hover:via-yellow-100 focus:via-yellow-100',
-        'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
-        className,
-        'text-sm'
-      )}
-      disabled={loading || claimed}
-      onClick={async (e) => {
-        e.stopPropagation()
-        setLoading(true)
-        try {
-          await redeemBoost({ adId })
-          toast.success(`+${formatMoney(reward)}`)
-          setClaimed(true)
-          track('claim boost', { adId })
-        } catch (err) {
-          toast.error(
-            (err as any).message ??
-              (typeof err === 'string' ? err : 'Error claiming boost')
-          )
-        } finally {
-          setLoading(false)
-        }
-      }}
-    >
-      {claimed ? (
-        'Claimed!'
-      ) : loading ? (
-        <LoadingIndicator size={'sm'} />
-      ) : (
-        `Claim ${formatMoney(reward)} Boost`
-      )}
-    </button>
   )
 }

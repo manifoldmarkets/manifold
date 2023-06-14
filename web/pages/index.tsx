@@ -256,7 +256,7 @@ const ContractsSection = memo(function ContractsSection(props: {
       {contracts.map((contract) => (
         <div
           className={
-            'border-ink-200 hover:border-ink-400 my-2 overflow-y-hidden rounded-xl border'
+            'border-ink-200 hover:border-ink-400 my-2 overflow-y-hidden border'
           }
         >
           <FeedContractCard key={contract.id} contract={contract} />
