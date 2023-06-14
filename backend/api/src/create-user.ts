@@ -21,7 +21,10 @@ import {
   getAverageContractEmbedding,
   getDefaultEmbedding,
 } from 'shared/helpers/embeddings'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -64,6 +67,19 @@ export const createuser = authEndpoint(async (req, auth) => {
     ? fbUser.photoURL
     : await generateAvatarUrl(auth.uid, name, bucket)
 
+  const db = createSupabaseClient()
+  let username = cleanUsername(name)
+
+  // check username case insensitive
+  const { data } = await db
+    .from('users')
+    .select('id')
+    .ilike('username', username)
+
+  const usernameExists = (data ?? []).length > 0
+  const isReservedName = RESERVED_PATHS.includes(username)
+  if (usernameExists || isReservedName) username += randomString(4)
+
   const { user, privateUser } = await firestore.runTransaction(
     async (trans) => {
       const userRef = firestore.collection('users').doc(auth.uid)
@@ -74,15 +90,12 @@ export const createuser = authEndpoint(async (req, auth) => {
           userId: auth.uid,
         })
 
-      let username = cleanUsername(name)
-
+      // check exact username to avoid problems with duplicate requests 
       const sameNameUser = await trans.get(
         firestore.collection('users').where('username', '==', username)
       )
-      const isReservedName = RESERVED_PATHS.includes(username)
-      if (!sameNameUser.empty || isReservedName) {
-        username += randomString(4)
-      }
+      if (!sameNameUser.empty)
+        throw new APIError(400, 'Username already taken', { username })
 
       // Only undefined prop should be avatarUrl
       const user: User = removeUndefinedProps({
