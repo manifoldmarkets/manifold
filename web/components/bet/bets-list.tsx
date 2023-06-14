@@ -438,7 +438,9 @@ function UserBetsTable(props: {
           )
           change =
             probChange !== 0
-              ? (probChange > 0 ? '+' : '') + probChange + '%'
+              ? (probChange > 0 ? '+' : '') +
+                probChange +
+                (c.outcomeType === 'BINARY' ? '' : '%')
               : ''
         }
         return (
