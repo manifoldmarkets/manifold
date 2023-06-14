@@ -12,7 +12,7 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
-import { CPMMBinaryContract } from 'common/contract'
+import { CPMMContract } from 'common/contract'
 import { SellRow } from 'web/components/bet/sell-row'
 import { User } from 'common/user'
 
@@ -87,12 +87,26 @@ export function BetsSummary(props: {
             </div>
           </Col>
         ) : isStonk ? (
-          <Col className="hidden sm:inline">
-            <div className="text-ink-500 whitespace-nowrap text-sm">
-              Value
-              <InfoTooltip text="How much your position in the market is worth right now according to the current stock price." />
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
+          <Col>
+            <Row className={'items-end gap-1'}>
+              <Col>
+                <div className="text-ink-500 whitespace-nowrap text-sm">
+                  Value
+                  <InfoTooltip text="How much your position in the market is worth right now according to the current stock price." />
+                </div>
+                <div className="whitespace-nowrap">
+                  {formatMoney(expectation)}
+                </div>
+              </Col>
+              {includeSellButton && (
+                <SellRow
+                  contract={contract as CPMMContract}
+                  user={includeSellButton}
+                  showTweet={false}
+                  hideStatus={true}
+                />
+              )}
+            </Row>
           </Col>
         ) : isBinary ? (
           <Col>
@@ -122,7 +136,7 @@ export function BetsSummary(props: {
               </div>
               {includeSellButton && (
                 <SellRow
-                  contract={contract as CPMMBinaryContract}
+                  contract={contract as CPMMContract}
                   user={includeSellButton}
                   showTweet={false}
                   hideStatus={true}
