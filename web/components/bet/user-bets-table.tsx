@@ -562,7 +562,7 @@ function BetsTable(props: {
               areYourBets &&
               !contract.isResolved &&
               (contract.closeTime ?? 0) > Date.now() &&
-              contract.outcomeType === 'BINARY'
+              contract.mechanism === 'cpmm-1'
                 ? signedInUser
                 : undefined
             return (

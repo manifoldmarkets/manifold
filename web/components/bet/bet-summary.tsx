@@ -86,75 +86,67 @@ export function BetsSummary(props: {
               <ProfitBadge profitPercent={profitPercent} />
             </div>
           </Col>
-        ) : isStonk ? (
-          <Col>
-            <Row className={'items-end gap-1'}>
+        ) : (
+          <Row className={'items-end gap-1'}>
+            {isStonk ? (
+              <Col>
+                <Col>
+                  <div className="text-ink-500 whitespace-nowrap text-sm">
+                    Value
+                    <InfoTooltip text="How much your position in the market is worth right now according to the current stock price." />
+                  </div>
+                  <div className="whitespace-nowrap">
+                    {formatMoney(expectation)}
+                  </div>
+                </Col>
+              </Col>
+            ) : isBinary ? (
               <Col>
                 <div className="text-ink-500 whitespace-nowrap text-sm">
-                  Value
-                  <InfoTooltip text="How much your position in the market is worth right now according to the current stock price." />
+                  Payout{' '}
+                  <InfoTooltip
+                    text={`You'll get ${formatMoney(
+                      Math.abs(position)
+                    )} if this market resolves ${exampleOutcome} (and ${formatMoney(
+                      0
+                    )} otherwise).`}
+                  />
                 </div>
                 <div className="whitespace-nowrap">
-                  {formatMoney(expectation)}
+                  {position > 1e-7 ? (
+                    <>
+                      {formatMoney(position)} on <YesLabel />
+                    </>
+                  ) : position < -1e-7 ? (
+                    <>
+                      {formatMoney(-position)} on <NoLabel />
+                    </>
+                  ) : (
+                    '——'
+                  )}
                 </div>
               </Col>
-              {includeSellButton && (
-                <SellRow
-                  contract={contract as CPMMContract}
-                  user={includeSellButton}
-                  showTweet={false}
-                  hideStatus={true}
-                />
-              )}
-            </Row>
-          </Col>
-        ) : isBinary ? (
-          <Col>
-            <div className="text-ink-500 whitespace-nowrap text-sm">
-              Payout{' '}
-              <InfoTooltip
-                text={`You'll get ${formatMoney(
-                  Math.abs(position)
-                )} if this market resolves ${exampleOutcome} (and ${formatMoney(
-                  0
-                )} otherwise).`}
+            ) : (
+              !hideValue && (
+                <Col className="hidden sm:inline">
+                  <div className="text-ink-500 whitespace-nowrap text-sm">
+                    Expected value{' '}
+                    <InfoTooltip text="How much your position in the market is worth right now according to the current market probability." />
+                  </div>
+                  <div className="whitespace-nowrap">{formatMoney(payout)}</div>
+                </Col>
+              )
+            )}
+            {includeSellButton && (
+              <SellRow
+                contract={contract as CPMMContract}
+                user={includeSellButton}
+                showTweet={false}
+                hideStatus={true}
+                className={'-mt-1'}
               />
-            </div>
-            <Row className={' gap-1'}>
-              <div className="whitespace-nowrap">
-                {position > 1e-7 ? (
-                  <>
-                    {formatMoney(position)} on <YesLabel />
-                  </>
-                ) : position < -1e-7 ? (
-                  <>
-                    {formatMoney(-position)} on <NoLabel />
-                  </>
-                ) : (
-                  '——'
-                )}
-              </div>
-              {includeSellButton && (
-                <SellRow
-                  contract={contract as CPMMContract}
-                  user={includeSellButton}
-                  showTweet={false}
-                  hideStatus={true}
-                  className={'-mt-1'}
-                />
-              )}
-            </Row>
-          </Col>
-        ) : (
-          !hideValue && (
-            <Col className="hidden sm:inline">
-              <div className="text-ink-500 whitespace-nowrap text-sm">
-                Expected value{' '}
-                <InfoTooltip text="How much your position in the market is worth right now according to the current market probability." />
-              </div>
-              <div className="whitespace-nowrap">{formatMoney(payout)}</div>
-            </Col>
-          )
+            )}
+          </Row>
         )}
 
         <Col>
