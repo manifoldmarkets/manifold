@@ -35,7 +35,7 @@ export function ExtraContractActionsRow(props: {
           totalLikes={contract.likedByUserCount ?? 0}
           contentText={contract.question}
           showTotalLikesUnder
-          size="sm"
+          size="md"
           color={'gray'}
           className={clsx(
             'p-2',
@@ -51,7 +51,7 @@ export function ExtraContractActionsRow(props: {
           tooltip: 'Copy market share link',
           //TODO: less spaghetti way of styling the button and icon
           className:
-            '!p-2 [&_svg]:h-4 [&_svg]:w-4 text-ink-500 hover:text-ink-600',
+            '!p-2 [&_svg]:h-5 [&_svg]:w-5 text-ink-500 hover:text-ink-600',
         }}
         eventTrackingName="copy market link"
       />
@@ -64,7 +64,7 @@ export function ExtraContractActionsRow(props: {
           )}
           onClick={() => setDialogOpen(true)}
         >
-          <DotsVerticalIcon className={clsx('h-4 w-4')} aria-hidden />
+          <DotsVerticalIcon className={clsx('h-5 w-5')} aria-hidden />
         </button>
       </Tooltip>
       <ContractInfoDialog
