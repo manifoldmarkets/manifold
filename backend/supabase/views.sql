@@ -122,7 +122,7 @@ create view
             else gm.role
           end
       ) as role,
-      gm.created_time as createdTime,
+      ts_to_millis (gm.created_time) as createdTime,
       gp.privacy_status as privacy_status
     from
       (
