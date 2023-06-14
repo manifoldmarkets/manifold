@@ -15,6 +15,7 @@ export function ProfitBadge(props: {
     ? 'bg-teal-500/20 text-teal-700 dark:text-teal-300'
     : 'bg-scarlet-500/20 text-scarlet-600 dark:text-scarlet-200'
   const rounded = round ? Math.round(profitPercent) : profitPercent.toFixed(1)
+  if (rounded == 0) return null
   return (
     <span
       className={clsx(
@@ -23,7 +24,7 @@ export function ProfitBadge(props: {
         className
       )}
     >
-      {rounded == 0 ? '' : (profitPercent > 0 ? '+' : '') + rounded + '%'}
+      {(profitPercent > 0 ? '+' : '') + rounded + '%'}
     </span>
   )
 }
