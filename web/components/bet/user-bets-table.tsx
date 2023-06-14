@@ -594,7 +594,7 @@ function BetsTable(props: {
                   </Row>
                   {/* Contract Metrics details*/}
                   <Row className={'grid-cols-16 mt-1 grid w-full pt-2'}>
-                    {dataColumns.map((c, i) => (
+                    {dataColumns.map((c) => (
                       <div
                         className={clsx(getColSpan(c.span))}
                         key={c.header?.props.id + contract.id + 'row'}
