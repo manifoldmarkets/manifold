@@ -30,7 +30,6 @@ import { useAdmin } from './use-admin'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized, useUser } from './use-user'
-import { GroupMember } from 'common/group-member'
 import { Row } from 'common/supabase/utils'
 
 export const useGroup = (groupId: string | undefined) => {
