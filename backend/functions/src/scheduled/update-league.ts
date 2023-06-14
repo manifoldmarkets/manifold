@@ -3,15 +3,17 @@ import { groupBy, sum, uniq, zipObject } from 'lodash'
 
 import { log, revalidateStaticProps } from 'shared/utils'
 import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { CPMMMultiContract, Contract } from 'common/contract'
 import {
   SupabaseDirectClient,
+  createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { secrets } from 'common/secrets'
 import { getSeasonDates } from 'common/leagues'
 import { getProfitMetrics } from 'common/calculate'
+import { getAnswersForContracts } from 'common/supabase/contracts'
 
 // Disable updates between freezing a season and starting the next one.
 const DISABLED = false
@@ -29,6 +31,7 @@ export const updateLeague = functions
 
 export async function updateLeagueCore() {
   const pg = createSupabaseDirectClient()
+  const db = createSupabaseClient()
 
   const season = 2 // CURRENT_SEASON
   const { start, end } = getSeasonDates(season)
@@ -154,7 +157,16 @@ export async function updateLeagueCore() {
 
   log('Loading contracts...')
   const contracts = await getRelevantContracts(pg, bets)
+  const answersByContractId = await getAnswersForContracts(
+    db,
+    contracts.filter((c) => c.mechanism === 'cpmm-multi-1').map((c) => c.id)
+  )
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
+
+  for (const [contractId, answers] of Object.entries(answersByContractId)) {
+    // Denormalize answers onto the contract.
+    ;(contractsById[contractId] as CPMMMultiContract).answers = answers
+  }
   log(`Loaded ${contracts.length} contracts.`)
 
   log('Computing metric updates...')
