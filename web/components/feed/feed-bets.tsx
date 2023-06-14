@@ -222,11 +222,6 @@ export function BetStatusText(props: {
       ? getFormattedMappedValue(contract, bet.probAfter)
       : getFormattedMappedValue(contract, bet.limitProb ?? bet.probAfter)
 
-  const textClass = clsx(
-    absAmount >= 100 && 'font-bold',
-    absAmount >= 500 && 'text-base'
-  )
-
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>
       {!inTimeline ? (
@@ -243,7 +238,7 @@ export function BetStatusText(props: {
         <></>
       )}{' '}
       {orderAmount ? (
-        <span className={textClass}>
+        <span>
           {anyFilled ? (
             <>
               filled limit order {money}/{orderAmount}

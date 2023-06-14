@@ -76,9 +76,7 @@ export const FeedItems = (props: {
         return (
           <Col
             key={contract.id + 'feed'}
-            className={
-              ' hover:border-ink-400 my-2 overflow-y-hidden rounded-xl'
-            }
+            className={' hover:border-ink-400 my-2 overflow-y-hidden'}
           >
             <FeedContractCard
               contract={contract}

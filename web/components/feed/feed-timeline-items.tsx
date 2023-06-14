@@ -65,7 +65,7 @@ export const FeedTimelineItems = (props: {
   )
 
   return (
-    <Col className="gap-3">
+    <Col className="gap-4">
       {feedTimelineItems.map((item) => {
         // Boosted contract
         if (item.contract && ('ad_id' in item || 'contract' in item)) {
@@ -102,6 +102,7 @@ export const FeedTimelineItems = (props: {
                 promotedData={promotedData}
                 trackingPostfix="feed"
                 hasItems={hasRelatedItems}
+                showReason={true}
               />
               {parentComments.length > 0 && (
                 <FeedCommentItem
@@ -156,7 +157,7 @@ export function FeedRelatedItemFrame(props: {
     <Link
       href={href}
       className={clsx(
-        'bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 mb-2 flex flex-col rounded-2xl border',
+        'bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 mb-2 flex flex-col rounded-2xl rounded-tr-none border',
         className
       )}
     >

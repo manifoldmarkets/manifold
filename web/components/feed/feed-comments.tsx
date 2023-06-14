@@ -540,6 +540,7 @@ function FeedCommentHeader(props: {
             marketCreator={marketCreator}
             className={'font-semibold'}
           />
+          {/* Hide my status if replying to a bet, it's too much clutter*/}
           {bettorUsername == undefined && !inTimeline && (
             <span className="text-ink-400 ml-1">
               <CommentStatus contract={contract} comment={comment} />
@@ -566,7 +567,6 @@ function FeedCommentHeader(props: {
         </span>
         <DotMenu comment={comment} contract={contract} />
       </Row>
-      {/* Hide my status if replying to a bet, it's too much clutter*/}
     </Col>
   )
 }
