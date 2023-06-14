@@ -107,7 +107,10 @@ export function FeedCommentThread(props: {
               <Button
                 size={'xs'}
                 color={'gray-white'}
-                onClick={() => setCollapseToIndex(-1)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  setCollapseToIndex(-1)
+                }}
               >
                 <Col>
                   <TriangleFillIcon className={'mr-2 h-2'} />
