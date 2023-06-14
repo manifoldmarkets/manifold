@@ -19,9 +19,10 @@ export function OutcomeLabel(props: {
   outcome: resolution | string
   truncate: 'short' | 'long' | 'none'
   value?: number
+  answerId?: string
 }) {
-  const { outcome, contract, truncate, value } = props
-  const { outcomeType } = contract
+  const { outcome, contract, truncate, value, answerId } = props
+  const { outcomeType, mechanism } = contract
 
   if (outcomeType === 'PSEUDO_NUMERIC')
     return <PseudoNumericOutcomeLabel outcome={outcome as any} />
@@ -41,6 +42,22 @@ export function OutcomeLabel(props: {
   }
   if (outcomeType === 'STONK') {
     return <StonkOutcomeLabel outcome={outcome as any} />
+  }
+
+  if (outcomeType === 'MULTIPLE_CHOICE' && mechanism === 'cpmm-multi-1') {
+    return (
+      <span>
+        {answerId && (
+          <FreeResponseOutcomeLabel
+            contract={contract}
+            resolution={answerId}
+            truncate={truncate}
+            answerClassName={'font-bold text-base-400 !break-normal'}
+          />
+        )}{' '}
+        <BinaryOutcomeLabel outcome={outcome as any} />
+      </span>
+    )
   }
 
   return (
