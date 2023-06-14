@@ -20,6 +20,7 @@ import { BoostsType } from 'web/hooks/use-feed'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 import { FeedBetsItem } from './feed-bet-item'
 import { MIN_BET_AMOUNT } from './feed-timeline-items'
+import { FeedCommentItem } from './feed-comment-item'
 
 export const FeedItems = (props: {
   contracts: Contract[]
@@ -68,7 +69,8 @@ export const FeedItems = (props: {
     <Col>
       {groupedItems.map((itemGroup) => {
         const { contract, parentComments, groupedBets } = itemGroup
-        const hasItems = parentComments.length > 0 || recentBets.length > 0
+        const hasItems =
+          parentComments.length > 0 || (groupedBets && groupedBets.length > 0)
 
         const promotedData =
           contract.type === 'boost'
@@ -95,14 +97,16 @@ export const FeedItems = (props: {
               trackingPostfix="feed"
               hasItems={hasItems}
             />
-            <FeedCommentItem
-              contract={contract}
-              commentThreads={parentComments.map((parentComment) => ({
-                parentComment,
-                childComments:
-                  childCommentsByParentCommentId[parentComment.id] ?? [],
-              }))}
-            />
+            {parentComments.length > 0 && (
+              <FeedCommentItem
+                contract={contract}
+                commentThreads={parentComments.map((parentComment) => ({
+                  parentComment,
+                  childComments:
+                    childCommentsByParentCommentId[parentComment.id] ?? [],
+                }))}
+              />
+            )}
             {parentComments.length === 0 && (
               <FeedBetsItem contract={contract} groupedBets={groupedBets} />
             )}
@@ -127,45 +131,45 @@ export function mergePeriodic<A, B>(a: A[], b: B[], period: number): (A | B)[] {
   return merged
 }
 
-//TODO: we can't yet respond to summarized bets yet bc we're just combining bets in the feed and
-// not combining bet amounts on the backend (where the values are filled in on the comment)
-const FeedCommentItem = (props: {
-  contract: Contract
-  commentThreads: {
-    parentComment: ContractComment
-    childComments: ContractComment[]
-  }[]
-}) => {
-  const { contract, commentThreads } = props
-  const firstCommentIsReplyToBet =
-    commentThreads[0] && isReplyToBet(commentThreads[0].parentComment)
-  return (
-    <Col className={clsx('w-full', firstCommentIsReplyToBet ? 'sm:mt-4' : '')}>
-      {commentThreads.map((ct, index) => (
-        <Row
-          className={'relative w-full'}
-          key={ct.parentComment.id + 'feed-thread'}
-        >
-          {/* {index === 0 && firstCommentIsReplyToBet ? (
-            <div />
-          ) : index !== commentThreads.length - 1 ? (
-            <div className="border-ink-200 b-[50%] absolute top-0 ml-7 h-[100%] border-l-2" />
-          ) : (
-            <div className="border-ink-200 absolute top-0 ml-7 h-3 border-l-2" />
-          )} */}
+// //TODO: we can't yet respond to summarized bets yet bc we're just combining bets in the feed and
+// // not combining bet amounts on the backend (where the values are filled in on the comment)
+// const FeedCommentItem = (props: {
+//   contract: Contract
+//   commentThreads: {
+//     parentComment: ContractComment
+//     childComments: ContractComment[]
+//   }[]
+// }) => {
+//   const { contract, commentThreads } = props
+//   const firstCommentIsReplyToBet =
+//     commentThreads[0] && isReplyToBet(commentThreads[0].parentComment)
+//   return (
+//     <Col className={clsx('w-full', firstCommentIsReplyToBet ? 'sm:mt-4' : '')}>
+//       {commentThreads.map((ct, index) => (
+//         <Row
+//           className={'relative w-full'}
+//           key={ct.parentComment.id + 'feed-thread'}
+//         >
+//           {/* {index === 0 && firstCommentIsReplyToBet ? (
+//             <div />
+//           ) : index !== commentThreads.length - 1 ? (
+//             <div className="border-ink-200 b-[50%] absolute top-0 ml-7 h-[100%] border-l-2" />
+//           ) : (
+//             <div className="border-ink-200 absolute top-0 ml-7 h-3 border-l-2" />
+//           )} */}
 
-          <Col className={'w-full p-3'}>
-            <FeedCommentThread
-              contract={contract}
-              threadComments={ct.childComments}
-              parentComment={ct.parentComment}
-              collapseMiddle={true}
-              trackingLocation={'feed'}
-              inTimeline={true}
-            />
-          </Col>
-        </Row>
-      ))}
-    </Col>
-  )
-}
+//           <Col className={'w-full p-3'}>
+//             <FeedCommentThread
+//               contract={contract}
+//               threadComments={ct.childComments}
+//               parentComment={ct.parentComment}
+//               collapseMiddle={true}
+//               trackingLocation={'feed'}
+//               inTimeline={true}
+//             />
+//           </Col>
+//         </Row>
+//       ))}
+//     </Col>
+//   )
+// }

@@ -122,8 +122,9 @@ export const SummarizeBets = memo(function SummarizeBets(props: {
   betsBySameUser: Bet[]
   avatarSize?: AvatarSizeType
   className?: string
+  inTimeline?: boolean
 }) {
-  const { contract, betsBySameUser, avatarSize, className } = props
+  const { contract, betsBySameUser, avatarSize, className, inTimeline } = props
   let bet = betsBySameUser[0]
   // for simplicity, we should just show buys of yes or buys of no
   if (betsBySameUser.length > 1) {
@@ -174,6 +175,7 @@ export const SummarizeBets = memo(function SummarizeBets(props: {
           contract={contract}
           hideUser={!showUser}
           className="flex-1"
+          inTimeline={inTimeline}
         />
       </Col>
     </Row>
@@ -185,8 +187,9 @@ export function BetStatusText(props: {
   bet: Bet
   hideUser?: boolean
   className?: string
+  inTimeline?: boolean
 }) {
-  const { bet, contract, hideUser, className } = props
+  const { bet, contract, hideUser, className, inTimeline } = props
   const { outcomeType, mechanism } = contract
   const self = useUser()
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
@@ -226,7 +229,20 @@ export function BetStatusText(props: {
   )
 
   return (
-    <div className={clsx('text-ink-500 text-sm', className)}>
+    <div className={clsx('text-ink-1000 text-sm', className)}>
+      {!inTimeline ? (
+        !hideUser ? (
+          <UserLink
+            name={bet.userName}
+            username={bet.userUsername}
+            className={'font-semibold'}
+          />
+        ) : (
+          <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>
+        )
+      ) : (
+        <></>
+      )}{' '}
       {orderAmount ? (
         <span className={textClass}>
           {anyFilled ? (
@@ -281,6 +297,7 @@ export function BetStatusText(props: {
         </InfoTooltip>
       )}
       {isApi && <InfoTooltip text="Placed via the API">🤖</InfoTooltip>}
+      {!inTimeline && <RelativeTimestamp time={createdTime} shortened={true} />}
     </div>
   )
 }

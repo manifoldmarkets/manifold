@@ -17,7 +17,7 @@ export const FeedBetsItem = (props: {
     return <></>
   }
   return (
-    <FeedRelatedItemFrame>
+    <FeedRelatedItemFrame href={`${contract.creatorUsername}/${contract.slug}`}>
       {groupedBets.map((bets, index) => (
         <Row
           className={'relative w-full px-4 py-2'}
@@ -27,6 +27,7 @@ export const FeedBetsItem = (props: {
             betsBySameUser={bets}
             contract={contract}
             avatarSize={'md'}
+            inTimeline={true}
           />
         </Row>
       ))}

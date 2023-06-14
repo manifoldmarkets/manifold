@@ -14,12 +14,25 @@ export function copyLinkToComment(
   contractSlug: string,
   commentId: string
 ) {
+  const commentUrl = getCommentLink(
+    contractCreatorUsername,
+    contractSlug,
+    commentId
+  )
+  copyToClipboard(commentUrl)
+  toast('Link copied to clipboard!')
+  trackShareEvent('copy comment link', commentUrl)
+}
+
+export function getCommentLink(
+  contractCreatorUsername: string,
+  contractSlug: string,
+  commentId: string
+) {
   const commentUrl = new URL(window.location.href)
   commentUrl.pathname = `/${contractCreatorUsername}/${contractSlug}`
   commentUrl.hash = commentId
-  copyToClipboard(commentUrl.toString())
-  toast('Link copied to clipboard!')
-  trackShareEvent('copy comment link', commentUrl.toString())
+  return commentUrl.toString()
 }
 
 export function CopyLinkDateTimeComponent(props: {

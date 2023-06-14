@@ -31,6 +31,7 @@ import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import Curve from 'web/public/custom-components/curve'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -53,10 +54,12 @@ export function FeedContractCard(props: {
     isResolved,
     creatorUsername,
     creatorAvatarUrl,
+    creatorName,
     question,
     coverImageUrl,
     outcomeType,
     mechanism,
+    creatorCreatedTime,
   } = contract
 
   const { ref } = useIsVisible(
@@ -101,45 +104,52 @@ export function FeedContractCard(props: {
     )
   }
   return (
-    <Row
-      className={clsx(
-        'relative ml-4 gap-4',
-        'bg-canvas-100 group cursor-pointer justify-between overflow-hidden px-4 pt-2 pb-6 dark:bg-opacity-20',
-        'rounded-lg rounded-b-none outline-none transition-colors'
-        // className
-      )}
-      // we have other links inside this card like the username, so can't make the whole card a button or link
-      tabIndex={-1}
-      onClick={(e) => {
-        trackClick()
-        Router.push(path)
-        e.currentTarget.focus() // focus the div like a button, for style
-      }}
-    >
-      <Row onClick={(e) => e.stopPropagation()} className="gap-2">
-        <Avatar
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          size={'xs'}
-        />
-        <Link
-          href={path}
-          className={clsx(
-            'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal text-sm outline-none',
-            textColor
-          )}
-          // if open in new tab, don't open in this one
-          onClick={(e) => {
-            trackClick()
-            e.stopPropagation()
-          }}
-        >
-          {question}
-        </Link>
-      </Row>
-      <div className="font-semibold">
-        <ContractStatusLabel contract={contract} />
-      </div>
+    <Row>
+      <Col className=" grow-y justify-end">
+        <div className="dark:border-ink-200 border-ink-300 ml-2 h-1/3 w-4 rounded-tl-xl border-2 border-b-0 border-r-0 sm:ml-4 sm:w-6" />
+      </Col>
+      <Col
+        className={clsx(
+          'relative',
+          'bg-canvas-100 dark:border-ink-200 border-ink-300 group mt-2 grow cursor-pointer justify-between overflow-hidden border-l-4 py-2 pl-2 pr-4 dark:bg-opacity-20',
+          'outline-none transition-colors'
+          // className
+        )}
+        // we have other links inside this card like the username, so can't make the whole card a button or link
+        tabIndex={-1}
+        onClick={(e) => {
+          trackClick()
+          Router.push(path)
+          e.currentTarget.focus() // focus the div like a button, for style
+        }}
+      >
+        <Row className="w-full justify-between gap-4">
+          <Row onClick={(e) => e.stopPropagation()} className="gap-2">
+            <Avatar
+              username={creatorUsername}
+              avatarUrl={creatorAvatarUrl}
+              size={'xs'}
+            />
+            <Link
+              href={path}
+              className={clsx(
+                'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
+                textColor
+              )}
+              // if open in new tab, don't open in this one
+              onClick={(e) => {
+                trackClick()
+                e.stopPropagation()
+              }}
+            >
+              {question}
+            </Link>
+          </Row>
+          <div className="font-semibold">
+            <ContractStatusLabel contract={contract} />
+          </div>
+        </Row>
+      </Col>
     </Row>
   )
 }

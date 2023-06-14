@@ -1,34 +1,26 @@
-import { Contract } from 'common/contract'
+import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
+import { run } from 'common/supabase/utils'
+import { User } from 'common/user'
+import { filterDefined } from 'common/util/array'
+import { sumBy } from 'lodash'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { mergePeriodic } from 'web/components/feed/feed-items'
 import { Col } from 'web/components/layout/col'
 import {
   groupCommentsByContractsAndParents,
   useFeedBets,
 } from 'web/hooks/use-additional-feed-items'
-import { User } from 'common/user'
-import {
-  FeedCommentThread,
-  isReplyToBet,
-} from 'web/components/feed/feed-comments'
-import { SummarizeBets, groupBetsByCreatedTimeAndUserId } from './feed-bets'
-import { Bet } from 'common/bet'
-import { sumBy } from 'lodash'
-import clsx from 'clsx'
-import { Row } from '../layout/row'
-import { ContractComment } from 'common/comment'
-import { BoostsType } from 'web/hooks/use-feed'
-import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
-import { mergePeriodic } from 'web/components/feed/feed-items'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
-import { filterDefined } from 'common/util/array'
 import { useUnseenReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
+import { BoostsType } from 'web/hooks/use-feed'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
-import { run } from 'common/supabase/utils'
-import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { NewsArticle } from '../news-article'
 import { SimpleContractRow } from '../simple-contract-row'
-import { FeedCommentItem } from './feed-comment-item'
 import { FeedBetsItem } from './feed-bet-item'
+import { groupBetsByCreatedTimeAndUserId } from './feed-bets'
+import { FeedCommentItem } from './feed-comment-item'
+import Link from 'next/link'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
@@ -155,13 +147,17 @@ export const FeedTimelineItems = (props: {
 
 export function FeedRelatedItemFrame(props: {
   children: React.ReactNode
+  href: string
   className?: string
 }) {
-  const { children, className } = props
+  const { children, href, className } = props
   return (
-    <Col className="bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 mb-4 -mt-4 mr-4 rounded-2xl border">
+    <Link
+      href={href}
+      className=" bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 mb-2 flex flex-col rounded-2xl border"
+    >
       {children}
-    </Col>
+    </Link>
   )
 }
 
