@@ -34,7 +34,6 @@ export const LikeButton = memo(function LikeButton(props: {
   trackingLocation: string
   className?: string
   size?: LikeButtonSizeType
-  showTotalLikesUnder?: boolean
   color?: 'gray' | 'white'
   isSwipe?: boolean
 }) {
@@ -47,7 +46,6 @@ export const LikeButton = memo(function LikeButton(props: {
     contentText,
     className,
     size = 'md',
-    showTotalLikesUnder,
     color = 'gray',
     isSwipe,
     trackingLocation,
@@ -124,42 +122,26 @@ export const LikeButton = memo(function LikeButton(props: {
         placement={'bottom'}
         noTap
         hasSafePolygon={showList}
-        className={clsx('flex flex-row items-center')}
       >
         <button
           disabled={disabled}
           className={clsx(
-            'transition-transform disabled:cursor-not-allowed',
+            'flex flex-row items-center gap-1 transition-transform disabled:cursor-not-allowed',
             color === 'white' ? 'text-ink-0' : 'text-ink-500 ',
             totalLikes === 0 &&
               !user &&
               color === 'gray' &&
               'disabled:opacity-50',
             !disabled && color === 'gray' ? 'hover:text-ink-600' : '',
-            size === 'sm' && 'px-2',
-            size === 'md' && 'px-2',
-            size === 'xl' && 'px-4',
+            size === 'sm' && 'w-8 px-1',
+            size === 'md' && ' px-2',
+            size === 'xl' && ' px-4',
             className
           )}
           onClick={(e) => e.preventDefault()}
           {...likeLongPress}
         >
           <div className="relative">
-            {!showTotalLikesUnder && (
-              <div
-                className={clsx(
-                  totalLikes > 0 ? 'bg-ink-500' : '',
-                  'text-ink-0 absolute rounded-full text-center',
-                  size === 'md' &&
-                    '-bottom-1.5 -right-1.5 min-w-[15px] p-[1.5px] text-[10px] leading-3',
-                  size === 'xl' &&
-                    'bottom-0 right-0 min-w-[24px] p-0.5 text-sm',
-                  color === 'white' && 'text-white'
-                )}
-              >
-                {totalLikes > 0 ? totalLikes : ''}
-              </div>
-            )}
             <HeartIcon
               className={clsx(
                 size === 'sm' && 'h-4 w-4',
@@ -170,6 +152,19 @@ export const LikeButton = memo(function LikeButton(props: {
                   : color === 'white' && 'fill-white stroke-white'
               )}
             />
+          </div>
+          <div
+            className={clsx(
+              ' my-auto h-5 disabled:opacity-50',
+              size === 'xl'
+                ? 'text-lg'
+                : size === 'sm'
+                ? 'mt-[6px] text-xs'
+                : 'text-sm',
+              color === 'white' ? 'text-white' : 'text-ink-500'
+            )}
+          >
+            {totalLikes > 0 ? totalLikes : ''}
           </div>
         </button>
       </Tooltip>
@@ -182,17 +177,6 @@ export const LikeButton = memo(function LikeButton(props: {
           setOpen={setModalOpen}
           titleName={contentText}
         />
-      )}
-      {showTotalLikesUnder && totalLikes > 0 && (
-        <div
-          className={clsx(
-            'h-5 disabled:opacity-50',
-            size === 'xl' ? 'text-lg' : 'text-sm',
-            color === 'white' ? 'text-white' : 'text-ink-500'
-          )}
-        >
-          {totalLikes > 0 ? totalLikes : ''}
-        </div>
       )}
     </>
   )

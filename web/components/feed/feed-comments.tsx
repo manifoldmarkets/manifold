@@ -1,55 +1,52 @@
-import React, { memo, ReactNode, useEffect, useRef, useState } from 'react'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
+import { memo, ReactNode, useEffect, useRef, useState } from 'react'
 
-import { ContractComment } from 'common/comment'
-import { Contract } from 'common/contract'
-import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { formatMoney } from 'common/util/format'
-import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
-import { OutcomeLabel } from 'web/components/outcome-label'
+import { EyeOffIcon, FlagIcon, PencilIcon } from '@heroicons/react/outline'
 import {
-  CopyLinkDateTimeComponent,
-  copyLinkToComment,
-} from 'web/components/feed/copy-link-date-time'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { Col } from 'web/components/layout/col'
-import { track } from 'web/lib/service/analytics'
-import { useEvent } from 'web/hooks/use-event'
-import { Content } from '../widgets/editor'
-import { UserLink } from 'web/components/widgets/user-link'
-import { CommentInput } from '../comments/comment-input'
-import {
-  DotsHorizontalIcon,
+  DotsVerticalIcon,
   ReplyIcon,
   XCircleIcon,
 } from '@heroicons/react/solid'
-import { Button, IconButton } from '../buttons/button'
-import { ReplyToggle } from '../comments/reply-toggle'
+import { Bet } from 'common/bet'
+import { ContractComment } from 'common/comment'
+import { Contract } from 'common/contract'
+import { CommentView } from 'common/events'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { buildArray } from 'common/util/array'
+import { formatMoney } from 'common/util/format'
+import { richTextToString } from 'common/util/parse'
+import { toast } from 'react-hot-toast'
 import { ReportModal } from 'web/components/buttons/report-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
-import { toast } from 'react-hot-toast'
-import LinkIcon from 'web/lib/icons/link-icon'
-import { EyeOffIcon, FlagIcon, PencilIcon } from '@heroicons/react/outline'
-import { LikeButton } from 'web/components/contract/like-button'
-import { richTextToString } from 'common/util/parse'
-import { buildArray } from 'common/util/array'
-import { createCommentOnContract, hideComment } from 'web/lib/firebase/api'
-import { useAdmin } from 'web/hooks/use-admin'
-import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import { useHashInUrl } from 'web/hooks/use-hash-in-url'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { Bet } from 'common/bet'
-import Curve from 'web/public/custom-components/curve'
-import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
-import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
-import { useIsVisible } from 'web/hooks/use-is-visible'
-import { CommentView } from 'common/events'
-import { Tooltip } from '../widgets/tooltip'
 import { EditCommentModal } from 'web/components/comments/edit-comment-modal'
-import { CommentEditHistoryButton } from 'web/components/comments/comment-edit-history-button'
+import { LikeButton } from 'web/components/contract/like-button'
+import { copyLinkToComment } from 'web/components/feed/copy-link-date-time'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { OutcomeLabel } from 'web/components/outcome-label'
+import { Avatar } from 'web/components/widgets/avatar'
+import { UserLink } from 'web/components/widgets/user-link'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useEvent } from 'web/hooks/use-event'
+import { useHashInUrl } from 'web/hooks/use-hash-in-url'
+import { useIsVisible } from 'web/hooks/use-is-visible'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { createCommentOnContract, hideComment } from 'web/lib/firebase/api'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import LinkIcon from 'web/lib/icons/link-icon'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
+import { track } from 'web/lib/service/analytics'
+import { scrollIntoViewCentered } from 'web/lib/util/scroll'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import Curve from 'web/public/custom-components/curve'
+import { Button, IconButton } from '../buttons/button'
+import { CommentInput } from '../comments/comment-input'
+import { ReplyToggle } from '../comments/reply-toggle'
+import { Content } from '../widgets/editor'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { Tooltip } from '../widgets/tooltip'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -61,6 +58,7 @@ export function FeedCommentThread(props: {
   parentComment: ContractComment
   trackingLocation: string
   collapseMiddle?: boolean
+  inTimeline?: boolean
 }) {
   const {
     contract,
@@ -68,6 +66,7 @@ export function FeedCommentThread(props: {
     parentComment,
     collapseMiddle,
     trackingLocation,
+    inTimeline,
   } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
   const [seeReplies, setSeeReplies] = useState(true)
@@ -83,7 +82,7 @@ export function FeedCommentThread(props: {
     collapseMiddle && threadComments.length > 2 ? threadComments.length - 2 : -1
   )
   return (
-    <Col className="w-full items-stretch gap-3 pb-2">
+    <Col className="w-full items-stretch gap-3">
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
@@ -95,6 +94,7 @@ export function FeedCommentThread(props: {
         onSeeReplyClick={onSeeRepliesClick}
         onReplyClick={onReplyClick}
         trackingLocation={trackingLocation}
+        inTimeline={inTimeline}
       />
       {seeReplies &&
         threadComments.map((comment, _commentIdx) =>
@@ -154,6 +154,7 @@ export const FeedComment = memo(function FeedComment(props: {
   onReplyClick?: (comment: ContractComment) => void
   children?: ReactNode
   className?: string
+  inTimeline?: boolean
 }) {
   const {
     contract,
@@ -164,6 +165,7 @@ export const FeedComment = memo(function FeedComment(props: {
     onReplyClick,
     children,
     trackingLocation,
+    inTimeline,
   } = props
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
@@ -185,7 +187,6 @@ export const FeedComment = memo(function FeedComment(props: {
       )}
     >
       <Avatar
-        size={children ? 'sm' : 'xs'}
         username={userUsername}
         avatarUrl={userAvatarUrl}
         className={clsx(marketCreator ? 'shadow shadow-amber-300' : '', 'z-10')}
@@ -194,7 +195,11 @@ export const FeedComment = memo(function FeedComment(props: {
         {isReplyToBet(comment) && (
           <FeedCommentReplyHeader comment={comment} contract={contract} />
         )}
-        <FeedCommentHeader comment={comment} contract={contract} />
+        <FeedCommentHeader
+          comment={comment}
+          contract={contract}
+          inTimeline={inTimeline}
+        />
 
         <HideableContent comment={comment} />
         <Row className={children ? 'justify-between' : 'justify-end'}>
@@ -222,6 +227,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   onReplyClick?: (comment: ContractComment) => void
   onSeeReplyClick: () => void
   trackingLocation: string
+  inTimeline?: boolean
 }) {
   const {
     contract,
@@ -233,6 +239,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     seeReplies,
     numReplies,
     trackingLocation,
+    inTimeline,
   } = props
   const { userUsername } = comment
   const { ref } = useIsVisible(
@@ -253,6 +260,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       showLike={showLike}
       className={clsx('gap-2', commentKind)}
       trackingLocation={trackingLocation}
+      inTimeline={inTimeline}
     >
       <div ref={ref} />
       <ReplyToggle
@@ -308,7 +316,7 @@ export function DotMenu(props: {
         label={'Comment'}
       />
       <DropdownMenu
-        Icon={<DotsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
+        Icon={<DotsVerticalIcon className="h-4 w-4" aria-hidden="true" />}
         Items={buildArray(
           {
             name: 'Copy Link',
@@ -379,7 +387,7 @@ export function CommentActions(props: {
       {user && onReplyClick && (
         <Tooltip text="Reply" placement="bottom">
           <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
-            <ReplyIcon className="h-5 w-5" />
+            <ReplyIcon className="h-4 w-4" />
           </IconButton>
         </Tooltip>
       )}
@@ -395,6 +403,7 @@ export function CommentActions(props: {
           className={
             isBlocked(privateUser, comment.userId) ? 'pointer-events-none' : ''
           }
+          size={'sm'}
           trackingLocation={trackingLocation}
         />
       )}
@@ -508,8 +517,9 @@ export function ContractCommentInput(props: {
 function FeedCommentHeader(props: {
   comment: ContractComment
   contract: Contract
+  inTimeline?: boolean
 }) {
-  const { comment, contract } = props
+  const { comment, contract, inTimeline } = props
   const {
     userUsername,
     userName,
@@ -519,7 +529,6 @@ function FeedCommentHeader(props: {
     answerOutcome,
     betAmount,
     userId,
-    editedTime,
     isApi,
   } = comment
 
@@ -527,44 +536,48 @@ function FeedCommentHeader(props: {
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
-    <Row className="text-ink-600 mt-0.5 flex-wrap items-end text-sm">
-      <UserLink
-        username={userUsername}
-        name={userName}
-        marketCreator={marketCreator}
-      />
-      {/* Hide my status if replying to a bet, it's too much clutter*/}
-      {bettorUsername == undefined && (
-        <span className="text-ink-400 ml-1">
-          <CommentStatus contract={contract} comment={comment} />
-          {bought} {money}
-          {shouldDisplayOutcome && (
-            <>
-              {' '}
-              of{' '}
-              <OutcomeLabel
-                outcome={betOutcome ? betOutcome : ''}
-                contract={contract}
-                truncate="short"
-              />
-            </>
+    <Col className={clsx('mt-1 text-sm ', inTimeline ? '' : 'text-ink-600')}>
+      <Row className="justify-between">
+        <span>
+          <UserLink
+            username={userUsername}
+            name={userName}
+            marketCreator={marketCreator}
+            className={'font-semibold'}
+          />
+          {/* Hide my status if replying to a bet, it's too much clutter*/}
+          {bettorUsername == undefined && !inTimeline && (
+            <span className="text-ink-400 ml-1">
+              <CommentStatus contract={contract} comment={comment} />
+              {bought} {money}
+              {shouldDisplayOutcome && (
+                <>
+                  {' '}
+                  of{' '}
+                  <OutcomeLabel
+                    outcome={betOutcome ? betOutcome : ''}
+                    contract={contract}
+                    truncate="short"
+                  />
+                </>
+              )}
+            </span>
           )}
+          {inTimeline && <span> commented</span>}{' '}
+          {isApi && (
+            <InfoTooltip text="Placed via API" className="mr-1">
+              🤖
+            </InfoTooltip>
+          )}
+          {
+            <span className="text-ink-500">
+              {shortenedFromNow(createdTime)}
+            </span>
+          }
         </span>
-      )}
-      <CopyLinkDateTimeComponent
-        prefix={contract.creatorUsername}
-        slug={contract.slug}
-        createdTime={editedTime ? editedTime : createdTime}
-        elementId={comment.id}
-        seeEditsButton={<CommentEditHistoryButton comment={comment} />}
-      />
-      {isApi && (
-        <InfoTooltip text="Placed via API" className="mr-1">
-          🤖
-        </InfoTooltip>
-      )}
-      <DotMenu comment={comment} contract={contract} />
-    </Row>
+        <DotMenu comment={comment} contract={contract} />
+      </Row>
+    </Col>
   )
 }
 

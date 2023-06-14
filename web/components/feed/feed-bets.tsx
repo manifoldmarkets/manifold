@@ -121,9 +121,9 @@ export const SummarizeBets = memo(function SummarizeBets(props: {
   contract: Contract
   betsBySameUser: Bet[]
   avatarSize?: AvatarSizeType
-  className?: string
+  inTimeline?: boolean
 }) {
-  const { contract, betsBySameUser, avatarSize, className } = props
+  const { contract, betsBySameUser, avatarSize, inTimeline } = props
   let bet = betsBySameUser[0]
   // for simplicity, we should just show buys of yes or buys of no
   if (betsBySameUser.length > 1) {
@@ -148,28 +148,36 @@ export const SummarizeBets = memo(function SummarizeBets(props: {
 
   // group bets by userid made within 30 minutes of each other
   return (
-    <Col className={'w-full'}>
-      <Row className={'justify-between'}>
-        <Row className={clsx(className, 'items-center gap-2')}>
-          {showUser ? (
-            <Avatar
-              size={avatarSize}
-              avatarUrl={userAvatarUrl}
-              username={userUsername}
-              className="z-10"
-            />
-          ) : (
-            <EmptyAvatar className="mx-1" />
-          )}
-          <BetStatusText
-            bet={bet}
-            contract={contract}
-            hideUser={!showUser}
-            className="flex-1"
-          />
-        </Row>
-      </Row>
-    </Col>
+    <Row className={'w-full gap-2'}>
+      {showUser ? (
+        <Avatar
+          size={avatarSize}
+          avatarUrl={userAvatarUrl}
+          username={userUsername}
+          className="z-10"
+        />
+      ) : (
+        <EmptyAvatar className="mx-1" />
+      )}
+      <Col>
+        <span>
+          <UserLink
+            name={bet.userName}
+            username={bet.userUsername}
+            className="text-ink-1000 font-semibold"
+          />{' '}
+          bet
+          <RelativeTimestamp time={createdTime} shortened={true} />
+        </span>
+        <BetStatusText
+          bet={bet}
+          contract={contract}
+          hideUser={!showUser}
+          className="flex-1"
+          inTimeline={inTimeline}
+        />
+      </Col>
+    </Row>
   )
 })
 
@@ -178,8 +186,9 @@ export function BetStatusText(props: {
   bet: Bet
   hideUser?: boolean
   className?: string
+  inTimeline?: boolean
 }) {
-  const { bet, contract, hideUser, className } = props
+  const { bet, contract, hideUser, className, inTimeline } = props
   const { outcomeType, mechanism } = contract
   const self = useUser()
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
@@ -213,20 +222,23 @@ export function BetStatusText(props: {
       ? getFormattedMappedValue(contract, bet.probAfter)
       : getFormattedMappedValue(contract, bet.limitProb ?? bet.probAfter)
 
-  const textClass = clsx(
-    absAmount >= 100 && 'font-bold',
-    absAmount >= 500 && 'text-base'
-  )
-
   return (
-    <div className={clsx('text-ink-500 text-sm', className)}>
-      {!hideUser ? (
-        <UserLink name={bet.userName} username={bet.userUsername} />
+    <div className={clsx('text-ink-1000 text-sm', className)}>
+      {!inTimeline ? (
+        !hideUser ? (
+          <UserLink
+            name={bet.userName}
+            username={bet.userUsername}
+            className={'font-semibold'}
+          />
+        ) : (
+          <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>
+        )
       ) : (
-        <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>
+        <></>
       )}{' '}
       {orderAmount ? (
-        <span className={textClass}>
+        <span>
           {anyFilled ? (
             <>
               filled limit order {money}/{orderAmount}
@@ -279,7 +291,7 @@ export function BetStatusText(props: {
         </InfoTooltip>
       )}
       {isApi && <InfoTooltip text="Placed via the API">🤖</InfoTooltip>}
-      <RelativeTimestamp time={createdTime} />
+      {!inTimeline && <RelativeTimestamp time={createdTime} shortened={true} />}
     </div>
   )
 }
