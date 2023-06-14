@@ -272,7 +272,7 @@ function SingleGroupInfo(props: {
           href={groupPath(group.slug)}
           className="text-primary-700 w-full text-right hover:underline"
         >
-          All {group.totalContracts} markets
+          All markets
         </Link>
         <div className="flex gap-4">{children}</div>
       </div>
