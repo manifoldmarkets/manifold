@@ -236,7 +236,7 @@ export function UserProfile(props: {
             </Row>
           )}
         </Row>
-        <Col className={'mt-1 px-1'}>
+        <Col className={'mt-1'}>
           <ProfilePublicStats
             className=""
             user={user}

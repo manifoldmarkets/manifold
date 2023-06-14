@@ -218,7 +218,7 @@ export function PortfolioValueSkeleton(props: {
       <Row
         className={clsx(
           'mb-1 items-start gap-0 sm:mb-2',
-          placement === 'bottom' ? 'ml-2 gap-8' : ''
+          placement === 'bottom' ? 'gap-8' : ''
         )}
       >
         <Col
@@ -291,7 +291,7 @@ export function PortfolioValueSkeleton(props: {
           setCurrentTimePeriod={setCurrentTimePeriod}
           color={switcherColor}
           disabled={disabled}
-          className="mx-2 mt-1"
+          className="mt-1"
           toggleClassName="grow justify-center"
         />
       )}

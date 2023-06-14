@@ -9,7 +9,7 @@ import { ControllableSingleValueHistoryChart } from 'web/components/charts/gener
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { HistoryPoint, viewScale } from 'common/chart'
 
-const MARGIN = { top: 12, right: 48, bottom: 20, left: 12 }
+const MARGIN = { top: 12, right: 42, bottom: 20, left: 6 }
 const MARGIN_X = MARGIN.left + MARGIN.right
 const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
