@@ -1,4 +1,3 @@
-import { JSONContent } from '@tiptap/core'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { User } from 'common/user'
@@ -31,6 +30,8 @@ import { useAdmin } from './use-admin'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized, useUser } from './use-user'
+import { GroupMember } from 'common/group-member'
+import { Row } from 'common/supabase/utils'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | undefined | null>(undefined)
@@ -126,16 +127,16 @@ export function useRealtimeGroupMemberIds(groupId: string) {
   return rows?.map((row) => row.member_id) ?? []
 }
 
+export type Member = Row<'group_role'>
+
 export function useRealtimeGroupMembers(
   groupId: string,
   hitBottom: boolean,
   numMembers: number | undefined
 ) {
-  const [admins, setAdmins] = useState<JSONContent[] | undefined>(undefined)
-  const [moderators, setModerators] = useState<JSONContent[] | undefined>(
-    undefined
-  )
-  const [members, setMembers] = useState<JSONContent[] | undefined>(undefined)
+  const [admins, setAdmins] = useState<Member[] | undefined>(undefined)
+  const [moderators, setModerators] = useState<Member[] | undefined>(undefined)
+  const [members, setMembers] = useState<Member[] | undefined>(undefined)
   const [loadMore, setLoadMore] = useState<boolean>(false)
   const [offsetPage, setOffsetPage] = useState<number>(0)
 

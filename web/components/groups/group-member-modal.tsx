@@ -5,7 +5,7 @@ import { Group } from 'common/group'
 import { buildArray } from 'common/util/array'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useRealtimeGroupMembers } from 'web/hooks/use-group-supabase'
+import { useRealtimeGroupMembers, Member } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useUser } from 'web/hooks/use-user'
 import { updateMemberRole } from 'web/lib/firebase/api'
@@ -253,7 +253,7 @@ export function LoadingMember(props: { className?: string }) {
 
 export function MemberRoleSection(props: {
   group: Group
-  members: JSONContent[] | undefined
+  members: Member[] | undefined
   role: groupRoleType
   canEdit: boolean
 }) {

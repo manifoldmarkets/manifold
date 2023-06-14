@@ -32,14 +32,15 @@ export async function addGroupMemberHelper(
     const requester = await tx.oneOrNone(
       `select gm.role, u.data
       from group_members gm join users u
-      on gm.user_id = u.id
-      where users.id = $1`,
-      [myId]
+      on gm.member_id = u.id
+      where u.id = $1
+      and gm.group_id = $2`,
+      [myId, groupId]
     )
 
     const newMemberExists = await tx.oneOrNone(
-      'select 1 from group_members where user_id = $1',
-      [userId]
+      'select 1 from group_members where member_id = $1 and group_id = $2',
+      [userId, groupId]
     )
 
     const group = await tx.oneOrNone('select * from groups where id = $1', [
@@ -73,7 +74,11 @@ export async function addGroupMemberHelper(
       }
     }
 
-    const member = removeUndefinedProps({ userId, role })
+    const member = removeUndefinedProps({
+      member_id: userId,
+      group_id: groupId,
+      role,
+    })
     // insert and return row
     const ret = await tx.one(
       `insert into group_members($1:name) values($1:csv)

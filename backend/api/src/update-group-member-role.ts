@@ -19,12 +19,12 @@ export const updatememberrole = authEndpoint(async (req, auth) => {
 
   return db.tx(async (tx) => {
     const requesterMembership = await tx.oneOrNone(
-      'select * from group_members where user_id = $1',
-      [auth.uid]
+      'select * from group_members where member_id = $1 and group_id = $2',
+      [auth.uid, groupId]
     )
     const affectedMember = await tx.oneOrNone(
-      'select * from group_members where user_id = $1',
-      [memberId]
+      'select * from group_members where member_id = $1 and group_id = $2',
+      [memberId, groupId]
     )
 
     const group = await tx.oneOrNone('select * from groups where id = $1', [
@@ -50,21 +50,21 @@ export const updatememberrole = authEndpoint(async (req, auth) => {
     } else {
       if (
         requesterMembership.role !== 'admin' &&
-        requesterMembership.user_id !== group.creator_id &&
-        auth.uid !== affectedMember.user_id
+        requesterMembership.member_id !== group.creator_id &&
+        auth.uid !== affectedMember.member_id
       )
         throw new APIError(400, 'User does not have permission to change roles')
     }
 
-    if (auth.uid === affectedMember.user_id && role !== 'member')
+    if (auth.uid === affectedMember.member_id && role !== 'member')
       throw new APIError(400, 'User can only change their role to a lower role')
 
     const realRole = role === 'member' ? null : role
     const ret = await tx.one(
       `update group_members
-       set role = $1 where user_id = $2
+       set role = $1 where member_id = $2 and group_id = $3
        returning *`,
-      [realRole, memberId]
+      [realRole, memberId, groupId]
     )
 
     if (requesterUser && auth.uid != memberId) {

@@ -119,10 +119,10 @@ create view
         select
           case
             when gp.creator_id = member_id then 'admin'
-            else (gm.data ->> 'role')
+            else gm.role
           end
       ) as role,
-      (gm.data ->> 'createdTime')::bigint as createdTime,
+      gm.created_time as createdTime,
       gp.privacy_status as privacy_status
     from
       (
