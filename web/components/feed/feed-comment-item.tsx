@@ -22,7 +22,7 @@ export const FeedCommentItem = (props: {
       <Col
         className={clsx('w-full', firstCommentIsReplyToBet ? 'sm:mt-4' : '')}
       >
-        {commentThreads.map((ct, index) => (
+        {commentThreads.map((ct) => (
           <Row
             className={'relative w-full'}
             key={ct.parentComment.id + 'feed-thread'}

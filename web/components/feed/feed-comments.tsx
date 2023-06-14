@@ -1,57 +1,51 @@
-import React, { memo, ReactNode, useEffect, useRef, useState } from 'react'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
+import { memo, ReactNode, useEffect, useRef, useState } from 'react'
 
-import { ContractComment } from 'common/comment'
-import { Contract } from 'common/contract'
-import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { formatMoney } from 'common/util/format'
-import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
-import { OutcomeLabel } from 'web/components/outcome-label'
+import { EyeOffIcon, FlagIcon, PencilIcon } from '@heroicons/react/outline'
 import {
-  CopyLinkDateTimeComponent,
-  copyLinkToComment,
-} from 'web/components/feed/copy-link-date-time'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { Col } from 'web/components/layout/col'
-import { track } from 'web/lib/service/analytics'
-import { useEvent } from 'web/hooks/use-event'
-import { Content } from '../widgets/editor'
-import { UserLink } from 'web/components/widgets/user-link'
-import { CommentInput } from '../comments/comment-input'
-import {
-  DotsHorizontalIcon,
   DotsVerticalIcon,
   ReplyIcon,
   XCircleIcon,
 } from '@heroicons/react/solid'
-import { Button, IconButton } from '../buttons/button'
-import { ReplyToggle } from '../comments/reply-toggle'
+import { Bet } from 'common/bet'
+import { ContractComment } from 'common/comment'
+import { Contract } from 'common/contract'
+import { CommentView } from 'common/events'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { buildArray } from 'common/util/array'
+import { formatMoney } from 'common/util/format'
+import { richTextToString } from 'common/util/parse'
+import { toast } from 'react-hot-toast'
 import { ReportModal } from 'web/components/buttons/report-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
-import { toast } from 'react-hot-toast'
-import LinkIcon from 'web/lib/icons/link-icon'
-import { EyeOffIcon, FlagIcon, PencilIcon } from '@heroicons/react/outline'
-import { LikeButton } from 'web/components/contract/like-button'
-import { richTextToString } from 'common/util/parse'
-import { buildArray } from 'common/util/array'
-import { createCommentOnContract, hideComment } from 'web/lib/firebase/api'
-import { useAdmin } from 'web/hooks/use-admin'
-import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import { useHashInUrl } from 'web/hooks/use-hash-in-url'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { Bet } from 'common/bet'
-import Curve from 'web/public/custom-components/curve'
-import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
-import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
-import { useIsVisible } from 'web/hooks/use-is-visible'
-import { CommentView } from 'common/events'
-import { Tooltip } from '../widgets/tooltip'
 import { EditCommentModal } from 'web/components/comments/edit-comment-modal'
-import { CommentEditHistoryButton } from 'web/components/comments/comment-edit-history-button'
-import { fromNow } from 'web/lib/util/time'
+import { LikeButton } from 'web/components/contract/like-button'
+import { copyLinkToComment } from 'web/components/feed/copy-link-date-time'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { OutcomeLabel } from 'web/components/outcome-label'
+import { Avatar } from 'web/components/widgets/avatar'
+import { UserLink } from 'web/components/widgets/user-link'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useEvent } from 'web/hooks/use-event'
+import { useHashInUrl } from 'web/hooks/use-hash-in-url'
+import { useIsVisible } from 'web/hooks/use-is-visible'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { createCommentOnContract, hideComment } from 'web/lib/firebase/api'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import LinkIcon from 'web/lib/icons/link-icon'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
+import { track } from 'web/lib/service/analytics'
+import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import Curve from 'web/public/custom-components/curve'
+import { Button, IconButton } from '../buttons/button'
+import { CommentInput } from '../comments/comment-input'
+import { ReplyToggle } from '../comments/reply-toggle'
+import { Content } from '../widgets/editor'
+import { Tooltip } from '../widgets/tooltip'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -531,7 +525,6 @@ function FeedCommentHeader(props: {
     answerOutcome,
     betAmount,
     userId,
-    editedTime,
   } = comment
 
   const marketCreator = contract.creatorId === userId

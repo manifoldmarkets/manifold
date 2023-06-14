@@ -1,4 +1,3 @@
-import { ClockIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -10,7 +9,6 @@ import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { formatMoney } from 'common/util/format'
-import { DAY_MS } from 'common/util/time'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
@@ -146,19 +144,10 @@ function DetailedCard(props: {
   path: string
   promotedData?: { adId: string; reward: number }
   className?: string
-  reason?: string
   hasItems?: boolean
 }) {
-  const {
-    ref,
-    contract,
-    trackClick,
-    path,
-    promotedData,
-    className,
-    reason,
-    hasItems,
-  } = props
+  const { ref, contract, trackClick, path, promotedData, className, hasItems } =
+    props
   const {
     closeTime,
     isResolved,
@@ -327,44 +316,6 @@ export function FeaturedPill(props: { label?: string }) {
     <div className="from-primary-500 rounded-full bg-gradient-to-br to-fuchsia-500 px-2 text-white">
       {label}
     </div>
-  )
-}
-
-function ReasonChosen(props: {
-  contract: Contract
-  reason?: string
-  className?: string
-}) {
-  const { contract, className } = props
-  const { createdTime, closeTime, uniqueBettorCount } = contract
-
-  const now = Date.now()
-  const reason = props.reason
-    ? props.reason
-    : createdTime > now - DAY_MS
-    ? 'New'
-    : closeTime && closeTime < now + DAY_MS
-    ? 'Closing soon'
-    : !uniqueBettorCount || uniqueBettorCount <= 5
-    ? 'For you'
-    : 'Trending'
-
-  return (
-    <Row className={clsx('text-ink-500 gap-3 text-xs', className)}>
-      <div className="flex items-center gap-1 text-right">
-        {reason}
-        {reason === 'New' && <StarIcon className="h-4 w-4" />}
-      </div>
-      <Row className="shrink-0 items-center gap-1 whitespace-nowrap">
-        {reason === 'Closing soon' && (
-          <>
-            <ClockIcon className="h-4 w-4" />
-            {fromNow(closeTime || 0)}
-          </>
-        )}
-        {reason === 'New' && fromNow(createdTime)}
-      </Row>
-    </Row>
   )
 }
 

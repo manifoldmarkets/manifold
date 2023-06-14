@@ -2,10 +2,9 @@
 
 import { Bet } from 'common/bet'
 import { Contract, contractPath } from 'common/contract'
-import { FeedRelatedItemFrame } from './feed-timeline-items'
 import { Row } from '../layout/row'
 import { SummarizeBets } from './feed-bets'
-import { Avatar } from '../widgets/avatar'
+import { FeedRelatedItemFrame } from './feed-timeline-items'
 
 // not combining bet amounts on the backend (where the values are filled in on the comment)
 export const FeedBetsItem = (props: {
@@ -19,7 +18,7 @@ export const FeedBetsItem = (props: {
   return (
     // TODO: make more specific link
     <FeedRelatedItemFrame href={contractPath(contract)}>
-      {groupedBets.map((bets, index) => (
+      {groupedBets.map((bets) => (
         <Row
           className={'relative w-full px-4 py-2'}
           key={bets[0].id + 'summary'}

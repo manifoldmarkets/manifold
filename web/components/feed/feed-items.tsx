@@ -1,26 +1,19 @@
+import clsx from 'clsx'
+import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 import { Contract } from 'common/contract'
-import { Col } from 'web/components/layout/col'
+import { User } from 'common/user'
+import { sumBy } from 'lodash'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { Col } from 'web/components/layout/col'
 import {
   useFeedBets,
   useFeedComments,
 } from 'web/hooks/use-additional-feed-items'
-import { User } from 'common/user'
-import {
-  FeedCommentThread,
-  isReplyToBet,
-} from 'web/components/feed/feed-comments'
-import { SummarizeBets, groupBetsByCreatedTimeAndUserId } from './feed-bets'
-import { Bet } from 'common/bet'
-import { sumBy } from 'lodash'
-import clsx from 'clsx'
-import { Row } from '../layout/row'
-import { ContractComment } from 'common/comment'
 import { BoostsType } from 'web/hooks/use-feed'
-import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 import { FeedBetsItem } from './feed-bet-item'
-import { MIN_BET_AMOUNT } from './feed-timeline-items'
+import { groupBetsByCreatedTimeAndUserId } from './feed-bets'
 import { FeedCommentItem } from './feed-comment-item'
+import { MIN_BET_AMOUNT } from './feed-timeline-items'
 
 export const FeedItems = (props: {
   contracts: Contract[]
