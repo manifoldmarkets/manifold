@@ -45,13 +45,15 @@ export function ClaimButton(props: {
         }
       }}
     >
-      {claimed ? (
-        'Claimed!'
-      ) : loading ? (
-        <LoadingIndicator size={'sm'} />
-      ) : (
-        `Claim ${formatMoney(reward)} Boost`
-      )}
+      <span className={'whitespace-nowrap'}>
+        {claimed ? (
+          'Claimed!'
+        ) : loading ? (
+          <LoadingIndicator size={'sm'} />
+        ) : (
+          `Claim ${formatMoney(reward)} Boost`
+        )}
+      </span>
     </button>
   )
 }

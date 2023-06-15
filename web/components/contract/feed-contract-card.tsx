@@ -234,13 +234,13 @@ function DetailedCard(props: {
           <Row onClick={(e) => e.stopPropagation()} className="gap-2">
             <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
             <Col className="w-full">
-              <span>
+              <span className="whitespace-nowrap">
                 <span>
                   <UserLink
                     name={creatorName}
                     username={creatorUsername}
                     createdTime={creatorCreatedTime}
-                    className={'font-semibold'}
+                    className={'overflow-none flex-shrink font-semibold'}
                   />
                   <span> asked </span>
                 </span>
@@ -248,9 +248,15 @@ function DetailedCard(props: {
                   {shortenedFromNow(contract.createdTime)}
                 </span>
               </span>
-              <div className="text-ink-500">
-                {contract.closeTime ? (
-                  <>closes {fromNow(contract.closeTime)}</>
+              <div className="text-ink-500 text-sm">
+                {contract.resolutionTime ? (
+                  <>resolved {fromNow(contract.resolutionTime)}</>
+                ) : contract.closeTime ? (
+                  contract.closeTime <= Date.now() ? (
+                    <>closed {fromNow(contract.closeTime)}</>
+                  ) : (
+                    <>closes {fromNow(contract.closeTime)}</>
+                  )
                 ) : (
                   'Never closes'
                 )}
