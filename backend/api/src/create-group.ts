@@ -64,8 +64,6 @@ export const creategroup = authEndpoint(async (req, auth) => {
     name,
     about: about ?? '',
     createdTime: Date.now(),
-    // TODO: allow users to add contract ids on group creation
-    totalContracts: 0,
     totalMembers: memberIds.length,
     postIds: [],
     pinnedItems: [],

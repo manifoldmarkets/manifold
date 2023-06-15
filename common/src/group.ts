@@ -9,11 +9,9 @@ export type Group = {
   creatorId: string // User id
   createdTime: number
   anyoneCanJoin?: boolean
-  totalContracts: number
   totalMembers: number
   aboutPostId?: string
   postIds: string[]
-  mostRecentContractAddedTime?: number
   cachedLeaderboard?: {
     topTraders: {
       userId: string
@@ -41,50 +39,12 @@ export type GroupLink = {
   name: string
   groupId: string
   createdTime: number
+  /** @deprecated */
   userId?: string
 }
 
 export type GroupContractDoc = { contractId: string; createdTime: number }
 export type GroupMemberDoc = { userId: string; createdTime: number }
-
-const excludedGroups = [
-  'features',
-  'personal',
-  'private',
-  'nomic',
-  'proofnik',
-  'free money',
-  'motivation',
-  'sf events',
-  'please resolve',
-  'short-term',
-  'washifold',
-]
-
-export function filterTopGroups(
-  groups: Group[],
-  n = 100,
-  excludeGroups = true
-) {
-  return sortBy(
-    groups,
-    (group) =>
-      -(group.totalMembers + group.totalContracts) *
-      ((group.mostRecentContractAddedTime ?? 0) >
-      Date.now() - 1000 * 60 * 60 * 24 * 7
-        ? 2
-        : 1)
-  )
-    .filter((group) => group.anyoneCanJoin)
-    .filter((group) =>
-      excludeGroups
-        ? excludedGroups.every(
-            (name) => !group.name.toLowerCase().includes(name)
-          )
-        : true
-    )
-    .slice(0, n)
-}
 
 export function groupPath(
   groupSlug: string,

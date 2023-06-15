@@ -1,9 +1,6 @@
 import * as dayjs from 'dayjs'
 import 'dayjs/plugin/utc'
-import * as admin from 'firebase-admin'
 import { Configuration, OpenAIApi } from 'openai'
-
-import { filterTopGroups, Group } from 'common/group'
 
 export const initOpenAIApi = () => {
   const configuration = new Configuration({
@@ -36,45 +33,6 @@ export const generateEmbeddings = async (question: string) => {
   if (response.status !== 200) return undefined
 
   return response.data.data[0].embedding
-}
-
-export const getGroupForMarket = async (question: string) => {
-  if (!openai) openai = initOpenAIApi()
-
-  const groups = await getGroups()
-
-  const groupsList = groups.map((g) => g.name).join('\n')
-
-  let response
-  try {
-    response = await openai.createCompletion({
-      model: 'text-davinci-003',
-      prompt: `Categories:\n\n${groupsList}\n\nQuestion: ${question}\nSelected category:`,
-      temperature: 0.4,
-      max_tokens: 3,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0,
-    })
-  } catch (e: any) {
-    console.error(
-      'Error generating group',
-      !process.env.OPENAI_API_KEY ? ' (no OpenAI API key found)' : '',
-      e.message
-    )
-    return undefined
-  }
-
-  if (response.status !== 200) return undefined
-
-  const text = response.data.choices[0].text?.trim()
-  if (!text) return undefined
-
-  console.log('AI-selected group for question', question, ':', text)
-
-  return groups.find((g) =>
-    g.name.toLowerCase().startsWith(text?.toLowerCase())
-  )
 }
 
 export const getCloseDate = async (question: string, utcOffset?: number) => {
@@ -170,17 +128,4 @@ export const getImagePrompt = async (question: string) => {
   console.log('AI-selected image prompt for question', question, ':', text)
 
   return text
-}
-
-const firestore = admin.firestore()
-
-const getGroups = async () => {
-  const snap = await firestore
-    .collection('groups')
-    .where('anyoneCanJoin', '==', true)
-    .get()
-
-  const groups = snap.docs.map((d) => d.data() as Group)
-
-  return filterTopGroups(groups, 100, false)
 }

@@ -730,8 +730,8 @@ create table if not exists
   group_contracts (
     group_id text not null,
     contract_id text not null,
-    data jsonb not null,
-    fs_updated_time timestamp not null,
+    data jsonb,
+    fs_updated_time timestamp,
     primary key (group_id, contract_id)
   );
 
@@ -742,8 +742,6 @@ drop policy if exists "public read" on group_contracts;
 create policy "public read" on group_contracts for
 select
   using (true);
-
-create index if not exists group_contracts_data_gin on group_contracts using GIN (data);
 
 alter table group_contracts
 cluster on group_contracts_pkey;
@@ -1256,7 +1254,6 @@ begin
            when 'contract_follows' then cast(('contract_id', 'follow_id') as table_spec)
            when 'contract_liquidity' then cast(('contract_id', 'liquidity_id') as table_spec)
            when 'groups' then cast((null, 'id') as table_spec)
-           when 'group_contracts' then cast(('group_id', 'contract_id') as table_spec)
            when 'txns' then cast((null, 'id') as table_spec)
            when 'manalinks' then cast((null, 'id') as table_spec)
            when 'user_contract_metrics' then cast(('user_id', 'contract_id') as table_spec)

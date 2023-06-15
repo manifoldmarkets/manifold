@@ -7,13 +7,7 @@ import { groupStateType } from 'web/components/groups/group-search'
 import { supabaseSearchGroups } from '../firebase/api'
 export type SearchGroupInfo = Pick<
   Group,
-  | 'id'
-  | 'name'
-  | 'slug'
-  | 'about'
-  | 'totalContracts'
-  | 'totalMembers'
-  | 'privacyStatus'
+  'id' | 'name' | 'slug' | 'about' | 'totalMembers' | 'privacyStatus'
 >
 
 export async function getGroupContracts(groupId: string) {
