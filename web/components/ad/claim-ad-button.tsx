@@ -5,6 +5,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { redeemBoost } from 'web/lib/firebase/api'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { Button } from '../buttons/button'
 
 export function ClaimButton(props: {
   adId: string
@@ -17,14 +18,13 @@ export function ClaimButton(props: {
   const [loading, setLoading] = useState(false)
 
   return (
-    <button
+    <Button
       className={clsx(
-        'h-min rounded-md bg-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 py-0.5 px-2 font-semibold text-gray-900 transition-colors',
-        'hover:via-yellow-100 focus:via-yellow-100',
         'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
-        className,
-        'text-sm'
+        className
       )}
+      size="lg"
+      color="gold"
       disabled={loading || claimed}
       onClick={async (e) => {
         e.preventDefault()
@@ -54,6 +54,6 @@ export function ClaimButton(props: {
           `Claim ${formatMoney(reward)} Boost`
         )}
       </span>
-    </button>
+    </Button>
   )
 }
