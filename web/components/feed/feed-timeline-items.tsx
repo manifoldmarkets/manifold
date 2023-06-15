@@ -155,22 +155,10 @@ export const FeedTimelineItems = (props: {
 
 export function FeedRelatedItemFrame(props: {
   children: React.ReactNode
-  href?: string
+  href: string
   className?: string
 }) {
   const { children, href, className } = props
-  if (!href) {
-    return (
-      <Col
-        className={clsx(
-          'bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 mb-2 overflow-hidden rounded-2xl rounded-tr-none border',
-          className
-        )}
-      >
-        {children}
-      </Col>
-    )
-  }
   return (
     <Link
       href={href}
