@@ -98,6 +98,7 @@ export function ContractsTable(props: {
   isMobile?: boolean
   highlightContractIds?: string[]
   headerClassName?: string
+  hideHeader?: boolean
 }) {
   const {
     contracts,
@@ -105,6 +106,7 @@ export function ContractsTable(props: {
     isMobile,
     highlightContractIds,
     headerClassName,
+    hideHeader,
   } = props
 
   const user = useUser()
@@ -226,7 +228,7 @@ export function ContractsTable(props: {
 
   return (
     <table>
-      {!isMobile && (
+      {!isMobile && !hideHeader && (
         <thead
           className={clsx(
             'text-ink-600 bg-canvas-50 sticky top-0 z-20 text-left text-sm font-semibold',

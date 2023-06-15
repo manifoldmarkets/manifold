@@ -1,5 +1,9 @@
 import dayjs from 'dayjs'
 import { Col } from 'web/components/layout/col'
+import { Row } from './layout/row'
+import Link from 'next/link'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { Content } from './widgets/editor'
 
 export const NewsArticle = (props: {
   title: string
@@ -12,23 +16,23 @@ export const NewsArticle = (props: {
   const { title, urlToImage, url, description, published_time, author } = props
 
   return (
-    <Col className="relative w-full">
+    <Link href={url} className="relative flex w-full flex-col">
+      <Col className="bg-canvas-0 px-4 pt-3 pb-2">
+        <div className="line-clamp-2 text-lg">{title}</div>
+        <div className="line-clamp-3 text-sm">
+          {author && `${author} `}
+          <span className={'text-ink-500'}>
+            {shortenedFromNow(dayjs.utc(published_time) as unknown as number)}
+          </span>
+        </div>
+        <div className="line-clamp-3 text-sm">{description}</div>
+      </Col>
       <img
-        className="border-ink-300 m-0 rounded-t-lg border object-contain "
+        className="m-0 object-contain "
         src={urlToImage}
         alt={title}
-        height={200}
+        height={100}
       />
-
-      <a className={'absolute inset-0 z-10'} href={url} target="_blank" />
-      <Col className="bg-canvas-0 border-ink-300 rounded-b-lg border border-t-0 p-2 hover:underline">
-        <div className="line-clamp-2 text-ink-900 text-lg">{title}</div>
-        <div className="line-clamp-3 text-ink-600 text-xs">
-          {author && `${author} / `}
-          {dayjs.utc(published_time).fromNow()}
-        </div>
-        <div className="line-clamp-3 text-ink-600 text-xs">{description}</div>
-      </Col>
-    </Col>
+    </Link>
   )
 }
