@@ -107,7 +107,11 @@ export function FeedCommentThread(props: {
               <Button
                 size={'xs'}
                 color={'gray-white'}
-                onClick={() => setCollapseToIndex(-1)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  setCollapseToIndex(-1)
+                }}
               >
                 <Col>
                   <TriangleFillIcon className={'mr-2 h-2'} />
@@ -383,7 +387,13 @@ export function CommentActions(props: {
     <Row className="grow items-center justify-end">
       {user && onReplyClick && (
         <Tooltip text="Reply" placement="bottom">
-          <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
+          <IconButton
+            size={'xs'}
+            onClick={(e) => {
+              e.preventDefault()
+              onReplyClick(comment)
+            }}
+          >
             <ReplyIcon className="h-4 w-4" />
           </IconButton>
         </Tooltip>
