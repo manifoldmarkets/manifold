@@ -62,7 +62,11 @@ export default function DropdownMenu(props: {
               <Menu.Item key={item.name}>
                 {({ active }) => (
                   <button
-                    onClick={item.onClick}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      e.preventDefault()
+                      item.onClick()
+                    }}
                     className={clsx(
                       active ? 'bg-ink-100 text-ink-900' : 'text-ink-700',
                       'block w-full px-4 py-2 text-sm'
