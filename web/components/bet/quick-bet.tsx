@@ -29,7 +29,7 @@ import toast from 'react-hot-toast'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { placeBet } from 'web/lib/firebase/api'
 import { getBinaryProbPercent } from 'common/contract'
-import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
+import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { sellShares } from 'web/lib/firebase/api'
 import { track, withTracking } from 'web/lib/service/analytics'
 import {
@@ -205,9 +205,9 @@ function SignedInQuickBet(props: {
   const invested = getInvested(contract, userBets)
   const { hasYesShares, hasNoShares } = useSaveBinaryShares(contract, userBets)
   const hasYesInvestment =
-    hasYesShares === true && invested != undefined && floor(invested) > 0
+    hasYesShares && invested != undefined && floor(invested) > 0
   const hasNoInvestment =
-    hasNoShares === true && invested != undefined && floor(invested) > 0
+    hasNoShares && invested != undefined && floor(invested) > 0
 
   if (isCpmm && ((upHover && hasNoShares) || (downHover && hasYesShares))) {
     const oppositeShares = upHover ? noShares : yesShares
@@ -541,10 +541,7 @@ export function ContractCardAnswers(props: {
 function getAnswerType(
   answer: Answer | DpmAnswer,
   resolution?: string,
-  resolutions?:
-    | { [outcome: string]: number }
-    | { [outcome: string]: number }
-    | undefined
+  resolutions?: { [outcome: string]: number } | undefined
 ) {
   if (answer.id === resolution || (resolutions && resolutions[answer.id])) {
     return 'winner'
