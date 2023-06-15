@@ -102,7 +102,7 @@ export const FeedTimelineItems = (props: {
                 promotedData={promotedData}
                 trackingPostfix="feed"
                 hasItems={hasRelatedItems}
-                showReason={true}
+                showReason={false}
                 reason={
                   'reasonDescription' in item
                     ? item.reasonDescription

@@ -3,6 +3,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import Router from 'next/router'
 import { MutableRefObject } from 'react'
+import {
+  ChatIcon,
+  FireIcon,
+  PresentationChartLineIcon,
+  SparklesIcon,
+} from '@heroicons/react/solid'
 
 import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -30,6 +36,7 @@ import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { User } from 'common/user'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { Tooltip } from '../widgets/tooltip'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -157,7 +164,7 @@ function SimpleCard(props: {
         <Col
           className={clsx(
             'relative',
-            'bg-canvas-0 border-ink-200 group justify-between overflow-hidden border-l-4 py-2 pl-2 pr-4 bg-opacity-50',
+            'bg-canvas-0 border-ink-200 group justify-between overflow-hidden border-l-4 bg-opacity-50 py-2 pl-2 pr-4',
             'outline-none transition-colors'
           )}
         >
@@ -198,6 +205,33 @@ function SimpleCard(props: {
         </Col>
       </Col>
     </Row>
+  )
+}
+
+function ReasonIcon(props: { item?: FeedTimelineItem }) {
+  const { item } = props
+  if (!item) return null
+
+  const { reasonDescription, createdTime, dataType } = item
+
+  const SpecificIcon =
+    (
+      {
+        trending_contract: FireIcon,
+        new_comment: ChatIcon,
+        popular_comment: ChatIcon,
+        new_contract: SparklesIcon,
+        contract_probability_changed: PresentationChartLineIcon,
+      } as any
+    )[dataType] ?? FireIcon
+
+  return (
+    <Tooltip text={reasonDescription} className="align-middle">
+      <SpecificIcon className="text-ink-400 h-5 w-5" />
+      <div className="text-ink-400 text-sm">
+        {shortenedFromNow(createdTime)}
+      </div>
+    </Tooltip>
   )
 }
 
@@ -292,7 +326,12 @@ function DetailedCard(props: {
               </div>
             </Col>
           </Row>
-          {promotedData && <ClaimButton {...promotedData} className={'z-10'} />}
+
+          {promotedData ? (
+            <ClaimButton {...promotedData} className={'z-10'} />
+          ) : (
+            <ReasonIcon item={item} />
+          )}
         </Row>
         <Link
           href={path}
