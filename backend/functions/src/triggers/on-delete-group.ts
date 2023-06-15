@@ -4,6 +4,9 @@ import * as admin from 'firebase-admin'
 import { Group } from 'common/group'
 import { Contract } from 'common/contract'
 
+// note that this does not delete the rows from the group_contracts table
+// instead, that happens via an on delete cascade trigger
+
 const firestore = admin.firestore()
 
 export const onDeleteGroup = functions.firestore
@@ -29,7 +32,7 @@ export const onDeleteGroup = functions.firestore
         .collection('contracts')
         .doc(contract.id)
         .update({
-          groupSlugs: contract.groupSlugs?.filter((s) => s !== group.slug),
+          groupSlugs: admin.firestore.FieldValue.arrayRemove(group.slug),
           groupLinks: newGroupLinks ?? [],
         })
     }

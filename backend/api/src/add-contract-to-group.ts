@@ -8,6 +8,7 @@ import { Group, GroupLink } from 'common/group'
 import { APIError, authEndpoint, validate } from './helpers'
 import { getUser } from 'shared/utils'
 import { createSupabaseClient } from 'shared/supabase/init'
+import { addGroupToContract } from 'shared/update-group-contracts-internal'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -90,20 +91,11 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
       )
     }
 
-    const newGroupLinks = [
-      ...(contract.groupLinks ?? []),
-      {
-        groupId: group.id,
-        createdTime: Date.now(),
-        slug: group.slug,
-        userId: auth.uid,
-        name: group.name,
-      } as GroupLink,
-    ]
-    transaction.update(contractDoc, {
-      groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
-      groupLinks: newGroupLinks,
-    })
+    const ok = await addGroupToContract(contract, group)
+    if (!ok) {
+      throw new APIError(400, 'Group is already in contract')
+    }
+
     return contract
   })
 })

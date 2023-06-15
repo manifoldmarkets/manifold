@@ -39,6 +39,7 @@ export type GroupLink = {
   name: string
   groupId: string
   createdTime: number
+  /** @deprecated */
   userId?: string
 }
 

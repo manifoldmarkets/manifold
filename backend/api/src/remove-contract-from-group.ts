@@ -1,13 +1,13 @@
 import { Contract } from 'common/contract'
 import { isAdmin, isManifoldId, isTrustworthy } from 'common/envs/constants'
 import { Group } from 'common/group'
-import { GroupMember } from 'common/group-member'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { canUserAddGroupToMarket } from 'api/add-contract-to-group'
 import { getUser } from 'shared/utils'
 import { createSupabaseClient } from 'shared/supabase/init'
+import { removeGroupFromContract } from 'shared/update-group-contracts-internal'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -44,8 +44,6 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
       groupDoc
     )
 
-    let groupMember
-
     if (!groupSnap.exists) throw new APIError(400, 'Group cannot be found')
     if (!contractSnap.exists)
       throw new APIError(400, 'Contract cannot be found')
@@ -78,24 +76,11 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
       )
     }
 
-    if (!contract.groupLinks || !contract.groupSlugs) {
-      throw new APIError(400, 'This group does not have any markets to remove')
+    const ok = await removeGroupFromContract(contract, group)
+    if (!ok) {
+      throw new APIError(400, 'Group does not have this contract')
     }
 
-    if (!contract.groupLinks?.some((l) => l.groupId === group.id)) {
-      throw new APIError(400, 'This contract does not exist in the group')
-    }
-
-    const newGroupLinks = contract.groupLinks.filter(
-      (groupLink) => groupLink.groupId != group.id
-    )
-    const newGroupSlugs = contract.groupSlugs.filter(
-      (groupSlug) => groupSlug != group.slug
-    )
-    transaction.update(contractDoc, {
-      groupSlugs: newGroupSlugs,
-      groupLinks: newGroupLinks,
-    })
     return contract
   })
 })
