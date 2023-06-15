@@ -100,8 +100,8 @@ export const FeedTimelineItems = (props: {
                   adId: item.ad_id,
                   reward: AD_REDEEM_REWARD,
                 }}
-                parentComments={parentComments}
-                childCommentsByParentCommentId={childCommentsByParentCommentId}
+                parentComments={[]}
+                childCommentsByParentCommentId={{}}
                 groupedBetsByTime={groupedBetsByTime}
               />
             )
