@@ -8,52 +8,63 @@ import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
 import { BetsTabContent } from './contract-tabs'
+import { shortFormatNumber } from 'common/util/format'
+import { ENV_CONFIG } from 'common/envs/constants'
 
-export function TradesButton(props: { contract: Contract }) {
-  const { contract } = props
+export function TradesButton(props: {
+  contract: Contract
+  showChange?: boolean
+}) {
+  const { contract, showChange } = props
   const [modalOpen, setModalOpen] = useState<boolean>(false)
   const [uniqueTraders, setUniqueTraders] = useState(contract.uniqueBettorCount)
-
+  const vol = contract.volume24Hours
   useEffect(() => {
     setUniqueTraders(contract.uniqueBettorCount)
   }, [contract.uniqueBettorCount])
 
   return (
-    <>
-      <Tooltip
-        text={'Traders'}
-        placement={'bottom'}
-        className={clsx('flex flex-row items-center')}
-      >
-        <button
-          disabled={uniqueTraders === 0}
-          className={clsx(
-            'text-ink-500 pr-2 transition-transform disabled:cursor-not-allowed'
-          )}
-          onClick={(e) => {
-            e.preventDefault()
-            setModalOpen(true)
-          }}
+    <button
+      disabled={uniqueTraders === 0}
+      className={clsx(
+        'text-ink-500 py-1 pr-2 pl-2 transition-transform disabled:cursor-not-allowed'
+      )}
+      onClick={(e) => {
+        e.preventDefault()
+        setModalOpen(true)
+      }}
+    >
+      <Row className="relative justify-center gap-1.5 text-sm">
+        <Tooltip
+          text={'Traders'}
+          placement={'bottom'}
+          className={clsx('flex flex-row items-center justify-center gap-1.5')}
         >
-          <Row className="relative justify-center gap-1.5 p-1 text-sm">
-            <UserIcon className={clsx('h-5 w-5')} />
-            <div>{uniqueTraders > 0 ? uniqueTraders : ''}</div>
-          </Row>
-          <Modal
-            open={modalOpen}
-            setOpen={setModalOpen}
-            className={clsx(MODAL_CLASS)}
-          >
-            <div className={'bg-canvas-0 sticky top-0 py-2'}>
-              Bets on <span className="font-bold">{contract.question}</span>
-            </div>
-            <div className={SCROLLABLE_MODAL_CLASS}>
-              <BetsModalContent contract={contract} />
-            </div>
-          </Modal>
-        </button>
-      </Tooltip>
-    </>
+          <UserIcon className={clsx(' h-5')} />
+          <div>{uniqueTraders > 0 ? uniqueTraders : ''}</div>
+        </Tooltip>
+        {showChange && (
+          <Tooltip text={'24hr Volume'} placement={'bottom'}>
+            <span className={'text-teal-500'}>
+              +{ENV_CONFIG.moneyMoniker + shortFormatNumber(vol)}
+            </span>
+          </Tooltip>
+        )}
+      </Row>
+      <Modal
+        open={modalOpen}
+        setOpen={setModalOpen}
+        className={clsx(MODAL_CLASS)}
+        size={'lg'}
+      >
+        <div className={'bg-canvas-0 sticky top-0 py-2'}>
+          Bets on <span className="font-bold">{contract.question}</span>
+        </div>
+        <div className={SCROLLABLE_MODAL_CLASS}>
+          <BetsModalContent contract={contract} />
+        </div>
+      </Modal>
+    </button>
   )
 }
 

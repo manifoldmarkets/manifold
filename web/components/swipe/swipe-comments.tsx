@@ -99,7 +99,12 @@ function CommentsDialog(props: {
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
   return (
-    <Modal open={open} setOpen={setOpen} className={clsx(MODAL_CLASS)}>
+    <Modal
+      open={open}
+      setOpen={setOpen}
+      className={clsx(MODAL_CLASS)}
+      size={'lg'}
+    >
       <div className="mb-2">
         Comments on <span className="font-bold">{contract.question}</span>
       </div>
