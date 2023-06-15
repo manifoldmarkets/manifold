@@ -8,8 +8,6 @@ import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
 import { BetsTabContent } from './contract-tabs'
-import { shortFormatNumber } from 'common/util/format'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { BinaryUserPositionsTable } from 'web/components/contract/user-positions-table'
 import { getCPMMContractUserContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
@@ -17,14 +15,10 @@ import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Col } from 'web/components/layout/col'
 
-export function TradesButton(props: {
-  contract: Contract
-  showChange?: boolean
-}) {
-  const { contract, showChange } = props
+export function TradesButton(props: { contract: Contract }) {
+  const { contract } = props
   const [modalOpen, setModalOpen] = useState<boolean>(false)
   const [uniqueTraders, setUniqueTraders] = useState(contract.uniqueBettorCount)
-  const vol = contract.volume24Hours
   useEffect(() => {
     setUniqueTraders(contract.uniqueBettorCount)
   }, [contract.uniqueBettorCount])
@@ -48,13 +42,6 @@ export function TradesButton(props: {
           <UserIcon className={clsx(' h-5')} />
           <div>{uniqueTraders > 0 ? uniqueTraders : ''}</div>
         </Tooltip>
-        {showChange && (
-          <Tooltip text={'24hr Volume'} placement={'bottom'}>
-            <span className={'text-teal-500'}>
-              +{ENV_CONFIG.moneyMoniker + shortFormatNumber(vol)}
-            </span>
-          </Tooltip>
-        )}
       </Row>
       <Modal
         open={modalOpen}

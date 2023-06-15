@@ -2395,6 +2395,13 @@ export interface Database {
         }
         Returns: unknown
       }
+      get_unique_bettors_since: {
+        Args: {
+          this_contract_id: string
+          since: number
+        }
+        Returns: number
+      }
       get_reply_chain_comments_for_comment_ids: {
         Args: {
           comment_ids: string[]

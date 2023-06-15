@@ -362,10 +362,7 @@ function DetailedCard(props: {
       <Col className="relative">
         <Row className="px-4 py-1" onClick={(e) => e.stopPropagation()}>
           <Col className={'w-[40%] items-start justify-center'}>
-            <TradesButton
-              contract={contract}
-              showChange={item?.dataType === 'trending_contract'}
-            />
+            <TradesButton contract={contract} />
           </Col>
           <Col className={'w-[50%] justify-center'}>
             <Row className={'justify-between'}>
