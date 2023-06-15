@@ -407,8 +407,13 @@ export function QuickOutcomeView(props: {
   const isMobile = useIsMobile()
   const prob = isMobile ? getProb(contract) : previewProb ?? getProb(contract)
   const textColor = getTextColor(contract)
+
   const probChange =
-    contract.mechanism === 'cpmm-1' ? contract.probChanges.day : 0
+    contract.mechanism === 'cpmm-1' &&
+    Math.abs(contract.probChanges.day) > 0.01 &&
+    !contract.isResolved
+      ? Math.round(contract.probChanges.day * 100)
+      : 0
   if (
     outcomeType == 'BINARY' ||
     outcomeType == 'NUMERIC' ||
@@ -443,7 +448,7 @@ export function QuickOutcomeView(props: {
               )}
             >
               {probChange! > 0 ? '+' : ''}
-              {Math.round(probChange * 100)}%
+              {probChange}%
             </span>
           )}
         </Row>

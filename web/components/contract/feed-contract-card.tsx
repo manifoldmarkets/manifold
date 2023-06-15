@@ -313,7 +313,10 @@ function DetailedCard(props: {
         <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
           <QuickOutcomeView
             contract={contract}
-            showChange={item?.dataType === 'contract_probability_changed'}
+            showChange={
+              item?.dataType === 'contract_probability_changed' ||
+              item?.dataType === 'trending_contract'
+            }
           />
 
           {isBinaryCpmm && <BetRow contract={contract} user={user} />}
