@@ -75,12 +75,9 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
     )
   }
 
-  const ok = await addGroupToContract(contract, group)
-  if (!ok) {
-    throw new APIError(400, 'Group is already in contract')
-  }
+  const isNew = await addGroupToContract(contract, group)
 
-  return contract
+  return { status: 'success', existed: !isNew }
 })
 
 const firestore = admin.firestore()

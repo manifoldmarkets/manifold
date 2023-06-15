@@ -8,20 +8,13 @@ const firestore = admin.firestore()
 
 export async function addGroupToContract(contract: Contract, group: Group) {
   const db = createSupabaseClient()
-
-  const exists = await db
-    .from('group_contracts')
-    .select()
-    .eq('contract_id', contract.id)
-    .eq('group_id', group.id)
-    .limit(1)
-  if (exists.data?.length) {
+  if ((contract?.groupLinks ?? []).some((g) => g.groupId === group.id)) {
     console.log('contract already has group')
     return false
   }
 
   // insert into group_contracts table
-  await db.from('group_contracts').insert({
+  await db.from('group_contracts').upsert({
     group_id: group.id,
     contract_id: contract.id,
   })
@@ -48,17 +41,6 @@ export async function removeGroupFromContract(
   group: Group
 ) {
   const db = createSupabaseClient()
-  const exists = await db
-    .from('group_contracts')
-    .select()
-    .eq('contract_id', contract.id)
-    .eq('group_id', group.id)
-    .limit(1)
-
-  if (!exists.data?.length) {
-    console.log('contract does not have group')
-    return false
-  }
 
   // delete from group_contracts table
   await db
@@ -78,6 +60,4 @@ export async function removeGroupFromContract(
       groupSlugs: admin.firestore.FieldValue.arrayRemove(group.slug),
       groupLinks: newLinks,
     })
-
-  return true
 }

@@ -69,12 +69,9 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
     )
   }
 
-  const ok = await removeGroupFromContract(contract, group)
-  if (!ok) {
-    throw new APIError(400, 'Group does not have this contract')
-  }
+  await removeGroupFromContract(contract, group)
 
-  return contract
+  return { success: true }
 })
 
 const firestore = admin.firestore()
