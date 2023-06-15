@@ -235,7 +235,7 @@ function DetailedCard(props: {
             <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
             <Col className="w-full">
               <span>
-                <span className="text-sm">
+                <span>
                   <UserLink
                     name={creatorName}
                     username={creatorUsername}
@@ -244,11 +244,11 @@ function DetailedCard(props: {
                   />
                   <span> asked </span>
                 </span>
-                <span className="text-ink-500 text-sm">
+                <span className="text-ink-500">
                   {shortenedFromNow(contract.createdTime)}
                 </span>
               </span>
-              <div className="text-ink-500 text-sm">
+              <div className="text-ink-500">
                 {contract.closeTime ? (
                   <>closes {fromNow(contract.closeTime)}</>
                 ) : (
