@@ -187,7 +187,7 @@ function SimpleCard(props: {
             </div>
           </Row>
           {isBinaryCpmm && (
-            <Row className="justify-end">
+            <Row className="h-8 justify-end text-sm">
               <BetRow contract={contract} user={user} />
             </Row>
           )}
@@ -307,11 +307,7 @@ function DetailedCard(props: {
         <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
           <QuickOutcomeView contract={contract} />
 
-          {isBinaryCpmm && (
-            <div className="flex gap-2">
-              <BetRow contract={contract} user={user} />
-            </div>
-          )}
+          {isBinaryCpmm && <BetRow contract={contract} user={user} />}
         </Row>
 
         {isBinaryCpmm && metrics && metrics.hasShares && (
