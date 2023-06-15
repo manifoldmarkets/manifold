@@ -36,68 +36,51 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
     ? userMembership[0].role ?? undefined
     : undefined
 
-  // run as transaction to prevent race conditions
-  return await firestore.runTransaction(async (transaction) => {
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const groupDoc = firestore.doc(`groups/${groupId}`)
-    const [contractSnap, groupSnap] = await transaction.getAll(
-      contractDoc,
-      groupDoc
+  const contractSnap = await firestore.doc(`contracts/${contractId}`).get()
+  const groupSnap = await firestore.doc(`groups/${groupId}`).get()
+
+  if (!groupSnap.exists) throw new APIError(400, 'Group cannot be found')
+  if (!contractSnap.exists) throw new APIError(400, 'Contract cannot be found')
+
+  const group = groupSnap.data() as Group
+  const contract = contractSnap.data() as Contract
+  const firebaseUser = await admin.auth().getUser(auth.uid)
+  const user = await getUser(auth.uid)
+
+  if (contract.visibility == 'private') {
+    throw new APIError(400, 'You cannot add a group to a private contract')
+  }
+
+  if (group.privacyStatus == 'private') {
+    throw new APIError(
+      400,
+      'You cannot add an existing public market to a private group'
     )
+  }
 
-    if (!groupSnap.exists) throw new APIError(400, 'Group cannot be found')
-    if (!contractSnap.exists)
-      throw new APIError(400, 'Contract cannot be found')
-
-    const group = groupSnap.data() as Group
-    const contract = contractSnap.data() as Contract
-    const firebaseUser = await admin.auth().getUser(auth.uid)
-    const user = await getUser(auth.uid)
-
-    if (contract.visibility == 'private') {
-      throw new APIError(400, 'You cannot add a group to a private contract')
-    }
-
-    if (group.privacyStatus == 'private') {
-      throw new APIError(
-        400,
-        'You cannot add an existing public market to a private group'
-      )
-    }
-
-    // check if contract already exists in group
-    if (
-      contract.groupLinks &&
-      contract.groupLinks
-        .map((gl) => gl.groupId)
-        .some((gid) => gid === group.id)
+  if (
+    !canUserAddGroupToMarket({
+      userId: auth.uid,
+      group: group,
+      isMarketCreator: contract.creatorId === auth.uid,
+      isManifoldAdmin: isManifoldId(auth.uid) || isAdmin(firebaseUser.email),
+      userGroupRole: groupMemberRole as any,
+      isTrustworthy: isTrustworthy(user?.username),
+      isGroupMember: isGroupMember,
+    })
+  ) {
+    throw new APIError(
+      400,
+      `User does not have permission to add this market to group "${group.name}".`
     )
-      throw new APIError(400, 'This market already exists in this group')
+  }
 
-    if (
-      !canUserAddGroupToMarket({
-        userId: auth.uid,
-        group: group,
-        isMarketCreator: contract.creatorId === auth.uid,
-        isManifoldAdmin: isManifoldId(auth.uid) || isAdmin(firebaseUser.email),
-        userGroupRole: groupMemberRole as any,
-        isTrustworthy: isTrustworthy(user?.username),
-        isGroupMember: isGroupMember,
-      })
-    ) {
-      throw new APIError(
-        400,
-        `User does not have permission to add this market to group "${group.name}".`
-      )
-    }
+  const ok = await addGroupToContract(contract, group)
+  if (!ok) {
+    throw new APIError(400, 'Group is already in contract')
+  }
 
-    const ok = await addGroupToContract(contract, group)
-    if (!ok) {
-      throw new APIError(400, 'Group is already in contract')
-    }
-
-    return contract
-  })
+  return contract
 })
 
 const firestore = admin.firestore()
