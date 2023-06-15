@@ -543,7 +543,9 @@ function FeedCommentHeader(props: {
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
-    <Col className={clsx('mt-1 text-sm ', inTimeline ? '' : 'text-ink-600')}>
+    <Col
+      className={clsx('mt-1', inTimeline ? 'text-md' : 'text-ink-600 text-sm ')}
+    >
       <Row className="justify-between">
         <span>
           <UserLink
