@@ -46,8 +46,7 @@ export function FeedContractCard(props: {
   hasItems?: boolean
   item?: FeedTimelineItem
 }) {
-  const { className, promotedData, trackingPostfix, hasItems, item } =
-    props
+  const { className, promotedData, trackingPostfix, hasItems, item } = props
   const user = useUser()
 
   const contract =
@@ -115,13 +114,7 @@ function SimpleCard(props: {
   user: User | null | undefined
   promotedData?: { adId: string; reward: number }
 }) {
-  const {
-    contract,
-    user,
-    textColor,
-    trackClick,
-    promotedData,
-  } = props
+  const { contract, user, textColor, trackClick, promotedData } = props
   const { question, outcomeType, mechanism } = contract
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   return (
