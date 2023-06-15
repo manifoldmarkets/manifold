@@ -28,6 +28,7 @@ import { PublicMarketGroups } from './contract-details'
 import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
+import { User } from 'common/user'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -47,6 +48,7 @@ export function FeedContractCard(props: {
     hasItems,
     showReason,
   } = props
+  const user = useUser()
 
   const contract =
     useFirebasePublicAndRealtimePrivateContract(
@@ -93,6 +95,7 @@ export function FeedContractCard(props: {
           contract={contract}
           trackClick={trackClick}
           path={path}
+          user={user}
           promotedData={promotedData}
           className={className}
           hasItems={hasItems}
@@ -106,6 +109,7 @@ export function FeedContractCard(props: {
       textColor={textColor}
       trackClick={trackClick}
       promotedData={promotedData}
+      user={user}
       reason={reason}
       showReason={showReason}
     />
@@ -116,14 +120,23 @@ function SimpleCard(props: {
   contract: Contract
   textColor: string
   trackClick: () => void
+  user: User | null | undefined
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   reason?: string
   showReason?: boolean
 }) {
-  const { contract, textColor, trackClick, promotedData, reason, showReason } =
-    props
-  const { question } = contract
+  const {
+    contract,
+    user,
+    textColor,
+    trackClick,
+    promotedData,
+    reason,
+    showReason,
+  } = props
+  const { question, outcomeType, mechanism } = contract
+  const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   return (
     <Row>
       <Col className=" grow-y justify-end">
@@ -176,6 +189,11 @@ function SimpleCard(props: {
               <ContractStatusLabel contract={contract} />
             </div>
           </Row>
+          {isBinaryCpmm && (
+            <Row className="justify-end gap-2">
+              <BetRow contract={contract} user={user} />
+            </Row>
+          )}
         </Link>
       </Col>
     </Row>
@@ -187,12 +205,21 @@ function DetailedCard(props: {
   contract: Contract
   trackClick: () => void
   path: string
+  user: User | null | undefined
   promotedData?: { adId: string; reward: number }
   className?: string
   hasItems?: boolean
 }) {
-  const { ref, contract, trackClick, path, promotedData, className, hasItems } =
-    props
+  const {
+    ref,
+    user,
+    contract,
+    trackClick,
+    path,
+    promotedData,
+    className,
+    hasItems,
+  } = props
   const {
     closeTime,
     isResolved,
@@ -208,7 +235,6 @@ function DetailedCard(props: {
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
-  const user = useUser()
 
   const showImage = !!coverImageUrl
   const metrics = useSavedContractMetrics(contract)

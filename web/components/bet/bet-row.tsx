@@ -12,8 +12,12 @@ export function BetRow(props: {
   user: User | null | undefined
 }) {
   const { contract, user } = props
+  const { closeTime } = contract
+  const isClosed = closeTime && closeTime < Date.now()
   const [dialogueThatIsOpen, setDialogueThatIsOpen] =
     useState<binaryOutcomes>(undefined)
+  if (isClosed) return null
+
   return (
     <Row>
       <FeedBetButton
