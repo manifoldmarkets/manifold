@@ -260,6 +260,14 @@ function createFeedTimelineItems(
         )
         // We may not find a relevant contract if they've already seen the same contract in their feed
         if (!relevantContract) return
+        // If the contract is closed/resolved, only show it due to market movements or trending.
+        // Otherwise, we don't need to see comments on closed/resolved markets
+        if (
+          shouldIgnoreCommentsOnContract(relevantContract) &&
+          (dataType === 'new_comment' || dataType !== 'popular_comment')
+        )
+          return
+
         const relevantComments = comments?.filter(
           (comment) => comment.contractId === item.contract_id
         )
@@ -280,5 +288,12 @@ function createFeedTimelineItems(
   return sortBy(
     filterDefined([...newsData, ...nonNewsTimelineItems]),
     (i) => -i.createdTime
+  )
+}
+
+export const shouldIgnoreCommentsOnContract = (contract: Contract): boolean => {
+  return (
+    contract.isResolved ||
+    (contract.closeTime ? contract.closeTime < Date.now() : false)
   )
 }
