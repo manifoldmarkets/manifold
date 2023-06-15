@@ -94,7 +94,7 @@ export const FeedTimelineItems = (props: {
           }
           return (
             <FeedItemFrame
-              item={undefined}
+              item={'ad_id' in item ? undefined : item}
               key={contract.id + 'feed-timeline-item'}
             >
               <FeedContractCard
@@ -195,7 +195,13 @@ const FeedItemFrame = (props: {
             .from('user_feed')
             .update({ seen_time: new Date().toISOString() })
             .eq('id', item.id)
-        ),
+        )
+          .then(() => {
+            console.log('updated feed item', item.id)
+          })
+          .catch((e) => {
+            console.error('failed to update feed item', item.id, e)
+          }),
       true
     )
   return (
