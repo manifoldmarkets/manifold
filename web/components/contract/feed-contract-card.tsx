@@ -29,6 +29,7 @@ import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { User } from 'common/user'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -39,6 +40,7 @@ export function FeedContractCard(props: {
   reason?: string
   hasItems?: boolean
   showReason?: boolean
+  item?: FeedTimelineItem
 }) {
   const {
     className,
@@ -47,6 +49,7 @@ export function FeedContractCard(props: {
     trackingPostfix,
     hasItems,
     showReason,
+    item,
   } = props
   const user = useUser()
 
@@ -99,6 +102,7 @@ export function FeedContractCard(props: {
           promotedData={promotedData}
           className={className}
           hasItems={hasItems}
+          item={item}
         />
       </Col>
     )
@@ -206,6 +210,7 @@ function DetailedCard(props: {
   promotedData?: { adId: string; reward: number }
   className?: string
   hasItems?: boolean
+  item?: FeedTimelineItem
 }) {
   const {
     ref,
@@ -216,6 +221,7 @@ function DetailedCard(props: {
     promotedData,
     className,
     hasItems,
+    item,
   } = props
   const {
     closeTime,
@@ -305,7 +311,10 @@ function DetailedCard(props: {
         </Link>
 
         <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
-          <QuickOutcomeView contract={contract} />
+          <QuickOutcomeView
+            contract={contract}
+            showChange={item?.dataType === 'contract_probability_changed'}
+          />
 
           {isBinaryCpmm && <BetRow contract={contract} user={user} />}
         </Row>

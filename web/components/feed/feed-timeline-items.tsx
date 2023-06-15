@@ -108,6 +108,7 @@ export const FeedTimelineItems = (props: {
                     ? item.reasonDescription
                     : undefined
                 }
+                item={'ad_id' in item ? undefined : item}
               />
               {parentComments.length > 0 && (
                 <FeedCommentItem

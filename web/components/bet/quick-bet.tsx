@@ -400,13 +400,15 @@ export function QuickOutcomeView(props: {
   contract: Contract
   previewProb?: number
   numAnswersFR?: number
+  showChange?: boolean
 }) {
-  const { contract, previewProb, numAnswersFR } = props
+  const { contract, showChange, previewProb, numAnswersFR } = props
   const { outcomeType } = contract
   const isMobile = useIsMobile()
   const prob = isMobile ? getProb(contract) : previewProb ?? getProb(contract)
   const textColor = getTextColor(contract)
-
+  const probChange =
+    contract.mechanism === 'cpmm-1' ? contract.probChanges.day : 0
   if (
     outcomeType == 'BINARY' ||
     outcomeType == 'NUMERIC' ||
@@ -428,12 +430,23 @@ export function QuickOutcomeView(props: {
           style={{ width: `${100 * prob}%` }}
           aria-hidden
         />
-        <div
-          className={`absolute inset-0 flex items-center justify-center gap-1 text-lg font-semibold ${textColor}`}
+        <Row
+          className={`absolute inset-0 items-center justify-center gap-1 text-lg font-semibold ${textColor}`}
         >
           {outcomeType === 'STONK' ? ENV_CONFIG.moneyMoniker : ''}
           {cardText(contract, isMobile ? undefined : previewProb)}
-        </div>
+          {showChange && probChange != 0 && (
+            <span
+              className={clsx(
+                'ml-0.5 text-base font-normal',
+                probChange! > 0 ? 'text-teal-500' : 'text-scarlet-500'
+              )}
+            >
+              {probChange! > 0 ? '+' : ''}
+              {Math.round(probChange * 100)}%
+            </span>
+          )}
+        </Row>
       </div>
     )
   }
