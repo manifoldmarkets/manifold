@@ -462,62 +462,7 @@ export interface Database {
           fs_updated_time?: string | null
           group_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: 'group_contracts_fk_contract'
-            columns: ['contract_id']
-            referencedRelation: 'contracts'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'group_contracts_fk_contract'
-            columns: ['contract_id']
-            referencedRelation: 'contracts_rbac'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'group_contracts_fk_contract'
-            columns: ['contract_id']
-            referencedRelation: 'listed_open_contracts'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'group_contracts_fk_contract'
-            columns: ['contract_id']
-            referencedRelation: 'public_contracts'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'group_contracts_fk_contract'
-            columns: ['contract_id']
-            referencedRelation: 'public_open_contracts'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'group_contracts_fk_contract'
-            columns: ['contract_id']
-            referencedRelation: 'trending_contracts'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'group_contracts_fk_group'
-            columns: ['group_id']
-            referencedRelation: 'groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'group_contracts_fk_group'
-            columns: ['group_id']
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
-          {
-            foreignKeyName: 'group_contracts_fk_group'
-            columns: ['group_id']
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
-          }
-        ]
+        Relationships: []
       }
       group_invites: {
         Row: {

@@ -728,8 +728,8 @@ cluster on groups_pkey;
 
 create table if not exists
   group_contracts (
-    group_id text not null references groups (id) on delete cascade,
-    contract_id text not null references contracts (id) on delete cascade,
+    group_id text not null,
+    contract_id text not null,
     data jsonb,
     fs_updated_time timestamp,
     primary key (group_id, contract_id)
