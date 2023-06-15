@@ -4,7 +4,6 @@ import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/creat
 import { Contract, contractPath } from 'common/contract'
 import * as admin from 'firebase-admin'
 
-import { GroupContractDoc } from 'common/group'
 import { isEqual } from 'lodash'
 import { secrets } from 'common/secrets'
 import { run } from 'common/supabase/utils'

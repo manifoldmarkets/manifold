@@ -1,4 +1,4 @@
-import { partition, sortBy } from 'lodash'
+import { partition } from 'lodash'
 import { Contract } from './contract'
 
 export type Group = {
