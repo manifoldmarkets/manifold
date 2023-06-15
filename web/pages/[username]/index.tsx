@@ -58,11 +58,7 @@ import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { getUserBetsFromResolvedContracts } from 'web/lib/supabase/bets'
-import {
-  calculateScore,
-  getCalibrationPoints,
-  getGrade,
-} from 'web/pages/[username]/calibration'
+import { getGrade, getPseudoBrierScore } from 'web/pages/[username]/calibration'
 import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
 
@@ -77,8 +73,7 @@ export const getStaticProps = async (props: {
   const bets = user
     ? await getUserBetsFromResolvedContracts(user.id, 10000)
     : []
-  const { yesBuckets, noBuckets } = getCalibrationPoints(bets)
-  const score = calculateScore(yesBuckets, noBuckets)
+  const score = getPseudoBrierScore(bets)
 
   return {
     props: {

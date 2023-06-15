@@ -33,7 +33,7 @@ export const getStaticProps = async (props: {
   const yesPoints = getXY(yesBuckets)
   const noPoints = getXY(noBuckets)
 
-  const score = calculateScore(yesBuckets, noBuckets)
+  const score = getPseudoBrierScore(bets)
 
   return {
     props: {
@@ -111,12 +111,12 @@ export default function CalibrationPage(props: {
               </li>
 
               <li>
-                The score is the mean squared error for yes and no bets times
-                -100.
+                The score is the mean squared error for each non-sell bet
+                weighted by log bet amount. Smaller is better.
               </li>
 
               <li>
-                Each point is a bucket of bets weighted by bet amount with a
+                Each point is a bucket of bets weighted by log bet amount with a
                 maximum range of 10% (sell trades are excluded).
               </li>
             </ul>
@@ -181,6 +181,32 @@ function BetsTable(props: {
 
 export const points = [1, 3, 5, ...range(10, 100, 10), 95, 97, 99]
 
+export const getPseudoBrierScore = (betsData: [Contract, LimitBet[]][]) => {
+  let score = 0
+  let n = 0
+
+  for (const [contract, bets] of betsData) {
+    const { resolution } = contract
+    if (resolution !== 'YES' && resolution !== 'NO') continue
+    const resolvedYES = resolution === 'YES'
+
+    for (const bet of bets as Bet[]) {
+      if (bet.amount < 0) continue // skip sales
+
+      const w = Math.log10(bet.amount + 1)
+      n += w
+
+      if (bet.outcome === 'YES' && !resolvedYES) {
+        score += w * (bet.probAfter - 0) ** 2
+      } else if (bet.outcome === 'NO' && resolvedYES) {
+        score += w * (1 - bet.probAfter) ** 2
+      }
+    }
+  }
+
+  return n === 0 ? 0 : (score / n).toPrecision(3)
+}
+
 export const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
   const yesProbBuckets: Dictionary<number> = {}
   const yesCountBuckets: Dictionary<number> = {}
@@ -205,7 +231,7 @@ export const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
         Math.abs(curr - rawP) < Math.abs(prev - rawP) ? curr : prev
       )
 
-      const w = bet.amount // weight by bet amount
+      const w = Math.log10(bet.amount + 1) // weight by log bet amount
 
       if (bet.outcome === 'YES') {
         yesProbBuckets[p] = (yesProbBuckets[p] ?? 0) + (resolvedYES ? w : 0)
@@ -254,7 +280,7 @@ const getXY = (probBuckets: Dictionary<number>) => {
   return xy
 }
 
-export const calculateScore = (
+export const calculateOldScore = (
   yesBuckets: Dictionary<number>,
   noBuckets: Dictionary<number>
 ) => {
@@ -281,7 +307,7 @@ export const calculateScore = (
   return (-100 * Math.round(raw * 1e4)) / 1e4
 }
 
-export const getGrade = (score: number) => {
+export const getOldGrade = (score: number) => {
   if (score > -0.05) return 'S'
   if (score >= -0.15) return 'A+'
   if (score >= -0.5) return 'A'
@@ -293,5 +319,20 @@ export const getGrade = (score: number) => {
   if (score >= -7) return 'C'
   if (score >= -8.5) return 'C-'
   if (score >= -10) return 'D'
+  else return 'F'
+}
+
+export const getGrade = (score: number) => {
+  if (score <= 0.055) return 'S'
+  if (score <= 0.065) return 'A+'
+  if (score <= 0.075) return 'A'
+  if (score <= 0.085) return 'A-'
+  if (score <= 0.1) return 'B+'
+  if (score <= 0.13) return 'B'
+  if (score <= 0.15) return 'B-'
+  if (score <= 0.17) return 'C+'
+  if (score <= 0.19) return 'C'
+  if (score <= 0.21) return 'C-'
+  if (score <= 0.24) return 'D'
   else return 'F'
 }
