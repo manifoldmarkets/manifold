@@ -14,8 +14,8 @@ export const NewsArticle = (props: {
   const { title, urlToImage, url, description, published_time, author } = props
 
   return (
-    <Link href={url} className="relative flex w-full flex-col">
-      <Col className="bg-canvas-0 px-4 pt-3 pb-2">
+    <Link href={url} target="_blank" className="relative flex w-full flex-col">
+      <Col className="px-4 pt-3 pb-2">
         <div className="line-clamp-2 text-lg">{title}</div>
         <div className="line-clamp-3 text-sm">
           {author && `${author} `}

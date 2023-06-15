@@ -135,7 +135,7 @@ export const FeedTimelineItems = (props: {
             <FeedItemFrame
               item={item}
               key={news.id + 'feed-timeline-item'}
-              className="w-full overflow-hidden rounded-2xl"
+              className="bg-canvas-0 border-canvas-0 hover:border-primary-300 w-full overflow-hidden rounded-2xl border "
             >
               <NewsArticle
                 author={(news as any)?.author}
@@ -143,7 +143,7 @@ export const FeedTimelineItems = (props: {
                 {...news}
               />
               {item.contracts && (
-                <Col className="bg-canvas-0 px-4 pt-2 pb-3">
+                <Col className="px-4 pt-2 pb-3">
                   <span className="text-ink-500 text-sm">Related Markets</span>
                   <ContractsTable
                     contracts={item.contracts}
