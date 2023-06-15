@@ -42,7 +42,7 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections', 'optOutAreYouSureWarnings']);
+                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections', 'optOutBetWarnings']);
       // User referral rules
       allow update: if userId == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
