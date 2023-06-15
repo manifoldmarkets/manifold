@@ -13,7 +13,7 @@ export const scoreContracts = functions
     timeoutSeconds: 540,
     secrets,
   })
-  .pubsub.schedule('every 1 hours')
+  .pubsub.schedule('every 10 minutes')
   .onRun(async () => {
     const fr = admin.firestore()
     const db = createSupabaseClient()
