@@ -250,25 +250,21 @@ function GroupDisplay(props: {
     <Link
       prefetch={false}
       href={groupPath(groupToDisplay.slug)}
-      legacyBehavior
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
       }}
+      className={clsx(
+        'text-ink-1000 bg-ink-100 hover:bg-ink-200 w-fit max-w-[200px] truncate whitespace-nowrap rounded-full bg-opacity-90 py-0.5 px-2 text-sm sm:max-w-[250px]',
+        isPrivate
+          ? 'text-ink-1000 bg-indigo-200 dark:bg-indigo-700'
+          : 'bg-ink-400 text-ink-0'
+      )}
     >
-      <a
-        className={clsx(
-          'text-ink-1000 bg-ink-100 hover:bg-ink-200 w-fit max-w-[200px] truncate whitespace-nowrap rounded-full bg-opacity-90 py-0.5 px-2 text-sm sm:max-w-[250px]',
-          isPrivate
-            ? 'text-ink-1000 bg-indigo-200 dark:bg-indigo-700'
-            : 'bg-ink-400 text-ink-0'
-        )}
-      >
-        <Row className="gap-0.5">
-          {isPrivate && <LockClosedIcon className="my-auto h-3 w-3" />}
-          {groupToDisplay.name}
-        </Row>
-      </a>
+      <Row className="gap-0.5">
+        {isPrivate && <LockClosedIcon className="my-auto h-3 w-3" />}
+        {groupToDisplay.name}
+      </Row>
     </Link>
   )
 }
