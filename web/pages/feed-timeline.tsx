@@ -157,7 +157,12 @@ const NewActivityButton = (props: { avatarUrls: string[] }) => {
       <Row className="text-ink-600 align-middle">
         <ArrowUpIcon className="text-ink-400 mr-3 h-5 w-5" />
         {avatarUrls.map((url) => (
-          <Avatar size={'xs'} className={'-ml-2'} avatarUrl={url} />
+          <Avatar
+            key={url + 'new-feed-activity-button'}
+            size={'xs'}
+            className={'-ml-2'}
+            avatarUrl={url}
+          />
         ))}
       </Row>
     </button>
