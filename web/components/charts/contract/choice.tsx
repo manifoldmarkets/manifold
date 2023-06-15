@@ -44,7 +44,11 @@ const getAnswers = (contract: MultiContract) => {
   )
   return sortBy(
     validAnswers,
-    (answer) => -1 * getOutcomeProbability(contract, answer.id)
+    (answer) =>
+      -1 *
+      ('prob' in answer
+        ? answer.prob
+        : getOutcomeProbability(contract, answer.id))
   )
 }
 

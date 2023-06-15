@@ -98,7 +98,7 @@ export const getContractAnswers = async (
     .from('answers')
     .select('*')
     .eq('contract_id', contractId)
-    .order('prob', { ascending: false })
+    .order('created_time', { ascending: false })
   if (!data) return null
   return data.map(parseDbAnswer)
 }
@@ -111,6 +111,7 @@ export const getAnswersForContracts = async (
     .from('answers')
     .select('*')
     .in('contract_id', contractIds)
+    .order('created_time', { ascending: false })
   if (!data) return {}
   const answers = data.map(parseDbAnswer)
   return groupBy(answers, 'contractId')
