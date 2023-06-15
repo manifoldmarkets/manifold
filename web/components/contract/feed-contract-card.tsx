@@ -150,17 +150,12 @@ function SimpleCard(props: {
             className="mb-1"
           />
         )}
-        <Link
+        <Col
           className={clsx(
             'relative',
-            'bg-canvas-100 dark:border-ink-200 border-ink-300 group cursor-pointer justify-between overflow-hidden border-l-4 py-2 pl-2 pr-4 dark:bg-opacity-20',
+            'bg-canvas-100 dark:border-ink-200 border-ink-300 group justify-between overflow-hidden border-l-4 py-2 pl-2 pr-4 dark:bg-opacity-20',
             'outline-none transition-colors'
           )}
-          onClick={(e) => {
-            trackClick()
-            e.stopPropagation()
-          }}
-          href={contractPath(contract)}
         >
           <Row className="mb-1 justify-between">
             <Col className="justify-end">
@@ -177,24 +172,26 @@ function SimpleCard(props: {
             )}
           </Row>
           <Row className="w-full justify-between gap-4">
-            <div
+            <Link
               className={clsx(
                 'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
                 textColor
               )}
+              onClick={trackClick}
+              href={contractPath(contract)}
             >
               {question}
-            </div>
+            </Link>
             <div className="font-semibold">
               <ContractStatusLabel contract={contract} />
             </div>
           </Row>
           {isBinaryCpmm && (
-            <Row className="justify-end gap-2">
+            <Row className="justify-end">
               <BetRow contract={contract} user={user} />
             </Row>
           )}
-        </Link>
+        </Col>
       </Col>
     </Row>
   )

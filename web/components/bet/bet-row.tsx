@@ -79,7 +79,7 @@ function FeedBetButton(props: {
         )}
       >
         <Col>
-          <div className="!mt-0 !mb-4 !text-xl">{contract.question}</div>
+          <div className="mt-0 mb-4 text-xl">{contract.question}</div>
           <BuyPanel
             contract={contract}
             user={user}
