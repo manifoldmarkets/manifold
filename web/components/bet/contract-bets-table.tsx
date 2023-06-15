@@ -1,4 +1,9 @@
-import { Contract, DPMContract } from 'common/contract'
+import {
+  Contract,
+  DPMContract,
+  FreeResponseContract,
+  MultipleChoiceContract,
+} from 'common/contract'
 import { Bet } from 'common/bet'
 import { partition, sortBy, sumBy } from 'lodash'
 import {
@@ -11,7 +16,7 @@ import { Table } from 'web/components/widgets/table'
 import React, { useState } from 'react'
 import {
   calculatePayout,
-  getOutcomeProbability,
+  getAnswerProbability,
   resolvedPayout,
 } from 'common/calculate'
 import {
@@ -179,6 +184,8 @@ function BetRow(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isDPM = mechanism === 'dpm-2'
   const isStonk = outcomeType === 'STONK'
+  const isMulti =
+    outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
 
   const dpmPayout = (() => {
     if (!isDPM) return 0
@@ -222,7 +229,7 @@ function BetRow(props: {
 
   return (
     <tr>
-      {isYourBet && isDPM && !isNumeric && !isResolved && !isClosed && (
+      {isYourBet && isDPM && isMulti && !isResolved && !isClosed && (
         <td className="text-ink-700">
           {!isSold && !isAnte && (
             <DpmSellButton contract={contract} bet={bet} />
@@ -283,16 +290,16 @@ function BetRow(props: {
   )
 }
 
-function DpmSellButton(props: { contract: DPMContract; bet: Bet }) {
+function DpmSellButton(props: {
+  contract: DPMContract & (MultipleChoiceContract | FreeResponseContract)
+  bet: Bet
+}) {
   const { contract, bet } = props
   const { outcome, shares, loanAmount } = bet
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const initialProb = getOutcomeProbability(
-    contract,
-    outcome === 'NO' ? 'YES' : outcome
-  )
+  const initialProb = getAnswerProbability(contract, outcome)
 
   const outcomeProb = getDpmProbabilityAfterSale(
     contract.totalShares,

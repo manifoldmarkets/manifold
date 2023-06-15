@@ -1,13 +1,9 @@
 import { JSONContent } from '@tiptap/core'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
-import {
-  getAnswerProbability,
-  getOutcomeProbability,
-  getProbability,
-} from 'common/calculate'
+import { getAnswerProbability, getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
-import { Contract } from 'common/contract'
+import { Contract, MultiContract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
@@ -152,13 +148,10 @@ export function toFullMarket(contract: Contract): FullMarket {
 }
 
 function augmentAnswerWithProbability(
-  contract: Contract,
+  contract: MultiContract,
   answer: DpmAnswer | Answer
 ): ApiAnswer {
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
-  const probability = isCpmm
-    ? getAnswerProbability(contract.answers, answer.id)
-    : getOutcomeProbability(contract, answer.id)
+  const probability = getAnswerProbability(contract, answer.id)
   return {
     ...answer,
     probability,

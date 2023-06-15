@@ -9,7 +9,7 @@ import { tradingAllowed } from 'common/contract'
 import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
-import { getOutcomeProbability } from 'common/calculate'
+import { getAnswerProbability } from 'common/calculate'
 import { Answer, DpmAnswer } from 'common/answer'
 import clsx from 'clsx'
 import { formatPercent } from 'common/util/format'
@@ -56,7 +56,7 @@ export function AnswersPanel(props: {
   )
 
   const answerProbs = answers.map((answer) =>
-    'prob' in answer ? answer.prob : getOutcomeProbability(contract, answer.id)
+    getAnswerProbability(contract, answer.id)
   )
   const answerToProb = Object.fromEntries(
     answers.map((answer, i) => [answer.id, answerProbs[i]])
@@ -241,8 +241,7 @@ function OpenAnswer(props: {
   const { answer, contract, onAnswerCommentClick, color } = props
   const { text } = answer
   const answerCreator = useUserByIdOrAnswer(answer)
-  const prob =
-    'prob' in answer ? answer.prob : getOutcomeProbability(contract, answer.id)
+  const prob = getAnswerProbability(contract, answer.id)
   const probPercent = formatPercent(prob)
   const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
     undefined
