@@ -1,8 +1,10 @@
+import clsx from 'clsx'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
 import { sumBy } from 'lodash'
+import Link from 'next/link'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { mergePeriodic } from 'web/components/feed/feed-items'
 import { Col } from 'web/components/layout/col'
@@ -15,13 +17,11 @@ import { BoostsType } from 'web/hooks/use-feed'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
+import { ContractsTable } from '../contract/contracts-table'
 import { NewsArticle } from '../news-article'
-import { SimpleContractRow } from '../simple-contract-row'
 import { FeedBetsItem } from './feed-bet-item'
 import { groupBetsByCreatedTimeAndUserId } from './feed-bets'
 import { FeedCommentItem } from './feed-comment-item'
-import Link from 'next/link'
-import clsx from 'clsx'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
@@ -125,20 +125,26 @@ export const FeedTimelineItems = (props: {
           )
         } else if ('news' in item && item.news) {
           const { news } = item
-          console.log('news', news.title)
           return (
-            <FeedItemFrame item={item} key={news.id + 'feed-timeline-item'}>
+            <FeedItemFrame
+              item={item}
+              key={news.id + 'feed-timeline-item'}
+              className="w-full overflow-hidden rounded-2xl"
+            >
               <NewsArticle
                 author={(news as any)?.author}
                 published_time={(news as any)?.published_time}
                 {...news}
               />
-              {item.contracts?.map((contract) => (
-                <SimpleContractRow
-                  contract={contract}
-                  key={`news-${news.id}-contract-${contract.id}`}
-                />
-              ))}
+              {item.contracts && (
+                <Col className="bg-canvas-0 px-4 pt-2 pb-3">
+                  <span className="text-ink-500 text-sm">Related Markets</span>
+                  <ContractsTable
+                    contracts={item.contracts}
+                    hideHeader={true}
+                  />
+                </Col>
+              )}
             </FeedItemFrame>
           )
         }
@@ -157,7 +163,7 @@ export function FeedRelatedItemFrame(props: {
     <Link
       href={href}
       className={clsx(
-        'bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 mb-2 flex flex-col rounded-2xl rounded-tr-none border',
+        'bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 mb-2 flex flex-col overflow-hidden rounded-2xl rounded-tr-none border',
         className
       )}
     >
