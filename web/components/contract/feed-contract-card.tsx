@@ -24,7 +24,6 @@ import { fromNow } from 'web/lib/util/time'
 import { ClaimButton } from '../ad/claim-ad-button'
 import { BetRow } from '../bet/bet-row'
 import { QuickOutcomeView } from '../bet/quick-bet'
-import { ReasonChosen } from '../feed/feed-reason-chosen'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { CommentsButton } from '../swipe/swipe-comments'
@@ -44,20 +43,11 @@ export function FeedContractCard(props: {
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
   className?: string
-  reason?: string
   hasItems?: boolean
-  showReason?: boolean
   item?: FeedTimelineItem
 }) {
-  const {
-    className,
-    promotedData,
-    reason,
-    trackingPostfix,
-    hasItems,
-    showReason,
-    item,
-  } = props
+  const { className, promotedData, trackingPostfix, hasItems, item } =
+    props
   const user = useUser()
 
   const contract =
@@ -93,13 +83,6 @@ export function FeedContractCard(props: {
   if (!hasItems) {
     return (
       <Col>
-        {showReason && (
-          <ReasonChosen
-            contract={contract}
-            reason={promotedData ? 'Boosted' : reason}
-            className="mb-1"
-          />
-        )}
         <DetailedCard
           ref={ref}
           contract={contract}
@@ -121,8 +104,6 @@ export function FeedContractCard(props: {
       trackClick={trackClick}
       promotedData={promotedData}
       user={user}
-      reason={reason}
-      showReason={showReason}
     />
   )
 }
@@ -133,9 +114,6 @@ function SimpleCard(props: {
   trackClick: () => void
   user: User | null | undefined
   promotedData?: { adId: string; reward: number }
-  /** location of the card, to disambiguate card click events */
-  reason?: string
-  showReason?: boolean
 }) {
   const {
     contract,
@@ -143,8 +121,6 @@ function SimpleCard(props: {
     textColor,
     trackClick,
     promotedData,
-    reason,
-    showReason,
   } = props
   const { question, outcomeType, mechanism } = contract
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
@@ -154,13 +130,6 @@ function SimpleCard(props: {
         <div className="dark:border-ink-200 border-ink-300 ml-2 h-1/3 w-4 rounded-tl-xl border-2 border-b-0 border-r-0 sm:ml-4 sm:w-6" />
       </Col>
       <Col className="mt-2 grow">
-        {showReason && (
-          <ReasonChosen
-            contract={contract}
-            reason={promotedData ? 'Boosted' : reason}
-            className="mb-1"
-          />
-        )}
         <Col
           className={clsx(
             'relative',

@@ -103,6 +103,7 @@ export const FeedTimelineItems = (props: {
                 parentComments={[]}
                 childCommentsByParentCommentId={{}}
                 groupedBetsByTime={groupedBetsByTime}
+                item={'ad_id' in item ? undefined : item}
               />
             )
           }
@@ -172,8 +173,6 @@ const FeedContractAndRelatedItems = (props: {
         promotedData={promotedData}
         trackingPostfix="feed"
         hasItems={hasRelatedItems}
-        showReason={true}
-        reason={item?.reasonDescription}
         item={item}
       />
       {parentComments.length > 0 && (
