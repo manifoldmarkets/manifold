@@ -17,7 +17,7 @@ export const useShouldShowFeed = (user: User | null | undefined) => {
       .eq('user_id', user.id)
       .limit(50)
 
-    run(query).then(({ data, count }) => {
+    run(query).then(({ count }) => {
       if (count > 50) setShouldShowFeed(true)
     })
   }, [user?.id])
