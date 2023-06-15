@@ -1,9 +1,7 @@
 import dayjs from 'dayjs'
 import { Col } from 'web/components/layout/col'
-import { Row } from './layout/row'
 import Link from 'next/link'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
-import { Content } from './widgets/editor'
 
 export const NewsArticle = (props: {
   title: string
