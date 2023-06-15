@@ -157,7 +157,7 @@ function SimpleCard(props: {
         <Col
           className={clsx(
             'relative',
-            'bg-canvas-100 dark:border-ink-200 border-ink-300 group justify-between overflow-hidden border-l-4 py-2 pl-2 pr-4 dark:bg-opacity-20',
+            'bg-canvas-0 border-ink-200 group justify-between overflow-hidden border-l-4 py-2 pl-2 pr-4 bg-opacity-50',
             'outline-none transition-colors'
           )}
         >
@@ -273,11 +273,11 @@ function DetailedCard(props: {
                   />
                   <span> asked </span>
                 </span>
-                <span className="text-ink-500">
-                  {shortenedFromNow(contract.createdTime)}
-                </span>
+                {/* <span className="text-ink-400">
+                  {shortenedFromNow(contract.createdTime)} ago
+                </span> */}
               </span>
-              <div className="text-ink-500 text-sm">
+              <div className="text-ink-400 text-xs">
                 {contract.resolutionTime ? (
                   <>resolved {fromNow(contract.resolutionTime)}</>
                 ) : contract.closeTime ? (
