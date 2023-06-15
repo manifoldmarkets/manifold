@@ -1,6 +1,6 @@
 import { UserIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import { Contract, CPMMBinaryContract } from 'common/contract'
 import { useEffect, useState } from 'react'
 import { useBets } from 'web/hooks/use-bets-supabase'
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -10,6 +10,12 @@ import { Tooltip } from '../widgets/tooltip'
 import { BetsTabContent } from './contract-tabs'
 import { shortFormatNumber } from 'common/util/format'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { BinaryUserPositionsTable } from 'web/components/contract/user-positions-table'
+import { getCPMMContractUserContractMetrics } from 'common/supabase/contract-metrics'
+import { db } from 'web/lib/supabase/db'
+import { UncontrolledTabs } from 'web/components/layout/tabs'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { Col } from 'web/components/layout/col'
 
 export function TradesButton(props: {
   contract: Contract
@@ -22,7 +28,6 @@ export function TradesButton(props: {
   useEffect(() => {
     setUniqueTraders(contract.uniqueBettorCount)
   }, [contract.uniqueBettorCount])
-
   return (
     <button
       disabled={uniqueTraders === 0}
@@ -57,10 +62,14 @@ export function TradesButton(props: {
         className={clsx(MODAL_CLASS)}
         size={'lg'}
       >
-        <div className={'bg-canvas-0 sticky top-0 py-2'}>
-          Bets on <span className="font-bold">{contract.question}</span>
+        <div className={'bg-canvas-0 sticky top-0'}>
+          <span className="font-bold">{contract.question}</span>
         </div>
-        <div className={SCROLLABLE_MODAL_CLASS}>
+        <div className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
+          {/*In case we need it:*/}
+          {/*<span className={'text-ink-500 text-xs'}>*/}
+          {/*  Currently held positions may not equal total traders*/}
+          {/*</span>*/}
           <BetsModalContent contract={contract} />
         </div>
       </Modal>
@@ -71,7 +80,50 @@ export function TradesButton(props: {
 function BetsModalContent(props: { contract: Contract }) {
   const { contract } = props
   const bets = useBets({ contractId: contract.id })
-  if (bets === undefined) return <LoadingIndicator />
-  else if (bets.length === 0) return <div>No bets yet</div>
-  return <BetsTabContent contract={contract} bets={bets} scrollToTop={false} />
+  const [positions, setPositions] = usePersistentInMemoryState<
+    undefined | Awaited<ReturnType<typeof getCPMMContractUserContractMetrics>>
+  >(undefined, 'market-card-feed-positions-' + contract.id)
+  useEffect(() => {
+    getCPMMContractUserContractMetrics(contract.id, 100, db).then(setPositions)
+  }, [contract.id])
+  if (contract.outcomeType !== 'BINARY') {
+    if (!bets) return <LoadingIndicator />
+    return (
+      <Col className={'mt-2'}>
+        <BetsTabContent contract={contract} bets={bets} scrollToTop={false} />
+      </Col>
+    )
+  }
+
+  return (
+    <UncontrolledTabs
+      tabs={[
+        {
+          title: 'Positions',
+          content: !positions ? (
+            <LoadingIndicator />
+          ) : (
+            <BinaryUserPositionsTable
+              contract={contract as CPMMBinaryContract}
+              positions={positions}
+            />
+          ),
+        },
+        {
+          title: 'Trades',
+          content: !bets ? (
+            <LoadingIndicator />
+          ) : (
+            <Col className={'mt-2'}>
+              <BetsTabContent
+                contract={contract}
+                bets={bets}
+                scrollToTop={false}
+              />
+            </Col>
+          ),
+        },
+      ]}
+    />
+  )
 }

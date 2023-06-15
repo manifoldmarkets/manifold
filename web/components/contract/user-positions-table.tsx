@@ -44,7 +44,7 @@ export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
     contract: CPMMContract
     positions: ContractMetricsByOutcome
-    setTotalPositions: (count: number) => void
+    setTotalPositions?: (count: number) => void
     shareholderStats?: ShareholderStats
   }) {
     const { contract, setTotalPositions } = props
@@ -194,8 +194,8 @@ export const BinaryUserPositionsTable = memo(
           />
         </Row>
 
-        <Row className={'gap-1 sm:gap-8'}>
-          <Col className={'w-full max-w-sm gap-2'}>
+        <Row className={'gap-1'}>
+          <Col className={'w-1/2 gap-2'}>
             <Row className={'text-ink-500 justify-end px-2'}>
               {sortBy === 'profit' ? (
                 <span className={'text-ink-500'}>Profit</span>
@@ -227,7 +227,7 @@ export const BinaryUserPositionsTable = memo(
               )
             })}
           </Col>
-          <Col className={'w-full max-w-sm gap-2'}>
+          <Col className={'w-1/2 gap-2'}>
             <Row className={'text-ink-500 justify-end px-2'}>
               {sortBy === 'profit' ? (
                 <span className={'text-ink-500'}>Loss</span>

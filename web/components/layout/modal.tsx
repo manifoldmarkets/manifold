@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { Fragment, ReactNode } from 'react'
 
 export const MODAL_CLASS =
-  'items-center gap-4 rounded-md bg-canvas-0 px-8 py-6 text-ink-1000'
+  'items-center gap-4 rounded-md bg-canvas-0 sm:px-8 px-4 py-6 text-ink-1000'
 export const SCROLLABLE_MODAL_CLASS =
   'max-h-[70vh] min-h-[20rem] !overflow-auto'
 
