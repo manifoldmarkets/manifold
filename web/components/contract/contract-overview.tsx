@@ -6,6 +6,7 @@ import {
   BinaryContract,
   CPMMStonkContract,
   Contract,
+  MultiContract,
   NumericContract,
   PseudoNumericContract,
 } from 'common/contract'
@@ -35,14 +36,19 @@ import { TimeRangePicker } from '../charts/time-range-picker'
 import { Row } from '../layout/row'
 import { CertOverview } from './cert-overview'
 import { QfOverview } from './qf-overview'
+import { AnswersPanel } from '../answers/answers-panel'
+import { Answer, DpmAnswer } from 'common/answer'
+import { UserBetsSummary } from '../bet/bet-summary'
 
 export const ContractOverview = memo(
   (props: {
     contract: Contract
     bets: Bet[]
     betPoints: HistoryPoint<Partial<Bet>>[]
+    showResolver: boolean
+    onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
   }) => {
-    const { betPoints, contract } = props
+    const { betPoints, contract, showResolver, onAnswerCommentClick } = props
 
     switch (contract.outcomeType) {
       case 'BINARY':
@@ -59,8 +65,13 @@ export const ContractOverview = memo(
         return <QfOverview contract={contract} />
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
-        return <></>
-      // return <ChoiceOverview contract={contract} bets={bets} />
+        return (
+          <ChoiceOverview
+            contract={contract}
+            showResolver={showResolver}
+            onAnswerCommentClick={onAnswerCommentClick}
+          />
+        )
       case 'STONK':
         return <StonkOverview contract={contract} betPoints={betPoints} />
     }
@@ -122,28 +133,41 @@ const BinaryOverview = (props: {
   )
 }
 
-// const ChoiceOverview = (props: {
-//   contract: FreeResponseContract | MultipleChoiceContract
-//   bets: Bet[]
-// }) => {
-//   const { contract, bets } = props
+const ChoiceOverview = (props: {
+  contract: MultiContract
+  showResolver: boolean
+  onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
+}) => {
+  const { contract, showResolver, onAnswerCommentClick } = props
 
-//   return (
-//     <>
-//       <FreeResponseResolution contract={contract} />
-//       <SizedContainer fullHeight={350} mobileHeight={250}>
-//         {(w, h) => (
-//           <ChoiceContractChart
-//             width={w}
-//             height={h}
-//             bets={bets}
-//             contract={contract}
-//           />
-//         )}
-//       </SizedContainer>
-//     </>
-//   )
-// }
+  if (!onAnswerCommentClick) return null
+  return (
+    //     <FreeResponseResolution contract={contract} />
+    //     <SizedContainer fullHeight={350} mobileHeight={250}>
+    //       {(w, h) => (
+    //         <ChoiceContractChart
+    //           width={w}
+    //           height={h}
+    //           bets={bets}
+    //           contract={contract}
+    //         />
+    //       )}
+    //     </SizedContainer>
+    <>
+      {' '}
+      <div />
+      <AnswersPanel
+        contract={contract}
+        onAnswerCommentClick={onAnswerCommentClick}
+        showResolver={showResolver}
+      />
+      <UserBetsSummary
+        className="border-ink-200 mt-2 !mb-2 "
+        contract={contract}
+      />
+    </>
+  )
+}
 
 const PseudoNumericOverview = (props: {
   contract: PseudoNumericContract
