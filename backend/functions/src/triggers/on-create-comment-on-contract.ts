@@ -158,6 +158,8 @@ export const onCreateCommentOnContract = functions
       bet,
       eventId
     )
+    // Leave out non-top-level comments (aka replies) from the feed
+    if (comment.replyToCommentId) return
     await addCommentOnContractToFeed(
       contractId,
       comment,
