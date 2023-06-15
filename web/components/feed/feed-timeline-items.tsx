@@ -103,6 +103,11 @@ export const FeedTimelineItems = (props: {
                 trackingPostfix="feed"
                 hasItems={hasRelatedItems}
                 showReason={true}
+                reason={
+                  'reasonDescription' in item
+                    ? item.reasonDescription
+                    : undefined
+                }
               />
               {parentComments.length > 0 && (
                 <FeedCommentItem
