@@ -117,7 +117,7 @@ function FeedTimelineContent() {
       />
       <div className="relative">
         <VisibilityObserver
-          className="pointer-events-none absolute bottom-0 h-5 w-full select-none "
+          className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
           onVisibilityUpdated={(visible) => visible && loadMoreOlder()}
         />
       </div>
