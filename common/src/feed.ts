@@ -21,7 +21,7 @@ export type FEED_REASON_TYPES =
   | 'similar_interest_vector_to_news_vector'
 
 export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
-  contract_probability_changed: 0.12,
+  contract_probability_changed: 0.135,
   trending_contract: 0.175,
   new_contract: 0.125,
   new_comment: 0.15,
