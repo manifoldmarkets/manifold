@@ -255,7 +255,10 @@ function DetailedCard(props: {
       <Col className="gap-2 p-4">
         {/* Title is link to contract for open in new tab and a11y */}
         <Row className="justify-between">
-          <Row onClick={(e) => e.stopPropagation()} className="gap-2 items-center">
+          <Row
+            onClick={(e) => e.stopPropagation()}
+            className="items-center gap-2"
+          >
             <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
             <Col className="w-full">
               <span className="whitespace-nowrap">
