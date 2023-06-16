@@ -29,7 +29,7 @@ export const scoreContractsScheduler = functions
   })
 
 export const scorecontracts = onRequest(
-  { timeoutSeconds: 3600, memory: '1GiB' },
+  { timeoutSeconds: 3600, memory: '1GiB', secrets },
   async (_req, res) => {
     const fr = admin.firestore()
     const db = createSupabaseClient()
