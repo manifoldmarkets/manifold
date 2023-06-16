@@ -1061,7 +1061,8 @@ export const createNewContractNotification = async (
       privateUser,
       reason
     )
-    if (sendToBrowser) {
+    // Users only get new contracts in their feed unless they're mentioned
+    if (sendToBrowser && reason !== 'contract_from_followed_user') {
       const notification: Notification = {
         id: idempotencyKey,
         userId: userId,
