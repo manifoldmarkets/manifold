@@ -2,7 +2,6 @@ import * as functions from 'firebase-functions'
 import { JSONContent } from '@tiptap/core'
 
 import { getUser } from 'shared/utils'
-import { createNewContractNotification } from 'shared/create-notification'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
@@ -11,6 +10,7 @@ import { secrets } from 'common/secrets'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { addContractToFeed } from 'shared/create-feed'
 import { INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
+import { createNewContractNotification } from 'shared/create-notification'
 
 export const onCreateContract = functions
   .runWith({
@@ -48,7 +48,7 @@ export const onCreateContract = functions
           INTEREST_DISTANCE_THRESHOLDS.new_contract,
       }
     )
-    // TODO: after feed goes live, remove non mentioned users from notifications
+
     await createNewContractNotification(
       contractCreator,
       contract,

@@ -54,9 +54,6 @@ export const subcollectionTables: SubcollectionTableMapping = {
     follows: 'contract_follows',
     liquidity: 'contract_liquidity',
   },
-  groups: {
-    groupContracts: 'group_contracts',
-  },
 }
 
 export function getInstanceHostname(instanceId: string) {

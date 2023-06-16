@@ -446,20 +446,20 @@ export interface Database {
       group_contracts: {
         Row: {
           contract_id: string
-          data: Json
-          fs_updated_time: string
+          data: Json | null
+          fs_updated_time: string | null
           group_id: string
         }
         Insert: {
           contract_id: string
-          data: Json
-          fs_updated_time: string
+          data?: Json | null
+          fs_updated_time?: string | null
           group_id: string
         }
         Update: {
           contract_id?: string
-          data?: Json
-          fs_updated_time?: string
+          data?: Json | null
+          fs_updated_time?: string | null
           group_id?: string
         }
         Relationships: []

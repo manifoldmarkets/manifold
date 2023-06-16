@@ -82,13 +82,26 @@ export function getOutcomeProbability(contract: Contract, outcome: string) {
   }
 }
 
-export function getAnswerProbability(answers: Answer[], answerId: string) {
-  const answer = answers.find((a) => a.id === answerId)
-  if (!answer) throw new Error('Answer not found')
+export function getAnswerProbability(
+  contract: MultiContract,
+  answerId: string
+) {
+  if (contract.mechanism === 'dpm-2') {
+    return getDpmOutcomeProbability(contract.totalShares, answerId)
+  }
 
-  const { poolYes, poolNo } = answer
-  const pool = { YES: poolYes, NO: poolNo }
-  return getCpmmProbability(pool, 0.5)
+  if (contract.mechanism === 'cpmm-multi-1') {
+    const answer = contract.answers.find((a) => a.id === answerId)
+    if (!answer) throw new Error('Answer not found')
+
+    const { poolYes, poolNo } = answer
+    const pool = { YES: poolYes, NO: poolNo }
+    return getCpmmProbability(pool, 0.5)
+  }
+
+  throw new Error(
+    'getAnswerProbability not implemented for mechanism ' + contract.mechanism
+  )
 }
 
 export function getOutcomeProbabilityAfterBet(
@@ -422,7 +435,7 @@ export function getTopNSortedAnswers(contract: MultiContract, n: number) {
     ),
     ...sortBy(
       losingAnswers,
-      (answer) => -1 * getOutcomeProbability(contract, answer.id)
+      (answer) => -1 * getAnswerProbability(contract, answer.id)
     ),
   ].slice(0, n)
   return sortedAnswers

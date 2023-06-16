@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import {
-  getOutcomeProbability,
   getOutcomeProbabilityAfterBet,
   getProbability,
   getTopAnswer,
@@ -505,8 +504,7 @@ function cardText(contract: Contract, previewProb?: number) {
     case 'FREE_RESPONSE': {
       const topAnswer = getTopAnswer(contract)
       return (
-        topAnswer &&
-        formatPercent(getOutcomeProbability(contract, topAnswer.id))
+        topAnswer && formatPercent(getAnswerProbability(contract, topAnswer.id))
       )
     }
   }
@@ -564,10 +562,7 @@ function ContractCardAnswer(props: {
   type: 'winner' | 'loser' | 'contender'
 }) {
   const { contract, answer, answersArray, type } = props
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
-  const prob = isCpmm
-    ? getAnswerProbability(contract.answers, answer.id)
-    : getOutcomeProbability(contract, answer.id)
+  const prob = getAnswerProbability(contract, answer.id)
   const display = formatPercent(prob)
   const isClosed = (contract.closeTime ?? Infinity) < Date.now()
   const answerColor = getAnswerColor(answer, answersArray)
@@ -616,7 +611,7 @@ function getProb(contract: Contract) {
       outcomeType === 'STONK'
     ? getProbability(contract)
     : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
-    ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
+    ? getAnswerProbability(contract, getTopAnswer(contract)?.id || '')
     : outcomeType === 'NUMERIC'
     ? getNumericScale(contract)
     : 1 // Should not happen

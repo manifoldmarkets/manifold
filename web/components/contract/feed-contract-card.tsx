@@ -1,3 +1,9 @@
+import {
+  ChatIcon,
+  FireIcon,
+  PresentationChartLineIcon,
+  SparklesIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -20,11 +26,11 @@ import { fromNow } from 'web/lib/util/time'
 import { ClaimButton } from '../ad/claim-ad-button'
 import { BetRow } from '../bet/bet-row'
 import { QuickOutcomeView } from '../bet/quick-bet'
-import { ReasonChosen } from '../feed/feed-reason-chosen'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { CommentsButton } from '../swipe/swipe-comments'
 import { Avatar } from '../widgets/avatar'
+import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { PublicMarketGroups } from './contract-details'
 import { ContractStatusLabel } from './contracts-table'
@@ -37,20 +43,10 @@ export function FeedContractCard(props: {
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
   className?: string
-  reason?: string
   hasItems?: boolean
-  showReason?: boolean
   item?: FeedTimelineItem
 }) {
-  const {
-    className,
-    promotedData,
-    reason,
-    trackingPostfix,
-    hasItems,
-    showReason,
-    item,
-  } = props
+  const { className, promotedData, trackingPostfix, hasItems, item } = props
   const user = useUser()
 
   const contract =
@@ -86,13 +82,6 @@ export function FeedContractCard(props: {
   if (!hasItems) {
     return (
       <Col>
-        {showReason && (
-          <ReasonChosen
-            contract={contract}
-            reason={promotedData ? 'Boosted' : reason}
-            className="mb-1"
-          />
-        )}
         <DetailedCard
           ref={ref}
           contract={contract}
@@ -114,8 +103,6 @@ export function FeedContractCard(props: {
       trackClick={trackClick}
       promotedData={promotedData}
       user={user}
-      reason={reason}
-      showReason={showReason}
     />
   )
 }
@@ -126,19 +113,8 @@ function SimpleCard(props: {
   trackClick: () => void
   user: User | null | undefined
   promotedData?: { adId: string; reward: number }
-  /** location of the card, to disambiguate card click events */
-  reason?: string
-  showReason?: boolean
 }) {
-  const {
-    contract,
-    user,
-    textColor,
-    trackClick,
-    promotedData,
-    reason,
-    showReason,
-  } = props
+  const { contract, user, textColor, trackClick, promotedData } = props
   const { question, outcomeType, mechanism } = contract
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   return (
@@ -147,17 +123,10 @@ function SimpleCard(props: {
         <div className="dark:border-ink-200 border-ink-300 ml-2 h-1/3 w-4 rounded-tl-xl border-2 border-b-0 border-r-0 sm:ml-4 sm:w-6" />
       </Col>
       <Col className="mt-2 grow">
-        {showReason && (
-          <ReasonChosen
-            contract={contract}
-            reason={promotedData ? 'Boosted' : reason}
-            className="mb-1"
-          />
-        )}
         <Col
           className={clsx(
             'relative',
-            'bg-canvas-100 dark:border-ink-200 border-ink-300 group justify-between overflow-hidden border-l-4 py-2 pl-2 pr-4 dark:bg-opacity-20',
+            'bg-canvas-0 border-ink-200 group justify-between overflow-hidden border-l-4 bg-opacity-50 py-2 pl-2 pr-4',
             'outline-none transition-colors'
           )}
         >
@@ -198,6 +167,33 @@ function SimpleCard(props: {
         </Col>
       </Col>
     </Row>
+  )
+}
+
+function ReasonIcon(props: { item?: FeedTimelineItem }) {
+  const { item } = props
+  if (!item) return null
+
+  const { reasonDescription, createdTime, dataType } = item
+
+  const SpecificIcon =
+    (
+      {
+        trending_contract: FireIcon,
+        new_comment: ChatIcon,
+        popular_comment: ChatIcon,
+        new_contract: SparklesIcon,
+        contract_probability_changed: PresentationChartLineIcon,
+      } as any
+    )[dataType] ?? FireIcon
+
+  return (
+    <Tooltip text={reasonDescription} className="align-middle">
+      <SpecificIcon className="text-ink-400 h-5 w-5" />
+      <div className="text-ink-400 text-sm">
+        {shortenedFromNow(createdTime)}
+      </div>
+    </Tooltip>
   )
 }
 
@@ -257,7 +253,7 @@ function DetailedCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Col className="gap-2 p-4 py-2">
+      <Col className="gap-2 p-4">
         {/* Title is link to contract for open in new tab and a11y */}
         <Row className="justify-between">
           <Row onClick={(e) => e.stopPropagation()} className="gap-2">
@@ -273,11 +269,11 @@ function DetailedCard(props: {
                   />
                   <span> asked </span>
                 </span>
-                <span className="text-ink-500">
-                  {shortenedFromNow(contract.createdTime)}
-                </span>
+                {/* <span className="text-ink-400">
+                  {shortenedFromNow(contract.createdTime)} ago
+                </span> */}
               </span>
-              <div className="text-ink-500 text-sm">
+              <div className="text-ink-400 text-xs">
                 {contract.resolutionTime ? (
                   <>resolved {fromNow(contract.resolutionTime)}</>
                 ) : contract.closeTime ? (
@@ -292,7 +288,12 @@ function DetailedCard(props: {
               </div>
             </Col>
           </Row>
-          {promotedData && <ClaimButton {...promotedData} className={'z-10'} />}
+
+          {promotedData ? (
+            <ClaimButton {...promotedData} className={'z-10'} />
+          ) : (
+            <ReasonIcon item={item} />
+          )}
         </Row>
         <Link
           href={path}
@@ -331,8 +332,8 @@ function DetailedCard(props: {
         <Col className="relative mt-1 h-40 w-full items-center justify-center">
           <div className="absolute inset-0 mt-2 bg-transparent transition-all group-hover:saturate-150">
             <Image
-              fill
               alt=""
+              fill
               sizes="100vw"
               className="object-cover"
               src={coverImageUrl}

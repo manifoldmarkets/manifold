@@ -251,7 +251,6 @@ function GroupDisplay(props: {
       prefetch={false}
       href={groupPath(groupToDisplay.slug)}
       onClick={(e) => {
-        e.preventDefault()
         e.stopPropagation()
       }}
       className={clsx(

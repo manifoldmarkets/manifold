@@ -14,7 +14,10 @@ import {
 } from 'web/hooks/use-additional-feed-items'
 import { useUnseenReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
 import { BoostsType } from 'web/hooks/use-feed'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import {
+  FeedTimelineItem,
+  shouldIgnoreCommentsOnContract,
+} from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
 import { ContractsTable } from '../contract/contracts-table'
@@ -22,6 +25,9 @@ import { NewsArticle } from '../news-article'
 import { FeedBetsItem } from './feed-bet-item'
 import { groupBetsByCreatedTimeAndUserId } from './feed-bets'
 import { FeedCommentItem } from './feed-comment-item'
+import { Contract } from 'common/contract'
+import { Bet } from 'common/bet'
+import { ContractComment } from 'common/comment'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
@@ -45,9 +51,13 @@ export const FeedTimelineItems = (props: {
 
   const contractIdsWithoutComments = filterDefined(
     savedFeedTimelineItems.map((item) =>
-      item.contractId && !item.comments ? item.contractId : null
+      item.contract?.id &&
+      !item.comments &&
+      !shouldIgnoreCommentsOnContract(item.contract)
+        ? item.contractId
+        : null
     )
-  ).concat(boostedContractItems.map((c) => c.contract.id))
+  )
 
   const recentComments = useUnseenReplyChainCommentsOnContracts(
     contractIdsWithoutComments,
@@ -67,7 +77,6 @@ export const FeedTimelineItems = (props: {
   return (
     <Col className="gap-4">
       {feedTimelineItems.map((item) => {
-        // Boosted contract
         if (item.contract && ('ad_id' in item || 'contract' in item)) {
           const { contract } = item
           const parentComments = (
@@ -82,52 +91,31 @@ export const FeedTimelineItems = (props: {
             (bets) =>
               sumBy(bets, (bet) => Math.abs(bet.amount)) > MIN_BET_AMOUNT
           )
-          const hasRelatedItems =
-            parentComments.length > 0 || groupedBetsByTime.length > 0
-
-          let promotedData = undefined
+          // Boosted contract
           if ('ad_id' in item) {
-            promotedData = {
-              adId: item.ad_id,
-              reward: AD_REDEEM_REWARD,
-            }
-          }
-          return (
-            <FeedItemFrame
-              item={'ad_id' in item ? undefined : item}
-              key={contract.id + 'feed-timeline-item'}
-            >
-              <FeedContractCard
+            return (
+              <FeedContractAndRelatedItems
                 contract={contract}
-                promotedData={promotedData}
-                trackingPostfix="feed"
-                hasItems={hasRelatedItems}
-                showReason={true}
-                reason={
-                  'reasonDescription' in item
-                    ? item.reasonDescription
-                    : undefined
-                }
+                promotedData={{
+                  adId: item.ad_id,
+                  reward: AD_REDEEM_REWARD,
+                }}
+                parentComments={[]}
+                childCommentsByParentCommentId={{}}
+                groupedBetsByTime={groupedBetsByTime}
                 item={'ad_id' in item ? undefined : item}
               />
-              {parentComments.length > 0 && (
-                <FeedCommentItem
-                  contract={contract}
-                  commentThreads={parentComments.map((parentComment) => ({
-                    parentComment,
-                    childComments:
-                      childCommentsByParentCommentId[parentComment.id] ?? [],
-                  }))}
-                />
-              )}
-              {(!parentComments || parentComments.length === 0) &&
-                groupedBetsByTime.length > 0 && (
-                  <FeedBetsItem
-                    contract={contract}
-                    groupedBets={groupedBetsByTime}
-                  />
-                )}
-            </FeedItemFrame>
+            )
+          }
+          // Organic contract
+          return (
+            <FeedContractAndRelatedItems
+              contract={contract}
+              parentComments={parentComments}
+              childCommentsByParentCommentId={childCommentsByParentCommentId}
+              groupedBetsByTime={groupedBetsByTime}
+              item={item}
+            />
           )
         } else if ('news' in item && item.news) {
           const { news } = item
@@ -156,6 +144,52 @@ export const FeedTimelineItems = (props: {
         }
       })}
     </Col>
+  )
+}
+
+const FeedContractAndRelatedItems = (props: {
+  contract: Contract
+  parentComments: ContractComment[]
+  childCommentsByParentCommentId: Record<string, ContractComment[]>
+  groupedBetsByTime: Bet[][]
+  item?: FeedTimelineItem
+  promotedData?: { adId: string; reward: number }
+}) => {
+  const {
+    contract,
+    promotedData,
+    item,
+    groupedBetsByTime,
+    childCommentsByParentCommentId,
+    parentComments,
+  } = props
+  const hasRelatedItems =
+    parentComments.length > 0 || groupedBetsByTime.length > 0
+
+  return (
+    <FeedItemFrame item={item} key={contract.id + 'feed-timeline-item'}>
+      <FeedContractCard
+        contract={contract}
+        promotedData={promotedData}
+        trackingPostfix="feed"
+        hasItems={hasRelatedItems}
+        item={item}
+      />
+      {parentComments.length > 0 && (
+        <FeedCommentItem
+          contract={contract}
+          commentThreads={parentComments.map((parentComment) => ({
+            parentComment,
+            childComments:
+              childCommentsByParentCommentId[parentComment.id] ?? [],
+          }))}
+        />
+      )}
+      {(!parentComments || parentComments.length === 0) &&
+        groupedBetsByTime.length > 0 && (
+          <FeedBetsItem contract={contract} groupedBets={groupedBetsByTime} />
+        )}
+    </FeedItemFrame>
   )
 }
 

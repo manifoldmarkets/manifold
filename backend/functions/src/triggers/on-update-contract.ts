@@ -4,7 +4,6 @@ import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/creat
 import { Contract, contractPath } from 'common/contract'
 import * as admin from 'firebase-admin'
 
-import { GroupContractDoc } from 'common/group'
 import { isEqual } from 'lodash'
 import { secrets } from 'common/secrets'
 import { run } from 'common/supabase/utils'
@@ -20,10 +19,6 @@ export const onUpdateContract = functions
     const { closeTime, question, description, resolution } = contract
 
     const db = createSupabaseClient()
-
-    if (!isEqual(previousContract.groupSlugs, contract.groupSlugs)) {
-      await handleContractGroupUpdated(previousContract, contract)
-    }
 
     if (
       !isEqual(previousContract.description, description) ||
@@ -96,44 +91,6 @@ async function handleUpdatedCloseTime(
     sourceText,
     contract
   )
-}
-
-async function handleContractGroupUpdated(
-  previousContract: Contract,
-  contract: Contract
-) {
-  const prevLength = previousContract.groupSlugs?.length ?? 0
-  const newLength = contract.groupSlugs?.length ?? 0
-  if (prevLength < newLength) {
-    // Contract was added to a new group
-    const groupId = contract.groupLinks?.find(
-      (link) =>
-        !previousContract.groupLinks
-          ?.map((l) => l.groupId)
-          .includes(link.groupId)
-    )?.groupId
-    if (!groupId) throw new Error('Could not find new group id')
-
-    await firestore
-      .collection(`groups/${groupId}/groupContracts`)
-      .doc(contract.id)
-      .set({
-        contractId: contract.id,
-        createdTime: Date.now(),
-      } as GroupContractDoc)
-  }
-  if (prevLength > newLength) {
-    // Contract was removed from a group
-    const groupId = previousContract.groupLinks?.find(
-      (link) => !contract.groupLinks?.some((l) => l.groupId === link.groupId)
-    )?.groupId
-    if (!groupId) throw new Error('Could not find old group id')
-
-    await firestore
-      .collection(`groups/${groupId}/groupContracts`)
-      .doc(contract.id)
-      .delete()
-  }
 }
 
 const getPropsThatTriggerRevalidation = (contract: Contract) => {

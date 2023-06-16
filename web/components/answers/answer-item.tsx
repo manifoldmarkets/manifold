@@ -10,7 +10,7 @@ import { formatPercent } from 'common/util/format'
 import { tradingAllowed } from 'common/contract'
 import { Linkify } from '../widgets/linkify'
 import { Input } from '../widgets/input'
-import { getAnswerProbability, getOutcomeProbability } from 'common/calculate'
+import { getAnswerProbability } from 'common/calculate'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 
 export function AnswerItem(props: {
@@ -33,15 +33,12 @@ export function AnswerItem(props: {
     onDeselect,
     isInModal,
   } = props
-  const { resolution, resolutions, mechanism, outcomeType } = contract
+  const { resolution, resolutions, outcomeType } = contract
   const { text } = answer
-  const isCpmm = mechanism === 'cpmm-multi-1'
   const user = useUserByIdOrAnswer(answer)
   const isChosen = chosenProb !== undefined
 
-  const prob = isCpmm
-    ? getAnswerProbability(contract.answers, answer.id)
-    : getOutcomeProbability(contract, answer.id)
+  const prob = getAnswerProbability(contract, answer.id)
   const roundedProb = Math.round(prob * 100)
   const probPercent = formatPercent(prob)
   const wasResolvedTo =

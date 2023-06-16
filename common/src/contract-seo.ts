@@ -1,8 +1,8 @@
 import { Contract, MultiContract } from './contract'
 import { getFormattedMappedValue } from './pseudo-numeric'
 import {
+  getAnswerProbability,
   getDisplayProbability,
-  getOutcomeProbability,
   getTopAnswer,
 } from './calculate'
 import { richTextToString } from './util/parse'
@@ -32,7 +32,7 @@ export const getContractOGProps = (
     outcomeType === 'BINARY'
       ? formatPercent(getDisplayProbability(contract))
       : topAnswer
-      ? formatPercent(getOutcomeProbability(contract, topAnswer.id))
+      ? formatPercent(getAnswerProbability(contract as MultiContract, topAnswer.id))
       : undefined
 
   const numericValue =
