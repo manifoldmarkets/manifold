@@ -20,7 +20,6 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
-import { fromNow } from 'web/lib/util/time'
 import { ClaimButton } from '../ad/claim-ad-button'
 import { BetRow } from '../bet/bet-row'
 import { QuickOutcomeView } from '../bet/quick-bet'
@@ -256,7 +255,7 @@ function DetailedCard(props: {
       <Col className="gap-2 p-4">
         {/* Title is link to contract for open in new tab and a11y */}
         <Row className="justify-between">
-          <Row onClick={(e) => e.stopPropagation()} className="gap-2">
+          <Row onClick={(e) => e.stopPropagation()} className="gap-2 items-center">
             <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
             <Col className="w-full">
               <span className="whitespace-nowrap">
@@ -269,11 +268,8 @@ function DetailedCard(props: {
                   />
                   <span> asked </span>
                 </span>
-                {/* <span className="text-ink-400">
-                  {shortenedFromNow(contract.createdTime)} ago
-                </span> */}
               </span>
-              <div className="text-ink-400 text-xs">
+              {/* <div className="text-ink-400 text-xs">
                 {contract.resolutionTime ? (
                   <>resolved {fromNow(contract.resolutionTime)}</>
                 ) : contract.closeTime ? (
@@ -285,7 +281,7 @@ function DetailedCard(props: {
                 ) : (
                   'Never closes'
                 )}
-              </div>
+              </div> */}
             </Col>
           </Row>
 
