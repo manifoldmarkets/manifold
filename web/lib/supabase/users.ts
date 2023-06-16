@@ -150,3 +150,13 @@ export async function getTopUserCreators(
   // work around rpc typing bug
   return data as unknown as { user_id: string; n: number }[]
 }
+
+export const getTotalContractsCreated = async (userId: string) => {
+  const { count } = await run(
+    db
+      .from('public_contracts')
+      .select('*', { head: true, count: 'exact' })
+      .eq('creator_id', userId)
+  )
+  return count
+}
