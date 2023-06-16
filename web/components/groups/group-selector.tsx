@@ -14,6 +14,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
 import { searchGroups } from 'web/lib/supabase/groups'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { PRIVACY_STATUS_ITEMS } from './group-privacy-modal'
 
 export function GroupSelector(props: {
   selectedGroup: Group | undefined
@@ -162,10 +163,13 @@ export function GroupSelector(props: {
                               </Row>
                               <Row
                                 className={clsx(
-                                  'text-ink-500 gap-2 text-sm',
+                                  'text-ink-500 items-center gap-2 text-sm',
                                   active ? 'text-ink-1000' : 'text-ink-500'
                                 )}
                               >
+                                {group.privacyStatus != 'public' &&
+                                  PRIVACY_STATUS_ITEMS[group.privacyStatus]
+                                    .icon}
                                 <Row className="w-12 items-center gap-0.5">
                                   <UsersIcon className="h-4 w-4" />
                                   {group.totalMembers}
