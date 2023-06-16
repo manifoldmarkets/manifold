@@ -11,9 +11,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Row } from 'web/components/layout/row'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
-import { searchGroupsToAdd } from 'web/lib/supabase/contract-groups'
 import { searchGroups } from 'web/lib/supabase/groups'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 
@@ -41,7 +39,6 @@ export function GroupSelector(props: {
   const [query, setQuery] = useState('')
   const [searchedGroups, setSearchedGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(false)
-  const isManifoldAdmin = useAdmin()
 
   const requestNumber = useRef(0)
 

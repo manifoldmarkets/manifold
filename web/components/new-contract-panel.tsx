@@ -1,8 +1,8 @@
 import { ExternalLinkIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
-import clsx from 'clsx'
 
 import {
   MAX_DESCRIPTION_LENGTH,
@@ -35,15 +35,14 @@ import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { QfExplainer } from './contract/qf-overview'
 
-import { Contract } from 'common/contract'
-import WaitingForSupabaseButton from './contract/waiting-for-supabase-button'
-import { Col } from './layout/col'
 import { generateJSON } from '@tiptap/core'
-import { extensions } from 'common/util/parse'
+import { Contract } from 'common/contract'
 import { STONK_NO, STONK_YES } from 'common/stonk'
+import { extensions } from 'common/util/parse'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getGroup } from 'web/lib/supabase/group'
-import { useAdmin } from 'web/hooks/use-admin'
+import WaitingForSupabaseButton from './contract/waiting-for-supabase-button'
+import { Col } from './layout/col'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -106,7 +105,6 @@ export function NewContractPanel(props: {
     ante,
     newContract,
   } = useNewContract(creator, params)
-  const isAdmin = useAdmin()
 
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
   const [toggleVisibility, setToggleVisibility] = useState<
