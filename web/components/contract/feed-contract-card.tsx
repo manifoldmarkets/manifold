@@ -360,30 +360,27 @@ function DetailedCard(props: {
         </div>
       )}
       <Col className="relative">
-        <Row className="px-4 py-1" onClick={(e) => e.stopPropagation()}>
-          <Col className={'w-[40%] items-start justify-center'}>
-            <TradesButton contract={contract} />
-          </Col>
-          <Col className={'w-[50%] justify-center'}>
-            <Row className={'justify-between'}>
-              <CommentsButton contract={contract} user={user} />
-              <div className="flex items-center gap-1.5 p-1">
-                <LikeButton
-                  contentId={contract.id}
-                  contentCreatorId={contract.creatorId}
-                  user={user}
-                  contentType={'contract'}
-                  totalLikes={contract.likedByUserCount ?? 0}
-                  contract={contract}
-                  contentText={question}
-                  size="md"
-                  color="gray"
-                  className="!px-0"
-                  trackingLocation={'contract card (feed)'}
-                />
-              </div>
-            </Row>
-          </Col>
+        <Row
+          className="justify-between px-4 py-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <TradesButton contract={contract} />
+          <CommentsButton contract={contract} user={user} />
+          <div className="flex items-center gap-1.5 p-1">
+            <LikeButton
+              contentId={contract.id}
+              contentCreatorId={contract.creatorId}
+              user={user}
+              contentType={'contract'}
+              totalLikes={contract.likedByUserCount ?? 0}
+              contract={contract}
+              contentText={question}
+              size="md"
+              color="gray"
+              className="!px-0"
+              trackingLocation={'contract card (feed)'}
+            />
+          </div>
         </Row>
       </Col>
       {hasItems && (
