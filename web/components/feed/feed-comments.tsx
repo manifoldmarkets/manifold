@@ -579,7 +579,7 @@ function FeedCommentHeader(props: {
           )}
         </span>
         {inTimeline ? (
-          <span className="text-sm">
+          <span>
             {' '}
             commented{' '}
             <span className="text-ink-500">
