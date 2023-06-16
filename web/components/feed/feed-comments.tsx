@@ -579,12 +579,12 @@ function FeedCommentHeader(props: {
           )}
         </span>
         {inTimeline ? (
-          <span className="text-ink-500 text-sm">
+          <span className="text-sm">
             {' '}
-            commented {shortenedFromNow(
-              editedTime ? editedTime : createdTime
-            )}{' '}
-            ago
+            commented{' '}
+            <span className="text-ink-500">
+              {shortenedFromNow(editedTime ? editedTime : createdTime)}{' '}
+            </span>
           </span>
         ) : (
           <CopyLinkDateTimeComponent

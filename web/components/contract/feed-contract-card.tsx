@@ -35,6 +35,7 @@ import { TradesButton } from './trades-button'
 import { User } from 'common/user'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { Tooltip } from '../widgets/tooltip'
+import { fromNow } from 'web/lib/util/time'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -98,22 +99,27 @@ export function FeedContractCard(props: {
   return (
     <SimpleCard
       contract={contract}
+      item={item}
       textColor={textColor}
       trackClick={trackClick}
       promotedData={promotedData}
       user={user}
+      ref={ref}
     />
   )
 }
 
 function SimpleCard(props: {
+  ref: MutableRefObject<HTMLDivElement | null>
   contract: Contract
   textColor: string
   trackClick: () => void
   user: User | null | undefined
+  item?: FeedTimelineItem
   promotedData?: { adId: string; reward: number }
 }) {
-  const { contract, user, textColor, trackClick, promotedData } = props
+  const { contract, user, textColor, trackClick, promotedData, item, ref } =
+    props
   const { question, outcomeType, mechanism } = contract
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   return (
@@ -125,44 +131,51 @@ function SimpleCard(props: {
         <Col
           className={clsx(
             'relative',
-            'bg-canvas-0 border-ink-200 group justify-between overflow-hidden border-l-4 bg-opacity-50 py-2 pl-2 pr-4',
+            'bg-canvas-0 border-ink-200 group justify-between gap-2 overflow-hidden border-l-4 bg-opacity-50 py-2 pl-2 pr-4',
             'outline-none transition-colors'
           )}
         >
-          <Row className="mb-1 justify-between">
-            <Col className="justify-end">
-              <span className="text-ink-500">
-                <UserLink
-                  name={contract.creatorName}
+          <Row className="w-full justify-between gap-4">
+            <Row className="items-center gap-2">
+              <Col className="h-full justify-start">
+                <Avatar
                   username={contract.creatorUsername}
-                />{' '}
-                asked
-              </span>
-            </Col>
+                  avatarUrl={contract.creatorAvatarUrl}
+                  size="2xs"
+                  className="mt-1"
+                />
+              </Col>
+              <Link
+                className={clsx(
+                  'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
+                  textColor
+                )}
+                onClick={trackClick}
+                href={contractPath(contract)}
+              >
+                {question}
+              </Link>
+            </Row>
             {promotedData && (
               <ClaimButton {...promotedData} className={'z-10'} />
             )}
           </Row>
-          <Row className="w-full justify-between gap-4">
-            <Link
-              className={clsx(
-                'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
-                textColor
-              )}
-              onClick={trackClick}
-              href={contractPath(contract)}
-            >
-              {question}
-            </Link>
-            <div className="font-semibold">
-              <ContractStatusLabel contract={contract} />
-            </div>
+
+          <Row
+            ref={ref}
+            className="text-ink-500 w-full items-center gap-3 text-sm"
+          >
+            <QuickOutcomeView
+              contract={contract}
+              showChange={
+                item?.dataType === 'contract_probability_changed' ||
+                item?.dataType === 'trending_contract'
+              }
+              size="sm"
+            />
+
+            {isBinaryCpmm && <BetRow contract={contract} user={user} />}
           </Row>
-          {isBinaryCpmm && (
-            <Row className="h-8 justify-end text-sm">
-              <BetRow contract={contract} user={user} />
-            </Row>
-          )}
         </Col>
       </Col>
     </Row>
@@ -189,9 +202,6 @@ function ReasonIcon(props: { item?: FeedTimelineItem }) {
   return (
     <Tooltip text={reasonDescription} className="align-middle">
       <SpecificIcon className="text-ink-400 h-5 w-5" />
-      <div className="text-ink-400 text-sm">
-        {shortenedFromNow(createdTime)}
-      </div>
     </Tooltip>
   )
 }
@@ -268,23 +278,13 @@ function DetailedCard(props: {
                     username={creatorUsername}
                     createdTime={creatorCreatedTime}
                     className={'overflow-none flex-shrink font-semibold'}
-                  />
-                  <span> asked </span>
+                  />{' '}
+                  asked
                 </span>
               </span>
-              {/* <div className="text-ink-400 text-xs">
-                {contract.resolutionTime ? (
-                  <>resolved {fromNow(contract.resolutionTime)}</>
-                ) : contract.closeTime ? (
-                  contract.closeTime <= Date.now() ? (
-                    <>closed {fromNow(contract.closeTime)}</>
-                  ) : (
-                    <>closes {fromNow(contract.closeTime)}</>
-                  )
-                ) : (
-                  'Never closes'
-                )}
-              </div> */}
+              <div className="text-ink-400 text-sm">
+                {fromNow(contract.createdTime)}
+              </div>
             </Col>
           </Row>
 
@@ -317,6 +317,7 @@ function DetailedCard(props: {
               item?.dataType === 'contract_probability_changed' ||
               item?.dataType === 'trending_contract'
             }
+            size="sm"
           />
 
           {isBinaryCpmm && <BetRow contract={contract} user={user} />}

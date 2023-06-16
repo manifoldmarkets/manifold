@@ -400,8 +400,9 @@ export function QuickOutcomeView(props: {
   previewProb?: number
   numAnswersFR?: number
   showChange?: boolean
+  size?: 'sm' | 'md'
 }) {
-  const { contract, showChange, previewProb, numAnswersFR } = props
+  const { contract, showChange, previewProb, numAnswersFR, size = 'md' } = props
   const { outcomeType } = contract
   const isMobile = useIsMobile()
   const prob = isMobile ? getProb(contract) : previewProb ?? getProb(contract)
@@ -422,8 +423,9 @@ export function QuickOutcomeView(props: {
     return (
       <div
         className={clsx(
-          'relative h-8 w-full overflow-hidden rounded-md',
-          getBgColor(contract)
+          'relative w-full overflow-hidden rounded-md',
+          getBgColor(contract),
+          size == 'sm' ? 'h-7' : 'h-8'
         )}
       >
         <div
@@ -435,14 +437,17 @@ export function QuickOutcomeView(props: {
           aria-hidden
         />
         <Row
-          className={`absolute inset-0 items-center justify-center gap-1 text-lg font-semibold ${textColor}`}
+          className={clsx(
+            `absolute inset-0 items-center justify-center gap-1 font-semibold ${textColor}`,
+            size == 'sm' ? 'text-base' : 'text-lg'
+          )}
         >
           {outcomeType === 'STONK' ? ENV_CONFIG.moneyMoniker : ''}
           {cardText(contract, isMobile ? undefined : previewProb)}
           {showChange && probChange != 0 && (
             <span
               className={clsx(
-                'ml-0.5 text-base font-normal',
+                'ml-0.5 font-normal',
                 probChange! > 0 ? 'text-teal-500' : 'text-scarlet-500'
               )}
             >
