@@ -114,7 +114,6 @@ export function NewContractPanel(props: {
   >('public')
 
   useEffect(() => {
-    console.log(selectedGroup?.privacyStatus)
     if (selectedGroup?.privacyStatus == 'private') {
       setVisibility('private')
       setTheme('private')
