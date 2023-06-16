@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import { Col } from 'web/components/layout/col'
+import clsx from 'clsx'
 
 export const NewsArticle = (props: {
   title: string
@@ -8,11 +9,20 @@ export const NewsArticle = (props: {
   description: string
   author: string
   published_time: number
+  className?: string
 }) => {
-  const { title, urlToImage, url, description, published_time, author } = props
+  const {
+    title,
+    urlToImage,
+    url,
+    description,
+    published_time,
+    author,
+    className,
+  } = props
 
   return (
-    <Col className="relative w-full">
+    <Col className={clsx('relative w-full', className)}>
       <img
         className="border-ink-300 m-0 rounded-t-lg border object-contain "
         src={urlToImage}

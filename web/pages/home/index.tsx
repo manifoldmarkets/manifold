@@ -22,8 +22,6 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { track } from 'web/lib/service/analytics'
-import { Title } from 'web/components/widgets/title'
-
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
 import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
@@ -35,6 +33,33 @@ import { TopicSelector } from 'web/components/topic-selector'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { ProfileSummary } from 'web/components/nav/profile-menu'
 import { Spacer } from 'web/components/layout/spacer'
+import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { NewsTopicsTabs } from 'web/components/news-topics-tabs'
+
+type Topic = {
+  title: string
+  content: ReactNode
+  onClick?: (event?: any) => void
+}
+
+export function TopicsTab({
+  topics,
+}: {
+  topics: Topic[]
+
+  setSelectedTab: (title: string) => void
+}) {
+  return (
+    <QueryUncontrolledTabs
+      tabs={topics.map((tab) => ({
+        ...tab,
+        onClick: () => {
+          track('news topic clicked', { tab: tab.title })
+        },
+      }))}
+    />
+  )
+}
 
 export default function Home() {
   const isClient = useIsClient()
@@ -53,33 +78,55 @@ export default function Home() {
   return <HomeDashboard />
 }
 
-function HomeDashboard() {
+export function HomeDashboard() {
   const user = useUser()
-
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
-
   const isLoading = !dailyChangedContracts
+
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-2xl gap-2 pb-8 sm:gap-6 sm:px-2 lg:pr-4">
-        <Row className="mx-2 mb-2 items-center justify-between gap-4 sm:mx-0">
-          <Title children="Home" className="!my-0 hidden sm:block" />
+      <Col className="mx-auto w-full gap-2 pb-8 sm:gap-6 sm:px-2 lg:pr-4">
+        <Row className="mx-2 items-center justify-between gap-4 sm:mx-0">
           <div className="flex sm:hidden">
             {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
           </div>
           <DailyStats user={user} />
         </Row>
-
         {isLoading && <LoadingIndicator />}
 
-        <Col className={clsx('gap-6', isLoading && 'hidden')}>
-          <YourDailyUpdates contracts={dailyChangedContracts} />
-          <MainContent />
-        </Col>
+        <NewsTopicsTabs
+          homeContent={
+            <Col className={clsx('gap-6', isLoading && 'hidden')}>
+              <YourDailyUpdates contracts={dailyChangedContracts} />
+              <MainContent />
+            </Col>
+          }
+        />
       </Col>
     </Page>
   )
 }
+
+const YourDailyUpdates = memo(function YourDailyUpdates(props: {
+  contracts: CPMMContract[] | undefined
+}) {
+  const { contracts } = props
+  const changedContracts = contracts
+    ? contracts.filter((c) => Math.abs(c.probChanges?.day ?? 0) >= 0.01)
+    : undefined
+  if (!changedContracts || changedContracts.length === 0) return <></>
+
+  return (
+    <Col>
+      <HomeSectionHeader
+        label="Today's updates"
+        icon="📊"
+        href="/todays-updates"
+      />
+      <ProbChangeTable changes={changedContracts as CPMMContract[]} />
+    </Col>
+  )
+})
 
 function HomeSectionHeader(props: {
   label: string
@@ -113,27 +160,6 @@ function HomeSectionHeader(props: {
     </Row>
   )
 }
-
-const YourDailyUpdates = memo(function YourDailyUpdates(props: {
-  contracts: CPMMContract[] | undefined
-}) {
-  const { contracts } = props
-  const changedContracts = contracts
-    ? contracts.filter((c) => Math.abs(c.probChanges?.day ?? 0) >= 0.01)
-    : undefined
-  if (!changedContracts || changedContracts.length === 0) return <></>
-
-  return (
-    <Col>
-      <HomeSectionHeader
-        label="Today's updates"
-        icon="📊"
-        href="/todays-updates"
-      />
-      <ProbChangeTable changes={changedContracts as CPMMContract[]} />
-    </Col>
-  )
-})
 
 const LiveSection = memo(function LiveSection(props: {
   pill: pill_options
