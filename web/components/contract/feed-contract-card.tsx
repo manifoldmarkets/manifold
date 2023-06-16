@@ -253,7 +253,7 @@ function DetailedCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Col className="gap-2 p-4 py-2">
+      <Col className="gap-2 p-4">
         {/* Title is link to contract for open in new tab and a11y */}
         <Row className="justify-between">
           <Row onClick={(e) => e.stopPropagation()} className="gap-2">
