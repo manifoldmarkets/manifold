@@ -1,7 +1,11 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { DEFAULT_EMBEDDING_DISTANCE_PROBES } from 'common/embeddings'
 import { fromPairs } from 'lodash'
-import { FEED_REASON_TYPES, INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
+import {
+  FEED_REASON_TYPES,
+  INTEREST_DISTANCE_THRESHOLDS,
+  USER_TO_USER_DISTANCE_THRESHOLD,
+} from 'common/feed'
 
 export const getUserFollowerIds = async (
   userId: string,
@@ -39,11 +43,11 @@ export const getUsersWithSimilarInterestVectorToUser = async (
             select ue.user_id, (select interest_embedding from pe) <=> ue.interest_embedding as distance
             from user_embeddings as ue
         ) as distances
-   where distance < 0.01
+   where distance < $2
    order by distance
    limit 1000
   `,
-      [userId]
+      [userId, USER_TO_USER_DISTANCE_THRESHOLD]
     )
     await t.none('SET ivfflat.probes = $1', [DEFAULT_EMBEDDING_DISTANCE_PROBES])
     return res
