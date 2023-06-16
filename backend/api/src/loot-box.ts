@@ -100,5 +100,5 @@ const loadUserContracts = async (db: SupabaseClient, userId: string, n = 100) =>
     .then((res) =>
       (res.data ?? [])
         .map((row) => row.data as BinaryContract)
-        .filter((c) => c.outcomeType === 'BINARY' && c.volume > 100)
+        .filter((c) => c.outcomeType === 'BINARY' && c.volume > 100 && c.visibility === 'public')
     )
