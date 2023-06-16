@@ -66,8 +66,9 @@ export function NewContractPanel(props: {
   params?: NewQuestionParams
   fromGroup?: boolean
   className?: string
+  setTheme: (theme: 'private' | 'non-private') => void
 }) {
-  const { creator, params, fromGroup, className } = props
+  const { creator, params, fromGroup, className, setTheme } = props
   const {
     question,
     setQuestion,
@@ -108,6 +109,20 @@ export function NewContractPanel(props: {
   const isAdmin = useAdmin()
 
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
+  const [toggleVisibility, setToggleVisibility] = useState<
+    'public' | 'unlisted'
+  >('public')
+
+  useEffect(() => {
+    console.log(selectedGroup?.privacyStatus)
+    if (selectedGroup?.privacyStatus == 'private') {
+      setVisibility('private')
+      setTheme('private')
+    } else {
+      setVisibility(toggleVisibility)
+      setTheme('non-private')
+    }
+  }, [selectedGroup?.privacyStatus, toggleVisibility])
 
   return (
     <div className={clsx(className, 'text-ink-1000')}>
@@ -270,7 +285,7 @@ export function NewContractPanel(props: {
         </>
       )}
 
-      {!fromGroup && visibility != 'private' && (
+      {!fromGroup && (
         <>
           <Row className={'items-end gap-x-2'}>
             <GroupSelector
@@ -278,6 +293,7 @@ export function NewContractPanel(props: {
               setSelectedGroup={setSelectedGroup}
               options={{ showSelector: true, showLabel: true }}
               isContractCreator={true}
+              newContract={true}
             />
             {selectedGroup && (
               <a target="_blank" href={groupPath(selectedGroup.slug)}>
@@ -340,7 +356,7 @@ export function NewContractPanel(props: {
           </Row>
         </div>
       )}
-      {params?.visibility != 'private' && isAdmin && (
+      {visibility != 'private' && (
         <>
           <Spacer h={6} />
           <Row className="items-center gap-2">
@@ -355,8 +371,10 @@ export function NewContractPanel(props: {
               />
             </span>
             <ShortToggle
-              on={visibility === 'public'}
-              setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
+              on={toggleVisibility === 'public'}
+              setOn={(on) => {
+                setToggleVisibility(on ? 'public' : 'unlisted')
+              }}
             />
           </Row>
         </>

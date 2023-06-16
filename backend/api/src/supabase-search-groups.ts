@@ -13,13 +13,20 @@ const bodySchema = z.object({
   limit: z.number().gt(0),
   fuzzy: z.boolean().optional(),
   yourGroups: z.boolean().optional(),
+  addingToContract: z.boolean().optional(),
+  newContract: z.boolean().optional(),
 })
 
 export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
-  const { term, offset, limit, fuzzy, yourGroups } = validate(
-    bodySchema,
-    req.body
-  )
+  const {
+    term,
+    offset,
+    limit,
+    fuzzy,
+    yourGroups,
+    addingToContract,
+    newContract,
+  } = validate(bodySchema, req.body)
   const pg = createSupabaseDirectClient()
   const searchGroupSQL = getSearchGroupSQL({
     term,
@@ -28,6 +35,8 @@ export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
     fuzzy,
     yourGroups,
     uid: auth?.uid,
+    addingToContract,
+    newContract,
   })
   const groups = await pg.map(searchGroupSQL, [term], (r) => r.data as Group)
 
@@ -41,8 +50,19 @@ function getSearchGroupSQL(groupInput: {
   fuzzy?: boolean
   yourGroups?: boolean
   uid?: string
+  addingToContract?: boolean
+  newContract?: boolean
 }) {
-  const { term, offset, limit, fuzzy, yourGroups, uid } = groupInput
+  const {
+    term,
+    offset,
+    limit,
+    fuzzy,
+    yourGroups,
+    uid,
+    addingToContract,
+    newContract,
+  } = groupInput
 
   let query = ''
   const emptyTerm = term.length === 0
@@ -55,6 +75,19 @@ function getSearchGroupSQL(groupInput: {
     return `where (privacy_status != 'private' ${privateGroupWhereSQL}`
   }
   const discoverGroupOrderBySQL = 'order by total_members desc'
+
+  function getAddingToContractWhereSQL(groupTable: string) {
+    const curatedModeratorWhereSQL = uid
+      ? `or has_moderator_or_above_role(${groupTable}.id, '${uid}'))`
+      : ')'
+
+    const newContractWhereSQL = newContract
+      ? ''
+      : `and privacy_status != 'private'`
+    return addingToContract
+      ? `and (privacy_status!='curated' ${curatedModeratorWhereSQL} ${newContractWhereSQL}`
+      : ''
+  }
 
   // if looking for your own groups
   if (yourGroups) {
@@ -101,13 +134,14 @@ function getSearchGroupSQL(groupInput: {
       and groups.name_fts @@ query
       `
     }
-    // if in discover groups
+    // if in discover groups or adding to contract
   } else {
     if (emptyTerm) {
       query = `
         select data
         from groups
         ${discoverGroupSearchWhereSQL('groups')}
+        ${getAddingToContractWhereSQL('groups')}
         ${discoverGroupOrderBySQL}
       `
     }
@@ -121,6 +155,7 @@ function getSearchGroupSQL(groupInput: {
         FROM groups 
       ) AS groupz
        ${discoverGroupSearchWhereSQL('groupz')}
+      ${getAddingToContractWhereSQL('groupz')}
       and groupz.similarity_score > ${SIMILARITY_THRESHOLD}
       ${discoverGroupOrderBySQL}
       `
@@ -130,6 +165,7 @@ function getSearchGroupSQL(groupInput: {
         FROM groups,
         websearch_to_tsquery('english',  $1) as query
        ${discoverGroupSearchWhereSQL('groups')}
+        ${getAddingToContractWhereSQL('groups')}
         and groups.name_fts @@ query
         ${discoverGroupOrderBySQL}
       `

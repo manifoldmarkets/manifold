@@ -14,6 +14,8 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { searchGroupsToAdd } from 'web/lib/supabase/contract-groups'
+import { searchGroups } from 'web/lib/supabase/groups'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function GroupSelector(props: {
   selectedGroup: Group | undefined
@@ -24,8 +26,15 @@ export function GroupSelector(props: {
     showLabel: boolean
     ignoreGroupIds?: string[]
   }
+  newContract?: boolean
 }) {
-  const { selectedGroup, setSelectedGroup, isContractCreator, options } = props
+  const {
+    selectedGroup,
+    setSelectedGroup,
+    isContractCreator,
+    options,
+    newContract,
+  } = props
   const user = useUser()
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
   const { showSelector, showLabel, ignoreGroupIds } = options
@@ -41,14 +50,15 @@ export function GroupSelector(props: {
       requestNumber.current++
       const requestId = requestNumber.current
       setLoading(true)
-      searchGroupsToAdd({
-        userId: user.id,
-        isCreator: isContractCreator,
-        isManifoldAdmin: isManifoldAdmin,
-        prompt: query,
+      setSearchedGroups([])
+      searchGroups({
+        term: query,
+        limit: 10,
+        addingToContract: true,
+        newContract,
       }).then((result) => {
         if (requestNumber.current === requestId) {
-          setSearchedGroups(result as Group[])
+          setSearchedGroups(result.data as Group[])
           setLoading(false)
         }
       })
@@ -106,63 +116,69 @@ export function GroupSelector(props: {
                 static={isCreatingNewGroup}
                 className="bg-canvas-0 ring-ink-1000 absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none"
               >
-                {searchedGroups
-                  .filter(
-                    (group: Group) =>
-                      !ignoreGroupIds?.some((id) => id == group.id)
-                  )
-                  .map((group: Group) => (
-                    <Combobox.Option
-                      key={group.id}
-                      value={group}
-                      className={({ active }) =>
-                        clsx(
-                          'relative h-12 cursor-pointer select-none py-2 pr-6 transition-colors',
-                          active ? 'text-ink-0 bg-primary-500' : 'text-ink-900',
-                          loading ? 'animate-pulse' : ''
-                        )
-                      }
-                    >
-                      {({ active, selected }) => (
-                        <>
-                          {selected && (
+                {loading && <LoadingIndicator />}
+                {!loading &&
+                  searchedGroups
+                    .filter(
+                      (group: Group) =>
+                        !ignoreGroupIds?.some((id) => id == group.id)
+                    )
+                    .map((group: Group) => (
+                      <Combobox.Option
+                        key={group.id}
+                        value={group}
+                        className={({ active }) =>
+                          clsx(
+                            'relative h-12 cursor-pointer select-none py-2 pr-6 transition-colors',
+                            active
+                              ? 'text-ink-0 bg-primary-500'
+                              : 'text-ink-900',
+                            loading ? 'animate-pulse' : ''
+                          )
+                        }
+                      >
+                        {({ active, selected }) => (
+                          <>
+                            {selected && (
+                              <span
+                                className={clsx(
+                                  'absolute inset-y-0 left-2 flex items-center pr-4',
+                                  active ? 'text-ink-1000' : 'text-primary-600'
+                                )}
+                              >
+                                <CheckIcon
+                                  className="h-5 w-5"
+                                  aria-hidden="true"
+                                />
+                              </span>
+                            )}
                             <span
                               className={clsx(
-                                'absolute inset-y-0 left-2 flex items-center pr-4',
-                                active ? 'text-ink-1000' : 'text-primary-600'
+                                'ml-3 mt-1 flex flex-row justify-between',
+                                selected && 'font-semibold'
                               )}
                             >
-                              <CheckIcon
-                                className="h-5 w-5"
-                                aria-hidden="true"
-                              />
-                            </span>
-                          )}
-                          <span
-                            className={clsx(
-                              'ml-3 mt-1 flex flex-row justify-between',
-                              selected && 'font-semibold'
-                            )}
-                          >
-                            <Row className={'items-center gap-1 truncate pl-5'}>
-                              {group.name}
-                            </Row>
-                            <Row
-                              className={clsx(
-                                'text-ink-500 gap-2 text-sm',
-                                active ? 'text-ink-1000' : 'text-ink-500'
-                              )}
-                            >
-                              <Row className="w-12 items-center gap-0.5">
-                                <UsersIcon className="h-4 w-4" />
-                                {group.totalMembers}
+                              <Row
+                                className={'items-center gap-1 truncate pl-5'}
+                              >
+                                {group.name}
                               </Row>
-                            </Row>
-                          </span>
-                        </>
-                      )}
-                    </Combobox.Option>
-                  ))}
+                              <Row
+                                className={clsx(
+                                  'text-ink-500 gap-2 text-sm',
+                                  active ? 'text-ink-1000' : 'text-ink-500'
+                                )}
+                              >
+                                <Row className="w-12 items-center gap-0.5">
+                                  <UsersIcon className="h-4 w-4" />
+                                  {group.totalMembers}
+                                </Row>
+                              </Row>
+                            </span>
+                          </>
+                        )}
+                      </Combobox.Option>
+                    ))}
 
                 <CreateGroupButton
                   user={user}

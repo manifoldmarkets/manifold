@@ -30,6 +30,7 @@ import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { User } from 'common/user'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { Tooltip } from '../widgets/tooltip'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -273,9 +274,11 @@ function DetailedCard(props: {
                   />
                   <span> asked </span>
                 </span>
-                <span className="text-ink-500">
-                  {shortenedFromNow(contract.createdTime)}
-                </span>
+                <Tooltip text={`${contract.createdTime}`}>
+                  <span className="text-ink-500">
+                    {shortenedFromNow(contract.createdTime)}
+                  </span>
+                </Tooltip>
               </span>
               <div className="text-ink-500 text-sm">
                 {contract.resolutionTime ? (
