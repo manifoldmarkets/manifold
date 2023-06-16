@@ -20,7 +20,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { MINUTE_MS } from 'common/util/time'
-import { ProfileSummary } from 'web/components/nav/profile-menu'
+import { ProfileSummary } from 'web/components/nav/profile-summary'
 import { Spacer } from 'web/components/layout/spacer'
 
 export default function FeedTimeline() {
