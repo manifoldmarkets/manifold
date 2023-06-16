@@ -395,6 +395,7 @@ export function CommentActions(props: {
             size={'xs'}
             onClick={(e) => {
               e.preventDefault()
+              e.stopPropagation()
               onReplyClick(comment)
             }}
           >
@@ -579,12 +580,12 @@ function FeedCommentHeader(props: {
           )}
         </span>
         {inTimeline ? (
-          <span className="text-ink-500 text-sm">
+          <span>
             {' '}
-            commented {shortenedFromNow(
-              editedTime ? editedTime : createdTime
-            )}{' '}
-            ago
+            commented{' '}
+            <span className="text-ink-500">
+              {shortenedFromNow(editedTime ? editedTime : createdTime)}{' '}
+            </span>
           </span>
         ) : (
           <CopyLinkDateTimeComponent

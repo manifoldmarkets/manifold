@@ -20,10 +20,10 @@ export function ClaimButton(props: {
   return (
     <Button
       className={clsx(
-        'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
+        'disabled:bg-canvas-50 disabled:text-ink-800 h-min disabled:cursor-default disabled:bg-none',
         className
       )}
-      size="xs"
+      size="2xs"
       color="gold"
       disabled={loading || claimed}
       onClick={async (e) => {
