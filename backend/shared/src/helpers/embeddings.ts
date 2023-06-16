@@ -4,7 +4,7 @@ import { ITask } from 'pg-promise'
 export async function getDefaultEmbedding(
   pg: SupabaseDirectClient | ITask<any>
 ) {
-  const avg = await pg.one<{ average_embedding: number[] }>(
+  const avg = await pg.one<{ average_embedding: string }>(
     `
     select avg(embedding) as average_embedding
     from (
@@ -19,7 +19,7 @@ export async function getDefaultEmbedding(
    ) as subquery
     `
   )
-  return avg.average_embedding
+  return JSON.parse(avg.average_embedding) as number[]
 }
 
 export async function getAverageContractEmbedding(
@@ -53,7 +53,10 @@ export async function updateUserInterestEmbedding(
       pg,
       userId,
       interestedContractIds
+    ).then(async (v) =>
+      v.every((n) => n === 0) ? await getDefaultEmbedding(pg) : v
     )
+
     await pg.none(
       'insert into user_embeddings (user_id, interest_embedding) values ($1, $2) on conflict (user_id) do update set interest_embedding = $2',
       [userId, interestEmbedding]
@@ -116,12 +119,12 @@ async function computeUserInterestEmbedding(
     select avg(combined_embedding) as average_embedding
     from combined_embeddings`,
     [contractIds, userId],
-    async (r: { average_embedding: number[] }) => {
+    async (r: { average_embedding: string }) => {
       if (r.average_embedding === null) {
         console.error('No average of embeddings for', contractIds)
         return await getDefaultEmbedding(pg)
       }
-      return r.average_embedding
+      return JSON.parse(r.average_embedding) as number[]
     }
   )
 }
