@@ -23,7 +23,7 @@ export function ClaimButton(props: {
         'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
         className
       )}
-      size="lg"
+      size="xs"
       color="gold"
       disabled={loading || claimed}
       onClick={async (e) => {
