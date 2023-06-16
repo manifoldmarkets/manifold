@@ -1,6 +1,9 @@
 import * as functions from 'firebase-functions'
 import { secrets } from 'common/secrets'
-import { scoreContractsInternal } from 'shared/score-contracts-internal'
+import {
+  MINUTE_INTERVAL,
+  scoreContractsInternal,
+} from 'shared/score-contracts-internal'
 import * as admin from 'firebase-admin'
 import {
   createSupabaseClient,
@@ -13,7 +16,7 @@ export const scoreContracts = functions
     timeoutSeconds: 540,
     secrets,
   })
-  .pubsub.schedule('every 10 minutes')
+  .pubsub.schedule(`every ${MINUTE_INTERVAL} minutes`)
   .onRun(async () => {
     const fr = admin.firestore()
     const db = createSupabaseClient()
