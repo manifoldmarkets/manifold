@@ -47,7 +47,7 @@ export default function BannerImage(props: {
             />
           )}
         </div>
-        <Image src={groupBannerUrl} alt="" fill={true} objectFit="cover" />
+        <Image src={groupBannerUrl} alt="" fill className="object-cover" />
       </figure>
     </>
   )
@@ -140,12 +140,7 @@ export function ChangeBannerModal(props: {
             )}
             {fileUrl && (
               <figure className="group relative h-full w-full">
-                <Image
-                  src={fileUrl}
-                  alt=""
-                  fill={true}
-                  objectFit="cover rounded"
-                />
+                <Image src={fileUrl} alt="" fill className="object-cover" />
               </figure>
             )}
           </div>
@@ -203,10 +198,9 @@ function DefaultBannerIcon(props: {
       <Image
         src={src}
         alt=""
-        fill={true}
-        objectFit="cover"
+        fill
         className={clsx(
-          'rounded ring-offset-2 transition-all',
+          'rounded object-cover ring-offset-2 transition-all',
           bannerSelection === src
             ? 'ring-highlight-blue ring'
             : 'hover:ring-highlight-blue hover:ring hover:ring-opacity-50'

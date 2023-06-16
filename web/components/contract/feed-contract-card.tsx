@@ -332,8 +332,8 @@ function DetailedCard(props: {
         <Col className="relative mt-1 h-40 w-full items-center justify-center">
           <div className="absolute inset-0 mt-2 bg-transparent transition-all group-hover:saturate-150">
             <Image
-              fill
               alt=""
+              fill
               sizes="100vw"
               className="object-cover"
               src={coverImageUrl}
