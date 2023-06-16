@@ -21,6 +21,22 @@ export const getUniqueBettorIds = async (
   return res.map((r) => r.user_id as string)
 }
 
+export const getUniqueBettorIdsForAnswer = async (
+  contractId: string,
+  answerId: string,
+  pg: SupabaseDirectClient
+) => {
+  const res = await pg.manyOrNone(
+    `select distinct user_id
+      from contract_bets
+      where contract_id = $1
+      and data->>'answerId' = $2
+      and is_redemption = false`,
+    [contractId, answerId]
+  )
+  return res.map((r) => r.user_id as string)
+}
+
 export const getContractFollowerIds = async (
   contractId: string,
   pg: SupabaseDirectClient

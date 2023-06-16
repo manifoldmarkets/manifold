@@ -92,7 +92,7 @@ export function getAnswerProbability(
 
   if (contract.mechanism === 'cpmm-multi-1') {
     const answer = contract.answers.find((a) => a.id === answerId)
-    if (!answer) throw new Error('Answer not found')
+    if (!answer) return 0
 
     const { poolYes, poolNo } = answer
     const pool = { YES: poolYes, NO: poolNo }
