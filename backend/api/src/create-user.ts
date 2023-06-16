@@ -70,7 +70,7 @@ export const createuser = authEndpoint(async (req, auth) => {
   const db = createSupabaseClient()
   let username = cleanUsername(name)
 
-  // check username case insensitive
+  // Check username case-insensitive
   const { data } = await db
     .from('users')
     .select('id')
@@ -90,7 +90,7 @@ export const createuser = authEndpoint(async (req, auth) => {
           userId: auth.uid,
         })
 
-      // check exact username to avoid problems with duplicate requests 
+      // Check exact username to avoid problems with duplicate requests
       const sameNameUser = await trans.get(
         firestore.collection('users').where('username', '==', username)
       )
@@ -111,7 +111,6 @@ export const createuser = authEndpoint(async (req, auth) => {
         followerCountCached: 0,
         streakForgiveness: 1,
         shouldShowWelcome: true,
-        achievements: {},
         creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
         isBannedFromPosting: Boolean(
           (deviceToken && bannedDeviceTokens.includes(deviceToken)) ||
@@ -158,7 +157,7 @@ async function insertUserEmbedding(
 
   const interestEmbedding = visitedContractIds
     ? await getAverageContractEmbedding(pg, visitedContractIds)
-    : getDefaultEmbedding()
+    : await getDefaultEmbedding(pg)
 
   await pg.none(
     `insert into user_embeddings (user_id, interest_embedding, pre_signup_interest_embedding) values ($1, $2, $3)`,

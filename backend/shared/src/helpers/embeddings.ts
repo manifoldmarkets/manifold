@@ -1,25 +1,42 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { ITask } from 'pg-promise'
 
-export function getDefaultEmbedding() {
-  return Array<number>(1536).fill(0)
+export async function getDefaultEmbedding(
+  pg: SupabaseDirectClient | ITask<any>
+) {
+  const avg = await pg.one<{ average_embedding: number[] }>(
+    `
+    select avg(embedding) as average_embedding
+    from (
+       select contract_embeddings.embedding
+       from contract_embeddings
+                join (
+           select id
+           from contracts
+           order by popularity_score desc
+           limit 100
+       ) as top_contracts on top_contracts.id = contract_embeddings.contract_id
+   ) as subquery
+    `
+  )
+  return avg.average_embedding
 }
 
 export async function getAverageContractEmbedding(
-  pg: SupabaseDirectClient | ITask<any>,
+  pg: SupabaseDirectClient,
   contractIds: string[]
 ) {
-  if (contractIds.length === 0) return getDefaultEmbedding()
+  if (contractIds.length === 0) return await getDefaultEmbedding(pg)
 
   return await pg.one(
     `select avg(embedding) as average_embedding
     from contract_embeddings
     where contract_id = any($1)`,
     [contractIds],
-    (r: { average_embedding: number[] }) => {
+    async (r: { average_embedding: number[] }) => {
       if (r.average_embedding === null) {
         console.error('No average of embeddings for', contractIds)
-        return getDefaultEmbedding()
+        return await getDefaultEmbedding(pg)
       }
       return r.average_embedding
     }
@@ -99,10 +116,10 @@ async function computeUserInterestEmbedding(
     select avg(combined_embedding) as average_embedding
     from combined_embeddings`,
     [contractIds, userId],
-    (r: { average_embedding: number[] }) => {
+    async (r: { average_embedding: number[] }) => {
       if (r.average_embedding === null) {
         console.error('No average of embeddings for', contractIds)
-        return getDefaultEmbedding()
+        return await getDefaultEmbedding(pg)
       }
       return r.average_embedding
     }
