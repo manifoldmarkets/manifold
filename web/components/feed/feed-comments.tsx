@@ -5,7 +5,6 @@ import { memo, ReactNode, useEffect, useRef, useState } from 'react'
 import { EyeOffIcon, FlagIcon, PencilIcon } from '@heroicons/react/outline'
 import {
   DotsHorizontalIcon,
-  DotsVerticalIcon,
   ReplyIcon,
   XCircleIcon,
 } from '@heroicons/react/solid'
@@ -43,7 +42,6 @@ import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import Curve from 'web/public/custom-components/curve'
 import { Button, IconButton } from '../buttons/button'
 import { CommentInput } from '../comments/comment-input'
