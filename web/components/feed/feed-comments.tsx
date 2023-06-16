@@ -4,6 +4,7 @@ import { memo, ReactNode, useEffect, useRef, useState } from 'react'
 
 import { EyeOffIcon, FlagIcon, PencilIcon } from '@heroicons/react/outline'
 import {
+  DotsHorizontalIcon,
   DotsVerticalIcon,
   ReplyIcon,
   XCircleIcon,
@@ -21,7 +22,10 @@ import { ReportModal } from 'web/components/buttons/report-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { EditCommentModal } from 'web/components/comments/edit-comment-modal'
 import { LikeButton } from 'web/components/contract/like-button'
-import { copyLinkToComment } from 'web/components/feed/copy-link-date-time'
+import {
+  CopyLinkDateTimeComponent,
+  copyLinkToComment,
+} from 'web/components/feed/copy-link-date-time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { OutcomeLabel } from 'web/components/outcome-label'
@@ -47,6 +51,7 @@ import { ReplyToggle } from '../comments/reply-toggle'
 import { Content } from '../widgets/editor'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
+import { CommentEditHistoryButton } from '../comments/comment-edit-history-button'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -317,7 +322,7 @@ export function DotMenu(props: {
         label={'Comment'}
       />
       <DropdownMenu
-        Icon={<DotsVerticalIcon className="h-4 w-4" aria-hidden="true" />}
+        Icon={<DotsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
         Items={buildArray(
           {
             name: 'Copy Link',
@@ -531,6 +536,7 @@ function FeedCommentHeader(props: {
     userUsername,
     userName,
     createdTime,
+    editedTime,
     bettorUsername,
     betOutcome,
     answerOutcome,
@@ -546,44 +552,44 @@ function FeedCommentHeader(props: {
     <Col
       className={clsx('mt-1', inTimeline ? 'text-md' : 'text-ink-600 text-sm ')}
     >
-      <Row className="justify-between">
-        <span>
-          <UserLink
-            username={userUsername}
-            name={userName}
-            marketCreator={marketCreator}
-            className={'font-semibold'}
-          />
-          {/* Hide my status if replying to a bet, it's too much clutter*/}
-          {bettorUsername == undefined && !inTimeline && (
-            <span className="text-ink-400 ml-1">
-              <CommentStatus contract={contract} comment={comment} />
-              {bought} {money}
-              {shouldDisplayOutcome && (
-                <>
-                  {' '}
-                  of{' '}
-                  <OutcomeLabel
-                    outcome={betOutcome ? betOutcome : ''}
-                    contract={contract}
-                    truncate="short"
-                  />
-                </>
-              )}
-            </span>
-          )}
-          {inTimeline && <span> commented</span>}{' '}
-          {isApi && (
-            <InfoTooltip text="Placed via API" className="mr-1">
-              🤖
-            </InfoTooltip>
-          )}
-          {
-            <span className="text-ink-500">
-              {shortenedFromNow(createdTime)}
-            </span>
-          }
-        </span>
+      <Row className="items-end">
+        <UserLink
+          username={userUsername}
+          name={userName}
+          marketCreator={marketCreator}
+          className={'font-semibold'}
+        />
+        {/* Hide my status if replying to a bet, it's too much clutter*/}
+        {bettorUsername == undefined && !inTimeline && (
+          <span className="text-ink-400 ml-1">
+            <CommentStatus contract={contract} comment={comment} />
+            {bought} {money}
+            {shouldDisplayOutcome && (
+              <>
+                {' '}
+                of{' '}
+                <OutcomeLabel
+                  outcome={betOutcome ? betOutcome : ''}
+                  contract={contract}
+                  truncate="short"
+                />
+              </>
+            )}
+          </span>
+        )}
+        {inTimeline && <span> commented</span>}{' '}
+        <CopyLinkDateTimeComponent
+          prefix={contract.creatorUsername}
+          slug={contract.slug}
+          createdTime={editedTime ? editedTime : createdTime}
+          elementId={comment.id}
+          seeEditsButton={<CommentEditHistoryButton comment={comment} />}
+        />
+        {isApi && (
+          <InfoTooltip text="Placed via API" className="mr-1">
+            🤖
+          </InfoTooltip>
+        )}
         <DotMenu comment={comment} contract={contract} />
       </Row>
     </Col>
