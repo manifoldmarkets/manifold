@@ -395,6 +395,7 @@ export function CommentActions(props: {
             size={'xs'}
             onClick={(e) => {
               e.preventDefault()
+              e.stopPropagation()
               onReplyClick(comment)
             }}
           >
