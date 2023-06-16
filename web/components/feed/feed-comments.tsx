@@ -394,7 +394,7 @@ export function CommentActions(props: {
               onReplyClick(comment)
             }}
           >
-            <ReplyIcon className="h-4 w-4" />
+            <ReplyIcon className="h-5 w-5" />
           </IconButton>
         </Tooltip>
       )}
@@ -410,7 +410,7 @@ export function CommentActions(props: {
           className={
             isBlocked(privateUser, comment.userId) ? 'pointer-events-none' : ''
           }
-          size={'sm'}
+          size={'md'}
           trackingLocation={trackingLocation}
         />
       )}
