@@ -274,11 +274,9 @@ function DetailedCard(props: {
                   />
                   <span> asked </span>
                 </span>
-                <Tooltip text={`${contract.createdTime}`}>
-                  <span className="text-ink-500">
-                    {shortenedFromNow(contract.createdTime)}
-                  </span>
-                </Tooltip>
+                <span className="text-ink-500">
+                  {shortenedFromNow(contract.createdTime)}
+                </span>
               </span>
               <div className="text-ink-500 text-sm">
                 {contract.resolutionTime ? (

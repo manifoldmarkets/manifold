@@ -52,16 +52,11 @@ export default function Create() {
         )}
       >
         <Row className="w-full justify-between">
-          <Title
-            className={clsx(
-              'transition-colors',
-              theme == 'private' ? 'text-ink-1000' : ''
-            )}
-          >
-            Create a market
+          <Title className={clsx('transition-colors')}>
+            {`Create a ${theme == 'private' ? 'private' : ''} market`}
           </Title>
           {theme == 'private' && (
-            <LockClosedIcon className="text-ink-1000 h-8 w-8" />
+            <LockClosedIcon className="text-primary-700 h-6 w-6 sm:h-8 sm:w-8" />
           )}
         </Row>
 
