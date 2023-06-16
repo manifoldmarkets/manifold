@@ -342,9 +342,11 @@ export function supabaseSearchGroups(params: {
   fuzzy?: boolean
   yourGroups?: boolean
 }) {
-  return maybeAuthedCall(getApiUrl('supabasesearchgroups'), 'POST') as Promise<
-    Group[]
-  >
+  return maybeAuthedCall(
+    getApiUrl('supabasesearchgroups'),
+    'POST',
+    params
+  ) as Promise<Group[]>
 }
 
 export function leagueActivity(params: { season: number; cohort: string }) {

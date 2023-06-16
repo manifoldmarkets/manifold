@@ -17,7 +17,6 @@ export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
     `select * from group_invites where id = $1`,
     [inviteId]
   )
-  console.log(invite)
   if (!invite) {
     throw new APIError(404, 'Group invite not found')
   }
@@ -34,7 +33,6 @@ export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
       `update group_invites set uses = $1 + 1 where id = $2`,
       [invite.uses, inviteId]
     )
-    console.log(result)
     if (result.rowCount === 0) {
       throw new APIError(404, 'Group invite not found')
     }
