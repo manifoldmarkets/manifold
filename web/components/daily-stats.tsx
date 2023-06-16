@@ -11,7 +11,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { DailyLeagueStat } from './daily-league-stat'
 
-export const dailyStatsClass = 'bg-ink-100 rounded-lg px-2 py-1 shadow'
+export const dailyStatsClass = 'bg-canvas-0 rounded-lg px-2 py-1 shadow'
 
 export function DailyStats(props: {
   user: User | null | undefined
