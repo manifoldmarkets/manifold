@@ -129,7 +129,7 @@ function SimpleCard(props: {
         <Col
           className={clsx(
             'relative',
-            'bg-canvas-0 border-ink-200 p group justify-between gap-2 overflow-hidden border-l-4 bg-opacity-50 pl-2 pr-4 pt-2 pb-3',
+            'bg-canvas-0 border-ink-200 p group justify-between gap-2 overflow-hidden border-l-4 border-b pl-2 pr-4 pt-2 pb-3',
             'outline-none transition-colors'
           )}
         >
