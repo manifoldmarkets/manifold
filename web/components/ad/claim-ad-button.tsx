@@ -23,7 +23,7 @@ export function ClaimButton(props: {
         'disabled:bg-canvas-50 disabled:text-ink-800 h-min disabled:cursor-default disabled:bg-none',
         className
       )}
-      size="2xs"
+      size="xs" // don't make it smaller!!!
       color="gold"
       disabled={loading || claimed}
       onClick={async (e) => {
