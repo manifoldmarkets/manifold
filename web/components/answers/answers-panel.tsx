@@ -1,8 +1,8 @@
-import { sortBy, partition, sum } from 'lodash'
+import { sortBy, partition, sum, groupBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { ChatIcon } from '@heroicons/react/outline'
 
-import { MultiContract } from 'common/contract'
+import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { tradingAllowed } from 'common/contract'
@@ -12,7 +12,7 @@ import { AnswerResolvePanel } from './answer-resolve-panel'
 import { getAnswerProbability } from 'common/calculate'
 import { Answer, DpmAnswer } from 'common/answer'
 import clsx from 'clsx'
-import { formatPercent } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
 import { Row } from 'web/components/layout/row'
@@ -27,6 +27,11 @@ import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { BuyPanel } from '../bet/bet-panel'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Subtitle } from '../widgets/subtitle'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { getContractBetMetrics } from 'common/calculate'
+import { Bet } from 'common/bet'
+import { ProfitBadge } from '../profit-badge'
+import { NoLabel, YesLabel } from '../outcome-label'
 
 export function getAnswerColor(
   answer: Answer | DpmAnswer,
@@ -138,6 +143,9 @@ export function AnswersPanel(props: {
     (answer, _index) => answer.text
   )
 
+  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
+
   const answerItemComponents = sortedAnswers.map((answer) => (
     <AnswerItem
       key={answer.id}
@@ -194,13 +202,14 @@ export function AnswersPanel(props: {
 
         {!resolveOption && (
           <Col className="gap-3">
-            {answerItems.map((item) => (
+            {answerItems.map((answer) => (
               <OpenAnswer
-                key={item.id}
-                answer={item}
+                key={answer.id}
+                answer={answer}
                 contract={contract}
                 onAnswerCommentClick={onAnswerCommentClick}
-                color={getAnswerColor(item, answersArray)}
+                color={getAnswerColor(answer, answersArray)}
+                userBets={userBetsByAnswer[answer.id]}
               />
             ))}
             {answersToHide.length > 0 && !showAllAnswers && (
@@ -237,8 +246,9 @@ function OpenAnswer(props: {
   answer: Answer | DpmAnswer
   color: string
   onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+  userBets?: Bet[]
 }) {
-  const { answer, contract, onAnswerCommentClick, color } = props
+  const { answer, contract, onAnswerCommentClick, color, userBets } = props
   const { text } = answer
   const answerCreator = useUserByIdOrAnswer(answer)
   const prob = getAnswerProbability(contract, answer.id)
@@ -253,9 +263,10 @@ function OpenAnswer(props: {
 
   const user = useUser()
   const isMobile = useIsMobile()
+  const hasBets = userBets && userBets.filter((b) => !b.isRedemption).length > 0
 
   return (
-    <div>
+    <Col>
       <Modal
         open={!!outcome}
         setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
@@ -297,7 +308,7 @@ function OpenAnswer(props: {
           ))}
       </Modal>
 
-      <div
+      <Col
         className={clsx(
           'relative w-full rounded-lg transition-all',
           tradingAllowed(contract) ? 'text-ink-900' : 'text-ink-500'
@@ -370,7 +381,65 @@ function OpenAnswer(props: {
             )}
           </Row>
         </Row>
-      </div>
-    </div>
+      </Col>
+
+      {hasBets && contract.mechanism === 'cpmm-multi-1' && (
+        <AnswerPosition
+          className="bg- self-end"
+          contract={contract}
+          userBets={userBets}
+        />
+      )}
+    </Col>
+  )
+}
+
+function AnswerPosition(props: {
+  contract: CPMMMultiContract
+  userBets: Bet[]
+  className?: string
+}) {
+  const { contract, userBets, className } = props
+
+  const { invested, profit, profitPercent, totalShares } =
+    getContractBetMetrics(contract, userBets)
+
+  const yesWinnings = totalShares.YES ?? 0
+  const noWinnings = totalShares.NO ?? 0
+  const position = yesWinnings - noWinnings
+
+  return (
+    <Row className={clsx(className, 'flex-wrap gap-6 sm:flex-nowrap')}>
+      <Col>
+        <div className="text-ink-500 whitespace-nowrap text-sm">Payout</div>
+        <div className="whitespace-nowrap">
+          {position > 1e-7 ? (
+            <>
+              {formatMoney(position)} on <YesLabel />
+            </>
+          ) : position < -1e-7 ? (
+            <>
+              {formatMoney(-position)} on <NoLabel />
+            </>
+          ) : (
+            '——'
+          )}
+        </div>
+      </Col>
+      <Col>
+        <div className="text-ink-500 whitespace-nowrap text-sm">Spent</div>
+        <div className="whitespace-nowrap text-right">
+          {formatMoney(invested)}
+        </div>
+      </Col>
+
+      <Col>
+        <div className="text-ink-500 whitespace-nowrap text-sm">Profit</div>
+        <div className="whitespace-nowrap text-right">
+          {formatMoney(profit)}
+          <ProfitBadge profitPercent={profitPercent} round={true} />
+        </div>
+      </Col>
+    </Row>
   )
 }
