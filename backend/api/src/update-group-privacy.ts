@@ -1,20 +1,18 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-
 import { isAdmin, isManifoldId } from 'common/envs/constants'
-import { Group } from 'common/group'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
 
 const bodySchema = z.object({
   groupId: z.string(),
-  privacy: z.string(),
+  privacy: z.enum(['public', 'curated', 'private']),
 })
 
 export const updategroupprivacy = authEndpoint(async (req, auth) => {
   const { groupId, privacy } = validate(bodySchema, req.body)
 
-  // get group membership and role TODO: move to single supabase transaction
+  // TODO: move to single supabase transaction
   const db = createSupabaseClient()
 
   const userMembership = (
@@ -28,59 +26,43 @@ export const updategroupprivacy = authEndpoint(async (req, auth) => {
 
   const requester = userMembership?.length ? userMembership[0] : null
 
-  // run as transaction to prevent race conditions
-  return await firestore.runTransaction(async (transaction) => {
-    const groupDoc = firestore.doc(`groups/${groupId}`)
-    const requesterUserDoc = firestore.doc(`users/${auth.uid}`)
-    const [groupSnap, requesterUserSnap] = await transaction.getAll(
-      groupDoc,
-      requesterUserDoc
+  const groupQuery = await db.from('groups').select().eq('id', groupId).limit(1)
+
+  if (groupQuery.error) throw new APIError(500, groupQuery.error.message)
+  if (!groupQuery.data.length) throw new APIError(404, 'Group cannot be found')
+  if (!userMembership?.length)
+    throw new APIError(404, 'You cannot be found in group')
+
+  const group = groupQuery.data[0]
+  const firebaseUser = await admin.auth().getUser(auth.uid)
+
+  if (
+    requester?.role !== 'admin' &&
+    auth.uid !== group.creator_id &&
+    !isManifoldId(auth.uid) &&
+    !isAdmin(firebaseUser.email)
+  )
+    throw new APIError(
+      403,
+      'You do not have permission to change group privacy'
     )
-    if (!groupSnap.exists) throw new APIError(400, 'Group cannot be found')
-    if (!userMembership?.length)
-      throw new APIError(400, 'You cannot be found in group')
-    if (!requesterUserSnap.exists)
-      throw new APIError(400, 'You cannot be found')
 
-    const group = groupSnap.data() as Group
-    const firebaseUser = await admin.auth().getUser(auth.uid)
+  if (group.privacy_status == 'private')
+    throw new APIError(400, 'Private groups must remain private')
 
-    if (
-      requester?.role !== 'admin' &&
-      auth.uid !== group.creatorId &&
-      !isManifoldId(auth.uid) &&
-      !isAdmin(firebaseUser.email)
-    )
-      throw new APIError(
-        400,
-        'User does not have permission to change group privacy'
-      )
+  if (privacy == 'private') {
+    throw new APIError(400, 'You can not retroactively make a group private')
+  }
 
-    if (group.privacyStatus == 'private')
-      throw new APIError(
-        400,
-        'You can not change the privacy of a private group'
-      )
+  if (privacy == group.privacy_status) {
+    throw new APIError(400, 'Group privacy is already set to this!')
+  }
 
-    if (privacy == 'private') {
-      throw new APIError(400, 'You can not retroactively make a group private')
-    }
+  await db
+    .from('groups')
+    .update({ privacy_status: privacy })
+    .eq('id', groupId)
+    .returns()
 
-    if (privacy == group.privacyStatus) {
-      throw new APIError(400, 'Group privacy is already set to this!')
-    }
-
-    if (
-      (privacy == 'curated' && group.privacyStatus == 'public') ||
-      (privacy == 'public' && group.privacyStatus == 'curated')
-    ) {
-      transaction.update(groupDoc, { privacyStatus: privacy })
-    } else {
-      throw new APIError(400, 'This privacy change is not allowed')
-    }
-
-    return group
-  })
+  return { status: 'success', message: 'Group privacy updated' }
 })
-
-const firestore = admin.firestore()

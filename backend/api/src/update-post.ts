@@ -1,6 +1,5 @@
-import { getUser } from 'shared/utils'
-import { APIError, authEndpoint, validate } from './helpers'
-import { MAX_POST_TITLE_LENGTH, Post } from 'common/post'
+import { authEndpoint, validate } from './helpers'
+import { MAX_POST_TITLE_LENGTH } from 'common/post'
 import { updateData } from 'shared/supabase/utils'
 import { z } from 'zod'
 import { contentSchema } from 'shared/zod-types'

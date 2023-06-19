@@ -6,6 +6,7 @@ import { log } from 'shared/utils'
 import { getIds } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
+import { updateData } from 'shared/supabase/utils'
 
 export const updateGroupMetrics = functions
   .runWith({ timeoutSeconds: 540, secrets })
@@ -65,12 +66,12 @@ export async function updateGroupMetricsCore() {
   )
 
   log('Updating leaderboards...')
-  const writer = firestore.bulkWriter()
+
   for (const groupId of groupIds) {
     const topTraderScores = profitScoresByGroup[groupId] ?? []
     const topCreatorScores = creatorScoresByGroup[groupId] ?? []
-    const doc = firestore.collection('groups').doc(groupId)
-    writer.update(doc, {
+
+    updateData(pg, 'groups', groupId, {
       cachedLeaderboard: {
         topTraders: sortBy(topTraderScores, (x) => -x.score),
         topCreators: sortBy(topCreatorScores, (x) => -x.score),
@@ -78,7 +79,5 @@ export async function updateGroupMetricsCore() {
     })
   }
 
-  log('Committing writes...')
-  await writer.close()
   log('Done.')
 }

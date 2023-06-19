@@ -13,8 +13,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { createPost } from 'web/lib/firebase/api'
-import { deleteFieldFromGroup, updateGroup } from 'web/lib/firebase/groups'
-import { deletePost } from 'web/lib/supabase/post'
+import { updateGroup } from 'web/lib/firebase/api'
 import { updatePost } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
@@ -93,9 +92,7 @@ export async function savePost(
       console.error(e)
       return e
     })
-    await updateGroup(group, {
-      aboutPostId: result.post.id,
-    })
+    await updateGroup({ id: group.id, aboutPostId: result.post.id })
   } else {
     await updatePost({ id: post.id, content: newPost.content })
   }
@@ -192,9 +189,7 @@ function DeleteAboutModal(props: {
   const { deleteOpen, setDeleteOpen, post, group } = props
   const [deleteLoading, setDeleteLoading] = useState(false)
   async function deleteGroupAboutPost() {
-    if (post == null) return
-    await deletePost(post)
-    await deleteFieldFromGroup(group, 'aboutPostId')
+    // TODO reimplement after about post migration
   }
   return (
     <Modal open={deleteOpen} setOpen={setDeleteOpen}>
@@ -230,9 +225,12 @@ function DeleteAboutModal(props: {
             onClick={() => {
               setDeleteLoading(true)
               deleteGroupAboutPost()
-              toast('About section deleted', {
-                icon: <TrashIcon className={'h-5 w-5 text-red-500'} />,
-              })
+              toast.error(
+                'Sorry, about section deletion is temporarily disabled'
+              )
+              // toast('About section deleted', {
+              // icon: <TrashIcon className={'h-5 w-5 text-red-500'} />,
+              // })
               setDeleteOpen(false)
             }}
           >

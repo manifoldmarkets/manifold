@@ -211,37 +211,10 @@ service cloud.firestore {
       allow list, update: if request.auth.uid == resource.data.fromId;
     }
 
-    match /groups/{groupId} {
+    // for testing supabase replication
+    match /test/{id} {
       allow read;
-      allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
-                        && request.resource.data.diff(resource.data)
-                        .affectedKeys()
-                        .hasOnly(['name', 'about', 'aboutPostId', 'pinnedItems','bannerUrl' ]);
-      allow delete: if request.auth.uid == resource.data.creatorId;
-
-      match /comments/{commentId} {
-        allow read;
-        allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isGroupMember(groupId);
-      }
+      allow write;
     }
-
-      match /posts/{postId} {
-        allow read;
-        allow update: if isAdmin() || request.auth.uid == resource.data.creatorId
-                         && request.resource.data.diff(resource.data)
-                         .affectedKeys()
-                         .hasOnly(['name', 'content', 'isGroupAboutPost']);
-        allow delete: if isAdmin() || request.auth.uid == resource.data.creatorId;
-         match /comments/{commentId} {
-          	allow read;
-            allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) ;
-          }
-      }
-
-      // for testing supabase replication
-      match /test/{id} {
-        allow read;
-        allow write;
-      }
   }
 }

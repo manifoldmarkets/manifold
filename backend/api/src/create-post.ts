@@ -1,5 +1,3 @@
-import * as admin from 'firebase-admin'
-
 import { getUser } from 'shared/utils'
 import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
@@ -12,6 +10,8 @@ import { DAY_MS } from 'common/util/time'
 import { contentSchema } from 'shared/zod-types'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { randomUUID } from 'crypto'
+import { update } from 'lodash'
+import { updateData } from 'shared/supabase/utils'
 
 const postSchema = z
   .object({
@@ -33,7 +33,6 @@ const postSchema = z
   )
 
 export const createpost = authEndpoint(async (req, auth) => {
-  const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
 
   const { title, content, isGroupAboutPost, groupId, ...otherProps } = validate(
@@ -90,20 +89,18 @@ export const createpost = authEndpoint(async (req, auth) => {
     groupId,
   })
 
-  // TODO: lock. or migrate groups.
-
   if (groupId) {
-    const groupRef = firestore.collection('groups').doc(groupId)
-    const group = await groupRef.get()
-    if (group.exists) {
-      const groupData = group.data()
-      if (groupData) {
-        const postIds = groupData.postIds ?? []
-        postIds.push(post.id)
-        await groupRef.update({ postIds })
-        post.visibility =
-          groupData.privacyStatus == 'private' ? 'private' : 'public'
-      }
+    const group = await pg.oneOrNone(`select * from groups where id = $1`, [
+      groupId,
+    ])
+    if (group) {
+      const postIds = group.data.postIds || []
+      await updateData(pg, 'groups', group.id, {
+        postIds: [...postIds, post.id],
+      })
+
+      post.visibility =
+        group.data.privacy_status === 'private' ? 'private' : 'public'
     }
   }
 

@@ -702,12 +702,12 @@ cluster on contract_liquidity_pkey;
 
 create table if not exists
   groups (
-    id text not null primary key,
+    id text not null primary key default uuid_generate_v4 (),
     data jsonb not null,
-    fs_updated_time timestamp not null,
+    fs_updated_time timestamp,
     privacy_status text,
-    slug text,
-    name text,
+    slug text not null,
+    name text not null,
     name_fts tsvector generated always as (to_tsvector('english'::regconfig, name)) stored,
     creator_id text,
     total_members numeric default 0
@@ -827,10 +827,6 @@ drop policy if exists "public read" on posts;
 create policy "public read" on posts for
 select
   using (true);
-
-drop policy if exists "user delete" on posts;
-
-create policy "user delete" on posts for delete using (auth.uid ()::text = creator_id);
 
 create index if not exists posts_data_gin on posts using GIN (data);
 
@@ -1253,7 +1249,6 @@ begin
            when 'contract_comments' then cast(('contract_id', 'comment_id') as table_spec)
            when 'contract_follows' then cast(('contract_id', 'follow_id') as table_spec)
            when 'contract_liquidity' then cast(('contract_id', 'liquidity_id') as table_spec)
-           when 'groups' then cast((null, 'id') as table_spec)
            when 'txns' then cast((null, 'id') as table_spec)
            when 'manalinks' then cast((null, 'id') as table_spec)
            when 'user_contract_metrics' then cast(('user_id', 'contract_id') as table_spec)

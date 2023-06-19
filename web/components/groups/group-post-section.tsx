@@ -8,7 +8,7 @@ import { getPost } from 'web/lib/supabase/post'
 import { ContractCard } from '../contract/contract-card'
 import Masonry from 'react-masonry-css'
 import { useUser } from 'web/hooks/use-user'
-import { updateGroup } from 'web/lib/firebase/groups'
+import { updateGroup } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -82,7 +82,7 @@ function GroupFeatured(props: {
   useEffect(() => {
     async function getPinned() {
       if (group.pinnedItems == null) {
-        updateGroup(group, { pinnedItems: [] })
+        updateGroup({ id: group.id, pinnedItems: [] })
       } else {
         const itemComponents = await Promise.all(
           group.pinnedItems.map(async (element) => {
@@ -110,7 +110,8 @@ function GroupFeatured(props: {
   }, [group, group.pinnedItems])
 
   async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
-    await updateGroup(group, {
+    await updateGroup({
+      id: group.id,
       pinnedItems: [
         ...group.pinnedItems,
         ...(selectedItems as { itemId: string; type: 'contract' | 'post' }[]),
@@ -122,7 +123,7 @@ function GroupFeatured(props: {
     const newPinned = group.pinnedItems.filter((item) => {
       return item.itemId !== group.pinnedItems[index].itemId
     })
-    updateGroup(group, { pinnedItems: newPinned })
+    updateGroup({ id: group.id, pinnedItems: newPinned })
   }
 
   if (!group.pinnedItems || group.pinnedItems.length == 0) return <></>

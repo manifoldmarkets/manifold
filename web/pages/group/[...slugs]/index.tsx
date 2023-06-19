@@ -42,7 +42,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useRealtimePost } from 'web/hooks/use-post-supabase'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
-import { getPost, getPosts } from 'web/lib/supabase/post'
+import { getPost, getPostsByGroup } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
@@ -94,9 +94,9 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
       ? await getPost(group.aboutPostId)
       : null
 
-    const posts = (await getPosts(group.postIds ?? [])).filter(
+    const posts = (await getPostsByGroup(group.id)).filter(
       (p) => p.id !== group.aboutPostId
-    ) as Post[]
+    )
     return {
       props: {
         groupPrivacy: group.privacyStatus,

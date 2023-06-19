@@ -694,7 +694,7 @@ export const createReferralNotification = async (
   idempotencyKey: string,
   bonusAmount: string,
   referredByContract?: Contract,
-  referredByGroup?: Group
+  referredByGroup?: { slug: string; name: string }
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
@@ -1121,7 +1121,7 @@ export const createNewContractNotification = async (
 export const createNewContractFromPrivateGroupNotification = async (
   contractCreator: User,
   contract: Contract,
-  group: Group
+  group: { id: string; name: string }
 ) => {
   const pg = createSupabaseDirectClient()
   const db = createSupabaseClient()
@@ -1160,13 +1160,7 @@ export const createNewContractFromPrivateGroupNotification = async (
       await insertNotificationToSupabase(notification, pg)
     }
     if (!sendToEmail) return
-    await sendNewPrivateMarketEmail(
-      reason,
-      userId,
-      privateUser,
-      contract,
-      group
-    )
+    await sendNewPrivateMarketEmail(reason, privateUser, contract, group.name)
   }
 
   const privateMemberIds = await getGroupMemberIds(db, group.id)

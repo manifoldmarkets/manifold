@@ -131,6 +131,10 @@ export function createGroup(params: any) {
   return call(getApiUrl('creategroup'), 'POST', params)
 }
 
+export function updateGroup(params: { id: string } & Partial<Group>) {
+  return call(getApiUrl('updategroup'), 'POST', params)
+}
+
 export function acceptChallenge(params: any) {
   return call(getApiUrl('acceptchallenge'), 'POST', params)
 }
@@ -148,11 +152,7 @@ export function createPost(params: {
   return call(getApiUrl('createpost'), 'POST', params)
 }
 
-export function updatePost(
-  params: {
-    id: string
-  } & Partial<Post>
-) {
+export function updatePost(params: { id: string } & Partial<Post>) {
   return call(getApiUrl('updatepost'), 'POST', params)
 }
 

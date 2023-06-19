@@ -129,7 +129,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     ante || 0
   )
 
-  if (group && groupId) {
+  if (group) {
     await addGroupToContract(contract, group)
     if (contract.visibility == 'private') {
       const contractCreator = await getUser(contract.creatorId)
@@ -292,60 +292,43 @@ function validateMarketBody(body: any) {
   }
 }
 
-async function getGroup(
-  groupId: string,
-  visibility: string,
-  userId: string
-): Promise<Group> {
-  const groupDocRef = firestore.collection('groups').doc(groupId)
-  const groupDoc = await groupDocRef.get()
-  const firebaseUser = await admin.auth().getUser(userId)
-  if (!groupDoc.exists) {
-    throw new APIError(400, 'No group exists with the given group ID.')
-  }
-  const user = await getUser(userId)
-
-  const group = groupDoc.data() as Group
-
+async function getGroup(groupId: string, visibility: string, userId: string) {
   const db = createSupabaseClient()
 
-  const userMembership = (
-    await db
-      .from('group_members')
-      .select()
-      .eq('member_id', userId)
-      .eq('group_id', groupId)
-      .limit(1)
-  ).data
+  const groupQuery = await db.from('groups').select().eq('id', groupId).limit(1)
+  if (groupQuery.error) throw new APIError(500, groupQuery.error.message)
+  if (!groupQuery.data.length) {
+    throw new APIError(404, 'No group exists with the given group ID.')
+  }
+  const group = groupQuery.data[0]
 
-  const isGroupMember = !!userMembership && userMembership.length >= 1
-
-  const groupMemberRole = isGroupMember
-    ? userMembership[0].role ?? undefined
-    : undefined
+  const membershipQuery = await db
+    .from('group_members')
+    .select()
+    .eq('member_id', userId)
+    .eq('group_id', groupId)
+    .limit(1)
+  const membership = membershipQuery.data?.[0]
 
   if (
-    (group.privacyStatus == 'private' && visibility != 'private') ||
-    (group.privacyStatus != 'private' && visibility == 'private')
+    (group.privacy_status == 'private' && visibility != 'private') ||
+    (group.privacy_status != 'private' && visibility == 'private')
   ) {
     throw new APIError(
       400,
       `Both "${group.name}" and market must be of the same private visibility.`
     )
   }
+
   if (
     !canUserAddGroupToMarket({
       userId,
       group,
-      isMarketCreator: true,
-      isManifoldAdmin: isManifoldId(userId) || isAdmin(firebaseUser.email),
-      isTrustworthy: isTrustworthy(user?.username),
-      userGroupRole: groupMemberRole as any,
-      isGroupMember,
+      membership,
     })
   ) {
     throw new APIError(
-      400,
+      403,
       `User does not have permission to add this market to group "${group.name}".`
     )
   }
