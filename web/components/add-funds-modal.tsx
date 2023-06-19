@@ -23,6 +23,7 @@ import { query, where } from 'firebase/firestore'
 import { coll, listenForValues } from 'web/lib/firebase/utils'
 import { sum } from 'lodash'
 import { AlertBox } from './widgets/alert-box'
+import { AD_REDEEM_REWARD } from 'common/boost'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -156,9 +157,12 @@ export function BuyManaTab(props: { onClose: () => void }) {
 export const OtherWaysToGetMana = () => {
   return (
     <ul className="border-ink-100 border-t">
-      <Item url="/ad">
-        👀 Read ads for
-        <span className={'mx-1 font-bold'}>{formatMoney(5)}</span>per ad
+      <Item>
+        🚀 Browse feed for
+        <span className={'mx-1 font-bold'}>
+          {formatMoney(AD_REDEEM_REWARD)}
+        </span>
+        from each boosted market
       </Item>
       <Item>
         🔥 Streak bonus (up to
