@@ -114,8 +114,7 @@ function SimpleCard(props: {
   item?: FeedTimelineItem
   promotedData?: { adId: string; reward: number }
 }) {
-  const { contract, user, textColor, trackClick, promotedData, item, ref } =
-    props
+  const { contract, user, textColor, trackClick, item, ref } = props
   const { question, outcomeType, mechanism } = contract
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   return (
@@ -179,7 +178,7 @@ function ReasonIcon(props: { item?: FeedTimelineItem }) {
   const { item } = props
   if (!item) return null
 
-  const { reasonDescription, createdTime, dataType } = item
+  const { reasonDescription, dataType } = item
 
   const SpecificIcon =
     (
