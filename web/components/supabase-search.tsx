@@ -431,7 +431,7 @@ function SupabaseContractSearchControls(props: {
         sort={sort}
         className={'flex flex-row gap-2'}
         includeProbSorts={includeProbSorts}
-        listViewDisabled={listViewDisabled}
+        listViewDisabled={true}
       />
     </div>
   )
