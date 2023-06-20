@@ -263,6 +263,7 @@ export function BuyPanel(props: {
     : undefined
 
   const displayError = !!outcome
+  const selected = seeLimit ? 'LIMIT' : outcome
 
   return (
     <Col className={clsx(className, hidden ? 'hidden' : '')}>
@@ -275,7 +276,7 @@ export function BuyPanel(props: {
         <YesNoSelector
           className="flex-1"
           btnClassName="flex-1"
-          selected={seeLimit ? 'LIMIT' : outcome}
+          selected={selected}
           onSelect={(choice) => {
             onOptionChoice(choice)
           }}
@@ -288,9 +289,10 @@ export function BuyPanel(props: {
         />
         {!isStonk && (
           <Button
-            color={seeLimit ? 'indigo' : 'indigo-outline'}
+            color={seeLimit || !selected ? 'indigo' : 'indigo-outline'}
             onClick={() => onOptionChoice('LIMIT')}
             className="text-lg"
+            size="xl"
           >
             %
           </Button>
