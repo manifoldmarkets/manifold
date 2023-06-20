@@ -197,6 +197,7 @@ export function CharityPage(props: { className?: string }) {
         height={100}
         src="/welcome/charity.gif"
         className="my-4 h-full w-full rounded-md object-contain"
+        alt={'Manifold charity animation'}
       />
       <p className="mt-2 mb-2 text-left text-lg">
         You can turn your mana earnings into a real donation to charity, at a
