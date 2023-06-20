@@ -70,11 +70,13 @@ export function TopicSelectorDialog(props: {
       open={open !== undefined ? open : true}
       setOpen={setOpen ? closeDialog : noop}
       className="bg-canvas-0 overflow-hidden rounded-md"
+      size={'lg'}
+      bgOpaque={true}
     >
       <Col className="h-[32rem] overflow-y-auto">
         <div className="bg-canvas-0 sticky top-0 py-4 px-6">
           <p className="text-primary-700 mb-2 text-2xl">What interests you?</p>
-          <p>Select a few topics to personalize your feed</p>
+          <p>Select at least 3 topics to personalize your feed</p>
         </div>
 
         {Object.keys(TOPICS_TO_SUBTOPICS).map((topic) => (
@@ -116,7 +118,11 @@ export function TopicSelectorDialog(props: {
 
         <div className="from-canvas-0 pointer-events-none sticky bottom-0 bg-gradient-to-t to-transparent text-right">
           <span className="pointer-events-auto ml-auto inline-flex p-6 pt-2">
-            <Button onClick={closeDialog} loading={isLoading}>
+            <Button
+              onClick={closeDialog}
+              disabled={(userSelectedTopics ?? []).length <= 2}
+              loading={isLoading}
+            >
               Done
             </Button>
           </span>

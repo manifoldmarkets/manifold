@@ -80,7 +80,7 @@ export default function Welcome() {
   if (groupSelectorOpen) return <TopicSelectorDialog />
 
   return (
-    <Modal open={open} setOpen={close}>
+    <Modal open={open} setOpen={close} bgOpaque={true} size={'lg'}>
       <Col className="bg-canvas-0 place-content-between rounded-md px-8 py-6 text-sm md:text-lg">
         {availablePages[page]}
         <Col>
