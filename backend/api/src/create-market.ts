@@ -389,6 +389,7 @@ async function createAnswers(
       const id = ids[i]
       const answer: Answer = {
         id,
+        index: i,
         contractId: contract.id,
         userId: user.id,
         text,

@@ -1091,6 +1091,7 @@ select
 create table if not exists
   answers (
     id text not null primary key,
+    index int, -- Order of the answer in the list
     contract_id text, -- Associated contract
     user_id text, -- Creator of the answer
     text text,
@@ -1115,9 +1116,9 @@ create
 or replace function answers_populate_cols () returns trigger language plpgsql as $$
 begin
   if new.data is not null then
+    new.index := ((new.data) ->> 'index')::int;
     new.contract_id := (new.data) ->> 'contractId';
     new.user_id := (new.data) ->> 'userId';
-    new.text := ((new.data) ->> 'text')::text;
     new.text := ((new.data) ->> 'text')::text;
     new.created_time :=
         case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;

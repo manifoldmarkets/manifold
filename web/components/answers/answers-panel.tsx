@@ -72,27 +72,25 @@ export function AnswersPanel(props: {
       ? []
       : answers.filter((answer) => answerToProb[answer.id] < 0.01)
 
+  const sortedAnswers = sortBy(answers, (answer) =>
+    'index' in answer ? answer.index : -1 * answerToProb[answer.id]
+  )
+
   const [winningAnswers, losingAnswers] = partition(
-    answers.filter((answer) =>
+    sortedAnswers.filter((answer) =>
       showAllAnswers ? true : !answersToHide.find((a) => answer.id === a.id)
     ),
     (answer) =>
       answer.id === resolution || (resolutions && resolutions[answer.id])
   )
-  const sortedAnswers = [
+  const answerItems = [
     ...sortBy(winningAnswers, (answer) =>
       resolutions ? -1 * resolutions[answer.id] : 0
     ),
-    ...sortBy(
-      resolution ? [] : losingAnswers,
-      (answer) => -1 * answerToProb[answer.id]
-    ),
+    ...(resolution ? [] : losingAnswers),
   ]
 
-  const answerItems = sortBy(
-    losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
-    (answer) => -answerToProb[answer.id]
-  )
+  const openAnswers = losingAnswers.length > 0 ? losingAnswers : answerItems
 
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -146,7 +144,7 @@ export function AnswersPanel(props: {
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
-  const answerItemComponents = sortedAnswers.map((answer) => (
+  const answerItemComponents = answerItems.map((answer) => (
     <AnswerItem
       key={answer.id}
       answer={answer}
@@ -202,7 +200,7 @@ export function AnswersPanel(props: {
 
         {!resolveOption && (
           <Col className="gap-3">
-            {answerItems.map((answer) => (
+            {openAnswers.map((answer) => (
               <OpenAnswer
                 key={answer.id}
                 answer={answer}
