@@ -33,7 +33,7 @@ export default function MarketsHome() {
   return (
     <Page>
       <Col className="mx-auto w-full p-2">
-        <Row className="mb-4 sm:mb-8 items-center justify-between gap-4">
+        <Row className="mb-4 items-center justify-between gap-4 sm:mb-8">
           <Title children="Home" className="!my-0 hidden sm:block" />
           <div className="flex sm:hidden">
             {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
