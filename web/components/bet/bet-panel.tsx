@@ -506,8 +506,10 @@ function LimitOrderPanel(props: {
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
 
-  const hasYesLimitBet = lowLimitProb !== undefined && !!betAmount
-  const hasNoLimitBet = highLimitProb !== undefined && !!betAmount
+  const hasYesLimitBet =
+    lowLimitProb !== undefined && !!betAmount && lowLimitProb > 0
+  const hasNoLimitBet =
+    highLimitProb !== undefined && !!betAmount && highLimitProb < 100
   const hasTwoBets = hasYesLimitBet && hasNoLimitBet
 
   const betDisabled =
@@ -699,17 +701,16 @@ function LimitOrderPanel(props: {
         />
       </Row>
       <LimitSlider
-        contract={contract}
-        isPseudoNumeric={isPseudoNumeric}
         lowLimitProb={lowLimitProb}
         setLowLimitProb={setLowLimitProb}
         highLimitProb={highLimitProb}
         setHighLimitProb={setHighLimitProb}
-        isSubmitting={isSubmitting}
         mobileView={mobileView}
       />
 
-      <span className="text-ink-800 mt-4 mb-2 text-sm">
+      <Spacer h={8} />
+
+      <span className="text-ink-800 mb-2 text-sm">
         Max amount<span className="text-scarlet-500 ml-0.5">*</span>
       </span>
 

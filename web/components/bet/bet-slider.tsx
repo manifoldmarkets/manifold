@@ -53,8 +53,6 @@ export const BetSlider = (props: {
               ? '[&>.rc-slider-track]:bg-scarlet-600 [&>.rc-slider-handle]:bg-scarlet-300'
               : '[&>.rc-slider-handle]:bg-primary-500 [&>.rc-slider-track]:bg-primary-300'
           )}
-          railStyle={{ height: 6, top: 4, left: 0 }}
-          trackStyle={{ height: 6, top: 4 }}
           handleStyle={{
             height: 20,
             width: 20,

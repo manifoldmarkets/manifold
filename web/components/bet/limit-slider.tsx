@@ -1,47 +1,31 @@
+import clsx from 'clsx'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
-  Contract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
+import Slider from 'rc-slider'
+import { useEffect, useRef, useState } from 'react'
+import { useWindowSize } from 'web/hooks/use-window-size'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { HigherLabel, LowerLabel, NoLabel, YesLabel } from '../outcome-label'
-import { ProbabilityOrNumericInput } from '../widgets/probability-input'
-import clsx from 'clsx'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { set } from 'lodash'
-import Slider from 'rc-slider'
-import { useWindowSize } from 'web/hooks/use-window-size'
 
 export function LimitSlider(props: {
-  contract:
-    | CPMMBinaryContract
-    | PseudoNumericContract
-    | StonkContract
-    | CPMMMultiContract
-  isPseudoNumeric: boolean
-  lowLimitProb: number | undefined
+  lowLimitProb: number
   setLowLimitProb: (prob: number) => void
-  highLimitProb: number | undefined
+  highLimitProb: number
   setHighLimitProb: (prob: number) => void
-  isSubmitting: boolean
   mobileView?: boolean
 }) {
   const {
-    contract,
-    isPseudoNumeric,
     lowLimitProb,
     setLowLimitProb,
     highLimitProb,
     setHighLimitProb,
-    isSubmitting,
     mobileView,
-    rangeError,
-    outOfRangeError,
   } = props
-  const [focus, setFocus] = useState<'low' | 'high' | undefined>(undefined)
+
   const mark = (value: number) => (
     <span className="text-ink-400 text-xs">
       <div className={'sm:h-0.5'} />
@@ -55,7 +39,6 @@ export function LimitSlider(props: {
   useEffect(() => {
     if (targetRef.current) {
       setSliderWidth(targetRef.current.offsetWidth)
-      console.log(targetRef.current.offsetWidth)
     }
   }, [window.width])
 
@@ -66,14 +49,16 @@ export function LimitSlider(props: {
     <Col className="mb-8">
       <Row className="mt-1 mb-4 gap-4">
         <Col className="w-full">
-          <div className="text-ink-800 text-sm">Attempt to keep between</div>
+          <div className="text-ink-800 text-sm">
+            Attempt to keep between probabilities:
+          </div>
           <Row
             className="relative h-12 grow items-center gap-4"
             ref={targetRef}
           >
             <div
               className={clsx(
-                'absolute bottom-0 w-16 rounded p-1 px-2 text-lg',
+                'absolute bottom-0 w-16 select-none rounded p-1 px-2 text-lg',
                 lowLimitProb === undefined || lowLimitProb === 0
                   ? 'bg-ink-300 text-ink-600'
                   : 'bg-canvas-0'
@@ -90,11 +75,11 @@ export function LimitSlider(props: {
                 }`,
               }}
             >
-              {lowLimitProb}%
+              {lowLimitProb} <span className="text-sm">%</span>
             </div>
             <div
               className={clsx(
-                'absolute bottom-0 w-16 rounded p-1 px-2 text-lg',
+                'absolute bottom-0 w-16 select-none rounded p-1 px-2 text-lg',
                 highLimitProb === undefined || highLimitProb === 100
                   ? 'bg-ink-300 text-ink-600'
                   : 'bg-canvas-0'
@@ -111,7 +96,7 @@ export function LimitSlider(props: {
                 }`,
               }}
             >
-              {highLimitProb}%
+              {highLimitProb} <span className="text-sm">%</span>
             </div>
           </Row>
         </Col>
@@ -132,7 +117,7 @@ export function LimitSlider(props: {
             // '75': mark(75),
             '100': mark(100),
           }}
-          value={[lowLimitProb ?? 0, highLimitProb ?? 100]}
+          value={[lowLimitProb, highLimitProb]}
           onChange={(value) => {
             if (value && Array.isArray(value) && value.length > 1) {
               setLowLimitProb(value[0])
@@ -155,17 +140,6 @@ export function LimitSlider(props: {
           allowCross={false}
         />
       </Row>
-      {outOfRangeError && (
-        <div className="text-scarlet-500 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-          Limit is out of range
-        </div>
-      )}
-      {rangeError && !outOfRangeError && (
-        <div className="text-scarlet-500 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-          {isPseudoNumeric ? 'HIGHER' : 'YES'} limit must be less than{' '}
-          {isPseudoNumeric ? 'LOWER' : 'NO'} limit
-        </div>
-      )}
     </Col>
   )
 }
