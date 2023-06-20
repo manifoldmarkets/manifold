@@ -1,6 +1,4 @@
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
-  '🗳️ US Politics': ['🙋 2024 US Elections', '🟠 Trump', '🇺🇸 US Politics'],
-
   '💻 Technology': [
     '🤖 AI',
     '🪙 Crypto',
@@ -12,6 +10,8 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '☢️ Nuclear',
     '🚀 Space',
   ],
+
+  '🗳️ Politics': ['🙋 2024 US Elections', '🟠 Trump', '🇺🇸 US Politics'],
 
   '🏟️ Sports': [
     '🏀 Basketball',
