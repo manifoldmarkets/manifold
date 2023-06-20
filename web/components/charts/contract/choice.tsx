@@ -42,9 +42,10 @@ const getAnswers = (contract: MultiContract) => {
   const validAnswers = (answers ?? []).filter(
     (answer) => answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE'
   )
-  return sortBy(
-    validAnswers,
-    (answer) => -1 * getAnswerProbability(contract, answer.id)
+  return sortBy(validAnswers, (answer) =>
+    'index' in answer
+      ? answer.index
+      : -1 * getAnswerProbability(contract, answer.id)
   )
 }
 

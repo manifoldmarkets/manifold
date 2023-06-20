@@ -22,7 +22,8 @@ export async function addGroupMemberHelper(
   groupId: string,
   userId: string,
   myId: string,
-  role?: string
+  role?: string,
+  isLink = false
 ) {
   const db = createSupabaseDirectClient()
 
@@ -47,28 +48,28 @@ export async function addGroupMemberHelper(
       groupId,
     ])
 
-    if (!group) throw new APIError(400, 'Group cannot be found')
+    if (!group) throw new APIError(404, 'Group cannot be found')
     if (newMemberExists)
       throw new APIError(400, 'User already exists in group!')
 
     const isAdminRequest = isAdmin((await admin.auth().getUser(myId)).email)
 
     if (userId === myId) {
-      if (group.privacy_status === 'private') {
-        throw new APIError(400, 'You can not add yourself to a private group!')
+      if (group.privacy_status === 'private' && !isLink) {
+        throw new APIError(403, 'You can not add yourself to a private group!')
       }
     } else {
       if (!requester) {
         if (!isManifoldId(myId) || !isAdminRequest) {
           throw new APIError(
-            400,
+            403,
             'User does not have permission to add members'
           )
         }
       } else {
         if (requester.role !== 'admin' && myId !== group.creator_id)
           throw new APIError(
-            400,
+            403,
             'User does not have permission to add members'
           )
       }

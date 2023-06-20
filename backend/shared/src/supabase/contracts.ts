@@ -5,7 +5,6 @@ import {
   getUsersWithSimilarInterestVectorToUser,
 } from 'shared/supabase/users'
 import { CONTRACT_OR_USER_FEED_REASON_TYPES } from 'common/feed'
-import { DEFAULT_EMBEDDING_DISTANCE_PROBES } from 'common/embeddings'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -18,6 +17,22 @@ export const getUniqueBettorIds = async (
       from contract_bets
         where contract_id = $1`,
     [contractId]
+  )
+  return res.map((r) => r.user_id as string)
+}
+
+export const getUniqueBettorIdsForAnswer = async (
+  contractId: string,
+  answerId: string,
+  pg: SupabaseDirectClient
+) => {
+  const res = await pg.manyOrNone(
+    `select distinct user_id
+      from contract_bets
+      where contract_id = $1
+      and data->>'answerId' = $2
+      and is_redemption = false`,
+    [contractId, answerId]
   )
   return res.map((r) => r.user_id as string)
 }
@@ -95,7 +110,7 @@ const getUsersWithSimilarInterestVectorsToContract = async (
   probes = 10
 ): Promise<string[]> => {
   const userIdsAndDistances = await pg.tx(async (t) => {
-    await t.none('SET ivfflat.probes = $1', [probes])
+    await t.none('SET LOCAL ivfflat.probes = $1', [probes])
     const res = await t.manyOrNone(
       `with ce as (
         select embedding
@@ -109,11 +124,9 @@ const getUsersWithSimilarInterestVectorsToContract = async (
           ) as distances
      where distance < $2
      order by distance
-     limit 5000;
     `,
       [contractId, distanceThreshold]
     )
-    await t.none('SET ivfflat.probes = $1', [DEFAULT_EMBEDDING_DISTANCE_PROBES])
     return res
   })
   return userIdsAndDistances.map((r) => r.user_id)

@@ -14,6 +14,7 @@ export interface Database {
           contract_id: string
           created_time: string
           id: string
+          index: number
           pool_no: number
           pool_yes: number
           prob: number
@@ -26,6 +27,7 @@ export interface Database {
           contract_id: string
           created_time?: string
           id: string
+          index: number
           pool_no: number
           pool_yes: number
           prob: number
@@ -38,6 +40,7 @@ export interface Database {
           contract_id?: string
           created_time?: string
           id?: string
+          index?: number
           pool_no?: number
           pool_yes?: number
           prob?: number

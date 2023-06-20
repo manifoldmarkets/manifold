@@ -6,7 +6,7 @@ import { DateTimeTooltip } from 'web/components/widgets/datetime-tooltip'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { trackShareEvent } from 'web/lib/service/analytics'
 import { copyToClipboard } from 'web/lib/util/copy'
-import { fromNow } from 'web/lib/util/time'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
 export function copyLinkToComment(
   contractCreatorUsername: string,
@@ -58,7 +58,7 @@ export function CopyLinkDateTimeComponent(props: {
           seeEditsButton ? '' : 'px-1'
         )}
       >
-        {isClient && fromNow(createdTime)}
+        {isClient && shortenedFromNow(createdTime)}
       </Link>
     </DateTimeTooltip>
   )

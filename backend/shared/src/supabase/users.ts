@@ -1,5 +1,4 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { DEFAULT_EMBEDDING_DISTANCE_PROBES } from 'common/embeddings'
 import { fromPairs } from 'lodash'
 import {
   FEED_REASON_TYPES,
@@ -29,7 +28,7 @@ export const getUsersWithSimilarInterestVectorToUser = async (
   probes = 3
 ) => {
   const userIdsAndDistances = await pg.tx(async (t) => {
-    await t.none('SET ivfflat.probes = $1', [probes])
+    await t.none('SET LOCAL ivfflat.probes = $1', [probes])
     const res = await t.manyOrNone<{
       user_id: string
       distance: number
@@ -49,7 +48,6 @@ export const getUsersWithSimilarInterestVectorToUser = async (
   `,
       [userId, USER_TO_USER_DISTANCE_THRESHOLD]
     )
-    await t.none('SET ivfflat.probes = $1', [DEFAULT_EMBEDDING_DISTANCE_PROBES])
     return res
   })
 

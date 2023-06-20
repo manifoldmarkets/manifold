@@ -50,6 +50,7 @@ import { Content } from '../widgets/editor'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { CommentEditHistoryButton } from '../comments/comment-edit-history-button'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -394,6 +395,7 @@ export function CommentActions(props: {
             size={'xs'}
             onClick={(e) => {
               e.preventDefault()
+              e.stopPropagation()
               onReplyClick(comment)
             }}
           >
@@ -550,45 +552,56 @@ function FeedCommentHeader(props: {
     <Col
       className={clsx('mt-1', inTimeline ? 'text-md' : 'text-ink-600 text-sm ')}
     >
-      <Row className="items-end">
-        <UserLink
-          username={userUsername}
-          name={userName}
-          marketCreator={marketCreator}
-          className={'font-semibold'}
-        />
-        {/* Hide my status if replying to a bet, it's too much clutter*/}
-        {bettorUsername == undefined && !inTimeline && (
-          <span className="text-ink-400 ml-1">
-            <CommentStatus contract={contract} comment={comment} />
-            {bought} {money}
-            {shouldDisplayOutcome && (
-              <>
-                {' '}
-                of{' '}
-                <OutcomeLabel
-                  outcome={betOutcome ? betOutcome : ''}
-                  contract={contract}
-                  truncate="short"
-                />
-              </>
-            )}
+      <Row className="items-center gap-1">
+        <span>
+          <UserLink
+            username={userUsername}
+            name={userName}
+            marketCreator={marketCreator}
+            className={'font-semibold'}
+          />
+          {/* Hide my status if replying to a bet, it's too much clutter*/}
+          {bettorUsername == undefined && !inTimeline && (
+            <span className="text-ink-400 ml-1">
+              <CommentStatus contract={contract} comment={comment} />
+              {bought} {money}
+              {shouldDisplayOutcome && (
+                <>
+                  {' '}
+                  of{' '}
+                  <OutcomeLabel
+                    outcome={betOutcome ? betOutcome : ''}
+                    contract={contract}
+                    truncate="short"
+                  />
+                </>
+              )}
+            </span>
+          )}
+        </span>
+        {inTimeline ? (
+          <span>
+            {' '}
+            commented{' '}
+            <span className="text-ink-500">
+              {shortenedFromNow(editedTime ? editedTime : createdTime)}{' '}
+            </span>
           </span>
+        ) : (
+          <CopyLinkDateTimeComponent
+            prefix={contract.creatorUsername}
+            slug={contract.slug}
+            createdTime={editedTime ? editedTime : createdTime}
+            elementId={comment.id}
+            seeEditsButton={<CommentEditHistoryButton comment={comment} />}
+          />
         )}
-        {inTimeline && <span> commented</span>}{' '}
-        <CopyLinkDateTimeComponent
-          prefix={contract.creatorUsername}
-          slug={contract.slug}
-          createdTime={editedTime ? editedTime : createdTime}
-          elementId={comment.id}
-          seeEditsButton={<CommentEditHistoryButton comment={comment} />}
-        />
-        {isApi && (
+        {!inTimeline && isApi && (
           <InfoTooltip text="Placed via API" className="mr-1">
             🤖
           </InfoTooltip>
         )}
-        <DotMenu comment={comment} contract={contract} />
+        {!inTimeline && <DotMenu comment={comment} contract={contract} />}
       </Row>
     </Col>
   )

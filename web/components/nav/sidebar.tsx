@@ -30,11 +30,13 @@ import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SignInButton } from '../buttons/sign-in-button'
 import { ManifoldLogo } from './manifold-logo'
-import { ProfileSummary } from './profile-menu'
+import { ProfileSummary } from './profile-summary'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
 import { getIsNative } from 'web/lib/native/is-native'
 import { NewspaperIcon } from '@heroicons/react/solid'
+import { useShouldShowFeed } from 'web/hooks/use-should-show-feed'
+import { useABTest } from 'web/hooks/use-ab-test'
 
 export default function Sidebar(props: {
   className?: string
@@ -54,9 +56,16 @@ export default function Sidebar(props: {
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
 
+  const shouldShowFeed = useShouldShowFeed(user)
+  const isMarkets = useABTest('markets homepage', {
+    markets: true,
+    feed: false,
+  })
+  const showMarkets = shouldShowFeed || !isMarkets
+
   const navOptions = isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
-    : getDesktopNav(!!user, () => setIsModalOpen(true))
+    : getDesktopNav(!!user, () => setIsModalOpen(true), showMarkets)
 
   const bottomNavOptions = bottomNav(
     !!user,
@@ -118,11 +127,15 @@ const logout = async () => {
   await Router.replace(Router.asPath)
 }
 
-const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
+const getDesktopNav = (
+  loggedIn: boolean,
+  openDownloadApp: () => void,
+  showMarkets: boolean
+) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
-      { name: 'Markets', href: '/markets', icon: ScaleIcon },
+      showMarkets && { name: 'Markets', href: '/markets', icon: ScaleIcon },
       {
         name: 'Notifications',
         href: `/notifications`,

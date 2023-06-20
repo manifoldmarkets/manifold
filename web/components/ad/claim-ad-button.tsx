@@ -20,10 +20,11 @@ export function ClaimButton(props: {
   return (
     <Button
       className={clsx(
-        'disabled:bg-canvas-50 disabled:text-ink-800 disabled:cursor-default disabled:bg-none',
+        'disabled:bg-canvas-50 disabled:text-ink-800 h-min disabled:cursor-default disabled:bg-none',
+        'ml-1',
         className
       )}
-      size="xs"
+      size="xs" // don't make it smaller!!!
       color="gold"
       disabled={loading || claimed}
       onClick={async (e) => {
@@ -45,15 +46,13 @@ export function ClaimButton(props: {
         }
       }}
     >
-      <span className={'whitespace-nowrap'}>
-        {claimed ? (
-          'Claimed!'
-        ) : loading ? (
-          <LoadingIndicator size={'sm'} />
-        ) : (
-          `Claim ${formatMoney(reward)} Boost`
-        )}
-      </span>
+      {claimed ? (
+        'Claimed!'
+      ) : loading ? (
+        <LoadingIndicator size={'sm'} />
+      ) : (
+        `Claim ${formatMoney(reward)}`
+      )}
     </Button>
   )
 }

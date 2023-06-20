@@ -1,6 +1,6 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { SupabaseClient } from 'common/supabase/utils'
-import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { loadPaginated, log } from 'shared/utils'
 import { Query } from 'firebase-admin/lib/firestore'
 import { Contract } from 'common/contract'
@@ -29,20 +29,21 @@ const getContractTraders = async (pg: SupabaseDirectClient, since: number) => {
     )
   )
 }
-
+export const MINUTE_INTERVAL = 10
 export async function scoreContractsInternal(
   firestore: FirebaseFirestore.Firestore,
   db: SupabaseClient,
   pg: SupabaseDirectClient
 ) {
   const now = Date.now()
+  const lastUpdatedTime = now - MINUTE_INTERVAL * MINUTE_MS
   const hourAgo = now - HOUR_MS
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
   const activeContracts = await loadPaginated(
     firestore
       .collection('contracts')
-      .where('lastUpdatedTime', '>', hourAgo) as Query<Contract>
+      .where('lastUpdatedTime', '>', lastUpdatedTime) as Query<Contract>
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContractsData = await db
@@ -66,6 +67,7 @@ export async function scoreContractsInternal(
   const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
   const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
   const todayTradersByContract = await getContractTraders(pg, dayAgo)
+  const hourAgoTradersByContract = await getContractTraders(pg, hourAgo)
   const thisWeekTradersByContract = await getContractTraders(pg, weekAgo)
 
   for (const contract of contracts) {
@@ -95,22 +97,29 @@ export async function scoreContractsInternal(
     // This is a newly trending contract, and should be at the top of most users' feeds
     if (todayScore > 10 && todayScore / thisWeekScore > 0.5) {
       log('inserting specifically today trending contract', contract.id)
-      await insertTrendingContractToUsersFeeds(contract, dayAgo)
+      await insertTrendingContractToUsersFeeds(contract, now - 2 * DAY_MS, {
+        todayScore,
+        thisWeekScore,
+      })
     }
     // If it's already popular but has had 5 new traders in the past hour, add it to the feed
     else if (
-      popularityScore > 10 &&
-      todayScore - (contract.popularityScore - thisWeekScoreWeight) > 5
+      popularityScore > 20 &&
+      hourAgoTradersByContract[contract.id] > 5
     ) {
       log(
         'inserting generally trending, recently popular contract',
         contract.id,
         'with popularity score',
         popularityScore,
-        'prev score',
-        contract.popularityScore
+        'and',
+        hourAgoTradersByContract[contract.id],
+        'traders in the past hour'
       )
-      await insertTrendingContractToUsersFeeds(contract, weekAgo)
+      await insertTrendingContractToUsersFeeds(contract, weekAgo, {
+        tradersInPastHour: hourAgoTradersByContract[contract.id],
+        popularityScore,
+      })
     }
     if (
       contract.popularityScore !== popularityScore ||

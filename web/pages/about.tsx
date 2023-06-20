@@ -188,9 +188,9 @@ export default function AboutPage() {
             href="/latestposts"
           />
           <LabCard
-            title="⏳ Timeline"
-            description="Live feed"
-            href="/feed-timeline"
+            title="⚡️ Live feed"
+            description="Latest market activity"
+            href="/live"
           />
         </LabSection>
 

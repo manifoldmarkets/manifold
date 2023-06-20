@@ -20,13 +20,23 @@ export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
   if (!invite) {
     throw new APIError(404, 'Group invite not found')
   }
-  if (!invite.is_forever && invite.expire_time && now >= invite.expire_time) {
-    throw new APIError(404, 'This link has expired')
+  if (
+    !invite.is_forever &&
+    invite.expire_time &&
+    now >= new Date(invite.expire_time)
+  ) {
+    throw new APIError(400, 'This link has expired')
   }
   if (invite.is_max_uses_reached) {
-    throw new APIError(404, 'The max uses has been reached for this link')
+    throw new APIError(400, 'The max uses has been reached for this link')
   }
-  const ret = await addGroupMemberHelper(invite.group_id, auth.uid, auth.uid)
+  const ret = await addGroupMemberHelper(
+    invite.group_id,
+    auth.uid,
+    auth.uid,
+    undefined,
+    true
+  )
 
   try {
     const result = await pg.result(

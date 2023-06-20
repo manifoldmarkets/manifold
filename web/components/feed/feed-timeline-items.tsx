@@ -28,6 +28,7 @@ import { FeedCommentItem } from './feed-comment-item'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
+import { track } from 'web/lib/service/analytics'
 
 const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
@@ -218,20 +219,23 @@ const FeedItemFrame = (props: {
   className?: string
 }) => {
   const { item, children, className } = props
-  const maybeVisibleHook =
-    item &&
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useIsVisible(
-      () =>
-        // TODO: should we keep updating them or just do it once?
-        run(
-          db
-            .from('user_feed')
-            .update({ seen_time: new Date().toISOString() })
-            .eq('id', item.id)
-        ),
-      true
-    )
+
+  const maybeVisibleHook = useIsVisible(
+    () =>
+      // TODO: should we keep updating them or just do it once?
+      item &&
+      run(
+        db
+          .from('user_feed')
+          .update({ seen_time: new Date().toISOString() })
+          .eq('id', item.id)
+      ).then(() =>
+        track('view feed item', { id: item.id, type: item.dataType })
+      ),
+    true,
+    item !== undefined
+  )
+
   return (
     <Col ref={maybeVisibleHook?.ref} className={className}>
       {children}

@@ -33,10 +33,12 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { TopicSelector } from 'web/components/topic-selector'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { ProfileSummary } from 'web/components/nav/profile-menu'
+import { ProfileSummary } from 'web/components/nav/profile-summary'
 import { Spacer } from 'web/components/layout/spacer'
 import { useShouldShowFeed } from 'web/hooks/use-should-show-feed'
 import FeedTimeline from 'web/pages/feed-timeline'
+import { useABTest } from 'web/hooks/use-ab-test'
+import MarketsHome from '../markets-home'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -60,8 +62,16 @@ function HomeDashboard() {
   const shouldShowFeed = useShouldShowFeed(user)
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
 
+  const isMarkets = useABTest('markets homepage', {
+    markets: true,
+    feed: false,
+  })
+
   const isLoading = !dailyChangedContracts
   if (shouldShowFeed) return <FeedTimeline />
+
+  if (isMarkets) return <MarketsHome />
+
   return (
     <Page>
       <Col className="mx-auto w-full max-w-2xl gap-2 pb-8 sm:gap-6 sm:px-2 lg:pr-4">
