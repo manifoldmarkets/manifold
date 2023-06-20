@@ -33,7 +33,7 @@ export function LimitSlider(props: {
     </span>
   )
 
-  const targetRef = useRef(null)
+  const targetRef = useRef<HTMLDivElement>(null)
   const [sliderWidth, setSliderWidth] = useState(0)
   const window = useWindowSize()
   useEffect(() => {
@@ -112,9 +112,7 @@ export function LimitSlider(props: {
           range
           marks={{
             '0': mark(0),
-            // '25': mark(25),
             '50': mark(50),
-            // '75': mark(75),
             '100': mark(100),
           }}
           value={[lowLimitProb, highLimitProb]}
