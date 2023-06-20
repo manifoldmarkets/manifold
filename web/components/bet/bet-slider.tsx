@@ -51,17 +51,17 @@ export const BetSlider = (props: {
               ? '[&>.rc-slider-handle]:bg-teal-500 [&>.rc-slider-track]:bg-teal-600'
               : binaryOutcome === 'NO'
               ? '[&>.rc-slider-track]:bg-scarlet-600 [&>.rc-slider-handle]:bg-scarlet-300'
-              : '[&>.rc-slider-handle]:bg-primary-500 [&>.rc-slider-track]:bg-primary-700'
+              : '[&>.rc-slider-handle]:bg-primary-500 [&>.rc-slider-track]:bg-primary-300'
           )}
           railStyle={{ height: 6, top: 4, left: 0 }}
           trackStyle={{ height: 6, top: 4 }}
           handleStyle={{
-            height: 28,
-            width: 28,
+            height: 20,
+            width: 20,
             opacity: 1,
             border: 'none',
             boxShadow: 'none',
-            top: -2,
+            top: 2,
           }}
           step={5}
         />

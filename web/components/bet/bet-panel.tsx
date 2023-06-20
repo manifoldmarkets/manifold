@@ -52,6 +52,8 @@ import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { getProbability } from 'common/calculate'
 import { removeUndefinedProps } from 'common/util/object'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
+import Slider from 'rc-slider'
+import { LimitSlider } from './limit-slider'
 
 export type binaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -488,8 +490,8 @@ function LimitOrderPanel(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
-  const [lowLimitProb, setLowLimitProb] = useState<number | undefined>()
-  const [highLimitProb, setHighLimitProb] = useState<number | undefined>()
+  const [lowLimitProb, setLowLimitProb] = useState<number>(10)
+  const [highLimitProb, setHighLimitProb] = useState<number>(90)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Expiring orders
@@ -504,28 +506,12 @@ function LimitOrderPanel(props: {
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
 
-  const rangeError =
-    lowLimitProb !== undefined &&
-    highLimitProb !== undefined &&
-    lowLimitProb >= highLimitProb
-
-  const outOfRangeError =
-    (lowLimitProb !== undefined &&
-      (lowLimitProb <= 0 || lowLimitProb >= 100)) ||
-    (highLimitProb !== undefined &&
-      (highLimitProb <= 0 || highLimitProb >= 100))
-
   const hasYesLimitBet = lowLimitProb !== undefined && !!betAmount
   const hasNoLimitBet = highLimitProb !== undefined && !!betAmount
   const hasTwoBets = hasYesLimitBet && hasNoLimitBet
 
   const betDisabled =
-    isSubmitting ||
-    !betAmount ||
-    rangeError ||
-    outOfRangeError ||
-    !!error ||
-    (!hasYesLimitBet && !hasNoLimitBet)
+    isSubmitting || !betAmount || !!error || (!hasYesLimitBet && !hasNoLimitBet)
 
   const yesLimitProb =
     lowLimitProb === undefined
@@ -609,8 +595,8 @@ function LimitOrderPanel(props: {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
         setBetAmount(undefined)
-        setLowLimitProb(undefined)
-        setHighLimitProb(undefined)
+        setLowLimitProb(10)
+        setHighLimitProb(90)
         if (onBuySuccess) onBuySuccess()
       })
 
@@ -712,55 +698,18 @@ function LimitOrderPanel(props: {
           contract={contract}
         />
       </Row>
-      <Row className="mt-1 mb-4 gap-4">
-        <Col className="gap-2">
-          <div className="text-ink-800 text-sm">
-            Buy {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
-          </div>
-          <ProbabilityOrNumericInput
-            contract={contract}
-            prob={lowLimitProb}
-            setProb={setLowLimitProb}
-            isSubmitting={isSubmitting}
-            placeholder="10"
-          />
-        </Col>
+      <LimitSlider
+        contract={contract}
+        isPseudoNumeric={isPseudoNumeric}
+        lowLimitProb={lowLimitProb}
+        setLowLimitProb={setLowLimitProb}
+        highLimitProb={highLimitProb}
+        setHighLimitProb={setHighLimitProb}
+        isSubmitting={isSubmitting}
+        mobileView={mobileView}
+      />
 
-        <div>or</div>
-
-        <Col className="gap-2">
-          <div className="text-ink-800 text-sm">
-            Buy {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
-          </div>
-          <ProbabilityOrNumericInput
-            contract={contract}
-            prob={highLimitProb}
-            setProb={setHighLimitProb}
-            isSubmitting={isSubmitting}
-            placeholder="90"
-          />
-        </Col>
-        <Row
-          className={clsx(
-            mobileView ? 'hidden' : 'hidden sm:flex',
-            'ml-auto gap-4 self-start'
-          )}
-        ></Row>
-      </Row>
-
-      {outOfRangeError && (
-        <div className="text-scarlet-500 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-          Limit is out of range
-        </div>
-      )}
-      {rangeError && !outOfRangeError && (
-        <div className="text-scarlet-500 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-          {isPseudoNumeric ? 'HIGHER' : 'YES'} limit must be less than{' '}
-          {isPseudoNumeric ? 'LOWER' : 'NO'} limit
-        </div>
-      )}
-
-      <span className="text-ink-800 mt-1 mb-2 text-sm">
+      <span className="text-ink-800 mt-4 mb-2 text-sm">
         Max amount<span className="text-scarlet-500 ml-0.5">*</span>
       </span>
 
