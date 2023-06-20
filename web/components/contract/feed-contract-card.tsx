@@ -5,7 +5,6 @@ import {
   SparklesIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import Image from 'next/image'
 import Link from 'next/link'
 import Router from 'next/router'
 import { MutableRefObject } from 'react'
@@ -31,7 +30,6 @@ import { CommentsButton } from '../swipe/swipe-comments'
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
-import { PublicMarketGroups } from './contract-details'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 
@@ -154,9 +152,6 @@ function SimpleCard(props: {
                 {question}
               </Link>
             </Row>
-            {promotedData && (
-              <ClaimButton {...promotedData} className={'z-10'} />
-            )}
           </Row>
 
           <Row
@@ -234,7 +229,6 @@ function DetailedCard(props: {
     creatorUsername,
     creatorAvatarUrl,
     question,
-    coverImageUrl,
     outcomeType,
     mechanism,
   } = contract
@@ -242,7 +236,6 @@ function DetailedCard(props: {
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
 
-  const showImage = !!coverImageUrl
   const metrics = useSavedContractMetrics(contract)
   return (
     <div
@@ -260,29 +253,39 @@ function DetailedCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Col className="gap-2 p-4">
+      <Col className="gap-2 p-1">
         {/* Title is link to contract for open in new tab and a11y */}
         <Row className="justify-between">
-          <Row
-            onClick={(e) => e.stopPropagation()}
-            className="items-center gap-2"
-          >
+          <Row onClick={(e) => e.stopPropagation()} className=" gap-2">
             <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
-            <Col className="w-full">
-              <span className="whitespace-nowrap">
-                <span>
-                  <UserLink
-                    name={creatorName}
-                    username={creatorUsername}
-                    createdTime={creatorCreatedTime}
-                    className={'overflow-none flex-shrink font-semibold'}
-                  />{' '}
-                  asked
+            <Col className="w-full gap-1">
+              <Link
+                href={path}
+                className={clsx(
+                  'text-lg',
+                  'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
+                  textColor
+                )}
+                // if open in new tab, don't open in this one
+                onClick={(e) => {
+                  trackClick()
+                  e.stopPropagation()
+                }}
+              >
+                {question}
+              </Link>
+              <Row className="items-center gap-1 whitespace-nowrap text-sm">
+                <UserLink
+                  name={creatorName}
+                  username={creatorUsername}
+                  createdTime={creatorCreatedTime}
+                  className={'overflow-none flex-shrink '}
+                />
+                asked
+                <span className="text-ink-400 text-sm">
+                  {fromNow(contract.createdTime)}
                 </span>
-              </span>
-              <div className="text-ink-400 text-sm">
-                {fromNow(contract.createdTime)}
-              </div>
+              </Row>
             </Col>
           </Row>
 
@@ -292,21 +295,6 @@ function DetailedCard(props: {
             !item?.isCopied && <ReasonIcon item={item} />
           )}
         </Row>
-        <Link
-          href={path}
-          className={clsx(
-            'text-lg',
-            'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
-            textColor
-          )}
-          // if open in new tab, don't open in this one
-          onClick={(e) => {
-            trackClick()
-            e.stopPropagation()
-          }}
-        >
-          {question}
-        </Link>
 
         <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
           <QuickOutcomeView
@@ -326,38 +314,6 @@ function DetailedCard(props: {
         )}
       </Col>
 
-      {showImage && (
-        <Col className="relative mt-1 h-40 w-full items-center justify-center">
-          <div className="absolute inset-0 mt-2 bg-transparent transition-all group-hover:saturate-150">
-            <Image
-              alt=""
-              fill
-              sizes="100vw"
-              className="object-cover"
-              src={coverImageUrl}
-            />
-          </div>
-          <Row className="absolute bottom-0 left-0">
-            <PublicMarketGroups
-              contract={contract}
-              className={'px-4 py-2'}
-              justGroups={true}
-            />
-          </Row>
-        </Col>
-      )}
-      {!showImage && (
-        <PublicMarketGroups
-          contract={contract}
-          className={'px-4 py-2'}
-          justGroups={true}
-        />
-      )}
-      {!showImage && (
-        <div className="w-full">
-          <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
-        </div>
-      )}
       <Col className="relative">
         <Row
           className="justify-between px-4 py-1"
