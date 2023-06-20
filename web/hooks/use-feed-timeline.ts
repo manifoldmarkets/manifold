@@ -264,7 +264,7 @@ function createFeedTimelineItems(
         // Otherwise, we don't need to see comments on closed/resolved markets
         if (
           shouldIgnoreCommentsOnContract(relevantContract) &&
-          (dataType === 'new_comment' || dataType !== 'popular_comment')
+          (dataType === 'new_comment' || dataType === 'popular_comment')
         )
           return
 
