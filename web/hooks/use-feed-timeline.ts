@@ -34,6 +34,7 @@ export type FeedTimelineItem = {
   comments?: ContractComment[]
   news?: News
   reasonDescription?: string
+  isCopied?: boolean
 }
 export const useFeedTimeline = (user: User | null | undefined, key: string) => {
   const [boosts, setBoosts] = usePersistentInMemoryState<
@@ -172,11 +173,11 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
 
   const loadMore = useEvent(
     async (options: { new?: boolean; old?: boolean; newerThan?: string }) => {
-      if (!userId) return
-      return fetchFeedItems(userId, options).then((res) => {
-        const { timelineItems } = res
-        addTimelineItems(timelineItems, options)
-      })
+      if (!userId) return false
+      const res = await fetchFeedItems(userId, options)
+      const { timelineItems } = res
+      addTimelineItems(timelineItems, options)
+      return timelineItems.length > 0
     }
   )
 
@@ -215,6 +216,7 @@ const getBaseTimelineItem = (item: Row<'user_feed'>) =>
     ),
     createdTime: new Date(item.created_time).valueOf(),
     supabaseTimestamp: item.created_time,
+    isCopied: item.is_copied,
   } as FeedTimelineItem)
 
 function createFeedTimelineItems(

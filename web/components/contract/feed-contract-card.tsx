@@ -289,7 +289,7 @@ function DetailedCard(props: {
           {promotedData ? (
             <ClaimButton {...promotedData} className={'z-10'} />
           ) : (
-            <ReasonIcon item={item} />
+            !item?.isCopied && <ReasonIcon item={item} />
           )}
         </Row>
         <Link

@@ -35,7 +35,6 @@ import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
 import { getIsNative } from 'web/lib/native/is-native'
 import { NewspaperIcon } from '@heroicons/react/solid'
-import { useShouldShowFeed } from 'web/hooks/use-should-show-feed'
 import { useABTest } from 'web/hooks/use-ab-test'
 
 export default function Sidebar(props: {
@@ -56,12 +55,11 @@ export default function Sidebar(props: {
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
 
-  const shouldShowFeed = useShouldShowFeed(user)
   const isMarkets = useABTest('markets homepage', {
     markets: true,
-    feed: false,
+    feed: true,
   })
-  const showMarkets = shouldShowFeed || !isMarkets
+  const showMarkets = true
 
   const navOptions = isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))

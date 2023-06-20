@@ -316,6 +316,7 @@ create table if not exists
     group_id text null,
     reaction_id text null,
     idempotency_key text null,
+    is_copied boolean not null default false,
     unique (user_id, idempotency_key)
   );
 

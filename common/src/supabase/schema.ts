@@ -1097,6 +1097,7 @@ export interface Database {
           reason: string
           seen_time: string | null
           user_id: string
+          is_copied: boolean
         }
         Insert: {
           answer_id?: string | null
@@ -1116,6 +1117,7 @@ export interface Database {
           reason: string
           seen_time?: string | null
           user_id: string
+          is_copied?: boolean
         }
         Update: {
           answer_id?: string | null
@@ -1135,6 +1137,7 @@ export interface Database {
           reason?: string
           seen_time?: string | null
           user_id?: string
+          is_copied?: boolean
         }
         Relationships: []
       }

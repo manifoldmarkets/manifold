@@ -37,9 +37,15 @@ export const MIN_BET_AMOUNT = 20
 export const FeedTimelineItems = (props: {
   feedTimelineItems: FeedTimelineItem[]
   boosts?: BoostsType
+  manualContracts?: Contract[]
   user: User | null | undefined
 }) => {
-  const { user, boosts, feedTimelineItems: savedFeedTimelineItems } = props
+  const {
+    user,
+    manualContracts,
+    boosts,
+    feedTimelineItems: savedFeedTimelineItems,
+  } = props
   const savedFeedComments = filterDefined(
     savedFeedTimelineItems.map((item) => item.comments)
   ).flat()
@@ -104,7 +110,6 @@ export const FeedTimelineItems = (props: {
                 parentComments={[]}
                 childCommentsByParentCommentId={{}}
                 groupedBetsByTime={groupedBetsByTime}
-                item={'ad_id' in item ? undefined : item}
               />
             )
           }
@@ -144,6 +149,14 @@ export const FeedTimelineItems = (props: {
           )
         }
       })}
+      {manualContracts?.map((contract) => (
+        <FeedContractAndRelatedItems
+          contract={contract}
+          parentComments={[]}
+          childCommentsByParentCommentId={{}}
+          groupedBetsByTime={[]}
+        />
+      ))}
     </Col>
   )
 }
