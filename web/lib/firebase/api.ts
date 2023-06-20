@@ -341,6 +341,8 @@ export function supabaseSearchGroups(params: {
   limit: number
   fuzzy?: boolean
   yourGroups?: boolean
+  addingToContract?: boolean
+  newContract?: boolean
 }) {
   return maybeAuthedCall(
     getApiUrl('supabasesearchgroups'),

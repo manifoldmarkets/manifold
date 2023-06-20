@@ -28,8 +28,17 @@ export async function searchGroups(props: {
   offset?: number
   limit: number
   yourGroups?: boolean
+  addingToContract?: boolean
+  newContract?: boolean
 }) {
-  const { term, offset = 0, limit, yourGroups } = props
+  const {
+    term,
+    offset = 0,
+    limit,
+    yourGroups,
+    addingToContract,
+    newContract,
+  } = props
   const state = props.state ?? {
     groups: undefined,
     fuzzyGroupOffset: 0,
@@ -46,6 +55,8 @@ export async function searchGroups(props: {
       offset: offset,
       limit: limit,
       yourGroups,
+      addingToContract: addingToContract ?? false,
+      newContract: newContract ?? false,
     })
     if (groups) {
       return { fuzzyOffset: 0, data: groups }
@@ -57,6 +68,8 @@ export async function searchGroups(props: {
       state,
       limit,
       yourGroups,
+      addingToContract: addingToContract ?? false,
+      newContract: newContract ?? false,
     })
     return contractFuzzy
   }
@@ -67,6 +80,8 @@ export async function searchGroups(props: {
     limit,
     fuzzy: false,
     yourGroups,
+    addingToContract: addingToContract ?? false,
+    newContract: newContract ?? false,
   })
   if (groups) {
     if (groups.length == limit) {
@@ -77,6 +92,8 @@ export async function searchGroups(props: {
         term,
         limit: limit - groups.length,
         yourGroups: yourGroups,
+        addingToContract: addingToContract ?? false,
+        newContract: newContract ?? false,
       })
       return {
         fuzzyOffset: fuzzyData.fuzzyOffset,
@@ -92,14 +109,19 @@ export async function searchGroupsFuzzy(props: {
   term: string
   limit: number
   yourGroups?: boolean
+  addingToContract?: boolean
+  newContract?: boolean
 }) {
-  const { state, term, limit, yourGroups } = props
+  const { state, term, limit, yourGroups, addingToContract, newContract } =
+    props
   const groups = await supabaseSearchGroups({
     term,
     offset: state.fuzzyGroupOffset,
     limit: limit,
     fuzzy: true,
     yourGroups,
+    addingToContract: addingToContract ?? false,
+    newContract: newContract ?? false,
   })
   if (groups) {
     return {
