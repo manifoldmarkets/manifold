@@ -1,25 +1,27 @@
-import clsx from 'clsx'
-import Image from 'next/image'
-import Link from 'next/link'
-import Router from 'next/router'
-import { MutableRefObject } from 'react'
 import {
   ChatIcon,
   FireIcon,
   PresentationChartLineIcon,
   SparklesIcon,
 } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import Image from 'next/image'
+import Link from 'next/link'
+import Router from 'next/router'
+import { MutableRefObject } from 'react'
 
 import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
+import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { fromNow } from 'web/lib/util/time'
 import { ClaimButton } from '../ad/claim-ad-button'
 import { BetRow } from '../bet/bet-row'
 import { QuickOutcomeView } from '../bet/quick-bet'
@@ -27,15 +29,11 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { CommentsButton } from '../swipe/swipe-comments'
 import { Avatar } from '../widgets/avatar'
+import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { PublicMarketGroups } from './contract-details'
-import { ContractStatusLabel } from './contracts-table'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
-import { User } from 'common/user'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
-import { Tooltip } from '../widgets/tooltip'
-import { fromNow } from 'web/lib/util/time'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -131,7 +129,7 @@ function SimpleCard(props: {
         <Col
           className={clsx(
             'relative',
-            'bg-canvas-0 border-ink-200 p group justify-between gap-2 overflow-hidden border-l-4 bg-opacity-50 pl-2 pr-4 pt-2 pb-3',
+            'bg-canvas-0 border-ink-200 p group justify-between gap-2 overflow-hidden border-l-4 border-b pl-2 pr-4 pt-2 pb-3',
             'outline-none transition-colors'
           )}
         >

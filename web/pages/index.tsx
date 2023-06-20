@@ -254,13 +254,11 @@ const ContractsSection = memo(function ContractsSection(props: {
   return (
     <Col className={clsx('max-w-2xl', className)}>
       {contracts.map((contract) => (
-        <div
-          className={
-            'border-ink-200 hover:border-ink-400 my-2 overflow-y-hidden border'
-          }
-        >
-          <FeedContractCard key={contract.id} contract={contract} />
-        </div>
+        <FeedContractCard
+          key={contract.id}
+          contract={contract}
+          className="my-2"
+        />
       ))}
     </Col>
   )

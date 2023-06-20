@@ -2,6 +2,7 @@ import { chunk, groupBy } from 'lodash'
 import { run, millisToTs, selectJson, SupabaseClient } from './utils'
 import { Contract } from '../contract'
 import { Answer } from 'common/answer'
+import { removeUndefinedProps } from 'common/util/object'
 
 export const getContractFromSlug = async (
   contractSlug: string,
@@ -111,15 +112,16 @@ export const getAnswersForContracts = async (
     .from('answers')
     .select('*')
     .in('contract_id', contractIds)
-    .order('created_time', { ascending: false })
+    .order('index', { ascending: false })
   if (!data) return {}
   const answers = data.map(parseDbAnswer)
   return groupBy(answers, 'contractId')
 }
 
 const parseDbAnswer = (row: any) => {
-  const answer: Answer = {
+  const answer: Answer = removeUndefinedProps({
     id: row.id,
+    index: row.index ?? undefined,
     contractId: row.contract_id,
     userId: row.user_id,
     text: row.text,
@@ -128,6 +130,6 @@ const parseDbAnswer = (row: any) => {
     poolNo: +row.pool_no,
     poolYes: +row.pool_yes,
     prob: +row.prob,
-  }
+  })
   return answer
 }

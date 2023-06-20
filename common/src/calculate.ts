@@ -99,8 +99,13 @@ export function getAnswerProbability(
     return getCpmmProbability(pool, 0.5)
   }
 
+  if (contract.mechanism === 'cpmm-2') {
+    return 0
+  }
+
   throw new Error(
-    'getAnswerProbability not implemented for mechanism ' + contract.mechanism
+    'getAnswerProbability not implemented for mechanism ' +
+      (contract as any).mechanism
   )
 }
 
