@@ -117,7 +117,12 @@ export const addCommentOnContractToFeed = async (
       contractId,
       comment.userId,
       pg,
-      ['follow_contract', 'follow_user', 'liked_contract'],
+      [
+        'follow_contract',
+        'follow_user',
+        'liked_contract',
+        'similar_interest_vector_to_contract',
+      ],
       INTEREST_DISTANCE_THRESHOLDS.new_comment
     )
   await Promise.all(
