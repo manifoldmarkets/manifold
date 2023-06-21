@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export function convertNumberToProb(
   number: number,
@@ -69,7 +70,9 @@ export function LimitSlider(props: {
       <Row className="mt-1 mb-4 gap-4">
         <Col className="w-full">
           <div className="text-ink-800 text-sm">
-            Attempt to keep between {isPseudoNumeric ? '' : 'probabilities'}:
+            Select a {isPseudoNumeric ? 'numerical' : 'probability'} range to
+            place bounding limit orders.{' '}
+            <InfoTooltip text="Limit orders let you place an order to buy at a specific probability which other users can bet against" />
           </div>
           <Row
             className="relative h-12 grow items-center gap-4"
