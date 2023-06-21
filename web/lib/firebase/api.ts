@@ -266,6 +266,13 @@ export function getSupabaseToken() {
 export function updateUserEmbedding() {
   return call(getApiUrl('update-user-embedding'), 'POST')
 }
+export function updateUserDisinterestEmbedding(params: {
+  contractId: string
+  creatorId: string
+  feedId?: number
+}) {
+  return call(getApiUrl('update-user-disinterest-embedding'), 'POST', params)
+}
 
 export function createCommentOnContract(params: {
   contractId: string

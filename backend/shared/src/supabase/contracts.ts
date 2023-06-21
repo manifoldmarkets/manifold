@@ -4,7 +4,10 @@ import {
   getUserFollowerIds,
   getUsersWithSimilarInterestVectorToUser,
 } from 'shared/supabase/users'
-import { CONTRACT_OR_USER_FEED_REASON_TYPES } from 'common/feed'
+import {
+  CONTRACT_OR_USER_FEED_REASON_TYPES,
+  USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD,
+} from 'common/feed'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -101,12 +104,11 @@ const getUsersWithSimilarInterestVectorsToContract = async (
   // -- chatbot 2k traders: 2k users, contract id: 5ssg7ccYrrsEwZLYh9tP
   // -- isaac king 40 traders: 1.8k users, contract id:  CPa23v0jJykJMhUjgT9J
   // -- taiwan fighter 5 traders, 500 users, contract id:  a4tsshKK3MCE8PvS7Yfv
-  distanceThreshold = 0.125,
+  interestDistanceThreshold = 0.125,
   // -- contract id used: 5ssg7ccYrrsEwZLYh9tP, distance: .125
   // -- probes at 10: 2k rows, 200 ms
   // -- probes at 5: 600 rows, 65 ms
   // -- probes at 1: 71 rows, 10ms
-  // If you go higher than 11 the planner will stop using the index and likely 2/3x your execution time
   probes = 10
 ): Promise<string[]> => {
   const userIdsAndDistances = await pg.tx(async (t) => {
@@ -117,15 +119,23 @@ const getUsersWithSimilarInterestVectorsToContract = async (
         from contract_embeddings
         where contract_id = $1
     )
-     select user_id, distance
+     select user_id, interest_distance, disinterest_distance
      from (
-              select ue.user_id, (select embedding from ce) <=> ue.interest_embedding as distance
+              select ue.user_id,
+                     (select embedding from ce) <=> ue.interest_embedding as interest_distance,
+                     (select embedding from ce) <=> ue.disinterest_embedding as disinterest_distance
               from user_embeddings as ue
           ) as distances
-     where distance < $2
-     order by distance
-    `,
-      [contractId, distanceThreshold]
+
+       where interest_distance < $2
+        and (disinterest_distance is null or disinterest_distance > $3)
+       order by interest_distance;
+      `,
+      [
+        contractId,
+        interestDistanceThreshold,
+        USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD,
+      ]
     )
     return res
   })

@@ -1,5 +1,6 @@
 // User interest to user interest distance:
 export const USER_TO_USER_DISTANCE_THRESHOLD = 0.004
+export const USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD = 0.12
 
 export type FEED_DATA_TYPES =
   | 'new_comment'
@@ -10,6 +11,7 @@ export type FEED_DATA_TYPES =
   | 'trending_contract'
   | 'new_subsidy'
 
+// TODO: add 'shared_contract'
 export type CONTRACT_OR_USER_FEED_REASON_TYPES =
   | 'follow_contract'
   | 'liked_contract'

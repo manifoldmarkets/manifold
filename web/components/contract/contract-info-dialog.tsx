@@ -1,6 +1,6 @@
 import { CheckIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { capitalize } from 'lodash'
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
@@ -32,8 +32,13 @@ import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { ReportButton } from '../buttons/report-button'
 import { Input } from '../widgets/input'
-import { unresolveMarket } from 'web/lib/firebase/api'
+import {
+  unresolveMarket,
+  updateUserDisinterestEmbedding,
+} from 'web/lib/firebase/api'
 import { BoostButton } from './boost-button'
+import { toast } from 'react-hot-toast'
+import { TiVolumeMute } from 'react-icons/ti'
 
 export const Stats = (props: {
   contract: Contract
@@ -335,6 +340,7 @@ export function ContractInfoDialog(props: {
                     />
 
                     <BlockMarketButton contract={contract} />
+                    <DisinterestedButton contract={contract} user={user} />
                   </Row>
                 </Col>
               ),
@@ -379,5 +385,29 @@ export function ContractInfoDialog(props: {
         <Row className="items-center justify-start gap-4 rounded-md "></Row>
       </Col>
     </Modal>
+  )
+}
+const DisinterestedButton = (props: {
+  contract: Contract
+  user: User | null | undefined
+}) => {
+  const { contract, user } = props
+  if (!user) return null
+  const markUninteresting = async () => {
+    await updateUserDisinterestEmbedding({
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+    })
+    toast(`We won't show you content like that again`, {
+      icon: <TiVolumeMute className={'h-5 w-5 text-teal-500'} />,
+    })
+  }
+  return (
+    <Button size="xs" color="yellow-outline" onClick={markUninteresting}>
+      <Row className={'items-center text-sm'}>
+        <TiVolumeMute className="h-5 w-5" />
+        Uninterested
+      </Row>
+    </Button>
   )
 }

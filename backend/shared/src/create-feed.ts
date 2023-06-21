@@ -353,10 +353,8 @@ export const insertMarketMovementContractToUsersFeeds = async (
   await addContractToFeed(
     contract,
     buildArray([
-      // You'll see it in your notifs
-      !contract.isResolved && 'follow_contract',
-      // TODO: viewed might not be signal enough, what about viewed 2x/3x?
-      'viewed_contract',
+      // TODO: We have these in our notifs, but might be nice in the feed
+      'follow_contract',
       'liked_contract',
       'similar_interest_vector_to_contract',
     ]),
@@ -378,7 +376,6 @@ export const insertTrendingContractToUsersFeeds = async (
     contract,
     [
       'follow_contract',
-      'viewed_contract',
       'liked_contract',
       'similar_interest_vector_to_contract',
     ],

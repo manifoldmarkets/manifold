@@ -1,5 +1,6 @@
 import {
   ChatIcon,
+  DotsHorizontalIcon,
   FireIcon,
   PresentationChartLineIcon,
   SparklesIcon,
@@ -29,6 +30,11 @@ import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
+import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
+import { TiVolumeMute } from 'react-icons/ti'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import { toast } from 'react-hot-toast'
+import React from 'react'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -218,32 +224,48 @@ function DetailedCard(props: {
       }}
     >
       <Row className={clsx('grow gap-2 py-2 px-3')}>
-        <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
         <Col className="w-full">
           <Col className="w-full gap-2">
             {/* Title is link to contract for open in new tab and a11y */}
             <Col onClick={(e) => e.stopPropagation()} className="w-full gap-1">
-              <Row className=" items-start justify-between">
-                <Link
-                  href={path}
-                  className={clsx(
-                    'text-md',
-                    'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
-                    textColor
-                  )}
-                  // if open in new tab, don't open in this one
-                  onClick={(e) => {
-                    trackClick()
-                    e.stopPropagation()
-                  }}
-                >
-                  {question}
-                </Link>
-                {promotedData ? (
-                  <ClaimButton {...promotedData} className={'z-10'} />
-                ) : (
-                  !item?.isCopied && <ReasonIcon item={item} />
-                )}
+              <Row className=" items-start justify-between gap-1">
+                <Col>
+                  <Row className={'gap-2'}>
+                    <Avatar
+                      username={creatorUsername}
+                      avatarUrl={creatorAvatarUrl}
+                    />
+                    <Link
+                      href={path}
+                      className={clsx(
+                        'text-md -mt-1',
+                        'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
+                        textColor
+                      )}
+                      // if open in new tab, don't open in this one
+                      onClick={(e) => {
+                        trackClick()
+                        e.stopPropagation()
+                      }}
+                    >
+                      {question}
+                    </Link>
+                  </Row>
+                </Col>
+                <Col>
+                  <Row className={'items-center gap-3'}>
+                    <MoreOptionsButton
+                      user={user}
+                      contract={contract}
+                      item={item}
+                    />
+                    {promotedData ? (
+                      <ClaimButton {...promotedData} className={'z-10'} />
+                    ) : (
+                      !item?.isCopied && <ReasonIcon item={item} />
+                    )}
+                  </Row>
+                </Col>
               </Row>
             </Col>
 
@@ -295,12 +317,34 @@ function DetailedCard(props: {
   )
 }
 
-export function FeaturedPill(props: { label?: string }) {
-  const label = props.label ?? 'Featured'
+const MoreOptionsButton = (props: {
+  contract: Contract
+  item: FeedTimelineItem | undefined
+  user: User | null | undefined
+}) => {
+  const { contract, user, item } = props
+  if (!user) return null
+  const markUninteresting = async () => {
+    await updateUserDisinterestEmbedding({
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+      feedId: item?.id,
+    })
+    toast(`We won't show you content like that again`, {
+      icon: <TiVolumeMute className={'h-5 w-5 text-teal-500'} />,
+    })
+  }
   return (
-    <div className="from-primary-500 rounded-full bg-gradient-to-br to-fuchsia-500 px-2 text-white">
-      {label}
-    </div>
+    <DropdownMenu
+      Icon={<DotsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
+      Items={[
+        {
+          name: `Uninteresting`,
+          icon: <TiVolumeMute className="h-5 w-5" />,
+          onClick: markUninteresting,
+        },
+      ]}
+    />
   )
 }
 
