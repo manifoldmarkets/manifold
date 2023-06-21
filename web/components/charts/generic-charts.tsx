@@ -112,9 +112,9 @@ const getTickValues = (
   let theMin = min
   let theMax = max
   if (step > 10) {
-    step = roundToNearestFive(step)
     theMin = roundToNearestFive(min)
     theMax = roundToNearestFive(max)
+    step = (theMax - theMin) / (n - 1)
   }
   const defaultRange = [
     theMin,
@@ -340,7 +340,7 @@ export const ControllableSingleValueHistoryChart = <
   const yScale = viewYScale ?? props.yScale
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
-  const py0 = yScale(negativeThreshold ?? 0)
+  const py0 = yScale(0)
   const py1 = useCallback((p: P) => yScale(p.y), [yScale])
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()

@@ -13,6 +13,7 @@ import {
   useId,
   useMemo,
   useRef,
+  useState,
 } from 'react'
 
 import { Margin } from 'common/chart'
@@ -41,40 +42,17 @@ export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   return <g ref={axisRef} transform={`translate(0, ${h})`} />
 }
 
-// export const YAxis = <Y,>(props: {
-//   w: number
-//   h: number
-//   axis: Axis<Y>
-//   negativeThreshold?: number
-// }) => {
-//   const { w, h, axis } = props
-//   const axisRef = useRef<SVGGElement>(null)
-//   useEffect(() => {
-//     if (axisRef.current != null) {
-//       select(axisRef.current)
-//         .call(axis)
-//         .call((g) =>
-//           g
-//             .selectAll('.tick line')
-//             .attr('x2', w)
-//             .attr('stroke-opacity', 0.1)
-//             .attr('transform', `translate(-${w}, 0)`)
-//         )
-//         .select('.domain')
-//         .attr('stroke-width', 0)
-//     }
-//   }, [w, h, axis])
-//   return <g ref={axisRef} transform={`translate(${w}, 0)`} />
-// }
-
 export const YAxis = <Y,>(props: {
   w: number
   h: number
   axis: Axis<Y>
   negativeThreshold?: number
 }) => {
-  const { w, h, axis, negativeThreshold } = props
+  const { w, h, axis, negativeThreshold = 0 } = props
   const axisRef = useRef<SVGGElement>(null)
+
+  const [showTooltip, setShowTooltip] = useState(false)
+
   useEffect(() => {
     if (axisRef.current != null) {
       select(axisRef.current)
@@ -83,16 +61,25 @@ export const YAxis = <Y,>(props: {
           g.selectAll('.tick').each(function (d) {
             const tick = select(this)
             if (negativeThreshold && d === negativeThreshold) {
+              const color = negativeThreshold >= 0 ? '#0d9488' : '#FF2400'
               tick
                 .select('line') // Change stroke of the line
                 .attr('x2', w)
                 .attr('stroke-opacity', 1)
                 .attr('stroke-dasharray', '10,5') // Make the line dotted
                 .attr('transform', `translate(-${w}, 0)`)
+                .attr('stroke', color)
 
               tick
                 .select('text') // Change font of the text
                 .style('font-weight', 'bold') // Adjust this to your needs
+                .attr('fill', color)
+                .on('mouseover', function () {
+                  setShowTooltip(true)
+                })
+                .on('mouseout', function () {
+                  setShowTooltip(false)
+                })
             } else {
               tick
                 .select('line')
@@ -107,7 +94,14 @@ export const YAxis = <Y,>(props: {
     }
   }, [w, h, axis, negativeThreshold])
 
-  return <g ref={axisRef} transform={`translate(${w}, 0)`} />
+  return (
+    <>
+      <g ref={axisRef} transform={`translate(${w}, 0)`} />
+      <div className="bg-red-500 text-lg">
+        value at the beginning of the week
+      </div>
+    </>
+  )
 }
 
 export const LinePath = <P,>(
