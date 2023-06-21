@@ -89,7 +89,6 @@ function FeedTimelineContent() {
       const excludedContractIds = savedFeedItems
         .map((i) => i.contractId)
         .concat(manualContracts?.map((c) => c.id) ?? [])
-      console.log('no more feed items')
       const { data } = await db.rpc('get_recommended_contracts_embeddings', {
         uid: user.id,
         n: 20,

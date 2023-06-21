@@ -130,7 +130,7 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
         ),
     ])
     const filteredContracts = contracts?.filter(
-      (c) => !isContractBlocked(privateUser, c)
+      (c) => !isContractBlocked(privateUser, c) && !c.isResolved
     )
     const filteredComments = comments?.filter(
       (c) => !privateUser?.blockedUserIds?.includes(c.userId)
