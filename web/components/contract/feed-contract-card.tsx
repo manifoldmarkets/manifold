@@ -7,7 +7,6 @@ import {
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
-import { MutableRefObject } from 'react'
 
 import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'

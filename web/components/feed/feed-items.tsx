@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
