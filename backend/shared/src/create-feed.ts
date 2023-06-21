@@ -243,9 +243,10 @@ export const addContractToFeedIfUnseenAndDeleteDuplicates = async (
   unseenNewerThanTime: number,
   options: {
     minUserInterestDistanceToContract: number
+    data?: Record<string, any>
   }
 ) => {
-  const { minUserInterestDistanceToContract } = options
+  const { minUserInterestDistanceToContract, data } = options
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
@@ -283,6 +284,7 @@ export const addContractToFeedIfUnseenAndDeleteDuplicates = async (
         {
           contractId: contract.id,
           creatorId: contract.creatorId,
+          data,
         },
         pg
       )
@@ -369,7 +371,8 @@ export const insertMarketMovementContractToUsersFeeds = async (
 }
 export const insertTrendingContractToUsersFeeds = async (
   contract: Contract,
-  unseenNewerThanTime: number
+  unseenNewerThanTime: number,
+  data?: Record<string, any>
 ) => {
   await addContractToFeedIfUnseenAndDeleteDuplicates(
     contract,
@@ -385,6 +388,7 @@ export const insertTrendingContractToUsersFeeds = async (
     {
       minUserInterestDistanceToContract:
         INTEREST_DISTANCE_THRESHOLDS.trending_contract,
+      data,
     }
   )
 }

@@ -1,11 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Bet, listenForBets } from 'web/lib/firebase/bets'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 export const useUserContractBets = (
   userId: string | undefined,
   contractId: string | undefined
 ) => {
-  const [bets, setBets] = useState<Bet[] | undefined>(undefined)
+  const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
+    undefined,
+    `bets-${userId}-${contractId}`
+  )
 
   useEffect(() => {
     if (userId && contractId)

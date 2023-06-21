@@ -23,7 +23,7 @@ import { BetSignUpPrompt } from '../sign-up-prompt'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import {
   calculateSharesBought,
-  getOutcomeProbability,
+  getAnswerProbability,
   getOutcomeProbabilityAfterBet,
 } from 'common/calculate'
 import { removeUndefinedProps } from 'common/util/object'
@@ -85,7 +85,7 @@ export function AnswerBetPanel(props: {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb = getOutcomeProbability(contract, answer.id)
+  const initialProb = getAnswerProbability(contract, answer.id)
 
   const { resultProb, shares, maxPayout } = getSimulatedBetInfo(
     betAmount ?? 0,

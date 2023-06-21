@@ -12,7 +12,7 @@ export const DailyLeagueStat = (props: { user: User }) => {
   const { user } = props
   const info = useLeagueInfo(user.id)
 
-  if (!info || !info.division) {
+  if (!info || info.division === undefined) {
     return null
   }
 

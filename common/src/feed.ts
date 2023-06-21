@@ -1,3 +1,6 @@
+// User interest to user interest distance:
+export const USER_TO_USER_DISTANCE_THRESHOLD = 0.004
+
 export type FEED_DATA_TYPES =
   | 'new_comment'
   | 'news_with_related_contracts'
@@ -20,8 +23,9 @@ export type FEED_REASON_TYPES =
   | CONTRACT_OR_USER_FEED_REASON_TYPES
   | 'similar_interest_vector_to_news_vector'
 
+// User interest to contract distances:
 export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
-  contract_probability_changed: 0.12,
+  contract_probability_changed: 0.135,
   trending_contract: 0.175,
   new_contract: 0.125,
   new_comment: 0.15,

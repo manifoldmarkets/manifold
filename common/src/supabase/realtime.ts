@@ -61,7 +61,6 @@ export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
   },
   group_contracts: {
     pk: ['group_id', 'contract_id'],
-    ts: (r) => Date.parse(r.fs_updated_time),
   },
 }
 

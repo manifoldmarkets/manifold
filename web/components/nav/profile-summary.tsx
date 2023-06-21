@@ -1,13 +1,13 @@
+import { useState } from 'react'
 import Link from 'next/link'
+import { PlusIcon } from '@heroicons/react/outline'
+import { animated } from '@react-spring/web'
 
 import { User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from '../widgets/avatar'
 import { trackCallback } from 'web/lib/service/analytics'
-import { useState } from 'react'
 import { AddFundsModal } from '../add-funds-modal'
-import { PlusIcon } from '@heroicons/react/outline'
-import { animated } from '@react-spring/web'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 
 export function ProfileSummary(props: { user: User }) {
@@ -20,7 +20,7 @@ export function ProfileSummary(props: { user: User }) {
     <Link
       href={`/${user.username}`}
       onClick={trackCallback('sidebar: profile')}
-      className="text-ink-500 hover:bg-ink-100 hover:text-ink-700 group mb-3 flex flex-shrink-0 flex-row items-center gap-4 rounded-md py-3"
+      className="text-ink-700 hover:bg-ink-100 hover:text-ink-900 group mb-3 flex flex-shrink-0 flex-row items-center gap-4 rounded-md py-3"
     >
       <Avatar avatarUrl={user.avatarUrl} username={user.username} noLink />
       <div className="truncate">

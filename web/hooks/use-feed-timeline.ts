@@ -34,6 +34,7 @@ export type FeedTimelineItem = {
   comments?: ContractComment[]
   news?: News
   reasonDescription?: string
+  isCopied?: boolean
 }
 export const useFeedTimeline = (user: User | null | undefined, key: string) => {
   const [boosts, setBoosts] = usePersistentInMemoryState<
@@ -172,11 +173,11 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
 
   const loadMore = useEvent(
     async (options: { new?: boolean; old?: boolean; newerThan?: string }) => {
-      if (!userId) return
-      return fetchFeedItems(userId, options).then((res) => {
-        const { timelineItems } = res
-        addTimelineItems(timelineItems, options)
-      })
+      if (!userId) return false
+      const res = await fetchFeedItems(userId, options)
+      const { timelineItems } = res
+      addTimelineItems(timelineItems, options)
+      return timelineItems.length > 0
     }
   )
 
@@ -215,6 +216,7 @@ const getBaseTimelineItem = (item: Row<'user_feed'>) =>
     ),
     createdTime: new Date(item.created_time).valueOf(),
     supabaseTimestamp: item.created_time,
+    isCopied: item.is_copied,
   } as FeedTimelineItem)
 
 function createFeedTimelineItems(
@@ -260,6 +262,14 @@ function createFeedTimelineItems(
         )
         // We may not find a relevant contract if they've already seen the same contract in their feed
         if (!relevantContract) return
+        // If the contract is closed/resolved, only show it due to market movements or trending.
+        // Otherwise, we don't need to see comments on closed/resolved markets
+        if (
+          shouldIgnoreCommentsOnContract(relevantContract) &&
+          (dataType === 'new_comment' || dataType === 'popular_comment')
+        )
+          return
+
         const relevantComments = comments?.filter(
           (comment) => comment.contractId === item.contract_id
         )
@@ -280,5 +290,12 @@ function createFeedTimelineItems(
   return sortBy(
     filterDefined([...newsData, ...nonNewsTimelineItems]),
     (i) => -i.createdTime
+  )
+}
+
+export const shouldIgnoreCommentsOnContract = (contract: Contract): boolean => {
+  return (
+    contract.isResolved ||
+    (contract.closeTime ? contract.closeTime < Date.now() : false)
   )
 }

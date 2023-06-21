@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
 import { Col } from 'web/components/layout/col'
-import clsx from 'clsx'
-import { track } from 'web/lib/service/analytics'
+import Link from 'next/link'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
 export const NewsArticle = (props: {
   title: string
@@ -23,29 +23,23 @@ export const NewsArticle = (props: {
   } = props
 
   return (
-    <Col className={clsx('relative w-full', className)}>
+    <Link href={url} target="_blank" className="relative flex w-full flex-col">
+      <Col className="px-4 pt-3 pb-2">
+        <div className="line-clamp-2 text-lg">{title}</div>
+        <div className="line-clamp-3 text-sm">
+          {author && `${author} `}
+          <span className={'text-ink-500'}>
+            {shortenedFromNow(dayjs.utc(published_time) as unknown as number)}
+          </span>
+        </div>
+        <div className="line-clamp-3 text-sm">{description}</div>
+      </Col>
       <img
-        className="border-ink-300 m-0 rounded-t-lg border object-contain "
+        className="m-0 object-contain "
         src={urlToImage}
         alt={title}
-        height={200}
+        height={100}
       />
-
-      <a
-        className={'absolute inset-0 z-10'}
-        href={url}
-        target="_blank"
-        onClick={() => track('click news article', { article: url })}
-      />
-
-      <Col className="bg-canvas-0 border-ink-300 rounded-b-lg border border-t-0 p-2 hover:underline">
-        <div className="line-clamp-2 text-ink-900 text-lg">{title}</div>
-        <div className="line-clamp-3 text-ink-600 text-xs">
-          {author}
-          {published_time && ` / ${dayjs.utc(published_time).fromNow()}`}
-        </div>
-        <div className="line-clamp-3 text-ink-600 text-xs">{description}</div>
-      </Col>
-    </Col>
+    </Link>
   )
 }

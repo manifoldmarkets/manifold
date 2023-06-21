@@ -42,7 +42,7 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections', 'optOutAreYouSureWarnings']);
+                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections', 'optOutBetWarnings']);
       // User referral rules
       allow update: if userId == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
@@ -211,10 +211,6 @@ service cloud.firestore {
       allow list, update: if request.auth.uid == resource.data.fromId;
     }
 
-    match /{somePath=**}/groupContracts/{contractId} {
-      allow read;
-    }
-
     match /groups/{groupId} {
       allow read;
       allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
@@ -222,10 +218,6 @@ service cloud.firestore {
                         .affectedKeys()
                         .hasOnly(['name', 'about', 'aboutPostId', 'pinnedItems','bannerUrl' ]);
       allow delete: if request.auth.uid == resource.data.creatorId;
-
-      match /groupContracts/{contractId} {
-        allow write;
-      }
 
       match /comments/{commentId} {
         allow read;

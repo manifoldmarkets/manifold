@@ -1,7 +1,12 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { DEFAULT_EMBEDDING_DISTANCE_PROBES } from 'common/embeddings'
 import { fromPairs } from 'lodash'
-import { FEED_REASON_TYPES, INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
+import {
+  FEED_REASON_TYPES,
+  INTEREST_DISTANCE_THRESHOLDS,
+  USER_TO_USER_DISTANCE_THRESHOLD,
+} from 'common/feed'
+import { Row } from 'common/supabase/utils'
+import { log } from 'shared/utils'
 
 export const getUserFollowerIds = async (
   userId: string,
@@ -25,7 +30,7 @@ export const getUsersWithSimilarInterestVectorToUser = async (
   probes = 3
 ) => {
   const userIdsAndDistances = await pg.tx(async (t) => {
-    await t.none('SET ivfflat.probes = $1', [probes])
+    await t.none('SET LOCAL ivfflat.probes = $1', [probes])
     const res = await t.manyOrNone<{
       user_id: string
       distance: number
@@ -39,13 +44,12 @@ export const getUsersWithSimilarInterestVectorToUser = async (
             select ue.user_id, (select interest_embedding from pe) <=> ue.interest_embedding as distance
             from user_embeddings as ue
         ) as distances
-   where distance < 0.01
+   where distance < $2
    order by distance
    limit 1000
   `,
-      [userId]
+      [userId, USER_TO_USER_DISTANCE_THRESHOLD]
     )
-    await t.none('SET ivfflat.probes = $1', [DEFAULT_EMBEDDING_DISTANCE_PROBES])
     return res
   })
 
@@ -83,4 +87,75 @@ export const getUsersWithSimilarInterestVectorToNews = async (
       'similar_interest_vector_to_news_vector' as FEED_REASON_TYPES,
     ])
   )
+}
+
+export const repopulateNewUsersFeedFromEmbeddings = async (
+  userId: string,
+  pg: SupabaseDirectClient,
+  welcomeTopicSelection: boolean
+) => {
+  await pg.tx(async (t) => {
+    await t.none('SET LOCAL ivfflat.probes = $1', [
+      welcomeTopicSelection ? 20 : 10,
+    ])
+
+    const relatedFeedItems = await t.manyOrNone<Row<'user_feed'>>(
+      `
+              WITH user_embedding AS (
+                  SELECT interest_embedding
+                  FROM user_embeddings
+                  WHERE user_id = $1
+              ),
+               interesting_contracts AS (
+                   SELECT contract_id,
+                          (SELECT interest_embedding FROM user_embedding) <=> embedding AS distance
+                   FROM contract_embeddings
+                   ORDER BY distance
+                   LIMIT $2
+               ),
+               filtered_user_feed AS (
+                   SELECT *
+                   FROM user_feed
+                   WHERE contract_id IN (SELECT contract_id FROM interesting_contracts)
+                   and created_time > now() - interval '7 days'
+               )
+              SELECT DISTINCT ON (contract_id) *
+              FROM filtered_user_feed
+              ORDER BY contract_id, created_time DESC;
+          `,
+      [userId, welcomeTopicSelection ? 500 : 100]
+    )
+
+    log('found', relatedFeedItems.length, 'feed items to copy')
+    if (relatedFeedItems.length === 0) return []
+
+    const updatedRows = relatedFeedItems.map((row) => {
+      // assuming you want to change the 'columnToChange' column
+      const { id: __, ...newRow } = row
+      newRow.user_id = userId
+      newRow.is_copied = true
+      newRow.created_time = new Date().toISOString()
+      return newRow
+    })
+    await Promise.all(
+      updatedRows.map(async (row) => {
+        const keys = Object.keys(row)
+        const values = Object.values(row)
+
+        const placeholders = keys.map((_, i) => `$${i + 1}`).join(',')
+        try {
+          await pg.none(
+            `INSERT INTO user_feed (${keys.join(
+              ','
+            )}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
+            values
+          )
+        } catch (e) {
+          console.log('error inserting feed item', row)
+          console.error(e)
+        }
+      })
+    )
+    return relatedFeedItems
+  })
 }

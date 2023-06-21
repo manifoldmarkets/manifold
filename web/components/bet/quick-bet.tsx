@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import {
-  getOutcomeProbability,
   getOutcomeProbabilityAfterBet,
   getProbability,
   getTopAnswer,
@@ -29,7 +28,7 @@ import toast from 'react-hot-toast'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { placeBet } from 'web/lib/firebase/api'
 import { getBinaryProbPercent } from 'common/contract'
-import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
+import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { sellShares } from 'web/lib/firebase/api'
 import { track, withTracking } from 'web/lib/service/analytics'
 import {
@@ -205,9 +204,9 @@ function SignedInQuickBet(props: {
   const invested = getInvested(contract, userBets)
   const { hasYesShares, hasNoShares } = useSaveBinaryShares(contract, userBets)
   const hasYesInvestment =
-    hasYesShares === true && invested != undefined && floor(invested) > 0
+    hasYesShares && invested != undefined && floor(invested) > 0
   const hasNoInvestment =
-    hasNoShares === true && invested != undefined && floor(invested) > 0
+    hasNoShares && invested != undefined && floor(invested) > 0
 
   if (isCpmm && ((upHover && hasNoShares) || (downHover && hasYesShares))) {
     const oppositeShares = upHover ? noShares : yesShares
@@ -400,13 +399,21 @@ export function QuickOutcomeView(props: {
   contract: Contract
   previewProb?: number
   numAnswersFR?: number
+  showChange?: boolean
+  size?: 'sm' | 'md'
 }) {
-  const { contract, previewProb, numAnswersFR } = props
+  const { contract, showChange, previewProb, numAnswersFR, size = 'md' } = props
   const { outcomeType } = contract
   const isMobile = useIsMobile()
   const prob = isMobile ? getProb(contract) : previewProb ?? getProb(contract)
   const textColor = getTextColor(contract)
 
+  const probChange =
+    contract.mechanism === 'cpmm-1' &&
+    Math.abs(contract.probChanges.day) > 0.01 &&
+    !contract.isResolved
+      ? Math.round(contract.probChanges.day * 100)
+      : 0
   if (
     outcomeType == 'BINARY' ||
     outcomeType == 'NUMERIC' ||
@@ -416,8 +423,9 @@ export function QuickOutcomeView(props: {
     return (
       <div
         className={clsx(
-          'relative h-8 w-full overflow-hidden rounded-md',
-          getBgColor(contract)
+          'relative w-full overflow-hidden rounded-md',
+          getBgColor(contract),
+          size == 'sm' ? 'h-7' : 'h-8'
         )}
       >
         <div
@@ -428,12 +436,26 @@ export function QuickOutcomeView(props: {
           style={{ width: `${100 * prob}%` }}
           aria-hidden
         />
-        <div
-          className={`absolute inset-0 flex items-center justify-center gap-1 text-lg font-semibold ${textColor}`}
+        <Row
+          className={clsx(
+            `absolute inset-0 items-center justify-center gap-1 font-semibold ${textColor}`,
+            size == 'sm' ? 'text-base' : 'text-lg'
+          )}
         >
           {outcomeType === 'STONK' ? ENV_CONFIG.moneyMoniker : ''}
           {cardText(contract, isMobile ? undefined : previewProb)}
-        </div>
+          {showChange && probChange != 0 && (
+            <span
+              className={clsx(
+                'ml-0.5 font-normal',
+                probChange! > 0 ? 'text-teal-500' : 'text-scarlet-500'
+              )}
+            >
+              {probChange! > 0 ? '+' : ''}
+              {probChange}%
+            </span>
+          )}
+        </Row>
       </div>
     )
   }
@@ -487,8 +509,7 @@ function cardText(contract: Contract, previewProb?: number) {
     case 'FREE_RESPONSE': {
       const topAnswer = getTopAnswer(contract)
       return (
-        topAnswer &&
-        formatPercent(getOutcomeProbability(contract, topAnswer.id))
+        topAnswer && formatPercent(getAnswerProbability(contract, topAnswer.id))
       )
     }
   }
@@ -528,10 +549,7 @@ export function ContractCardAnswers(props: {
 function getAnswerType(
   answer: Answer | DpmAnswer,
   resolution?: string,
-  resolutions?:
-    | { [outcome: string]: number }
-    | { [outcome: string]: number }
-    | undefined
+  resolutions?: { [outcome: string]: number } | undefined
 ) {
   if (answer.id === resolution || (resolutions && resolutions[answer.id])) {
     return 'winner'
@@ -549,10 +567,7 @@ function ContractCardAnswer(props: {
   type: 'winner' | 'loser' | 'contender'
 }) {
   const { contract, answer, answersArray, type } = props
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
-  const prob = isCpmm
-    ? getAnswerProbability(contract.answers, answer.id)
-    : getOutcomeProbability(contract, answer.id)
+  const prob = getAnswerProbability(contract, answer.id)
   const display = formatPercent(prob)
   const isClosed = (contract.closeTime ?? Infinity) < Date.now()
   const answerColor = getAnswerColor(answer, answersArray)
@@ -601,7 +616,7 @@ function getProb(contract: Contract) {
       outcomeType === 'STONK'
     ? getProbability(contract)
     : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
-    ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
+    ? getAnswerProbability(contract, getTopAnswer(contract)?.id || '')
     : outcomeType === 'NUMERIC'
     ? getNumericScale(contract)
     : 1 // Should not happen
@@ -614,10 +629,10 @@ function getNumericScale(contract: NumericContract) {
 }
 
 const OUTCOME_TO_COLOR_BAR = {
-  YES: 'bg-teal-200',
-  NO: 'bg-scarlet-200',
-  CANCEL: 'bg-ink-200',
-  MKT: 'bg-sky-200',
+  YES: 'bg-teal-500 bg-opacity-20',
+  NO: 'bg-scarlet-500 bg-opacity-20',
+  CANCEL: 'bg-ink-500 bg-opacity-20',
+  MKT: 'bg-sky-500 bg-opacity-20',
 }
 
 export function getBarColor(contract: Contract) {
@@ -635,10 +650,10 @@ export function getBarColor(contract: Contract) {
 }
 
 const OUTCOME_TO_COLOR_BACKGROUND = {
-  YES: 'bg-teal-100',
-  NO: 'bg-scarlet-100',
-  CANCEL: 'bg-ink-100',
-  MKT: 'bg-sky-100',
+  YES: 'bg-teal-200 bg-opacity-20',
+  NO: 'bg-scarlet-200 bg-opacity-20',
+  CANCEL: 'bg-ink-200 bg-opacity-20',
+  MKT: 'bg-sky-200 bg-opacity-20',
 }
 
 export function getBgColor(contract: Contract) {
@@ -652,10 +667,10 @@ export function getBgColor(contract: Contract) {
 }
 
 const OUTCOME_TO_COLOR_TEXT = {
-  YES: 'text-teal-600',
-  NO: 'text-scarlet-600',
+  YES: 'text-teal-600 dark:text-teal-100',
+  NO: 'text-scarlet-600 dark:text-scarlet-100',
   CANCEL: 'text-ink-400',
-  MKT: 'text-sky-600',
+  MKT: 'text-sky-600 dark:text-sky-100',
 }
 
 export function getTextColor(contract: Contract) {

@@ -19,6 +19,7 @@ export type ColorType =
   | 'gradient-pink'
   | 'gray-white'
   | 'yellow-outline'
+  | 'gold'
   | 'none'
 
 const sizeClasses = {
@@ -68,6 +69,8 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
       'text-ink-600 hover:bg-ink-200 shadow-none disabled:opacity-50 border-ink-300',
     color === 'yellow-outline' &&
       'ring-2 ring-yellow-500 text-yellow-500 disabled:ring-ink-300 enabled:hover:bg-yellow-500 enabled:hover:text-ink-0 disabled:text-ink-300',
+    color === 'gold' &&
+      'bg-yellow-300 enabled:bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 text-gray-900 transition-colors hover:via-yellow-100 focus:via-yellow-100',
     color === 'none' && 'bg-none'
   )
 }

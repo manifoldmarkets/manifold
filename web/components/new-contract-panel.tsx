@@ -1,8 +1,8 @@
 import { ExternalLinkIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
-import clsx from 'clsx'
 
 import {
   MAX_DESCRIPTION_LENGTH,
@@ -35,15 +35,14 @@ import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { QfExplainer } from './contract/qf-overview'
 
-import { Contract } from 'common/contract'
-import WaitingForSupabaseButton from './contract/waiting-for-supabase-button'
-import { Col } from './layout/col'
 import { generateJSON } from '@tiptap/core'
-import { extensions } from 'common/util/parse'
+import { Contract } from 'common/contract'
 import { STONK_NO, STONK_YES } from 'common/stonk'
+import { extensions } from 'common/util/parse'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getGroup } from 'web/lib/supabase/group'
-import { useAdmin } from 'web/hooks/use-admin'
+import WaitingForSupabaseButton from './contract/waiting-for-supabase-button'
+import { Col } from './layout/col'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -66,8 +65,9 @@ export function NewContractPanel(props: {
   params?: NewQuestionParams
   fromGroup?: boolean
   className?: string
+  setTheme: (theme: 'private' | 'non-private') => void
 }) {
-  const { creator, params, fromGroup, className } = props
+  const { creator, params, fromGroup, className, setTheme } = props
   const {
     question,
     setQuestion,
@@ -105,9 +105,21 @@ export function NewContractPanel(props: {
     ante,
     newContract,
   } = useNewContract(creator, params)
-  const isAdmin = useAdmin()
 
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
+  const [toggleVisibility, setToggleVisibility] = useState<
+    'public' | 'unlisted'
+  >('public')
+
+  useEffect(() => {
+    if (selectedGroup?.privacyStatus == 'private') {
+      setVisibility('private')
+      setTheme('private')
+    } else {
+      setVisibility(toggleVisibility)
+      setTheme('non-private')
+    }
+  }, [selectedGroup?.privacyStatus, toggleVisibility])
 
   return (
     <div className={clsx(className, 'text-ink-1000')}>
@@ -270,7 +282,7 @@ export function NewContractPanel(props: {
         </>
       )}
 
-      {!fromGroup && visibility != 'private' && (
+      {!fromGroup && (
         <>
           <Row className={'items-end gap-x-2'}>
             <GroupSelector
@@ -278,6 +290,7 @@ export function NewContractPanel(props: {
               setSelectedGroup={setSelectedGroup}
               options={{ showSelector: true, showLabel: true }}
               isContractCreator={true}
+              newContract={true}
             />
             {selectedGroup && (
               <a target="_blank" href={groupPath(selectedGroup.slug)}>
@@ -340,7 +353,7 @@ export function NewContractPanel(props: {
           </Row>
         </div>
       )}
-      {params?.visibility != 'private' && isAdmin && (
+      {visibility != 'private' && (
         <>
           <Spacer h={6} />
           <Row className="items-center gap-2">
@@ -355,8 +368,10 @@ export function NewContractPanel(props: {
               />
             </span>
             <ShortToggle
-              on={visibility === 'public'}
-              setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
+              on={toggleVisibility === 'public'}
+              setOn={(on) => {
+                setToggleVisibility(on ? 'public' : 'unlisted')
+              }}
             />
           </Row>
         </>

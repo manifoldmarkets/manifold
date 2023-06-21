@@ -14,6 +14,7 @@ export interface Database {
           contract_id: string
           created_time: string
           id: string
+          index: number
           pool_no: number
           pool_yes: number
           prob: number
@@ -26,6 +27,7 @@ export interface Database {
           contract_id: string
           created_time?: string
           id: string
+          index: number
           pool_no: number
           pool_yes: number
           prob: number
@@ -38,6 +40,7 @@ export interface Database {
           contract_id?: string
           created_time?: string
           id?: string
+          index?: number
           pool_no?: number
           pool_yes?: number
           prob?: number
@@ -446,20 +449,20 @@ export interface Database {
       group_contracts: {
         Row: {
           contract_id: string
-          data: Json
-          fs_updated_time: string
+          data: Json | null
+          fs_updated_time: string | null
           group_id: string
         }
         Insert: {
           contract_id: string
-          data: Json
-          fs_updated_time: string
+          data?: Json | null
+          fs_updated_time?: string | null
           group_id: string
         }
         Update: {
           contract_id?: string
-          data?: Json
-          fs_updated_time?: string
+          data?: Json | null
+          fs_updated_time?: string | null
           group_id?: string
         }
         Relationships: []
@@ -1094,6 +1097,7 @@ export interface Database {
           reason: string
           seen_time: string | null
           user_id: string
+          is_copied: boolean
         }
         Insert: {
           answer_id?: string | null
@@ -1113,6 +1117,7 @@ export interface Database {
           reason: string
           seen_time?: string | null
           user_id: string
+          is_copied?: boolean
         }
         Update: {
           answer_id?: string | null
@@ -1132,6 +1137,7 @@ export interface Database {
           reason?: string
           seen_time?: string | null
           user_id?: string
+          is_copied?: boolean
         }
         Relationships: []
       }
@@ -2394,6 +2400,13 @@ export interface Database {
           start: number
         }
         Returns: unknown
+      }
+      get_unique_bettors_since: {
+        Args: {
+          this_contract_id: string
+          since: number
+        }
+        Returns: number
       }
       get_reply_chain_comments_for_comment_ids: {
         Args: {

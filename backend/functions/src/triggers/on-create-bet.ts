@@ -52,7 +52,10 @@ import {
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_TRADE_FEE } from 'common/fees'
-import { getUniqueBettorIds } from 'shared/supabase/contracts'
+import {
+  getUniqueBettorIds,
+  getUniqueBettorIdsForAnswer,
+} from 'shared/supabase/contracts'
 
 const firestore = admin.firestore()
 
@@ -202,6 +205,39 @@ export const updateUniqueBettorsAndGiveCreatorBonus = async (
   bet: Bet
 ) => {
   const pg = createSupabaseDirectClient()
+
+  // Add house liquidity to multiple choice each time a user bets on a new answer.
+  if (
+    oldContract.mechanism === 'cpmm-multi-1' &&
+    bet.answerId &&
+    // Only consider non-redemption bets!
+    !bet.isRedemption &&
+    bet.userId !== oldContract.creatorId
+  ) {
+    const previousBetOnAnswerSnap = await firestore
+      .collection('contracts')
+      .doc(oldContract.id)
+      .collection('bets')
+      .where('answerId', '==', bet.answerId)
+      .where('userId', '==', bet.userId)
+      .where('isRedemption', '==', false)
+      .where('createdTime', '<', bet.createdTime)
+      .limit(1)
+      .get()
+
+    if (previousBetOnAnswerSnap.empty) {
+      const uniqueBettorIds = await getUniqueBettorIdsForAnswer(
+        oldContract.id,
+        bet.answerId,
+        pg
+      )
+      if (!uniqueBettorIds.includes(bettor.id)) uniqueBettorIds.push(bettor.id)
+      if (uniqueBettorIds.length <= MAX_TRADERS_FOR_BONUS) {
+        await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
+      }
+    }
+  }
+
   // Return if they've already bet on this contract previously, but we'll check in a transaction to be safe
   const previousBet = await pg.oneOrNone(
     `
@@ -213,6 +249,7 @@ export const updateUniqueBettorsAndGiveCreatorBonus = async (
     [oldContract.id, bettor.id, new Date(bet.createdTime).toISOString()]
   )
   if (previousBet) return
+
   const fromUserId = isProd()
     ? HOUSE_LIQUIDITY_PROVIDER_ID
     : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
@@ -285,10 +322,7 @@ export const updateUniqueBettorsAndGiveCreatorBonus = async (
   })
   if (!result) return
 
-  if (
-    oldContract.mechanism === 'cpmm-1' ||
-    oldContract.mechanism === 'cpmm-multi-1'
-  ) {
+  if (oldContract.mechanism === 'cpmm-1') {
     await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
   }
 

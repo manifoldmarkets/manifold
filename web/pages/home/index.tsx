@@ -10,7 +10,6 @@ import {
   LivePillOptions,
   pill_options,
 } from 'web/components/activity-log'
-import { DailyStats } from 'web/components/daily-stats'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -19,20 +18,18 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
-import { useUser } from 'web/hooks/use-user'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { track } from 'web/lib/service/analytics'
+
 import { useIsClient } from 'web/hooks/use-is-client'
-import { ContractsFeed } from '../../components/contract/contracts-feed'
-import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
-import { db } from '../../lib/supabase/db'
+import { ContractsFeed } from 'web/components/contract/contracts-feed'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { TopicSelector } from 'web/components/topic-selector'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { ProfileSummary } from 'web/components/nav/profile-menu'
-import { Spacer } from 'web/components/layout/spacer'
+import FeedTimeline from 'web/pages/feed-timeline'
+import { useABTest } from 'web/hooks/use-ab-test'
 import { NewsTopicsTabs } from 'web/components/news-topics-tabs'
 
 export default function Home() {
@@ -52,27 +49,19 @@ export default function Home() {
   return <HomeDashboard />
 }
 
-export function HomeDashboard() {
-  const user = useUser()
-  const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
-  const isLoading = !dailyChangedContracts
+function HomeDashboard() {
+  const isMarkets = useABTest('markets homepage', {
+    markets: true,
+    feed: true,
+  })
 
   return (
     <Page>
-      <Col className="mx-auto w-full gap-2 pb-8 sm:gap-6 sm:px-2 lg:pr-4">
-        <Row className="mx-2 items-center justify-between gap-4 sm:mx-0">
-          <div className="flex sm:hidden">
-            {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
-          </div>
-          <DailyStats user={user} />
-        </Row>
-        {isLoading && <LoadingIndicator />}
-
+      <Col className="mx-auto w-full max-w-2xl gap-2 pb-8 sm:gap-6 sm:px-2 lg:pr-4">
         <NewsTopicsTabs
           homeContent={
-            <Col className={clsx('gap-6', isLoading && 'hidden')}>
-              <YourDailyUpdates contracts={dailyChangedContracts} />
-              <MainContent />
+            <Col className={clsx('gap-6')}>
+              <FeedTimeline />
             </Col>
           }
         />

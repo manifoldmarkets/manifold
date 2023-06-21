@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { Fragment, ReactNode } from 'react'
 
 export const MODAL_CLASS =
-  'items-center gap-4 rounded-md bg-canvas-0 px-8 py-6 text-ink-1000'
+  'items-center gap-4 rounded-md bg-canvas-0 sm:px-8 px-4 py-6 text-ink-1000'
 export const SCROLLABLE_MODAL_CLASS =
   'max-h-[70vh] min-h-[20rem] !overflow-auto'
 
@@ -16,6 +16,7 @@ export function Modal(props: {
   position?: 'center' | 'top' | 'bottom'
   noAutoFocus?: boolean
   className?: string
+  bgOpaque?: boolean
 }) {
   const {
     children,
@@ -25,6 +26,7 @@ export function Modal(props: {
     size = 'md',
     className,
     noAutoFocus,
+    bgOpaque,
   } = props
 
   const sizeClass = {
@@ -57,7 +59,12 @@ export function Modal(props: {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity dark:bg-slate-700 dark:bg-opacity-75" />
+          <div
+            className={clsx(
+              'bg-canvas-100 fixed inset-0  transition-opacity ',
+              bgOpaque ? 'bg-opacity-100' : 'bg-opacity-75'
+            )}
+          />
         </Transition.Child>
 
         <Transition.Child

@@ -87,6 +87,7 @@ export function NotificationSettings(props: {
     'trending_markets',
     'onboarding_flow',
     'thank_you_for_purchases',
+    'contract_from_followed_user',
   ]
 
   const mobilePushEnabled: Array<notification_preference> = [

@@ -444,7 +444,7 @@ function BetsTable(props: {
         const dateString = date.toLocaleDateString('en-US', {
           month: '2-digit',
           day: '2-digit',
-          year: !isThisYear ? '2-digit' : undefined,
+          year: isThisYear ? undefined : '2-digit',
         })
         return (
           <Row className={'justify-end'}>

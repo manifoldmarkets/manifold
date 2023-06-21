@@ -20,8 +20,11 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { MINUTE_MS } from 'common/util/time'
-import { ProfileSummary } from 'web/components/nav/profile-menu'
+import { ProfileSummary } from 'web/components/nav/profile-summary'
 import { Spacer } from 'web/components/layout/spacer'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { Contract } from 'common/contract'
+import { db } from 'web/lib/supabase/db'
 
 export default function FeedTimeline() {
   const user = useUser()
@@ -74,6 +77,10 @@ function FeedTimelineContent() {
     Date.now(),
     'last-seen-feed-timeline' + user?.id
   )
+  const [manualContracts, setManualContracts] = usePersistentInMemoryState<
+    Contract[] | undefined
+  >(undefined, `new-interesting-contracts-${user?.id}-feed-timeline`)
+
   const [topWasVisible, setTopWasVisible] = useState(false)
   const [newerTimelineItems, setNewerTimelineItems] = useState<
     FeedTimelineItem[]
@@ -93,6 +100,22 @@ function FeedTimelineContent() {
   const newAvatarUrls = uniq(
     filterDefined(newerTimelineItems.map((item) => item.avatarUrl))
   ).slice(0, 3)
+  const fetchMoreOlderContent = async () => {
+    const moreFeedItems = await loadMoreOlder()
+    if (!moreFeedItems && user) {
+      const excludedContractIds = savedFeedItems
+        .map((i) => i.contractId)
+        .concat(manualContracts?.map((c) => c.id) ?? [])
+      console.log('no more feed items')
+      const { data } = await db.rpc('get_recommended_contracts_embeddings', {
+        uid: user.id,
+        n: 20,
+        excluded_contract_ids: filterDefined(excludedContractIds),
+      })
+
+      setManualContracts((data ?? []).map((row: any) => row.data as Contract))
+    }
+  }
 
   return (
     <Col className={'relative w-full items-center'}>
@@ -114,11 +137,12 @@ function FeedTimelineContent() {
         boosts={boosts}
         user={user}
         feedTimelineItems={savedFeedItems}
+        manualContracts={manualContracts}
       />
       <div className="relative">
         <VisibilityObserver
-          className="pointer-events-none absolute bottom-0 h-5 w-full select-none "
-          onVisibilityUpdated={(visible) => visible && loadMoreOlder()}
+          className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
+          onVisibilityUpdated={(visible) => visible && fetchMoreOlderContent()}
         />
       </div>
 
@@ -157,7 +181,12 @@ const NewActivityButton = (props: { avatarUrls: string[] }) => {
       <Row className="text-ink-600 align-middle">
         <ArrowUpIcon className="text-ink-400 mr-3 h-5 w-5" />
         {avatarUrls.map((url) => (
-          <Avatar size={'xs'} className={'-ml-2'} avatarUrl={url} />
+          <Avatar
+            key={url + 'new-feed-activity-button'}
+            size={'xs'}
+            className={'-ml-2'}
+            avatarUrl={url}
+          />
         ))}
       </Row>
     </button>

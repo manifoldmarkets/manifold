@@ -12,8 +12,12 @@ export function BetRow(props: {
   user: User | null | undefined
 }) {
   const { contract, user } = props
+  const { closeTime } = contract
+  const isClosed = closeTime && closeTime < Date.now()
   const [dialogueThatIsOpen, setDialogueThatIsOpen] =
     useState<binaryOutcomes>(undefined)
+  if (isClosed) return null
+
   return (
     <Row>
       <FeedBetButton
@@ -47,7 +51,7 @@ function FeedBetButton(props: {
     <>
       <button
         className={clsx(
-          'border-ink-300 hover:text-canvas-0 whitespace-nowrap border px-2 py-1 transition-colors',
+          'border-ink-300 hover:text-canvas-0 h-7 whitespace-nowrap border px-2 py-1 transition-colors',
           outcome == 'YES'
             ? 'rounded-l border-r-0 text-teal-500 hover:bg-teal-500'
             : 'text-scarlet-500 hover:bg-scarlet-500 rounded-r'
@@ -75,7 +79,7 @@ function FeedBetButton(props: {
         )}
       >
         <Col>
-          <div className="!mt-0 !mb-4 !text-xl">{contract.question}</div>
+          <div className="mt-0 mb-4 text-xl">{contract.question}</div>
           <BuyPanel
             contract={contract}
             user={user}

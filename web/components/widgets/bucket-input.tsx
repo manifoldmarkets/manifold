@@ -4,14 +4,17 @@ import { NumericContract, PseudoNumericContract } from 'common/contract'
 import { getMappedBucket } from 'common/calculate-dpm'
 
 import { NumberInput } from './number-input'
+import clsx from 'clsx'
 
 export function BucketInput(props: {
   contract: NumericContract | PseudoNumericContract
   isSubmitting?: boolean
   onBucketChange: (value?: number, bucket?: string) => void
   placeholder?: string
+  className?: string
 }) {
-  const { contract, isSubmitting, onBucketChange, placeholder } = props
+  const { contract, isSubmitting, onBucketChange, placeholder, className } =
+    props
 
   const [numberString, setNumberString] = useState('')
 
@@ -35,7 +38,7 @@ export function BucketInput(props: {
 
   return (
     <NumberInput
-      inputClassName="w-full max-w-none"
+      inputClassName={clsx('w-full max-w-none', className)}
       onChange={onChange}
       error={undefined}
       disabled={isSubmitting}

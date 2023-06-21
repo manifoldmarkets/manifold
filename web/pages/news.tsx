@@ -30,7 +30,10 @@ export default function NewsPage() {
         columnClassName="pl-4 bg-clip-padding"
       >
         {articles.map((article) => (
-          <Col className="mb-8" key={'article' + article.id}>
+          <Col
+            className="bg-canvas-0 border-canvas-50 hover:border-canvas-100 mb-8 rounded-lg border"
+            key={'article' + article.id}
+          >
             <NewsArticle urlToImage={article.image_url} {...article} />
 
             {article.contract_ids

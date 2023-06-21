@@ -419,7 +419,7 @@ function SupabaseContractSearchControls(props: {
         value={query}
         onChange={(e) => updateQuery(e.target.value)}
         onBlur={trackCallback('search', { query: query })}
-        placeholder="Filter markets"
+        placeholder="Search markets"
         className="w-full"
         autoFocus={autoFocus}
       />
@@ -431,7 +431,7 @@ function SupabaseContractSearchControls(props: {
         sort={sort}
         className={'flex flex-row gap-2'}
         includeProbSorts={includeProbSorts}
-        listViewDisabled={listViewDisabled}
+        listViewDisabled={true}
       />
     </div>
   )

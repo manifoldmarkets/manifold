@@ -209,7 +209,7 @@ export function TextEditor(props: {
     // matches input styling
     <div
       className={clsx(
-        'border-ink-500 bg-canvas-0 focus-within:border-primary-500 focus-within:ring-primary-500 w-full overflow-hidden rounded-lg border shadow-sm transition-colors focus-within:ring-1',
+        'border-ink-300 bg-canvas-0 focus-within:border-primary-500 focus-within:ring-primary-500 w-full overflow-hidden rounded-lg border shadow-sm transition-colors focus-within:ring-1',
         className
       )}
     >

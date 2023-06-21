@@ -6,8 +6,10 @@ import { ReactNode, useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { getTotalContractCreated } from 'web/lib/firebase/users'
-import { getCreatorRank } from 'web/lib/supabase/users'
+import {
+  getCreatorRank,
+  getTotalContractsCreated,
+} from 'web/lib/supabase/users'
 import { db } from 'web/lib/supabase/db'
 import { SupabaseContractSearch } from '../supabase-search'
 
@@ -25,7 +27,7 @@ export function UserContractsList(props: { creator: User }) {
     }
   }, [])
   useEffect(() => {
-    getTotalContractCreated(creator.id).then(setMarketsCreated)
+    getTotalContractsCreated(creator.id).then(setMarketsCreated)
     getCreatorRank(allTime, 'allTime').then(setCreatorRank)
     getUnresolvedContractsCount(creator.id, db).then((count) =>
       setUnresolvedMarkets(count)

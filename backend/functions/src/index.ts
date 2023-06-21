@@ -13,7 +13,6 @@ export * from './triggers/on-create-contract'
 export * from './triggers/on-follow-user'
 export * from './triggers/on-unfollow-user'
 export * from './triggers/on-create-liquidity-provision'
-export * from './triggers/on-update-group'
 export * from './triggers/on-delete-group'
 export * from './triggers/on-update-reaction'
 

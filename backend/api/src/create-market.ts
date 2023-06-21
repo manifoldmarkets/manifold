@@ -33,13 +33,14 @@ import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { mintAndPoolCert } from 'shared/helpers/cert-txns'
 import { generateEmbeddings, getCloseDate } from 'shared/helpers/openai-utils'
-import { getContract, getUser, htmlToRichText } from 'shared/utils'
+import { getUser, htmlToRichText } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
+import { addGroupToContract } from 'shared/update-group-contracts-internal'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -129,7 +130,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
   )
 
   if (group && groupId) {
-    await addGroupContract(groupId, group, contractRef, userId)
+    await addGroupToContract(contract, group)
     if (contract.visibility == 'private') {
       const contractCreator = await getUser(contract.creatorId)
       if (!contractCreator) throw new Error('Could not find contract creator')
@@ -213,41 +214,6 @@ async function getContractFromSlug(trans: Transaction, slug: string) {
   const snap = await trans.get(query)
 
   return snap.empty ? undefined : (snap.docs[0].data() as Contract)
-}
-
-async function createGroupLinks(
-  group: Group,
-  contractIds: string[],
-  userId: string
-) {
-  for (const contractId of contractIds) {
-    const contract = await getContract(contractId)
-    if (!contract?.groupSlugs?.includes(group.slug)) {
-      await firestore
-        .collection('contracts')
-        .doc(contractId)
-        .update({
-          groupSlugs: uniq([group.slug, ...(contract?.groupSlugs ?? [])]),
-        })
-    }
-    if (!contract?.groupLinks?.some((gl) => gl.groupId === group.id)) {
-      await firestore
-        .collection('contracts')
-        .doc(contractId)
-        .update({
-          groupLinks: [
-            {
-              groupId: group.id,
-              name: group.name,
-              slug: group.slug,
-              userId,
-              createdTime: Date.now(),
-            } as GroupLink,
-            ...(contract?.groupLinks ?? []),
-          ],
-        })
-    }
-  }
 }
 
 function validateMarketBody(body: any) {
@@ -387,34 +353,6 @@ async function getGroup(
   return group
 }
 
-async function addGroupContract(
-  groupId: string,
-  group: Group,
-  contractRef: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>,
-  userId: string
-): Promise<void> {
-  const groupContractsSnap = await firestore
-    .collection(`groups/${groupId}/groupContracts`)
-    .get()
-
-  const groupContracts = groupContractsSnap.docs.map(
-    (doc) => doc.data() as { contractId: string; createdTime: number }
-  )
-
-  if (!groupContracts.some((c) => c.contractId === contractRef.id)) {
-    await createGroupLinks(group, [contractRef.id], userId)
-
-    const groupContractRef = firestore
-      .collection(`groups/${groupId}/groupContracts`)
-      .doc(contractRef.id)
-
-    await groupContractRef.set({
-      contractId: contractRef.id,
-      createdTime: Date.now(),
-    })
-  }
-}
-
 async function createAnswers(
   user: User,
   contract: CPMMMultiContract,
@@ -451,6 +389,7 @@ async function createAnswers(
       const id = ids[i]
       const answer: Answer = {
         id,
+        index: i,
         contractId: contract.id,
         userId: user.id,
         text,

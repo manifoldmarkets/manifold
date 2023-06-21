@@ -25,8 +25,7 @@ export async function getServerSideProps(props: {
 }) {
   const { inviteid } = props.params
   const adminDb = await initSupabaseAdmin()
-  const invite: GroupInvite | null =
-    (await getInvite(inviteid, adminDb)) || null
+  const invite = await getInvite(inviteid, adminDb)
   const group = invite ? await getGroup(adminDb, invite.group_id) : null
   return { props: { invite, groupName: group?.name, groupSlug: group?.slug } }
 }
@@ -41,9 +40,10 @@ export default function GroupInvitePage(props: {
   groupSlug: string
 }) {
   const { invite, groupName, groupSlug } = props
-  const whenExpires = dayjs(invite.expire_time).fromNow()
+  const expire = dayjs(invite.expire_time)
+  const expireLabel = expire.fromNow()
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const isExpired = !invite.is_forever && invite.expire_time! <= new Date()
+  const isExpired = !invite.is_forever && expire.isBefore(dayjs())
   const isAuth = useIsAuthorized()
   const user = useUser()
   const isAlreadyGroupMember = useIsGroupMember(groupSlug)
@@ -71,8 +71,8 @@ export default function GroupInvitePage(props: {
                   )}
                 >
                   {isExpired
-                    ? `Expired ${whenExpires}`
-                    : `Expires ${whenExpires}`}
+                    ? `Expired ${expireLabel}`
+                    : `Expires ${expireLabel}`}
                 </div>
               </Row>
             )}

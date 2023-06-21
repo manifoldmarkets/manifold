@@ -6,7 +6,7 @@ import { curveStepAfter } from 'd3-shape'
 import { Bet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
 import { MultiContract } from 'common/contract'
-import { getOutcomeProbability } from 'common/calculate'
+import { getAnswerProbability } from 'common/calculate'
 import { DAY_MS } from 'common/util/time'
 import {
   TooltipProps,
@@ -42,9 +42,10 @@ const getAnswers = (contract: MultiContract) => {
   const validAnswers = (answers ?? []).filter(
     (answer) => answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE'
   )
-  return sortBy(
-    validAnswers,
-    (answer) => -1 * getOutcomeProbability(contract, answer.id)
+  return sortBy(validAnswers, (answer) =>
+    'index' in answer
+      ? answer.index
+      : -1 * getAnswerProbability(contract, answer.id)
   )
 }
 
@@ -127,7 +128,7 @@ export const ChoiceContractChart = (props: {
     [answers, bets, topN, isDpm]
   )
   const endProbs = useMemo(
-    () => answers.map((a) => getOutcomeProbability(contract, a.id)),
+    () => answers.map((a) => getAnswerProbability(contract, a.id)),
     [answers, contract]
   )
 

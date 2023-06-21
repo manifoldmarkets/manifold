@@ -2,6 +2,7 @@ import { User } from './user'
 
 export type Answer = {
   id: string
+  index?: number // Order of the answer in the list
   contractId: string
   userId: string
   text: string

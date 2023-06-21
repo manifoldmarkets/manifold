@@ -12,7 +12,6 @@ import Head from 'next/head'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEO } from 'web/components/SEO'
-import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
@@ -426,23 +425,12 @@ export function ContractPageContent(props: {
                 </div>
               </div>
 
-              {(outcomeType === 'FREE_RESPONSE' ||
-                outcomeType === 'MULTIPLE_CHOICE') && (
-                <>
-                  <Spacer h={4} />
-                  <AnswersPanel
-                    contract={contract}
-                    onAnswerCommentClick={onAnswerCommentClick}
-                    showResolver={showResolver}
-                  />
-                  <Spacer h={4} />
-                </>
-              )}
-
               <ContractOverview
                 contract={contract}
                 bets={bets}
                 betPoints={betPoints}
+                showResolver={showResolver}
+                onAnswerCommentClick={onAnswerCommentClick}
               />
 
               <SignUpFlow user={user} />

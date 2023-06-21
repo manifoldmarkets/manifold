@@ -4,7 +4,7 @@ import { memo, ReactNode, useEffect, useRef, useState } from 'react'
 
 import { EyeOffIcon, FlagIcon, PencilIcon } from '@heroicons/react/outline'
 import {
-  DotsVerticalIcon,
+  DotsHorizontalIcon,
   ReplyIcon,
   XCircleIcon,
 } from '@heroicons/react/solid'
@@ -21,7 +21,10 @@ import { ReportModal } from 'web/components/buttons/report-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { EditCommentModal } from 'web/components/comments/edit-comment-modal'
 import { LikeButton } from 'web/components/contract/like-button'
-import { copyLinkToComment } from 'web/components/feed/copy-link-date-time'
+import {
+  CopyLinkDateTimeComponent,
+  copyLinkToComment,
+} from 'web/components/feed/copy-link-date-time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { OutcomeLabel } from 'web/components/outcome-label'
@@ -39,7 +42,6 @@ import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import Curve from 'web/public/custom-components/curve'
 import { Button, IconButton } from '../buttons/button'
 import { CommentInput } from '../comments/comment-input'
@@ -47,6 +49,8 @@ import { ReplyToggle } from '../comments/reply-toggle'
 import { Content } from '../widgets/editor'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
+import { CommentEditHistoryButton } from '../comments/comment-edit-history-button'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -107,7 +111,11 @@ export function FeedCommentThread(props: {
               <Button
                 size={'xs'}
                 color={'gray-white'}
-                onClick={() => setCollapseToIndex(-1)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  setCollapseToIndex(-1)
+                }}
               >
                 <Col>
                   <TriangleFillIcon className={'mr-2 h-2'} />
@@ -313,7 +321,7 @@ export function DotMenu(props: {
         label={'Comment'}
       />
       <DropdownMenu
-        Icon={<DotsVerticalIcon className="h-4 w-4" aria-hidden="true" />}
+        Icon={<DotsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
         Items={buildArray(
           {
             name: 'Copy Link',
@@ -383,8 +391,15 @@ export function CommentActions(props: {
     <Row className="grow items-center justify-end">
       {user && onReplyClick && (
         <Tooltip text="Reply" placement="bottom">
-          <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
-            <ReplyIcon className="h-4 w-4" />
+          <IconButton
+            size={'xs'}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onReplyClick(comment)
+            }}
+          >
+            <ReplyIcon className="h-5 w-5" />
           </IconButton>
         </Tooltip>
       )}
@@ -400,7 +415,7 @@ export function CommentActions(props: {
           className={
             isBlocked(privateUser, comment.userId) ? 'pointer-events-none' : ''
           }
-          size={'sm'}
+          size={'md'}
           trackingLocation={trackingLocation}
         />
       )}
@@ -521,6 +536,7 @@ function FeedCommentHeader(props: {
     userUsername,
     userName,
     createdTime,
+    editedTime,
     bettorUsername,
     betOutcome,
     answerOutcome,
@@ -533,8 +549,10 @@ function FeedCommentHeader(props: {
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
-    <Col className={clsx('mt-1 text-sm ', inTimeline ? '' : 'text-ink-600')}>
-      <Row className="justify-between">
+    <Col
+      className={clsx('mt-1', inTimeline ? 'text-md' : 'text-ink-600 text-sm ')}
+    >
+      <Row className="items-center gap-1">
         <span>
           <UserLink
             username={userUsername}
@@ -560,19 +578,30 @@ function FeedCommentHeader(props: {
               )}
             </span>
           )}
-          {inTimeline && <span> commented</span>}{' '}
-          {isApi && (
-            <InfoTooltip text="Placed via API" className="mr-1">
-              🤖
-            </InfoTooltip>
-          )}
-          {
-            <span className="text-ink-500">
-              {shortenedFromNow(createdTime)}
-            </span>
-          }
         </span>
-        <DotMenu comment={comment} contract={contract} />
+        {inTimeline ? (
+          <span>
+            {' '}
+            commented{' '}
+            <span className="text-ink-500">
+              {shortenedFromNow(editedTime ? editedTime : createdTime)}{' '}
+            </span>
+          </span>
+        ) : (
+          <CopyLinkDateTimeComponent
+            prefix={contract.creatorUsername}
+            slug={contract.slug}
+            createdTime={editedTime ? editedTime : createdTime}
+            elementId={comment.id}
+            seeEditsButton={<CommentEditHistoryButton comment={comment} />}
+          />
+        )}
+        {!inTimeline && isApi && (
+          <InfoTooltip text="Placed via API" className="mr-1">
+            🤖
+          </InfoTooltip>
+        )}
+        {!inTimeline && <DotMenu comment={comment} contract={contract} />}
       </Row>
     </Col>
   )
