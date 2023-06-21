@@ -71,6 +71,7 @@ export const PortfolioGraph = (props: {
           ? '#3B82F6'
           : '#4f46e5'
       }
+      negativeThreshold={negativeThreshold}
     />
   )
 }

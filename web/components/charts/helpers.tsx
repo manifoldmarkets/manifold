@@ -19,6 +19,7 @@ import { Margin } from 'common/chart'
 import { Contract } from 'common/contract'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
+import { Tooltip } from '../widgets/tooltip'
 
 export interface ContinuousScale<T> extends AxisScale<T> {
   invert(n: number): T
@@ -40,24 +41,74 @@ export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   return <g ref={axisRef} transform={`translate(0, ${h})`} />
 }
 
-export const YAxis = <Y,>(props: { w: number; h: number; axis: Axis<Y> }) => {
-  const { w, h, axis } = props
+// export const YAxis = <Y,>(props: {
+//   w: number
+//   h: number
+//   axis: Axis<Y>
+//   negativeThreshold?: number
+// }) => {
+//   const { w, h, axis } = props
+//   const axisRef = useRef<SVGGElement>(null)
+//   useEffect(() => {
+//     if (axisRef.current != null) {
+//       select(axisRef.current)
+//         .call(axis)
+//         .call((g) =>
+//           g
+//             .selectAll('.tick line')
+//             .attr('x2', w)
+//             .attr('stroke-opacity', 0.1)
+//             .attr('transform', `translate(-${w}, 0)`)
+//         )
+//         .select('.domain')
+//         .attr('stroke-width', 0)
+//     }
+//   }, [w, h, axis])
+//   return <g ref={axisRef} transform={`translate(${w}, 0)`} />
+// }
+
+export const YAxis = <Y,>(props: {
+  w: number
+  h: number
+  axis: Axis<Y>
+  negativeThreshold?: number
+}) => {
+  const { w, h, axis, negativeThreshold } = props
   const axisRef = useRef<SVGGElement>(null)
   useEffect(() => {
     if (axisRef.current != null) {
       select(axisRef.current)
         .call(axis)
         .call((g) =>
-          g
-            .selectAll('.tick line')
-            .attr('x2', w)
-            .attr('stroke-opacity', 0.1)
-            .attr('transform', `translate(-${w}, 0)`)
+          g.selectAll('.tick').each(function (d) {
+            const tick = select(this)
+            if (d === negativeThreshold) {
+              tick
+                .select('line') // Change stroke of the line
+                .attr('x2', w)
+                .attr('stroke-opacity', 1)
+                .attr('stroke-dasharray', '10,5') // Make the line dotted
+                .attr('transform', `translate(-${w}, 0)`)
+
+              tick
+                .select('text') // Change font of the text
+                .style('font-weight', 'bold') // Adjust this to your needs
+                .append('title') // Adding a tooltip
+                .text('value at the start of this week')
+            } else {
+              tick
+                .select('line')
+                .attr('x2', w)
+                .attr('stroke-opacity', 0.1)
+                .attr('transform', `translate(-${w}, 0)`)
+            }
+          })
         )
         .select('.domain')
         .attr('stroke-width', 0)
     }
-  }, [w, h, axis])
+  }, [w, h, axis, negativeThreshold])
+
   return <g ref={axisRef} transform={`translate(${w}, 0)`} />
 }
 
@@ -157,6 +208,7 @@ export const SVGChart = <X, TT>(props: {
   onMouseOver?: (mouseX: number, mouseY: number) => void
   onMouseLeave?: () => void
   Tooltip?: TooltipComponent<X, TT>
+  negativeThreshold?: number
 }) => {
   const {
     children,
@@ -170,6 +222,7 @@ export const SVGChart = <X, TT>(props: {
     onMouseOver,
     onMouseLeave,
     Tooltip,
+    negativeThreshold,
   } = props
   const tooltipMeasure = useMeasureSize()
   const overlayRef = useRef<SVGGElement>(null)
@@ -259,7 +312,12 @@ export const SVGChart = <X, TT>(props: {
         </clipPath>
         <g transform={`translate(${margin.left}, ${margin.top})`}>
           <XAxis axis={xAxis} w={innerW} h={innerH} />
-          <YAxis axis={yAxis} w={innerW} h={innerH} />
+          <YAxis
+            axis={yAxis}
+            w={innerW}
+            h={innerH}
+            negativeThreshold={negativeThreshold}
+          />
           <g clipPath={`url(#${clipPathId})`}>{children}</g>
           {!isMobile ? (
             <g
