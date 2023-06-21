@@ -14,6 +14,7 @@ import { first, groupBy, last, sortBy, uniq, uniqBy } from 'lodash'
 import { News } from 'common/news'
 import { FEED_DATA_TYPES, FEED_REASON_TYPES, getExplanation } from 'common/feed'
 import { isContractBlocked } from 'web/lib/firebase/users'
+import { useUninterestedContracts } from 'web/hooks/use-uninterested-contracts'
 
 const PAGE_SIZE = 20
 
@@ -43,6 +44,7 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
   useEffect(() => {
     if (user) getBoosts(user.id).then(setBoosts as any)
   }, [user?.id])
+  const uninterestedContracts = useUninterestedContracts(user?.id ?? '_')
 
   const [savedFeedItems, setSavedFeedItems] = usePersistentInMemoryState<
     FeedTimelineItem[] | undefined
@@ -89,15 +91,17 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
 
     const contractIds = uniq(
       filterDefined(data.map((item) => item.contract_id)).filter(
-        (id) => !alreadySavedContractIds.includes(id)
+        (id) =>
+          !alreadySavedContractIds.includes(id) &&
+          !uninterestedContracts?.includes(id)
       )
     )
-    const commentIds = uniq(
+    const commentOnContractIds = uniq(
       filterDefined(
         data.map((item) =>
-          alreadySavedContractIds.includes(item.contract_id ?? '_')
-            ? undefined
-            : item.comment_id
+          contractIds.includes(item.contract_id ?? '_')
+            ? item.comment_id
+            : undefined
         )
       )
     )
@@ -106,7 +110,7 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
     const [comments, contracts, news] = await Promise.all([
       db
         .rpc('get_reply_chain_comments_for_comment_ids' as any, {
-          comment_ids: commentIds,
+          comment_ids: commentOnContractIds,
         })
         .then((res) => res.data?.map((c) => c.data as ContractComment)),
       db

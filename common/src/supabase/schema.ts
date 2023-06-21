@@ -1021,10 +1021,41 @@ export interface Database {
         }
         Relationships: []
       }
+      user_disinterests: {
+        Row: {
+          comment_id: string | null
+          contract_id: string
+          created_time: string
+          creator_id: string
+          feed_id: number | null
+          id: number
+          user_id: string
+        }
+        Insert: {
+          comment_id?: string | null
+          contract_id: string
+          created_time?: string
+          creator_id: string
+          feed_id?: number | null
+          id?: never
+          user_id: string
+        }
+        Update: {
+          comment_id?: string | null
+          contract_id?: string
+          created_time?: string
+          creator_id?: string
+          feed_id?: number | null
+          id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_embeddings: {
         Row: {
           card_view_embedding: string | null
           created_at: string
+          disinterest_embedding: string | null
           interest_embedding: string
           pre_signup_interest_embedding: string | null
           user_id: string
@@ -1032,6 +1063,7 @@ export interface Database {
         Insert: {
           card_view_embedding?: string | null
           created_at?: string
+          disinterest_embedding?: string | null
           interest_embedding: string
           pre_signup_interest_embedding?: string | null
           user_id: string
@@ -1039,6 +1071,7 @@ export interface Database {
         Update: {
           card_view_embedding?: string | null
           created_at?: string
+          disinterest_embedding?: string | null
           interest_embedding?: string
           pre_signup_interest_embedding?: string | null
           user_id?: string

@@ -34,7 +34,7 @@ import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
 import { TiVolumeMute } from 'react-icons/ti'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { toast } from 'react-hot-toast'
-import React from 'react'
+import React, { useState } from 'react'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -203,10 +203,11 @@ function DetailedCard(props: {
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
-
+  const [hidden, setHidden] = useState(false)
   const path = contractPath(contract)
 
   const metrics = useSavedContractMetrics(contract)
+  if (hidden) return null
   return (
     <div
       className={clsx(
@@ -258,6 +259,7 @@ function DetailedCard(props: {
                       user={user}
                       contract={contract}
                       item={item}
+                      onSetUninteresting={() => setHidden(true)}
                     />
                     {promotedData ? (
                       <ClaimButton {...promotedData} className={'z-10'} />
@@ -321,8 +323,9 @@ const MoreOptionsButton = (props: {
   contract: Contract
   item: FeedTimelineItem | undefined
   user: User | null | undefined
+  onSetUninteresting: () => void
 }) => {
-  const { contract, user, item } = props
+  const { contract, user, item, onSetUninteresting } = props
   if (!user) return null
   const markUninteresting = async () => {
     await updateUserDisinterestEmbedding({
@@ -333,6 +336,7 @@ const MoreOptionsButton = (props: {
     toast(`We won't show you content like that again`, {
       icon: <TiVolumeMute className={'h-5 w-5 text-teal-500'} />,
     })
+    onSetUninteresting()
   }
   return (
     <DropdownMenu
