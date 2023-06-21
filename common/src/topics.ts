@@ -1,53 +1,23 @@
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
-  '💻 Technology': [
+  '🚀 Popular': [
+    '🙋 2024 US Elections',
+    '🇺🇸 US Politics',
     '🤖 AI',
-    '🪙 Crypto',
-    '🪸 Climate',
-    '🧬 Biotech',
-    '💻 Programming',
+    '🚘 Elon Musk',
+    '🟠 Trump',
+    '💪 Personal Development',
     '🔬 Science',
-    '🧮 Math',
-    '☢️ Nuclear',
-    '🚀 Space',
+    '💻 Programming',
+    '🪙 Crypto',
   ],
-
-  '🗳️ Politics': ['🙋 2024 US Elections', '🟠 Trump', '🇺🇸 US Politics'],
-
   '🏟️ Sports': [
     '🏀 Basketball',
     '🏈 NFL',
     '⚾ Baseball',
     '⚽ Soccer',
     '♟️ Chess',
-    '🏎️ Racing',
     '🏅 Sports',
   ],
-
-  '🍿 Media': [
-    '🎬 Movies',
-    '📺 TV Shows',
-    '🎮 Gaming',
-    '🎵 Music',
-    '📚 Books',
-    '🌐 Internet Culture',
-    '👥 Celebrities',
-  ],
-  '💼 Business': [
-    '🪙 Crypto',
-    '💵 Finance',
-    '💰 Economics',
-    '🚀 Startups',
-    '🚘 Elon Musk',
-  ],
-
-  '🪂 Lifestyle': [
-    '🏳️‍🌈 LGBTQIA+',
-    '⛪ Religion',
-    '❤️ Sex and love',
-    '👨‍🎓 Education',
-    '💪 Personal Development',
-  ],
-
   '🌍 World': [
     '🇷🇺🇺🇦 Russia & Ukraine',
     '🇨🇳 China',
@@ -59,14 +29,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🌍 Middle East',
   ],
 
-  '👥 Communities': [
-    // '🤓 CGP Grey',
-    // '📜 ACX',
-    '💗 Effective Altruism',
-    '🎮 Destiny.gg',
-    // '🦔 Proofniks',
-    // '🎰 Wall Street Bets',
-  ],
+  '👥 Communities': ['💗 Effective Altruism', '🎮 Destiny.gg'],
 }
 
 const GROUP_IDs: { [key: string]: string } = {
