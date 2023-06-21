@@ -174,7 +174,9 @@ export const PortfolioValueSection = memo(
                   viewScaleProps={graphView}
                   onMouseOver={handleGraphDisplayChange}
                   negativeThreshold={
-                    graphMode == 'profit' ? graphPoints[0].y : undefined
+                    graphMode == 'profit' && currentTimePeriod != 'allTime'
+                      ? graphPoints[0].y
+                      : undefined
                   }
                 />
               )

@@ -123,7 +123,7 @@ const getTickValues = (
   ]
   if (negativeThreshold) {
     return defaultRange
-      .filter((n) => Math.abs(negativeThreshold - n) > step / 2)
+      .filter((n) => Math.abs(negativeThreshold - n) > Math.max(step / 4, 1))
       .concat(negativeThreshold)
       .sort((a, b) => a - b)
   }
