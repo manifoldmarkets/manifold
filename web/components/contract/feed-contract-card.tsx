@@ -19,7 +19,6 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { fromNow } from 'web/lib/util/time'
 import { ClaimButton } from '../ad/claim-ad-button'
 import { BetRow } from '../bet/bet-row'
 import { QuickOutcomeView } from '../bet/quick-bet'
@@ -28,7 +27,6 @@ import { Row } from '../layout/row'
 import { CommentsButton } from '../swipe/swipe-comments'
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
-import { UserLink } from '../widgets/user-link'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 
@@ -190,8 +188,6 @@ function DetailedCard(props: {
   const {
     closeTime,
     isResolved,
-    creatorCreatedTime,
-    creatorName,
     creatorUsername,
     creatorAvatarUrl,
     question,
@@ -227,40 +223,28 @@ function DetailedCard(props: {
           <Col className="w-full gap-2">
             {/* Title is link to contract for open in new tab and a11y */}
             <Col onClick={(e) => e.stopPropagation()} className="w-full gap-1">
-              <Row className="grow justify-between">
-                <Row className="items-center gap-1 whitespace-nowrap text-sm">
-                  <UserLink
-                    name={creatorName}
-                    username={creatorUsername}
-                    createdTime={creatorCreatedTime}
-                    className={'overflow-none flex-shrink '}
-                  />
-                  asked
-                  <span className="text-ink-400 text-sm">
-                    {fromNow(contract.createdTime)}
-                  </span>
-                </Row>
+              <Row className=" items-start justify-between">
+                <Link
+                  href={path}
+                  className={clsx(
+                    'text-md',
+                    'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
+                    textColor
+                  )}
+                  // if open in new tab, don't open in this one
+                  onClick={(e) => {
+                    trackClick()
+                    e.stopPropagation()
+                  }}
+                >
+                  {question}
+                </Link>
                 {promotedData ? (
                   <ClaimButton {...promotedData} className={'z-10'} />
                 ) : (
                   !item?.isCopied && <ReasonIcon item={item} />
                 )}
               </Row>
-              <Link
-                href={path}
-                className={clsx(
-                  'text-md sm:text-lg',
-                  'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
-                  textColor
-                )}
-                // if open in new tab, don't open in this one
-                onClick={(e) => {
-                  trackClick()
-                  e.stopPropagation()
-                }}
-              >
-                {question}
-              </Link>
             </Col>
 
             <Row className="text-ink-500 items-center gap-3 text-sm">
