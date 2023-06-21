@@ -12,15 +12,7 @@ export const NewsArticle = (props: {
   published_time?: number
   className?: string
 }) => {
-  const {
-    title,
-    urlToImage,
-    url,
-    description,
-    published_time,
-    author,
-    className,
-  } = props
+  const { title, urlToImage, url, description, published_time, author } = props
 
   return (
     <Link href={url} target="_blank" className="relative flex w-full flex-col">

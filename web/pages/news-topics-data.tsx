@@ -3,7 +3,7 @@ import Masonry from 'react-masonry-css'
 import { useContracts } from 'web/hooks/use-contract-supabase'
 import { SimpleContractRow } from 'web/components/simple-contract-row'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
-import { NewsArticle } from 'web/components/news-article'
+import { NewsArticleOriginal } from 'web/components/news-article-original'
 import { Container } from 'web/components/widgets/container'
 import Link from 'next/link'
 
@@ -25,7 +25,7 @@ export const UkraineWarData = () => {
   return (
     <Col>
       <NewsGrid>
-        <NewsArticle
+        <NewsArticleOriginal
           className="mb-4"
           title="Biden warns the threat of Putin using tactical nuclear weapons is ‘real’
 "
@@ -104,7 +104,7 @@ export const RedditBlackoutData = () => {
             </ul>
           }
         />
-        <NewsArticle
+        <NewsArticleOriginal
           className="mb-4"
           title="Thousands of Reddit Communities Stay Dark as App Policy Protest Continues"
           urlToImage="https://static01.nyt.com/images/2023/06/21/multimedia/20xp-reddit1-print-lcjh/20xp-reddit1-lcjh-superJumbo.jpg?quality=75&auto=webp"
@@ -172,7 +172,7 @@ export const MissingSubData = () => {
           }
         />
 
-        <NewsArticle
+        <NewsArticleOriginal
           className="mb-4"
           title="Search for Missing Titanic Submersible"
           urlToImage="https://i.ytimg.com/vi/l9_qNO37oFs/maxresdefault.jpg"
@@ -215,7 +215,7 @@ export const UsElectionsData = () => {
   return (
     <Col>
       <NewsGrid>
-        <NewsArticle
+        <NewsArticleOriginal
           className="mb-4"
           title="Judge set Mar-a-lago classified paper trial date for August 14th"
           urlToImage="https://static.independent.co.uk/2023/06/15/23/Trump_Classified_Documents_14918.jpg?quality=75&width=990&crop=4%3A3%2Csmart&auto=webp"

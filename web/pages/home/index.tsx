@@ -31,6 +31,10 @@ import ShortToggle from 'web/components/widgets/short-toggle'
 import FeedTimeline from 'web/pages/feed-timeline'
 import { useABTest } from 'web/hooks/use-ab-test'
 import { NewsTopicsTabs } from 'web/components/news-topics-tabs'
+import { DailyStats } from 'web/components/daily-stats'
+import { Spacer } from 'web/components/layout/spacer'
+import { ProfileSummary } from 'web/components/nav/profile-summary'
+import { useUser } from 'web/hooks/use-user'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -54,18 +58,23 @@ function HomeDashboard() {
     markets: true,
     feed: true,
   })
+  const user = useUser()
 
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-2xl gap-2 pb-8 sm:gap-6 sm:px-2 lg:pr-4">
-        <NewsTopicsTabs
-          homeContent={
-            <Col className={clsx('gap-6')}>
-              <FeedTimeline />
-            </Col>
-          }
-        />
-      </Col>
+      <Row className="mx-4 mb-2 items-center justify-between gap-4">
+        <div className="flex sm:hidden">
+          {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
+        </div>
+        <DailyStats user={user} />
+      </Row>
+      <NewsTopicsTabs
+        homeContent={
+          <Col className={clsx('gap-6')}>
+            <FeedTimeline />
+          </Col>
+        }
+      />
     </Page>
   )
 }
