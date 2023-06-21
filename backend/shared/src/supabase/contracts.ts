@@ -142,7 +142,7 @@ const getUsersWithSimilarInterestVectorsToContract = async (
   return userIdsAndDistances.map((r) => r.user_id)
 }
 // Helpful firebase deploy arguments after changing the following function
-// functions:onCreateContract,functions:onCreateCommentOnContract,functions:onCreateLiquidityProvision,functions:scoreContracts
+// functions:onCreateContract,functions:onCreateCommentOnContract,functions:onCreateLiquidityProvision,functions:scorecontracts
 export const getUserToReasonsInterestedInContractAndUser = async (
   contractId: string,
   userId: string,
