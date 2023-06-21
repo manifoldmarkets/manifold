@@ -30,6 +30,11 @@ import { TopicSelector } from 'web/components/topic-selector'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import FeedTimeline from 'web/pages/feed-timeline'
 import { useABTest } from 'web/hooks/use-ab-test'
+import { NewsTopicsTabs } from 'web/components/news-topics-tabs'
+import { DailyStats } from 'web/components/daily-stats'
+import { Spacer } from 'web/components/layout/spacer'
+import { ProfileSummary } from 'web/components/nav/profile-summary'
+import { useUser } from 'web/hooks/use-user'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -53,9 +58,47 @@ function HomeDashboard() {
     markets: true,
     feed: true,
   })
+  const user = useUser()
 
-  return <FeedTimeline />
+  return (
+    <Page>
+      <Row className="mx-4 mb-2 items-center justify-between gap-4">
+        <div className="flex sm:hidden">
+          {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
+        </div>
+        <DailyStats user={user} />
+      </Row>
+      <NewsTopicsTabs
+        homeContent={
+          <Col className={clsx('gap-6')}>
+            <FeedTimeline />
+          </Col>
+        }
+      />
+    </Page>
+  )
 }
+
+const YourDailyUpdates = memo(function YourDailyUpdates(props: {
+  contracts: CPMMContract[] | undefined
+}) {
+  const { contracts } = props
+  const changedContracts = contracts
+    ? contracts.filter((c) => Math.abs(c.probChanges?.day ?? 0) >= 0.01)
+    : undefined
+  if (!changedContracts || changedContracts.length === 0) return <></>
+
+  return (
+    <Col>
+      <HomeSectionHeader
+        label="Today's updates"
+        icon="📊"
+        href="/todays-updates"
+      />
+      <ProbChangeTable changes={changedContracts as CPMMContract[]} />
+    </Col>
+  )
+})
 
 function HomeSectionHeader(props: {
   label: string
@@ -89,27 +132,6 @@ function HomeSectionHeader(props: {
     </Row>
   )
 }
-
-const YourDailyUpdates = memo(function YourDailyUpdates(props: {
-  contracts: CPMMContract[] | undefined
-}) {
-  const { contracts } = props
-  const changedContracts = contracts
-    ? contracts.filter((c) => Math.abs(c.probChanges?.day ?? 0) >= 0.01)
-    : undefined
-  if (!changedContracts || changedContracts.length === 0) return <></>
-
-  return (
-    <Col>
-      <HomeSectionHeader
-        label="Today's updates"
-        icon="📊"
-        href="/todays-updates"
-      />
-      <ProbChangeTable changes={changedContracts as CPMMContract[]} />
-    </Col>
-  )
-})
 
 const LiveSection = memo(function LiveSection(props: {
   pill: pill_options

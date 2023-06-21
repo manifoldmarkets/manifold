@@ -1,5 +1,4 @@
 import { useUser } from 'web/hooks/use-user'
-import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
@@ -27,40 +26,28 @@ import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
 
 export default function FeedTimeline() {
-  const user = useUser()
-
   return (
-    <Page>
-      <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
-        <Row className="mx-4 mb-2 items-center justify-between gap-4">
-          <Title children="Home" className="!my-0 hidden sm:block" />
-          <div className="flex sm:hidden">
-            {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
-          </div>
-          <DailyStats user={user} />
-        </Row>
-
-        <Col className={clsx('gap-6')}>
-          <Col>
-            <FeedTimelineContent />
-            <button
-              type="button"
-              className={clsx(
-                'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
-                'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
-                'bottom-[64px]'
-              )}
-              onClick={() => {
-                Router.push('/create')
-                track('mobile create button')
-              }}
-            >
-              <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
-            </button>
-          </Col>
+    <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
+      <Col className={clsx('gap-6')}>
+        <Col>
+          <FeedTimelineContent />
+          <button
+            type="button"
+            className={clsx(
+              'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
+              'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
+              'bottom-[64px]'
+            )}
+            onClick={() => {
+              Router.push('/create')
+              track('mobile create button')
+            }}
+          >
+            <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
+          </button>
         </Col>
       </Col>
-    </Page>
+    </Col>
   )
 }
 function FeedTimelineContent() {

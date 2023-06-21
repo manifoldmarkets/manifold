@@ -39,8 +39,9 @@ export function FeedContractCard(props: {
   trackingPostfix?: string
   hasItems?: boolean
   item?: FeedTimelineItem
+  className?: string
 }) {
-  const { promotedData, trackingPostfix, hasItems, item } = props
+  const { promotedData, trackingPostfix, hasItems, item, className } = props
   const user = useUser()
 
   const contract =
@@ -78,6 +79,7 @@ export function FeedContractCard(props: {
           item={item}
           trackClick={trackClick}
           user={user}
+          className={className}
         />
       ) : (
         <DetailedCard
@@ -86,6 +88,7 @@ export function FeedContractCard(props: {
           user={user}
           promotedData={promotedData}
           item={item}
+          className={className}
         />
       )}
     </div>
@@ -97,15 +100,16 @@ function SimpleCard(props: {
   trackClick: () => void
   user: User | null | undefined
   item?: FeedTimelineItem
+  className?: string
 }) {
-  const { contract, user, trackClick, item } = props
+  const { contract, user, trackClick, item, className } = props
   const { question, outcomeType, mechanism, closeTime, isResolved } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
 
   return (
-    <Row>
+    <Row className={clsx(className)}>
       <Col className="justify-end">
         <div className="dark:border-ink-200 border-ink-300 ml-2 h-1/3 w-4 rounded-tl-xl border-2 border-b-0 border-r-0 sm:ml-4 sm:w-6" />
       </Col>
@@ -180,8 +184,9 @@ function DetailedCard(props: {
   user: User | null | undefined
   promotedData?: { adId: string; reward: number }
   item?: FeedTimelineItem
+  className?: string
 }) {
-  const { user, contract, trackClick, promotedData, item } = props
+  const { user, contract, trackClick, promotedData, item, className } = props
   const {
     closeTime,
     isResolved,
@@ -203,6 +208,7 @@ function DetailedCard(props: {
   return (
     <div
       className={clsx(
+        className,
         'relative rounded-xl',
         'bg-canvas-0 group flex cursor-pointer flex-col overflow-hidden',
         'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border outline-none transition-colors'
@@ -215,7 +221,7 @@ function DetailedCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Row className="grow gap-2 py-2 px-3">
+      <Row className={clsx('grow gap-2 py-2 px-3')}>
         <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
         <Col className="w-full">
           <Col className="w-full gap-2">

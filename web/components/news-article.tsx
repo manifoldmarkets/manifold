@@ -9,7 +9,8 @@ export const NewsArticle = (props: {
   url: string
   description: string
   author: string
-  published_time: number
+  published_time?: number
+  className?: string
 }) => {
   const { title, urlToImage, url, description, published_time, author } = props
 
