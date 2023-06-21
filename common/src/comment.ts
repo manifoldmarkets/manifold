@@ -42,6 +42,7 @@ export type OnContract = {
   // denormalized from bet
   betAmount?: number
   betOutcome?: string
+  betAnswerId?: string
 
   // Used to respond to another user's bet
   bettorUsername?: string
@@ -51,6 +52,7 @@ export type OnContract = {
   commenterPositionProb?: number // binary only
   commenterPositionShares?: number
   commenterPositionOutcome?: string
+  commenterPositionAnswerId?: string
 }
 
 export type OnPost = {
