@@ -29,12 +29,13 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { TopicSelector } from 'web/components/topic-selector'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import FeedTimeline from 'web/pages/feed-timeline'
-import { useABTest } from 'web/hooks/use-ab-test'
 import { NewsTopicsTabs } from 'web/components/news-topics-tabs'
 import { DailyStats } from 'web/components/daily-stats'
 import { Spacer } from 'web/components/layout/spacer'
 import { ProfileSummary } from 'web/components/nav/profile-summary'
 import { useUser } from 'web/hooks/use-user'
+import { useIsFeedTest } from 'web/hooks/use-is-feed-test'
+import MarketsHome from '../markets-home'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -54,11 +55,10 @@ export default function Home() {
 }
 
 function HomeDashboard() {
-  const isMarkets = useABTest('markets homepage', {
-    markets: true,
-    feed: true,
-  })
+  const isFeed = useIsFeedTest()
   const user = useUser()
+
+  if (!isFeed) return <MarketsHome />
 
   return (
     <Page>

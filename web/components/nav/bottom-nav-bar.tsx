@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/outline'
 import {
   DeviceMobileIcon,
+  NewspaperIcon,
   ScaleIcon,
   UserCircleIcon,
 } from '@heroicons/react/solid'
@@ -30,6 +31,7 @@ import { isIOS } from 'web/lib/util/device'
 import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { animated } from '@react-spring/web'
+import { useIsFeedTest } from 'web/hooks/use-is-feed-test'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -38,10 +40,12 @@ const itemClass =
 const selectedItemClass = 'bg-ink-100 text-primary-700'
 const touchItemClass = 'bg-primary-100'
 
-function getNavigation(user: User) {
+function getNavigation(user: User, isFeed: boolean) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Search', href: '/find', icon: SearchIcon },
+    isFeed
+      ? { name: 'Search', href: '/find', icon: SearchIcon }
+      : { name: 'News', href: '/news', icon: NewspaperIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
@@ -74,6 +78,8 @@ export function BottomNavBar() {
 
   const user = useUser()
 
+  const isFeed = !!useIsFeedTest()
+
   const [appStoreUrl, setAppStoreUrl] = useState(APPLE_APP_URL)
   useEffect(() => {
     setAppStoreUrl(isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL)
@@ -84,8 +90,9 @@ export function BottomNavBar() {
     return null
   }
 
+
   const navigationOptions = user
-    ? getNavigation(user)
+    ? getNavigation(user, isFeed)
     : signedOutNavigation(appStoreUrl)
 
   return (

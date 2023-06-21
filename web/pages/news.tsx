@@ -56,7 +56,7 @@ export default function NewsPage() {
       />
       <Col className="mx-auto w-full gap-6 pb-8 sm:px-2 lg:pr-4">
         <Row className="mx-4 mt-2 items-center justify-between gap-4">
-          <Title className="!mb-0">📰 News</Title>
+          <Title className="!mb-0">News</Title>
         </Row>
 
         <NewsTopicsTabs articlesContent={content} />
