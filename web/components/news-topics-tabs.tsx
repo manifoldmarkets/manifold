@@ -9,15 +9,22 @@ import {
   MissingSubData,
   UsElectionsData,
 } from 'web/components/news-topics-data'
+import { buildArray } from 'common/util/array'
 
-export function NewsTopicsTabs({ homeContent }: { homeContent: ReactNode }) {
-  const topics = [
-    { title: 'Home', content: homeContent },
+export function NewsTopicsTabs(props: {
+  homeContent?: ReactNode
+  articlesContent?: ReactNode
+}) {
+  const { homeContent, articlesContent } = props
+
+  const topics = buildArray(
+    !!homeContent && { title: 'Home', content: homeContent },
     { title: 'Titanic Sub', content: <MissingSubData /> },
     { title: 'Ukraine War', content: <UkraineWarData /> },
     { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
     { title: 'US Elections', content: <UsElectionsData /> },
-  ]
+    !!articlesContent && { title: 'All Articles', content: articlesContent }
+  )
 
   return (
     <Col className="mx-auto w-full gap-2 pb-8 sm:gap-6 sm:px-2 lg:pr-4">

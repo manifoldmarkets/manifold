@@ -15,6 +15,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
 import { Contract } from 'common/contract'
 import { SimpleContractRow } from 'web/components/simple-contract-row'
+import { NewsTopicsTabs } from 'web/components/news-topics-tabs'
 
 export default function NewsPage() {
   useTracking('view news page')
@@ -55,11 +56,11 @@ export default function NewsPage() {
         description="Breaking news meets the wisdom of the market"
       />
       <Col className="mx-auto w-full gap-6 pb-8 sm:px-2 lg:pr-4">
-        <Row className="mx-4 mb-2 items-center justify-between gap-4">
-          <Title className="!mb-0">News</Title>
+        <Row className="mx-4 mt-2 items-center justify-between gap-4">
+          <Title className="!mb-0">📰 News</Title>
         </Row>
 
-        <Col className={clsx('gap-6')}>{content}</Col>
+        <NewsTopicsTabs articlesContent={content} />
       </Col>
     </Page>
   )
