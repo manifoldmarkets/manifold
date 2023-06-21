@@ -15,7 +15,6 @@ import {
 import { formatMoney, formatPercent } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS, MINUTE_MS } from 'common/util/time'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
 import { APIError, placeBet } from 'web/lib/firebase/api'
 import { User } from 'web/lib/firebase/users'
@@ -65,7 +64,7 @@ export default function LimitOrderPanel(props: {
   }
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [lowLimitProb, setLowLimitProb] = useState<number>(
     isPseudoNumeric ? contract.min : 10
   )
@@ -295,10 +294,7 @@ export default function LimitOrderPanel(props: {
   return (
     <Col className={clsx(className, hidden && 'hidden')}>
       <Row className="mb-4 items-center justify-between">
-        <div>
-          Place a limit order{' '}
-          <InfoTooltip text="Limit orders let you place an order to buy at a specific probability which other users can bet against" />
-        </div>
+        <div>Limit orders</div>
 
         <OrderBookButton
           limitBets={unfilledBetsMatchingAnswer}

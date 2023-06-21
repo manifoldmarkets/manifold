@@ -53,12 +53,12 @@ export function TopicSelectorDialog(props: {
 
   const closeDialog = () => {
     if (setOpen) {
-      user ? updateUserEmbedding({ userId: user.id }) : noop
+      user ? updateUserEmbedding() : noop
       onFinishSelectingTopics?.(userSelectedTopics ?? [])
       setOpen(false)
     } else if (user) {
       setIsLoading(true)
-      updateUserEmbedding({ userId: user.id }).then(() => {
+      updateUserEmbedding().then(() => {
         // Reload to recompute feed!
         window.location.reload()
       })
@@ -76,7 +76,7 @@ export function TopicSelectorDialog(props: {
       <Col className="h-[32rem] overflow-y-auto">
         <div className="bg-canvas-0 sticky top-0 py-4 px-6">
           <p className="text-primary-700 mb-2 text-2xl">What interests you?</p>
-          <p>Select at least 3 topics to personalize your feed</p>
+          <p>Select at least 1 topic to personalize your feed</p>
         </div>
 
         {Object.keys(TOPICS_TO_SUBTOPICS).map((topic) => (
@@ -120,7 +120,7 @@ export function TopicSelectorDialog(props: {
           <span className="pointer-events-auto ml-auto inline-flex p-6 pt-2">
             <Button
               onClick={closeDialog}
-              disabled={(userSelectedTopics ?? []).length <= 2}
+              disabled={(userSelectedTopics ?? []).length <= 0}
               loading={isLoading}
             >
               Done

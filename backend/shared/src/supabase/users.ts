@@ -89,63 +89,18 @@ export const getUsersWithSimilarInterestVectorToNews = async (
   )
 }
 
-export const populateNewUsersFeedFromEmbeddings = async (
+export const repopulateNewUsersFeedFromEmbeddings = async (
   userId: string,
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  welcomeTopicSelection: boolean
 ) => {
   await pg.tx(async (t) => {
-    await t.none('SET LOCAL ivfflat.probes = $1', [20])
-    const similarUsersWithFeedItems = await t.manyOrNone<{
-      user_id: string
-      feed_count: number
-      distance: number
-    }>(
+    await t.none('SET LOCAL ivfflat.probes = $1', [
+      welcomeTopicSelection ? 20 : 10,
+    ])
+
+    const relatedFeedItems = await t.manyOrNone<Row<'user_feed'>>(
       `
-          WITH ordered_users AS (
-              SELECT user_embeddings.user_id,
-                     (user_embeddings.interest_embedding <=> (
-                         SELECT interest_embedding
-                         FROM user_embeddings
-                         WHERE user_id = $1
-                     )) AS distance
-              FROM user_embeddings
-              WHERE user_id != $1 AND
-                      (user_embeddings.interest_embedding <=> (
-                          SELECT interest_embedding
-                          FROM user_embeddings
-                          WHERE user_id = $1
-                      )) < $2
-              ORDER BY distance
-              LIMIT 100
-          ),
-           ordered_users_with_feed_counts AS (
-               SELECT ordered_users.user_id,
-                      COUNT(DISTINCT user_feed.contract_id) AS feed_count,
-                      ordered_users.distance
-               FROM ordered_users
-                        LEFT JOIN user_feed ON ordered_users.user_id = user_feed.user_id
-               where user_feed.created_time > now() - interval '5 days'
-               GROUP BY ordered_users.user_id, ordered_users.distance
-               HAVING COUNT(DISTINCT user_feed.contract_id) > 30
-               )
-          SELECT *
-          FROM ordered_users_with_feed_counts
-          ORDER BY distance;
-      `,
-      [userId, USER_TO_USER_DISTANCE_THRESHOLD]
-    )
-    const similarUsers = similarUsersWithFeedItems.length > 0
-    if (similarUsers) {
-      log(
-        'found similar user with feed items:',
-        similarUsersWithFeedItems[0].user_id,
-        'to user',
-        userId
-      )
-    }
-    const similarUsersFeedItems = !similarUsers
-      ? await t.many<Row<'user_feed'>>(
-          `
               WITH user_embedding AS (
                   SELECT interest_embedding
                   FROM user_embeddings
@@ -156,44 +111,30 @@ export const populateNewUsersFeedFromEmbeddings = async (
                           (SELECT interest_embedding FROM user_embedding) <=> embedding AS distance
                    FROM contract_embeddings
                    ORDER BY distance
-                   LIMIT 50
-               ),
-               interesting_contracts_ordered AS (
-                   SELECT interesting_contracts.contract_id,
-                          ((data->'lastUpdatedTime')::numeric) AS last_updated_time
-                   FROM interesting_contracts
-                            JOIN contracts ON contracts.id = interesting_contracts.contract_id
-                   ORDER BY last_updated_time DESC
+                   LIMIT $2
                ),
                filtered_user_feed AS (
                    SELECT *
                    FROM user_feed
-                   WHERE contract_id IN (SELECT contract_id FROM interesting_contracts_ordered)
-                   and created_time > now() - interval '5 days'
+                   WHERE contract_id IN (SELECT contract_id FROM interesting_contracts)
+                   and created_time > now() - interval '7 days'
                )
               SELECT DISTINCT ON (contract_id) *
               FROM filtered_user_feed
               ORDER BY contract_id, created_time DESC;
           `,
-          [userId]
-        )
-      : await t.many<Row<'user_feed'>>(
-          `
-         SELECT *
-         FROM user_feed
-         WHERE user_id = $1
-         ORDER BY created_time DESC
-         LIMIT 200
-             `,
-          [similarUsersWithFeedItems[0].user_id]
-        )
-    log('found', similarUsersFeedItems.length, 'feed items to copy')
+      [userId, welcomeTopicSelection ? 500 : 100]
+    )
 
-    const updatedRows = similarUsersFeedItems.map((row) => {
+    log('found', relatedFeedItems.length, 'feed items to copy')
+    if (relatedFeedItems.length === 0) return []
+
+    const updatedRows = relatedFeedItems.map((row) => {
       // assuming you want to change the 'columnToChange' column
       const { id: __, ...newRow } = row
       newRow.user_id = userId
       newRow.is_copied = true
+      newRow.created_time = new Date().toISOString()
       return newRow
     })
     await Promise.all(
@@ -215,6 +156,6 @@ export const populateNewUsersFeedFromEmbeddings = async (
         }
       })
     )
-    return similarUsersFeedItems
+    return relatedFeedItems
   })
 }
