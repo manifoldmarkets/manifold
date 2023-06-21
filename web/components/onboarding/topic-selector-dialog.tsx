@@ -53,12 +53,12 @@ export function TopicSelectorDialog(props: {
 
   const closeDialog = () => {
     if (setOpen) {
-      user ? updateUserEmbedding({ userId: user.id }) : noop
+      user ? updateUserEmbedding() : noop
       onFinishSelectingTopics?.(userSelectedTopics ?? [])
       setOpen(false)
     } else if (user) {
       setIsLoading(true)
-      updateUserEmbedding({ userId: user.id }).then(() => {
+      updateUserEmbedding().then(() => {
         // Reload to recompute feed!
         window.location.reload()
       })

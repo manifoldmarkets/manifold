@@ -263,8 +263,8 @@ export function getSupabaseToken() {
   return call(getApiUrl('getsupabasetoken'), 'GET')
 }
 
-export function updateUserEmbedding(params: { userId: string }) {
-  return call(getApiUrl('update-user-embedding'), 'POST', params)
+export function updateUserEmbedding() {
+  return call(getApiUrl('update-user-embedding'), 'POST')
 }
 
 export function createCommentOnContract(params: {
