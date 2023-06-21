@@ -31,7 +31,7 @@ export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
   contract_probability_changed: 0.135,
   trending_contract: 0.175,
   new_contract: 0.125,
-  new_comment: 0.125,
+  new_comment: 0.1,
   news_with_related_contracts: 0.175, // used to compare user interest vector to news title embedding
   popular_comment: 0.175, // Not yet in use
   new_subsidy: 0.175,
