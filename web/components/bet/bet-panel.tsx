@@ -1,9 +1,8 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
-import { clamp, sumBy } from 'lodash'
+import { sumBy } from 'lodash'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
-import dayjs from 'dayjs'
 
 import {
   CPMMBinaryContract,
@@ -25,19 +24,13 @@ import { User } from 'web/lib/firebase/users'
 import { LimitBet } from 'common/bet'
 import { APIError, placeBet } from 'web/lib/firebase/api'
 import { BuyAmountInput } from '../widgets/amount-input'
-import {
-  BinaryOutcomeLabel,
-  HigherLabel,
-  LowerLabel,
-  NoLabel,
-  YesLabel,
-} from '../outcome-label'
+
+
 import { useFocus } from 'web/hooks/use-focus'
 import { useUnfilledBetsAndBalanceByUserId } from '../../hooks/use-bets'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
-import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { track } from 'web/lib/service/analytics'
-import { YourOrders, OrderBookButton } from './limit-bets'
+import { YourOrders } from './limit-bets'
 import { YesNoSelector } from './yes-no-selector'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
@@ -45,15 +38,10 @@ import { Button } from '../buttons/button'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
 import { getStonkShares, STONK_NO, STONK_YES } from 'common/stonk'
-import { Input } from 'web/components/widgets/input'
-import { DAY_MS, MINUTE_MS } from 'common/util/time'
 import { Answer } from 'common/answer'
-import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
-import { getProbability } from 'common/calculate'
+import { getCpmmProbability } from 'common/calculate-cpmm'
 import { removeUndefinedProps } from 'common/util/object'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
-import Slider from 'rc-slider'
-import { LimitSlider } from './limit-slider'
 import LimitOrderPanel from './limit-order-panel'
 
 export type binaryOutcomes = 'YES' | 'NO' | undefined

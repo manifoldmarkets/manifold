@@ -1,10 +1,6 @@
 import clsx from 'clsx'
-import {
-  CPMMBinaryContract,
-  CPMMMultiContract,
-  PseudoNumericContract,
-  StonkContract,
-} from 'common/contract'
+
+
 import Slider from 'rc-slider'
 import { useEffect, useRef, useState } from 'react'
 import { useWindowSize } from 'web/hooks/use-window-size'
