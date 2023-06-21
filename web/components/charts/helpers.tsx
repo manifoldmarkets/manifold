@@ -51,8 +51,6 @@ export const YAxis = <Y,>(props: {
   const { w, h, axis, negativeThreshold = 0 } = props
   const axisRef = useRef<SVGGElement>(null)
 
-  const [showTooltip, setShowTooltip] = useState(false)
-
   useEffect(() => {
     if (axisRef.current != null) {
       select(axisRef.current)
@@ -74,12 +72,6 @@ export const YAxis = <Y,>(props: {
                 .select('text') // Change font of the text
                 .style('font-weight', 'bold') // Adjust this to your needs
                 .attr('fill', color)
-                .on('mouseover', function () {
-                  setShowTooltip(true)
-                })
-                .on('mouseout', function () {
-                  setShowTooltip(false)
-                })
             } else {
               tick
                 .select('line')
@@ -94,14 +86,7 @@ export const YAxis = <Y,>(props: {
     }
   }, [w, h, axis, negativeThreshold])
 
-  return (
-    <>
-      <g ref={axisRef} transform={`translate(${w}, 0)`} />
-      <div className="bg-red-500 text-lg">
-        value at the beginning of the week
-      </div>
-    </>
-  )
+  return <g ref={axisRef} transform={`translate(${w}, 0)`} />
 }
 
 export const LinePath = <P,>(

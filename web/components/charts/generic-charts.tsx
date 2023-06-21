@@ -345,19 +345,19 @@ export const ControllableSingleValueHistoryChart = <
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
     const nTicks = noAxes ? 0 : h < 200 ? 3 : 5
-    const pctTickValues = noAxes
+    const customTickValues = noAxes
       ? []
       : getTickValues(min, max, nTicks, negativeThreshold)
     const xAxis = axisBottom<Date>(xScale).ticks(noAxes ? 0 : w / 100)
     const yAxis =
       yKind === 'percent'
         ? axisRight<number>(yScale)
-            .tickValues(pctTickValues)
+            .tickValues(customTickValues)
             .tickFormat((n) => formatPct(n))
         : yKind === 'Ṁ'
         ? negativeThreshold
           ? axisRight<number>(yScale)
-              .tickValues(pctTickValues)
+              .tickValues(customTickValues)
               .tickFormat((n) => formatMoneyNumber(n))
           : axisRight<number>(yScale)
               .ticks(nTicks)
