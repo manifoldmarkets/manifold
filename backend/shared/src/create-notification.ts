@@ -22,7 +22,7 @@ import { getPrivateUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
 import { groupBy, keyBy, mapValues, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
-import { DpmAnswer } from 'common/answer'
+import { Answer, DpmAnswer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { Group } from 'common/group'
 import {
@@ -602,6 +602,10 @@ export const createBetFillNotification = async (
     contract.outcomeType === 'PSEUDO_NUMERIC'
       ? limitBet.limitProb * (contract.max - contract.min) + contract.min
       : Math.round(limitBet.limitProb * 100) + '%'
+  const betAnswer =
+    'answers' in contract
+      ? (contract.answers as Answer[]).find((a) => a.id === bet.answerId)?.text
+      : undefined
 
   const notification: Notification = {
     id: idempotencyKey,
@@ -622,6 +626,7 @@ export const createBetFillNotification = async (
     sourceContractId: contract.id,
     data: {
       betOutcome: bet.outcome,
+      betAnswer,
       creatorOutcome: limitBet.outcome,
       fillAmount,
       probability: limitBet.limitProb,
