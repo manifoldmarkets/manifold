@@ -20,8 +20,16 @@ import { MINUTE_MS } from 'common/util/time'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
+import { Page } from 'web/components/layout/page'
 
-export default function FeedTimeline() {
+export default function FeedTimelinePage() {
+  return (
+    <Page>
+      <FeedTimeline />
+    </Page>
+  )
+}
+export function FeedTimeline() {
   return (
     <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
       <Col className={clsx('gap-6')}>
