@@ -90,7 +90,6 @@ export function BottomNavBar() {
     return null
   }
 
-
   const navigationOptions = user
     ? getNavigation(user, isFeed)
     : signedOutNavigation(appStoreUrl)
