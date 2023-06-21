@@ -13,14 +13,12 @@ import {
   useId,
   useMemo,
   useRef,
-  useState,
 } from 'react'
 
 import { Margin } from 'common/chart'
 import { Contract } from 'common/contract'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
-import { Tooltip } from '../widgets/tooltip'
 
 export interface ContinuousScale<T> extends AxisScale<T> {
   invert(n: number): T
