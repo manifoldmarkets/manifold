@@ -1,7 +1,6 @@
 import { authEndpoint, validate } from './helpers'
 import { updateUserDisinterestEmbeddingInternal } from 'shared/helpers/embeddings'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { repopulateNewUsersFeedFromEmbeddings } from 'shared/supabase/users'
 import { z } from 'zod'
 
 const bodySchema = z.object({
