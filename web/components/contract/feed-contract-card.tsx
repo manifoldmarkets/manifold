@@ -38,11 +38,10 @@ export function FeedContractCard(props: {
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
-  className?: string
   hasItems?: boolean
   item?: FeedTimelineItem
 }) {
-  const { className, promotedData, trackingPostfix, hasItems, item } = props
+  const { promotedData, trackingPostfix, hasItems, item } = props
   const user = useUser()
 
   const contract =
@@ -50,7 +49,8 @@ export function FeedContractCard(props: {
       props.contract.visibility,
       props.contract.id
     ) ?? props.contract
-  const { closeTime, isResolved } = contract
+
+  // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 
   const { ref } = useIsVisible(
     () =>
@@ -71,104 +71,81 @@ export function FeedContractCard(props: {
       isPromoted: !!promotedData,
     })
 
-  const isClosed = closeTime && closeTime < Date.now()
-  const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
-  const path = contractPath(contract)
-
-  if (!hasItems) {
-    return (
-      <Col>
+  return (
+    <div ref={ref}>
+      {hasItems ? (
+        <SimpleCard
+          contract={contract}
+          item={item}
+          trackClick={trackClick}
+          user={user}
+        />
+      ) : (
         <DetailedCard
-          ref={ref}
           contract={contract}
           trackClick={trackClick}
-          path={path}
           user={user}
           promotedData={promotedData}
-          className={className}
-          hasItems={hasItems}
           item={item}
         />
-      </Col>
-    )
-  }
-  return (
-    <SimpleCard
-      contract={contract}
-      item={item}
-      textColor={textColor}
-      trackClick={trackClick}
-      promotedData={promotedData}
-      user={user}
-      ref={ref}
-    />
+      )}
+    </div>
   )
 }
 
 function SimpleCard(props: {
-  ref: MutableRefObject<HTMLDivElement | null>
   contract: Contract
-  textColor: string
   trackClick: () => void
   user: User | null | undefined
   item?: FeedTimelineItem
-  promotedData?: { adId: string; reward: number }
 }) {
-  const { contract, user, textColor, trackClick, item, ref } = props
-  const { question, outcomeType, mechanism } = contract
+  const { contract, user, trackClick, item } = props
+  const { question, outcomeType, mechanism, closeTime, isResolved } = contract
+  const isClosed = closeTime && closeTime < Date.now()
+  const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
+
   return (
     <Row>
-      <Col className=" grow-y justify-end">
+      <Col className="justify-end">
         <div className="dark:border-ink-200 border-ink-300 ml-2 h-1/3 w-4 rounded-tl-xl border-2 border-b-0 border-r-0 sm:ml-4 sm:w-6" />
       </Col>
-      <Col className="mt-2 grow">
-        <Col
-          className={clsx(
-            'relative',
-            'bg-canvas-0 border-ink-200 p group justify-between gap-2 overflow-hidden border-l-4 border-b pl-2 pr-4 pt-2 pb-3',
-            'outline-none transition-colors'
-          )}
-        >
-          <Row className="w-full justify-between gap-4">
-            <Row className="items-center gap-2">
-              <Col className="h-full justify-start">
-                <Avatar
-                  username={contract.creatorUsername}
-                  avatarUrl={contract.creatorAvatarUrl}
-                  size="2xs"
-                  className="mt-1"
-                />
-              </Col>
-              <Link
-                className={clsx(
-                  'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
-                  textColor
-                )}
-                onClick={trackClick}
-                href={contractPath(contract)}
-              >
-                {question}
-              </Link>
-            </Row>
-          </Row>
-
-          <Row
-            ref={ref}
-            className="text-ink-500 w-full items-center gap-3 text-sm"
+      <Col
+        className={
+          'bg-canvas-0 border-ink-200 mt-2 grow justify-between gap-2 overflow-hidden border-l-4 border-b pl-2 pr-4 pt-2 pb-3'
+        }
+      >
+        <Row className="w-full items-start gap-2">
+          <Avatar
+            username={contract.creatorUsername}
+            avatarUrl={contract.creatorAvatarUrl}
+            size="2xs"
+            className="mt-1"
+          />
+          <Link
+            className={clsx(
+              'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
+              textColor
+            )}
+            onClick={trackClick}
+            href={contractPath(contract)}
           >
-            <QuickOutcomeView
-              contract={contract}
-              showChange={
-                item?.dataType === 'contract_probability_changed' ||
-                item?.dataType === 'trending_contract'
-              }
-              size="sm"
-            />
+            {question}
+          </Link>
+        </Row>
 
-            {isBinaryCpmm && <BetRow contract={contract} user={user} />}
-          </Row>
-        </Col>
+        <Row className="text-ink-500 w-full items-center gap-3 text-sm">
+          <QuickOutcomeView
+            contract={contract}
+            showChange={
+              item?.dataType === 'contract_probability_changed' ||
+              item?.dataType === 'trending_contract'
+            }
+            size="sm"
+          />
+
+          {isBinaryCpmm && <BetRow contract={contract} user={user} />}
+        </Row>
       </Col>
     </Row>
   )
@@ -199,27 +176,13 @@ function ReasonIcon(props: { item?: FeedTimelineItem }) {
 }
 
 function DetailedCard(props: {
-  ref: MutableRefObject<HTMLDivElement | null>
   contract: Contract
   trackClick: () => void
-  path: string
   user: User | null | undefined
   promotedData?: { adId: string; reward: number }
-  className?: string
-  hasItems?: boolean
   item?: FeedTimelineItem
 }) {
-  const {
-    ref,
-    user,
-    contract,
-    trackClick,
-    path,
-    promotedData,
-    className,
-    hasItems,
-    item,
-  } = props
+  const { user, contract, trackClick, promotedData, item } = props
   const {
     closeTime,
     isResolved,
@@ -235,14 +198,15 @@ function DetailedCard(props: {
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
 
+  const path = contractPath(contract)
+
   const metrics = useSavedContractMetrics(contract)
   return (
     <div
       className={clsx(
         'relative rounded-xl',
         'bg-canvas-0 group flex cursor-pointer flex-col overflow-hidden',
-        'border-canvas-0 hover:border-primary-300 border outline-none transition-colors ',
-        className
+        'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border outline-none transition-colors'
       )}
       // we have other links inside this card like the username, so can't make the whole card a button or link
       tabIndex={-1}
@@ -295,7 +259,7 @@ function DetailedCard(props: {
           )}
         </Row>
 
-        <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
+        <Row className="text-ink-500 items-center gap-3 text-sm">
           <QuickOutcomeView
             contract={contract}
             showChange={
@@ -337,11 +301,6 @@ function DetailedCard(props: {
           </div>
         </Row>
       </Col>
-      {hasItems && (
-        <div className=" w-full">
-          <hr className="border-ink-200 mx-auto w-[calc(100%-1rem)]" />
-        </div>
-      )}
     </div>
   )
 }

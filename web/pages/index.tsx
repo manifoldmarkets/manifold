@@ -252,13 +252,9 @@ const ContractsSection = memo(function ContractsSection(props: {
 }) {
   const { contracts, className } = props
   return (
-    <Col className={clsx('max-w-2xl', className)}>
+    <Col className={clsx('max-w-2xl gap-2', className)}>
       {contracts.map((contract) => (
-        <FeedContractCard
-          key={contract.id}
-          contract={contract}
-          className="my-2"
-        />
+        <FeedContractCard key={contract.id} contract={contract} />
       ))}
     </Col>
   )
