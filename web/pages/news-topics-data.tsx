@@ -4,7 +4,7 @@ import { useContracts } from 'web/hooks/use-contract-supabase'
 import { SimpleContractRow } from 'web/components/simple-contract-row'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { NewsArticleOriginal } from 'web/components/news-article-original'
-import { Container } from 'web/components/widgets/container'
+import { NewsTopicsContentContainer } from 'web/components/widgets/news-topics-content-container'
 import Link from 'next/link'
 
 export const UkraineWarData = () => {
@@ -35,16 +35,14 @@ export const UkraineWarData = () => {
           author="NBC News"
           published_time={Date.UTC(2023, 5, 20, 12)}
         />
-        <Container
+
+        <NewsTopicsContentContainer
           header="New Markets"
           containerContent={
             <>
               {contracts &&
-                newMarkets.length > 0 &&
                 newMarkets.map((contract) => (
-                  <>
-                    <SimpleContractRow key={contract.id} contract={contract} />
-                  </>
+                  <SimpleContractRow key={contract.id} contract={contract} />
                 ))}
             </>
           }
@@ -75,7 +73,7 @@ export const RedditBlackoutData = () => {
   return (
     <Col>
       <NewsGrid>
-        <Container
+        <NewsTopicsContentContainer
           header="Summary"
           containerContent={
             <ul className="ml-6 list-disc">
@@ -142,7 +140,7 @@ export const MissingSubData = () => {
   return (
     <Col>
       <NewsGrid>
-        <Container
+        <NewsTopicsContentContainer
           header="Summary"
           containerContent={
             <ul className="ml-6 list-disc">
@@ -223,12 +221,11 @@ export const UsElectionsData = () => {
           description="Former allies pile criticism on Donald Trump over Mar-a-Lago classified documents indictment ahead of 2024 election"
           author="Independent"
         />
-        <Container
+        <NewsTopicsContentContainer
           header="New Markets"
           containerContent={
             <>
               {contracts &&
-                newMarkets.length > 0 &&
                 newMarkets.map((contract) => (
                   <>
                     <SimpleContractRow key={contract.id} contract={contract} />
