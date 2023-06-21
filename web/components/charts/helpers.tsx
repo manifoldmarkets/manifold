@@ -82,7 +82,7 @@ export const YAxis = <Y,>(props: {
         .call((g) =>
           g.selectAll('.tick').each(function (d) {
             const tick = select(this)
-            if (d === negativeThreshold) {
+            if (negativeThreshold && d === negativeThreshold) {
               tick
                 .select('line') // Change stroke of the line
                 .attr('x2', w)
@@ -93,8 +93,6 @@ export const YAxis = <Y,>(props: {
               tick
                 .select('text') // Change font of the text
                 .style('font-weight', 'bold') // Adjust this to your needs
-                .append('title') // Adding a tooltip
-                .text('value at the start of this week')
             } else {
               tick
                 .select('line')

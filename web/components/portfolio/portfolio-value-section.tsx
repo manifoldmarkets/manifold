@@ -173,7 +173,9 @@ export const PortfolioValueSection = memo(
                   height={height}
                   viewScaleProps={graphView}
                   onMouseOver={handleGraphDisplayChange}
-                  negativeThreshold={graphPoints[0].y}
+                  negativeThreshold={
+                    graphMode == 'profit' ? graphPoints[0].y : undefined
+                  }
                 />
               )
         }
