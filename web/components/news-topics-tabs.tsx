@@ -8,7 +8,8 @@ import {
   RedditBlackoutData,
   MissingSubData,
   UsElectionsData,
-} from 'web/pages/news-topics-data'
+} from 'web/components/news-topics-data'
+
 
 export function NewsTopicsTabs({ homeContent }: { homeContent: ReactNode }) {
   const topics = [
