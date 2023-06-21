@@ -184,6 +184,28 @@ create index if not exists user_reactions_content_id on user_reactions (
 alter table user_reactions
 cluster on user_reactions_type;
 
+
+create table if not exists
+    user_share_events (
+                          id bigint generated always as identity primary key,
+                          created_time timestamptz not null default now(),
+                          user_id text not null,
+                          contract_id text null,
+                          comment_id text null
+);
+
+alter table user_share_events enable row level security;
+
+drop policy if exists "public read" on user_share_events;
+
+create policy "public read" on user_share_events for
+    select
+    using (true);
+
+create index if not exists user_share_events_user_id on user_share_events (user_id);
+alter table user_share_events
+    cluster on user_share_events_user_id;
+
 create table if not exists
     user_disinterests (
         id bigint generated always as identity primary key,
@@ -206,6 +228,8 @@ create policy "public read" on user_disinterests for
 create index if not exists user_disinterests_user_id on user_disinterests (user_id);
 create index if not exists user_disinterests_user_id_contract_id on user_disinterests (user_id, contract_id);
 
+alter table user_disinterests
+    cluster on user_disinterests_user_id;
 
 create table if not exists
   user_events (
@@ -361,9 +385,9 @@ create index if not exists user_feed_data_gin on user_feed using GIN (data);
 
 create index if not exists user_feed_created_time on user_feed (user_id, created_time desc);
 
-create index if not exists user_feed_unseen_created_time on user_feed (
+create index concurrently if not exists user_feed_user_id_contract_id_created_time on user_feed (
   user_id,
-  seen_time desc nulls first,
+  contract_id,
   created_time desc
 );
 

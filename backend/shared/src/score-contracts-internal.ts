@@ -29,7 +29,7 @@ const getContractTraders = async (pg: SupabaseDirectClient, since: number) => {
     )
   )
 }
-export const MINUTE_INTERVAL = 10
+export const MINUTE_INTERVAL = 15
 export async function scoreContractsInternal(
   firestore: FirebaseFirestore.Firestore,
   db: SupabaseClient,
