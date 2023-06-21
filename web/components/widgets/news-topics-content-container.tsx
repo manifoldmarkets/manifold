@@ -3,7 +3,7 @@ import { Subtitle } from 'web/components/widgets/subtitle'
 import clsx from 'clsx'
 import { Col } from '../layout/col'
 
-export const Container = (props: {
+export const NewsTopicsContentContainer = (props: {
   className?: string
   containerContent: ReactNode
   header?: string

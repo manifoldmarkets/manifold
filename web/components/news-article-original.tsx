@@ -35,7 +35,7 @@ export const NewsArticleOriginal = (props: {
         className={'absolute inset-0 z-10'}
         href={url}
         target="_blank"
-        onClick={() => track('click news article', { article: url })}
+        onClick={() => track('click news article', { article: title })}
       />
 
       <Col className="bg-canvas-0 border-ink-300 rounded-b-lg border border-t-0 p-2 hover:underline">
