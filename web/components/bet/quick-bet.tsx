@@ -629,10 +629,10 @@ function getNumericScale(contract: NumericContract) {
 }
 
 const OUTCOME_TO_COLOR_BAR = {
-  YES: 'bg-teal-200',
-  NO: 'bg-scarlet-200',
-  CANCEL: 'bg-ink-200',
-  MKT: 'bg-sky-200',
+  YES: 'bg-teal-500 bg-opacity-20',
+  NO: 'bg-scarlet-500 bg-opacity-20',
+  CANCEL: 'bg-ink-500 bg-opacity-20',
+  MKT: 'bg-sky-500 bg-opacity-20',
 }
 
 export function getBarColor(contract: Contract) {
@@ -650,10 +650,10 @@ export function getBarColor(contract: Contract) {
 }
 
 const OUTCOME_TO_COLOR_BACKGROUND = {
-  YES: 'bg-teal-100',
-  NO: 'bg-scarlet-100',
-  CANCEL: 'bg-ink-100',
-  MKT: 'bg-sky-100',
+  YES: 'bg-teal-200 bg-opacity-20',
+  NO: 'bg-scarlet-200 bg-opacity-20',
+  CANCEL: 'bg-ink-200 bg-opacity-20',
+  MKT: 'bg-sky-200 bg-opacity-20',
 }
 
 export function getBgColor(contract: Contract) {
@@ -667,10 +667,10 @@ export function getBgColor(contract: Contract) {
 }
 
 const OUTCOME_TO_COLOR_TEXT = {
-  YES: 'text-teal-600',
-  NO: 'text-scarlet-600',
+  YES: 'text-teal-600 dark:text-teal-100',
+  NO: 'text-scarlet-600 dark:text-scarlet-100',
   CANCEL: 'text-ink-400',
-  MKT: 'text-sky-600',
+  MKT: 'text-sky-600 dark:text-sky-100',
 }
 
 export function getTextColor(contract: Contract) {

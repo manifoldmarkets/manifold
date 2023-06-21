@@ -215,16 +215,35 @@ function DetailedCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Col className="gap-2 p-1">
-        {/* Title is link to contract for open in new tab and a11y */}
-        <Row className="justify-between">
-          <Row onClick={(e) => e.stopPropagation()} className=" gap-2">
-            <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
-            <Col className="w-full gap-1">
+      <Row className="grow gap-2 py-2 px-3">
+        <Avatar username={creatorUsername} avatarUrl={creatorAvatarUrl} />
+        <Col className="w-full">
+          <Col className="w-full gap-2">
+            {/* Title is link to contract for open in new tab and a11y */}
+            <Col onClick={(e) => e.stopPropagation()} className="w-full gap-1">
+              <Row className="grow justify-between">
+                <Row className="items-center gap-1 whitespace-nowrap text-sm">
+                  <UserLink
+                    name={creatorName}
+                    username={creatorUsername}
+                    createdTime={creatorCreatedTime}
+                    className={'overflow-none flex-shrink '}
+                  />
+                  asked
+                  <span className="text-ink-400 text-sm">
+                    {fromNow(contract.createdTime)}
+                  </span>
+                </Row>
+                {promotedData ? (
+                  <ClaimButton {...promotedData} className={'z-10'} />
+                ) : (
+                  !item?.isCopied && <ReasonIcon item={item} />
+                )}
+              </Row>
               <Link
                 href={path}
                 className={clsx(
-                  'text-lg',
+                  'text-md sm:text-lg',
                   'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
                   textColor
                 )}
@@ -236,70 +255,52 @@ function DetailedCard(props: {
               >
                 {question}
               </Link>
-              <Row className="items-center gap-1 whitespace-nowrap text-sm">
-                <UserLink
-                  name={creatorName}
-                  username={creatorUsername}
-                  createdTime={creatorCreatedTime}
-                  className={'overflow-none flex-shrink '}
-                />
-                asked
-                <span className="text-ink-400 text-sm">
-                  {fromNow(contract.createdTime)}
-                </span>
-              </Row>
             </Col>
-          </Row>
 
-          {promotedData ? (
-            <ClaimButton {...promotedData} className={'z-10'} />
-          ) : (
-            !item?.isCopied && <ReasonIcon item={item} />
-          )}
-        </Row>
+            <Row className="text-ink-500 items-center gap-3 text-sm">
+              <QuickOutcomeView
+                contract={contract}
+                showChange={
+                  item?.dataType === 'contract_probability_changed' ||
+                  item?.dataType === 'trending_contract'
+                }
+                size="sm"
+              />
 
-        <Row className="text-ink-500 items-center gap-3 text-sm">
-          <QuickOutcomeView
-            contract={contract}
-            showChange={
-              item?.dataType === 'contract_probability_changed' ||
-              item?.dataType === 'trending_contract'
-            }
-            size="sm"
-          />
+              {isBinaryCpmm && <BetRow contract={contract} user={user} />}
+            </Row>
 
-          {isBinaryCpmm && <BetRow contract={contract} user={user} />}
-        </Row>
+            {isBinaryCpmm && metrics && metrics.hasShares && (
+              <YourMetricsFooter metrics={metrics} />
+            )}
+          </Col>
 
-        {isBinaryCpmm && metrics && metrics.hasShares && (
-          <YourMetricsFooter metrics={metrics} />
-        )}
-      </Col>
-
-      <Col className="relative">
-        <Row
-          className="justify-between px-4 py-1"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <TradesButton contract={contract} />
-          <CommentsButton contract={contract} user={user} />
-          <div className="flex items-center gap-1.5 p-1">
-            <LikeButton
-              contentId={contract.id}
-              contentCreatorId={contract.creatorId}
-              user={user}
-              contentType={'contract'}
-              totalLikes={contract.likedByUserCount ?? 0}
-              contract={contract}
-              contentText={question}
-              size="md"
-              color="gray"
-              className="!px-0"
-              trackingLocation={'contract card (feed)'}
-            />
-          </div>
-        </Row>
-      </Col>
+          <Col className="relative">
+            <Row
+              className="justify-between pt-1"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <TradesButton contract={contract} />
+              <CommentsButton contract={contract} user={user} />
+              <div className="flex items-center gap-1.5 p-1">
+                <LikeButton
+                  contentId={contract.id}
+                  contentCreatorId={contract.creatorId}
+                  user={user}
+                  contentType={'contract'}
+                  totalLikes={contract.likedByUserCount ?? 0}
+                  contract={contract}
+                  contentText={question}
+                  size="md"
+                  color="gray"
+                  className="!px-0"
+                  trackingLocation={'contract card (feed)'}
+                />
+              </div>
+            </Row>
+          </Col>
+        </Col>
+      </Row>
     </div>
   )
 }
