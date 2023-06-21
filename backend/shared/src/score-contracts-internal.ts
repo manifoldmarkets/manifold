@@ -15,21 +15,8 @@ import { removeUndefinedProps } from 'common/util/object'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { BOT_USERNAMES } from 'common/envs/constants'
 
-const getContractTraders = async (pg: SupabaseDirectClient, since: number) => {
-  return Object.fromEntries(
-    await pg.map(
-      `select cb.contract_id, count(distinct cb.user_id)::int as n
-       from contract_bets cb
-                join users u on cb.user_id = u.id
-       where cb.created_time >= millis_to_ts($1)
-         and u.username <> ANY(ARRAY[$2])
-       group by cb.contract_id`,
-      [since, BOT_USERNAMES],
-      (r) => [r.contract_id as string, r.n as number]
-    )
-  )
-}
 export const MINUTE_INTERVAL = 15
+
 export async function scoreContractsInternal(
   firestore: FirebaseFirestore.Firestore,
   db: SupabaseClient,
@@ -40,6 +27,7 @@ export async function scoreContractsInternal(
   const hourAgo = now - HOUR_MS
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
+
   const activeContracts = await loadPaginated(
     firestore
       .collection('contracts')
@@ -71,29 +59,22 @@ export async function scoreContractsInternal(
   const thisWeekTradersByContract = await getContractTraders(pg, weekAgo)
 
   for (const contract of contracts) {
-    const todayScore =
-      (todayLikesByContract[contract.id] ?? 0) +
-      (todayTradersByContract[contract.id] ?? 0)
-    const thisWeekScore =
-      (thisWeekLikesByContract[contract.id] ?? 0) +
-      (thisWeekTradersByContract[contract.id] ?? 0)
-    const thisWeekScoreWeight = thisWeekScore / 10
-    const popularityScore = todayScore + thisWeekScoreWeight
-    const freshnessScore = 1 + Math.log(1 + popularityScore)
-    const wasCreatedToday = contract.createdTime > dayAgo
+    const {
+      todayScore,
+      thisWeekScore,
+      popularityScore,
+      freshnessScore,
+      dailyScore,
+    } = computeContractScores(
+      now,
+      contract,
+      todayLikesByContract[contract.id] ?? 0,
+      thisWeekLikesByContract[contract.id] ?? 0,
+      todayTradersByContract[contract.id] ?? 0,
+      hourAgoTradersByContract[contract.id] ?? 0,
+      thisWeekTradersByContract[contract.id] ?? 0
+    )
 
-    let dailyScore = 0
-    if (
-      contract.outcomeType === 'BINARY' &&
-      contract.mechanism === 'cpmm-1' &&
-      !wasCreatedToday
-    ) {
-      const { prob, probChanges } = contract
-      const yesterdayProb = clamp(prob - probChanges.day, 0.01, 0.99)
-      const todayProb = clamp(prob, 0.01, 0.99)
-      const logOddsChange = Math.abs(logit(yesterdayProb) - logit(todayProb))
-      dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
-    }
     // This is a newly trending contract, and should be at the top of most users' feeds
     if (todayScore > 10 && todayScore / thisWeekScore > 0.5) {
       log('inserting specifically today trending contract', contract.id)
@@ -121,6 +102,7 @@ export async function scoreContractsInternal(
         popularityScore,
       })
     }
+
     if (
       contract.popularityScore !== popularityScore ||
       contract.dailyScore !== dailyScore
@@ -148,4 +130,54 @@ export async function scoreContractsInternal(
     ['contract_id'],
     contractScoreUpdates
   )
+}
+
+const getContractTraders = async (pg: SupabaseDirectClient, since: number) => {
+  return Object.fromEntries(
+    await pg.map(
+      `select cb.contract_id, count(distinct cb.user_id)::int as n
+       from contract_bets cb
+                join users u on cb.user_id = u.id
+       where cb.created_time >= millis_to_ts($1)
+         and u.username <> ANY(ARRAY[$2])
+       group by cb.contract_id`,
+      [since, BOT_USERNAMES],
+      (r) => [r.contract_id as string, r.n as number]
+    )
+  )
+}
+
+const computeContractScores = (
+  now: number,
+  contract: Contract,
+  likesToday: number,
+  likesWeek: number,
+  tradersToday: number,
+  traderHour: number,
+  tradersWeek: number
+) => {
+  const todayScore = likesToday + tradersToday
+  const thisWeekScore = likesWeek + tradersWeek
+  const thisWeekScoreWeight = thisWeekScore / 10
+  const popularityScore = todayScore + thisWeekScoreWeight
+  const freshnessScore = 1 + Math.log(1 + popularityScore)
+  const wasCreatedToday = contract.createdTime > now - DAY_MS
+
+  let dailyScore = 0
+
+  if (contract.mechanism === 'cpmm-1' && !wasCreatedToday) {
+    const { prob, probChanges } = contract
+    const yesterdayProb = clamp(prob - probChanges.day, 0.01, 0.99)
+    const todayProb = clamp(prob, 0.01, 0.99)
+    const logOddsChange = Math.abs(logit(yesterdayProb) - logit(todayProb))
+    dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
+  }
+
+  return {
+    todayScore,
+    thisWeekScore,
+    popularityScore,
+    freshnessScore,
+    dailyScore,
+  }
 }
