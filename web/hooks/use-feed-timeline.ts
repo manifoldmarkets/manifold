@@ -14,7 +14,6 @@ import { first, groupBy, last, sortBy, uniq, uniqBy } from 'lodash'
 import { News } from 'common/news'
 import { FEED_DATA_TYPES, FEED_REASON_TYPES, getExplanation } from 'common/feed'
 import { isContractBlocked } from 'web/lib/firebase/users'
-import { useUninterestedContracts } from 'web/hooks/use-uninterested-contracts'
 
 const PAGE_SIZE = 20
 
@@ -44,7 +43,6 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
   useEffect(() => {
     if (user) getBoosts(user.id).then(setBoosts as any)
   }, [user?.id])
-  const uninterestedContracts = useUninterestedContracts(user?.id ?? '_')
 
   const [savedFeedItems, setSavedFeedItems] = usePersistentInMemoryState<
     FeedTimelineItem[] | undefined
@@ -91,9 +89,7 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
 
     const contractIds = uniq(
       filterDefined(data.map((item) => item.contract_id)).filter(
-        (id) =>
-          !alreadySavedContractIds.includes(id) &&
-          !uninterestedContracts?.includes(id)
+        (id) => !alreadySavedContractIds.includes(id)
       )
     )
     const commentOnContractIds = uniq(
@@ -107,7 +103,7 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
     )
 
     const newsIds = uniq(filterDefined(data.map((item) => item.news_id)))
-    const [comments, contracts, news] = await Promise.all([
+    const [comments, contracts, news, ignoredContractIds] = await Promise.all([
       db
         .rpc('get_reply_chain_comments_for_comment_ids' as any, {
           comment_ids: commentOnContractIds,
@@ -132,9 +128,18 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
               } as News)
           )
         ),
+      db
+        .from('user_disinterests')
+        .select('contract_id')
+        .eq('user_id', userId)
+        .in('contract_id', contractIds)
+        .then((res) => res.data?.map((c) => c.contract_id)),
     ])
     const filteredContracts = contracts?.filter(
-      (c) => !isContractBlocked(privateUser, c) && !c.isResolved
+      (c) =>
+        !isContractBlocked(privateUser, c) &&
+        !c.isResolved &&
+        !ignoredContractIds?.includes(c.id)
     )
     const filteredComments = comments?.filter(
       (c) => !privateUser?.blockedUserIds?.includes(c.userId)
