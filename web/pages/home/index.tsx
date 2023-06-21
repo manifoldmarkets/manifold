@@ -33,33 +33,7 @@ import { TopicSelector } from 'web/components/topic-selector'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { ProfileSummary } from 'web/components/nav/profile-menu'
 import { Spacer } from 'web/components/layout/spacer'
-import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { NewsTopicsTabs } from 'web/components/news-topics-tabs'
-
-type Topic = {
-  title: string
-  content: ReactNode
-  onClick?: (event?: any) => void
-}
-
-export function TopicsTab({
-  topics,
-}: {
-  topics: Topic[]
-
-  setSelectedTab: (title: string) => void
-}) {
-  return (
-    <QueryUncontrolledTabs
-      tabs={topics.map((tab) => ({
-        ...tab,
-        onClick: () => {
-          track('news topic clicked', { tab: tab.title })
-        },
-      }))}
-    />
-  )
-}
 
 export default function Home() {
   const isClient = useIsClient()

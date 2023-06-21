@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
+import { track } from 'web/lib/service/analytics'
 
 export const NewsArticle = (props: {
   title: string
@@ -8,7 +9,7 @@ export const NewsArticle = (props: {
   url: string
   description: string
   author: string
-  published_time: number
+  published_time?: number
   className?: string
 }) => {
   const {
@@ -30,12 +31,18 @@ export const NewsArticle = (props: {
         height={200}
       />
 
-      <a className={'absolute inset-0 z-10'} href={url} target="_blank" />
+      <a
+        className={'absolute inset-0 z-10'}
+        href={url}
+        target="_blank"
+        onClick={() => track('click news article', { article: url })}
+      />
+
       <Col className="bg-canvas-0 border-ink-300 rounded-b-lg border border-t-0 p-2 hover:underline">
         <div className="line-clamp-2 text-ink-900 text-lg">{title}</div>
         <div className="line-clamp-3 text-ink-600 text-xs">
-          {author && `${author} / `}
-          {dayjs.utc(published_time).fromNow()}
+          {author}
+          {published_time && ` / ${dayjs.utc(published_time).fromNow()}`}
         </div>
         <div className="line-clamp-3 text-ink-600 text-xs">{description}</div>
       </Col>

@@ -42,7 +42,7 @@ export default function Sidebar(props: {
 }) {
   const { className, isMobile } = props
   const router = useRouter()
-  const currentPage = router.asPath
+  const currentPage = router.pathname
 
   const user = useUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
