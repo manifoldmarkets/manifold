@@ -10,7 +10,6 @@ import {
   UsElectionsData,
 } from 'web/components/news-topics-data'
 
-
 export function NewsTopicsTabs({ homeContent }: { homeContent: ReactNode }) {
   const topics = [
     { title: 'Home', content: homeContent },
