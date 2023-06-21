@@ -111,7 +111,8 @@ function SimpleCard(props: {
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
-
+  const [hidden, setHidden] = useState(false)
+  if (hidden) return null
   return (
     <Row className={clsx(className)}>
       <Col className="justify-end">
@@ -119,26 +120,41 @@ function SimpleCard(props: {
       </Col>
       <Col
         className={
-          'bg-canvas-0 border-ink-200 mt-2 grow justify-between gap-2 overflow-hidden border-l-4 border-b pl-2 pr-4 pt-2 pb-3'
+          'bg-canvas-0 border-ink-200 mt-2 grow justify-between gap-2 overflow-hidden border-l-4 border-b px-3 pt-2 pb-3'
         }
       >
-        <Row className="w-full items-start gap-2">
-          <Avatar
-            username={contract.creatorUsername}
-            avatarUrl={contract.creatorAvatarUrl}
-            size="2xs"
-            className="mt-1"
-          />
-          <Link
-            className={clsx(
-              'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
-              textColor
-            )}
-            onClick={trackClick}
-            href={contractPath(contract)}
-          >
-            {question}
-          </Link>
+        <Row className="items-start justify-between gap-1">
+          <Col>
+            <Row className={'items-start gap-2'}>
+              <Avatar
+                username={contract.creatorUsername}
+                avatarUrl={contract.creatorAvatarUrl}
+                size="2xs"
+                className="mt-1"
+              />
+              <Link
+                className={clsx(
+                  'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
+                  textColor
+                )}
+                onClick={trackClick}
+                href={contractPath(contract)}
+              >
+                {question}
+              </Link>
+            </Row>
+          </Col>
+          <Col className={'items-end'}>
+            <Row className={'items-center gap-2.5'}>
+              <MoreOptionsButton
+                user={user}
+                contract={contract}
+                item={item}
+                onSetUninteresting={() => setHidden(true)}
+              />
+              {!item?.isCopied && <ReasonIcon item={item} />}
+            </Row>
+          </Col>
         </Row>
 
         <Row className="text-ink-500 w-full items-center gap-3 text-sm">
@@ -254,7 +270,7 @@ function DetailedCard(props: {
                   </Row>
                 </Col>
                 <Col>
-                  <Row className={'items-center gap-3'}>
+                  <Row className={'items-center gap-2.5'}>
                     <MoreOptionsButton
                       user={user}
                       contract={contract}
