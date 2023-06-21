@@ -61,9 +61,11 @@ export function ProbabilityOrNumericInput(props: {
   prob: number | undefined
   setProb: (prob: number | undefined) => void
   isSubmitting: boolean
+  className?: string
   placeholder?: string
 }) {
-  const { contract, prob, setProb, isSubmitting, placeholder } = props
+  const { contract, prob, setProb, isSubmitting, placeholder, className } =
+    props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   return isPseudoNumeric ? (
@@ -84,6 +86,7 @@ export function ProbabilityOrNumericInput(props: {
       }
       isSubmitting={isSubmitting}
       placeholder={placeholder}
+      className={className}
     />
   ) : (
     <ProbabilityInput

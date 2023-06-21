@@ -33,7 +33,7 @@ export function NumberInput(props: {
   return (
     <Col className={className}>
       <Input
-        className={clsx('max-w-[200px] !text-lg', inputClassName)}
+        className={clsx(' max-w-[200px] !text-lg', inputClassName)}
         ref={inputRef}
         type="text"
         pattern="[0-9]*"
