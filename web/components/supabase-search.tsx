@@ -28,6 +28,7 @@ import { useIsAuthorized } from 'web/hooks/use-user'
 import { ALL_TOPICS_WITH_EMOJIS, cleanTopic } from 'common/topics'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Row } from 'web/components/layout/row'
+import { Carousel } from './widgets/carousel'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -465,7 +466,7 @@ function SupabaseContractSearchControls(props: {
         )} */}
       </Col>
       {showTopics && (
-        <Row className={'scrollbar-hide mb-1 gap-1.5 overflow-x-scroll'}>
+        <Carousel>
           {ALL_TOPICS_WITH_EMOJIS.map((t) => (
             <PillButton
               key={'pill-' + t}
@@ -475,7 +476,7 @@ function SupabaseContractSearchControls(props: {
               {t}
             </PillButton>
           ))}
-        </Row>
+        </Carousel>
       )}
     </Col>
   )
