@@ -13,6 +13,7 @@ export const UkraineWarData = () => {
     '8dD3vNDbHnPCx3movLl9',
     'Zj5agn5qrD9Qsz4k80EW',
     'mKuKAAsV3OCAEnhPwTCp',
+    'Zn6S6CWvmLJmOGSkFNEh',
   ]
   const contracts = useContracts(contractIds)
   const newMarketsId = [
@@ -27,13 +28,13 @@ export const UkraineWarData = () => {
       <NewsGrid>
         <NewsArticleOriginal
           className="mb-4"
-          title="Biden warns the threat of Putin using tactical nuclear weapons is ‘real’
+          title="Ukrainian intelligence shows Moscow is plotting 'terror attack' on nuclear plant
 "
-          urlToImage="https://media-cldnry.s-nbcnews.com/image/upload/t_fit-1240w,f_auto,q_auto:best/rockcms/2023-06/230620-putin-mb-0947-b05644.jpg"
-          url="https://www.nbcnews.com/news/world/putin-nuclear-weapons-threat-real-biden-warns-rcna90114"
+          urlToImage="https://www.icrc.org/sites/default/files/styles/special_page_image/public/document_new/image/tihange_nuclear_power_station_belgium-reuters.jpg?itok=yUgL6S2U"
+          url="https://news.sky.com/story/ukraine-russia-war-latest-counteroffensive-paused-putin-12541713"
           description="The president's comments came as Ukraine pressed on with its counteroffensive and just days after the Kremlin began deploying the weapons to Belarus."
-          author="NBC News"
-          published_time={Date.UTC(2023, 5, 20, 12)}
+          author="Sky News"
+          published_time={Date.UTC(2023, 5, 22, 11)}
         />
 
         <NewsTopicsContentContainer
@@ -134,6 +135,7 @@ export const MissingSubData = () => {
 
     'lWojxiYMjgmOZOMVVvJu',
     'YX9ZjC9te9W7dX3vp4o9',
+    'Kb8JZ1E7PRK83wQ8Zt9q',
   ]
   const contracts = useContracts(contractIds)
 
@@ -144,7 +146,15 @@ export const MissingSubData = () => {
           header="Summary"
           containerContent={
             <ul className="ml-6 list-disc">
-              <li>Contact lost on Sunday, 1h 45m after submerging.</li>
+              <li>
+                <Link
+                  href={'https://www.bbc.co.uk/news/world-us-canada-65991651'}
+                  className="break-anywhere decoration-primary-400 underline hover:decoration-2"
+                >
+                  Breaking - Debris field: Parts of missing sub's cover found,
+                  expert says{' '}
+                </Link>
+              </li>
               <li>
                 <Link
                   className="break-anywhere decoration-primary-400 underline hover:decoration-2"
@@ -174,9 +184,9 @@ export const MissingSubData = () => {
           className="mb-4"
           title="Search for Missing Titanic Submersible"
           urlToImage="https://i.ytimg.com/vi/l9_qNO37oFs/maxresdefault.jpg"
-          url="https://www.bbc.co.uk/news/live/world-us-canada-65953941"
-          description="LIVE: Missing Titanic sub has 40 hours of air left - US Coast Guard"
-          author="Edited by Nathan Williams"
+          url="https://www.bbc.co.uk/news/live/world-us-canada-65967464"
+          description='David Mearns tells the BBC a "landing frame and a rear cover from the submersible" were seen'
+          author="Edited by Frances Mao"
         />
 
         {contracts &&
@@ -204,10 +214,10 @@ export const UsElectionsData = () => {
   ]
   const contracts = useContracts(contractIds)
   const newMarketsId = [
+    'HXN7yKJLxZyOxKhjB75s',
+    'tUwInVx79MKObXLzsrjC',
     '4MLChi9mLtUA4ecz5tB0',
     'vaPsnIxe8FdWJud7DzDq',
-    'IiYcDyn7FM0BwggQZ88f',
-    'gLvEHniAUT18ccV6lIhj',
   ]
   const newMarkets = useContracts(newMarketsId)
   return (
