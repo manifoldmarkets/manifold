@@ -465,9 +465,7 @@ function SupabaseContractSearchControls(props: {
         )} */}
       </Col>
       {showTopics && (
-        <Row
-          className={'scrollbar-hide mb-1 gap-1.5 overflow-x-scroll'}
-        >
+        <Row className={'scrollbar-hide mb-1 gap-1.5 overflow-x-scroll'}>
           {ALL_TOPICS_WITH_EMOJIS.map((t) => (
             <PillButton
               key={'pill-' + t}
