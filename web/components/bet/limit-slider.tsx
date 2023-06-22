@@ -143,7 +143,9 @@ export function LimitSlider(props: {
         <div
           className={clsx(
             'text-scarlet-500 dark:text-scarlet-300 absolute text-sm',
-            isPseudoNumeric ? '-bottom-8' : '-bottom-12'
+            isPseudoNumeric
+              ? 'top-[135px] sm:top-[120px]'
+              : 'top-[145px] sm:top-[130px]'
           )}
         >
           * Upper limit can not be less than or equal to lower limit!{' '}
