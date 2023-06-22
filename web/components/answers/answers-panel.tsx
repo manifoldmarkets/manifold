@@ -407,7 +407,7 @@ function AnswerPosition(props: {
   const position = yesWinnings - noWinnings
 
   return (
-    <Row className={clsx(className, 'flex-wrap gap-6 sm:flex-nowrap')}>
+    <Row className={clsx(className, 'flex-wrap gap-6 text-sm sm:flex-nowrap')}>
       <Col>
         <div className="text-ink-500 whitespace-nowrap text-sm">Payout</div>
         <div className="whitespace-nowrap">
@@ -435,7 +435,6 @@ function AnswerPosition(props: {
         <div className="text-ink-500 whitespace-nowrap text-sm">Profit</div>
         <div className="whitespace-nowrap text-right">
           {formatMoney(profit)}
-          <ProfitBadge profitPercent={profitPercent} round={true} />
         </div>
       </Col>
     </Row>
