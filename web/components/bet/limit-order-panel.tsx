@@ -54,7 +54,6 @@ export default function LimitOrderPanel(props: {
     hidden,
     onBuySuccess,
     className,
-    singularView,
   } = props
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
