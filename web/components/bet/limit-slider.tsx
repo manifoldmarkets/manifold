@@ -153,9 +153,18 @@ export function LimitSlider(props: {
             <button
               className="font-semibold text-indigo-500 underline"
               onClick={() => {
-                setHighLimitProb(
-                  Math.min((lowLimitProb ?? minProb) + 5, maxProb)
-                )
+                if (lowLimitProb == highLimitProb) {
+                  console.log('equals')
+                  console.log(Math.min((lowLimitProb ?? minProb) + 5, maxProb))
+                  setHighLimitProb(
+                    Math.min((lowLimitProb ?? minProb) + 5, maxProb)
+                  )
+                } else {
+                  const tempLow = lowLimitProb
+                  const tempHigh = highLimitProb
+                  setLowLimitProb(tempHigh)
+                  setHighLimitProb(tempLow)
+                }
               }}
             >
               Quick Fix

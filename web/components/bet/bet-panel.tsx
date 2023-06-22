@@ -415,7 +415,9 @@ export function BuyPanel(props: {
       {option === 'LIMIT' && (
         <>
           <LimitOrderPanel
-            className="rounded-lg bg-indigo-400/10 px-4 py-2"
+            className={clsx(
+              singularView ? '' : 'rounded-lg bg-indigo-400/10 px-4 py-2'
+            )}
             contract={contract}
             multiProps={multiProps}
             hidden={!seeLimit}

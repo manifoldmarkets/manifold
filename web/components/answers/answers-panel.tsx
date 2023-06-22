@@ -361,7 +361,7 @@ function OpenAnswer(props: {
                   </Button>
                   <Button
                     size="2xs"
-                    color="indigo-outline"
+                    color="indigo"
                     onClick={() => setOutcome('LIMIT')}
                     className="my-auto"
                   >
