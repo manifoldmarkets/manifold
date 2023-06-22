@@ -993,8 +993,10 @@ export const createUniqueBettorBonusNotification = async (
       data: removeUndefinedProps({
         bet,
         answerText:
-          outcomeType === 'FREE_RESPONSE'
-            ? contract.answers.find((a) => a.id === bet.outcome)?.text
+          outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
+            ? (contract.answers as Answer[]).find(
+                (a) => a.id === bet.outcome || a.id === bet.answerId
+              )?.text
             : undefined,
         outcomeType,
         ...pseudoNumericData,
