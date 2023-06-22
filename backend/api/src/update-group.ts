@@ -8,14 +8,6 @@ import { isAdmin } from 'common/envs/constants'
 
 const schema = z.object({
   id: z.string(),
-  pinnedItems: z
-    .array(
-      z.object({
-        itemId: z.string(),
-        type: z.enum(['post', 'contract']),
-      })
-    )
-    .optional(),
   aboutPostId: z.string().optional(),
   bannerUrl: z.string().optional(),
 })

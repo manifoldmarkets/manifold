@@ -351,13 +351,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
             },
             {
               title: 'Posts',
-              content: (
-                <GroupPostSection
-                  group={group}
-                  posts={groupPosts}
-                  canEdit={isManifoldAdmin || userRole === 'admin'}
-                />
-              ),
+              content: <GroupPostSection group={group} posts={groupPosts} />,
             },
             {
               title: 'Leaderboards',

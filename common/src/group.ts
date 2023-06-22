@@ -23,7 +23,6 @@ export type Group = {
       score: number
     }[]
   }
-  pinnedItems: { itemId: string; type: 'post' | 'contract' }[]
   bannerUrl?: string
   privacyStatus: PrivacyStatusType
 }
