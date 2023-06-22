@@ -168,11 +168,11 @@ export async function getGroupMarkets(groupId: string) {
 
 export async function getGroupFromSlug(groupSlug: string, db: SupabaseClient) {
   const { data: group } = await run(
-    db.from('groups').select('data').eq('slug', groupSlug)
+    db.from('groups').select('data, id').eq('slug', groupSlug)
   )
 
   if (group && group.length > 0) {
-    return group[0].data as Group
+    return { ...(group[0].data as any), id: group[0].id } as Group
   }
   return null
 }
