@@ -1,27 +1,47 @@
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
-  '🚀 Popular': [
-    '🇺🇸 US Politics',
+  '🗳️ Politics': ['🇺🇸 US Politics', '🟠 Trump'],
+  '💻 Technology': [
     '🤖 AI',
-    '🚘 Elon Musk',
-    '🟠 Trump',
-    '💪 Personal Development',
-    '🔬 Science',
-    '💻 Programming',
     '🪙 Crypto',
+    '🪸 Climate',
+    '🧬 Biotech',
+    '💻 Programming',
+    '🔬 Science',
+    '🧮 Math',
+    '☢️ Nuclear',
+    '🚀 Space',
   ],
+
   '🏟️ Sports': [
     '🏀 Basketball',
-    '🏈 NFL',
-    '⚾ Baseball',
     '⚽ Soccer',
     '♟️ Chess',
+    '🏎️ Racing',
     '🏅 Sports',
   ],
+
+  '🍿 Media': [
+    '📺 TV Shows',
+    '🎮 Gaming',
+    '🎵 Music',
+    '📚 Books',
+    '🌐 Internet Culture',
+    '👥 Celebrities',
+  ],
+  '💼 Business': [
+    '🪙 Crypto',
+    '💵 Finance',
+    '💰 Economics',
+    '🚀 Startups',
+    '🚘 Elon Musk',
+  ],
+
+  '🪂 Lifestyle': ['🏳️‍🌈 LGBTQIA+', '⛪ Religion', '💪 Personal Development'],
+
   '🌍 World': [
     '🇷🇺🇺🇦 Russia & Ukraine',
     '🇨🇳 China',
     '🇮🇳 India',
-    '🌍 Africa',
     '🌏 Asia',
     '🌍 Europe',
     '🌎 Latin America',

@@ -92,15 +92,16 @@ export const getUsersWithSimilarInterestVectorToNews = async (
 export const repopulateNewUsersFeedFromEmbeddings = async (
   userId: string,
   pg: SupabaseDirectClient,
-  welcomeTopicSelection: boolean
+  postWelcomeTopicSelection: boolean
 ) => {
   await pg.tx(async (t) => {
     await t.none('SET LOCAL ivfflat.probes = $1', [
-      welcomeTopicSelection ? 20 : 10,
+      postWelcomeTopicSelection ? 20 : 10,
     ])
 
-    const relatedFeedItems = await t.manyOrNone<Row<'user_feed'>>(
-      `
+    const relatedFeedItems = postWelcomeTopicSelection
+      ? await t.manyOrNone<Row<'user_feed'>>(
+          `
               WITH user_embedding AS (
                   SELECT interest_embedding
                   FROM user_embeddings
@@ -123,8 +124,39 @@ export const repopulateNewUsersFeedFromEmbeddings = async (
               FROM filtered_user_feed
               ORDER BY contract_id, created_time DESC;
           `,
-      [userId, welcomeTopicSelection ? 500 : 100]
-    )
+          [userId, postWelcomeTopicSelection ? 500 : 100]
+        )
+      : await t.manyOrNone<Row<'user_feed'>>(
+          `
+              WITH user_embedding AS (
+                  SELECT interest_embedding
+                  FROM user_embeddings
+                  WHERE user_id = $1
+              ),
+              popular_contracts AS (
+                  SELECT id
+                   from contracts
+                   order by  popularity_score desc
+                   limit $2),
+               interesting_contract_embeddings AS (
+                   SELECT contract_id,
+                          (SELECT interest_embedding FROM user_embedding) <=> embedding AS distance
+                   FROM contract_embeddings
+                   where contract_id in (select id from popular_contracts)
+                   ORDER BY distance
+               ),
+               filtered_user_feed AS (
+                   SELECT *
+                   FROM user_feed
+                   WHERE contract_id IN (SELECT contract_id FROM interesting_contract_embeddings)
+                   and created_time > now() - interval '3 days'
+               )
+              SELECT DISTINCT ON (contract_id) *
+              FROM filtered_user_feed
+              ORDER BY contract_id, created_time DESC;
+          `,
+          [userId, 50]
+        )
 
     log('found', relatedFeedItems.length, 'feed items to copy')
     if (relatedFeedItems.length === 0) return []

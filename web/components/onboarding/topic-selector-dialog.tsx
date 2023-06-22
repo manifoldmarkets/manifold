@@ -10,6 +10,7 @@ import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { db } from 'web/lib/supabase/db'
 import { joinGroup, updateUserEmbedding } from 'web/lib/firebase/api'
 import { getUserInterestTopics } from 'web/lib/supabase/user'
+import { Row } from 'web/components/layout/row'
 
 export function TopicSelectorDialog(props: {
   setOpen?: (open: boolean) => void
@@ -51,17 +52,20 @@ export function TopicSelectorDialog(props: {
     })
   }, [user, userSelectedTopics, open])
 
-  const closeDialog = () => {
+  const closeDialog = (skipped: boolean) => {
     if (setOpen) {
-      user ? updateUserEmbedding() : noop
+      user && !skipped ? updateUserEmbedding() : noop
       onFinishSelectingTopics?.(userSelectedTopics ?? [])
       setOpen(false)
-    } else if (user) {
+    } else if (user && !skipped) {
       setIsLoading(true)
       updateUserEmbedding().then(() => {
         // Reload to recompute feed!
         window.location.reload()
       })
+    } else {
+      onFinishSelectingTopics?.(userSelectedTopics ?? [])
+      window.location.reload()
     }
   }
 
@@ -76,7 +80,7 @@ export function TopicSelectorDialog(props: {
       <Col className="h-[32rem] overflow-y-auto">
         <div className="bg-canvas-0 sticky top-0 py-4 px-6">
           <p className="text-primary-700 mb-2 text-2xl">What interests you?</p>
-          <p>Select at least 1 topic to personalize your feed</p>
+          <p>Select 3 or more topics to personalize your feed</p>
         </div>
 
         {Object.keys(TOPICS_TO_SUBTOPICS).map((topic) => (
@@ -117,15 +121,18 @@ export function TopicSelectorDialog(props: {
         ))}
 
         <div className="from-canvas-0 pointer-events-none sticky bottom-0 bg-gradient-to-t to-transparent text-right">
-          <span className="pointer-events-auto ml-auto inline-flex p-6 pt-2">
+          <Row className="pointer-events-auto ml-auto justify-end gap-2  p-6 pt-2">
+            <Button onClick={() => closeDialog(true)} color={'gray'}>
+              Skip
+            </Button>
             <Button
-              onClick={closeDialog}
-              disabled={(userSelectedTopics ?? []).length <= 0}
+              onClick={() => closeDialog(false)}
+              disabled={(userSelectedTopics ?? []).length <= 2}
               loading={isLoading}
             >
               Done
             </Button>
-          </span>
+          </Row>
         </div>
       </Col>
     </Modal>
