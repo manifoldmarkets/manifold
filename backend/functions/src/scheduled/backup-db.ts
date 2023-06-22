@@ -33,10 +33,8 @@ export const backupDbCore = async (
   // NOTE: Subcollections are not backed up by default
   const collectionIds = [
     'contracts',
-    'groups',
     'private-users',
     'stripe-transactions',
-    'transactions',
     'users',
     'bets',
     'comments',
@@ -46,11 +44,9 @@ export const backupDbCore = async (
     'txns',
     'manalinks',
     'liquidity',
-    'stats',
     'cache',
     'latency',
     'views',
-    'folds',
   ]
   return await client.exportDocuments({ name, outputUriPrefix, collectionIds })
 }
