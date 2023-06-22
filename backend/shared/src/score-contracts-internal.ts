@@ -106,7 +106,8 @@ export async function scoreContractsInternal(
 
     if (
       contract.popularityScore !== popularityScore ||
-      contract.dailyScore !== dailyScore
+      contract.dailyScore !== dailyScore ||
+      contract.importanceScore !== importanceScore
     ) {
       // If it's just undergone a large prob change, add it to the feed
       if (dailyScore > 1.5 && dailyScore - contract.dailyScore > 1) {
@@ -265,7 +266,7 @@ const computeContractScores = (
   // recalibrate all of these numbers as site usage changes
   const rawImportance =
     3 * normalize(logOddsChange, 5) +
-    3 * newness +
+    2 * newness +
     2 * normalize(traderHour, 20) +
     2 * normalize(todayScore, 100) +
     normalize(thisWeekScore, 200) +
