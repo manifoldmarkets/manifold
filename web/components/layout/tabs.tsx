@@ -129,12 +129,13 @@ export function QueryUncontrolledTabs(
       tabs={tabs}
       activeIndex={activeIndex}
       onClick={(title, i) => {
+        onClick?.(title, i)
+
         router.replace(
           { query: { ...router.query, tab: title.toLowerCase() } },
           undefined,
           { shallow: true }
         )
-        onClick?.(title, i)
       }}
     />
   )
