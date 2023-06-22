@@ -55,7 +55,6 @@ export function BuyPanel(props: {
   user: User | null | undefined
   hidden: boolean
   onBuySuccess?: () => void
-  mobileView?: boolean
   singularView?: 'YES' | 'NO' | 'LIMIT'
   initialOutcome?: binaryOutcomes | 'LIMIT'
   location?: string
@@ -67,7 +66,6 @@ export function BuyPanel(props: {
     user,
     hidden,
     onBuySuccess,
-    mobileView,
     singularView,
     initialOutcome,
     location = 'bet panel',
@@ -424,7 +422,6 @@ export function BuyPanel(props: {
             user={user}
             unfilledBets={unfilledBets}
             balanceByUserId={balanceByUserId}
-            mobileView={mobileView}
           />
 
           <YourOrders

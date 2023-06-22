@@ -32,7 +32,6 @@ export function BetDialog(props: {
         <BuyPanel
           contract={contract}
           user={user}
-          mobileView={true}
           hidden={false}
           initialOutcome={initialOutcome}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
