@@ -60,7 +60,6 @@ export const creategroup = authEndpoint(async (req, auth) => {
     createdTime: Date.now(),
     totalMembers: memberIds.length,
     postIds: [],
-    pinnedItems: [],
     privacyStatus: privacyStatus as PrivacyStatusType,
   })
 
