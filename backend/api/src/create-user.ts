@@ -25,6 +25,7 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
+import { repopulateNewUsersFeedFromEmbeddings } from 'shared/supabase/users'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -144,6 +145,9 @@ export const createuser = authEndpoint(async (req, auth) => {
 
   console.log('created user', user.username, 'firebase id:', auth.uid)
   await insertUserEmbedding(auth.uid, visitedContractIds)
+  const pg = createSupabaseDirectClient()
+  await repopulateNewUsersFeedFromEmbeddings(auth.uid, pg, false)
+
   await track(auth.uid, 'create user', { username: user.username }, { ip })
 
   return { user, privateUser }

@@ -1,9 +1,6 @@
 import { useUser } from 'web/hooks/use-user'
-import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Title } from 'web/components/widgets/title'
-import { DailyStats } from 'web/components/daily-stats'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
@@ -20,44 +17,41 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { MINUTE_MS } from 'common/util/time'
-import { ProfileSummary } from 'web/components/nav/profile-summary'
-import { Spacer } from 'web/components/layout/spacer'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { Contract } from 'common/contract'
+import { db } from 'web/lib/supabase/db'
+import { Page } from 'web/components/layout/page'
 
-export default function FeedTimeline() {
-  const user = useUser()
-
+export default function FeedTimelinePage() {
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
-        <Row className="mx-4 mb-2 items-center justify-between gap-4">
-          <Title children="Home" className="!my-0 hidden sm:block" />
-          <div className="flex sm:hidden">
-            {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
-          </div>
-          <DailyStats user={user} />
-        </Row>
-
-        <Col className={clsx('gap-6')}>
-          <Col>
-            <FeedTimelineContent />
-            <button
-              type="button"
-              className={clsx(
-                'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
-                'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
-                'bottom-[64px]'
-              )}
-              onClick={() => {
-                Router.push('/create')
-                track('mobile create button')
-              }}
-            >
-              <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
-            </button>
-          </Col>
+      <FeedTimeline />
+    </Page>
+  )
+}
+export function FeedTimeline() {
+  return (
+    <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
+      <Col className={clsx('gap-6')}>
+        <Col>
+          <FeedTimelineContent />
+          <button
+            type="button"
+            className={clsx(
+              'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
+              'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
+              'bottom-[64px]'
+            )}
+            onClick={() => {
+              Router.push('/create')
+              track('mobile create button')
+            }}
+          >
+            <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
+          </button>
         </Col>
       </Col>
-    </Page>
+    </Col>
   )
 }
 function FeedTimelineContent() {
@@ -74,6 +68,10 @@ function FeedTimelineContent() {
     Date.now(),
     'last-seen-feed-timeline' + user?.id
   )
+  const [manualContracts, setManualContracts] = usePersistentInMemoryState<
+    Contract[] | undefined
+  >(undefined, `new-interesting-contracts-${user?.id}-feed-timeline`)
+
   const [topWasVisible, setTopWasVisible] = useState(false)
   const [newerTimelineItems, setNewerTimelineItems] = useState<
     FeedTimelineItem[]
@@ -93,6 +91,21 @@ function FeedTimelineContent() {
   const newAvatarUrls = uniq(
     filterDefined(newerTimelineItems.map((item) => item.avatarUrl))
   ).slice(0, 3)
+  const fetchMoreOlderContent = async () => {
+    const moreFeedItems = await loadMoreOlder()
+    if (!moreFeedItems && user) {
+      const excludedContractIds = savedFeedItems
+        .map((i) => i.contractId)
+        .concat(manualContracts?.map((c) => c.id) ?? [])
+      const { data } = await db.rpc('get_recommended_contracts_embeddings', {
+        uid: user.id,
+        n: 20,
+        excluded_contract_ids: filterDefined(excludedContractIds),
+      })
+
+      setManualContracts((data ?? []).map((row: any) => row.data as Contract))
+    }
+  }
 
   return (
     <Col className={'relative w-full items-center'}>
@@ -114,11 +127,12 @@ function FeedTimelineContent() {
         boosts={boosts}
         user={user}
         feedTimelineItems={savedFeedItems}
+        manualContracts={manualContracts}
       />
       <div className="relative">
         <VisibilityObserver
           className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
-          onVisibilityUpdated={(visible) => visible && loadMoreOlder()}
+          onVisibilityUpdated={(visible) => visible && fetchMoreOlderContent()}
         />
       </div>
 

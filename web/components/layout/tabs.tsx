@@ -35,7 +35,10 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   return (
     <>
       <nav
-        className={clsx('border-ink-200 space-x-8 border-b', className)}
+        className={clsx(
+          'border-ink-200 flex flex-nowrap justify-start overflow-x-auto border-b',
+          className
+        )}
         aria-label="Tabs"
       >
         {tabs.map((tab, i) => (
@@ -54,8 +57,9 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
               activeIndex === i
                 ? 'border-primary-500 text-primary-600'
                 : 'text-ink-500 hover:border-ink-300 hover:text-ink-700 border-transparent',
-              'inline-flex cursor-pointer flex-row gap-1 whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium',
-              labelClassName
+              'mr-8 inline-flex cursor-pointer flex-row gap-1 whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium ',
+              labelClassName,
+              'flex-shrink-0'
             )}
             aria-current={activeIndex === i ? 'page' : undefined}
           >
@@ -125,12 +129,13 @@ export function QueryUncontrolledTabs(
       tabs={tabs}
       activeIndex={activeIndex}
       onClick={(title, i) => {
+        onClick?.(title, i)
+
         router.replace(
           { query: { ...router.query, tab: title.toLowerCase() } },
           undefined,
           { shallow: true }
         )
-        onClick?.(title, i)
       }}
     />
   )

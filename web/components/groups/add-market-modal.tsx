@@ -24,20 +24,37 @@ export function AddMarketToGroupModal(props: {
   useEffect(() => {
     getGroupContractIds(group.id).then((ids) => setGroupContractIds(ids))
   }, [group.id])
+  const [theme, setTheme] = useState<'private' | 'non-private'>(
+    group.privacyStatus == 'private' ? 'private' : 'non-private'
+  )
   return (
     <Modal open={open} setOpen={setOpen} size="lg">
-      <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
+      <Col
+        className={clsx(
+          MODAL_CLASS,
+          SCROLLABLE_MODAL_CLASS,
+          theme == 'private' ? 'bg-primary-100' : 'bg-canvas-0'
+        )}
+      >
         <div className="bg-primary-100 text-primary-800 fixed inset-x-0 top-0 z-40 w-full rounded-t-md py-2 px-8">
           {group.name}
         </div>
         {addPermission == 'private' && (
           <Col className="w-full pt-4">
-            <NewContractFromGroup group={group} user={user} />
+            <NewContractFromGroup
+              group={group}
+              user={user}
+              setTheme={setTheme}
+            />
           </Col>
         )}
         {addPermission == 'new' && (
           <Col className="w-full pt-4">
-            <NewContractFromGroup group={group} user={user} />
+            <NewContractFromGroup
+              group={group}
+              user={user}
+              setTheme={setTheme}
+            />
           </Col>
         )}
         {addPermission == 'any' && (
@@ -46,7 +63,13 @@ export function AddMarketToGroupModal(props: {
               tabs={[
                 {
                   title: 'New market',
-                  content: <NewContractFromGroup group={group} user={user} />,
+                  content: (
+                    <NewContractFromGroup
+                      group={group}
+                      user={user}
+                      setTheme={setTheme}
+                    />
+                  ),
                 },
                 {
                   title: 'Existing market',
@@ -74,8 +97,12 @@ export function AddMarketToGroupModal(props: {
   )
 }
 
-export function NewContractFromGroup(props: { group: Group; user: User }) {
-  const { group, user } = props
+export function NewContractFromGroup(props: {
+  group: Group
+  user: User
+  setTheme: (theme: 'private' | 'non-private') => void
+}) {
+  const { group, user, setTheme } = props
   return (
     <NewContractPanel
       params={{
@@ -89,6 +116,7 @@ export function NewContractFromGroup(props: { group: Group; user: User }) {
       }}
       creator={user}
       fromGroup={true}
+      setTheme={setTheme}
     />
   )
 }

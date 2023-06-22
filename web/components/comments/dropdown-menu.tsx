@@ -54,7 +54,7 @@ export default function DropdownMenu(props: {
         <Menu.Items
           className={clsx(
             'bg-canvas-0 ring-ink-1000 absolute right-0 z-30 mt-2 origin-top-right rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none',
-            menuWidth ?? 'w-32'
+            menuWidth ?? 'w-34'
           )}
         >
           <div className="py-1">

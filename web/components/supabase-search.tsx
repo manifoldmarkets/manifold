@@ -25,6 +25,9 @@ import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { SiteLink } from './widgets/site-link'
 import { useIsAuthorized } from 'web/hooks/use-user'
+import { ALL_TOPICS_WITH_EMOJIS, cleanTopic } from 'common/topics'
+import { PillButton } from 'web/components/buttons/pill-button'
+import { Row } from 'web/components/layout/row'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -51,6 +54,7 @@ export type SupabaseSearchParameters = {
   query: string
   sort: Sort
   filter: filter
+  topic: string
 }
 
 function getShowTime(sort: Sort) {
@@ -111,6 +115,7 @@ export function SupabaseContractSearch(props: {
   }
   listViewDisabled?: boolean
   contractSearchControlsClassName?: string
+  showTopics?: boolean
 }) {
   const {
     defaultSort,
@@ -128,6 +133,7 @@ export function SupabaseContractSearch(props: {
     profile,
     fromGroupProps,
     listViewDisabled,
+    showTopics,
   } = props
 
   const [state, setState] = usePersistentInMemoryState<stateType>(
@@ -155,7 +161,7 @@ export function SupabaseContractSearch(props: {
       if (searchParams.current == null) {
         return false
       }
-      const { query, sort, filter } = searchParams.current
+      const { query, sort, filter, topic } = searchParams.current
       const id = ++requestId.current
       const offset = freshQuery
         ? 0
@@ -168,6 +174,7 @@ export function SupabaseContractSearch(props: {
           query,
           filter,
           sort,
+          topic,
           offset: offset,
           limit: CONTRACTS_PER_PAGE,
           group_id: additionalFilter?.groupId,
@@ -265,6 +272,7 @@ export function SupabaseContractSearch(props: {
           onSearchParametersChanged={onSearchParametersChanged}
           autoFocus={autoFocus}
           listViewDisabled={listViewDisabled}
+          showTopics={showTopics}
         />
         {contracts && contracts.length === 0 ? (
           profile || fromGroupProps ? (
@@ -324,6 +332,7 @@ function SupabaseContractSearchControls(props: {
   useQueryUrlParam?: boolean
   autoFocus?: boolean
   listViewDisabled?: boolean
+  showTopics?: boolean
 }) {
   const {
     className,
@@ -335,7 +344,7 @@ function SupabaseContractSearchControls(props: {
     useQueryUrlParam,
     autoFocus,
     includeProbSorts,
-    listViewDisabled,
+    showTopics,
   } = props
 
   const router = useRouter()
@@ -358,6 +367,15 @@ function SupabaseContractSearchControls(props: {
       ? undefined
       : {
           key: 's',
+          store: urlParamStore(router),
+        }
+  )
+  const [topic, setTopic] = usePersistentState(
+    '',
+    !useQueryUrlParam
+      ? undefined
+      : {
+          key: 't',
           store: urlParamStore(router),
         }
   )
@@ -393,6 +411,11 @@ function SupabaseContractSearchControls(props: {
     setSort(newSort)
     track('select search sort', { sort: newSort })
   }
+  const selectTopic = (newTopic: string) => {
+    if (newTopic === topic) return setTopic('')
+    setTopic(newTopic)
+    track('select search topic', { topic: newTopic })
+  }
 
   const isAuth = useIsAuthorized()
 
@@ -401,39 +424,60 @@ function SupabaseContractSearchControls(props: {
       onSearchParametersChanged({
         query: query,
         sort: sort as Sort,
+        topic: topic,
         filter: filter as filter,
       })
     }
-  }, [query, sort, filter, isAuth])
+  }, [query, sort, filter, topic, isAuth])
 
   return (
-    <div
-      className={clsx(
-        'bg-canvas-50 sticky top-0 z-30 mb-1 flex flex-col items-stretch gap-3 pb-2 pt-px sm:flex-row sm:gap-2',
-        className
+    <Col>
+      <Col
+        className={clsx(
+          'bg-canvas-50 sticky top-0 z-30 mb-1 items-stretch gap-3 pb-2 pt-px sm:flex-row sm:gap-2',
+          className
+        )}
+      >
+        <Input
+          type="text"
+          inputMode="search"
+          value={query}
+          onChange={(e) => updateQuery(e.target.value)}
+          onBlur={trackCallback('search', { query: query })}
+          placeholder="Search markets"
+          className="w-full"
+          autoFocus={autoFocus}
+        />
+        <SearchFilters
+          filter={filter}
+          selectFilter={selectFilter}
+          hideOrderSelector={hideOrderSelector}
+          selectSort={selectSort}
+          sort={sort}
+          className={'flex flex-row gap-2'}
+          includeProbSorts={includeProbSorts}
+          listViewDisabled={true}
+        />
+        {/* {showTopics && (
+          <div className={'hidden sm:inline'}>
+            <TopicSelector topic={topic} onSetTopic={setTopic} />
+          </div>
+        )} */}
+      </Col>
+      {showTopics && (
+        <Row className={'scrollbar-hide mb-1 gap-1.5 overflow-x-scroll'}>
+          {ALL_TOPICS_WITH_EMOJIS.map((t) => (
+            <PillButton
+              key={'pill-' + t}
+              selected={topic === cleanTopic(t)}
+              onSelect={() => selectTopic(cleanTopic(t))}
+            >
+              {t}
+            </PillButton>
+          ))}
+        </Row>
       )}
-    >
-      <Input
-        type="text"
-        inputMode="search"
-        value={query}
-        onChange={(e) => updateQuery(e.target.value)}
-        onBlur={trackCallback('search', { query: query })}
-        placeholder="Filter markets"
-        className="w-full"
-        autoFocus={autoFocus}
-      />
-      <SearchFilters
-        filter={filter}
-        selectFilter={selectFilter}
-        hideOrderSelector={hideOrderSelector}
-        selectSort={selectSort}
-        sort={sort}
-        className={'flex flex-row gap-2'}
-        includeProbSorts={includeProbSorts}
-        listViewDisabled={listViewDisabled}
-      />
-    </div>
+    </Col>
   )
 }
 

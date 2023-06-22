@@ -1,5 +1,6 @@
 // User interest to user interest distance:
 export const USER_TO_USER_DISTANCE_THRESHOLD = 0.004
+export const USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD = 0.12
 
 export type FEED_DATA_TYPES =
   | 'new_comment'
@@ -10,6 +11,7 @@ export type FEED_DATA_TYPES =
   | 'trending_contract'
   | 'new_subsidy'
 
+// TODO: add 'shared_contract'
 export type CONTRACT_OR_USER_FEED_REASON_TYPES =
   | 'follow_contract'
   | 'liked_contract'
@@ -23,12 +25,13 @@ export type FEED_REASON_TYPES =
   | CONTRACT_OR_USER_FEED_REASON_TYPES
   | 'similar_interest_vector_to_news_vector'
 
+// TODO: now that we have disinterest vectors, increase this threshold
 // User interest to contract distances:
 export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
   contract_probability_changed: 0.135,
   trending_contract: 0.175,
   new_contract: 0.125,
-  new_comment: 0.15,
+  new_comment: 0.1,
   news_with_related_contracts: 0.175, // used to compare user interest vector to news title embedding
   popular_comment: 0.175, // Not yet in use
   new_subsidy: 0.175,

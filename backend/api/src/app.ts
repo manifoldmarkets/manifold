@@ -65,6 +65,7 @@ import { awardQAndAAnswer } from './award-q-and-a-answer'
 import { createchatmessage } from 'api/create-chat-message'
 import { updatepost } from './update-post'
 import { updategroup } from './update-group'
+import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -140,6 +141,10 @@ app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/redeemad', ...apiRoute(redeemad))
 app.post('/completequest', ...apiRoute(completequest))
 app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
+app.post(
+  '/update-user-disinterest-embedding',
+  ...apiRoute(updateUserDisinterestEmbedding)
+)
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
 app.post('/supabasesearchcontracts', ...apiRoute(supabasesearchcontracts))
 app.post('/delete-market', ...apiRoute(deleteMarket))

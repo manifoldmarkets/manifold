@@ -135,6 +135,7 @@ export const onCreateCommentOnContract = functions
             betId: bet.id,
             betOutcome: bet.outcome,
             betAmount: bet.amount,
+            betAnswerId: bet.answerId,
           })
         )
     }
@@ -144,6 +145,9 @@ export const onCreateCommentOnContract = functions
       const fields: { [k: string]: unknown } = {
         commenterPositionShares: position.shares,
         commenterPositionOutcome: position.outcome,
+      }
+      if (position.answerId) {
+        fields.commenterPositionAnswerId = position.answerId
       }
       if (contract.mechanism === 'cpmm-1') {
         fields.commenterPositionProb = contract.prob

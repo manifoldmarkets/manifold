@@ -4,7 +4,7 @@ import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import * as admin from 'firebase-admin'
 
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getDefaultEmbedding } from 'shared/helpers/embeddings'
+import { repopulateNewUsersFeedFromEmbeddings } from 'shared/supabase/users'
 const firestore = admin.firestore()
 
 async function testScheduledFunction() {
@@ -12,8 +12,11 @@ async function testScheduledFunction() {
   await loadSecretsToEnv(credentials)
   try {
     const pg = createSupabaseDirectClient()
-    const defaultEmbedding = await getDefaultEmbedding(pg)
-    console.log('defaultEmbedding', defaultEmbedding)
+    await repopulateNewUsersFeedFromEmbeddings(
+      'GJrkVojV9bPrC81NfCwYbSXWsc23',
+      pg,
+      true
+    )
 
     // await addContractsWithLargeProbChangesToFeed()
     //

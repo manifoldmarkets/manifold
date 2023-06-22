@@ -11,13 +11,7 @@ import {
 } from 'web/components/widgets/avatar'
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
-import {
-  AnswerLabel,
-  BinaryOutcomeLabel,
-  NoLabel,
-  OutcomeLabel,
-  YesLabel,
-} from 'web/components/outcome-label'
+import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -189,15 +183,12 @@ export function BetStatusText(props: {
   inTimeline?: boolean
 }) {
   const { bet, contract, hideUser, className, inTimeline } = props
-  const { outcomeType, mechanism } = contract
+  const { outcomeType } = contract
   const self = useUser()
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
-  const isCPMM2 = mechanism === 'cpmm-2'
-  const isCpmmMulti = mechanism === 'cpmm-multi-1'
-  const { amount, outcome, createdTime, shares, isChallenge, isApi } = bet
+  const { amount, outcome, createdTime, answerId, isChallenge, isApi } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
-  const isShortSell = isCPMM2 && amount > 0 && shares === 0
   const absAmount = Math.abs(amount)
   const money = formatMoney(absAmount)
   const orderAmount =
@@ -246,40 +237,25 @@ export function BetStatusText(props: {
           ) : (
             <>created limit order for {orderAmount}</>
           )}{' '}
-          {isCpmmMulti ? (
-            <BinaryOutcomeLabel outcome={outcome as any} />
-          ) : (
-            <OutcomeLabel
-              outcome={outcome}
-              value={(bet as any).value}
-              contract={contract}
-              truncate="short"
-            />
-          )}{' '}
+          <OutcomeLabel
+            outcome={outcome}
+            answerId={answerId}
+            value={(bet as any).value}
+            contract={contract}
+            truncate="short"
+          />{' '}
           at {toProb} {bet.isCancelled && !allFilled ? '(cancelled)' : ''}
         </span>
       ) : (
         <>
           {bought} {money}{' '}
-          {isCpmmMulti && (
-            <>{outcome === 'YES' ? <YesLabel /> : <NoLabel />} of</>
-          )}
-          {isCPMM2 && (isShortSell ? 'NO of ' : 'YES of')}{' '}
-          {isCpmmMulti ? (
-            contract.answers.find((a) => a.id === bet.answerId) && (
-              <AnswerLabel
-                answer={contract.answers.find((a) => a.id === bet.answerId)!}
-                truncate="short"
-              />
-            )
-          ) : (
-            <OutcomeLabel
-              outcome={outcome}
-              value={(bet as any).value}
-              contract={contract}
-              truncate="short"
-            />
-          )}{' '}
+          <OutcomeLabel
+            outcome={outcome}
+            answerId={answerId}
+            value={(bet as any).value}
+            contract={contract}
+            truncate="short"
+          />{' '}
           {fromProb === toProb
             ? `at ${fromProb}`
             : `from ${fromProb} to ${toProb}`}

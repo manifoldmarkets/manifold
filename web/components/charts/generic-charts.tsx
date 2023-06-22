@@ -36,6 +36,7 @@ import {
   computeColorStops,
   formatPct,
 } from './helpers'
+import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 
 const Y_AXIS_CONSTRAINTS: Record<ValueKind, AxisConstraints> = {
   percent: { min: 0, max: 1, minExtent: 0.04 },
@@ -101,9 +102,32 @@ const constrainExtent = (
   }
 }
 
-const getTickValues = (min: number, max: number, n: number) => {
-  const step = (max - min) / (n - 1)
-  return [min, ...range(1, n - 1).map((i) => min + step * i), max]
+const getTickValues = (
+  min: number,
+  max: number,
+  n: number,
+  negativeThreshold?: number
+) => {
+  let step = (max - min) / (n - 1)
+  let theMin = min
+  let theMax = max
+  if (step > 10) {
+    theMin = roundToNearestFive(min)
+    theMax = roundToNearestFive(max)
+    step = (theMax - theMin) / (n - 1)
+  }
+  const defaultRange = [
+    theMin,
+    ...range(1, n - 1).map((i) => theMin + step * i),
+    theMax,
+  ]
+  if (negativeThreshold) {
+    return defaultRange
+      .filter((n) => Math.abs(negativeThreshold - n) > Math.max(step / 4, 1))
+      .concat(negativeThreshold)
+      .sort((a, b) => a - b)
+  }
+  return defaultRange
 }
 
 const dataAtTimeSelector = <Y, P extends Point<number, Y>>(
@@ -302,8 +326,10 @@ export const ControllableSingleValueHistoryChart = <
   Tooltip?: TooltipComponent<Date, P>
   noAxes?: boolean
   pct?: boolean
+  negativeThreshold?: number
 }) => {
-  const { data, w, h, color, margin, Tooltip, noAxes } = props
+  const { data, w, h, color, margin, Tooltip, noAxes, negativeThreshold } =
+    props
   const { viewXScale, setViewXScale, viewYScale, setViewYScale } =
     props.viewScaleProps
   const yKind = props.yKind ?? 'amount'
@@ -316,21 +342,26 @@ export const ControllableSingleValueHistoryChart = <
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py0 = yScale(0)
   const py1 = useCallback((p: P) => yScale(p.y), [yScale])
-
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
     const nTicks = noAxes ? 0 : h < 200 ? 3 : 5
-    const pctTickValues = noAxes ? [] : getTickValues(min, max, nTicks)
+    const customTickValues = noAxes
+      ? []
+      : getTickValues(min, max, nTicks, negativeThreshold)
     const xAxis = axisBottom<Date>(xScale).ticks(noAxes ? 0 : w / 100)
     const yAxis =
       yKind === 'percent'
         ? axisRight<number>(yScale)
-            .tickValues(pctTickValues)
+            .tickValues(customTickValues)
             .tickFormat((n) => formatPct(n))
         : yKind === 'Ṁ'
-        ? axisRight<number>(yScale)
-            .ticks(nTicks)
-            .tickFormat((n) => formatMoneyNumber(n))
+        ? negativeThreshold
+          ? axisRight<number>(yScale)
+              .tickValues(customTickValues)
+              .tickFormat((n) => formatMoneyNumber(n))
+          : axisRight<number>(yScale)
+              .ticks(nTicks)
+              .tickFormat((n) => formatMoneyNumber(n))
         : axisRight<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale, noAxes])
@@ -405,6 +436,7 @@ export const ControllableSingleValueHistoryChart = <
       onMouseOver={onMouseOver}
       onMouseLeave={onMouseLeave}
       Tooltip={Tooltip}
+      negativeThreshold={negativeThreshold}
     >
       {stops && (
         <defs>

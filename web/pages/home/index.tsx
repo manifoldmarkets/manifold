@@ -10,7 +10,6 @@ import {
   LivePillOptions,
   pill_options,
 } from 'web/components/activity-log'
-import { DailyStats } from 'web/components/daily-stats'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -19,24 +18,24 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
-import { useUser } from 'web/hooks/use-user'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { track } from 'web/lib/service/analytics'
-import { Title } from 'web/components/widgets/title'
 
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from 'web/components/contract/contracts-feed'
-import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
-import { db } from 'web/lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { TopicSelector } from 'web/components/topic-selector'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { ProfileSummary } from 'web/components/nav/profile-summary'
+import { FeedTimeline } from 'web/pages/feed-timeline'
+import { NewsTopicsTabs } from 'web/components/news-topics-tabs'
+import { DailyStats } from 'web/components/daily-stats'
 import { Spacer } from 'web/components/layout/spacer'
-import { useShouldShowFeed } from 'web/hooks/use-should-show-feed'
-import FeedTimeline from 'web/pages/feed-timeline'
+import { ProfileSummary } from 'web/components/nav/profile-summary'
+import { useUser } from 'web/hooks/use-user'
+import { useIsFeedTest } from 'web/hooks/use-is-feed-test'
+import MarketsHome from '../markets-home'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -56,33 +55,50 @@ export default function Home() {
 }
 
 function HomeDashboard() {
+  const isFeed = useIsFeedTest()
   const user = useUser()
-  const shouldShowFeed = useShouldShowFeed(user)
-  const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id, 5)
 
-  const isLoading = !dailyChangedContracts
-  if (shouldShowFeed) return <FeedTimeline />
+  if (!isFeed) return <MarketsHome />
+
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-2xl gap-2 pb-8 sm:gap-6 sm:px-2 lg:pr-4">
-        <Row className="mx-2 mb-2 items-center justify-between gap-4 sm:mx-0">
-          <Title children="Home" className="!my-0 hidden sm:block" />
-          <div className="flex sm:hidden">
-            {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
-          </div>
-          <DailyStats user={user} />
-        </Row>
-
-        {isLoading && <LoadingIndicator />}
-
-        <Col className={clsx('gap-6', isLoading && 'hidden')}>
-          <YourDailyUpdates contracts={dailyChangedContracts} />
-          <MainContent />
-        </Col>
-      </Col>
+      <Row className="mx-4 mb-2 items-center justify-between gap-4">
+        <div className="flex sm:hidden">
+          {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
+        </div>
+        <DailyStats user={user} />
+      </Row>
+      <NewsTopicsTabs
+        homeContent={
+          <Col className={clsx('gap-6')}>
+            <FeedTimeline />
+          </Col>
+        }
+      />
     </Page>
   )
 }
+
+const YourDailyUpdates = memo(function YourDailyUpdates(props: {
+  contracts: CPMMContract[] | undefined
+}) {
+  const { contracts } = props
+  const changedContracts = contracts
+    ? contracts.filter((c) => Math.abs(c.probChanges?.day ?? 0) >= 0.01)
+    : undefined
+  if (!changedContracts || changedContracts.length === 0) return <></>
+
+  return (
+    <Col>
+      <HomeSectionHeader
+        label="Today's updates"
+        icon="📊"
+        href="/todays-updates"
+      />
+      <ProbChangeTable changes={changedContracts as CPMMContract[]} />
+    </Col>
+  )
+})
 
 function HomeSectionHeader(props: {
   label: string
@@ -116,27 +132,6 @@ function HomeSectionHeader(props: {
     </Row>
   )
 }
-
-const YourDailyUpdates = memo(function YourDailyUpdates(props: {
-  contracts: CPMMContract[] | undefined
-}) {
-  const { contracts } = props
-  const changedContracts = contracts
-    ? contracts.filter((c) => Math.abs(c.probChanges?.day ?? 0) >= 0.01)
-    : undefined
-  if (!changedContracts || changedContracts.length === 0) return <></>
-
-  return (
-    <Col>
-      <HomeSectionHeader
-        label="Today's updates"
-        icon="📊"
-        href="/todays-updates"
-      />
-      <ProbChangeTable changes={changedContracts as CPMMContract[]} />
-    </Col>
-  )
-})
 
 const LiveSection = memo(function LiveSection(props: {
   pill: pill_options

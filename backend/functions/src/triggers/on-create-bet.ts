@@ -59,6 +59,7 @@ import {
   getUniqueBettorIds,
   getUniqueBettorIdsForAnswer,
 } from 'shared/supabase/contracts'
+import { removeUndefinedProps } from 'common/util/object'
 
 const firestore = admin.firestore()
 
@@ -116,7 +117,8 @@ export const onCreateBet = functions
     await handleReferral(bettor, eventId)
     await updateBettingStreak(bettor, bet, contract, eventId)
 
-    await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor, bet)
+    await giveUniqueBettorAndLiquidityBonus(contract, eventId, bettor, bet)
+    await updateUniqueBettors(contract, bet)
 
     await completeArchaeologyQuest(bet, bettor, contract, eventId)
 
@@ -201,114 +203,104 @@ const updateBettingStreak = async (
   }
 }
 
-export const updateUniqueBettorsAndGiveCreatorBonus = async (
-  oldContract: Contract,
+export const updateUniqueBettors = async (contract: Contract, bet: Bet) => {
+  const pg = createSupabaseDirectClient()
+  const contractDoc = firestore.collection(`contracts`).doc(contract.id)
+  const supabaseUniqueBettorIds = await getUniqueBettorIds(contract.id, pg)
+  if (!supabaseUniqueBettorIds.includes(bet.userId))
+    supabaseUniqueBettorIds.push(bet.userId)
+
+  if (contract.uniqueBettorCount == supabaseUniqueBettorIds.length) return
+  await contractDoc.update({
+    uniqueBettorCount: supabaseUniqueBettorIds.length,
+  })
+}
+
+export const giveUniqueBettorAndLiquidityBonus = async (
+  contract: Contract,
   eventId: string,
   bettor: User,
   bet: Bet
 ) => {
+  const { answerId, isRedemption } = bet
   const pg = createSupabaseDirectClient()
 
-  // Add house liquidity to multiple choice each time a user bets on a new answer.
-  if (
-    oldContract.mechanism === 'cpmm-multi-1' &&
-    bet.answerId &&
-    // Only consider non-redemption bets!
-    !bet.isRedemption &&
-    bet.userId !== oldContract.creatorId
-  ) {
-    const previousBetOnAnswerSnap = await firestore
-      .collection('contracts')
-      .doc(oldContract.id)
-      .collection('bets')
-      .where('answerId', '==', bet.answerId)
-      .where('userId', '==', bet.userId)
-      .where('isRedemption', '==', false)
-      .where('createdTime', '<', bet.createdTime)
-      .limit(1)
-      .get()
+  const isCreator = bettor.id == contract.creatorId
+  const isBot = BOT_USERNAMES.includes(bettor.username)
+  const isUnlisted = contract.visibility === 'unlisted'
 
-    if (previousBetOnAnswerSnap.empty) {
-      const uniqueBettorIds = await getUniqueBettorIdsForAnswer(
-        oldContract.id,
-        bet.answerId,
-        pg
+  if (isCreator || isBot || isUnlisted || isRedemption) return
+
+  const previousBet = answerId
+    ? await pg.oneOrNone(
+        `select bet_id from contract_bets
+        where contract_id = $1
+          and data->>'answerId' = $2
+          and user_id = $3
+          and created_time < $4
+          and is_redemption = false
+        limit 1`,
+        [
+          contract.id,
+          answerId,
+          bettor.id,
+          new Date(bet.createdTime - 1).toISOString(),
+        ]
       )
-      if (!uniqueBettorIds.includes(bettor.id)) uniqueBettorIds.push(bettor.id)
-      if (uniqueBettorIds.length <= MAX_TRADERS_FOR_BONUS) {
-        await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
-      }
-    }
-  }
-
-  // Return if they've already bet on this contract previously, but we'll check in a transaction to be safe
-  const previousBet = await pg.oneOrNone(
-    `
-    select bet_id from contract_bets
-    where contract_id = $1
-    and user_id = $2
-    and created_time < $3
-    limit 1`,
-    [oldContract.id, bettor.id, new Date(bet.createdTime).toISOString()]
-  )
+    : await pg.oneOrNone(
+        `select bet_id from contract_bets
+        where contract_id = $1
+          and user_id = $2
+          and created_time < $3
+        limit 1`,
+        [contract.id, bettor.id, new Date(bet.createdTime).toISOString()]
+      )
+  // Check previous bet.
   if (previousBet) return
 
-  const fromUserId = isProd()
-    ? HOUSE_LIQUIDITY_PROVIDER_ID
-    : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-  const isCreator = bettor.id == oldContract.creatorId
-  // They may still have bet on this previously, use a transaction to be sure we haven't sent creator a bonus already
-  const result = await firestore.runTransaction(async (trans) => {
-    const contractDoc = firestore.collection(`contracts`).doc(oldContract.id)
-    const contract = (await trans.get(contractDoc)).data() as Contract
+  // For bets with answerId (multiple choice), give a bonus for the first bet on each answer.
+  // NOTE: this may miscount unique bettors if they place multiple bets quickly b/c of replication delay.
+  const uniqueBettorIds = answerId
+    ? await getUniqueBettorIdsForAnswer(contract.id, answerId, pg)
+    : await getUniqueBettorIds(contract.id, pg)
+  if (!uniqueBettorIds.includes(bettor.id)) uniqueBettorIds.push(bettor.id)
 
-    const txnsSnap = await firestore
+  // Check max bonus exceeded.
+  if (uniqueBettorIds.length > MAX_TRADERS_FOR_BONUS) return
+
+  // They may still have bet on this previously, use a transaction to be sure
+  // we haven't sent creator a bonus already
+  const result = await firestore.runTransaction(async (trans) => {
+    const fromUserId = isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+    const query = firestore
       .collection('txns')
       .where('fromId', '==', fromUserId)
       .where('toId', '==', contract.creatorId)
       .where('category', '==', 'UNIQUE_BETTOR_BONUS')
       .where('data.uniqueNewBettorId', '==', bettor.id)
       .where('data.contractId', '==', contract.id)
-      .get()
+    const queryWithMaybeAnswer = answerId
+      ? query.where('data.answerId', '==', answerId)
+      : query
+    const txnsSnap = await queryWithMaybeAnswer.get()
 
     const refs = txnsSnap.docs.map((doc) => doc.ref)
     const txns = refs.length > 0 ? await trans.getAll(...refs) : []
     const bonusGivenAlready = txns.length > 0
-    if (bonusGivenAlready) return
-    // two options from here:
-    //1. they're the creator, and we don't want to give them a bonus, but they may be a new bettor, so update the bettor count
-    //2. they're a new bettor, so update the bettor count and give the creator a bonus
-    // if they're the creator: if the bet is not replicated, add 1 to the count and update the count
-    const supabaseUniqueBettorIds = await getUniqueBettorIds(contract.id, pg)
-    // NOTE: this may miscount the creator temporarily as a unique bettor multiple times if they place bets
-    //  quickly bc of replication delay. It should revert to the true number once other people bet, though
-    if (!supabaseUniqueBettorIds.includes(bettor.id))
-      supabaseUniqueBettorIds.push(bettor.id)
+    if (bonusGivenAlready) return undefined
 
-    if (
-      supabaseUniqueBettorIds.length > MAX_TRADERS_FOR_BONUS ||
-      // Exclude creator from bonuses
-      isCreator ||
-      // Exclude unlisted markets from bonuses
-      oldContract.visibility === 'unlisted' ||
-      // Exclude bots from bonuses
-      BOT_USERNAMES.includes(bettor.username)
-    ) {
-      trans.update(contractDoc, {
-        uniqueBettorCount: supabaseUniqueBettorIds.length,
-      })
-      return
-    }
-
-    const bonusTxnData = {
-      contractId: oldContract.id,
+    const bonusTxnData = removeUndefinedProps({
+      contractId: contract.id,
       uniqueNewBettorId: bettor.id,
-    }
+      answerId,
+    })
 
     const bonusTxn: TxnData = {
       fromId: fromUserId,
       fromType: 'BANK',
-      toId: oldContract.creatorId,
+      toId: contract.creatorId,
       toType: 'USER',
       amount: UNIQUE_BETTOR_BONUS_AMOUNT,
       token: 'M$',
@@ -318,32 +310,33 @@ export const updateUniqueBettorsAndGiveCreatorBonus = async (
     } as Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'>
 
     const { status, message, txn } = await runTxn(trans, bonusTxn)
-    trans.update(contractDoc, {
-      uniqueBettorCount: supabaseUniqueBettorIds.length,
-    })
-    return { status, newUniqueBettorIds: supabaseUniqueBettorIds, message, txn }
+    return { status, message, txn }
   })
   if (!result) return
 
-  if (oldContract.mechanism === 'cpmm-1') {
-    await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
+  if (
+    contract.mechanism === 'cpmm-1' ||
+    contract.mechanism === 'cpmm-multi-1'
+  ) {
+    await addHouseSubsidy(contract.id, UNIQUE_BETTOR_LIQUIDITY)
   }
 
   if (result.status != 'success' || !result.txn) {
-    log(`No bonus for user: ${oldContract.creatorId} - status:`, result.status)
+    log(`No bonus for user: ${contract.creatorId} - status:`, result.status)
     log('message:', result.message)
   } else {
-    log(
-      `Bonus txn for user: ${oldContract.creatorId} completed:`,
-      result.txn?.id
-    )
+    log(`Bonus txn for user: ${contract.creatorId} completed:`, result.txn?.id)
+    const overallUniqueBettorIds = answerId
+      ? await getUniqueBettorIds(contract.id, pg)
+      : uniqueBettorIds
+
     await createUniqueBettorBonusNotification(
-      oldContract.creatorId,
+      contract.creatorId,
       bettor,
       result.txn.id,
-      oldContract,
+      contract,
       result.txn.amount,
-      result.newUniqueBettorIds,
+      overallUniqueBettorIds,
       eventId + '-unique-bettor-bonus',
       bet
     )

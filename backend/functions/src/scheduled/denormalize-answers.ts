@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { uniq } from 'lodash'
+import { sortBy, uniq } from 'lodash'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
 import { getAnswersForContracts } from 'common/supabase/contracts'
@@ -37,8 +37,12 @@ export async function denormalizeAnswersCore() {
   const answersByContractId = await getAnswersForContracts(db, contractIds)
   await Promise.all(
     Object.entries(answersByContractId).map(([contractId, answers]) => {
-      return firestore.collection('contracts').doc(contractId).update({
+      const sortedAnswers = sortBy(
         answers,
+        (answer) => answer.index ?? answer.createdTime
+      )
+      return firestore.collection('contracts').doc(contractId).update({
+        answers: sortedAnswers,
       })
     })
   )

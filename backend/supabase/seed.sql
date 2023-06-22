@@ -184,6 +184,53 @@ create index if not exists user_reactions_content_id on user_reactions (
 alter table user_reactions
 cluster on user_reactions_type;
 
+
+create table if not exists
+    user_share_events (
+                          id bigint generated always as identity primary key,
+                          created_time timestamptz not null default now(),
+                          user_id text not null,
+                          contract_id text null,
+                          comment_id text null
+);
+
+alter table user_share_events enable row level security;
+
+drop policy if exists "public read" on user_share_events;
+
+create policy "public read" on user_share_events for
+    select
+    using (true);
+
+create index if not exists user_share_events_user_id on user_share_events (user_id);
+alter table user_share_events
+    cluster on user_share_events_user_id;
+
+create table if not exists
+    user_disinterests (
+        id bigint generated always as identity primary key,
+        user_id text not null,
+        creator_id text not null,
+        contract_id text not null,
+        comment_id text,
+        feed_id bigint,
+        created_time timestamptz not null default now()
+);
+
+alter table user_disinterests enable row level security;
+
+drop policy if exists "public read" on user_disinterests;
+
+create policy "public read" on user_disinterests for
+    select
+    using (true);
+
+create index if not exists user_disinterests_user_id on user_disinterests (user_id);
+create index if not exists user_disinterests_user_id_contract_id on user_disinterests (user_id, contract_id);
+
+alter table user_disinterests
+    cluster on user_disinterests_user_id;
+
 create table if not exists
   user_events (
     id bigint generated always as identity primary key,
@@ -316,6 +363,7 @@ create table if not exists
     group_id text null,
     reaction_id text null,
     idempotency_key text null,
+    is_copied boolean not null default false,
     unique (user_id, idempotency_key)
   );
 
@@ -337,9 +385,9 @@ create index if not exists user_feed_data_gin on user_feed using GIN (data);
 
 create index if not exists user_feed_created_time on user_feed (user_id, created_time desc);
 
-create index if not exists user_feed_unseen_created_time on user_feed (
+create index concurrently if not exists user_feed_user_id_contract_id_created_time on user_feed (
   user_id,
-  seen_time desc nulls first,
+  contract_id,
   created_time desc
 );
 
@@ -917,7 +965,8 @@ create table if not exists
     created_at timestamp not null default now(),
     interest_embedding vector (1536) not null,
     pre_signup_interest_embedding vector (1536),
-    card_view_embedding vector (1536)
+    card_view_embedding vector (1536),
+    disinterest_embedding vector (1536)
   );
 
 alter table user_embeddings enable row level security;
@@ -1087,6 +1136,7 @@ select
 create table if not exists
   answers (
     id text not null primary key,
+    index int, -- Order of the answer in the list
     contract_id text, -- Associated contract
     user_id text, -- Creator of the answer
     text text,
@@ -1111,9 +1161,9 @@ create
 or replace function answers_populate_cols () returns trigger language plpgsql as $$
 begin
   if new.data is not null then
+    new.index := ((new.data) ->> 'index')::int;
     new.contract_id := (new.data) ->> 'contractId';
     new.user_id := (new.data) ->> 'userId';
-    new.text := ((new.data) ->> 'text')::text;
     new.text := ((new.data) ->> 'text')::text;
     new.created_time :=
         case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;

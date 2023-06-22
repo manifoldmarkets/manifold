@@ -9,7 +9,7 @@ import { Group, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
 export { APIError } from 'common/api'
-import { filter, Sort } from '../../components/supabase-search'
+import { filter, Sort } from 'web/components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { Bet } from 'common/bet'
@@ -263,8 +263,15 @@ export function getSupabaseToken() {
   return call(getApiUrl('getsupabasetoken'), 'GET')
 }
 
-export function updateUserEmbedding(params: { userId: string }) {
-  return call(getApiUrl('update-user-embedding'), 'POST', params)
+export function updateUserEmbedding() {
+  return call(getApiUrl('update-user-embedding'), 'POST')
+}
+export function updateUserDisinterestEmbedding(params: {
+  contractId: string
+  creatorId: string
+  feedId?: number
+}) {
+  return call(getApiUrl('update-user-disinterest-embedding'), 'POST', params)
 }
 
 export function createCommentOnContract(params: {
@@ -283,6 +290,7 @@ export function supabaseSearchContracts(params: {
   sort: Sort
   offset: number
   limit: number
+  topic?: string
   fuzzy?: boolean
   groupId?: string
   creatorId?: string
@@ -341,6 +349,8 @@ export function supabaseSearchGroups(params: {
   limit: number
   fuzzy?: boolean
   yourGroups?: boolean
+  addingToContract?: boolean
+  newContract?: boolean
 }) {
   return maybeAuthedCall(
     getApiUrl('supabasesearchgroups'),

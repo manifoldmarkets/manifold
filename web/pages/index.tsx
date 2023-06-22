@@ -30,6 +30,7 @@ import clsx from 'clsx'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { formatMoney } from 'common/util/format'
 import { SiteLink } from 'web/components/widgets/site-link'
+import { NewsTopicsTabs } from 'web/components/news-topics-tabs'
 
 const excludedGroupSlugs = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
@@ -117,10 +118,13 @@ export default function Home(props: {
             />
           </Row>
         </Col>
-
-        <ContractsSection
-          contracts={trendingContracts}
-          className="w-full self-center"
+        <NewsTopicsTabs
+          homeContent={
+            <ContractsSection
+              contracts={trendingContracts}
+              className="w-full self-center"
+            />
+          }
         />
 
         <TestimonialsPanel />
@@ -252,13 +256,9 @@ const ContractsSection = memo(function ContractsSection(props: {
 }) {
   const { contracts, className } = props
   return (
-    <Col className={clsx('max-w-2xl', className)}>
+    <Col className={clsx('max-w-2xl gap-2', className)}>
       {contracts.map((contract) => (
-        <FeedContractCard
-          key={contract.id}
-          contract={contract}
-          className="my-2"
-        />
+        <FeedContractCard key={contract.id} contract={contract} />
       ))}
     </Col>
   )

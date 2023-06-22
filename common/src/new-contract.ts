@@ -77,6 +77,7 @@ export function getNewContract(
     closeTime,
     dailyScore: 0,
     popularityScore: 0,
+    importanceScore: 0,
     uniqueBettorCount: 0,
     lastUpdatedTime: createdTime,
 

@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
@@ -80,10 +79,6 @@ export const FeedItems = (props: {
           >
             <FeedContractCard
               contract={contract}
-              className={clsx(
-                'my-0 border-0',
-                hasItems ? 'rounded-t-xl rounded-b-none' : ''
-              )}
               promotedData={promotedData}
               trackingPostfix="feed"
               hasItems={hasItems}

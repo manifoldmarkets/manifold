@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
-import { NumericContract, PseudoNumericContract } from 'common/contract'
 import { getMappedBucket } from 'common/calculate-dpm'
+import { NumericContract, PseudoNumericContract } from 'common/contract'
 
 import { NumberInput } from './number-input'
 
@@ -10,8 +10,10 @@ export function BucketInput(props: {
   isSubmitting?: boolean
   onBucketChange: (value?: number, bucket?: string) => void
   placeholder?: string
+  className?: string
 }) {
-  const { contract, isSubmitting, onBucketChange, placeholder } = props
+  const { contract, isSubmitting, onBucketChange, placeholder, className } =
+    props
 
   const [numberString, setNumberString] = useState('')
 
@@ -35,12 +37,12 @@ export function BucketInput(props: {
 
   return (
     <NumberInput
-      inputClassName="w-full max-w-none"
       onChange={onChange}
       error={undefined}
       disabled={isSubmitting}
       numberString={numberString}
       placeholder={placeholder}
+      className={className}
     />
   )
 }

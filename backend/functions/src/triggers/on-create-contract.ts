@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import { JSONContent } from '@tiptap/core'
 
-import { getUser } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
@@ -11,6 +11,7 @@ import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-intern
 import { addContractToFeed } from 'shared/create-feed'
 import { INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 import { createNewContractNotification } from 'shared/create-notification'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const onCreateContract = functions
   .runWith({
@@ -33,6 +34,27 @@ export const onCreateContract = functions
     const desc = contract.description as JSONContent
     const mentioned = parseMentions(desc)
     await addUserToContractFollowers(contract.id, contractCreator.id)
+
+    await createNewContractNotification(
+      contractCreator,
+      contract,
+      eventId,
+      richTextToString(desc),
+      mentioned
+    )
+    const pg = createSupabaseDirectClient()
+    const contractEmbedding = await pg.oneOrNone<{ embedding: string }>(
+      `select embedding
+        from contract_embeddings
+        where contract_id = $1`,
+      [contract.id]
+    )
+    const contractHasEmbedding = (contractEmbedding?.embedding ?? []).length > 0
+    log('contractHasEmbedding:', contractHasEmbedding)
+    if (!contractHasEmbedding) {
+      // Wait 5 seconds, hopefully the embedding will be there by then
+      await new Promise((resolve) => setTimeout(resolve, 5000))
+    }
     await addContractToFeed(
       contract,
       [
@@ -47,13 +69,5 @@ export const onCreateContract = functions
         minUserInterestDistanceToContract:
           INTEREST_DISTANCE_THRESHOLDS.new_contract,
       }
-    )
-
-    await createNewContractNotification(
-      contractCreator,
-      contract,
-      eventId,
-      richTextToString(desc),
-      mentioned
     )
   })

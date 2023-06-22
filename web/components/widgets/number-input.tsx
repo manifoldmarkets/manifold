@@ -13,7 +13,6 @@ export function NumberInput(props: {
   disabled?: boolean
   placeholder?: string
   className?: string
-  inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
   children?: ReactNode
@@ -25,7 +24,6 @@ export function NumberInput(props: {
     disabled,
     placeholder,
     className,
-    inputClassName,
     inputRef,
     children,
   } = props
@@ -33,7 +31,7 @@ export function NumberInput(props: {
   return (
     <Col className={className}>
       <Input
-        className={clsx('max-w-[200px] !text-lg', inputClassName)}
+        className={clsx('w-full !text-lg')}
         ref={inputRef}
         type="text"
         pattern="[0-9]*"
@@ -56,5 +54,54 @@ export function NumberInput(props: {
 
       {children}
     </Col>
+  )
+}
+
+export function ControllableNumberInput(props: {
+  num: number | undefined
+  onChange: (newProb: number | undefined) => void
+  minValue: number
+  maxValue: number
+  disabled?: boolean
+  placeholder?: string
+  className?: string
+  error?: boolean
+}) {
+  const {
+    num,
+    onChange,
+    disabled,
+    placeholder,
+    className,
+    minValue,
+    maxValue,
+    error,
+  } = props
+
+  const onNumChange = (str: string) => {
+    let n = parseInt(str.replace(/\D/g, ''))
+    const isInvalid = !str || isNaN(n)
+    if (n < minValue) {
+      n = minValue
+    }
+    if (n > maxValue) {
+      n = maxValue
+    }
+    onChange(isInvalid ? undefined : n)
+  }
+
+  return (
+    <Input
+      className={clsx('pr-2 !text-lg', 'w-full', className)}
+      type="text"
+      pattern="[0-9]*"
+      inputMode="numeric"
+      maxLength={2}
+      placeholder={placeholder ?? '0'}
+      value={num ?? ''}
+      disabled={disabled}
+      onChange={(e) => onNumChange(e.target.value)}
+      error={error}
+    />
   )
 }

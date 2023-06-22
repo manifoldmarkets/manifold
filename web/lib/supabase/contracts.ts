@@ -196,11 +196,21 @@ export async function searchContract(props: {
   filter: filter
   sort: Sort
   offset?: number
+  topic?: string
   limit: number
   group_id?: string
   creator_id?: string
 }) {
-  const { query, filter, sort, offset = 0, limit, group_id, creator_id } = props
+  const {
+    query,
+    topic,
+    filter,
+    sort,
+    offset = 0,
+    limit,
+    group_id,
+    creator_id,
+  } = props
   const state = props.state ?? {
     contracts: undefined,
     fuzzyContractOffset: 0,
@@ -215,10 +225,11 @@ export async function searchContract(props: {
   if (!query) {
     const contracts = await supabaseSearchContracts({
       term: '',
-      filter: filter,
-      sort: sort,
-      offset: offset,
-      limit: limit,
+      filter,
+      sort,
+      offset,
+      limit,
+      topic,
       groupId: group_id,
       creatorId: creator_id,
     })
@@ -235,19 +246,21 @@ export async function searchContract(props: {
       limit,
       group_id,
       creator_id,
+      topic,
     })
     return contractFuzzy
   }
 
   const contracts = await supabaseSearchContracts({
     term: query,
-    filter: filter,
-    sort: sort,
-    offset: offset,
-    limit: limit,
+    filter,
+    sort,
+    offset,
+    limit,
     fuzzy: false,
     groupId: group_id,
     creatorId: creator_id,
+    topic,
   })
   if (contracts) {
     if (contracts.length == limit) {
@@ -276,20 +289,23 @@ export async function searchContractFuzzy(props: {
   query: string
   filter: filter
   sort: Sort
+  topic?: string
   limit: number
   group_id?: string
   creator_id?: string
 }) {
-  const { state, query, filter, sort, limit, group_id, creator_id } = props
+  const { state, topic, query, filter, sort, limit, group_id, creator_id } =
+    props
   const contracts = await supabaseSearchContracts({
     term: query,
-    filter: filter,
-    sort: sort,
+    filter,
+    sort,
     offset: state.fuzzyContractOffset,
-    limit: limit,
+    limit,
     fuzzy: true,
     groupId: group_id,
     creatorId: creator_id,
+    topic,
   })
   if (contracts) {
     return {

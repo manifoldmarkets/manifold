@@ -80,7 +80,7 @@ export default function Welcome() {
   if (groupSelectorOpen) return <TopicSelectorDialog />
 
   return (
-    <Modal open={open} setOpen={close}>
+    <Modal open={open} setOpen={close} bgOpaque={true} size={'lg'}>
       <Col className="bg-canvas-0 place-content-between rounded-md px-8 py-6 text-sm md:text-lg">
         {availablePages[page]}
         <Col>
@@ -197,6 +197,7 @@ export function CharityPage(props: { className?: string }) {
         height={100}
         src="/welcome/charity.gif"
         className="my-4 h-full w-full rounded-md object-contain"
+        alt=""
       />
       <p className="mt-2 mb-2 text-left text-lg">
         You can turn your mana earnings into a real donation to charity, at a

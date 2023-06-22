@@ -32,7 +32,7 @@ import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserLink } from 'web/components/widgets/user-link'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { OrderTable } from 'web/components/bet/limit-bets'
-import { TinyRelativeTimestamp } from 'web/components/relative-timestamp'
+import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
 import { BetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
@@ -431,7 +431,10 @@ function BetsTable(props: {
       span: isMobile ? 2 : 1,
       renderCell: (c: Contract) => (
         <Row className={'justify-end'}>
-          <TinyRelativeTimestamp time={metricsByContractId[c.id].lastBetTime} />
+          <RelativeTimestamp
+            time={metricsByContractId[c.id].lastBetTime}
+            shortened={true}
+          />
         </Row>
       ),
     },

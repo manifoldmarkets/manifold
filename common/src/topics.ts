@@ -1,53 +1,23 @@
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
-  '🗳️ US Politics': ['🙋 2024 US Elections', '🟠 Trump', '🇺🇸 US Politics'],
-
-  '💻 Technology': [
+  '🚀 Popular': [
+    '🙋 2024 US Elections',
+    '🇺🇸 US Politics',
     '🤖 AI',
-    '🪙 Crypto',
-    '🪸 Climate',
-    '🧬 Biotech',
-    '💻 Programming',
+    '🚘 Elon Musk',
+    '🟠 Trump',
+    '💪 Personal Development',
     '🔬 Science',
-    '🧮 Math',
-    '☢️ Nuclear',
-    '🚀 Space',
+    '💻 Programming',
+    '🪙 Crypto',
   ],
-
   '🏟️ Sports': [
     '🏀 Basketball',
     '🏈 NFL',
     '⚾ Baseball',
     '⚽ Soccer',
     '♟️ Chess',
-    '🏎️ Racing',
     '🏅 Sports',
   ],
-
-  '🍿 Media': [
-    '🎬 Movies',
-    '📺 TV Shows',
-    '🎮 Gaming',
-    '🎵 Music',
-    '📚 Books',
-    '🌐 Internet Culture',
-    '👥 Celebrities',
-  ],
-  '💼 Business': [
-    '🪙 Crypto',
-    '💵 Finance',
-    '💰 Economics',
-    '🚀 Startups',
-    '🚘 Elon Musk',
-  ],
-
-  '🪂 Lifestyle': [
-    '🏳️‍🌈 LGBTQIA+',
-    '⛪ Religion',
-    '❤️ Sex and love',
-    '👨‍🎓 Education',
-    '💪 Personal Development',
-  ],
-
   '🌍 World': [
     '🇷🇺🇺🇦 Russia & Ukraine',
     '🇨🇳 China',
@@ -59,14 +29,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🌍 Middle East',
   ],
 
-  '👥 Communities': [
-    // '🤓 CGP Grey',
-    // '📜 ACX',
-    '💗 Effective Altruism',
-    '🎮 Destiny.gg',
-    // '🦔 Proofniks',
-    // '🎰 Wall Street Bets',
-  ],
+  '👥 Communities': ['💗 Effective Altruism', '🎮 Destiny.gg'],
 }
 
 const GROUP_IDs: { [key: string]: string } = {
@@ -102,4 +65,7 @@ export const getSubtopics = (topic: string) =>
   )
 export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
   .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))
+  .flat()
+export const ALL_TOPICS_WITH_EMOJIS = Object.keys(TOPICS_TO_SUBTOPICS)
+  .map((topic) => getSubtopics(topic).map(([subtopic]) => subtopic))
   .flat()

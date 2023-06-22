@@ -1,37 +1,39 @@
-import { sortBy, partition, sum, groupBy } from 'lodash'
-import { useEffect, useState } from 'react'
 import { ChatIcon } from '@heroicons/react/outline'
+import { groupBy, partition, sortBy, sum } from 'lodash'
+import { useEffect, useState } from 'react'
 
-import { CPMMMultiContract, MultiContract } from 'common/contract'
-import { Col } from '../layout/col'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { tradingAllowed } from 'common/contract'
-import { AnswerItem } from './answer-item'
-import { CreateAnswerPanel } from './create-answer-panel'
-import { AnswerResolvePanel } from './answer-resolve-panel'
-import { getAnswerProbability } from 'common/calculate'
-import { Answer, DpmAnswer } from 'common/answer'
 import clsx from 'clsx'
+import { Answer, DpmAnswer } from 'common/answer'
+import { Bet } from 'common/bet'
+import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
+import {
+  CPMMMultiContract,
+  MultiContract,
+  tradingAllowed,
+} from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
-import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
+import { Button } from 'web/components/buttons/button'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { Linkify } from 'web/components/widgets/linkify'
-import { Button } from 'web/components/buttons/button'
 import { useAdmin } from 'web/hooks/use-admin'
-import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
-import { useChartAnswers } from '../charts/contract/choice'
-import { GradientContainer } from '../widgets/gradient-container'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { BuyPanel } from '../bet/bet-panel'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Subtitle } from '../widgets/subtitle'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { getContractBetMetrics } from 'common/calculate'
-import { Bet } from 'common/bet'
-import { ProfitBadge } from '../profit-badge'
+import {
+  CHOICE_ANSWER_COLORS,
+  useChartAnswers,
+} from '../charts/contract/choice'
+import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
+import { GradientContainer } from '../widgets/gradient-container'
+import { Subtitle } from '../widgets/subtitle'
+import { AnswerItem } from './answer-item'
+import { AnswerResolvePanel } from './answer-resolve-panel'
+import { CreateAnswerPanel } from './create-answer-panel'
 
 export function getAnswerColor(
   answer: Answer | DpmAnswer,
@@ -72,27 +74,25 @@ export function AnswersPanel(props: {
       ? []
       : answers.filter((answer) => answerToProb[answer.id] < 0.01)
 
+  const sortedAnswers = sortBy(answers, (answer) =>
+    'index' in answer ? answer.index : -1 * answerToProb[answer.id]
+  )
+
   const [winningAnswers, losingAnswers] = partition(
-    answers.filter((answer) =>
+    sortedAnswers.filter((answer) =>
       showAllAnswers ? true : !answersToHide.find((a) => answer.id === a.id)
     ),
     (answer) =>
       answer.id === resolution || (resolutions && resolutions[answer.id])
   )
-  const sortedAnswers = [
+  const answerItems = [
     ...sortBy(winningAnswers, (answer) =>
       resolutions ? -1 * resolutions[answer.id] : 0
     ),
-    ...sortBy(
-      resolution ? [] : losingAnswers,
-      (answer) => -1 * answerToProb[answer.id]
-    ),
+    ...(resolution ? [] : losingAnswers),
   ]
 
-  const answerItems = sortBy(
-    losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
-    (answer) => -answerToProb[answer.id]
-  )
+  const openAnswers = losingAnswers.length > 0 ? losingAnswers : answerItems
 
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -146,7 +146,7 @@ export function AnswersPanel(props: {
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
-  const answerItemComponents = sortedAnswers.map((answer) => (
+  const answerItemComponents = answerItems.map((answer) => (
     <AnswerItem
       key={answer.id}
       answer={answer}
@@ -202,7 +202,7 @@ export function AnswersPanel(props: {
 
         {!resolveOption && (
           <Col className="gap-3">
-            {answerItems.map((answer) => (
+            {openAnswers.map((answer) => (
               <OpenAnswer
                 key={answer.id}
                 answer={answer}
@@ -262,7 +262,6 @@ function OpenAnswer(props: {
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
 
   const user = useUser()
-  const isMobile = useIsMobile()
   const hasBets = userBets && userBets.filter((b) => !b.isRedemption).length > 0
 
   return (
@@ -290,7 +289,6 @@ function OpenAnswer(props: {
                 user={user}
                 initialOutcome={outcome}
                 hidden={false}
-                mobileView={isMobile}
                 singularView={outcome}
                 onBuySuccess={() =>
                   setTimeout(() => setOutcome(undefined), 500)
@@ -363,7 +361,7 @@ function OpenAnswer(props: {
                   </Button>
                   <Button
                     size="2xs"
-                    color="indigo-outline"
+                    color="indigo"
                     onClick={() => setOutcome('LIMIT')}
                     className="my-auto"
                   >
@@ -401,16 +399,15 @@ function AnswerPosition(props: {
 }) {
   const { contract, userBets, className } = props
 
-  const { invested, profit, profitPercent, totalShares } =
-    getContractBetMetrics(contract, userBets)
+  const { invested, totalShares } = getContractBetMetrics(contract, userBets)
 
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
   const position = yesWinnings - noWinnings
 
   return (
-    <Row className={clsx(className, 'flex-wrap gap-6 sm:flex-nowrap')}>
-      <Col>
+    <Row className={clsx(className, 'gap-2 text-sm')}>
+      <Row className="gap-1">
         <div className="text-ink-500 whitespace-nowrap text-sm">Payout</div>
         <div className="whitespace-nowrap">
           {position > 1e-7 ? (
@@ -425,21 +422,13 @@ function AnswerPosition(props: {
             '——'
           )}
         </div>
-      </Col>
-      <Col>
+      </Row>
+      <Row className="gap-1">
         <div className="text-ink-500 whitespace-nowrap text-sm">Spent</div>
         <div className="whitespace-nowrap text-right">
           {formatMoney(invested)}
         </div>
-      </Col>
-
-      <Col>
-        <div className="text-ink-500 whitespace-nowrap text-sm">Profit</div>
-        <div className="whitespace-nowrap text-right">
-          {formatMoney(profit)}
-          <ProfitBadge profitPercent={profitPercent} round={true} />
-        </div>
-      </Col>
+      </Row>
     </Row>
   )
 }

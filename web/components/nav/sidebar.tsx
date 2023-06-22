@@ -34,7 +34,8 @@ import { ProfileSummary } from './profile-summary'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
 import { getIsNative } from 'web/lib/native/is-native'
-import { NewspaperIcon } from '@heroicons/react/solid'
+import { NewspaperIcon, SearchIcon } from '@heroicons/react/solid'
+import { useIsFeedTest } from 'web/hooks/use-is-feed-test'
 
 export default function Sidebar(props: {
   className?: string
@@ -42,7 +43,7 @@ export default function Sidebar(props: {
 }) {
   const { className, isMobile } = props
   const router = useRouter()
-  const currentPage = router.asPath
+  const currentPage = router.pathname
 
   const user = useUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -54,9 +55,11 @@ export default function Sidebar(props: {
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
 
+  const isFeed = !!useIsFeedTest()
+
   const navOptions = isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
-    : getDesktopNav(!!user, () => setIsModalOpen(true))
+    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), isFeed)
+    : getDesktopNav(!!user, () => setIsModalOpen(true), isFeed)
 
   const bottomNavOptions = bottomNav(
     !!user,
@@ -118,11 +121,17 @@ const logout = async () => {
   await Router.replace(Router.asPath)
 }
 
-const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
+const getDesktopNav = (
+  loggedIn: boolean,
+  openDownloadApp: () => void,
+  showMarkets: boolean
+) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
-      { name: 'Markets', href: '/markets', icon: ScaleIcon },
+      showMarkets
+        ? { name: 'Markets', href: '/markets', icon: ScaleIcon }
+        : { name: 'News', href: '/news', icon: NewspaperIcon },
       {
         name: 'Notifications',
         href: `/notifications`,
@@ -143,17 +152,20 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   return buildArray(
     { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'Markets', href: '/markets', icon: ScaleIcon },
+    { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
 }
 
 // No sidebar when signed out
-const getMobileNav = (toggleModal: () => void) => {
+const getMobileNav = (toggleModal: () => void, isFeed: boolean) => {
   return buildArray(
-    { name: 'Markets', href: '/markets', icon: ScaleIcon },
+    isFeed && { name: 'News', href: '/news', icon: NewspaperIcon },
+    isFeed
+      ? { name: 'Markets', href: '/markets', icon: ScaleIcon }
+      : { name: 'Search', href: '/search', icon: SearchIcon },
     getIsNative() && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    { name: 'News', href: '/news', icon: NewspaperIcon },
     {
       name: 'Groups',
       icon: UserGroupIcon,

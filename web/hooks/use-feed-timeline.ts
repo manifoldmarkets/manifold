@@ -34,6 +34,7 @@ export type FeedTimelineItem = {
   comments?: ContractComment[]
   news?: News
   reasonDescription?: string
+  isCopied?: boolean
 }
 export const useFeedTimeline = (user: User | null | undefined, key: string) => {
   const [boosts, setBoosts] = usePersistentInMemoryState<
@@ -91,21 +92,21 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
         (id) => !alreadySavedContractIds.includes(id)
       )
     )
-    const commentIds = uniq(
+    const commentOnContractIds = uniq(
       filterDefined(
         data.map((item) =>
-          alreadySavedContractIds.includes(item.contract_id ?? '_')
-            ? undefined
-            : item.comment_id
+          contractIds.includes(item.contract_id ?? '_')
+            ? item.comment_id
+            : undefined
         )
       )
     )
 
     const newsIds = uniq(filterDefined(data.map((item) => item.news_id)))
-    const [comments, contracts, news] = await Promise.all([
+    const [comments, contracts, news, ignoredContractIds] = await Promise.all([
       db
         .rpc('get_reply_chain_comments_for_comment_ids' as any, {
-          comment_ids: commentIds,
+          comment_ids: commentOnContractIds,
         })
         .then((res) => res.data?.map((c) => c.data as ContractComment)),
       db
@@ -127,9 +128,18 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
               } as News)
           )
         ),
+      db
+        .from('user_disinterests')
+        .select('contract_id')
+        .eq('user_id', userId)
+        .in('contract_id', contractIds)
+        .then((res) => res.data?.map((c) => c.contract_id)),
     ])
     const filteredContracts = contracts?.filter(
-      (c) => !isContractBlocked(privateUser, c)
+      (c) =>
+        !isContractBlocked(privateUser, c) &&
+        !c.isResolved &&
+        !ignoredContractIds?.includes(c.id)
     )
     const filteredComments = comments?.filter(
       (c) => !privateUser?.blockedUserIds?.includes(c.userId)
@@ -172,11 +182,11 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
 
   const loadMore = useEvent(
     async (options: { new?: boolean; old?: boolean; newerThan?: string }) => {
-      if (!userId) return
-      return fetchFeedItems(userId, options).then((res) => {
-        const { timelineItems } = res
-        addTimelineItems(timelineItems, options)
-      })
+      if (!userId) return false
+      const res = await fetchFeedItems(userId, options)
+      const { timelineItems } = res
+      addTimelineItems(timelineItems, options)
+      return timelineItems.length > 0
     }
   )
 
@@ -215,6 +225,7 @@ const getBaseTimelineItem = (item: Row<'user_feed'>) =>
     ),
     createdTime: new Date(item.created_time).valueOf(),
     supabaseTimestamp: item.created_time,
+    isCopied: item.is_copied,
   } as FeedTimelineItem)
 
 function createFeedTimelineItems(
@@ -264,7 +275,7 @@ function createFeedTimelineItems(
         // Otherwise, we don't need to see comments on closed/resolved markets
         if (
           shouldIgnoreCommentsOnContract(relevantContract) &&
-          (dataType === 'new_comment' || dataType !== 'popular_comment')
+          (dataType === 'new_comment' || dataType === 'popular_comment')
         )
           return
 
