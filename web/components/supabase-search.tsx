@@ -27,7 +27,6 @@ import { SiteLink } from './widgets/site-link'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { ALL_TOPICS_WITH_EMOJIS, cleanTopic } from 'common/topics'
 import { PillButton } from 'web/components/buttons/pill-button'
-import { Row } from 'web/components/layout/row'
 import { Carousel } from './widgets/carousel'
 
 const CONTRACTS_PER_PAGE = 20
