@@ -134,7 +134,7 @@ function getSearchContractSQL(contractInput: {
     FROM contracts
     ${whereSQL}
     AND slug = '${slug}' `
-    sortAlgorithm = 'popularity_score'
+    sortAlgorithm = 'importance_score'
   }
   // Searching markets within a group
   else if (groupId) {
@@ -211,8 +211,8 @@ function getSearchContractSQL(contractInput: {
     ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
     ) as relevant_group_contracts
       `
-      // We use popularity score bc these are exact matches and can be low quality
-      sortAlgorithm = 'popularity_score'
+      // We use importance score bc these are exact matches and can be low quality
+      sortAlgorithm = 'importance_score'
     }
   }
   // Searching markets by creator
@@ -339,8 +339,8 @@ select * from (
     -- prefix matches are weighted higher than subset matches bc they include the last word
     ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC) as ranked_matches
     `
-      // We use popularity score bc these are exact matches and can be low quality
-      sortAlgorithm = 'popularity_score'
+      // We use importance score bc these are exact matches and can be low quality
+      sortAlgorithm = 'importance_score'
     }
     // Normal full text search for markets
     else {
@@ -411,22 +411,23 @@ function getSearchContractWhereSQL(
   `
 }
 
+type SortFields = Record<string, string>
+
 function getSearchContractSortSQL(
   sort: string,
   fuzzy: boolean | undefined,
   empty: boolean,
   sortingAlgorithm: string | undefined
 ) {
-  type SortFields = Record<string, string>
   const sortFields: SortFields = {
     relevance: sortingAlgorithm
       ? sortingAlgorithm
       : empty
-      ? 'popularity_score'
+      ? 'importance_score'
       : fuzzy
       ? 'similarity_score'
       : 'ts_rank_cd(question_fts, query) * 1.0 + ts_rank_cd(description_fts, query) * 0.5',
-    score: 'popularity_score',
+    score: 'importance_score',
     'daily-score': "(data->>'dailyScore')::numeric",
     '24-hour-vol': "(data->>'volume24Hours')::numeric",
     liquidity: "(data->>'elasticity')::numeric",
