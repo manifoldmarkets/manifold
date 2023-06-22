@@ -1,6 +1,5 @@
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
   '🚀 Popular': [
-    '🙋 2024 US Elections',
     '🇺🇸 US Politics',
     '🤖 AI',
     '🚘 Elon Musk',
