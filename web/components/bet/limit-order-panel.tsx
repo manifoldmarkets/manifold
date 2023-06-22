@@ -65,12 +65,6 @@ export default function LimitOrderPanel(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
-  const [lowLimitProb, setLowLimitProb] = useState<number>(
-    isPseudoNumeric ? contract.min : 10
-  )
-  const [highLimitProb, setHighLimitProb] = useState<number>(
-    isPseudoNumeric ? contract.max : 90
-  )
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Expiring orders
@@ -88,18 +82,26 @@ export default function LimitOrderPanel(props: {
   const MAX_PROB = isPseudoNumeric ? contract.max : 100
   const MIN_PROB = isPseudoNumeric ? contract.min : 0
 
-  const hasYesLimitBet =
-    lowLimitProb !== undefined && !!betAmount && lowLimitProb > MIN_PROB
-  const hasNoLimitBet =
-    highLimitProb !== undefined && !!betAmount && highLimitProb < MAX_PROB
+  const [lowLimitProb, setLowLimitProb] = useState<number | undefined>(
+    undefined
+  )
+  const [highLimitProb, setHighLimitProb] = useState<number | undefined>(
+    undefined
+  )
+
+  const hasYesLimitBet = lowLimitProb !== undefined && !!betAmount
+  const hasNoLimitBet = highLimitProb !== undefined && !!betAmount
+
   const hasTwoBets = hasYesLimitBet && hasNoLimitBet
+  const invalidLowAndHighBet =
+    !!lowLimitProb && !!highLimitProb && lowLimitProb >= highLimitProb
 
   const betDisabled =
     isSubmitting ||
     !betAmount ||
     !!error ||
     (!hasYesLimitBet && !hasNoLimitBet) ||
-    lowLimitProb == highLimitProb
+    invalidLowAndHighBet
 
   const yesLimitProb =
     lowLimitProb === undefined
@@ -303,16 +305,18 @@ export default function LimitOrderPanel(props: {
       </Row>
       <LimitSlider
         isPseudoNumeric={isPseudoNumeric}
+        contract={contract}
         lowLimitProb={lowLimitProb}
         setLowLimitProb={setLowLimitProb}
         highLimitProb={highLimitProb}
         setHighLimitProb={setHighLimitProb}
-        max_prob={MAX_PROB}
-        min_prob={MIN_PROB}
-        mobileView={mobileView}
+        maxProb={MAX_PROB}
+        minProb={MIN_PROB}
+        isSubmitting={isSubmitting}
+        invalidLowAndHighBet={invalidLowAndHighBet}
       />
 
-      <Spacer h={8} />
+      <Spacer h={6} />
 
       <span className="text-ink-800 mb-2 text-sm">
         Max amount<span className="text-scarlet-500 ml-0.5">*</span>

@@ -38,12 +38,12 @@ export function BucketInput(props: {
 
   return (
     <NumberInput
-      inputClassName={clsx('w-full max-w-none', className)}
       onChange={onChange}
       error={undefined}
       disabled={isSubmitting}
       numberString={numberString}
       placeholder={placeholder}
+      className={className}
     />
   )
 }
