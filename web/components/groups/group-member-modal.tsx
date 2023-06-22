@@ -321,7 +321,7 @@ export function MemberRoleTag(props: {
   return (
     <span
       className={clsx(
-        'text-ink-0 h-min w-full rounded px-1 py-0.5 text-xs font-semibold',
+        'text-ink-0 rounded px-1 py-0.5 text-xs font-semibold',
         isCreator
           ? 'bg-primary-400'
           : role === 'admin'

@@ -298,7 +298,7 @@ export function SupabaseContractSearch(props: {
             loadMore={loadMoreContracts}
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
-            headerClassName={`${headerClassName} !top-14`}
+            headerClassName={clsx(headerClassName, '!top-14')}
           />
         ) : (
           <ContractsGrid
