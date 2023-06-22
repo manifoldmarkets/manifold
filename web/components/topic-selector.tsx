@@ -8,7 +8,9 @@ export function TopicSelector(props: {
   onSetTopic: (topic: string) => void
 }) {
   const { topic, onSetTopic } = props
-  const subtopics = uniq(Object.values(TOPICS_TO_SUBTOPICS).flat())
+  const subtopics = ['Any topic'].concat(
+    uniq(Object.values(TOPICS_TO_SUBTOPICS).flat())
+  )
   const selectTopic = (topic: string) => {
     onSetTopic(topic)
     track('select topic', { topic })
@@ -20,6 +22,7 @@ export function TopicSelector(props: {
       value={topic}
       onChange={(e) => {
         const { value } = e.target
+        if (value === 'Any topic') return selectTopic('')
         selectTopic(value)
       }}
     >
