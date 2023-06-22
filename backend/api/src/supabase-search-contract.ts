@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
-
+const TOPIC_DISTANCE_THRESHOLD = 0.225
 const bodySchema = z.object({
   term: z.string(),
   filter: z.union([
@@ -26,6 +26,7 @@ const bodySchema = z.object({
     z.literal('resolve-date'),
     z.literal('random'),
   ]),
+  topic: z.string().optional(),
   offset: z.number().gte(0),
   limit: z.number().gt(0),
   fuzzy: z.boolean().optional(),
@@ -35,8 +36,17 @@ const bodySchema = z.object({
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
-    const { term, filter, sort, offset, limit, fuzzy, groupId, creatorId } =
-      validate(bodySchema, req.body)
+    const {
+      term,
+      topic,
+      filter,
+      sort,
+      offset,
+      limit,
+      fuzzy,
+      groupId,
+      creatorId,
+    } = validate(bodySchema, req.body)
     const pg = createSupabaseDirectClient()
     const hasGroupAccess = groupId
       ? await pg
@@ -59,6 +69,7 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       creatorId,
       uid: auth?.uid,
       hasGroupAccess,
+      topic,
     })
     const contracts = await pg.map(
       searchMarketSQL,
@@ -81,6 +92,7 @@ function getSearchContractSQL(contractInput: {
   creatorId?: string
   uid?: string
   hasGroupAccess?: boolean
+  topic?: string
 }) {
   const {
     term,
@@ -93,13 +105,14 @@ function getSearchContractSQL(contractInput: {
     creatorId,
     uid,
     hasGroupAccess,
+    topic,
   } = contractInput
 
   let query = ''
   const emptyTerm = term.length === 0
 
   const hideStonks =
-    (sort === 'relevance' || sort === 'score') && !term && !groupId
+    (sort === 'relevance' || sort === 'score') && emptyTerm && !groupId
 
   const whereSQL = getSearchContractWhereSQL(
     filter,
@@ -108,7 +121,8 @@ function getSearchContractSQL(contractInput: {
     uid,
     groupId,
     hasGroupAccess,
-    hideStonks
+    hideStonks,
+    topic
   )
   let sortAlgorithm: string | undefined = undefined
   const isUrl = term.startsWith('https://manifold.markets/')
@@ -265,50 +279,65 @@ function getSearchContractSQL(contractInput: {
   }
   // Blank search for markets not by group nor creator
   else {
+    const topicJoin = topic
+      ? ` JOIN contract_embeddings ON contracts.id = contract_embeddings.contract_id, topic_embedding`
+      : ''
+    const fuzzyTopicQuery = topic
+      ? `topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = '${topic}' LIMIT 1),`
+      : ''
+    const topicQuery = topic
+      ? `with topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = '${topic}' LIMIT 1)`
+      : ''
+    const topicSelect = topic ? `contract_embeddings.embedding,` : ''
+    const topicFrom = topic ? `, contract_embeddings, topic_embedding` : ''
+    const topicAnd = topic
+      ? `AND contracts.id = contract_embeddings.contract_id`
+      : ''
     if (emptyTerm) {
       query = `
+      ${topicQuery}
       SELECT data
-      FROM contracts 
+      FROM contracts
+      ${topicJoin}
       ${whereSQL}`
     }
     // Fuzzy search for markets not by group nor creator
     else if (fuzzy) {
       query = `
-    select *
-      from (WITH
-        subset_query AS (
-            SELECT to_tsquery('english_nostop_with_prefix', get_exact_match_minus_last_word_query($1)) AS query
+select * from (
+    WITH ${fuzzyTopicQuery}
+     subset_query AS (
+         SELECT to_tsquery('english_nostop_with_prefix', get_exact_match_minus_last_word_query($1)) AS query
+     ),
+     prefix_query AS (
+         SELECT to_tsquery('english_nostop_with_prefix', get_prefix_match_query($1)) AS query
+     ),
+     subset_matches AS (
+         SELECT contracts.*, ${topicSelect} subset_query.query, 0.0 AS weight
+         FROM contracts, subset_query ${topicFrom}
+             ${whereSQL}
+           AND question_nostop_fts @@ subset_query.query ${topicAnd}
         ),
-        prefix_query AS (
-            SELECT to_tsquery('english_nostop_with_prefix', get_prefix_match_query($1)) AS query
+     prefix_matches AS (
+         SELECT contracts.*, ${topicSelect} prefix_query.query,  1.0 AS weight
+         FROM contracts, prefix_query ${topicFrom}
+           ${whereSQL}
+           AND question_nostop_fts @@ prefix_query.query ${topicAnd}
         ),
-        subset_matches AS (
-            SELECT contracts.*, subset_query.query, 0.0 AS weight
-            FROM contracts, subset_query
-                ${whereSQL}
-            AND question_nostop_fts @@ subset_query.query
-        ),
-        prefix_matches AS (
-            SELECT contracts.*, prefix_query.query,  1.0 AS weight
-            FROM contracts, prefix_query
-            ${whereSQL}
-            AND question_nostop_fts @@ prefix_query.query
-        ),
-        combined_matches AS (
-            SELECT * FROM prefix_matches
-            UNION ALL
-            SELECT * FROM subset_matches
-        )
-      SELECT *
-      FROM (
+     combined_matches AS (
+         SELECT * FROM prefix_matches
+         UNION ALL
+         SELECT * FROM subset_matches
+     )
+    SELECT *
+    FROM (
            SELECT *,
                   ROW_NUMBER() OVER (PARTITION BY id ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC) as row_num
            FROM combined_matches
        ) AS ranked_matches
-     WHERE row_num = 1
-     -- prefix matches are weighted higher than subset matches bc they include the last word
-     ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
-   ) as relevant_contracts
+    WHERE row_num = 1
+    -- prefix matches are weighted higher than subset matches bc they include the last word
+    ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC) as ranked_matches
     `
       // We use popularity score bc these are exact matches and can be low quality
       sortAlgorithm = 'popularity_score'
@@ -316,8 +345,11 @@ function getSearchContractSQL(contractInput: {
     // Normal full text search for markets
     else {
       query = `
+          ${topicQuery}
           SELECT data
-          FROM contracts, websearch_to_tsquery('english',  $1) as query
+          FROM contracts
+              ${topicJoin},
+               websearch_to_tsquery('english',  $1) as query
               ${whereSQL}
       AND (question_fts @@ query
           OR description_fts @@ query)`
@@ -339,7 +371,8 @@ function getSearchContractWhereSQL(
   uid: string | undefined,
   groupId: string | undefined,
   hasGroupAccess?: boolean,
-  hideStonks?: boolean
+  hideStonks?: boolean,
+  topic?: string
 ) {
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
@@ -350,13 +383,14 @@ function getSearchContractWhereSQL(
   }
 
   const stonkFilter = hideStonks ? `AND outcome_type != 'STONK'` : ''
-
+  const topicFilter = topic
+    ? `AND (contract_embeddings.embedding <=> topic_embedding.embedding < ${TOPIC_DISTANCE_THRESHOLD})`
+    : ''
   const sortFilter = sort == 'close-date' ? 'AND close_time > NOW()' : ''
   const otherVisibilitySQL = `
   OR (visibility = 'unlisted' AND creator_id='${uid}') 
   OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))
   `
-
   const visibilitySQL = `AND (visibility = 'public' ${
     uid ? otherVisibilitySQL : ''
   })`
@@ -372,7 +406,9 @@ function getSearchContractWhereSQL(
       ? ''
       : visibilitySQL
   }
-  ${creatorId ? `and creator_id = '${creatorId}'` : ''}`
+  ${creatorId ? `and creator_id = '${creatorId}'` : ''}
+  ${topicFilter}
+  `
 }
 
 function getSearchContractSortSQL(
