@@ -5,19 +5,28 @@ import {
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
-import { getPseudoProbability } from 'common/pseudo-numeric'
-import { BucketInput } from './bucket-input'
-import { Input } from './input'
 import { Col } from '../layout/col'
+import { Input } from './input'
+import { ControllableNumberInput } from './number-input'
 
 export function ProbabilityInput(props: {
   prob: number | undefined
   onChange: (newProb: number | undefined) => void
   disabled?: boolean
   placeholder?: string
+  className?: string
   inputClassName?: string
+  error?: boolean
 }) {
-  const { prob, onChange, disabled, placeholder, inputClassName } = props
+  const {
+    prob,
+    onChange,
+    disabled,
+    placeholder,
+    className,
+    inputClassName,
+    error,
+  } = props
 
   const onProbChange = (str: string) => {
     let prob = parseInt(str.replace(/\D/g, ''))
@@ -31,23 +40,22 @@ export function ProbabilityInput(props: {
   }
 
   return (
-    <Col>
-      <label className="relative w-fit">
-        <Input
-          className={clsx('pr-2 !text-lg', inputClassName)}
-          type="text"
-          pattern="[0-9]*"
-          inputMode="numeric"
-          maxLength={2}
-          placeholder={placeholder ?? '0'}
-          value={prob ?? ''}
-          disabled={disabled}
-          onChange={(e) => onProbChange(e.target.value)}
-        />
-        <span className="text-ink-400 absolute top-1/2 right-4 my-auto -translate-y-1/2">
-          %
-        </span>
-      </label>
+    <Col className={clsx(className, 'relative')}>
+      <Input
+        className={clsx('pr-2 !text-lg', 'w-full', inputClassName)}
+        type="text"
+        pattern="[0-9]*"
+        inputMode="numeric"
+        maxLength={2}
+        placeholder={placeholder ?? '0'}
+        value={prob ?? ''}
+        disabled={disabled}
+        onChange={(e) => onProbChange(e.target.value)}
+        error={error}
+      />
+      <span className="text-ink-400 absolute top-1/2 right-4 my-auto -translate-y-1/2">
+        %
+      </span>
     </Col>
   )
 }
@@ -62,39 +70,44 @@ export function ProbabilityOrNumericInput(props: {
   setProb: (prob: number | undefined) => void
   isSubmitting: boolean
   className?: string
+  inputClassName?: string
   placeholder?: string
+  width?: string
+  error?: boolean
 }) {
-  const { contract, prob, setProb, isSubmitting, placeholder, className } =
-    props
+  const {
+    contract,
+    prob,
+    setProb,
+    isSubmitting,
+    placeholder,
+    className,
+    inputClassName,
+    width = 'w-24',
+    error,
+  } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   return isPseudoNumeric ? (
-    <BucketInput
-      contract={contract}
-      onBucketChange={(value) =>
-        setProb(
-          value === undefined
-            ? undefined
-            : 100 *
-                getPseudoProbability(
-                  value,
-                  contract.min,
-                  contract.max,
-                  contract.isLogScale
-                )
-        )
-      }
-      isSubmitting={isSubmitting}
+    <ControllableNumberInput
+      num={prob}
+      className={clsx(className, width, inputClassName)}
+      onChange={setProb}
+      minValue={contract.min}
+      maxValue={contract.max}
+      disabled={isSubmitting}
       placeholder={placeholder}
-      className={className}
+      error={error}
     />
   ) : (
     <ProbabilityInput
-      inputClassName="w-24"
+      className={clsx(className, width)}
+      inputClassName={inputClassName}
       prob={prob}
       onChange={setProb}
       disabled={isSubmitting}
       placeholder={placeholder}
+      error={error}
     />
   )
 }

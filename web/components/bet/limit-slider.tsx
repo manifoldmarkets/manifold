@@ -1,11 +1,16 @@
 import clsx from 'clsx'
 
+import {
+  CPMMBinaryContract,
+  CPMMMultiContract,
+  PseudoNumericContract,
+  StonkContract,
+} from 'common/contract'
 import Slider from 'rc-slider'
-import { useEffect, useRef, useState } from 'react'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 
 export function convertNumberToProb(
   number: number,
@@ -21,23 +26,31 @@ export function convertNumberToProb(
 
 export function LimitSlider(props: {
   isPseudoNumeric: boolean
-  lowLimitProb: number
-  setLowLimitProb: (prob: number) => void
-  highLimitProb: number
-  setHighLimitProb: (prob: number) => void
-  max_prob: number
-  min_prob: number
-  mobileView?: boolean
+  contract:
+    | CPMMBinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
+  lowLimitProb: number | undefined
+  setLowLimitProb: (prob: number | undefined) => void
+  highLimitProb: number | undefined
+  setHighLimitProb: (prob: number | undefined) => void
+  maxProb: number
+  minProb: number
+  isSubmitting: boolean
+  invalidLowAndHighBet: boolean
 }) {
   const {
     isPseudoNumeric,
+    contract,
     lowLimitProb,
     setLowLimitProb,
     highLimitProb,
     setHighLimitProb,
-    max_prob,
-    min_prob,
-    mobileView,
+    maxProb,
+    minProb,
+    isSubmitting,
+    invalidLowAndHighBet,
   } = props
 
   const mark = (value: number) => (
@@ -47,154 +60,116 @@ export function LimitSlider(props: {
     </span>
   )
 
-  const targetRef = useRef<HTMLDivElement>(null)
-  const [sliderWidth, setSliderWidth] = useState(0)
-  const window = useWindowSize()
-  useEffect(() => {
-    if (targetRef.current) {
-      setSliderWidth(targetRef.current.offsetWidth)
-    }
-  }, [window.width])
-
-  const lowLimitPosition =
-    sliderWidth *
-    (convertNumberToProb(lowLimitProb, isPseudoNumeric, min_prob, max_prob) /
-      100)
-  const highLimitPosition =
-    sliderWidth *
-    (convertNumberToProb(highLimitProb, isPseudoNumeric, min_prob, max_prob) /
-      100)
-  const LIMIT_LABEL_MIN_DISTANCE = 130
   return (
-    <Col className="mb-8">
-      <Row className="mt-1 mb-4 gap-4">
-        <Col className="w-full">
-          <div className="text-ink-800 text-sm">
-            Select a {isPseudoNumeric ? 'numerical' : 'probability'} range to
-            place bounding limit orders.{' '}
-            <InfoTooltip text="Limit orders let you place an order to buy at a specific probability which other users can bet against" />
-          </div>
-          <Row
-            className="relative h-12 grow items-center gap-4"
-            ref={targetRef}
-          >
-            <div
-              className={clsx(
-                'absolute bottom-0 w-16 select-none rounded p-1 px-2 text-center text-lg',
-                lowLimitProb === undefined || lowLimitProb === min_prob
-                  ? 'bg-ink-300 text-ink-600 opacity-40'
-                  : lowLimitProb == highLimitProb
-                  ? 'bg-red-400 bg-opacity-20 text-red-500'
-                  : 'bg-canvas-0'
-              )}
-              style={{
-                left: `${
-                  highLimitPosition - lowLimitPosition <
-                  LIMIT_LABEL_MIN_DISTANCE
-                    ? `calc(${convertNumberToProb(
-                        lowLimitProb,
-                        isPseudoNumeric,
-                        min_prob,
-                        max_prob
-                      )}%-${
-                        LIMIT_LABEL_MIN_DISTANCE -
-                        (highLimitPosition - lowLimitPosition)
-                      }px)`
-                    : `${convertNumberToProb(
-                        lowLimitProb,
-                        isPseudoNumeric,
-                        min_prob,
-                        max_prob
-                      )}%`
-                }`,
-              }}
-            >
-              {lowLimitProb}{' '}
-              {!isPseudoNumeric && <span className="text-sm">%</span>}
-            </div>
-            <div
-              className={clsx(
-                'absolute bottom-0 w-16 select-none rounded p-1 px-2 text-center text-lg',
-                highLimitProb === undefined || highLimitProb === max_prob
-                  ? 'bg-ink-300 text-ink-600 opacity-40'
-                  : lowLimitProb == highLimitProb
-                  ? 'bg-red-400 bg-opacity-20 text-red-500'
-                  : 'bg-canvas-0'
-              )}
-              style={{
-                right: `${
-                  highLimitPosition - lowLimitPosition <
-                  LIMIT_LABEL_MIN_DISTANCE
-                    ? `calc((100% - ${convertNumberToProb(
-                        highLimitProb,
-                        isPseudoNumeric,
-                        min_prob,
-                        max_prob
-                      )}%)-${
-                        LIMIT_LABEL_MIN_DISTANCE -
-                        (highLimitPosition - lowLimitPosition)
-                      }px)`
-                    : `${
-                        100 -
-                        (convertNumberToProb(
-                          highLimitProb,
-                          isPseudoNumeric,
-                          min_prob,
-                          max_prob
-                        ) ?? 0)
-                      }%`
-                }`,
-              }}
-            >
-              {highLimitProb}
-              {!isPseudoNumeric && <span className="text-sm">%</span>}
-            </div>
-          </Row>
-        </Col>
-        <Row
-          className={clsx(
-            mobileView ? 'hidden' : 'hidden sm:flex',
-            'ml-auto gap-4 self-start'
-          )}
-        ></Row>
+    <Col className="relative mb-8 w-full gap-3">
+      <div className="text-ink-800 text-sm">
+        Select a {isPseudoNumeric ? 'numerical' : 'probability'} range to place
+        bounding limit orders.{' '}
+        <InfoTooltip text="Limit orders let you place an order to buy at a specific probability which other users can bet against" />
+      </div>
+      <Row className="w-full gap-3">
+        <ProbabilityOrNumericInput
+          contract={contract}
+          prob={lowLimitProb}
+          setProb={setLowLimitProb}
+          isSubmitting={isSubmitting}
+          placeholder={`${minProb}`}
+          width={'w-full'}
+        />
+        <ProbabilityOrNumericInput
+          contract={contract}
+          prob={highLimitProb}
+          setProb={setHighLimitProb}
+          isSubmitting={isSubmitting}
+          placeholder={`${maxProb}`}
+          width={'w-full'}
+          error={invalidLowAndHighBet}
+        />
       </Row>
-      <Row>
+      <Col className="px-2">
         <Slider
           range
+          disabled={isSubmitting}
           marks={
             isPseudoNumeric
               ? undefined
               : {
-                  0: mark(min_prob),
+                  0: mark(minProb),
                   50: mark(50),
-                  100: mark(max_prob),
+                  100: mark(maxProb),
                 }
           }
-          value={[lowLimitProb, highLimitProb]}
-          min={min_prob}
-          max={max_prob}
+          value={[lowLimitProb ?? minProb, highLimitProb ?? maxProb]}
+          min={minProb}
+          max={maxProb}
           onChange={(value) => {
             if (value && Array.isArray(value) && value.length > 1) {
-              setLowLimitProb(value[0])
-              setHighLimitProb(value[1])
+              setLowLimitProb(value[0] == minProb ? undefined : value[0])
+              setHighLimitProb(value[1] == maxProb ? undefined : value[1])
             }
           }}
           className={clsx(
-            '[&>.rc-slider-rail]:bg-ink-200 my-auto mx-2  !h-1 xl:mx-2 ',
+            '[&>.rc-slider-rail]:bg-ink-200 my-auto !h-1',
             '[&>.rc-slider-handle]:z-10',
-            '[&>.rc-slider-handle]:bg-primary-500 [&>.rc-slider-track]:bg-primary-300'
+            invalidLowAndHighBet
+              ? '[&>.rc-slider-track]:bg-scarlet-500'
+              : '[&>.rc-slider-track]:bg-primary-300'
           )}
-          handleStyle={{
-            height: 20,
-            width: 20,
-            opacity: 1,
-            border: 'none',
-            boxShadow: 'none',
-            top: 2,
-          }}
+          handleStyle={[
+            {
+              height: 20,
+              width: 20,
+              opacity: 1,
+              border: 'none',
+              boxShadow: 'none',
+              top: 2,
+              backgroundColor: invalidLowAndHighBet ? '#FF2400' : '#6366f1',
+            },
+            {
+              height: 20,
+              width: 20,
+              opacity: 1,
+              border: 'none',
+              boxShadow: 'none',
+              top: 2,
+              backgroundColor: '#6366f1',
+            },
+          ]}
           allowCross={false}
+          onBeforeChange={() => {}}
         />
-      </Row>
+      </Col>
+      {invalidLowAndHighBet && (
+        <div
+          className={clsx(
+            'text-scarlet-500 dark:text-scarlet-300 absolute text-sm',
+            isPseudoNumeric
+              ? 'top-[135px] sm:top-[120px]'
+              : 'top-[145px] sm:top-[130px]'
+          )}
+        >
+          * Upper limit can not be less than or equal to lower limit!{' '}
+          <span>
+            <button
+              className="font-semibold text-indigo-500 underline"
+              onClick={() => {
+                if (lowLimitProb == highLimitProb) {
+                  setHighLimitProb(
+                    Math.min((lowLimitProb ?? minProb) + 5, maxProb)
+                  )
+                } else {
+                  const tempLow = lowLimitProb
+                  const tempHigh = highLimitProb
+                  setLowLimitProb(tempHigh)
+                  setHighLimitProb(tempLow)
+                }
+              }}
+            >
+              Quick Fix
+            </button>
+          </span>
+        </div>
+      )}
     </Col>
   )
 }

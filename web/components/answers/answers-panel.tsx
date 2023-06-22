@@ -1,36 +1,39 @@
-import { sortBy, partition, sum, groupBy } from 'lodash'
-import { useEffect, useState } from 'react'
 import { ChatIcon } from '@heroicons/react/outline'
+import { groupBy, partition, sortBy, sum } from 'lodash'
+import { useEffect, useState } from 'react'
 
-import { CPMMMultiContract, MultiContract } from 'common/contract'
-import { Col } from '../layout/col'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { tradingAllowed } from 'common/contract'
-import { AnswerItem } from './answer-item'
-import { CreateAnswerPanel } from './create-answer-panel'
-import { AnswerResolvePanel } from './answer-resolve-panel'
-import { getAnswerProbability } from 'common/calculate'
-import { Answer, DpmAnswer } from 'common/answer'
 import clsx from 'clsx'
+import { Answer, DpmAnswer } from 'common/answer'
+import { Bet } from 'common/bet'
+import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
+import {
+  CPMMMultiContract,
+  MultiContract,
+  tradingAllowed,
+} from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
-import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
+import { Button } from 'web/components/buttons/button'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { Linkify } from 'web/components/widgets/linkify'
-import { Button } from 'web/components/buttons/button'
 import { useAdmin } from 'web/hooks/use-admin'
-import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
-import { useChartAnswers } from '../charts/contract/choice'
-import { GradientContainer } from '../widgets/gradient-container'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { BuyPanel } from '../bet/bet-panel'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Subtitle } from '../widgets/subtitle'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { getContractBetMetrics } from 'common/calculate'
-import { Bet } from 'common/bet'
+import {
+  CHOICE_ANSWER_COLORS,
+  useChartAnswers,
+} from '../charts/contract/choice'
+import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
+import { GradientContainer } from '../widgets/gradient-container'
+import { Subtitle } from '../widgets/subtitle'
+import { AnswerItem } from './answer-item'
+import { AnswerResolvePanel } from './answer-resolve-panel'
+import { CreateAnswerPanel } from './create-answer-panel'
 
 export function getAnswerColor(
   answer: Answer | DpmAnswer,
@@ -259,7 +262,6 @@ function OpenAnswer(props: {
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
 
   const user = useUser()
-  const isMobile = useIsMobile()
   const hasBets = userBets && userBets.filter((b) => !b.isRedemption).length > 0
 
   return (
@@ -287,7 +289,6 @@ function OpenAnswer(props: {
                 user={user}
                 initialOutcome={outcome}
                 hidden={false}
-                mobileView={isMobile}
                 singularView={outcome}
                 onBuySuccess={() =>
                   setTimeout(() => setOutcome(undefined), 500)
@@ -360,7 +361,7 @@ function OpenAnswer(props: {
                   </Button>
                   <Button
                     size="2xs"
-                    color="indigo-outline"
+                    color="indigo"
                     onClick={() => setOutcome('LIMIT')}
                     className="my-auto"
                   >

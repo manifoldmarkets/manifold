@@ -55,7 +55,6 @@ export function BuyPanel(props: {
   user: User | null | undefined
   hidden: boolean
   onBuySuccess?: () => void
-  mobileView?: boolean
   singularView?: 'YES' | 'NO' | 'LIMIT'
   initialOutcome?: binaryOutcomes | 'LIMIT'
   location?: string
@@ -67,7 +66,6 @@ export function BuyPanel(props: {
     user,
     hidden,
     onBuySuccess,
-    mobileView,
     singularView,
     initialOutcome,
     location = 'bet panel',
@@ -417,14 +415,15 @@ export function BuyPanel(props: {
       {option === 'LIMIT' && (
         <>
           <LimitOrderPanel
-            className="rounded-lg bg-indigo-400/10 px-4 py-2"
+            className={clsx(
+              singularView ? '' : 'rounded-lg bg-indigo-400/10 px-4 py-2'
+            )}
             contract={contract}
             multiProps={multiProps}
             hidden={!seeLimit}
             user={user}
             unfilledBets={unfilledBets}
             balanceByUserId={balanceByUserId}
-            mobileView={mobileView}
           />
 
           <YourOrders

@@ -6,12 +6,15 @@ import { useState } from 'react'
 import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { getProbability } from 'common/calculate'
+import { CpmmState } from 'common/calculate-cpmm'
+import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
+import { computeCpmmBet } from 'common/new-bet'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS, MINUTE_MS } from 'common/util/time'
@@ -27,9 +30,6 @@ import { BinaryOutcomeLabel, HigherLabel, LowerLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { OrderBookButton } from './limit-bets'
 import { LimitSlider, convertNumberToProb } from './limit-slider'
-import { CpmmState } from 'common/calculate-cpmm'
-import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
-import { computeCpmmBet } from 'common/new-bet'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -43,7 +43,6 @@ export default function LimitOrderPanel(props: {
   balanceByUserId: { [userId: string]: number }
   hidden: boolean
   onBuySuccess?: () => void
-  mobileView?: boolean
   className?: string
 }) {
   const {
@@ -54,7 +53,6 @@ export default function LimitOrderPanel(props: {
     balanceByUserId,
     hidden,
     onBuySuccess,
-    mobileView,
     className,
   } = props
 
@@ -65,12 +63,6 @@ export default function LimitOrderPanel(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
-  const [lowLimitProb, setLowLimitProb] = useState<number>(
-    isPseudoNumeric ? contract.min : 10
-  )
-  const [highLimitProb, setHighLimitProb] = useState<number>(
-    isPseudoNumeric ? contract.max : 90
-  )
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Expiring orders
@@ -88,18 +80,26 @@ export default function LimitOrderPanel(props: {
   const MAX_PROB = isPseudoNumeric ? contract.max : 100
   const MIN_PROB = isPseudoNumeric ? contract.min : 0
 
-  const hasYesLimitBet =
-    lowLimitProb !== undefined && !!betAmount && lowLimitProb > MIN_PROB
-  const hasNoLimitBet =
-    highLimitProb !== undefined && !!betAmount && highLimitProb < MAX_PROB
+  const [lowLimitProb, setLowLimitProb] = useState<number | undefined>(
+    undefined
+  )
+  const [highLimitProb, setHighLimitProb] = useState<number | undefined>(
+    undefined
+  )
+
+  const hasYesLimitBet = lowLimitProb !== undefined && !!betAmount
+  const hasNoLimitBet = highLimitProb !== undefined && !!betAmount
+
   const hasTwoBets = hasYesLimitBet && hasNoLimitBet
+  const invalidLowAndHighBet =
+    !!lowLimitProb && !!highLimitProb && lowLimitProb >= highLimitProb
 
   const betDisabled =
     isSubmitting ||
     !betAmount ||
     !!error ||
     (!hasYesLimitBet && !hasNoLimitBet) ||
-    lowLimitProb == highLimitProb
+    invalidLowAndHighBet
 
   const yesLimitProb =
     lowLimitProb === undefined
@@ -303,16 +303,18 @@ export default function LimitOrderPanel(props: {
       </Row>
       <LimitSlider
         isPseudoNumeric={isPseudoNumeric}
+        contract={contract}
         lowLimitProb={lowLimitProb}
         setLowLimitProb={setLowLimitProb}
         highLimitProb={highLimitProb}
         setHighLimitProb={setHighLimitProb}
-        max_prob={MAX_PROB}
-        min_prob={MIN_PROB}
-        mobileView={mobileView}
+        maxProb={MAX_PROB}
+        minProb={MIN_PROB}
+        isSubmitting={isSubmitting}
+        invalidLowAndHighBet={invalidLowAndHighBet}
       />
 
-      <Spacer h={8} />
+      <Spacer h={6} />
 
       <span className="text-ink-800 mb-2 text-sm">
         Max amount<span className="text-scarlet-500 ml-0.5">*</span>

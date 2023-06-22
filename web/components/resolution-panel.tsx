@@ -129,23 +129,23 @@ export function ResolutionPanel(props: {
           ) : outcome === 'CANCEL' ? (
             <>Cancel all trades and return money back to {BETTORS}.</>
           ) : outcome === 'MKT' ? (
-            <>
-              {capitalize(PLURAL_BETS)} will be paid out at the probability you
-              specify:
-            </>
+            <Row className="flex-wrap gap-2">
+              <span>
+                {capitalize(PLURAL_BETS)} will be paid out at the probability
+                you specify:
+              </span>{' '}
+              <ProbabilityInput
+                prob={prob}
+                onChange={setProb}
+                className="mr-3 !h-11 w-28"
+              />
+            </Row>
           ) : (
             <span className="text-ink-500">
               Resolving this market will immediately pay out {BETTORS}.
             </span>
           )}
         </div>
-        {outcome === 'MKT' && (
-          <ProbabilityInput
-            prob={prob}
-            onChange={setProb}
-            inputClassName="w-28 mr-3 !h-11"
-          />
-        )}
         {!modalSetOpen && (
           <ResolveConfirmationButton
             color={getResolveButtonColor(outcome)}

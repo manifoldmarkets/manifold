@@ -1,21 +1,19 @@
-import { BuyPanel } from './bet-panel'
 import {
   BinaryContract,
   CPMMBinaryContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
-import { Col } from '../layout/col'
-import { User } from 'web/lib/firebase/users'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
+import { User } from 'web/lib/firebase/users'
+import { Col } from '../layout/col'
+import { BuyPanel } from './bet-panel'
 
 export function SignedInBinaryMobileBetting(props: {
   contract: BinaryContract | PseudoNumericContract | StonkContract
   user: User
 }) {
   const { contract, user } = props
-  const isMobile = useIsMobile()
 
   return (
     <Col className="my-3 w-full px-1">
@@ -23,7 +21,6 @@ export function SignedInBinaryMobileBetting(props: {
         hidden={false}
         contract={contract as CPMMBinaryContract}
         user={user}
-        mobileView={isMobile}
       />
       <UserBetsSummary
         className="border-ink-200 mt-2 !mb-2 "

@@ -83,7 +83,6 @@ function FeedBetButton(props: {
           <BuyPanel
             contract={contract}
             user={user}
-            mobileView={true}
             hidden={false}
             initialOutcome={outcome}
             onBuySuccess={() =>
