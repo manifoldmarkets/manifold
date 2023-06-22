@@ -28,6 +28,7 @@ supabase status: columns exist for
   resolution?: text
   resolutionProbability?: numeric
   popularityScore: numeric
+  importanceScore: numeric
 
 any changes to the type of these columns in firestore will require modifying
 the supabase trigger, or replication of contracts may fail!

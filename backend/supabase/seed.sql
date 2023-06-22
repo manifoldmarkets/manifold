@@ -409,6 +409,7 @@ create table if not exists
     resolution_probability numeric,
     resolution text,
     popularity_score numeric,
+    importance_score numeric,
     data jsonb not null,
     question_fts tsvector generated always as (to_tsvector('english'::regconfig, question)) stored,
     question_nostop_fts tsvector generated always as (
@@ -485,6 +486,7 @@ begin
     new.resolution_probability := ((new.data) ->> 'resolutionProbability')::numeric;
     new.resolution := (new.data) ->> 'resolution';
     new.popularity_score := coalesce(((new.data) ->> 'popularityScore')::numeric, 0);
+    new.importance_score := coalesce(((new.data) ->> 'importanceScore')::numeric, 0);
   end if;
   return new;
 end
