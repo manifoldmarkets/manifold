@@ -3,6 +3,7 @@ import { cleanTopic, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { Select } from './widgets/select'
 import { track } from 'web/lib/service/analytics'
 export const CUSTOM_TOPIC_KEY = 'user-topics'
+
 export function TopicSelector(props: {
   topic: string | undefined
   onSetTopic: (topic: string) => void

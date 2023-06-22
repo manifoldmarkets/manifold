@@ -28,7 +28,6 @@ import { useIsAuthorized } from 'web/hooks/use-user'
 import { ALL_TOPICS_WITH_EMOJIS, cleanTopic } from 'common/topics'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Row } from 'web/components/layout/row'
-import { TopicSelector } from 'web/components/topic-selector'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -459,15 +458,15 @@ function SupabaseContractSearchControls(props: {
           includeProbSorts={includeProbSorts}
           listViewDisabled={true}
         />
-        {showTopics && (
+        {/* {showTopics && (
           <div className={'hidden sm:inline'}>
             <TopicSelector topic={topic} onSetTopic={setTopic} />
           </div>
-        )}
+        )} */}
       </Col>
       {showTopics && (
         <Row
-          className={'scrollbar-hide mb-1 gap-1.5 overflow-x-scroll sm:hidden'}
+          className={'scrollbar-hide mb-1 gap-1.5 overflow-x-scroll'}
         >
           {ALL_TOPICS_WITH_EMOJIS.map((t) => (
             <PillButton
