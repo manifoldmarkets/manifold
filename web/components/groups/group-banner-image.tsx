@@ -4,7 +4,7 @@ import { Group } from 'common/group'
 import { User } from 'common/user'
 import Image from 'next/image'
 import { useState } from 'react'
-import { updateGroup } from 'web/lib/firebase/groups'
+import { updateGroup } from 'web/lib/firebase/api'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { Button } from '../buttons/button'
 import DropdownMenu from '../comments/dropdown-menu'
@@ -60,7 +60,7 @@ async function updateGroupBannerImage(group: Group, bannerUrl?: string) {
   if (group.bannerUrl && group.bannerUrl === bannerUrl) {
     return
   }
-  await updateGroup(group, { bannerUrl: bannerUrl })
+  await updateGroup({ id: group.id, bannerUrl: bannerUrl })
 }
 
 export function ChangeBannerModal(props: {

@@ -1,6 +1,3 @@
-import * as admin from 'firebase-admin'
-
-import { Contract } from 'common/contract'
 import {
   Group,
   MAX_ABOUT_LENGTH,
@@ -15,6 +12,7 @@ import { getUser } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { randomUUID } from 'crypto'
 import { bulkInsert } from 'shared/supabase/utils'
 
 const bodySchema = z.object({
@@ -25,7 +23,6 @@ const bodySchema = z.object({
 })
 
 export const creategroup = authEndpoint(async (req, auth) => {
-  const firestore = admin.firestore()
   const { name, about, memberIds, privacyStatus } = validate(
     bodySchema,
     req.body
@@ -55,10 +52,7 @@ export const creategroup = authEndpoint(async (req, auth) => {
 
   const slug = await getSlug(name)
 
-  const groupRef = firestore.collection('groups').doc()
-
-  const group: Group = removeUndefinedProps({
-    id: groupRef.id,
+  const groupData: Omit<Group, 'id'> = removeUndefinedProps({
     creatorId: creator.id,
     slug,
     name,
@@ -70,7 +64,10 @@ export const creategroup = authEndpoint(async (req, auth) => {
     privacyStatus: privacyStatus as PrivacyStatusType,
   })
 
-  await groupRef.create(group)
+  const group = await pg.one(
+    `insert into groups (data) values ($1) returning *`,
+    [groupData]
+  )
 
   await bulkInsert(
     pg,
@@ -89,18 +86,17 @@ export const creategroup = authEndpoint(async (req, auth) => {
 
 export const getSlug = async (name: string) => {
   const proposedSlug = slugify(name)
+  const exists = await groupExists(proposedSlug)
 
-  const preexistingGroup = await getGroupFromSlug(proposedSlug)
-
-  return preexistingGroup ? proposedSlug + '-' + randomString() : proposedSlug
+  return exists ? proposedSlug + '-' + randomString() : proposedSlug
 }
 
-export async function getGroupFromSlug(slug: string) {
-  const firestore = admin.firestore()
-  const snap = await firestore
-    .collection('groups')
-    .where('slug', '==', slug)
-    .get()
+// TODO: change to on conflict of uniqueness
+export async function groupExists(slug: string) {
+  const pg = createSupabaseDirectClient()
+  const group = await pg.oneOrNone(`select 1 from groups where slug = $1`, [
+    slug,
+  ])
 
-  return snap.empty ? undefined : (snap.docs[0].data() as Contract)
+  return !!group
 }

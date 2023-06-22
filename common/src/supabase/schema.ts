@@ -553,34 +553,34 @@ export interface Database {
         Row: {
           creator_id: string | null
           data: Json
-          fs_updated_time: string
+          fs_updated_time: string | null
           id: string
-          name: string | null
+          name: string
           name_fts: unknown | null
           privacy_status: string | null
-          slug: string | null
+          slug: string
           total_members: number | null
         }
         Insert: {
           creator_id?: string | null
           data: Json
-          fs_updated_time: string
-          id: string
-          name?: string | null
+          fs_updated_time?: string | null
+          id?: string
+          name: string
           name_fts?: unknown | null
           privacy_status?: string | null
-          slug?: string | null
+          slug: string
           total_members?: number | null
         }
         Update: {
           creator_id?: string | null
           data?: Json
-          fs_updated_time?: string
+          fs_updated_time?: string | null
           id?: string
-          name?: string | null
+          name?: string
           name_fts?: unknown | null
           privacy_status?: string | null
-          slug?: string | null
+          slug?: string
           total_members?: number | null
         }
         Relationships: []

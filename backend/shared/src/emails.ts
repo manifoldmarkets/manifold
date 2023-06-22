@@ -542,10 +542,9 @@ export const sendNewFollowedMarketEmail = async (
 
 export const sendNewPrivateMarketEmail = async (
   reason: notification_reason_types,
-  userId: string,
   privateUser: PrivateUser,
   contract: Contract,
-  group: Group
+  groupName: string
 ) => {
   const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
     privateUser,
@@ -563,7 +562,7 @@ export const sendNewPrivateMarketEmail = async (
   console.log('questionImgSrc', questionImgSrc)
   return await sendTemplateEmail(
     privateUser.email,
-    `${creatorName} asked ${contract.question} in private group, ${group.name}`,
+    `${creatorName} asked ${contract.question} in private group, ${groupName}`,
     'new-market-from-private-group',
     {
       name: firstName,
@@ -572,7 +571,7 @@ export const sendNewPrivateMarketEmail = async (
       questionTitle: contract.question,
       questionUrl: contractUrl(contract),
       questionImgSrc,
-      groupName: group.name,
+      groupName,
     },
     {
       from: `${creatorName} on Manifold <no-reply@manifold.markets>`,

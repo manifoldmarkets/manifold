@@ -1,5 +1,6 @@
 import { partition } from 'lodash'
 import { Contract } from './contract'
+import { Row } from './supabase/utils'
 
 export type Group = {
   id: string
@@ -27,6 +28,8 @@ export type Group = {
   privacyStatus: PrivacyStatusType
 }
 
+export type GroupResponse = Row<'groups'>
+
 export type PrivacyStatusType = 'public' | 'curated' | 'private'
 export const MAX_GROUP_NAME_LENGTH = 75
 export const MAX_ABOUT_LENGTH = 140
@@ -42,9 +45,6 @@ export type GroupLink = {
   /** @deprecated */
   userId?: string
 }
-
-export type GroupContractDoc = { contractId: string; createdTime: number }
-export type GroupMemberDoc = { userId: string; createdTime: number }
 
 export function groupPath(
   groupSlug: string,

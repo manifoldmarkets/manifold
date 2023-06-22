@@ -1,12 +1,15 @@
 import * as admin from 'firebase-admin'
 
 import { Contract } from 'common/contract'
-import { Group, GroupLink } from 'common/group'
+import { GroupLink } from 'common/group'
 import { createSupabaseClient } from './supabase/init'
 
 const firestore = admin.firestore()
 
-export async function addGroupToContract(contract: Contract, group: Group) {
+export async function addGroupToContract(
+  contract: Contract,
+  group: { id: string; slug: string; name: string }
+) {
   const db = createSupabaseClient()
   if ((contract?.groupLinks ?? []).some((g) => g.groupId === group.id)) {
     console.log('contract already has group')
@@ -38,7 +41,7 @@ export async function addGroupToContract(contract: Contract, group: Group) {
 
 export async function removeGroupFromContract(
   contract: Contract,
-  group: Group
+  group: { id: string; slug: string }
 ) {
   const db = createSupabaseClient()
 

@@ -64,6 +64,7 @@ import { createQAndAAnswer } from './create-q-and-a-answer'
 import { awardQAndAAnswer } from './award-q-and-a-answer'
 import { createchatmessage } from 'api/create-chat-message'
 import { updatepost } from './update-post'
+import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
 
 const allowCors: RequestHandler = cors({
@@ -122,6 +123,7 @@ app.post('/addsubsidy', ...apiRoute(addsubsidy))
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
 app.post('/createmarket', ...apiRoute(createmarket))
 app.post('/creategroup', ...apiRoute(creategroup))
+app.post('/updategroup', ...apiRoute(updategroup))
 app.post('/resolvemarket', ...apiRoute(resolvemarket))
 app.post('/closemarket', ...apiRoute(closemarket))
 app.post('/savetwitchcredentials', ...apiRoute(savetwitchcredentials))

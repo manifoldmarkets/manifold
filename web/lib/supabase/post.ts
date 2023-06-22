@@ -7,13 +7,6 @@ export function postPath(postSlug: string) {
   return `/post/${postSlug}`
 }
 
-export function deletePost(post: Post) {
-  // we don't delete comments but this matters little.
-  // this function is only used to delete group about posts....
-
-  return run(db.from('posts').delete().eq('id', post.id))
-}
-
 export async function getPost(postId: string) {
   const { data: post } = await run(
     db.from('posts').select('data').eq('id', postId)
@@ -46,8 +39,10 @@ export async function getAllPosts() {
   return data.map((d) => d.data) as Post[]
 }
 
-export async function getPosts(postIds: string[]) {
-  const { data } = await run(db.from('posts').select('data').in('id', postIds))
+export async function getPostsByGroup(groupId: string) {
+  const { data } = await run(
+    db.from('posts').select('data').eq('group_id', groupId)
+  )
   return data.map((d) => d.data) as Post[]
 }
 

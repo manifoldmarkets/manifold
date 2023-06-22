@@ -41,8 +41,11 @@ import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { runTxn, TxnData } from 'shared/run-txn'
-import { Group } from 'common/group'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { Group, GroupResponse } from 'common/group'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import {
@@ -437,16 +440,20 @@ async function handleReferral(staleUser: User, eventId: string) {
     }
     console.log(`referredByContract: ${referredByContract?.slug}`)
 
-    let referredByGroup: Group | undefined = undefined
+    let referredByGroup: GroupResponse | undefined = undefined
     if (user.referredByGroupId) {
-      const referredByGroupDoc = firestore.doc(
-        `groups/${user.referredByGroupId}`
-      )
-      referredByGroup = await transaction
-        .get(referredByGroupDoc)
-        .then((snap) => snap.data() as Group)
+      const db = createSupabaseClient()
+      const groupQuery = await db
+        .from('groups')
+        .select()
+        .eq('id', user.referredByGroupId)
+        .limit(1)
+
+      if (groupQuery.data?.length) {
+        referredByGroup = groupQuery.data[0]
+        console.log(`referredByGroup: ${referredByGroup.slug}`)
+      }
     }
-    console.log(`referredByGroup: ${referredByGroup?.slug}`)
 
     const txns = await transaction.get(
       firestore
@@ -481,7 +488,7 @@ async function handleReferral(staleUser: User, eventId: string) {
     const txnDoc = firestore.collection(`txns/`).doc(txn.id)
     transaction.set(txnDoc, txn)
     console.log('created referral with txn id:', txn.id)
-    // We're currently not subtracting Ṁ from the house, not sure if we want to for accounting purposes.
+
     transaction.update(referredByUserDoc, {
       balance: referredByUser.balance + REFERRAL_AMOUNT,
       totalDeposits: referredByUser.totalDeposits + REFERRAL_AMOUNT,
