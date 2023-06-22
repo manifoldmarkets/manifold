@@ -30,7 +30,6 @@ import { Subtitle } from '../widgets/subtitle'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { getContractBetMetrics } from 'common/calculate'
 import { Bet } from 'common/bet'
-import { ProfitBadge } from '../profit-badge'
 import { NoLabel, YesLabel } from '../outcome-label'
 
 export function getAnswerColor(
