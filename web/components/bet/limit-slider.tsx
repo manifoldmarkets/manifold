@@ -89,6 +89,7 @@ export function LimitSlider(props: {
       <Col className="px-2">
         <Slider
           range
+          disabled={isSubmitting}
           marks={
             isPseudoNumeric
               ? undefined
