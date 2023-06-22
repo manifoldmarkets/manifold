@@ -95,6 +95,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   groupLinks?: GroupLink[]
   uniqueBettorCount: number
   popularityScore: number
+  importanceScore: number
   dailyScore: number
   likedByUserCount?: number
   unlistedById?: string
