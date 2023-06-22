@@ -25,9 +25,8 @@ export function VisibilityObserver(props: {
 export function LoadMoreUntilNotVisible(props: {
   // Returns true if there are more results.
   loadMore: () => Promise<boolean>
-  className?: string
 }) {
-  const { loadMore, className } = props
+  const { loadMore } = props
   const isVisibleRef = useRef(false)
   const loadMoreIfVisible = useEvent(async () => {
     if (isVisibleRef.current && loadMore) {
@@ -48,9 +47,12 @@ export function LoadMoreUntilNotVisible(props: {
   })
 
   return (
-    <VisibilityObserver
-      className={className}
-      onVisibilityUpdated={onVisibilityUpdated}
-    />
+    <div className="relative">
+      <VisibilityObserver
+        // Loads more as soon as one screen height of content is left.
+        className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
+        onVisibilityUpdated={onVisibilityUpdated}
+      />
+    </div>
   )
 }

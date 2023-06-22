@@ -35,14 +35,7 @@ export const RelatedContractsList = memo(function RelatedContractsList(props: {
         ))}
       </Col>
 
-      <div className="relative">
-        {loadMore && (
-          <LoadMoreUntilNotVisible
-            className="pointer-events-none absolute bottom-0 h-[75vh] w-full select-none"
-            loadMore={loadMore}
-          />
-        )}
-      </div>
+      {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
     </Col>
   )
 })

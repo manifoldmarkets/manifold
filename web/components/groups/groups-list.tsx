@@ -48,12 +48,7 @@ export function GroupsList(props: {
           />
         ))}
 
-      {loadMore && (
-        <LoadMoreUntilNotVisible
-          loadMore={loadMore}
-          className="relative -top-96 h-1"
-        />
-      )}
+      {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
     </Col>
   )
 }
