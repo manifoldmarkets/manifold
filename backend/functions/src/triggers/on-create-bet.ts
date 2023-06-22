@@ -41,7 +41,7 @@ import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { runTxn, TxnData } from 'shared/run-txn'
-import { Group, GroupResponse } from 'common/group'
+import { GroupResponse } from 'common/group'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
