@@ -7,7 +7,7 @@ import {
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { Input } from './input'
-import { ControllableNumberInput, NumberInput } from './number-input'
+import { ControllableNumberInput } from './number-input'
 
 export function ProbabilityInput(props: {
   prob: number | undefined

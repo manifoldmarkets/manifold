@@ -6,12 +6,15 @@ import { useState } from 'react'
 import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { getProbability } from 'common/calculate'
+import { CpmmState } from 'common/calculate-cpmm'
+import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
+import { computeCpmmBet } from 'common/new-bet'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS, MINUTE_MS } from 'common/util/time'
@@ -27,9 +30,6 @@ import { BinaryOutcomeLabel, HigherLabel, LowerLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { OrderBookButton } from './limit-bets'
 import { LimitSlider, convertNumberToProb } from './limit-slider'
-import { CpmmState } from 'common/calculate-cpmm'
-import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
-import { computeCpmmBet } from 'common/new-bet'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -43,7 +43,6 @@ export default function LimitOrderPanel(props: {
   balanceByUserId: { [userId: string]: number }
   hidden: boolean
   onBuySuccess?: () => void
-  mobileView?: boolean
   className?: string
 }) {
   const {
@@ -54,7 +53,6 @@ export default function LimitOrderPanel(props: {
     balanceByUserId,
     hidden,
     onBuySuccess,
-    mobileView,
     className,
   } = props
 

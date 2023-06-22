@@ -11,8 +11,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
-import { min } from 'lodash'
-import { useState } from 'react'
 
 export function convertNumberToProb(
   number: number,
