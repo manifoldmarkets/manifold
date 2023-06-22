@@ -29,7 +29,6 @@ import {
 } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
-import { ProfitBadge } from '../profit-badge'
 import { GradientContainer } from '../widgets/gradient-container'
 import { Subtitle } from '../widgets/subtitle'
 import { AnswerItem } from './answer-item'
@@ -400,16 +399,15 @@ function AnswerPosition(props: {
 }) {
   const { contract, userBets, className } = props
 
-  const { invested, profit, profitPercent, totalShares } =
-    getContractBetMetrics(contract, userBets)
+  const { invested, totalShares } = getContractBetMetrics(contract, userBets)
 
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
   const position = yesWinnings - noWinnings
 
   return (
-    <Row className={clsx(className, 'flex-wrap gap-6 sm:flex-nowrap')}>
-      <Col>
+    <Row className={clsx(className, 'gap-2 text-sm')}>
+      <Row className="gap-1">
         <div className="text-ink-500 whitespace-nowrap text-sm">Payout</div>
         <div className="whitespace-nowrap">
           {position > 1e-7 ? (
@@ -424,21 +422,13 @@ function AnswerPosition(props: {
             '——'
           )}
         </div>
-      </Col>
-      <Col>
+      </Row>
+      <Row className="gap-1">
         <div className="text-ink-500 whitespace-nowrap text-sm">Spent</div>
         <div className="whitespace-nowrap text-right">
           {formatMoney(invested)}
         </div>
-      </Col>
-
-      <Col>
-        <div className="text-ink-500 whitespace-nowrap text-sm">Profit</div>
-        <div className="whitespace-nowrap text-right">
-          {formatMoney(profit)}
-          <ProfitBadge profitPercent={profitPercent} round={true} />
-        </div>
-      </Col>
+      </Row>
     </Row>
   )
 }

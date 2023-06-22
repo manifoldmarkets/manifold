@@ -43,6 +43,7 @@ export default function Search() {
             excludeUserIds: privateUser?.blockedUserIds,
           }}
           isWholePage
+          showTopics={true}
         />
       </Col>
     </Page>

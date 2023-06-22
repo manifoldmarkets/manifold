@@ -55,12 +55,12 @@ export function ChangeBannerButton(props: {
         >
           {canEdit ? (
             hasCoverImage ? (
-              <CameraIcon className="h-4 w-4" />
+              <CameraIcon className="h-5 w-5" />
             ) : (
-              <TbCameraPlus className="h-4 w-4" />
+              <TbCameraPlus className="h-5 w-5" />
             )
           ) : (
-            <ArrowsExpandIcon className="h-4 w-4" />
+            <ArrowsExpandIcon className="h-5 w-5" />
           )}
         </button>
       </Tooltip>

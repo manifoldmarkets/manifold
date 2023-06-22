@@ -54,6 +54,7 @@ export default function MarketsHome() {
             excludeUserIds: privateUser?.blockedUserIds,
           }}
           isWholePage
+          showTopics={true}
         />
       </Col>
     </Page>

@@ -310,6 +310,7 @@ export type LeagueChangeData = {
 
 export type BetFillData = {
   betOutcome: string
+  betAnswer?: string
   creatorOutcome: string
   probability: number
   fillAmount: number

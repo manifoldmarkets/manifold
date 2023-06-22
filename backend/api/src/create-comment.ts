@@ -81,6 +81,7 @@ export const createcomment = authEndpoint(async (req, auth) => {
     betId: bet?.id,
     betAmount: bet?.amount,
     betOutcome: bet?.outcome,
+    betAnswerId: bet?.answerId,
     bettorName: bet?.userName,
     bettorUsername: bet?.userUsername,
     isApi,

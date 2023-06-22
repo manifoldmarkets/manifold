@@ -152,6 +152,7 @@ const getDesktopNav = (
   return buildArray(
     { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'Markets', href: '/markets', icon: ScaleIcon },
+    { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
 }

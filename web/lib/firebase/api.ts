@@ -290,6 +290,7 @@ export function supabaseSearchContracts(params: {
   sort: Sort
   offset: number
   limit: number
+  topic?: string
   fuzzy?: boolean
   groupId?: string
   creatorId?: string

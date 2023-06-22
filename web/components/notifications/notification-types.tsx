@@ -366,8 +366,10 @@ function BetFillNotification(props: {
     creatorOutcome,
     probability,
     limitOrderRemaining,
+    limitOrderTotal,
     limitAt: dataLimitAt,
     outcomeType,
+    betAnswer,
   } = (data as BetFillData) ?? {}
   const amount = formatMoney(parseInt(sourceText ?? '0'))
   const limitAt =
@@ -390,9 +392,10 @@ function BetFillNotification(props: {
   const description =
     creatorOutcome && probability ? (
       <span>
-        {amount} of your
-        <span className={clsx('mx-1', color)}>{outcome}</span>
-        limit order at was filled{' '}
+        <span className="font-semibold">{amount}</span> of your{' '}
+        <span className={clsx(color)}>{outcome}</span>{' '}
+        {betAnswer && <span>{betAnswer}</span>} limit order at{' '}
+        <span className="font-semibold">{limitAt}</span> was filled{' '}
       </span>
     ) : (
       <span>{amount} of your limit order was filled</span>
@@ -400,14 +403,19 @@ function BetFillNotification(props: {
 
   const subtitle = (
     <>
-      {limitOrderRemaining ? (
+      {limitOrderRemaining === 0 && (
         <>
-          You are buying <span className={clsx(color)}>{outcome}</span> at{' '}
-          <b>{limitAt}</b>. You have {formatMoney(limitOrderRemaining)}{' '}
-          remaining.
+          Your limit order{' '}
+          {limitOrderTotal && <>for {formatMoney(limitOrderTotal)}</>} is
+          complete
         </>
-      ) : (
-        ''
+      )}
+      {!!limitOrderRemaining && (
+        <>
+          You have {formatMoney(limitOrderRemaining)}
+          {limitOrderTotal && <>/{formatMoney(limitOrderTotal)}</>} remaining in
+          your order
+        </>
       )}
     </>
   )

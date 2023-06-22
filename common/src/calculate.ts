@@ -451,6 +451,29 @@ export function getLargestPosition(contract: Contract, userBets: Bet[]) {
     return null
   }
 
+  if (contract.mechanism === 'cpmm-multi-1') {
+    const { sharesByAnswerId, hasShares } = getCpmmMultiShares(userBets)
+    if (!hasShares) return null
+
+    const answerId = maxBy(Object.keys(sharesByAnswerId), (answerId) =>
+      Math.max(...Object.values(sharesByAnswerId[answerId].totalShares))
+    )
+    if (!answerId) return null
+    const { totalShares } = sharesByAnswerId[answerId]
+
+    const outcome = maxBy(
+      Object.keys(totalShares),
+      (outcome) => totalShares[outcome]
+    )
+    if (!outcome) return null
+
+    return {
+      answerId,
+      outcome,
+      shares: totalShares[outcome],
+    }
+  }
+
   const { totalShares, hasShares } = getContractBetMetrics(contract, userBets)
   if (!hasShares) return null
 

@@ -66,3 +66,6 @@ export const getSubtopics = (topic: string) =>
 export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
   .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))
   .flat()
+export const ALL_TOPICS_WITH_EMOJIS = Object.keys(TOPICS_TO_SUBTOPICS)
+  .map((topic) => getSubtopics(topic).map(([subtopic]) => subtopic))
+  .flat()

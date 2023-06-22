@@ -433,6 +433,7 @@ function CommentStatus(props: {
   const {
     commenterPositionProb: prob,
     commenterPositionOutcome,
+    commenterPositionAnswerId,
     commenterPositionShares,
     createdTime,
   } = comment
@@ -452,6 +453,7 @@ function CommentStatus(props: {
           : `is ${isStonk ? 'holding' : 'predicting'} `}
         <OutcomeLabel
           outcome={commenterPositionOutcome}
+          answerId={commenterPositionAnswerId}
           contract={contract}
           truncate="short"
         />
@@ -539,6 +541,7 @@ function FeedCommentHeader(props: {
     editedTime,
     bettorUsername,
     betOutcome,
+    betAnswerId,
     answerOutcome,
     betAmount,
     userId,
@@ -571,6 +574,7 @@ function FeedCommentHeader(props: {
                   of{' '}
                   <OutcomeLabel
                     outcome={betOutcome ? betOutcome : ''}
+                    answerId={betAnswerId}
                     contract={contract}
                     truncate="short"
                   />
@@ -622,11 +626,13 @@ function FeedCommentReplyHeader(props: {
   contract: Contract
 }) {
   const { comment, contract } = props
-  const { bettorName, bettorUsername, betOutcome, betAmount } = comment
+  const { bettorName, bettorUsername, betOutcome, betAnswerId, betAmount } =
+    comment
   if (!bettorUsername || !bettorName || !betOutcome || !betAmount) return null
   return (
     <CommentOnBetRow
       betOutcome={betOutcome}
+      betAnswerId={betAnswerId}
       betAmount={betAmount}
       bettorName={bettorName}
       bettorUsername={bettorUsername}
@@ -641,6 +647,7 @@ export function CommentOnBetRow(props: {
   betAmount: number
   bettorName: string
   bettorUsername: string
+  betAnswerId?: string
   clearReply?: () => void
   className?: string
 }) {
@@ -649,6 +656,7 @@ export function CommentOnBetRow(props: {
     betAmount,
     bettorName,
     bettorUsername,
+    betAnswerId,
     contract,
     clearReply,
     className,
@@ -671,6 +679,7 @@ export function CommentOnBetRow(props: {
             {bought} {money} of
             <OutcomeLabel
               outcome={betOutcome ? betOutcome : ''}
+              answerId={betAnswerId}
               contract={contract}
               truncate="short"
             />
