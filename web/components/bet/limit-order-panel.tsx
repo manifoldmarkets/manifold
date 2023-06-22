@@ -201,8 +201,8 @@ export default function LimitOrderPanel(props: {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
         setBetAmount(undefined)
-        setLowLimitProb(10)
-        setHighLimitProb(90)
+        setLowLimitProb(undefined)
+        setHighLimitProb(undefined)
         if (onBuySuccess) onBuySuccess()
       })
 
