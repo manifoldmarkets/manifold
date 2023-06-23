@@ -1,7 +1,7 @@
 import Masonry from 'react-masonry-css'
 
 import { Col } from 'web/components/layout/col'
-import { useContract, useContracts } from 'web/hooks/use-contract-supabase'
+import { useContracts } from 'web/hooks/use-contract-supabase'
 import { SimpleContractRow } from 'web/components/simple-contract-row'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { NewsArticleOriginal } from 'web/components/news-article-original'
