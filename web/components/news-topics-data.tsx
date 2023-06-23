@@ -1,7 +1,7 @@
 import Masonry from 'react-masonry-css'
 
 import { Col } from 'web/components/layout/col'
-import { useContracts } from 'web/hooks/use-contract-supabase'
+import { useContract, useContracts } from 'web/hooks/use-contract-supabase'
 import { SimpleContractRow } from 'web/components/simple-contract-row'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { NewsArticleOriginal } from 'web/components/news-article-original'
@@ -97,9 +97,34 @@ export const UkraineWarData = () => {
     'XeT9d6hwd1AeeXatOsXS',
   ]
   const newMarkets = useContracts(newMarketsId)
+
+  const prigozhinMarkets = useContracts([
+    'Uj4VpjfgWxdwwek3b9UJ',
+    '3hoy92xFKV9SQbX1HTiy',
+  ])
   return (
     <Col>
       <NewsGrid>
+        <NewsArticleOriginal
+          className="mb-4"
+          title="Wagner boss Prigozhin says Russia's 'evil' defense ministry 'must be stopped' in latest shocking provocation"
+          urlToImage="https://i.insider.com/6495e7aa65b9ce0018a49df7?width=1300&format=jpeg&auto=webp"
+          url="https://www.businessinsider.com/wagner-boss-prigozhin-russia-evil-defense-ministry-must-stop-2023-6"
+          description={`Wagner Group founder Yevgeny Prigozhin blasted Russia's defense ministry as "evil" on Friday, saying Moscow's military leadership "must be stopped" after an alleged missile strike killed scores of his fighters, allegations immediately denied by that Russia's ministry of defense.`}
+          author="Jake Epstein"
+          published_time={Date.UTC(2023, 5, 23, 19)}
+        />
+
+        {prigozhinMarkets.map((contract) => (
+          <>
+            <FeedContractCard
+              key={contract.id}
+              contract={contract}
+              className="mb-4"
+            />
+          </>
+        ))}
+
         <NewsArticleOriginal
           className="mb-4"
           title="Ukrainian intelligence shows Moscow is plotting 'terror attack' on nuclear plant
@@ -122,17 +147,15 @@ export const UkraineWarData = () => {
             </>
           }
         />
-        {contracts &&
-          contracts.length > 0 &&
-          contracts.map((contract) => (
-            <>
-              <FeedContractCard
-                key={contract.id}
-                contract={contract}
-                className="mb-4"
-              />
-            </>
-          ))}
+        {contracts.map((contract) => (
+          <>
+            <FeedContractCard
+              key={contract.id}
+              contract={contract}
+              className="mb-4"
+            />
+          </>
+        ))}
       </NewsGrid>
     </Col>
   )

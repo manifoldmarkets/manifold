@@ -20,9 +20,9 @@ export function NewsTopicsTabs(props: {
 
   const topics = buildArray(
     !!homeContent && { title: 'Home', content: homeContent },
+    { title: 'Ukraine War', content: <UkraineWarData /> },
     { title: 'Elon v Zuck', content: <ElonVersusZuckData /> },
     { title: 'Titanic Sub', content: <MissingSubData /> },
-    { title: 'Ukraine War', content: <UkraineWarData /> },
     { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
     { title: 'US Elections', content: <UsElectionsData /> },
     !!articlesContent && { title: 'All Articles', content: articlesContent }
