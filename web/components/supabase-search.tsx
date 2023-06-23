@@ -276,10 +276,10 @@ export function SupabaseContractSearch(props: {
         />
         {contracts && contracts.length === 0 ? (
           profile || fromGroupProps ? (
-            <p className="text-ink-500 mx-2">No markets found</p>
+            <p className="text-ink-500 mx-2">No questions found</p>
           ) : (
             <p className="text-ink-500 mx-2">
-              No markets found. Why not{' '}
+              No questions found. Why not{' '}
               <SiteLink href="/create" className="text-ink-700 font-bold">
                 create one?
               </SiteLink>
@@ -444,7 +444,7 @@ function SupabaseContractSearchControls(props: {
           value={query}
           onChange={(e) => updateQuery(e.target.value)}
           onBlur={trackCallback('search', { query: query })}
-          placeholder="Search markets"
+          placeholder="Search questions"
           className="w-full"
           autoFocus={autoFocus}
         />

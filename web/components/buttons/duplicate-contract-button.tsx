@@ -50,7 +50,7 @@ function duplicateContractHref(contract: Contract) {
     params.initValue = getMappedValue(contract, contract.initialProbability)
   }
 
-  // TODO: Support multiple choice markets?
+  // TODO: Support multiple choice questions?
 
   if (contract.groupLinks && contract.groupLinks.length > 0) {
     params.groupId = contract.groupLinks[0].groupId

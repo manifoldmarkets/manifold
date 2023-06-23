@@ -124,7 +124,7 @@ function SellSharesModal(props: {
           ) : (
             <>
               You have {formatWithCommas(shares)} shares worth{' '}
-              {formatMoney(shares)} if this market resolves{' '}
+              {formatMoney(shares)} if this question resolves{' '}
             </>
           )}
           <OutcomeLabel

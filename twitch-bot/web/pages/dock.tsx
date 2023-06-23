@@ -19,7 +19,7 @@ import { LoadingOverlay } from 'web/components/loading-overlay';
 import { Title } from 'web/components/title';
 import { ConnectionState } from 'web/lib/connection-state';
 import { SelectedGroup } from 'web/lib/selected-group';
-import { CONTRACT_ANTE, formatMoney, Resolution } from 'web/lib/utils';
+import { CONTRACT_ANTE, Resolution, formatMoney } from 'web/lib/utils';
 import { ConfirmationButton } from '../components/confirmation-button';
 import { GroupSelector } from '../components/group-selector';
 
@@ -30,9 +30,9 @@ let connectedServerID: string = undefined;
 let isAdmin = false;
 
 export function getMarketDisplayability(c: LiteMarket): [featureable: boolean, listPrecedence: number, reason?: string] {
-  if (c.outcomeType !== 'BINARY') return [false, 6, 'This type of market is not currently supported'];
-  if (c.mechanism !== 'cpmm-1') return [false, 5, 'This type of market is not currently supported'];
-  if (c.resolution) return [false, 3, 'This market has been resolved'];
+  if (c.outcomeType !== 'BINARY') return [false, 6, 'This type of question is not currently supported'];
+  if (c.mechanism !== 'cpmm-1') return [false, 5, 'This type of question is not currently supported'];
+  if (c.resolution) return [false, 3, 'This question has been resolved'];
   if (c.closeTime < Date.now()) return [false, 2, 'This marked is closed'];
   return [true, 1];
 }
@@ -247,7 +247,7 @@ export default () => {
     });
 
     sw.on(PacketResolved, () => {
-      console.debug('Market resolved');
+      console.debug('Question resolved');
       setSelectedContract(undefined);
       if (selectedGroup) {
         setLoadingContracts(true);
@@ -262,7 +262,7 @@ export default () => {
     });
 
     sw.on(PacketSelectMarketID, async (p) => {
-      console.debug('Selecting market: ' + p.id);
+      console.debug('Selecting question: ' + p.id);
       const market = await fetchMarketById(p.id);
       setSelectedContract(market);
     });
@@ -481,7 +481,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
   return (
     <Col className={'xs:px-8 xs:py-6 bg-canvas-0 flex cursor-default justify-end rounded-md px-4 py-4 shadow-md'} onClick={(e) => e.stopPropagation()}>
       <Row className="items-center justify-center">
-        <div className="xs:whitespace-nowrap xs:text-2xl xs:text-left text-center text-lg">Resolve market</div>
+        <div className="xs:whitespace-nowrap xs:text-2xl xs:text-left text-center text-lg">Resolve question</div>
         <div className="grow" />
         <div className="min-h-10 xs:block hidden">{ping}ms</div>
       </Row>
@@ -528,7 +528,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
               //         You will earn {earnedFees}.
               //     </Col>
               // )
-              <>Resolving this market will immediately pay out traders.</>
+              <>Resolving this question will immediately pay out traders.</>
             )}
           </div>
 
@@ -541,7 +541,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
       ) : (
         <>
           <span>
-            Please ask <p className="inline font-bold">{contract.creatorName}</p> to resolve this market.
+            Please ask <p className="inline font-bold">{contract.creatorName}</p> to resolve this question.
           </span>
           <div className="my-1" />
         </>
@@ -549,7 +549,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
       <ConfirmationButton
         openModalBtn={{
           className: clsx('border-none self-start w-full mt-2', isSubmitting ? 'btn-disabled' : ''),
-          label: 'Unfeature market',
+          label: 'Unfeature question',
         }}
         cancelBtn={{
           label: 'Back',
@@ -564,7 +564,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
         }}
       >
         <p>
-          Are you sure you want to unfeature this market? <b>You will have to resolve it later on the Manifold website.</b>
+          Are you sure you want to unfeature this question? <b>You will have to resolve it later on the Manifold website.</b>
         </p>
       </ConfirmationButton>
     </Col>
@@ -588,7 +588,7 @@ export function ResolveConfirmationButton(props: { onResolve: () => Promise<bool
       }}
       onSubmitWithSuccess={onResolve}
     >
-      <p>Are you sure you want to resolve this market?</p>
+      <p>Are you sure you want to resolve this question?</p>
     </ConfirmationButton>
   );
 }

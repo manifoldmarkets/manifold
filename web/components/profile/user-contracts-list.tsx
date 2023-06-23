@@ -42,7 +42,7 @@ export function UserContractsList(props: { creator: User }) {
           total={`#${formatWithCommas(creatorRank ?? 0)}`}
         />
         <MarketStats
-          title={'Total markets'}
+          title={'Total questions'}
           total={formatWithCommas(marketsCreated ?? 0)}
           subTitle={
             unresolvedMarkets === 0 ? null : (

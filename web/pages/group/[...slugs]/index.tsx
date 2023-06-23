@@ -111,7 +111,7 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
-const groupSubpages = [undefined, 'markets', 'about', 'leaderboards'] as const
+const groupSubpages = [undefined, 'questions', 'about', 'leaderboards'] as const
 
 export default function GroupPage(props: {
   groupPrivacy: PrivacyStatusType | null
@@ -156,8 +156,8 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
   const page = slugs?.[1] as typeof groupSubpages[number]
-  const tabIndex = ['markets', 'about', 'leaderboards'].indexOf(
-    page === 'about' ? 'about' : page ?? 'markets'
+  const tabIndex = ['questions', 'about', 'leaderboards'].indexOf(
+    page === 'about' ? 'about' : page ?? 'questions'
   )
   const [activeIndex, setActiveIndex] = useState(tabIndex)
   useEffect(() => {
@@ -317,7 +317,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
           className={'mb-2'}
           tabs={[
             {
-              title: 'Markets',
+              title: 'Questions',
               content: (
                 <SupabaseContractSearch
                   defaultFilter="all"

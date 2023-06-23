@@ -245,7 +245,7 @@ export function BuyPanel(props: {
         user?.balance ?? 0
       )}`
     : highProbMove
-    ? `Are you sure you want to move the market by ${displayedDifference}?`
+    ? `Are you sure you want to move the probability by ${displayedDifference}?`
     : undefined
 
   const displayError = !!outcome

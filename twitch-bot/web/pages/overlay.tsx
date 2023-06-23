@@ -361,11 +361,6 @@ export default () => {
                     transform: 'scale(1.8)',
                   }}
                 ></div>
-                {/* <div className="text-[0.4em] whitespace-nowrap" style={{ fontFamily: "Major Mono Display, monospace" }}>
-                                    manifold
-                                    <br />
-                                    markets
-                                </div> */}
                 <div className="text-center text-[1.0em]" style={{ fontWeight: 'bold' }}>
                   !signup
                 </div>

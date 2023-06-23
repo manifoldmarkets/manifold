@@ -33,7 +33,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
   // Create the modal
   const modal = new ModalBuilder()
     .setCustomId('creationModal')
-    .setTitle('Create a market')
+    .setTitle('Create a question')
   // Create the text input components
   const marketQuestionTitle = new TextInputBuilder()
     .setCustomId('marketQuestionTitle')

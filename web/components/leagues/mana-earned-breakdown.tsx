@@ -133,7 +133,9 @@ export const ManaEarnedBreakdown = (props: {
 
         {contracts && contracts.length > 0 && (
           <Col>
-            <Subtitle className="text-ink-800 mt-6">Profit by market</Subtitle>
+            <Subtitle className="text-ink-800 mt-6">
+              Profit by question
+            </Subtitle>
             <Row className="mb-4 gap-2">
               <ShortToggle on={showHighestFirst} setOn={setShowHighestFirst} />{' '}
               Highest first

@@ -167,7 +167,7 @@ export function LeavePrivateGroupModal() {
       <Subtitle className="!mt-0">Are you sure?</Subtitle>
       <p className="text-sm">
         You can't rejoin this group unless invited back. You also won't be able
-        to access any markets you have shares in.
+        to access any questions you have shares in.
       </p>
     </>
   )

@@ -229,7 +229,7 @@ function UserLikedFullList(props: {
             {titleName
               ? titleName
               : contentType === 'contract'
-              ? 'this market'
+              ? 'this question'
               : `this ${contentType}`}
           </span>
         </span>

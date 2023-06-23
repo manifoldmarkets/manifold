@@ -46,7 +46,7 @@ export const ContractLeaderboard = function ContractLeaderboard(props: {
       : topContractMetrics
 
   const userProfits = allMetrics
-    // exclude house bot from market leaderboard
+    // exclude house bot from question leaderboard
     .filter((cm) => cm.userName !== 'acc' || currentUser?.username === 'acc')
     .map((cm) => {
       const { profit } = cm

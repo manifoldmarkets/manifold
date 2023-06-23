@@ -96,7 +96,8 @@ export function BuyManaTab(props: { onClose: () => void }) {
   return (
     <>
       <div className="mt-6 mb-4">
-        Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite markets.
+        Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite
+        questions.
         <div className="italic">Not redeemable for cash.</div>
       </div>
 
@@ -162,7 +163,7 @@ export const OtherWaysToGetMana = () => {
         <span className={'mx-1 font-bold'}>
           {formatMoney(AD_REDEEM_REWARD)}
         </span>
-        from each boosted market
+        from each boosted question
       </Item>
       <Item>
         🔥 Streak bonus (up to
@@ -177,7 +178,7 @@ export const OtherWaysToGetMana = () => {
         after their first trade
       </Item>
       <Item url="/create">
-        📈 Make a market for
+        📈 Make a question for
         <span className={'mx-1 font-bold'}>
           {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)}
         </span>

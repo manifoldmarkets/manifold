@@ -62,7 +62,7 @@ export default function ContractCard(props: { controlUserID: string; contract: L
                 return true;
               }}
             >
-              <p>Are you sure you want to feature this market?{!canResolveMarket && <b> As you don't own it, you will need to ask {contract.creatorName} to resolve it for you.</b>}</p>
+              <p>Are you sure you want to feature this question?{!canResolveMarket && <b> As you don't own it, you will need to ask {contract.creatorName} to resolve it for you.</b>}</p>
             </ConfirmationButton>
           </Row>
         </Col>

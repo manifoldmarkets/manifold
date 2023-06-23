@@ -31,8 +31,8 @@ export default function Create() {
       <Page>
         <div className="mx-auto w-full max-w-2xl">
           <div className="rounded-lg px-6 py-4 sm:py-0">
-            <Title>Create a market</Title>
-            <p>Sorry, you are currently banned from creating a market.</p>
+            <Title>Create a question</Title>
+            <p>Sorry, you are currently banned from creating a question.</p>
           </div>
         </div>
       </Page>
@@ -41,7 +41,7 @@ export default function Create() {
   return (
     <Page>
       <SEO
-        title="Create a market"
+        title="Create a question"
         description="Create a play-money prediction market on any question."
         url="/create"
       />
@@ -53,7 +53,7 @@ export default function Create() {
       >
         <Row className="w-full justify-between">
           <Title className={clsx('transition-colors')}>
-            {`Create a ${theme == 'private' ? 'private' : ''} market`}
+            {`Create a ${theme == 'private' ? 'private' : ''} question`}
           </Title>
           {theme == 'private' && (
             <LockClosedIcon className="text-primary-700 h-6 w-6 sm:h-8 sm:w-8" />

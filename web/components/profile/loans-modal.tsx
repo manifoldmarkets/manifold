@@ -25,13 +25,13 @@ export function LoansModal(props: {
           </span>
           <span className={'ml-2'}>
             Yes, don't worry! You will automatically pay back loans when the
-            market resolves or you sell your bet.
+            question resolves or you sell your bet.
           </span>
           <span className={'text-primary-700'}>
             • What is the purpose of loans?
           </span>
           <span className={'ml-2'}>
-            Loans make it worthwhile to bet on markets that won't resolve for
+            Loans make it worthwhile to bet on questions that won't resolve for
             months or years, because your investment won't be locked up as long.
           </span>
           <span className={'text-primary-700'}>• What is an example?</span>

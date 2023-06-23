@@ -76,7 +76,7 @@ export function ResolutionPanel(props: {
         setError(e.toString())
       } else {
         console.error(e)
-        setError('Error resolving market')
+        setError('Error resolving question')
       }
     }
 
@@ -95,7 +95,7 @@ export function ResolutionPanel(props: {
       )}
       {!modalSetOpen && (
         <div className="mb-6">
-          Resolve {isCreator ? 'your' : "this user's"} market
+          Resolve {isCreator ? 'your' : "this user's"} question
         </div>
       )}
       {modalSetOpen && (
@@ -142,7 +142,7 @@ export function ResolutionPanel(props: {
             </Row>
           ) : (
             <span className="text-ink-500">
-              Resolving this market will immediately pay out {BETTORS}.
+              Resolving this question will immediately pay out {BETTORS}.
             </span>
           )}
         </div>

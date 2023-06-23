@@ -322,7 +322,7 @@ export function UserProfile(props: {
                 ),
               },
               {
-                title: 'Markets',
+                title: 'Questions',
                 stackedTabIcon: <ScaleIcon className="h-5" />,
                 content: (
                   <>

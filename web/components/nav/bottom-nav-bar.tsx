@@ -60,7 +60,7 @@ function getNavigation(user: User, isFeed: boolean) {
 
 const signedOutNavigation = (appStoreUrl: string) => [
   { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Markets', href: '/markets', icon: ScaleIcon },
+  { name: 'Questions', href: '/markets', icon: ScaleIcon },
   {
     name: 'Get app',
     href: appStoreUrl,

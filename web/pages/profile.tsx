@@ -277,7 +277,7 @@ export default function ProfilePage(props: {
               Bet warnings{' '}
               <InfoTooltip
                 text={
-                  'Warnings before you place a bet that is either 1. a large portion of your balance, or 2. going to move the market by a large amount'
+                  'Warnings before you place a bet that is either 1. a large portion of your balance, or 2. going to move the probability by a large amount'
                 }
               />
             </label>

@@ -93,7 +93,7 @@ export function BetsSummary(props: {
                 <Col>
                   <div className="text-ink-500 whitespace-nowrap text-sm">
                     Value
-                    <InfoTooltip text="How much your position in the market is worth right now according to the current stock price." />
+                    <InfoTooltip text="How much your position in the question is worth right now according to the current stock price." />
                   </div>
                   <div className="whitespace-nowrap">
                     {formatMoney(expectation)}
@@ -107,7 +107,7 @@ export function BetsSummary(props: {
                   <InfoTooltip
                     text={`You'll get ${formatMoney(
                       Math.abs(position)
-                    )} if this market resolves ${exampleOutcome} (and ${formatMoney(
+                    )} if this question resolves ${exampleOutcome} (and ${formatMoney(
                       0
                     )} otherwise).`}
                   />
@@ -131,7 +131,7 @@ export function BetsSummary(props: {
                 <Col className="hidden sm:inline">
                   <div className="text-ink-500 whitespace-nowrap text-sm">
                     Expected value{' '}
-                    <InfoTooltip text="How much your position in the market is worth right now according to the current market probability." />
+                    <InfoTooltip text="How much your position in the question is worth right now according to the current probability." />
                   </div>
                   <div className="whitespace-nowrap">{formatMoney(payout)}</div>
                 </Col>
@@ -152,7 +152,7 @@ export function BetsSummary(props: {
         <Col>
           <div className="text-ink-500 whitespace-nowrap text-sm">
             Spent{' '}
-            <InfoTooltip text="Cost basis. Cash originally invested in this market, using average cost accounting." />
+            <InfoTooltip text="Cost basis. Cash originally invested in this question, using average cost accounting." />
           </div>
           <div className="whitespace-nowrap">{formatMoney(invested)}</div>
         </Col>
@@ -161,7 +161,7 @@ export function BetsSummary(props: {
           <Col className="hidden sm:inline">
             <div className="text-ink-500 whitespace-nowrap text-sm">
               Expected value{' '}
-              <InfoTooltip text="How much your position in the market is worth right now according to the current market probability." />
+              <InfoTooltip text="How much your position in the question is worth right now according to the current probability." />
             </div>
             <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
           </Col>

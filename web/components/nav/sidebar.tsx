@@ -131,7 +131,7 @@ const getDesktopNav = (
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
       showMarkets
-        ? { name: 'Markets', href: '/markets', icon: ScaleIcon }
+        ? { name: 'Questions', href: '/markets', icon: ScaleIcon }
         : { name: 'News', href: '/news', icon: NewspaperIcon },
       {
         name: 'Notifications',
@@ -152,7 +152,7 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Home', href: '/', icon: HomeIcon },
-    { name: 'Markets', href: '/markets', icon: ScaleIcon },
+    { name: 'Questions', href: '/markets', icon: ScaleIcon },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
@@ -163,7 +163,7 @@ const getMobileNav = (toggleModal: () => void, isFeed: boolean) => {
   return buildArray(
     isFeed && { name: 'News', href: '/news', icon: NewspaperIcon },
     isFeed
-      ? { name: 'Markets', href: '/markets', icon: ScaleIcon }
+      ? { name: 'Questions', href: '/markets', icon: ScaleIcon }
       : { name: 'Search', href: '/search', icon: SearchIcon },
     getIsNative() && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },

@@ -102,7 +102,7 @@ export default function CalibrationPage(props: {
             <ul>
               <li>
                 The green dot at (x%, y%) means when {user?.name} bet YES at x%,
-                the market resolved YES y% of the time on average.
+                the question resolved YES y% of the time on average.
               </li>
 
               <li>

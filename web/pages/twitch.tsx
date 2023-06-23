@@ -41,7 +41,7 @@ export default function TwitchLandingPage() {
     <Page>
       <SEO
         title="Manifold Markets on Twitch"
-        description="Get more out of Twitch with play-money betting markets."
+        description="Get more out of Twitch with play-money betting questions."
       />
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
         <ManifoldLogo />
@@ -163,13 +163,13 @@ function TwitchPlaysManifoldMarkets(props: {
         <Subtitle text="How it works" />
         <div>
           Similar to Twitch channel point predictions, Manifold Markets allows
-          you to create a play-money betting market on any question you like and
-          feature it in your stream.
+          you to create a play-money prediction markets on any question you like
+          and feature it in your stream.
         </div>
         <div>
           The key difference is that Manifold's questions function more like a
           stock market and viewers can buy and sell shares over the course of
-          the event and not just at the start. The market will eventually
+          the event and not just at the start. The question will eventually
           resolve to yes or no at which point the winning shareholders will
           receive their profit.
         </div>
@@ -223,7 +223,7 @@ function TwitchChatCommands() {
         />
         <Command
           command="position"
-          desc="Shows how many shares you own in the current market and what your fixed payout is."
+          desc="Shows how many shares you own in the current question and what your fixed payout is."
         />
         <Command
           command="balance"
@@ -236,22 +236,22 @@ function TwitchChatCommands() {
 
         <div>
           We recommend streamers sharing the link to the control dock with their
-          mods. Alternatively, chat commands can be used to control markets.{' '}
+          mods. Alternatively, chat commands can be used to control questions.{' '}
         </div>
 
         <Command
           command="create [question]"
           desc="Creates and features a question. Be careful, this will replace any question that is currently featured."
         />
-        <Command command="resolve yes" desc="Resolves the market as 'Yes'." />
-        <Command command="resolve no" desc="Resolves the market as 'No'." />
+        <Command command="resolve yes" desc="Resolves the question as 'Yes'." />
+        <Command command="resolve no" desc="Resolves the question as 'No'." />
         <Command
           command="resolve na"
-          desc="Cancels the market and refunds everyone their mana."
+          desc="Cancels the question and refunds everyone their mana."
         />
         <Command
           command="unfeature"
-          desc="Unfeatures the market. The market will still be open on our site and available to be refeatured again. If you plan to never interact with a market again we recommend resolving to N/A and not this command."
+          desc="Unfeatures the question. The question will still be open on our site and available to be refeatured again. If you plan to never interact with a question again we recommend resolving to N/A and not this command."
         />
       </Col>
     </div>
@@ -464,8 +464,9 @@ function SetUpBot(props: {
         {user && (
           <Col className="mb-8 p-4">
             <div className="text-ink-700 mb-2 text-base">
-              Share your markets! Earn a {formatMoney(REFERRAL_AMOUNT)} referral
-              bonus if a new user signs up and places a trade using the link.
+              Share your questions! Earn a {formatMoney(REFERRAL_AMOUNT)}{' '}
+              referral bonus if a new user signs up and places a trade using the
+              link.
             </div>
 
             <CopyLinkButton

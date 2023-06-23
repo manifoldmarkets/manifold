@@ -391,7 +391,7 @@ function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
   }
   if (outcomeType === 'NUMERIC') {
     // TODO: Ideally an 'UP' bet would be a uniform bet between [current, max]
-    throw new Error("Can't quick bet on numeric markets")
+    throw new Error("Can't quick bet on numeric questions")
   }
 }
 

@@ -46,7 +46,7 @@ export function ExtraContractActionsRow(props: {
       <CopyLinkButton
         url={getShareUrl(contract, user?.username)}
         linkIconOnlyProps={{
-          tooltip: 'Copy market share link',
+          tooltip: 'Copy question share link',
           //TODO: less spaghetti way of styling the button and icon
           className:
             '!p-2 [&_svg]:h-5 [&_svg]:w-5 text-ink-500 hover:text-ink-600',
@@ -54,7 +54,7 @@ export function ExtraContractActionsRow(props: {
         eventTrackingName="copy market link"
       />
 
-      <Tooltip text="Market details" placement="bottom" noTap>
+      <Tooltip text="Question details" placement="bottom" noTap>
         <button
           className={clsx(
             'text-ink-500 hover:text-ink-600 p-2 transition-colors',

@@ -71,7 +71,7 @@ export async function unfollowMarket(
   user: User
 ) {
   await unFollowContract(contractId, user.id)
-  toast("You'll no longer receive notifications from this market", {
+  toast("You'll no longer receive notifications from this question", {
     icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
   })
   track('Unwatch Market', {
@@ -85,7 +85,7 @@ export async function followMarket(
   user: User
 ) {
   await followContract(contractid, user.id)
-  toast("You'll now receive notifications from this market!", {
+  toast("You'll now receive notifications from this question!", {
     icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
   })
   track('Watch Market', {

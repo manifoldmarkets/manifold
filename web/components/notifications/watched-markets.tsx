@@ -52,14 +52,14 @@ export const UserWatchedContractsButton = memo(
           <span className="font-semibold">
             {watchedContractsCount > 0 ? watchedContractsCount : ''}
           </span>{' '}
-          Watched Markets
+          Watched Questions
         </TextButton>
         <Modal open={isOpen} setOpen={setIsOpen} size={'lg'}>
           <Col className="bg-canvas-0 rounded p-6">
             <Row className={'ml-2 mb-4 items-center justify-between gap-4 '}>
-              <span className={'text-xl'}>Watched markets</span>
+              <span className={'text-xl'}>Watched questions</span>
               <Input
-                placeholder="Search markets"
+                placeholder="Search questions"
                 className={' w-42'}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}

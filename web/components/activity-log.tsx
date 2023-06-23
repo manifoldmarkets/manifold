@@ -204,7 +204,7 @@ export function ActivityLog(props: {
   )
 }
 
-export type pill_options = 'all' | 'markets' | 'comments' | 'trades'
+export type pill_options = 'all' | 'questions' | 'comments' | 'trades'
 export const LivePillOptions = (props: {
   pill: pill_options
   setPill: (pill: pill_options) => void
@@ -226,11 +226,11 @@ export const LivePillOptions = (props: {
         All
       </PillButton>
       <PillButton
-        selected={pill === 'markets'}
-        onSelect={() => selectPill('markets')}
+        selected={pill === 'questions'}
+        onSelect={() => selectPill('questions')}
         xs
       >
-        Markets
+        Questions
       </PillButton>
       <PillButton
         selected={pill === 'comments'}

@@ -112,20 +112,20 @@ export const Stats = (props: {
         )}
 
         <tr>
-          <td>Market created</td>
+          <td>Question created</td>
           <td>{formatTime(createdTime)}</td>
         </tr>
 
         {closeTime && (
           <tr>
-            <td>Market close{closeTime > Date.now() ? 's' : 'd'}</td>
+            <td>Question close{closeTime > Date.now() ? 's' : 'd'}</td>
             <td>{formatTime(closeTime)}</td>
           </tr>
         )}
 
         {resolutionTime && (
           <tr>
-            <td>Market resolved</td>
+            <td>Question resolved</td>
             <td>{formatTime(resolutionTime)}</td>
           </tr>
         )}
@@ -304,7 +304,7 @@ export function ContractInfoDialog(props: {
     <Modal open={open} setOpen={setOpen}>
       <Col className="bg-canvas-0 gap-4 rounded p-6">
         <Row className={'items-center justify-between'}>
-          <Title className="!mb-0">This Market</Title>
+          <Title className="!mb-0">This Question</Title>
           <FollowMarketButton contract={contract} user={user} />
         </Row>
 
@@ -357,7 +357,7 @@ export function ContractInfoDialog(props: {
                   />
 
                   <div className="text-ink-500 mt-4 mb-2 text-base">
-                    Invite traders to participate in this market and earn a{' '}
+                    Invite traders to participate in this question and earn a{' '}
                     {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
                     trader that signs up.
                   </div>

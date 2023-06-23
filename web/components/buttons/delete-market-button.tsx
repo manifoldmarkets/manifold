@@ -21,7 +21,7 @@ export const DeleteMarketButton = (props: {
         deleteMarket({ contractId }).then(() => window.location.reload())
       }}
     >
-      Delete market
+      Delete question
     </Button>
   )
 }

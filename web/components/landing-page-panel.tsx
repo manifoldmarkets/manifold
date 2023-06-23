@@ -165,7 +165,7 @@ export function CharityModal(props: {
 
 export function LandingPage0(props: { isMobile: boolean }) {
   const { isMobile } = props
-  const text = '1. Create a market'
+  const text = '1. Create a question'
   return (
     <>
       <div
