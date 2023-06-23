@@ -74,7 +74,7 @@ export async function unfollowMarket(
   toast("You'll no longer receive notifications from this question", {
     icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
   })
-  track('Unwatch Question', {
+  track('Unwatch Market', {
     slug: contractSlug,
   })
 }
@@ -88,7 +88,7 @@ export async function followMarket(
   toast("You'll now receive notifications from this question!", {
     icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
   })
-  track('Watch Question', {
+  track('Watch Market', {
     slug: contractslug,
   })
 }
