@@ -55,7 +55,7 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
               activeIndex === i
                 ? 'border-primary-500 text-primary-600'
                 : 'text-ink-500 hover:border-ink-300 hover:text-ink-700 border-transparent',
-              'mr-8 inline-flex cursor-pointer flex-row gap-1 whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium ',
+              'mr-4 inline-flex cursor-pointer flex-row gap-1 whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium ',
               labelClassName,
               'flex-shrink-0'
             )}

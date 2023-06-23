@@ -48,7 +48,6 @@ export function NewsTopicsTabs(props: {
   return (
     <Col className="mx-auto w-full gap-2 pb-8 sm:gap-6 sm:px-2 lg:pr-4">
       <QueryUncontrolledTabs
-        labelClassName={'pb-3 pt-0'}
         className={'bg-canvas-50 sticky top-0 z-20'}
         tabs={topics.map((tab) => ({
           ...tab,
