@@ -18,35 +18,6 @@ import { NewsTopicsTabs } from 'web/components/news-topics-tabs'
 
 export default function NewsPage() {
   useTracking('view news page')
-  const { articles, contracts } = useNews()
-
-  const content =
-    contracts.length === 0 ? (
-      <LoadingIndicator />
-    ) : (
-      <Masonry
-        breakpointCols={{ default: 2, 768: 1 }}
-        className="-ml-4 flex w-auto"
-        columnClassName="pl-4 bg-clip-padding"
-      >
-        {articles.map((article) => (
-          <Col
-            className="bg-canvas-0 border-canvas-50 hover:border-canvas-100 mb-8 rounded-lg border"
-            key={'article' + article.id}
-          >
-            <NewsArticle urlToImage={article.image_url} {...article} />
-
-            {article.contract_ids
-              .map((cid: any) => contracts.find((c) => c.id === cid))
-              .filter((c: any) => !!c)
-              .slice(0, 3)
-              .map((contract: Contract) => (
-                <SimpleContractRow contract={contract} key={contract.id} />
-              ))}
-          </Col>
-        ))}
-      </Masonry>
-    )
 
   return (
     <Page>
@@ -59,13 +30,44 @@ export default function NewsPage() {
           <Title className="!mb-0">News</Title>
         </Row>
 
-        <NewsTopicsTabs articlesContent={content} />
+        <NewsTopicsTabs />
       </Col>
     </Page>
   )
 }
 
-const useNews = () => {
+export const AllArticles = () => {
+  const { articles, contracts } = useNews()
+
+  return contracts.length === 0 ? (
+    <LoadingIndicator />
+  ) : (
+    <Masonry
+      breakpointCols={{ default: 2, 768: 1 }}
+      className="-ml-4 flex w-auto"
+      columnClassName="pl-4 bg-clip-padding"
+    >
+      {articles.map((article) => (
+        <Col
+          className="bg-canvas-0 border-canvas-50 hover:border-canvas-100 mb-8 rounded-lg border"
+          key={'article' + article.id}
+        >
+          <NewsArticle urlToImage={article.image_url} {...article} />
+
+          {article.contract_ids
+            .map((cid: any) => contracts.find((c) => c.id === cid))
+            .filter((c: any) => !!c)
+            .slice(0, 3)
+            .map((contract: Contract) => (
+              <SimpleContractRow contract={contract} key={contract.id} />
+            ))}
+        </Col>
+      ))}
+    </Masonry>
+  )
+}
+
+export const useNews = () => {
   const [articles, setArticles] = useState<any[]>([])
   const user = useUser()
 
