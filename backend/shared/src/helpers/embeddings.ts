@@ -23,7 +23,7 @@ export async function getDefaultEmbedding(
                   SELECT id
                   FROM contracts
                   ORDER BY popularity_score DESC
-                  LIMIT 100
+                  LIMIT 25
               ) AS top_contracts ON top_contracts.id = contract_embeddings.contract_id
             ) AS subquery
        )
@@ -36,9 +36,12 @@ export async function getDefaultEmbedding(
 
 export async function getAverageContractEmbedding(
   pg: SupabaseDirectClient,
-  contractIds: string[]
+  contractIds: string[] | undefined
 ) {
-  if (contractIds.length === 0) return await getDefaultEmbedding(pg)
+  if (!contractIds || contractIds.length === 0) {
+    const embed = await getDefaultEmbedding(pg)
+    return { embed, defaultEmbed: true }
+  }
 
   return await pg.one(
     `select avg(embedding) as average_embedding
@@ -48,9 +51,11 @@ export async function getAverageContractEmbedding(
     async (r: { average_embedding: string }) => {
       if (r.average_embedding === null) {
         console.error('No average of embeddings for', contractIds)
-        return await getDefaultEmbedding(pg)
+        const embed = await getDefaultEmbedding(pg)
+        return { embed, defaultEmbed: true }
       }
-      return JSON.parse(r.average_embedding) as number[]
+      const embed = JSON.parse(r.average_embedding) as number[]
+      return { embed, defaultEmbed: false }
     }
   )
 }

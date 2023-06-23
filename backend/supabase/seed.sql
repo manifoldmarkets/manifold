@@ -968,7 +968,8 @@ create table if not exists
     interest_embedding vector (1536) not null,
     pre_signup_interest_embedding vector (1536),
     card_view_embedding vector (1536),
-    disinterest_embedding vector (1536)
+    disinterest_embedding vector (1536),
+    pre_signup_embedding_is_default boolean default false
   );
 
 alter table user_embeddings enable row level security;

@@ -159,13 +159,14 @@ async function insertUserEmbedding(
 ): Promise<void> {
   const pg = createSupabaseDirectClient()
 
-  const interestEmbedding = visitedContractIds
-    ? await getAverageContractEmbedding(pg, visitedContractIds)
-    : await getDefaultEmbedding(pg)
+  const { embed, defaultEmbed } = await getAverageContractEmbedding(
+    pg,
+    visitedContractIds
+  )
 
   await pg.none(
-    `insert into user_embeddings (user_id, interest_embedding, pre_signup_interest_embedding) values ($1, $2, $3)`,
-    [userId, interestEmbedding, interestEmbedding]
+    `insert into user_embeddings (user_id, interest_embedding, pre_signup_interest_embedding, pre_signup_embedding_is_default) values ($1, $2, $3)`,
+    [userId, embed, embed, defaultEmbed]
   )
 }
 
