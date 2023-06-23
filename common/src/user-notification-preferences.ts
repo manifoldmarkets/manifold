@@ -108,7 +108,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
       true
     ),
     all_comments_on_contracts_with_shares_in_on_watched_markets: constructPref(
-      true,
+      false,
       false,
       false
     ),
