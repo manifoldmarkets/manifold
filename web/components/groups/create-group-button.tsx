@@ -1,4 +1,3 @@
-import { Editor } from '@tiptap/core'
 import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { MAX_GROUP_NAME_LENGTH, PrivacyStatusType } from 'common/group'

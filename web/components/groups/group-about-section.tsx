@@ -19,7 +19,6 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { Content } from '../widgets/editor'
 import { ExpandableContent } from '../widgets/expandable-content'
-import { set } from 'lodash'
 
 function GroupAboutModalContent(props: {
   content: JSONContent | string
