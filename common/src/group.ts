@@ -1,17 +1,17 @@
 import { partition } from 'lodash'
 import { Contract } from './contract'
 import { Row } from './supabase/utils'
+import { JSONContent } from '@tiptap/core'
 
 export type Group = {
   id: string
   slug: string
   name: string
-  about: string
+  about?: string | JSONContent
   creatorId: string // User id
   createdTime: number
   anyoneCanJoin?: boolean
   totalMembers: number
-  aboutPostId?: string
   postIds: string[]
   cachedLeaderboard?: {
     topTraders: {

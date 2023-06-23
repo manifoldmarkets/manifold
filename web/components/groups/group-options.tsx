@@ -47,7 +47,7 @@ export function GroupOptions(props: {
         user: privateUser,
       })
     )
-    if (canEdit && !group.aboutPostId) {
+    if (canEdit && !group.about) {
       groupOptionItems = groupOptionItems.concat({
         name: 'Create about section',
         icon: <PencilIcon className="h-5 w-5" />,
