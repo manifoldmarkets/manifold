@@ -39,7 +39,7 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
             ? '/manifold_text_white.svg'
             : '/manifold_text_indigo.svg'
         }
-        className="flex min-w-0 grow object-contain"
+        className="flex min-w-0 grow object-contain pr-24 lg:pr-0"
         alt=""
       />
     </Link>
