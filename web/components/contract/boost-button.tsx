@@ -30,7 +30,9 @@ export function BoostButton(props: {
   const [open, setOpen] = useState(false)
 
   const disabled =
-    contract.isResolved || (contract.closeTime ?? Infinity) < Date.now()
+    contract.isResolved ||
+    (contract.closeTime ?? Infinity) < Date.now() ||
+    contract.visibility !== 'public'
 
   if (disabled) return <></>
 

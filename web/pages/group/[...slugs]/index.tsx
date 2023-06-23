@@ -39,10 +39,9 @@ import {
 } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { useRealtimePost } from 'web/hooks/use-post-supabase'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
-import { getPost, getPostsByGroup } from 'web/lib/supabase/post'
+import { getPostsByGroup } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
@@ -90,13 +89,8 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
     const topTraders = await toTopUsers(cachedTopTraderIds)
     const topCreators = await toTopUsers(cachedTopCreatorIds)
     const creator = await creatorPromise
-    const aboutPost = group?.aboutPostId
-      ? await getPost(group.aboutPostId)
-      : null
 
-    const posts = (await getPostsByGroup(group.id)).filter(
-      (p) => p.id !== group.aboutPostId
-    )
+    const posts = await getPostsByGroup(group.id)
     return {
       props: {
         groupPrivacy: group.privacyStatus,
@@ -106,7 +100,6 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
           creator: creator ?? null,
           topTraders: topTraders ?? [],
           topCreators: topCreators ?? [],
-          aboutPost: aboutPost ?? null,
           posts: posts ?? [],
         },
         revalidate: 60, // regenerate after a minute
@@ -149,10 +142,7 @@ export function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
     <>
       <SEO
         title={group.name}
-        description={
-          group.about ||
-          `Manifold ${group.privacyStatus} group with ${group.totalMembers} members`
-        }
+        description={`Manifold ${group.privacyStatus} group with ${group.totalMembers} members`}
         url={groupPath(group.slug)}
         image={group.bannerUrl}
       />
@@ -184,8 +174,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const [writingNewAbout, setWritingNewAbout] = useState(false)
   const bannerRef = useRef<HTMLDivElement | null>(null)
   const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
-  const aboutPost =
-    useRealtimePost(group?.aboutPostId) ?? groupParams?.aboutPost
   const groupPosts = groupParams?.posts ?? []
   const creator = useGroupCreator(group) ?? groupParams?.creator
   const topTraders =
@@ -312,7 +300,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
       <GroupAboutSection
         group={group}
         canEdit={isManifoldAdmin || userRole === 'admin'}
-        post={aboutPost}
         writingNewAbout={writingNewAbout}
         setWritingNewAbout={setWritingNewAbout}
       />

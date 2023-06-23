@@ -8,13 +8,10 @@ import {
 import { Editor, JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
 import { Group } from 'common/group'
-import { Post } from 'common/post'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
-import { createPost } from 'web/lib/firebase/api'
 import { updateGroup } from 'web/lib/firebase/api'
-import { updatePost } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -39,29 +36,27 @@ function GroupAboutModalContent(props: {
 export function GroupAboutSection(props: {
   group: Group
   canEdit: boolean
-  post: Post | null | undefined
   writingNewAbout: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
 }) {
-  const { group, canEdit, post, writingNewAbout, setWritingNewAbout } = props
-  if ((post && post.content) || writingNewAbout) {
+  const { group, canEdit, writingNewAbout, setWritingNewAbout } = props
+  if (group.about || writingNewAbout) {
     return (
       <Col className="group my-2 gap-2 px-4 py-2 lg:px-0">
-        <div className=" text-ink-500">ABOUT</div>
+        <div className="text-ink-500 uppercase">About</div>
         {canEdit && (
           <EditableGroupAbout
             group={group}
-            post={post}
             writingNewAbout={writingNewAbout}
             setWritingNewAbout={setWritingNewAbout}
           />
         )}
-        {!canEdit && post && post.content && (
+        {!canEdit && group.about && (
           <ExpandableContent
-            content={post.content}
+            content={group.about}
             modalContent={
               <GroupAboutModalContent
-                content={post.content}
+                content={group.about}
                 groupName={group.name}
               />
             }
@@ -73,44 +68,24 @@ export function GroupAboutSection(props: {
   return <></>
 }
 
-export async function savePost(
-  editor: Editor | null,
-  group: Group,
-  post?: Post | null
-) {
-  if (!editor) return
-  // TODO: this should not be a post, should just be rich text field on the group.
-  const newPost = {
-    title: group.name,
-    content: editor.getJSON(),
-    isGroupAboutPost: true,
-    groupId: group.id,
-  }
-
-  if (!post) {
-    const result = await createPost(newPost).catch((e) => {
-      console.error(e)
-      return e
-    })
-    await updateGroup({ id: group.id, aboutPostId: result.post.id })
-  } else {
-    await updatePost({ id: post.id, content: newPost.content })
+export async function savePost(editor: Editor | null, group: Group) {
+  if (editor) {
+    await updateGroup({ id: group.id, about: editor.getJSON() })
   }
 }
 
 function EditableGroupAbout(props: {
   group: Group
-  post?: Post | null
   writingNewAbout: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
 }) {
-  const { group, post, writingNewAbout, setWritingNewAbout } = props
+  const { group, writingNewAbout, setWritingNewAbout } = props
   const [editing, setEditing] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const editor = useTextEditor({
     key: `about ${group.id}`,
-    defaultValue: post?.content,
+    defaultValue: group.about,
     size: 'lg',
   })
 
@@ -124,7 +99,7 @@ function EditableGroupAbout(props: {
         </Button>
         <Button
           onClick={async () => {
-            await savePost(editor, group, post)
+            await savePost(editor, group)
             if (writingNewAbout) {
               setWritingNewAbout(false)
             }
@@ -135,7 +110,7 @@ function EditableGroupAbout(props: {
         </Button>
       </Row>
     </>
-  ) : post && post.content ? (
+  ) : group.about ? (
     <div className="relative">
       <Row className="absolute -top-8 right-0 transition-all group-hover:visible md:invisible">
         <Button
@@ -159,10 +134,10 @@ function EditableGroupAbout(props: {
         </Button>
       </Row>
       <ExpandableContent
-        content={post.content}
+        content={group.about}
         modalContent={
           <GroupAboutModalContent
-            content={post.content}
+            content={group.about}
             groupName={group.name}
           />
         }
@@ -171,7 +146,6 @@ function EditableGroupAbout(props: {
       <DeleteAboutModal
         deleteOpen={deleteOpen}
         setDeleteOpen={setDeleteOpen}
-        post={post}
         group={group}
       />
     </div>
@@ -183,14 +157,11 @@ function EditableGroupAbout(props: {
 function DeleteAboutModal(props: {
   deleteOpen: boolean
   setDeleteOpen: (open: boolean) => void
-  post: Post | null
   group: Group
 }) {
-  const { deleteOpen, setDeleteOpen, post, group } = props
+  const { deleteOpen, setDeleteOpen, group } = props
   const [deleteLoading, setDeleteLoading] = useState(false)
-  async function deleteGroupAboutPost() {
-    // TODO reimplement after about post migration
-  }
+
   return (
     <Modal open={deleteOpen} setOpen={setDeleteOpen}>
       <Col className={MODAL_CLASS}>
@@ -222,16 +193,14 @@ function DeleteAboutModal(props: {
           <Button
             color="red"
             loading={deleteLoading}
-            onClick={() => {
+            onClick={async () => {
               setDeleteLoading(true)
-              deleteGroupAboutPost()
-              toast.error(
-                'Sorry, about section deletion is temporarily disabled'
-              )
-              // toast('About section deleted', {
-              // icon: <TrashIcon className={'h-5 w-5 text-red-500'} />,
-              // })
+              await updateGroup({ id: group.id, about: '' })
+              toast('About section deleted', {
+                icon: <TrashIcon className={'h-5 w-5 text-red-500'} />,
+              })
               setDeleteOpen(false)
+              setDeleteLoading(false)
             }}
           >
             Yes, delete about section

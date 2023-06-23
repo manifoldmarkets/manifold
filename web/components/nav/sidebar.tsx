@@ -11,6 +11,8 @@ import {
   UserGroupIcon,
   FireIcon,
   QuestionMarkCircleIcon,
+  NewspaperIcon,
+  SearchIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -34,7 +36,6 @@ import { ProfileSummary } from './profile-summary'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
 import { getIsNative } from 'web/lib/native/is-native'
-import { NewspaperIcon, SearchIcon } from '@heroicons/react/solid'
 import { useIsFeedTest } from 'web/hooks/use-is-feed-test'
 
 export default function Sidebar(props: {
