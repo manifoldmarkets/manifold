@@ -15,7 +15,7 @@ export const MobileAppsQRCodeButton = (props: { size?: 'md' | 'lg' }) => {
         // Don't change this color to gradient!
         // The most prominent CTA when signed out
         // should be the signup button, not this one.
-        color="gray-outline"
+        color="green-outline"
         size={size}
         onClick={() => setIsModalOpen(true)}
       >
