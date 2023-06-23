@@ -23,7 +23,7 @@ export async function getDefaultEmbedding(
                   SELECT id
                   FROM contracts
                   ORDER BY popularity_score DESC
-                  LIMIT 25
+                  LIMIT 100
               ) AS top_contracts ON top_contracts.id = contract_embeddings.contract_id
             ) AS subquery
        )
