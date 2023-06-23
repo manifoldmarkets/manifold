@@ -78,7 +78,7 @@ export default function Sidebar(props: {
       aria-label="Sidebar"
       className={clsx('flex h-screen flex-col xl:ml-2', className)}
     >
-      <ManifoldLogo className="py-6" twoLine />
+      <ManifoldLogo className="pt-6" />
 
       {user === undefined && <div className="h-[56px]" />}
 

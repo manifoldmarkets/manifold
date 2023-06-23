@@ -17,28 +17,31 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
     <Link
       href={user ? '/home' : '/'}
       className={clsx(
-        'group flex shrink-0 flex-row items-center gap-4',
+        'group flex w-full flex-row items-center gap-0.5 px-1',
         className
       )}
     >
       <img
-        className="transition-all group-hover:rotate-12"
+        className="shrink-0 transition-all group-hover:rotate-12"
         src={isDarkMode ? '/logo-white.svg' : '/logo.svg'}
-        width={45}
         height={45}
+        width={45}
         alt=""
       />
-      {twoLine ? (
-        <div className="font-major-mono text-ink-900 mt-1 text-lg lowercase">
-          Manifold
-          <br />
-          {name}
-        </div>
-      ) : (
-        <div className="font-major-mono text-ink-900 mt-2 text-2xl lowercase md:whitespace-nowrap">
-          Manifold {name}
-        </div>
-      )}
+
+      <img
+        src={
+          ENV == 'DEV'
+            ? isDarkMode
+              ? '/devifold_text_white.svg'
+              : '/devifold_text_indigo.svg'
+            : isDarkMode
+            ? '/manifold_text_white.svg'
+            : '/manifold_text_indigo.svg'
+        }
+        className="flex min-w-0 grow object-contain"
+        alt=""
+      />
     </Link>
   )
 }

@@ -50,11 +50,11 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
         <Col
           className={clsx(
             user && !hasCompletedStreakToday(user) && 'grayscale',
-            'items-center gap-1'
+            'items-center'
           )}
         >
           <span>🔥 {user?.currentBettingStreak ?? 0}</span>
-          <span className="text-ink-600 text-sm">Streak</span>
+          <span className="text-ink-600 text-xs">Streak</span>
         </Col>
       </button>
       {showQuestsModal && (
