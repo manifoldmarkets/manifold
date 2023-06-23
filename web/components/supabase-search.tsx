@@ -431,7 +431,7 @@ function SupabaseContractSearchControls(props: {
   }, [query, sort, filter, topic, isAuth])
 
   return (
-    <Col className='mb-4'>
+    <Col className="mb-4">
       <Col
         className={clsx(
           'bg-canvas-50 sticky top-0 z-30 mb-1 items-stretch gap-3 pb-2 pt-px sm:flex-row sm:gap-2',
