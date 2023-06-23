@@ -48,7 +48,7 @@ export const ElonVersusZuckData = () => {
         title="Elon Musk vs. Mark Zuckerberg? Dana White prepared to make 'biggest fight ever in the history of the world'"
         urlToImage="https://img-s-msn-com.akamaized.net/tenant/amp/entityid/AA1cUcfI.img?w=768&h=511&m=6&x=144&y=83&s=693&d=254"
         url="https://www.msn.com/en-us/sports/other/elon-musk-vs-mark-zuckerberg-dana-white-prepared-to-make-biggest-fight-ever-in-the-history-of-the-world/ar-AA1cTY8R"
-        description="The president's comments came as Ukraine pressed on with its counteroffensive and just days after the Kremlin began deploying the weapons to Belarus."
+        description="According to UFC president Dana White, “both guys are absolutely dead serious.”"
         author="Simon Samano"
         published_time={Date.UTC(2023, 5, 23, 0)}
         className="mb-4"
