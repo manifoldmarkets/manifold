@@ -51,7 +51,7 @@ export const onCreateLiquidityProvision = functions
         'new_subsidy',
         [contract.creatorId, liquidity.userId],
         {
-          minUserInterestDistanceToContract:
+          maxDistanceFromUserInterestToContract:
             INTEREST_DISTANCE_THRESHOLDS.new_subsidy,
           userIdResponsibleForEvent: liquidity.userId,
           idempotencyKey: eventId,

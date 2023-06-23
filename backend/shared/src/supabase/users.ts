@@ -36,9 +36,11 @@ export const getUsersWithSimilarInterestVectorToUser = async (
       distance: number
     }>(
       `
-    with pe as (select interest_embedding
+    with pe as (select interest_embedding, created_at
                  from user_embeddings
-                 where user_id = $1)
+                 where user_id = $1
+                 and created_at < current_date - interval '14 day'
+                 )
    select user_id, distance
    from (
             select ue.user_id, (select interest_embedding from pe) <=> ue.interest_embedding as distance

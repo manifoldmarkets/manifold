@@ -202,14 +202,14 @@ export const addContractToFeed = async (
   dataType: FEED_DATA_TYPES,
   userIdsToExclude: string[],
   options: {
-    minUserInterestDistanceToContract: number
+    maxDistanceFromUserInterestToContract: number
     userIdResponsibleForEvent?: string
     idempotencyKey?: string
   }
 ) => {
   const {
     idempotencyKey,
-    minUserInterestDistanceToContract,
+    maxDistanceFromUserInterestToContract,
     userIdResponsibleForEvent,
   } = options
   const pg = createSupabaseDirectClient()
@@ -219,7 +219,7 @@ export const addContractToFeed = async (
       userIdResponsibleForEvent ?? contract.creatorId,
       pg,
       reasonsToInclude,
-      minUserInterestDistanceToContract
+      maxDistanceFromUserInterestToContract
     )
 
   await Promise.all(
@@ -366,7 +366,7 @@ export const insertMarketMovementContractToUsersFeeds = async (
     'contract_probability_changed',
     [],
     {
-      minUserInterestDistanceToContract:
+      maxDistanceFromUserInterestToContract:
         INTEREST_DISTANCE_THRESHOLDS.contract_probability_changed,
       idempotencyKey,
     }

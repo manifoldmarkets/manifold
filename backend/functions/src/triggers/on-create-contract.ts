@@ -66,7 +66,7 @@ export const onCreateContract = functions
       [contractCreator.id],
       {
         idempotencyKey: eventId,
-        minUserInterestDistanceToContract:
+        maxDistanceFromUserInterestToContract:
           INTEREST_DISTANCE_THRESHOLDS.new_contract,
       }
     )
