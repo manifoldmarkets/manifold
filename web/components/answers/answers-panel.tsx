@@ -201,7 +201,7 @@ export function AnswersPanel(props: {
         {resolution && answerItemComponents}
 
         {!resolveOption && (
-          <Col className="gap-3">
+          <Col className="gap-2">
             {openAnswers.map((answer) => (
               <OpenAnswer
                 key={answer.id}
@@ -265,7 +265,7 @@ function OpenAnswer(props: {
   const hasBets = userBets && userBets.filter((b) => !b.isRedemption).length > 0
 
   return (
-    <Col>
+    <Col className="relative">
       <Modal
         open={!!outcome}
         setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
@@ -306,48 +306,50 @@ function OpenAnswer(props: {
           ))}
       </Modal>
 
-      <Col
+      <div
         className={clsx(
-          'relative w-full rounded-lg transition-all',
+          'bg-canvas-100 relative w-full overflow-hidden rounded-lg py-1.5 px-3 ',
           tradingAllowed(contract) ? 'text-ink-900' : 'text-ink-500'
         )}
-        style={{
-          background: `linear-gradient(to right, ${color} ${colorWidth}%, #94a3b833 ${colorWidth}%)`,
-        }}
       >
-        <Row className="z-20 justify-between gap-2 py-1.5 px-3">
-          <Row className="items-center">
+        {/* probability bar */}
+        <div
+          className="absolute left-0 top-0 bottom-0 rounded-lg transition-all"
+          style={{ width: `${colorWidth}%`, background: color }}
+        />
+
+        {/*  */}
+        <div className="isolate block justify-between sm:flex">
+          <div className="inline items-center sm:flex">
             {isFreeResponse &&
               (answerCreator ? (
                 <Avatar
-                  className="mr-2 h-5 w-5 border border-transparent transition-transform hover:border-none"
+                  className="mr-2 inline h-5 w-5 border border-transparent transition-transform hover:border-none"
+                  size="sm"
                   username={answerCreator.username}
                   avatarUrl={answerCreator.avatarUrl}
                 />
               ) : (
                 <EmptyAvatar />
               ))}
-            <Linkify className="text-md whitespace-pre-line" text={text} />
-          </Row>
-          <Row className="gap-2">
-            <div className="my-auto text-xl">{probPercent}</div>
+            <Linkify
+              className="text-md whitespace-pre-line align-middle"
+              text={text}
+            />
+          </div>
+          <div className="float-right ml-2 inline items-center space-x-2 sm:flex [&>*]:align-middle">
+            <span className="text-xl">{probPercent}</span>
             {tradingAllowed(contract) &&
               (isDpm ? (
-                <Button
-                  size="2xs"
-                  color="gray-outline"
-                  onClick={() => setOutcome('YES')}
-                  className="my-auto"
-                >
+                <Button size="2xs" onClick={() => setOutcome('YES')}>
                   Bet
                 </Button>
               ) : (
-                <Row className="gap-2">
+                <>
                   <Button
                     size="2xs"
                     color="green"
                     onClick={() => setOutcome('YES')}
-                    className="my-auto"
                   >
                     YES
                   </Button>
@@ -355,19 +357,13 @@ function OpenAnswer(props: {
                     size="2xs"
                     color="red"
                     onClick={() => setOutcome('NO')}
-                    className="my-auto"
                   >
                     NO
                   </Button>
-                  <Button
-                    size="2xs"
-                    color="indigo"
-                    onClick={() => setOutcome('LIMIT')}
-                    className="my-auto"
-                  >
+                  <Button size="2xs" onClick={() => setOutcome('LIMIT')}>
                     %
                   </Button>
-                </Row>
+                </>
               ))}
             {isFreeResponse && (
               <button
@@ -377,13 +373,13 @@ function OpenAnswer(props: {
                 <ChatIcon className="text-ink-500 hover:text-ink-600 h-5 w-5 transition-colors" />
               </button>
             )}
-          </Row>
-        </Row>
-      </Col>
+          </div>
+        </div>
+      </div>
 
       {hasBets && contract.mechanism === 'cpmm-multi-1' && (
         <AnswerPosition
-          className="bg- self-end"
+          className="self-center"
           contract={contract}
           userBets={userBets}
         />
@@ -406,28 +402,32 @@ function AnswerPosition(props: {
   const position = yesWinnings - noWinnings
 
   return (
-    <Row className={clsx(className, 'gap-2 text-sm')}>
+    <Row
+      className={clsx(
+        className,
+        'text-ink-500 gap-1.5 whitespace-nowrap text-xs font-semibold'
+      )}
+    >
       <Row className="gap-1">
-        <div className="text-ink-500 whitespace-nowrap text-sm">Payout</div>
-        <div className="whitespace-nowrap">
-          {position > 1e-7 ? (
-            <>
-              {formatMoney(position)} on <YesLabel />
-            </>
-          ) : position < -1e-7 ? (
-            <>
-              {formatMoney(-position)} on <NoLabel />
-            </>
-          ) : (
-            '——'
-          )}
-        </div>
+        Payout
+        {position > 1e-7 ? (
+          <>
+            <span className="text-ink-700">{formatMoney(position)}</span> on
+            <YesLabel />
+          </>
+        ) : position < -1e-7 ? (
+          <>
+            <span className="text-ink-700">{formatMoney(-position)}</span> on
+            <NoLabel />
+          </>
+        ) : (
+          '——'
+        )}
       </Row>
+      &middot;
       <Row className="gap-1">
-        <div className="text-ink-500 whitespace-nowrap text-sm">Spent</div>
-        <div className="whitespace-nowrap text-right">
-          {formatMoney(invested)}
-        </div>
+        <div className="text-ink-500">Spent</div>
+        <div className="text-ink-700">{formatMoney(invested)}</div>
       </Row>
     </Row>
   )
