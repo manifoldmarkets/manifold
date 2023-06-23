@@ -83,7 +83,7 @@ export function AddMarketToGroupModal(props: {
                       additionalFilter={{
                         excludeContractIds: groupContractIds,
                       }}
-                      headerClassName="top-[6px]"
+                      headerClassName="!top-[4rem]"
                     />
                   ),
                 },

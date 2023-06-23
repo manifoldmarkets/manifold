@@ -43,6 +43,7 @@ export default function Search() {
             excludeUserIds: privateUser?.blockedUserIds,
           }}
           isWholePage
+          headerClassName={'bg-canvas-50'}
           showTopics={true}
         />
       </Col>

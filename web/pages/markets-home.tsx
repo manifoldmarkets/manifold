@@ -40,7 +40,7 @@ export default function MarketsHome() {
         }}
         isWholePage
         showTopics={true}
-        headerClassName={'!top-[2.2rem]'}
+        headerClassName={'!top-[2.2rem] bg-canvas-50'}
       />
     </Col>
   )
