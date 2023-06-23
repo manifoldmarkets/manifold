@@ -211,14 +211,6 @@ export const getContract = (contractId: string) => {
   return getDoc<Contract>('contracts', contractId)
 }
 
-export const getGroup = (groupId: string) => {
-  return getDoc<Group>('groups', groupId)
-}
-
-export const getPost = (postId: string) => {
-  return getDoc<Post>('posts', postId)
-}
-
 export const getUser = (userId: string) => {
   return getDoc<User>('users', userId)
 }
