@@ -92,7 +92,7 @@ export function NumericResolutionOrExpectation(props: {
   const resolutionValue =
     contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)
 
-  // All distributional numeric markets are resolved now
+  // All distributional numeric questions are resolved now
   return (
     <Row className="items-baseline gap-2 text-3xl">
       <div className={clsx('text-base')}>Resolved</div>

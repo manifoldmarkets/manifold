@@ -143,7 +143,7 @@ function FeedTimelineContent() {
             href="/markets?s=newest&f=open"
             className="text-primary-700"
           >
-            Browse new markets
+            Browse new questions
           </SiteLink>
         </div>
       )}

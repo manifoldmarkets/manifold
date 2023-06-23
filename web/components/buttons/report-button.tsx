@@ -20,7 +20,7 @@ export function ReportButton(props: {
   const { contentOwnerId, contentType } = report
   const currentUser = useUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const label = contentType === 'contract' ? 'market' : contentType
+  const label = contentType === 'contract' ? 'question' : contentType
   if (!currentUser || currentUser.id === contentOwnerId) return <div />
 
   return (

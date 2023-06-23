@@ -82,7 +82,7 @@ function AddLiquidityPanel(props: {
   return (
     <>
       <div className="text-ink-500 mb-4">
-        Contribute your {ENV_CONFIG.moneyMoniker} to make this market more
+        Contribute your {ENV_CONFIG.moneyMoniker} to make this question more
         accurate by subsidizing trading.{' '}
         <InfoTooltip text="Liquidity is how much money traders can make if they're right. The higher the stakes for traders, the greater the incentive to find the correct probability." />
       </div>

@@ -12,8 +12,10 @@ async function getGroupBySlug(slug: string) {
 }
 
 async function getMarketsByGroupId(id: string) {
-  // API structure: /v0/group/by-id/[id]/markets
-  const resp = await fetch(`https://${DOMAIN}/api/v0/group/by-id/${id}/markets`)
+  // API structure: /v0/group/by-id/[id]/questions
+  const resp = await fetch(
+    `https://${DOMAIN}/api/v0/group/by-id/${id}/questions`
+  )
   return await resp.json()
 }
 

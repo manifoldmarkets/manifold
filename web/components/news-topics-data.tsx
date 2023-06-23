@@ -112,7 +112,7 @@ export const UkraineWarData = () => {
         />
 
         <NewsTopicsContentContainer
-          header="New Markets"
+          header="New Questions"
           containerContent={
             <>
               {contracts &&
@@ -306,7 +306,7 @@ export const UsElectionsData = () => {
           author="Independent"
         />
         <NewsTopicsContentContainer
-          header="New Markets"
+          header="New Questions"
           containerContent={
             <>
               {contracts &&

@@ -37,7 +37,7 @@ export function StickyFormatMenu(props: {
         <EmbedModal editor={editor} open={iframeOpen} setOpen={setIframeOpen} />
         <CodeIcon className="h-5 w-5" aria-hidden="true" />
       </ToolbarButton>
-      <ToolbarButton label="Add market" onClick={() => setMarketOpen(true)}>
+      <ToolbarButton label="Add question" onClick={() => setMarketOpen(true)}>
         <MarketModal
           editor={editor}
           open={marketOpen}

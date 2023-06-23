@@ -62,12 +62,12 @@ export function AddContractButton(props: {
       )
     )
       .then(() =>
-        toast('Succesfully added markets!', {
+        toast('Succesfully added questions!', {
           icon: <CheckCircleIcon className={'h-5 w-5 text-green-500'} />,
         })
       )
       .catch(() =>
-        toast('Error adding markets. Try again?', {
+        toast('Error adding questions. Try again?', {
           icon: <XCircleIcon className={'h-5 w-5 text-red-500'} />,
         })
       )

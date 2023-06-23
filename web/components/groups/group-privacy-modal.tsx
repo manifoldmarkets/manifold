@@ -211,14 +211,14 @@ export const PRIVACY_STATUS_ITEMS = {
     bigIcon: <GlobeIcon className="h-6 w-6" />,
     status: 'Public',
     descriptor:
-      'Anyone can view, join, and add their own markets to this group.',
+      'Anyone can view, join, and add their own questions to this group.',
   },
   curated: {
     icon: <ShieldCheckIcon className="h-4 w-4" />,
     bigIcon: <ShieldCheckIcon className="h-6 w-6" />,
     status: 'Curated',
     descriptor:
-      'Anyone can view and join this group, but only admins and moderators can add/remove markets',
+      'Anyone can view and join this group, but only admins and moderators can add/remove questions',
   },
   private: {
     icon: <LockClosedIcon className="h-4 w-4" />,

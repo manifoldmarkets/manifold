@@ -143,8 +143,8 @@ function PredictionMarketPage() {
         How it works
       </div>
       <div className="mt-2 text-lg">
-        Create a market on any question. Bet on the right answer. The
-        probability is the market's best estimate.
+        Create a question on anything. Bet on the right answer. The probability
+        is the question's best estimate.
       </div>
       <Image
         src="/welcome/manifold-example.gif"

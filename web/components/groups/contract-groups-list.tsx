@@ -76,8 +76,8 @@ export function ContractGroupsList(props: {
                               contractId: contract.id,
                             }),
                             {
-                              loading: `Removing market from "${group.name}"`,
-                              success: `Successfully removed market from "${group.name}"!`,
+                              loading: `Removing question from "${group.name}"`,
+                              success: `Successfully removed question from "${group.name}"!`,
                               error: `Error removing group. Try again?`,
                             }
                           )

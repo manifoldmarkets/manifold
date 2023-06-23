@@ -94,7 +94,7 @@ function useNotificationFollowItem(notification: Notification) {
   }
   return [
     {
-      name: isFollowing ? 'Unfollow this market' : 'Follow this market',
+      name: isFollowing ? 'Unfollow this question' : 'Follow this question',
       icon: isFollowing ? (
         <EyeOffIcon className="h-5 w-5" />
       ) : (

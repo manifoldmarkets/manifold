@@ -32,7 +32,7 @@ export default function AncientMarkets(props: { contracts: Contract[] }) {
   const { contracts } = props
   return (
     <Page>
-      <Title>Ancient Markets</Title>
+      <Title>Ancient Questions</Title>
       <ContractsTable contracts={contracts} />
     </Page>
   )

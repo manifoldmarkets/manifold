@@ -136,7 +136,7 @@ export function NonPrivateContractPage(props: {
 
   const inIframe = useIsIframe()
   if (!contract) {
-    return <Custom404 customText="Unable to fetch market" />
+    return <Custom404 customText="Unable to fetch question" />
   } else if (inIframe) {
     return <ContractEmbedPage contract={contract} historyData={historyData} />
   } else
@@ -312,7 +312,7 @@ export function ContractPageContent(props: {
         <Col
           className={clsx(
             'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
-            // Keep content in view when scrolling related markets on desktop.
+            // Keep content in view when scrolling related questions on desktop.
             'sticky bottom-0 min-h-screen self-end'
           )}
         >
@@ -488,7 +488,7 @@ export function ContractPageContent(props: {
             {outcomeType === 'NUMERIC' && (
               <AlertBox
                 title="Warning"
-                text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
+                text="Distributional numeric questions were introduced as an experimental feature and are now deprecated."
               />
             )}
 

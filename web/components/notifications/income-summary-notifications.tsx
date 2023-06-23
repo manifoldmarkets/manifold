@@ -289,7 +289,7 @@ export function UserJoinedNotification(props: {
   if (sourceSlug && reason == 'user_joined_to_bet_on_your_market') {
     reasonBlock = (
       <>
-        to bet on the market{' '}
+        to bet on the question{' '}
         <QuestionOrGroupLink
           notification={notification}
           truncatedLength={'xl'}

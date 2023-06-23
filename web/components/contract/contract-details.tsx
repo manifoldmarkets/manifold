@@ -160,7 +160,7 @@ export function CloseOrResolveTime(props: {
         {isResolved && resolutionTime && (
           <DateTimeTooltip
             className="whitespace-nowrap"
-            text="Market resolved:"
+            text="Question resolved:"
             time={resolutionTime}
             placement="bottom-start"
           >
@@ -320,9 +320,9 @@ function EditableCloseDate(props: {
         position="top"
       >
         <Col className="bg-canvas-0 rounded p-8">
-          <Title className="!text-2xl">Market close time</Title>
+          <Title className="!text-2xl">Question close time</Title>
           <div className="mb-4">
-            Change when this market closes. All trading will be halted at this
+            Change when this question closes. All trading will be halted at this
             time.
           </div>
           <Row className="flex-wrap items-center justify-end gap-2">
@@ -349,14 +349,14 @@ function EditableCloseDate(props: {
 
           {(contract.closeTime ?? Date.now() + 1) > Date.now() && (
             <Row className="align-center mt-8">
-              <div className="mt-1 mr-2">Or close market now:</div>
+              <div className="mt-1 mr-2">Or close question now:</div>
               <Button
                 className=""
                 size={'xs'}
                 color="gray"
                 onClick={() => onSave(Date.now())}
               >
-                Close market
+                Close question
               </Button>
             </Row>
           )}

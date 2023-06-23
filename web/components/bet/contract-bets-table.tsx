@@ -338,7 +338,7 @@ function DpmSellButton(props: {
       <div className="mt-2 mb-1 text-sm">
         {profit > 0 ? 'Profit' : 'Loss'}: {formatMoney(profit).replace('-', '')}
         <br />
-        Market probability: {formatPercent(initialProb)} →{' '}
+        Question probability: {formatPercent(initialProb)} →{' '}
         {formatPercent(outcomeProb)}
       </div>
     </ConfirmationButton>

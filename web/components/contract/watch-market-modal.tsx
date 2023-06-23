@@ -18,8 +18,8 @@ export const WatchMarketModal = (props: {
         <Col className={'gap-2'}>
           <span className={'text-primary-700'}>• What is watching?</span>
           <span className={'ml-2'}>
-            Watching a market means you'll receive notifications from activity
-            on it. You automatically start watching a market if you comment on
+            Watching a question means you'll receive notifications from activity
+            on it. You automatically start watching a question if you comment on
             it, bet on it, or click the watch button.
           </span>
           <span className={'text-primary-700'}>
@@ -28,7 +28,7 @@ export const WatchMarketModal = (props: {
           <span className={'ml-2'}>
             New comments, answers, and updates to the question. See the
             notifications settings pages to customize which types of
-            notifications you receive on watched markets.
+            notifications you receive on watched questions.
           </span>
         </Col>
       </Col>

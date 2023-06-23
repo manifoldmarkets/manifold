@@ -82,10 +82,10 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
 export function QfExplainer() {
   return (
     <AlertBox
-      title="This is Quadratic Funding, an experimental market type."
+      title="This is Quadratic Funding, an experimental question type."
       text=""
     >
-      Unlike Free Response where you bet on what the market creator will
+      Unlike Free Response where you bet on what the question creator will
       resolve, here you send mana as a tip to your favorite entries. The
       quadratic funding pool will then match donations - popular entries get
       larger matches.

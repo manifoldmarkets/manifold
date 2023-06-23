@@ -144,7 +144,7 @@ export function SellPanel(props: {
 
   const warning =
     probChange >= 0.3
-      ? `Are you sure you want to move the market by ${displayedDifference}?`
+      ? `Are you sure you want to move the probability by ${displayedDifference}?`
       : undefined
 
   const onAmountChange = (displayAmount: number | undefined) => {

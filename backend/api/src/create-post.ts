@@ -48,7 +48,7 @@ export const createpost = authEndpoint(async (req, auth) => {
 
   const slug = await getSlug(title)
 
-  // If this is a date doc, create a market for it.
+  // If this is a date doc, create a question for it.
   let contractSlug
   if ('type' in otherProps && otherProps.type === 'date-doc') {
     const closeTime = Date.now() + DAY_MS * 30 * 3

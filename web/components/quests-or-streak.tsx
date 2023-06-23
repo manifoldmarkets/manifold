@@ -129,13 +129,13 @@ export function QuestsModal(props: {
             status={`(${shareStatus.currentCount}/${shareStatus.requiredCount})`}
             reward={QUEST_DETAILS.SHARES.rewardAmount}
             info={
-              'Share a market, comment, group, or your referral link with a friend!'
+              'Share a question, comment, group, or your referral link with a friend!'
             }
           />
           <Row className={'text-primary-700'}>Weekly</Row>
           <QuestRow
             emoji={'📈'}
-            title={`Create a market this week`}
+            title={`Create a question this week`}
             complete={createStatus.currentCount >= createStatus.requiredCount}
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
@@ -143,7 +143,7 @@ export function QuestsModal(props: {
           />
           <QuestRow
             emoji={'🏺'}
-            title={`Trade on an ancient market this week`}
+            title={`Trade on an ancient question this week`}
             complete={
               archeologistStatus.currentCount >=
               archeologistStatus.requiredCount
@@ -151,7 +151,7 @@ export function QuestsModal(props: {
             status={`(${archeologistStatus.currentCount}/${archeologistStatus.requiredCount})`}
             reward={QUEST_DETAILS.ARCHAEOLOGIST.rewardAmount}
             info={
-              'This has to be a market that no other user has bet on in the last 3 months'
+              'This has to be a question that no other user has bet on in the last 3 months'
             }
             href={'/ancient'}
           />{' '}
@@ -164,7 +164,7 @@ export function QuestsModal(props: {
             status={`(${referralsStatus.currentCount}/${referralsStatus.requiredCount})`}
             reward={QUEST_DETAILS.REFERRALS.rewardAmount}
             info={
-              'Just click the share button on a market and your referral code will be added to the link'
+              'Just click the share button on a question and your referral code will be added to the link'
             }
             href={'/referrals'}
           />

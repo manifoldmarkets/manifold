@@ -27,7 +27,7 @@ export default function AddFundsPage() {
     <Page>
       <SEO
         title="Get mana"
-        description="Buy mana to trade in your favorite markets on Manifold"
+        description="Buy mana to trade in your favorite questionss on Manifold"
         url="/add-funds"
       />
 

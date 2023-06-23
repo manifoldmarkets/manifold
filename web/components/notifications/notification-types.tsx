@@ -1045,7 +1045,7 @@ function UserLikeNotification(props: {
       your
       {sourceType === 'comment_like'
         ? ' comment ' + (isChildOfGroup ? '' : 'on ')
-        : ' market '}
+        : ' question '}
       {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
       <MultiUserReactionModal
         similarNotifications={relatedNotifications}

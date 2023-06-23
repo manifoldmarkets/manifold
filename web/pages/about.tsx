@@ -89,7 +89,7 @@ export default function AboutPage() {
           <LabCard
             title="📰 Newsletter"
             href="https://news.manifold.markets/"
-            description="Get updates on new features and markets"
+            description="Get updates on new features and questions"
           />
           <LabCard
             title="🪺 Twitter"
@@ -163,13 +163,13 @@ export default function AboutPage() {
           {user && (
             <LabCard
               title="🎁 Loot Box"
-              description="Invest in random markets"
+              description="Invest in random questions"
               href="/lootbox"
             />
           )}
           <LabCard
             title="📰 News"
-            description="Breaking news + markets"
+            description="Breaking news + questions"
             href="/news"
           />
           <LabCard
@@ -218,12 +218,12 @@ export default function AboutPage() {
           />
           <LabCard
             title="💬 Discord bot"
-            description="Create, trade, & share markets from Discord"
+            description="Create, trade, & share questions from Discord"
             href="/discord-bot"
           />
           <LabCard
             title="🎮 Twitch bot"
-            description="Embed markets in your stream"
+            description="Embed questions in your stream"
             href="/twitch"
           />
           <LabCard
@@ -256,7 +256,7 @@ export default function AboutPage() {
           />
           <LabCard
             title="🎴 Manifold: The Gambling"
-            description="Match each market to its creator"
+            description="Match each question to its creator"
             href="/cards"
           />
           <LabCard
@@ -281,7 +281,7 @@ export default function AboutPage() {
           />
           <LabCard
             title="👀 Classified Ads"
-            description="An old version of market boosts that let you advertise anything. View ads for mana!"
+            description="An old version of question boosts that let you advertise anything. View ads for mana!"
             href="/ad"
           />
           <LabCard title="🐮 Moolinda" description="???" href="/cowp" />

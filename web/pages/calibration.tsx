@@ -72,7 +72,7 @@ export default function CalibrationPage(props: {
               height={isMobile ? 200 : 400}
             />
             <div className="text-ink-800 text-center text-sm">
-              Market probability
+              Question probability
             </div>
           </div>
 
@@ -80,19 +80,19 @@ export default function CalibrationPage(props: {
             <b>Interpretation</b>
             <ul>
               <li>
-                The chart shows the probability of a binary market resolving to
-                YES given that the market is currently displaying a probability
-                of x%. Perfect calibration would result in all points being on
-                the line.
+                The chart shows the probability of a binary question resolving
+                to YES given that the question is currently displaying a
+                probability of x%. Perfect calibration would result in all
+                points being on the line.
               </li>
 
               <li>
                 Methodology: {formatPct(SAMPLING_P)} of all past bets in public
-                resolved binary markets with {TRADER_THRESHOLD} or more traders
-                are sampled to get the average probability before and after the
-                bet. This probability is then bucketed and used to compute the
-                proportion of markets that resolve YES. Sample size:{' '}
-                {formatLargeNumber(n)} bets. Updates every hour.
+                resolved binary questions with {TRADER_THRESHOLD} or more
+                traders are sampled to get the average probability before and
+                after the bet. This probability is then bucketed and used to
+                compute the proportion of questions that resolve YES. Sample
+                size: {formatLargeNumber(n)} bets. Updates every hour.
               </li>
 
               <li>

@@ -75,7 +75,7 @@ export function ResolveConfirmationButton(props: { onResolve: () => void; isSubm
       }}
       onSubmit={onResolve}
     >
-      <p>Are you sure you want to resolve this market?</p>
+      <p>Are you sure you want to resolve this question?</p>
     </ConfirmationButton>
   );
 }

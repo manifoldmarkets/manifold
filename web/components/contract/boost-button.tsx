@@ -59,13 +59,13 @@ export function BoostDialog(props: {
   return (
     <Modal open={isOpen} setOpen={setOpen} size="sm">
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
-        <Title className="!mb-2" children="🚀 Boost this market" />
+        <Title className="!mb-2" children="🚀 Boost this question" />
 
         <div className="text-ink-500 mb-2 text-base">
-          Pay to boost this market in the feed.{' '}
+          Pay to boost this question in the feed.{' '}
           <InfoTooltip
-            text="Boosted markets are displayed to users with relevant interests. Users earn a redeemable reward
-          in exchange for clicking on the market."
+            text="Boosted questions are displayed to users with relevant interests. Users earn a redeemable reward
+          in exchange for clicking on the question."
           />
         </div>
 

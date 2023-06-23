@@ -115,7 +115,10 @@ function BotBadge() {
 
 export function PostBanBadge() {
   return (
-    <Tooltip text="Can't create comments, posts, or markets" placement="bottom">
+    <Tooltip
+      text="Can't create comments, posts, or questions"
+      placement="bottom"
+    >
       <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
         Banned
       </span>
@@ -180,7 +183,7 @@ function FreshBadge() {
 
 function MarketCreatorBadge() {
   return (
-    <Tooltip text="Market Creator" placement="right">
+    <Tooltip text="Question Creator" placement="right">
       <ScalesIcon className="h-4 w-4 text-amber-400" aria-hidden="true" />
     </Tooltip>
   )

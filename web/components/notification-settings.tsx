@@ -142,7 +142,7 @@ export function NotificationSettings(props: {
     ],
   }
   const yourMarkets: SectionData = {
-    label: 'Markets You Created',
+    label: 'Questions You Created',
     subscriptionTypes: [
       // 'your_contract_closed',
       'all_comments_on_my_markets',
@@ -426,7 +426,7 @@ export function NotificationSettings(props: {
           {user ? (
             <UserWatchedContractsButton user={user} />
           ) : (
-            <span>Watched Markets</span>
+            <span>Watched Questions</span>
           )}
           <InformationCircleIcon
             className="text-ink-500 -mb-1 h-5 w-5 cursor-pointer"

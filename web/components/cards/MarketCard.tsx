@@ -12,7 +12,7 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { db } from 'web/lib/supabase/db'
 
-// Find 100 top markets in terms of value from this user
+// Find 100 top question in terms of value from this user
 // Mostly extracted from BetsList
 export function useTopMarketsByUser(userId: string) {
   const [initialContracts, setInitialContracts] = usePersistentState<

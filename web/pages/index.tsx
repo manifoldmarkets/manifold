@@ -114,7 +114,7 @@ export default function Home(props: {
             <LinkInfoCard
               link="/markets"
               icon={<ScaleIcon className="mx-auto h-8 w-8" />}
-              text="Explore markets"
+              text="Explore questions"
             />
           </Row>
         </Col>
@@ -196,7 +196,7 @@ export function ManaExplainer() {
         <strong className="semibold mt-4 text-xl">
           Mana ({ENV_CONFIG.moneyMoniker})
         </strong>{' '}
-        is Manifold's play money. Use it to create and bet in markets.
+        is Manifold's play money. Use it to create and bet in questions.
       </div>
       <div className={'my-3 text-lg '}>
         Mana can't be converted into cash, but can be purchased and donated to
@@ -233,7 +233,7 @@ export function PredictionMarketExplainer() {
         <p className="mt-4">
           This set of bets implies a <b>70% probability</b> of the Democrats
           winning. As more people bet, the implied probability will converge to
-          the market's best estimate.
+          the questions's best estimate.
         </p>
       </div>
     </>

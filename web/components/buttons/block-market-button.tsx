@@ -23,7 +23,7 @@ export function BlockMarketButton(props: { contract: Contract }) {
       }),
       {
         loading: 'Blocking...',
-        success: `You'll no longer see this market in your feed nor search.`,
+        success: `You'll no longer see this question in your feed nor search.`,
         error: 'Error blocking user',
       }
     )

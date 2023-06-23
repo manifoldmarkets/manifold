@@ -24,7 +24,7 @@ export function MarketModal(props: {
 
   return (
     <SelectMarketsModal
-      title="Embed markets"
+      title="Embed questions"
       open={open}
       setOpen={setOpen}
       submitLabel={(len) =>

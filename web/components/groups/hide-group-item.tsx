@@ -17,7 +17,7 @@ export function getBlockGroupDropdownItem(props: {
       }),
       {
         loading: 'Blocking...',
-        success: `You'll no longer see markets from this group`,
+        success: `You'll no longer see questions from this group`,
         error: 'Error blocking user',
       }
     )
