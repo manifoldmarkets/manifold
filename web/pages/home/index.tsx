@@ -36,6 +36,7 @@ import { ProfileSummary } from 'web/components/nav/profile-summary'
 import { useUser } from 'web/hooks/use-user'
 import { useIsFeedTest } from 'web/hooks/use-is-feed-test'
 import MarketsHome from '../markets-home'
+import { Title } from 'web/components/widgets/title'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -63,6 +64,7 @@ function HomeDashboard() {
   return (
     <Page>
       <Row className="mx-4 mb-2 items-center justify-between gap-4">
+        <Title>Home</Title>
         <div className="flex sm:hidden">
           {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
         </div>
