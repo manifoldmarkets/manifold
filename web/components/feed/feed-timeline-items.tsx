@@ -82,7 +82,7 @@ export const FeedTimelineItems = (props: {
   )
 
   return (
-    <Col className="gap-1">
+    <Col className="gap-4">
       {feedTimelineItems.map((item) => {
         if (item.contract && ('ad_id' in item || 'contract' in item)) {
           const { contract } = item

@@ -240,7 +240,7 @@ function DetailedCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Row className={clsx('grow gap-2 py-2 px-3')}>
+      <Row className={clsx('grow gap-2 pt-4 pb-2 px-3')}>
         <Col className="w-full">
           <Col className="w-full gap-2">
             {/* Title is link to contract for open in new tab and a11y */}
