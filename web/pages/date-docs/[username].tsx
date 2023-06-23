@@ -104,7 +104,7 @@ export function DateDocPost(props: {
 
   const age = dayjs().diff(birthday, 'year')
   const shareUrl = `https://${DOMAIN}/date-docs/${username}`
-const marketUrl = `https://${DOMAIN}/${username}/${contractSlug}`
+  const marketUrl = `https://${DOMAIN}/${username}/${contractSlug}`
 
   return (
     <Col className="bg-canvas-0 gap-6 rounded-lg px-6 py-6">
