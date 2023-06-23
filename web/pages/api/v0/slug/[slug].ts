@@ -1,4 +1,4 @@
-import { FullMarket, toFullMarket } from 'common/api-market-types'
+import { FullQuestion, toFullQuestion } from 'common/api-question-types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
@@ -7,7 +7,7 @@ import { db } from 'web/lib/supabase/db'
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<FullMarket | ApiError>
+  res: NextApiResponse<FullQuestion | ApiError>
 ) {
   await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
   const { slug } = req.query
@@ -20,5 +20,5 @@ export default async function handler(
   }
 
   res.setHeader('Cache-Control', 'max-age=0')
-  return res.status(200).json(toFullMarket(contract))
+  return res.status(200).json(toFullQuestion(contract))
 }

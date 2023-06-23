@@ -3,9 +3,9 @@ import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
 } from 'common/contract'
-import { createMarket, getMarketFromId } from 'discord-bot/api'
+import { createQuestion, getQuestionFromId } from 'discord-bot/api'
 import { Command } from 'discord-bot/command'
-import { replyWithMarketToBetOn } from 'discord-bot/commands/react-to-bet-on-market'
+import { replyWithQuestionToBetOn } from 'discord-bot/commands/react-to-bet-on-question'
 import { getUserInfo } from 'discord-bot/storage'
 import {
   ActionRowBuilder,
@@ -22,7 +22,7 @@ import { shouldIgnoreMessageFromGuild } from 'discord-bot/helpers'
 const data = new SlashCommandBuilder()
   .setName('create')
   .setDescription(
-    'Create a Yes/No market on manifold. Hit enter to bring up the creation modal.'
+    'Create a Yes/No question on manifold. Hit enter to bring up the creation modal.'
   )
 
 async function execute(interaction: ChatInputCommandInteraction) {
@@ -33,13 +33,13 @@ async function execute(interaction: ChatInputCommandInteraction) {
   // Create the modal
   const modal = new ModalBuilder()
     .setCustomId('creationModal')
-    .setTitle('Create a market')
+    .setTitle('Create a question')
   // Create the text input components
-  const marketQuestionTitle = new TextInputBuilder()
-    .setCustomId('marketQuestionTitle')
+  const questionQuestionTitle = new TextInputBuilder()
+    .setCustomId('questionQuestionTitle')
     .setMaxLength(MAX_QUESTION_LENGTH)
     .setPlaceholder('E.g. Michelle Obama runs for president in 2024')
-    .setLabel('Market title')
+    .setLabel('Question title')
     .setStyle(TextInputStyle.Short)
     .setRequired(true)
 
@@ -49,7 +49,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     .setPlaceholder(
       'E.g. Resolves YES if Michelle Obama runs for president in 2024 and NO otherwise.'
     )
-    .setLabel('Market description')
+    .setLabel('Question description')
     .setStyle(TextInputStyle.Paragraph)
     .setRequired(false)
 
@@ -57,7 +57,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
   // so you need one action row per text input.
   const firstActionRow =
     new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
-      marketQuestionTitle
+      questionQuestionTitle
     )
   const secondActionRow =
     new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
@@ -71,24 +71,24 @@ async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.showModal(modal)
 }
 
-export const handleCreateMarket = async (
+export const handleCreateQuestion = async (
   interaction: ModalSubmitInteraction
 ) => {
   if (interaction.customId !== 'creationModal') return
   const api = await getUserInfo(interaction.user, interaction)
   if (!api) return
-  const question = interaction.fields.getTextInputValue('marketQuestionTitle')
+  const question = interaction.fields.getTextInputValue('questionQuestionTitle')
   const description = interaction.fields.getTextInputValue(
     'questionDescription'
   )
-  const resp = await createMarket(api, question, description)
+  const resp = await createQuestion(api, question, description)
   if (resp.status === 200) {
     const contract = (await resp.json()) as Contract
-    const market = await getMarketFromId(contract.id)
-    await replyWithMarketToBetOn(interaction, market)
+    const question = await getQuestionFromId(contract.id)
+    await replyWithQuestionToBetOn(interaction, question)
   } else {
     await interaction.reply({
-      content: 'Error creating market',
+      content: 'Error creating question',
       ephemeral: true,
     })
   }

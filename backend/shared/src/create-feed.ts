@@ -337,7 +337,7 @@ export const insertNewsContractsToUsersFeeds = async (
     })
   )
 }
-export const insertMarketMovementContractToUsersFeeds = async (
+export const insertQuestionMovementContractToUsersFeeds = async (
   contract: Contract,
   dailyScore: number
 ) => {

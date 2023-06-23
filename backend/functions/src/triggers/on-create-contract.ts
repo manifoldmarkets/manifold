@@ -4,7 +4,7 @@ import { JSONContent } from '@tiptap/core'
 import { getUser, log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
-import { addUserToContractFollowers } from 'shared/follow-market'
+import { addUserToContractFollowers } from 'shared/follow-question'
 
 import { secrets } from 'common/secrets'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'

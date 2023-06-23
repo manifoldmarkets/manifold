@@ -109,7 +109,7 @@ export function CreatePostForm(props: { group?: Group }) {
               href="/create"
               className={clsx(linkClass, 'text-primary-700')}
             >
-              create a market
+              create a question
             </SiteLink>{' '}
             instead?
           </p>

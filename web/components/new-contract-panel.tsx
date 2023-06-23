@@ -30,7 +30,7 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { createMarket } from 'web/lib/firebase/api'
+import { createQuestion } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { QfExplainer } from './contract/qf-overview'
@@ -189,7 +189,7 @@ export function NewContractPanel(props: {
       )}
       {outcomeType === 'FREE_RESPONSE' && (
         <div className="text-primary-700 mt-3 ml-1 text-sm">
-          Users can submit their own answers to this market.
+          Users can submit their own answers to this question.
         </div>
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
@@ -254,7 +254,7 @@ export function NewContractPanel(props: {
           <div className="mb-2 flex flex-col items-start">
             <label className="gap-2 px-1 py-2">
               <span className="mb-1">Initial value </span>
-              <InfoTooltip text="The starting value for this market. Should be in between min and max values." />
+              <InfoTooltip text="The starting value for this question. Should be in between min and max values." />
             </label>
 
             <Row className="gap-2">
@@ -305,7 +305,7 @@ export function NewContractPanel(props: {
       {outcomeType !== 'STONK' && (
         <div className="mb-1 flex flex-col items-start">
           <label className="mb-1 gap-2 px-1 py-2">
-            <span>Market closes in </span>
+            <span>Question closes in </span>
             <InfoTooltip text="Trading will be halted after this time (local timezone)." />
           </label>
           <Row className={'w-full items-center gap-2'}>
@@ -398,7 +398,7 @@ export function NewContractPanel(props: {
                 <InfoTooltip
                   text={`You'll earn a bonus of ${formatMoney(
                     UNIQUE_BETTOR_BONUS_AMOUNT
-                  )} for each unique trader you get on your market.`}
+                  )} for each unique trader you get on your question.`}
                 />
               </span>
             )}
@@ -447,7 +447,7 @@ export function NewContractPanel(props: {
               submit()
             }}
           >
-            {isSubmitting ? 'Creating...' : 'Create market'}
+            {isSubmitting ? 'Creating...' : 'Create question'}
           </Button>
         )}
       </Row>
@@ -509,7 +509,7 @@ const useNewContract = (
   const ante = getAnte(outcomeType, answers.length)
 
   // If params.closeTime is set, extract out the specified date and time
-  // By default, close the market a week from today
+  // By default, close the question a week from today
   const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
   const timeInMs = Number(params?.closeTime ?? 0)
   const initDate = timeInMs
@@ -551,7 +551,7 @@ const useNewContract = (
         editor?.commands.setContent(
           generateJSON(
             `<div>
-            ${STONK_YES}: good<br/>${STONK_NO}: bad<br/>Market trades based on sentiment & never
+            ${STONK_YES}: good<br/>${STONK_NO}: bad<br/>Question trades based on sentiment & never
             resolves.
           </div>`,
             extensions
@@ -590,7 +590,7 @@ const useNewContract = (
   }, [isValid])
 
   const editor = useTextEditor({
-    key: 'create market',
+    key: 'create question',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
     defaultValue: params?.description
@@ -605,7 +605,7 @@ const useNewContract = (
 
   const resetProperties = () => {
     editor?.commands.clearContent(true)
-    safeLocalStorage?.removeItem(`text create market`)
+    safeLocalStorage?.removeItem(`text create question`)
     setQuestion('')
     setOutcomeType('BINARY')
     setCloseDate(undefined)
@@ -626,7 +626,7 @@ const useNewContract = (
     if (!isValid) return
     setIsSubmitting(true)
     try {
-      const newContract = (await createMarket(
+      const newContract = (await createQuestion(
         removeUndefinedProps({
           question,
           outcomeType,
@@ -648,7 +648,7 @@ const useNewContract = (
       setNewContract(newContract)
       resetProperties()
 
-      track('create market', {
+      track('create question', {
         slug: newContract.slug,
         selectedGroup: selectedGroup?.id,
         outcomeType,
@@ -703,7 +703,7 @@ const useNewContract = (
 }
 
 const descriptionPlaceholder =
-  'Optional. Provide background info and market resolution criteria here.'
+  'Optional. Provide background info and question resolution criteria here.'
 
 // get days from today until the end of this year:
 const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')

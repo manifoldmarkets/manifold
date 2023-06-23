@@ -1,8 +1,8 @@
 import * as functions from 'firebase-functions'
 import { getContract, getUser, log } from 'shared/utils'
-import { createFollowOrMarketSubsidizedNotification } from 'shared/create-notification'
+import { createFollowOrQuestionSubsidizedNotification } from 'shared/create-notification'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { addUserToContractFollowers } from 'shared/follow-market'
+import { addUserToContractFollowers } from 'shared/follow-question'
 import { FIXED_ANTE } from 'common/economy'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -20,7 +20,7 @@ export const onCreateLiquidityProvision = functions
     const liquidity = change.data() as LiquidityProvision
     const { eventId } = context
 
-    // Ignore Manifold Markets liquidity for now - users see a notification for free market liquidity provision
+    // Ignore Manifold Questions liquidity for now - users see a notification for free question liquidity provision
     if (
       liquidity.isAnte ||
       ((liquidity.userId === HOUSE_LIQUIDITY_PROVIDER_ID ||
@@ -57,7 +57,7 @@ export const onCreateLiquidityProvision = functions
           idempotencyKey: eventId,
         }
       )
-    await createFollowOrMarketSubsidizedNotification(
+    await createFollowOrQuestionSubsidizedNotification(
       contract.id,
       'liquidity',
       'created',

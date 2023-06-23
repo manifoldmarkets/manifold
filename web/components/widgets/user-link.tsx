@@ -58,7 +58,7 @@ export function UserLink(props: {
   noLink?: boolean
   createdTime?: number
   hideBadge?: boolean
-  marketCreator?: boolean
+  questionCreator?: boolean
 }) {
   const {
     name,
@@ -68,7 +68,7 @@ export function UserLink(props: {
     noLink,
     createdTime,
     hideBadge,
-    marketCreator,
+    questionCreator,
   } = props
   const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name) : name
@@ -79,7 +79,7 @@ export function UserLink(props: {
         <UserBadge
           username={username}
           fresh={fresh}
-          marketCreator={marketCreator}
+          questionCreator={questionCreator}
         />
       )}
     </>
@@ -115,7 +115,10 @@ function BotBadge() {
 
 export function PostBanBadge() {
   return (
-    <Tooltip text="Can't create comments, posts, or markets" placement="bottom">
+    <Tooltip
+      text="Can't create comments, posts, or questions"
+      placement="bottom"
+    >
       <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
         Banned
       </span>
@@ -126,9 +129,9 @@ export function PostBanBadge() {
 export function UserBadge(props: {
   username: string
   fresh?: boolean
-  marketCreator?: boolean
+  questionCreator?: boolean
 }) {
-  const { username, fresh, marketCreator } = props
+  const { username, fresh, questionCreator } = props
   const badges = []
   if (BOT_USERNAMES.includes(username)) {
     badges.push(<BotBadge key="bot" />)
@@ -142,8 +145,8 @@ export function UserBadge(props: {
   if (fresh) {
     badges.push(<FreshBadge key="fresh" />)
   }
-  if (marketCreator) {
-    badges.push(<MarketCreatorBadge key="creator" />)
+  if (questionCreator) {
+    badges.push(<QuestionCreatorBadge key="creator" />)
   }
   return <>{badges}</>
 }
@@ -178,9 +181,9 @@ function FreshBadge() {
   )
 }
 
-function MarketCreatorBadge() {
+function QuestionCreatorBadge() {
   return (
-    <Tooltip text="Market Creator" placement="right">
+    <Tooltip text="Question Creator" placement="right">
       <ScalesIcon className="h-4 w-4 text-amber-400" aria-hidden="true" />
     </Tooltip>
   )

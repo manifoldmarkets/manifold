@@ -82,11 +82,11 @@ export const ContractCard = memo(function ContractCard(props: {
   const { resolution } = contract
 
   const user = useUser()
-  const marketClosed =
+  const questionClosed =
     (contract.closeTime || Infinity) < Date.now() || !!resolution
 
   const showBinaryQuickBet =
-    !marketClosed &&
+    !questionClosed &&
     (outcomeType === 'BINARY' ||
       outcomeType === 'PSEUDO_NUMERIC' ||
       outcomeType === 'STONK') &&
@@ -217,7 +217,7 @@ export const ContractCard = memo(function ContractCard(props: {
           onClick={(e) => {
             // Let the browser handle the link click (opens in new tab).
             if (e.ctrlKey || e.metaKey) {
-              track('click market card' + (trackingPostfix ?? ''), {
+              track('click question card' + (trackingPostfix ?? ''), {
                 slug: contract.slug,
                 contractId: contract.id,
               })
@@ -231,7 +231,7 @@ export const ContractCard = memo(function ContractCard(props: {
         <Link
           href={href}
           onClick={trackCallback(
-            'click market card' + (trackingPostfix ?? ''),
+            'click question card' + (trackingPostfix ?? ''),
             {
               slug: contract.slug,
               contractId: contract.id,

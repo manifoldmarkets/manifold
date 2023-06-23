@@ -123,7 +123,7 @@ export function NotificationItem(props: {
   } else if (sourceType === 'contract') {
     if (sourceUpdateType === 'resolved') {
       return (
-        <MarketResolvedNotification
+        <QuestionResolvedNotification
           highlighted={highlighted}
           notification={notification}
           isChildOfGroup={isChildOfGroup}
@@ -133,7 +133,7 @@ export function NotificationItem(props: {
     }
     if (sourceUpdateType === 'closed') {
       return (
-        <MarketClosedNotification
+        <QuestionClosedNotification
           notification={notification}
           isChildOfGroup={isChildOfGroup}
           highlighted={highlighted}
@@ -143,7 +143,7 @@ export function NotificationItem(props: {
     }
     if (reason === 'contract_from_followed_user') {
       return (
-        <NewMarketNotification
+        <NewQuestionNotification
           notification={notification}
           isChildOfGroup={isChildOfGroup}
           highlighted={highlighted}
@@ -153,7 +153,7 @@ export function NotificationItem(props: {
     }
     if (reason === 'contract_from_private_group') {
       return (
-        <NewPrivateMarketNotification
+        <NewPrivateQuestionNotification
           notification={notification}
           isChildOfGroup={isChildOfGroup}
           highlighted={highlighted}
@@ -171,7 +171,7 @@ export function NotificationItem(props: {
       )
     }
     return (
-      <MarketUpdateNotification
+      <QuestionUpdateNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -486,7 +486,7 @@ function SignupBonusNotification(props: {
   )
 }
 
-export function MarketResolvedNotification(props: {
+export function QuestionResolvedNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
@@ -545,12 +545,12 @@ export function MarketResolvedNotification(props: {
     }
     if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
 
-    // Numeric markets
+    // Numeric questions
     const isNumberWithCommaOrPeriod = /^[0-9,.]*$/.test(sourceText)
     if (isNumberWithCommaOrPeriod)
       return <NumericValueLabel value={parseFloat(sourceText)} />
 
-    // Free response market
+    // Free response question
     return (
       <span
         className={
@@ -630,7 +630,7 @@ export function MarketResolvedNotification(props: {
   )
 }
 
-function MarketClosedNotification(props: {
+function QuestionClosedNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
@@ -667,7 +667,7 @@ function MarketClosedNotification(props: {
   )
 }
 
-function NewMarketNotification(props: {
+function NewQuestionNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
@@ -701,7 +701,7 @@ function NewMarketNotification(props: {
   )
 }
 
-function NewPrivateMarketNotification(props: {
+function NewPrivateQuestionNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
@@ -752,7 +752,7 @@ function NewPrivateMarketNotification(props: {
   )
 }
 
-function MarketUpdateNotification(props: {
+function QuestionUpdateNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
@@ -1045,7 +1045,7 @@ function UserLikeNotification(props: {
       your
       {sourceType === 'comment_like'
         ? ' comment ' + (isChildOfGroup ? '' : 'on ')
-        : ' market '}
+        : ' question '}
       {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
       <MultiUserReactionModal
         similarNotifications={relatedNotifications}

@@ -141,7 +141,7 @@ export async function getGroup(groupId: string) {
     return null
   }
 }
-export async function getGroupMarkets(groupId: string) {
+export async function getGroupQuestions(groupId: string) {
   const { data: contractIds } = await run(
     db.from('group_contracts').select('contract_id').eq('group_id', groupId)
   )
@@ -162,8 +162,8 @@ export async function getGroupMarkets(groupId: string) {
         )
     )
   )
-  const markets = data.flatMap((d) => d.data)
-  return markets.map((m) => m.data as Contract)
+  const questions = data.flatMap((d) => d.data)
+  return questions.map((m) => m.data as Contract)
 }
 
 export async function getGroupFromSlug(groupSlug: string, db: SupabaseClient) {

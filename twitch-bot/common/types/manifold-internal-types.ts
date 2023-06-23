@@ -128,7 +128,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   closeTime?: number; // When no more trading is allowed
 
   isResolved: boolean;
-  resolutionTime?: number; // When the contract creator resolved the market
+  resolutionTime?: number; // When the contract creator resolved the question
   resolution?: string;
   resolutionProbability?: number;
 
@@ -185,7 +185,7 @@ export type CPMM = {
 export type Binary = {
   outcomeType: 'BINARY';
   initialProbability: number;
-  resolutionProbability?: number; // Used for BINARY markets resolved to MKT
+  resolutionProbability?: number; // Used for BINARY questions resolved to MKT
   resolution?: resolution;
 };
 
@@ -196,7 +196,7 @@ export type PseudoNumeric = {
   isLogScale: boolean;
   resolutionValue?: number;
 
-  // same as binary market; map everything to probability
+  // same as binary question; map everything to probability
   initialProbability: number;
   resolutionProbability?: number;
 };
@@ -275,14 +275,14 @@ export type User = {
   lastBetTime?: number;
   currentBettingStreak?: number;
   hasSeenContractFollowModal?: boolean;
-  freeMarketsCreated?: number;
+  freeQuestionsCreated?: number;
   isBannedFromPosting?: boolean;
 
   achievements: {
     provenCorrect?: {
       badges: any[];
     };
-    marketCreator?: {
+    questionCreator?: {
       badges: any[];
     };
     streaker?: {

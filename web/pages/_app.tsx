@@ -73,29 +73,29 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   return (
     <>
       <Head>
-        <title>Manifold Markets</title>
+        <title>Manifold Questions</title>
 
         <meta
           property="og:title"
           name="twitter:title"
-          content="Manifold Markets"
+          content="Manifold Questions"
           key="title"
         />
         <meta
           name="description"
-          content="Create your own prediction market. Unfold the future."
+          content="Create your own prediction question. Unfold the future."
           key="description1"
         />
         <meta
           property="og:description"
           name="twitter:description"
-          content="Create your own prediction market. Unfold the future."
+          content="Create your own prediction question. Unfold the future."
           key="description2"
         />
         <meta property="og:url" content="https://manifold.markets" key="url" />
-        <meta property="og:site_name" content="Manifold Markets" />
+        <meta property="og:site_name" content="Manifold Questions" />
         <meta name="twitter:card" content="summary" key="card" />
-        <meta name="twitter:site" content="@manifoldmarkets" />
+        <meta name="twitter:site" content="@manifoldquestions" />
         <meta
           name="twitter:image"
           content="https://manifold.markets/logo-white.png"
@@ -112,7 +112,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           rel="search"
           type="application/opensearchdescription+xml"
           href="https://manifold.markets/opensearch.xml"
-          title="Manifold Markets"
+          title="Manifold Questions"
         />
       </Head>
       <div
@@ -138,7 +138,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           <div />
         </div>
       </div>
-      {/* Umami, for pageview analytics on https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets */}
+      {/* Umami, for pageview analytics on https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Questions */}
       <Script
         src="https://analytics.umami.is/script.js"
         data-website-id="ee5d6afd-5009-405b-a69f-04e3e4e3a685"

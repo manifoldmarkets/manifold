@@ -36,7 +36,7 @@ export function getNewContract(
   // twitch
   isTwitchContract: boolean | undefined,
 
-  // used for numeric markets
+  // used for numeric questions
   bucketCount: number,
   min: number,
   max: number,

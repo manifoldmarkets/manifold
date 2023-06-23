@@ -91,12 +91,12 @@ export function addSubsidy(params: any) {
   return call(getApiUrl('addsubsidy'), 'POST', params)
 }
 
-export function createMarket(params: any) {
-  return call(getApiUrl('createmarket'), 'POST', params)
+export function createQuestion(params: any) {
+  return call(getApiUrl('createquestion'), 'POST', params)
 }
 
-export function resolveMarket(params: any) {
-  return call(getApiUrl('resolvemarket'), 'POST', params)
+export function resolveQuestion(params: any) {
+  return call(getApiUrl('resolvequestion'), 'POST', params)
 }
 
 export function swapCert(params: any) {
@@ -156,8 +156,8 @@ export function updatePost(params: { id: string } & Partial<Post>) {
   return call(getApiUrl('updatepost'), 'POST', params)
 }
 
-export function boostMarket(params: any) {
-  return call(getApiUrl('boost-market'), 'POST', params)
+export function boostQuestion(params: any) {
+  return call(getApiUrl('boost-question'), 'POST', params)
 }
 
 let nonce = 0
@@ -223,9 +223,9 @@ export function resolveQf(params: QfResolveReq) {
   return call('/api/v0/qf/resolve', 'POST', params)
 }
 
-export function unresolveMarket(params: { marketId: string }) {
-  const { marketId } = params
-  return call(`/api/v0/market/${marketId}/unresolve`, 'POST', params)
+export function unresolveQuestion(params: { questionId: string }) {
+  const { questionId } = params
+  return call(`/api/v0/question/${questionId}/unresolve`, 'POST', params)
 }
 
 export function hideComment(params: HideCommentReq) {
@@ -302,8 +302,8 @@ export function supabaseSearchContracts(params: {
   ) as Promise<Contract[]>
 }
 
-export function deleteMarket(params: { contractId: string }) {
-  return call(getApiUrl('delete-market'), 'POST', params) as Promise<{
+export function deleteQuestion(params: { contractId: string }) {
+  return call(getApiUrl('delete-question'), 'POST', params) as Promise<{
     status: 'success'
   }>
 }

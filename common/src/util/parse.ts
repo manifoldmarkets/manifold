@@ -59,12 +59,12 @@ export const extensions = [
   Link,
   Image.extend({ renderText: () => '[image]' }),
   Mention, // user @mention
-  Mention.extend({ name: 'contract-mention' }), // market %mention
+  Mention.extend({ name: 'contract-mention' }), // question %mention
   Iframe.extend({
     renderText: ({ node }) =>
       '[embed]' + node.attrs.src ? `(${node.attrs.src})` : '',
   }),
-  skippableComponent('gridCardsComponent', '[markets]'),
+  skippableComponent('gridCardsComponent', '[questions]'),
   skippableComponent('linkPreview', '[link preview]'),
   TiptapTweet.extend({ renderText: () => '[tweet]' }),
   TiptapSpoiler.extend({ renderHTML: () => ['span', '[spoiler]', 0] }),

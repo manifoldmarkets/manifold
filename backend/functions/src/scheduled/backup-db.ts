@@ -10,7 +10,7 @@
 // https://console.cloud.google.com/storage/browser/manifold-firestore-backup
 //
 // To import the data into dev Firestore (from https://firebase.google.com/docs/firestore/manage-data/move-data):
-// 0. Open up a cloud shell from manticmarkets@gmail.com: https://console.cloud.google.com/home/dashboard?cloudshell=true
+// 0. Open up a cloud shell from manticquestions@gmail.com: https://console.cloud.google.com/home/dashboard?cloudshell=true
 // 1. `gcloud config set project dev-mantic-markets`
 // 2. Get the backup timestamp e.g. `2022-01-25T21:19:20_6605`
 // 3. `gcloud firestore import gs://manifold-firestore-backup/2022-01-25T21:19:20_6605 --async`

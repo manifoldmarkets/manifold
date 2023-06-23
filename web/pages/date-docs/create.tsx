@@ -27,7 +27,7 @@ export default function CreateDateDocPage() {
 
   const title = `${user?.name}'s Date Doc`
   const [birthday, setBirthday] = useState<undefined | string>(undefined)
-  const [createMarket, setCreateMarket] = useState(true)
+  const [createQuestion, setCreateQuestion] = useState(true)
   const [question, setQuestion] = useState(
     'Will I find a partner in the next 3 months?'
   )
@@ -42,7 +42,7 @@ export default function CreateDateDocPage() {
     birthday &&
     editor &&
     editor.isEmpty === false &&
-    (question || !createMarket)
+    (question || !createQuestion)
 
   async function saveDateDoc() {
     if (!user || !editor || !birthdayTime) return
@@ -62,7 +62,7 @@ export default function CreateDateDocPage() {
       bounty: 0,
       birthday: birthdayTime,
       type: 'date-doc',
-      question: createMarket ? question : undefined,
+      question: createQuestion ? question : undefined,
       visibility: 'public',
     })
 
@@ -115,10 +115,10 @@ export default function CreateDateDocPage() {
             <Col className="gap-4">
               <Row className="items-center gap-4">
                 <ShortToggle
-                  on={createMarket}
-                  setOn={(on) => setCreateMarket(on)}
+                  on={createQuestion}
+                  setOn={(on) => setCreateQuestion(on)}
                 />
-                Create a (private) prediction market attached to the date doc
+                Create a (private) prediction question attached to the date doc
               </Row>
 
               <Col className="gap-2">
@@ -126,7 +126,7 @@ export default function CreateDateDocPage() {
                   maxLength={MAX_QUESTION_LENGTH}
                   value={question}
                   onChange={(e) => setQuestion(e.target.value || '')}
-                  disabled={!createMarket}
+                  disabled={!createQuestion}
                 />
                 <div className="text-ink-500 ml-2">
                   Cost: {ENV_CONFIG.moneyMoniker}100

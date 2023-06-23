@@ -15,9 +15,9 @@ import { Col } from 'web/components/layout/col';
 import { Row } from 'web/components/layout/row';
 
 import { ResolutionOutcome } from '@common/outcome';
-import { PacketAddBets, PacketClear, PacketHandshakeComplete, PacketResolved, PacketSelectMarket, PacketUnfeature } from '@common/packets';
+import { PacketAddBets, PacketClear, PacketHandshakeComplete, PacketResolved, PacketSelectQuestion, PacketUnfeature } from '@common/packets';
 import SocketWrapper from '@common/socket-wrapper';
-import { AbstractMarket, NamedBet } from '@common/types/manifold-abstract-types';
+import { AbstractQuestion, NamedBet } from '@common/types/manifold-abstract-types';
 import { DisconnectDescription } from 'socket.io-client/build/esm/socket';
 import { LoadingOverlay } from '../components/loading-overlay';
 import { ConnectionState } from '../lib/connection-state';
@@ -39,7 +39,7 @@ class Application {
   currentProbability_percent = 0;
   animatedProbability_percent: number = this.currentProbability_percent;
 
-  currentMarket: AbstractMarket = null;
+  currentQuestion: AbstractQuestion = null;
 
   constructor() {
     this.transactionTemplate = document.getElementById('transaction-template');
@@ -100,11 +100,11 @@ class Application {
         console.trace(e);
       }
     });
-    this.sw.on(PacketSelectMarket, (p: PacketSelectMarket) => {
+    this.sw.on(PacketSelectQuestion, (p: PacketSelectQuestion) => {
       console.debug(p);
       try {
         this.resetUI();
-        this.loadMarket(p);
+        this.loadQuestion(p);
       } catch (e) {
         console.trace(e);
       }
@@ -129,14 +129,14 @@ class Application {
     this.betElements = [];
   }
 
-  loadMarket(p: PacketSelectMarket) {
-    this.currentMarket = { ...p.market, initialBets: p.initialBets } as AbstractMarket;
+  loadQuestion(p: PacketSelectQuestion) {
+    this.currentQuestion = { ...p.question, initialBets: p.initialBets } as AbstractQuestion;
 
-    if (this.currentMarket.bets.length > 0) {
-      this.currentMarket.probability = this.currentMarket.bets[this.currentMarket.bets.length - 1].probAfter;
+    if (this.currentQuestion.bets.length > 0) {
+      this.currentQuestion.probability = this.currentQuestion.bets[this.currentQuestion.bets.length - 1].probAfter;
     }
 
-    const questionLength = this.currentMarket.question.length;
+    const questionLength = this.currentQuestion.question.length;
     const questionDiv = document.getElementById('question');
     if (questionLength < 60) {
       questionDiv.style.fontSize = '1.3em';
@@ -145,8 +145,8 @@ class Application {
     } else {
       questionDiv.style.fontSize = '0.85em';
     }
-    questionDiv.innerHTML = this.currentMarket.question;
-    this.currentProbability_percent = this.currentMarket.probability * 100;
+    questionDiv.innerHTML = this.currentQuestion.question;
+    this.currentProbability_percent = this.currentQuestion.probability * 100;
     this.animatedProbability_percent = this.currentProbability_percent;
 
     this.loadBettingHistory(p);
@@ -154,12 +154,12 @@ class Application {
     setTimeout(() => this.chart.resize(), 50);
   }
 
-  loadBettingHistory(p: PacketSelectMarket) {
+  loadBettingHistory(p: PacketSelectQuestion) {
     const data: Point[] = [];
     // Bets are stored oldest-first:
     data.push(new Point(Date.now() - 1e9, 0.5));
-    if (p.market.bets.length > 0) {
-      for (const bet of this.currentMarket.bets) {
+    if (p.question.bets.length > 0) {
+      for (const bet of this.currentQuestion.bets) {
         data.push(new Point(bet.createdTime, bet.probBefore));
         data.push(new Point(bet.createdTime, bet.probAfter));
       }
@@ -215,9 +215,9 @@ class Application {
       }, 1000);
     }
 
-    if (this.currentMarket && options.addToChart) {
-      this.currentMarket.probability = bet.probAfter;
-      this.currentProbability_percent = this.currentMarket.probability * 100;
+    if (this.currentQuestion && options.addToChart) {
+      this.currentQuestion.probability = bet.probAfter;
+      this.currentProbability_percent = this.currentQuestion.probability * 100;
       this.chart.data.push(new Point(bet.createdTime, bet.probBefore));
       this.chart.data.push(new Point(bet.createdTime, bet.probAfter));
     }
@@ -270,7 +270,7 @@ export default () => {
       setResolvedData(undefined);
       setOverlayVisible(false);
     });
-    app.sw.on(PacketSelectMarket, () => {
+    app.sw.on(PacketSelectQuestion, () => {
       setResolvedData(undefined);
       setOverlayVisible(true);
     });
@@ -364,7 +364,7 @@ export default () => {
                 {/* <div className="text-[0.4em] whitespace-nowrap" style={{ fontFamily: "Major Mono Display, monospace" }}>
                                     manifold
                                     <br />
-                                    markets
+                                    questions
                                 </div> */}
                 <div className="text-center text-[1.0em]" style={{ fontWeight: 'bold' }}>
                   !signup

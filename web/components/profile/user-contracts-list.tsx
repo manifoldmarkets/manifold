@@ -17,9 +17,9 @@ export function UserContractsList(props: { creator: User }) {
   const { creator } = props
   const { creatorTraders } = creator
   const { weekly, allTime } = creatorTraders
-  const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
+  const [questionsCreated, setQuestionsCreated] = useState<number | undefined>()
   const [creatorRank, setCreatorRank] = useState<number | undefined>()
-  const [unresolvedMarkets, setUnresolvedMarkets] = useState<number>(0)
+  const [unresolvedQuestions, setUnresolvedQuestions] = useState<number>(0)
   useEffect(() => {
     console.log('mounted')
     return () => {
@@ -27,34 +27,34 @@ export function UserContractsList(props: { creator: User }) {
     }
   }, [])
   useEffect(() => {
-    getTotalContractsCreated(creator.id).then(setMarketsCreated)
+    getTotalContractsCreated(creator.id).then(setQuestionsCreated)
     getCreatorRank(allTime, 'allTime').then(setCreatorRank)
     getUnresolvedContractsCount(creator.id, db).then((count) =>
-      setUnresolvedMarkets(count)
+      setUnresolvedQuestions(count)
     )
   }, [creator.id, allTime])
 
   return (
     <Col className={'w-full'}>
       <Row className={'gap-8 pb-4'}>
-        <MarketStats
+        <QuestionStats
           title={'Creator rank'}
           total={`#${formatWithCommas(creatorRank ?? 0)}`}
         />
-        <MarketStats
-          title={'Total markets'}
-          total={formatWithCommas(marketsCreated ?? 0)}
+        <QuestionStats
+          title={'Total questions'}
+          total={formatWithCommas(questionsCreated ?? 0)}
           subTitle={
-            unresolvedMarkets === 0 ? null : (
+            unresolvedQuestions === 0 ? null : (
               <Tooltip text={'Closed and waiting for resolution'}>
                 <div className="bg-scarlet-300 text-ink-0 min-w-[15px] cursor-pointer rounded-full p-[2px] text-center text-[10px] leading-3">
-                  {`${unresolvedMarkets}`}
+                  {`${unresolvedQuestions}`}
                 </div>
               </Tooltip>
             )
           }
         />
-        <MarketStats
+        <QuestionStats
           title={'Traders'}
           total={formatWithCommas(allTime ?? 0)}
           subTitle={
@@ -89,7 +89,7 @@ export function UserContractsList(props: { creator: User }) {
   )
 }
 
-const MarketStats = (props: {
+const QuestionStats = (props: {
   title: string
   total: string
   subTitle?: ReactNode

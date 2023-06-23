@@ -12,7 +12,7 @@ export const CreateQuestionButton = () => {
         'mt-4 w-full bg-gradient-to-r !px-3 text-white'
       )}
     >
-      Create a market
+      Create a question
     </Link>
   )
 }

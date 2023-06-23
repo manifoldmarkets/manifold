@@ -4,7 +4,7 @@ import { User } from 'web/lib/firebase/users'
 import { YesNoCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
-import { APIError, resolveMarket } from 'web/lib/firebase/api'
+import { APIError, resolveQuestion } from 'web/lib/firebase/api'
 import { getProbability } from 'common/calculate'
 import { BinaryContract, resolution } from 'common/contract'
 import { BETTORS, PLURAL_BETS } from 'common/user'
@@ -65,7 +65,7 @@ export function ResolutionPanel(props: {
     setIsSubmitting(true)
 
     try {
-      const result = await resolveMarket({
+      const result = await resolveQuestion({
         outcome,
         contractId: contract.id,
         probabilityInt: prob,
@@ -76,7 +76,7 @@ export function ResolutionPanel(props: {
         setError(e.toString())
       } else {
         console.error(e)
-        setError('Error resolving market')
+        setError('Error resolving question')
       }
     }
 
@@ -95,7 +95,7 @@ export function ResolutionPanel(props: {
       )}
       {!modalSetOpen && (
         <div className="mb-6">
-          Resolve {isCreator ? 'your' : "this user's"} market
+          Resolve {isCreator ? 'your' : "this user's"} question
         </div>
       )}
       {modalSetOpen && (
@@ -142,7 +142,7 @@ export function ResolutionPanel(props: {
             </Row>
           ) : (
             <span className="text-ink-500">
-              Resolving this market will immediately pay out {BETTORS}.
+              Resolving this question will immediately pay out {BETTORS}.
             </span>
           )}
         </div>
@@ -150,7 +150,7 @@ export function ResolutionPanel(props: {
           <ResolveConfirmationButton
             color={getResolveButtonColor(outcome)}
             label={getResolveButtonLabel(outcome, prob)}
-            marketTitle={contract.question}
+            questionTitle={contract.question}
             disabled={!outcome}
             onResolve={resolve}
             isSubmitting={isSubmitting}

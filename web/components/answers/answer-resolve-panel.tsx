@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 
 import { MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
-import { APIError, resolveMarket } from 'web/lib/firebase/api'
+import { APIError, resolveQuestion } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../bet/yes-no-selector'
 import { ResolveConfirmationButton } from '../buttons/confirmation-button'
@@ -131,14 +131,14 @@ export function AnswerResolvePanel(props: {
         })
 
     try {
-      const result = await resolveMarket(resolutionProps)
+      const result = await resolveQuestion(resolutionProps)
       console.log('resolved', resolutionProps, 'result:', result)
     } catch (e) {
       if (e instanceof APIError) {
         setError(e.toString())
       } else {
         console.error(e)
-        setError('Error resolving market')
+        setError('Error resolving question')
       }
     }
 
@@ -149,7 +149,7 @@ export function AnswerResolvePanel(props: {
   return (
     <Col className="gap-4 rounded">
       <Row className="justify-between">
-        {!isInModal && <div>Resolve your market</div>}
+        {!isInModal && <div>Resolve your question</div>}
         {isInModal && <div>Resolve "{contract.question}"</div>}
         {isAdmin && !isCreator && (
           <span className="bg-scarlet-500/20 text-scarlet-500 rounded p-1 text-xs">
@@ -189,7 +189,7 @@ export function AnswerResolvePanel(props: {
                 chosenText,
                 answerIds
               )}
-              marketTitle={contract.question}
+              questionTitle={contract.question}
               disabled={getAnswerResolveButtonDisabled(
                 resolveOption,
                 answerIds,

@@ -1,4 +1,4 @@
-// number normal markets to show between boosted markets
+// number normal questions to show between boosted questions
 export const AD_PERIOD = 5
 
 export const AD_RATE_LIMIT = 7 * 1000 // 7 seconds

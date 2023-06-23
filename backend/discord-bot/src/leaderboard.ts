@@ -1,4 +1,4 @@
-import { FullMarket } from 'common/api-market-types'
+import { FullQuestion } from 'common/api-question-types'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { sendThreadEmbed } from 'discord-bot/helpers'
 
@@ -14,7 +14,7 @@ import {
 
 export const sendPositionsEmbed = async (
   interaction: ChatInputCommandInteraction | ButtonInteraction,
-  market: FullMarket,
+  question: FullQuestion,
   positions: ContractMetrics[],
   message: Message,
   threadId?: string
@@ -26,7 +26,7 @@ export const sendPositionsEmbed = async (
     })
   }
 
-  const { coverImageUrl } = market
+  const { coverImageUrl } = question
   const getAttachment = async (url: string, name: string) => {
     const blob = await fetch(url).then((r) => r.blob())
     const arrayBuffer = await blob.arrayBuffer()
@@ -44,20 +44,20 @@ export const sendPositionsEmbed = async (
       return `${prefix}${Math.abs(profit)} | ${p.userName} \n`
     })
     .join('')
-  const marketEmbed = new EmbedBuilder()
-  marketEmbed
+  const questionEmbed = new EmbedBuilder()
+  questionEmbed
     .setColor(0x0099ff)
-    .setTitle('Profit & loss leaderboard for ' + market.question)
+    .setTitle('Profit & loss leaderboard for ' + question.question)
     .setFields([
       { name: 'Profit | Username', value: positionsField, inline: true },
     ])
-    .setURL(market.url)
+    .setURL(question.url)
     .setThumbnail(`attachment://cover.png`)
   const channel = interaction.channel as TextChannel
   const { thread, message: leaderboardMessage } = await sendThreadEmbed(
     channel,
-    market,
-    marketEmbed,
+    question,
+    questionEmbed,
     message.id,
     [cover],
     threadId

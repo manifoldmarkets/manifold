@@ -111,7 +111,7 @@ export default function ContractEmbedPage(props: {
 
   useEffect(() => {
     if (contract?.id)
-      track('view market embed', {
+      track('view question embed', {
         slug: contract.slug,
         contractId: contract.id,
         creatorId: contract.creatorId,

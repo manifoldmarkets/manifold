@@ -14,7 +14,7 @@ export const sendTextEmail = async (
 ) => {
   const data: mailgun.messages.SendData = {
     ...options,
-    from: options?.from ?? 'Manifold Markets <info@manifold.markets>',
+    from: options?.from ?? 'Manifold Questions <info@manifold.markets>',
     to,
     subject,
     text,
@@ -38,7 +38,7 @@ export const sendTemplateEmail = async (
 ) => {
   const data: mailgun.messages.SendTemplateData = {
     ...options,
-    from: options?.from ?? 'Manifold Markets <info@manifold.markets>',
+    from: options?.from ?? 'Manifold Questions <info@manifold.markets>',
     to,
     subject,
     template: templateId,

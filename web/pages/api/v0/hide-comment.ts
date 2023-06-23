@@ -46,7 +46,9 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   if (!isAdmin(privateUser.email) && !isContractCreator) {
     return res
       .status(401)
-      .json({ error: 'Only the market creator or an admin can hide markets' })
+      .json({
+        error: 'Only the question creator or an admin can hide questions',
+      })
   }
 
   await hideComment(commentPath, userId)

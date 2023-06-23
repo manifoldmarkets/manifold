@@ -15,7 +15,7 @@ import {
   replied_users_info,
 } from 'shared/create-notification'
 import { parseMentions, richTextToString } from 'common/util/parse'
-import { addUserToContractFollowers } from 'shared/follow-market'
+import { addUserToContractFollowers } from 'shared/follow-question'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import { secrets } from 'common/secrets'

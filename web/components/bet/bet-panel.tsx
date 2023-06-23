@@ -245,7 +245,7 @@ export function BuyPanel(props: {
         user?.balance ?? 0
       )}`
     : highProbMove
-    ? `Are you sure you want to move the market by ${displayedDifference}?`
+    ? `Are you sure you want to move the question by ${displayedDifference}?`
     : undefined
 
   const displayError = !!outcome
@@ -391,7 +391,7 @@ export function BuyPanel(props: {
 
         {user && (
           <WarningConfirmationButton
-            marketType="binary"
+            questionType="binary"
             amount={betAmount}
             warning={warning}
             userOptedOutOfWarning={user.optOutBetWarnings}

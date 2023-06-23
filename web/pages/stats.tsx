@@ -81,7 +81,7 @@ export function CustomAnalytics(props: Stats) {
       <Title children="Active users" />
       <p className="text-ink-500">
         An active user is a user who has traded in, commented on, or created a
-        market.
+        question.
       </p>
       <div className="text-ink-500 mt-2">
         <b>{formatLargeNumber(currentDAUs)} DAUs</b> yesterday;{' '}
@@ -138,7 +138,7 @@ export function CustomAnalytics(props: Stats) {
           {isNative ? (
             <a
               href={
-                'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets'
+                'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Questions'
               }
               className={'text-primary-700'}
             >
@@ -155,7 +155,7 @@ export function CustomAnalytics(props: Stats) {
       <Title children="Engaged users" />
       <p className="text-ink-500">
         An engaged user is a user who has traded in, commented on, or created a
-        market on at least 2 out of 7 days in each of the past 3 weeks.
+        question on at least 2 out of 7 days in each of the past 3 weeks.
       </p>
       <div className="text-ink-500 mt-2">
         <b>{formatLargeNumber(currentEngaged)} </b> engaged users
@@ -302,7 +302,7 @@ export function CustomAnalytics(props: Stats) {
             ),
           },
           {
-            title: 'Markets created',
+            title: 'Questions created',
             content: (
               <DailyChart
                 dailyValues={dailyContractCounts}

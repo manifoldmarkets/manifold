@@ -70,9 +70,9 @@ export const getContractViewerIds = async (
   pg: SupabaseDirectClient
 ) => {
   const viewerIds = await pg.manyOrNone<{ user_id: string }>(
-    `select distinct user_id from user_seen_markets
+    `select distinct user_id from user_seen_questions
                 where contract_id = $1
-                and type = 'view market'`,
+                and type = 'view question'`,
     [contractId]
   )
   return viewerIds.map((r) => r.user_id)

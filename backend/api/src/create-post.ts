@@ -5,7 +5,7 @@ import { Post, MAX_POST_TITLE_LENGTH } from 'common/post'
 import { APIError, authEndpoint, validate } from './helpers'
 import { z } from 'zod'
 import { removeUndefinedProps } from 'common/util/object'
-import { createMarketHelper } from './create-market'
+import { createQuestionHelper } from './create-question'
 import { DAY_MS } from 'common/util/time'
 import { contentSchema } from 'shared/zod-types'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -48,13 +48,13 @@ export const createpost = authEndpoint(async (req, auth) => {
 
   const slug = await getSlug(title)
 
-  // If this is a date doc, create a market for it.
+  // If this is a date doc, create a question for it.
   let contractSlug
   if ('type' in otherProps && otherProps.type === 'date-doc') {
     const closeTime = Date.now() + DAY_MS * 30 * 3
 
     try {
-      const result = await createMarketHelper(
+      const result = await createQuestionHelper(
         {
           question: otherProps.question,
           closeTime,

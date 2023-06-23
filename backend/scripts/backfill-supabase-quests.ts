@@ -24,16 +24,16 @@ async function backfillSupabaseQuests() {
     await Promise.all(
       users.slice(start, end).map(async (user) => {
         try {
-          const marketsCreatedCount = await getRecentContractsCount(
+          const questionsCreatedCount = await getRecentContractsCount(
             user.id,
             START_OF_WEEK,
             db
           )
-          if (marketsCreatedCount > 0) {
+          if (questionsCreatedCount > 0) {
             await setQuestScoreValue(
               user.id,
               QUEST_DETAILS['MARKETS_CREATED'].scoreId,
-              marketsCreatedCount,
+              questionsCreatedCount,
               db
             )
           }

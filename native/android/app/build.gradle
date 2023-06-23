@@ -115,9 +115,9 @@ android {
 
     compileSdkVersion rootProject.ext.compileSdkVersion
 
-    namespace "com.markets.manifold"
+    namespace "com.questions.manifold"
     defaultConfig {
-        applicationId 'com.markets.manifold'
+        applicationId 'com.questions.manifold'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 54

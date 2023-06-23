@@ -9,9 +9,9 @@ export const getStaticProps = async () => {
   const { data } = await db
     .from('public_open_contracts')
     .select('data')
-    // Excludes markets with recent comments but not recent bets
+    // Excludes questions with recent comments but not recent bets
     .lte('data->lastUpdatedTime', dayjs().subtract(3, 'month').valueOf())
-    // Put markets with no bets first
+    // Put questions with no bets first
     .order('data->lastBetTime' as any, { ascending: true, nullsFirst: true })
     .limit(100)
 
@@ -28,11 +28,11 @@ export const getStaticProps = async () => {
   }
 }
 
-export default function AncientMarkets(props: { contracts: Contract[] }) {
+export default function AncientQuestions(props: { contracts: Contract[] }) {
   const { contracts } = props
   return (
     <Page>
-      <Title>Ancient Markets</Title>
+      <Title>Ancient Questions</Title>
       <ContractsTable contracts={contracts} />
     </Page>
   )

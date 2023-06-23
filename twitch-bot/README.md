@@ -1,4 +1,4 @@
-# Manifold Markets Twitch Bot
+# Manifold Questions Twitch Bot
 
 This sub-repo has everything required to host the Manifold Twitch Bot and associated overlay and dock browser sources for OBS.
 
@@ -84,11 +84,11 @@ There are two ways to view the logs of the deployed bot:
 ## Future development
 
 - [ ] Port the overlay to a [Twitch Extension](https://www.twitch.tv/p/en/extensions/) to decrease viewer latency when viewing bets
-- [ ] Support market types other than binary
+- [ ] Support question types other than binary
 - [ ] Rate limit management in the Twitch bot to prioritize outgoing messages when there is a risk of Twitch dropping them
 - [ ] Support betting to a percentage
-- [ ] Save which markets are currently featured on each Twitch channel to Firestore to support server rebooting without interruption
-- [ ] Allow docks to set the group within which markets created through chat will be added
+- [ ] Save which questions are currently featured on each Twitch channel to Firestore to support server rebooting without interruption
+- [ ] Allow docks to set the group within which questions created through chat will be added
 - [ ] Support renewing dock and overlay links in case of a leak
 - [ ] Reduce image sizes loaded from googleusercontent
 - [ ] Use gzip compression for serving webpages

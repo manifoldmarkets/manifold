@@ -8,7 +8,7 @@ import { getRecentContractLikes } from 'shared/supabase/likes'
 import { clamp } from 'lodash'
 import { logit } from 'common/util/math'
 import {
-  insertMarketMovementContractToUsersFeeds,
+  insertQuestionMovementContractToUsersFeeds,
   insertTrendingContractToUsersFeeds,
 } from 'shared/create-feed'
 import { removeUndefinedProps } from 'common/util/object'
@@ -111,7 +111,7 @@ export async function scoreContractsInternal(
     ) {
       // If it's just undergone a large prob change, add it to the feed
       if (dailyScore > 1.5 && dailyScore - contract.dailyScore > 1) {
-        await insertMarketMovementContractToUsersFeeds(contract, dailyScore)
+        await insertQuestionMovementContractToUsersFeeds(contract, dailyScore)
       }
       await firestore
         .collection('contracts')

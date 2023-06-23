@@ -1,6 +1,16 @@
-import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated, PacketPing, PacketPong, PacketRequestResolve, PacketResolved, PacketSelectMarketID, PacketUnfeature } from '@common/packets';
+import {
+  PacketCreateQuestion,
+  PacketHandshakeComplete,
+  PacketQuestionCreated,
+  PacketPing,
+  PacketPong,
+  PacketRequestResolve,
+  PacketResolved,
+  PacketSelectQuestionID,
+  PacketUnfeature,
+} from '@common/packets';
 import SocketWrapper from '@common/socket-wrapper';
-import { LiteMarket, LiteUser } from '@common/types/manifold-api-types';
+import { LiteQuestion, LiteUser } from '@common/types/manifold-api-types';
 import { Group } from '@common/types/manifold-internal-types';
 import { Transition } from '@headlessui/react';
 import { ENV_CONFIG } from '@manifold_common/envs/constants';
@@ -29,32 +39,32 @@ let APIBase = undefined;
 let connectedServerID: string = undefined;
 let isAdmin = false;
 
-export function getMarketDisplayability(c: LiteMarket): [featureable: boolean, listPrecedence: number, reason?: string] {
-  if (c.outcomeType !== 'BINARY') return [false, 6, 'This type of market is not currently supported'];
-  if (c.mechanism !== 'cpmm-1') return [false, 5, 'This type of market is not currently supported'];
-  if (c.resolution) return [false, 3, 'This market has been resolved'];
+export function getQuestionDisplayability(c: LiteQuestion): [featureable: boolean, listPrecedence: number, reason?: string] {
+  if (c.outcomeType !== 'BINARY') return [false, 6, 'This type of question is not currently supported'];
+  if (c.mechanism !== 'cpmm-1') return [false, 5, 'This type of question is not currently supported'];
+  if (c.resolution) return [false, 3, 'This question has been resolved'];
   if (c.closeTime < Date.now()) return [false, 2, 'This marked is closed'];
   return [true, 1];
 }
 
-async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
-  const r = await fetch(`${APIBase}group/by-id/${group.id}/markets`);
-  const markets = (await r.json()) as LiteMarket[];
+async function fetchQuestionsInGroup(group: Group): Promise<LiteQuestion[]> {
+  const r = await fetch(`${APIBase}group/by-id/${group.id}/questions`);
+  const questions = (await r.json()) as LiteQuestion[];
 
-  // Sort the markets for most recently created first:
-  markets.sort((a, b) => b.createdTime - a.createdTime);
+  // Sort the questions for most recently created first:
+  questions.sort((a, b) => b.createdTime - a.createdTime);
 
-  // Sort the markets such that the display order is Featureable markets > Closed markets > Unsupported markets:
-  const marketWeight = (a: LiteMarket) => getMarketDisplayability(a)[1];
-  markets.sort((a, b) => marketWeight(a) - marketWeight(b));
+  // Sort the questions such that the display order is Featureable questions > Closed questions > Unsupported questions:
+  const questionWeight = (a: LiteQuestion) => getQuestionDisplayability(a)[1];
+  questions.sort((a, b) => questionWeight(a) - questionWeight(b));
 
-  return markets;
+  return questions;
 }
 
-async function fetchMarketById(id: string): Promise<LiteMarket> {
-  const r = await fetch(`${APIBase}market/${id}`);
-  const market = (await r.json()) as LiteMarket;
-  return market;
+async function fetchQuestionById(id: string): Promise<LiteQuestion> {
+  const r = await fetch(`${APIBase}question/${id}`);
+  const question = (await r.json()) as LiteQuestion;
+  return question;
 }
 
 async function getUserBalance(userID: string): Promise<number> {
@@ -110,8 +120,8 @@ export default () => {
   const [question, setQuestion] = useState('');
   const [questionCreateError, setQuestionCreateError] = useState<string | undefined>(undefined);
   const [loadingContracts, setLoadingContracts] = useState<boolean>(false);
-  const [contracts, setContracts] = useState<LiteMarket[]>([]);
-  const [selectedContract, setSelectedContract] = useState<LiteMarket | undefined>(undefined);
+  const [contracts, setContracts] = useState<LiteQuestion[]>([]);
+  const [selectedContract, setSelectedContract] = useState<LiteQuestion | undefined>(undefined);
   const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Connecting to server...');
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.CONNECTING);
@@ -126,14 +136,14 @@ export default () => {
     setIsSubmittingQuestion(true);
     try {
       await new Promise<void>((resolve, reject) => {
-        sw.emit(PacketCreateMarket, { groupId: selectedGroup.id, question: question });
-        sw.once(PacketMarketCreated, async (packet) => {
+        sw.emit(PacketCreateQuestion, { groupId: selectedGroup.id, question: question });
+        sw.once(PacketQuestionCreated, async (packet) => {
           if (packet.failReason) {
             reject(new Error(packet.failReason));
             return;
           }
           forceRefreshGroups((i) => ++i);
-          onContractFeature(await fetchMarketById(packet.id));
+          onContractFeature(await fetchQuestionById(packet.id));
           resolve();
         });
         setTimeout(() => reject(new Error('Timeout')), 20000);
@@ -247,13 +257,13 @@ export default () => {
     });
 
     sw.on(PacketResolved, () => {
-      console.debug('Market resolved');
+      console.debug('Question resolved');
       setSelectedContract(undefined);
       if (selectedGroup) {
         setLoadingContracts(true);
-        fetchMarketsInGroup(selectedGroup)
-          .then((markets) => {
-            setContracts(markets);
+        fetchQuestionsInGroup(selectedGroup)
+          .then((questions) => {
+            setContracts(questions);
           })
           .finally(() => {
             setLoadingContracts(false);
@@ -261,18 +271,18 @@ export default () => {
       }
     });
 
-    sw.on(PacketSelectMarketID, async (p) => {
-      console.debug('Selecting market: ' + p.id);
-      const market = await fetchMarketById(p.id);
-      setSelectedContract(market);
+    sw.on(PacketSelectQuestionID, async (p) => {
+      console.debug('Selecting question: ' + p.id);
+      const question = await fetchQuestionById(p.id);
+      setSelectedContract(question);
     });
 
     sw.on(PacketUnfeature, () => setSelectedContract(undefined));
   }, []);
 
-  const onContractFeature = (contract: LiteMarket) => {
+  const onContractFeature = (contract: LiteQuestion) => {
     setSelectedContract(contract);
-    sw.emit(PacketSelectMarketID, { id: contract.id });
+    sw.emit(PacketSelectQuestionID, { id: contract.id });
   };
 
   const onContractUnfeature = () => {
@@ -284,9 +294,9 @@ export default () => {
   useEffect(() => {
     if (selectedGroup) {
       setLoadingContracts(true);
-      fetchMarketsInGroup(selectedGroup)
-        .then((markets) => {
-          setContracts(markets);
+      fetchQuestionsInGroup(selectedGroup)
+        .then((questions) => {
+          setContracts(questions);
         })
         .finally(() => {
           setLoadingContracts(false);
@@ -412,7 +422,7 @@ export default () => {
                   </Transition>
                 ))
               ) : (
-                selectedGroup && <p className="text-ink-400 w-full select-none text-center">No applicable markets in this group</p>
+                selectedGroup && <p className="text-ink-400 w-full select-none text-center">No applicable questions in this group</p>
               )}
             </div>
             <Transition
@@ -439,7 +449,7 @@ export default () => {
               >
                 <Transition appear unmount={false} show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
                   <div className="flex w-full max-w-xl grow flex-col justify-end">
-                    <ResolutionPanel controlUserID={manifoldUserID} contract={selectedContract} onUnfeatureMarket={onContractUnfeature} ping={ping} />
+                    <ResolutionPanel controlUserID={manifoldUserID} contract={selectedContract} onUnfeatureQuestion={onContractUnfeature} ping={ping} />
                   </div>
                 </Transition>
               </div>
@@ -451,8 +461,8 @@ export default () => {
   );
 };
 
-function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; onUnfeatureMarket: () => void; ping?: number }) {
-  const { controlUserID, contract, onUnfeatureMarket, ping } = props;
+function ResolutionPanel(props: { controlUserID: string; contract: LiteQuestion; onUnfeatureQuestion: () => void; ping?: number }) {
+  const { controlUserID, contract, onUnfeatureQuestion, ping } = props;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [outcome, setOutcome] = useState<Resolution | undefined>();
@@ -476,12 +486,12 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
     return true;
   };
 
-  const canResolveMarket = controlUserID === contract.creatorId;
+  const canResolveQuestion = controlUserID === contract.creatorId;
 
   return (
     <Col className={'xs:px-8 xs:py-6 bg-canvas-0 flex cursor-default justify-end rounded-md px-4 py-4 shadow-md'} onClick={(e) => e.stopPropagation()}>
       <Row className="items-center justify-center">
-        <div className="xs:whitespace-nowrap xs:text-2xl xs:text-left text-center text-lg">Resolve market</div>
+        <div className="xs:whitespace-nowrap xs:text-2xl xs:text-left text-center text-lg">Resolve question</div>
         <div className="grow" />
         <div className="min-h-10 xs:block hidden">{ping}ms</div>
       </Row>
@@ -495,7 +505,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
         {contract.question}
       </p>
 
-      {canResolveMarket ? (
+      {canResolveQuestion ? (
         <>
           <div className="text-ink-500 mb-3 text-sm">Outcome</div>
 
@@ -528,7 +538,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
               //         You will earn {earnedFees}.
               //     </Col>
               // )
-              <>Resolving this market will immediately pay out traders.</>
+              <>Resolving this question will immediately pay out traders.</>
             )}
           </div>
 
@@ -541,7 +551,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
       ) : (
         <>
           <span>
-            Please ask <p className="inline font-bold">{contract.creatorName}</p> to resolve this market.
+            Please ask <p className="inline font-bold">{contract.creatorName}</p> to resolve this question.
           </span>
           <div className="my-1" />
         </>
@@ -549,7 +559,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
       <ConfirmationButton
         openModalBtn={{
           className: clsx('border-none self-start w-full mt-2', isSubmitting ? 'btn-disabled' : ''),
-          label: 'Unfeature market',
+          label: 'Unfeature question',
         }}
         cancelBtn={{
           label: 'Back',
@@ -559,12 +569,12 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
           className: clsx('border-none btn-primary'),
         }}
         onSubmitWithSuccess={async () => {
-          onUnfeatureMarket();
+          onUnfeatureQuestion();
           return true;
         }}
       >
         <p>
-          Are you sure you want to unfeature this market? <b>You will have to resolve it later on the Manifold website.</b>
+          Are you sure you want to unfeature this question? <b>You will have to resolve it later on the Manifold website.</b>
         </p>
       </ConfirmationButton>
     </Col>
@@ -588,7 +598,7 @@ export function ResolveConfirmationButton(props: { onResolve: () => Promise<bool
       }}
       onSubmitWithSuccess={onResolve}
     >
-      <p>Are you sure you want to resolve this market?</p>
+      <p>Are you sure you want to resolve this question?</p>
     </ConfirmationButton>
   );
 }

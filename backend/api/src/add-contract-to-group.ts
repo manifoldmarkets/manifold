@@ -47,11 +47,11 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
   if (group.privacy_status == 'private') {
     throw new APIError(
       400,
-      'You cannot add an existing public market to a private group'
+      'You cannot add an existing public question to a private group'
     )
   }
 
-  const canAdd = await canUserAddGroupToMarket({
+  const canAdd = await canUserAddGroupToQuestion({
     userId: auth.uid,
     group,
     contract,
@@ -60,7 +60,7 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
   if (!canAdd) {
     throw new APIError(
       400,
-      `User does not have permission to add this market to group "${group.name}".`
+      `User does not have permission to add this question to group "${group.name}".`
     )
   }
 
@@ -71,7 +71,7 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
 
 const firestore = admin.firestore()
 
-export async function canUserAddGroupToMarket(props: {
+export async function canUserAddGroupToQuestion(props: {
   userId: string
   group: GroupResponse
   contract?: Contract
@@ -81,7 +81,7 @@ export async function canUserAddGroupToMarket(props: {
 
   const user = await getUser(userId)
   const firebaseUser = await admin.auth().getUser(userId)
-  const isMarketCreator = !contract || contract.creatorId === userId
+  const isQuestionCreator = !contract || contract.creatorId === userId
   const isManifoldAdmin = isManifoldId(userId) || isAdmin(firebaseUser.email)
   const trustworthy = isTrustworthy(user?.username)
 
@@ -94,7 +94,7 @@ export async function canUserAddGroupToMarket(props: {
     isAdminOrMod ||
     group.creator_id === userId ||
     // if user owns the contract and is a public group
-    (group.privacy_status === 'public' && (isMarketCreator || trustworthy)) ||
-    (group.privacy_status === 'private' && isMarketCreator && isMember)
+    (group.privacy_status === 'public' && (isQuestionCreator || trustworthy)) ||
+    (group.privacy_status === 'private' && isQuestionCreator && isMember)
   )
 }

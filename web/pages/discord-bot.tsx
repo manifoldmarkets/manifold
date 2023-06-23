@@ -14,15 +14,16 @@ export default function DiscordBot() {
   return (
     <Page>
       <SEO
-        title={'Manifold Markets Discord Bot'}
-        description={'Add the Manifold Markets Discord Bot to your server!'}
+        title={'Manifold Questions Discord Bot'}
+        description={'Add the Manifold Questions Discord Bot to your server!'}
       />
       <Col className={'w-full items-center '}>
         <Col className={'bg-canvas-0 gap-3 p-4'}>
           <Title>Our Discord Bot</Title>
           <Col className={'mx-4 gap-2'}>
             <li>
-              Want an easy way to introduce your friends to prediction markets?
+              Want an easy way to introduce your friends to prediction
+              questions?
             </li>
             <li>Want to put skin in the game instead of just arguing?</li>
             <li>
@@ -44,8 +45,8 @@ export default function DiscordBot() {
           </Col>
           <Row className={'text-primary-700 text-xl'}>What is it?</Row>
           <span className={'mx-4'}>
-            The Manifold Markets Discord Bot allows you to trade, search, and
-            create prediction markets right from your discord server. It
+            The Manifold Questions Discord Bot allows you to trade, search, and
+            create prediction questions right from your discord server. It
             supports trading via Zoomer-friendly emoji reactions! This is how it
             looks:
           </span>

@@ -1,4 +1,4 @@
-// Run with `npx ts-node src/scripts/contest/resolve-markets.ts`
+// Run with `npx ts-node src/scripts/contest/resolve-questions.ts`
 
 const DOMAIN = 'http://localhost:3000'
 // Dev API key for Cause Exploration Prizes (@CEP)
@@ -15,14 +15,14 @@ async function getGroupBySlug(slug: string) {
   return await resp.json()
 }
 
-async function getMarketsByGroupId(id: string) {
-  // API structure: /v0/group/by-id/[id]/markets
-  const resp = await fetch(`${DOMAIN}/api/v0/group/by-id/${id}/markets`)
+async function getQuestionsByGroupId(id: string) {
+  // API structure: /v0/group/by-id/[id]/questions
+  const resp = await fetch(`${DOMAIN}/api/v0/group/by-id/${id}/questions`)
   return await resp.json()
 }
 
 async function addLiquidityById(id: string, amount: number) {
-  const resp = await fetch(`${DOMAIN}/api/v0/market/${id}/add-liquidity`, {
+  const resp = await fetch(`${DOMAIN}/api/v0/question/${id}/add-liquidity`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -37,15 +37,15 @@ async function addLiquidityById(id: string, amount: number) {
 
 async function main() {
   const group = await getGroupBySlug('cart-contest')
-  const markets = await getMarketsByGroupId(group.id)
+  const questions = await getQuestionsByGroupId(group.id)
 
   // Count up some metrics
-  console.log('Number of markets', markets.length)
+  console.log('Number of questions', questions.length)
 
-  // Resolve each market to NO
-  for (const market of markets.slice(0, 3)) {
-    console.log(market.slug, market.totalLiquidity)
-    const resp = await addLiquidityById(market.id, 200)
+  // Resolve each question to NO
+  for (const question of questions.slice(0, 3)) {
+    console.log(question.slug, question.totalLiquidity)
+    const resp = await addLiquidityById(question.id, 200)
     console.log(resp)
   }
 }

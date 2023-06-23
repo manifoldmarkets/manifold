@@ -71,7 +71,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     .slice(0, USERS_TO_EMAIL)
 
   if (privateUsersToSendEmailsTo.length === 0) {
-    log('No users to send trending markets emails to')
+    log('No users to send trending questions emails to')
     return
   }
 
@@ -163,19 +163,19 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       const usersMetrics = usersToContractMetrics[privateUser.id]
       const profit = sum(usersMetrics.map((cm) => cm.from?.week.profit ?? 0))
       const roundedProfit = Math.round(profit) === 0 ? 0 : Math.floor(profit)
-      const marketsCreated = (usersToContractsCreated?.[privateUser.id] ?? [])
+      const questionsCreated = (usersToContractsCreated?.[privateUser.id] ?? [])
         .length
       const performanceData = {
         profit: emailMoneyFormat(profit),
         profit_style: `background-color: ${
           roundedProfit > 0 ? greenBg : roundedProfit === 0 ? clearBg : redBg
         }`,
-        markets_created: marketsCreated.toString(),
+        questions_created: questionsCreated.toString(),
         likes_received: usersToLikesReceived[privateUser.id].length.toString(),
         unique_bettors: usersToTxnsReceived[privateUser.id]
           .filter((txn) => txn.category === 'UNIQUE_BETTOR_BONUS')
           .length.toString(),
-        markets_traded: totalContractsUserBetOnInLastWeek.toString(),
+        questions_traded: totalContractsUserBetOnInLastWeek.toString(),
         prediction_streak:
           (user.currentBettingStreak?.toString() ?? '0') + ' days',
         // More options: bonuses, tips given,
@@ -194,7 +194,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         filterDefined(
           weeklyMoverContracts.map((contract) => {
             const cpmmContract = contract as CPMMContract
-            const marketProbAWeekAgo =
+            const questionProbAWeekAgo =
               cpmmContract.prob - cpmmContract.probChanges.week
 
             const cm = usersToContractMetrics[user.id].filter(
@@ -210,7 +210,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
               pastValue: fromWeek.prevValue,
               profit,
               contractSlug: contract.slug,
-              marketProbAWeekAgo,
+              questionProbAWeekAgo,
               questionTitle: contract.question,
               questionUrl: contractUrl(contract),
               questionProb: cpmmContract.resolution
@@ -225,7 +225,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         (differences) => Math.abs(differences.profit)
       ).reverse()
 
-      // Don't show markets with abs profit < 1
+      // Don't show questions with abs profit < 1
       const [winningInvestments, losingInvestments] = partition(
         investmentValueDifferences.filter((diff) => Math.abs(diff.profit) > 1),
         (investmentsData: PerContractInvestmentsData) => {
@@ -235,12 +235,12 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       // Pick 3 winning investments and 3 losing investments
       const topInvestments = winningInvestments.slice(0, 3)
       const worstInvestments = losingInvestments.slice(0, 3)
-      // If no bets in the last week ANd no market movers AND no markets created, don't send email
+      // If no bets in the last week ANd no question movers AND no questions created, don't send email
       if (
         totalContractsUserBetOnInLastWeek === 0 &&
         topInvestments.length === 0 &&
         worstInvestments.length === 0 &&
-        marketsCreated === 0
+        questionsCreated === 0
       ) {
         return
       }

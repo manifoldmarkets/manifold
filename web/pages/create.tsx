@@ -31,8 +31,8 @@ export default function Create() {
       <Page>
         <div className="mx-auto w-full max-w-2xl">
           <div className="rounded-lg px-6 py-4 sm:py-0">
-            <Title>Create a market</Title>
-            <p>Sorry, you are currently banned from creating a market.</p>
+            <Title>Create a question</Title>
+            <p>Sorry, you are currently banned from creating a question.</p>
           </div>
         </div>
       </Page>
@@ -41,8 +41,8 @@ export default function Create() {
   return (
     <Page>
       <SEO
-        title="Create a market"
-        description="Create a play-money prediction market on any question."
+        title="Create a question"
+        description="Create a play-money prediction question on any question."
         url="/create"
       />
       <div
@@ -53,7 +53,7 @@ export default function Create() {
       >
         <Row className="w-full justify-between">
           <Title className={clsx('transition-colors')}>
-            {`Create a ${theme == 'private' ? 'private' : ''} market`}
+            {`Create a ${theme == 'private' ? 'private' : ''} question`}
           </Title>
           {theme == 'private' && (
             <LockClosedIcon className="text-primary-700 h-6 w-6 sm:h-8 sm:w-8" />
@@ -61,7 +61,7 @@ export default function Create() {
         </Row>
 
         <div className="text-ink-700 mb-4">
-          Set up your own play-money prediction market on any question.
+          Set up your own play-money prediction question on any question.
         </div>
 
         <NewContractPanel params={params} creator={user} setTheme={setTheme} />

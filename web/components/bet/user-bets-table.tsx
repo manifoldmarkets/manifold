@@ -240,7 +240,7 @@ const NoBets = ({ user }: { user: User }) => {
         <>
           You have not made any bets yet.{' '}
           <SiteLink href="/home" className="text-primary-500 hover:underline">
-            Find a prediction market!
+            Find a prediction question!
           </SiteLink>
         </>
       ) : (

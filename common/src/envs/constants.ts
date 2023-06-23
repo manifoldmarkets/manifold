@@ -63,7 +63,7 @@ export const BOT_USERNAMES = [
   'jerk',
   'snap',
   'ArbitrageBot',
-  'MarketManagerBot',
+  'QuestionManagerBot',
   'Botlab',
   'JuniorBot',
   'ManifoldDream',
@@ -109,7 +109,7 @@ export const CORE_USERNAMES = [
   'DavidChee',
   'mqp',
   'IngaWei',
-  'ManifoldMarkets',
+  'ManifoldQuestions',
 ]
 
 export const CHECK_USERNAMES = [
@@ -161,9 +161,9 @@ export function firestoreConsolePath(contractId: string) {
 }
 
 export const GOOGLE_PLAY_APP_URL =
-  'https://play.google.com/store/apps/details?id=com.markets.manifold'
+  'https://play.google.com/store/apps/details?id=com.questions.manifold'
 export const APPLE_APP_URL =
-  'https://apps.apple.com/us/app/manifold-markets/id6444136749'
+  'https://apps.apple.com/us/app/manifold-questions/id6444136749'
 
 export const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 
@@ -241,7 +241,7 @@ export const RESERVED_PATHS = [
   'login',
   'lootbox',
   'mana-auction',
-  'markets',
+  'questions',
   'mtg',
   'notifications',
   'privacy',

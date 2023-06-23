@@ -28,8 +28,8 @@ export const FeedItems = (props: {
 
   const boostedContracts =
     boosts?.map((boost) => {
-      const { market_data, ...rest } = boost
-      return { ...market_data, ...rest, type: 'boost' as const }
+      const { question_data, ...rest } = boost
+      return { ...question_data, ...rest, type: 'boost' as const }
     }) ?? []
 
   const contracts = mergePeriodic(organicContracts, boostedContracts, AD_PERIOD)

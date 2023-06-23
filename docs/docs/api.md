@@ -2,10 +2,10 @@
 id: api
 slug: /api
 ---
+
 # Manifold API
 
-
-Programatic access to [Manifold Markets](https://manifold.markets).
+Programatic access to [Manifold Questions](https://manifold.markets).
 
 :::caution
 
@@ -14,7 +14,6 @@ Our API is still in alpha — things may change or break at any time!
 If you have questions, come chat with us on [Discord](https://discord.com/invite/eHQBNBqXuh). We’d love to hear about what you build!
 
 :::
-
 
 ## General notes
 
@@ -43,6 +42,7 @@ response was a 4xx or 5xx.)
 ## Usage Guidelines
 
 Feel free to use the API for any purpose you'd like. We ask that you:
+
 - Keep your bets to less than 10 per minute, amortized (transient spikes of over 10/min are okay).
 - Keep your reads to less than 100 per second.
 
@@ -94,30 +94,30 @@ Gets a group by its unique ID.
 Requires no authorization.
 Note: group is singular in the URL.
 
-### `GET /v0/group/by-id/[id]/markets`
+### `GET /v0/group/by-id/[id]/questions`
 
-Gets a group's markets by its unique ID.
+Gets a group's questions by its unique ID.
 
 Requires no authorization.
 Note: group is singular in the URL.
 
-### `GET /v0/markets`
+### `GET /v0/questions`
 
-Lists all markets, ordered by creation date descending.
+Lists all questions, ordered by creation date descending.
 
 Parameters:
 
-- `limit`: Optional. How many markets to return. The maximum is 1000 and the default is 500.
-- `before`: Optional. The ID of the market before which the list will start. For
-  example, if you ask for the most recent 10 markets, and then perform a second
-  query for 10 more markets with `before=[the id of the 10th market]`, you will
-  get markets 11 through 20.
+- `limit`: Optional. How many questions to return. The maximum is 1000 and the default is 500.
+- `before`: Optional. The ID of the question before which the list will start. For
+  example, if you ask for the most recent 10 questions, and then perform a second
+  query for 10 more questions with `before=[the id of the 10th question]`, you will
+  get questions 11 through 20.
 
 Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/markets?limit=1
+  https://manifold.markets/api/v0/questions?limit=1
   ```
 - Example response
   ```json
@@ -145,12 +145,12 @@ Requires no authorization.
     },
     ...
   ```
-- Response type: Array of `LiteMarket`
+- Response type: Array of `LiteQuestion`
 
   ```tsx
-  // Information about a market, but without bets or comments
-  type LiteMarket = {
-    // Unique identifer for this market
+  // Information about a question, but without bets or comments
+  type LiteQuestion = {
+    // Unique identifer for this question
     id: string
 
     // Attributes about the creator
@@ -159,26 +159,26 @@ Requires no authorization.
     createdTime: number // milliseconds since epoch
     creatorAvatarUrl?: string
 
-    // Market attributes. All times are in milliseconds since epoch
+    // Question attributes. All times are in milliseconds since epoch
     closeTime?: number // Min of creator's chosen date, and resolutionTime
     question: string
 
     // Note: This url always points to https://manifold.markets, regardless of what instance the api is running on.
     // This url includes the creator's username, but this doesn't need to be correct when constructing valid URLs.
-    //   i.e. https://manifold.markets/Austin/test-market is the same as https://manifold.markets/foo/test-market
+    //   i.e. https://manifold.markets/Austin/test-question is the same as https://manifold.markets/foo/test-question
     url: string
 
     outcomeType: string // BINARY, FREE_RESPONSE, MULTIPLE_CHOICE, NUMERIC, or PSEUDO_NUMERIC
     mechanism: string // dpm-2 or cpmm-1
 
     probability: number
-    pool: { outcome: number } // For CPMM markets, the number of shares in the liquidity pool. For DPM markets, the amount of mana invested in each answer.
-    p?: number // CPMM markets only, probability constant in y^p * n^(1-p) = k
-    totalLiquidity?: number // CPMM markets only, the amount of mana deposited into the liquidity pool
-    value?: number // PSEUDO_NUMERIC markets only, the current market value, which is mapped from probability using min, max, and isLogScale.
-    min?: number // PSEUDO_NUMERIC markets only, the minimum resolvable value
-    max?: number // PSEUDO_NUMERIC markets only, the maximum resolvable value
-    isLogScale?: bool // PSEUDO_NUMERIC markets only, if true `number = (max - min + 1)^probability + minstart - 1`, otherwise `number = min + (max - min) * probability`
+    pool: { outcome: number } // For CPMM questions, the number of shares in the liquidity pool. For DPM questions, the amount of mana invested in each answer.
+    p?: number // CPMM questions only, probability constant in y^p * n^(1-p) = k
+    totalLiquidity?: number // CPMM questions only, the amount of mana deposited into the liquidity pool
+    value?: number // PSEUDO_NUMERIC questions only, the current question value, which is mapped from probability using min, max, and isLogScale.
+    min?: number // PSEUDO_NUMERIC questions only, the minimum resolvable value
+    max?: number // PSEUDO_NUMERIC questions only, the maximum resolvable value
+    isLogScale?: bool // PSEUDO_NUMERIC questions only, if true `number = (max - min + 1)^probability + minstart - 1`, otherwise `number = min + (max - min) * probability`
 
     volume: number
     volume24Hours: number
@@ -186,16 +186,16 @@ Requires no authorization.
     isResolved: boolean
     resolutionTime?: number
     resolution?: string
-    resolutionProbability?: number // Used for BINARY markets resolved to MKT
+    resolutionProbability?: number // Used for BINARY questions resolved to MKT
 
     lastUpdatedTime?: number
   }
   ```
 
-### `GET /v0/market/[marketId]`
+### `GET /v0/question/[questionId]`
 
-Gets information about a single market by ID. Includes answers, but not bets and
-comments. Use `/bets` or `/comments` with a market ID to retrieve bets or
+Gets information about a single question by ID. Includes answers, but not bets and
+comments. Use `/bets` or `/comments` with a question ID to retrieve bets or
 comments.
 
 Requires no authorization.
@@ -203,7 +203,7 @@ Requires no authorization.
 - Example request
 
   ```
-  https://manifold.markets/api/v0/market/3zspH9sSzMlbFQLn9GKR
+  https://manifold.markets/api/v0/question/3zspH9sSzMlbFQLn9GKR
   ```
 
 - <details><summary>Example response</summary><p>
@@ -283,34 +283,34 @@ Requires no authorization.
     </p>
   </details>
 
-- Response type: A `FullMarket`
+- Response type: A `FullQuestion`
 
   ```tsx
-  // A complete market, along with answers (for free response markets)
-  type FullMarket = LiteMarket & {
-    answers?: Answer[] // dpm-2 markets only
+  // A complete question, along with answers (for free response questions)
+  type FullQuestion = LiteQuestion & {
+    answers?: Answer[] // dpm-2 questions only
     description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
     textDescription: string // string description without formatting, images, or embeds
   }
   ```
 
-### `GET /v0/market/[marketId]/positions`
+### `GET /v0/question/[questionId]/positions`
 
-Get positions information about a single market by ID.
+Get positions information about a single question by ID.
 
 Parameters:
+
 - `order` - Optional. The field to order results by. Default: `profit`. Options: `shares` or `profit`,
 - `top` - Optional. The number of top positions (ordered by `order`) to return. Default: `null`.
 - `bottom` - Optional. The number of bottom positions (ordered by `order`) to return. Default: `null`.
 - `userId` - Optional. The user ID to query by. Default: `null`. If provided, only the position for this user will be returned.
-
 
 Requires no authorization.
 
 - Example request
 
   ```
-  https://manifold.markets/api/v0/market/kupKInoLsjMuiDiNfogm/positions?top=1&bottom=1
+  https://manifold.markets/api/v0/question/kupKInoLsjMuiDiNfogm/positions?top=1&bottom=1
   ```
 
 - <details><summary>Example response</summary><p>
@@ -318,90 +318,90 @@ Requires no authorization.
   ```json
   [
     {
-        "from": {
-            "day": {
-                "value": 23.479030029570662,
-                "profit": 0,
-                "invested": 23.479030029570662,
-                "prevValue": 23.479030029570662,
-                "profitPercent": 0
-            },
-            "week": {
-                "value": 0,
-                "profit": 8.479030029570673,
-                "invested": 15,
-                "prevValue": 0,
-                "profitPercent": 56.52686686380448
-            },
-            "month": {
-                "value": 0,
-                "profit": 8.479030029570673,
-                "invested": 15,
-                "prevValue": 0,
-                "profitPercent": 56.52686686380448
-            }
+      "from": {
+        "day": {
+          "value": 23.479030029570662,
+          "profit": 0,
+          "invested": 23.479030029570662,
+          "prevValue": 23.479030029570662,
+          "profitPercent": 0
         },
-        "loan": 1.7123642870400002,
-        "payout": 23.479030029570673,
-        "profit": 8.479030029570673,
-        "userId": "IpTiwOTs96VIzeoxu66tfitUcBZ2",
-        "invested": 15,
-        "userName": "Lucas Goldfein",
-        "hasShares": true,
-        "contractId": "kupKInoLsjMuiDiNfogm",
-        "hasNoShares": true,
-        "lastBetTime": 1678924706057,
-        "totalShares": {
-            "NO": 89.17418492518308
+        "week": {
+          "value": 0,
+          "profit": 8.479030029570673,
+          "invested": 15,
+          "prevValue": 0,
+          "profitPercent": 56.52686686380448
         },
-        "hasYesShares": false,
-        "userUsername": "LucasGoldfein56b1",
-        "profitPercent": 56.52686686380448,
-        "userAvatarUrl": "https://lh3.googleusercontent.com/a/AEdFTp5e7cFzq1moc91CKqaAgyEleoNTjtEL9ke8emzV=s96-c",
-        "maxSharesOutcome": "NO"
+        "month": {
+          "value": 0,
+          "profit": 8.479030029570673,
+          "invested": 15,
+          "prevValue": 0,
+          "profitPercent": 56.52686686380448
+        }
+      },
+      "loan": 1.7123642870400002,
+      "payout": 23.479030029570673,
+      "profit": 8.479030029570673,
+      "userId": "IpTiwOTs96VIzeoxu66tfitUcBZ2",
+      "invested": 15,
+      "userName": "Lucas Goldfein",
+      "hasShares": true,
+      "contractId": "kupKInoLsjMuiDiNfogm",
+      "hasNoShares": true,
+      "lastBetTime": 1678924706057,
+      "totalShares": {
+        "NO": 89.17418492518308
+      },
+      "hasYesShares": false,
+      "userUsername": "LucasGoldfein56b1",
+      "profitPercent": 56.52686686380448,
+      "userAvatarUrl": "https://lh3.googleusercontent.com/a/AEdFTp5e7cFzq1moc91CKqaAgyEleoNTjtEL9ke8emzV=s96-c",
+      "maxSharesOutcome": "NO"
     },
     {
-        "from": {
-            "day": {
-                "value": 5.008090894597479,
-                "profit": 0,
-                "invested": 5.008090894597479,
-                "prevValue": 5.008090894597479,
-                "profitPercent": 0
-            },
-            "week": {
-                "value": 0,
-                "profit": -4.991909105402519,
-                "invested": 10,
-                "prevValue": 0,
-                "profitPercent": -49.919091054025195
-            },
-            "month": {
-                "value": 0,
-                "profit": -4.991909105402519,
-                "invested": 10,
-                "prevValue": 0,
-                "profitPercent": -49.919091054025195
-            }
+      "from": {
+        "day": {
+          "value": 5.008090894597479,
+          "profit": 0,
+          "invested": 5.008090894597479,
+          "prevValue": 5.008090894597479,
+          "profitPercent": 0
         },
-        "loan": 1.14157619136,
-        "payout": 5.008090894597481,
-        "profit": -4.991909105402519,
-        "userId": "JNkmw38JICdw6ySJ9RgWK7WyBdE2",
-        "invested": 10,
-        "userName": "Sylvie",
-        "hasShares": true,
-        "contractId": "kupKInoLsjMuiDiNfogm",
-        "hasNoShares": true,
-        "lastBetTime": 1678914591730,
-        "totalShares": {
-            "NO": 19.020906016751987
+        "week": {
+          "value": 0,
+          "profit": -4.991909105402519,
+          "invested": 10,
+          "prevValue": 0,
+          "profitPercent": -49.919091054025195
         },
-        "hasYesShares": false,
-        "userUsername": "sylv",
-        "profitPercent": -49.919091054025195,
-        "userAvatarUrl": "https://lh3.googleusercontent.com/a/AATXAJyoOZtkrJBItDvRE0HvcRDn8txM-_v033jFIifZ=s96-c",
-        "maxSharesOutcome": "NO"
+        "month": {
+          "value": 0,
+          "profit": -4.991909105402519,
+          "invested": 10,
+          "prevValue": 0,
+          "profitPercent": -49.919091054025195
+        }
+      },
+      "loan": 1.14157619136,
+      "payout": 5.008090894597481,
+      "profit": -4.991909105402519,
+      "userId": "JNkmw38JICdw6ySJ9RgWK7WyBdE2",
+      "invested": 10,
+      "userName": "Sylvie",
+      "hasShares": true,
+      "contractId": "kupKInoLsjMuiDiNfogm",
+      "hasNoShares": true,
+      "lastBetTime": 1678914591730,
+      "totalShares": {
+        "NO": 19.020906016751987
+      },
+      "hasYesShares": false,
+      "userUsername": "sylv",
+      "profitPercent": -49.919091054025195,
+      "userAvatarUrl": "https://lh3.googleusercontent.com/a/AATXAJyoOZtkrJBItDvRE0HvcRDn8txM-_v033jFIifZ=s96-c",
+      "maxSharesOutcome": "NO"
     }
   ]
   ```
@@ -412,44 +412,44 @@ Requires no authorization.
 - Response type: An array of `ContractMetric`
 
   ```tsx
-  // A single position in a market
+  // A single position in a question
   type ContractMetric = {
-  contractId: string
-  from:
-    | {
-        // includes, day, week,month
-        [period: string]: {
-          profit: number
-          profitPercent: number
-          invested: number
-          prevValue: number
-          value: number
+    contractId: string
+    from:
+      | {
+          // includes, day, week,month
+          [period: string]: {
+            profit: number
+            profitPercent: number
+            invested: number
+            prevValue: number
+            value: number
+          }
         }
-      }
-    | undefined
-  hasNoShares: boolean
-  hasShares: boolean
-  hasYesShares: boolean
-  invested: number
-  loan: number
-  maxSharesOutcome: string | null
-  payout: number
-  profit: number
-  profitPercent: number
-  totalShares: {
-    [outcome: string]: number
-  }
-  userId: string
-  userUsername: string
-  userName: string
-  userAvatarUrl: string
-  lastBetTime: number
+      | undefined
+    hasNoShares: boolean
+    hasShares: boolean
+    hasYesShares: boolean
+    invested: number
+    loan: number
+    maxSharesOutcome: string | null
+    payout: number
+    profit: number
+    profitPercent: number
+    totalShares: {
+      [outcome: string]: number
+    }
+    userId: string
+    userUsername: string
+    userName: string
+    userAvatarUrl: string
+    lastBetTime: number
   }
   ```
 
-### `GET /v0/slug/[marketSlug]`
+### `GET /v0/slug/[questionSlug]`
 
-Gets information about a single market by slug (the portion of the URL path after the username).
+Gets information about a single question by slug (the portion of the URL path after the username).
 
 Requires no authorization.
 
@@ -457,11 +457,11 @@ Requires no authorization.
   ```
   https://manifold.markets/api/v0/slug/will-carrick-flynn-win-the-general
   ```
-- Response type: A `FullMarket` ; same as above.
+- Response type: A `FullQuestion` ; same as above.
 
-### `GET /v0/search-markets`
+### `GET /v0/search-questions`
 
-Search markets by keywords, limited to 100 results.
+Search questions by keywords, limited to 100 results.
 Parameters:
 
 - `terms`: Optional. A space-separated list of keywords to search for.
@@ -471,7 +471,7 @@ Requires no authorization.
 - Example request
 
   ```
-  https://manifold.markets/api/v0/search-markets?terms=biden poop
+  https://manifold.markets/api/v0/search-questions?terms=biden poop
   ```
 
 - <details><summary>Example response</summary><p>
@@ -479,97 +479,97 @@ Requires no authorization.
   ```json
   [
     {
-        "id": "qr759sZOfNCBV9o0cIDg",
-        "creatorId": "2e6vTEJPk1dVs3xGvOBM2xkK2Q02",
-        "creatorUsername": "frostmourn",
-        "creatorName": "frostmourn",
-        "createdTime": 1671067643426,
-        "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Ffrostmourn%2FbpATR5uUGb.cloudfront?alt=media&token=ff031d9c-26e8-4b83-972f-ad1795633fac",
-        "closeTime": 1672531140000,
-        "question": "Will Biden poop in his pants again by EOY 2022?",
-        "url": "https://manifold.markets/frostmourn/will-biden-poop-in-his-pants-again",
-        "pool": {
-            "NO": 199.4604480014367,
-            "YES": 958.0024251946996
-        },
-        "probability": 0.0480391000210468,
-        "p": 0.1950892350158,
-        "totalLiquidity": 290,
-        "outcomeType": "BINARY",
-        "mechanism": "cpmm-1",
-        "volume": 1165.294619742559,
-        "volume24Hours": 0,
-        "isResolved": true,
-        "resolution": "NO",
-        "resolutionTime": 1675498119366,
-        "resolutionProbability": 0.05,
-        "lastUpdatedTime": 1675498117432,
-        "description": {
+      "id": "qr759sZOfNCBV9o0cIDg",
+      "creatorId": "2e6vTEJPk1dVs3xGvOBM2xkK2Q02",
+      "creatorUsername": "frostmourn",
+      "creatorName": "frostmourn",
+      "createdTime": 1671067643426,
+      "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Ffrostmourn%2FbpATR5uUGb.cloudfront?alt=media&token=ff031d9c-26e8-4b83-972f-ad1795633fac",
+      "closeTime": 1672531140000,
+      "question": "Will Biden poop in his pants again by EOY 2022?",
+      "url": "https://manifold.markets/frostmourn/will-biden-poop-in-his-pants-again",
+      "pool": {
+        "NO": 199.4604480014367,
+        "YES": 958.0024251946996
+      },
+      "probability": 0.0480391000210468,
+      "p": 0.1950892350158,
+      "totalLiquidity": 290,
+      "outcomeType": "BINARY",
+      "mechanism": "cpmm-1",
+      "volume": 1165.294619742559,
+      "volume24Hours": 0,
+      "isResolved": true,
+      "resolution": "NO",
+      "resolutionTime": 1675498119366,
+      "resolutionProbability": 0.05,
+      "lastUpdatedTime": 1675498117432,
+      "description": {
+        "content": [
+          {
             "content": [
-                {
-                    "content": [
-                        {
-                            "marks": [
-                                {
-                                    "attrs": {
-                                        "href": "https://www.opindia.com/2021/10/poopypantsbiden-trend-twitter-rumours-joe-biden-suffering-bathroom-accident-vatican/",
-                                        "target": "_blank"
-                                    },
-                                    "type": "link"
-                                }
-                            ],
-                            "text": "https://www.opindia.com/2021/10/poopypantsbiden-trend-twitter-rumours-joe-biden-suffering-bathroom-accident-vatican/",
-                            "type": "text"
-                        }
-                    ],
-                    "type": "paragraph"
-                },
-                {
+              {
+                "marks": [
+                  {
                     "attrs": {
-                        "src": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2FagMgCBTkIa.jpg?alt=media&token=4d57e1c1-8264-45f7-bda5-db43b23f398e"
+                      "href": "https://www.opindia.com/2021/10/poopypantsbiden-trend-twitter-rumours-joe-biden-suffering-bathroom-accident-vatican/",
+                      "target": "_blank"
                     },
-                    "type": "image"
-                },
-                {
-                    "content": [
-                        {
-                            "text": "Market resolves to \"yes\" if Biden pooped in his pants again by the end of 2022",
-                            "type": "text"
-                        }
-                    ],
-                    "type": "paragraph"
-                },
-                {
-                    "content": [
-                        {
-                            "text": "Market resolves to \"no\" if Biden has not pooped in his pants again by the end of 2022",
-                            "type": "text"
-                        }
-                    ],
-                    "type": "paragraph"
-                }
+                    "type": "link"
+                  }
+                ],
+                "text": "https://www.opindia.com/2021/10/poopypantsbiden-trend-twitter-rumours-joe-biden-suffering-bathroom-accident-vatican/",
+                "type": "text"
+              }
             ],
-            "type": "doc"
-        },
-        "coverImageUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/dream%2FxPIOqK99-m.png?alt=media&token=30a61355-fc83-4d98-9197-f99db72e8b54",
-        "textDescription": "https://www.opindia.com/2021/10/poopypantsbiden-trend-twitter-rumours-joe-biden-suffering-bathroom-accident-vatican/\n\n[image]Market resolves to \"yes\" if Biden pooped in his pants again by the end of 2022\n\nMarket resolves to \"no\" if Biden has not pooped in his pants again by the end of 2022"
-    }]
+            "type": "paragraph"
+          },
+          {
+            "attrs": {
+              "src": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2FagMgCBTkIa.jpg?alt=media&token=4d57e1c1-8264-45f7-bda5-db43b23f398e"
+            },
+            "type": "image"
+          },
+          {
+            "content": [
+              {
+                "text": "Question resolves to \"yes\" if Biden pooped in his pants again by the end of 2022",
+                "type": "text"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "content": [
+              {
+                "text": "Question resolves to \"no\" if Biden has not pooped in his pants again by the end of 2022",
+                "type": "text"
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "type": "doc"
+      },
+      "coverImageUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/dream%2FxPIOqK99-m.png?alt=media&token=30a61355-fc83-4d98-9197-f99db72e8b54",
+      "textDescription": "https://www.opindia.com/2021/10/poopypantsbiden-trend-twitter-rumours-joe-biden-suffering-bathroom-accident-vatican/\n\n[image]Question resolves to \"yes\" if Biden pooped in his pants again by the end of 2022\n\nQuestion resolves to \"no\" if Biden has not pooped in his pants again by the end of 2022"
+    }
+  ]
   ```
 
     </p>
   </details>
 
-- Response type: Array of `FullMarket`.
+- Response type: Array of `FullQuestion`.
 
   ```tsx
-  // A complete market, along with answers (for free response markets)
-  type FullMarket = LiteMarket & {
-    answers?: Answer[] // dpm-2 markets only
+  // A complete question, along with answers (for free response questions)
+  type FullQuestion = LiteQuestion & {
+    answers?: Answer[] // dpm-2 questions only
     description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
     textDescription: string // string description without formatting, images, or embeds
   }
   ```
-
 
 ### `GET /v0/users`
 
@@ -643,20 +643,20 @@ Places a new bet on behalf of the authorized user.
 Parameters:
 
 - `amount`: Required. The amount to bet, in mana, before fees.
-- `contractId`: Required. The ID of the contract (market) to bet on.
-- `outcome`: Required. The outcome to bet on. For binary markets, this is `YES`
-  or `NO`. For free response markets, this is the ID of the free response
-  answer. For numeric markets, this is a string representing the target bucket,
+- `contractId`: Required. The ID of the contract (question) to bet on.
+- `outcome`: Required. The outcome to bet on. For binary questions, this is `YES`
+  or `NO`. For free response questions, this is the ID of the free response
+  answer. For numeric questions, this is a string representing the target bucket,
   and an additional `value` parameter is required which is a number representing
-  the target value. (Bet on numeric markets at your own peril.)
+  the target value. (Bet on numeric questions at your own peril.)
 - `limitProb`: Optional. A number between `0.01` and `0.99` inclusive representing
   the limit probability for your bet (i.e. 1% to 99% — multiply by 100 for the
   probability percentage).
   The bet will execute immediately in the direction of `outcome`, but not beyond this
   specified limit. If not all the bet is filled, the bet will remain as an open offer
   that can later be matched against an opposite direction bet.
-  - For example, if the current market probability is `50%`:
-    - A `M$10` bet on `YES` with `limitProb=0.4` would not be filled until the market
+  - For example, if the current question probability is `50%`:
+    - A `M$10` bet on `YES` with `limitProb=0.4` would not be filled until the question
       probability moves down to `40%` and someone bets `M$15` of `NO` to match your
       bet odds.
     - A `M$100` bet on `YES` with `limitProb=0.6` would fill partially or completely
@@ -682,13 +682,13 @@ Response type: A `Bet`.
 
 Cancel the limit order of a bet with the specified id. If the bet was unfilled, it will be cancelled so that no other bets will match with it. This action is irreversible.
 
-### `POST /v0/market`
+### `POST /v0/question`
 
-Creates a new market on behalf of the authorized user.
+Creates a new question on behalf of the authorized user.
 
-Note: this costs mana. If you have insufficient mana, this call will return an error. The cost to create each type of market is:
+Note: this costs mana. If you have insufficient mana, this call will return an error. The cost to create each type of question is:
 
-| Market Type     | Creation Cost |
+| Question Type   | Creation Cost |
 | --------------- | ------------- |
 | BINARY          | M$50          |
 | PSEUDO_NUMERIC  | M$250         |
@@ -698,32 +698,32 @@ Note: this costs mana. If you have insufficient mana, this call will return an e
 Parameters:
 
 - `outcomeType`: Required. One of `BINARY`, `FREE_RESPONSE`, `MULTIPLE_CHOICE`, or `PSEUDO_NUMERIC`.
-- `question`: Required. The headline question for the market.
-- `description`: Optional. A long description describing the rules for the market.
+- `question`: Required. The headline question for the question.
+- `description`: Optional. A long description describing the rules for the question.
   - Note: string descriptions do **not** turn into links, mentions, formatted text. You may instead use `descriptionMarkdown` or `descriptionHtml` for rich text formatting.
-- `closeTime`: Optional. The time at which the market will close, represented as milliseconds since the epoch. Defaults to 7 days from now.
-- `visibility`: Optional. One of `public` (default) or `unlisted`. Controls whether the market can be shown on homepage and in search results.
-- `groupId`: Optional. A group to create this market under.
+- `closeTime`: Optional. The time at which the question will close, represented as milliseconds since the epoch. Defaults to 7 days from now.
+- `visibility`: Optional. One of `public` (default) or `unlisted`. Controls whether the question can be shown on homepage and in search results.
+- `groupId`: Optional. A group to create this question under.
 
-For binary markets, you must also provide:
+For binary questions, you must also provide:
 
-- `initialProb`: An initial probability for the market, between 1 and 99.
+- `initialProb`: An initial probability for the question, between 1 and 99.
 
-For numeric markets, you must also provide:
+For numeric questions, you must also provide:
 
-- `min`: The minimum value that the market may resolve to.
-- `max`: The maximum value that the market may resolve to.
-- `isLogScale`: If true, your numeric market will increase exponentially from min to max.
-- `initialValue`: An initial value for the market, between min and max, exclusive.
+- `min`: The minimum value that the question may resolve to.
+- `max`: The maximum value that the question may resolve to.
+- `isLogScale`: If true, your numeric question will increase exponentially from min to max.
+- `initialValue`: An initial value for the question, between min and max, exclusive.
 
-For multiple choice markets, you must also provide:
+For multiple choice questions, you must also provide:
 
-- `answers`: An array of strings, each of which will be a valid answer for the market.
+- `answers`: An array of strings, each of which will be a valid answer for the question.
 
 Example request:
 
 ```
-$ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: application/json' \
+$ curl https://manifold.markets/api/v0/question -X POST -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}'
     --data-raw '{"outcomeType":"BINARY", \
                  "question":"Is there life on Mars?", \
@@ -732,45 +732,45 @@ $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: applicat
                  "initialProb":25}'
 ```
 
-### `POST /v0/market/[marketId]/add-liquidity`
+### `POST /v0/question/[questionId]/add-liquidity`
 
-Adds a specified amount of liquidity into the market.
+Adds a specified amount of liquidity into the question.
 
 - `amount`: Required. The amount of liquidity to add, in M$.
 
-### `POST /v0/market/[marketId]/close`
+### `POST /v0/question/[questionId]/close`
 
-Closes a market on behalf of the authorized user.
+Closes a question on behalf of the authorized user.
 
-- `closeTime`: Optional. Milliseconds since the epoch to close the market at. If not provided, the market will be closed immediately. Cannot provide close time in the past.
+- `closeTime`: Optional. Milliseconds since the epoch to close the question at. If not provided, the question will be closed immediately. Cannot provide close time in the past.
 
-### `POST /v0/market/[marketId]/group`
+### `POST /v0/question/[questionId]/group`
 
-Add or remove a market to/from a group.
+Add or remove a question to/from a group.
 
-- `groupId`: Required. Id of the group. Must be admin/moderator/creator of group if curated/private. Must be market creator or trustworthyish if group is public.
-- `remove`: Optional. Set to `true` to remove the market from the group.
+- `groupId`: Required. Id of the group. Must be admin/moderator/creator of group if curated/private. Must be question creator or trustworthyish if group is public.
+- `remove`: Optional. Set to `true` to remove the question from the group.
 
-### `POST /v0/market/[marketId]/resolve`
+### `POST /v0/question/[questionId]/resolve`
 
-Resolves a market on behalf of the authorized user.
+Resolves a question on behalf of the authorized user.
 
 Parameters:
 
-For binary markets:
+For binary questions:
 
 - `outcome`: Required. One of `YES`, `NO`, `MKT`, or `CANCEL`.
 - `probabilityInt`: Optional. The probability to use for `MKT` resolution.
 
-For free response or multiple choice markets:
+For free response or multiple choice questions:
 
 - `outcome`: Required. One of `MKT`, `CANCEL`, or a `number` indicating the answer index.
 - `resolutions`: An array of `{ answer, pct }` objects to use as the weights for resolving in favor of multiple free response options. Can only be set with `MKT` outcome. Note that the total weights must add to 100.
 
-For numeric markets:
+For numeric questions:
 
 - `outcome`: Required. One of `CANCEL`, or a `number` indicating the selected numeric bucket ID.
-- `value`: The value that the market resolves to.
+- `value`: The value that the question resolves to.
 - `probabilityInt`: Required if `value` is present. Should be equal to
   - If log scale: `log10(value - min + 1) / log10(max - min + 1)`
   - Otherwise: `(value - min) / (max - min)`
@@ -778,27 +778,27 @@ For numeric markets:
 Example request:
 
 ```
-# Resolve a binary market
-$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+# Resolve a binary question
+$ curl https://manifold.markets/api/v0/question/{questionId}/resolve -X POST \
     -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}' \
     --data-raw '{"outcome": "YES"}'
 
-# Resolve a binary market with a specified probability
-$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+# Resolve a binary question with a specified probability
+$ curl https://manifold.markets/api/v0/question/{questionId}/resolve -X POST \
     -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}' \
     --data-raw '{"outcome": "MKT", \
                  "probabilityInt": 75}'
 
-# Resolve a free response market with a single answer chosen
-$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+# Resolve a free response question with a single answer chosen
+$ curl https://manifold.markets/api/v0/question/{questionId}/resolve -X POST \
     -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}' \
     --data-raw '{"outcome": 2}'
 
-# Resolve a free response market with multiple answers chosen
-$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+# Resolve a free response question with multiple answers chosen
+$ curl https://manifold.markets/api/v0/question/{questionId}/resolve -X POST \
     -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}' \
     --data-raw '{"outcome": "MKT", \
@@ -808,9 +808,9 @@ $ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
                  ]}'
 ```
 
-### `POST /v0/market/[marketId]/sell`
+### `POST /v0/question/[questionId]/sell`
 
-Sells some quantity of shares in a binary market on behalf of the authorized user.
+Sells some quantity of shares in a binary question on behalf of the authorized user.
 
 Parameters:
 
@@ -822,7 +822,7 @@ Parameters:
 Example request:
 
 ```
-$ curl https://manifold.markets/api/v0/market/{marketId}/sell -X POST \
+$ curl https://manifold.markets/api/v0/question/{questionId}/sell -X POST \
     -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}' \
     --data-raw '{"outcome": "YES", "shares": 10}'
@@ -832,11 +832,11 @@ Response type: A `Bet`, with an additional `"status": "success"` field.
 
 ### `POST /v0/comment`
 
-Creates a comment in the specified market. Only supports top-level comments for now.
+Creates a comment in the specified question. Only supports top-level comments for now.
 
 Parameters:
 
-- `contractId`: Required. The ID of the market to comment on.
+- `contractId`: Required. The ID of the question to comment on.
 - `content`: The comment to post, formatted as [TipTap json](https://tiptap.dev/guide/output#option-1-json), OR
 - `html`: The comment to post, formatted as an HTML string, OR
 - `markdown`: The comment to post, formatted as a markdown string.
@@ -872,7 +872,7 @@ Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/bets?username=ManifoldMarkets&contractSlug=will-i-be-able-to-place-a-limit-ord
+  https://manifold.markets/api/v0/bets?username=ManifoldQuestions&contractSlug=will-i-be-able-to-place-a-limit-ord
   ```
 - Response type: A `Bet[]`.
 
@@ -942,16 +942,17 @@ Requires no authorization.
   </details>
 
 ## Changelog
-- 2023-05-15: Change the response of the `/market/{marketId}/sell` POST endpoint from
+
+- 2023-05-15: Change the response of the `/question/{questionId}/sell` POST endpoint from
   `{"status": "success"}` to a full `Bet`, with an additional `"status": "success"` field.
-- 2023-04-03: Add `/market/[marketId]/group` POST endpoint.
-- 2023-03-21: Add `/market/[marketId]/positions` and `/search-markets` endpoints
-- 2022-11-22: Update /market GET to remove `bets` and `comments`
-- 2022-10-17: Update /market POST to allow `visibility` and `groupId`; mark `closeTime` as optional; remove `tags`
-- 2022-09-24: Expand market POST docs to include new market types (`PSEUDO_NUMERIC`, `MULTIPLE_CHOICE`)
+- 2023-04-03: Add `/question/[questionId]/group` POST endpoint.
+- 2023-03-21: Add `/question/[questionId]/positions` and `/search-questions` endpoints
+- 2022-11-22: Update /question GET to remove `bets` and `comments`
+- 2022-10-17: Update /question POST to allow `visibility` and `groupId`; mark `closeTime` as optional; remove `tags`
+- 2022-09-24: Expand question POST docs to include new question types (`PSEUDO_NUMERIC`, `MULTIPLE_CHOICE`)
 - 2022-07-15: Add user by username and user by ID APIs
-- 2022-06-08: Add paging to markets endpoint
+- 2022-06-08: Add paging to questions endpoint
 - 2022-06-05: Add new authorized write endpoints
-- 2022-02-28: Add `resolutionTime` to markets, change `closeTime` definition
+- 2022-02-28: Add `resolutionTime` to questions, change `closeTime` definition
 - 2022-02-19: Removed user IDs from bets
-- 2022-02-17: Released our v0 API, with `/markets`, `/market/[marketId]`, and `/slug/[slugId]`
+- 2022-02-17: Released our v0 API, with `/questions`, `/question/[questionId]`, and `/slug/[slugId]`

@@ -85,8 +85,8 @@ export type PrivateUser = {
   discordId?: string
 }
 
-export const MANIFOLD_USER_USERNAME = 'ManifoldMarkets'
-export const MANIFOLD_USER_NAME = 'ManifoldMarkets'
+export const MANIFOLD_USER_USERNAME = 'ManifoldQuestions'
+export const MANIFOLD_USER_NAME = 'ManifoldQuestions'
 export const MANIFOLD_AVATAR_URL = 'https://manifold.markets/logo-bg-white.png'
 
 // TODO: remove. Hardcoding the strings would be better.

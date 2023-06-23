@@ -110,8 +110,8 @@ const CACHED_REFERRAL_CONTRACT_ID_KEY = 'CACHED_REFERRAL_CONTRACT_KEY'
 const CACHED_REFERRAL_GROUP_ID_KEY = 'CACHED_REFERRAL_GROUP_KEY'
 
 // Scenarios:
-// 1. User is referred by another user to homepage, group page, market page etc. explicitly via referrer= query param
-// 2. User lands on a market or group without a referrer, we attribute the market/group creator
+// 1. User is referred by another user to homepage, group page, question page etc. explicitly via referrer= query param
+// 2. User lands on a question or group without a referrer, we attribute the question/group creator
 // Explicit referrers take priority over the implicit ones, (e.g. they're overwritten)
 export function writeReferralInfo(
   defaultReferrerUsername: string,

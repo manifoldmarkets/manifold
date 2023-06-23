@@ -12,7 +12,7 @@ const pages: PageData[] = [
   { label: 'Notifications', slug: '/notifications' },
   { label: 'Leaderboards', slug: '/leaderboards', keywords: ['top', 'high'] },
   {
-    label: 'Create market',
+    label: 'Create question',
     slug: '/create',
     keywords: ['add', 'make', 'ask'],
   },
@@ -28,7 +28,7 @@ const pages: PageData[] = [
   { label: 'About', slug: '/about' },
   { label: 'Ads', slug: '/ad', keywords: ['advertisement'] },
 
-  { label: 'Markets', slug: '/markets' },
+  { label: 'Questions', slug: '/questions' },
   { label: 'Users', slug: '/users' },
 ]
 

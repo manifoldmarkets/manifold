@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Manifold",
-    "slug": "manifold-markets",
+    "slug": "manifold-questions",
     "owner": "iansp",
     "sdkVersion": "48.0.0",
     "jsEngine": "hermes",
@@ -9,13 +9,16 @@
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
-    "plugins": ["./plugins/withAndroidVerifiedLinksWorkaround", "sentry-expo",
-    [
-      "expo-notifications",
-      {
-        "icon":"./assets/logo-96.png"
-      }
-    ]],
+    "plugins": [
+      "./plugins/withAndroidVerifiedLinksWorkaround",
+      "sentry-expo",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo-96.png"
+        }
+      ]
+    ],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",
@@ -25,10 +28,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "updates": {
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/0ce454fc-3885-4eab-88b6-787b1691973b"
@@ -45,10 +45,7 @@
               "host": "manifold.markets"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ],
       "googleServicesFile": "./google-services.json",
@@ -56,7 +53,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#4337C9"
       },
-      "package": "com.markets.manifold",
+      "package": "com.questions.manifold",
       "versionCode": 54
     },
     "ios": {
@@ -65,7 +62,7 @@
       },
       "supportsTablet": true,
       "usesAppleSignIn": true,
-      "bundleIdentifier": "com.markets.manifold",
+      "bundleIdentifier": "com.questions.manifold",
       "associatedDomains": [
         "applinks:manifold.markets",
         "webcredentials:manifold.markets"

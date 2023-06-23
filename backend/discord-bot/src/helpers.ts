@@ -1,10 +1,10 @@
-import { FullMarket } from 'common/api-market-types'
+import { FullQuestion } from 'common/api-question-types'
 import { randomString } from 'common/util/random'
 import { DAY_MS } from 'common/util/time'
 import * as console from 'console'
 import {
-  getMarketFromId,
-  getMyPositionInMarket,
+  getQuestionFromId,
+  getMyPositionInQuestion,
   getTopAndBottomPositions,
   placeBet,
 } from 'discord-bot/api'
@@ -30,7 +30,7 @@ import {
   getBetInfoFromReaction,
 } from './emojis.js'
 import {
-  getMarketInfoFromMessageId,
+  getQuestionInfoFromMessageId,
   getUserInfo,
   saveThreadIdToMessageId,
   updateThreadLastUpdatedTime,
@@ -38,7 +38,7 @@ import {
 
 export const messageEmbedsToRefresh = new Set<{
   message: Message
-  marketId: string
+  questionId: string
   createdTime: number
 }>()
 const discordMessageIdsToThreads: { [key: string]: ThreadChannel } = {}
@@ -48,14 +48,14 @@ setInterval(async () => {
   if (messageEmbedsToRefresh.size === 0) return
   await Promise.all(
     Array.from(messageEmbedsToRefresh).map(async (m) => {
-      const { message, marketId, createdTime } = m
+      const { message, questionId, createdTime } = m
       // Discard messages that are older than 2 days
       if (Date.now() - createdTime > 2 * DAY_MS) {
         messageEmbedsToRefresh.delete(m)
         return
       }
       if (message.embeds.length === 0) await message.fetch()
-      const isResolved = await refreshMessage(message, marketId)
+      const isResolved = await refreshMessage(message, questionId)
       if (isResolved) messageEmbedsToRefresh.delete(m)
     })
   )
@@ -77,7 +77,7 @@ export const handleReaction = async (
   reaction: MessageReaction,
   user: User,
   channel: TextChannel,
-  market: FullMarket,
+  question: FullQuestion,
   threadId?: string
 ) => {
   const { name } = reaction.emoji
@@ -100,7 +100,7 @@ export const handleReaction = async (
   if (!message) return
 
   // Attempt to place a bet
-  await handleBet(reaction, user, channel, message, market, threadId)
+  await handleBet(reaction, user, channel, message, question, threadId)
 }
 
 export const handleBet = async (
@@ -108,13 +108,13 @@ export const handleBet = async (
   user: User,
   channel: TextChannel,
   message: Message,
-  market: FullMarket,
+  question: FullQuestion,
   threadId?: string
 ) => {
   const messageId = reaction.message.id
   const { outcome, amount } = getBetInfoFromReaction(reaction)
   if (!outcome || !amount) return
-  console.log('betting', amount, outcome, 'on', market.id, 'for', user.tag)
+  console.log('betting', amount, outcome, 'on', question.id, 'for', user.tag)
 
   const api = await getUserInfo(user).catch(async () => {
     const userReactions = message.reactions.cache.filter(
@@ -133,7 +133,7 @@ export const handleBet = async (
   })
   if (!api) return
   try {
-    const resp = await placeBet(api, market.id, amount, outcome)
+    const resp = await placeBet(api, question.id, amount, outcome)
 
     if (!resp.ok) {
       const content = `Error: ${resp.statusText}`
@@ -147,12 +147,12 @@ export const handleBet = async (
     )}%`
     const content = `${user.toString()} ${status}`
 
-    market.probability = newProb
-    await sendThreadMessage(channel, market, content, messageId, threadId)
-    await updateMarketStatus(message, market)
+    question.probability = newProb
+    await sendThreadMessage(channel, question, content, messageId, threadId)
+    await updateQuestionStatus(message, question)
     messageEmbedsToRefresh.add({
       message,
-      marketId: market.id,
+      questionId: question.id,
       createdTime: Date.now(),
     })
   } catch (e) {
@@ -163,52 +163,57 @@ export const handleBet = async (
 const currentProbText = (prob: number) =>
   `**${Math.round(prob * 100)}%** chance`
 
-export const getCurrentMarketDescription = (market: FullMarket) => {
-  const closed = (market.closeTime ?? 0) <= Date.now()
-  let content = currentProbText(market.probability ?? 0) + '. React to differ.'
+export const getCurrentQuestionDescription = (question: FullQuestion) => {
+  const closed = (question.closeTime ?? 0) <= Date.now()
+  let content =
+    currentProbText(question.probability ?? 0) + '. React to differ.'
 
   if (closed) {
-    content = market.isResolved
-      ? `Resolved ${market.resolution}`
-      : `Market closed at ${Math.round(
-          (market.probability ?? 0) * 100
+    content = question.isResolved
+      ? `Resolved ${question.resolution}`
+      : `Question closed at ${Math.round(
+          (question.probability ?? 0) * 100
         )}% chance.`
   }
   return content
 }
 
-const updateMarketStatus = async (message: Message, market: FullMarket) => {
+const updateQuestionStatus = async (
+  message: Message,
+  question: FullQuestion
+) => {
   const previousEmbed = message.embeds[0]
-  const marketEmbed = EmbedBuilder.from(previousEmbed)
-  marketEmbed.setDescription(getCurrentMarketDescription(market))
-  marketEmbed.setTitle(
-    market.question + ` ${Math.round((market.probability ?? 0) * 100)}% chance`
+  const questionEmbed = EmbedBuilder.from(previousEmbed)
+  questionEmbed.setDescription(getCurrentQuestionDescription(question))
+  questionEmbed.setTitle(
+    question.question +
+      ` ${Math.round((question.probability ?? 0) * 100)}% chance`
   )
-  await message.edit({ embeds: [marketEmbed], files: [] })
+  await message.edit({ embeds: [questionEmbed], files: [] })
 }
-export const refreshMessage = async (message: Message, marketId: string) => {
+export const refreshMessage = async (message: Message, questionId: string) => {
   const previousEmbed = message.embeds[0]
-  const marketEmbed = EmbedBuilder.from(previousEmbed)
+  const questionEmbed = EmbedBuilder.from(previousEmbed)
   if (!previousEmbed || !previousEmbed.url) {
     console.log('No embed or url found')
     return
   }
-  const market = await getMarketFromId(marketId)
-  marketEmbed.setDescription(getCurrentMarketDescription(market))
-  const isResolved = market.isResolved
-  marketEmbed.setTitle(
-    market.question +
+  const question = await getQuestionFromId(questionId)
+  questionEmbed.setDescription(getCurrentQuestionDescription(question))
+  const isResolved = question.isResolved
+  questionEmbed.setTitle(
+    question.question +
       (!isResolved
-        ? ` ${Math.round((market.probability ?? 0) * 100)}% chance`
+        ? ` ${Math.round((question.probability ?? 0) * 100)}% chance`
         : '')
   )
   if (isResolved) {
     message.reactions
       .removeAll()
       .catch((error) => console.error('Failed to clear reactions: ', error))
-    marketEmbed.setFields([])
+    questionEmbed.setFields([])
   }
-  await message.edit({ embeds: [marketEmbed], files: [] })
+  await message.edit({ embeds: [questionEmbed], files: [] })
   return isResolved
 }
 
@@ -216,17 +221,17 @@ export const sendChannelMessage = async (
   channel: TextChannel,
   content: string
 ) => {
-  const marketEmbed = new EmbedBuilder().setDescription(content)
-  await channel.send({ embeds: [marketEmbed] })
+  const questionEmbed = new EmbedBuilder().setDescription(content)
+  await channel.send({ embeds: [questionEmbed] })
 }
 
 const getOrCreateThread = async (
   channel: TextChannel,
-  marketName: string,
+  questionName: string,
   messageId: string,
   threadId?: string
 ) => {
-  const name = marketName.slice(0, 40) + '-' + randomString(5)
+  const name = questionName.slice(0, 40) + '-' + randomString(5)
   if (discordMessageIdsToThreads[messageId])
     return discordMessageIdsToThreads[messageId]
   else if (channel.isThread()) {
@@ -240,7 +245,7 @@ const getOrCreateThread = async (
   const thread = await channel.threads.create({
     name,
     autoArchiveDuration: 60,
-    reason: 'Activity feed for market: ' + name,
+    reason: 'Activity feed for question: ' + name,
   })
   discordMessageIdsToThreads[messageId] = thread
   await saveThreadIdToMessageId(messageId, thread.id)
@@ -249,7 +254,7 @@ const getOrCreateThread = async (
 
 export const sendThreadMessage = async (
   channel: TextChannel,
-  market: FullMarket,
+  question: FullQuestion,
   content: string,
   messageId: string,
   threadId?: string
@@ -257,7 +262,7 @@ export const sendThreadMessage = async (
   // get the thread id from supabase if we have one
   const thread = await getOrCreateThread(
     channel,
-    market.question,
+    question.question,
     messageId,
     threadId
   )
@@ -268,7 +273,7 @@ export const sendThreadMessage = async (
 }
 export const sendThreadEmbed = async (
   channel: TextChannel,
-  market: FullMarket,
+  question: FullQuestion,
   content: EmbedBuilder,
   messageId: string,
   files?: AttachmentBuilder[],
@@ -277,7 +282,7 @@ export const sendThreadEmbed = async (
   // get the thread id from supabase if we have one
   const thread = await getOrCreateThread(
     channel,
-    market.question,
+    question.question,
     messageId,
     threadId
   )
@@ -318,30 +323,30 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
     })
   if (!message) return
 
-  // React to bet on market button interactions
-  const marketInfo = await getMarketInfoFromMessageId(message.id)
-  if (!marketInfo) return
+  // React to bet on question button interactions
+  const questionInfo = await getQuestionInfoFromMessageId(message.id)
+  if (!questionInfo) return
 
   // Help
   if (customId === 'question') {
     const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings()
-    const content = `This is a prediction market from [Manifold Markets](<${config.domain}>). You can bet that the event will happen (YES) by reacting with these emojis: ${yesBetsEmojis} and that it won't (NO) with these: ${noBetsEmojis}. The emoji numbers correspond to the amount of mana used, (i.e. your conviction) per bet.`
+    const content = `This is a prediction question from [Manifold Questions](<${config.domain}>). You can bet that the event will happen (YES) by reacting with these emojis: ${yesBetsEmojis} and that it won't (NO) with these: ${noBetsEmojis}. The emoji numbers correspond to the amount of mana used, (i.e. your conviction) per bet.`
     await interaction.reply({ content, ephemeral: true })
     return
   }
-  const market = await getMarketFromId(marketInfo.market_id)
+  const question = await getQuestionFromId(questionInfo.question_id)
 
   // User position and profit
   if (customId === 'my-position') {
     const api = await getUserInfo(interaction.user, interaction)
     if (!api) return
-    const contractMetrics = await getMyPositionInMarket(
+    const contractMetrics = await getMyPositionInQuestion(
       api,
-      marketInfo.market_id
+      questionInfo.question_id
     )
     if (!contractMetrics || contractMetrics.length === 0) {
       await interaction.reply({
-        content: 'You have no position in this market',
+        content: 'You have no position in this question',
         ephemeral: true,
       })
       return
@@ -356,37 +361,39 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
     return
   }
 
-  // Market description
+  // Question description
   if (customId === 'details') {
-    const { textDescription } = market
+    const { textDescription } = question
     const description =
       textDescription.length > 1995
         ? textDescription.slice(0, 1995) + '...'
         : textDescription
     const content = `${
-      description.length > 0 ? description : 'No market description provided :('
+      description.length > 0
+        ? description
+        : 'No question description provided :('
     }`
     await interaction.reply({ content, ephemeral: true })
     return
   }
 
-  // Market top and bottom positions
+  // Question top and bottom positions
   if (customId === 'leaderboard') {
-    const { contractMetrics, market } = await getTopAndBottomPositions(
-      marketInfo.market_slug,
+    const { contractMetrics, question } = await getTopAndBottomPositions(
+      questionInfo.question_slug,
       'profit'
     ).catch(async (error) => {
       console.error('Failed to get positions', error)
       await interaction.reply({ content: error.message, ephemeral: true })
-      return { contractMetrics: [], market: null }
+      return { contractMetrics: [], question: null }
     })
-    if (!contractMetrics || !market) return
+    if (!contractMetrics || !question) return
     await sendPositionsEmbed(
       interaction,
-      market,
+      question,
       contractMetrics,
       message,
-      marketInfo.thread_id
+      questionInfo.thread_id
     )
   }
 }

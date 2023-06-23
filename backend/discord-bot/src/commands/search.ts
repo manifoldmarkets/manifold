@@ -1,8 +1,8 @@
-import { FullMarket, LiteMarket } from 'common/api-market-types'
+import { FullQuestion, LiteQuestion } from 'common/api-question-types'
 import { floatingEqual } from 'common/util/math'
 import { MINUTE_MS } from 'common/util/time'
 import { Command } from 'discord-bot/command'
-import { replyWithMarketToBetOn } from 'discord-bot/commands/react-to-bet-on-market'
+import { replyWithQuestionToBetOn } from 'discord-bot/commands/react-to-bet-on-question'
 import { config } from 'discord-bot/constants/config'
 
 import { shouldIgnoreMessageFromGuild, truncateText } from 'discord-bot/helpers'
@@ -17,16 +17,16 @@ import {
   StringSelectMenuInteraction,
 } from 'discord.js'
 const MARKETS_PER_PAGE = 5
-const DROPDOWN_PLACEHOLDER = 'Select a market from the dropdown'
+const DROPDOWN_PLACEHOLDER = 'Select a question from the dropdown'
 const searchMessageIdToSearchState = new Map<
   string,
-  { page: number; markets: LiteMarket[] }
+  { page: number; questions: LiteQuestion[] }
 >()
 export const searchButtonTypes = ['back', 'next', 'done']
 
 const data = new SlashCommandBuilder()
   .setName('search')
-  .setDescription('Search for markets on Manifold Markets')
+  .setDescription('Search for questions on Manifold Questions')
   .addStringOption((option) =>
     option
       .setName('keywords')
@@ -43,16 +43,16 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.editReply('Please provide some keywords to search for')
     return
   }
-  const markets = await searchMarkets(keywords).catch(async (error) => {
+  const questions = await searchQuestions(keywords).catch(async (error) => {
     await interaction.editReply(
-      'Error searching markets, please try again later.'
+      'Error searching questions, please try again later.'
     )
-    console.error('Error searching markets', error)
+    console.error('Error searching questions', error)
     return
   })
-  if (!markets) return
-  if (markets.length === 0) {
-    await interaction.editReply('No markets found, try different keywords.')
+  if (!questions) return
+  if (questions.length === 0) {
+    await interaction.editReply('No questions found, try different keywords.')
     return
   }
 
@@ -62,18 +62,18 @@ async function execute(interaction: ChatInputCommandInteraction) {
         .setCustomId('select')
         .setPlaceholder(DROPDOWN_PLACEHOLDER)
         .addOptions(
-          markets
+          questions
             .slice(0, MARKETS_PER_PAGE)
-            .map((market) => getMarketItem(market))
+            .map((question) => getQuestionItem(question))
         )
     )
 
   const message = await interaction.editReply({
-    content: 'Searching markets for terms: ' + keywords,
-    components: [stringSelectRow, getButtonRow(0, markets.length)],
+    content: 'Searching questions for terms: ' + keywords,
+    components: [stringSelectRow, getButtonRow(0, questions.length)],
   })
   const page = 0
-  searchMessageIdToSearchState.set(message.id, { page, markets })
+  searchMessageIdToSearchState.set(message.id, { page, questions })
   const collector = message.createMessageComponentCollector({
     time: 10 * MINUTE_MS,
   })
@@ -93,36 +93,36 @@ async function execute(interaction: ChatInputCommandInteraction) {
       page = limit(
         i.customId === 'next' ? page + 1 : page - 1,
         0,
-        Math.round(markets.length / MARKETS_PER_PAGE) - 1
+        Math.round(questions.length / MARKETS_PER_PAGE) - 1
       )
-      searchMessageIdToSearchState.set(message.id, { page, markets })
+      searchMessageIdToSearchState.set(message.id, { page, questions })
       const newSelectRow =
         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
           new StringSelectMenuBuilder()
             .setCustomId('select')
             .setPlaceholder(DROPDOWN_PLACEHOLDER)
             .addOptions(
-              markets
+              questions
                 .slice(page * MARKETS_PER_PAGE, (page + 1) * MARKETS_PER_PAGE)
-                .map((market) => getMarketItem(market))
+                .map((question) => getQuestionItem(question))
             )
         )
 
       await i.update({
         content: i.message.content,
-        components: [newSelectRow, getButtonRow(page, markets.length)],
+        components: [newSelectRow, getButtonRow(page, questions.length)],
       })
       return
     }
 
-    // Handle market selection
-    const marketSelectInteraction = i as StringSelectMenuInteraction
-    if (marketSelectInteraction) {
-      const market = markets.find(
-        (m) => m.url === marketSelectInteraction.values[0]
+    // Handle question selection
+    const questionSelectInteraction = i as StringSelectMenuInteraction
+    if (questionSelectInteraction) {
+      const question = questions.find(
+        (m) => m.url === questionSelectInteraction.values[0]
       )
-      if (!market) return
-      await replyWithMarketToBetOn(marketSelectInteraction, market)
+      if (!question) return
+      await replyWithQuestionToBetOn(questionSelectInteraction, question)
     }
   })
 
@@ -140,34 +140,34 @@ export const searchCommand = {
   execute,
 } as Command
 
-export const searchMarkets = async (terms: string) => {
+export const searchQuestions = async (terms: string) => {
   const resp = await fetch(
-    `${config.domain}api/v0/search-markets?terms=${terms}`
+    `${config.domain}api/v0/search-questions?terms=${terms}`
   )
   if (!resp.ok) {
-    throw new Error('Market not found with slug: ' + terms)
+    throw new Error('Question not found with slug: ' + terms)
   }
-  const fullMarkets = (await resp.json()) as FullMarket[]
-  // filter markets that are closed or resolved already
+  const fullQuestions = (await resp.json()) as FullQuestion[]
+  // filter questions that are closed or resolved already
 
-  return fullMarkets.filter(
-    (market) =>
-      market.closeTime &&
-      market.closeTime > Date.now() &&
-      !market.isResolved &&
-      market.outcomeType === 'BINARY'
+  return fullQuestions.filter(
+    (question) =>
+      question.closeTime &&
+      question.closeTime > Date.now() &&
+      !question.isResolved &&
+      question.outcomeType === 'BINARY'
   )
 }
 
-const getMarketDescription = (market: FullMarket) => {
-  let description = truncateText(market.creatorName, 25) + ' | '
+const getQuestionDescription = (question: FullQuestion) => {
+  let description = truncateText(question.creatorName, 25) + ' | '
   // if it has a text description, use that limited
-  if (market.textDescription) {
-    description += truncateText(market.textDescription, 69)
+  if (question.textDescription) {
+    description += truncateText(question.textDescription, 69)
   }
   // if it has a close date, use that
-  if (description.length < 85 && market.closeTime) {
-    description += `${new Date(market.closeTime).toLocaleDateString()}`
+  if (description.length < 85 && question.closeTime) {
+    description += `${new Date(question.closeTime).toLocaleDateString()}`
   }
   // otherwise use the creator
   return description
@@ -197,10 +197,10 @@ const getButtonRow = (page: number, maxItems: number) => {
       .setStyle(ButtonStyle.Secondary)
   )
 }
-const getMarketItem = (market: FullMarket) => ({
-  label: truncateText(market.question, 69),
-  description: getMarketDescription(market),
-  value: market.url,
+const getQuestionItem = (question: FullQuestion) => ({
+  label: truncateText(question.question, 69),
+  description: getQuestionDescription(question),
+  value: question.url,
 })
 
 export const handleSearchButtonInteraction = async (

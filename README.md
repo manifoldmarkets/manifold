@@ -1,4 +1,4 @@
-# Manifold Markets
+# Manifold Questions
 
 This [monorepo][] has basically everything involved in running and operating Manifold.
 
@@ -24,7 +24,7 @@ Operations with complicated contracts (e.g. buying shares) are provided in a sep
 
 - [backend/](./backend/): All the rest of the stuff we run on GCP.
 
-- [common/](./common/): Typescript library code shared between `web/` & `backend/`. If you want to look at how the market math
+- [common/](./common/): Typescript library code shared between `web/` & `backend/`. If you want to look at how the question math
   works, most of that's in here (it gets called from the `placeBet` and `sellBet` endpoints in `functions/`.) Also
   contains in `common/envs` configuration for the different environments (i.e. prod, dev, Manifold for Teams instances.)
 

@@ -2,9 +2,9 @@
 
 import { Answer, Bet } from './manifold-internal-types';
 
-// Information about a market, but without bets or comments
-export type LiteMarket = {
-  // Unique identifer for this market
+// Information about a question, but without bets or comments
+export type LiteQuestion = {
+  // Unique identifer for this question
   id: string;
 
   // Attributes about the creator
@@ -14,7 +14,7 @@ export type LiteMarket = {
   createdTime: number;
   creatorAvatarUrl?: string;
 
-  // Market attributes. All times are in milliseconds since epoch
+  // Question attributes. All times are in milliseconds since epoch
   closeTime?: number;
   question: string;
   url: string;
@@ -77,7 +77,7 @@ export type ApiAnswer = Answer & {
   probability?: number;
 };
 
-export type FullMarket = LiteMarket & {
+export type FullQuestion = LiteQuestion & {
   bets: Bet[];
   comments: any[];
   answers?: ApiAnswer[];

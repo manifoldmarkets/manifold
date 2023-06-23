@@ -10,10 +10,7 @@ import {
   CPMMBinaryContract,
 } from 'common/contract'
 import { Bet } from 'common/bet'
-import {
-  calculateDpmPayout,
-  getDpmProbability,
-} from 'common/calculate-dpm'
+import { calculateDpmPayout, getDpmProbability } from 'common/calculate-dpm'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import { noFees } from 'common/fees'
 import { addObjects } from 'common/util/object'
@@ -103,7 +100,7 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
     const liquidityDocRef = contractRef.collection('liquidity').doc()
 
     const lp = getCpmmInitialLiquidity(
-      'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // use @ManifoldMarkets' id
+      'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // use @ManifoldQuestions' id
       {
         ...contract,
         ...contractUpdate,

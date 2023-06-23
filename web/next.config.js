@@ -61,7 +61,7 @@ module.exports = {
       },
       {
         source: '/versus',
-        destination: '/VersusBot?tab=markets',
+        destination: '/VersusBot?tab=questions',
         permanent: false,
       },
       {
@@ -77,7 +77,7 @@ module.exports = {
       {
         source: '/umami',
         destination:
-          'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets',
+          'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Questions',
         permanent: false,
       },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.

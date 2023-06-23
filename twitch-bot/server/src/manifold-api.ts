@@ -73,10 +73,10 @@ export async function getUserByManifoldUsername(manifoldUsername: string): Promi
 }
 
 /**
- * @deprecated This is generally a messy function as it uses a market's slug and user's username instead of the relevant IDs. Avoid using if possible.
+ * @deprecated This is generally a messy function as it uses a question's slug and user's username instead of the relevant IDs. Avoid using if possible.
  */
-export async function getUsersStakeInMarket_shares(marketSlug: string, manifoldUsername: string): Promise<{ shares: number; outcome: 'YES' | 'NO' }> {
-  return fetch(`${MANIFOLD_API_BASE_URL}bets?market=${marketSlug}&username=${manifoldUsername}`)
+export async function getUsersStakeInQuestion_shares(questionSlug: string, manifoldUsername: string): Promise<{ shares: number; outcome: 'YES' | 'NO' }> {
+  return fetch(`${MANIFOLD_API_BASE_URL}bets?question=${questionSlug}&username=${manifoldUsername}`)
     .then((r) => <Promise<ManifoldInternalTypes.Bet[]>>r.json())
     .then((bets) => {
       let total = 0;
@@ -88,21 +88,21 @@ export async function getUsersStakeInMarket_shares(marketSlug: string, manifoldU
     });
 }
 
-export async function sellShares(marketID: string, APIKey: string, outcome?: 'YES' | 'NO' | number, shares?: number): Promise<Response> {
+export async function sellShares(questionID: string, APIKey: string, outcome?: 'YES' | 'NO' | number, shares?: number): Promise<Response> {
   const parameters = {
     ...(outcome && { outcome }),
     ...(shares && { shares }),
   };
-  return post(`${MANIFOLD_API_BASE_URL}market/${marketID}/sell`, APIKey, parameters);
+  return post(`${MANIFOLD_API_BASE_URL}question/${questionID}/sell`, APIKey, parameters);
 }
 
-export async function createBinaryMarket(
+export async function createBinaryQuestion(
   APIKey: string,
   question: string,
   description: string,
   initialProb_percent: number,
   options?: { visibility?: 'public' | 'unlisted'; groupID?: string }
-): Promise<ManifoldAPITypes.LiteMarket> {
+): Promise<ManifoldAPITypes.LiteQuestion> {
   const { visibility = 'public', groupID } = options;
 
   const outcomeType: 'BINARY' | 'FREE_RESPONSE' | 'NUMERIC' = 'BINARY';
@@ -134,17 +134,17 @@ export async function createBinaryMarket(
     visibility,
     isTwitchContract: true,
   };
-  return <Promise<ManifoldAPITypes.LiteMarket>>(await post(`${MANIFOLD_API_BASE_URL}market`, APIKey, requestData)).json();
+  return <Promise<ManifoldAPITypes.LiteQuestion>>(await post(`${MANIFOLD_API_BASE_URL}question`, APIKey, requestData)).json();
 }
 
-export async function resolveBinaryMarket(marketID: string, APIKey: string, outcome: ResolutionOutcome): Promise<Response> {
-  return post(`${MANIFOLD_API_BASE_URL}market/${marketID}/resolve`, APIKey, { outcome: outcome });
+export async function resolveBinaryQuestion(questionID: string, APIKey: string, outcome: ResolutionOutcome): Promise<Response> {
+  return post(`${MANIFOLD_API_BASE_URL}question/${questionID}/resolve`, APIKey, { outcome: outcome });
 }
 
-export async function placeBet(marketID: string, APIKey: string, amount: number, outcome: 'YES' | 'NO'): Promise<Response> {
+export async function placeBet(questionID: string, APIKey: string, amount: number, outcome: 'YES' | 'NO'): Promise<Response> {
   const requestData = {
     amount: amount,
-    contractId: marketID,
+    contractId: questionID,
     outcome: outcome,
   };
   return post(`${MANIFOLD_API_BASE_URL}bet`, APIKey, requestData);
@@ -159,22 +159,22 @@ export async function verifyAPIKey(APIKey: string): Promise<boolean> {
   return true;
 }
 
-export async function getLatestMarketBets(marketSlug: string, numBetsToLoad?: number): Promise<ManifoldInternalTypes.Bet[]> {
-  return <Promise<ManifoldInternalTypes.Bet[]>>(await get(`${MANIFOLD_API_BASE_URL}bets?market=${marketSlug}${numBetsToLoad ? `&limit=${numBetsToLoad}` : ''}`)).json();
+export async function getLatestQuestionBets(questionSlug: string, numBetsToLoad?: number): Promise<ManifoldInternalTypes.Bet[]> {
+  return <Promise<ManifoldInternalTypes.Bet[]>>(await get(`${MANIFOLD_API_BASE_URL}bets?question=${questionSlug}${numBetsToLoad ? `&limit=${numBetsToLoad}` : ''}`)).json();
 }
 
-export async function getMarketBySlug(marketSlug: string): Promise<ManifoldAPITypes.LiteMarket> {
-  return <Promise<ManifoldAPITypes.LiteMarket>>(await get(`${MANIFOLD_API_BASE_URL}slug/${marketSlug}`)).json();
+export async function getQuestionBySlug(questionSlug: string): Promise<ManifoldAPITypes.LiteQuestion> {
+  return <Promise<ManifoldAPITypes.LiteQuestion>>(await get(`${MANIFOLD_API_BASE_URL}slug/${questionSlug}`)).json();
 }
 
-export async function getFullMarketByID(marketID: string): Promise<ManifoldAPITypes.FullMarket> {
-  const fullMarket = <ManifoldAPITypes.FullMarket>await (await get(`${MANIFOLD_API_BASE_URL}market/${marketID}`)).json();
-  fullMarket.bets.sort((a, b) => a.createdTime - b.createdTime); // Ensure that bets are oldest-first. The Manifold API doesn't consistently order them.
-  return fullMarket;
+export async function getFullQuestionByID(questionID: string): Promise<ManifoldAPITypes.FullQuestion> {
+  const fullQuestion = <ManifoldAPITypes.FullQuestion>await (await get(`${MANIFOLD_API_BASE_URL}question/${questionID}`)).json();
+  fullQuestion.bets.sort((a, b) => a.createdTime - b.createdTime); // Ensure that bets are oldest-first. The Manifold API doesn't consistently order them.
+  return fullQuestion;
 }
 
-export async function getLiteMarketByID(marketID: string): Promise<ManifoldAPITypes.LiteMarket> {
-  return <Promise<ManifoldAPITypes.LiteMarket>>(await get(`${MANIFOLD_API_BASE_URL}market/${marketID}/lite`)).json();
+export async function getLiteQuestionByID(questionID: string): Promise<ManifoldAPITypes.LiteQuestion> {
+  return <Promise<ManifoldAPITypes.LiteQuestion>>(await get(`${MANIFOLD_API_BASE_URL}question/${questionID}/lite`)).json();
 }
 
 export async function getGroupBySlug(groupSlug: string): Promise<ManifoldInternalTypes.Group> {

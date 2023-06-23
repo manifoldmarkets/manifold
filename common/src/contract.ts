@@ -76,10 +76,10 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   lastBetTime?: number
   lastCommentTime?: number
   closeTime?: number // When no more trading is allowed
-  deleted?: boolean // If true, don't show market anywhere.
+  deleted?: boolean // If true, don't show question anywhere.
 
   isResolved: boolean
-  resolutionTime?: number // When the contract creator resolved the market
+  resolutionTime?: number // When the contract creator resolved the question
   resolution?: string
   resolutionProbability?: number
 
@@ -136,7 +136,7 @@ export type DPM = {
   totalBets: { [outcome: string]: number }
 }
 
-// Deprecated: Simple constant product market maker for a variable number of outcomes.
+// Deprecated: Simple constant product question maker for a variable number of outcomes.
 /** @deprecated */
 export type CPMM2 = {
   mechanism: 'cpmm-2'
@@ -206,7 +206,7 @@ export type QuadraticFunding = {
 export type Binary = {
   outcomeType: 'BINARY'
   initialProbability: number
-  resolutionProbability?: number // Used for BINARY markets resolved to MKT
+  resolutionProbability?: number // Used for BINARY questions resolved to MKT
   resolution?: resolution
 }
 
@@ -217,7 +217,7 @@ export type PseudoNumeric = {
   isLogScale: boolean
   resolutionValue?: number
 
-  // same as binary market; map everything to probability
+  // same as binary question; map everything to probability
   initialProbability: number
   resolutionProbability?: number
 }

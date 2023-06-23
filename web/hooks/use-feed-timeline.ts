@@ -271,8 +271,8 @@ function createFeedTimelineItems(
         )
         // We may not find a relevant contract if they've already seen the same contract in their feed
         if (!relevantContract) return
-        // If the contract is closed/resolved, only show it due to market movements or trending.
-        // Otherwise, we don't need to see comments on closed/resolved markets
+        // If the contract is closed/resolved, only show it due to question movements or trending.
+        // Otherwise, we don't need to see comments on closed/resolved questions
         if (
           shouldIgnoreCommentsOnContract(relevantContract) &&
           (dataType === 'new_comment' || dataType === 'popular_comment')

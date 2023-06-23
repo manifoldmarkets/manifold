@@ -10,7 +10,10 @@ import clsx from 'clsx'
 import { Notification } from 'common/notification'
 import { getNotificationPreference } from 'common/user-notification-preferences'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { followMarket, unfollowMarket } from '../buttons/follow-market-button'
+import {
+  followQuestion,
+  unfollowQuestion,
+} from '../buttons/follow-question-button'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { Spacer } from '../layout/spacer'
 import {
@@ -94,7 +97,7 @@ function useNotificationFollowItem(notification: Notification) {
   }
   return [
     {
-      name: isFollowing ? 'Unfollow this market' : 'Follow this market',
+      name: isFollowing ? 'Unfollow this question' : 'Follow this question',
       icon: isFollowing ? (
         <EyeOffIcon className="h-5 w-5" />
       ) : (
@@ -103,10 +106,10 @@ function useNotificationFollowItem(notification: Notification) {
       onClick: () => {
         if (isFollowing) {
           setIsFollowing(false)
-          unfollowMarket(sourceContractId, sourceContractSlug, user)
+          unfollowQuestion(sourceContractId, sourceContractSlug, user)
         } else {
           setIsFollowing(true)
-          followMarket(sourceContractId, sourceContractSlug, user)
+          followQuestion(sourceContractId, sourceContractSlug, user)
         }
       },
     } as DropdownItem,

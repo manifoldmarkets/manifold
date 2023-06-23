@@ -434,7 +434,7 @@ Wild Animal Initiative currently focuses on helping scientists, grantors, and de
     preview:
       'WWF works to sustain the natural world for the benefit of people and wildlife, collaborating with partners from local to global levels in nearly 100 countries.',
     description:
-      'As the world’s leading conservation organization, WWF works in nearly 100 countries to tackle the most pressing issues at the intersection of nature, people, and climate. We collaborate with local communities to conserve the natural resources we all depend on and build a future in which people and nature thrive. Together with partners at all levels, we transform markets and policies toward sustainability, tackle the threats driving the climate crisis, and protect and restore wildlife and their habitats.',
+      'As the world’s leading conservation organization, WWF works in nearly 100 countries to tackle the most pressing issues at the intersection of nature, people, and climate. We collaborate with local communities to conserve the natural resources we all depend on and build a future in which people and nature thrive. Together with partners at all levels, we transform questions and policies toward sustainability, tackle the threats driving the climate crisis, and protect and restore wildlife and their habitats.',
   },
   {
     name: 'UNICEF USA',

@@ -127,7 +127,7 @@ export default function Charity(props: {
     <Page>
       <SEO
         title="Manifold for Charity"
-        description="Donate your prediction market earnings to charity on Manifold."
+        description="Donate your prediction question earnings to charity on Manifold."
         url="/charity"
       />
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
@@ -139,7 +139,7 @@ export default function Charity(props: {
             donations at a ratio of{' '}
             <strong className="semibold">{formatMoney(100)} : $1</strong>.
             <SiteLink
-              href="https://manifoldmarkets.notion.site/Charitable-donation-program-668d55f4ded147cf8cf1282a007fb005"
+              href="https://manifoldquestions.notion.site/Charitable-donation-program-668d55f4ded147cf8cf1282a007fb005"
               className="text-primary-700 ml-2"
             >
               Read more here.

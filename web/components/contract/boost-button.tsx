@@ -2,7 +2,7 @@ import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { AmountInput } from '../widgets/amount-input'
 import { ReactNode, useState } from 'react'
-import { boostMarket } from 'web/lib/firebase/api'
+import { boostQuestion } from 'web/lib/firebase/api'
 import { Button, ColorType, SizeType } from '../buttons/button'
 import toast from 'react-hot-toast'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -57,13 +57,13 @@ export function BoostDialog(props: {
   return (
     <Modal open={isOpen} setOpen={setOpen} size="sm">
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
-        <Title className="!mb-2" children="🚀 Boost this market" />
+        <Title className="!mb-2" children="🚀 Boost this question" />
 
         <div className="text-ink-500 mb-2 text-base">
-          Pay to boost this market in the feed.{' '}
+          Pay to boost this question in the feed.{' '}
           <InfoTooltip
-            text="Boosted markets are displayed to users with relevant interests. Users earn a redeemable reward
-          in exchange for clicking on the market."
+            text="Boosted questions are displayed to users with relevant interests. Users earn a redeemable reward
+          in exchange for clicking on the question."
           />
         </div>
 
@@ -95,15 +95,15 @@ function BoostFormRow(props: { contract: Contract }) {
   const onSubmit = async () => {
     setLoading(true)
     try {
-      await boostMarket({
-        marketId: contract.id,
+      await boostQuestion({
+        questionId: contract.id,
         totalCost,
         costPerView,
       })
       toast.success('Boosted!')
       setTotalCost(undefined)
 
-      track('boost market', {
+      track('boost question', {
         slug: contract.slug,
         totalCost,
         costPerView,
@@ -111,7 +111,7 @@ function BoostFormRow(props: { contract: Contract }) {
     } catch (e) {
       toast.error(
         (e as any).message ??
-          (typeof e === 'string' ? e : 'Error boosting market')
+          (typeof e === 'string' ? e : 'Error boosting question')
       )
     } finally {
       setLoading(false)
@@ -186,19 +186,19 @@ function FeedAnalytics(props: { contractId: string }) {
     ['ad data', contractId],
     async () =>
       await db
-        .from('market_ads')
+        .from('question_ads')
         .select('id, funds, created_at, cost_per_view')
-        .eq('market_id', contractId),
+        .eq('question_id', contractId),
     { refetchInterval: false }
   )
 
   const viewQuery = useQuery(
-    ['view market card data', contractId],
+    ['view question card data', contractId],
     async () =>
       await db
-        .from('user_seen_markets')
+        .from('user_seen_questions')
         .select('user_id, data')
-        .eq('type', 'view market card')
+        .eq('type', 'view question card')
         .eq('contract_id', contractId),
     { refetchInterval: false }
   )
@@ -209,7 +209,7 @@ function FeedAnalytics(props: { contractId: string }) {
       await db
         .from('user_events')
         .select('*', { count: 'exact' })
-        .eq('name', 'click market card feed')
+        .eq('name', 'click question card feed')
         .eq('contract_id', contractId),
     { refetchInterval: false }
   )

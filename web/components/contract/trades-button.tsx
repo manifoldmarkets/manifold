@@ -69,7 +69,7 @@ function BetsModalContent(props: { contract: Contract }) {
   const bets = useBets({ contractId: contract.id })
   const [positions, setPositions] = usePersistentInMemoryState<
     undefined | Awaited<ReturnType<typeof getCPMMContractUserContractMetrics>>
-  >(undefined, 'market-card-feed-positions-' + contract.id)
+  >(undefined, 'question-card-feed-positions-' + contract.id)
   useEffect(() => {
     getCPMMContractUserContractMetrics(contract.id, 100, db).then(setPositions)
   }, [contract.id])

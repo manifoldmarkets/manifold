@@ -12,7 +12,7 @@ if (require.main === module) {
         balanceUsd: FieldValue.delete(),
         creatorVolumeCached: FieldValue.delete(),
         followedCategories: FieldValue.delete(),
-        freeMarketsCreated: FieldValue.delete(),
+        freeQuestionsCreated: FieldValue.delete(),
         homeSections: FieldValue.delete(),
         profitRankCached: FieldValue.delete(),
         totalPnLCached: FieldValue.delete(),

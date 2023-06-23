@@ -10,7 +10,7 @@ import { useEvent } from './use-event'
 const GROUPS_PAGE_SIZE = 6
 // const RELATED_PAGE_SIZE = 10
 
-export const useRelatedMarkets = (
+export const useRelatedQuestions = (
   contract: Contract,
   initialContracts: Contract[]
 ) => {

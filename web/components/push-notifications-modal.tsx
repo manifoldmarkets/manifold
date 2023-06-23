@@ -53,8 +53,8 @@ export function PushNotificationsModal(props: {
     <Modal open={isOpen} setOpen={setOpen}>
       <Col className="bg-canvas-0 text-ink-1000 items-center gap-4 rounded-md px-8 py-6">
         <span className="mb-2 text-lg">
-          Want push notifications when a market resolves or when users reply to
-          you?
+          Want push notifications when a question resolves or when users reply
+          to you?
         </span>
         <Col className={'gap-2'}>
           <span className={'text-primary-700'}>• Can I opt out later?</span>

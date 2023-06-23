@@ -12,7 +12,7 @@ import {
 } from './supabase-search'
 import { LoadingIndicator } from './widgets/loading-indicator'
 
-export function SelectMarketsModal(props: {
+export function SelectQuestionsModal(props: {
   title: string
   description?: React.ReactNode
   open: boolean
@@ -36,7 +36,7 @@ export function SelectMarketsModal(props: {
       <Col className="bg-canvas-0 text-ink-1000 relative h-[85vh] w-full gap-4 rounded-md p-8">
         <div className={'text-primary-700 pb-0 text-xl'}>{title}</div>
         {description}
-        <SelectMarkets
+        <SelectQuestions
           submitLabel={submitLabel}
           onSubmit={onSubmit}
           contractSearchOptions={contractSearchOptions}
@@ -48,7 +48,7 @@ export function SelectMarketsModal(props: {
   )
 }
 
-export function SelectMarkets(props: {
+export function SelectQuestions(props: {
   submitLabel: (length: number) => string
   onSubmit: (contracts: Contract[]) => void | Promise<void>
   contractSearchOptions?: Partial<Parameters<typeof SupabaseContractSearch>[0]>

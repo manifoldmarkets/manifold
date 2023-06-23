@@ -12,7 +12,7 @@ export function PrivateContractPage(props: { contractSlug: string }) {
   if (contractParameters === undefined) {
     return <LoadingPrivateThing />
   } else if (!contractParameters.contractParams)
-    return <InaccessiblePrivateThing thing="market" />
+    return <InaccessiblePrivateThing thing="question" />
   else {
     return (
       <ContractPageContent contractParams={contractParameters.contractParams} />

@@ -58,7 +58,7 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
             return r.check_group_accessibility
           })
       : undefined
-    const searchMarketSQL = getSearchContractSQL({
+    const searchQuestionSQL = getSearchContractSQL({
       term,
       filter,
       sort,
@@ -72,7 +72,7 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       topic,
     })
     const contracts = await pg.map(
-      searchMarketSQL,
+      searchQuestionSQL,
       [term],
       (r) => r.data as Contract
     )
@@ -136,7 +136,7 @@ function getSearchContractSQL(contractInput: {
     AND slug = '${slug}' `
     sortAlgorithm = 'popularity_score'
   }
-  // Searching markets within a group
+  // Searching questions within a group
   else if (groupId) {
     // Blank search within group
     if (emptyTerm) {
@@ -215,16 +215,16 @@ function getSearchContractSQL(contractInput: {
       sortAlgorithm = 'popularity_score'
     }
   }
-  // Searching markets by creator
+  // Searching questions by creator
   else if (creatorId) {
-    // Blank search for markets by creator
+    // Blank search for questions by creator
     if (emptyTerm) {
       query = `
       SELECT data
       FROM contracts 
       ${whereSQL}`
     }
-    // Fuzzy search for markets by creator
+    // Fuzzy search for questions by creator
     else if (fuzzy) {
       query = `
       SELECT contractz.data
@@ -236,7 +236,7 @@ function getSearchContractSQL(contractInput: {
       ${whereSQL}
       AND contractz.similarity_score > 0.1`
     }
-    // Normal prefix and exact match search for markets by creator
+    // Normal prefix and exact match search for questions by creator
     else {
       query = `
         select *
@@ -274,10 +274,10 @@ function getSearchContractSQL(contractInput: {
         ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
         ) as relevant_creator_contracts
       `
-      // Creators typically don't have that many markets so we don't have to sort by popularity score
+      // Creators typically don't have that many questions so we don't have to sort by popularity score
     }
   }
-  // Blank search for markets not by group nor creator
+  // Blank search for questions not by group nor creator
   else {
     const topicJoin = topic
       ? ` JOIN contract_embeddings ON contracts.id = contract_embeddings.contract_id, topic_embedding`
@@ -301,7 +301,7 @@ function getSearchContractSQL(contractInput: {
       ${topicJoin}
       ${whereSQL}`
     }
-    // Fuzzy search for markets not by group nor creator
+    // Fuzzy search for questions not by group nor creator
     else if (fuzzy) {
       query = `
 select * from (
@@ -342,7 +342,7 @@ select * from (
       // We use popularity score bc these are exact matches and can be low quality
       sortAlgorithm = 'popularity_score'
     }
-    // Normal full text search for markets
+    // Normal full text search for questions
     else {
       query = `
           ${topicQuery}

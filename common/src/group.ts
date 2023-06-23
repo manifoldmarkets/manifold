@@ -49,7 +49,7 @@ export function groupPath(
   groupSlug: string,
   subpath?:
     | 'edit'
-    | 'markets'
+    | 'questions'
     | 'about'
     | typeof GROUP_CHAT_SLUG
     | 'leaderboards'
@@ -77,7 +77,7 @@ export const GroupsByTopic = {
     'ai-alignment',
     'gpt4-speculation',
   ],
-  ponzi: ['fun', 'selfresolving', 'whale-watching', 'permanent markets'],
+  ponzi: ['fun', 'selfresolving', 'whale-watching', 'permanent questions'],
   // grey: ['cgp-grey'],
 }
 

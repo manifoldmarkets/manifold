@@ -79,7 +79,7 @@ export type notification_reason_types =
   | 'contract_from_followed_user'
   | 'contract_from_private_group'
   | 'you_referred_user'
-  | 'user_joined_to_bet_on_your_market'
+  | 'user_joined_to_bet_on_your_question'
   | 'unique_bettors_on_your_contract'
   | 'tip_received'
   | 'bet_fill'
@@ -110,7 +110,7 @@ export type notification_reason_types =
   | 'reply_to_users_answer'
   | 'reply_to_users_comment'
   | 'your_contract_closed'
-  | 'subsidized_your_market'
+  | 'subsidized_your_question'
   | 'group_role_changed'
   | 'added_to_group'
 
@@ -123,27 +123,27 @@ type notification_descriptions = {
   }
 }
 export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
-  all_answers_on_my_markets: {
-    simple: 'Answers on your markets',
-    detailed: 'Answers on your own markets',
+  all_answers_on_my_questions: {
+    simple: 'Answers on your questions',
+    detailed: 'Answers on your own questions',
     verb: 'answered your question',
   },
-  some_comments_on_watched_markets: {
-    simple: 'Popular comments on markets you watch',
-    detailed: 'Comments on markets you watch that other users have liked',
+  some_comments_on_watched_questions: {
+    simple: 'Popular comments on questions you watch',
+    detailed: 'Comments on questions you watch that other users have liked',
   },
-  all_comments_on_my_markets: {
-    simple: 'Comments on your markets',
-    detailed: 'Comments on your own markets',
-    verb: 'commented on your market',
+  all_comments_on_my_questions: {
+    simple: 'Comments on your questions',
+    detailed: 'Comments on your own questions',
+    verb: 'commented on your question',
   },
-  answers_by_followed_users_on_watched_markets: {
+  answers_by_followed_users_on_watched_questions: {
     simple: 'Only answers by users you follow',
-    detailed: "Only answers by users you follow on markets you're watching",
+    detailed: "Only answers by users you follow on questions you're watching",
   },
-  answers_by_market_creator_on_watched_markets: {
-    simple: 'Only answers by market creator',
-    detailed: "Only answers by market creator on markets you're watching",
+  answers_by_question_creator_on_watched_questions: {
+    simple: 'Only answers by question creator',
+    detailed: "Only answers by question creator on questions you're watching",
   },
   betting_streaks: {
     simple: `Prediction streak bonuses & expirations`,
@@ -153,35 +153,35 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: `Quest completion rewards`,
     detailed: `Bonuses paid out for completing quests`,
   },
-  comments_by_followed_users_on_watched_markets: {
+  comments_by_followed_users_on_watched_questions: {
     simple: 'Only comments by users you follow',
     detailed:
-      'Only comments by users that you follow on markets that you watch',
+      'Only comments by users that you follow on questions that you watch',
   },
   contract_from_followed_user: {
-    simple: 'New markets from users you follow',
-    detailed: 'New markets from users you follow',
+    simple: 'New questions from users you follow',
+    detailed: 'New questions from users you follow',
   },
   contract_from_private_group: {
-    simple: 'New markets from private groups',
-    detailed: 'New markets from private groups you are a member of',
+    simple: 'New questions from private groups',
+    detailed: 'New questions from private groups you are a member of',
   },
   limit_order_fills: {
     simple: 'Limit order fills',
     detailed: 'When your limit order is filled by another user',
   },
   loan_income: {
-    simple: 'Automatic loans from your predictions in unresolved markets',
+    simple: 'Automatic loans from your predictions in unresolved questions',
     detailed:
-      'Automatic loans from your predictions that are locked in unresolved markets',
+      'Automatic loans from your predictions that are locked in unresolved questions',
   },
-  market_updates_on_watched_markets: {
+  question_updates_on_watched_questions: {
     simple: 'All creator updates',
-    detailed: 'All market updates made by the creator',
+    detailed: 'All question updates made by the creator',
   },
-  market_updates_on_watched_markets_with_shares_in: {
-    simple: `Only creator updates on markets that you've ${PAST_BET}`,
-    detailed: `Only updates made by the creator on markets that you've ${PAST_BET}`,
+  question_updates_on_watched_questions_with_shares_in: {
+    simple: `Only creator updates on questions that you've ${PAST_BET}`,
+    detailed: `Only updates made by the creator on questions that you've ${PAST_BET}`,
   },
   on_new_follow: {
     simple: 'A user followed you',
@@ -191,9 +191,9 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Emails to help you get started using Manifold',
     detailed: 'Emails to help you learn how to use Manifold',
   },
-  probability_updates_on_watched_markets: {
-    simple: 'Large changes in probability on markets that you watch',
-    detailed: 'Large changes in probability on markets that you watch',
+  probability_updates_on_watched_questions: {
+    simple: 'Large changes in probability on questions that you watch',
+    detailed: 'Large changes in probability on questions that you watch',
   },
   profit_loss_updates: {
     simple: 'Weekly portfolio updates',
@@ -203,17 +203,17 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Referring new users',
     detailed: 'Bonuses you receive from referring a new user',
   },
-  resolutions_on_watched_markets: {
-    simple: 'All market resolutions',
-    detailed: "All resolutions on markets that you're watching",
+  resolutions_on_watched_questions: {
+    simple: 'All question resolutions',
+    detailed: "All resolutions on questions that you're watching",
   },
-  resolutions_on_watched_markets_with_shares_in: {
-    simple: `Only market resolutions that you've ${PAST_BET}`,
-    detailed: `Only resolutions of markets you're watching and that you've ${PAST_BET}`,
+  resolutions_on_watched_questions_with_shares_in: {
+    simple: `Only question resolutions that you've ${PAST_BET}`,
+    detailed: `Only resolutions of questions you're watching and that you've ${PAST_BET}`,
   },
-  subsidized_your_market: {
-    simple: 'Your market was subsidized',
-    detailed: 'When someone subsidizes your market',
+  subsidized_your_question: {
+    simple: 'Your question was subsidized',
+    detailed: 'When someone subsidizes your question',
   },
   tagged_user: {
     simple: 'A user tagged you',
@@ -228,65 +228,65 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Thank you notes for your purchases',
     detailed: 'Thank you notes for your purchases',
   },
-  tipped_comments_on_watched_markets: {
-    simple: 'Only highly tipped comments on markets that you watch',
-    detailed: 'Only highly tipped comments on markets that you watch',
+  tipped_comments_on_watched_questions: {
+    simple: 'Only highly tipped comments on questions that you watch',
+    detailed: 'Only highly tipped comments on questions that you watch',
   },
   tips_on_your_comments: {
     simple: 'Tips on your comments',
     detailed: 'Tips on your comments',
   },
-  tips_on_your_markets: {
-    simple: 'Tips/Likes on your markets',
-    detailed: 'Tips/Likes on your markets',
+  tips_on_your_questions: {
+    simple: 'Tips/Likes on your questions',
+    detailed: 'Tips/Likes on your questions',
   },
-  trending_markets: {
-    simple: 'Weekly interesting markets',
-    detailed: 'Weekly interesting markets',
+  trending_questions: {
+    simple: 'Weekly interesting questions',
+    detailed: 'Weekly interesting questions',
   },
   unique_bettors_on_your_contract: {
-    simple: 'Unique predictors on your markets',
-    detailed: 'Bonuses for unique predictors on your markets',
+    simple: 'Unique predictors on your questions',
+    detailed: 'Bonuses for unique predictors on your questions',
   },
   your_contract_closed: {
-    simple: 'Your market has closed and you need to resolve it (necessary)',
-    detailed: 'Your market has closed and you need to resolve it (necessary)',
+    simple: 'Your question has closed and you need to resolve it (necessary)',
+    detailed: 'Your question has closed and you need to resolve it (necessary)',
     necessary: true,
   },
-  all_comments_on_watched_markets: {
+  all_comments_on_watched_questions: {
     simple: 'All new comments',
-    detailed: 'All new comments on markets you follow',
+    detailed: 'All new comments on questions you follow',
   },
-  all_comments_on_contracts_with_shares_in_on_watched_markets: {
-    simple: `Only on markets you've ${PAST_BET}`,
-    detailed: `Comments on markets that you're watching and you've ${PAST_BET}`,
+  all_comments_on_contracts_with_shares_in_on_watched_questions: {
+    simple: `Only on questions you've ${PAST_BET}`,
+    detailed: `Comments on questions that you're watching and you've ${PAST_BET}`,
   },
-  all_replies_to_my_comments_on_watched_markets: {
+  all_replies_to_my_comments_on_watched_questions: {
     simple: 'Only replies to your comments',
-    detailed: "Only replies to your comments on markets you're watching",
+    detailed: "Only replies to your comments on questions you're watching",
     verb: 'replied to you',
   },
-  all_replies_to_my_answers_on_watched_markets: {
+  all_replies_to_my_answers_on_watched_questions: {
     simple: 'Only replies to your answers',
-    detailed: "Only replies to your answers on markets you're watching",
+    detailed: "Only replies to your answers on questions you're watching",
     verb: 'replied to you',
   },
-  all_answers_on_watched_markets: {
+  all_answers_on_watched_questions: {
     simple: 'All new answers',
-    detailed: "All new answers on markets you're watching",
+    detailed: "All new answers on questions you're watching",
   },
-  all_answers_on_contracts_with_shares_in_on_watched_markets: {
-    simple: `Only on markets you've ${PAST_BET}`,
-    detailed: `Answers on markets that you're watching and that you've ${PAST_BET}`,
+  all_answers_on_contracts_with_shares_in_on_watched_questions: {
+    simple: `Only on questions you've ${PAST_BET}`,
+    detailed: `Answers on questions that you're watching and that you've ${PAST_BET}`,
   },
   opt_out_all: {
-    simple: 'Opt out of all notifications (excludes when your markets close)',
+    simple: 'Opt out of all notifications (excludes when your questions close)',
     detailed:
-      'Opt out of all notifications excluding your own market closure notifications',
+      'Opt out of all notifications excluding your own question closure notifications',
   },
   user_liked_your_content: {
     simple: 'A user liked your content',
-    detailed: 'A user liked your comment, market, or other content',
+    detailed: 'A user liked your comment, question, or other content',
   },
   group_role_changed: {
     simple: 'Changes in group roles',
@@ -411,7 +411,7 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
   'resolution_on_contract_with_users_shares_in',
   // referrals
   'you_referred_user',
-  'user_joined_to_bet_on_your_market',
+  'user_joined_to_bet_on_your_question',
   'user_joined_from_your_group_invite',
   'quest_payout',
   'bet_fill',

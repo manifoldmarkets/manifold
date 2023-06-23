@@ -73,7 +73,7 @@ export function groupBetsByCreatedTimeAndUserId(bets: Bet[]) {
   const betsByUserId = groupBy(
     bets,
     // Don't combine limit order creations and bets that actually fill
-    (bet) => `${bet.userId}-${bet.amount === 0 ? 'limit' : 'market'}`
+    (bet) => `${bet.userId}-${bet.amount === 0 ? 'limit' : 'question'}`
   )
   const betsByTime: {
     [key: number]: Bet[]

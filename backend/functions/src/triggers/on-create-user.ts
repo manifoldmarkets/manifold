@@ -7,7 +7,7 @@ import { getPrivateUser, getTrendingContracts } from 'shared/utils'
 import { User } from 'common/user'
 import {
   sendCreatorGuideEmail,
-  sendInterestingMarketsEmail,
+  sendInterestingQuestionsEmail,
   sendPersonalFollowupEmail,
   sendWelcomeEmail,
 } from 'shared/emails'
@@ -40,12 +40,12 @@ export const onCreateUser = functions
     if (day === 0 || (day === 1 && dayjs().utc().hour() <= 19)) return
 
     const contracts = await getTrendingContracts()
-    const marketsSendTime = dayjs().add(24, 'hours').toString()
+    const questionsSendTime = dayjs().add(24, 'hours').toString()
 
-    await sendInterestingMarketsEmail(
+    await sendInterestingQuestionsEmail(
       user,
       privateUser,
       contracts,
-      marketsSendTime
+      questionsSendTime
     )
   })

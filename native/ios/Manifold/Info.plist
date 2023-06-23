@@ -27,13 +27,13 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.markets.manifold</string>
+          <string>com.questions.manifold</string>
         </array>
       </dict>
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>exp+manifold-markets</string>
+          <string>exp+manifold-questions</string>
         </array>
       </dict>
     </array>

@@ -11,7 +11,7 @@ service cloud.firestore {
         'jahooma@gmail.com',
         'taowell@gmail.com',
         'abc.sinclair@gmail.com',
-        'manticmarkets@gmail.com',
+        'manticquestions@gmail.com',
         'iansphilips@gmail.com',
         'd4vidchee@gmail.com',
         'ingawei@gmail.com',
@@ -135,7 +135,7 @@ service cloud.firestore {
       allow read: if userId == request.auth.uid || isAdmin();
     }
 
-    match /private-users/{userId}/seenMarkets/{marketId} {
+    match /private-users/{userId}/seenQuestions/{questionId} {
       allow write: if userId == request.auth.uid;
       allow read: if userId == request.auth.uid
     }

@@ -51,7 +51,7 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
           className="mt-3 flex text-3xl lowercase"
           style={{ fontFamily: 'Major Mono Display' }}
         >
-          Manifold Markets
+          Manifold Questions
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-package com.markets.manifold;
+package com.questions.manifold;
 
 import android.app.Application;
 import android.content.res.Configuration;

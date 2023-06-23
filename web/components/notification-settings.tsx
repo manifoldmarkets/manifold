@@ -25,7 +25,7 @@ import { uniq } from 'lodash'
 import { memo, ReactNode, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
-import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
+import { WatchQuestionModal } from 'web/components/contract/watch-question-modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SwitchSetting } from 'web/components/switch-setting'
@@ -33,7 +33,7 @@ import { SwitchSetting } from 'web/components/switch-setting'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/components/native-message-listener'
-import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
+import { UserWatchedContractsButton } from 'web/components/notifications/watched-questions'
 import { useUser } from 'web/hooks/use-user'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
@@ -48,22 +48,22 @@ export function NotificationSettings(props: {
   const isNative = getIsNative()
 
   const emailsEnabled: Array<notification_preference> = [
-    'all_comments_on_watched_markets',
-    'all_replies_to_my_comments_on_watched_markets',
-    'all_comments_on_contracts_with_shares_in_on_watched_markets',
+    'all_comments_on_watched_questions',
+    'all_replies_to_my_comments_on_watched_questions',
+    'all_comments_on_contracts_with_shares_in_on_watched_questions',
 
-    'all_answers_on_watched_markets',
-    'all_replies_to_my_answers_on_watched_markets',
-    'all_answers_on_contracts_with_shares_in_on_watched_markets',
+    'all_answers_on_watched_questions',
+    'all_replies_to_my_answers_on_watched_questions',
+    'all_answers_on_contracts_with_shares_in_on_watched_questions',
 
     'your_contract_closed',
-    'all_comments_on_my_markets',
-    'all_answers_on_my_markets',
+    'all_comments_on_my_questions',
+    'all_answers_on_my_questions',
 
-    'resolutions_on_watched_markets_with_shares_in',
-    'resolutions_on_watched_markets',
+    'resolutions_on_watched_questions_with_shares_in',
+    'resolutions_on_watched_questions',
 
-    'trending_markets',
+    'trending_questions',
     'onboarding_flow',
     'thank_you_for_purchases',
 
@@ -73,39 +73,39 @@ export function NotificationSettings(props: {
     'unique_bettors_on_your_contract',
     'profit_loss_updates',
     'opt_out_all',
-    'some_comments_on_watched_markets',
+    'some_comments_on_watched_questions',
     // TODO: add these
-    // biggest winner, here are the rest of your markets
+    // biggest winner, here are the rest of your questions
 
     // 'referral_bonuses',
     // 'on_new_follow',
     // maybe the following?
-    // 'probability_updates_on_watched_markets',
+    // 'probability_updates_on_watched_questions',
     // 'limit_order_fills',
   ]
   const browserDisabled: Array<notification_preference> = [
-    'trending_markets',
+    'trending_questions',
     'onboarding_flow',
     'thank_you_for_purchases',
     'contract_from_followed_user',
   ]
 
   const mobilePushEnabled: Array<notification_preference> = [
-    'resolutions_on_watched_markets',
-    'resolutions_on_watched_markets_with_shares_in',
+    'resolutions_on_watched_questions',
+    'resolutions_on_watched_questions_with_shares_in',
     'opt_out_all',
-    'all_replies_to_my_comments_on_watched_markets',
-    'all_replies_to_my_answers_on_watched_markets',
-    'all_comments_on_my_markets',
-    'all_answers_on_my_markets',
+    'all_replies_to_my_comments_on_watched_questions',
+    'all_replies_to_my_answers_on_watched_questions',
+    'all_comments_on_my_questions',
+    'all_answers_on_my_questions',
     'tagged_user',
-    'some_comments_on_watched_markets',
+    'some_comments_on_watched_questions',
     'betting_streaks',
 
     // TODO: add these
     // 'limit_order_fills',
     // 'contract_from_followed_user',
-    // 'probability_updates_on_watched_markets',
+    // 'probability_updates_on_watched_questions',
   ]
 
   type SectionData = {
@@ -116,38 +116,38 @@ export function NotificationSettings(props: {
   const comments: SectionData = {
     label: 'New Comments',
     subscriptionTypes: [
-      'some_comments_on_watched_markets',
+      'some_comments_on_watched_questions',
       // TODO: combine these two
-      'all_replies_to_my_comments_on_watched_markets',
-      'all_replies_to_my_answers_on_watched_markets',
-      'all_comments_on_contracts_with_shares_in_on_watched_markets',
-      'all_comments_on_watched_markets',
+      'all_replies_to_my_comments_on_watched_questions',
+      'all_replies_to_my_answers_on_watched_questions',
+      'all_comments_on_contracts_with_shares_in_on_watched_questions',
+      'all_comments_on_watched_questions',
     ],
   }
 
   const answers: SectionData = {
     label: 'New Answers',
     subscriptionTypes: [
-      'all_answers_on_watched_markets',
-      'all_answers_on_contracts_with_shares_in_on_watched_markets',
+      'all_answers_on_watched_questions',
+      'all_answers_on_contracts_with_shares_in_on_watched_questions',
     ],
   }
   const updates: SectionData = {
     label: 'Updates & Resolutions',
     subscriptionTypes: [
-      'market_updates_on_watched_markets',
-      'market_updates_on_watched_markets_with_shares_in',
-      'resolutions_on_watched_markets',
-      'resolutions_on_watched_markets_with_shares_in',
+      'question_updates_on_watched_questions',
+      'question_updates_on_watched_questions_with_shares_in',
+      'resolutions_on_watched_questions',
+      'resolutions_on_watched_questions_with_shares_in',
     ],
   }
-  const yourMarkets: SectionData = {
-    label: 'Markets You Created',
+  const yourQuestions: SectionData = {
+    label: 'Questions You Created',
     subscriptionTypes: [
       // 'your_contract_closed',
-      'all_comments_on_my_markets',
-      'all_answers_on_my_markets',
-      'subsidized_your_market',
+      'all_comments_on_my_questions',
+      'all_answers_on_my_questions',
+      'subsidized_your_question',
     ],
   }
   const bonuses: SectionData = {
@@ -187,7 +187,7 @@ export function NotificationSettings(props: {
   const generalOther: SectionData = {
     label: 'Other',
     subscriptionTypes: [
-      'trending_markets',
+      'trending_questions',
       'thank_you_for_purchases',
       'onboarding_flow',
       'profit_loss_updates',
@@ -426,7 +426,7 @@ export function NotificationSettings(props: {
           {user ? (
             <UserWatchedContractsButton user={user} />
           ) : (
-            <span>Watched Markets</span>
+            <span>Watched Questions</span>
           )}
           <InformationCircleIcon
             className="text-ink-500 -mb-1 h-5 w-5 cursor-pointer"
@@ -442,7 +442,10 @@ export function NotificationSettings(props: {
           icon={<LightBulbIcon className={'h-6 w-6'} />}
           data={answers}
         />
-        <Section icon={<UserIcon className={'h-6 w-6'} />} data={yourMarkets} />
+        <Section
+          icon={<UserIcon className={'h-6 w-6'} />}
+          data={yourQuestions}
+        />
         <Row className={'text-ink-700 gap-2 text-xl'}>
           <span>Balance Changes</span>
         </Row>
@@ -471,7 +474,7 @@ export function NotificationSettings(props: {
           icon={<ExclamationIcon className={'h-6 w-6'} />}
           data={optOut}
         />
-        <WatchMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
+        <WatchQuestionModal open={showWatchModal} setOpen={setShowWatchModal} />
       </Col>
     </div>
   )

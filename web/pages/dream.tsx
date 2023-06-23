@@ -18,7 +18,7 @@ const PLACEHOLDERS = [
       'https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/dream%2FUJipi9pNnm.png?alt=media&token=2713eb8b-60b3-4d15-99c0-3aa32cc07988',
   },
   {
-    placeholderPrompt: 'Prediction markets taking over the world',
+    placeholderPrompt: 'Prediction questions taking over the world',
     placeholderUrl:
       'https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/dream%2FVu-39YtvNU.png?alt=media&token=ed6e3891-2fee-42bc-94ad-fb5bb666b2f1',
   },

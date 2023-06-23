@@ -2,7 +2,10 @@ import { Contract } from 'common/contract'
 import * as admin from 'firebase-admin'
 import { initAdmin } from 'shared/init-admin'
 initAdmin()
-import { getDataAndPayoutInfo, payUsersTransactions } from 'api/resolve-market'
+import {
+  getDataAndPayoutInfo,
+  payUsersTransactions,
+} from 'api/resolve-question'
 const firestore = admin.firestore()
 
 const CONTRACT_ID = 'tWQ6DLrSaFQ8ifC1GIOj'

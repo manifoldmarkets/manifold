@@ -16,13 +16,13 @@ export const UkraineWarData = () => {
     'Zn6S6CWvmLJmOGSkFNEh',
   ]
   const contracts = useContracts(contractIds)
-  const newMarketsId = [
+  const newQuestionsId = [
     '	0z22nhXeCipEuXho6qa8',
     'T2pUroz3OwKXmOQ4UOUK',
     'g13teSHUN3VDickGKp9G',
     'XeT9d6hwd1AeeXatOsXS',
   ]
-  const newMarkets = useContracts(newMarketsId)
+  const newQuestions = useContracts(newQuestionsId)
   return (
     <Col>
       <NewsGrid>
@@ -38,11 +38,11 @@ export const UkraineWarData = () => {
         />
 
         <NewsTopicsContentContainer
-          header="New Markets"
+          header="New Questions"
           containerContent={
             <>
               {contracts &&
-                newMarkets.map((contract) => (
+                newQuestions.map((contract) => (
                   <SimpleContractRow key={contract.id} contract={contract} />
                 ))}
             </>
@@ -213,13 +213,13 @@ export const UsElectionsData = () => {
     'ixDhLuu8EJmC4OQQwRyq',
   ]
   const contracts = useContracts(contractIds)
-  const newMarketsId = [
+  const newQuestionsId = [
     'HXN7yKJLxZyOxKhjB75s',
     'tUwInVx79MKObXLzsrjC',
     '4MLChi9mLtUA4ecz5tB0',
     'vaPsnIxe8FdWJud7DzDq',
   ]
-  const newMarkets = useContracts(newMarketsId)
+  const newQuestions = useContracts(newQuestionsId)
   return (
     <Col>
       <NewsGrid>
@@ -232,11 +232,11 @@ export const UsElectionsData = () => {
           author="Independent"
         />
         <NewsTopicsContentContainer
-          header="New Markets"
+          header="New Questions"
           containerContent={
             <>
               {contracts &&
-                newMarkets.map((contract) => (
+                newQuestions.map((contract) => (
                   <>
                     <SimpleContractRow key={contract.id} contract={contract} />
                   </>

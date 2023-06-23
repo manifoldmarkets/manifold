@@ -52,7 +52,7 @@ export default function NewsPage() {
     <Page>
       <SEO
         title="News"
-        description="Breaking news meets the wisdom of the market"
+        description="Breaking news meets the wisdom of the question"
       />
       <Col className="mx-auto w-full gap-6 pb-8 sm:px-2 lg:pr-4">
         <Row className="mx-4 mt-2 items-center justify-between gap-4">

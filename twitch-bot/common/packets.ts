@@ -1,5 +1,5 @@
 import { ResolutionOutcome } from './outcome';
-import { AbstractMarket, NamedBet } from './types/manifold-abstract-types';
+import { AbstractQuestion, NamedBet } from './types/manifold-abstract-types';
 import { Contract, Group } from './types/manifold-internal-types';
 
 export class Packet {}
@@ -34,7 +34,7 @@ export class PacketClear extends Packet {
   }
 }
 
-export class PacketCreateMarket extends Packet {
+export class PacketCreateQuestion extends Packet {
   question: string;
   groupId: string;
   static getName() {
@@ -42,11 +42,11 @@ export class PacketCreateMarket extends Packet {
   }
 }
 
-export class PacketMarketCreated extends Packet {
+export class PacketQuestionCreated extends Packet {
   id?: string;
   failReason?: string;
   static getName() {
-    return 'marketcreated';
+    return 'questioncreated';
   }
 }
 
@@ -67,24 +67,24 @@ export class PacketHandshakeComplete extends Packet {
   }
 }
 
-export class PacketSelectMarket extends Packet {
-  market: AbstractMarket;
+export class PacketSelectQuestion extends Packet {
+  question: AbstractQuestion;
   initialBets: NamedBet[];
   static getName() {
-    return 'selectmarket';
+    return 'selectquestion';
   }
 }
 
-export class PacketSelectMarketID extends Packet {
+export class PacketSelectQuestionID extends Packet {
   id: string;
   static getName() {
-    return 'selectmarketid';
+    return 'selectquestionid';
   }
 }
 
 export class PacketUnfeature extends Packet {
   static getName() {
-    return 'unfeaturemarket';
+    return 'unfeaturequestion';
   }
 }
 

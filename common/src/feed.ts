@@ -74,16 +74,16 @@ export const FeedExplanationDictionary: Record<
     follow_user: 'New question by a creator you follow',
   },
   contract_probability_changed: {
-    follow_contract: 'Market movement on question you follow',
-    liked_contract: 'Market movement on question you liked',
-    viewed_contract: 'Market movement on question you viewed',
+    follow_contract: 'Question movement on question you follow',
+    liked_contract: 'Question movement on question you liked',
+    viewed_contract: 'Question movement on question you viewed',
     contract_in_group_you_are_in:
-      'Market movement on question in a group you are in',
+      'Question movement on question in a group you are in',
     similar_interest_vector_to_user:
-      'Market movement on question by a creator you may be interested in',
+      'Question movement on question by a creator you may be interested in',
     similar_interest_vector_to_contract:
-      'Market movement on question you may be interested in',
-    follow_user: 'Market movement on question by a creator you follow',
+      'Question movement on question you may be interested in',
+    follow_user: 'Question movement on question by a creator you follow',
   },
   popular_comment: {
     follow_contract: 'Popular comment on question you follow',

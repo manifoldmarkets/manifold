@@ -52,8 +52,8 @@ export const FeedTimelineItems = (props: {
 
   const boostedContractItems =
     boosts?.map((boost) => {
-      const { market_data, ...rest } = boost
-      return { contract: { ...market_data }, ...rest }
+      const { question_data, ...rest } = boost
+      return { contract: { ...question_data }, ...rest }
     }) ?? []
 
   const contractIdsWithoutComments = filterDefined(
@@ -138,7 +138,9 @@ export const FeedTimelineItems = (props: {
               />
               {item.contracts && (
                 <Col className="px-4 pt-2 pb-3">
-                  <span className="text-ink-500 text-sm">Related Markets</span>
+                  <span className="text-ink-500 text-sm">
+                    Related Questions
+                  </span>
                   <ContractsTable
                     contracts={item.contracts}
                     hideHeader={true}

@@ -2,14 +2,14 @@ import { Socket } from 'socket.io';
 
 import { getOutcomeForString } from '@common/outcome';
 import {
-  PacketCreateMarket,
+  PacketCreateQuestion,
   PacketGroupControlFields,
   PacketHandshakeComplete,
-  PacketMarketCreated,
+  PacketQuestionCreated,
   PacketPing,
   PacketPong,
   PacketRequestResolve,
-  PacketSelectMarketID,
+  PacketSelectQuestionID,
   PacketUnfeature,
 } from '@common/packets';
 import SocketWrapper from '@common/socket-wrapper';
@@ -50,8 +50,8 @@ export default class DockClient {
       isAdmin: this.connectedUser.data.admin || false,
     };
     sw.emit(PacketHandshakeComplete, handshakePacket);
-    if (this.stream.featuredMarket) {
-      sw.emit(PacketSelectMarketID, { id: this.stream.featuredMarket.data.id });
+    if (this.stream.featuredQuestion) {
+      sw.emit(PacketSelectQuestionID, { id: this.stream.featuredQuestion.data.id });
     } else {
       sw.emit(PacketUnfeature);
     }
@@ -62,10 +62,10 @@ export default class DockClient {
     const streamName = this.stream.name;
     const sw = this.sw;
 
-    this.sw.on(PacketSelectMarketID, async (p) => {
-      log.debug(`Select market ID '${p.id}' requested for channel '${streamName}' by dock`);
+    this.sw.on(PacketSelectQuestionID, async (p) => {
+      log.debug(`Select question ID '${p.id}' requested for channel '${streamName}' by dock`);
       try {
-        await this.stream.selectMarket(p.id, this);
+        await this.stream.selectQuestion(p.id, this);
       } catch (e) {
         this.sw.emit(PacketUnfeature);
         log.trace(e);
@@ -73,18 +73,18 @@ export default class DockClient {
     });
 
     sw.on(PacketUnfeature, async () => {
-      log.debug(`Market unfeatured for channel '${streamName}'`);
-      await this.stream.selectMarket(null, this);
+      log.debug(`Question unfeatured for channel '${streamName}'`);
+      await this.stream.selectQuestion(null, this);
     });
 
     sw.on(PacketRequestResolve, async (p) => {
-      const currentMarket = this.stream.featuredMarket;
-      if (!currentMarket) {
-        log.error(`Received resolve request when no market was active for stream '${streamName}'`);
+      const currentQuestion = this.stream.featuredQuestion;
+      if (!currentQuestion) {
+        log.error(`Received resolve request when no question was active for stream '${streamName}'`);
         return;
       }
 
-      log.debug(`Dock requested market '${currentMarket.data.id}' resolve ${p.outcomeString}`);
+      log.debug(`Dock requested question '${currentQuestion.data.id}' resolve ${p.outcomeString}`);
 
       const outcome = getOutcomeForString(p.outcomeString);
       if (!outcome) {
@@ -93,19 +93,19 @@ export default class DockClient {
       }
 
       try {
-        await ManifoldAPI.resolveBinaryMarket(currentMarket.data.id, this.connectedUser.data.APIKey, outcome);
+        await ManifoldAPI.resolveBinaryQuestion(currentQuestion.data.id, this.connectedUser.data.APIKey, outcome);
       } catch (e) {
         log.trace(e);
       }
     });
 
-    sw.on(PacketCreateMarket, async (packet: PacketCreateMarket) => {
+    sw.on(PacketCreateQuestion, async (packet: PacketCreateQuestion) => {
       try {
-        const newMarket = await ManifoldAPI.createBinaryMarket(this.connectedUser.data.APIKey, packet.question, undefined, 50, { groupID: packet.groupId, visibility: 'unlisted' });
-        sw.emit(PacketMarketCreated, { id: newMarket.id });
-        log.debug('Created new market via dock: ' + packet.question);
+        const newQuestion = await ManifoldAPI.createBinaryQuestion(this.connectedUser.data.APIKey, packet.question, undefined, 50, { groupID: packet.groupId, visibility: 'unlisted' });
+        sw.emit(PacketQuestionCreated, { id: newQuestion.id });
+        log.debug('Created new question via dock: ' + packet.question);
       } catch (e) {
-        sw.emit(PacketMarketCreated, { failReason: e.message });
+        sw.emit(PacketQuestionCreated, { failReason: e.message });
       }
     });
 

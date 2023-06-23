@@ -26,9 +26,9 @@ type AnyTxnType =
   | QfDividend
   | PostAdCreate
   | PostAdRedeem
-  | MarketAdCreate
-  | MarketAdRedeem
-  | MarketAdRedeemFee
+  | QuestionAdCreate
+  | QuestionAdRedeem
+  | QuestionAdRedeemFee
   | QuestReward
   | QAndACreate
   | QAndAAward
@@ -47,7 +47,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
   toType: SourceType
 
   amount: number
-  token: 'M$' | 'SHARE' // | 'USD' | MarketOutcome
+  token: 'M$' | 'SHARE' // | 'USD' | QuestionOutcome
 
   category: AnyTxnType['category']
 
@@ -240,19 +240,19 @@ type PostAdRedeem = {
   toType: 'USER'
 }
 
-type MarketAdCreate = {
+type QuestionAdCreate = {
   category: 'MARKET_BOOST_CREATE'
   fromType: 'USER'
   toType: 'AD'
 }
 
-type MarketAdRedeem = {
+type QuestionAdRedeem = {
   category: 'MARKET_BOOST_REDEEM'
   fromType: 'AD'
   toType: 'USER'
 }
 
-type MarketAdRedeemFee = {
+type QuestionAdRedeemFee = {
   category: 'MARKET_BOOST_REDEEM_FEE'
   fromType: 'AD'
   toType: 'BANK'
@@ -316,9 +316,9 @@ export type QfAddPoolTxn = QfTxn & QfAddPool
 export type QfDividendTxn = QfTxn & QfDividend
 export type PostAdCreateTxn = Txn & PostAdCreate
 export type PostAdRedeemTxn = Txn & PostAdRedeem
-export type MarketAdCreateTxn = Txn & MarketAdCreate
-export type MarketAdRedeemTxn = Txn & MarketAdRedeem
-export type MarketAdRedeemFeeTxn = Txn & MarketAdRedeemFee
+export type QuestionAdCreateTxn = Txn & QuestionAdCreate
+export type QuestionAdRedeemTxn = Txn & QuestionAdRedeem
+export type QuestionAdRedeemFeeTxn = Txn & QuestionAdRedeemFee
 export type QuestRewardTxn = Txn & QuestReward
 export type LootBoxPuchaseTxn = Txn & LootBoxPurchase
 export type QAndACreateTxn = Txn & QAndACreate

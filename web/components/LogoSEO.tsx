@@ -11,7 +11,7 @@ export function LogoSEO() {
       "@type": "Corporation",
       "url": "https://manifold.markets",
       "logo": "https://manifold.markets/logo.svg",
-      "description": "Create your own prediction market. Unfold the future."
+      "description": "Create your own prediction question. Unfold the future."
     }`,
         }}
       />

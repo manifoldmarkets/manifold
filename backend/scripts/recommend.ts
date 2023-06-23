@@ -1,4 +1,4 @@
-import { getMarketRecommendations, user_data } from 'common/recommendation'
+import { getQuestionRecommendations, user_data } from 'common/recommendation'
 import { sortBy } from 'lodash'
 import { readJson, writeJson } from 'shared/helpers/file'
 import { getContract } from 'shared/utils'
@@ -34,7 +34,7 @@ const recommend = async () => {
   }
 
   console.log('Computing recommendations...')
-  const { getUserContractScores } = getMarketRecommendations(
+  const { getUserContractScores } = getQuestionRecommendations(
     contracts,
     userData
   )

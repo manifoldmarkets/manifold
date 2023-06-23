@@ -401,28 +401,28 @@ export interface Database {
         }
         Relationships: []
       }
-      discord_messages_markets: {
+      discord_messages_questions: {
         Row: {
           channel_id: string
           last_updated_thread_time: number | null
-          market_id: string
-          market_slug: string
+          question_id: string
+          question_slug: string
           message_id: string
           thread_id: string | null
         }
         Insert: {
           channel_id: string
           last_updated_thread_time?: number | null
-          market_id: string
-          market_slug: string
+          question_id: string
+          question_slug: string
           message_id: string
           thread_id?: string | null
         }
         Update: {
           channel_id?: string
           last_updated_thread_time?: number | null
-          market_id?: string
-          market_slug?: string
+          question_id?: string
+          question_slug?: string
           message_id?: string
           thread_id?: string | null
         }
@@ -669,14 +669,14 @@ export interface Database {
         }
         Relationships: []
       }
-      market_ads: {
+      question_ads: {
         Row: {
           cost_per_view: number
           created_at: string
           embedding: string
           funds: number
           id: string
-          market_id: string
+          question_id: string
           user_id: string
         }
         Insert: {
@@ -685,7 +685,7 @@ export interface Database {
           embedding: string
           funds: number
           id?: string
-          market_id: string
+          question_id: string
           user_id: string
         }
         Update: {
@@ -694,49 +694,49 @@ export interface Database {
           embedding?: string
           funds?: number
           id?: string
-          market_id?: string
+          question_id?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: 'question_ads_question_id_fkey'
+            columns: ['question_id']
             referencedRelation: 'contracts'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: 'question_ads_question_id_fkey'
+            columns: ['question_id']
             referencedRelation: 'contracts_rbac'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: 'question_ads_question_id_fkey'
+            columns: ['question_id']
             referencedRelation: 'contracts_view'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: 'question_ads_question_id_fkey'
+            columns: ['question_id']
             referencedRelation: 'listed_open_contracts'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: 'question_ads_question_id_fkey'
+            columns: ['question_id']
             referencedRelation: 'public_contracts'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: 'question_ads_question_id_fkey'
+            columns: ['question_id']
             referencedRelation: 'public_open_contracts'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: 'question_ads_question_id_fkey'
+            columns: ['question_id']
             referencedRelation: 'trending_contracts'
             referencedColumns: ['id']
           }
@@ -1312,7 +1312,7 @@ export interface Database {
         }
         Relationships: []
       }
-      user_seen_markets: {
+      user_seen_questions: {
         Row: {
           contract_id: string
           created_time: string
@@ -2466,16 +2466,16 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: number
       }
-      get_top_market_ads: {
+      get_top_question_ads: {
         Args: {
           uid: string
         }
         Returns: {
           ad_id: string
-          market_id: string
+          question_id: string
           ad_funds: number
           ad_cost_per_view: number
-          market_data: Json
+          question_data: Json
         }[]
       }
       get_unseen_reply_chain_comments_matching_contracts: {

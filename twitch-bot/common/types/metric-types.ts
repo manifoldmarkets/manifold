@@ -1,5 +1,5 @@
 export type MetricDay = {
-  uniqueUserFeatures: number; // Users that have featured a market today
+  uniqueUserFeatures: number; // Users that have featured a question today
   featuredQuestions: number; // Total number of features questions today
   newBots: number; // Number of users that have added the bot to their channel for the first time
   twitchLinks: number; // Number of users that have linked their Manifold account to Twitch

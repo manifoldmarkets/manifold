@@ -829,9 +829,9 @@ export const data = [
     link: 'https://forum.effectivealtruism.org/posts/RYBFyDWAYZL4YCkW2/should-young-eas-really-focus-on-career-capital',
   },
   {
-    title: 'Prediction Markets are Somewhat Overrated Within EA',
+    title: 'Prediction Questions are Somewhat Overrated Within EA',
     author: 'Francis',
-    link: 'https://forum.effectivealtruism.org/posts/4LsrNczpF6mfrHP4M/prediction-markets-are-somewhat-overrated-within-ea',
+    link: 'https://forum.effectivealtruism.org/posts/4LsrNczpF6mfrHP4M/prediction-questions-are-somewhat-overrated-within-ea',
   },
   {
     title: 'Capitalism, power and epistemology: a critique of EA',

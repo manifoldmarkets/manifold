@@ -138,7 +138,7 @@ export default function LootBoxPage() {
     <Page>
       <SEO
         title="Loot Box"
-        description={`Feeling lucky? A loot box gives you random shares in markets worth
+        description={`Feeling lucky? A loot box gives you random shares in questions worth
             up to ${formatMoney(LOOTBOX_MAX)}!`}
       />
       <Col className=" items-center">
@@ -146,7 +146,7 @@ export default function LootBoxPage() {
           <Title>Loot Box</Title>
           <LootboxAnimation ref={animationRef} paused={animationPaused} />
           <div className={'mb-4'}>
-            Feeling lucky? A loot box gives you random shares in markets worth
+            Feeling lucky? A loot box gives you random shares in questions worth
             up to {formatMoney(LOOTBOX_MAX)}!
           </div>
 
@@ -210,13 +210,13 @@ function LootModal(props: {
                   )}
                 >
                   <tr>
-                    <th className="px-4" key={'market'}>
-                      Market
+                    <th className="px-4" key={'question'}>
+                      Question
                     </th>
-                    <th className="pr-4" key={'market'}>
+                    <th className="pr-4" key={'question'}>
                       Shares
                     </th>
-                    <th className="px-4" key={'market'}>
+                    <th className="px-4" key={'question'}>
                       Value
                     </th>
                   </tr>

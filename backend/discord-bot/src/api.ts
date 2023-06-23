@@ -1,4 +1,4 @@
-import { FullMarket } from 'common/api-market-types'
+import { FullQuestion } from 'common/api-question-types'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { config } from 'discord-bot/constants/config'
 import { User } from 'discord.js'
@@ -9,54 +9,56 @@ export type Api = {
   manifoldUserId: string
 }
 
-export const getMarketFromSlug = async (slug: string) => {
+export const getQuestionFromSlug = async (slug: string) => {
   const resp = await fetch(`${config.domain}api/v0/slug/${slug}`)
   if (!resp.ok) {
-    throw new Error('Market not found with slug: ' + slug)
+    throw new Error('Question not found with slug: ' + slug)
   }
-  return (await resp.json()) as FullMarket
+  return (await resp.json()) as FullQuestion
 }
-export const getMarketFromId = async (id: string) => {
-  const resp = await fetch(`${config.domain}api/v0/market/${id}`).catch((e) => {
-    console.error('Error on getMarketFromId', e)
-    throw e
-  })
+export const getQuestionFromId = async (id: string) => {
+  const resp = await fetch(`${config.domain}api/v0/question/${id}`).catch(
+    (e) => {
+      console.error('Error on getQuestionFromId', e)
+      throw e
+    }
+  )
   if (!resp.ok) {
-    throw new Error('Market not found with id: ' + id)
+    throw new Error('Question not found with id: ' + id)
   }
-  return (await resp.json()) as FullMarket
+  return (await resp.json()) as FullQuestion
 }
-export const getOpenBinaryMarketFromSlug = async (slug: string) => {
-  const market = await getMarketFromSlug(slug)
+export const getOpenBinaryQuestionFromSlug = async (slug: string) => {
+  const question = await getQuestionFromSlug(slug)
 
-  if (market.isResolved || (market.closeTime ?? 0) < Date.now()) {
-    const status = market.isResolved ? 'resolved' : 'closed'
-    throw new Error(`Market is ${status}, no longer accepting bets`)
+  if (question.isResolved || (question.closeTime ?? 0) < Date.now()) {
+    const status = question.isResolved ? 'resolved' : 'closed'
+    throw new Error(`Question is ${status}, no longer accepting bets`)
   }
-  if (market.outcomeType !== 'BINARY') {
-    throw new Error('Only Yes/No markets are supported')
+  if (question.outcomeType !== 'BINARY') {
+    throw new Error('Only Yes/No questions are supported')
   }
-  return market
+  return question
 }
 export const getTopAndBottomPositions = async (
   slug: string,
   orderBy: 'profit' | 'shares'
 ) => {
-  const market = await getMarketFromSlug(slug)
+  const question = await getQuestionFromSlug(slug)
   const NUM_POSITIONS = 5
   const resp = await fetch(
-    `${config.domain}api/v0/market/${market.id}/positions?top=${NUM_POSITIONS}&bottom=${NUM_POSITIONS}&order=${orderBy}`
+    `${config.domain}api/v0/question/${question.id}/positions?top=${NUM_POSITIONS}&bottom=${NUM_POSITIONS}&order=${orderBy}`
   )
   if (!resp.ok) {
     throw new Error('Positions not found with slug: ' + slug)
   }
   const contractMetrics = (await resp.json()) as ContractMetrics[]
-  return { market, contractMetrics }
+  return { question, contractMetrics }
 }
 
 export const placeBet = async (
   api: Api,
-  marketId: string,
+  questionId: string,
   amount: number,
   outcome: 'YES' | 'NO'
 ) => {
@@ -68,28 +70,28 @@ export const placeBet = async (
     },
     body: JSON.stringify({
       amount,
-      contractId: marketId,
+      contractId: questionId,
       outcome,
     }),
   })
 }
 
-export const getMyPositionInMarket = async (api: Api, marketId: string) => {
+export const getMyPositionInQuestion = async (api: Api, questionId: string) => {
   const resp = await fetch(
-    `${config.domain}api/v0/market/${marketId}/positions?userId=${api.manifoldUserId}`
+    `${config.domain}api/v0/question/${questionId}/positions?userId=${api.manifoldUserId}`
   )
   if (!resp.ok) {
-    throw new Error('Position not found with market id: ' + marketId)
+    throw new Error('Position not found with question id: ' + questionId)
   }
   return (await resp.json()) as ContractMetrics[]
 }
 
-export const createMarket = async (
+export const createQuestion = async (
   api: Api,
   question: string,
   description: string
 ) => {
-  return await fetch(`${config.domain}api/v0/market`, {
+  return await fetch(`${config.domain}api/v0/question`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

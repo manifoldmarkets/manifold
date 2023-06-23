@@ -19,11 +19,11 @@ import { cancelbet } from './cancel-bet'
 import { sellbet } from './sell-bet'
 import { sellshares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
-import { createmarket } from './create-market'
+import { createquestion } from './create-question'
 import { createcomment } from './create-comment'
 import { creategroup } from './create-group'
-import { resolvemarket } from './resolve-market'
-import { closemarket } from './close-market'
+import { resolvequestion } from './resolve-question'
+import { closequestion } from './close-question'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe-endpoints'
 import { getcurrentuser } from './get-current-user'
@@ -47,11 +47,11 @@ import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
 import { auctionbid } from './auction-bid'
 import { supabasesearchcontracts } from './supabase-search-contract'
-import { deleteMarket } from './delete-market'
+import { deleteQuestion } from './delete-question'
 import { saveTopic } from './save-topic'
 import { getcontractparams } from './get-contract-params'
-import { boostmarket } from './create-market-ad'
-import { redeemboost } from './redeem-market-ad-reward'
+import { boostquestion } from './create-question-ad'
+import { redeemboost } from './redeem-question-ad-reward'
 import { creategroupinvite } from './create-group-invite'
 import { joingroupthroughinvite } from './join-group-through-invite'
 import { joingroup } from './join-group'
@@ -121,11 +121,11 @@ app.post('/sellbet', ...apiRoute(sellbet))
 app.post('/sellshares', ...apiRoute(sellshares))
 app.post('/addsubsidy', ...apiRoute(addsubsidy))
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
-app.post('/createmarket', ...apiRoute(createmarket))
+app.post('/createquestion', ...apiRoute(createquestion))
 app.post('/creategroup', ...apiRoute(creategroup))
 app.post('/updategroup', ...apiRoute(updategroup))
-app.post('/resolvemarket', ...apiRoute(resolvemarket))
-app.post('/closemarket', ...apiRoute(closemarket))
+app.post('/resolvequestion', ...apiRoute(resolvequestion))
+app.post('/closequestion', ...apiRoute(closequestion))
 app.post('/savetwitchcredentials', ...apiRoute(savetwitchcredentials))
 app.post('/createpost', ...apiRoute(createpost))
 app.post('/updatepost', ...apiRoute(updatepost))
@@ -147,9 +147,9 @@ app.post(
 )
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
 app.post('/supabasesearchcontracts', ...apiRoute(supabasesearchcontracts))
-app.post('/delete-market', ...apiRoute(deleteMarket))
+app.post('/delete-question', ...apiRoute(deleteQuestion))
 app.post('/save-topic', ...apiRoute(saveTopic))
-app.post('/boost-market', ...apiRoute(boostmarket))
+app.post('/boost-question', ...apiRoute(boostquestion))
 app.post('/redeem-boost', ...apiRoute(redeemboost))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)

@@ -9,9 +9,9 @@ import {
 } from 'discord.js'
 
 const discordIdsToApis: { [k: string]: Api } = {}
-type DiscordMessageMarketInfo = {
-  market_id: string
-  market_slug: string
+type DiscordMessageQuestionInfo = {
+  question_id: string
+  question_slug: string
   message_id: string
   thread_id?: string
   channel_id?: string
@@ -68,27 +68,27 @@ export const getApiKeyFromDiscordId = async (discordUser: User) => {
   } as Api
 }
 
-export const getMarketInfoFromMessageId = async (messageId: string) => {
+export const getQuestionInfoFromMessageId = async (messageId: string) => {
   const { data, error } = await supabase
-    .from('discord_messages_markets')
+    .from('discord_messages_questions')
     .select('*')
     .eq('message_id', messageId)
-  return error ? null : (data[0] as DiscordMessageMarketInfo) ?? null
+  return error ? null : (data[0] as DiscordMessageQuestionInfo) ?? null
 }
 
-export const saveMarketToMessageId = async (
+export const saveQuestionToMessageId = async (
   messageId: string,
-  marketId: string,
-  marketSlug: string,
+  questionId: string,
+  questionSlug: string,
   channelId: string
 ) => {
-  const { error } = await supabase.from('discord_messages_markets').insert({
+  const { error } = await supabase.from('discord_messages_questions').insert({
     message_id: messageId,
-    market_id: marketId,
-    market_slug: marketSlug,
+    question_id: questionId,
+    question_slug: questionSlug,
     channel_id: channelId,
   })
-  if (error) console.error('write market to message error', error)
+  if (error) console.error('write question to message error', error)
   return error
 }
 export const saveThreadIdToMessageId = async (
@@ -97,7 +97,7 @@ export const saveThreadIdToMessageId = async (
 ) => {
   console.log('writing thread id', threadId, 'to message id', messageId)
   const { error } = await supabase
-    .from('discord_messages_markets')
+    .from('discord_messages_questions')
     .update({
       message_id: messageId,
       thread_id: threadId,
@@ -109,7 +109,7 @@ export const saveThreadIdToMessageId = async (
 }
 export const updateThreadLastUpdatedTime = async (messageId: string) => {
   const { error } = await supabase
-    .from('discord_messages_markets')
+    .from('discord_messages_questions')
     .update({
       message_id: messageId,
       last_updated_thread_time: Date.now(),

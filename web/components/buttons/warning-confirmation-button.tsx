@@ -9,7 +9,7 @@ import { Button, ColorType, SizeType } from './button'
 
 export function WarningConfirmationButton(props: {
   amount: number | undefined
-  marketType: 'freeResponse' | 'binary'
+  questionType: 'freeResponse' | 'binary'
   warning?: string
   onSubmit?: () => void
   disabled: boolean

@@ -43,19 +43,23 @@ export default function AboutPage() {
 
   return (
     <Page>
-      <SEO title="About" description="About Manifold Markets" url="/sitemap" />
+      <SEO
+        title="About"
+        description="About Manifold Questions"
+        url="/sitemap"
+      />
 
       <Col className="p-4">
         <Title>About</Title>
 
         <div className="mb-4 text-lg">
-          Manifold Markets is a play-money prediction market platform where you
-          can bet on anything.
+          Manifold Questions is a play-money prediction question platform where
+          you can bet on anything.
         </div>
 
         <LabCard
-          title="📈 What is a prediction market?"
-          href="https://docs.manifold.markets/faq#what-is-a-prediction-market"
+          title="📈 What is a prediction question?"
+          href="https://docs.manifold.markets/faq#what-is-a-prediction-question"
         />
         <LabCard
           title="💰 What is mana (Ṁ)?"
@@ -89,11 +93,11 @@ export default function AboutPage() {
           <LabCard
             title="📰 Newsletter"
             href="https://news.manifold.markets/"
-            description="Get updates on new features and markets"
+            description="Get updates on new features and questions"
           />
           <LabCard
             title="🪺 Twitter"
-            href="https://twitter.com/ManifoldMarkets"
+            href="https://twitter.com/ManifoldQuestions"
             description="Follow us for updates and memes"
           />
           <LabCard
@@ -149,12 +153,12 @@ export default function AboutPage() {
           <LabCard
             title="📜 Community guidelines"
             description="General expectations and account rules"
-            href="https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400"
+            href="https://manifoldquestions.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400"
           />
           <LabCard
             title="😎 Awesome Manifold"
             description="Community-created projects built on Manifold"
-            href="https://manifoldmarkets.notion.site/Awesome-Manifold-4b93a64528674290989ef8a9f696b460"
+            href="https://manifoldquestions.notion.site/Awesome-Manifold-4b93a64528674290989ef8a9f696b460"
           />
         </LabSection>
 
@@ -163,13 +167,13 @@ export default function AboutPage() {
           {user && (
             <LabCard
               title="🎁 Loot Box"
-              description="Invest in random markets"
+              description="Invest in random questions"
               href="/lootbox"
             />
           )}
           <LabCard
             title="📰 News"
-            description="Breaking news + markets"
+            description="Breaking news + questions"
             href="/news"
           />
           <LabCard
@@ -189,7 +193,7 @@ export default function AboutPage() {
           />
           <LabCard
             title="⚡️ Live feed"
-            description="Latest market activity"
+            description="Latest question activity"
             href="/live"
           />
         </LabSection>
@@ -204,26 +208,26 @@ export default function AboutPage() {
           <LabCard
             title="😻 Github"
             description="We're open source!"
-            href="https://github.com/manifoldmarkets/manifold"
+            href="https://github.com/manifoldquestions/manifold"
           />
           <LabCard
             title="🎁 Bounties"
             description="Earn mana for contributing"
-            href="https://manifoldmarkets.notion.site/Manifold-Bounties-5cd9c4045422461dbe84b4339f93e98f"
+            href="https://manifoldquestions.notion.site/Manifold-Bounties-5cd9c4045422461dbe84b4339f93e98f"
           />
           <LabCard
             title="🔁 Maniswap"
             description="Learn about our AMM"
-            href="https://manifoldmarkets.notion.site/Maniswap-ce406e1e897d417cbd491071ea8a0c39"
+            href="https://manifoldquestions.notion.site/Maniswap-ce406e1e897d417cbd491071ea8a0c39"
           />
           <LabCard
             title="💬 Discord bot"
-            description="Create, trade, & share markets from Discord"
+            description="Create, trade, & share questions from Discord"
             href="/discord-bot"
           />
           <LabCard
             title="🎮 Twitch bot"
-            description="Embed markets in your stream"
+            description="Embed questions in your stream"
             href="/twitch"
           />
           <LabCard
@@ -252,11 +256,11 @@ export default function AboutPage() {
           <LabCard
             title="⚔️ Versus"
             description="Create mana-battles between two ideas"
-            href="/VersusBot?tab=markets"
+            href="/VersusBot?tab=questions"
           />
           <LabCard
             title="🎴 Manifold: The Gambling"
-            description="Match each market to its creator"
+            description="Match each question to its creator"
             href="/cards"
           />
           <LabCard
@@ -281,7 +285,7 @@ export default function AboutPage() {
           />
           <LabCard
             title="👀 Classified Ads"
-            description="An old version of market boosts that let you advertise anything. View ads for mana!"
+            description="An old version of question boosts that let you advertise anything. View ads for mana!"
             href="/ad"
           />
           <LabCard title="🐮 Moolinda" description="???" href="/cowp" />

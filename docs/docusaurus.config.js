@@ -9,13 +9,13 @@ const katex = require('rehype-katex')
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Manifold Docs',
-  tagline: 'Learn more about the BESTEST prediction market platform~',
+  tagline: 'Learn more about the BESTEST prediction question platform~',
   url: 'https://docs.manifold.markets',
   baseUrl: '/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'https://manifold.markets/favicon.ico',
-  organizationName: 'manifoldmarkets', // Usually your GitHub org/user name.
+  organizationName: 'manifoldquestions', // Usually your GitHub org/user name.
   projectName: 'docs', // Usually your repo name.
 
   presets: [
@@ -26,7 +26,8 @@ const config = {
         docs: {
           routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/manifoldmarkets/manifold/tree/main/docs',
+          editUrl:
+            'https://github.com/manifoldquestions/manifold/tree/main/docs',
           remarkPlugins: [math],
           rehypePlugins: [katex],
         },
@@ -60,7 +61,7 @@ const config = {
       navbar: {
         title: 'Manifold Docs',
         logo: {
-          alt: 'Manifold Markets Logo',
+          alt: 'Manifold Questions Logo',
           src: 'https://manifold.markets/logo.svg',
         },
         items: [
@@ -71,7 +72,7 @@ const config = {
           //   label: 'Docs',
           // },
           // {
-          //   href: 'https://github.com/manifoldmarkets/manifold/tree/main/docs/docs',
+          //   href: 'https://github.com/manifoldquestions/manifold/tree/main/docs/docs',
           //   label: 'GitHub',
           //   position: 'right',
           // },
@@ -84,7 +85,7 @@ const config = {
             title: 'Manifold',
             items: [
               {
-                label: 'Manifold Markets',
+                label: 'Manifold Questions',
                 to: 'https://manifold.markets',
               },
               {
@@ -102,7 +103,7 @@ const config = {
               },
               {
                 label: 'Twitter',
-                href: 'https://twitter.com/manifoldmarkets',
+                href: 'https://twitter.com/manifoldquestions',
               },
             ],
           },
@@ -111,16 +112,16 @@ const config = {
             items: [
               {
                 label: 'Blog',
-                to: 'https://manifoldmarkets.substack.com',
+                to: 'https://manifoldquestions.substack.com',
               },
               {
                 label: 'GitHub',
-                href: 'https://github.com/manifoldmarkets/manifold/',
+                href: 'https://github.com/manifoldquestions/manifold/',
               },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Manifold Markets, Inc. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Manifold Questions, Inc. Built with Docusaurus.`,
       },
       prism: {
         theme: lightCodeTheme,

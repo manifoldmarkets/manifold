@@ -67,7 +67,7 @@ export function DepthChart(props: {
 
   return (
     <Col className="text-ink-800 items-center">
-      <h2>Market depth</h2>
+      <h2>Question depth</h2>
       <SVGChart
         w={width}
         h={height}

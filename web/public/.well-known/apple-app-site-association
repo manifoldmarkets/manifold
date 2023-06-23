@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-      "appIDs": ["RPU7UVLP3Z.com.markets.manifold"],
+      "appIDs": ["RPU7UVLP3Z.com.questions.manifold"],
       "components": [
         {
           "/": "/*",
@@ -12,12 +12,12 @@
       ]
     },
       {
-      "appID": "RPU7UVLP3Z.com.markets.manifold",
+      "appID": "RPU7UVLP3Z.com.questions.manifold",
       "paths": ["*"]
       }
     ]
   },
   "webcredentials": {
-    "apps": [ "RPU7UVLP3Z.com.markets.manifold"]
+    "apps": [ "RPU7UVLP3Z.com.questions.manifold"]
   }
 }

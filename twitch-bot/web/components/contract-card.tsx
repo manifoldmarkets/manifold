@@ -1,18 +1,18 @@
 import { InformationCircleIcon, TrendingUpIcon } from '@heroicons/react/outline';
 import { SparklesIcon } from '@heroicons/react/solid';
 import clsx from 'clsx';
-import { LiteMarket } from '@common/types/manifold-api-types';
+import { LiteQuestion } from '@common/types/manifold-api-types';
 import { DAY_MS, formatMoney } from 'web/lib/utils';
-import { getMarketDisplayability } from 'web/pages/dock';
+import { getQuestionDisplayability } from 'web/pages/dock';
 import { Avatar } from './avatar';
 import { ConfirmationButton } from './confirmation-button';
 import { Col } from './layout/col';
 import { Row } from './layout/row';
 
-export default function ContractCard(props: { controlUserID: string; contract: LiteMarket; onFeature: () => void }) {
+export default function ContractCard(props: { controlUserID: string; contract: LiteQuestion; onFeature: () => void }) {
   const { controlUserID, contract, onFeature } = props;
-  const [isFeatureable, , message] = getMarketDisplayability(contract);
-  const canResolveMarket = controlUserID === contract.creatorId;
+  const [isFeatureable, , message] = getQuestionDisplayability(contract);
+  const canResolveQuestion = controlUserID === contract.creatorId;
   return (
     <Col className={clsx('xs:pl-6 bg-canvas-0 group relative gap-3 rounded-lg p-4 py-4 pr-5 shadow-md', !isFeatureable && 'bg-ink-100')}>
       <div className="xs:flex-row flex flex-col">
@@ -62,7 +62,7 @@ export default function ContractCard(props: { controlUserID: string; contract: L
                 return true;
               }}
             >
-              <p>Are you sure you want to feature this market?{!canResolveMarket && <b> As you don't own it, you will need to ask {contract.creatorName} to resolve it for you.</b>}</p>
+              <p>Are you sure you want to feature this question?{!canResolveQuestion && <b> As you don't own it, you will need to ask {contract.creatorName} to resolve it for you.</b>}</p>
             </ConfirmationButton>
           </Row>
         </Col>
@@ -71,7 +71,7 @@ export default function ContractCard(props: { controlUserID: string; contract: L
   );
 }
 
-function MiscDetails(props: { contract: LiteMarket; showHotVolume?: boolean; showTime?: boolean; hideGroupLink?: boolean }) {
+function MiscDetails(props: { contract: LiteQuestion; showHotVolume?: boolean; showTime?: boolean; hideGroupLink?: boolean }) {
   const { contract, showHotVolume } = props;
   const { volume, volume24Hours, isResolved, createdTime } = contract;
 
@@ -100,7 +100,7 @@ function NewContractBadge() {
   );
 }
 
-function AvatarDetails(props: { contract: LiteMarket }) {
+function AvatarDetails(props: { contract: LiteQuestion }) {
   const { contract } = props;
   const { creatorName, creatorUsername } = contract;
 
@@ -132,7 +132,7 @@ function ProbBar(props: { previewProb?: number }) {
   );
 }
 
-function BinaryResolutionOrChance(props: { contract: LiteMarket; className?: string }) {
+function BinaryResolutionOrChance(props: { contract: LiteQuestion; className?: string }) {
   const { contract, className } = props;
   const { resolution } = contract;
   // const textColor = `text-${getColor(contract)}`
@@ -157,7 +157,7 @@ function BinaryResolutionOrChance(props: { contract: LiteMarket; className?: str
   );
 }
 
-export function BinaryContractOutcomeLabel(props: { contract: LiteMarket; resolution: string }) {
+export function BinaryContractOutcomeLabel(props: { contract: LiteQuestion; resolution: string }) {
   return <BinaryOutcomeLabel outcome={props.resolution} />;
 }
 

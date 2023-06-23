@@ -31,8 +31,8 @@ export const QUEST_DETAILS: Record<
   MARKETS_CREATED: {
     requiredCount: 1,
     rewardAmount: 25,
-    scoreId: 'marketsCreatedThisWeek',
-    title: 'Market Creation',
+    scoreId: 'questionsCreatedThisWeek',
+    title: 'Question Creation',
   },
   ARCHAEOLOGIST: {
     requiredCount: 1,

@@ -19,7 +19,7 @@ import { JoinOrLeaveGroupButton } from '../groups/groups-button'
 import { SORTS, Sort } from '../supabase-search'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { searchMarketSorts } from './query-market-sorts'
+import { searchQuestionSorts } from './query-question-sorts'
 import { PageData, defaultPages, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
 
@@ -69,13 +69,13 @@ export const OmniSearch = (props: {
             onKeyDown={(e: any) => {
               if (e.key === 'Escape') setOpen?.(false)
               if (e.key === 'Enter' && !activeOption) {
-                router.push(marketSearchSlug(query))
+                router.push(questionSearchSlug(query))
                 setOpen?.(false)
                 onSelect?.()
               }
             }}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search markets, users, & groups"
+            placeholder="Search questions, users, & groups"
             enterKeyHint="search"
             className={clsx(
               'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
@@ -100,15 +100,15 @@ export const OmniSearch = (props: {
 
 const DefaultResults = () => {
   const user = useUser()
-  const markets = useYourRecentContracts(db, user?.id) ?? []
+  const questions = useYourRecentContracts(db, user?.id) ?? []
 
   return (
     <>
-      <MarketResults markets={markets} />
+      <QuestionResults questions={questions} />
       <PageResults pages={defaultPages} />
       <div className="mx-2 my-2 text-xs">
         <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
-        Start with <Key>%</Key> for markets, <Key>@</Key> for users, or{' '}
+        Start with <Key>%</Key> for questions, <Key>@</Key> for users, or{' '}
         <Key>#</Key> for groups
       </div>
     </>
@@ -127,17 +127,17 @@ const Results = (props: { query: string }) => {
 
   const userHitLimit = !prefix ? 2 : prefix === '@' ? 25 : 0
   const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
-  const marketHitLimit = !prefix ? 20 : prefix === '%' ? 25 : 0
+  const questionHitLimit = !prefix ? 20 : prefix === '%' ? 25 : 0
 
   const [
-    { pageHits, userHits, groupHits, sortHit, marketHits },
+    { pageHits, userHits, groupHits, sortHit, questionHits },
     setSearchResults,
   ] = useState({
     pageHits: [] as PageData[],
     userHits: [] as UserSearchResult[],
     groupHits: [] as Group[],
-    sortHit: null as { sort: Sort; markets: Contract[] } | null,
-    marketHits: [] as Contract[],
+    sortHit: null as { sort: Sort; questions: Contract[] } | null,
+    questionHits: [] as Contract[],
   })
   const [loading, setLoading] = useState(false)
 
@@ -156,13 +156,13 @@ const Results = (props: { query: string }) => {
         query: search,
         filter: 'all',
         sort: 'score',
-        limit: marketHitLimit,
+        limit: questionHitLimit,
       }),
       (async () => {
-        const sortHits = prefix ? [] : searchMarketSorts(search)
+        const sortHits = prefix ? [] : searchQuestionSorts(search)
         const sort = sortHits[0]
         if (sortHits.length) {
-          const markets = (
+          const questions = (
             await searchContract({
               query: '',
               filter: 'all',
@@ -170,31 +170,31 @@ const Results = (props: { query: string }) => {
               limit: 3,
             })
           ).data
-          return { sort, markets }
+          return { sort, questions }
         }
         return null
       })(),
     ]).then(([u, g, m, s]) => {
       const userHits = u.status === 'fulfilled' ? u.value : []
       const groupHits = g.status === 'fulfilled' ? g.value.data : []
-      const marketHits = m.status === 'fulfilled' ? m.value.data : []
+      const questionHits = m.status === 'fulfilled' ? m.value.data : []
       const sortHit = s.status === 'fulfilled' ? s.value : null
 
       if (thisNonce === nonce.current) {
         const pageHits = prefix ? [] : searchPages(search, 2)
-        const uniqueMarketHits = uniqBy<Contract>(marketHits, 'id')
+        const uniqueQuestionHits = uniqBy<Contract>(questionHits, 'id')
         const uniqueGroupHits = uniqBy<Group>(groupHits, 'id')
         setSearchResults({
           pageHits,
           userHits,
           groupHits: uniqueGroupHits,
           sortHit,
-          marketHits: uniqueMarketHits,
+          questionHits: uniqueQuestionHits,
         })
         setLoading(false)
       }
     })
-  }, [search, groupHitLimit, marketHitLimit, userHitLimit, prefix])
+  }, [search, groupHitLimit, questionHitLimit, userHitLimit, prefix])
 
   if (loading) {
     return (
@@ -209,7 +209,7 @@ const Results = (props: { query: string }) => {
     !pageHits.length &&
     !userHits.length &&
     !groupHits.length &&
-    !marketHits.length
+    !questionHits.length
   ) {
     return <div className="my-6 text-center">no results x.x</div>
   }
@@ -219,8 +219,8 @@ const Results = (props: { query: string }) => {
       <PageResults pages={pageHits} />
       <UserResults users={userHits} search={search} />
       <GroupResults groups={groupHits} search={search} />
-      {sortHit && <MarketSortResults {...sortHit} />}
-      <MarketResults markets={marketHits} search={search} />
+      {sortHit && <QuestionSortResults {...sortHit} />}
+      <QuestionResults questions={questionHits} search={search} />
     </>
   )
 }
@@ -286,40 +286,40 @@ const ResultOption = (props: {
   )
 }
 
-const MarketResults = (props: { markets: Contract[]; search?: string }) => {
-  const markets = props.markets
-  if (!markets.length) return null
+const QuestionResults = (props: { questions: Contract[]; search?: string }) => {
+  const questions = props.questions
+  if (!questions.length) return null
 
   return (
     <>
-      <SectionTitle link={marketSearchSlug(props.search ?? '')}>
-        Markets
+      <SectionTitle link={questionSearchSlug(props.search ?? '')}>
+        Questions
       </SectionTitle>
-      {markets.map((market) => (
-        <MarketResult key={market.id} market={market} />
+      {questions.map((question) => (
+        <QuestionResult key={question.id} question={question} />
       ))}
     </>
   )
 }
 
-const MarketResult = (props: { market: Contract }) => {
-  const market = props.market
+const QuestionResult = (props: { question: Contract }) => {
+  const question = props.question
   return (
     <ResultOption
       value={{
-        id: market.id,
-        slug: `/${market.creatorUsername}/${market.slug}`,
+        id: question.id,
+        slug: `/${question.creatorUsername}/${question.slug}`,
       }}
     >
       <div className="flex gap-2">
-        <span className="grow">{market.question}</span>
+        <span className="grow">{question.question}</span>
         <span className="font-bold">
-          <ContractStatusLabel contract={market} />
+          <ContractStatusLabel contract={question} />
         </span>
         <Avatar
           size="xs"
-          username={market.creatorUsername}
-          avatarUrl={market.creatorAvatarUrl}
+          username={question.creatorUsername}
+          avatarUrl={question.creatorAvatarUrl}
         />
       </div>
     </ResultOption>
@@ -404,8 +404,8 @@ const PageResults = (props: { pages: PageData[] }) => {
   )
 }
 
-const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
-  const { sort, markets } = props
+const QuestionSortResults = (props: { sort: Sort; questions: Contract[] }) => {
+  const { sort, questions } = props
   if (!sort) return null
 
   const casedLabel = startCase(SORTS.find((s) => s.value === sort)?.label)
@@ -417,17 +417,17 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
     'close-date',
     'resolve-date',
   ].includes(sort)
-    ? casedLabel + ' Markets'
-    : 'Markets by ' + casedLabel
+    ? casedLabel + ' Questions'
+    : 'Questions by ' + casedLabel
 
   return (
     <>
-      <SectionTitle link={`/markets?s=${sort}`}>{label}</SectionTitle>
+      <SectionTitle link={`/questions?s=${sort}`}>{label}</SectionTitle>
       <div className="flex">
         <div className="bg-ink-200 my-1 ml-2 mr-3 w-1" />
         <div className="flex flex-col gap-2">
-          {markets.map((market) => (
-            <MarketResult key={market.id} market={market} />
+          {questions.map((question) => (
+            <QuestionResult key={question.id} question={question} />
           ))}
         </div>
       </div>
@@ -435,5 +435,5 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
   )
 }
 
-const marketSearchSlug = (query: string) =>
-  `/markets?s=score&f=all&q=${encodeURIComponent(query)}`
+const questionSearchSlug = (query: string) =>
+  `/questions?s=score&f=all&q=${encodeURIComponent(query)}`

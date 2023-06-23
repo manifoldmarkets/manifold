@@ -67,7 +67,7 @@ export const PROD_CONFIG: EnvConfig = {
     'jahooma@gmail.com', // James
     'taowell@gmail.com', // Stephen
     // 'abc.sinclair@gmail.com', // Sinclair
-    'manticmarkets@gmail.com', // Manifold
+    'manticquestions@gmail.com', // Manifold
     'iansphilips@gmail.com', // Ian
     'd4vidchee@gmail.com', // D4vid
     'ingawei@gmail.com', //Inga
@@ -84,7 +84,7 @@ export const PROD_CONFIG: EnvConfig = {
   newQuestionPlaceholders: [
     'Will anyone I know get engaged this year?',
     'Will humans set foot on Mars by the end of 2030?',
-    'Will any cryptocurrency eclipse Bitcoin by market cap this year?',
+    'Will any cryptocurrency eclipse Bitcoin by question cap this year?',
     'Will the Democrats win the 2024 presidential election?',
   ],
   expoConfig: {

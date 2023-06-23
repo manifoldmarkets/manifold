@@ -5,7 +5,7 @@ import App from './app';
 import { DEBUG_TWITCH_ACCOUNT, IS_DEV, MANIFOLD_SIGNUP_URL, TWITCH_BOT_OAUTH_TOKEN, TWITCH_BOT_USERNAME } from './envs';
 import log from './logger';
 import * as Manifold from './manifold-api';
-import { Market } from './market';
+import { Question } from './question';
 import { TwitchStream } from './stream';
 import { sanitizeTwitchChannelName } from './twitch-api';
 import User from './user';
@@ -15,31 +15,31 @@ const COMMAND_REGEXP = new RegExp(/!([a-zA-Z0-9]+)\s?([\s\S]*)?/);
 
 /* cSpell:enable */
 const MSG_NOT_ENOUGH_MANA_CREATE_MARKET = (username: string, balance: number) =>
-  `Sorry ${username}, the owner of this channel doesn't have enough Mana (M$${Math.floor(balance).toFixed(0)}/M$100) to create a market LUL`;
+  `Sorry ${username}, the owner of this channel doesn't have enough Mana (M$${Math.floor(balance).toFixed(0)}/M$100) to create a question LUL`;
 const MSG_NOT_ENOUGH_MANA_PLACE_BET = (username: string) => `Sorry ${username}, you don't have enough Mana to place that bet`;
 const MSG_SIGNUP = (username: string) => `Hello ${username}! Click here to play: ${MANIFOLD_SIGNUP_URL}!`;
 const MSG_HELP = () => `Check out the full list of commands and how to play here: ${MANIFOLD_SIGNUP_URL}`;
-const MSG_RESOLVED = (market: Market) => {
+const MSG_RESOLVED = (question: Question) => {
   const maxWinners = 10;
-  const outcome = market.resolveData.outcome;
-  const topWinners = market.resolveData.topWinners;
-  let message = `The market has resolved to ${outcome === ResolutionOutcome.CANCEL ? 'N/A' : outcome}!`;
+  const outcome = question.resolveData.outcome;
+  const topWinners = question.resolveData.topWinners;
+  let message = `The question has resolved to ${outcome === ResolutionOutcome.CANCEL ? 'N/A' : outcome}!`;
   if (topWinners.length > 0) {
     message += ` The top ${maxWinners} bettors are ` + topWinners.map((w) => `${w.displayName} (${w.profit > 0 ? '+' : ''}${w.profit.toFixed(0)})`).join(', ');
   }
-  message += ` See the market here: ${market.data.url}`;
+  message += ` See the question here: ${question.data.url}`;
   return message;
 };
 const MSG_BALANCE = (username: string, balance: number) => `${username} currently has M$${Math.floor(balance).toFixed(0)}`;
 const MSG_POSITION = (username: string, shares_int: number) => {
   return `${username} has ${Math.abs(shares_int).toFixed(0)}${shares_int === 0 ? '' : shares_int > 0 ? ' YES' : ' NO'} share${shares_int === 1 ? '' : 's'}.`;
 };
-const MSG_MARKET_CREATED = (question: string) => `The market '${question}' has been created!`;
-const MSG_MARKET_UNFEATURED = () => `Market unfeatured.`;
+const MSG_MARKET_CREATED = (question: string) => `The question '${question}' has been created!`;
+const MSG_MARKET_UNFEATURED = () => `Question unfeatured.`;
 const MSG_COMMAND_FAILED = (username: string) => `Sorry ${username} but an internal error occurred handling your command BibleThump`;
-const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no market is currently active on this stream.`;
+const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no question is currently active on this stream.`;
 const MSG_TRADING_CLOSED = (username: string) => `Too slow ${username}, your bet was too late!`;
-const MSG_FEATURED = (market: Market) => `The market ${market.data.question} is now being featured! ${market.data.url}`;
+const MSG_FEATURED = (question: Question) => `The question ${question.data.question} is now being featured! ${question.data.url}`;
 const MSG_BEHIND_PROCESSING = () => `The bot is processing a lot of orders right now, please be patient!`;
 const MSG_PREDICT = () => `Predict here for free to win a share of 250USD: https://manifold.markets/post/storybook-brawl-streamer-showdown`;
 /* cSpell:disable */
@@ -53,13 +53,13 @@ type CommandParams = {
   stream: TwitchStream;
   broadcaster: User;
   user: User;
-  market: Market;
+  question: Question;
 };
 
 type CommandDef = {
   handler: (params: CommandParams) => Promise<any>;
   requirements?: {
-    marketFeatured?: boolean;
+    questionFeatured?: boolean;
     isAdmin?: boolean;
     hasUser?: boolean;
     minArgs?: number;
@@ -81,9 +81,9 @@ export default class TwitchBot {
 
     const betCommand = (sourceYes?: boolean) =>
       <CommandDef>{
-        requirements: { hasUser: true, marketFeatured: true, minArgs: 1 },
+        requirements: { hasUser: true, questionFeatured: true, minArgs: 1 },
         handler: async (params: CommandParams) => {
-          const { args, user, market, stream } = params;
+          const { args, user, question, stream } = params;
           let arg = args[0].toLocaleLowerCase();
           if (sourceYes === undefined) {
             if (args.length >= 2) {
@@ -108,7 +108,7 @@ export default class TwitchBot {
 
           const value = Number.parseInt(amount);
           try {
-            await user.placeBet(market.data.id, value, yes);
+            await user.placeBet(question.data.id, value, yes);
           } catch (e) {
             if (e instanceof InsufficientBalanceException) {
               this.client.say(stream.name, MSG_NOT_ENOUGH_MANA_PLACE_BET(user.twitchDisplayName));
@@ -123,14 +123,14 @@ export default class TwitchBot {
       requirements: { isAdmin: true, minArgs: 1 },
       handler: async (params: CommandParams) => {
         const { args, stream } = params;
-        await stream.selectMarket((await Manifold.getMarketBySlug(args[0])).id);
+        await stream.selectQuestion((await Manifold.getQuestionBySlug(args[0])).id);
       },
     };
 
     const resolveCommand: CommandDef = {
-      requirements: { isAdmin: true, marketFeatured: true, minArgs: 1 },
+      requirements: { isAdmin: true, questionFeatured: true, minArgs: 1 },
       handler: async (params: CommandParams) => {
-        const { args, market, broadcaster } = params;
+        const { args, question, broadcaster } = params;
         const resolutionString = args[0].toLocaleUpperCase();
         let outcome: ResolutionOutcome = ResolutionOutcome[resolutionString];
         if (resolutionString === 'NA' || resolutionString === 'N/A') {
@@ -140,15 +140,15 @@ export default class TwitchBot {
           log.info('Resolve command failed due to outcome: ' + outcome);
           return;
         }
-        await broadcaster.resolveBinaryMarket(market.data.id, outcome);
+        await broadcaster.resolveBinaryQuestion(question.data.id, outcome);
       },
     };
 
     const positionCommand: CommandDef = {
-      requirements: { marketFeatured: true, hasUser: true },
+      requirements: { questionFeatured: true, hasUser: true },
       handler: async (params: CommandParams) => {
-        const { stream, market, user } = params;
-        let shares = market.getUsersExpectedPayout(user);
+        const { stream, question, user } = params;
+        let shares = question.getUsersExpectedPayout(user);
         if (shares >= 0) {
           shares = Math.floor(shares);
         } else {
@@ -173,16 +173,16 @@ export default class TwitchBot {
       y: betCommand(true),
       n: betCommand(false),
       sell: {
-        requirements: { hasUser: true, marketFeatured: true },
+        requirements: { hasUser: true, questionFeatured: true },
         handler: async (params: CommandParams) => {
-          const { user, market } = params;
-          await user.sellAllShares(market.data.id);
+          const { user, question } = params;
+          await user.sellAllShares(question.data.id);
         },
       },
       allin: {
-        requirements: { hasUser: true, marketFeatured: true, minArgs: 1 },
+        requirements: { hasUser: true, questionFeatured: true, minArgs: 1 },
         handler: async (params: CommandParams) => {
-          const { args, user, market } = params;
+          const { args, user, question } = params;
           const arg = args[0].toLocaleLowerCase();
           let yes: boolean;
           if (arg == 'yes') {
@@ -192,7 +192,7 @@ export default class TwitchBot {
           } else {
             return;
           }
-          await user.allIn(market.data.id, yes);
+          await user.allIn(question.data.id, yes);
         },
       },
       balance: {
@@ -206,10 +206,10 @@ export default class TwitchBot {
       select: featureCommand,
       feature: featureCommand,
       unfeature: {
-        requirements: { isAdmin: true, marketFeatured: true },
+        requirements: { isAdmin: true, questionFeatured: true },
         handler: async (params: CommandParams) => {
           const { stream } = params;
-          await stream.selectMarket(null);
+          await stream.selectQuestion(null);
           this.client.say(stream.name, MSG_MARKET_UNFEATURED());
         },
       },
@@ -226,9 +226,9 @@ export default class TwitchBot {
           log.info(`Create command issued with question '${question}'`);
 
           try {
-            const market = await broadcaster.createBinaryMarket(question, null, 50, { visibility: 'unlisted' });
-            log.info('Created market ID: ' + market.id);
-            stream.selectMarket(market.id);
+            const question = await broadcaster.createBinaryQuestion(question, null, 50, { visibility: 'unlisted' });
+            log.info('Created question ID: ' + question.id);
+            stream.selectQuestion(question.id);
             this.client.say(stream.name, MSG_MARKET_CREATED(question));
           } catch (e) {
             if (e instanceof InsufficientBalanceException) {
@@ -285,13 +285,13 @@ export default class TwitchBot {
       try {
         const broadcaster = this.app.getUserForTwitchUsername(channelName);
 
-        const market = stream.featuredMarket;
+        const question = stream.featuredQuestion;
         let user = undefined;
         try {
           user = this.app.getUserForTwitchUsername(tags.username);
           user.twitchDisplayName = userDisplayName;
         } catch (e) {}
-        const commandParams: CommandParams = { args, stream, tags, username: tags.username, broadcaster, market, user };
+        const commandParams: CommandParams = { args, stream, tags, username: tags.username, broadcaster, question, user };
 
         if (command.requirements) {
           const requirements = command.requirements;
@@ -312,7 +312,7 @@ export default class TwitchBot {
             this.client.say(channelName, MSG_SIGNUP(userDisplayName));
             return;
           }
-          if (requirements.marketFeatured && !market) {
+          if (requirements.questionFeatured && !question) {
             this.client.say(channelName, MSG_NO_MARKET_SELECTED(userDisplayName));
             return;
           }
@@ -375,12 +375,12 @@ export default class TwitchBot {
     return false;
   }
 
-  public onMarketResolved(channel: string, market: Market) {
-    this.client.say(channel, MSG_RESOLVED(market));
+  public onQuestionResolved(channel: string, question: Question) {
+    this.client.say(channel, MSG_RESOLVED(question));
   }
 
-  public onMarketFeatured(channel: string, market: Market) {
-    this.client.say(channel, MSG_FEATURED(market));
+  public onQuestionFeatured(channel: string, question: Question) {
+    this.client.say(channel, MSG_FEATURED(question));
   }
 
   public async connect() {
@@ -424,7 +424,7 @@ export default class TwitchBot {
         await this.client.say(channelName, '/color BlueViolet'); // TODO this will become invalid as of February 18, 2023 (https://discuss.dev.twitch.tv/t/deprecation-of-chat-commands-through-irc/40486)
         log.debug('Sent join message.');
 
-        let message = 'Hey there! I am the Manifold Markets chat bot.';
+        let message = 'Hey there! I am the Manifold Questions chat bot.';
         if (!this.client.isMod(channelName, TWITCH_BOT_USERNAME)) {
           message += ' Please /mod me so I can do my job.';
         }

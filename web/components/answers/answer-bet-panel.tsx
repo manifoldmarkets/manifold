@@ -181,7 +181,7 @@ export function AnswerBetPanel(props: {
       {user ? (
         <WarningConfirmationButton
           size="xl"
-          marketType="freeResponse"
+          questionType="freeResponse"
           amount={betAmount}
           warning={warning}
           onSubmit={submitBet}

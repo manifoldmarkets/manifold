@@ -209,16 +209,16 @@ export async function updateUsersCardViewEmbeddings(
   return await pg.none(
     `with view_embedding as (
       select
-        user_seen_markets.user_id,
+        user_seen_questions.user_id,
         avg(contract_embeddings.embedding) as average_embedding
       from
         contract_embeddings
-        join user_seen_markets on user_seen_markets.contract_id = contract_embeddings.contract_id
-        join users on users.id = user_seen_markets.user_id
+        join user_seen_questions on user_seen_questions.contract_id = contract_embeddings.contract_id
+        join users on users.id = user_seen_questions.user_id
       where
-          user_seen_markets.type = 'view market card'
+          user_seen_questions.type = 'view question card'
       group by
-          user_seen_markets.user_id
+          user_seen_questions.user_id
     )
     update
       user_embeddings

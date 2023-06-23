@@ -17,7 +17,7 @@ export function DuplicateContractButton(props: { contract: Contract }) {
         'hover:text-ink-0 gap-1 border-2 border-violet-400 text-violet-400 hover:bg-violet-400'
       )}
       href={href}
-      onClick={trackCallback('duplicate market')}
+      onClick={trackCallback('duplicate question')}
       target={getLinkTarget(href, true)}
     >
       <DuplicateIcon className="h-4 w-4" aria-hidden="true" />
@@ -50,7 +50,7 @@ function duplicateContractHref(contract: Contract) {
     params.initValue = getMappedValue(contract, contract.initialProbability)
   }
 
-  // TODO: Support multiple choice markets?
+  // TODO: Support multiple choice questions?
 
   if (contract.groupLinks && contract.groupLinks.length > 0) {
     params.groupId = contract.groupLinks[0].groupId

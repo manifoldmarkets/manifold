@@ -9,7 +9,7 @@ export type ContractCardView = {
   creatorId: string
   isPromoted?: boolean
   // Following attributes added by saveUserEvent
-  name: 'view market card'
+  name: 'view question card'
   timestamp: number
 }
 
@@ -26,7 +26,7 @@ export type ContractView = {
   contractId: string
   creatorId: string
   // Following attributes added by saveUserEvent
-  name: 'view market'
+  name: 'view question'
   timestamp: number
 }
 
@@ -38,8 +38,8 @@ export type ShareEvent = {
 }
 
 const ShareEventNames = [
-  'copy market link',
-  'copy creator market link',
+  'copy question link',
+  'copy creator question link',
   'copy dream link',
   'copy group link',
   'copy manalink',

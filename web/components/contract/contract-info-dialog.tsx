@@ -28,12 +28,12 @@ import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Tabs } from '../layout/tabs'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { CopyLinkButton } from '../buttons/copy-link-button'
-import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
-import { BlockMarketButton } from 'web/components/buttons/block-market-button'
+import { FollowQuestionButton } from 'web/components/buttons/follow-question-button'
+import { BlockQuestionButton } from 'web/components/buttons/block-question-button'
 import { ReportButton } from '../buttons/report-button'
 import { Input } from '../widgets/input'
 import {
-  unresolveMarket,
+  unresolveQuestion,
   updateUserDisinterestEmbedding,
 } from 'web/lib/firebase/api'
 import { BoostButton } from './boost-button'
@@ -112,20 +112,20 @@ export const Stats = (props: {
         )}
 
         <tr>
-          <td>Market created</td>
+          <td>Question created</td>
           <td>{formatTime(createdTime)}</td>
         </tr>
 
         {closeTime && (
           <tr>
-            <td>Market close{closeTime > Date.now() ? 's' : 'd'}</td>
+            <td>Question close{closeTime > Date.now() ? 's' : 'd'}</td>
             <td>{formatTime(closeTime)}</td>
           </tr>
         )}
 
         {resolutionTime && (
           <tr>
-            <td>Market resolved</td>
+            <td>Question resolved</td>
             <td>{formatTime(resolutionTime)}</td>
           </tr>
         )}
@@ -237,7 +237,7 @@ export const Stats = (props: {
                       onClick={() => {
                         if (unresolving) return
                         setUnresolving(true)
-                        unresolveMarket({ marketId: id }).then(() => {
+                        unresolveQuestion({ questionId: id }).then(() => {
                           setUnresolving(false)
                           setUnresolveText('')
                         })
@@ -304,8 +304,8 @@ export function ContractInfoDialog(props: {
     <Modal open={open} setOpen={setOpen}>
       <Col className="bg-canvas-0 gap-4 rounded p-6">
         <Row className={'items-center justify-between'}>
-          <Title className="!mb-0">This Market</Title>
-          <FollowMarketButton contract={contract} user={user} />
+          <Title className="!mb-0">This Question</Title>
+          <FollowQuestionButton contract={contract} user={user} />
         </Row>
 
         <Tabs
@@ -339,7 +339,7 @@ export function ContractInfoDialog(props: {
                       }}
                     />
 
-                    <BlockMarketButton contract={contract} />
+                    <BlockQuestionButton contract={contract} />
                     <DisinterestedButton contract={contract} user={user} />
                   </Row>
                 </Col>
@@ -357,14 +357,14 @@ export function ContractInfoDialog(props: {
                   />
 
                   <div className="text-ink-500 mt-4 mb-2 text-base">
-                    Invite traders to participate in this market and earn a{' '}
+                    Invite traders to participate in this question and earn a{' '}
                     {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
                     trader that signs up.
                   </div>
 
                   <CopyLinkButton
                     url={getShareUrl(contract, user?.username)}
-                    eventTrackingName="copy market link"
+                    eventTrackingName="copy question link"
                   />
                   <Row className="mt-4 flex-wrap gap-2">
                     <TweetButton

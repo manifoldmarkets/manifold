@@ -2,9 +2,9 @@ import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
 import { useUser } from 'web/hooks/use-user'
 import {
-  MarketCard,
-  useTopMarketsByUser,
-} from 'web/components/cards/MarketCard'
+  QuestionCard,
+  useTopQuestionsByUser,
+} from 'web/components/cards/QuestionCard'
 import { groupBy, shuffle } from 'lodash'
 import { useEffect, useMemo, useState } from 'react'
 import { Row } from 'web/components/layout/row'
@@ -62,20 +62,23 @@ export default function CardsPage() {
 
   // GAME DATA
   const user = useUser()
-  // TODO: what if user doesn't have enough top markets?
-  const topMarkets = useTopMarketsByUser(user?.id ?? '')
+  // TODO: what if user doesn't have enough top questions?
+  const topQuestions = useTopQuestionsByUser(user?.id ?? '')
   const defaults = useContractsByIds(DEFAULT_MARKETS)
-  const shuffledMarkets = useMemo(
-    () => shuffle([...topMarkets, ...defaults]),
-    [topMarkets.length]
+  const shuffledQuestions = useMemo(
+    () => shuffle([...topQuestions, ...defaults]),
+    [topQuestions.length]
   )
-  const groupedMarkets = groupBy(shuffledMarkets, 'creatorId')
-  const markets = Object.values(groupedMarkets)
+  const groupedQuestions = groupBy(shuffledQuestions, 'creatorId')
+  const questions = Object.values(groupedQuestions)
     .filter((group) => group.length === 1)
     .flat()
     .slice(0, TOTAL_MARKETS)
-  const marketCreators = markets.map((market) => market.creatorId)
-  const creators = useMemo(() => shuffle(marketCreators), [topMarkets.length])
+  const questionCreators = questions.map((question) => question.creatorId)
+  const creators = useMemo(
+    () => shuffle(questionCreators),
+    [topQuestions.length]
+  )
 
   function clicksMatch(a: number, b: number) {
     // Set i to be the lesser, and j to be the greater
@@ -84,7 +87,7 @@ export default function CardsPage() {
     if (i >= TOTAL_MARKETS || j < TOTAL_MARKETS) {
       return false
     }
-    return markets[i].creatorId === creators[j - TOTAL_MARKETS]
+    return questions[i].creatorId === creators[j - TOTAL_MARKETS]
   }
 
   function click(index: number) {
@@ -125,7 +128,7 @@ export default function CardsPage() {
             Manifold: the Gambling
           </h1>
           <Spacer h={4} />
-          <h2 className="text-2xl">Match each market to its creator!</h2>
+          <h2 className="text-2xl">Match each question to its creator!</h2>
           <h2 className="block sm:hidden">(Best played on desktop 😛)</h2>
         </Col>
         <Col className="justify-end">
@@ -145,8 +148,8 @@ export default function CardsPage() {
       </Row>
       <Spacer h={4} />
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-        {markets.map((contract, i) => (
-          <MarketCard
+        {questions.map((contract, i) => (
+          <QuestionCard
             contract={contract}
             faceup={faceups[i]}
             onClick={() => click(i)}

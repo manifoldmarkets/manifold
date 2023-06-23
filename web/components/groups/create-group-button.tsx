@@ -165,7 +165,7 @@ export function CreateGroupButton(props: {
         <Title className="!my-0" children="Create a group" />
 
         <Col className="text-ink-500">
-          <div>You can add markets to your group after creation.</div>
+          <div>You can add questions to your group after creation.</div>
         </Col>
         {errorText && <div className={'text-error'}>{errorText}</div>}
 

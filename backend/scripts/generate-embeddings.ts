@@ -15,7 +15,7 @@ async function main() {
   const result = await run(db.from('contract_embeddings').select('contract_id'))
 
   const contractIds = new Set(result.data.map((row: any) => row.contract_id))
-  console.log('Got', contractIds.size, 'markets with preexisting embeddings')
+  console.log('Got', contractIds.size, 'questions with preexisting embeddings')
 
   const { data: contracts } = await run(
     db.from('contracts').select('id, data')
@@ -23,7 +23,7 @@ async function main() {
     // .not('id', 'in', '(' + [...contractIds].join(',') + ')')
   ).catch((err) => (console.error(err), { data: [] }))
 
-  console.log('Got', contracts.length, 'markets to process')
+  console.log('Got', contracts.length, 'questions to process')
 
   for (const contract of contracts) {
     const { id, data } = contract

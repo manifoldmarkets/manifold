@@ -19,7 +19,7 @@ const embedPatterns: EmbedPattern[] = [
     rewrite: (text: string) => text,
   },
   {
-    regex: /^https?:\/\/manifold\.markets\/([^\/]+\/[^\/]+)/,
+    regex: /^https?:\/\/manifold\.questions\/([^\/]+\/[^\/]+)/,
     rewrite: (slug) =>
       `<iframe src="https://manifold.markets/embed/${slug}"></iframe>`,
   },

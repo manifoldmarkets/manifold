@@ -55,10 +55,10 @@ export default class AppFirestore {
     );
   }
 
-  async updateSelectedMarketForUser(twitchName: string, selectedMarket: string) {
+  async updateSelectedQuestionForUser(twitchName: string, selectedQuestion: string) {
     const user = this.getUserForTwitchUsername(twitchName);
     if (!user) throw new UserNotRegisteredException(`No user record for Twitch username ${twitchName}`);
-    const data = { selectedMarket: selectedMarket || deleteField() };
+    const data = { selectedQuestion: selectedQuestion || deleteField() };
     return updateDoc(doc(this.db, this.userCollection.path, user.data.manifoldID), data);
   }
 

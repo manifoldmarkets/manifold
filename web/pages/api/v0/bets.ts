@@ -16,7 +16,7 @@ const queryParams = z
     username: z.string().optional(),
     contractId: z.string().optional(),
     contractSlug: z.string().optional(),
-    market: z.string().optional(), // deprecated, synonym for `contractSlug`
+    question: z.string().optional(), // deprecated, synonym for `contractSlug`
     limit: z
       .number()
       .default(1000)
@@ -30,7 +30,7 @@ const getContractId = async (params: z.infer<typeof queryParams>) => {
   if (params.contractId) {
     return params.contractId
   }
-  const slug = params.contractSlug ?? params.market
+  const slug = params.contractSlug ?? params.question
   if (slug) {
     const contract = await getContractFromSlug(slug, db)
     if (contract) {

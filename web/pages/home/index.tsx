@@ -35,7 +35,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { ProfileSummary } from 'web/components/nav/profile-summary'
 import { useUser } from 'web/hooks/use-user'
 import { useIsFeedTest } from 'web/hooks/use-is-feed-test'
-import MarketsHome from '../markets-home'
+import QuestionsHome from '../questions-home'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -58,7 +58,7 @@ function HomeDashboard() {
   const isFeed = useIsFeedTest()
   const user = useUser()
 
-  if (!isFeed) return <MarketsHome />
+  if (!isFeed) return <QuestionsHome />
 
   return (
     <Page>

@@ -61,7 +61,7 @@ export const unsubscribe = async (req: Request, res: Response) => {
       xmlns:o="urn:schemas-microsoft-com:office:office">
 
 <head>
-  <title>Unsubscribe from Manifold Markets emails</title>
+  <title>Unsubscribe from Manifold Questions emails</title>
   <!--[if !mso]><!-->
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <!--<![endif]-->
@@ -214,7 +214,7 @@ export const unsubscribe = async (req: Request, res: Response) => {
       xmlns:o="urn:schemas-microsoft-com:office:office">
 
 <head>
-  <title>Unsubscribe from Manifold Markets emails</title>
+  <title>Unsubscribe from Manifold Questions emails</title>
     <!--[if !mso]><!-->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <!--<![endif]-->

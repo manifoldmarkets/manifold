@@ -28,10 +28,10 @@ export function ContractsFeed(props: { topic?: string }) {
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
           We're fresh out of cards!
           <SiteLink
-            href="/markets?s=newest&f=open"
+            href="/questions?s=newest&f=open"
             className="text-primary-700"
           >
-            Browse new markets
+            Browse new questions
           </SiteLink>
         </div>
       ) : (

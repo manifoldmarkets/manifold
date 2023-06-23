@@ -125,9 +125,9 @@ export default class ManifoldFirestore {
     return updateCachePromise;
   }
 
-  async getFullMarketByID(marketID: string): Promise<[DocumentReference<Contract<AnyContractType>>, CollectionReference<Bet>]> {
-    const contractDoc = doc(this.contracts, marketID);
-    const betCollection = <CollectionReference<Bet>>collection(this.contracts, marketID, 'bets');
+  async getFullQuestionByID(questionID: string): Promise<[DocumentReference<Contract<AnyContractType>>, CollectionReference<Bet>]> {
+    const contractDoc = doc(this.contracts, questionID);
+    const betCollection = <CollectionReference<Bet>>collection(this.contracts, questionID, 'bets');
     return [contractDoc, betCollection];
   }
 }

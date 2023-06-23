@@ -5,7 +5,7 @@ import { NumberCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { NumericContract, PseudoNumericContract } from 'common/contract'
-import { APIError, resolveMarket } from 'web/lib/firebase/api'
+import { APIError, resolveQuestion } from 'web/lib/firebase/api'
 import { BucketInput } from './widgets/bucket-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTORS } from 'common/user'
@@ -66,7 +66,7 @@ export function NumericResolutionPanel(props: {
       )
 
     try {
-      const result = await resolveMarket({
+      const result = await resolveQuestion({
         outcome: finalOutcome,
         value,
         probabilityInt,
@@ -78,7 +78,7 @@ export function NumericResolutionPanel(props: {
         setError(e.toString())
       } else {
         console.error(e)
-        setError('Error resolving market')
+        setError('Error resolving question')
       }
     }
 
@@ -98,7 +98,7 @@ export function NumericResolutionPanel(props: {
           ADMIN
         </span>
       )}
-      {!modalSetOpen && <div className="mb-6">Resolve your market</div>}
+      {!modalSetOpen && <div className="mb-6">Resolve your question</div>}
       {modalSetOpen && (
         <div className="mb-6">Resolve "{contract.question}"</div>
       )}
@@ -120,7 +120,7 @@ export function NumericResolutionPanel(props: {
           {outcomeMode === 'CANCEL' ? (
             <>Cancel all trades and return money back to {BETTORS}.</>
           ) : (
-            <>Resolving this market will immediately pay out {BETTORS}.</>
+            <>Resolving this question will immediately pay out {BETTORS}.</>
           )}
         </div>
 
@@ -130,7 +130,7 @@ export function NumericResolutionPanel(props: {
             isSubmitting={isSubmitting}
             color={getNumericResolveButtonColor(outcomeMode)}
             label={getNumericResolveButtonLabel(outcomeMode, value)}
-            marketTitle={question}
+            questionTitle={question}
             disabled={buttonDisabled}
           />
         )}

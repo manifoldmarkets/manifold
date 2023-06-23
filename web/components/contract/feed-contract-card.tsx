@@ -58,7 +58,7 @@ export function FeedContractCard(props: {
 
   const { ref } = useIsVisible(
     () =>
-      track('view market card', {
+      track('view question card', {
         contractId: contract.id,
         creatorId: contract.creatorId,
         slug: contract.slug,
@@ -68,7 +68,7 @@ export function FeedContractCard(props: {
   )
 
   const trackClick = () =>
-    track(('click market card ' + trackingPostfix).trim(), {
+    track(('click question card ' + trackingPostfix).trim(), {
       contractId: contract.id,
       creatorId: contract.creatorId,
       slug: contract.slug,

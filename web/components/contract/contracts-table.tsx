@@ -112,8 +112,8 @@ export function ContractsTable(props: {
   const user = useUser()
   const contractColumns = [
     {
-      name: 'market',
-      header: 'Market',
+      name: 'question',
+      header: 'Question',
       visible: true,
       content: (contract: Contract) => (
         <Row className="gap-2 sm:gap-4">

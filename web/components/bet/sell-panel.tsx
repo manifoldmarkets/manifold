@@ -144,7 +144,7 @@ export function SellPanel(props: {
 
   const warning =
     probChange >= 0.3
-      ? `Are you sure you want to move the market by ${displayedDifference}?`
+      ? `Are you sure you want to move the question by ${displayedDifference}?`
       : undefined
 
   const onAmountChange = (displayAmount: number | undefined) => {
@@ -242,7 +242,7 @@ export function SellPanel(props: {
       <Spacer h={8} />
 
       <WarningConfirmationButton
-        marketType="binary"
+        questionType="binary"
         amount={undefined}
         warning={warning}
         userOptedOutOfWarning={user.optOutBetWarnings}

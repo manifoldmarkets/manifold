@@ -14,7 +14,7 @@ export type user_data = {
 export const LATENT_FEATURES_COUNT = 5
 const DESTINY_GROUP_ID = 'W2ES30fRo6CCbPNwMTTj'
 
-export function getMarketRecommendations(
+export function getQuestionRecommendations(
   contracts: Contract[],
   userData: user_data[],
   iterations = 2000
@@ -63,18 +63,18 @@ export function getMarketRecommendations(
       row.set(getColumnIndex(contractId), 0)
     }
     if (!groupIds.includes(DESTINY_GROUP_ID)) {
-      // Downweight markets in the Destiny group if you don't follow it.
+      // Downweight questions in the Destiny group if you don't follow it.
       const contractIdSubset = shuffle(destinyContractIds).slice(0, 25)
       for (const contractId of contractIdSubset) {
         row.set(getColumnIndex(contractId), 0)
       }
     }
     for (const contractId of viewedPageIds) {
-      // If you clicked into a market, that demonstrates interest.
+      // If you clicked into a question, that demonstrates interest.
       row.set(getColumnIndex(contractId), 0.25)
     }
     for (const groupId of groupIds) {
-      // If you follow a group, count that as interest in random subset of group markets.
+      // If you follow a group, count that as interest in random subset of group questions.
       const contractIds = Object.keys(groupsToContracts[groupId] ?? {})
       const contractIdSubset = shuffle(contractIds).slice(0, 5)
       for (const contractId of contractIdSubset) {
@@ -93,7 +93,7 @@ export function getMarketRecommendations(
   })
 
   // Fill in a few random 0's for each user and contract column.
-  // When users click a link directly to a market or search for it,
+  // When users click a link directly to a question or search for it,
   // and bet on it, then we start to get only 1's in the matrix,
   // which is bad for the algorithm to distinguish between good and bad contracts:
   // it will just predict 1 for all contracts.

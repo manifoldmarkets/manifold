@@ -51,7 +51,7 @@ import { SplashAuth } from 'components/splash-auth'
 import { useIsConnected } from 'lib/use-is-connected'
 
 // NOTE: URIs other than manifold.markets and localhost:3000 won't work for API requests due to CORS
-// this means no supabase jwt, placing bets, creating markets, etc.
+// this means no supabase jwt, placing bets, creating questions, etc.
 // const baseUri = 'http://192.168.0.74:3000/'
 const baseUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'

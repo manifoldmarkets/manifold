@@ -68,8 +68,8 @@ export default function Sidebar(props: {
     toggleTheme
   )
 
-  const createMarketButton = user && !user.isBannedFromPosting && (
-    <CreateQuestionButton key="create-market-button" />
+  const createQuestionButton = user && !user.isBannedFromPosting && (
+    <CreateQuestionButton key="create-question-button" />
   )
 
   return (
@@ -98,7 +98,7 @@ export default function Sidebar(props: {
 
         {user === null && <SignInButton />}
 
-        {createMarketButton}
+        {createQuestionButton}
       </div>
       <div className="mt-auto mb-6 flex flex-col gap-1">
         {user !== null && <AppBadgesOrGetAppButton hideOnDesktop={true} />}
@@ -124,13 +124,13 @@ const logout = async () => {
 const getDesktopNav = (
   loggedIn: boolean,
   openDownloadApp: () => void,
-  showMarkets: boolean
+  showQuestions: boolean
 ) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
-      showMarkets
-        ? { name: 'Markets', href: '/markets', icon: ScaleIcon }
+      showQuestions
+        ? { name: 'Questions', href: '/questions', icon: ScaleIcon }
         : { name: 'News', href: '/news', icon: NewspaperIcon },
       {
         name: 'Notifications',
@@ -151,7 +151,7 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Home', href: '/', icon: HomeIcon },
-    { name: 'Markets', href: '/markets', icon: ScaleIcon },
+    { name: 'Questions', href: '/questions', icon: ScaleIcon },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
@@ -162,7 +162,7 @@ const getMobileNav = (toggleModal: () => void, isFeed: boolean) => {
   return buildArray(
     isFeed && { name: 'News', href: '/news', icon: NewspaperIcon },
     isFeed
-      ? { name: 'Markets', href: '/markets', icon: ScaleIcon }
+      ? { name: 'Questions', href: '/questions', icon: ScaleIcon }
       : { name: 'Search', href: '/search', icon: SearchIcon },
     getIsNative() && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },

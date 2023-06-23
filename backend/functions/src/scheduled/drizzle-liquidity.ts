@@ -21,17 +21,17 @@ export const drizzleLiquidity = async () => {
     .get()
 
   const contractIds = snap.docs.map((doc) => doc.id)
-  console.log('found', contractIds.length, 'markets to drizzle')
+  console.log('found', contractIds.length, 'questions to drizzle')
   console.log()
 
-  await mapAsync(contractIds, (cid) => drizzleMarket(cid), 10)
+  await mapAsync(contractIds, (cid) => drizzleQuestion(cid), 10)
 }
 
 export const drizzleLiquidityScheduler = functions.pubsub
   .schedule('*/10 * * * *')
   .onRun(drizzleLiquidity)
 
-const drizzleMarket = async (contractId: string) => {
+const drizzleQuestion = async (contractId: string) => {
   await firestore.runTransaction(async (trans) => {
     const snap = await trans.get(firestore.doc(`contracts/${contractId}`))
     const contract = snap.data() as CPMMContract | CPMMMultiContract

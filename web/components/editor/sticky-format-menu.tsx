@@ -11,7 +11,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
 import { EmbedModal } from './embed-modal'
 import { DreamModal } from './image-modal'
-import { MarketModal } from './market-modal'
+import { QuestionModal } from './question-modal'
 import type { UploadMutation } from './upload-extension'
 
 /* Toolbar, with buttons for images and embeds */
@@ -24,7 +24,7 @@ export function StickyFormatMenu(props: {
 
   const [dreamOpen, setDreamOpen] = useState(false)
   const [iframeOpen, setIframeOpen] = useState(false)
-  const [marketOpen, setMarketOpen] = useState(false)
+  const [questionOpen, setQuestionOpen] = useState(false)
 
   return (
     <div className="text border-ink-200 flex h-9 items-stretch border-t">
@@ -37,11 +37,11 @@ export function StickyFormatMenu(props: {
         <EmbedModal editor={editor} open={iframeOpen} setOpen={setIframeOpen} />
         <CodeIcon className="h-5 w-5" aria-hidden="true" />
       </ToolbarButton>
-      <ToolbarButton label="Add market" onClick={() => setMarketOpen(true)}>
-        <MarketModal
+      <ToolbarButton label="Add question" onClick={() => setQuestionOpen(true)}>
+        <QuestionModal
           editor={editor}
-          open={marketOpen}
-          setOpen={setMarketOpen}
+          open={questionOpen}
+          setOpen={setQuestionOpen}
         />
         <PresentationChartLineIcon className="h-5 w-5" aria-hidden="true" />
       </ToolbarButton>

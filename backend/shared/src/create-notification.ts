@@ -26,12 +26,12 @@ import { Answer, DpmAnswer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { Group } from 'common/group'
 import {
-  sendMarketCloseEmail,
-  sendMarketResolutionEmail,
+  sendQuestionCloseEmail,
+  sendQuestionResolutionEmail,
   sendNewAnswerEmail,
   sendNewCommentEmail,
-  sendNewFollowedMarketEmail,
-  sendNewPrivateMarketEmail,
+  sendNewFollowedQuestionEmail,
+  sendNewPrivateQuestionEmail,
   sendNewUniqueBettorsEmail,
 } from './emails'
 import { filterDefined } from 'common/util/array'
@@ -79,7 +79,7 @@ const insertNotificationToSupabase = async (
     ]
   )
 }
-export const createFollowOrMarketSubsidizedNotification = async (
+export const createFollowOrQuestionSubsidizedNotification = async (
   sourceId: string,
   sourceType: 'liquidity' | 'follow',
   sourceUpdateType: 'created',
@@ -141,8 +141,8 @@ export const createFollowOrMarketSubsidizedNotification = async (
 
       if (!sendToEmail) continue
 
-      if (reason === 'subsidized_your_market') {
-        // TODO: send email to creator of market that was subsidized
+      if (reason === 'subsidized_your_question') {
+        // TODO: send email to creator of question that was subsidized
       } else if (reason === 'on_new_follow') {
         // TODO: send email to user who was followed
       }
@@ -161,7 +161,7 @@ export const createFollowOrMarketSubsidizedNotification = async (
   } else if (sourceType === 'liquidity' && sourceContract) {
     if (shouldReceiveNotification(sourceContract.creatorId, userToReasonTexts))
       userToReasonTexts[sourceContract.creatorId] = {
-        reason: 'subsidized_your_market',
+        reason: 'subsidized_your_question',
       }
     return await sendNotificationsIfSettingsPermit(userToReasonTexts)
   }
@@ -244,7 +244,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     userId: string,
     reason: notification_reason_types
   ) => {
-    // A user doesn't have to follow a market to receive a notification with their tag
+    // A user doesn't have to follow a question to receive a notification with their tag
     if (
       (!stillFollowingContract(userId) &&
         !needNotFollowContractReasons.includes(reason)) ||
@@ -391,8 +391,8 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyBettorsOnContract = async () => {
-    // We don't need to filter by shares in bc they auto unfollow a market upon selling out of it
-    // Unhandled case sacrificed for performance: they bet in a market, sold out,
+    // We don't need to filter by shares in bc they auto unfollow a question upon selling out of it
+    // Unhandled case sacrificed for performance: they bet in a question, sold out,
     // then re-followed it - their notification reason should not include 'with_shares_in'
     const recipientUserIds = await getUniqueBettorIds(sourceContract.id, pg)
 
@@ -498,7 +498,7 @@ export const createTopLevelLikedCommentNotification = async (
     const notification: Notification = {
       id: idempotencyKey,
       userId,
-      reason: 'some_comments_on_watched_markets',
+      reason: 'some_comments_on_watched_questions',
       createdTime: Date.now(),
       isSeen: false,
       sourceId,
@@ -715,7 +715,7 @@ export const createReferralNotification = async (
     reason: referredByGroup
       ? 'user_joined_from_your_group_invite'
       : referredByContract?.creatorId === toUser.id
-      ? 'user_joined_to_bet_on_your_market'
+      ? 'user_joined_to_bet_on_your_question'
       : 'you_referred_user',
     createdTime: Date.now(),
     isSeen: false,
@@ -1094,7 +1094,7 @@ export const createNewContractNotification = async (
     }
     if (!sendToEmail) return
     if (reason === 'contract_from_followed_user')
-      await sendNewFollowedMarketEmail(reason, userId, privateUser, contract)
+      await sendNewFollowedQuestionEmail(reason, userId, privateUser, contract)
   }
   const followersSnapshot = await firestore
     .collectionGroup('follows')
@@ -1167,7 +1167,7 @@ export const createNewContractFromPrivateGroupNotification = async (
       await insertNotificationToSupabase(notification, pg)
     }
     if (!sendToEmail) return
-    await sendNewPrivateMarketEmail(reason, privateUser, contract, group.name)
+    await sendNewPrivateQuestionEmail(reason, privateUser, contract, group.name)
   }
 
   const privateMemberIds = await getGroupMemberIds(db, group.id)
@@ -1282,7 +1282,7 @@ export const createContractResolvedNotifications = async (
 
     // Emails notifications
     if (sendToEmail && !contract.isTwitchContract)
-      await sendMarketResolutionEmail(
+      await sendQuestionResolutionEmail(
         reason,
         privateUser,
         userIdToContractMetrics?.[userId]?.invested ?? 0,
@@ -1334,8 +1334,8 @@ export const createContractResolvedNotifications = async (
     [contract.id]
   )
   const contractFollowersIds = followerIds.map((f) => f.follow_id)
-  // We ignore whether users are still watching a market if they have a payout, mainly
-  // bc market resolutions changes their profits, and they'll likely want to know, esp. if NA resolution
+  // We ignore whether users are still watching a question if they have a payout, mainly
+  // bc question resolutions changes their profits, and they'll likely want to know, esp. if NA resolution
   const usersToNotify = uniq(
     [...contractFollowersIds, ...Object.keys(userPayouts)].filter(
       (id) => id !== resolver.id
@@ -1354,7 +1354,7 @@ export const createContractResolvedNotifications = async (
   )
 }
 
-export const createMarketClosedNotification = async (
+export const createQuestionClosedNotification = async (
   contract: Contract,
   creator: User,
   privateUser: PrivateUser,
@@ -1382,7 +1382,7 @@ export const createMarketClosedNotification = async (
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
-  await sendMarketCloseEmail(
+  await sendQuestionCloseEmail(
     'your_contract_closed',
     creator,
     privateUser,

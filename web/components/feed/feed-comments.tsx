@@ -174,7 +174,7 @@ export const FeedComment = memo(function FeedComment(props: {
   } = props
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
-  const marketCreator = contract.creatorId === comment.userId
+  const questionCreator = contract.creatorId === comment.userId
 
   useEffect(() => {
     if (highlighted && ref.current) {
@@ -194,7 +194,10 @@ export const FeedComment = memo(function FeedComment(props: {
       <Avatar
         username={userUsername}
         avatarUrl={userAvatarUrl}
-        className={clsx(marketCreator ? 'shadow shadow-amber-300' : '', 'z-10')}
+        className={clsx(
+          questionCreator ? 'shadow shadow-amber-300' : '',
+          'z-10'
+        )}
       />
       <Col className="w-full">
         {isReplyToBet(comment) && (
@@ -548,7 +551,7 @@ function FeedCommentHeader(props: {
     isApi,
   } = comment
 
-  const marketCreator = contract.creatorId === userId
+  const questionCreator = contract.creatorId === userId
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
@@ -560,7 +563,7 @@ function FeedCommentHeader(props: {
           <UserLink
             username={userUsername}
             name={userName}
-            marketCreator={marketCreator}
+            questionCreator={questionCreator}
             className={'font-semibold'}
           />
           {/* Hide my status if replying to a bet, it's too much clutter*/}
@@ -674,7 +677,7 @@ export function CommentOnBetRow(props: {
             <UserLink
               username={bettorUsername}
               name={bettorName}
-              marketCreator={false}
+              questionCreator={false}
             />
             {bought} {money} of
             <OutcomeLabel

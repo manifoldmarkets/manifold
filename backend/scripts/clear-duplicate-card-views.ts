@@ -28,7 +28,7 @@ const clearDuplicateCardViews = async () => {
           .collection('users')
           .doc(userId)
           .collection('events')
-          .where('name', '==', 'view market card')
+          .where('name', '==', 'view question card')
           .select('contractId', 'timestamp') as Query<{
           contractId: string
           timestamp: number

@@ -286,10 +286,10 @@ export function UserJoinedNotification(props: {
   const { sourceUserName, sourceUserUsername, sourceSlug, reason, sourceText } =
     notification
   let reasonBlock = <span>because of a link you shared</span>
-  if (sourceSlug && reason == 'user_joined_to_bet_on_your_market') {
+  if (sourceSlug && reason == 'user_joined_to_bet_on_your_question') {
     reasonBlock = (
       <>
-        to bet on the market{' '}
+        to bet on the question{' '}
         <QuestionOrGroupLink
           notification={notification}
           truncatedLength={'xl'}

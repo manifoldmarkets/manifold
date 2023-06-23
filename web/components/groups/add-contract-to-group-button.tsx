@@ -11,7 +11,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { addContractToGroup } from 'web/lib/firebase/api'
 import { IconButton } from '../buttons/button'
-import { AddMarketToGroupModal } from './add-market-modal'
+import { AddQuestionToGroupModal } from './add-question-modal'
 import { groupRoleType } from './group-member-modal'
 
 export type AddContractToGroupPermissionType =
@@ -62,12 +62,12 @@ export function AddContractButton(props: {
       )
     )
       .then(() =>
-        toast('Succesfully added markets!', {
+        toast('Succesfully added questions!', {
           icon: <CheckCircleIcon className={'h-5 w-5 text-green-500'} />,
         })
       )
       .catch(() =>
-        toast('Error adding markets. Try again?', {
+        toast('Error adding questions. Try again?', {
           icon: <XCircleIcon className={'h-5 w-5 text-red-500'} />,
         })
       )
@@ -87,12 +87,12 @@ export function AddContractButton(props: {
             )}
           </div>
         </IconButton>
-        <AddMarketToGroupModal
+        <AddQuestionToGroupModal
           group={group}
           user={user}
           open={open}
           setOpen={setOpen}
-          onAddMarkets={onSubmit}
+          onAddQuestions={onSubmit}
           addPermission={addPermission}
         />
       </div>

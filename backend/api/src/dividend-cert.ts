@@ -58,7 +58,7 @@ export const dividendcert = authEndpoint(async (req, auth) => {
     }
 
     // Update user balances; assumes <249 owners of a cert
-    // See `resolve-markets.ts` for a more robust solution
+    // See `resolve-questions.ts` for a more robust solution
     payUsers(transaction, payouts)
     // Also create the associated dividend txns
     const payoutsWithoutProvider = payouts.filter(

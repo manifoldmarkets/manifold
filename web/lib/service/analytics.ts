@@ -39,12 +39,12 @@ async function insertSupabaseEvent(
   adId?: string | null
 ) {
   if (
-    (name === 'view market' || name === 'view market card') &&
+    (name === 'view question' || name === 'view question card') &&
     userId &&
     contractId
   ) {
     return run(
-      db.from('user_seen_markets').insert({
+      db.from('user_seen_questions').insert({
         user_id: userId,
         contract_id: contractId,
         data: removeUndefinedProps(data) as Record<string, Json>,

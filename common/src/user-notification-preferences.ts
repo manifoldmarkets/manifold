@@ -7,36 +7,36 @@ import { PrivateUser } from './user'
 export type notification_destination_types = 'email' | 'browser' | 'mobile'
 export type notification_preference = keyof notification_preferences
 export type notification_preferences = {
-  // Watched Markets
-  all_comments_on_watched_markets: notification_destination_types[]
-  all_answers_on_watched_markets: notification_destination_types[]
+  // Watched Questions
+  all_comments_on_watched_questions: notification_destination_types[]
+  all_answers_on_watched_questions: notification_destination_types[]
 
-  some_comments_on_watched_markets: notification_destination_types[]
+  some_comments_on_watched_questions: notification_destination_types[]
 
   // Comments
-  tipped_comments_on_watched_markets: notification_destination_types[]
-  comments_by_followed_users_on_watched_markets: notification_destination_types[]
-  all_replies_to_my_comments_on_watched_markets: notification_destination_types[]
-  all_replies_to_my_answers_on_watched_markets: notification_destination_types[]
-  all_comments_on_contracts_with_shares_in_on_watched_markets: notification_destination_types[]
+  tipped_comments_on_watched_questions: notification_destination_types[]
+  comments_by_followed_users_on_watched_questions: notification_destination_types[]
+  all_replies_to_my_comments_on_watched_questions: notification_destination_types[]
+  all_replies_to_my_answers_on_watched_questions: notification_destination_types[]
+  all_comments_on_contracts_with_shares_in_on_watched_questions: notification_destination_types[]
 
   // Answers
-  answers_by_followed_users_on_watched_markets: notification_destination_types[]
-  answers_by_market_creator_on_watched_markets: notification_destination_types[]
-  all_answers_on_contracts_with_shares_in_on_watched_markets: notification_destination_types[]
+  answers_by_followed_users_on_watched_questions: notification_destination_types[]
+  answers_by_question_creator_on_watched_questions: notification_destination_types[]
+  all_answers_on_contracts_with_shares_in_on_watched_questions: notification_destination_types[]
 
-  // On users' markets
+  // On users' questions
   your_contract_closed: notification_destination_types[]
-  all_comments_on_my_markets: notification_destination_types[]
-  all_answers_on_my_markets: notification_destination_types[]
-  subsidized_your_market: notification_destination_types[]
+  all_comments_on_my_questions: notification_destination_types[]
+  all_answers_on_my_questions: notification_destination_types[]
+  subsidized_your_question: notification_destination_types[]
 
-  // Market updates
-  resolutions_on_watched_markets: notification_destination_types[]
-  resolutions_on_watched_markets_with_shares_in: notification_destination_types[]
-  market_updates_on_watched_markets: notification_destination_types[]
-  market_updates_on_watched_markets_with_shares_in: notification_destination_types[]
-  probability_updates_on_watched_markets: notification_destination_types[]
+  // Question updates
+  resolutions_on_watched_questions: notification_destination_types[]
+  resolutions_on_watched_questions_with_shares_in: notification_destination_types[]
+  question_updates_on_watched_questions: notification_destination_types[]
+  question_updates_on_watched_questions_with_shares_in: notification_destination_types[]
+  probability_updates_on_watched_questions: notification_destination_types[]
 
   // Balance Changes
   loan_income: notification_destination_types[]
@@ -44,7 +44,7 @@ export type notification_preferences = {
   referral_bonuses: notification_destination_types[]
   unique_bettors_on_your_contract: notification_destination_types[]
   tips_on_your_comments: notification_destination_types[]
-  tips_on_your_markets: notification_destination_types[]
+  tips_on_your_questions: notification_destination_types[]
   limit_order_fills: notification_destination_types[]
   quest_payout: notification_destination_types[]
 
@@ -61,7 +61,7 @@ export type notification_preferences = {
   user_liked_your_content: notification_destination_types[]
   on_new_follow: notification_destination_types[]
   contract_from_followed_user: notification_destination_types[]
-  trending_markets: notification_destination_types[]
+  trending_questions: notification_destination_types[]
   profit_loss_updates: notification_destination_types[]
   onboarding_flow: notification_destination_types[]
   thank_you_for_purchases: notification_destination_types[]
@@ -85,66 +85,63 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     ]) as notification_destination_types[]
   }
   const defaults: notification_preferences = {
-    // Watched Markets
-    all_comments_on_watched_markets: constructPref(false, false, false),
-    all_answers_on_watched_markets: constructPref(true, false, false),
-    some_comments_on_watched_markets: constructPref(true, false, false),
+    // Watched Questions
+    all_comments_on_watched_questions: constructPref(false, false, false),
+    all_answers_on_watched_questions: constructPref(true, false, false),
+    some_comments_on_watched_questions: constructPref(true, false, false),
 
     // Comments
     tips_on_your_comments: constructPref(true, true, false),
-    comments_by_followed_users_on_watched_markets: constructPref(
+    comments_by_followed_users_on_watched_questions: constructPref(
       true,
       true,
       false
     ),
-    all_replies_to_my_comments_on_watched_markets: constructPref(
+    all_replies_to_my_comments_on_watched_questions: constructPref(
       true,
       true,
       true
     ),
-    all_replies_to_my_answers_on_watched_markets: constructPref(
+    all_replies_to_my_answers_on_watched_questions: constructPref(
       true,
       true,
       true
     ),
-    all_comments_on_contracts_with_shares_in_on_watched_markets: constructPref(
-      true,
-      false,
-      false
-    ),
+    all_comments_on_contracts_with_shares_in_on_watched_questions:
+      constructPref(true, false, false),
 
     // Answers
-    answers_by_followed_users_on_watched_markets: constructPref(
+    answers_by_followed_users_on_watched_questions: constructPref(
       true,
       true,
       false
     ),
-    answers_by_market_creator_on_watched_markets: constructPref(
+    answers_by_question_creator_on_watched_questions: constructPref(
       true,
       true,
       false
     ),
-    all_answers_on_contracts_with_shares_in_on_watched_markets: constructPref(
+    all_answers_on_contracts_with_shares_in_on_watched_questions: constructPref(
       true,
       true,
       false
     ),
 
-    // On users' markets
+    // On users' questions
     your_contract_closed: constructPref(true, true, false), // High priority
-    all_comments_on_my_markets: constructPref(true, true, false),
-    all_answers_on_my_markets: constructPref(true, true, false),
-    subsidized_your_market: constructPref(true, true, false),
+    all_comments_on_my_questions: constructPref(true, true, false),
+    all_answers_on_my_questions: constructPref(true, true, false),
+    subsidized_your_question: constructPref(true, true, false),
 
-    // Market updates
-    resolutions_on_watched_markets: constructPref(true, false, true),
-    market_updates_on_watched_markets: constructPref(true, false, false),
-    market_updates_on_watched_markets_with_shares_in: constructPref(
+    // Question updates
+    resolutions_on_watched_questions: constructPref(true, false, true),
+    question_updates_on_watched_questions: constructPref(true, false, false),
+    question_updates_on_watched_questions_with_shares_in: constructPref(
       true,
       false,
       false
     ),
-    resolutions_on_watched_markets_with_shares_in: constructPref(
+    resolutions_on_watched_questions_with_shares_in: constructPref(
       true,
       true,
       true
@@ -155,8 +152,8 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     betting_streaks: constructPref(true, false, true),
     referral_bonuses: constructPref(true, true, false),
     unique_bettors_on_your_contract: constructPref(true, true, false),
-    tipped_comments_on_watched_markets: constructPref(true, true, false),
-    tips_on_your_markets: constructPref(true, true, false),
+    tipped_comments_on_watched_questions: constructPref(true, true, false),
+    tips_on_your_questions: constructPref(true, true, false),
     limit_order_fills: constructPref(true, false, false),
     quest_payout: constructPref(true, false, false),
 
@@ -172,9 +169,9 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     tagged_user: constructPref(true, true, false),
     on_new_follow: constructPref(true, true, false),
     contract_from_followed_user: constructPref(true, true, false),
-    trending_markets: constructPref(false, true, false),
+    trending_questions: constructPref(false, true, false),
     profit_loss_updates: constructPref(true, true, false),
-    probability_updates_on_watched_markets: constructPref(true, false, true),
+    probability_updates_on_watched_questions: constructPref(true, false, true),
     thank_you_for_purchases: constructPref(false, false, false),
     onboarding_flow: constructPref(true, true, false),
     user_liked_your_content: constructPref(true, false, false),
@@ -187,43 +184,44 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
 // Adding a new key:value here is optional, you can just use a key of notification_subscription_types
 // You might want to add a key:value here if there will be multiple notification reasons that map to the same
 // subscription type, i.e. 'comment_on_contract_you_follow' and 'comment_on_contract_with_users_answer' both map to
-// 'all_comments_on_watched_markets' subscription type
+// 'all_comments_on_watched_questions' subscription type
 // TODO: perhaps better would be to map notification_subscription_types to arrays of notification_reason_types
 export const notificationReasonToSubscriptionType: Partial<
   Record<notification_reason_types, notification_preference>
 > = {
   you_referred_user: 'referral_bonuses',
-  user_joined_to_bet_on_your_market: 'referral_bonuses',
+  user_joined_to_bet_on_your_question: 'referral_bonuses',
   tip_received: 'tips_on_your_comments',
   bet_fill: 'limit_order_fills',
   user_joined_from_your_group_invite: 'referral_bonuses',
   challenge_accepted: 'limit_order_fills',
   betting_streak_incremented: 'betting_streaks',
-  liked_and_tipped_your_contract: 'tips_on_your_markets',
-  comment_on_your_contract: 'all_comments_on_my_markets',
-  answer_on_your_contract: 'all_answers_on_my_markets',
-  comment_on_contract_you_follow: 'all_comments_on_watched_markets',
-  answer_on_contract_you_follow: 'all_answers_on_watched_markets',
-  update_on_contract_you_follow: 'market_updates_on_watched_markets',
-  resolution_on_contract_you_follow: 'resolutions_on_watched_markets',
+  liked_and_tipped_your_contract: 'tips_on_your_questions',
+  comment_on_your_contract: 'all_comments_on_my_questions',
+  answer_on_your_contract: 'all_answers_on_my_questions',
+  comment_on_contract_you_follow: 'all_comments_on_watched_questions',
+  answer_on_contract_you_follow: 'all_answers_on_watched_questions',
+  update_on_contract_you_follow: 'question_updates_on_watched_questions',
+  resolution_on_contract_you_follow: 'resolutions_on_watched_questions',
   comment_on_contract_with_users_shares_in:
-    'all_comments_on_contracts_with_shares_in_on_watched_markets',
+    'all_comments_on_contracts_with_shares_in_on_watched_questions',
   answer_on_contract_with_users_shares_in:
-    'all_answers_on_contracts_with_shares_in_on_watched_markets',
+    'all_answers_on_contracts_with_shares_in_on_watched_questions',
   update_on_contract_with_users_shares_in:
-    'market_updates_on_watched_markets_with_shares_in',
+    'question_updates_on_watched_questions_with_shares_in',
   resolution_on_contract_with_users_shares_in:
-    'resolutions_on_watched_markets_with_shares_in',
-  comment_on_contract_with_users_answer: 'all_comments_on_watched_markets',
-  update_on_contract_with_users_answer: 'market_updates_on_watched_markets',
-  resolution_on_contract_with_users_answer: 'resolutions_on_watched_markets',
-  answer_on_contract_with_users_answer: 'all_answers_on_watched_markets',
-  comment_on_contract_with_users_comment: 'all_comments_on_watched_markets',
-  answer_on_contract_with_users_comment: 'all_answers_on_watched_markets',
-  update_on_contract_with_users_comment: 'market_updates_on_watched_markets',
-  resolution_on_contract_with_users_comment: 'resolutions_on_watched_markets',
-  reply_to_users_answer: 'all_replies_to_my_answers_on_watched_markets',
-  reply_to_users_comment: 'all_replies_to_my_comments_on_watched_markets',
+    'resolutions_on_watched_questions_with_shares_in',
+  comment_on_contract_with_users_answer: 'all_comments_on_watched_questions',
+  update_on_contract_with_users_answer: 'question_updates_on_watched_questions',
+  resolution_on_contract_with_users_answer: 'resolutions_on_watched_questions',
+  answer_on_contract_with_users_answer: 'all_answers_on_watched_questions',
+  comment_on_contract_with_users_comment: 'all_comments_on_watched_questions',
+  answer_on_contract_with_users_comment: 'all_answers_on_watched_questions',
+  update_on_contract_with_users_comment:
+    'question_updates_on_watched_questions',
+  resolution_on_contract_with_users_comment: 'resolutions_on_watched_questions',
+  reply_to_users_answer: 'all_replies_to_my_answers_on_watched_questions',
+  reply_to_users_comment: 'all_replies_to_my_comments_on_watched_questions',
 }
 
 export function getNotificationPreference(reason: NotificationReason) {
@@ -243,7 +241,7 @@ export const getNotificationDestinationsForUser = (
     const notificationPreference = getNotificationPreference(reason)
     const destinations = notificationSettings[notificationPreference] ?? []
     const optOutOfAllSettings = notificationSettings.opt_out_all
-    // Your market closure notifications are high priority, opt-out doesn't affect their delivery
+    // Your question closure notifications are high priority, opt-out doesn't affect their delivery
     const optedOutOfEmail =
       optOutOfAllSettings.includes('email') &&
       notificationPreference !== 'your_contract_closed'

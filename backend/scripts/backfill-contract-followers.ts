@@ -37,7 +37,7 @@ async function backfillContractFollowers() {
       .get()
     const liquidityProvidersIds = uniq(
       liquidityProviders.docs.map((doc) => doc.data().userId)
-      // exclude free market liquidity provider
+      // exclude free question liquidity provider
     ).filter(
       (id) =>
         id !== HOUSE_LIQUIDITY_PROVIDER_ID ||

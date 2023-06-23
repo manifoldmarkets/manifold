@@ -5,7 +5,7 @@ import { groupBy } from 'lodash'
 import { invokeFunction } from 'shared/utils'
 import {
   LATENT_FEATURES_COUNT,
-  getMarketRecommendations,
+  getQuestionRecommendations,
 } from 'common/recommendation'
 import {
   createSupabaseDirectClient,
@@ -28,12 +28,12 @@ export const scheduleUpdateRecommended = functions.pubsub
 export const updaterecommended = onRequest(
   { timeoutSeconds: 3600, cpu: 4, memory: '2GiB', minInstances: 0 },
   async (_req, res) => {
-    await updateRecommendedMarkets()
+    await updateRecommendedQuestions()
     res.status(200).json({ success: true })
   }
 )
 
-export const updateRecommendedMarkets = async () => {
+export const updateRecommendedQuestions = async () => {
   const pg = createSupabaseDirectClient()
 
   console.log('Loading contracts...')
@@ -45,7 +45,7 @@ export const updateRecommendedMarkets = async () => {
   console.log('Computing recommendations...')
 
   const { userIds, userFeatures, contractIds, contractFeatures } =
-    getMarketRecommendations(contracts, userData, 2000)
+    getQuestionRecommendations(contracts, userData, 2000)
 
   const userFeatureRows = userIds.map((userId, i) => ({
     user_id: userId,
@@ -101,18 +101,18 @@ export const loadUserDataForRecommendations = async (
     `select
       user_id, type as event_name,
       array_agg(distinct contract_id) as contract_ids
-    from user_seen_markets
+    from user_seen_questions
     group by user_id, type`
   )
   const viewedIdsByEvent = groupBy(viewedIds, (r) => r.event_name)
   const viewedCardIds = Object.fromEntries(
-    viewedIdsByEvent['view market card'].map((r) => [
+    viewedIdsByEvent['view question card'].map((r) => [
       r.user_id as string,
       r.contract_ids as string[],
     ])
   )
   const viewedPageIds = Object.fromEntries(
-    viewedIdsByEvent['view market'].map((r) => [
+    viewedIdsByEvent['view question'].map((r) => [
       r.user_id as string,
       r.contract_ids as string[],
     ])

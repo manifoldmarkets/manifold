@@ -13,14 +13,14 @@ import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
-import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
+import { DeleteQuestionButton } from 'web/components/buttons/delete-question-button'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { BackButton } from 'web/components/contract/back-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import {
   AuthorInfo,
   CloseOrResolveTime,
-  MarketGroups,
+  QuestionGroups,
 } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
@@ -42,7 +42,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
-import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
+import { useRelatedQuestions } from 'web/hooks/use-related-contracts'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
@@ -136,7 +136,7 @@ export function NonPrivateContractPage(props: {
 
   const inIframe = useIsIframe()
   if (!contract) {
-    return <Custom404 customText="Unable to fetch market" />
+    return <Custom404 customText="Unable to fetch question" />
   } else if (inIframe) {
     return <ContractEmbedPage contract={contract} historyData={historyData} />
   } else
@@ -193,7 +193,7 @@ export function ContractPageContent(props: {
 
   useSaveCampaign()
   useTracking(
-    'view market',
+    'view question',
     {
       slug: contract.slug,
       contractId: contract.id,
@@ -242,7 +242,7 @@ export function ContractPageContent(props: {
   const isClosed = !!(closeTime && closeTime < Date.now())
   const trustworthy = isTrustworthy(user?.username)
 
-  // show the resolver by default if the market is closed and you can resolve it
+  // show the resolver by default if the question is closed and you can resolve it
   const [showResolver, setShowResolver] = useState(false)
   useEffect(() => {
     // Close resolve panel if you just resolved it.
@@ -279,7 +279,7 @@ export function ContractPageContent(props: {
   })
   const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
 
-  const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
+  const { contracts: relatedQuestions, loadMore } = useRelatedQuestions(
     contract,
     relatedContracts
   )
@@ -312,7 +312,7 @@ export function ContractPageContent(props: {
         <Col
           className={clsx(
             'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
-            // Keep content in view when scrolling related markets on desktop.
+            // Keep content in view when scrolling related questions on desktop.
             'sticky bottom-0 min-h-screen self-end'
           )}
         >
@@ -440,7 +440,7 @@ export function ContractPageContent(props: {
               isResolved &&
               resolution === 'CANCEL' &&
               (!uniqueBettorCount || uniqueBettorCount < 10) && (
-                <DeleteMarketButton
+                <DeleteQuestionButton
                   className="mt-4 self-end"
                   contractId={contract.id}
                 />
@@ -482,13 +482,13 @@ export function ContractPageContent(props: {
               ) : null)}
 
             <div className="my-4">
-              <MarketGroups contract={contract} />
+              <QuestionGroups contract={contract} />
             </div>
 
             {outcomeType === 'NUMERIC' && (
               <AlertBox
                 title="Warning"
-                text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
+                text="Distributional numeric questions were introduced as an experimental feature and are now deprecated."
               />
             )}
 
@@ -537,18 +537,18 @@ export function ContractPageContent(props: {
         </Col>
         <RelatedContractsList
           className="hidden min-h-full max-w-[375px] xl:flex"
-          contracts={relatedMarkets}
+          contracts={relatedQuestions}
           onContractClick={(c) =>
-            track('click related market', { contractId: c.id })
+            track('click related question', { contractId: c.id })
           }
           loadMore={loadMore}
         />
       </Row>
       <RelatedContractsList
         className="mx-auto mt-8 min-w-[300px] max-w-[600px] xl:hidden"
-        contracts={relatedMarkets}
+        contracts={relatedQuestions}
         onContractClick={(c) =>
-          track('click related market', { contractId: c.id })
+          track('click related question', { contractId: c.id })
         }
         loadMore={loadMore}
       />
@@ -590,7 +590,7 @@ export function ContractSEO(props: {
       title={question}
       description={seoDesc}
       url={`/${creatorUsername}/${slug}`}
-      ogProps={{ props: ogCardProps, endpoint: 'market' }}
+      ogProps={{ props: ogCardProps, endpoint: 'question' }}
     />
   )
 }

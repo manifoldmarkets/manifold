@@ -54,15 +54,15 @@ export default function DestinyLandingPage(props: {
     <Page>
       <SEO
         title="Destiny on Manifold"
-        description="Get more out of Twitch with play-money betting markets."
+        description="Get more out of Twitch with play-money betting questions."
       />
 
       <Col className="text-ink-600 bg-canvas-0 max-w-3xl rounded p-4 shadow-md sm:mx-auto sm:p-10">
         <Title>Claim a Destiny tier-1 subscription!</Title>
         <div>
-          Support Destiny by trading in our markets. Claim a sub for you or a
+          Support Destiny by trading in our questions. Claim a sub for you or a
           friend for the cost of {formatMoney(1000)}. For each subscription,
-          Manifold Markets will pay Destiny $5.00 on your behalf!
+          Manifold Questions will pay Destiny $5.00 on your behalf!
         </div>
 
         <div className="mt-4 pt-6 sm:mt-0">
@@ -76,7 +76,7 @@ export default function DestinyLandingPage(props: {
         </AlertBox>
 
         <Spacer h={2} />
-        <Subtitle>New to Manifold Markets?</Subtitle>
+        <Subtitle>New to Manifold Questions?</Subtitle>
         <Col className=" max-w-3xl gap-4 px-4">
           <LandingPagePanel />
           <Row className="w-full gap-2 sm:gap-4">
@@ -94,13 +94,13 @@ export default function DestinyLandingPage(props: {
             <ExternalInfoCard
               link="https://manifold.markets/group/destinygg"
               icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
-              text="All Dgg Markets"
+              text="All Dgg Questions"
             />
           </Row>
         </Col>
 
         <Spacer h={4} />
-        <Subtitle>Trending markets</Subtitle>
+        <Subtitle>Trending questions</Subtitle>
         <ContractsGrid contracts={trendingContracts} />
         <TestimonialsPanel />
       </Col>

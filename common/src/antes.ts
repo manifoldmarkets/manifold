@@ -15,8 +15,8 @@ import { noFees } from './fees'
 import { DpmAnswer } from './answer'
 import { removeUndefinedProps } from './util/object'
 
-export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
-export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // @ManifoldMarkets' id
+export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldQuestions' id
+export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // @ManifoldQuestions' id
 export const UNIQUE_BETTOR_LIQUIDITY_AMOUNT = 20
 
 type NormalizedBet<T extends Bet = Bet> = Omit<

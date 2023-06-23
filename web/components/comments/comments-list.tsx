@@ -23,8 +23,8 @@ type ContractKey = {
 
 function contractPath(slug: string) {
   // by convention this includes the contract creator username, but we don't
-  // have that handy, so we just put /market/
-  return `/market/${slug}`
+  // have that handy, so we just put /question/
+  return `/question/${slug}`
 }
 
 export function UserCommentsList(props: { user: User }) {

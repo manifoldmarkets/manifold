@@ -147,7 +147,7 @@ function DailyProfitModal(props: {
             Change in profit over the last 24 hours.{' '}
             <InfoTooltip
               text="I.e. the change in the value of your
-            shares in Yes/No markets. (Updates every 30 min)"
+            shares in Yes/No questions. (Updates every 30 min)"
             />
           </div>
         </Col>
@@ -218,14 +218,14 @@ export function ProfitChangeTable(props: {
       <Table>
         <thead>
           <tr>
-            <th>Market</th>
+            <th>Question</th>
             <th>Profit</th>
           </tr>
         </thead>
         <tbody>
           {rows.map(([contract, profit]) => (
             <tr key={contract.id + 'mention'}>
-              <MarketCell contract={contract} from={from} />
+              <QuestionCell contract={contract} from={from} />
               <ProfitCell profit={profit} />
             </tr>
           ))}
@@ -244,7 +244,7 @@ export function ProfitChangeTable(props: {
   )
 }
 
-const MarketCell = (props: {
+const QuestionCell = (props: {
   contract: CPMMContract
   from: 'day' | 'week' | 'month'
 }) => {

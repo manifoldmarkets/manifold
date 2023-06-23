@@ -19,15 +19,15 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
 
         <TweetButton
           tweetText={
-            'I created a market. ' +
+            'I created a question. ' +
             getShareUrl(contract, contract.creatorUsername)
           }
         />
 
         <CopyLinkButton
           url={getShareUrl(contract, contract.creatorUsername)}
-          eventTrackingName="copy creator market link"
-          linkIconOnlyProps={{ tooltip: 'Copy link to market' }}
+          eventTrackingName="copy creator question link"
+          linkIconOnlyProps={{ tooltip: 'Copy link to question' }}
         />
       </div>
 

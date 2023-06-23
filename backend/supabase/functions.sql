@@ -98,7 +98,7 @@ or replace function get_recommended_contracts_embeddings_from (
            join listed_open_contracts lpc on lpc.id = ce.contract_id
      left join (
         select contract_id
-        from user_seen_markets
+        from user_seen_questions
         where user_id = uid
           and created_time > now() - interval '7 days'
       ) seen on seen.contract_id = ce.contract_id
@@ -323,9 +323,9 @@ or replace function get_recommended_contracts_embeddings_from_fast (
   relative_dist numeric,
   popularity_score numeric
 ) stable parallel safe language sql as $$ with
-  viewed_market_cards as (
+  viewed_question_cards as (
     select contract_id
-    from user_seen_markets
+    from user_seen_questions
     where user_id = uid
       and created_time > now() - interval '7 days'
   ),
@@ -340,7 +340,7 @@ or replace function get_recommended_contracts_embeddings_from_fast (
     from contract_embeddings as ce
            join listed_open_contracts lpc on lpc.id = ce.contract_id
     where not exists (select 1 from unnest(excluded_contract_ids) w where w = ce.contract_id)
-      and not exists (select 1 from viewed_market_cards vmc where vmc.contract_id = ce.contract_id)
+      and not exists (select 1 from viewed_question_cards vmc where vmc.contract_id = ce.contract_id)
     order by p_embedding <=> ce.embedding
     limit 500
   ), available_contracts as (
@@ -647,9 +647,8 @@ where contracts.resolution_time is not null
   and contracts.outcome_type = 'BINARY'
 limit count offset start $$;
 
-create or replace function sample_resolved_bets(trader_threshold int, p numeric) 
-returns table (prob numeric, is_yes boolean) 
-stable parallel safe language sql as $$
+create
+or replace function sample_resolved_bets (trader_threshold int, p numeric) returns table (prob numeric, is_yes boolean) stable parallel safe language sql as $$
 select  0.5 * ((contract_bets.data->>'probBefore')::numeric + (contract_bets.data->>'probAfter')::numeric)  as prob, 
        ((contracts.data->>'resolution')::text = 'YES')::boolean as is_yes
 from contract_bets
@@ -683,17 +682,17 @@ create table if not exists
 alter table discord_users enable row level security;
 
 create table if not exists
-  discord_messages_markets (
+  discord_messages_questions (
     message_id text not null,
-    market_id text not null,
-    market_slug text not null,
+    question_id text not null,
+    question_slug text not null,
     channel_id text not null,
     last_updated_thread_time bigint,
     thread_id text,
     primary key (message_id)
   );
 
-alter table discord_messages_markets enable row level security;
+alter table discord_messages_questions enable row level security;
 
 create
 or replace function get_your_contract_ids (uid text) returns table (contract_id text) stable parallel safe language sql as $$ with your_liked_contracts as (
@@ -838,12 +837,12 @@ limit match_count;
 $$;
 
 create
- or replace function get_top_market_ads (uid text) returns table (
+or replace function get_top_question_ads (uid text) returns table (
   ad_id text,
-  market_id text,
+  question_id text,
   ad_funds numeric,
   ad_cost_per_view numeric,
-  market_data jsonb
+  question_data jsonb
 ) language sql parallel safe as $$
 --with all the redeemed ads (has a txn)
 with redeemed_ad_ids as (
@@ -862,38 +861,38 @@ user_embedding as (
   where user_id = uid
 ),
 --with all the ads that haven't been redeemed, by closest to your embedding
-unredeemed_market_ads as (
+unredeemed_question_ads as (
   select
-    id, market_id, funds, cost_per_view, embedding
+    id, question_id, funds, cost_per_view, embedding
   from
-    market_ads
+    question_ads
   where 
-    market_ads.user_id != uid -- hide your own ads; comment out to debug
+    question_ads.user_id != uid -- hide your own ads; comment out to debug
     and not exists (
       SELECT 1
       FROM redeemed_ad_ids
-      WHERE fromId = market_ads.id
+      WHERE fromId = question_ads.id
     )
-    and market_ads.funds >= cost_per_view 
+    and question_ads.funds >= cost_per_view 
   order by cost_per_view * (1 - (embedding <=> (
     select interest_embedding
     from user_embedding
   ))) desc
   limit 50
 ),
---with all the unique market_ids
-unique_market_ids as (
-  select distinct market_id
-  from unredeemed_market_ads
+--with all the unique question_ids
+unique_question_ids as (
+  select distinct question_id
+  from unredeemed_question_ads
 ),
---with the top ad for each unique market_id
-top_market_ads as (
+--with the top ad for each unique question_id
+top_question_ads as (
   select
-    id, market_id, funds, cost_per_view
+    id, question_id, funds, cost_per_view
   from
-    unredeemed_market_ads
+    unredeemed_question_ads
   where
-    market_id in (select market_id from unique_market_ids)
+    question_id in (select question_id from unique_question_ids)
   order by
     cost_per_view * (1 - (embedding <=> (select interest_embedding from user_embedding))) desc
   limit
@@ -901,33 +900,32 @@ top_market_ads as (
 )
 select
   tma.id,
-  tma.market_id,
+  tma.question_id,
   tma.funds,
   tma.cost_per_view,
   contracts.data
 from
-  top_market_ads as tma
-  inner join contracts on contracts.id = tma.market_id
+  top_question_ads as tma
+  inner join contracts on contracts.id = tma.question_id
 where
   contracts.resolution_time is null
   and contracts.close_time > now()
 $$;
 
-
-CREATE OR REPLACE FUNCTION user_top_news(uid TEXT, similarity numeric, n numeric)
-RETURNS TABLE (
+create
+or replace function user_top_news (uid text, similarity numeric, n numeric) returns table (
   id numeric,
-    created_time timestamp,
-    title text,
-    url text,
-    published_time timestamp,
-    author text,
-    description text,
-    image_url text,
-    source_id text,
-    source_name text,
-    contract_ids text[]
-) AS $$
+  created_time timestamp,
+  title text,
+  url text,
+  published_time timestamp,
+  author text,
+  description text,
+  image_url text,
+  source_id text,
+  source_name text,
+  contract_ids text[]
+) as $$
 with 
 user_embedding as (
   select interest_embedding
@@ -942,7 +940,7 @@ user_embedding as (
     1 - (title_embedding <=> (select interest_embedding from user_embedding)) > similarity
   ORDER BY published_time DESC
   LIMIT n;
-$$ LANGUAGE SQL;
+$$ language sql;
 
 create
 or replace function save_user_topics (p_user_id text, p_topics text[]) returns void language sql as $$ with chosen_embedding as (
@@ -1302,11 +1300,8 @@ or replace function get_engaged_users () returns table (user_id text, username t
   )
 $$ language sql stable;
 
-create or replace function top_creators_for_user(uid text, excluded_ids text[], limit_n int)
-  returns table (user_id text, n float)
-  language sql
-  stable parallel safe
-as $$
+create
+or replace function top_creators_for_user (uid text, excluded_ids text[], limit_n int) returns table (user_id text, n float) language sql stable parallel safe as $$
   select c.creator_id as user_id, count(*) as n
   from contract_bets as cb
   join contracts as c on c.id = cb.contract_id

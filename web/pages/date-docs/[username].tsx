@@ -104,7 +104,7 @@ export function DateDocPost(props: {
 
   const age = dayjs().diff(birthday, 'year')
   const shareUrl = `https://${DOMAIN}/date-docs/${username}`
-  const marketUrl = `https://${DOMAIN}/${username}/${contractSlug}`
+  const questionUrl = `https://${DOMAIN}/${username}/${contractSlug}`
 
   return (
     <Col className="bg-canvas-0 gap-6 rounded-lg px-6 py-6">
@@ -145,7 +145,7 @@ export function DateDocPost(props: {
         <div className="to-primary-300 mt-4 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 p-3">
           <iframe
             height="405"
-            src={marketUrl}
+            src={questionUrl}
             title=""
             frameBorder="0"
             className="bg-canvas-0 w-full rounded-xl p-10"

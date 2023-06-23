@@ -2,8 +2,8 @@ import { REST } from '@discordjs/rest'
 import * as console from 'console'
 import { Command } from 'discord-bot/command'
 import { commands } from 'discord-bot/commands'
-import { handleCreateMarket } from 'discord-bot/commands/create'
-import { handleOldReaction } from 'discord-bot/commands/react-to-bet-on-market'
+import { handleCreateQuestion } from 'discord-bot/commands/create'
+import { handleOldReaction } from 'discord-bot/commands/react-to-bet-on-question'
 
 import {
   Client,
@@ -102,8 +102,8 @@ const registerListeners = () => {
         customId: interaction.customId,
       })
     } else if (interaction.isModalSubmit()) {
-      handleCreateMarket(interaction).catch((e) =>
-        console.log('Error handling create market interaction', e)
+      handleCreateQuestion(interaction).catch((e) =>
+        console.log('Error handling create question interaction', e)
       )
       await track(user.id, 'modal submit', {
         guildId,

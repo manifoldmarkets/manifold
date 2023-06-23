@@ -101,8 +101,8 @@ export default function Home(props: {
           <Row className="w-full gap-2 sm:gap-4">
             <InfoCard
               icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
-              text="What is a prediction market?"
-              modal={<PredictionMarketExplainer />}
+              text="What is a prediction question?"
+              modal={<PredictionQuestionExplainer />}
             />
 
             <InfoCard
@@ -112,9 +112,9 @@ export default function Home(props: {
             />
 
             <LinkInfoCard
-              link="/markets"
+              link="/questions"
               icon={<ScaleIcon className="mx-auto h-8 w-8" />}
-              text="Explore markets"
+              text="Explore questions"
             />
           </Row>
         </Col>
@@ -196,7 +196,7 @@ export function ManaExplainer() {
         <strong className="semibold mt-4 text-xl">
           Mana ({ENV_CONFIG.moneyMoniker})
         </strong>{' '}
-        is Manifold's play money. Use it to create and bet in markets.
+        is Manifold's play money. Use it to create and bet in questions.
       </div>
       <div className={'my-3 text-lg '}>
         Mana can't be converted into cash, but can be purchased and donated to
@@ -207,14 +207,14 @@ export function ManaExplainer() {
   )
 }
 
-export function PredictionMarketExplainer() {
+export function PredictionQuestionExplainer() {
   return (
     <>
       <div className="text-lg">
-        Prediction markets let you bet on the outcome of future events.
+        Prediction questions let you bet on the outcome of future events.
       </div>
       <div className="mt-2 text-lg">
-        On Manifold, you can create your own prediction market on any question
+        On Manifold, you can create your own prediction question on any question
         you want!
       </div>
 
@@ -233,7 +233,7 @@ export function PredictionMarketExplainer() {
         <p className="mt-4">
           This set of bets implies a <b>70% probability</b> of the Democrats
           winning. As more people bet, the implied probability will converge to
-          the market's best estimate.
+          the question's best estimate.
         </p>
       </div>
     </>

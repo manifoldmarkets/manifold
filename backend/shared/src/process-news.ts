@@ -121,11 +121,11 @@ const processNewsArticle = async (
     .slice(0, 5)
 
   if (questions.length === 0) {
-    console.log('No related markets found\n\n')
+    console.log('No related questions found\n\n')
     return
   }
 
-  console.log('Markets:')
+  console.log('Questions:')
   for (const q of questions) {
     console.log(q.question)
   }

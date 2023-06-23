@@ -118,7 +118,7 @@ export default function RangePerformancePage(props: {
     defaultReferrerUsername: user?.username,
   })
   const graphView = useSingleValueHistoryChartViewScale()
-  const { contracts: relatedMarkets, loadMore } = useRecentlyBetOnContracts(
+  const { contracts: relatedQuestions, loadMore } = useRecentlyBetOnContracts(
     user?.id ?? '_'
   )
 
@@ -221,9 +221,9 @@ export default function RangePerformancePage(props: {
           </Col>
         </Col>
         <Title children="Also betting on" />
-        {relatedMarkets ? (
+        {relatedQuestions ? (
           <ContractsGrid
-            contracts={relatedMarkets}
+            contracts={relatedQuestions}
             trackingPostfix=" weekly update related"
             loadMore={loadMore}
           />

@@ -2,7 +2,7 @@ import { Contract } from 'common/contract'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
-import { canUserAddGroupToMarket } from 'api/add-contract-to-group'
+import { canUserAddGroupToQuestion } from 'api/add-contract-to-group'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { removeGroupFromContract } from 'shared/update-group-contracts-internal'
 
@@ -39,11 +39,11 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
   if (group.privacy_status == 'private' || contract.visibility == 'private') {
     throw new APIError(
       400,
-      'You can not remove a private market from a private group!'
+      'You can not remove a private question from a private group!'
     )
   }
 
-  const canAdd = await canUserAddGroupToMarket({
+  const canAdd = await canUserAddGroupToQuestion({
     userId: auth.uid,
     group,
     contract,
@@ -52,7 +52,7 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
   if (!canAdd) {
     throw new APIError(
       400,
-      `User does not have permission to remove this market from group "${group.name}".`
+      `User does not have permission to remove this question from group "${group.name}".`
     )
   }
 

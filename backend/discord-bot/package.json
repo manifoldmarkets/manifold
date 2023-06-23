@@ -1,6 +1,6 @@
 {
   "name": "manifold-discord-bot",
-  "description": "Discord bot that uses reactions to place bets on Manifold Markets.",
+  "description": "Discord bot that uses reactions to place bets on Manifold Questions.",
   "version": "0.1.0",
   "scripts": {
     "start": "ENVIRONMENT=PROD yarn build:watch",

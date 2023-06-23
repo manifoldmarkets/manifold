@@ -11,7 +11,7 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
 
   const user = useUser()
 
-  const name = ENV === 'DEV' ? 'DEV' : 'Markets'
+  const name = ENV === 'DEV' ? 'DEV' : 'Questions'
 
   return (
     <Link

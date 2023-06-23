@@ -72,7 +72,7 @@ export type NumericBet = Bet & {
   allBetAmounts: { [outcome: string]: number }
 }
 
-// Binary market limit order.
+// Binary question limit order.
 export type LimitBet = Bet & LimitProps
 
 type LimitProps = {

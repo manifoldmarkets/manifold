@@ -7,7 +7,7 @@ import { getNewMultiBetInfo } from 'common/new-bet'
 import { DpmAnswer, MAX_ANSWER_LENGTH } from 'common/answer'
 import { getValues } from 'shared/utils'
 import { APIError, authEndpoint, validate } from './helpers'
-import { addUserToContractFollowers } from 'shared/follow-market'
+import { addUserToContractFollowers } from 'shared/follow-question'
 
 const bodySchema = z.object({
   contractId: z.string().max(MAX_ANSWER_LENGTH),

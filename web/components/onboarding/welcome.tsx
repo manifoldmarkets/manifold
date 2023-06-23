@@ -29,7 +29,7 @@ export default function Welcome() {
 
   const availablePages = buildArray([
     <WhatIsManifoldPage />,
-    <PredictionMarketPage />,
+    <PredictionQuestionPage />,
     user && <ThankYouPage />,
   ])
 
@@ -126,7 +126,7 @@ function WhatIsManifoldPage() {
         width={150}
       />
       <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-xl font-normal">
-        Welcome to Manifold Markets
+        Welcome to Manifold Questions
       </div>
       <p className="mb-4 text-lg">
         Bet on anything and help people predict the future!
@@ -136,15 +136,15 @@ function WhatIsManifoldPage() {
   )
 }
 
-function PredictionMarketPage() {
+function PredictionQuestionPage() {
   return (
     <>
       <div className="text-primary-700 mt-3 mb-6 text-center text-xl font-normal">
         How it works
       </div>
       <div className="mt-2 text-lg">
-        Create a market on any question. Bet on the right answer. The
-        probability is the market's best estimate.
+        Create a question on any question. Bet on the right answer. The
+        probability is the question's best estimate.
       </div>
       <Image
         src="/welcome/manifold-example.gif"

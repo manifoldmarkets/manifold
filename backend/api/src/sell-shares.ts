@@ -13,7 +13,7 @@ import { Bet } from 'common/bet'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { redeemShares } from './redeem-shares'
-import { removeUserFromContractFollowers } from 'shared/follow-market'
+import { removeUserFromContractFollowers } from 'shared/follow-question'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -69,7 +69,7 @@ export const sellshares = authEndpoint(async (req, auth) => {
         ([_k, v]) => !floatingEqual(0, v)
       )
       if (nonzeroShares.length == 0) {
-        throw new APIError(400, "You don't own any shares in this market.")
+        throw new APIError(400, "You don't own any shares in this question.")
       }
       if (nonzeroShares.length > 1) {
         throw new APIError(

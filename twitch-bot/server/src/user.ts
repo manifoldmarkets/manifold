@@ -1,5 +1,5 @@
 import { ResolutionOutcome } from '@common/outcome';
-import { LiteMarket } from '@common/types/manifold-api-types';
+import { LiteQuestion } from '@common/types/manifold-api-types';
 import { Response } from 'node-fetch';
 import * as Manifold from './manifold-api';
 
@@ -12,7 +12,7 @@ export type UserData = {
   APIKey: string;
   controlToken: string;
   botEnabled?: boolean;
-  selectedMarket?: string;
+  selectedQuestion?: string;
   admin?: boolean;
   metrics?: {
     lastOverlayFeatured_day?: number;
@@ -33,23 +33,23 @@ export default class User {
     return (await Manifold.getUserByID(this.data.manifoldID)).balance;
   }
 
-  public async allIn(marketID: string, yes: boolean): Promise<Response> {
-    return this.placeBet(marketID, Math.floor(await this.getBalance()), yes);
+  public async allIn(questionID: string, yes: boolean): Promise<Response> {
+    return this.placeBet(questionID, Math.floor(await this.getBalance()), yes);
   }
 
-  async sellAllShares(marketID: string): Promise<Response> {
-    return Manifold.sellShares(marketID, this.data.APIKey);
+  async sellAllShares(questionID: string): Promise<Response> {
+    return Manifold.sellShares(questionID, this.data.APIKey);
   }
 
-  public async createBinaryMarket(question: string, description: string, initialProb_percent: number, options?: { visibility?: 'public' | 'unlisted'; groupID?: string }): Promise<LiteMarket> {
-    return Manifold.createBinaryMarket(this.data.APIKey, question, description, initialProb_percent, options);
+  public async createBinaryQuestion(question: string, description: string, initialProb_percent: number, options?: { visibility?: 'public' | 'unlisted'; groupID?: string }): Promise<LiteQuestion> {
+    return Manifold.createBinaryQuestion(this.data.APIKey, question, description, initialProb_percent, options);
   }
 
-  public async resolveBinaryMarket(marketID: string, outcome: ResolutionOutcome) {
-    return Manifold.resolveBinaryMarket(marketID, this.data.APIKey, outcome);
+  public async resolveBinaryQuestion(questionID: string, outcome: ResolutionOutcome) {
+    return Manifold.resolveBinaryQuestion(questionID, this.data.APIKey, outcome);
   }
 
-  public async placeBet(marketID: string, amount: number, yes: boolean): Promise<Response> {
-    return Manifold.placeBet(marketID, this.data.APIKey, amount, yes ? 'YES' : 'NO');
+  public async placeBet(questionID: string, amount: number, yes: boolean): Promise<Response> {
+    return Manifold.placeBet(questionID, this.data.APIKey, amount, yes ? 'YES' : 'NO');
   }
 }

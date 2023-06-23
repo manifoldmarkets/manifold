@@ -107,7 +107,7 @@ export function ResolveConfirmationButton(props: {
   onResolve: () => void
   isSubmitting: boolean
   openModalButtonClass?: string
-  marketTitle: string
+  questionTitle: string
   label: string
   color: ColorType
   disabled?: boolean
@@ -117,7 +117,7 @@ export function ResolveConfirmationButton(props: {
     isSubmitting,
     openModalButtonClass,
     color,
-    marketTitle,
+    questionTitle,
     label,
     disabled,
   } = props
@@ -141,7 +141,7 @@ export function ResolveConfirmationButton(props: {
       onSubmit={onResolve}
     >
       <p>
-        Are you sure you want to resolve "{marketTitle}" to <b>{label}</b>?
+        Are you sure you want to resolve "{questionTitle}" to <b>{label}</b>?
         <br />
       </p>
     </ConfirmationButton>

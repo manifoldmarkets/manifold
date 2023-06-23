@@ -184,7 +184,7 @@ export function PrivateGroupLink(props: { group: Group }) {
       <CopyLinkButton
         url={realUrl}
         loading={slugLoading}
-        eventTrackingName={'copy market link'}
+        eventTrackingName={'copy question link'}
         displayUrl={realUrl ? truncatedUrl(realUrl) : ''}
         linkBoxClassName={'border-indigo-400 py-1 border-2 text-ink-900'}
         linkButtonClassName={'text-indigo-400'}
