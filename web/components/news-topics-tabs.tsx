@@ -8,6 +8,7 @@ import {
   RedditBlackoutData,
   MissingSubData,
   UsElectionsData,
+  ElonVersusZuckData,
 } from 'web/components/news-topics-data'
 import { buildArray } from 'common/util/array'
 
@@ -19,6 +20,7 @@ export function NewsTopicsTabs(props: {
 
   const topics = buildArray(
     !!homeContent && { title: 'Home', content: homeContent },
+    { title: 'Elon v Zuck', content: <ElonVersusZuckData /> },
     { title: 'Titanic Sub', content: <MissingSubData /> },
     { title: 'Ukraine War', content: <UkraineWarData /> },
     { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
