@@ -222,7 +222,7 @@ export const sendPersonalFollowupEmail = async (
 
 Thanks for signing up! I'm one of the cofounders of Manifold Markets, and was wondering how you've found your experience on the platform so far?
 
-If you haven't already, I encourage you to try creating your own prediction question (https://manifold.markets/create) and joining our Discord chat (https://discord.com/invite/eHQBNBqXuh).
+If you haven't already, I encourage you to try creating your own prediction market (https://manifold.markets/create) and joining our Discord chat (https://discord.com/invite/eHQBNBqXuh).
 
 Feel free to reply to this email with any questions or concerns you have.
 
@@ -260,7 +260,7 @@ export const sendCreatorGuideEmail = async (
   if (!sendToEmail) return
   return await sendTemplateEmail(
     privateUser.email,
-    'Create your own prediction question',
+    'Create your own prediction market',
     'creating-question',
     {
       name: firstName,

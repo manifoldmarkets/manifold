@@ -118,7 +118,7 @@ export default function CreateDateDocPage() {
                   on={createQuestion}
                   setOn={(on) => setCreateQuestion(on)}
                 />
-                Create a (private) prediction question attached to the date doc
+                Create a (private) prediction market attached to the date doc
               </Row>
 
               <Col className="gap-2">

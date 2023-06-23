@@ -9,7 +9,7 @@ const katex = require('rehype-katex')
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Manifold Docs',
-  tagline: 'Learn more about the BESTEST prediction question platform~',
+  tagline: 'Learn more about the BESTEST prediction market platform~',
   url: 'https://docs.manifold.markets',
   baseUrl: '/',
   onBrokenLinks: 'throw',

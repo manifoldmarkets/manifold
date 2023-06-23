@@ -127,7 +127,7 @@ export default function Charity(props: {
     <Page>
       <SEO
         title="Manifold for Charity"
-        description="Donate your prediction question earnings to charity on Manifold."
+        description="Donate your prediction market earnings to charity on Manifold."
         url="/charity"
       />
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">

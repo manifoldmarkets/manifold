@@ -330,7 +330,7 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
   // Help
   if (customId === 'question') {
     const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings()
-    const content = `This is a prediction question from [Manifold Markets](<${config.domain}>). You can bet that the event will happen (YES) by reacting with these emojis: ${yesBetsEmojis} and that it won't (NO) with these: ${noBetsEmojis}. The emoji numbers correspond to the amount of mana used, (i.e. your conviction) per bet.`
+    const content = `This is a prediction market from [Manifold Markets](<${config.domain}>). You can bet that the event will happen (YES) by reacting with these emojis: ${yesBetsEmojis} and that it won't (NO) with these: ${noBetsEmojis}. The emoji numbers correspond to the amount of mana used, (i.e. your conviction) per bet.`
     await interaction.reply({ content, ephemeral: true })
     return
   }

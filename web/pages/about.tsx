@@ -49,12 +49,12 @@ export default function AboutPage() {
         <Title>About</Title>
 
         <div className="mb-4 text-lg">
-          Manifold Markets is a play-money prediction question platform where
-          you can bet on anything.
+          Manifold Markets is a play-money prediction market platform where you
+          can bet on anything.
         </div>
 
         <LabCard
-          title="📈 What is a prediction question?"
+          title="📈 What is a prediction market?"
           href="https://docs.manifold.markets/faq#what-is-a-prediction-question"
         />
         <LabCard

@@ -42,7 +42,7 @@ export default function Create() {
     <Page>
       <SEO
         title="Create a question"
-        description="Create a play-money prediction question on any question."
+        description="Create a play-money prediction market on any question."
         url="/create"
       />
       <div
@@ -61,7 +61,7 @@ export default function Create() {
         </Row>
 
         <div className="text-ink-700 mb-4">
-          Set up your own play-money prediction question on any question.
+          Set up your own play-money prediction market on any question.
         </div>
 
         <NewContractPanel params={params} creator={user} setTheme={setTheme} />

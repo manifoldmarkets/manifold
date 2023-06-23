@@ -46,7 +46,7 @@ export default function DiscordBot() {
           <Row className={'text-primary-700 text-xl'}>What is it?</Row>
           <span className={'mx-4'}>
             The Manifold Markets Discord Bot allows you to trade, search, and
-            create prediction questions right from your discord server. It
+            create prediction markets right from your discord server. It
             supports trading via Zoomer-friendly emoji reactions! This is how it
             looks:
           </span>

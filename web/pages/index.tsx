@@ -101,7 +101,7 @@ export default function Home(props: {
           <Row className="w-full gap-2 sm:gap-4">
             <InfoCard
               icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
-              text="What is a prediction question?"
+              text="What is a prediction market?"
               modal={<PredictionQuestionExplainer />}
             />
 
@@ -211,10 +211,10 @@ export function PredictionQuestionExplainer() {
   return (
     <>
       <div className="text-lg">
-        Prediction questions let you bet on the outcome of future events.
+        Prediction markets let you bet on the outcome of future events.
       </div>
       <div className="mt-2 text-lg">
-        On Manifold, you can create your own prediction question on any question
+        On Manifold, you can create your own prediction market on any question
         you want!
       </div>
 

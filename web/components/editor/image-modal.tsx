@@ -129,7 +129,7 @@ export function DreamCard(props: {
           name="embed"
           id="embed"
           className="border-ink-300 bg-canvas-0 placeholder:text-ink-300 focus:border-primary-500 focus:ring-primary-500 block w-full rounded-md shadow-sm sm:text-sm"
-          placeholder="Prediction questions taking over the world"
+          placeholder="Prediction markets taking over the world"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           autoComplete="off"

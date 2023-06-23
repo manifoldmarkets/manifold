@@ -33,7 +33,7 @@ export default function Groups() {
     <Page>
       <SEO
         title="Groups"
-        description="Topics and communities centered prediction questions."
+        description="Topics and communities centered prediction markets."
         url="/groups"
       />
       <Col className="items-center">

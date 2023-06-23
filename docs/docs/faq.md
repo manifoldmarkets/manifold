@@ -4,19 +4,19 @@ Everything you wanted to know about [Manifold Markets](https://manifold.markets)
 
 ## Basics
 
-### What is a prediction question?
+### What is a prediction market?
 
-Prediction questions allow you to bet on the outcome of future events.
+Prediction markets allow you to bet on the outcome of future events.
 
 The prices for shares on each outcome can be interpreted as the probability that the underlying event will happen and track what question participants in aggregate believe.
 
 As more people trade on the question, the probability estimate converges to reflect the truth. Since these probabilities are public, anyone can use them to make more informed decisions.
 
-On Manifold, anyone can create their own prediction question about any question they want! We believe prediction questions are not only the best way to forecast difficult questions, but also a fun way to interact with friends, build communities over shared interests, and facilitate the sharing of information.
+On Manifold, anyone can create their own prediction market about any question they want! We believe prediction markets are not only the best way to forecast difficult questions, but also a fun way to interact with friends, build communities over shared interests, and facilitate the sharing of information.
 
 #### An example
 
-Consider a prediction question on a question like: "Will Democrats win the 2024 US presidential election?"
+Consider a prediction market on a question like: "Will Democrats win the 2024 US presidential election?"
 
 If the question is currently displaying a probability of 50%, but you believe that the true chance is higher, you can purchase shares at a cost $0.50/share that will pay out $1 if the Democrats win. Suppose the true probability is 60%, then you will make $0.10 for each share you purchase in expectation.
 
@@ -24,11 +24,11 @@ Now, you or I could be mistaken and overshooting the true probability one way or
 
 [![Explainer video](https://ruittinten.nl/wp-content/uploads/youtube-placeholder.png)](https://youtu.be/xA27x7GRMZQ)
 
-### Can prediction questions work without real money?
+### Can prediction markets work without real money?
 
 Yes! You can track Manifold's predictive track record in real time from our [platform calibration page](https://manifold.markets/calibration).
 
-Beside our own platform, there is substantial evidence that play-money prediction questions provide real forecasting power. Examples include [sports betting](http://www.electronicquestions.org/fileadmin/user_upload/doc/Issues/Volume_16/Issue_01/V16I1_Statistical_Tests_of_Real-Money_versus_Play-Money_Prediction_Questions.pdf) and internal prediction questions at firms like [Google](https://www.networkworld.com/article/2284098/google-bets-on-value-of-prediction-questions.html).
+Beside our own platform, there is substantial evidence that play-money prediction markets provide real forecasting power. Examples include [sports betting](http://www.electronicquestions.org/fileadmin/user_upload/doc/Issues/Volume_16/Issue_01/V16I1_Statistical_Tests_of_Real-Money_versus_Play-Money_Prediction_Questions.pdf) and internal prediction markets at firms like [Google](https://www.networkworld.com/article/2284098/google-bets-on-value-of-prediction-questions.html).
 
 Traders in a play-money environments are competing for the social prestige and sense of progression that come from predicting and trading well.
 
@@ -148,7 +148,7 @@ Here are some other tips to get you started:
 Whoever created the question gets to resolve it! Manifold Markets puts trust in its users to resolve their own questions in a timely and accurate manner. We generally will not intervene and resolve a question ourselves outside of exceptional circumstances. We do encourage creators to set clear resolution criteria in advance.
 
 - The creator is free to use their judgment.
-  - This allows for many new kinds of prediction questions to be created that are less objective. (E.g. "Will I enjoy participating in the Metaverse in 2023?")
+  - This allows for many new kinds of prediction markets to be created that are less objective. (E.g. "Will I enjoy participating in the Metaverse in 2023?")
 - Questions creators who are known to be reputable will earn followers and more activity on their questions.
 - Check out the [resolution section in the community guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
 
