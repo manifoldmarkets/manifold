@@ -35,7 +35,7 @@ function HomeDashboard() {
 
   return (
     <Page>
-      <Row className="mx-4 mb-0 items-center justify-between gap-4">
+      <Row className="mx-4 mb-2 items-center justify-between gap-4">
         <div className="flex sm:hidden">
           {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
         </div>

@@ -5,6 +5,7 @@ import { track } from 'web/lib/service/analytics'
 import { Col } from './col'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from 'web/components/layout/row'
+import { Carousel } from 'web/components/widgets/carousel'
 
 type Tab = {
   title: string
@@ -34,11 +35,8 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   } = props
   return (
     <>
-      <nav
-        className={clsx(
-          'border-ink-200 flex flex-nowrap justify-start overflow-x-auto border-b',
-          className
-        )}
+      <Carousel
+        className={clsx('border-ink-200 border-b', className)}
         aria-label="Tabs"
       >
         {tabs.map((tab, i) => (
@@ -76,7 +74,7 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
             </Col>
           </a>
         ))}
-      </nav>
+      </Carousel>
       {tabs.map((tab, i) => (
         <div
           key={i}
