@@ -26,9 +26,9 @@ export function NewsTopicsTabs(props: {
     !!questionsContent && { title: 'All', content: questionsContent },
     !isMobile
       ? [
+          { title: 'Ukraine War', content: <UkraineWarData /> },
           { title: 'Elon v Zuck', content: <ElonVersusZuckData /> },
           { title: 'Titanic Sub', content: <MissingSubData /> },
-          { title: 'Ukraine War', content: <UkraineWarData /> },
           { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
           { title: 'US Elections', content: <UsElectionsData /> },
         ]
