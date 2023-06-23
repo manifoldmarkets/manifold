@@ -1,6 +1,7 @@
 // User interest to user interest distance:
 export const USER_TO_USER_DISTANCE_THRESHOLD = 0.004
 export const USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD = 0.12
+export const NEW_USER_TO_CONTRACT_INTEREST_DISTANCE_THRESHOLD = 0.925
 
 export type FEED_DATA_TYPES =
   | 'new_comment'

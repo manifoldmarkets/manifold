@@ -6,6 +6,7 @@ import {
 } from 'shared/supabase/users'
 import {
   CONTRACT_OR_USER_FEED_REASON_TYPES,
+  NEW_USER_TO_CONTRACT_INTEREST_DISTANCE_THRESHOLD,
   USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD,
 } from 'common/feed'
 
@@ -119,22 +120,27 @@ const getUsersWithSimilarInterestVectorsToContract = async (
         from contract_embeddings
         where contract_id = $1
     )
-     select user_id, interest_distance, disinterest_distance
+     select user_id, interest_distance, disinterest_distance, created_at
      from (
               select ue.user_id,
                      (select embedding from ce) <=> ue.interest_embedding as interest_distance,
-                     (select embedding from ce) <=> ue.disinterest_embedding as disinterest_distance
+                     (select embedding from ce) <=> ue.disinterest_embedding as disinterest_distance,
+                     ue.created_at as created_at
               from user_embeddings as ue
           ) as distances
-
-       where interest_distance < $2
-        and (disinterest_distance is null or disinterest_distance > $3)
+       where
+           (created_at < current_date - interval '10 day' and interest_distance < $2
+               and (disinterest_distance is null or disinterest_distance > $3))
+          or
+           (created_at >= current_date - interval '10 day' and interest_distance < $4
+               and (disinterest_distance is null or disinterest_distance > $3))
        order by interest_distance;
       `,
       [
         contractId,
         interestDistanceThreshold,
         USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD,
+        NEW_USER_TO_CONTRACT_INTEREST_DISTANCE_THRESHOLD,
       ]
     )
     return res
