@@ -28,13 +28,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🌐 Internet Culture',
     '👥 Celebrities',
   ],
-  '💼 Business': [
-    '🪙 Crypto',
-    '💵 Finance',
-    '💰 Economics',
-    '🚀 Startups',
-    '🚘 Elon Musk',
-  ],
+  '💼 Business': ['💵 Finance', '💰 Economics', '🚀 Startups', '🚘 Elon Musk'],
 
   '🪂 Lifestyle': ['🏳️‍🌈 LGBTQIA+', '⛪ Religion', '💪 Personal Development'],
 
