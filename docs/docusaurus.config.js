@@ -61,7 +61,7 @@ const config = {
       navbar: {
         title: 'Manifold Docs',
         logo: {
-          alt: 'Manifold Questions Logo',
+          alt: 'Manifold Markets Logo',
           src: 'https://manifold.markets/logo.svg',
         },
         items: [
@@ -85,7 +85,7 @@ const config = {
             title: 'Manifold',
             items: [
               {
-                label: 'Manifold Questions',
+                label: 'Manifold Markets',
                 to: 'https://manifold.markets',
               },
               {
@@ -121,7 +121,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Manifold Questions, Inc. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Manifold Markets, Inc. Built with Docusaurus.`,
       },
       prism: {
         theme: lightCodeTheme,

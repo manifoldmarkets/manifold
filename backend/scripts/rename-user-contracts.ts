@@ -35,5 +35,5 @@ async function renameUserContracts(
 if (require.main === module)
   renameUserContracts('ManticQuestions', {
     username: 'ManifoldQuestions',
-    name: 'Manifold Questions',
+    name: 'Manifold Markets',
   }).then(() => process.exit())

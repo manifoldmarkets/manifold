@@ -11,8 +11,8 @@ const now = new Date()
 const fileName = `logs_${now.toISOString().replace(/:/g, '-')}.txt`
 const filePath = FileSystem.documentDirectory
 const initLogger = () => {
-  console.log('[Manifold Questions] logger filePath', filePath + fileName)
-  console.log('[Manifold Questions] build type', NATIVE_BUILD)
+  console.log('[Manifold Markets] logger filePath', filePath + fileName)
+  console.log('[Manifold Markets] build type', NATIVE_BUILD)
   if (NATIVE_BUILD === 'PROD') return { info: () => {} }
   const config = {
     severity: 'debug',
@@ -28,8 +28,8 @@ const initLogger = () => {
 const appLogger = initLogger()
 export const log = (...args: unknown[]) => {
   if (NATIVE_BUILD === 'PROD') return
-  console.log('[Manifold Questions]', ...args)
-  appLogger.info(`[Manifold Questions]`, ...args)
+  console.log('[Manifold Markets]', ...args)
+  appLogger.info(`[Manifold Markets]`, ...args)
 }
 const exportLogsViaSharingMenu = async () => {
   const UTI = 'public.item'

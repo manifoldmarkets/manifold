@@ -126,7 +126,7 @@ function WhatIsManifoldPage() {
         width={150}
       />
       <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-xl font-normal">
-        Welcome to Manifold Questions
+        Welcome to Manifold Markets
       </div>
       <p className="mb-4 text-lg">
         Bet on anything and help people predict the future!

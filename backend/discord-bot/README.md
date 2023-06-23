@@ -1,4 +1,4 @@
-# Manifold Questions Discord Bot
+# Manifold Markets Discord Bot
 
 ![image](img/ss.png)  
 Bet directly from your Discord server!

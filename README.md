@@ -1,4 +1,4 @@
-# Manifold Questions
+# Manifold Markets
 
 This [monorepo][] has basically everything involved in running and operating Manifold.
 

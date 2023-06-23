@@ -5,7 +5,7 @@ We're using Expo to help with android and ios builds. You can find more informat
 - The `native/` directory is not part of the yarn workspace, so you have to run `yarn` in the `native/` directory to install dependencies.
 - You will need to install the Expo CLI globally: `npm install -g expo-cli`
 - You need the `SENTRY_AUTH_TOKEN` set on your env, ask Ian
-- You need to make sure the Manifold Questions, Inc. team is set as the signer for app builds in Xcode - open up ios directory in Xcode and set the signing account.
+- You need to make sure the Manifold Markets, Inc. team is set as the signer for app builds in Xcode - open up ios directory in Xcode and set the signing account.
 - You need to register your device for development builds with Expo and install a provisioning profile, see the [Running a build](https://docs.expo.dev/development/build/) section with `eas device:create`
 
 ## Configuration

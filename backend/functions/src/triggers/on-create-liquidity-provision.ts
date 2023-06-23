@@ -20,7 +20,7 @@ export const onCreateLiquidityProvision = functions
     const liquidity = change.data() as LiquidityProvision
     const { eventId } = context
 
-    // Ignore Manifold Questions liquidity for now - users see a notification for free question liquidity provision
+    // Ignore Manifold Markets liquidity for now - users see a notification for free question liquidity provision
     if (
       liquidity.isAnte ||
       ((liquidity.userId === HOUSE_LIQUIDITY_PROVIDER_ID ||

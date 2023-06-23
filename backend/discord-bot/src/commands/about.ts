@@ -10,7 +10,7 @@ const data = new SlashCommandBuilder()
 async function execute(interaction: ChatInputCommandInteraction) {
   if (shouldIgnoreMessageFromGuild(interaction.guildId)) return
   await interaction.reply({
-    content: `${interaction.client.user.toString()} is the official Discord bot of [Manifold Questions](<${
+    content: `${interaction.client.user.toString()} is the official Discord bot of [Manifold Markets](<${
       config.domain
     }>).
  

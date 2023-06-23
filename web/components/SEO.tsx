@@ -20,7 +20,7 @@ export function SEO<P extends Record<string, string | undefined>>(props: {
 
   return (
     <Head>
-      <title>{`${title} | Manifold Questions`}</title>
+      <title>{`${title} | Manifold Markets`}</title>
 
       <meta
         property="og:title"

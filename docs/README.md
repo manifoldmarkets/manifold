@@ -1,6 +1,6 @@
 # docs
 
-Manifold Questions Docs
+Manifold Markets Docs
 
 ## Getting started
 

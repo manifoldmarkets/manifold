@@ -43,17 +43,13 @@ export default function AboutPage() {
 
   return (
     <Page>
-      <SEO
-        title="About"
-        description="About Manifold Questions"
-        url="/sitemap"
-      />
+      <SEO title="About" description="About Manifold Markets" url="/sitemap" />
 
       <Col className="p-4">
         <Title>About</Title>
 
         <div className="mb-4 text-lg">
-          Manifold Questions is a play-money prediction question platform where
+          Manifold Markets is a play-money prediction question platform where
           you can bet on anything.
         </div>
 

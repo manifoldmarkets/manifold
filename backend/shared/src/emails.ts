@@ -196,7 +196,7 @@ export const sendWelcomeEmail = async (
 
   return await sendTemplateEmail(
     privateUser.email,
-    'Welcome to Manifold Questions!',
+    'Welcome to Manifold Markets!',
     'welcome',
     {
       name: firstName,
@@ -220,7 +220,7 @@ export const sendPersonalFollowupEmail = async (
 
   const emailBody = `Hi ${firstName},
 
-Thanks for signing up! I'm one of the cofounders of Manifold Questions, and was wondering how you've found your experience on the platform so far?
+Thanks for signing up! I'm one of the cofounders of Manifold Markets, and was wondering how you've found your experience on the platform so far?
 
 If you haven't already, I encourage you to try creating your own prediction question (https://manifold.markets/create) and joining our Discord chat (https://discord.com/invite/eHQBNBqXuh).
 
@@ -229,7 +229,7 @@ Feel free to reply to this email with any questions or concerns you have.
 Cheers,
 
 James
-Cofounder of Manifold Questions
+Cofounder of Manifold Markets
 https://manifold.markets
  `
 
@@ -638,7 +638,7 @@ export const sendNewUniqueBettorsEmail = async (
     newPredictors.length === 1 ? 'new-unique-bettor' : 'new-unique-bettors',
     templateData,
     {
-      from: `Manifold Questions <no-reply@manifold.markets>`,
+      from: `Manifold Markets <no-reply@manifold.markets>`,
     }
   )
 }
