@@ -52,6 +52,7 @@ export type FullMarket = LiteMarket & {
   description: string | JSONContent
   textDescription: string // string version of description
   coverImageUrl?: string
+  groupSlugs?: string[]
 }
 
 export function toLiteMarket(contract: Contract): LiteMarket {
@@ -133,13 +134,14 @@ export function toFullMarket(contract: Contract): FullMarket {
         )
       : undefined
 
-  const { description, coverImageUrl } = contract
+  const { description, coverImageUrl, groupSlugs} = contract
 
   return {
     ...liteMarket,
     answers,
     description,
     coverImageUrl,
+    groupSlugs,
     textDescription:
       typeof description === 'string'
         ? description
