@@ -165,7 +165,8 @@ async function insertUserEmbedding(
   )
 
   await pg.none(
-    `insert into user_embeddings (user_id, interest_embedding, pre_signup_interest_embedding, pre_signup_embedding_is_default) values ($1, $2, $3)`,
+    `insert into user_embeddings (user_id, interest_embedding, pre_signup_interest_embedding, pre_signup_embedding_is_default)
+            values ($1, $2, $3, $4)`,
     [userId, embed, embed, defaultEmbed]
   )
 }
