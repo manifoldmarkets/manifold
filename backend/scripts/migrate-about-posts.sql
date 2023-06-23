@@ -1,23 +1,27 @@
 create temp table
-  abouts as (
+  about_updates as (
     select
-      id,
-      group_id,
-      data -> 'content' as about
+      g.id,
+      g.data -> 'about' as old,
+      p.data -> 'content' as new
     from
-      posts
-    where
-      (data ->> 'isGroupAboutPost')::boolean = true
+      groups g
+      join posts p on g.data ->> 'aboutPostId' = p.id
   );
 
 update groups
 set
-  data = jsonb_set(data, '{about}', abouts.about)
+  data = jsonb_set(data, '{about}', about_updates.new)
 from
-  abouts
+  about_updates
 where
-  abouts.group_id = groups.id;
+  about_updates.id = groups.id;
 
 delete from posts
 where
-  (data ->> 'isGroupAboutPost')::boolean = true
+  id in (
+    select
+      id
+    from
+      about_updates
+  )
