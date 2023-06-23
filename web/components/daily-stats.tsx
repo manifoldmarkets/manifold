@@ -25,7 +25,7 @@ export function DailyStats(props: {
   if (!user) return <></>
 
   return (
-    <Row className={'z-30 flex-shrink-0 items-center gap-3'}>
+    <Row className={'z-30 w-full items-center justify-end gap-3'}>
       <DailyLeagueStat user={user} />
       <QuestsOrStreak user={user} />
 
