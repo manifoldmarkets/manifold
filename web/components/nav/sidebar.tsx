@@ -36,7 +36,6 @@ import { ProfileSummary } from './profile-summary'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
 import { getIsNative } from 'web/lib/native/is-native'
-import { useIsFeedTest } from 'web/hooks/use-is-feed-test'
 
 export default function Sidebar(props: {
   className?: string
@@ -56,11 +55,9 @@ export default function Sidebar(props: {
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
 
-  const isFeed = !!useIsFeedTest()
-
   const navOptions = isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), isFeed)
-    : getDesktopNav(!!user, () => setIsModalOpen(true), isFeed)
+    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), true)
+    : getDesktopNav(!!user, () => setIsModalOpen(true), true)
 
   const bottomNavOptions = bottomNav(
     !!user,

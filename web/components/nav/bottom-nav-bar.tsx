@@ -31,7 +31,6 @@ import { isIOS } from 'web/lib/util/device'
 import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { animated } from '@react-spring/web'
-import { useIsFeedTest } from 'web/hooks/use-is-feed-test'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -78,8 +77,6 @@ export function BottomNavBar() {
 
   const user = useUser()
 
-  const isFeed = !!useIsFeedTest()
-
   const [appStoreUrl, setAppStoreUrl] = useState(APPLE_APP_URL)
   useEffect(() => {
     setAppStoreUrl(isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL)
@@ -91,7 +88,7 @@ export function BottomNavBar() {
   }
 
   const navigationOptions = user
-    ? getNavigation(user, isFeed)
+    ? getNavigation(user, true)
     : signedOutNavigation(appStoreUrl)
 
   return (
