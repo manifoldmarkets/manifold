@@ -39,7 +39,9 @@ export function NewsTopicsTabs(props: {
       ? newsContent
       : {
           title: 'News',
-          content: <Col className='m-1'>{newsContent.map((tab) => tab.content)}</Col>,
+          content: (
+            <Col className="m-1">{newsContent.map((tab) => tab.content)}</Col>
+          ),
         }
   )
 
