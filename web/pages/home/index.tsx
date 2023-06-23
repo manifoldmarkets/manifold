@@ -11,7 +11,7 @@ import { DailyStats } from 'web/components/daily-stats'
 import { Spacer } from 'web/components/layout/spacer'
 import { ProfileSummary } from 'web/components/nav/profile-summary'
 import { useUser } from 'web/hooks/use-user'
-import Search from 'web/pages/search'
+import MarketsHome from 'web/pages/markets-home'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -43,7 +43,7 @@ function HomeDashboard() {
       </Row>
       <NewsTopicsTabs
         homeContent={<FeedTimeline />}
-        questionsContent={<Search />}
+        questionsContent={<MarketsHome />}
       />
     </Page>
   )
