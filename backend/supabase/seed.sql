@@ -277,7 +277,7 @@ alter table user_events
 cluster on user_events_name;
 
 create table if not exists
-  user_seen_questions (
+  user_seen_markets (
     id bigint generated always as identity primary key,
     user_id text not null,
     contract_id text not null,
@@ -287,31 +287,31 @@ create table if not exists
     type text not null default 'view question'
   );
 
-alter table user_seen_questions enable row level security;
+alter table user_seen_markets enable row level security;
 
-drop policy if exists "public read" on user_seen_questions;
+drop policy if exists "public read" on user_seen_markets;
 
-create policy "public read" on user_seen_questions for
+create policy "public read" on user_seen_markets for
 select
   using (true);
 
-drop policy if exists "user can insert" on user_seen_questions;
+drop policy if exists "user can insert" on user_seen_markets;
 
-create policy "user can insert" on user_seen_questions for insert
+create policy "user can insert" on user_seen_markets for insert
 with
   check (true);
 
-create index if not exists user_seen_questions_created_time_desc_idx on user_seen_questions (user_id, contract_id, created_time desc);
+create index if not exists user_seen_markets_created_time_desc_idx on user_seen_markets (user_id, contract_id, created_time desc);
 
-create index concurrently if not exists user_seen_questions_type_created_time_desc_idx on user_seen_questions (
+create index concurrently if not exists user_seen_markets_type_created_time_desc_idx on user_seen_markets (
   user_id,
   contract_id,
   type,
   created_time desc
 );
 
-alter table user_seen_questions
-cluster on user_seen_questions_type_created_time_desc_idx;
+alter table user_seen_markets
+cluster on user_seen_markets_type_created_time_desc_idx;
 
 create table if not exists
   user_notifications (
@@ -833,7 +833,7 @@ create index if not exists txns_data_gin on txns using GIN (data);
 alter table txns
 cluster on txns_pkey;
 
--- for querying top question_ads
+-- for querying top market_ads
 create index if not exists txns_category on txns ((data ->> 'category'), (data ->> 'toId'));
 
 create table if not exists
@@ -1050,28 +1050,28 @@ drop policy if exists "public write access" on user_topics;
 create policy "public write access" on user_topics for all using (true);
 
 create table if not exists
-  question_ads (
+  market_ads (
     id text not null primary key default uuid_generate_v4 (),
     user_id text not null,
-    question_id text not null,
-    foreign key (question_id) references contracts (id),
+    market_id text not null,
+    foreign key (market_id) references contracts (id),
     funds numeric not null,
     cost_per_view numeric not null,
     created_at timestamp not null default now(),
     embedding vector (1536) not null,
   );
 
-alter table question_ads enable row level security;
+alter table market_ads enable row level security;
 
-drop policy if exists "public read" on question_ads;
+drop policy if exists "public read" on market_ads;
 
-create policy "public read" on question_ads for
+create policy "public read" on market_ads for
 select
   using (true);
 
-drop policy if exists "admin write access" on question_ads;
+drop policy if exists "admin write access" on market_ads;
 
-create policy "admin write access" on question_ads as PERMISSIVE for all to service_role;
+create policy "admin write access" on market_ads as PERMISSIVE for all to service_role;
 
 create table if not exists
   leagues (

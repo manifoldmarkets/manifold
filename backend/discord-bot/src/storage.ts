@@ -10,7 +10,7 @@ import {
 
 const discordIdsToApis: { [k: string]: Api } = {}
 type DiscordMessageQuestionInfo = {
-  question_id: string
+  market_id: string
   question_slug: string
   message_id: string
   thread_id?: string
@@ -70,7 +70,7 @@ export const getApiKeyFromDiscordId = async (discordUser: User) => {
 
 export const getQuestionInfoFromMessageId = async (messageId: string) => {
   const { data, error } = await supabase
-    .from('discord_messages_questions')
+    .from('discord_messages_markets')
     .select('*')
     .eq('message_id', messageId)
   return error ? null : (data[0] as DiscordMessageQuestionInfo) ?? null
@@ -82,9 +82,9 @@ export const saveQuestionToMessageId = async (
   questionSlug: string,
   channelId: string
 ) => {
-  const { error } = await supabase.from('discord_messages_questions').insert({
+  const { error } = await supabase.from('discord_messages_markets').insert({
     message_id: messageId,
-    question_id: questionId,
+    market_id: questionId,
     question_slug: questionSlug,
     channel_id: channelId,
   })
@@ -97,7 +97,7 @@ export const saveThreadIdToMessageId = async (
 ) => {
   console.log('writing thread id', threadId, 'to message id', messageId)
   const { error } = await supabase
-    .from('discord_messages_questions')
+    .from('discord_messages_markets')
     .update({
       message_id: messageId,
       thread_id: threadId,
@@ -109,7 +109,7 @@ export const saveThreadIdToMessageId = async (
 }
 export const updateThreadLastUpdatedTime = async (messageId: string) => {
   const { error } = await supabase
-    .from('discord_messages_questions')
+    .from('discord_messages_markets')
     .update({
       message_id: messageId,
       last_updated_thread_time: Date.now(),

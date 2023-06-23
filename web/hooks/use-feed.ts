@@ -17,7 +17,7 @@ const PAGE_SIZE = 20
 export type BoostsType =
   | {
       ad_id: string
-      question_id: string
+      market_id: string
       ad_funds: number
       ad_cost_per_view: number
       question_data: Contract

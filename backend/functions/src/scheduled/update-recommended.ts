@@ -101,7 +101,7 @@ export const loadUserDataForRecommendations = async (
     `select
       user_id, type as event_name,
       array_agg(distinct contract_id) as contract_ids
-    from user_seen_questions
+    from user_seen_markets
     group by user_id, type`
   )
   const viewedIdsByEvent = groupBy(viewedIds, (r) => r.event_name)

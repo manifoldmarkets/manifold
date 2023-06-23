@@ -188,9 +188,9 @@ function FeedAnalytics(props: { contractId: string }) {
     ['ad data', contractId],
     async () =>
       await db
-        .from('question_ads')
+        .from('market_ads')
         .select('id, funds, created_at, cost_per_view')
-        .eq('question_id', contractId),
+        .eq('market_id', contractId),
     { refetchInterval: false }
   )
 
@@ -198,7 +198,7 @@ function FeedAnalytics(props: { contractId: string }) {
     ['view question card data', contractId],
     async () =>
       await db
-        .from('user_seen_questions')
+        .from('user_seen_markets')
         .select('user_id, data')
         .eq('type', 'view question card')
         .eq('contract_id', contractId),

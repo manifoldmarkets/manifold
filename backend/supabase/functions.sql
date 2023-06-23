@@ -98,7 +98,7 @@ or replace function get_recommended_contracts_embeddings_from (
            join listed_open_contracts lpc on lpc.id = ce.contract_id
      left join (
         select contract_id
-        from user_seen_questions
+        from user_seen_markets
         where user_id = uid
           and created_time > now() - interval '7 days'
       ) seen on seen.contract_id = ce.contract_id
@@ -325,7 +325,7 @@ or replace function get_recommended_contracts_embeddings_from_fast (
 ) stable parallel safe language sql as $$ with
   viewed_question_cards as (
     select contract_id
-    from user_seen_questions
+    from user_seen_markets
     where user_id = uid
       and created_time > now() - interval '7 days'
   ),
@@ -682,9 +682,9 @@ create table if not exists
 alter table discord_users enable row level security;
 
 create table if not exists
-  discord_messages_questions (
+  discord_messages_markets (
     message_id text not null,
-    question_id text not null,
+    market_id text not null,
     question_slug text not null,
     channel_id text not null,
     last_updated_thread_time bigint,
@@ -692,7 +692,7 @@ create table if not exists
     primary key (message_id)
   );
 
-alter table discord_messages_questions enable row level security;
+alter table discord_messages_markets enable row level security;
 
 create
 or replace function get_your_contract_ids (uid text) returns table (contract_id text) stable parallel safe language sql as $$ with your_liked_contracts as (
@@ -837,9 +837,9 @@ limit match_count;
 $$;
 
 create
-or replace function get_top_question_ads (uid text) returns table (
+or replace function get_top_market_ads (uid text) returns table (
   ad_id text,
-  question_id text,
+  market_id text,
   ad_funds numeric,
   ad_cost_per_view numeric,
   question_data jsonb
@@ -861,38 +861,38 @@ user_embedding as (
   where user_id = uid
 ),
 --with all the ads that haven't been redeemed, by closest to your embedding
-unredeemed_question_ads as (
+unredeemed_market_ads as (
   select
-    id, question_id, funds, cost_per_view, embedding
+    id, market_id, funds, cost_per_view, embedding
   from
-    question_ads
+    market_ads
   where 
-    question_ads.user_id != uid -- hide your own ads; comment out to debug
+    market_ads.user_id != uid -- hide your own ads; comment out to debug
     and not exists (
       SELECT 1
       FROM redeemed_ad_ids
-      WHERE fromId = question_ads.id
+      WHERE fromId = market_ads.id
     )
-    and question_ads.funds >= cost_per_view 
+    and market_ads.funds >= cost_per_view 
   order by cost_per_view * (1 - (embedding <=> (
     select interest_embedding
     from user_embedding
   ))) desc
   limit 50
 ),
---with all the unique question_ids
-unique_question_ids as (
-  select distinct question_id
-  from unredeemed_question_ads
+--with all the unique market_ids
+unique_market_ids as (
+  select distinct market_id
+  from unredeemed_market_ads
 ),
---with the top ad for each unique question_id
-top_question_ads as (
+--with the top ad for each unique market_id
+top_market_ads as (
   select
-    id, question_id, funds, cost_per_view
+    id, market_id, funds, cost_per_view
   from
-    unredeemed_question_ads
+    unredeemed_market_ads
   where
-    question_id in (select question_id from unique_question_ids)
+    market_id in (select market_id from unique_market_ids)
   order by
     cost_per_view * (1 - (embedding <=> (select interest_embedding from user_embedding))) desc
   limit
@@ -900,13 +900,13 @@ top_question_ads as (
 )
 select
   tma.id,
-  tma.question_id,
+  tma.market_id,
   tma.funds,
   tma.cost_per_view,
   contracts.data
 from
-  top_question_ads as tma
-  inner join contracts on contracts.id = tma.question_id
+  top_market_ads as tma
+  inner join contracts on contracts.id = tma.market_id
 where
   contracts.resolution_time is null
   and contracts.close_time > now()

@@ -334,7 +334,7 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
     await interaction.reply({ content, ephemeral: true })
     return
   }
-  const question = await getQuestionFromId(questionInfo.question_id)
+  const question = await getQuestionFromId(questionInfo.market_id)
 
   // User position and profit
   if (customId === 'my-position') {
@@ -342,7 +342,7 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
     if (!api) return
     const contractMetrics = await getMyPositionInQuestion(
       api,
-      questionInfo.question_id
+      questionInfo.market_id
     )
     if (!contractMetrics || contractMetrics.length === 0) {
       await interaction.reply({

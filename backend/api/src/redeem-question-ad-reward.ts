@@ -36,7 +36,7 @@ export const redeemboost = authEndpoint(async (req, auth) => {
 
   // find the advertisement
   const data = await pg.one(
-    `select cost_per_view::numeric, funds::numeric from question_ads
+    `select cost_per_view::numeric, funds::numeric from market_ads
     where id = $1`,
     [adId]
   )
@@ -56,7 +56,7 @@ export const redeemboost = authEndpoint(async (req, auth) => {
     const pg = createSupabaseDirectClient()
 
     await pg.none(
-      `update question_ads 
+      `update market_ads 
       set funds = funds - $1
       where id = $2`,
       [cost, adId]

@@ -44,7 +44,7 @@ async function insertSupabaseEvent(
     contractId
   ) {
     return run(
-      db.from('user_seen_questions').insert({
+      db.from('user_seen_markets').insert({
         user_id: userId,
         contract_id: contractId,
         data: removeUndefinedProps(data) as Record<string, Json>,

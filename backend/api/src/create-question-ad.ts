@@ -46,8 +46,8 @@ export const boostquestion = authEndpoint(async (req, auth) => {
 
   // create if not exists the question ad row
   const { id } = await pg.one(
-    `insert into question_ads
-      (user_id, question_id, embedding, funds, cost_per_view)
+    `insert into market_ads
+      (user_id, market_id, embedding, funds, cost_per_view)
       values ($1, $2, $3, $4, $5)
       returning id`,
     [auth.uid, questionId, embedding, totalCost, costPerView]
@@ -76,8 +76,8 @@ export const boostquestion = authEndpoint(async (req, auth) => {
     log('error adding txn! reversing funds to ad.')
 
     await pg.none(
-      `update question_ads
-      set funds = question_ads.funds - $1
+      `update market_ads
+      set funds = market_ads.funds - $1
       where id = $2`,
       [totalCost, id]
     )
