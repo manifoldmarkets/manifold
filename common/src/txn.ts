@@ -241,19 +241,19 @@ type PostAdRedeem = {
 }
 
 type QuestionAdCreate = {
-  category: 'MARKET_BOOST_CREATE'
+  category: 'QUESTION_BOOST_CREATE'
   fromType: 'USER'
   toType: 'AD'
 }
 
 type QuestionAdRedeem = {
-  category: 'MARKET_BOOST_REDEEM'
+  category: 'QUESTION_BOOST_REDEEM'
   fromType: 'AD'
   toType: 'USER'
 }
 
 type QuestionAdRedeemFee = {
-  category: 'MARKET_BOOST_REDEEM_FEE'
+  category: 'QUESTION_BOOST_REDEEM_FEE'
   fromType: 'AD'
   toType: 'BANK'
 }

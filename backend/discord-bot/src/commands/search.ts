@@ -16,7 +16,7 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuInteraction,
 } from 'discord.js'
-const MARKETS_PER_PAGE = 5
+const QUESTIONS_PER_PAGE = 5
 const DROPDOWN_PLACEHOLDER = 'Select a question from the dropdown'
 const searchMessageIdToSearchState = new Map<
   string,
@@ -63,7 +63,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         .setPlaceholder(DROPDOWN_PLACEHOLDER)
         .addOptions(
           questions
-            .slice(0, MARKETS_PER_PAGE)
+            .slice(0, QUESTIONS_PER_PAGE)
             .map((question) => getQuestionItem(question))
         )
     )
@@ -93,7 +93,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
       page = limit(
         i.customId === 'next' ? page + 1 : page - 1,
         0,
-        Math.round(questions.length / MARKETS_PER_PAGE) - 1
+        Math.round(questions.length / QUESTIONS_PER_PAGE) - 1
       )
       searchMessageIdToSearchState.set(message.id, { page, questions })
       const newSelectRow =
@@ -103,7 +103,10 @@ async function execute(interaction: ChatInputCommandInteraction) {
             .setPlaceholder(DROPDOWN_PLACEHOLDER)
             .addOptions(
               questions
-                .slice(page * MARKETS_PER_PAGE, (page + 1) * MARKETS_PER_PAGE)
+                .slice(
+                  page * QUESTIONS_PER_PAGE,
+                  (page + 1) * QUESTIONS_PER_PAGE
+                )
                 .map((question) => getQuestionItem(question))
             )
         )
@@ -177,7 +180,7 @@ const limit = (n: number, min: number, max: number) =>
   Math.max(Math.min(n, max), min)
 
 const getButtonRow = (page: number, maxItems: number) => {
-  const maxPage = Math.round(maxItems / MARKETS_PER_PAGE) - 1
+  const maxPage = Math.round(maxItems / QUESTIONS_PER_PAGE) - 1
   console.log('page', page, 'max page', maxPage)
 
   return new ActionRowBuilder<ButtonBuilder>().addComponents(

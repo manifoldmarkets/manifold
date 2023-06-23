@@ -32,7 +32,7 @@ async function backfillSupabaseQuests() {
           if (questionsCreatedCount > 0) {
             await setQuestScoreValue(
               user.id,
-              QUEST_DETAILS['MARKETS_CREATED'].scoreId,
+              QUEST_DETAILS['QUESTIONS_CREATED'].scoreId,
               questionsCreatedCount,
               db
             )

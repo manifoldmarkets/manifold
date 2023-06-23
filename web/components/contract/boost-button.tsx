@@ -222,7 +222,7 @@ function FeedAnalytics(props: { contractId: string }) {
       await db
         .from('txns')
         .select('*', { count: 'exact' })
-        .eq('data->>category', 'MARKET_BOOST_REDEEM')
+        .eq('data->>category', 'QUESTION_BOOST_REDEEM')
         .eq('data->>fromId', adQuery.data?.data?.[0]?.id),
     { enabled: adQuery.isSuccess, refetchInterval: false }
   )

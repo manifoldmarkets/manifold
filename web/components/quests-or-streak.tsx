@@ -86,7 +86,7 @@ export function QuestsModal(props: {
     )
   const streakStatus = questToCompletionStatus['BETTING_STREAK']
   const shareStatus = questToCompletionStatus['SHARES']
-  const createStatus = questToCompletionStatus['MARKETS_CREATED']
+  const createStatus = questToCompletionStatus['QUESTIONS_CREATED']
   const archeologistStatus = questToCompletionStatus['ARCHAEOLOGIST']
   const referralsStatus = questToCompletionStatus['REFERRALS']
 
@@ -138,7 +138,7 @@ export function QuestsModal(props: {
             title={`Create a question this week`}
             complete={createStatus.currentCount >= createStatus.requiredCount}
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
-            reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
+            reward={QUEST_DETAILS.QUESTIONS_CREATED.rewardAmount}
             href={'/create'}
           />
           <QuestRow

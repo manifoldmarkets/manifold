@@ -851,7 +851,7 @@ with redeemed_ad_ids as (
   from
     txns
   where
-    data->>'category' = 'MARKET_BOOST_REDEEM'
+    data->>'category' = 'QUESTION_BOOST_REDEEM'
     and data->>'toId' = uid
 ),
 -- with the user embedding

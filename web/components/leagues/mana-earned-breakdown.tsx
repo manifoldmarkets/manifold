@@ -42,8 +42,8 @@ export const ManaEarnedBreakdown = (props: {
   const breakdown = {
     PROFIT: mana_earned_breakdown.profit,
     ...mana_earned_breakdown,
-    MARKET_BOOST_REDEEM:
-      (mana_earned_breakdown.MARKET_BOOST_REDEEM ?? 0) +
+    QUESTION_BOOST_REDEEM:
+      (mana_earned_breakdown.QUESTION_BOOST_REDEEM ?? 0) +
       (mana_earned_breakdown.AD_REDEEM ?? 0),
   } as { [key: string]: number }
 
@@ -212,6 +212,6 @@ const MANA_EARNED_CATEGORY_LABELS = {
   PROFIT: 'Profit',
   BETTING_STREAK_BONUS: 'Streak bonuses',
   QUEST_REWARD: 'Quests',
-  MARKET_BOOST_REDEEM: 'Boosts claimed',
+  QUESTION_BOOST_REDEEM: 'Boosts claimed',
   UNIQUE_BETTOR_BONUS: 'Trader bonuses',
 } as { [key: string]: string }

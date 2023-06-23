@@ -32,7 +32,7 @@ dayjs.tz.setDefault('America/Los_Angeles')
 export const START_OF_WEEK = dayjs().startOf('week').add(1, 'day').valueOf()
 const START_OF_DAY = dayjs().startOf('day').valueOf()
 
-type QUESTS_INTERNALLY_CALCULATED = 'MARKETS_CREATED' | 'SHARES' | 'REFERRALS'
+type QUESTS_INTERNALLY_CALCULATED = 'QUESTIONS_CREATED' | 'SHARES' | 'REFERRALS'
 export const completeCalculatedQuest = async (
   user: User,
   questType: 'SHARES'
@@ -45,7 +45,7 @@ export const completeCalculatedQuest = async (
 
 export const completeCalculatedQuestFromTrigger = async (
   user: User,
-  questType: 'MARKETS_CREATED',
+  questType: 'QUESTIONS_CREATED',
   // idempotencyKey is used to prevent duplicate quest completions from triggers firing multiple times
   idempotencyKey: string
 ) => {
@@ -145,7 +145,7 @@ const getCurrentCountForQuest = async (
   questType: QUESTS_INTERNALLY_CALCULATED,
   db: SupabaseClient
 ): Promise<number> => {
-  if (questType === 'MARKETS_CREATED') {
+  if (questType === 'QUESTIONS_CREATED') {
     return await getRecentContractsCount(user.id, START_OF_WEEK, db)
   } else if (questType === 'SHARES') {
     return await getUniqueUserShareEventsCount(

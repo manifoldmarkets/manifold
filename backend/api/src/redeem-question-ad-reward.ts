@@ -21,7 +21,7 @@ export const redeemboost = authEndpoint(async (req, auth) => {
   const { count } = await pg.one(
     `select count(*) from txns
     where 
-    data->>'category' = 'MARKET_BOOST_REDEEM'
+    data->>'category' = 'QUESTION_BOOST_REDEEM'
     and data->>'fromId' = $1
     and data->>'toId' = $2`,
     [adId, auth.uid]
@@ -73,7 +73,7 @@ export const redeemboost = authEndpoint(async (req, auth) => {
     })
 
     txnColl.add({
-      category: 'MARKET_BOOST_REDEEM',
+      category: 'QUESTION_BOOST_REDEEM',
       fromType: 'AD',
       fromId: adId,
       toType: 'USER',
@@ -85,7 +85,7 @@ export const redeemboost = authEndpoint(async (req, auth) => {
     } as QuestionAdRedeemTxn)
 
     txnColl.add({
-      category: 'MARKET_BOOST_REDEEM_FEE',
+      category: 'QUESTION_BOOST_REDEEM_FEE',
       fromType: 'AD',
       fromId: adId,
       toType: 'BANK',

@@ -27,7 +27,7 @@ export const onCreateContract = functions
 
     await completeCalculatedQuestFromTrigger(
       contractCreator,
-      'MARKETS_CREATED',
+      'QUESTIONS_CREATED',
       eventId
     )
 

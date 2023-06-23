@@ -24,9 +24,9 @@ const fancyFont = Grenze_Gotisch({
   subsets: ['latin'],
 })
 
-const TOTAL_MARKETS = 5
+const TOTAL_QUESTIONS = 5
 
-const DEFAULT_MARKETS = [
+const DEFAULT_QUESTIONS = [
   'YTIuuSsNRn2OlA4KykRM',
   'DreezzZ09K5d4ee1E64l',
   'YBxwKfe5eY2Ynw1ACGYI',
@@ -44,14 +44,14 @@ function useContractsByIds(ids: string[]) {
   return contracts
 }
 
-// A memory game with 2 rows of TOTAL_MARKETS cards
+// A memory game with 2 rows of TOTAL_QUESTIONS cards
 // Users flip 2 cards at a time; if they match, they stay flipped
 export default function CardsPage() {
   const router = useRouter()
   // GAME STATE
   // Boolean array of whether each card is faceup
   const [faceups, setFaceups] = useState<boolean[]>(
-    Array.from({ length: TOTAL_MARKETS * 2 }, () => false)
+    Array.from({ length: TOTAL_QUESTIONS * 2 }, () => false)
   )
   // Last card clicked
   const [clicked, setClicked] = useState<number | undefined>(undefined)
@@ -64,7 +64,7 @@ export default function CardsPage() {
   const user = useUser()
   // TODO: what if user doesn't have enough top questions?
   const topQuestions = useTopQuestionsByUser(user?.id ?? '')
-  const defaults = useContractsByIds(DEFAULT_MARKETS)
+  const defaults = useContractsByIds(DEFAULT_QUESTIONS)
   const shuffledQuestions = useMemo(
     () => shuffle([...topQuestions, ...defaults]),
     [topQuestions.length]
@@ -73,7 +73,7 @@ export default function CardsPage() {
   const questions = Object.values(groupedQuestions)
     .filter((group) => group.length === 1)
     .flat()
-    .slice(0, TOTAL_MARKETS)
+    .slice(0, TOTAL_QUESTIONS)
   const questionCreators = questions.map((question) => question.creatorId)
   const creators = useMemo(
     () => shuffle(questionCreators),
@@ -84,10 +84,10 @@ export default function CardsPage() {
     // Set i to be the lesser, and j to be the greater
     const i = Math.min(a, b)
     const j = Math.max(a, b)
-    if (i >= TOTAL_MARKETS || j < TOTAL_MARKETS) {
+    if (i >= TOTAL_QUESTIONS || j < TOTAL_QUESTIONS) {
       return false
     }
-    return questions[i].creatorId === creators[j - TOTAL_MARKETS]
+    return questions[i].creatorId === creators[j - TOTAL_QUESTIONS]
   }
 
   function click(index: number) {
@@ -138,7 +138,7 @@ export default function CardsPage() {
               <span>✅</span>
             ))}
             {/* And a ❌ for non-matches */}
-            {Array.from({ length: TOTAL_MARKETS - matches }, () => (
+            {Array.from({ length: TOTAL_QUESTIONS - matches }, () => (
               <span>🃏</span>
             ))}
           </h2>
@@ -160,12 +160,12 @@ export default function CardsPage() {
         {creators.map((userId, i) => (
           <UserCard
             userId={userId}
-            faceup={faceups[TOTAL_MARKETS + i]}
-            onClick={() => click(TOTAL_MARKETS + i)}
+            faceup={faceups[TOTAL_QUESTIONS + i]}
+            onClick={() => click(TOTAL_QUESTIONS + i)}
           />
         ))}
       </div>
-      {matches === TOTAL_MARKETS && (
+      {matches === TOTAL_QUESTIONS && (
         <Button
           size="2xl"
           color="gradient"

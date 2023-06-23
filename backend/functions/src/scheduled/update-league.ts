@@ -52,7 +52,7 @@ export async function updateLeagueCore() {
   const txnCategoriesCountedAsManaEarned = [
     'BETTING_STREAK_BONUS',
     'AD_REDEEM',
-    'MARKET_BOOST_REDEEM',
+    'QUESTION_BOOST_REDEEM',
     'QUEST_REWARD',
   ]
   const txnData = await pg.manyOrNone<{

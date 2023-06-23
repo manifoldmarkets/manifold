@@ -3,7 +3,7 @@ import User from './user';
 import { getCurrentEpochDay, MetricDay } from '@common/types/metric-types';
 
 export enum MetricEvent {
-  MARKET_FEATURED,
+  QUESTION_FEATURED,
   FIRST_TIME_BOT,
   NEW_LINEKD_ACCOUNT,
   COMMAND_USED,
@@ -63,7 +63,7 @@ export class Metrics {
       case MetricEvent.FIRST_TIME_BOT:
         dayData.newBots++;
         break;
-      case MetricEvent.MARKET_FEATURED:
+      case MetricEvent.QUESTION_FEATURED:
         dayData.featuredQuestions++;
         break;
       case MetricEvent.NEW_LINEKD_ACCOUNT:

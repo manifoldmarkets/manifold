@@ -14,7 +14,7 @@ import { MetricEvent, UniqueMetricEvent } from './metrics';
 const COMMAND_REGEXP = new RegExp(/!([a-zA-Z0-9]+)\s?([\s\S]*)?/);
 
 /* cSpell:enable */
-const MSG_NOT_ENOUGH_MANA_CREATE_MARKET = (username: string, balance: number) =>
+const MSG_NOT_ENOUGH_MANA_CREATE_QUESTION = (username: string, balance: number) =>
   `Sorry ${username}, the owner of this channel doesn't have enough Mana (M$${Math.floor(balance).toFixed(0)}/M$100) to create a question LUL`;
 const MSG_NOT_ENOUGH_MANA_PLACE_BET = (username: string) => `Sorry ${username}, you don't have enough Mana to place that bet`;
 const MSG_SIGNUP = (username: string) => `Hello ${username}! Click here to play: ${MANIFOLD_SIGNUP_URL}!`;
@@ -34,10 +34,10 @@ const MSG_BALANCE = (username: string, balance: number) => `${username} currentl
 const MSG_POSITION = (username: string, shares_int: number) => {
   return `${username} has ${Math.abs(shares_int).toFixed(0)}${shares_int === 0 ? '' : shares_int > 0 ? ' YES' : ' NO'} share${shares_int === 1 ? '' : 's'}.`;
 };
-const MSG_MARKET_CREATED = (question: string) => `The question '${question}' has been created!`;
-const MSG_MARKET_UNFEATURED = () => `Question unfeatured.`;
+const MSG_QUESTION_CREATED = (question: string) => `The question '${question}' has been created!`;
+const MSG_QUESTION_UNFEATURED = () => `Question unfeatured.`;
 const MSG_COMMAND_FAILED = (username: string) => `Sorry ${username} but an internal error occurred handling your command BibleThump`;
-const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no question is currently active on this stream.`;
+const MSG_NO_QUESTION_SELECTED = (username: string) => `Sorry ${username} but no question is currently active on this stream.`;
 const MSG_TRADING_CLOSED = (username: string) => `Too slow ${username}, your bet was too late!`;
 const MSG_FEATURED = (question: Question) => `The question ${question.data.question} is now being featured! ${question.data.url}`;
 const MSG_BEHIND_PROCESSING = () => `The bot is processing a lot of orders right now, please be patient!`;
@@ -210,7 +210,7 @@ export default class TwitchBot {
         handler: async (params: CommandParams) => {
           const { stream } = params;
           await stream.selectQuestion(null);
-          this.client.say(stream.name, MSG_MARKET_UNFEATURED());
+          this.client.say(stream.name, MSG_QUESTION_UNFEATURED());
         },
       },
       create: {
@@ -229,11 +229,11 @@ export default class TwitchBot {
             const question = await broadcaster.createBinaryQuestion(question, null, 50, { visibility: 'unlisted' });
             log.info('Created question ID: ' + question.id);
             stream.selectQuestion(question.id);
-            this.client.say(stream.name, MSG_MARKET_CREATED(question));
+            this.client.say(stream.name, MSG_QUESTION_CREATED(question));
           } catch (e) {
             if (e instanceof InsufficientBalanceException) {
               broadcaster.getBalance().then((balance) => {
-                this.client.say(stream.name, MSG_NOT_ENOUGH_MANA_CREATE_MARKET(username, balance));
+                this.client.say(stream.name, MSG_NOT_ENOUGH_MANA_CREATE_QUESTION(username, balance));
               });
             } else throw e;
           }
@@ -313,7 +313,7 @@ export default class TwitchBot {
             return;
           }
           if (requirements.questionFeatured && !question) {
-            this.client.say(channelName, MSG_NO_MARKET_SELECTED(userDisplayName));
+            this.client.say(channelName, MSG_NO_QUESTION_SELECTED(userDisplayName));
             return;
           }
         }

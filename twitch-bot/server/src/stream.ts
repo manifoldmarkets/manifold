@@ -60,7 +60,7 @@ export class TwitchStream {
         this.broadcastToOverlays(PacketSelectQuestion, { question: { ...question.data, bets: question.data.bets }, initialBets: question.data.bets.slice(initialBetIndex) });
         this.app.firestore.updateSelectedQuestionForUser(this.name, id);
         this.app.bot.onQuestionFeatured(this.name, question);
-        this.app.metrics.logMetricsEvent(MetricEvent.MARKET_FEATURED);
+        this.app.metrics.logMetricsEvent(MetricEvent.QUESTION_FEATURED);
         this.app.metrics.logUnqiueMetricsEvent(UniqueMetricEvent.UNIQUE_OVERLAY, this.app.getUserForTwitchUsername(this.name));
         return question;
       } catch (e) {

@@ -58,7 +58,7 @@ export const boostquestion = authEndpoint(async (req, auth) => {
     log('starting transaction to deduct funds.')
     await firestore.runTransaction(async (trans) => {
       const result = await runTxn(trans, {
-        category: 'MARKET_BOOST_CREATE',
+        category: 'QUESTION_BOOST_CREATE',
         fromType: 'USER',
         fromId: auth.uid,
         toType: 'AD',

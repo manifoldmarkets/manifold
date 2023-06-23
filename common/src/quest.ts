@@ -1,7 +1,7 @@
 export const QUEST_TYPES = [
   'BETTING_STREAK',
   'SHARES',
-  'MARKETS_CREATED',
+  'QUESTIONS_CREATED',
   'ARCHAEOLOGIST',
   'REFERRALS',
 ] as const
@@ -28,7 +28,7 @@ export const QUEST_DETAILS: Record<
     scoreId: 'sharesToday',
     title: 'Sharing',
   },
-  MARKETS_CREATED: {
+  QUESTIONS_CREATED: {
     requiredCount: 1,
     rewardAmount: 25,
     scoreId: 'questionsCreatedThisWeek',
