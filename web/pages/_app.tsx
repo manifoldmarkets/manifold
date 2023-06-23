@@ -95,7 +95,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         <meta property="og:url" content="https://manifold.markets" key="url" />
         <meta property="og:site_name" content="Manifold Markets" />
         <meta name="twitter:card" content="summary" key="card" />
-        <meta name="twitter:site" content="@manifoldquestions" />
+        <meta name="twitter:site" content="@manifoldmarkets" />
         <meta
           name="twitter:image"
           content="https://manifold.markets/logo-white.png"

@@ -150,7 +150,7 @@ Whoever created the question gets to resolve it! Manifold Markets puts trust in 
 - The creator is free to use their judgment.
   - This allows for many new kinds of prediction questions to be created that are less objective. (E.g. "Will I enjoy participating in the Metaverse in 2023?")
 - Questions creators who are known to be reputable will earn followers and more activity on their questions.
-- Check out the [resolution section in the community guidelines](https://manifoldquestions.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
+- Check out the [resolution section in the community guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
 
 ### How should I resolve a question?
 
@@ -318,7 +318,7 @@ Be warned that when deleting an account your questions and comments are not dele
 
 ### Does Manifold have a content moderation policy or account rules?
 
-Yes, please see our [Community Guidelines](https://manifoldquestions.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
+Yes, please see our [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
 
 ### Is there an API?
 

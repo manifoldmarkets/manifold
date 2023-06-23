@@ -55,7 +55,7 @@ export GOOGLE_APPLICATION_CREDENTIALS_DEV=~/dev-mantic-question.json
 
 ## Developing with localdb
 
-Developing with a local copy of the database is deprecated. The old instructions are on [Notion](https://www.notion.so/manifoldquestions/How-localdb-worked-c0c3d541005a417f9adfabf63285f440) (or in the git history of this README file)
+Developing with a local copy of the database is deprecated. The old instructions are on [Notion](https://www.notion.so/manifoldmarkets/How-localdb-worked-c0c3d541005a417f9adfabf63285f440) (or in the git history of this README file)
 
 ## Debugging
 

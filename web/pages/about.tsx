@@ -149,12 +149,12 @@ export default function AboutPage() {
           <LabCard
             title="📜 Community guidelines"
             description="General expectations and account rules"
-            href="https://manifoldquestions.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400"
+            href="https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400"
           />
           <LabCard
             title="😎 Awesome Manifold"
             description="Community-created projects built on Manifold"
-            href="https://manifoldquestions.notion.site/Awesome-Manifold-4b93a64528674290989ef8a9f696b460"
+            href="https://manifoldmarkets.notion.site/Awesome-Manifold-4b93a64528674290989ef8a9f696b460"
           />
         </LabSection>
 
@@ -204,17 +204,17 @@ export default function AboutPage() {
           <LabCard
             title="😻 Github"
             description="We're open source!"
-            href="https://github.com/manifoldquestions/manifold"
+            href="https://github.com/manifoldmarkets/manifold"
           />
           <LabCard
             title="🎁 Bounties"
             description="Earn mana for contributing"
-            href="https://manifoldquestions.notion.site/Manifold-Bounties-5cd9c4045422461dbe84b4339f93e98f"
+            href="https://manifoldmarkets.notion.site/Manifold-Bounties-5cd9c4045422461dbe84b4339f93e98f"
           />
           <LabCard
             title="🔁 Maniswap"
             description="Learn about our AMM"
-            href="https://manifoldquestions.notion.site/Maniswap-ce406e1e897d417cbd491071ea8a0c39"
+            href="https://manifoldmarkets.notion.site/Maniswap-ce406e1e897d417cbd491071ea8a0c39"
           />
           <LabCard
             title="💬 Discord bot"

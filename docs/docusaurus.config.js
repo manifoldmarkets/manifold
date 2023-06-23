@@ -15,7 +15,7 @@ const config = {
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'https://manifold.markets/favicon.ico',
-  organizationName: 'manifoldquestions', // Usually your GitHub org/user name.
+  organizationName: 'manifoldmarkets', // Usually your GitHub org/user name.
   projectName: 'docs', // Usually your repo name.
 
   presets: [
@@ -26,8 +26,7 @@ const config = {
         docs: {
           routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl:
-            'https://github.com/manifoldquestions/manifold/tree/main/docs',
+          editUrl: 'https://github.com/manifoldmarkets/manifold/tree/main/docs',
           remarkPlugins: [math],
           rehypePlugins: [katex],
         },
@@ -72,7 +71,7 @@ const config = {
           //   label: 'Docs',
           // },
           // {
-          //   href: 'https://github.com/manifoldquestions/manifold/tree/main/docs/docs',
+          //   href: 'https://github.com/manifoldmarkets/manifold/tree/main/docs/docs',
           //   label: 'GitHub',
           //   position: 'right',
           // },
@@ -103,7 +102,7 @@ const config = {
               },
               {
                 label: 'Twitter',
-                href: 'https://twitter.com/manifoldquestions',
+                href: 'https://twitter.com/manifoldmarkets',
               },
             ],
           },
@@ -112,11 +111,11 @@ const config = {
             items: [
               {
                 label: 'Blog',
-                to: 'https://manifoldquestions.substack.com',
+                to: 'https://manifoldmarkets.substack.com',
               },
               {
                 label: 'GitHub',
-                href: 'https://github.com/manifoldquestions/manifold/',
+                href: 'https://github.com/manifoldmarkets/manifold/',
               },
             ],
           },
