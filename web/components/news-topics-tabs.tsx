@@ -12,7 +12,6 @@ import {
   RussianCoupData,
 } from 'web/components/news-topics-data'
 import { buildArray } from 'common/util/array'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { AllArticles } from 'web/pages/news'
 
 export function NewsTopicsTabs(props: {
@@ -20,7 +19,6 @@ export function NewsTopicsTabs(props: {
   questionsContent?: ReactNode
 }) {
   const { homeContent, questionsContent } = props
-  const isMobile = useIsMobile()
 
   const newsContent = [
     { title: 'Russian Coup?', content: <RussianCoupData /> },
@@ -33,16 +31,9 @@ export function NewsTopicsTabs(props: {
   ]
 
   const topics = buildArray(
-    !!homeContent && { title: 'Timeline', content: homeContent },
-    !!questionsContent && { title: 'All', content: questionsContent },
-    !isMobile
-      ? newsContent
-      : {
-          title: 'News',
-          content: (
-            <Col className="m-1">{newsContent.map((tab) => tab.content)}</Col>
-          ),
-        }
+    !!homeContent && { title: 'Feed', content: homeContent as JSX.Element },
+    !!questionsContent && { title: 'Browse', content: questionsContent },
+    ...newsContent
   )
 
   return (
