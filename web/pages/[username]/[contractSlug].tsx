@@ -69,6 +69,7 @@ import {
   useFirebasePublicAndRealtimePrivateContract,
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
+import { VisibilityIcon } from 'web/components/contract/contracts-table'
 
 export type ContractParameters = {
   contractSlug: string
@@ -356,7 +357,8 @@ export function ContractPageContent(props: {
                 )}
                 {headerStuck && (
                   <span className="text-ink-1000 ml-4 mt-1 w-full min-w-0 overflow-hidden break-all">
-                    {contract.question}
+                    <VisibilityIcon contract={contract} />
+                   {' '} {contract.question}
                   </span>
                 )}
               </Row>

@@ -15,7 +15,6 @@ import { ContractMinibar } from '../charts/minibar'
 import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
-import { Tooltip } from '../widgets/tooltip'
 import { Action } from './contract-table-action'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 
@@ -123,7 +122,9 @@ export function ContractsTable(props: {
             size="xs"
             preventDefault={true}
           />
-          <div className="">{contract.question}</div>
+          <div className="">
+            <VisibilityIcon contract={contract} /> {contract.question}
+          </div>
         </Row>
       ),
     },
@@ -149,16 +150,16 @@ export function ContractsTable(props: {
         </Row>
       ),
     },
-    {
-      name: 'visibility',
-      header: '',
-      visible: !isMobile,
-      content: (contract: Contract) => (
-        <div className="mt-1">
-          <Visibility contract={contract} />
-        </div>
-      ),
-    },
+    // {
+    //   name: 'visibility',
+    //   header: '',
+    //   visible: !isMobile,
+    //   content: (contract: Contract) => (
+    //     <div className="mt-1">
+    //       <Visibility contract={contract} />
+    //     </div>
+    //   ),
+    // },
     {
       name: 'action',
       header: '',
@@ -265,30 +266,17 @@ export function ContractsTable(props: {
   )
 }
 
-function Visibility(props: { contract: Contract }) {
-  const { contract } = props
-  const iconClassName = 'h-4 w-4'
+export function VisibilityIcon(props: {
+  contract: Contract
+  isLarge?: boolean
+}) {
+  const { contract, isLarge } = props
+  const iconClassName = clsx(isLarge ? 'h-6 w-w' : 'h-4 w-4', 'inline')
 
-  const visibilityFields = {
-    private: {
-      text: 'Private',
-      icon: <LockClosedIcon className={iconClassName} />,
-    },
-    unlisted: {
-      text: 'Unlisted',
-      icon: <IoUnlink className={iconClassName} />,
-    },
-  }
-  type VisibilityType = keyof typeof visibilityFields
-  if (contract.visibility in visibilityFields) {
-    const { text, icon } =
-      visibilityFields[contract.visibility as VisibilityType]
-    return (
-      <Tooltip text={text} placement="top" className={'w-full'}>
-        {icon}
-      </Tooltip>
-    )
-  }
+  if (contract.visibility === 'private')
+    return <LockClosedIcon className={iconClassName} />
+
+  if (contract.visibility === 'unlisted') <IoUnlink className={iconClassName} />
 
   return <></>
 }

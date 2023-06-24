@@ -5,6 +5,7 @@ import { updateContract } from 'web/lib/firebase/contracts'
 import { IconButton } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Linkify } from '../widgets/linkify'
+import { VisibilityIcon } from './contracts-table'
 
 export const TitleOrEdit = (props: {
   contract: Contract
@@ -54,11 +55,9 @@ export const TitleOrEdit = (props: {
       </IconButton>
     </div>
   ) : (
-    <span>
-      <Linkify
-        className="text-xl font-medium sm:text-2xl"
-        text={contract.question}
-      />
+    <span className="text-xl font-medium sm:text-2xl">
+      <VisibilityIcon contract={contract} isLarge/>{' '}
+      <Linkify className="" text={contract.question} />
       {canEdit && (
         <button onClick={edit} className="ml-1 p-1">
           <PencilIcon className=" text-ink-500 hover:text-ink-600 h-4 w-4" />
