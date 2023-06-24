@@ -6,12 +6,10 @@ import { useIsDarkMode } from 'web/hooks/dark-mode-context'
 import { ENV } from 'common/envs/constants'
 
 export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
-  const { className, twoLine } = props
+  const { className } = props
   const isDarkMode = useIsDarkMode()
 
   const user = useUser()
-
-  const name = ENV === 'DEV' ? 'DEV' : 'Markets'
 
   return (
     <Link
@@ -24,12 +22,12 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
       <img
         className="shrink-0 transition-all group-hover:rotate-12"
         src={isDarkMode ? '/logo-white.svg' : '/logo.svg'}
-        height={60}
-        width={60}
+        height={40}
+        width={40}
         alt=""
       />
       <div
-        className={clsx('text-2xl font-thin text-indigo-700 dark:text-white')}
+        className={clsx('text-xl font-thin text-indigo-700 dark:text-white')}
       >
         {ENV == 'DEV' ? 'DEVIFOLD' : 'MANIFOLD'}
       </div>
