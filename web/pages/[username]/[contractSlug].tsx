@@ -357,8 +357,7 @@ export function ContractPageContent(props: {
                 )}
                 {headerStuck && (
                   <span className="text-ink-1000 ml-4 mt-1 w-full min-w-0 overflow-hidden break-all">
-                    <VisibilityIcon contract={contract} />
-                   {' '} {contract.question}
+                    <VisibilityIcon contract={contract} /> {contract.question}
                   </span>
                 )}
               </Row>
