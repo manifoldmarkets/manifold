@@ -28,7 +28,7 @@ const pages: PageData[] = [
   { label: 'About', slug: '/about' },
   { label: 'Ads', slug: '/ad', keywords: ['advertisement'] },
 
-  { label: 'Markets', slug: '/markets' },
+  { label: 'Questions', slug: '/questions' },
   { label: 'Users', slug: '/users' },
 ]
 

@@ -112,7 +112,7 @@ export default function Home(props: {
             />
 
             <LinkInfoCard
-              link="/markets"
+              link="/questions"
               icon={<ScaleIcon className="mx-auto h-8 w-8" />}
               text="Explore questions"
             />

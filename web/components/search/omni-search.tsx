@@ -422,7 +422,7 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
 
   return (
     <>
-      <SectionTitle link={`/markets?s=${sort}`}>{label}</SectionTitle>
+      <SectionTitle link={`/questions?s=${sort}`}>{label}</SectionTitle>
       <div className="flex">
         <div className="bg-ink-200 my-1 ml-2 mr-3 w-1" />
         <div className="flex flex-col gap-2">
@@ -436,4 +436,4 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
 }
 
 const marketSearchSlug = (query: string) =>
-  `/markets?s=score&f=all&q=${encodeURIComponent(query)}`
+  `/questions?s=score&f=all&q=${encodeURIComponent(query)}`
