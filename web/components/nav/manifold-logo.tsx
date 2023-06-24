@@ -24,24 +24,15 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
       <img
         className="shrink-0 transition-all group-hover:rotate-12"
         src={isDarkMode ? '/logo-white.svg' : '/logo.svg'}
-        height={45}
-        width={45}
+        height={60}
+        width={60}
         alt=""
       />
-
-      <img
-        src={
-          ENV == 'DEV'
-            ? isDarkMode
-              ? '/devifold_text_white.svg'
-              : '/devifold_text_indigo.svg'
-            : isDarkMode
-            ? '/manifold_text_white.svg'
-            : '/manifold_text_indigo.svg'
-        }
-        className="flex min-w-0 grow object-contain pr-24 lg:pr-0"
-        alt=""
-      />
+      <div
+        className={clsx('text-2xl font-thin text-indigo-700 dark:text-white')}
+      >
+        {ENV == 'DEV' ? 'DEVIFOLD' : 'MANIFOLD'}
+      </div>
     </Link>
   )
 }
