@@ -98,26 +98,16 @@ export const RussianCoupData = () => {
   ])
   return (
     <Col>
-      <Title className="mb-4">Russian Merc Chief Prigozhin Speaks Out</Title>
+      <Title className="mb-4">Coup Over? Russian Merc Chief Stands Down</Title>
       <NewsGrid>
         <NewsArticleOriginal
           className="mb-4"
-          title="Wagner boss Prigozhin says Russia's 'evil' defense ministry 'must be stopped' in latest shocking provocation"
-          urlToImage="https://i.insider.com/6495e7aa65b9ce0018a49df7?width=1300&format=jpeg&auto=webp"
-          url="https://www.businessinsider.com/wagner-boss-prigozhin-russia-evil-defense-ministry-must-stop-2023-6"
-          description={`Wagner Group founder Yevgeny Prigozhin blasted Russia's defense ministry as "evil" on Friday, saying Moscow's military leadership "must be stopped" after an alleged missile strike killed scores of his fighters, allegations immediately denied by that Russia's ministry of defense.`}
-          author="Jake Epstein"
-          published_time={Date.UTC(2023, 5, 23, 19)}
-        />
-
-        <NewsArticleOriginal
-          className="mb-4"
-          title="Russia accuses Wagner mercenary boss Yevgeny Prigozhin of mutiny after he says Moscow killed 2,000 of his men"
-          urlToImage="https://live-production.wcms.abc-cdn.net.au/0b572035d75fec649729bcc01e15ad56?impolicy=wcms_crop_resize&cropH=2811&cropW=4997&xPos=3&yPos=0&width=862&height=485"
-          url="https://www.abc.net.au/news/2023-06-24/fsb-opens-criminal-case-against-wagner-chief-prigozhin-mutiny/102519616"
-          description={`Russia has accused mercenary chief Yevgeny Prigozhin of calling for an armed mutiny after he alleged, without providing evidence, that the military leadership had killed 2,000 of his fighters and vowed to stop what he called its "evil".`}
-          author="Reuters"
-          published_time={Date.UTC(2023, 5, 23, 22)}
+          title="Wagner chief says he ordered his Russian mercenaries to halt march on Moscow and return to Ukraine"
+          urlToImage="https://storage.googleapis.com/afs-prod/media/d4ed1506982c42e998398220ee61d51a/1000.jpeg"
+          url="https://apnews.com/article/russia-ukraine-wagner-prigozhin-9acbdf1eda849692ca0423a4116058d1"
+          description={`A rebellious mercenary commander said Saturday he ordered his mercenaries to halt their march on Moscow and retreat to field camps in Ukraine, appearing to defuse a dramatically escalating crisis that represented the most significant challenge to President Vladimir Putin in his more than two decades in power.`}
+          author="AP News"
+          published_time={Date.UTC(2023, 5, 24, 18)}
         />
 
         {prigozhinMarkets.map((contract) => (
@@ -129,6 +119,25 @@ export const RussianCoupData = () => {
             />
           </>
         ))}
+        <NewsArticleOriginal
+          className="mb-4"
+          title="Russia accuses Wagner mercenary boss Yevgeny Prigozhin of mutiny after he says Moscow killed 2,000 of his men"
+          urlToImage="https://live-production.wcms.abc-cdn.net.au/0b572035d75fec649729bcc01e15ad56?impolicy=wcms_crop_resize&cropH=2811&cropW=4997&xPos=3&yPos=0&width=862&height=485"
+          url="https://www.abc.net.au/news/2023-06-24/fsb-opens-criminal-case-against-wagner-chief-prigozhin-mutiny/102519616"
+          description={`Russia has accused mercenary chief Yevgeny Prigozhin of calling for an armed mutiny after he alleged, without providing evidence, that the military leadership had killed 2,000 of his fighters and vowed to stop what he called its "evil".`}
+          author="Reuters"
+          published_time={Date.UTC(2023, 5, 23, 22)}
+        />
+
+        <NewsArticleOriginal
+          className="mb-4"
+          title="Wagner boss Prigozhin says Russia's 'evil' defense ministry 'must be stopped' in latest shocking provocation"
+          urlToImage="https://i.insider.com/6495e7aa65b9ce0018a49df7?width=1300&format=jpeg&auto=webp"
+          url="https://www.businessinsider.com/wagner-boss-prigozhin-russia-evil-defense-ministry-must-stop-2023-6"
+          description={`Wagner Group founder Yevgeny Prigozhin blasted Russia's defense ministry as "evil" on Friday, saying Moscow's military leadership "must be stopped" after an alleged missile strike killed scores of his fighters, allegations immediately denied by that Russia's ministry of defense.`}
+          author="Jake Epstein"
+          published_time={Date.UTC(2023, 5, 23, 19)}
+        />
       </NewsGrid>
     </Col>
   )
