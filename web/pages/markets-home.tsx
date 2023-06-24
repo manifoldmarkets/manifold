@@ -40,7 +40,8 @@ export default function MarketsHome() {
         }}
         isWholePage
         showTopics={true}
-        headerClassName={'!top-[2.2rem] bg-canvas-50'}
+        headerClassName={'bg-canvas-50 !static pt-0'}
+        inputRowClassName="hidden"
       />
     </Col>
   )

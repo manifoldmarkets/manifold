@@ -105,6 +105,7 @@ export function SupabaseContractSearch(props: {
     noLinkAvatar?: boolean
   }
   headerClassName?: string
+  inputRowClassName?: string
   isWholePage?: boolean
   includeProbSorts?: boolean
   autoFocus?: boolean
@@ -116,6 +117,7 @@ export function SupabaseContractSearch(props: {
   listViewDisabled?: boolean
   contractSearchControlsClassName?: string
   showTopics?: boolean
+  hideSearch?: boolean
 }) {
   const {
     defaultSort,
@@ -126,6 +128,7 @@ export function SupabaseContractSearch(props: {
     cardUIOptions,
     highlightContractIds,
     headerClassName,
+    inputRowClassName,
     persistPrefix,
     includeProbSorts,
     isWholePage,
@@ -263,6 +266,7 @@ export function SupabaseContractSearch(props: {
       <Col>
         <SupabaseContractSearchControls
           className={headerClassName}
+          inputRowClassName={inputRowClassName}
           defaultSort={defaultSort}
           defaultFilter={defaultFilter}
           persistPrefix={persistPrefix}
@@ -323,6 +327,7 @@ export function SupabaseContractSearch(props: {
 
 function SupabaseContractSearchControls(props: {
   className?: string
+  inputRowClassName?: string
   defaultSort?: Sort
   defaultFilter?: filter
   persistPrefix?: string
@@ -345,6 +350,7 @@ function SupabaseContractSearchControls(props: {
     autoFocus,
     includeProbSorts,
     showTopics,
+    inputRowClassName,
   } = props
 
   const router = useRouter()
@@ -434,7 +440,8 @@ function SupabaseContractSearchControls(props: {
     <Col className={clsx('sticky top-0 z-30 mb-2', className)}>
       <Col
         className={clsx(
-          'mb-1 items-stretch gap-2 pb-1 pt-px sm:flex-row sm:gap-2'
+          'mb-1 items-stretch gap-2 pb-1 pt-px sm:flex-row sm:gap-2',
+          inputRowClassName
         )}
       >
         <Input
