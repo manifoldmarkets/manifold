@@ -11,6 +11,20 @@ import {
 } from 'shared/supabase/init'
 import { invokeFunction, log } from 'shared/utils'
 import { onRequest } from 'firebase-functions/v2/https'
+import {
+  IMPORTANCE_MINUTE_INTERVAL,
+  calculateImportanceScore,
+} from 'shared/importance-score'
+
+export const importanceScoreScheduler = functions
+  .runWith({ secrets })
+  .pubsub.schedule(`every ${IMPORTANCE_MINUTE_INTERVAL} minutes`)
+  .onRun(async () => {
+    const fr = admin.firestore()
+    const db = createSupabaseClient()
+    const pg = createSupabaseDirectClient()
+    await calculateImportanceScore(fr, db, pg)
+  })
 
 export const scoreContractsScheduler = functions
   .runWith({
@@ -28,6 +42,8 @@ export const scoreContractsScheduler = functions
     }
   })
 
+// TODO: Make more robust.
+// This process is really slow
 export const scorecontracts = onRequest(
   { timeoutSeconds: 3600, memory: '1GiB', secrets },
   async (_req, res) => {

@@ -1,8 +1,9 @@
 import { runScript } from 'run-script'
-import { testScoreContractsInternal } from 'shared/score-contracts-internal'
+import { calculateImportanceScore } from 'shared/importance-score'
 
 if (require.main === module) {
   runScript(async ({ firestore, db, pg }) => {
-    await testScoreContractsInternal(firestore, db, pg)
+    const readOnly = true
+    await calculateImportanceScore(firestore, db, pg, readOnly)
   })
 }
