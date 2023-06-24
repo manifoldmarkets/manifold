@@ -35,9 +35,10 @@ import { formatTime } from 'web/lib/util/time'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
+  const currentSeasonRows = rows.filter((row) => row.season === CURRENT_SEASON)
   return {
     props: {
-      rows,
+      rows: currentSeasonRows,
     },
   }
 }
