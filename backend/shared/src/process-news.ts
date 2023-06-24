@@ -8,7 +8,8 @@ import { Contract } from 'common/contract'
 export const processNews = async (
   apiKey: string,
   db: SupabaseClient,
-  pg: IDatabase<IClient, IClient>
+  pg: IDatabase<IClient, IClient>,
+  readOnly = false
 ) => {
   const lastPublished = await getLastPublished(db)
   console.log('Last published time:', lastPublished?.toLocaleString())
@@ -29,7 +30,7 @@ export const processNews = async (
   console.log('Loaded', articles.length, 'articles')
 
   for (const article of articles) {
-    await processNewsArticle(article, lastPublished, db, pg)
+    await processNewsArticle(article, lastPublished, db, pg, readOnly)
   }
 }
 
@@ -69,7 +70,8 @@ const processNewsArticle = async (
   }: NewsArticle,
   lastPublished: Date,
   db: SupabaseClient,
-  pg: IDatabase<IClient, IClient>
+  pg: IDatabase<IClient, IClient>,
+  readOnly: boolean
 ) => {
   const publishedAtDate = new Date(publishedAt)
   if (publishedAtDate <= lastPublished) {
@@ -115,9 +117,10 @@ const processNewsArticle = async (
         c.outcomeType !== 'STONK' &&
         !c.isResolved &&
         c.visibility === 'public' &&
-        c.uniqueBettorCount >= 5
+        c.importanceScore
     )
-    .sort((a, b) => b.popularityScore - a.popularityScore)
+    // sort in descending order of importance score
+    .sort((a, b) => b.importanceScore - a.importanceScore)
     .slice(0, 5)
 
   if (questions.length === 0) {
@@ -131,6 +134,9 @@ const processNewsArticle = async (
   }
   console.log()
   console.log()
+
+  if (readOnly) return
+
   const newsRowJustId = await pg
     .one<{ id: number }>(
       'insert into news (title, url, published_time, author, description, image_url, source_id, source_name, title_embedding, contract_ids) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id',
@@ -148,6 +154,7 @@ const processNewsArticle = async (
       ]
     )
     .catch((err) => console.error(err))
+
   const newsId = newsRowJustId?.id.toString()
   if (!newsId) return
   console.log(
@@ -156,6 +163,7 @@ const processNewsArticle = async (
     'adding to feed now with published date',
     publishedAtDate.toISOString()
   )
+
   await insertNewsContractsToUsersFeeds(
     newsId,
     questions,
