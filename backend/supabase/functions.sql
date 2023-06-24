@@ -833,7 +833,7 @@ where contract_id != input_contract_id
     OR (is_admin = true and contracts.visibility = 'public')
     OR (is_admin = true and contracts.visibility = 'private' and firebase_uid() is not null and can_access_private_contract(contracts.id, firebase_uid()))
   )
-order by similarity * similarity * log(popularity_score + 100) desc
+order by similarity * similarity * importance_score desc
 limit match_count;
 $$;
 
