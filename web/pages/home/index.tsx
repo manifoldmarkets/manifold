@@ -41,7 +41,7 @@ function HomeDashboard() {
         <div className="flex sm:hidden">
           {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
         </div>
-        <Title className="hidden sm:flex !mb-0">Home</Title>
+        <Title className="!mb-0 hidden sm:flex">Home</Title>
         <DailyStats user={user} />
       </Row>
 
