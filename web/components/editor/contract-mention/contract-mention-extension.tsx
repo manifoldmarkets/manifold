@@ -36,7 +36,7 @@ const ContractMention = (attrs: any) => {
  */
 export const DisplayContractMention = Mention.extend({
   name: 'contract-mention',
-  parseHTML: () => [{ tag: 'name' }, { tag: `a[data-type="${name}"]` }],
+  parseHTML: () => [{ tag: name }, { tag: `a[data-type="${name}"]` }],
   renderHTML: ({ HTMLAttributes }) => [
     name,
     mergeAttributes(HTMLAttributes),
