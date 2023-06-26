@@ -84,6 +84,12 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const { notification, highlighted, setHighlighted } = props
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
+  const data = notification.data as UniqueBettorData
+  const numNewTraders =
+    'relatedNotifications' in data
+      ? (data as any).relatedNotifications.length
+      : parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
+
   return (
     <NotificationFrame
       notification={notification}
@@ -112,13 +118,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
       <span className="line-clamp-3">
         <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
         <PrimaryNotificationLink
-          text={
-            sourceText
-              ? `${
-                  parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-                } new traders`
-              : 'unique traders'
-          }
+          text={sourceText ? `${numNewTraders} new traders` : 'new traders'}
         />{' '}
         on <QuestionOrGroupLink notification={notification} />
       </span>
