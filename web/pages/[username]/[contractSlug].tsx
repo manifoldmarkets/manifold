@@ -357,7 +357,7 @@ export function ContractPageContent(props: {
                 )}
                 {headerStuck && (
                   <span className="text-ink-1000 ml-4 mt-1 w-full min-w-0 overflow-hidden break-all">
-                    {contract.question}
+                    <VisibilityIcon contract={contract} /> {contract.question}
                   </span>
                 )}
               </Row>
@@ -416,7 +416,11 @@ export function ContractPageContent(props: {
                 </Row>
                 <Spacer h={2} />
                 <div ref={titleRef}>
-                  <VisibilityIcon contract={contract} />
+                  <VisibilityIcon
+                    contract={contract}
+                    isLarge
+                    className="mr-1"
+                  />
                   <TitleOrEdit
                     contract={contract}
                     canEdit={isAdmin || isCreator}
