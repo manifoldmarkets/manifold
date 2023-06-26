@@ -25,7 +25,7 @@ export function ExtraContractActionsRow(props: {
     <Row className={className}>
       {children}
 
-      <div className={'flex items-center [&>div]:pr-2'}>
+      <div className={'flex items-center'}>
         <LikeButton
           user={user}
           contract={contract}
@@ -36,7 +36,6 @@ export function ExtraContractActionsRow(props: {
           contentText={contract.question}
           color={'gray'}
           className={clsx(
-            'p-2',
             isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
           )}
           trackingLocation={'contract page'}

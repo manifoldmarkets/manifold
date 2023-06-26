@@ -126,7 +126,7 @@ export const LikeButton = memo(function LikeButton(props: {
         <button
           disabled={disabled}
           className={clsx(
-            'flex flex-row items-center gap-1 transition-transform disabled:cursor-not-allowed',
+            'flex flex-row items-center transition-transform disabled:cursor-not-allowed',
             color === 'white' ? 'text-ink-0' : 'text-ink-500 ',
             totalLikes === 0 &&
               !user &&
@@ -153,19 +153,21 @@ export const LikeButton = memo(function LikeButton(props: {
               )}
             />
           </div>
-          <div
-            className={clsx(
-              ' my-auto h-5 disabled:opacity-50',
-              size === 'xl'
-                ? 'text-lg'
-                : size === 'sm'
-                ? 'mt-[6px] text-xs'
-                : 'text-sm',
-              color === 'white' ? 'text-white' : 'text-ink-500'
-            )}
-          >
-            {totalLikes > 0 ? totalLikes : ''}
-          </div>
+          {totalLikes > 0 && (
+            <div
+              className={clsx(
+                ' my-auto h-5 pl-1 disabled:opacity-50',
+                size === 'xl'
+                  ? 'text-lg'
+                  : size === 'sm'
+                  ? 'mt-[6px] text-xs'
+                  : 'text-sm',
+                color === 'white' ? 'text-white' : 'text-ink-500'
+              )}
+            >
+              {totalLikes}
+            </div>
+          )}
         </button>
       </Tooltip>
       {modalOpen && (

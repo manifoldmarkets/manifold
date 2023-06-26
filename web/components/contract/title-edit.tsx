@@ -56,7 +56,6 @@ export const TitleOrEdit = (props: {
     </div>
   ) : (
     <span className="text-xl font-medium sm:text-2xl">
-      <VisibilityIcon contract={contract} isLarge />{' '}
       <Linkify className="" text={contract.question} />
       {canEdit && (
         <button onClick={edit} className="ml-1 p-1">

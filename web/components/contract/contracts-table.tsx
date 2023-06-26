@@ -269,9 +269,14 @@ export function ContractsTable(props: {
 export function VisibilityIcon(props: {
   contract: Contract
   isLarge?: boolean
+  className?: string
 }) {
-  const { contract, isLarge } = props
-  const iconClassName = clsx(isLarge ? 'h-6 w-w' : 'h-4 w-4', 'inline')
+  const { contract, isLarge, className } = props
+  const iconClassName = clsx(
+    isLarge ? 'h-6 w-w' : 'h-4 w-4',
+    'inline',
+    className
+  )
 
   if (contract.visibility === 'private')
     return <LockClosedIcon className={iconClassName} />
