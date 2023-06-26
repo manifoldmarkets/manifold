@@ -82,10 +82,10 @@ export const resolveMarketHelper = async (
   // handle exploit where users can get negative payouts
   const negPayoutThreshold =
     Date.now() - contract.createdTime < 96 * 60 * 60 * 1000 ||
-    contract.uniqueBettorCount < 10
+    contract.uniqueBettorCount < 10 ||
+    contract.visibility !== 'public'
       ? -10
       : -250
-
 
   const userPayouts = groupPayoutsByUser(payouts)
   console.log('user payouts', userPayouts)
@@ -97,10 +97,14 @@ export const resolveMarketHelper = async (
   console.log('negative payouts', negativePayouts)
 
   if (
+    outcome === 'CANCEL' &&
     !CORE_USERNAMES.includes(resolver.username) &&
     negativePayouts.length > 0
   ) {
-    throw new APIError(403, 'Negative payouts too large for resolution')
+    throw new APIError(
+      403,
+      'Negative payouts too large for resolution. Contact admin.'
+    )
   }
 
   // mqp: it would be nice to do this but would require some refactoring
