@@ -1,6 +1,14 @@
+import { z } from 'zod'
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
-import { z } from 'zod'
+import {
+  SqlBuilder,
+  buildSql,
+  from,
+  renderSql,
+  select,
+  where,
+} from 'shared/supabase/sql-builder'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
@@ -109,12 +117,13 @@ function getSearchContractSQL(contractInput: {
   } = contractInput
 
   let query = ''
+  let queryBuilder: SqlBuilder | undefined
   const emptyTerm = term.length === 0
 
   const hideStonks =
     (sort === 'relevance' || sort === 'score') && emptyTerm && !groupId
 
-  const whereSQL = getSearchContractWhereSQL(
+  const whereSqlBuilder = getSearchContractWhereSQL(
     filter,
     sort,
     creatorId,
@@ -124,33 +133,36 @@ function getSearchContractSQL(contractInput: {
     hideStonks,
     topic
   )
+  const whereSQL = renderSql(whereSqlBuilder)
   let sortAlgorithm: string | undefined = undefined
   const isUrl = term.startsWith('https://manifold.markets/')
 
   if (isUrl) {
     const slug = term.split('/').pop()
-    query = `
-    SELECT data
-    FROM contracts
-    ${whereSQL}
-    AND slug = '${slug}' `
+    queryBuilder = buildSql(
+      select('data'),
+      from('contracts'),
+      whereSqlBuilder,
+      where('slug = $1', [slug])
+    )
     sortAlgorithm = 'importance_score'
   }
   // Searching markets within a group
   else if (groupId) {
     // Blank search within group
     if (emptyTerm) {
-      query = `
-        SELECT contractz.data
-        FROM (
+      queryBuilder = buildSql(
+        select('contractz.data'),
+        from(`(
           select contracts.*, 
           group_contracts.group_id 
           from contracts 
           join group_contracts 
           on group_contracts.contract_id = contracts.id) 
-        as contractz
-        ${whereSQL}
-        AND contractz.group_id = '${groupId}'`
+        as contractz`),
+        whereSqlBuilder,
+        where('contractz.group_id = $1', [groupId])
+      )
     }
     // Fuzzy search within group
     else if (fuzzy) {
@@ -219,22 +231,24 @@ function getSearchContractSQL(contractInput: {
   else if (creatorId) {
     // Blank search for markets by creator
     if (emptyTerm) {
-      query = `
-      SELECT data
-      FROM contracts 
-      ${whereSQL}`
+      queryBuilder = buildSql(
+        select('data'),
+        from('contracts'),
+        whereSqlBuilder
+      )
     }
     // Fuzzy search for markets by creator
     else if (fuzzy) {
-      query = `
-      SELECT contractz.data
-      FROM (
-        SELECT contracts.*,
-               similarity(contracts.question, $1) AS similarity_score
-        FROM contracts
-      ) AS contractz
-      ${whereSQL}
-      AND contractz.similarity_score > 0.1`
+      queryBuilder = buildSql(
+        select('contractz.data'),
+        from(`(
+          select contracts.*,
+          similarity(contracts.question, $1) AS similarity_score
+          from contracts
+          ) as contractz`),
+        whereSqlBuilder,
+        where('contractz.similarity_score > 0.1')
+      )
     }
     // Normal prefix and exact match search for markets by creator
     else {
@@ -355,6 +369,9 @@ select * from (
           OR description_fts @@ query)`
     }
   }
+  if (queryBuilder) {
+    query = renderSql(queryBuilder)
+  }
   return (
     query +
     ' ' +
@@ -382,33 +399,29 @@ function getSearchContractWhereSQL(
     all: 'true',
   }
 
-  const stonkFilter = hideStonks ? `AND outcome_type != 'STONK'` : ''
+  const stonkFilter = hideStonks ? `outcome_type != 'STONK'` : ''
   const topicFilter = topic
-    ? `AND (contract_embeddings.embedding <=> topic_embedding.embedding < ${TOPIC_DISTANCE_THRESHOLD})`
+    ? `(contract_embeddings.embedding <=> topic_embedding.embedding < ${TOPIC_DISTANCE_THRESHOLD})`
     : ''
-  const sortFilter = sort == 'close-date' ? 'AND close_time > NOW()' : ''
+  const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
+  const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
   const otherVisibilitySQL = `
   OR (visibility = 'unlisted' AND creator_id='${uid}') 
   OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))
   `
-  const visibilitySQL = `AND (visibility = 'public' ${
-    uid ? otherVisibilitySQL : ''
-  })`
-
-  return `
-  WHERE (
-   ${filterSQL[filter]}
-   ${stonkFilter}
-  )
-  ${sortFilter}
-  ${
+  const visibilitySQL =
     (groupId && hasGroupAccess) || (!!creatorId && !!uid && creatorId === uid)
       ? ''
-      : visibilitySQL
-  }
-  ${creatorId ? `and creator_id = '${creatorId}'` : ''}
-  ${topicFilter}
-  `
+      : `(visibility = 'public' ${uid ? otherVisibilitySQL : ''})`
+
+  return buildSql(
+    where(filterSQL[filter]),
+    where(stonkFilter),
+    where(sortFilter),
+    where(visibilitySQL),
+    where(creatorFilter),
+    where(topicFilter)
+  )
 }
 
 type SortFields = Record<string, string>
