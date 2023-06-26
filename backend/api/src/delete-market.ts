@@ -32,10 +32,10 @@ export const deleteMarket = authEndpoint(async (req, auth) => {
   if (resolution !== 'CANCEL')
     throw new APIError(400, 'Contract must be resolved N/A to be deleted')
 
-  if (uniqueBettorCount && uniqueBettorCount >= 10)
+  if (uniqueBettorCount && uniqueBettorCount >= 2)
     throw new APIError(
       400,
-      'Contract must have less than 10 bettors to be deleted'
+      'Contract must have less than 2 bettors to be deleted'
     )
 
   await contractDoc.update({ deleted: true })
