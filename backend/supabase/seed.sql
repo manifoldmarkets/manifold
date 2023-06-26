@@ -434,8 +434,6 @@ select
 
 create index if not exists contracts_data_gin on contracts using GIN (data);
 
-create index if not exists contracts_group_slugs_gin on contracts using GIN ((data -> 'groupSlugs'));
-
 create index if not exists contracts_slug on contracts (slug);
 
 create index if not exists contracts_creator_id on contracts (creator_id, created_time);
@@ -450,10 +448,9 @@ create index if not exists contracts_visibility on contracts (visibility);
 
 create index if not exists description_fts on contracts using gin (description_fts);
 
-create index idx_contracts_close_time_resolution_time_visibility on contracts (close_time, resolution_time, visibility);
+create index if not exists idx_contracts_close_time_resolution_time_visibility on contracts (close_time, resolution_time, visibility);
 
--- for the ilike search TODO: remove this after PR merge
-create index if not exists contracts_question_trgm_idx on contracts using gin (question gin_trgm_ops);
+create index if not exists contracts_importance_score on contracts (importance_score desc);
 
 create index if not exists question_nostop_fts on contracts using gin (question_nostop_fts);
 
