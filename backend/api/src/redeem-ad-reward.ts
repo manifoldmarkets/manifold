@@ -8,6 +8,7 @@ import { getUser } from 'shared/utils'
 import { z } from 'zod'
 
 import { APIError, authEndpoint, validate } from './helpers'
+import { BOT_USERNAMES } from 'common/envs/constants'
 
 const schema = z.object({
   adId: z.string(),
@@ -20,6 +21,11 @@ export const redeemad = authEndpoint(async (req, auth) => {
   const user = await getUser(auth.uid)
   if (!user)
     throw new APIError(400, 'No user exists with the authenticated user ID')
+
+  // stop bot redeems
+  const isApiOrBot =
+    auth.creds.kind === 'key' || BOT_USERNAMES.includes(user.username)
+  if (isApiOrBot) throw new APIError(403, 'Not eligible to redeem boosts')
 
   const pg = createSupabaseDirectClient()
 
