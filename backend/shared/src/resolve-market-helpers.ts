@@ -27,6 +27,7 @@ import {
   checkAndMergePayouts,
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
+import { APIError } from 'common/api'
 
 export type ResolutionParams = {
   outcome: string
@@ -93,6 +94,21 @@ export const resolveMarketHelper = async (
   await revalidateStaticProps(contractPath(contract))
 
   const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
+
+  // handle exploit where users can get negative payouts
+  const negPayoutThreshold =
+    Date.now() - contract.createdTime < 96 * 60 * 60 * 1000 ||
+    contract.uniqueBettorCount < 10
+      ? -10
+      : -250
+
+  const negativePayouts = Object.values(userPayoutsWithoutLoans).filter(
+    (p) => p <= negPayoutThreshold
+  )
+
+  if (negativePayouts.length > 0) {
+    throw new APIError(403, 'Negative payouts too large for resolution')
+  }
 
   const userIdToContractMetrics = mapValues(
     groupBy(bets, (bet) => bet.userId),
