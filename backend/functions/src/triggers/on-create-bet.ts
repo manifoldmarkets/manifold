@@ -297,12 +297,17 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       answerId,
     })
 
+    const bonusAmount =
+      contract.mechanism === 'cpmm-multi-1'
+        ? UNIQUE_BETTOR_BONUS_AMOUNT / 2
+        : UNIQUE_BETTOR_BONUS_AMOUNT
+
     const bonusTxn: TxnData = {
       fromId: fromUserId,
       fromType: 'BANK',
       toId: contract.creatorId,
       toType: 'USER',
-      amount: UNIQUE_BETTOR_BONUS_AMOUNT,
+      amount: bonusAmount,
       token: 'M$',
       category: 'UNIQUE_BETTOR_BONUS',
       description: JSON.stringify(bonusTxnData),
@@ -314,11 +319,10 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   })
   if (!result) return
 
-  if (
-    contract.mechanism === 'cpmm-1' ||
-    contract.mechanism === 'cpmm-multi-1'
-  ) {
+  if (contract.mechanism === 'cpmm-1') {
     await addHouseSubsidy(contract.id, UNIQUE_BETTOR_LIQUIDITY)
+  } else if (contract.mechanism === 'cpmm-multi-1') {
+    await addHouseSubsidy(contract.id, UNIQUE_BETTOR_LIQUIDITY / 2)
   }
 
   if (result.status != 'success' || !result.txn) {
