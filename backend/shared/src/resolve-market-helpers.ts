@@ -28,6 +28,7 @@ import {
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common/api'
+import { CORE_USERNAMES, isAdmin } from 'common/envs/constants'
 
 export type ResolutionParams = {
   outcome: string
@@ -78,6 +79,30 @@ export const resolveMarketHelper = async (
     subsidyPool: 0,
   } as Contract
 
+  // handle exploit where users can get negative payouts
+  const negPayoutThreshold =
+    Date.now() - contract.createdTime < 96 * 60 * 60 * 1000 ||
+    contract.uniqueBettorCount < 10
+      ? -10
+      : -250
+
+
+  const userPayouts = groupPayoutsByUser(payouts)
+  console.log('user payouts', userPayouts)
+
+  const negativePayouts = Object.values(userPayouts).filter(
+    (p) => p <= negPayoutThreshold
+  )
+
+  console.log('negative payouts', negativePayouts)
+
+  if (
+    !CORE_USERNAMES.includes(resolver.username) &&
+    negativePayouts.length > 0
+  ) {
+    throw new APIError(403, 'Negative payouts too large for resolution')
+  }
+
   // mqp: it would be nice to do this but would require some refactoring
   // const updates = await computeContractMetricUpdates(contract, Date.now())
   // contract = { ...contract, ...(updates as any) }
@@ -94,21 +119,6 @@ export const resolveMarketHelper = async (
   await revalidateStaticProps(contractPath(contract))
 
   const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
-
-  // handle exploit where users can get negative payouts
-  const negPayoutThreshold =
-    Date.now() - contract.createdTime < 96 * 60 * 60 * 1000 ||
-    contract.uniqueBettorCount < 10
-      ? -10
-      : -250
-
-  const negativePayouts = Object.values(userPayoutsWithoutLoans).filter(
-    (p) => p <= negPayoutThreshold
-  )
-
-  if (negativePayouts.length > 0) {
-    throw new APIError(403, 'Negative payouts too large for resolution')
-  }
 
   const userIdToContractMetrics = mapValues(
     groupBy(bets, (bet) => bet.userId),
