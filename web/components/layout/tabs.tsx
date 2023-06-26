@@ -127,7 +127,7 @@ export function QueryUncontrolledTabs(
       tabs={tabs}
       activeIndex={activeIndex}
       onClick={(title, i) => {
-        if (scrollToTop) window.scrollTo({ top: 0, behavior: 'instant' })
+        if (scrollToTop) window.scrollTo({ top: 0 })
 
         onClick?.(title, i)
 
