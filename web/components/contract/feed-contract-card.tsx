@@ -120,7 +120,7 @@ function SimpleCard(props: {
       </Col>
       <Col
         className={
-          'bg-canvas-0 border-ink-200 mt-2 grow justify-between gap-2 overflow-hidden border-l-4 border-b px-3 pt-2 pb-3'
+          'dark:bg-canvas-50 border-ink-200 mt-2 grow justify-between gap-2 overflow-hidden border border-l-4 px-3 pt-2 pb-3'
         }
       >
         <Row className="items-start justify-between gap-1">
@@ -229,8 +229,8 @@ function DetailedCard(props: {
       className={clsx(
         className,
         'relative rounded-xl',
-        'bg-canvas-0 group flex cursor-pointer flex-col overflow-hidden',
-        'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border outline-none transition-colors'
+        'dark:bg-canvas-50 group flex cursor-pointer flex-col overflow-hidden',
+        'border-canvas-100 hover:border-primary-300 focus:border-primary-300 border outline-none transition-colors'
       )}
       // we have other links inside this card like the username, so can't make the whole card a button or link
       tabIndex={-1}

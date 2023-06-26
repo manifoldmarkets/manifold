@@ -562,7 +562,7 @@ function BetsTable(props: {
       <Col className={'w-full'}>
         <Row
           className={
-            'grid-cols-15 bg-canvas-100 sticky top-0 z-10 grid w-full py-2 pr-1'
+            'grid-cols-15 bg-canvas-50 sticky top-0 z-10 grid w-full py-2 pr-1'
           }
         >
           {dataColumns.map((c) => (
@@ -590,7 +590,7 @@ function BetsTable(props: {
               <Row
                 key={contract.id + 'bets-table-row'}
                 className={
-                  'border-ink-300 hover:bg-canvas-100 cursor-pointer border-b py-2'
+                  'border-ink-300 hover:bg-canvas-50 cursor-pointer border-b py-2'
                 }
                 onClick={() => setNewExpandedId(contract.id)}
               >
@@ -644,7 +644,7 @@ function BetsTable(props: {
                           {contract.mechanism === 'cpmm-1' &&
                             limitBets.length > 0 && (
                               <div className="max-w-md">
-                                <div className="bg-canvas-100 mt-4 px-4 py-2">
+                                <div className="bg-canvas-50 mt-4 px-4 py-2">
                                   Limit orders
                                 </div>
                                 <OrderTable

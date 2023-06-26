@@ -129,7 +129,7 @@ export const FeedTimelineItems = (props: {
             <FeedItemFrame
               item={item}
               key={news.id + 'feed-timeline-item'}
-              className="bg-canvas-0 border-canvas-0 hover:border-primary-300 w-full overflow-hidden rounded-2xl border "
+              className="dark:bg-canvas-50 border-canvas-100 hover:border-primary-300 w-full overflow-hidden rounded-2xl border "
             >
               <NewsArticle
                 author={(news as any)?.author}
@@ -219,7 +219,7 @@ export function FeedRelatedItemFrame(props: {
     <Link
       href={href}
       className={clsx(
-        'bg-canvas-0 border-canvas-0 hover:border-primary-300 z-10 mb-2 flex flex-col overflow-hidden rounded-2xl rounded-tr-none border',
+        'dark:bg-canvas-50 border-canvas-100 hover:border-primary-300 z-10 mb-2 flex flex-col overflow-hidden rounded-2xl rounded-tr-none border',
         className
       )}
     >

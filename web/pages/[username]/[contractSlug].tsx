@@ -312,7 +312,7 @@ export function ContractPageContent(props: {
       <Row className="w-full items-start justify-center gap-8">
         <Col
           className={clsx(
-            'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
+            'border-ink-300 border-[0.5px] w-full max-w-3xl rounded-b xl:w-[70%]',
             // Keep content in view when scrolling related questions on desktop.
             'sticky bottom-0 min-h-screen self-end'
           )}

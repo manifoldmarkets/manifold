@@ -49,7 +49,7 @@ export const AllArticles = () => {
     >
       {articles.map((article) => (
         <Col
-          className="bg-canvas-0 border-canvas-50 hover:border-canvas-100 mb-8 rounded-lg border"
+          className="dark:bg-canvas-50 border-canvas-100 hover:border-primary-300 mb-8 rounded-lg border"
           key={'article' + article.id}
         >
           <NewsArticle urlToImage={article.image_url} {...article} />

@@ -232,7 +232,7 @@ export function ContractsTable(props: {
       {!isMobile && !hideHeader && (
         <thead
           className={clsx(
-            'text-ink-600 bg-canvas-50 text-left text-sm font-semibold',
+            'text-ink-600 text-left text-sm font-semibold',
             headerClassName
           )}
         >
