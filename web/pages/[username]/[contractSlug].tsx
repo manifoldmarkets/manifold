@@ -69,6 +69,7 @@ import {
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
+import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 
 export type ContractParameters = {
   contractSlug: string
