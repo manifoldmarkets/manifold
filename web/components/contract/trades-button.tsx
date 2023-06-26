@@ -26,14 +26,14 @@ export function TradesButton(props: { contract: Contract }) {
     <button
       disabled={uniqueTraders === 0}
       className={clsx(
-        'text-ink-500 py-1 pr-2 pl-2 transition-transform disabled:cursor-not-allowed'
+        'text-ink-500 transition-transform disabled:cursor-not-allowed'
       )}
       onClick={(e) => {
         e.preventDefault()
         setModalOpen(true)
       }}
     >
-      <Row className="relative justify-center gap-1.5 text-sm">
+      <Row className="relative gap-1.5 text-sm">
         <Tooltip
           text={'Traders'}
           placement={'bottom'}

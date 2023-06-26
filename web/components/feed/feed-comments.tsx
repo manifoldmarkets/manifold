@@ -193,6 +193,7 @@ export const FeedComment = memo(function FeedComment(props: {
     >
       <Avatar
         username={userUsername}
+        size={'sm'}
         avatarUrl={userAvatarUrl}
         className={clsx(marketCreator ? 'shadow shadow-amber-300' : '', 'z-10')}
       />
@@ -552,10 +553,8 @@ function FeedCommentHeader(props: {
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
-    <Col
-      className={clsx('mt-1', inTimeline ? 'text-md' : 'text-ink-600 text-sm ')}
-    >
-      <Row className="items-center gap-1">
+    <Col className={clsx('', inTimeline ? 'text-md' : 'text-ink-600 text-sm ')}>
+      <Row className=" gap-1">
         <span>
           <UserLink
             username={userUsername}

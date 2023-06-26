@@ -64,7 +64,7 @@ export function CommentsButton(props: {
     <Tooltip text={`Comments`} placement="bottom" className={'z-10'}>
       <button
         disabled={comments.length === 0 && !user}
-        className="hover:text-ink-600 text-ink-500 -mr-1 flex items-center gap-1.5 p-1 disabled:opacity-50"
+        className="hover:text-ink-600 text-ink-500 flex items-center gap-1.5 disabled:opacity-50"
         onClick={() => {
           setOpen(true)
           track('view comments', { contractId: contract.id })
