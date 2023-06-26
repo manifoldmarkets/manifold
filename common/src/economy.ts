@@ -10,11 +10,18 @@ const ANTES = {
   STONK: FIXED_ANTE,
 }
 
-export const getAnte = (outcomeType: string, numAnswers?: number) => {
+export const getAnte = (
+  outcomeType: string,
+  numAnswers: number | undefined,
+  isPrivate: boolean
+) => {
   const ante = ANTES[outcomeType as keyof typeof ANTES] ?? FIXED_ANTE
-  return outcomeType === 'MULTIPLE_CHOICE' && numAnswers
-    ? ante * numAnswers
-    : ante
+  const privateFee = isPrivate ? 200 : 0
+
+  return (
+    privateFee +
+    (outcomeType === 'MULTIPLE_CHOICE' && numAnswers ? ante * numAnswers : ante)
+  )
 }
 
 export const STARTING_BALANCE = 500

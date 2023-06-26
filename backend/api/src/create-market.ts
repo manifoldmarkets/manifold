@@ -72,7 +72,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
   const contractRef = firestore.collection('contracts').doc()
 
-  const ante = getAnte(outcomeType, answers?.length)
+  const ante = getAnte(outcomeType, answers?.length, visibility === 'private')
 
   const closeTimestamp = await getCloseTimestamp(closeTime, question, utcOffset)
 

@@ -506,7 +506,7 @@ const useNewContract = (
       })
   }, [creator.id, params?.groupId])
 
-  const ante = getAnte(outcomeType, answers.length)
+  const ante = getAnte(outcomeType, answers.length, visibility === 'private')
 
   // If params.closeTime is set, extract out the specified date and time
   // By default, close the question a week from today
