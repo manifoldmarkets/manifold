@@ -261,7 +261,7 @@ export function BuyPanel(props: {
       >
         <YesNoSelector
           className="flex-1"
-          btnClassName="flex-1"
+          btnClassName="flex-1 px-2 sm:px-6"
           selected={selected}
           onSelect={(choice) => {
             onOptionChoice(choice)
@@ -277,7 +277,7 @@ export function BuyPanel(props: {
           <Button
             color={seeLimit || !selected ? 'indigo' : 'indigo-outline'}
             onClick={() => onOptionChoice('LIMIT')}
-            className="text-lg"
+            className="px-3 text-lg sm:px-6"
             size="xl"
           >
             %
