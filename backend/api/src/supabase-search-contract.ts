@@ -297,7 +297,7 @@ function getSearchContractSQL(contractInput: {
     const topicJoin = topic
       ? `contract_embeddings ON contracts.id = contract_embeddings.contract_id, topic_embedding`
       : ''
-    const topicQuerySegment = pgp.as.format(
+    const topicQuery = pgp.as.format(
       'topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = $1 LIMIT 1)',
       [topic]
     )
@@ -305,7 +305,7 @@ function getSearchContractSQL(contractInput: {
       ? `(contract_embeddings.embedding <=> topic_embedding.embedding < ${TOPIC_DISTANCE_THRESHOLD})`
       : ''
     const topicSqlBuilder = buildSql(
-      withClause(topicQuerySegment),
+      withClause(topicQuery),
       join(topicJoin),
       where(topicFilter)
     )
@@ -320,7 +320,7 @@ function getSearchContractSQL(contractInput: {
     }
     // Fuzzy search for markets not by group nor creator
     else if (fuzzy) {
-      const fuzzyTopicQuery = topic ? `${topicQuerySegment},` : ''
+      const fuzzyTopicQuery = topic ? `${topicQuery},` : ''
       const topicSelect = topic ? `contract_embeddings.embedding,` : ''
       const topicFrom = topic ? `, contract_embeddings, topic_embedding` : ''
       const topicAnd = topic
@@ -371,21 +371,16 @@ select * from (
     }
     // Normal full text search for markets
     else {
-      const topicSqlBuilder = buildSql(
-        withClause(topicQuerySegment),
-        join(topicJoin + `, websearch_to_tsquery('english',  $1) as query`),
-        where(topicFilter)
-      )
-      queryBuilder = buildSql(
-        select('data'),
-        from('contracts'),
-        whereSqlBuilder,
-        where(
-          `(question_fts @@ query
+      query = `
+          with ${topicQuery}
+          SELECT data
+          FROM contracts
+          ${topicJoin ? `JOIN ${topicJoin}` : ''},
+               websearch_to_tsquery('english',  $1) as query
+          ${whereSQL}
+          ${topicFilter ? `AND ${topicFilter}` : ''}
+          AND (question_fts @@ query
           OR description_fts @@ query)`
-        ),
-        topicSqlBuilder
-      )
     }
   }
   if (queryBuilder) {
