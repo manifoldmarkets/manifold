@@ -5,7 +5,6 @@ import { updateContract } from 'web/lib/firebase/contracts'
 import { IconButton } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Linkify } from '../widgets/linkify'
-import { VisibilityIcon } from './contracts-table'
 
 export const TitleOrEdit = (props: {
   contract: Contract
