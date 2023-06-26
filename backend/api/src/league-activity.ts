@@ -80,15 +80,20 @@ export const getLeagueActivity = async (
       data from contracts
     where
       contracts.id = any($1)
+      and contracts.visibility = 'public'
       `,
     [contractIds],
     (row) => row.data
   )
-  console.log('contracts', contracts.length)
 
+  const contractSet = new Set(contracts.map((contract) => contract.id))
+  const publicBets = bets.filter((bet) => contractSet.has(bet.contractId))
+  const publicComments = comments.filter((comment) =>
+    contractSet.has(comment.contractId)
+  )
   return {
-    bets: bets.filter((bet) => bet.visibility === 'public'),
-    comments: comments.filter((comment) => comment.visibility === 'public'),
-    contracts: contracts.filter((contract) => contract.visibility === 'public'),
+    contracts,
+    bets: publicBets,
+    comments: publicComments,
   }
 }
