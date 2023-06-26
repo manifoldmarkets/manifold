@@ -437,7 +437,7 @@ export function ContractPageContent(props: {
               <SignUpFlow user={user} />
             </Col>
 
-            {isCreator &&
+            {/* {isCreator &&
               isResolved &&
               resolution === 'CANCEL' &&
               (!uniqueBettorCount || uniqueBettorCount < 10) && (
@@ -445,7 +445,7 @@ export function ContractPageContent(props: {
                   className="mt-4 self-end"
                   contractId={contract.id}
                 />
-              )}
+              )} */}
 
             <ContractDescription
               className="mt-2"
