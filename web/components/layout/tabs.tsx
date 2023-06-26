@@ -115,9 +115,9 @@ const isTabSelected = (router: NextRouter, queryParam: string, tab: Tab) => {
 }
 
 export function QueryUncontrolledTabs(
-  props: TabProps & { defaultIndex?: number }
+  props: TabProps & { defaultIndex?: number; scrollToTop?: boolean }
 ) {
-  const { tabs, defaultIndex, onClick, ...rest } = props
+  const { tabs, defaultIndex, onClick, scrollToTop, ...rest } = props
   const router = useRouter()
   const selectedIdx = tabs.findIndex((t) => isTabSelected(router, 'tab', t))
   const activeIndex = selectedIdx !== -1 ? selectedIdx : defaultIndex ?? 0
@@ -127,6 +127,8 @@ export function QueryUncontrolledTabs(
       tabs={tabs}
       activeIndex={activeIndex}
       onClick={(title, i) => {
+        if (scrollToTop) window.scrollTo({ top: 0, behavior: 'instant' })
+
         onClick?.(title, i)
 
         router.replace(
