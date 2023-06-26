@@ -120,35 +120,12 @@ function PrivateMarketGroups(props: { contract: Contract }) {
   return <></>
 }
 
-export function AuthorInfo(props: { contract: Contract }) {
-  const { contract } = props
-  const { creatorName, creatorUsername, creatorAvatarUrl, creatorCreatedTime } =
-    contract
-
-  return (
-    <Row className="grow items-center gap-2">
-      <div className="relative">
-        <Avatar
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          size={'xs'}
-        />
-      </div>
-
-      <UserLink
-        name={creatorName}
-        username={creatorUsername}
-        createdTime={creatorCreatedTime}
-      />
-    </Row>
-  )
-}
-
 export function CloseOrResolveTime(props: {
   contract: Contract
   editable?: boolean
+  className?: string
 }) {
-  const { contract, editable } = props
+  const { contract, editable, className } = props
   const { resolutionTime, closeTime, isResolved } = contract
   if (contract.outcomeType === 'STONK') {
     return <></>
@@ -156,7 +133,7 @@ export function CloseOrResolveTime(props: {
 
   if (!!closeTime || !!isResolved) {
     return (
-      <Row className="select-none items-center">
+      <Row className={clsx('select-none items-center', className)}>
         {isResolved && resolutionTime && (
           <DateTimeTooltip
             className="whitespace-nowrap"
@@ -374,7 +351,6 @@ function EditableCloseDate(props: {
           noTap
           className="flex items-center"
         >
-          <ClockIcon className="mr-1 h-4 w-4" />
           {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}{' '}
           {isSameDay
             ? fromNow(closeTime)

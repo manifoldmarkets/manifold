@@ -17,7 +17,6 @@ import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { BackButton } from 'web/components/contract/back-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import {
-  AuthorInfo,
   CloseOrResolveTime,
   MarketGroups,
 } from 'web/components/contract/contract-details'
@@ -68,6 +67,9 @@ import {
   useFirebasePublicAndRealtimePrivateContract,
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
+// import { VisibilityIcon } from 'web/components/contract/contracts-table'
+import { Avatar } from 'web/components/widgets/avatar'
+import { UserLink } from 'web/components/widgets/user-link'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 
@@ -357,7 +359,7 @@ export function ContractPageContent(props: {
                 )}
                 {headerStuck && (
                   <span className="text-ink-1000 ml-4 mt-1 w-full min-w-0 overflow-hidden break-all">
-                    <VisibilityIcon contract={contract} /> {contract.question}
+                    {contract.question}
                   </span>
                 )}
               </Row>
@@ -397,34 +399,32 @@ export function ContractPageContent(props: {
                     </ExtraContractActionsRow>
                   </Row>
                 )}
+                <Row className="gap-2">
+                  <Avatar
+                    username={contract.creatorUsername}
+                    avatarUrl={contract.creatorAvatarUrl}
+                  />
+                  <Col>
+                    <UserLink
+                      name={contract.creatorName}
+                      username={contract.creatorUsername}
+                    />
+                    <CloseOrResolveTime
+                      contract={contract}
+                      editable={user?.id === creatorId}
+                      className="text-ink-600 text-sm"
+                    />
+                  </Col>
+                </Row>
+                <Spacer h={2} />
                 <div ref={titleRef}>
+                  <VisibilityIcon contract={contract} />
                   <TitleOrEdit
                     contract={contract}
                     canEdit={isAdmin || isCreator}
                   />
                 </div>
               </Col>
-
-              <div className="text-ink-600 flex items-center justify-between text-sm">
-                <AuthorInfo contract={contract} />
-
-                <div className="flex gap-4">
-                  <Tooltip
-                    text="Traders"
-                    placement="bottom"
-                    noTap
-                    className="flex flex-row items-center gap-1"
-                  >
-                    <UserIcon className="text-ink-500 h-4 w-4" />
-                    <div>{uniqueBettorCount ?? 0}</div>
-                  </Tooltip>
-
-                  <CloseOrResolveTime
-                    contract={contract}
-                    editable={user?.id === creatorId}
-                  />
-                </div>
-              </div>
 
               <ContractOverview
                 contract={contract}
