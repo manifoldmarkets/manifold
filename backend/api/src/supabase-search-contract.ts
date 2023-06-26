@@ -5,9 +5,11 @@ import {
   SqlBuilder,
   buildSql,
   from,
+  join,
   renderSql,
   select,
   where,
+  withClause,
 } from 'shared/supabase/sql-builder'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 
@@ -130,8 +132,7 @@ function getSearchContractSQL(contractInput: {
     uid,
     groupId,
     hasGroupAccess,
-    hideStonks,
-    topic
+    hideStonks
   )
   const whereSQL = renderSql(whereSqlBuilder)
   let sortAlgorithm: string | undefined = undefined
@@ -294,29 +295,40 @@ function getSearchContractSQL(contractInput: {
   // Blank search for markets not by group nor creator
   else {
     const topicJoin = topic
-      ? ` JOIN contract_embeddings ON contracts.id = contract_embeddings.contract_id, topic_embedding`
+      ? `contract_embeddings ON contracts.id = contract_embeddings.contract_id, topic_embedding`
       : ''
     const topicQuerySegment = pgp.as.format(
       'topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = $1 LIMIT 1)',
       [topic]
     )
-    const fuzzyTopicQuery = topic ? `${topicQuerySegment},` : ''
-    const topicQuery = topic ? `with ${topicQuerySegment}` : ''
-    const topicSelect = topic ? `contract_embeddings.embedding,` : ''
-    const topicFrom = topic ? `, contract_embeddings, topic_embedding` : ''
-    const topicAnd = topic
-      ? `AND contracts.id = contract_embeddings.contract_id`
+    const topicFilter = topic
+      ? `(contract_embeddings.embedding <=> topic_embedding.embedding < ${TOPIC_DISTANCE_THRESHOLD})`
       : ''
+    const topicSqlBuilder = buildSql(
+      withClause(topicQuerySegment),
+      join(topicJoin),
+      where(topicFilter)
+    )
+
     if (emptyTerm) {
-      query = `
-      ${topicQuery}
-      SELECT data
-      FROM contracts
-      ${topicJoin}
-      ${whereSQL}`
+      queryBuilder = buildSql(
+        select('data'),
+        from('contracts'),
+        whereSqlBuilder,
+        topicSqlBuilder
+      )
     }
     // Fuzzy search for markets not by group nor creator
     else if (fuzzy) {
+      const fuzzyTopicQuery = topic ? `${topicQuerySegment},` : ''
+      const topicSelect = topic ? `contract_embeddings.embedding,` : ''
+      const topicFrom = topic ? `, contract_embeddings, topic_embedding` : ''
+      const topicAnd = topic
+        ? `AND contracts.id = contract_embeddings.contract_id`
+        : ''
+      const whereSqlWithTopic = topic
+        ? whereSQL + ` AND ${topicFilter}`
+        : whereSQL
       query = `
 select * from (
     WITH ${fuzzyTopicQuery}
@@ -329,13 +341,13 @@ select * from (
      subset_matches AS (
          SELECT contracts.*, ${topicSelect} subset_query.query, 0.0 AS weight
          FROM contracts, subset_query ${topicFrom}
-             ${whereSQL}
+             ${whereSqlWithTopic}
            AND question_nostop_fts @@ subset_query.query ${topicAnd}
         ),
      prefix_matches AS (
          SELECT contracts.*, ${topicSelect} prefix_query.query,  1.0 AS weight
          FROM contracts, prefix_query ${topicFrom}
-           ${whereSQL}
+           ${whereSqlWithTopic}
            AND question_nostop_fts @@ prefix_query.query ${topicAnd}
         ),
      combined_matches AS (
@@ -351,22 +363,29 @@ select * from (
        ) AS ranked_matches
     WHERE row_num = 1
     -- prefix matches are weighted higher than subset matches bc they include the last word
-    ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC) as ranked_matches
+    ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
+  ) as ranked_matches
     `
       // We use importance score bc these are exact matches and can be low quality
       sortAlgorithm = 'importance_score'
     }
     // Normal full text search for markets
     else {
-      query = `
-          ${topicQuery}
-          SELECT data
-          FROM contracts
-              ${topicJoin},
-               websearch_to_tsquery('english',  $1) as query
-              ${whereSQL}
-      AND (question_fts @@ query
+      const topicSqlBuilder = buildSql(
+        withClause(topicQuerySegment),
+        join(topicJoin + `, websearch_to_tsquery('english',  $1) as query`),
+        where(topicFilter)
+      )
+      queryBuilder = buildSql(
+        select('data'),
+        from('contracts'),
+        whereSqlBuilder,
+        where(
+          `(question_fts @@ query
           OR description_fts @@ query)`
+        ),
+        topicSqlBuilder
+      )
     }
   }
   if (queryBuilder) {
@@ -388,8 +407,7 @@ function getSearchContractWhereSQL(
   uid: string | undefined,
   groupId: string | undefined,
   hasGroupAccess?: boolean,
-  hideStonks?: boolean,
-  topic?: string
+  hideStonks?: boolean
 ) {
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
@@ -400,9 +418,6 @@ function getSearchContractWhereSQL(
   }
 
   const stonkFilter = hideStonks ? `outcome_type != 'STONK'` : ''
-  const topicFilter = topic
-    ? `(contract_embeddings.embedding <=> topic_embedding.embedding < ${TOPIC_DISTANCE_THRESHOLD})`
-    : ''
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
   const otherVisibilitySQL = `
@@ -419,8 +434,7 @@ function getSearchContractWhereSQL(
     where(stonkFilter),
     where(sortFilter),
     where(visibilitySQL),
-    where(creatorFilter),
-    where(topicFilter)
+    where(creatorFilter)
   )
 }
 

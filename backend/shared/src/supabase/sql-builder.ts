@@ -49,27 +49,6 @@ export function buildSql(
   }
 }
 
-export function renderSql(builder: SqlBuilder) {
-  const {
-    with: withClause,
-    select,
-    from,
-    join,
-    where,
-    orderBy,
-    limit,
-  } = builder
-  return buildArray(
-    withClause.length && `with ${withClause.join(', ')}`,
-    select.length && `select ${select.join(', ')}`,
-    from.length && `from ${from.join(', ')}`,
-    join.length && `join ${join.join(' join ')}`,
-    where.length && `where ${where.join(' and ')}`,
-    orderBy.length && `order by ${orderBy.join(', ')}`,
-    limit && `limit ${limit}`
-  ).join('\n')
-}
-
 export function withClause(clause: string) {
   return buildSql({ with: clause })
 }
@@ -93,4 +72,25 @@ export function where(clause: string, formatValues?: any) {
 
 export function orderBy(clause: string) {
   return buildSql({ orderBy: clause })
+}
+
+export function renderSql(builder: SqlBuilder) {
+  const {
+    with: withClause,
+    select,
+    from,
+    join,
+    where,
+    orderBy,
+    limit,
+  } = builder
+  return buildArray(
+    withClause.length && `with ${withClause.join(', ')}`,
+    select.length && `select ${select.join(', ')}`,
+    from.length && `from ${from.join(', ')}`,
+    join.length && `join ${join.join(' join ')}`,
+    where.length && `where ${where.join(' and ')}`,
+    orderBy.length && `order by ${orderBy.join(', ')}`,
+    limit && `limit ${limit}`
+  ).join('\n')
 }
