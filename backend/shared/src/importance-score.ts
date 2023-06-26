@@ -168,6 +168,9 @@ export const computeContractScores = (
     dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
   }
 
+  const marketMovt =
+    normalize(logOddsChange, 5) * normalize(contract.uniqueBettorCount, 10) // ignore movt on small markets
+
   const { closeTime, isResolved } = contract
 
   const newness =
@@ -189,7 +192,7 @@ export const computeContractScores = (
 
   // recalibrate all of these numbers as site usage changes
   const rawImportance =
-    3 * normalize(logOddsChange, 5) +
+    3 * marketMovt +
     2 * newness +
     2 * normalize(traderHour, 20) +
     2 * normalize(todayScore, 100) +
