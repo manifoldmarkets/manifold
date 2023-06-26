@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { z } from 'zod'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 
@@ -282,12 +282,12 @@ function getSearchContractSQL(contractInput: {
     const topicJoin = topic
       ? ` JOIN contract_embeddings ON contracts.id = contract_embeddings.contract_id, topic_embedding`
       : ''
-    const fuzzyTopicQuery = topic
-      ? `topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = '${topic}' LIMIT 1),`
-      : ''
-    const topicQuery = topic
-      ? `with topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = '${topic}' LIMIT 1)`
-      : ''
+    const topicQuerySegment = pgp.as.format(
+      'topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = $1 LIMIT 1)',
+      [topic]
+    )
+    const fuzzyTopicQuery = topic ? `${topicQuerySegment},` : ''
+    const topicQuery = topic ? `with ${topicQuerySegment}` : ''
     const topicSelect = topic ? `contract_embeddings.embedding,` : ''
     const topicFrom = topic ? `, contract_embeddings, topic_embedding` : ''
     const topicAnd = topic
