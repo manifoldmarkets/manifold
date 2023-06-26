@@ -60,9 +60,10 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
       ? contract.groupLinks[0].groupId
       : undefined
 
+  const isAdmin = await getIsAdmin(db, auth?.uid)
   const canAccessContract =
     // can't access if contract is deleted
-    !contract.deleted &&
+    (!contract.deleted || isAdmin) &&
     // can access if contract is not private
     (contract.visibility != 'private' ||
       // if contract is private, can't access if in static props
@@ -71,8 +72,6 @@ export const getcontractparams = MaybeAuthedEndpoint(async (req, auth) => {
         auth &&
         groupId &&
         (await getUserIsMember(db, groupId, auth?.uid))))
-
-  const isAdmin = await getIsAdmin(db, auth?.uid)
 
   if (!canAccessContract && !isAdmin) {
     return contract && !contract.deleted

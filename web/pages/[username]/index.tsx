@@ -65,6 +65,7 @@ import {
 } from 'web/pages/[username]/calibration'
 import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export const getStaticProps = async (props: {
   params: {
@@ -101,6 +102,7 @@ export default function UserPage(props: {
   posts: Post[]
   score: number
 }) {
+  const isAdmin = useAdmin()
   const { user, username, posts, score } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
@@ -110,7 +112,7 @@ export default function UserPage(props: {
   useSaveReferral()
 
   if (!user) return <Custom404 />
-  else if (user.userDeleted) return <DeletedUser />
+  else if (user.userDeleted && !isAdmin) return <DeletedUser />
 
   return privateUser && blockedByCurrentUser ? (
     <BlockedUser user={user} privateUser={privateUser} />
