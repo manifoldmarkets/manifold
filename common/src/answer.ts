@@ -45,3 +45,5 @@ export const getNoneAnswer = (contractId: string, creator: User) => {
 }
 
 export const MAX_ANSWER_LENGTH = 240
+
+export const MULTIPLE_CHOICE_MAX_ANSWERS = 100

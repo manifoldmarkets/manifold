@@ -1,4 +1,4 @@
-import { MAX_ANSWER_LENGTH } from 'common/answer'
+import { MAX_ANSWER_LENGTH, MULTIPLE_CHOICE_MAX_ANSWERS } from 'common/answer'
 import { XIcon } from '@heroicons/react/solid'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -47,15 +47,17 @@ export function MultipleChoiceAnswers(props: {
         </Row>
       ))}
 
-      <Row className="justify-end">
-        <button
-          type="button"
-          onClick={addAnswer}
-          className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
-        >
-          Add answer
-        </button>
-      </Row>
+      {answers.length < MULTIPLE_CHOICE_MAX_ANSWERS && (
+        <Row className="justify-end">
+          <button
+            type="button"
+            onClick={addAnswer}
+            className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+          >
+            Add answer
+          </button>
+        </Row>
+      )}
     </Col>
   )
 }

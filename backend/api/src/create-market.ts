@@ -1,11 +1,14 @@
 import * as admin from 'firebase-admin'
 import { JSONContent } from '@tiptap/core'
 import { FieldValue, Transaction } from 'firebase-admin/firestore'
-import { uniq } from 'lodash'
 import { z } from 'zod'
 import { marked } from 'marked'
 
-import { Answer, getNoneAnswer } from 'common/answer'
+import {
+  Answer,
+  MULTIPLE_CHOICE_MAX_ANSWERS,
+  getNoneAnswer,
+} from 'common/answer'
 import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
@@ -22,8 +25,7 @@ import {
   VISIBILITIES,
 } from 'common/contract'
 import { getAnte } from 'common/economy'
-import { isAdmin, isManifoldId, isTrustworthy } from 'common/envs/constants'
-import { Group, GroupLink, MAX_ID_LENGTH } from 'common/group'
+import { MAX_ID_LENGTH } from 'common/group'
 import { getNewContract } from 'common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from 'common/numeric-constants'
 import { getPseudoProbability } from 'common/pseudo-numeric'
@@ -503,7 +505,13 @@ const numericSchema = z.object({
 })
 
 const multipleChoiceSchema = z.object({
-  answers: z.string().trim().min(1).array().min(2),
+  answers: z
+    .string()
+    .trim()
+    .min(1)
+    .array()
+    .min(2)
+    .max(MULTIPLE_CHOICE_MAX_ANSWERS),
   shouldAnswersSumToOne: z.boolean().optional(),
 })
 
