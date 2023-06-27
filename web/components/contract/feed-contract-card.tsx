@@ -101,7 +101,7 @@ function SimpleCard(props: {
   item?: FeedTimelineItem
   className?: string
 }) {
-  const { contract, user, trackClick, item, className } = props
+  const { contract, user, trackClick, className } = props
   const { question, outcomeType, mechanism, closeTime, isResolved } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
