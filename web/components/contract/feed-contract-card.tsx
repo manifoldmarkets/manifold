@@ -101,7 +101,12 @@ function SimpleCard(props: {
   item?: FeedTimelineItem
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, user, trackClick, item, className } = props
+  const { question, outcomeType, mechanism, closeTime, isResolved } = contract
+  const isClosed = closeTime && closeTime < Date.now()
+  const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
+  const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
+
   return (
     <Row className={clsx(className)}>
       <Col className="justify-end">
@@ -109,10 +114,37 @@ function SimpleCard(props: {
       </Col>
       <Col
         className={
-          'dark:bg-canvas-50 border-ink-200 grow justify-between gap-2 overflow-hidden border border-l-4'
+          'dark:bg-canvas-50 border-ink-200 grow justify-between gap-2 overflow-hidden border border-l-4 px-3 pt-2'
         }
       >
-        <SimpleContractRow contract={contract} className="text-ink-700 " />
+        <Row className="items-start justify-between gap-1">
+          <Col>
+            <Row className={'items-start gap-2'}>
+              <Avatar
+                username={contract.creatorUsername}
+                avatarUrl={contract.creatorAvatarUrl}
+                size="xs"
+              />
+              <Link
+                className={clsx(
+                  'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
+                  textColor
+                )}
+                onClick={trackClick}
+                href={contractPath(contract)}
+              >
+                {question}
+              </Link>
+            </Row>
+          </Col>
+          <Col className={'items-end'}>
+            <ContractStatusLabel className={' font-bold'} contract={contract} />
+          </Col>
+        </Row>
+
+        <Row className="text-ink-500 mb-1.5 w-full items-center justify-end gap-3 text-sm">
+          {isBinaryCpmm && <BetRow contract={contract} user={user} />}
+        </Row>
       </Col>
     </Row>
   )
