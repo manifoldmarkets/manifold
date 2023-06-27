@@ -1,4 +1,3 @@
-import { DotsHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
@@ -172,18 +171,18 @@ function DetailedCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Row className={clsx('grow gap-2 px-3 pt-2 pb-2')}>
+      <Row className={clsx('grow gap-2 px-3 pt-4 pb-2')}>
         <Col className="w-full">
           <Col className="w-full gap-0.5">
             {/* Title is link to contract for open in new tab and a11y */}
             <Col onClick={(e) => e.stopPropagation()} className="w-full">
-              <Row className=" items-start justify-between">
-                <Col className={'gap-1.5'}>
+              <Row className="flex-col items-start justify-between gap-2 sm:flex-row sm:gap-0">
+                <Col className={'flex-col-reverse gap-1.5 sm:flex-col'}>
                   <Row className={'gap-1'}>
                     <Link
                       href={path}
                       className={clsx(
-                        'text-md -mt-1',
+                        '-mt-1 text-lg',
                         'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
                         textColor
                       )}
@@ -198,7 +197,7 @@ function DetailedCard(props: {
                         !item.isCopied &&
                         (item.dataType === 'contract_probability_changed' ||
                           item.dataType === 'trending_contract') && (
-                          <span className={'text-ink-400 text-xs'}>
+                          <div className={'text-ink-400 text-xs'}>
                             {item.dataType === 'contract_probability_changed'
                               ? ' moved'
                               : item.dataType === 'trending_contract'
@@ -211,7 +210,7 @@ function DetailedCard(props: {
                               shortened={true}
                             />{' '}
                             ago
-                          </span>
+                          </div>
                         )}
                     </Link>
                   </Row>
@@ -223,7 +222,7 @@ function DetailedCard(props: {
                       username={creatorUsername}
                     />
                     <Row
-                      className={'text-ink-400 items-baseline gap-1 text-sm'}
+                      className={'text-ink-700 items-baseline gap-1 text-sm'}
                     >
                       <UserLink
                         name={contract.creatorName}
@@ -237,40 +236,49 @@ function DetailedCard(props: {
                             <RelativeTimestamp
                               time={item.createdTime}
                               shortened={true}
+                              className="text-ink-600"
                             />
                           </span>
                         )}
                     </Row>
                   </Row>
                 </Col>
-                <Col className={'items-end '}>
+                <div
+                  className={
+                    'my-1 flex flex-row items-center gap-2 sm:flex-col sm:items-end sm:gap-1'
+                  }
+                >
                   <ContractStatusLabel
-                    className={'-mt-1 font-bold'}
+                    className={'-mt-1 text-lg font-bold'}
                     contract={contract}
-                  />
-                  {showChange && (
-                    <span
-                      className={clsx(
-                        'font-normal',
-                        probChange! > 0 ? 'text-teal-500' : 'text-scarlet-500'
-                      )}
-                    >
-                      {probChange! > 0 ? '+' : ''}
-                      {probChange}%
-                    </span>
+                  />{' '}
+                  <span>
+                    {showChange && (
+                      <span
+                        className={clsx(
+                          'font-normal',
+                          probChange! > 0 ? 'text-teal-500' : 'text-scarlet-500'
+                        )}
+                      >
+                        {probChange! > 0 ? '+' : ''}
+                        {probChange}%
+                      </span>
+                    )}
+                  </span>
+                  {isBinaryCpmm && !isClosed && (
+                    <Col className="text-ink-500 items-center text-sm">
+                      <BetRow contract={contract} user={user} />
+                    </Col>
                   )}
-                  <MoreOptionsButton
-                    user={user}
-                    contract={contract}
-                    item={item}
-                    onSetUninteresting={() => setHidden(true)}
-                  />
-                </Col>
+                </div>
               </Row>
             </Col>
             <Col className={'w-full items-center'}>
               {promotedData && (
-                <ClaimButton {...promotedData} className={'z-10 w-40'} />
+                <ClaimButton
+                  {...promotedData}
+                  className={'z-10 my-2 whitespace-nowrap'}
+                />
               )}
             </Col>
             {isBinaryCpmm && metrics && metrics.hasShares && (
@@ -282,9 +290,17 @@ function DetailedCard(props: {
               onClick={(e) => e.stopPropagation()}
             >
               <Col className={'w-full'}>
-                <Row className={'grid grid-cols-3 items-center'}>
+                <Row className={'items-center justify-between'}>
                   <TradesButton contract={contract} />
                   <CommentsButton contract={contract} user={user} />
+
+                  <MoreOptionsButton
+                    user={user}
+                    contract={contract}
+                    item={item}
+                    onSetUninteresting={() => setHidden(true)}
+                  />
+
                   <LikeButton
                     contentId={contract.id}
                     contentCreatorId={contract.creatorId}
@@ -300,11 +316,6 @@ function DetailedCard(props: {
                   />
                 </Row>
               </Col>
-              {isBinaryCpmm && !isClosed && (
-                <Col className="text-ink-500 items-center text-sm">
-                  <BetRow contract={contract} user={user} />
-                </Col>
-              )}
             </Row>
           </Col>
         </Col>
@@ -321,6 +332,7 @@ const MoreOptionsButton = (props: {
 }) => {
   const { contract, user, item, onSetUninteresting } = props
   if (!user) return null
+
   const markUninteresting = async () => {
     await updateUserDisinterestEmbedding({
       contractId: contract.id,
@@ -332,19 +344,21 @@ const MoreOptionsButton = (props: {
     })
     onSetUninteresting()
   }
+
   return (
-    <Tooltip text={item?.reasonDescription}>
-      <DropdownMenu
-        menuItemsClass={'-top-4 right-5'}
-        Icon={<DotsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
-        Items={[
-          {
-            name: `Uninteresting`,
-            icon: <TiVolumeMute className="h-5 w-5" />,
-            onClick: markUninteresting,
-          },
-        ]}
-      />
+    <Tooltip text={'Hide this market'}>
+      <button
+        className={clsx(
+          'text-ink-400 hover:text-ink-600 transition-transform disabled:cursor-not-allowed'
+        )}
+        onClick={(e) => {
+          e.preventDefault()
+          if (confirm('Are you sure you want to mute this contract?'))
+            markUninteresting()
+        }}
+      >
+        <TiVolumeMute className="h-7 w-7" />
+      </button>
     </Tooltip>
   )
 }

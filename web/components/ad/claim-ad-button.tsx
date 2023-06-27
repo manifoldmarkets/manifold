@@ -24,7 +24,7 @@ export function ClaimButton(props: {
         'ml-1',
         className
       )}
-      size="xs" // don't make it smaller!!!
+      size="xl" // don't make it smaller!!!
       color="gold"
       disabled={loading || claimed}
       onClick={async (e) => {
@@ -51,7 +51,7 @@ export function ClaimButton(props: {
       ) : loading ? (
         <LoadingIndicator size={'sm'} />
       ) : (
-        `Claim ${formatMoney(reward)}`
+        `Claim ${formatMoney(reward)} Boost`
       )}
     </Button>
   )
