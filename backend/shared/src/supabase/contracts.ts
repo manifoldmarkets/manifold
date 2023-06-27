@@ -222,3 +222,25 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       .reverse()
   )
 }
+
+export const isContractLikelyNonPredictive = async (
+  contractId: string,
+  pg: SupabaseDirectClient
+): Promise<boolean> => {
+  return (
+    await pg.map(
+      `
+    with topic_embedding as
+    (
+      select embedding from topic_embeddings
+      where topic = 'Non-Predictive'
+    )
+    select
+    ((select embedding from contract_embeddings where contract_id = $1)
+         <=>
+        (select embedding from topic_embedding)) as distance`,
+      [contractId],
+      (row) => row.distance < 0.125
+    )
+  )[0]
+}

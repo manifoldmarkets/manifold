@@ -12,6 +12,9 @@ import { addContractToFeed } from 'shared/create-feed'
 import { INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 import { createNewContractNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { isContractLikelyNonPredictive } from 'shared/supabase/contracts'
+import { addGroupToContract } from 'shared/update-group-contracts-internal'
+import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 
 export const onCreateContract = functions
   .runWith({
@@ -55,6 +58,17 @@ export const onCreateContract = functions
       // Wait 5 seconds, hopefully the embedding will be there by then
       await new Promise((resolve) => setTimeout(resolve, 5000))
     }
+    const likelyNonPredictive = await isContractLikelyNonPredictive(
+      contract.id,
+      pg
+    )
+    if (likelyNonPredictive)
+      await addGroupToContract(contract, {
+        id: NON_PREDICTIVE_GROUP_ID,
+        slug: 'nonpredictive',
+        name: 'Non-Predictive',
+      })
+
     await addContractToFeed(
       contract,
       [

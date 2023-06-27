@@ -285,6 +285,27 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
+        {!hideAdvanced && (
+          <tr className={clsx(isAdmin && 'bg-scarlet-500/20')}>
+            <td>
+              Non predictive
+              <InfoTooltip
+                text={
+                  contract.nonPredictive === true
+                    ? 'Profits from leagues disabled'
+                    : 'Normal prediction market'
+                }
+              />
+            </td>
+            <td>
+              <ShortToggle
+                disabled={true}
+                on={contract.nonPredictive === true}
+                setOn={() => null}
+              />
+            </td>
+          </tr>
+        )}
       </tbody>
     </Table>
   )

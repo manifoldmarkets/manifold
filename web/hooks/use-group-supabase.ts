@@ -1,8 +1,6 @@
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { User } from 'common/user'
-import { filterDefined } from 'common/util/array'
-import { uniq } from 'lodash'
 import { useEffect, useState } from 'react'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
@@ -84,15 +82,29 @@ export function useRealtimeGroupContractIds(groupId: string) {
 export const useGroupsWithContract = (
   contract: Contract | undefined | null
 ) => {
-  const [groups, setGroups] = useState<Group[]>()
-
-  useEffectCheckEquality(() => {
-    if (contract && contract.groupSlugs)
-      listGroupsBySlug(uniq(contract.groupSlugs)).then((groups) =>
-        setGroups(filterDefined(groups))
-      )
-  }, [contract?.groupSlugs])
-
+  const [groups, setGroups] = useState<Group[] | undefined>()
+  const groupIds = useSubscription('group_contracts', {
+    k: 'contract_id',
+    v: contract?.id ?? '_',
+  }).rows?.map((r) => r.group_id)
+  useEffect(() => {
+    if (groupIds) {
+      db.from('groups')
+        .select('*')
+        .in('id', groupIds)
+        .then((result) => {
+          setGroups(
+            result.data?.map(
+              (r) =>
+                ({
+                  id: r.id,
+                  ...(r.data as object),
+                } as Group)
+            )
+          )
+        })
+    }
+  }, [groupIds?.length])
   return groups
 }
 

@@ -23,7 +23,6 @@ export function ContractGroupsList(props: {
   user: User | null | undefined
 }) {
   const { user, contract } = props
-  const { groupLinks = [] } = contract
   const groups = useGroupsWithContract(contract) ?? []
 
   const isCreator = contract.creatorId === user?.id
@@ -51,33 +50,35 @@ export function ContractGroupsList(props: {
       </span>
       <Col className="h-96 justify-between overflow-auto">
         <Col>
-          {groupLinks.length === 0 && (
+          {groups.length === 0 && (
             <Col className="text-ink-400">No groups yet...</Col>
           )}
           <Row className="my-2 flex-wrap gap-3">
-            {groupLinks.map((groupLink) => {
-              const group = groups.find((g) => g.id === groupLink.groupId)
+            {groups.map((g) => {
               return (
                 <span
-                  key={groupLink.groupId}
+                  key={g.id}
                   className={clsx(
                     'text-ink-1000 bg-ink-100 hover:bg-ink-200 group relative rounded-full p-1 px-4 text-sm transition-colors'
                   )}
                 >
-                  <GroupLinkItem group={groupLink} />
-                  {group && canRemoveFromGroup(group) && (
+                  <GroupLinkItem group={g} />
+                  {g && canRemoveFromGroup(g) && (
                     <div className="absolute -top-2 -right-4 md:invisible md:group-hover:visible">
                       <IconButton
                         size={'xs'}
                         onClick={() => {
                           toast.promise(
                             removeContractFromGroup({
-                              groupId: group.id,
+                              groupId: g.id,
                               contractId: contract.id,
+                            }).catch((e) => {
+                              console.error(e.message)
+                              throw e
                             }),
                             {
-                              loading: `Removing question from "${group.name}"`,
-                              success: `Successfully removed question from "${group.name}"!`,
+                              loading: `Removing question from "${g.name}"`,
+                              success: `Successfully removed question from "${g.name}"!`,
                               error: `Error removing group. Try again?`,
                             }
                           )
@@ -106,7 +107,7 @@ export function ContractGroupsList(props: {
                 options={{
                   showSelector: true,
                   showLabel: false,
-                  ignoreGroupIds: groupLinks.map((g) => g.groupId),
+                  ignoreGroupIds: groups.map((g) => g.id),
                 }}
                 setSelectedGroup={(group) =>
                   group &&

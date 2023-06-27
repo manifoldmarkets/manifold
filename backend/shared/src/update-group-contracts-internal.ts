@@ -2,7 +2,12 @@ import * as admin from 'firebase-admin'
 
 import { Contract } from 'common/contract'
 import { GroupLink } from 'common/group'
-import { createSupabaseClient } from './supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from './supabase/init'
+import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import { updateNonPredictiveEmbedding } from 'shared/supabase/groups'
 
 const firestore = admin.firestore()
 
@@ -34,8 +39,13 @@ export async function addGroupToContract(
         slug: group.slug,
         name: group.name,
       }),
+      nonPredictive: group.id === NON_PREDICTIVE_GROUP_ID,
     })
 
+  if (group.id === NON_PREDICTIVE_GROUP_ID) {
+    const pg = createSupabaseDirectClient()
+    await updateNonPredictiveEmbedding(pg)
+  }
   return true
 }
 

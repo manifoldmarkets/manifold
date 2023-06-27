@@ -4,7 +4,10 @@ import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import * as admin from 'firebase-admin'
 
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { spiceUpNewUsersFeedBasedOnTheirInterests } from 'shared/supabase/users'
+import { isContractLikelyNonPredictive } from 'shared/supabase/contracts'
+import { addGroupToContract } from 'shared/update-group-contracts-internal'
+import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import { getContract } from 'shared/utils'
 const firestore = admin.firestore()
 
 async function testScheduledFunction() {
@@ -17,11 +20,19 @@ async function testScheduledFunction() {
     //   pg,
     //   true
     // )
-    await spiceUpNewUsersFeedBasedOnTheirInterests(
-      'yG1B9kzWqUQ1RhzlD8r2C51r2772',
-      pg
-    )
-
+    // await spiceUpNewUsersFeedBasedOnTheirInterests(
+    //   'yG1B9kzWqUQ1RhzlD8r2C51r2772',
+    //   pg
+    // )
+    const res = await isContractLikelyNonPredictive('Ioio40vZNkQ9thAzWpIQ', pg)
+    const contract = await getContract('Ioio40vZNkQ9thAzWpIQ')
+    if (!contract) throw new Error('Could not find contract')
+    await addGroupToContract(contract, {
+      id: NON_PREDICTIVE_GROUP_ID,
+      slug: 'nonpredictive',
+      name: 'Non-Predictive',
+    })
+    console.log(res)
     // await addContractsWithLargeProbChangesToFeed()
     //
     // const contract = await getContract('qGUa5xkW2XDoZdZebpfi')

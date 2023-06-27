@@ -1,7 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { run } from './utils'
 import { Group } from 'common/group'
-
+export const NON_PREDICTIVE_GROUP_ID = 'f141b8ca-eac3-4400-962a-72973b3ceb62'
+export const NON_PREDICTIVE_TOPIC_NAME = 'Non-Predictive'
 export async function getGroup(db: SupabaseClient, groupId: string) {
   const { data } = await run(db.from('groups').select('data').eq('id', groupId))
   if (data && data.length > 0) {
