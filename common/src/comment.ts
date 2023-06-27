@@ -1,5 +1,5 @@
 import type { JSONContent } from '@tiptap/core'
-import { visibility } from './contract'
+import { Visibility } from './contract'
 
 export type AnyCommentType = OnContract | OnPost
 
@@ -24,7 +24,7 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   hidden?: boolean
   hiddenTime?: number
   hiderId?: string
-  visibility: visibility
+  visibility: Visibility
   editedTime?: number
   isApi?: boolean
 } & T

@@ -1,6 +1,6 @@
 import { Answer, DpmAnswer } from './answer'
 import { Bet } from './bet'
-import { HistoryPoint } from './chart'
+import { MultiSerializedPoint, SerializedPoint } from './chart'
 import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
 import { GroupLink } from 'common/group'
@@ -35,7 +35,7 @@ the supabase trigger, or replication of contracts may fail!
 
 *************************************************/
 
-export type AnyOutcomeType =
+type AnyOutcomeType =
   | Binary
   | MultipleChoice
   | PseudoNumeric
@@ -45,7 +45,7 @@ export type AnyOutcomeType =
   | QuadraticFunding
   | Stonk
 
-export type AnyContractType =
+type AnyContractType =
   | (CPMM & Binary)
   | (CPMM & PseudoNumeric)
   | (DPM & Binary)
@@ -70,7 +70,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   question: string
   description: string | JSONContent // More info about what the contract is about
-  visibility: visibility
+  visibility: Visibility
 
   createdTime: number // Milliseconds since epoch
   lastUpdatedTime: number // Updated on new bet or comment
@@ -260,7 +260,7 @@ export type MultiContract = (
   resolutions?: { [outcome: string]: number }
 }
 
-export type outcomeType = AnyOutcomeType['outcomeType']
+export type OutcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
 export const OUTCOME_TYPES = [
@@ -320,7 +320,7 @@ export const MAX_TAG_LENGTH = 60
 
 export const CPMM_MIN_POOL_QTY = 0.01
 
-export type visibility = 'public' | 'unlisted' | 'private'
+export type Visibility = 'public' | 'unlisted' | 'private'
 export const VISIBILITIES = ['public', 'unlisted', 'private'] as const
 
 export function contractPath(contract: Contract) {
@@ -331,7 +331,7 @@ export type ContractParams = {
   contract: Contract
   historyData: {
     bets: Bet[]
-    points: HistoryPoint<Partial<Bet>>[]
+    points: MultiSerializedPoint[] | SerializedPoint<Partial<Bet>>[]
   }
   pointsString?: string
   comments: ContractComment[]
@@ -343,3 +343,17 @@ export type ContractParams = {
   relatedContracts: Contract[]
   shareholderStats?: ShareholderStats
 }
+
+export type MaybeAuthedContractParams =
+  | {
+      state: 'authed'
+      params: ContractParams
+    }
+  | {
+      state: 'not authed'
+      visibility: Visibility
+      slug: string
+    }
+  | {
+      state: 'not found'
+    }

@@ -91,19 +91,6 @@ export const getContractsByUsers = async (
   return null
 }
 
-export const getContractAnswers = async (
-  db: SupabaseClient,
-  contractId: string
-) => {
-  const { data } = await db
-    .from('answers')
-    .select('*')
-    .eq('contract_id', contractId)
-    .order('created_time', { ascending: false })
-  if (!data) return null
-  return data.map(parseDbAnswer)
-}
-
 export const getAnswersForContracts = async (
   db: SupabaseClient,
   contractIds: string[]

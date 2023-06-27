@@ -15,6 +15,7 @@ import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Post } from 'common/post'
+import { MaybeAuthedContractParams } from 'common/contract'
 
 export async function call(url: string, method: string, params?: any) {
   const user = auth.currentUser
@@ -322,9 +323,7 @@ export function getContractParams(params: {
     getApiUrl('getcontractparams'),
     'POST',
     params
-  ) as Promise<{
-    status: 'success'
-  }>
+  ) as Promise<MaybeAuthedContractParams>
 }
 
 export function createGroupInvite(params: {

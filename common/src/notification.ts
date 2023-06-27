@@ -1,4 +1,4 @@
-import { outcomeType } from 'common/contract'
+import { OutcomeType } from 'common/contract'
 import { groupPath } from './group'
 import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
@@ -317,7 +317,7 @@ export type BetFillData = {
   limitOrderTotal?: number
   limitOrderRemaining?: number
   limitAt?: string
-  outcomeType?: outcomeType
+  outcomeType?: OutcomeType
 }
 
 export type ContractResolutionData = {
@@ -331,7 +331,7 @@ export type ContractResolutionData = {
 
 export type UniqueBettorData = {
   bet: Bet
-  outcomeType: outcomeType
+  outcomeType: OutcomeType
   answerText?: string
   min?: number
   max?: number

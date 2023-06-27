@@ -6,11 +6,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { UserIcon } from '@heroicons/react/solid'
 
 import { Answer, DpmAnswer } from 'common/answer'
-import { ContractParams, visibility } from 'common/contract'
+import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
-import { CONTRACT_BET_FILTER } from 'common/supabase/bets'
 import { removeUndefinedProps } from 'common/util/object'
 import { SEO } from 'web/components/SEO'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
@@ -70,13 +69,8 @@ import {
 } from 'web/hooks/use-contract-supabase'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
+import { unserializePoints } from 'common/chart'
 import { Tooltip } from 'web/components/widgets/tooltip'
-
-export type ContractParameters = {
-  contractSlug: string
-  visibility: visibility | null
-  contractParams?: ContractParams
-}
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -88,16 +82,11 @@ export async function getStaticProps(ctx: {
       contractSlug,
       fromStaticProps: true,
     })
-    return {
-      props,
-    }
+    return { props }
   } catch (e) {
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {
       return {
-        props: {
-          contractSlug,
-          visibility: null,
-        },
+        props: { state: 'not found' },
         revalidate: 60,
       }
     }
@@ -109,23 +98,17 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function ContractPage(props: {
-  visibility: visibility | null
-  contractSlug: string
-  contractParams?: ContractParams
-}) {
-  const { visibility, contractSlug, contractParams } = props
-
-  if (!visibility) {
+export default function ContractPage(props: MaybeAuthedContractParams) {
+  if (props.state === 'not found') {
     return <Custom404 />
   }
+
   return (
     <Page className="!max-w-[1400px]" mainClassName="!col-span-10">
-      {visibility == 'private' && (
-        <PrivateContractPage contractSlug={contractSlug} />
-      )}
-      {visibility != 'private' && contractParams && (
-        <NonPrivateContractPage contractParams={contractParams} />
+      {props.state === 'not authed' ? (
+        <PrivateContractPage contractSlug={props.slug} />
+      ) : (
+        <NonPrivateContractPage contractParams={props.params} />
       )}
     </Page>
   )
@@ -140,7 +123,12 @@ export function NonPrivateContractPage(props: {
   if (!contract) {
     return <Custom404 customText="Unable to fetch question" />
   } else if (inIframe) {
-    return <ContractEmbedPage contract={contract} historyData={historyData} />
+    return (
+      <ContractEmbedPage
+        contract={contract}
+        points={unserializePoints(historyData.points) as any}
+      />
+    )
   } else
     return (
       <>
@@ -153,9 +141,7 @@ export function NonPrivateContractPage(props: {
     )
 }
 
-export function ContractPageContent(props: {
-  contractParams: ContractParams & { contract: Contract }
-}) {
+export function ContractPageContent(props: { contractParams: ContractParams }) {
   const { contractParams } = props
   const {
     userPositionsByOutcome,
@@ -165,11 +151,12 @@ export function ContractPageContent(props: {
     relatedContracts,
     shareholderStats,
   } = contractParams
-  const contract =
+  const contract: typeof contractParams.contract =
     useFirebasePublicAndRealtimePrivateContract(
       contractParams.contract.visibility,
       contractParams.contract.id
     ) ?? contractParams.contract
+
   if (
     'answers' in contractParams.contract &&
     contract.mechanism === 'cpmm-multi-1'
@@ -210,24 +197,30 @@ export function ContractPageContent(props: {
   const newBets = useRealtimeBets({
     contractId: contract.id,
     afterTime: lastBetTime,
-    ...CONTRACT_BET_FILTER,
+    filterRedemptions: contract.mechanism === 'cpmm-multi-1',
   })
   const totalBets = contractParams.totalBets + (newBets?.length ?? 0)
   const bets = useMemo(
     () => contractParams.historyData.bets.concat(newBets ?? []),
     [contractParams.historyData.bets, newBets]
   )
-  const betPoints = useMemo(
-    () =>
-      contractParams.historyData.points.concat(
+
+  const betPoints = useMemo(() => {
+    const points = unserializePoints(contractParams.historyData.points)
+
+    //  TODO: live update multiple choice
+    if (contract.outcomeType !== 'MULTIPLE_CHOICE') {
+      points.concat(
         newBets?.map((bet) => ({
           x: bet.createdTime,
           y: bet.probAfter,
           obj: { userAvatarUrl: bet.userAvatarUrl },
         })) ?? []
-      ),
-    [contractParams.historyData.points, newBets]
-  )
+      )
+    }
+
+    return points
+  }, [contractParams.historyData.points, newBets])
 
   const {
     isResolved,
@@ -435,7 +428,7 @@ export function ContractPageContent(props: {
               <ContractOverview
                 contract={contract}
                 bets={bets}
-                betPoints={betPoints}
+                betPoints={betPoints as any}
                 showResolver={showResolver}
                 onAnswerCommentClick={onAnswerCommentClick}
               />

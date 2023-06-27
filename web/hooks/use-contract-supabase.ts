@@ -1,4 +1,8 @@
-import { AnyContractType, Contract, visibility } from 'common/contract'
+import {
+  Contract,
+  MaybeAuthedContractParams,
+  Visibility,
+} from 'common/contract'
 import { useEffect, useRef, useState } from 'react'
 import { getContractParams } from 'web/lib/firebase/api'
 import {
@@ -11,7 +15,6 @@ import {
 } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { ContractParameters } from 'web/pages/[username]/[contractSlug]'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { useIsAuthorized } from './use-user'
 import { useContractFirebase } from './use-contract-firebase'
@@ -53,9 +56,9 @@ export function useIsPrivateContractMember(userId: string, contractId: string) {
 }
 
 export const useContractParams = (contractSlug: string | undefined) => {
-  const [contractParams, setContractParams] = useState<any | undefined>(
-    undefined
-  )
+  const [contractParams, setContractParams] = useState<
+    MaybeAuthedContractParams | undefined
+  >()
 
   const isAuth = useIsAuthorized()
   const paramsRef = useRef(0)
@@ -74,7 +77,7 @@ export const useContractParams = (contractSlug: string | undefined) => {
     }
   }, [contractSlug, isAuth])
 
-  return contractParams as ContractParameters
+  return contractParams
 }
 
 export const useContractFromSlug = (contractSlug: string | undefined) => {
@@ -88,7 +91,7 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
     }
   }, [contractSlug])
 
-  return contract as Contract<AnyContractType>
+  return contract as Contract
 }
 
 export const useContracts = (contractIds: string[]) => {
@@ -129,7 +132,7 @@ export function useRealtimeContracts(limit: number) {
 }
 
 export function useFirebasePublicAndRealtimePrivateContract(
-  visibility: visibility,
+  visibility: Visibility,
   contractId: string
 ) {
   const contract =
