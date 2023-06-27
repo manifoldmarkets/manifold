@@ -72,20 +72,39 @@ function FeedTimelineContent() {
     Contract[] | undefined
   >(undefined, `new-interesting-contracts-${user?.id}-feed-timeline`)
 
-  const [topWasVisible, setTopWasVisible] = useState(false)
+  const [topIsVisible, setTopIsVisible] = useState(false)
   const [newerTimelineItems, setNewerTimelineItems] = useState<
     FeedTimelineItem[]
   >([])
+  const [loadingMore, setLoadingMore] = useState(false)
   const checkForNewerFeedItems = async () => {
-    const newerTimelineItems = await checkForNewer()
-    setNewerTimelineItems(newerTimelineItems)
+    return await checkForNewer()
   }
+
+  // This queries for new items if they haven't looked at the page in a while like twitter
   useEffect(() => {
+    if (newerTimelineItems.length > 0) return
     const now = Date.now()
-    if (pageVisible && now - lastSeen > MINUTE_MS) checkForNewerFeedItems()
+    if (pageVisible && now - lastSeen > MINUTE_MS)
+      checkForNewerFeedItems().then(setNewerTimelineItems)
     if (!pageVisible) setLastSeen(now)
     return () => setLastSeen(Date.now())
   }, [pageVisible])
+
+  // This queries for new items if they scroll to the top
+  useEffect(() => {
+    if (newerTimelineItems.length > 0) return
+    const now = Date.now()
+    if (topIsVisible && now - lastSeen > 10000) {
+      setLoadingMore(true)
+      checkForNewerFeedItems().then((newerTimelineItems) => {
+        addTimelineItems(newerTimelineItems, { new: true })
+        setLoadingMore(false)
+      })
+    }
+    if (!topIsVisible) setLastSeen(now)
+    return () => setLastSeen(Date.now())
+  }, [topIsVisible])
 
   if (!boosts || !savedFeedItems) return <LoadingIndicator />
   const newAvatarUrls = uniq(
@@ -112,16 +131,22 @@ function FeedTimelineContent() {
       <VisibilityObserver
         className="pointer-events-none absolute top-0 h-5 w-full select-none "
         onVisibilityUpdated={(visible) => {
-          if (visible && !topWasVisible) {
+          if (visible && !topIsVisible) {
             addTimelineItems(newerTimelineItems, { new: true })
             setNewerTimelineItems([])
-            setTopWasVisible(true)
+            setTopIsVisible(true)
           }
-          if (!visible) setTopWasVisible(false)
+          if (!visible) setTopIsVisible(false)
         }}
       />
-      {newAvatarUrls.length > 0 && !topWasVisible && (
+      {newAvatarUrls.length > 0 && !topIsVisible && (
         <NewActivityButton avatarUrls={newAvatarUrls} />
+      )}
+
+      {loadingMore && (
+        <Row className={'my-1 mb-2 justify-center'}>
+          <LoadingIndicator />
+        </Row>
       )}
       <FeedTimelineItems
         boosts={boosts}

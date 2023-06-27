@@ -87,32 +87,26 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
       savedFeedItems?.map((item) => item.contractId) ?? []
     )
 
-    const contractIds = uniq(
+    const newContractIds = uniq(
       filterDefined(data.map((item) => item.contract_id)).filter(
         (id) => !alreadySavedContractIds.includes(id)
       )
     )
-    const commentOnContractIds = uniq(
-      filterDefined(
-        data.map((item) =>
-          contractIds.includes(item.contract_id ?? '_')
-            ? item.comment_id
-            : undefined
-        )
-      )
+    const newCommentsOnContractIds = uniq(
+      filterDefined(data.map((item) => item.comment_id))
     )
 
     const newsIds = uniq(filterDefined(data.map((item) => item.news_id)))
     const [comments, contracts, news, ignoredContractIds] = await Promise.all([
       db
         .rpc('get_reply_chain_comments_for_comment_ids' as any, {
-          comment_ids: commentOnContractIds,
+          comment_ids: newCommentsOnContractIds,
         })
         .then((res) => res.data?.map((c) => c.data as ContractComment)),
       db
         .from('contracts')
         .select('*')
-        .in('id', contractIds)
+        .in('id', newContractIds)
         .then((res) => res.data?.map((c) => c.data as Contract)),
       db
         .from('news')
@@ -132,24 +126,32 @@ export const useFeedTimeline = (user: User | null | undefined, key: string) => {
         .from('user_disinterests')
         .select('contract_id')
         .eq('user_id', userId)
-        .in('contract_id', contractIds)
+        .in('contract_id', newContractIds)
         .then((res) => res.data?.map((c) => c.contract_id)),
     ])
-    const filteredContracts = contracts?.filter(
+    const filteredNewContracts = contracts?.filter(
       (c) =>
         !isContractBlocked(privateUser, c) &&
         !c.isResolved &&
         !ignoredContractIds?.includes(c.id)
     )
-    const filteredComments = comments?.filter(
-      (c) => !privateUser?.blockedUserIds?.includes(c.userId)
+    const filteredNewComments = comments?.filter(
+      (c) => !privateUser?.blockedUserIds?.includes(c.userId) && !c.hidden
+    )
+    // New comments on contracts they've already seen in their feed can be interesting
+    const savedContractsWithNewComments: Contract[] = filterDefined(
+      (filteredNewComments ?? []).map(
+        (item) =>
+          savedFeedItems?.find((i) => i.contractId === item.contractId)
+            ?.contract
+      )
     )
 
     // It's possible we're missing contracts for news items bc of the duplicate filter
     const timelineItems = createFeedTimelineItems(
       data,
-      filteredContracts,
-      filteredComments,
+      (filteredNewContracts ?? []).concat(savedContractsWithNewComments),
+      filteredNewComments,
       news
     )
 
