@@ -13,7 +13,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { UserAvatarAndBadge } from '../widgets/user-link'
-import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { Bet } from 'common/bet'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { ProfitBadge } from '../profit-badge'
@@ -22,7 +22,6 @@ import { useBets } from 'web/hooks/use-bets-supabase'
 import ShortToggle from '../widgets/short-toggle'
 import { useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
-import { useAnswersForContracts } from 'web/hooks/use-answers'
 
 export const ManaEarnedBreakdown = (props: {
   user: User
@@ -60,14 +59,7 @@ export const ManaEarnedBreakdown = (props: {
     ? uniq(loadingBets.map((b) => b.contractId))
     : undefined
   const contracts = usePublicContracts(contractIds)
-  const answersByContractId = useAnswersForContracts(contractIds) ?? {}
   const contractsById = keyBy(contracts, 'id')
-  for (const [contractId, answers] of Object.entries(answersByContractId)) {
-    const contract = contractsById[contractId]
-    if (contract) {
-      ;(contract as CPMMMultiContract).answers = answers
-    }
-  }
 
   const betsByContract = groupBy(bets, 'contractId')
   const metricsByContract =
