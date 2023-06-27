@@ -29,7 +29,7 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
-import { SimpleContractRow } from '../simple-contract-row'
+import NoSymbolIcon from 'web/lib/icons/no-symbol'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -348,15 +348,19 @@ const MoreOptionsButton = (props: {
     <Tooltip text={'Hide this market'}>
       <button
         className={clsx(
-          'text-ink-400 hover:text-ink-600 transition-transform disabled:cursor-not-allowed'
+          'text-ink-500 hover:text-ink-600 flex flex-col justify-center transition-transform disabled:cursor-not-allowed'
         )}
         onClick={(e) => {
           e.preventDefault()
-          if (confirm('Are you sure you want to mute this contract?'))
+          if (
+            confirm(
+              `Are you sure you don't want to see more content like this?`
+            )
+          )
             markUninteresting()
         }}
       >
-        <TiVolumeMute className="h-7 w-7" />
+        <NoSymbolIcon className={'h-[1.4rem]'} />
       </button>
     </Tooltip>
   )
