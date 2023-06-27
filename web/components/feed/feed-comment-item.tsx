@@ -18,7 +18,7 @@ export const FeedCommentItem = (props: {
     commentThreads[0] && isReplyToBet(commentThreads[0].parentComment)
   return (
     // TODO: make more specific link
-    <FeedRelatedItemFrame href={contractPath(contract)}>
+    <FeedRelatedItemFrame href={contractPath(contract)} className="ml-4">
       <Col
         className={clsx('w-full', firstCommentIsReplyToBet ? 'sm:mt-4' : '')}
       >

@@ -109,12 +109,9 @@ function SimpleCard(props: {
 
   return (
     <Row className={clsx(className)}>
-      <Col className="justify-end">
-        <div className="dark:border-ink-200 border-ink-300 ml-2 h-1/3 w-4 rounded-tl-xl border-2 border-b-0 border-r-0 sm:ml-4 sm:w-6" />
-      </Col>
       <Col
         className={
-          'dark:bg-canvas-50 border-ink-200 grow justify-between gap-2 overflow-hidden border border-l-4 px-3 pt-2'
+          'dark:bg-canvas-50 border-ink-200 grow justify-between gap-2 overflow-hidden rounded-t-xl rounded-l-xl border  px-3 pt-2'
         }
       >
         <Row className="items-start justify-between gap-1">
@@ -140,10 +137,7 @@ function SimpleCard(props: {
           </Col>
           <Col className={'items-end'}>
             <Tooltip text={item?.reasonDescription} placement={'top'}>
-              <ContractStatusLabel
-                className={' font-bold'}
-                contract={contract}
-              />
+              <ContractStatusLabel className={''} contract={contract} />
             </Tooltip>
           </Col>
         </Row>
