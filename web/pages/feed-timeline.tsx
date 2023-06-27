@@ -16,11 +16,11 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Avatar } from 'web/components/widgets/avatar'
 import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
-import { MINUTE_MS } from 'common/util/time'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
 import { Page } from 'web/components/layout/page'
+import { MINUTE_MS } from 'common/util/time'
 
 export default function FeedTimelinePage() {
   return (
@@ -140,7 +140,10 @@ function FeedTimelineContent() {
         }}
       />
       {newAvatarUrls.length > 0 && !topIsVisible && (
-        <NewActivityButton avatarUrls={newAvatarUrls} />
+        <NewActivityButton
+          avatarUrls={newAvatarUrls}
+          onClick={() => setLastSeen(Date.now)}
+        />
       )}
 
       {loadingMore && (
@@ -176,9 +179,13 @@ function FeedTimelineContent() {
   )
 }
 
-const NewActivityButton = (props: { avatarUrls: string[] }) => {
-  const { avatarUrls } = props
+const NewActivityButton = (props: {
+  avatarUrls: string[]
+  onClick: () => void
+}) => {
+  const { avatarUrls, onClick } = props
   const scrollToTop = () => {
+    onClick()
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
