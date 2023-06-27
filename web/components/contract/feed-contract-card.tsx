@@ -31,6 +31,7 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
+import { SimpleContractRow } from '../simple-contract-row'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -102,14 +103,7 @@ function SimpleCard(props: {
   item?: FeedTimelineItem
   className?: string
 }) {
-  const { contract, user, trackClick, item, className } = props
-  const { question, outcomeType, mechanism, closeTime, isResolved } = contract
-  const isClosed = closeTime && closeTime < Date.now()
-  const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
-  const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
-  const [hidden, setHidden] = useState(false)
-  if (hidden) return null
-
+  const { contract, className } = props
   return (
     <Row className={clsx(className)}>
       <Col className="justify-end">
@@ -117,40 +111,10 @@ function SimpleCard(props: {
       </Col>
       <Col
         className={
-          'dark:bg-canvas-50 border-ink-200 grow justify-between gap-2 overflow-hidden border border-l-4 px-3 pt-2'
+          'dark:bg-canvas-50 border-ink-200 grow justify-between gap-2 overflow-hidden border border-l-4'
         }
       >
-        <Row className="items-start justify-between gap-1">
-          <Col>
-            <Row className={'items-start gap-2'}>
-              <Link
-                className={clsx(
-                  'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
-                  textColor
-                )}
-                onClick={trackClick}
-                href={contractPath(contract)}
-              >
-                {question}
-              </Link>
-            </Row>
-          </Col>
-          <Col className={'items-end'}>
-            <ContractStatusLabel className={' font-bold'} contract={contract} />
-            <Row className={'items-center gap-2.5'}>
-              <MoreOptionsButton
-                user={user}
-                contract={contract}
-                item={item}
-                onSetUninteresting={() => setHidden(true)}
-              />
-            </Row>
-          </Col>
-        </Row>
-
-        <Row className="text-ink-500 mb-1.5 w-full items-center justify-end gap-3 text-sm">
-          {isBinaryCpmm && <BetRow contract={contract} user={user} />}
-        </Row>
+        <SimpleContractRow contract={contract} className="text-ink-700 " />
       </Col>
     </Row>
   )
