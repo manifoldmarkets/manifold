@@ -7,7 +7,9 @@ import {
 } from 'common/feed'
 import { Row } from 'common/supabase/utils'
 import { log } from 'shared/utils'
-
+import { ITask } from 'pg-promise'
+import { IClient } from 'pg-promise/typescript/pg-subset'
+export const DEFAULT_USER_FEED_ID = 'yYNDWRmBJDcWW0q1aZFi6xfKNcQ2'
 export const getUserFollowerIds = async (
   userId: string,
   pg: SupabaseDirectClient
@@ -91,15 +93,50 @@ export const getUsersWithSimilarInterestVectorToNews = async (
   )
 }
 
-export const repopulateNewUsersFeedFromEmbeddings = async (
+export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
+  userId: string,
+  pg: SupabaseDirectClient
+) => {
+  await pg.tx(async (t) => {
+    await t.none('SET LOCAL ivfflat.probes = $1', [20])
+    const relatedFeedItems = await t.manyOrNone<Row<'user_feed'>>(
+      `              
+          WITH user_embedding AS (
+            SELECT interest_embedding
+            FROM user_embeddings
+            WHERE user_id = $1
+          ),
+          interesting_contract_embeddings AS (
+             SELECT contract_id,
+                    (SELECT interest_embedding FROM user_embedding) <=> embedding AS distance
+             FROM contract_embeddings
+             ORDER BY distance
+            LIMIT $2
+           ),
+           filtered_user_feed AS (
+               SELECT *
+               FROM user_feed
+               WHERE contract_id IN (SELECT contract_id FROM interesting_contract_embeddings)
+               and created_time > now() - interval '3 days'
+           )
+          SELECT DISTINCT ON (contract_id) *
+          FROM filtered_user_feed
+        `,
+      [userId, 100]
+    )
+    log('found relatedFeedItems', relatedFeedItems.length)
+
+    return copyOverFeedItems(userId, relatedFeedItems, t)
+  })
+}
+
+export const populateNewUsersFeed = async (
   userId: string,
   pg: SupabaseDirectClient,
   postWelcomeTopicSelection: boolean
 ) => {
   await pg.tx(async (t) => {
-    await t.none('SET LOCAL ivfflat.probes = $1', [
-      postWelcomeTopicSelection ? 20 : 10,
-    ])
+    await t.none('SET LOCAL ivfflat.probes = $1', [10])
 
     const relatedFeedItems = postWelcomeTopicSelection
       ? await t.manyOrNone<Row<'user_feed'>>(
@@ -126,70 +163,57 @@ export const repopulateNewUsersFeedFromEmbeddings = async (
               FROM filtered_user_feed
               ORDER BY contract_id, created_time DESC;
           `,
-          [userId, postWelcomeTopicSelection ? 500 : 100]
+          [userId, 200]
         )
       : await t.manyOrNone<Row<'user_feed'>>(
           `
-              WITH user_embedding AS (
-                  SELECT interest_embedding
-                  FROM user_embeddings
-                  WHERE user_id = $1
-              ),
-              popular_contracts AS (
-                  SELECT id
-                   from contracts
-                   order by  popularity_score desc
-                   limit $2),
-               interesting_contract_embeddings AS (
-                   SELECT contract_id,
-                          (SELECT interest_embedding FROM user_embedding) <=> embedding AS distance
-                   FROM contract_embeddings
-                   where contract_id in (select id from popular_contracts)
-                   ORDER BY distance
-               ),
-               filtered_user_feed AS (
-                   SELECT *
-                   FROM user_feed
-                   WHERE contract_id IN (SELECT contract_id FROM interesting_contract_embeddings)
-                   and created_time > now() - interval '3 days'
-               )
-              SELECT DISTINCT ON (contract_id) *
-              FROM filtered_user_feed
-              ORDER BY contract_id, created_time DESC;
+             SELECT *
+             FROM user_feed
+             where user_id = $1
+            ORDER BY created_time DESC
+            LIMIT 250;
           `,
-          [userId, 50]
+          [DEFAULT_USER_FEED_ID]
         )
 
     log('found', relatedFeedItems.length, 'feed items to copy')
     if (relatedFeedItems.length === 0) return []
 
-    const updatedRows = relatedFeedItems.map((row) => {
-      // assuming you want to change the 'columnToChange' column
-      const { id: __, ...newRow } = row
-      newRow.user_id = userId
-      newRow.is_copied = true
-      newRow.created_time = new Date().toISOString()
-      return newRow
-    })
-    await Promise.all(
-      updatedRows.map(async (row) => {
-        const keys = Object.keys(row)
-        const values = Object.values(row)
-
-        const placeholders = keys.map((_, i) => `$${i + 1}`).join(',')
-        try {
-          await pg.none(
-            `INSERT INTO user_feed (${keys.join(
-              ','
-            )}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
-            values
-          )
-        } catch (e) {
-          console.log('error inserting feed item', row)
-          console.error(e)
-        }
-      })
-    )
-    return relatedFeedItems
+    return copyOverFeedItems(userId, relatedFeedItems, t)
   })
+}
+
+const copyOverFeedItems = async (
+  userId: string,
+  relatedFeedItems: Row<'user_feed'>[],
+  pg: ITask<IClient> & IClient
+) => {
+  const updatedRows = relatedFeedItems.map((row) => {
+    // assuming you want to change the 'columnToChange' column
+    const { id: __, ...newRow } = row
+    newRow.user_id = userId
+    newRow.is_copied = true
+    newRow.created_time = new Date().toISOString()
+    return newRow
+  })
+  await Promise.all(
+    updatedRows.map(async (row) => {
+      const keys = Object.keys(row)
+      const values = Object.values(row)
+
+      const placeholders = keys.map((_, i) => `$${i + 1}`).join(',')
+      try {
+        await pg.none(
+          `INSERT INTO user_feed (${keys.join(
+            ','
+          )}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
+          values
+        )
+      } catch (e) {
+        console.log('error inserting feed item', row)
+        console.error(e)
+      }
+    })
+  )
+  return relatedFeedItems
 }

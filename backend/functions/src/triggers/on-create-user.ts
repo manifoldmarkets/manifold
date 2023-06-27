@@ -15,6 +15,7 @@ import { secrets } from 'common/secrets'
 import { CURRENT_SEASON } from 'common/leagues'
 import { addUserToLeague } from 'shared/generate-leagues'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { spiceUpNewUsersFeedBasedOnTheirInterests } from 'shared/supabase/users'
 
 export const onCreateUser = functions
   .runWith({ secrets })
@@ -48,4 +49,5 @@ export const onCreateUser = functions
       contracts,
       marketsSendTime
     )
+    await spiceUpNewUsersFeedBasedOnTheirInterests(user.id, pg)
   })

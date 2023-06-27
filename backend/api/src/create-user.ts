@@ -17,15 +17,15 @@ import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { RESERVED_PATHS } from 'common/envs/constants'
 import { isProd } from 'shared/utils'
-import {
-  getAverageContractEmbedding,
-  getDefaultEmbedding,
-} from 'shared/helpers/embeddings'
+import { getAverageContractEmbedding } from 'shared/helpers/embeddings'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { repopulateNewUsersFeedFromEmbeddings } from 'shared/supabase/users'
+import {
+  DEFAULT_USER_FEED_ID,
+  populateNewUsersFeed,
+} from 'shared/supabase/users'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -146,12 +146,16 @@ export const createuser = authEndpoint(async (req, auth) => {
   console.log('created user', user.username, 'firebase id:', auth.uid)
   await insertUserEmbedding(auth.uid, visitedContractIds)
   const pg = createSupabaseDirectClient()
-  await repopulateNewUsersFeedFromEmbeddings(auth.uid, pg, false)
-
+  await populateNewUsersFeed(auth.uid, pg, false)
+  await updateDefaultUserEmbeddings()
   await track(auth.uid, 'create user', { username: user.username }, { ip })
 
   return { user, privateUser }
 })
+
+async function updateDefaultUserEmbeddings() {
+  await insertUserEmbedding(DEFAULT_USER_FEED_ID, undefined)
+}
 
 async function insertUserEmbedding(
   userId: string,
@@ -166,7 +170,12 @@ async function insertUserEmbedding(
 
   await pg.none(
     `insert into user_embeddings (user_id, interest_embedding, pre_signup_interest_embedding, pre_signup_embedding_is_default)
-            values ($1, $2, $3, $4)`,
+            values ($1, $2, $3, $4)
+            on conflict (user_id)
+            do update set
+            interest_embedding = EXCLUDED.interest_embedding,
+            pre_signup_interest_embedding = EXCLUDED.pre_signup_interest_embedding,
+            pre_signup_embedding_is_default = EXCLUDED.pre_signup_embedding_is_default`,
     [userId, embed, embed, defaultEmbed]
   )
 }

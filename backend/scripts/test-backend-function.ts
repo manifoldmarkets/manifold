@@ -4,7 +4,7 @@ import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import * as admin from 'firebase-admin'
 
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { repopulateNewUsersFeedFromEmbeddings } from 'shared/supabase/users'
+import { spiceUpNewUsersFeedBasedOnTheirInterests } from 'shared/supabase/users'
 const firestore = admin.firestore()
 
 async function testScheduledFunction() {
@@ -12,10 +12,14 @@ async function testScheduledFunction() {
   await loadSecretsToEnv(credentials)
   try {
     const pg = createSupabaseDirectClient()
-    await repopulateNewUsersFeedFromEmbeddings(
-      'GJrkVojV9bPrC81NfCwYbSXWsc23',
-      pg,
-      true
+    // await repopulateNewUsersFeedFromEmbeddings(
+    //   'GJrkVojV9bPrC81NfCwYbSXWsc23',
+    //   pg,
+    //   true
+    // )
+    await spiceUpNewUsersFeedBasedOnTheirInterests(
+      'yG1B9kzWqUQ1RhzlD8r2C51r2772',
+      pg
     )
 
     // await addContractsWithLargeProbChangesToFeed()
