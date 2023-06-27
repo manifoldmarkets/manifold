@@ -85,11 +85,11 @@ export const StonkContractChart = (props: {
     [props.betPoints, rangeStart]
   )
   const minProb = useMemo(
-    () => minBy(betPointsInRange, (pt) => pt.y)?.y ?? 0,
+    () => minBy(betPointsInRange, (pt) => pt.y)?.y ?? 0.0001,
     [betPointsInRange]
   )
   const maxProb = useMemo(
-    () => maxBy(betPointsInRange, (pt) => pt.y)?.y ?? 1,
+    () => maxBy(betPointsInRange, (pt) => pt.y)?.y ?? 0.9999,
     [betPointsInRange]
   )
   const min = getStonkPriceAtProb(contract, minProb)

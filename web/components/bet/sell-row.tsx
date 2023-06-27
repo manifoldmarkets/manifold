@@ -15,7 +15,7 @@ import { Modal } from '../layout/modal'
 import { Title } from '../widgets/title'
 import { SellPanel } from './sell-panel'
 import { TweetButton, getPositionTweet } from '../buttons/tweet-button'
-import { getStonkShares } from 'common/stonk'
+import { getStonkDisplayShares } from 'common/stonk'
 
 export function SellRow(props: {
   contract: CPMMContract
@@ -40,7 +40,10 @@ export function SellRow(props: {
           {!hideStatus && (
             <div>
               {isStonk ? (
-                <>You have {getStonkShares(contract, shares, 2)} shares of </>
+                <>
+                  You have {getStonkDisplayShares(contract, shares, 2)} shares
+                  of{' '}
+                </>
               ) : (
                 <>You'll get {formatMoney(shares)} on </>
               )}
@@ -120,7 +123,7 @@ function SellSharesModal(props: {
 
         <div className="mb-6">
           {isStonk ? (
-            <>You have {getStonkShares(contract, shares)} shares of </>
+            <>You have {getStonkDisplayShares(contract, shares)} shares of </>
           ) : (
             <>
               You have {formatWithCommas(shares)} shares worth{' '}

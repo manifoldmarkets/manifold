@@ -36,7 +36,7 @@ import { WarningConfirmationButton } from '../buttons/warning-confirmation-butto
 import { Button } from '../buttons/button'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
-import { getStonkShares, STONK_NO, STONK_YES } from 'common/stonk'
+import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { Answer } from 'common/answer'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { removeUndefinedProps } from 'common/util/object'
@@ -328,7 +328,7 @@ export function BuyPanel(props: {
             <div>
               <span className="whitespace-nowrap text-lg font-semibold">
                 {isStonk
-                  ? getStonkShares(contract, currentPayout, 2)
+                  ? getStonkDisplayShares(contract, currentPayout, 2)
                   : isPseudoNumeric
                   ? Math.floor(currentPayout)
                   : formatMoney(currentPayout)}

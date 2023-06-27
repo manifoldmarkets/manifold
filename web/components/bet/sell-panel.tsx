@@ -24,7 +24,7 @@ import {
   AmountInput,
   quickAddMoreButtonClassName,
 } from '../widgets/amount-input'
-import { getSharesFromStonkShares, getStonkShares } from 'common/stonk'
+import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
 import clsx from 'clsx'
 
 export function SellPanel(props: {
@@ -55,12 +55,12 @@ export function SellPanel(props: {
     return probChange > 0.2
       ? undefined
       : isStonk
-      ? getStonkShares(contract, shares ?? 0)
+      ? getStonkDisplayShares(contract, shares)
       : shares
   })
   const [amount, setAmount] = useState<number | undefined>(
     isStonk
-      ? getSharesFromStonkShares(contract, displayAmount ?? 0)
+      ? getSharesFromStonkShares(contract, displayAmount ?? 0, shares)
       : displayAmount
   )
   const [error, setError] = useState<string | undefined>()
@@ -150,7 +150,7 @@ export function SellPanel(props: {
   const onAmountChange = (displayAmount: number | undefined) => {
     setDisplayAmount(displayAmount)
     const realAmount = isStonk
-      ? getSharesFromStonkShares(contract, displayAmount ?? 0)
+      ? getSharesFromStonkShares(contract, displayAmount ?? 0, shares)
       : displayAmount
     setAmount(realAmount)
 
@@ -190,7 +190,7 @@ export function SellPanel(props: {
             )}
             onClick={() =>
               onAmountChange(
-                isStonk ? getStonkShares(contract, shares) : shares
+                isStonk ? getStonkDisplayShares(contract, shares) : shares
               )
             }
           >

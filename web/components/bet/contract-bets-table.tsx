@@ -24,7 +24,7 @@ import {
   getDpmProbabilityAfterSale,
 } from 'common/calculate-dpm'
 import { BinaryOutcomeLabel, OutcomeLabel } from 'web/components/outcome-label'
-import { getStonkShares } from 'common/stonk'
+import { getStonkDisplayShares } from 'common/stonk'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatTimeShort } from 'web/lib/util/time'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
@@ -265,7 +265,7 @@ function BetRow(props: {
       {isDPM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>
         {isStonk
-          ? getStonkShares(contract, sharesOrShortSellShares, 2)
+          ? getStonkDisplayShares(contract, sharesOrShortSellShares, 2)
           : formatWithCommas(sharesOrShortSellShares)}
       </td>
 

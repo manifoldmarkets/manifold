@@ -38,7 +38,7 @@ import {
   getContractMetricsNoCount,
 } from 'web/lib/firebase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
-import { getStonkShares } from 'common/stonk'
+import { getStonkDisplayShares } from 'common/stonk'
 
 export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
@@ -215,7 +215,7 @@ export const BinaryUserPositionsTable = memo(
                   numberToShow={
                     sortBy === 'shares'
                       ? isStonk
-                        ? getStonkShares(
+                        ? getStonkDisplayShares(
                             contract,
                             position.totalShares[outcome] ?? 0,
                             2
@@ -247,7 +247,7 @@ export const BinaryUserPositionsTable = memo(
                   numberToShow={
                     sortBy === 'shares'
                       ? isStonk
-                        ? getStonkShares(
+                        ? getStonkDisplayShares(
                             contract,
                             position.totalShares[outcome] ?? 0,
                             2
