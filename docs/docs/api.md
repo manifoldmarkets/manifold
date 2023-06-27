@@ -291,6 +291,7 @@ Requires no authorization.
     answers?: Answer[] // dpm-2 markets only
     description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
     textDescription: string // string description without formatting, images, or embeds
+    groupSlugs?: string[] // groups which the market is a part of
   }
   ```
 
@@ -568,6 +569,7 @@ Requires no authorization.
     answers?: Answer[] // dpm-2 markets only
     description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
     textDescription: string // string description without formatting, images, or embeds
+    groupSlugs?: string[] // groups which the market is a part of
   }
   ```
 
