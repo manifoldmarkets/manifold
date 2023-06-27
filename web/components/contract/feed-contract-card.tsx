@@ -124,6 +124,7 @@ function SimpleCard(props: {
                 username={contract.creatorUsername}
                 avatarUrl={contract.creatorAvatarUrl}
                 size="xs"
+                className={'mt-0.5'}
               />
               <Link
                 className={clsx(
