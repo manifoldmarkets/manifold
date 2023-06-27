@@ -207,102 +207,102 @@ function DetailedCard(props: {
           <Col className="w-full gap-0.5">
             {/* Title is link to contract for open in new tab and a11y */}
             <Col onClick={(e) => e.stopPropagation()} className="w-full">
-              <Row className="flex-col items-start justify-between gap-2 sm:flex-row sm:gap-0">
-                <Col className={'flex-col-reverse gap-1.5 sm:flex-col'}>
-                  <Row className={'gap-1'}>
-                    <Link
-                      href={path}
-                      className={clsx(
-                        '-mt-1 text-lg',
-                        'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
-                        textColor
+              <Col className={'w-full flex-col gap-1.5'}>
+                <Row className={'justify-between gap-1'}>
+                  <Link
+                    href={path}
+                    className={clsx(
+                      '-mt-1 text-lg',
+                      'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
+                      textColor
+                    )}
+                    // if open in new tab, don't open in this one
+                    onClick={(e) => {
+                      trackClick()
+                      e.stopPropagation()
+                    }}
+                  >
+                    {question}
+                    {item &&
+                      !item.isCopied &&
+                      (item.dataType === 'contract_probability_changed' ||
+                        item.dataType === 'trending_contract') && (
+                        <div className={'text-ink-400 text-xs'}>
+                          {item.dataType === 'contract_probability_changed'
+                            ? ' moved'
+                            : item.dataType === 'trending_contract'
+                            ? ' trending'
+                            : item.dataType === 'new_subsidy'
+                            ? ' subsidized'
+                            : ''}
+                          <RelativeTimestamp
+                            time={item.createdTime}
+                            shortened={true}
+                          />{' '}
+                          ago
+                        </div>
                       )}
-                      // if open in new tab, don't open in this one
-                      onClick={(e) => {
-                        trackClick()
-                        e.stopPropagation()
-                      }}
-                    >
-                      {question}
-                      {item &&
-                        !item.isCopied &&
-                        (item.dataType === 'contract_probability_changed' ||
-                          item.dataType === 'trending_contract') && (
-                          <div className={'text-ink-400 text-xs'}>
-                            {item.dataType === 'contract_probability_changed'
-                              ? ' moved'
-                              : item.dataType === 'trending_contract'
-                              ? ' trending'
-                              : item.dataType === 'new_subsidy'
-                              ? ' subsidized'
-                              : ''}
-                            <RelativeTimestamp
-                              time={item.createdTime}
-                              shortened={true}
-                            />{' '}
-                            ago
-                          </div>
-                        )}
-                    </Link>
-                  </Row>
-                  <Row className={'items-center gap-1'}>
-                    <Avatar
-                      size={'xs'}
-                      className={'mr-0.5'}
-                      avatarUrl={creatorAvatarUrl}
-                      username={creatorUsername}
+                  </Link>
+                  <Col className={'items-end'}>
+                    <ContractStatusLabel
+                      className={'-mt-1 text-lg font-bold'}
+                      contract={contract}
                     />
-                    <Row
-                      className={'text-ink-700 items-baseline gap-1 text-sm'}
-                    >
-                      <UserLink
-                        name={contract.creatorName}
+                    <span>
+                      {showChange && (
+                        <span
+                          className={clsx(
+                            'font-normal',
+                            probChange! > 0
+                              ? 'text-teal-500'
+                              : 'text-scarlet-500'
+                          )}
+                        >
+                          {probChange! > 0 ? '+' : ''}
+                          {probChange}%
+                        </span>
+                      )}
+                    </span>
+                  </Col>
+                </Row>
+                <Row className={'items-center justify-between gap-1'}>
+                  <Col>
+                    <Row className={'items-center gap-1'}>
+                      <Avatar
+                        size={'xs'}
+                        className={'mr-0.5'}
+                        avatarUrl={creatorAvatarUrl}
                         username={creatorUsername}
                       />
-                      {item &&
-                        !item.isCopied &&
-                        item.dataType === 'new_contract' && (
-                          <span className={'text-xs'}>
-                            asked
-                            <RelativeTimestamp
-                              time={item.createdTime}
-                              shortened={true}
-                              className="text-ink-600"
-                            />
-                          </span>
-                        )}
-                    </Row>
-                  </Row>
-                </Col>
-                <div
-                  className={
-                    'my-1 flex flex-row items-center gap-2 sm:flex-col sm:items-end sm:gap-1'
-                  }
-                >
-                  <ContractStatusLabel
-                    className={'-mt-1 text-lg font-bold'}
-                    contract={contract}
-                  />{' '}
-                  <span>
-                    {showChange && (
-                      <span
-                        className={clsx(
-                          'font-normal',
-                          probChange! > 0 ? 'text-teal-500' : 'text-scarlet-500'
-                        )}
+                      <Row
+                        className={'text-ink-700 items-baseline gap-1 text-sm'}
                       >
-                        {probChange! > 0 ? '+' : ''}
-                        {probChange}%
-                      </span>
-                    )}
-                  </span>
+                        <UserLink
+                          name={contract.creatorName}
+                          username={creatorUsername}
+                        />
+                        {item &&
+                          !item.isCopied &&
+                          item.dataType === 'new_contract' && (
+                            <span className={'text-xs'}>
+                              asked
+                              <RelativeTimestamp
+                                time={item.createdTime}
+                                shortened={true}
+                                className="text-ink-600"
+                              />
+                            </span>
+                          )}
+                      </Row>
+                    </Row>
+                  </Col>
                   {isBinaryCpmm && !isClosed && (
                     <Col className="text-ink-500 items-center text-sm">
                       <BetRow contract={contract} user={user} />
                     </Col>
                   )}
-                </div>
-              </Row>
+                </Row>
+              </Col>
             </Col>
             <Col className={'w-full items-center'}>
               {promotedData && (
