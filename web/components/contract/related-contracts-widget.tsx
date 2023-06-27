@@ -66,6 +66,14 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
         className="absolute top-0 left-0 h-full w-full"
         onClick={() => onContractClick?.(contract)}
       />
+      <div>
+        <span className={clsx('break-anywhere whitespace-normal font-medium')}>
+          {question}
+        </span>
+        <span className="float-right ml-2 font-semibold">
+          <ContractStatusLabel contract={contract} />
+        </span>
+      </div>
       <Row className="z-10 gap-2">
         <Avatar
           username={creatorUsername}
@@ -79,14 +87,6 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
           createdTime={creatorCreatedTime}
         />
       </Row>
-      <div>
-        <span className={clsx('break-anywhere whitespace-normal font-medium')}>
-          {question}
-        </span>
-        <span className="float-right ml-2 font-semibold">
-          <ContractStatusLabel contract={contract} />
-        </span>
-      </div>
     </Col>
   )
 })
