@@ -162,9 +162,9 @@ function TwitchPlaysManifoldMarkets(props: {
       <Col className="gap-4">
         <Subtitle text="How it works" />
         <div>
-          Similar to Twitch channel point predictions, Manifold allows
-          you to create a play-money prediction markets on any question you like
-          and feature it in your stream.
+          Similar to Twitch channel point predictions, Manifold allows you to
+          create a play-money prediction markets on any question you like and
+          feature it in your stream.
         </div>
         <div>
           The key difference is that Manifold's questions function more like a

@@ -49,8 +49,8 @@ export default function AboutPage() {
         <Title>About</Title>
 
         <div className="mb-4 text-lg">
-          Manifold is a play-money prediction market platform where you
-          can bet on anything.
+          Manifold is a play-money prediction market platform where you can bet
+          on anything.
         </div>
 
         <LabCard
