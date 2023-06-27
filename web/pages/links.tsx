@@ -140,7 +140,6 @@ function ManalinksDisplay(props: {
           totalItems={links.length}
           setPage={setPage}
           className="bg-transparent"
-          UNSAFE_scrollToTop
         />
       </>
     )

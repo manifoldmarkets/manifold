@@ -45,7 +45,6 @@ export function Pagination(props: {
   itemsPerPage: number
   totalItems: number
   setPage: (page: number) => void
-  UNSAFE_scrollToTop?: boolean
   className?: string
   savePageToQuery?: boolean
 }) {
@@ -54,7 +53,6 @@ export function Pagination(props: {
     itemsPerPage,
     totalItems,
     setPage,
-    UNSAFE_scrollToTop,
     className,
     savePageToQuery,
   } = props
@@ -69,9 +67,6 @@ export function Pagination(props: {
       } else if (!pageQuery && page !== 0) {
         setPage(0)
       }
-    }
-    if (UNSAFE_scrollToTop) {
-      window.scrollTo(0, 0)
     }
   }, [pageQuery])
 
@@ -93,9 +88,6 @@ export function Pagination(props: {
       )
     }
     setPage(page)
-    if (UNSAFE_scrollToTop) {
-      window.scrollTo(0, 0)
-    }
   }
 
   const maxPage = Math.ceil(totalItems / itemsPerPage) - 1

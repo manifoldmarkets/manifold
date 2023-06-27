@@ -183,9 +183,7 @@ export function BetStatusText(props: {
   inTimeline?: boolean
 }) {
   const { bet, contract, hideUser, className, inTimeline } = props
-  const { outcomeType } = contract
   const self = useUser()
-  const isFreeResponse = outcomeType === 'FREE_RESPONSE'
   const { amount, outcome, createdTime, answerId, isChallenge, isApi } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
@@ -203,15 +201,13 @@ export function BetStatusText(props: {
       bet.fills?.some((fill) => fill.matchedBetId === null)) ??
     false
 
-  const fromProb =
-    hadPoolMatch || isFreeResponse
-      ? getFormattedMappedValue(contract, bet.probBefore)
-      : getFormattedMappedValue(contract, bet.limitProb ?? bet.probBefore)
+  const fromProb = hadPoolMatch
+    ? getFormattedMappedValue(contract, bet.probBefore)
+    : getFormattedMappedValue(contract, bet.limitProb ?? bet.probBefore)
 
-  const toProb =
-    hadPoolMatch || isFreeResponse
-      ? getFormattedMappedValue(contract, bet.probAfter)
-      : getFormattedMappedValue(contract, bet.limitProb ?? bet.probAfter)
+  const toProb = hadPoolMatch
+    ? getFormattedMappedValue(contract, bet.probAfter)
+    : getFormattedMappedValue(contract, bet.limitProb ?? bet.probAfter)
 
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>

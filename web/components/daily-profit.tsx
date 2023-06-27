@@ -237,7 +237,6 @@ export function ProfitChangeTable(props: {
           itemsPerPage={rowsPerSection * 2}
           totalItems={contracts.length}
           setPage={setPage}
-          UNSAFE_scrollToTop={true}
         />
       )}
     </Col>

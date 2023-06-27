@@ -77,7 +77,7 @@ function BetsModalContent(props: { contract: Contract }) {
     if (!bets) return <LoadingIndicator />
     return (
       <Col className={'mt-2'}>
-        <BetsTabContent contract={contract} bets={bets} scrollToTop={false} />
+        <BetsTabContent contract={contract} bets={bets} />
       </Col>
     )
   }
@@ -102,11 +102,7 @@ function BetsModalContent(props: { contract: Contract }) {
             <LoadingIndicator />
           ) : (
             <Col className={'mt-2'}>
-              <BetsTabContent
-                contract={contract}
-                bets={bets}
-                scrollToTop={false}
-              />
+              <BetsTabContent contract={contract} bets={bets} />
             </Col>
           ),
         },
