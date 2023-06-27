@@ -5,7 +5,7 @@ slug: /api
 
 # Manifold API
 
-Programatic access to [Manifold Markets](https://manifold.markets).
+Programatic access to [Manifold](https://manifold.markets).
 
 :::caution
 

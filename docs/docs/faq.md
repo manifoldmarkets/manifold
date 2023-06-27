@@ -1,6 +1,6 @@
 # Manifold FAQ
 
-Everything you wanted to know about [Manifold Markets](https://manifold.markets) in one place!
+Everything you wanted to know about [Manifold](https://manifold.markets) in one place!
 
 ## Basics
 
@@ -39,7 +39,7 @@ Traders in a play-money environments are competing for the social prestige and s
 
 Mana (M) is the play-money used by our platform to keep track of your bets. It **cannot be converted to cash**. All users start with M500 for free.
 
-As the native currency of Manifold Markets, mana is backed by the ability to create, subsidise, promote, and bet in markets on the platform.
+As the native currency of Manifold, mana is backed by the ability to create, subsidise, promote, and bet in markets on the platform.
 
 In addition, you can also [purchase more mana](https://manifold.markets/add-funds) or convert your mana earnings into real [charitable donations](https://manifold.markets/charity) at a rate of **M100 to $1**.
 
@@ -59,7 +59,7 @@ The most obvious way is by trading well and having a market resolve in your favo
 - [**Purchase mana**](https://manifold.markets/add-funds)
 
 
-### What types of questions can I use Manifold Markets to answer?
+### What types of questions can I use Manifold to answer?
 
 There are loads of different ways you can use our markets to answer your questions. Most of our users tend to interact with a whole mixture of markets.
 
@@ -98,7 +98,7 @@ Here are some of the top use cases for our markets, with corresponding examples.
 Can be used for personal projects, startups, or even large intra-company processes.
 
 - Predicting the success of your projects and using that knowledge to influence decisions.
-  - [Manifold Markets’ biggest growth vector](https://manifold.markets/SG/what-will-manifolds-biggest-growth)
+  - [Manifold’s biggest growth vector](https://manifold.markets/SG/what-will-manifolds-biggest-growth)
   - [Beeminder](https://manifold.markets/dreev/which-beeminder-featureproject-will)
 - Community feedback on whether you should add a new feature
   - [How will Manifold improve our commenting?](https://manifold.markets/ManifoldMarkets/how-will-manifold-markets-integrate)
@@ -148,7 +148,7 @@ Here are some other tips to get you started:
 
 ### How does resolving markets work?
 
-Whoever created the market gets to resolve it! Manifold Markets puts trust in its users to resolve their own markets in a timely and accurate manner. We generally will not intervene and resolve a market ourselves outside of exceptional circumstances. We do encourage creators to set clear resolution criteria in advance.
+Whoever created the market gets to resolve it! Manifold puts trust in its users to resolve their own markets in a timely and accurate manner. We generally will not intervene and resolve a market ourselves outside of exceptional circumstances. We do encourage creators to set clear resolution criteria in advance.
 
 - The creator is free to use their judgment.
   - This allows for many new kinds of prediction markets to be created that are less objective. (E.g. "Will I enjoy participating in the Metaverse in 2023?")
@@ -256,7 +256,7 @@ Maybe you are confident the chance lies in the range of 25%-30%. In this case, y
 
 1. Place your limit order. If you place an upper and lower bound then when fully filled equal shares of each type will have been bought.
 2. View your open orders.
-3. If another user bets (in this case, Dev Manifold Markets) you will see your limit order updated showing how much it has been filled. In this case, M217 worth of No shares was bought.
+3. If another user bets (in this case, Dev Manifold) you will see your limit order updated showing how much it has been filled. In this case, M217 worth of No shares was bought.
 
 ### What is the liquidity pool?
 

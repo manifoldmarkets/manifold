@@ -60,7 +60,7 @@ const config = {
       navbar: {
         title: 'Manifold Docs',
         logo: {
-          alt: 'Manifold Markets Logo',
+          alt: 'Manifold Logo',
           src: 'https://manifold.markets/logo.svg',
         },
         items: [
@@ -84,7 +84,7 @@ const config = {
             title: 'Manifold',
             items: [
               {
-                label: 'Manifold Markets',
+                label: 'Manifold',
                 to: 'https://manifold.markets',
               },
               {
@@ -120,7 +120,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Manifold Markets, Inc. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Manifold Markets, Inc.`,
       },
       prism: {
         theme: lightCodeTheme,

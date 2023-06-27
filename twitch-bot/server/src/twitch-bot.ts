@@ -424,7 +424,7 @@ export default class TwitchBot {
         await this.client.say(channelName, '/color BlueViolet'); // TODO this will become invalid as of February 18, 2023 (https://discuss.dev.twitch.tv/t/deprecation-of-chat-commands-through-irc/40486)
         log.debug('Sent join message.');
 
-        let message = 'Hey there! I am the Manifold Markets chat bot.';
+        let message = 'Hey there! I am the Manifold chat bot.';
         if (!this.client.isMod(channelName, TWITCH_BOT_USERNAME)) {
           message += ' Please /mod me so I can do my job.';
         }

@@ -1,4 +1,4 @@
-# Manifold Markets web app
+# Manifold web app
 
 ## Getting started
 

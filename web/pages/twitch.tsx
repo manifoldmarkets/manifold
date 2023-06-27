@@ -40,7 +40,7 @@ export default function TwitchLandingPage() {
   return (
     <Page>
       <SEO
-        title="Manifold Markets on Twitch"
+        title="Manifold on Twitch"
         description="Get more out of Twitch with play-money betting questions."
       />
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
@@ -140,7 +140,7 @@ function TwitchPlaysManifoldMarkets(props: {
           className="mb-[0.4rem] mr-4 inline h-10 w-10"
         ></img>
         <Title
-          children={'Twitch plays Manifold Markets'}
+          children={'Twitch plays Manifold'}
           className={'!-my-0 md:block'}
         />
       </Row>
@@ -162,7 +162,7 @@ function TwitchPlaysManifoldMarkets(props: {
       <Col className="gap-4">
         <Subtitle text="How it works" />
         <div>
-          Similar to Twitch channel point predictions, Manifold Markets allows
+          Similar to Twitch channel point predictions, Manifold allows
           you to create a play-money prediction markets on any question you like
           and feature it in your stream.
         </div>

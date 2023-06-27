@@ -62,7 +62,7 @@ export default function DestinyLandingPage(props: {
         <div>
           Support Destiny by trading in our questions. Claim a sub for you or a
           friend for the cost of {formatMoney(1000)}. For each subscription,
-          Manifold Markets will pay Destiny $5.00 on your behalf!
+          Manifold will pay Destiny $5.00 on your behalf!
         </div>
 
         <div className="mt-4 pt-6 sm:mt-0">
@@ -76,7 +76,7 @@ export default function DestinyLandingPage(props: {
         </AlertBox>
 
         <Spacer h={2} />
-        <Subtitle>New to Manifold Markets?</Subtitle>
+        <Subtitle>New to Manifold?</Subtitle>
         <Col className=" max-w-3xl gap-4 px-4">
           <LandingPagePanel />
           <Row className="w-full gap-2 sm:gap-4">

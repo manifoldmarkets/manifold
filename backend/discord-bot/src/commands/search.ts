@@ -26,7 +26,7 @@ export const searchButtonTypes = ['back', 'next', 'done']
 
 const data = new SlashCommandBuilder()
   .setName('search')
-  .setDescription('Search for markets on Manifold Markets')
+  .setDescription('Search for markets on Manifold')
   .addStringOption((option) =>
     option
       .setName('keywords')

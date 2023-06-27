@@ -1,4 +1,4 @@
-# Manifold Markets Twitch Bot
+# Manifold Twitch Bot
 
 This sub-repo has everything required to host the Manifold Twitch Bot and associated overlay and dock browser sources for OBS.
 

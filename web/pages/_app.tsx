@@ -73,12 +73,12 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   return (
     <>
       <Head>
-        <title>Manifold Markets</title>
+        <title>Manifold</title>
 
         <meta
           property="og:title"
           name="twitter:title"
-          content="Manifold Markets"
+          content="Manifold"
           key="title"
         />
         <meta
@@ -93,7 +93,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           key="description2"
         />
         <meta property="og:url" content="https://manifold.markets" key="url" />
-        <meta property="og:site_name" content="Manifold Markets" />
+        <meta property="og:site_name" content="Manifold" />
         <meta name="twitter:card" content="summary" key="card" />
         <meta name="twitter:site" content="@manifoldmarkets" />
         <meta
@@ -112,7 +112,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           rel="search"
           type="application/opensearchdescription+xml"
           href="https://manifold.markets/opensearch.xml"
-          title="Manifold Markets"
+          title="Manifold"
         />
       </Head>
       <div
