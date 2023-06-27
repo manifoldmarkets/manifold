@@ -1,4 +1,10 @@
 import clsx from 'clsx'
+import { first } from 'lodash'
+import Head from 'next/head'
+import Image from 'next/image'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { UserIcon } from '@heroicons/react/solid'
+
 import { Answer, DpmAnswer } from 'common/answer'
 import { ContractParams, visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -6,16 +12,13 @@ import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
 import { CONTRACT_BET_FILTER } from 'common/supabase/bets'
 import { removeUndefinedProps } from 'common/util/object'
-import { first } from 'lodash'
-import Head from 'next/head'
-import Image from 'next/image'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { BackButton } from 'web/components/contract/back-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import {
+  AuthorInfo,
   CloseOrResolveTime,
   MarketGroups,
 } from 'web/components/contract/contract-details'
@@ -65,11 +68,9 @@ import {
   useFirebasePublicAndRealtimePrivateContract,
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
-// import { VisibilityIcon } from 'web/components/contract/contracts-table'
-import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 export type ContractParameters = {
   contractSlug: string
@@ -397,24 +398,6 @@ export function ContractPageContent(props: {
                     </ExtraContractActionsRow>
                   </Row>
                 )}
-                <Row className="gap-2">
-                  <Avatar
-                    username={contract.creatorUsername}
-                    avatarUrl={contract.creatorAvatarUrl}
-                  />
-                  <Col>
-                    <UserLink
-                      name={contract.creatorName}
-                      username={contract.creatorUsername}
-                    />
-                    <CloseOrResolveTime
-                      contract={contract}
-                      editable={user?.id === creatorId}
-                      className="text-ink-600 text-sm"
-                    />
-                  </Col>
-                </Row>
-                <Spacer h={2} />
                 <div ref={titleRef}>
                   <VisibilityIcon
                     contract={contract}
@@ -427,6 +410,27 @@ export function ContractPageContent(props: {
                   />
                 </div>
               </Col>
+
+              <div className="text-ink-600 flex items-center justify-between text-sm">
+                <AuthorInfo contract={contract} />
+
+                <div className="flex gap-4">
+                  <Tooltip
+                    text="Traders"
+                    placement="bottom"
+                    noTap
+                    className="flex flex-row items-center gap-1"
+                  >
+                    <UserIcon className="text-ink-500 h-4 w-4" />
+                    <div>{uniqueBettorCount ?? 0}</div>
+                  </Tooltip>
+
+                  <CloseOrResolveTime
+                    contract={contract}
+                    editable={user?.id === creatorId}
+                  />
+                </div>
+              </div>
 
               <ContractOverview
                 contract={contract}

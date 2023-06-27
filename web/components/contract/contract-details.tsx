@@ -30,6 +30,8 @@ import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
 import { IoEllipsisHorizontal } from 'react-icons/io5'
+import { Avatar } from '../widgets/avatar'
+import { UserLink } from '../widgets/user-link'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -116,6 +118,30 @@ function PrivateMarketGroups(props: { contract: Contract }) {
     )
   }
   return <></>
+}
+
+export function AuthorInfo(props: { contract: Contract }) {
+  const { contract } = props
+  const { creatorName, creatorUsername, creatorAvatarUrl, creatorCreatedTime } =
+    contract
+
+  return (
+    <Row className="grow items-center gap-2">
+      <div className="relative">
+        <Avatar
+          username={creatorUsername}
+          avatarUrl={creatorAvatarUrl}
+          size={'xs'}
+        />
+      </div>
+
+      <UserLink
+        name={creatorName}
+        username={creatorUsername}
+        createdTime={creatorCreatedTime}
+      />
+    </Row>
+  )
 }
 
 export function CloseOrResolveTime(props: {
