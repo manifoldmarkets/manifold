@@ -9,12 +9,12 @@ import {
   FreeResponse,
   MultipleChoice,
   Numeric,
-  outcomeType,
+  OutcomeType,
   PseudoNumeric,
   QuadraticFunding,
   Stonk,
   Uniswap2,
-  visibility,
+  Visibility,
 } from './contract'
 import { User } from './user'
 import { removeUndefinedProps } from './util/object'
@@ -26,12 +26,12 @@ export function getNewContract(
   slug: string,
   creator: User,
   question: string,
-  outcomeType: outcomeType,
+  outcomeType: OutcomeType,
   description: JSONContent,
   initialProb: number,
   ante: number,
   closeTime: number,
-  visibility: visibility,
+  visibility: Visibility,
 
   // twitch
   isTwitchContract: boolean | undefined,

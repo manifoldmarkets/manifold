@@ -58,7 +58,7 @@ export function AnswersPanel(props: {
 
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
 
-  const answers = (contract.answers as (DpmAnswer | Answer)[]).filter(
+  const answers = contract.answers.filter(
     (a) => isMultipleChoice || ('number' in a && a.number !== 0)
   )
 

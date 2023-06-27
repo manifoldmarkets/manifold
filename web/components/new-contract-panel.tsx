@@ -7,8 +7,8 @@ import { useEffect, useState } from 'react'
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
-  outcomeType,
-  visibility,
+  OutcomeType,
+  Visibility,
 } from 'common/contract'
 import { UNIQUE_BETTOR_BONUS_AMOUNT, getAnte } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -168,7 +168,7 @@ export function NewContractPanel(props: {
         <ChoicesToggleGroup
           currentChoice={outcomeType}
           setChoice={(choice) => {
-            setOutcomeType(choice as outcomeType)
+            setOutcomeType(choice as OutcomeType)
           }}
           choicesMap={{
             'Yes\xa0/ No': 'BINARY', // non-breaking space
@@ -461,8 +461,8 @@ const useNewContract = (
   creator: User,
   params: NewQuestionParams | undefined
 ) => {
-  const [outcomeType, setOutcomeType] = usePersistentLocalState<outcomeType>(
-    (params?.outcomeType as outcomeType) ?? 'BINARY',
+  const [outcomeType, setOutcomeType] = usePersistentLocalState<OutcomeType>(
+    (params?.outcomeType as OutcomeType) ?? 'BINARY',
     'new-outcome-type'
   )
   const [minString, setMinString] = usePersistentLocalState(
@@ -482,8 +482,8 @@ const useNewContract = (
     params?.initValue,
     'new-init-value'
   )
-  const [visibility, setVisibility] = usePersistentLocalState<visibility>(
-    (params?.visibility as visibility) ?? 'public',
+  const [visibility, setVisibility] = usePersistentLocalState<Visibility>(
+    (params?.visibility as Visibility) ?? 'public',
     `new-visibility${'-' + params?.groupId ?? ''}`
   )
   const [newContract, setNewContract] = useState<Contract | undefined>(
@@ -611,7 +611,7 @@ const useNewContract = (
     setCloseDate(undefined)
     setCloseHoursMinutes(undefined)
     setSelectedGroup(undefined)
-    setVisibility((params?.visibility as visibility) ?? 'public')
+    setVisibility((params?.visibility as Visibility) ?? 'public')
     setAnswers(['', '', ''])
     setMinString('')
     setMaxString('')

@@ -4,10 +4,9 @@ import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 
 import { Bet } from 'common/bet'
-import { Answer, DpmAnswer } from 'common/answer'
+import { DpmAnswer } from 'common/answer'
 import { MultiContract } from 'common/contract'
 import { getAnswerProbability } from 'common/calculate'
-import { DAY_MS } from 'common/util/time'
 import {
   TooltipProps,
   getDateRange,
@@ -17,9 +16,9 @@ import {
 } from '../helpers'
 import { MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
 import { buildArray } from 'common/util/array'
 import { MultiPoint } from 'common/chart'
+import { DAY_MS } from 'common/util/time'
 
 export const CHOICE_ANSWER_COLORS = [
   '#77AADDB3',
@@ -75,46 +74,19 @@ const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[], topN?: number) => {
   return points
 }
 
-// TODO: implement
-const getMultiBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
-  return []
-}
-
-type LegendItem = { color: string; label: string; value?: string }
-const Legend = (props: { className?: string; items: LegendItem[] }) => {
-  const { items, className } = props
-  return (
-    <ol className={className}>
-      {items.map((item) => (
-        <li key={item.label} className="flex flex-row justify-between gap-4">
-          <Row className="items-center gap-2 overflow-hidden">
-            <span
-              className="h-4 w-4 shrink-0"
-              style={{ backgroundColor: item.color }}
-            ></span>
-            <span className="text-semibold overflow-hidden text-ellipsis">
-              {item.label}
-            </span>
-          </Row>
-          <span className="text-ink-600">{item.value}</span>
-        </li>
-      ))}
-    </ol>
-  )
-}
-
 export function useChartAnswers(contract: MultiContract) {
   return useMemo(() => getAnswers(contract), [contract])
 }
 
 export const ChoiceContractChart = (props: {
   contract: MultiContract
-  bets: Bet[]
+  bets?: Bet[]
+  points?: MultiPoint[]
   width: number
   height: number
-  onMouseOver?: (p: MultiPoint<Bet> | undefined) => void
+  onMouseOver?: (p: MultiPoint | undefined) => void
 }) => {
-  const { contract, bets, width, height, onMouseOver } = props
+  const { contract, bets = [], points = [], width, height, onMouseOver } = props
   const isMultipleChoice = contract.outcomeType === 'MULTIPLE_CHOICE'
   const isDpm = contract.mechanism === 'dpm-2'
   const [start, end] = getDateRange(contract)
@@ -122,10 +94,9 @@ export const ChoiceContractChart = (props: {
   const topN = Math.min(CHOICE_ANSWER_COLORS.length, answers.length)
   const betPoints = useMemo(
     () =>
-      isDpm
-        ? getDpmBetPoints(answers as DpmAnswer[], bets, topN)
-        : getMultiBetPoints(answers as Answer[], bets, topN),
-    [answers, bets, topN, isDpm]
+      isDpm ? getDpmBetPoints(answers as DpmAnswer[], bets, topN) : points,
+
+    [answers, bets, topN, isDpm, points]
   )
   const endProbs = useMemo(
     () => answers.map((a) => getAnswerProbability(contract, a.id)),
@@ -157,31 +128,40 @@ export const ChoiceContractChart = (props: {
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
 
   const ChoiceTooltip = useMemo(
-    () => (props: TooltipProps<Date, MultiPoint<Bet>>) => {
-      const { prev, x, xScale } = props
+    () => (props: TooltipProps<Date, MultiPoint>) => {
+      const { prev, x, y, xScale, yScale } = props
       const [start, end] = xScale.domain()
-      const d = xScale.invert(x)
+
+      if (!yScale) return null
       if (!prev) return null
-      const legendItems = sortBy(
-        prev.y.map((p, i) => ({
-          color: CHOICE_ALL_COLORS[i],
-          label: i === CHOICE_ANSWER_COLORS.length ? 'Other' : answers[i].text,
-          value: formatPct(p),
-          p,
-        })),
-        (item) => -item.p
-      ).slice(0, 10)
+
+      const d = xScale.invert(x)
+      const prob = yScale.invert(y)
+
+      const index = cum(prev.y).findIndex((p) => p >= 1 - prob)
+      const answer = answers[index]?.text ?? 'Other'
+      const color = CHOICE_ALL_COLORS[index] ?? CHOICE_OTHER_COLOR
+      const value = formatPct(prev.y[index])
+
       return (
         <>
           <Row className="items-center gap-2">
-            {prev.obj && (
-              <Avatar size="2xs" avatarUrl={prev.obj.userAvatarUrl} />
-            )}
             <span className="text-semibold text-base">
               {formatDateInRange(d, start, end)}
             </span>
           </Row>
-          <Legend className="max-w-xs" items={legendItems} />
+          <div className="flex max-w-xs flex-row justify-between gap-4">
+            <Row className="items-center gap-2 overflow-hidden">
+              <span
+                className="h-4 w-4 shrink-0 rounded-sm"
+                style={{ backgroundColor: color }}
+              />
+              <span className="text-semibold overflow-hidden text-ellipsis">
+                {answer}
+              </span>
+            </Row>
+            <span className="text-ink-600">{value}</span>
+          </div>
         </>
       )
     },
@@ -203,4 +183,14 @@ export const ChoiceContractChart = (props: {
       Tooltip={ChoiceTooltip}
     />
   )
+}
+
+const cum = (numbers: number[]) => {
+  const result = []
+  let sum = 0
+  for (const n of numbers) {
+    sum += n
+    result.push(sum)
+  }
+  return result
 }

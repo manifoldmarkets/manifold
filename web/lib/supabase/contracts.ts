@@ -1,4 +1,4 @@
-import { CPMMContract, Contract, visibility } from 'common/contract'
+import { CPMMContract, Contract, Visibility } from 'common/contract'
 import {
   SupabaseClient,
   millisToTs,
@@ -184,7 +184,7 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
   )
 
   if (contractVisibility && contractVisibility.length > 0) {
-    return (contractVisibility[0] as unknown as { visibility: visibility })
+    return (contractVisibility[0] as unknown as { visibility: Visibility })
       .visibility
   }
   return undefined

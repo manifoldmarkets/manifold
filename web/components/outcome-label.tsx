@@ -6,7 +6,7 @@ import {
   BinaryContract,
   Contract,
   MultiContract,
-  outcomeType,
+  OutcomeType,
   resolution,
 } from 'common/contract'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
@@ -214,7 +214,7 @@ export function AnswerLabel(props: {
 }
 
 export function BetOutcomeLabel(props: {
-  contractOutcomeType: outcomeType
+  contractOutcomeType: OutcomeType
   bet: Bet
   answerText?: string
 }) {

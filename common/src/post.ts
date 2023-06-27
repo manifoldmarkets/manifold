@@ -1,5 +1,5 @@
 import { JSONContent } from '@tiptap/core'
-import { visibility } from './contract'
+import { Visibility } from './contract'
 
 export type Post = {
   id: string
@@ -25,7 +25,7 @@ export type Post = {
   isGroupAboutPost?: boolean
   groupId?: string
   featuredLabel?: string
-  visibility: visibility
+  visibility: Visibility
 }
 
 export type DateDoc = Post & {

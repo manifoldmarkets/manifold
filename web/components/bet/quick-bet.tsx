@@ -518,8 +518,9 @@ function cardText(contract: Contract, previewProb?: number) {
 export function ContractCardAnswers(props: {
   contract: MultiContract
   numAnswersFR?: number
+  className?: string
 }) {
-  const { contract, numAnswersFR } = props
+  const { contract, numAnswersFR, className } = props
   const answers = getTopNSortedAnswers(contract, numAnswersFR ?? 3)
   const answersArray = useChartAnswers(contract).map(
     (answer, _index) => answer.text
@@ -528,7 +529,7 @@ export function ContractCardAnswers(props: {
     return <div>No answers yet...</div>
   }
   return (
-    <Col className="w-full gap-2">
+    <Col className={clsx('w-full gap-2', className)}>
       {answers.map((answer) => (
         <ContractCardAnswer
           key={answer.id}

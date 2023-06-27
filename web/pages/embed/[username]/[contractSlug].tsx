@@ -1,24 +1,19 @@
-import { Bet } from 'common/bet'
-import { Contract, contractPath } from 'common/contract'
+import { Contract, OutcomeType, contractPath } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useEffect } from 'react'
-import { ContractCard } from 'web/components/contract/contract-card'
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import {
   BinaryContractChart,
-  ChoiceContractChart,
   NumericContractChart,
   PseudoNumericContractChart,
 } from 'web/components/charts/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
-import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
-import { useUser } from 'web/hooks/use-user'
 import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
 import { getBetFields } from 'web/lib/supabase/bets'
 import { NoSEO } from 'web/components/NoSEO'
@@ -31,31 +26,23 @@ import {
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
-import { HistoryPoint } from 'common/chart'
-import { getBets } from 'common/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { HistoryPoint } from 'common/chart'
+import { ContractCardAnswers } from 'web/components/bet/quick-bet'
 
-type HistoryData = { bets?: Bet[]; points?: HistoryPoint<Partial<Bet>>[] }
-
-const CONTRACT_BET_LOADING_OPTS = {
-  filterRedemptions: true,
-  filterChallenges: true,
-}
+type Points = HistoryPoint<any>[]
 
 async function getHistoryData(contract: Contract) {
-  if (contract.outcomeType === 'NUMERIC') {
-    return null
-  }
   switch (contract.outcomeType) {
     case 'BINARY':
-    case 'PSEUDO_NUMERIC':
-      // We could include avatars in the embed, but not sure it's worth it
+    case 'PSEUDO_NUMERIC': {
       const points = (
         await getBetFields(['createdTime', 'probAfter'], {
           contractId: contract.id,
-          ...CONTRACT_BET_LOADING_OPTS,
+          filterRedemptions: true,
+          filterChallenges: true,
           limit: 50000,
           order: 'desc',
         })
@@ -63,20 +50,15 @@ async function getHistoryData(contract: Contract) {
         x: bet.createdTime,
         y: bet.probAfter,
       }))
-      return { points } as HistoryData
-    default: // choice contracts
-      const bets = await getBets(db, {
-        contractId: contract.id,
-        ...CONTRACT_BET_LOADING_OPTS,
-        limit: 50000,
-        order: 'desc',
-      })
-      return { bets } as HistoryData
+      return points
+    }
+
+    default:
+      return null
   }
 }
 
-export const getStaticProps = fromPropz(getStaticPropz)
-export async function getStaticPropz(props: {
+export async function getStaticProps(props: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = props.params
@@ -84,9 +66,9 @@ export async function getStaticPropz(props: {
   if (contract == null) {
     return { notFound: true, revalidate: 60 }
   }
-  const historyData = await getHistoryData(contract)
+  const points = await getHistoryData(contract)
   return {
-    props: { contract, historyData },
+    props: { contract, points },
   }
 }
 
@@ -96,13 +78,8 @@ export async function getStaticPaths() {
 
 export default function ContractEmbedPage(props: {
   contract: Contract
-  historyData: HistoryData | null
+  points: Points | null
 }) {
-  props = usePropz(props, getStaticPropz) ?? {
-    contract: null,
-    historyData: null,
-  }
-
   const contract =
     useFirebasePublicAndRealtimePrivateContract(
       props.contract.visibility,
@@ -119,41 +96,27 @@ export default function ContractEmbedPage(props: {
       })
   }, [contract?.creatorId, contract?.id, contract?.slug])
 
-  const user = useUser()
-
   if (!contract) {
     return <Custom404 />
   }
 
-  // return (height < 250px) ? Card : SmolView
   return (
     <>
       <NoSEO />
       <ContractSEO contract={contract} />
-      <div className="contents [@media(min-height:250px)]:hidden">
-        <ContractCard
-          contract={contract}
-          className="h-screen"
-          noLinkAvatar
-          newTab
-          hideQuickBet={!user}
-        />
-      </div>
-      <div className="hidden [@media(min-height:250px)]:contents">
-        <ContractSmolView contract={contract} data={props.historyData} />
-      </div>
+      <ContractSmolView contract={contract} points={props.points} />
     </>
   )
 }
 
 const ContractChart = (props: {
   contract: Contract
-  data: HistoryData | null
+  points: Points | null
   width: number
   height: number
   color?: string
 }) => {
-  const { contract, data, ...rest } = props
+  const { contract, points, ...rest } = props
   const viewScale = useSingleValueHistoryChartViewScale()
 
   switch (contract.outcomeType) {
@@ -163,7 +126,7 @@ const ContractChart = (props: {
           {...rest}
           viewScaleProps={viewScale}
           contract={contract}
-          betPoints={data?.points ?? []}
+          betPoints={points ?? []}
         />
       )
     case 'PSEUDO_NUMERIC':
@@ -172,39 +135,51 @@ const ContractChart = (props: {
           {...rest}
           viewScaleProps={viewScale}
           contract={contract}
-          betPoints={data?.points ?? []}
+          betPoints={points ?? []}
         />
       )
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
       return (
-        <ChoiceContractChart
-          {...rest}
-          contract={contract}
-          bets={data?.bets ?? []}
-        />
+        <>
+          <ContractCardAnswers
+            contract={contract}
+            numAnswersFR={numBars(props.height)}
+            className="h-full justify-center pt-4"
+          />
+        </>
       )
+
     case 'NUMERIC':
       return <NumericContractChart {...rest} contract={contract} />
     case 'STONK':
       return (
         <StonkContractChart
           {...rest}
-          betPoints={data?.points ?? []}
+          betPoints={points ?? []}
           viewScaleProps={viewScale}
           contract={contract}
         />
       )
+
     default:
-      throw new Error('Contract outcome type not supported for chart')
+      return null
   }
+}
+
+const numBars = (height: number) => {
+  if (height < 120) return 2
+  if (height < 150) return 3
+  if (height < 180) return 4
+  if (height < 210) return 5
+  return 6
 }
 
 function ContractSmolView(props: {
   contract: Contract
-  data: HistoryData | null
+  points: Points | null
 }) {
-  const { contract, data } = props
+  const { contract, points } = props
   const { question, outcomeType } = contract
 
   const router = useRouter()
@@ -227,7 +202,7 @@ function ContractSmolView(props: {
           <a
             href={href}
             target="_blank"
-            className="text-primary-700 text-xl md:text-2xl"
+            className="text-primary-700 text-lg hover:underline sm:text-xl"
             style={{
               color: textColor,
               filter: isDarkMode && textColor ? 'invert(1)' : undefined,
@@ -263,7 +238,7 @@ function ContractSmolView(props: {
         {graphWidth != null && graphHeight != null && (
           <ContractChart
             contract={contract}
-            data={data}
+            points={points}
             width={graphWidth}
             height={graphHeight}
             color={graphColor}

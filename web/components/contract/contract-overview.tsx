@@ -1,7 +1,6 @@
 import { memo, useState } from 'react'
-
 import { Bet } from 'common/bet'
-import { HistoryPoint } from 'common/chart'
+import { HistoryPoint, MultiPoint } from 'common/chart'
 import {
   BinaryContract,
   CPMMStonkContract,
@@ -13,6 +12,7 @@ import {
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import {
   BinaryContractChart,
+  ChoiceContractChart,
   NumericContractChart,
   PseudoNumericContractChart,
 } from 'web/components/charts/contract'
@@ -44,20 +44,26 @@ export const ContractOverview = memo(
   (props: {
     contract: Contract
     bets: Bet[]
-    betPoints: HistoryPoint<Partial<Bet>>[]
+    betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoint[]
     showResolver: boolean
     onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
   }) => {
-    const { betPoints, contract, showResolver, onAnswerCommentClick } = props
+    const { bets, betPoints, contract, showResolver, onAnswerCommentClick } =
+      props
 
     switch (contract.outcomeType) {
       case 'BINARY':
-        return <BinaryOverview betPoints={betPoints} contract={contract} />
+        return (
+          <BinaryOverview betPoints={betPoints as any} contract={contract} />
+        )
       case 'NUMERIC':
         return <NumericOverview contract={contract} />
       case 'PSEUDO_NUMERIC':
         return (
-          <PseudoNumericOverview contract={contract} betPoints={betPoints} />
+          <PseudoNumericOverview
+            contract={contract}
+            betPoints={betPoints as any}
+          />
         )
       case 'CERT':
         return <CertOverview contract={contract} />
@@ -68,12 +74,16 @@ export const ContractOverview = memo(
         return (
           <ChoiceOverview
             contract={contract}
+            bets={bets}
+            points={betPoints as any}
             showResolver={showResolver}
             onAnswerCommentClick={onAnswerCommentClick}
           />
         )
       case 'STONK':
-        return <StonkOverview contract={contract} betPoints={betPoints} />
+        return (
+          <StonkOverview contract={contract} betPoints={betPoints as any} />
+        )
     }
   }
 )
@@ -134,27 +144,28 @@ const BinaryOverview = (props: {
 }
 
 const ChoiceOverview = (props: {
+  bets?: Bet[]
+  points?: MultiPoint[]
   contract: MultiContract
   showResolver: boolean
   onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
 }) => {
-  const { contract, showResolver, onAnswerCommentClick } = props
+  const { bets, points, contract, showResolver, onAnswerCommentClick } = props
 
   if (!onAnswerCommentClick) return null
   return (
-    //     <FreeResponseResolution contract={contract} />
-    //     <SizedContainer fullHeight={350} mobileHeight={250}>
-    //       {(w, h) => (
-    //         <ChoiceContractChart
-    //           width={w}
-    //           height={h}
-    //           bets={bets}
-    //           contract={contract}
-    //         />
-    //       )}
-    //     </SizedContainer>
     <>
-      {' '}
+      <SizedContainer fullHeight={250} mobileHeight={150}>
+        {(w, h) => (
+          <ChoiceContractChart
+            width={w}
+            height={h}
+            bets={bets}
+            points={points}
+            contract={contract}
+          />
+        )}
+      </SizedContainer>
       <div />
       <AnswersPanel
         contract={contract}
