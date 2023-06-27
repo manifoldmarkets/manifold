@@ -498,12 +498,13 @@ const useNewContract = (
   }, [params?.q])
 
   useEffect(() => {
-    if (params?.groupId)
+    if (params?.groupId) {
       getGroup(params?.groupId).then((group) => {
         if (group) {
           setSelectedGroup(group)
         }
       })
+    }
   }, [creator.id, params?.groupId])
 
   const ante = getAnte(outcomeType, answers.length, visibility === 'private')
@@ -622,7 +623,6 @@ const useNewContract = (
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function submit() {
-    // TODO: Tell users why their contract is invalid
     if (!isValid) return
     setIsSubmitting(true)
     try {
@@ -654,12 +654,8 @@ const useNewContract = (
         outcomeType,
       })
     } catch (e) {
-      console.error('error creating contract', e, (e as any).details)
-      setErrorText(
-        JSON.stringify(
-          (e as any).details || (e as any).message || 'Error creating contract'
-        )
-      )
+      console.error('error creating contract', e)
+      setErrorText((e as any).message || 'Error creating contract')
       setIsSubmitting(false)
     }
   }
