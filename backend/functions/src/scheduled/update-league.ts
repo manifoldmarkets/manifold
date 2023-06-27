@@ -170,6 +170,7 @@ export async function updateLeagueCore() {
       const contract = contractsById[contractId]
       if (
         contract.visibility === 'public' &&
+        !contract.nonPredictive &&
         !EXCLUDED_CONTRACT_SLUGS.has(contract.slug)
       ) {
         const { profit } = getProfitMetrics(contract, contractBets)
