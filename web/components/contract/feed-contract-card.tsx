@@ -101,7 +101,7 @@ function SimpleCard(props: {
   item?: FeedTimelineItem
   className?: string
 }) {
-  const { contract, user, trackClick, className } = props
+  const { contract, user, item, trackClick, className } = props
   const { question, outcomeType, mechanism, closeTime, isResolved } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
@@ -139,7 +139,12 @@ function SimpleCard(props: {
             </Row>
           </Col>
           <Col className={'items-end'}>
-            <ContractStatusLabel className={' font-bold'} contract={contract} />
+            <Tooltip text={item?.reasonDescription} placement={'top'}>
+              <ContractStatusLabel
+                className={' font-bold'}
+                contract={contract}
+              />
+            </Tooltip>
           </Col>
         </Row>
 
@@ -229,13 +234,18 @@ function DetailedCard(props: {
                       (item.dataType === 'contract_probability_changed' ||
                         item.dataType === 'trending_contract') && (
                         <div className={'text-ink-400 text-xs'}>
-                          {item.dataType === 'contract_probability_changed'
-                            ? ' moved'
-                            : item.dataType === 'trending_contract'
-                            ? ' trending'
-                            : item.dataType === 'new_subsidy'
-                            ? ' subsidized'
-                            : ''}
+                          <Tooltip
+                            text={item?.reasonDescription}
+                            placement={'top'}
+                          >
+                            {item.dataType === 'contract_probability_changed'
+                              ? ' moved'
+                              : item.dataType === 'trending_contract'
+                              ? ' trending'
+                              : item.dataType === 'new_subsidy'
+                              ? ' subsidized'
+                              : ''}
+                          </Tooltip>
                           <RelativeTimestamp
                             time={item.createdTime}
                             shortened={true}
@@ -286,7 +296,12 @@ function DetailedCard(props: {
                           !item.isCopied &&
                           item.dataType === 'new_contract' && (
                             <span className={'text-xs'}>
-                              asked
+                              <Tooltip
+                                text={item?.reasonDescription}
+                                placement={'top'}
+                              >
+                                asked
+                              </Tooltip>
                               <RelativeTimestamp
                                 time={item.createdTime}
                                 shortened={true}
