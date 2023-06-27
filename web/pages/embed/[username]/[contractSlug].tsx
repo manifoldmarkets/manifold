@@ -1,4 +1,4 @@
-import { Contract, OutcomeType, contractPath } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useEffect } from 'react'
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
