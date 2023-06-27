@@ -177,7 +177,11 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
       outcomeType: contract.outcomeType,
       contract,
       historyData: {
-        bets: includingSingleBetPts ? bets.slice(0, 100) : bets,
+        bets: includingSingleBetPts
+          ? bets.slice(0, 100)
+          : includingMultiBetPts
+          ? bets.filter((b) => !b.isRedemption)
+          : bets,
         points: includingMultiBetPts ? multiBetPoints : betPoints,
       },
       pointsString,

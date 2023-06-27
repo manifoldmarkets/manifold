@@ -197,7 +197,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   const newBets = useRealtimeBets({
     contractId: contract.id,
     afterTime: lastBetTime,
-    filterRedemptions: contract.mechanism === 'cpmm-multi-1',
+    filterRedemptions: true,
   })
   const totalBets = contractParams.totalBets + (newBets?.length ?? 0)
   const bets = useMemo(
@@ -208,7 +208,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   const betPoints = useMemo(() => {
     const points = unserializePoints(contractParams.historyData.points)
 
-    //  TODO: live update multiple choice
+    //  TODO: live update multiple choice. will need to include new redemptions...
     if (contract.outcomeType !== 'MULTIPLE_CHOICE') {
       points.concat(
         newBets?.map((bet) => ({
