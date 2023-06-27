@@ -102,12 +102,12 @@ export const RussianCoupData = () => {
       <NewsGrid>
         <NewsArticleOriginal
           className="mb-4"
-          title="Wagner chief says he ordered his Russian mercenaries to halt march on Moscow and return to Ukraine"
-          urlToImage="https://storage.googleapis.com/afs-prod/media/d4ed1506982c42e998398220ee61d51a/1000.jpeg"
-          url="https://apnews.com/article/russia-ukraine-wagner-prigozhin-9acbdf1eda849692ca0423a4116058d1"
-          description={`A rebellious mercenary commander said Saturday he ordered his mercenaries to halt their march on Moscow and retreat to field camps in Ukraine, appearing to defuse a dramatically escalating crisis that represented the most significant challenge to President Vladimir Putin in his more than two decades in power.`}
-          author="AP News"
-          published_time={Date.UTC(2023, 5, 24, 18)}
+          title="Vladimir Putin says Wagner mutiny leaders will be 'brought to justice'"
+          urlToImage="https://ichef.bbci.co.uk/news/976/cpsprodpb/B235/production/_130212654_vladimirputin.png.webp"
+          url="https://www.bbc.com/news/world-europe-66024526"
+          description={`Russian President Vladimir Putin has accused the leaders of last weekend's Wagner mutiny of wanting "to see Russia choked in bloody strife".`}
+          author="James Gregory & Sarah Rainsford"
+          published_time={Date.UTC(2023, 5, 26, 23, 30)}
         />
 
         {prigozhinMarkets.map((contract) => (
@@ -119,6 +119,17 @@ export const RussianCoupData = () => {
             />
           </>
         ))}
+
+        <NewsArticleOriginal
+          className="mb-4"
+          title="Wagner chief says he ordered his Russian mercenaries to halt march on Moscow and return to Ukraine"
+          urlToImage="https://storage.googleapis.com/afs-prod/media/d4ed1506982c42e998398220ee61d51a/1000.jpeg"
+          url="https://apnews.com/article/russia-ukraine-wagner-prigozhin-9acbdf1eda849692ca0423a4116058d1"
+          description={`A rebellious mercenary commander said Saturday he ordered his mercenaries to halt their march on Moscow and retreat to field camps in Ukraine, appearing to defuse a dramatically escalating crisis that represented the most significant challenge to President Vladimir Putin in his more than two decades in power.`}
+          author="AP News"
+          published_time={Date.UTC(2023, 5, 24, 18)}
+        />
+
         <NewsArticleOriginal
           className="mb-4"
           title="Russia accuses Wagner mercenary boss Yevgeny Prigozhin of mutiny after he says Moscow killed 2,000 of his men"
