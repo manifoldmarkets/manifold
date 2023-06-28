@@ -14,6 +14,7 @@ import { News } from 'common/news'
 import { FEED_DATA_TYPES, FEED_REASON_TYPES, getExplanation } from 'common/feed'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items'
+import { DAY_MS } from 'common/util/time'
 
 const PAGE_SIZE = 20
 
@@ -99,8 +100,20 @@ export const useFeedTimeline = (
       filterDefined(data.map((item) => item.comment_id))
     )
 
+    const potentiallySeenCommentIds = uniq(
+      filterDefined(
+        data.map((item) => (!item.seen_time ? item.comment_id : null))
+      )
+    )
+
     const newsIds = uniq(filterDefined(data.map((item) => item.news_id)))
-    const [comments, contracts, news, ignoredContractIds] = await Promise.all([
+    const [
+      comments,
+      contracts,
+      news,
+      uninterestingContractIds,
+      seenCommentIds,
+    ] = await Promise.all([
       db
         .rpc('get_reply_chain_comments_for_comment_ids' as any, {
           comment_ids: newCommentsOnContractIds,
@@ -131,15 +144,27 @@ export const useFeedTimeline = (
         .eq('user_id', userId)
         .in('contract_id', newContractIds)
         .then((res) => res.data?.map((c) => c.contract_id)),
+      db
+        .from('user_events')
+        .select('comment_id')
+        .eq('user_id', userId)
+        .eq('name', 'view comment thread')
+        .in('comment_id', potentiallySeenCommentIds)
+        .gt('ts', new Date(Date.now() - 5 * DAY_MS).toISOString())
+        .then((res) => res.data?.map((c) => c.comment_id)),
     ])
+
     const filteredNewContracts = contracts?.filter(
       (c) =>
         !isContractBlocked(privateUser, c) &&
         !c.isResolved &&
-        !ignoredContractIds?.includes(c.id)
+        !uninterestingContractIds?.includes(c.id)
     )
     const filteredNewComments = comments?.filter(
-      (c) => !privateUser?.blockedUserIds?.includes(c.userId) && !c.hidden
+      (c) =>
+        !privateUser?.blockedUserIds?.includes(c.userId) &&
+        !c.hidden &&
+        !seenCommentIds?.includes(c.id)
     )
     // New comments on contracts they've already seen in their feed can be interesting
     const savedContractsWithNewComments: Contract[] = filterDefined(
