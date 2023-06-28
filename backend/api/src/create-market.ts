@@ -111,7 +111,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       max ?? 0,
       isLogScale ?? false,
       shouldAnswersSumToOne,
-      totalBounty
+      totalBounty ?? 0
     )
 
     trans.create(contractRef, contract)
@@ -153,6 +153,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
   await generateContractEmbeddings(contract)
 
+  console.log(contract)
   return contract
 }
 
@@ -298,6 +299,7 @@ function validateMarketBody(body: any) {
     isLogScale,
     answers,
     shouldAnswersSumToOne,
+    totalBounty,
   }
 }
 
