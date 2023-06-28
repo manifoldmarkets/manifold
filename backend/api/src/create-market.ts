@@ -66,6 +66,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     isLogScale,
     answers,
     shouldAnswersSumToOne,
+    totalBounty,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -109,7 +110,8 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       min ?? 0,
       max ?? 0,
       isLogScale ?? false,
-      shouldAnswersSumToOne
+      shouldAnswersSumToOne,
+      totalBounty ?? 0
     )
 
     trans.create(contractRef, contract)
@@ -237,7 +239,8 @@ function validateMarketBody(body: any) {
     initialProb: number | undefined,
     isLogScale: boolean | undefined,
     answers: string[] | undefined,
-    shouldAnswersSumToOne: boolean | undefined
+    shouldAnswersSumToOne: boolean | undefined,
+    totalBounty: number | undefined
 
   if (visibility == 'private' && !groupId) {
     throw new APIError(
@@ -274,6 +277,10 @@ function validateMarketBody(body: any) {
     ;({ answers, shouldAnswersSumToOne } = validate(multipleChoiceSchema, body))
   }
 
+  if (outcomeType === 'BOUNTIED_QUESTION') {
+    ;({ totalBounty } = validate(bountiedQuestionSchema, body))
+  }
+
   return {
     question,
     description,
@@ -291,6 +298,7 @@ function validateMarketBody(body: any) {
     isLogScale,
     answers,
     shouldAnswersSumToOne,
+    totalBounty,
   }
 }
 
@@ -515,7 +523,12 @@ const multipleChoiceSchema = z.object({
   shouldAnswersSumToOne: z.boolean().optional(),
 })
 
+const bountiedQuestionSchema = z.object({
+  totalBounty: z.number().min(1),
+})
+
 type schema = z.infer<typeof bodySchema> &
   (z.infer<typeof binarySchema> | {}) &
   (z.infer<typeof numericSchema> | {}) &
-  (z.infer<typeof multipleChoiceSchema> | {})
+  (z.infer<typeof multipleChoiceSchema> | {}) &
+  (z.infer<typeof bountiedQuestionSchema> | {})

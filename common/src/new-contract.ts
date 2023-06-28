@@ -1,6 +1,7 @@
 import { range } from 'lodash'
 import {
   Binary,
+  BountiedQuestion,
   Cert,
   Contract,
   CPMM,
@@ -8,6 +9,7 @@ import {
   DPM,
   FreeResponse,
   MultipleChoice,
+  NonBet,
   Numeric,
   OutcomeType,
   PseudoNumeric,
@@ -41,7 +43,8 @@ export function getNewContract(
   min: number,
   max: number,
   isLogScale: boolean,
-  shouldAnswersSumToOne: boolean | undefined
+  shouldAnswersSumToOne: boolean | undefined,
+  totalBounty: number
 ) {
   const createdTime = Date.now()
 
@@ -55,6 +58,7 @@ export function getNewContract(
     CERT: () => getCertProps(ante),
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
     STONK: () => getStonkCpmmProps(initialProb, ante),
+    BOUNTIED_QUESTION: () => getBountiedQuestionProps(totalBounty),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -265,6 +269,18 @@ const getNumericProps = (
     bucketCount,
     min,
     max,
+  }
+
+  return system
+}
+
+const getBountiedQuestionProps = (totalBounty: number) => {
+  const system: NonBet & BountiedQuestion = {
+    mechanism: 'none',
+    outcomeType: 'BOUNTIED_QUESTION',
+    totalBounty,
+    bountyPaid: 0,
+    bountyTxns: [],
   }
 
   return system
