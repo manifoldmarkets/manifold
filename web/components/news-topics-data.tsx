@@ -87,6 +87,7 @@ export const ElonVersusZuckData = () => {
 
 export const RussianCoupData = () => {
   const prigozhinMarkets = useContracts([
+    'HZKHs5sbICIRrtBeGXMu',
     'Uj4VpjfgWxdwwek3b9UJ',
     '3hoy92xFKV9SQbX1HTiy',
     'u25Sl9uaATsilhkCr7uU',
@@ -108,6 +109,16 @@ export const RussianCoupData = () => {
           description={`Russian President Vladimir Putin has accused the leaders of last weekend's Wagner mutiny of wanting "to see Russia choked in bloody strife".`}
           author="James Gregory & Sarah Rainsford"
           published_time={Date.UTC(2023, 5, 26, 23, 30)}
+        />
+
+        <NewsArticleOriginal
+          className="mb-4"
+          title="Rumors grow that a top Russian general who knew of Prigozhin's attempted coup may be under arrest"
+          urlToImage="https://s.yimg.com/ny/api/res/1.2/oXNcLmKnIjZRMTErBYsp9A--/YXBwaWQ9aGlnaGxhbmRlcjt3PTcwNTtoPTQ3MDtjZj13ZWJw/https://media.zenfs.com/en/business_insider_articles_888/ce08d4cc8e92c221186763d12243e885"
+          url="https://www.yahoo.com/news/rumors-grow-top-russian-general-213316102.html"
+          description={`Gen. Surovikin knew Prigozhin was planning an uprising against Russian military leadership, NYT reported.`}
+          author="Chris Panella"
+          published_time={Date.UTC(2023, 5, 28, 9, 30)}
         />
 
         {prigozhinMarkets.map((contract) => (
