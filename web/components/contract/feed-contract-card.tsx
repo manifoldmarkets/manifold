@@ -111,18 +111,12 @@ function SimpleCard(props: {
     <Row className={clsx(className)}>
       <Col
         className={
-          'dark:bg-canvas-50 border-ink-200 grow justify-between gap-2 overflow-hidden rounded-t-xl rounded-l-xl border  px-3 pt-2'
+          'dark:bg-canvas-50 border-ink-200 grow justify-between gap-2 overflow-hidden border border-l-4 px-3 pt-2'
         }
       >
         <Row className="items-start justify-between gap-1">
           <Col>
             <Row className={'items-start gap-2'}>
-              <Avatar
-                username={contract.creatorUsername}
-                avatarUrl={contract.creatorAvatarUrl}
-                size="xs"
-                className={'mt-0.5'}
-              />
               <Link
                 className={clsx(
                   'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
