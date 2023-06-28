@@ -857,8 +857,8 @@ with redeemed_ad_ids as (
 ),
 -- with the user embedding
 user_embedding as (
-  select interest_embedding
-  from user_embeddings
+    select interest_embedding, disinterest_embedding
+    from user_embeddings
   where user_id = uid
 ),
 --with all the ads that haven't been redeemed, by closest to your embedding
@@ -874,7 +874,8 @@ unredeemed_market_ads as (
       FROM redeemed_ad_ids
       WHERE fromId = market_ads.id
     )
-    and market_ads.funds >= cost_per_view 
+    and market_ads.funds >= cost_per_view
+    and coalesce(embedding <=> (select disinterest_embedding from user_embedding), 1) > 0.125
   order by cost_per_view * (1 - (embedding <=> (
     select interest_embedding
     from user_embedding
