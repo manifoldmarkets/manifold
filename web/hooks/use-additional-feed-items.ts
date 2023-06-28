@@ -7,16 +7,15 @@ import { Bet } from 'common/bet'
 import { getBetsOnContracts } from 'web/lib/supabase/bets'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { ContractComment } from 'common/comment'
-
+export const IGNORE_COMMENT_FEED_CONTENT = ['gridCardsComponent']
 export const groupCommentsByContractsAndParents = (
   comments: ContractComment[]
 ) => {
   // Grid cards make for huge, unwieldy comment threads
-  const ignoredCommentTypes = ['gridCardsComponent']
   const filteredUnseenCommentThreads = comments.filter(
     (ct) =>
       !ct.content?.content?.some((c) =>
-        ignoredCommentTypes.includes(c.type ?? '')
+        IGNORE_COMMENT_FEED_CONTENT.includes(c.type ?? '')
       )
   )
   const parentCommentsByContractId = groupBy(

@@ -13,6 +13,7 @@ import { first, groupBy, last, sortBy, uniq, uniqBy } from 'lodash'
 import { News } from 'common/news'
 import { FEED_DATA_TYPES, FEED_REASON_TYPES, getExplanation } from 'common/feed'
 import { isContractBlocked } from 'web/lib/firebase/users'
+import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items'
 
 const PAGE_SIZE = 20
 
@@ -283,9 +284,19 @@ function createFeedTimelineItems(
         )
           return
 
-        const relevantComments = comments?.filter(
-          (comment) => comment.contractId === item.contract_id
-        )
+        if (relevantContract.id === 'RqQdSlfdP7Vf6QmsJ80R') {
+          console.log('found it')
+        }
+        // Let's stick with one comment per feed item for now
+        const relevantComments = comments
+          ?.filter((comment) => comment.id === item.comment_id)
+          .filter(
+            (ct) =>
+              !ct.content?.content?.some((c) =>
+                IGNORE_COMMENT_FEED_CONTENT.includes(c.type ?? '')
+              )
+          )
+        if (item.comment_id && !relevantComments?.length) return
         return {
           ...getBaseTimelineItem(item),
           contractId: item.contract_id,

@@ -3,15 +3,11 @@ import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
-import { sumBy } from 'lodash'
 import Link from 'next/link'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { mergePeriodic } from 'web/components/feed/feed-items'
 import { Col } from 'web/components/layout/col'
-import {
-  groupCommentsByContractsAndParents,
-  useFeedBets,
-} from 'web/hooks/use-additional-feed-items'
+import { groupCommentsByContractsAndParents } from 'web/hooks/use-additional-feed-items'
 import { useUnseenReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
 import { BoostsType } from 'web/hooks/use-feed'
 import {
@@ -23,14 +19,12 @@ import { db } from 'web/lib/supabase/db'
 import { ContractsTable } from '../contract/contracts-table'
 import { NewsArticle } from '../news-article'
 import { FeedBetsItem } from './feed-bet-item'
-import { groupBetsByCreatedTimeAndUserId } from './feed-bets'
 import { FeedCommentItem } from './feed-comment-item'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { track } from 'web/lib/service/analytics'
 
-const MAX_BETS_PER_FEED_ITEM = 2
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
 
@@ -74,7 +68,6 @@ export const FeedTimelineItems = (props: {
   const { parentCommentsByContractId, childCommentsByParentCommentId } =
     groupCommentsByContractsAndParents(savedFeedComments.concat(recentComments))
 
-  const recentBets = useFeedBets(user, contractIdsWithoutComments)
   const feedTimelineItems = mergePeriodic(
     savedFeedTimelineItems,
     boostedContractItems,
@@ -86,18 +79,6 @@ export const FeedTimelineItems = (props: {
       {feedTimelineItems.map((item) => {
         if (item.contract && ('ad_id' in item || 'contract' in item)) {
           const { contract } = item
-          const parentComments = (
-            parentCommentsByContractId[contract.id] ?? []
-          ).slice(0, MAX_PARENT_COMMENTS_PER_FEED_ITEM)
-          const relatedBets = recentBets
-            .filter((bet) => bet.contractId === contract.id)
-            .slice(0, MAX_BETS_PER_FEED_ITEM)
-          const groupedBetsByTime = groupBetsByCreatedTimeAndUserId(
-            relatedBets
-          ).filter(
-            (bets) =>
-              sumBy(bets, (bet) => Math.abs(bet.amount)) > MIN_BET_AMOUNT
-          )
           // Boosted contract
           if ('ad_id' in item) {
             return (
@@ -109,17 +90,21 @@ export const FeedTimelineItems = (props: {
                 }}
                 parentComments={[]}
                 childCommentsByParentCommentId={{}}
-                groupedBetsByTime={groupedBetsByTime}
+                keyPrefix={'ad-'}
               />
             )
           }
+          const parentComments = (
+            item.comments ??
+            parentCommentsByContractId[contract.id] ??
+            []
+          ).slice(0, MAX_PARENT_COMMENTS_PER_FEED_ITEM)
           // Organic contract
           return (
             <FeedContractAndRelatedItems
               contract={contract}
               parentComments={parentComments}
               childCommentsByParentCommentId={childCommentsByParentCommentId}
-              groupedBetsByTime={groupedBetsByTime}
               item={item}
             />
           )
@@ -156,7 +141,7 @@ export const FeedTimelineItems = (props: {
           contract={contract}
           parentComments={[]}
           childCommentsByParentCommentId={{}}
-          groupedBetsByTime={[]}
+          keyPrefix={'manual-'}
         />
       ))}
     </Col>
@@ -167,9 +152,10 @@ const FeedContractAndRelatedItems = (props: {
   contract: Contract
   parentComments: ContractComment[]
   childCommentsByParentCommentId: Record<string, ContractComment[]>
-  groupedBetsByTime: Bet[][]
+  groupedBetsByTime?: Bet[][]
   item?: FeedTimelineItem
   promotedData?: { adId: string; reward: number }
+  keyPrefix?: string
 }) => {
   const {
     contract,
@@ -178,12 +164,16 @@ const FeedContractAndRelatedItems = (props: {
     groupedBetsByTime,
     childCommentsByParentCommentId,
     parentComments,
+    keyPrefix,
   } = props
   const hasRelatedItems =
-    parentComments.length > 0 || groupedBetsByTime.length > 0
+    parentComments.length > 0 || (groupedBetsByTime ?? []).length > 0
 
   return (
-    <FeedItemFrame item={item} key={contract.id + 'feed-timeline-item'}>
+    <FeedItemFrame
+      item={item}
+      key={keyPrefix + contract.id + '-feed-timeline-item-' + item?.id}
+    >
       <FeedContractCard
         contract={contract}
         promotedData={promotedData}
@@ -202,7 +192,7 @@ const FeedContractAndRelatedItems = (props: {
         />
       )}
       {(!parentComments || parentComments.length === 0) &&
-        groupedBetsByTime.length > 0 && (
+        groupedBetsByTime?.length && (
           <FeedBetsItem contract={contract} groupedBets={groupedBetsByTime} />
         )}
     </FeedItemFrame>
