@@ -1,9 +1,8 @@
 import { uniqBy } from 'lodash'
 import { Contract } from 'common/contract'
-import { User } from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import { useEffect, useRef, useState } from 'react'
 import { buildArray } from 'common/util/array'
-import { usePrivateUser } from './use-user'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { useEvent } from './use-event'
 import { db } from 'web/lib/supabase/db'
@@ -26,6 +25,7 @@ export type BoostsType =
 
 export const useFeed = (
   user: User | null | undefined,
+  privateUser: PrivateUser | null | undefined,
   key: string,
   options?: {
     binaryOnly?: boolean
@@ -36,14 +36,13 @@ export const useFeed = (
 
   const [boosts, setBoosts] = useState<BoostsType>()
   useEffect(() => {
-    if (user) getBoosts(user.id).then(setBoosts as any)
-  }, [user?.id])
+    if (privateUser) getBoosts(privateUser).then(setBoosts)
+  }, [privateUser])
 
   const [savedContracts, setSavedContracts] = usePersistentInMemoryState<
     Contract[] | undefined
   >(undefined, `recommended-contracts-${user?.id}-${key}`)
 
-  const privateUser = usePrivateUser()
   const userId = user?.id
 
   const lastTopicRef = useRef(topic)

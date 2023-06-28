@@ -1,6 +1,10 @@
 import { run, selectJson, selectFrom } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import { db } from './db'
+import { PrivateUser } from 'common/user'
+import { isContractBlocked } from 'web/lib/firebase/users'
+import { Contract } from 'common/contract'
+import { BoostsType } from 'web/hooks/use-feed'
 
 export async function getAllAds() {
   const query = selectJson(db, 'posts')
@@ -52,7 +56,9 @@ export async function getUsersWhoSkipped(adId: string) {
   return filterDefined(data.map((r) => r['user_id']))
 }
 
-export const getBoosts = async (userId: string) => {
-  const { data } = await db.rpc('get_top_market_ads', { uid: userId })
-  return data
+export const getBoosts = async (privateUser: PrivateUser) => {
+  const { data } = await db.rpc('get_top_market_ads', { uid: privateUser.id })
+  return data?.filter(
+    (d) => !isContractBlocked(privateUser, d.market_data as Contract)
+  ) as BoostsType
 }

@@ -2476,7 +2476,7 @@ export interface Database {
           ad_funds: number
           ad_cost_per_view: number
           market_data: Json
-        }[]
+        }
       }
       get_unseen_reply_chain_comments_matching_contracts: {
         Args: {

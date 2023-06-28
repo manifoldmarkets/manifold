@@ -1,4 +1,4 @@
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -56,13 +56,14 @@ export function FeedTimeline() {
 }
 function FeedTimelineContent() {
   const user = useUser()
+  const privateUser = usePrivateUser()
   const {
     boosts,
     checkForNewer,
     addTimelineItems,
     savedFeedItems,
     loadMoreOlder,
-  } = useFeedTimeline(user, 'feed-timeline')
+  } = useFeedTimeline(user, privateUser, 'feed-timeline')
   const pageVisible = useIsPageVisible()
   const [lastSeen, setLastSeen] = usePersistentLocalState(
     Date.now(),

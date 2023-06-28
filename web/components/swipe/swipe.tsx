@@ -23,7 +23,7 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { useTracking } from 'web/hooks/use-tracking'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
@@ -40,7 +40,10 @@ export function Swipe(props: { toggleView?: () => void }) {
   const { toggleView } = props
 
   const user = useUser()
-  const { contracts, loadMore } = useFeed(user, 'swipe', { binaryOnly: true })
+  const privateUser = usePrivateUser()
+  const { contracts, loadMore } = useFeed(user, privateUser, 'swipe', {
+    binaryOnly: true,
+  })
   const feed = contracts as BinaryContract[] | undefined
 
   const [index, setIndex] = usePersistentState(0, {

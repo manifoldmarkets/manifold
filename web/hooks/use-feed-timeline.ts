@@ -1,9 +1,8 @@
 import { Contract } from 'common/contract'
-import { User } from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import { ContractComment } from 'common/comment'
 import { useEffect, useRef } from 'react'
 import { buildArray, filterDefined } from 'common/util/array'
-import { usePrivateUser } from './use-user'
 import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { getBoosts } from 'web/lib/supabase/ads'
@@ -36,19 +35,22 @@ export type FeedTimelineItem = {
   reasonDescription?: string
   isCopied?: boolean
 }
-export const useFeedTimeline = (user: User | null | undefined, key: string) => {
+export const useFeedTimeline = (
+  user: User | null | undefined,
+  privateUser: PrivateUser | null | undefined,
+  key: string
+) => {
   const [boosts, setBoosts] = usePersistentInMemoryState<
     BoostsType | undefined
   >(undefined, `boosts-${user?.id}-${key}`)
   useEffect(() => {
-    if (user) getBoosts(user.id).then(setBoosts as any)
-  }, [user?.id])
+    if (privateUser) getBoosts(privateUser).then(setBoosts)
+  }, [privateUser])
 
   const [savedFeedItems, setSavedFeedItems] = usePersistentInMemoryState<
     FeedTimelineItem[] | undefined
   >(undefined, `timeline-items-${user?.id}-${key}`)
 
-  const privateUser = usePrivateUser()
   const userId = user?.id
   // Supabase timestamptz has more precision than js Date, so we need to store the oldest and newest timestamps as strings
   const newestCreatedTimestamp = useRef(
