@@ -1,4 +1,4 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs } from 'lodash'
 import {
   DEFAULT_USER_FEED_ID,
@@ -166,15 +166,37 @@ export const populateNewUsersFeed = async (
           `,
           [userId, 200]
         )
-      : await t.manyOrNone<Row<'user_feed'>>(
+      : await t.manyOrNone<userFeedRowAndDistance>(
           `
-             SELECT *
-             FROM user_feed
-             where user_id = $1
-            ORDER BY created_time DESC
-            LIMIT 250;
+          with user_embedding as (
+              select interest_embedding
+              from user_embeddings
+              where user_id = $1
+          ),
+         contract_embeddings_for_user_feed as (
+             select contract_embeddings.contract_id, contract_embeddings.embedding
+             from contract_embeddings
+             where contract_embeddings.contract_id in (
+                 select contract_id
+                 from user_feed
+                 where user_id = $2
+                 order by created_time desc
+                 limit 200
+             )
+         ),
+         interesting_contracts as (
+             select
+                 contract_embeddings_for_user_feed.contract_id,
+                 contract_embeddings_for_user_feed.embedding <=> user_embedding.interest_embedding as distance
+             from contract_embeddings_for_user_feed, user_embedding
+         )
+          select user_feed.*, interesting_contracts.distance
+          from user_feed
+                   join interesting_contracts on user_feed.contract_id = interesting_contracts.contract_id
+          where user_feed.user_id = $2
+          order by interesting_contracts.distance;
           `,
-          [DEFAULT_USER_FEED_ID]
+          [userId, DEFAULT_USER_FEED_ID]
         )
 
     log('found', relatedFeedItems.length, 'feed items to copy')
@@ -183,38 +205,30 @@ export const populateNewUsersFeed = async (
     return copyOverFeedItems(userId, relatedFeedItems, t)
   })
 }
-
+type userFeedRowAndDistance = Row<'user_feed'> & { distance?: number }
 const copyOverFeedItems = async (
   userId: string,
-  relatedFeedItems: Row<'user_feed'>[],
+  relatedFeedItems: userFeedRowAndDistance[],
   pg: ITask<IClient> & IClient
 ) => {
-  const updatedRows = relatedFeedItems.map((row) => {
+  const now = Date.now()
+  const updatedRows = relatedFeedItems.map((row, i) => {
     // assuming you want to change the 'columnToChange' column
-    const { id: __, ...newRow } = row
+    const { id: __, distance: _, ...newRow } = row
     newRow.user_id = userId
     newRow.is_copied = true
-    newRow.created_time = new Date().toISOString()
+    newRow.created_time = new Date(now - i * 100).toISOString()
     return newRow
   })
-  await Promise.all(
-    updatedRows.map(async (row) => {
-      const keys = Object.keys(row)
-      const values = Object.values(row)
+  const cs = new pgp.helpers.ColumnSet(updatedRows[0], { table: 'user_feed' })
+  const insert = pgp.helpers.insert(updatedRows, cs) + ' ON CONFLICT DO NOTHING'
 
-      const placeholders = keys.map((_, i) => `$${i + 1}`).join(',')
-      try {
-        await pg.none(
-          `INSERT INTO user_feed (${keys.join(
-            ','
-          )}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
-          values
-        )
-      } catch (e) {
-        console.log('error inserting feed item', row)
-        console.error(e)
-      }
-    })
-  )
+  try {
+    await pg.none(insert)
+  } catch (e) {
+    console.log('error inserting feed items')
+    console.error(e)
+  }
+
   return relatedFeedItems
 }
