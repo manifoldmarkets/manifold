@@ -72,5 +72,10 @@ export async function removeGroupFromContract(
     .update({
       groupSlugs: admin.firestore.FieldValue.arrayRemove(group.slug),
       groupLinks: newLinks,
+      nonPredictive: false,
     })
+  if (group.id === NON_PREDICTIVE_GROUP_ID) {
+    const pg = createSupabaseDirectClient()
+    await updateNonPredictiveEmbedding(pg)
+  }
 }
