@@ -41,7 +41,7 @@ export function GroupsList(props: {
         groups.map((group) => (
           <GroupLine
             key={group.id}
-            group={group as Group}
+            group={group}
             user={user}
             isMember={!!yourGroupIds?.includes(group.id)}
             yourGroupRoles={yourGroupRoles}

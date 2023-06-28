@@ -5,6 +5,7 @@ import { db } from './db'
 import { Contract } from '../firebase/contracts'
 import { groupStateType } from 'web/components/groups/group-search'
 import { supabaseSearchGroups } from '../firebase/api'
+import { convertGroup } from 'common/supabase/groups'
 export type SearchGroupInfo = Pick<
   Group,
   'id' | 'name' | 'slug' | 'about' | 'totalMembers' | 'privacyStatus'
@@ -134,9 +135,9 @@ export async function searchGroupsFuzzy(props: {
 
 export async function getMemberGroups(userId: string, db: SupabaseClient) {
   const groupIds = await getMemberGroupIds(userId, db)
-  const query = selectJson(db, 'groups').in('id', groupIds)
+  const query = db.from('groups').select().in('id', groupIds)
 
-  return (await run(query)).data.map((d) => d.data as Group)
+  return (await run(query)).data.map(convertGroup)
 }
 
 export async function getShouldBlockDestiny(
@@ -211,47 +212,41 @@ export async function getGroupsWhereUserIsMember(userId: string) {
 
 // gets all public groups
 export async function getPublicGroups() {
-  const groupThings = await run(
-    db
-      .from('groups')
-      .select('data')
-      .eq('privacy_status', 'public')
-      .order('name')
+  const { data } = await run(
+    db.from('groups').select().eq('privacy_status', 'public').order('name')
   )
 
-  return groupThings.data.map((d: { data: any }) => d.data as Group)
+  return data.map(convertGroup)
 }
 
 export async function getGroupBySlug(groupSlug: string) {
   const { data } = await run(
-    db.from('groups').select('data').eq('slug', groupSlug).limit(1)
+    db.from('groups').select().eq('slug', groupSlug).limit(1)
   )
-  return data ? (data[0]?.data as Group) : null
+  return data?.length ? convertGroup(data[0]) : null
 }
 
 export async function getGroup(groupId: string) {
   const { data } = await run(
-    db.from('groups').select('data').eq('id', groupId).limit(1)
+    db.from('groups').select().eq('id', groupId).limit(1)
   )
-  return data ? (data[0]?.data as Group) : null
+  return data?.length ? convertGroup(data[0]) : null
 }
 
 export async function getGroupContractIds(groupId: string) {
   const { data } = await run(
     db.from('group_contracts').select('contract_id').eq('group_id', groupId)
   )
-  if (data && data.length > 0) {
-    return data.map((group) => group.contract_id as string)
+  if (data) {
+    return data.map((group) => group.contract_id)
   }
   return []
 }
 
 export async function listGroupsBySlug(groupSlugs: string[]) {
-  const { data } = await run(
-    db.from('groups').select('data').in('slug', groupSlugs)
-  )
-  if (data && data.length > 0) {
-    return data.map((group) => group.data as Group)
+  const { data } = await run(db.from('groups').select().in('slug', groupSlugs))
+  if (data) {
+    return data.map(convertGroup)
   }
   return []
 }

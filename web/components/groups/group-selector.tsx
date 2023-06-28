@@ -56,7 +56,7 @@ export function GroupSelector(props: {
         newContract,
       }).then((result) => {
         if (requestNumber.current === requestId) {
-          setSearchedGroups(result.data as Group[])
+          setSearchedGroups(result.data)
           setLoading(false)
         }
       })

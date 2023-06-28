@@ -21,7 +21,6 @@ import { Dictionary } from 'lodash'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { buildOgUrl } from 'common/util/og'
 import { removeUndefinedProps } from 'common/util/object'
-import { Group } from 'common/group'
 
 export type PerContractInvestmentsData = {
   questionTitle: string

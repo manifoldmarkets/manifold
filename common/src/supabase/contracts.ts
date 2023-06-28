@@ -1,5 +1,13 @@
 import { chunk, groupBy } from 'lodash'
-import { run, millisToTs, selectJson, SupabaseClient } from './utils'
+import {
+  run,
+  millisToTs,
+  selectJson,
+  SupabaseClient,
+  mapTypes,
+  Row,
+  tsToMillis,
+} from './utils'
 import { Contract } from '../contract'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
@@ -101,22 +109,11 @@ export const getAnswersForContracts = async (
     .in('contract_id', contractIds)
     .order('index', { ascending: false })
   if (!data) return {}
-  const answers = data.map(parseDbAnswer)
+  const answers = data.map(convertAnswer)
   return groupBy(answers, 'contractId')
 }
 
-const parseDbAnswer = (row: any) => {
-  const answer: Answer = removeUndefinedProps({
-    id: row.id,
-    index: row.index ?? undefined,
-    contractId: row.contract_id,
-    userId: row.user_id,
-    text: row.text,
-    createdTime: new Date(row.created_time).getTime(),
-
-    poolNo: +row.pool_no,
-    poolYes: +row.pool_yes,
-    prob: +row.prob,
+const convertAnswer = (row: Row<'answers'>) =>
+  mapTypes<'answers', Answer>(row, {
+    created_time: tsToMillis,
   })
-  return answer
-}

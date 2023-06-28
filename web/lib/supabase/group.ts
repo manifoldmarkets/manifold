@@ -1,10 +1,10 @@
-import { Group } from 'common/group'
 import { run, SupabaseClient } from 'common/supabase/utils'
 import { chunk, uniqBy } from 'lodash'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 import { User } from '../firebase/users'
 import { db } from './db'
 import { Contract } from 'common/contract'
+import { convertGroup } from 'common/supabase/groups'
 
 // functions called for one group
 export async function getNumGroupMembers(groupId: string) {
@@ -123,21 +123,18 @@ export const getGroupWithFields = async (groupId: string) => {
   const { data } = await run(db.from('groups').select('*').eq('id', groupId))
   if (data && data.length > 0) {
     const result = data[0]
-    return {
-      ...(result.data as Group),
-      id: groupId,
-      privacyStatus: result.privacy_status,
-      slug: result.slug,
-    }
+    return convertGroup(result)
   } else {
     return null
   }
 }
 
 export async function getGroup(groupId: string) {
-  const { data } = await run(db.from('groups').select('data').eq('id', groupId))
+  const { data } = await run(
+    db.from('groups').select('data, id').eq('id', groupId)
+  )
   if (data && data.length > 0) {
-    return { ...(data[0].data as any), id: groupId } as Group
+    return convertGroup(data[0])
   } else {
     return null
   }
@@ -169,12 +166,10 @@ export async function getGroupMarkets(groupId: string) {
 }
 
 export async function getGroupFromSlug(groupSlug: string, db: SupabaseClient) {
-  const { data: group } = await run(
-    db.from('groups').select('data, id').eq('slug', groupSlug)
-  )
+  const { data } = await run(db.from('groups').select().eq('slug', groupSlug))
 
-  if (group && group.length > 0) {
-    return { ...(group[0].data as any), id: group[0].id } as Group
+  if (data && data.length > 0) {
+    return convertGroup(data[0])
   }
   return null
 }

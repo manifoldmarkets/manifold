@@ -1,5 +1,5 @@
 import { DateDoc, Post } from 'common/post'
-import { run } from 'common/supabase/utils'
+import { Row, mapTypes, run } from 'common/supabase/utils'
 import { db } from './db'
 import { getUserByUsername } from 'web/lib/supabase/users'
 
@@ -8,22 +8,17 @@ export function postPath(postSlug: string) {
 }
 
 export async function getPost(postId: string) {
-  const { data: post } = await run(
-    db.from('posts').select('data').eq('id', postId)
-  )
-  if (post && post.length > 0) {
-    return post[0].data as Post
-  } else {
-    return null
+  const { data } = await run(db.from('posts').select().eq('id', postId))
+  if (data && data.length > 0) {
+    return convertPost(data[0])
   }
+  return null
 }
 
 export async function getPostBySlug(slug: string) {
-  const { data: posts } = await run(
-    db.from('posts').select('data').eq('data->>slug', slug)
-  )
-  if (posts && posts.length > 0) {
-    return posts[0].data as Post
+  const { data } = await run(db.from('posts').select().eq('data->>slug', slug))
+  if (data && data.length > 0) {
+    return convertPost(data[0])
   }
   return null
 }
@@ -32,45 +27,37 @@ export async function getAllPosts() {
   const { data } = await run(
     db
       .from('posts')
-      .select('data')
+      .select()
       .order('created_time', { ascending: false } as any)
   )
-  return data.map((d) => d.data) as Post[]
+  return data.map(convertPost)
 }
 
 export async function getPostsByGroup(groupId: string) {
-  const { data } = await run(
-    db.from('posts').select('data').eq('group_id', groupId)
-  )
-  return data.map((d) => d.data) as Post[]
+  const { data } = await run(db.from('posts').select().eq('group_id', groupId))
+  return data.map(convertPost)
 }
 
 export async function getPostsByUser(userId: string) {
-  const { data: posts } = await run(
+  const { data } = await run(
     db
       .from('posts')
-      .select('data')
+      .select()
       .eq('creator_id', userId)
       .order('created_time', { ascending: false } as any)
   )
-  if (posts && posts.length > 0) {
-    return posts.map((post) => {
-      return post.data as Post
-    })
-  } else {
-    return [] as Post[]
-  }
+  return data.map(convertPost)
 }
 
 export async function getDateDocs() {
   const { data } = await run(
     db
       .from('posts')
-      .select('data')
+      .select()
       .eq('data->>type', 'date-doc')
       .order('created_time', { ascending: false } as any)
   )
-  return data.map((d) => d.data) as DateDoc[]
+  return data.map(convertPost) as DateDoc[]
 }
 
 export async function getDateDoc(username: string) {
@@ -78,15 +65,21 @@ export async function getDateDoc(username: string) {
 
   if (!user) return null
 
-  const { data: posts } = await run(
+  const { data } = await run(
     db
       .from('posts')
-      .select('data')
+      .select()
       .eq('data->>type', 'date-doc')
       .eq('data->>creatorId', user.id)
   )
-  if (posts && posts.length > 0) {
-    return { user, post: posts[0].data as DateDoc }
+  if (data && data.length > 0) {
+    return { user, post: convertPost(data[0]) as DateDoc }
   }
   return null
 }
+
+const convertPost = (sqlPost: Row<'posts'>) =>
+  mapTypes<'posts', Post>(sqlPost, {
+    fs_updated_time: false,
+    created_time: false, // grab from data
+  })
