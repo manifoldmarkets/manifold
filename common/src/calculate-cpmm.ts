@@ -354,39 +354,30 @@ export function addCpmmMultiLiquidity(
 ) {
   const numAnswers = Object.keys(pools).length
 
-  // Assuming one answer resolves YES:
-  const maxYesAdded = amount
-  const maxNoAdded = amount / (numAnswers - 1)
-
   const newPools: typeof pools = {}
   for (const [answerId, pool] of Object.entries(pools)) {
     const { YES: y, NO: n } = pool
     const p = getCpmmProbability(pool, 0.5)
-    let newYes: number
-    let newNo: number
 
-    // Add up to max YES or NO shares without changing the probability p.
-    // p = n / (y + n)
-    // py = n(1 - p)
-    // y = n(1 - p) / p
-    // n = py / (1 - p)
-    if (n + maxNoAdded > ((y + maxYesAdded) * p) / (1 - p)) {
-      newYes = y + maxYesAdded
-      newNo = ((y + maxYesAdded) * p) / (1 - p)
-    } else {
-      newYes = ((n + maxNoAdded) * (1 - p)) / p
-      newNo = n + maxNoAdded
-    }
+    // First, amount is equal to payout when one set of yes shares pay out
+    // while all but one set of no shares pay out:
+    //   amount = newYes + (numAnswers - 1) * newNo
+    // Secondly, cpmm identity for probability is preserved:
+    //   n / (n + y) = (n + newNo) / (y + n + newYes + newNo)
+    // https://www.wolframalpha.com/input?i=Solve+n+%2F+%28n%2By%29+%3D+%28n+%2B+n1%29+%2F+%28y+%2B+n+%2B+y1+%2B+n1%29%2C++a+%3D+y1+%2B+%28c+-+1%29+*+n1+for+y1%2C+n1
 
-    const newPool = { YES: newYes, NO: newNo }
+    const newYes = (amount * y) / ((numAnswers - 1) * n + y)
+    const newNo = (amount * n) / ((numAnswers - 1) * n + y)
+
+    const newPool = { YES: y + newYes, NO: n + newNo }
     console.log(
       'prev pool',
       pool,
       'new pool',
       newPool,
-      'p',
+      'prob',
       p,
-      'new p',
+      'new prob',
       getCpmmProbability(newPool, 0.5)
     )
     newPools[answerId] = newPool
