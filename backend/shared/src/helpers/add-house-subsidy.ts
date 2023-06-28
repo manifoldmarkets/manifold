@@ -21,7 +21,7 @@ export const addHouseSubsidy = (contractId: string, amount: number) => {
       : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
 
     const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const snap = await contractDoc.get()
+    const snap = await transaction.get(contractDoc)
     const contract = snap.data() as CPMMContract | CPMMMultiContract
 
     const { newLiquidityProvision, newTotalLiquidity, newSubsidyPool } =
