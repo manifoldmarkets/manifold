@@ -1,8 +1,7 @@
 import { DateDoc, Post } from 'common/post'
-import { Row, run } from 'common/supabase/utils'
+import { Row, mapTypes, run } from 'common/supabase/utils'
 import { db } from './db'
 import { getUserByUsername } from 'web/lib/supabase/users'
-import { mapTypes } from 'common/util/types'
 
 export function postPath(postSlug: string) {
   return `/post/${postSlug}`

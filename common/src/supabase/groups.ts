@@ -1,7 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { Row, run } from './utils'
+import { Row, mapTypes, run } from 'common/supabase/utils'
 import { Group } from 'common/group'
-import { mapTypes } from 'common/util/types'
 
 export const NON_PREDICTIVE_GROUP_ID = 'f141b8ca-eac3-4400-962a-72973b3ceb62'
 export const NON_PREDICTIVE_TOPIC_NAME = 'Non-Predictive'
