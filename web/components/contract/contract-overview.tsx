@@ -84,6 +84,8 @@ export const ContractOverview = memo(
         return (
           <StonkOverview contract={contract} betPoints={betPoints as any} />
         )
+      case 'BOUNTIED_QUESTION':
+        return <></>
     }
   }
 )

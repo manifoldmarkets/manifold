@@ -60,6 +60,10 @@ export function OutcomeLabel(props: {
     )
   }
 
+  if (outcomeType === 'BOUNTIED_QUESTION') {
+    return <></>
+  }
+
   return (
     <FreeResponseOutcomeLabel
       contract={contract}

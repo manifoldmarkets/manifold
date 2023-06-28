@@ -44,6 +44,7 @@ type AnyOutcomeType =
   | Cert
   | QuadraticFunding
   | Stonk
+  | BountiedQuestion
 
 type AnyContractType =
   | (CPMM & Binary)
@@ -57,6 +58,7 @@ type AnyContractType =
   | QuadraticFunding
   | (CPMM & Stonk)
   | CPMMMulti
+  | (NonBet & BountiedQuestion)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -124,6 +126,7 @@ export type DpmMultipleChoiceContract = Contract & MultipleChoice & DPM
 export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
 export type CPMMStonkContract = StonkContract & CPMM
+export type BountiedQuestionContract = Contract & BountiedQuestion
 
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
@@ -166,6 +169,10 @@ export type Uniswap2 = {
   pool: { [outcome: string]: number }
   // The price of the token in terms of M$. Similar to prob.
   price: number
+}
+
+export type NonBet = {
+  mechanism: 'none'
 }
 
 /**
@@ -252,6 +259,13 @@ export type Stonk = {
   initialProbability: number
 }
 
+export type BountiedQuestion = {
+  outcomeType: 'BOUNTIED_QUESTION'
+  totalBounty: number
+  bountyPaid: number
+  bountyTxns: string[]
+}
+
 export type MultiContract = (
   | FreeResponseContract
   | MultipleChoiceContract
@@ -273,6 +287,7 @@ export const OUTCOME_TYPES = [
   'CERT',
   'QUADRATIC_FUNDING',
   'STONK',
+  'BOUNTIED_QUESTION',
 ] as const
 
 export function contractPathWithoutContract(

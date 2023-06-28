@@ -8,6 +8,7 @@ const ANTES = {
   CERT: FIXED_ANTE * 10,
   QUADRATIC_FUNDING: FIXED_ANTE * 10,
   STONK: FIXED_ANTE,
+  BOUNTIED_QUESTION: 0,
 }
 
 export const getAnte = (
