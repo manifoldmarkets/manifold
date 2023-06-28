@@ -30,6 +30,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import NoSymbolIcon from 'web/lib/icons/no-symbol'
+import { AnswersPanel } from '../answers/answers-panel'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -243,10 +244,12 @@ function DetailedCard(props: {
                       )}
                   </Link>
                   <Col className={'items-end'}>
-                    <ContractStatusLabel
-                      className={'-mt-1 text-lg font-bold'}
-                      contract={contract}
-                    />
+                    {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
+                      <ContractStatusLabel
+                        className={'-mt-1 text-lg font-bold'}
+                        contract={contract}
+                      />
+                    )}
                     <span>
                       {showChange && (
                         <span
@@ -308,6 +311,19 @@ function DetailedCard(props: {
                 </Row>
               </Col>
             </Col>
+
+            {contract.outcomeType === 'MULTIPLE_CHOICE' && (
+              <Col className="mt-4" onClick={(e) => e.stopPropagation()}>
+                <AnswersPanel
+                  contract={contract}
+                  onAnswerCommentClick={() => {
+                    return undefined
+                  }}
+                  showResolver={false}
+                />
+              </Col>
+            )}
+
             <Col className={'w-full items-center'}>
               {promotedData && (
                 <ClaimButton
@@ -316,6 +332,7 @@ function DetailedCard(props: {
                 />
               )}
             </Col>
+
             {isBinaryCpmm && metrics && metrics.hasShares && (
               <YourMetricsFooter metrics={metrics} />
             )}
