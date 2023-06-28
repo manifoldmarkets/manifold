@@ -1,5 +1,6 @@
 import {
   groupBy,
+  keyBy,
   mapValues,
   maxBy,
   partition,
@@ -275,13 +276,26 @@ function getCpmmOrDpmProfit(contract: Contract, yourBets: Bet[]) {
   let saleValue = 0
   let redeemed = 0
 
+  const betsById = keyBy(yourBets, 'id')
+  const betIdToSaleBet = keyBy(
+    yourBets.filter((b) => b.sale),
+    (bet) => bet.sale!.betId
+  )
+
   for (const bet of yourBets) {
     const { isSold, sale, amount, isRedemption } = bet
 
     if (isSold) {
-      totalInvested += amount
+      const saleBet = betIdToSaleBet[bet.id]
+      if (saleBet) {
+        // Only counts if the sale bet is also in the list.
+        totalInvested += amount
+      }
     } else if (sale) {
-      saleValue += sale.amount
+      if (betsById[sale.betId]) {
+        // Only counts if the original bet is also in the list.
+        saleValue += sale.amount
+      }
     } else {
       if (isRedemption) {
         redeemed += -1 * amount
