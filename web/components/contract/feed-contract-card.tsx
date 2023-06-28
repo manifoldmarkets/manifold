@@ -24,7 +24,10 @@ import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
 import { TiVolumeMute } from 'react-icons/ti'
 import { toast } from 'react-hot-toast'
 import React, { useState } from 'react'
-import { ContractStatusLabel } from 'web/components/contract/contracts-table'
+import {
+  ContractStatusLabel,
+  VisibilityIcon,
+} from 'web/components/contract/contracts-table'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -126,7 +129,7 @@ function SimpleCard(props: {
                 onClick={trackClick}
                 href={contractPath(contract)}
               >
-                {question}
+                <VisibilityIcon contract={contract} /> {contract.question}
               </Link>
             </Row>
           </Col>
@@ -217,7 +220,7 @@ function DetailedCard(props: {
                       e.stopPropagation()
                     }}
                   >
-                    {question}
+                    <VisibilityIcon contract={contract} /> {contract.question}
                     {item &&
                       !item.isCopied &&
                       (item.dataType === 'contract_probability_changed' ||
