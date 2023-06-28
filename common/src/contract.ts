@@ -263,6 +263,7 @@ export type BountiedQuestion = {
   outcomeType: 'BOUNTIED_QUESTION'
   totalBounty: number
   bountyPaid: number
+  // the bounty txn ids
   bountyTxns: string[]
 }
 
