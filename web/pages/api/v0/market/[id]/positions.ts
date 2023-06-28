@@ -10,8 +10,9 @@ import { db } from 'web/lib/supabase/db'
 import { validate } from 'web/pages/api/v0/_validate'
 import { z } from 'zod'
 import { ApiError, ValidationError } from '../../_types'
-import { marketCacheStrategy } from 'web/pages/api/v0/market/[id]/index'
 import { getContract } from 'web/lib/supabase/contracts'
+
+export const longCacheStrategy = 's-maxage=120, stale-while-revalidate=150'
 
 const queryParams = z.object({
   id: z.string(),
@@ -42,7 +43,7 @@ export default async function handler(
     res.status(404).json({ error: 'Contract not found' })
     return
   }
-  res.setHeader('Cache-Control', marketCacheStrategy)
+  res.setHeader('Cache-Control', longCacheStrategy)
 
   // Get single user's positions
   if (userId) {
