@@ -128,9 +128,7 @@ export default function GroupSearch(props: {
     }, 100)
   ).current
 
-  const groups = state.groups
-    ? (uniqBy(state.groups, 'id') as Group[])
-    : undefined
+  const groups = state.groups ? uniqBy(state.groups, 'id') : undefined
 
   useEffect(() => {
     onSearchTermChanged(inputTerm)
