@@ -29,6 +29,7 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized, useUser } from './use-user'
 import { Row } from 'common/supabase/utils'
+import { convertGroup } from 'common/supabase/groups'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | undefined | null>(undefined)
@@ -93,15 +94,7 @@ export const useGroupsWithContract = (
         .select('*')
         .in('id', groupIds)
         .then((result) => {
-          setGroups(
-            result.data?.map(
-              (r) =>
-                ({
-                  id: r.id,
-                  ...(r.data as object),
-                } as Group)
-            )
-          )
+          setGroups(result.data?.map(convertGroup))
         })
     }
   }, [groupIds?.length])

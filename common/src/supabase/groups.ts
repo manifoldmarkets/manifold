@@ -1,12 +1,15 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { run } from './utils'
+import { Row, run } from './utils'
 import { Group } from 'common/group'
+import { mapTypes } from 'common/util/types'
+
 export const NON_PREDICTIVE_GROUP_ID = 'f141b8ca-eac3-4400-962a-72973b3ceb62'
 export const NON_PREDICTIVE_TOPIC_NAME = 'Non-Predictive'
+
 export async function getGroup(db: SupabaseClient, groupId: string) {
-  const { data } = await run(db.from('groups').select('data').eq('id', groupId))
+  const { data } = await run(db.from('groups').select().eq('id', groupId))
   if (data && data.length > 0) {
-    return data[0].data as Group
+    return convertGroup(data[0])
   } else {
     return null
   }
@@ -35,3 +38,11 @@ export async function getGroupMemberIds(db: SupabaseClient, groupId: string) {
   )
   return data ? data.map((member) => member.member_id) : []
 }
+
+export const convertGroup = (
+  sqlGroup: Partial<Row<'groups'>> & { id: string }
+) =>
+  mapTypes<'groups', Group>(sqlGroup, {
+    fs_updated_time: false,
+    name_fts: false,
+  })
