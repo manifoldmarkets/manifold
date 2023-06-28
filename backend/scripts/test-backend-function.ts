@@ -8,6 +8,7 @@ import { isContractLikelyNonPredictive } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 import { getContract } from 'shared/utils'
+import { populateNewUsersFeed } from 'shared/supabase/users'
 const firestore = admin.firestore()
 
 async function testScheduledFunction() {
@@ -15,11 +16,7 @@ async function testScheduledFunction() {
   await loadSecretsToEnv(credentials)
   try {
     const pg = createSupabaseDirectClient()
-    // await repopulateNewUsersFeedFromEmbeddings(
-    //   'GJrkVojV9bPrC81NfCwYbSXWsc23',
-    //   pg,
-    //   true
-    // )
+    await populateNewUsersFeed('GJrkVojV9bPrC81NfCwYbSXWsc23', pg, true)
     // await spiceUpNewUsersFeedBasedOnTheirInterests(
     //   'yG1B9kzWqUQ1RhzlD8r2C51r2772',
     //   pg

@@ -270,6 +270,7 @@ export function updateUserDisinterestEmbedding(params: {
   contractId: string
   creatorId: string
   feedId?: number
+  removeContract?: boolean
 }) {
   return call(getApiUrl('update-user-disinterest-embedding'), 'POST', params)
 }

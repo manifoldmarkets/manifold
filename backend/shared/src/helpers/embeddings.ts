@@ -1,6 +1,5 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { ITask } from 'pg-promise'
-import { log } from 'shared/utils'
 
 export async function getDefaultEmbedding(
   pg: SupabaseDirectClient | ITask<any>
@@ -83,14 +82,22 @@ export async function updateUserDisinterestEmbeddingInternal(
   userId: string,
   contractId: string,
   creatorId: string,
-  feedId?: number
+  feedId?: number,
+  removeContract?: boolean
 ) {
   await pg.task('update-user-disinterest-embedding', async (pg) => {
-    await pg.none(
-      `insert into user_disinterests (user_id, contract_id, creator_id, feed_id)
+    if (removeContract) {
+      await pg.none(
+        `delete from user_disinterests
+                where user_id = $1 and contract_id = $2 and creator_id = $3 and feed_id = $4`,
+        [userId, contractId, creatorId, feedId]
+      )
+    } else
+      await pg.none(
+        `insert into user_disinterests (user_id, contract_id, creator_id, feed_id)
               values ($1, $2, $3, $4)`,
-      [userId, contractId, creatorId, feedId]
-    )
+        [userId, contractId, creatorId, feedId]
+      )
     const disinterestedContractIds = await getDisinterestedContractIds(
       pg,
       userId
@@ -100,10 +107,6 @@ export async function updateUserDisinterestEmbeddingInternal(
       userId,
       disinterestedContractIds
     )
-    if (disinterestEmbedding === null) {
-      log('No disinterest embedding for', userId)
-      return
-    }
 
     await pg.none(
       'UPDATE user_embeddings SET disinterest_embedding = $2 WHERE user_id = $1',

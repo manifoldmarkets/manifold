@@ -32,8 +32,8 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
-import NoSymbolIcon from 'web/lib/icons/no-symbol'
 import { AnswersPanel } from '../answers/answers-panel'
+import { FiThumbsDown } from 'react-icons/fi'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -183,7 +183,6 @@ function DetailedCard(props: {
       item?.dataType === 'trending_contract') &&
     probChange != 0
   const metrics = useSavedContractMetrics(contract)
-  if (hidden) return null
   return (
     <div
       className={clsx(
@@ -200,146 +199,160 @@ function DetailedCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Row className={clsx('grow gap-2 px-3 pt-4 pb-2')}>
+      <Row className={clsx('grow gap-2 px-3 pb-2')}>
         <Col className="w-full">
           <Col className="w-full gap-0.5">
-            {/* Title is link to contract for open in new tab and a11y */}
-            <Col onClick={(e) => e.stopPropagation()} className="w-full">
-              <Col className={'w-full flex-col gap-1.5'}>
-                <Row className={'justify-between gap-1'}>
-                  <Link
-                    href={path}
-                    className={clsx(
-                      '-mt-1 text-lg',
-                      'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
-                      textColor
-                    )}
-                    // if open in new tab, don't open in this one
-                    onClick={(e) => {
-                      trackClick()
-                      e.stopPropagation()
-                    }}
-                  >
-                    <VisibilityIcon contract={contract} /> {contract.question}
-                    {item &&
-                      !item.isCopied &&
-                      (item.dataType === 'contract_probability_changed' ||
-                        item.dataType === 'trending_contract') && (
-                        <div className={'text-ink-400 text-xs'}>
-                          <Tooltip
-                            text={item?.reasonDescription}
-                            placement={'top'}
-                          >
-                            {item.dataType === 'contract_probability_changed'
-                              ? ' moved'
-                              : item.dataType === 'trending_contract'
-                              ? ' trending'
-                              : item.dataType === 'new_subsidy'
-                              ? ' subsidized'
-                              : ''}
-                          </Tooltip>
-                          <RelativeTimestamp
-                            time={item.createdTime}
-                            shortened={true}
-                          />{' '}
-                          ago
-                        </div>
-                      )}
-                  </Link>
-                  <Col className={'items-end'}>
-                    {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-                      <ContractStatusLabel
-                        className={'-mt-1 text-lg font-bold'}
-                        contract={contract}
-                      />
-                    )}
-                    <span>
-                      {showChange && (
-                        <span
-                          className={clsx(
-                            'font-normal',
-                            probChange! > 0
-                              ? 'text-teal-500'
-                              : 'text-scarlet-500'
-                          )}
-                        >
-                          {probChange! > 0 ? '+' : ''}
-                          {probChange}%
-                        </span>
-                      )}
-                    </span>
-                  </Col>
-                </Row>
-                <Row className={'items-center justify-between gap-1'}>
-                  <Col>
-                    <Row className={'items-center gap-1'}>
-                      <Avatar
-                        size={'xs'}
-                        className={'mr-0.5'}
-                        avatarUrl={creatorAvatarUrl}
-                        username={creatorUsername}
-                      />
-                      <Row
-                        className={'text-ink-700 items-baseline gap-1 text-sm'}
+            {!hidden ? (
+              <>
+                {/* Title is link to contract for open in new tab and a11y */}
+                <Col
+                  onClick={(e) => e.stopPropagation()}
+                  className={'w-full pt-4'}
+                >
+                  <Col className={'w-full flex-col gap-1.5'}>
+                    <Row className={'justify-between gap-1'}>
+                      <Link
+                        href={path}
+                        className={clsx(
+                          '-mt-1 text-lg',
+                          'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
+                          textColor
+                        )}
+                        // if open in new tab, don't open in this one
+                        onClick={(e) => {
+                          trackClick()
+                          e.stopPropagation()
+                        }}
                       >
-                        <UserLink
-                          name={contract.creatorName}
-                          username={creatorUsername}
-                        />
+                        <VisibilityIcon contract={contract} />{' '}
+                        {contract.question}
                         {item &&
                           !item.isCopied &&
-                          item.dataType === 'new_contract' && (
-                            <span className={'text-xs'}>
+                          (item.dataType === 'contract_probability_changed' ||
+                            item.dataType === 'trending_contract') && (
+                            <div className={'text-ink-400 text-xs'}>
                               <Tooltip
                                 text={item?.reasonDescription}
                                 placement={'top'}
                               >
-                                asked
+                                {item.dataType ===
+                                'contract_probability_changed'
+                                  ? ' moved'
+                                  : item.dataType === 'trending_contract'
+                                  ? ' trending'
+                                  : item.dataType === 'new_subsidy'
+                                  ? ' subsidized'
+                                  : ''}
                               </Tooltip>
                               <RelativeTimestamp
                                 time={item.createdTime}
                                 shortened={true}
-                                className="text-ink-600"
-                              />
+                              />{' '}
+                              ago
+                            </div>
+                          )}
+                      </Link>
+                      <Col className={'items-end'}>
+                        {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
+                          <ContractStatusLabel
+                            className={'-mt-1 text-lg font-bold'}
+                            contract={contract}
+                          />
+                        )}
+                        <span>
+                          {showChange && (
+                            <span
+                              className={clsx(
+                                'font-normal',
+                                probChange! > 0
+                                  ? 'text-teal-500'
+                                  : 'text-scarlet-500'
+                              )}
+                            >
+                              {probChange! > 0 ? '+' : ''}
+                              {probChange}%
                             </span>
                           )}
-                      </Row>
+                        </span>
+                      </Col>
+                    </Row>
+                    <Row className={'items-center justify-between gap-1'}>
+                      <Col>
+                        <Row className={'items-center gap-1'}>
+                          <Avatar
+                            size={'xs'}
+                            className={'mr-0.5'}
+                            avatarUrl={creatorAvatarUrl}
+                            username={creatorUsername}
+                          />
+                          <Row
+                            className={
+                              'text-ink-700 items-baseline gap-1 text-sm'
+                            }
+                          >
+                            <UserLink
+                              name={contract.creatorName}
+                              username={creatorUsername}
+                            />
+                            {item &&
+                              !item.isCopied &&
+                              item.dataType === 'new_contract' && (
+                                <span className={'text-xs'}>
+                                  <Tooltip
+                                    text={item?.reasonDescription}
+                                    placement={'top'}
+                                  >
+                                    asked
+                                  </Tooltip>
+                                  <RelativeTimestamp
+                                    time={item.createdTime}
+                                    shortened={true}
+                                    className="text-ink-600"
+                                  />
+                                </span>
+                              )}
+                          </Row>
+                        </Row>
+                      </Col>
+                      {isBinaryCpmm && !isClosed && (
+                        <Col className="text-ink-500 items-center text-sm">
+                          <BetRow contract={contract} user={user} />
+                        </Col>
+                      )}
                     </Row>
                   </Col>
-                  {isBinaryCpmm && !isClosed && (
-                    <Col className="text-ink-500 items-center text-sm">
-                      <BetRow contract={contract} user={user} />
-                    </Col>
+                </Col>
+
+                {contract.outcomeType === 'MULTIPLE_CHOICE' && (
+                  <Col className="mt-4" onClick={(e) => e.stopPropagation()}>
+                    <AnswersPanel
+                      contract={contract}
+                      onAnswerCommentClick={() => {
+                        return undefined
+                      }}
+                      showResolver={false}
+                    />
+                  </Col>
+                )}
+
+                <Col className={'w-full items-center'}>
+                  {promotedData && (
+                    <ClaimButton
+                      {...promotedData}
+                      className={'z-10 my-2 whitespace-nowrap'}
+                    />
                   )}
-                </Row>
-              </Col>
-            </Col>
+                </Col>
 
-            {contract.outcomeType === 'MULTIPLE_CHOICE' && (
-              <Col className="mt-4" onClick={(e) => e.stopPropagation()}>
-                <AnswersPanel
-                  contract={contract}
-                  onAnswerCommentClick={() => {
-                    return undefined
-                  }}
-                  showResolver={false}
-                />
-              </Col>
+                {isBinaryCpmm && metrics && metrics.hasShares && (
+                  <YourMetricsFooter metrics={metrics} />
+                )}
+              </>
+            ) : (
+              <Row className={'text-ink-400 mt-2 text-sm'}>
+                <i>Market hidden</i>
+              </Row>
             )}
-
-            <Col className={'w-full items-center'}>
-              {promotedData && (
-                <ClaimButton
-                  {...promotedData}
-                  className={'z-10 my-2 whitespace-nowrap'}
-                />
-              )}
-            </Col>
-
-            {isBinaryCpmm && metrics && metrics.hasShares && (
-              <YourMetricsFooter metrics={metrics} />
-            )}
-
             <Row
               className="items-center justify-between pt-2"
               onClick={(e) => e.stopPropagation()}
@@ -353,7 +366,8 @@ function DetailedCard(props: {
                     user={user}
                     contract={contract}
                     item={item}
-                    onSetUninteresting={() => setHidden(true)}
+                    interesting={!hidden}
+                    toggleInteresting={() => setHidden(!hidden)}
                   />
 
                   <LikeButton
@@ -383,9 +397,10 @@ const MoreOptionsButton = (props: {
   contract: Contract
   item: FeedTimelineItem | undefined
   user: User | null | undefined
-  onSetUninteresting: () => void
+  interesting: boolean
+  toggleInteresting: () => void
 }) => {
-  const { contract, user, item, onSetUninteresting } = props
+  const { contract, user, interesting, item, toggleInteresting } = props
   if (!user) return null
 
   const markUninteresting = async () => {
@@ -393,11 +408,14 @@ const MoreOptionsButton = (props: {
       contractId: contract.id,
       creatorId: contract.creatorId,
       feedId: item?.id,
+      // Currently not interesting, toggling to interesting
+      removeContract: !interesting,
     })
-    toast(`We won't show you content like that again`, {
-      icon: <TiVolumeMute className={'h-5 w-5 text-teal-500'} />,
-    })
-    onSetUninteresting()
+    if (interesting)
+      toast(`We won't show you content like that again`, {
+        icon: <TiVolumeMute className={'h-5 w-5 text-teal-500'} />,
+      })
+    toggleInteresting()
   }
 
   return (
@@ -406,17 +424,11 @@ const MoreOptionsButton = (props: {
         className={clsx(
           'text-ink-500 hover:text-ink-600 flex flex-col justify-center transition-transform disabled:cursor-not-allowed'
         )}
-        onClick={(e) => {
-          e.preventDefault()
-          if (
-            confirm(
-              `Are you sure you don't want to see more content like this?`
-            )
-          )
-            markUninteresting()
-        }}
+        onClick={markUninteresting}
       >
-        <NoSymbolIcon className={'h-[1.4rem]'} />
+        <FiThumbsDown
+          className={clsx('h-5 w-5', !interesting ? 'text-primary-500' : '')}
+        />
       </button>
     </Tooltip>
   )

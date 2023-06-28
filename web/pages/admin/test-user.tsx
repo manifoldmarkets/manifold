@@ -4,11 +4,16 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from 'firebase/auth'
 import { randomString } from 'common/util/random'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getCookie } from 'web/lib/util/cookie'
+import { Input } from 'web/components/widgets/input'
 
 export default function TestUser() {
   useRedirectIfSignedIn()
@@ -29,6 +34,7 @@ export default function TestUser() {
   }, [])
 
   const [submitting, setSubmitting] = useState(false)
+  const [signingIn, setSigningIn] = useState(false)
 
   const create = () => {
     setSubmitting(true)
@@ -43,6 +49,21 @@ export default function TestUser() {
         const errorCode = error.code
         const errorMessage = error.message
         console.log('ERROR creating firebase user', errorCode, errorMessage)
+      })
+  }
+  const login = () => {
+    setSigningIn(true)
+    const auth = getAuth()
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        setSubmitting(false)
+        console.log('SUCCESS logging in firebase user', userCredential)
+      })
+      .catch((error) => {
+        setSigningIn(false)
+        const errorCode = error.code
+        const errorMessage = error.message
+        console.log('ERROR logging in firebase user', errorCode, errorMessage)
       })
   }
 
@@ -73,6 +94,25 @@ export default function TestUser() {
       <Button loading={submitting} className={'mt-2'} onClick={create}>
         Submit
       </Button>
+      <Row className={'w-full'}>
+        <Col className={'w-full items-center'}>
+          Email
+          <Input
+            className={'w-80'}
+            value={email}
+            onChange={(e) => setEmail(e.target.value || '')}
+          />
+          Password
+          <Input
+            className={'w-80'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value || '')}
+          />
+          <Button loading={signingIn} className={'mt-2'} onClick={login}>
+            Login
+          </Button>
+        </Col>
+      </Row>
     </Col>
   )
 }
