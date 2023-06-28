@@ -21,6 +21,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { postPath } from 'web/lib/supabase/post'
 import toast from 'react-hot-toast'
+import { useUser } from 'web/hooks/use-user'
 
 export async function getStaticProps() {
   const ads = await getAllAds()
@@ -28,8 +29,7 @@ export async function getStaticProps() {
 }
 
 export default function AdsPage(props: { ads: AdType[] }) {
-  // const user = useUser()
-  const user = { id: 'ZB5wm6TsZbfYNWOoAWIjDpzjEz72' }
+  const user = useUser()
 
   const [oldAdIds, setOldAdIds] = useState<string[]>()
   useEffect(() => {
