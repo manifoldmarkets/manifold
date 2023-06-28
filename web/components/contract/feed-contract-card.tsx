@@ -30,7 +30,6 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import NoSymbolIcon from 'web/lib/icons/no-symbol'
-import { SimpleContractRow } from '../simple-contract-row'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -102,16 +101,50 @@ function SimpleCard(props: {
   item?: FeedTimelineItem
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, user, item, trackClick, className } = props
+  const { question, outcomeType, mechanism, closeTime, isResolved } = contract
+  const isClosed = closeTime && closeTime < Date.now()
+  const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
+  const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
 
   return (
     <Row className={clsx(className)}>
       <Col
         className={
-          'dark:bg-canvas-50 border-ink-200 grow justify-between gap-2 overflow-hidden rounded-t-xl rounded-l-xl border'
+          'dark:bg-canvas-50 border-ink-200 grow justify-between gap-2 overflow-hidden rounded-t-xl rounded-l-xl border  px-3 pt-2'
         }
       >
-        <SimpleContractRow contract={contract} />
+        <Row className="items-start justify-between gap-1">
+          <Col>
+            <Row className={'items-start gap-2'}>
+              <Avatar
+                username={contract.creatorUsername}
+                avatarUrl={contract.creatorAvatarUrl}
+                size="xs"
+                className={'mt-0.5'}
+              />
+              <Link
+                className={clsx(
+                  'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
+                  textColor
+                )}
+                onClick={trackClick}
+                href={contractPath(contract)}
+              >
+                {question}
+              </Link>
+            </Row>
+          </Col>
+          <Col className={'items-end'}>
+            <Tooltip text={item?.reasonDescription} placement={'top'}>
+              <ContractStatusLabel className={''} contract={contract} />
+            </Tooltip>
+          </Col>
+        </Row>
+
+        <Row className="text-ink-500 mb-1.5 w-full items-center justify-end gap-3 text-sm">
+          {isBinaryCpmm && <BetRow contract={contract} user={user} />}
+        </Row>
       </Col>
     </Row>
   )
