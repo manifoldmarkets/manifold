@@ -41,6 +41,14 @@ export function formatMoneyWithDecimals(amount: number) {
   return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
 }
 
+export function formatMoneyToDecimal(amount: number) {
+  const amountString =
+    Math.abs(amount - Math.round(amount)) < 0.0001
+      ? Math.round(amount).toFixed(0)
+      : amount.toFixed(1)
+  return ENV_CONFIG.moneyMoniker + amountString
+}
+
 export function formatWithCommas(amount: number) {
   return formatter.format(Math.floor(amount)).replace('$', '')
 }

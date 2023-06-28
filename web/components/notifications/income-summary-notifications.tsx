@@ -1,14 +1,11 @@
-import {
-  BETTING_STREAK_BONUS_MAX,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/economy'
+import { BETTING_STREAK_BONUS_MAX } from 'common/economy'
 import {
   getSourceUrl,
   LeagueChangeData,
   Notification,
   UniqueBettorData,
 } from 'common/notification'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatMoneyToDecimal } from 'common/util/format'
 import { groupBy } from 'lodash'
 import { useState } from 'react'
 
@@ -88,7 +85,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const numNewTraders =
     'relatedNotifications' in data
       ? (data as any).relatedNotifications.length
-      : parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
+      : 1
 
   return (
     <NotificationFrame
@@ -414,7 +411,7 @@ function IncomeNotificationLabel(props: {
   const { sourceText } = notification
   return sourceText ? (
     <span className={clsx('text-teal-600', className)}>
-      {formatMoney(parseInt(sourceText))}
+      {formatMoneyToDecimal(parseFloat(sourceText))}
     </span>
   ) : (
     <div />
