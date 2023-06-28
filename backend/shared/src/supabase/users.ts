@@ -1,6 +1,7 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs } from 'lodash'
 import {
+  DEFAULT_USER_FEED_ID,
   FEED_REASON_TYPES,
   INTEREST_DISTANCE_THRESHOLDS,
   USER_TO_USER_DISTANCE_THRESHOLD,
@@ -9,7 +10,7 @@ import { Row } from 'common/supabase/utils'
 import { log } from 'shared/utils'
 import { ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
-export const DEFAULT_USER_FEED_ID = 'yYNDWRmBJDcWW0q1aZFi6xfKNcQ2'
+
 export const getUserFollowerIds = async (
   userId: string,
   pg: SupabaseDirectClient

@@ -22,10 +22,8 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import {
-  DEFAULT_USER_FEED_ID,
-  populateNewUsersFeed,
-} from 'shared/supabase/users'
+import { populateNewUsersFeed } from 'shared/supabase/users'
+import { DEFAULT_USER_FEED_ID } from 'common/feed'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -144,7 +142,7 @@ export const createuser = authEndpoint(async (req, auth) => {
   )
 
   console.log('created user', user.username, 'firebase id:', auth.uid)
-  await insertUserEmbedding(auth.uid, visitedContractIds)
+  await upsertUserEmbedding(auth.uid, visitedContractIds)
   const pg = createSupabaseDirectClient()
   await populateNewUsersFeed(auth.uid, pg, false)
   await updateDefaultUserEmbeddings()
@@ -154,10 +152,10 @@ export const createuser = authEndpoint(async (req, auth) => {
 })
 
 async function updateDefaultUserEmbeddings() {
-  await insertUserEmbedding(DEFAULT_USER_FEED_ID, undefined)
+  await upsertUserEmbedding(DEFAULT_USER_FEED_ID, undefined)
 }
 
-async function insertUserEmbedding(
+async function upsertUserEmbedding(
   userId: string,
   visitedContractIds: string[] | undefined
 ): Promise<void> {
