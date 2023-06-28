@@ -153,7 +153,6 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
   await generateContractEmbeddings(contract)
 
-  console.log(contract)
   return contract
 }
 
