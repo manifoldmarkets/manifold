@@ -315,6 +315,13 @@ export const MissingSubData = () => {
     <Col>
       <Title className="mb-4">Missing Submarine</Title>
       <NewsGrid>
+        <iframe
+          className="mb-4 h-48 w-full"
+          src="https://www.youtube.com/embed/0aybrUe8cPY"
+          title="YouTube video player"
+          allow=""
+        ></iframe>
+
         <NewsTopicsContentContainer
           header="Summary"
           containerContent={
@@ -353,15 +360,6 @@ export const MissingSubData = () => {
           }
         />
 
-        <NewsArticleOriginal
-          className="mb-4"
-          title="Search for Missing Titanic Submersible"
-          urlToImage="https://i.ytimg.com/vi/l9_qNO37oFs/maxresdefault.jpg"
-          url="https://www.bbc.co.uk/news/live/world-us-canada-65967464"
-          description='David Mearns tells the BBC a "landing frame and a rear cover from the submersible" were seen'
-          author="Edited by Frances Mao"
-        />
-
         {contracts &&
           contracts.length > 0 &&
           contracts.map((contract) => (
@@ -373,6 +371,15 @@ export const MissingSubData = () => {
               />
             </>
           ))}
+
+        <NewsArticleOriginal
+          className="mb-4"
+          title="Search for Missing Titanic Submersible"
+          urlToImage="https://i.ytimg.com/vi/l9_qNO37oFs/maxresdefault.jpg"
+          url="https://www.bbc.co.uk/news/live/world-us-canada-65967464"
+          description='David Mearns tells the BBC a "landing frame and a rear cover from the submersible" were seen'
+          author="Edited by Frances Mao"
+        />
       </NewsGrid>
     </Col>
   )
