@@ -219,7 +219,7 @@ export function FeedRelatedItemFrame(props: {
     <Link
       href={href}
       className={clsx(
-        'dark:bg-canvas-50 border-canvas-100 hover:border-primary-300 z-10 flex flex-col overflow-hidden rounded-2xl rounded-tr-none border',
+        'dark:bg-canvas-50 border-canvas-100 hover:border-primary-300 z-10 flex flex-col overflow-hidden rounded-2xl rounded-tr-none border border-t-0',
         className
       )}
     >
