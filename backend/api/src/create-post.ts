@@ -17,7 +17,6 @@ const postSchema = z
   .object({
     title: z.string().min(1).max(MAX_POST_TITLE_LENGTH),
     content: contentSchema,
-    isGroupAboutPost: z.boolean().optional(),
     groupId: z.string().optional(),
   })
   .and(
@@ -35,7 +34,7 @@ const postSchema = z
 export const createpost = authEndpoint(async (req, auth) => {
   const pg = createSupabaseDirectClient()
 
-  const { title, content, isGroupAboutPost, groupId, ...otherProps } = validate(
+  const { title, content, groupId, ...otherProps } = validate(
     postSchema,
     req.body
   )
@@ -78,7 +77,6 @@ export const createpost = authEndpoint(async (req, auth) => {
     creatorId: creator.id,
     slug,
     title,
-    isGroupAboutPost,
     createdTime: Date.now(),
     content: content,
     contractSlug,

@@ -56,7 +56,6 @@ type GroupParams = {
   creator: User | null
   topTraders: { user: User; score: number }[]
   topCreators: { user: User; score: number }[]
-  aboutPost: Post | null
   posts: Post[]
 }
 

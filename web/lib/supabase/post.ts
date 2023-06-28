@@ -33,7 +33,6 @@ export async function getAllPosts() {
     db
       .from('posts')
       .select('data')
-      .is('data->>isGroupAboutPost', null)
       .order('created_time', { ascending: false } as any)
   )
   return data.map((d) => d.data) as Post[]

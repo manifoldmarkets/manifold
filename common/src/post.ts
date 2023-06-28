@@ -22,6 +22,7 @@ export type Post = {
 
   /** @deprecated */
   commentCount?: number
+  /** @deprecated */
   isGroupAboutPost?: boolean
   groupId?: string
   featuredLabel?: string

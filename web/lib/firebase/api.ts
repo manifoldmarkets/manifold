@@ -148,7 +148,6 @@ export function createPost(params: {
   title: string
   content: JSONContent
   groupId?: string
-  isGroupAboutPost?: boolean
 }) {
   return call(getApiUrl('createpost'), 'POST', params)
 }
