@@ -227,7 +227,7 @@ export function UserProfile(props: {
             </Col>
           </Row>
           {isCurrentUser ? (
-            <Row className={'gap-1 sm:gap-2'}>
+            <Row className={'gap-1 sm:gap-2 items-center'}>
               <DailyLeagueStat user={user} />
               <QuestsOrStreak user={user} />
             </Row>
