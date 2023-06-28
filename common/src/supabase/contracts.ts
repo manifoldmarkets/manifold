@@ -10,7 +10,6 @@ import {
 } from './utils'
 import { Contract } from '../contract'
 import { Answer } from 'common/answer'
-import { removeUndefinedProps } from 'common/util/object'
 
 export const getContractFromSlug = async (
   contractSlug: string,

@@ -1,6 +1,6 @@
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { Group } from 'common/group'
-import { run, selectJson, SupabaseClient } from 'common/supabase/utils'
+import { run, SupabaseClient } from 'common/supabase/utils'
 import { db } from './db'
 import { Contract } from '../firebase/contracts'
 import { groupStateType } from 'web/components/groups/group-search'
