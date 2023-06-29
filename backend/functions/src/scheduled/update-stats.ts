@@ -170,8 +170,12 @@ export async function getStripeSales(startTime: number, numberOfDays: number) {
 
 export const updateStatsCore = async () => {
   const pg = createSupabaseDirectClient()
-  const today = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
-  const startDate = today - numberOfDays * DAY_MS
+
+  const start = dayjs()
+    .subtract(numberOfDays, 'day')
+    .tz('America/Los_Angeles')
+    .startOf('day')
+    .valueOf()
 
   log('Fetching data for stats update...')
   const [
@@ -181,11 +185,11 @@ export const updateStatsCore = async () => {
     dailyNewUsers,
     dailyStripeSales,
   ] = await Promise.all([
-    getDailyBets(pg, startDate.valueOf(), numberOfDays),
-    getDailyContracts(pg, startDate.valueOf(), numberOfDays),
-    getDailyComments(pg, startDate.valueOf(), numberOfDays),
-    getDailyNewUsers(pg, startDate.valueOf(), numberOfDays),
-    getStripeSales(startDate.valueOf(), numberOfDays),
+    getDailyBets(pg, start, numberOfDays),
+    getDailyContracts(pg, start, numberOfDays),
+    getDailyComments(pg, start, numberOfDays),
+    getDailyNewUsers(pg, start, numberOfDays),
+    getStripeSales(start, numberOfDays),
   ])
   logMemory()
 
@@ -427,7 +431,7 @@ export const updateStatsCore = async () => {
   })
 
   const statsData: Stats = {
-    startDate: [startDate.valueOf()],
+    startDate: [start.valueOf()],
     dailyActiveUsers,
     dailyActiveUsersWeeklyAvg,
     avgDailyUserActions,
