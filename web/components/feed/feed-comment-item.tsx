@@ -23,7 +23,7 @@ export const FeedCommentItem = (props: {
         className={clsx(
           'mb-2 w-full',
           firstCommentIsReplyToBet ? 'sm:mt-4' : ''
-      )}
+        )}
       >
         {commentThreads.map((ct) => (
           <Row
