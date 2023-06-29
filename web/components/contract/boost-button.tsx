@@ -190,8 +190,7 @@ function FeedAnalytics(props: { contractId: string }) {
       await db
         .from('market_ads')
         .select('id, funds, created_at, cost_per_view')
-        .eq('market_id', contractId),
-    { refetchInterval: false }
+        .eq('market_id', contractId)
   )
 
   const viewQuery = useQuery(
@@ -201,8 +200,7 @@ function FeedAnalytics(props: { contractId: string }) {
         .from('user_seen_markets')
         .select('user_id, data')
         .eq('type', 'view market card')
-        .eq('contract_id', contractId),
-    { refetchInterval: false }
+        .eq('contract_id', contractId)
   )
 
   const clickQuery = useQuery(
@@ -212,8 +210,7 @@ function FeedAnalytics(props: { contractId: string }) {
         .from('user_events')
         .select('*', { count: 'exact' })
         .eq('name', 'click market card feed')
-        .eq('contract_id', contractId),
-    { refetchInterval: false }
+        .eq('contract_id', contractId)
   )
 
   const redeemQuery = useQuery(
@@ -224,7 +221,7 @@ function FeedAnalytics(props: { contractId: string }) {
         .select('*', { count: 'exact' })
         .eq('data->>category', 'MARKET_BOOST_REDEEM')
         .eq('data->>fromId', adQuery.data?.data?.[0]?.id),
-    { enabled: adQuery.isSuccess, refetchInterval: false }
+    { enabled: adQuery.isSuccess }
   )
 
   if (
