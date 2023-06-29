@@ -86,7 +86,7 @@ export function FeedCommentThread(props: {
     collapseMiddle && threadComments.length > 2 ? threadComments.length - 2 : -1
   )
   return (
-    <Col className="w-full items-stretch gap-3">
+    <Col className="mt-3 w-full items-stretch gap-3">
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
@@ -187,7 +187,6 @@ export const FeedComment = memo(function FeedComment(props: {
       ref={ref}
       className={clsx(
         className ? className : 'ml-9 gap-2',
-        highlighted ? 'bg-primary-50' : '',
         isReplyToBet(comment) ? 'mt-6 sm:mt-2' : ''
       )}
     >
@@ -197,7 +196,12 @@ export const FeedComment = memo(function FeedComment(props: {
         avatarUrl={userAvatarUrl}
         className={clsx(marketCreator ? 'shadow shadow-amber-300' : '', 'z-10')}
       />
-      <Col className="w-full">
+      <Col
+        className={clsx(
+          'w-full rounded-xl rounded-tl-none px-4 py-1',
+          highlighted ? 'bg-primary-50' : 'bg-ink-100'
+        )}
+      >
         {isReplyToBet(comment) && (
           <FeedCommentReplyHeader comment={comment} contract={contract} />
         )}
@@ -553,7 +557,7 @@ function FeedCommentHeader(props: {
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
-    <Col className={clsx('', inTimeline ? 'text-md' : 'text-ink-600 text-sm ')}>
+    <Col className={clsx('text-ink-600 text-sm ')}>
       <Row className=" gap-1">
         <span>
           <UserLink
@@ -564,7 +568,7 @@ function FeedCommentHeader(props: {
           />
           {/* Hide my status if replying to a bet, it's too much clutter*/}
           {bettorUsername == undefined && !inTimeline && (
-            <span className="text-ink-400 ml-1">
+            <span className="text-ink-500 ml-1">
               <CommentStatus contract={contract} comment={comment} />
               {bought} {money}
               {shouldDisplayOutcome && (
@@ -582,23 +586,15 @@ function FeedCommentHeader(props: {
             </span>
           )}
         </span>
-        {inTimeline ? (
-          <span>
-            {' '}
-            commented{' '}
-            <span className="text-ink-500">
-              {shortenedFromNow(editedTime ? editedTime : createdTime)}{' '}
-            </span>
-          </span>
-        ) : (
-          <CopyLinkDateTimeComponent
-            prefix={contract.creatorUsername}
-            slug={contract.slug}
-            createdTime={editedTime ? editedTime : createdTime}
-            elementId={comment.id}
-            seeEditsButton={<CommentEditHistoryButton comment={comment} />}
-          />
-        )}
+        <CopyLinkDateTimeComponent
+          prefix={contract.creatorUsername}
+          slug={contract.slug}
+          createdTime={editedTime ? editedTime : createdTime}
+          elementId={comment.id}
+          seeEditsButton={<CommentEditHistoryButton comment={comment} />}
+          size={'sm'}
+          linkClassName="text-ink-500"
+        />
         {!inTimeline && isApi && (
           <InfoTooltip text="Placed via API" className="mr-1">
             🤖

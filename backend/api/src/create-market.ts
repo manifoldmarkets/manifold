@@ -280,7 +280,6 @@ function validateMarketBody(body: any) {
   if (outcomeType === 'BOUNTIED_QUESTION') {
     ;({ totalBounty } = validate(bountiedQuestionSchema, body))
   }
-
   return {
     question,
     description,

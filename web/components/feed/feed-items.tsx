@@ -81,21 +81,30 @@ export const FeedItems = (props: {
               contract={contract}
               promotedData={promotedData}
               trackingPostfix="feed"
-              hasItems={hasItems}
+              children={
+                hasItems ? (
+                  <>
+                    {parentComments.length > 0 && (
+                      <FeedCommentItem
+                        contract={contract}
+                        commentThreads={parentComments.map((parentComment) => ({
+                          parentComment,
+                          childComments:
+                            childCommentsByParentCommentId[parentComment.id] ??
+                            [],
+                        }))}
+                      />
+                    )}
+                    {parentComments.length === 0 && (
+                      <FeedBetsItem
+                        contract={contract}
+                        groupedBets={groupedBets}
+                      />
+                    )}
+                  </>
+                ) : undefined
+              }
             />
-            {parentComments.length > 0 && (
-              <FeedCommentItem
-                contract={contract}
-                commentThreads={parentComments.map((parentComment) => ({
-                  parentComment,
-                  childComments:
-                    childCommentsByParentCommentId[parentComment.id] ?? [],
-                }))}
-              />
-            )}
-            {parentComments.length === 0 && (
-              <FeedBetsItem contract={contract} groupedBets={groupedBets} />
-            )}
           </Col>
         )
       })}

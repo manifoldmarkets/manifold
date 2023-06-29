@@ -41,9 +41,19 @@ export function CopyLinkDateTimeComponent(props: {
   elementId: string
   className?: string
   seeEditsButton?: ReactNode
+  linkClassName?: string
+  size?: 'xs' | 'sm'
 }) {
-  const { prefix, seeEditsButton, slug, elementId, createdTime, className } =
-    props
+  const {
+    prefix,
+    seeEditsButton,
+    slug,
+    elementId,
+    createdTime,
+    className,
+    linkClassName,
+    size = 'xs',
+  } = props
   const isClient = useIsClient()
 
   return (
@@ -54,8 +64,10 @@ export function CopyLinkDateTimeComponent(props: {
         replace
         onClick={() => copyLinkToComment(prefix, slug, elementId)}
         className={clsx(
-          'text-ink-400 hover:bg-ink-100 mx-1 whitespace-nowrap rounded-sm text-xs transition-colors',
-          seeEditsButton ? '' : 'px-1'
+          'text-ink-500 hover:bg-ink-100 mx-1 whitespace-nowrap rounded-sm transition-colors',
+          seeEditsButton ? '' : 'px-1',
+          linkClassName,
+          size == 'xs' ? 'text-xs' : 'text-sm'
         )}
       >
         {isClient && shortenedFromNow(createdTime)}

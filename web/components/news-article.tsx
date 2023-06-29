@@ -16,7 +16,7 @@ export const NewsArticle = (props: {
 
   return (
     <Link href={url} target="_blank" className="relative flex w-full flex-col">
-      <Col className="px-4 pt-3 pb-2">
+      <Col className="gap-1.5 px-4 pt-3 pb-2">
         <div className="line-clamp-2 text-lg">{title}</div>
         <div className="line-clamp-3 text-sm">
           {author && `${author} `}

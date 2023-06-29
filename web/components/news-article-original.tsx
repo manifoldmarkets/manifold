@@ -38,7 +38,7 @@ export const NewsArticleOriginal = (props: {
         onClick={() => track('click news article', { article: title })}
       />
 
-      <Col className="bg-canvas-0 border-ink-300 rounded-b-lg border border-t-0 p-2 hover:underline">
+      <Col className="bg-canvas-0 border-canvas-0 rounded-b-lg border border-t-0 p-2 hover:underline">
         <div className="line-clamp-2 text-ink-900 text-lg">{title}</div>
         <div className="line-clamp-3 text-ink-600 text-xs">
           {author}
