@@ -327,7 +327,8 @@ export function getBinaryProbPercent(contract: BinaryContract) {
 export function tradingAllowed(contract: Contract) {
   return (
     !contract.isResolved &&
-    (!contract.closeTime || contract.closeTime > Date.now())
+    (!contract.closeTime || contract.closeTime > Date.now()) &&
+    contract.mechanism !== 'none'
   )
 }
 

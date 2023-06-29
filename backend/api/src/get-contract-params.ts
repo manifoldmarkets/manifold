@@ -82,17 +82,21 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
       : { state: 'not found' }
   }
 
-  const totalBets = await getTotalBetCount(contract.id, db)
+  const totalBets =
+    contract.mechanism == 'none' ? 0 : await getTotalBetCount(contract.id, db)
   const includingSingleBetPts = contract.mechanism === 'cpmm-1'
   const includingMultiBetPts = contract.mechanism === 'cpmm-multi-1'
 
   // prioritize newer bets via descending order
-  const bets = await getBets(db, {
-    contractId: contract.id,
-    filterRedemptions: !includingMultiBetPts,
-    limit: includingSingleBetPts ? 50000 : 4000,
-    order: 'desc',
-  })
+  const bets =
+    contract.mechanism == 'none'
+      ? []
+      : await getBets(db, {
+          contractId: contract.id,
+          filterRedemptions: !includingMultiBetPts,
+          limit: includingSingleBetPts ? 50000 : 4000,
+          order: 'desc',
+        })
 
   const betPoints: SerializedPoint<Partial<Bet>>[] = includingSingleBetPts
     ? bets.map(

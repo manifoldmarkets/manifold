@@ -194,11 +194,14 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
 
   // Static props load bets in descending order by time
   const lastBetTime = first(contractParams.historyData.bets)?.createdTime
-  const newBets = useRealtimeBets({
-    contractId: contract.id,
-    afterTime: lastBetTime,
-    filterRedemptions: true,
-  })
+  const newBets =
+    contract.mechanism == 'none'
+      ? []
+      : useRealtimeBets({
+          contractId: contract.id,
+          afterTime: contract.lastBetTime,
+          filterRedemptions: true,
+        })
   const totalBets = contractParams.totalBets + (newBets?.length ?? 0)
   const bets = useMemo(
     () => contractParams.historyData.bets.concat(newBets ?? []),
@@ -245,7 +248,8 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     else if (
       (isCreator || isAdmin || trustworthy) &&
       (closeTime ?? 0) < Date.now() &&
-      outcomeType !== 'STONK'
+      outcomeType !== 'STONK' &&
+      contract.mechanism !== 'none'
     ) {
       setShowResolver(true)
     }
