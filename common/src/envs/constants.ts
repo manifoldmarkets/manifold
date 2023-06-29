@@ -7,6 +7,8 @@ export const ENV = (process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD') as
   | 'PROD'
   | 'DEV'
 
+export const BOUNTIED_QUESTION_ENABLED = ENV == 'DEV'
+
 export const CONFIGS: { [env: string]: EnvConfig } = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,

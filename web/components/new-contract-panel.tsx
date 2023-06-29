@@ -11,7 +11,7 @@ import {
   Visibility,
 } from 'common/contract'
 import { UNIQUE_BETTOR_BONUS_AMOUNT, getAnte } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { BOUNTIED_QUESTION_ENABLED, ENV_CONFIG } from 'common/envs/constants'
 import { Group, groupPath } from 'common/group'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -43,6 +43,8 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getGroup } from 'web/lib/supabase/group'
 import WaitingForSupabaseButton from './contract/waiting-for-supabase-button'
 import { Col } from './layout/col'
+import { BuyAmountInput } from './widgets/amount-input'
+import { set } from 'lodash'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -103,9 +105,12 @@ export function NewContractPanel(props: {
     errorText,
     balance,
     ante,
+    bountyAmount,
+    setBountyAmount,
     newContract,
   } = useNewContract(creator, params)
 
+  const [bountyError, setBountyError] = useState<string | undefined>(undefined)
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
   const [toggleVisibility, setToggleVisibility] = useState<
     'public' | 'unlisted'
@@ -123,6 +128,33 @@ export function NewContractPanel(props: {
 
   return (
     <div className={clsx(className, 'text-ink-1000')}>
+      <label className="flex px-1 pt-2 pb-3">Answer type</label>
+      <Row>
+        <ChoicesToggleGroup
+          currentChoice={outcomeType}
+          setChoice={(choice) => {
+            setOutcomeType(choice as OutcomeType)
+          }}
+          choicesMap={
+            BOUNTIED_QUESTION_ENABLED
+              ? {
+                  'Yes\xa0/ No': 'BINARY', // non-breaking space
+                  'Multiple choice': 'MULTIPLE_CHOICE',
+                  'Bountied Question': 'BOUNTIED_QUESTION',
+                }
+              : {
+                  'Yes\xa0/ No': 'BINARY', // non-breaking space
+                  'Multiple choice': 'MULTIPLE_CHOICE',
+                  // Stock: 'STONK',
+                  // 'Free response': 'FREE_RESPONSE',
+                  // Numeric: 'PSEUDO_NUMERIC',
+                }
+          }
+          disabled={isSubmitting}
+          className={'col-span-4'}
+        />
+      </Row>
+      <Spacer h={6} />
       <Col>
         {outcomeType === 'STONK' ? (
           <div className="flex w-full flex-col">
@@ -161,26 +193,6 @@ export function NewContractPanel(props: {
           <TextEditor editor={editor} />
         </div>
       </Col>
-
-      <Spacer h={6} />
-      <label className="flex px-1 pt-2 pb-3">Answer type</label>
-      <Row>
-        <ChoicesToggleGroup
-          currentChoice={outcomeType}
-          setChoice={(choice) => {
-            setOutcomeType(choice as OutcomeType)
-          }}
-          choicesMap={{
-            'Yes\xa0/ No': 'BINARY', // non-breaking space
-            'Multiple choice': 'MULTIPLE_CHOICE',
-            // Stock: 'STONK',
-            // 'Free response': 'FREE_RESPONSE',
-            // Numeric: 'PSEUDO_NUMERIC',
-          }}
-          disabled={isSubmitting}
-          className={'col-span-4'}
-        />
-      </Row>
 
       {outcomeType === 'STONK' && (
         <div className="text-primary-700 mt-3 ml-1 text-sm">
@@ -282,6 +294,24 @@ export function NewContractPanel(props: {
         </>
       )}
 
+      {outcomeType == 'BOUNTIED_QUESTION' && (
+        <>
+          <label className="gap-2 px-1 py-2">
+            <span className="mb-1 mr-1">Bounty</span>
+            <InfoTooltip text="The award you give good answers. You can divide this amongst answers however you'd like." />
+          </label>
+          <BuyAmountInput
+            inputClassName="w-full max-w-none"
+            minimumAmount={5}
+            amount={bountyAmount}
+            onChange={(newAmount) => setBountyAmount(newAmount)}
+            error={bountyError}
+            setError={setBountyError}
+            sliderOptions={{ show: true, wrap: false }}
+          />
+          <Spacer h={6} />
+        </>
+      )}
       {!fromGroup && (
         <>
           <Row className={'items-end gap-x-2'}>
@@ -302,7 +332,7 @@ export function NewContractPanel(props: {
         </>
       )}
 
-      {outcomeType !== 'STONK' && (
+      {outcomeType !== 'STONK' && outcomeType !== 'BOUNTIED_QUESTION' && (
         <div className="mb-1 flex flex-col items-start">
           <label className="mb-1 gap-2 px-1 py-2">
             <span>Question closes in </span>
@@ -384,13 +414,17 @@ export function NewContractPanel(props: {
           <label className="mb-1 gap-2 px-1 py-2">
             <span>Cost </span>
             <InfoTooltip
-              text={`Cost to create your question. This amount is used to subsidize predictions.`}
+              text={
+                outcomeType == 'BOUNTIED_QUESTION'
+                  ? 'Your bounty. This amount is put upfront.'
+                  : `Cost to create your question. This amount is used to subsidize predictions.`
+              }
             />
           </label>
 
           <div className="text-ink-700 pl-1 text-sm">
-            {formatMoney(ante)}
-            {visibility === 'public' && (
+            {outcomeType !== 'BOUNTIED_QUESTION' && <>{formatMoney(ante)}</>}
+            {outcomeType !== 'BOUNTIED_QUESTION' && visibility === 'public' && (
               <span>
                 {' '}
                 or <span className=" text-teal-500">FREE </span>
@@ -400,6 +434,13 @@ export function NewContractPanel(props: {
                     UNIQUE_BETTOR_BONUS_AMOUNT
                   )} for each unique trader you get on your question.`}
                 />
+              </span>
+            )}
+            {outcomeType == 'BOUNTIED_QUESTION' && (
+              <span>
+                {bountyAmount
+                  ? formatMoney(bountyAmount)
+                  : `${ENV_CONFIG.moneyMoniker} --`}
               </span>
             )}
           </div>
@@ -441,7 +482,11 @@ export function NewContractPanel(props: {
             color="indigo"
             size="xl"
             loading={isSubmitting}
-            disabled={!isValid || editor?.storage.upload.mutation.isLoading}
+            disabled={
+              !isValid ||
+              editor?.storage.upload.mutation.isLoading ||
+              (outcomeType == 'BOUNTIED_QUESTION' && bountyError)
+            }
             onClick={(e) => {
               e.preventDefault()
               submit()
@@ -531,6 +576,10 @@ const useNewContract = (
     Group | undefined
   >(undefined, 'new-selected-group')
 
+  const [bountyAmount, setBountyAmount] = usePersistentLocalState<
+    number | undefined
+  >(50, 'new-bounty')
+
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
@@ -618,6 +667,7 @@ const useNewContract = (
     setMaxString('')
     setInitialValueString('')
     setIsLogScale(false)
+    setBountyAmount(50)
   }
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -642,6 +692,7 @@ const useNewContract = (
           groupId: selectedGroup?.id,
           visibility,
           utcOffset: new Date().getTimezoneOffset(),
+          totalBounty: bountyAmount,
         })
       )) as Contract
 
@@ -695,6 +746,8 @@ const useNewContract = (
     balance,
     ante,
     newContract,
+    bountyAmount,
+    setBountyAmount,
   }
 }
 
