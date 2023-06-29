@@ -475,7 +475,6 @@ async function generateAntes(
       qfId: contract.id,
     }
     await txnDoc.set(txn)
-  } else if (outcomeType == 'BOUNTIED_QUESTION') {
   }
 }
 
