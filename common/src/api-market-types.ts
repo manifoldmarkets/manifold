@@ -1,4 +1,5 @@
 import { JSONContent } from '@tiptap/core'
+import { Except } from 'type-fest'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability, getProbability } from 'common/calculate'
@@ -42,9 +43,17 @@ export type LiteMarket = {
 
   lastUpdatedTime?: number
 }
-export type ApiAnswer = (Answer | DpmAnswer) & {
-  probability?: number
-}
+export type ApiAnswer =
+  | (DpmAnswer & {
+      probability: number
+    })
+  | Except<
+      Answer & {
+        probability: number
+        pool: { YES: number; NO: number }
+      },
+      'prob' | 'poolYes' | 'poolNo'
+    >
 export type FullMarket = LiteMarket & {
   bets?: Bet[]
   comments?: Comment[]
@@ -134,7 +143,7 @@ export function toFullMarket(contract: Contract): FullMarket {
         )
       : undefined
 
-  const { description, coverImageUrl, groupSlugs} = contract
+  const { description, coverImageUrl, groupSlugs } = contract
 
   return {
     ...liteMarket,
@@ -154,8 +163,22 @@ function augmentAnswerWithProbability(
   answer: DpmAnswer | Answer
 ): ApiAnswer {
   const probability = getAnswerProbability(contract, answer.id)
-  return {
-    ...answer,
-    probability,
+  if (contract.mechanism === 'cpmm-multi-1') {
+    const { poolYes, poolNo, prob: _, ...other } = answer as Answer
+    const pool = {
+      YES: poolYes,
+      NO: poolNo,
+    }
+    return {
+      ...other,
+      pool,
+      probability,
+    }
+  } else {
+    const dpmAnswer = answer as DpmAnswer
+    return {
+      ...dpmAnswer,
+      probability,
+    }
   }
 }
