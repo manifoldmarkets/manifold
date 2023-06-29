@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { DailyChart } from 'web/components/charts/stats'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
@@ -14,18 +13,17 @@ import { formatWithCommas } from 'common/util/format'
 import { InfoBox } from 'web/components/widgets/info-box'
 import { Linkify } from 'web/components/widgets/linkify'
 import { getIsNative } from 'web/lib/native/is-native'
+import { HOUR_MS } from 'common/util/time'
 
-export default function Analytics() {
-  const [stats, setStats] = useState<Stats | undefined>(undefined)
-  useEffect(() => {
-    getStats().then(setStats)
-  }, [])
-  if (stats == null) {
-    return <></>
-  }
+export const getStaticProps = async () => {
+  const stats = await getStats()
+  return { props: stats, revalidate: HOUR_MS }
+}
+
+export default function Analytics(props: Stats) {
   return (
     <Page>
-      <CustomAnalytics {...stats} />
+      <CustomAnalytics {...props} />
     </Page>
   )
 }
