@@ -107,8 +107,8 @@ function SimpleCard(props: {
   item?: FeedTimelineItem
   className?: string
 }) {
-  const { contract, user, item, trackClick, className, children } = props
-  const { question, outcomeType, mechanism, closeTime, isResolved } = contract
+  const { contract, user, trackClick, className, children } = props
+  const { outcomeType, mechanism, closeTime, isResolved } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
@@ -136,9 +136,7 @@ function SimpleCard(props: {
           </Row>
         </Col>
         <Col className={'items-end'}>
-          <Tooltip text={item?.reasonDescription} placement={'top'}>
-            <ContractStatusLabel className={''} contract={contract} />
-          </Tooltip>
+          <ContractStatusLabel className={'font-bold'} contract={contract} />
         </Col>
       </Row>
 
