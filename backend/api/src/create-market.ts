@@ -277,10 +277,6 @@ function validateMarketBody(body: any) {
     ;({ answers, shouldAnswersSumToOne } = validate(multipleChoiceSchema, body))
   }
 
-  if (outcomeType === 'BOUNTIED_QUESTION') {
-    ;({ totalBounty } = validate(bountiedQuestionSchema, body))
-  }
-
   return {
     question,
     description,
@@ -476,8 +472,7 @@ async function generateAntes(
       qfId: contract.id,
     }
     await txnDoc.set(txn)
-  } else if (outcomeType=='BOUNTIED_QUESTION') {
-    
+  } else if (outcomeType == 'BOUNTIED_QUESTION') {
   }
 }
 
