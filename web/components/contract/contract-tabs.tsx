@@ -44,7 +44,6 @@ import { QfTrades } from './qf-overview'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
-import { Spacer } from '../layout/spacer'
 
 export const EMPTY_USER = '_'
 

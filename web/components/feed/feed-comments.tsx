@@ -50,7 +50,6 @@ import { Content } from '../widgets/editor'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { CommentEditHistoryButton } from '../comments/comment-edit-history-button'
-import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
