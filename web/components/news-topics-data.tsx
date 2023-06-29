@@ -9,6 +9,43 @@ import { NewsTopicsContentContainer } from 'web/components/widgets/news-topics-c
 import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 
+export const AffActionData = () => {
+  const markets = useContracts([
+    'hm8goGmn54zkWsboPOy7',
+    'tBYgyhWF06jGxvvNEnlf',
+    'qJ1IWNzWLTDS4ibc4UOR',
+  ])
+
+  return (
+    <Col>
+      <Title className="mb-4">
+        Supreme Court Strikes Down Affirmative Action
+      </Title>
+      <NewsGrid>
+        <NewsArticleOriginal
+          title="Supreme Court guts affirmative action in college admissions"
+          urlToImage="https://dynaimage.cdn.cnn.com/cnn/digital-images/org/6634ed29-c67e-48b6-8765-fdd2ddd25e4e.jpg"
+          url="https://edition.cnn.com/politics/live-news/supreme-court-decisions"
+          description="The Supreme Court ruled colleges and universities can no longer take race into consideration as a specific basis in admissions — a landmark decision that overturns long-standing precedent that has benefited Black and Latino students in higher education."
+          author="CNN"
+          published_time={Date.UTC(2023, 5, 29, 14)}
+          className="mb-4"
+        />
+
+        {markets.map((contract) => (
+          <>
+            <FeedContractCard
+              key={contract.id}
+              contract={contract}
+              className="mb-4"
+            />
+          </>
+        ))}
+      </NewsGrid>
+    </Col>
+  )
+}
+
 export const ElonVersusZuckData = () => {
   const [fightMarket, winMarket, streamMarket, julyMarket] = useContracts([
     'hqTneuDcF7jXJt4tEHlj',

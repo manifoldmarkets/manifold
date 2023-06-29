@@ -10,6 +10,7 @@ import {
   UsElectionsData,
   ElonVersusZuckData,
   RussianCoupData,
+  AffActionData,
 } from 'web/components/news-topics-data'
 import { buildArray } from 'common/util/array'
 import { AllArticles } from 'web/pages/news'
@@ -22,6 +23,7 @@ export function NewsTopicsTabs(props: {
   const { homeContent, questionsContent } = props
 
   const newsContent = [
+    { title: 'Affirmative Action', content: <AffActionData /> },
     { title: 'Russian Coup?', content: <RussianCoupData /> },
     { title: 'Elon v Zuck', content: <ElonVersusZuckData /> },
     { title: 'Titanic Sub', content: <MissingSubData /> },
