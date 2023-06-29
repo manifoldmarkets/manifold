@@ -126,7 +126,7 @@ export type DpmMultipleChoiceContract = Contract & MultipleChoice & DPM
 export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
 export type CPMMStonkContract = StonkContract & CPMM
-export type BountiedQuestionContract = Contract & BountiedQuestion
+export type BountiedQuestionContract = Contract & BountiedQuestion & NonBet
 
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
@@ -175,6 +175,7 @@ export type NonBet = {
   mechanism: 'none'
 }
 
+export const NON_BETTING_OUTCOMES = ['BOUNTIED_QUESTION']
 /**
  * Implemented as a set of cpmm-1 binary contracts, one for each answer.
  * The mechanism is stored among the contract's answers, which each

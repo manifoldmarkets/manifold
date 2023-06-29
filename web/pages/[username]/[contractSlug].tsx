@@ -71,6 +71,7 @@ import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 import { unserializePoints } from 'common/chart'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { BountyLeft } from 'web/components/contract/bountied-question'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -296,6 +297,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     observer.observe(element)
     return () => observer.unobserve(element)
   }, [titleRef])
+
   return (
     <>
       {creatorTwitter && (
@@ -411,22 +413,28 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
               <div className="text-ink-600 flex items-center justify-between text-sm">
                 <AuthorInfo contract={contract} />
 
-                <div className="flex gap-4">
-                  <Tooltip
-                    text="Traders"
-                    placement="bottom"
-                    noTap
-                    className="flex flex-row items-center gap-1"
-                  >
-                    <UserIcon className="text-ink-500 h-4 w-4" />
-                    <div>{uniqueBettorCount ?? 0}</div>
-                  </Tooltip>
-
-                  <CloseOrResolveTime
-                    contract={contract}
-                    editable={user?.id === creatorId}
+                {contract.outcomeType == 'BOUNTIED_QUESTION' ? (
+                  <BountyLeft
+                    bountyLeft={contract.totalBounty - contract.bountyPaid}
                   />
-                </div>
+                ) : (
+                  <div className="flex gap-4">
+                    <Tooltip
+                      text="Traders"
+                      placement="bottom"
+                      noTap
+                      className="flex flex-row items-center gap-1"
+                    >
+                      <UserIcon className="text-ink-500 h-4 w-4" />
+                      <div>{uniqueBettorCount ?? 0}</div>
+                    </Tooltip>
+
+                    <CloseOrResolveTime
+                      contract={contract}
+                      editable={user?.id === creatorId}
+                    />
+                  </div>
+                )}
               </div>
 
               <ContractOverview

@@ -76,8 +76,11 @@ export const Stats = (props: {
       ? 'Free response'
       : outcomeType === 'MULTIPLE_CHOICE'
       ? 'Multiple choice'
+      : outcomeType === 'BOUNTIED_QUESTION'
+      ? 'Bountied question'
       : 'Numeric'
 
+  const isBettingContract = contract.mechanism !== 'none'
   return (
     <Table>
       <tbody>
@@ -101,6 +104,8 @@ export const Stats = (props: {
                     text={`Each share in an outcome is worth ${ENV_CONFIG.moneyMoniker}1 if it is chosen.`}
                   />
                 </>
+              ) : mechanism == 'none' ? (
+                <></>
               ) : (
                 <>
                   Parimutuel{' '}
@@ -116,42 +121,64 @@ export const Stats = (props: {
           <td>{formatTime(createdTime)}</td>
         </tr>
 
-        {closeTime && (
+        {contract.outcomeType == 'BOUNTIED_QUESTION' && (
+          <>
+            <tr>
+              <td>
+                Total bounty{' '}
+                <InfoTooltip text="The total bounty the creator has put up" />
+              </td>
+              <td>{formatMoney(contract.totalBounty)}</td>
+            </tr>
+            <tr>
+              <td>
+                Bounty paid{' '}
+                <InfoTooltip text="The bounty that has been paid out so far" />
+              </td>
+              <td>{formatMoney(contract.bountyPaid)}</td>
+            </tr>
+          </>
+        )}
+
+        {closeTime && isBettingContract && (
           <tr>
             <td>Question close{closeTime > Date.now() ? 's' : 'd'}</td>
             <td>{formatTime(closeTime)}</td>
           </tr>
         )}
 
-        {resolutionTime && (
+        {resolutionTime && isBettingContract && (
           <tr>
             <td>Question resolved</td>
             <td>{formatTime(resolutionTime)}</td>
           </tr>
         )}
 
-        <tr>
-          <td>
-            <span className="mr-1">24 hour volume</span>
-            <InfoTooltip text="Amount bought or sold in the last 24 hours" />
-          </td>
-          <td>{formatMoney(contract.volume24Hours)}</td>
-        </tr>
+        {isBettingContract && (
+          <>
+            <tr>
+              <td>
+                <span className="mr-1">24 hour volume</span>
+                <InfoTooltip text="Amount bought or sold in the last 24 hours" />
+              </td>
+              <td>{formatMoney(contract.volume24Hours)}</td>
+            </tr>
 
-        <tr>
-          <td>
-            <span className="mr-1">Total volume</span>
-            <InfoTooltip text="Total amount bought or sold" />
-          </td>
-          <td>{formatMoney(contract.volume)}</td>
-        </tr>
+            <tr>
+              <td>
+                <span className="mr-1">Total volume</span>
+                <InfoTooltip text="Total amount bought or sold" />
+              </td>
+              <td>{formatMoney(contract.volume)}</td>
+            </tr>
 
-        <tr>
-          <td>{capitalize(BETTORS)}</td>
-          <td>{uniqueBettorCount ?? '0'}</td>
-        </tr>
-
-        {!hideAdvanced && !contract.resolution && (
+            <tr>
+              <td>{capitalize(BETTORS)}</td>
+              <td>{uniqueBettorCount ?? '0'}</td>
+            </tr>
+          </>
+        )}
+        {!hideAdvanced && !contract.resolution && isBettingContract && (
           <tr>
             <td>
               <Row>
@@ -177,18 +204,20 @@ export const Stats = (props: {
           </tr>
         )}
 
-        <tr>
-          <td>Liquidity subsidies</td>
-          <td>
-            {mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
-              ? `${formatMoney(
-                  contract.totalLiquidity - contract.subsidyPool
-                )} / ${formatMoney(contract.totalLiquidity)}`
-              : formatMoney(100)}
-          </td>
-        </tr>
+        {isBettingContract && (
+          <tr>
+            <td>Liquidity subsidies</td>
+            <td>
+              {mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
+                ? `${formatMoney(
+                    contract.totalLiquidity - contract.subsidyPool
+                  )} / ${formatMoney(contract.totalLiquidity)}`
+                : formatMoney(100)}
+            </td>
+          </tr>
+        )}
 
-        {!hideAdvanced && (
+        {!hideAdvanced && isBettingContract && (
           <tr>
             <td>Pool</td>
             <td>
@@ -285,7 +314,7 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
-        {!hideAdvanced && (
+        {!hideAdvanced && isBettingContract && (
           <tr className={clsx(isAdmin && 'bg-scarlet-500/20')}>
             <td>
               Non predictive
@@ -325,7 +354,9 @@ export function ContractInfoDialog(props: {
     <Modal open={open} setOpen={setOpen}>
       <Col className="bg-canvas-0 gap-4 rounded p-6">
         <Row className={'items-center justify-between'}>
-          <Title className="!mb-0">This Question</Title>
+          <div className="text-primary-700 line-clamp-2">
+            {contract.question}
+          </div>
           <FollowMarketButton contract={contract} user={user} />
         </Row>
 
@@ -377,11 +408,19 @@ export function ContractInfoDialog(props: {
                     className="self-center"
                   />
 
-                  <div className="text-ink-500 mt-4 mb-2 text-base">
-                    Invite traders to participate in this question and earn a{' '}
-                    {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
-                    trader that signs up.
-                  </div>
+                  {contract.mechanism == 'none' ? (
+                    <>
+                      Invite you friends to join, and earn a{' '}
+                      {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
+                      person that signs up.
+                    </>
+                  ) : (
+                    <div className="text-ink-500 mt-4 mb-2 text-base">
+                      Invite traders to participate in this question and earn a{' '}
+                      {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
+                      trader that signs up.
+                    </div>
+                  )}
 
                   <CopyLinkButton
                     url={getShareUrl(contract, user?.username)}

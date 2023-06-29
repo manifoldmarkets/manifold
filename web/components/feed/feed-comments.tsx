@@ -50,6 +50,7 @@ import { Content } from '../widgets/editor'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { CommentEditHistoryButton } from '../comments/comment-edit-history-button'
+import { AwardBountyButton } from '../contract/bountied-question'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -71,8 +72,9 @@ export function FeedCommentThread(props: {
     trackingLocation,
     inTimeline,
   } = props
+  const isBountiedQuestion = contract.outcomeType === 'BOUNTIED_QUESTION'
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
-  const [seeReplies, setSeeReplies] = useState(true)
+  const [seeReplies, setSeeReplies] = useState(!isBountiedQuestion)
 
   const idInUrl = useHashInUrl()
 
@@ -159,6 +161,7 @@ export const FeedComment = memo(function FeedComment(props: {
   children?: ReactNode
   className?: string
   inTimeline?: boolean
+  isParent?: boolean
 }) {
   const {
     contract,
@@ -170,6 +173,7 @@ export const FeedComment = memo(function FeedComment(props: {
     children,
     trackingLocation,
     inTimeline,
+    isParent,
   } = props
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
@@ -208,6 +212,7 @@ export const FeedComment = memo(function FeedComment(props: {
           comment={comment}
           contract={contract}
           inTimeline={inTimeline}
+          isParent={isParent}
         />
 
         <HideableContent comment={comment} />
@@ -261,23 +266,26 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   )
   const commentKind = userUsername === 'ManifoldDream' ? 'ub-dream-comment' : ''
   return (
-    <FeedComment
-      contract={contract}
-      comment={comment}
-      onReplyClick={onReplyClick}
-      highlighted={highlighted}
-      showLike={showLike}
-      className={clsx('gap-2', commentKind)}
-      trackingLocation={trackingLocation}
-      inTimeline={inTimeline}
-    >
-      <div ref={ref} />
-      <ReplyToggle
-        seeReplies={seeReplies}
-        numComments={numReplies}
-        onClick={onSeeReplyClick}
-      />
-    </FeedComment>
+    <>
+      <FeedComment
+        contract={contract}
+        comment={comment}
+        onReplyClick={onReplyClick}
+        highlighted={highlighted}
+        showLike={showLike}
+        className={clsx('gap-2', commentKind)}
+        trackingLocation={trackingLocation}
+        inTimeline={inTimeline}
+        isParent={true}
+      >
+        <div ref={ref} />
+        <ReplyToggle
+          seeReplies={seeReplies}
+          numComments={numReplies}
+          onClick={onSeeReplyClick}
+        />
+      </FeedComment>
+    </>
   )
 })
 
@@ -536,6 +544,7 @@ function FeedCommentHeader(props: {
   comment: ContractComment
   contract: Contract
   inTimeline?: boolean
+  isParent?: boolean
 }) {
   const { comment, contract, inTimeline } = props
   const {
@@ -555,51 +564,67 @@ function FeedCommentHeader(props: {
   const marketCreator = contract.creatorId === userId
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
+  const user = useUser()
+  const isBountiedQuestion = contract.outcomeType === 'BOUNTIED_QUESTION'
+  const canGiveBounty =
+    isBountiedQuestion &&
+    user &&
+    user.id == contract.creatorId &&
+    contract.totalBounty - contract.bountyPaid > 0
   return (
     <Col className={clsx('text-ink-600 text-sm ')}>
-      <Row className=" gap-1">
-        <span>
-          <UserLink
-            username={userUsername}
-            name={userName}
-            marketCreator={marketCreator}
-            className={'font-semibold'}
+      <Row className="justify-between">
+        <Row className=" gap-1">
+          <span>
+            <UserLink
+              username={userUsername}
+              name={userName}
+              marketCreator={marketCreator}
+              className={'font-semibold'}
+            />
+            {/* Hide my status if replying to a bet, it's too much clutter*/}
+            {bettorUsername == undefined && !inTimeline && (
+              <span className="text-ink-500 ml-1">
+                <CommentStatus contract={contract} comment={comment} />
+                {bought} {money}
+                {shouldDisplayOutcome && (
+                  <>
+                    {' '}
+                    of{' '}
+                    <OutcomeLabel
+                      outcome={betOutcome ? betOutcome : ''}
+                      answerId={betAnswerId}
+                      contract={contract}
+                      truncate="short"
+                    />
+                  </>
+                )}
+              </span>
+            )}
+          </span>
+          <CopyLinkDateTimeComponent
+            prefix={contract.creatorUsername}
+            slug={contract.slug}
+            createdTime={editedTime ? editedTime : createdTime}
+            elementId={comment.id}
+            seeEditsButton={<CommentEditHistoryButton comment={comment} />}
+            size={'sm'}
+            linkClassName="text-ink-500"
           />
-          {/* Hide my status if replying to a bet, it's too much clutter*/}
-          {bettorUsername == undefined && !inTimeline && (
-            <span className="text-ink-500 ml-1">
-              <CommentStatus contract={contract} comment={comment} />
-              {bought} {money}
-              {shouldDisplayOutcome && (
-                <>
-                  {' '}
-                  of{' '}
-                  <OutcomeLabel
-                    outcome={betOutcome ? betOutcome : ''}
-                    answerId={betAnswerId}
-                    contract={contract}
-                    truncate="short"
-                  />
-                </>
-              )}
-            </span>
+          {!inTimeline && isApi && (
+            <InfoTooltip text="Placed via API" className="mr-1">
+              🤖
+            </InfoTooltip>
           )}
-        </span>
-        <CopyLinkDateTimeComponent
-          prefix={contract.creatorUsername}
-          slug={contract.slug}
-          createdTime={editedTime ? editedTime : createdTime}
-          elementId={comment.id}
-          seeEditsButton={<CommentEditHistoryButton comment={comment} />}
-          size={'sm'}
-          linkClassName="text-ink-500"
-        />
-        {!inTimeline && isApi && (
-          <InfoTooltip text="Placed via API" className="mr-1">
-            🤖
-          </InfoTooltip>
+          {!inTimeline && <DotMenu comment={comment} contract={contract} />}
+        </Row>
+        {canGiveBounty && (
+          <AwardBountyButton
+            contract={contract}
+            comment={comment}
+            user={user}
+          />
         )}
-        {!inTimeline && <DotMenu comment={comment} contract={contract} />}
       </Row>
     </Col>
   )

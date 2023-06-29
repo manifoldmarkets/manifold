@@ -120,6 +120,20 @@ export function ContractTabs(props: {
 
   const positionsTitle = shortFormatNumber(totalPositions) + ' Positions'
 
+  if (contract.outcomeType == 'BOUNTIED_QUESTION') {
+    return (
+      <CommentsTabContent
+        contract={contract}
+        comments={comments}
+        setCommentsLength={setTotalComments}
+        answerResponse={answerResponse}
+        onCancelAnswerResponse={onCancelAnswerResponse}
+        blockedUserIds={blockedUserIds}
+        betResponse={replyToBet}
+        clearReply={() => setReplyToBet(undefined)}
+      />
+    )
+  }
   return (
     <ControlledTabs
       className="mb-4"
@@ -219,10 +233,14 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     DEFAULT_PARENT_COMMENTS_TO_RENDER
   )
 
-  const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
-    key: `comments-sort-${contract.id}`,
-    store: inMemoryStore(),
-  })
+  const isBountiedQuestion = contract.outcomeType == 'BOUNTIED_QUESTION'
+  const [sort, setSort] = usePersistentState<'Newest' | 'Best'>(
+    isBountiedQuestion ? 'Best' : 'Newest',
+    {
+      key: `comments-sort-${contract.id}`,
+      store: inMemoryStore(),
+    }
+  )
   const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
@@ -235,11 +253,13 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       sortBy(comments, [
         sort === 'Best'
           ? (c) =>
-              // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-              likes &&
-              c.createdTime > Date.now() - 10 * MINUTE_MS &&
-              c.userId === user?.id &&
-              shouldBeNewestFirst(c)
+              isBountiedQuestion
+                ? c.likes
+                : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+                likes &&
+                  c.createdTime > Date.now() - 10 * MINUTE_MS &&
+                  c.userId === user?.id &&
+                  shouldBeNewestFirst(c)
                 ? -Infinity
                 : -(c?.likes ?? 0)
           : (c) => c,
