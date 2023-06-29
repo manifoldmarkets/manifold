@@ -104,7 +104,7 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
   }
 
   return (
-    <Page className="!max-w-[1400px]" mainClassName="!col-span-10">
+    <Page className=" !max-w-[1400px]" mainClassName="!col-span-10">
       {props.state === 'not authed' ? (
         <PrivateContractPage contractSlug={props.slug} />
       ) : (
@@ -306,7 +306,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
       <Row className="w-full items-start justify-center gap-8">
         <Col
           className={clsx(
-            'border-ink-300 w-full max-w-3xl rounded-b border-[0.5px] xl:w-[70%]',
+            'bg-canvas-0 w-full max-w-3xl rounded-b  xl:w-[70%]',
             // Keep content in view when scrolling related questions on desktop.
             'sticky bottom-0 min-h-screen self-end'
           )}

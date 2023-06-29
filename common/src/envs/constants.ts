@@ -7,6 +7,8 @@ export const ENV = (process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD') as
   | 'PROD'
   | 'DEV'
 
+export const BOUNTIED_QUESTION_ENABLED = ENV == 'DEV'
+
 export const CONFIGS: { [env: string]: EnvConfig } = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,
@@ -194,7 +196,7 @@ export const DISCORD_BOT_INVITE_LINK =
 
 export const YES_GRAPH_COLOR = '#11b981'
 
-export const BACKGROUND_COLOR = 'bg-canvas-0'
+export const BACKGROUND_COLOR = 'bg-canvas-50'
 
 export const RESERVED_PATHS = [
   '_next',

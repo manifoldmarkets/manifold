@@ -25,7 +25,7 @@ export const RelatedContractsList = memo(function RelatedContractsList(props: {
   return (
     <Col className={clsx(className, 'flex-1')}>
       <h2 className={clsx('text-ink-600 mb-2 text-xl')}>Related questions</h2>
-      <Col className="divide-ink-300 border-ink-300 divide-y-[0.5px] border-[0.5px]">
+      <Col className="divide-ink-300 divide-y-[0.5px]">
         {contracts.map((contract) => (
           <RelatedContractCard
             contract={contract}

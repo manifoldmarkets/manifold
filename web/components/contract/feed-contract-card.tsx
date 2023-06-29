@@ -37,14 +37,14 @@ import { FiThumbsDown } from 'react-icons/fi'
 
 export function FeedContractCard(props: {
   contract: Contract
+  children?: React.ReactNode
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
-  hasItems?: boolean
   item?: FeedTimelineItem
   className?: string
 }) {
-  const { promotedData, trackingPostfix, hasItems, item, className } = props
+  const { promotedData, trackingPostfix, item, className, children } = props
   const user = useUser()
 
   const contract =
@@ -76,13 +76,14 @@ export function FeedContractCard(props: {
 
   return (
     <div ref={ref}>
-      {hasItems ? (
+      {children ? (
         <SimpleCard
           contract={contract}
           item={item}
           trackClick={trackClick}
           user={user}
           className={className}
+          children={children}
         />
       ) : (
         <DetailedCard
@@ -102,49 +103,50 @@ function SimpleCard(props: {
   contract: Contract
   trackClick: () => void
   user: User | null | undefined
+  children: React.ReactNode
   item?: FeedTimelineItem
   className?: string
 }) {
-  const { contract, user, item, trackClick, className } = props
+  const { contract, user, item, trackClick, className, children } = props
   const { question, outcomeType, mechanism, closeTime, isResolved } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
 
   return (
-    <Row className={clsx(className)}>
-      <Col
-        className={
-          'dark:bg-canvas-50 border-ink-200 grow justify-between gap-2 overflow-hidden border border-l-4 px-3 pt-2'
-        }
-      >
-        <Row className="items-start justify-between gap-1">
-          <Col>
-            <Row className={'items-start gap-2'}>
-              <Link
-                className={clsx(
-                  'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
-                  textColor
-                )}
-                onClick={trackClick}
-                href={contractPath(contract)}
-              >
-                <VisibilityIcon contract={contract} /> {contract.question}
-              </Link>
-            </Row>
-          </Col>
-          <Col className={'items-end'}>
-            <Tooltip text={item?.reasonDescription} placement={'top'}>
-              <ContractStatusLabel className={''} contract={contract} />
-            </Tooltip>
-          </Col>
-        </Row>
+    <Col
+      className={clsx(
+        className,
+        'bg-canvas-0 border-canvas-0  hover:border-primary-300 grow justify-between gap-2 overflow-hidden rounded-xl border px-4 pt-2 drop-shadow-md'
+      )}
+    >
+      <Row className="items-start justify-between gap-1">
+        <Col>
+          <Row className={'items-start gap-2'}>
+            <Link
+              className={clsx(
+                'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
+                textColor
+              )}
+              onClick={trackClick}
+              href={contractPath(contract)}
+            >
+              <VisibilityIcon contract={contract} /> {contract.question}
+            </Link>
+          </Row>
+        </Col>
+        <Col className={'items-end'}>
+          <Tooltip text={item?.reasonDescription} placement={'top'}>
+            <ContractStatusLabel className={''} contract={contract} />
+          </Tooltip>
+        </Col>
+      </Row>
 
-        <Row className="text-ink-500 mb-1.5 w-full items-center justify-end gap-3 text-sm">
-          {isBinaryCpmm && <BetRow contract={contract} user={user} />}
-        </Row>
-      </Col>
-    </Row>
+      <Row className="text-ink-500 mb-1.5 w-full items-center justify-end gap-3 text-sm">
+        {isBinaryCpmm && <BetRow contract={contract} user={user} />}
+      </Row>
+      {children}
+    </Col>
   )
 }
 
@@ -188,8 +190,8 @@ function DetailedCard(props: {
       className={clsx(
         className,
         'relative rounded-xl',
-        'dark:bg-canvas-50 group flex cursor-pointer flex-col overflow-hidden',
-        'border-canvas-100 hover:border-primary-300 focus:border-primary-300 border outline-none transition-colors'
+        'bg-canvas-0 group flex cursor-pointer flex-col overflow-hidden',
+        'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border outline-none drop-shadow-md transition-colors'
       )}
       // we have other links inside this card like the username, so can't make the whole card a button or link
       tabIndex={-1}
@@ -199,7 +201,7 @@ function DetailedCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Row className={clsx('grow gap-2 px-3 pb-2')}>
+      <Row className={clsx('grow gap-2 px-4 pb-2')}>
         <Col className="w-full">
           <Col className="w-full gap-0.5">
             {!hidden ? (
@@ -230,7 +232,7 @@ function DetailedCard(props: {
                           !item.isCopied &&
                           (item.dataType === 'contract_probability_changed' ||
                             item.dataType === 'trending_contract') && (
-                            <div className={'text-ink-400 text-xs'}>
+                            <div className={'text-ink-400 text-sm'}>
                               <Tooltip
                                 text={item?.reasonDescription}
                                 placement={'top'}
@@ -248,7 +250,6 @@ function DetailedCard(props: {
                                 time={item.createdTime}
                                 shortened={true}
                               />{' '}
-                              ago
                             </div>
                           )}
                       </Link>
@@ -297,7 +298,7 @@ function DetailedCard(props: {
                             {item &&
                               !item.isCopied &&
                               item.dataType === 'new_contract' && (
-                                <span className={'text-xs'}>
+                                <span>
                                   <Tooltip
                                     text={item?.reasonDescription}
                                     placement={'top'}
@@ -307,7 +308,7 @@ function DetailedCard(props: {
                                   <RelativeTimestamp
                                     time={item.createdTime}
                                     shortened={true}
-                                    className="text-ink-600"
+                                    className="text-ink-400"
                                   />
                                 </span>
                               )}

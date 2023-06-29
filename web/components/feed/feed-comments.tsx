@@ -86,7 +86,7 @@ export function FeedCommentThread(props: {
     collapseMiddle && threadComments.length > 2 ? threadComments.length - 2 : -1
   )
   return (
-    <Col className="w-full items-stretch gap-3">
+    <Col className="mt-3 w-full items-stretch gap-3">
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
@@ -197,7 +197,7 @@ export const FeedComment = memo(function FeedComment(props: {
         avatarUrl={userAvatarUrl}
         className={clsx(marketCreator ? 'shadow shadow-amber-300' : '', 'z-10')}
       />
-      <Col className="w-full">
+      <Col className="bg-ink-100 w-full rounded-xl rounded-tl-none px-4 py-1">
         {isReplyToBet(comment) && (
           <FeedCommentReplyHeader comment={comment} contract={contract} />
         )}

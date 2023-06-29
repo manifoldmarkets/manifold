@@ -36,7 +36,7 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   return (
     <>
       <Carousel
-        className={clsx('border-ink-200 border-b', className)}
+        className={clsx('border-ink-200 bg-canvas-0 border-b', className)}
         aria-label="Tabs"
       >
         {tabs.map((tab, i) => (

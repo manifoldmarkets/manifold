@@ -17,12 +17,9 @@ export const FeedBetsItem = (props: {
   }
   return (
     // TODO: make more specific link
-    <FeedRelatedItemFrame href={contractPath(contract)}>
+    <FeedRelatedItemFrame className="bg-canvas-0" href={contractPath(contract)}>
       {groupedBets.map((bets) => (
-        <Row
-          className={'relative w-full px-4 py-2'}
-          key={bets[0].id + 'summary'}
-        >
+        <Row className={'relative w-full py-2'} key={bets[0].id + 'summary'}>
           <SummarizeBets
             betsBySameUser={bets}
             contract={contract}

@@ -44,6 +44,7 @@ import { QfTrades } from './qf-overview'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+import { Spacer } from '../layout/spacer'
 
 export const EMPTY_USER = '_'
 
@@ -307,7 +308,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           }}
         />
       )}
-      <div className={'mt-2'} />
       {contract.outcomeType === 'FREE_RESPONSE' && (
         <FreeResponseComments
           contract={contract}

@@ -114,7 +114,7 @@ export const FeedTimelineItems = (props: {
             <FeedItemFrame
               item={item}
               key={news.id + 'feed-timeline-item'}
-              className="dark:bg-canvas-50 border-canvas-100 hover:border-primary-300 w-full overflow-hidden rounded-2xl border "
+              className="bg-canvas-0 border-canvas-0 hover:border-primary-300 w-full overflow-hidden rounded-2xl border drop-shadow-md "
             >
               <NewsArticle
                 author={(news as any)?.author}
@@ -178,23 +178,31 @@ const FeedContractAndRelatedItems = (props: {
         contract={contract}
         promotedData={promotedData}
         trackingPostfix="feed"
-        hasItems={hasRelatedItems}
+        children={
+          hasRelatedItems ? (
+            <>
+              {parentComments.length > 0 && (
+                <FeedCommentItem
+                  contract={contract}
+                  commentThreads={parentComments.map((parentComment) => ({
+                    parentComment,
+                    childComments:
+                      childCommentsByParentCommentId[parentComment.id] ?? [],
+                  }))}
+                />
+              )}
+              {(!parentComments || parentComments.length === 0) &&
+                groupedBetsByTime?.length && (
+                  <FeedBetsItem
+                    contract={contract}
+                    groupedBets={groupedBetsByTime}
+                  />
+                )}
+            </>
+          ) : undefined
+        }
         item={item}
       />
-      {parentComments.length > 0 && (
-        <FeedCommentItem
-          contract={contract}
-          commentThreads={parentComments.map((parentComment) => ({
-            parentComment,
-            childComments:
-              childCommentsByParentCommentId[parentComment.id] ?? [],
-          }))}
-        />
-      )}
-      {(!parentComments || parentComments.length === 0) &&
-        groupedBetsByTime?.length && (
-          <FeedBetsItem contract={contract} groupedBets={groupedBetsByTime} />
-        )}
     </FeedItemFrame>
   )
 }
@@ -206,13 +214,7 @@ export function FeedRelatedItemFrame(props: {
 }) {
   const { children, href, className } = props
   return (
-    <Link
-      href={href}
-      className={clsx(
-        'dark:bg-canvas-50 border-canvas-100 hover:border-primary-300 z-10 flex flex-col overflow-hidden rounded-2xl rounded-tr-none border border-t-0',
-        className
-      )}
-    >
+    <Link href={href} className={clsx(' z-10 mb-2 flex flex-col ', className)}>
       {children}
     </Link>
   )
