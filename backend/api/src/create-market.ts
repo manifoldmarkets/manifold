@@ -277,6 +277,9 @@ function validateMarketBody(body: any) {
     ;({ answers, shouldAnswersSumToOne } = validate(multipleChoiceSchema, body))
   }
 
+  if (outcomeType === 'BOUNTIED_QUESTION') {
+    ;({ totalBounty } = validate(bountiedQuestionSchema, body))
+  }
   return {
     question,
     description,
