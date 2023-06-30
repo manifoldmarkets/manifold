@@ -13,11 +13,11 @@ import { getUserInterestTopics } from 'web/lib/supabase/user'
 import { Row } from 'web/components/layout/row'
 
 export function TopicSelectorDialog(props: {
-  skippable: boolean
-  opaque: boolean
+  setOpen?: (open: boolean) => void
+  open?: boolean
+  onFinishSelectingTopics?: (topics: string[]) => void
 }) {
-  const { skippable, opaque } = props
-
+  const { setOpen, open, onFinishSelectingTopics } = props
   const user = useUser()
   const [userSelectedTopics, setUserSelectedTopics] = useState<
     string[] | undefined
@@ -52,26 +52,30 @@ export function TopicSelectorDialog(props: {
     })
   }, [user, userSelectedTopics, open])
 
-  const closeDialog = (skipUpdate: boolean) => {
-    setIsLoading(true)
-
-    if (user && !skipUpdate) {
+  const closeDialog = (skipped: boolean) => {
+    if (setOpen) {
+      user && !skipped ? updateUserEmbedding() : noop
+      onFinishSelectingTopics?.(userSelectedTopics ?? [])
+      setOpen(false)
+    } else if (user && !skipped) {
+      setIsLoading(true)
       updateUserEmbedding().then(() => {
         // Reload to recompute feed!
         window.location.reload()
       })
     } else {
+      onFinishSelectingTopics?.(userSelectedTopics ?? [])
       window.location.reload()
     }
   }
 
   return (
     <Modal
-      open={true}
-      setOpen={skippable ? closeDialog : noop}
+      open={open !== undefined ? open : true}
+      setOpen={setOpen ? closeDialog : noop}
       className="bg-canvas-0 overflow-hidden rounded-md"
       size={'lg'}
-      bgOpaque={opaque}
+      bgOpaque={true}
     >
       <Col className="h-[32rem] overflow-y-auto">
         <div className="bg-canvas-0 sticky top-0 py-4 px-6">
@@ -118,11 +122,9 @@ export function TopicSelectorDialog(props: {
 
         <div className="from-canvas-0 pointer-events-none sticky bottom-0 bg-gradient-to-t to-transparent text-right">
           <Row className="pointer-events-auto ml-auto justify-end gap-2  p-6 pt-2">
-            {skippable && (
-              <Button onClick={() => closeDialog(true)} color={'gray'}>
-                Skip
-              </Button>
-            )}
+            <Button onClick={() => closeDialog(true)} color={'gray'}>
+              Skip
+            </Button>
             <Button
               onClick={() => closeDialog(false)}
               disabled={(userSelectedTopics ?? []).length <= 2}

@@ -1,13 +1,11 @@
-import React, { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
 import Image from 'next/image'
-import { noop } from 'lodash'
-import clsx from 'clsx'
 
 import { STARTING_BALANCE } from 'common/economy'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
+import { useRouter } from 'next/router'
+import React, { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
@@ -15,7 +13,7 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { TopicSelectorDialog } from './topic-selector-dialog'
-import { useABTest } from 'web/hooks/use-ab-test'
+import clsx from 'clsx'
 
 export default function Welcome() {
   const user = useUser()
@@ -28,13 +26,6 @@ export default function Welcome() {
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
 
   const router = useRouter()
-
-  const [skippable, opaque] = useABTest('skippable onboarding', {
-    skippableOpaque: [true, true],
-    skippableTransparent: [true, false],
-    unskippableOpaque: [false, true],
-    unskippableTransparent: [false, false],
-  }) ?? [false, false]
 
   const availablePages = buildArray([
     <WhatIsManifoldPage />,
@@ -86,16 +77,10 @@ export default function Welcome() {
 
   if (!shouldShowWelcomeModals) return <></>
 
-  if (groupSelectorOpen)
-    return <TopicSelectorDialog skippable={skippable} opaque={opaque} />
+  if (groupSelectorOpen) return <TopicSelectorDialog />
 
   return (
-    <Modal
-      open={open}
-      setOpen={skippable ? close : noop}
-      bgOpaque={opaque}
-      size={'lg'}
-    >
+    <Modal open={open} setOpen={close} bgOpaque={true} size={'lg'}>
       <Col className="bg-canvas-0 place-content-between rounded-md px-8 py-6 text-sm md:text-lg">
         {availablePages[page]}
         <Col>
