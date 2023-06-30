@@ -12,9 +12,9 @@ import { joinGroup, updateUserEmbedding } from 'web/lib/firebase/api'
 import { getUserInterestTopics } from 'web/lib/supabase/user'
 import { Row } from 'web/components/layout/row'
 
-export function TopicSelectorDialog(props: { 
+export function TopicSelectorDialog(props: {
   skippable: boolean
-  opaque: boolean 
+  opaque: boolean
 }) {
   const { skippable, opaque } = props
 
