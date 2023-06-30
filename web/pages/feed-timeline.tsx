@@ -201,7 +201,7 @@ const NewActivityButton = (props: {
       )}
       onClick={scrollToTop}
     >
-      <Row className="text-ink-600 align-middle">
+      <Row className="text-ink-600 align-middle items-center">
         <ArrowUpIcon className="text-ink-400 mr-3 h-5 w-5" />
         {avatarUrls.map((url) => (
           <Avatar
@@ -211,7 +211,7 @@ const NewActivityButton = (props: {
             avatarUrl={url}
           />
         ))}
-        <div>New updates</div>
+        <div className='ml-1'>New updates</div>
       </Row>
     </button>
   )
