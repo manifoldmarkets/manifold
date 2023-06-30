@@ -17,6 +17,8 @@ import { CollapsibleContent } from '../widgets/collapsible-content'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { awardBounty } from 'web/lib/firebase/api'
 import clsx from 'clsx'
+import Lottie from 'react-lottie'
+import * as award from '../../public/lottie/award.json'
 
 export function BountyLeft(props: { bountyLeft: number }) {
   const { bountyLeft } = props
@@ -74,7 +76,7 @@ export function AwardBountyButton(props: {
     <>
       <Button
         className={clsx('py-1 text-xs', buttonClassName)}
-        color={open ? 'indigo' : 'indigo-outline'}
+        color={'gray-outline'}
         size="xs"
         disabled={disabled}
         onClick={() => setOpen(true)}
@@ -83,7 +85,28 @@ export function AwardBountyButton(props: {
       </Button>
       <Modal open={open} setOpen={setOpen}>
         <Col className={MODAL_CLASS}>
-          Award {comment.userName}
+          <Lottie
+            options={{
+              loop: true,
+              autoplay: true,
+              animationData: award,
+              rendererSettings: {
+                preserveAspectRatio: 'xMidYMid slice',
+              },
+            }}
+            height={200}
+            width={200}
+            isStopped={false}
+            isPaused={false}
+            style={{
+              color: '#6366f1',
+              pointerEvents: 'none',
+              background: 'transparent',
+            }}
+          />
+          <span>
+            Award <b>{comment.userName}</b> a bounty
+          </span>
           <BuyAmountInput
             parentClassName="w-full"
             inputClassName="w-full max-w-none"
