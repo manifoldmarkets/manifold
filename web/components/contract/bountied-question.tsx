@@ -16,6 +16,7 @@ import { Col } from '../layout/col'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { awardBounty } from 'web/lib/firebase/api'
+import clsx from 'clsx'
 
 export function BountyLeft(props: { bountyLeft: number }) {
   const { bountyLeft } = props
@@ -50,8 +51,10 @@ export function AwardBountyButton(props: {
   contract: BountiedQuestionContract
   comment: ContractComment
   user: User
+  disabled: boolean
+  buttonClassName?: string
 }) {
-  const { contract, comment, user } = props
+  const { contract, comment, user, disabled, buttonClassName } = props
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
   const { bountyLeft } = contract
@@ -61,18 +64,19 @@ export function AwardBountyButton(props: {
   }
 
   async function onAwardBounty() {
-    return awardBounty({
+    awardBounty({
       contractId: contract.id,
       commentId: comment.id,
       amount: amount,
-    })
+    }).then((_result) => setOpen(false))
   }
   return (
     <>
       <Button
-        className="py-1 text-xs"
+        className={clsx('py-1 text-xs', buttonClassName)}
         color={open ? 'indigo' : 'indigo-outline'}
         size="xs"
+        disabled={disabled}
         onClick={() => setOpen(true)}
       >
         Award bounty

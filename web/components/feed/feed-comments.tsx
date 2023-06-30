@@ -51,6 +51,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { CommentEditHistoryButton } from '../comments/comment-edit-history-button'
 import { AwardBountyButton } from '../contract/bountied-question'
+import { BsAwardFill } from 'react-icons/bs'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -399,8 +400,24 @@ export function CommentActions(props: {
   const user = useUser()
   const privateUser = usePrivateUser()
 
+  const isBountiedQuestion = contract.outcomeType === 'BOUNTIED_QUESTION'
+  const canGiveBounty =
+    isBountiedQuestion &&
+    user &&
+    user.id == contract.creatorId &&
+    comment.userId != user.id
+
   return (
     <Row className="grow items-center justify-end">
+      {canGiveBounty && (
+        <AwardBountyButton
+          contract={contract}
+          comment={comment}
+          user={user}
+          disabled={false}
+          buttonClassName={'mr-1'}
+        />
+      )}
       {user && onReplyClick && (
         <Tooltip text="Reply" placement="bottom">
           <IconButton
@@ -559,18 +576,13 @@ function FeedCommentHeader(props: {
     betAmount,
     userId,
     isApi,
+    bountyAwarded,
   } = comment
 
   const marketCreator = contract.creatorId === userId
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   const user = useUser()
-  const isBountiedQuestion = contract.outcomeType === 'BOUNTIED_QUESTION'
-  const canGiveBounty =
-    isBountiedQuestion &&
-    user &&
-    user.id == contract.creatorId &&
-    contract.bountyLeft > 0
   return (
     <Col className={clsx('text-ink-600 text-sm ')}>
       <Row className="justify-between">
@@ -618,12 +630,10 @@ function FeedCommentHeader(props: {
           )}
           {!inTimeline && <DotMenu comment={comment} contract={contract} />}
         </Row>
-        {canGiveBounty && (
-          <AwardBountyButton
-            contract={contract}
-            comment={comment}
-            user={user}
-          />
+        {bountyAwarded && bountyAwarded > 0 && (
+          <span className="text-primary-700 select-none">
+            +{formatMoney(bountyAwarded)}
+          </span>
         )}
       </Row>
     </Col>
