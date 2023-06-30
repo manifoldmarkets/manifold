@@ -4,10 +4,11 @@ import { BETTORS, User } from 'common/user'
 import React, { useEffect, useState } from 'react'
 import { ContractMetric } from 'common/contract-metric'
 import { removeUndefinedProps } from 'common/util/object'
-import { getProfitRankForContract } from 'web/lib/firebase/contract-metrics'
 import { Leaderboard } from 'web/components/leaderboard'
+import { db } from 'web/lib/supabase/db'
+import { getRanking } from 'common/supabase/contract-metrics'
 
-export const ContractLeaderboard = function ContractLeaderboard(props: {
+export function ContractLeaderboard(props: {
   topContractMetrics: ContractMetric[]
   currentUser: User | undefined | null
   contractId: string
@@ -25,8 +26,8 @@ export const ContractLeaderboard = function ContractLeaderboard(props: {
 
   useEffect(() => {
     if (currentUserMetrics?.profit && !yourRank && !userIsAlreadyRanked) {
-      getProfitRankForContract(currentUserMetrics.profit, contractId).then(
-        (rank) => setYourRank(rank)
+      getRanking(contractId, currentUserMetrics.profit, db).then((rank) =>
+        setYourRank(rank)
       )
     }
   }, [currentUserMetrics?.profit, yourRank, contractId, userIsAlreadyRanked])

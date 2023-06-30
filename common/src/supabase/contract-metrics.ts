@@ -11,7 +11,7 @@ export async function getContractMetricsOutcomeCount(
 ) {
   const columnName = `has_${outcome}_shares`
 
-  const { data, count } = await run(
+  const { count } = await run(
     db
       .from('user_contract_metrics')
       .select(columnName, { count: 'exact' })
@@ -37,6 +37,22 @@ export async function getTopContractMetrics(
   )
 
   return data ? data.map((doc) => doc.data as ContractMetric) : []
+}
+
+export async function getRanking(
+  contractId: string,
+  profit: number,
+  db: SupabaseClient
+) {
+  const { count } = await run(
+    db
+      .from('user_contract_metrics')
+      .select('*', { count: 'exact' })
+      .eq('contract_id', contractId)
+      .gt('profit', profit)
+  )
+
+  return count + 1
 }
 
 export async function getUserContractMetrics(

@@ -7,6 +7,7 @@ import {
 import {
   ShareholderStats,
   getContractMetricsForContractId,
+  getContractMetricsOutcomeCount,
 } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -32,11 +33,6 @@ import { useContractMetrics } from 'web/hooks/use-contract-metrics'
 import { useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
-import {
-  getTotalContractMetricsCount,
-  getContractMetricsYesCount,
-  getContractMetricsNoCount,
-} from 'web/lib/firebase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { getStonkDisplayShares } from 'common/stonk'
 
@@ -57,6 +53,7 @@ export const BinaryUserPositionsTable = memo(
     const [contractMetricsByProfit, setContractMetricsByProfit] = useState<
       ContractMetric[] | undefined
     >()
+
     const [shareholderStats, setShareholderStats] = useState<
       ShareholderStats | undefined
     >(props.shareholderStats)
@@ -89,18 +86,16 @@ export const BinaryUserPositionsTable = memo(
     const noPositionsSorted =
       sortBy === 'shares' ? positions.NO ?? [] : negativeProfitPositions
     useEffect(() => {
-      // Let's use firebase here as supabase can be slightly out of date, leading to incorrect counts
-      getTotalContractMetricsCount(contractId).then(setTotalPositions)
-
       Promise.all([
-        getContractMetricsYesCount(contractId),
-        getContractMetricsNoCount(contractId),
-      ]).then(([yesCount, noCount]) =>
+        getContractMetricsOutcomeCount(contractId, 'yes', db),
+        getContractMetricsOutcomeCount(contractId, 'no', db),
+      ]).then(([yesCount, noCount]) => {
         setShareholderStats({
           yesShareholders: yesCount,
           noShareholders: noCount,
         })
-      )
+        setTotalPositions?.(yesCount + noCount)
+      })
     }, [positions, contractId])
 
     const visibleYesPositions = yesPositionsSorted.slice(

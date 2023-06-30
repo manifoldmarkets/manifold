@@ -48,7 +48,6 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getContractParams } from 'web/lib/firebase/api'
-import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { Contract } from 'web/lib/firebase/contracts'
 import { tradingAllowed } from 'common/contract'
 import { track } from 'web/lib/service/analytics'
@@ -71,6 +70,8 @@ import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 import { unserializePoints } from 'common/chart'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
+import { db } from 'web/lib/supabase/db'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -176,7 +177,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   useEffect(() => {
     // If the contract resolves while the user is on the page, get the top contract metrics
     if (contract.resolution && topContractMetrics.length === 0) {
-      getTopContractMetrics(contract.id, 10).then(setTopContractMetrics)
+      getTopContractMetrics(contract.id, 10, db).then(setTopContractMetrics)
     }
   }, [contract.resolution, contract.id, topContractMetrics.length])
 
