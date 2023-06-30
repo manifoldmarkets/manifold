@@ -86,12 +86,12 @@ export async function runAwardBountyTxn(
   fbTransaction.update(recipientDoc, {
     balance: FieldValue.increment(amount),
     totalDeposits: FieldValue.increment(amount),
-    bountyTxns: FieldValue.arrayUnion(newTxnDoc.id),
   })
 
   // update bountied contract
   fbTransaction.update(contractDoc, {
     bountyLeft: FieldValue.increment(-amount),
+    bountyTxns: FieldValue.arrayUnion(newTxnDoc.id),
   })
 
   return { status: 'success', txn }
