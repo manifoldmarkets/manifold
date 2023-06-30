@@ -1,19 +1,22 @@
 import dayjs from 'dayjs'
-import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
-import { track } from 'web/lib/service/analytics'
 
-export const NewsArticleOriginal = (props: {
+import { track } from 'web/lib/service/analytics'
+import { Col } from 'web/components/layout/col'
+
+export const DashboardNewsItem = (props: {
   title: string
-  urlToImage: string
+  urlToImage?: string
+  image?: string
   url: string
   description: string
-  author: string
+  author?: string
   published_time?: number
   className?: string
 }) => {
   const {
     title,
+    image,
     urlToImage,
     url,
     description,
@@ -26,7 +29,7 @@ export const NewsArticleOriginal = (props: {
     <Col className={clsx('relative w-full', className)}>
       <img
         className="border-ink-300 m-0 rounded-t-lg border object-contain "
-        src={urlToImage}
+        src={image ?? urlToImage}
         alt={title}
         height={200}
       />

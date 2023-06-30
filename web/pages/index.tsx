@@ -30,7 +30,7 @@ import clsx from 'clsx'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { formatMoney } from 'common/util/format'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { NewsTopicsTabs } from 'web/components/news-topics-tabs'
+import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
 
 const excludedGroupSlugs = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 

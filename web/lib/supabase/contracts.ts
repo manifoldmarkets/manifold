@@ -43,9 +43,12 @@ export async function getPublicContractIds(contractIds: string[]) {
   }
 }
 
-export async function getContracts(contractIds: string[]) {
+export async function getContracts(
+  contractIds: string[],
+  pk: 'id' | 'slug' = 'id'
+) {
   const { data } = await run(
-    db.from('contracts').select('data').in('id', contractIds)
+    db.from('contracts').select('data').in(pk, contractIds)
   )
   if (data && data.length > 0) {
     return data.map((d) => d.data as Contract)

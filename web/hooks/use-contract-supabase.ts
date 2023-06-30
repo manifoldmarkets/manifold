@@ -94,12 +94,15 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
   return contract as Contract
 }
 
-export const useContracts = (contractIds: string[]) => {
+export const useContracts = (
+  contractIds: string[],
+  pk: 'id' | 'slug' = 'id'
+) => {
   const [contracts, setContracts] = useState<Contract[]>([])
 
   useEffectCheckEquality(() => {
     if (contractIds) {
-      getContracts(contractIds).then((result) => {
+      getContracts(contractIds, pk).then((result) => {
         setContracts(result)
       })
     }
