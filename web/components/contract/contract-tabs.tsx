@@ -252,16 +252,16 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     () =>
       sortBy(comments, [
         sort === 'Best'
-          ? (c) =>
-              isBountiedQuestion
-                ? c.likes
-                : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+          ? isBountiedQuestion
+            ? (c: ContractComment) => -(c?.bountyAwarded ?? 0)
+            : (c) =>
+                // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
                 likes &&
-                  c.createdTime > Date.now() - 10 * MINUTE_MS &&
-                  c.userId === user?.id &&
-                  shouldBeNewestFirst(c)
-                ? -Infinity
-                : -(c?.likes ?? 0)
+                c.createdTime > Date.now() - 10 * MINUTE_MS &&
+                c.userId === user?.id &&
+                shouldBeNewestFirst(c)
+                  ? -Infinity
+                  : -(c?.likes ?? 0)
           : (c) => c,
         (c) => (!shouldBeNewestFirst(c) ? c.createdTime : -c.createdTime),
       ]),
