@@ -79,13 +79,24 @@ export default function Home(props: {
                 color="gray-white"
                 size="xs"
                 onClick={() => setIsModalOpen(true)}
+                className="whitespace-nowrap"
               >
                 Get app
               </Button>
-              <Button color="gray-white" size="xs" onClick={firebaseLogin}>
+              <Button
+                color="gray-white"
+                size="xs"
+                onClick={firebaseLogin}
+                className="whitespace-nowrap"
+              >
                 Sign in
               </Button>
-              <Button color="indigo" size="xs" onClick={firebaseLogin}>
+              <Button
+                color="indigo"
+                size="xs"
+                onClick={firebaseLogin}
+                className="whitespace-nowrap"
+              >
                 Sign up
               </Button>
 
