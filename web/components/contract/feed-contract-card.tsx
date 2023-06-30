@@ -358,16 +358,15 @@ function DetailedCard(props: {
             >
               <Col className={'w-full'}>
                 <Row className={'items-center justify-between'}>
-                  <TradesButton contract={contract} />
-                  <CommentsButton contract={contract} user={user} />
-
-                  <MoreOptionsButton
+                  <DislikeButton
                     user={user}
                     contract={contract}
                     item={item}
                     interesting={!hidden}
                     toggleInteresting={() => setHidden(!hidden)}
                   />
+                  <TradesButton contract={contract} />
+                  <CommentsButton contract={contract} user={user} />
 
                   <LikeButton
                     contentId={contract.id}
@@ -392,7 +391,7 @@ function DetailedCard(props: {
   )
 }
 
-const MoreOptionsButton = (props: {
+const DislikeButton = (props: {
   contract: Contract
   item: FeedTimelineItem | undefined
   user: User | null | undefined
