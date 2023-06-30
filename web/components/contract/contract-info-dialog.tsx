@@ -135,7 +135,7 @@ export const Stats = (props: {
                 Bounty paid{' '}
                 <InfoTooltip text="The bounty that has been paid out so far" />
               </td>
-              <td>{formatMoney(contract.bountyPaid)}</td>
+              <td>{formatMoney(contract.totalBounty - contract.bountyLeft)}</td>
             </tr>
           </>
         )}

@@ -43,6 +43,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
+import { runTxn } from 'shared/run-txn'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -117,9 +118,18 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     trans.create(contractRef, contract)
 
     trans.update(userDoc.ref, {
-      balance: FieldValue.increment(-(ante + (totalBounty ?? 0))),
-      totalDeposits: FieldValue.increment(-(ante + (totalBounty ?? 0))),
+      balance: FieldValue.increment(-ante),
+      totalDeposits: FieldValue.increment(-ante),
     })
+
+    if (totalBounty && totalBounty > 0) {
+      const { status, txn } = await runTxn(trans, {
+        category: 'BOUNTY_POSTED',
+        fromType: 'USER',
+        toType: 'BOUNTY_CONTRACT',
+        token: 'M$',
+      })
+    }
 
     return { user, contract }
   })

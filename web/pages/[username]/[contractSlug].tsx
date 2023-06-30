@@ -414,9 +414,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 <AuthorInfo contract={contract} />
 
                 {contract.outcomeType == 'BOUNTIED_QUESTION' ? (
-                  <BountyLeft
-                    bountyLeft={contract.totalBounty - contract.bountyPaid}
-                  />
+                  <BountyLeft bountyLeft={contract.bountyLeft} />
                 ) : (
                   <div className="flex gap-4">
                     <Tooltip

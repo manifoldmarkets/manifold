@@ -279,7 +279,8 @@ const getBountiedQuestionProps = (totalBounty: number) => {
     mechanism: 'none',
     outcomeType: 'BOUNTIED_QUESTION',
     totalBounty,
-    bountyPaid: 0,
+    // will be added when run TXN
+    bountyLeft: 0,
     bountyTxns: [],
   }
 

@@ -9,6 +9,7 @@ import {
   Txn,
 } from 'common/txn'
 import { createSupabaseDirectClient } from './supabase/init'
+import { BountiedQuestionContract } from 'common/contract'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
@@ -16,26 +17,44 @@ export async function runTxn(
   fbTransaction: admin.firestore.Transaction,
   data: TxnData
 ) {
-  const { amount, fromId, toId, toType } = data
+  const { amount, fromId, toId, toType, fromType } = data
 
   if (!isFinite(amount) || amount <= 0) {
     return { status: 'error', message: 'Invalid amount' }
   }
 
-  const fromDoc = firestore.doc(`users/${fromId}`)
-  const fromSnap = await fbTransaction.get(fromDoc)
-  if (!fromSnap.exists) {
-    return { status: 'error', message: 'User not found' }
-  }
-  const fromUser = fromSnap.data() as User
+  let fromDoc: FirebaseFirestore.DocumentReference
+  let toDoc: FirebaseFirestore.DocumentReference
+  if (fromType === 'BOUNTY_CONTRACT') {
+    fromDoc = firestore.doc(`contracts/${fromId}`)
+    const fromSnap = await fbTransaction.get(fromDoc)
+    if (!fromSnap.exists) {
+      return { status: 'error', message: 'Bounty Contract not found' }
+    }
+    const fromBountyContract = fromSnap.data() as BountiedQuestionContract
 
-  if (fromUser.balance < amount) {
-    return {
-      status: 'error',
-      message: `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance} `,
+    if (fromBountyContract.bountyLeft < amount) {
+      return {
+        status: 'error',
+        message: `Insufficient balance: ${fromBountyContract.question} needed ${amount} but only had ${fromBountyContract.bountyLeft} `,
+      }
+    }
+    //assumed USER for now
+  } else {
+    fromDoc = firestore.doc(`users/${fromId}`)
+    const fromSnap = await fbTransaction.get(fromDoc)
+    if (!fromSnap.exists) {
+      return { status: 'error', message: 'User not found' }
+    }
+    const fromUser = fromSnap.data() as User
+
+    if (fromUser.balance < amount) {
+      return {
+        status: 'error',
+        message: `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance} `,
+      }
     }
   }
-
   // TODO: Track payments received by charities, bank, contracts too.
   if (toType === 'USER') {
     const toDoc = firestore.doc(`users/${toId}`)
@@ -43,15 +62,26 @@ export async function runTxn(
       balance: FieldValue.increment(amount),
       totalDeposits: FieldValue.increment(amount),
     })
+  } else if (toType == 'BOUNTY_CONTRACT') {
+    const toDoc = firestore.doc(`contracts/${toId}`)
+    fbTransaction.update(toDoc, {
+      bountyLeft: FieldValue.increment(amount),
+    })
   }
 
   const newTxnDoc = firestore.collection(`txns/`).doc()
   const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...data }
   fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
-  fbTransaction.update(fromDoc, {
-    balance: FieldValue.increment(-amount),
-    totalDeposits: FieldValue.increment(-amount),
-  })
+  if (fromType === 'USER') {
+    fbTransaction.update(fromDoc, {
+      balance: FieldValue.increment(-amount),
+      totalDeposits: FieldValue.increment(-amount),
+    })
+  } else if (fromType === 'BOUNTY_CONTRACT') {
+    fbTransaction.update(fromDoc, {
+      bountyLeft: FieldValue.increment(-amount),
+    })
+  }
 
   return { status: 'success', txn }
 }

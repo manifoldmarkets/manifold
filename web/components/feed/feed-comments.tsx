@@ -570,7 +570,7 @@ function FeedCommentHeader(props: {
     isBountiedQuestion &&
     user &&
     user.id == contract.creatorId &&
-    contract.totalBounty - contract.bountyPaid > 0
+    contract.bountyLeft > 0
   return (
     <Col className={clsx('text-ink-600 text-sm ')}>
       <Row className="justify-between">
