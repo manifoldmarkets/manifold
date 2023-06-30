@@ -3,6 +3,7 @@ import { JSONContent } from '@tiptap/core'
 import { FieldValue, Transaction } from 'firebase-admin/firestore'
 import { z } from 'zod'
 import { marked } from 'marked'
+import { runPostBountyTxn } from 'shared/txn/run-bounty-txn'
 
 import {
   Answer,
@@ -43,7 +44,6 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
-import { runTxn } from 'shared/run-txn'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -111,8 +111,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       min ?? 0,
       max ?? 0,
       isLogScale ?? false,
-      shouldAnswersSumToOne,
-      totalBounty ?? 0
+      shouldAnswersSumToOne
     )
 
     trans.create(contractRef, contract)
@@ -123,12 +122,22 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     })
 
     if (totalBounty && totalBounty > 0) {
-      const { status, txn } = await runTxn(trans, {
-        category: 'BOUNTY_POSTED',
-        fromType: 'USER',
-        toType: 'BOUNTY_CONTRACT',
-        token: 'M$',
-      })
+      if (totalBounty > user.balance)
+        throw new APIError(400, `Balance must be at least ${ante}.`)
+      const { status, txn } = await runPostBountyTxn(
+        trans,
+        {
+          fromId: userId,
+          fromType: 'USER',
+          toId: contract.id,
+          toType: 'CONTRACT',
+          amount: totalBounty,
+          token: 'M$',
+          category: 'BOUNTY_POSTED',
+        },
+        contractRef,
+        userDoc.ref
+      )
     }
 
     return { user, contract }

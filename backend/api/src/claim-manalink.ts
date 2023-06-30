@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { User } from 'common/user'
 import { canCreateManalink, Manalink } from 'common/manalink'
 import { APIError, authEndpoint, validate } from './helpers'
-import { runTxn, TxnData } from 'shared/run-txn'
+import { runTxn, TxnData } from 'shared/txn/run-txn'
 import { createSupabaseClient } from 'shared/supabase/init'
 
 const bodySchema = z.object({

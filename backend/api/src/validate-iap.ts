@@ -10,7 +10,7 @@ import {
 } from 'common/antes'
 import { ManaPurchaseTxn } from 'common/txn'
 import { sendThankYouEmail } from 'shared/emails'
-import { runTxn } from 'shared/run-txn'
+import { runTxn } from 'shared/txn/run-txn'
 
 const bodySchema = z.object({
   receipt: z.string(),

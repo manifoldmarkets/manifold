@@ -36,13 +36,7 @@ type AnyTxnType =
   | BountyPosted
   | BountyAwarded
 
-type SourceType =
-  | 'USER'
-  | 'CONTRACT'
-  | 'CHARITY'
-  | 'BANK'
-  | 'AD'
-  | 'BOUNTY_CONTRACT'
+export type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
   id: string

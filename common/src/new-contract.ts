@@ -43,8 +43,7 @@ export function getNewContract(
   min: number,
   max: number,
   isLogScale: boolean,
-  shouldAnswersSumToOne: boolean | undefined,
-  totalBounty: number
+  shouldAnswersSumToOne: boolean | undefined
 ) {
   const createdTime = Date.now()
 
@@ -58,7 +57,7 @@ export function getNewContract(
     CERT: () => getCertProps(ante),
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
     STONK: () => getStonkCpmmProps(initialProb, ante),
-    BOUNTIED_QUESTION: () => getBountiedQuestionProps(totalBounty),
+    BOUNTIED_QUESTION: () => getBountiedQuestionProps(),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -274,14 +273,13 @@ const getNumericProps = (
   return system
 }
 
-const getBountiedQuestionProps = (totalBounty: number) => {
+const getBountiedQuestionProps = () => {
   const system: NonBet & BountiedQuestion = {
     mechanism: 'none',
     outcomeType: 'BOUNTIED_QUESTION',
-    totalBounty,
-    // will be added when run TXN
-    bountyLeft: 0,
     bountyTxns: [],
+    totalBounty: 0,
+    bountyLeft: 0,
   }
 
   return system

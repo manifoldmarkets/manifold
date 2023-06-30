@@ -4,8 +4,9 @@ import * as admin from 'firebase-admin'
 import { Contract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
-import { runTxn } from 'shared/run-txn'
+import { runTxn } from 'shared/txn/run-txn'
 import { FieldValue } from 'firebase-admin/firestore'
+import { runAwardBountyTxn } from 'shared/txn/run-bounty-txn'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -21,27 +22,6 @@ export const awardbounty = authEndpoint(async (req, auth) => {
 
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const contractSnap = await transaction.get(contractDoc)
-    if (!contractSnap.exists) throw new APIError(400, 'Invalid contract')
-    const contract = contractSnap.data() as Contract
-    if (
-      contract.mechanism !== 'none' ||
-      contract.outcomeType !== 'BOUNTIED_QUESTION'
-    ) {
-      throw new APIError(
-        400,
-        'Invalid contract, only bountied questions are supported'
-      )
-    }
-
-    if (contract.creatorId !== auth.uid) {
-      throw new APIError(
-        400,
-        'A bounty can only be given by the creator of the question'
-      )
-    }
-
     const commentDoc = firestore.doc(
       `contracts/${contractId}/comments/${commentId}`
     )
@@ -49,40 +29,22 @@ export const awardbounty = authEndpoint(async (req, auth) => {
     if (!commentSnap.exists) throw new APIError(400, 'Invalid comment')
     const comment = commentSnap.data() as ContractComment
 
-    const recipientDoc = firestore.doc(`users/${comment.userId}`)
-    const recipientSnap = await transaction.get(recipientDoc)
-    if (!recipientSnap.exists) throw new APIError(400, 'Invalid recipient')
-    const recipient = recipientSnap.data() as User
+    await runAwardBountyTxn(
+      transaction,
+      {
+        fromId: contractId,
+        fromType: 'CONTRACT',
+        toId: comment.userId,
+        toType: 'USER',
+        amount,
+        token: 'M$',
+        category: 'BOUNTY_AWARDED',
+        data: { comment: comment.id },
+      },
+      auth.uid
+    )
 
-    const { bountyLeft } = contract
-    if (bountyLeft < amount) {
-      throw new APIError(
-        400,
-        `There is only M${bountyLeft} of bounty left to award, which is less than M${amount}`
-      )
-    }
-
-    if (!isFinite(bountyLeft - amount)) {
-      throw new APIError(
-        500,
-        'Invalid bounty balance left for ' + contract.question
-      )
-    }
-
-    const { status, txn } = await runTxn(transaction, {
-      category: 'BOUNTY_AWARDED',
-      fromType: 'BOUNTY_CONTRACT',
-      toType: 'USER',
-      token: 'M$',
-    })
-
-    if (status !== 'success' || !txn)
-      throw new APIError(500, 'Failed to award bounty')
-    transaction.update(contractDoc, {
-      bountyTxns: FieldValue.arrayUnion(txn.id),
-    })
-
-    return txn
+    return { status: 'hi' }
   })
 })
 
