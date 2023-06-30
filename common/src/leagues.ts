@@ -30,6 +30,21 @@ export const getSeasonDates = (season: number) => {
   return { start, end }
 }
 
+export const getSeasonStatus = (season: number) => {
+  const { start, end } = getSeasonDates(season)
+  const now = new Date()
+  if (now < start) {
+    return 'upcoming'
+  } else if (now > end) {
+    if (!SEASON_END_TIMES[season - 1]) {
+      return 'closing-period'
+    }
+    return 'ended'
+  } else {
+    return 'current'
+  }
+}
+
 export const DIVISION_NAMES = {
   0: 'Bots',
   1: 'Bronze',

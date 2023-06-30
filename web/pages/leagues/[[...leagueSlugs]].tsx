@@ -14,6 +14,7 @@ import {
   getSeasonMonth,
   getSeasonDates,
   parseLeaguePath,
+  getSeasonStatus,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -145,6 +146,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     getDemotionAndPromotionCount(division)
 
   const MARKER = '●️'
+  const seasonStatus = getSeasonStatus(season)
   const seasonEnd = getSeasonDates(season).end
 
   return (
@@ -185,22 +187,29 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             <Col className="items-center gap-1">
               <Row className="items-center gap-1.5">
                 <ClockIcon className="text-ink-1000 h-4 w-4" />{' '}
-                <Row className={' gap-1 text-sm'}>
-                  {new Date() > seasonEnd ? (
-                    'Ended. Finalized ' + formatTime(seasonEnd)
-                  ) : (
+                <div className={'text-sm'}>
+                  {seasonStatus === 'closing-period' && (
+                    <>
+                      Ends randomly within 24h:{' '}
+                      <Countdown className=" text-sm" endDate={seasonEnd} />
+                    </>
+                  )}
+                  {seasonStatus === 'ended' && (
+                    <>Ended at {formatTime(seasonEnd)}</>
+                  )}
+                  {seasonStatus === 'current' && (
                     <InfoTooltip
                       text={
                         'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
                       }
                     >
                       <>
-                        Ends in{' '}
+                        Countdown:{' '}
                         <Countdown className=" text-sm" endDate={seasonEnd} />
                       </>
                     </InfoTooltip>
                   )}
-                </Row>
+                </div>
               </Row>
             </Col>
           </Row>
