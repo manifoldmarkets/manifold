@@ -390,6 +390,8 @@ async function createAnswers(
         poolYes,
         poolNo,
         prob,
+        totalLiquidity: poolYes ** 0.5 * poolNo ** 0.5,
+        subsidyPool: 0,
       }
       return firestore
         .collection(`contracts/${contract.id}/answersCpmm`)
