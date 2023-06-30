@@ -1,5 +1,6 @@
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
-  '🗳️ Politics': ['🇺🇸 US Politics', '🟠 Trump'],
+  '🗳️ Politics': ['🇺🇸 US Politics', '🟠 Trump', '👩‍⚖️ Supreme Court'],
+
   '💻 Technology': [
     '🤖 AI',
     '🪙 Crypto',
@@ -20,17 +21,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🏅 Sports',
   ],
 
-  '🍿 Media': [
-    '📺 TV Shows',
-    '🎮 Gaming',
-    '🎵 Music',
-    '📚 Books',
-    '🌐 Internet Culture',
-    '👥 Celebrities',
-  ],
   '💼 Business': ['💵 Finance', '💰 Economics', '🚀 Startups', '🚘 Elon Musk'],
-
-  '🪂 Lifestyle': ['🏳️‍🌈 LGBTQIA+', '⛪ Religion', '💪 Personal Development'],
 
   '🌍 World': [
     '🇷🇺🇺🇦 Russia & Ukraine',
@@ -41,6 +32,17 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🌎 Latin America',
     '🌍 Middle East',
   ],
+
+  '🍿 Media': [
+    '📺 TV Shows',
+    '🎮 Gaming',
+    '🎵 Music',
+    '📚 Books',
+    '🌐 Internet Culture',
+    '👥 Celebrities',
+  ],
+
+  '🪂 Lifestyle': ['🏳️‍🌈 LGBTQIA+', '⛪ Religion', '💪 Personal Development'],
 
   '👥 Communities': ['💗 Effective Altruism', '🎮 Destiny.gg'],
 }

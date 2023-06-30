@@ -12,6 +12,7 @@ const TOPICS_TO_IGNORE_FOR_BLANK_TOPIC = [
 ]
 
 const TOPICS_TO_WORDS: { [key: string]: string } = {
+  'Supreme Court': 'Supreme Court, SCOTUS, Justice, Judge, Law, Constitution',
   'LGBTQIA+': 'lesbian, bisexual, gay, transgender, queer culture',
   'Effective Altruism':
     'effective altruism, charity, donations, philanthropy, animal rights, existential risk',
