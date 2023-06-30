@@ -1,15 +1,15 @@
 import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
 import { usePersistentState, storageStore } from './use-persistent-state'
-import { useUser, useUserContractMetrics } from './use-user'
-import { useEffectCheckEquality } from './use-effect-check-equality'
+import { useUser } from './use-user'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { getUserContractMetrics } from 'common/supabase/contract-metrics'
+import { db } from 'web/lib/supabase/db'
+import { useEffect } from 'react'
 
 export const useSavedContractMetrics = (contract: Contract) => {
   const user = useUser()
-  const contractMetrics = contract
-    ? useUserContractMetrics(user?.id, contract.id)
-    : null
+
   const [savedMetrics, setSavedMetrics] = usePersistentState<
     ContractMetric | undefined
   >(undefined, {
@@ -17,17 +17,12 @@ export const useSavedContractMetrics = (contract: Contract) => {
     store: storageStore(safeLocalStorage),
   })
 
-  const metrics =
-    contractMetrics || savedMetrics
-      ? ({
-          ...savedMetrics,
-          ...contractMetrics,
-        } as ContractMetric)
-      : undefined
+  useEffect(() => {
+    getUserContractMetrics(user?.id ?? '_', contract.id, db).then((metrics) => {
+      if (metrics) setSavedMetrics({ ...savedMetrics, ...metrics[0] })
+    }),
+      []
+  })
 
-  useEffectCheckEquality(() => {
-    if (metrics) setSavedMetrics(metrics)
-  }, [metrics, setSavedMetrics])
-
-  return metrics
+  return savedMetrics
 }
