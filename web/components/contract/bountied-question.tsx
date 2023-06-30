@@ -19,7 +19,7 @@ import { awardBounty } from 'web/lib/firebase/api'
 
 export function BountyLeft(props: { bountyLeft: number }) {
   const { bountyLeft } = props
-  if (bountyLeft < 1) {
+  if (!bountyLeft || bountyLeft < 1) {
     return (
       <span>
         No bounty left

@@ -1,12 +1,9 @@
+import { ContractComment } from 'common/comment'
+import * as admin from 'firebase-admin'
+import { runAwardBountyTxn } from 'shared/txn/run-bounty-txn'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
-import * as admin from 'firebase-admin'
-import { Contract } from 'common/contract'
-import { ContractComment } from 'common/comment'
-import { User } from 'common/user'
-import { runTxn } from 'shared/txn/run-txn'
 import { FieldValue } from 'firebase-admin/firestore'
-import { runAwardBountyTxn } from 'shared/txn/run-bounty-txn'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -29,7 +26,7 @@ export const awardbounty = authEndpoint(async (req, auth) => {
     if (!commentSnap.exists) throw new APIError(400, 'Invalid comment')
     const comment = commentSnap.data() as ContractComment
 
-    await runAwardBountyTxn(
+    const { status, txn } = await runAwardBountyTxn(
       transaction,
       {
         fromId: contractId,
@@ -44,7 +41,11 @@ export const awardbounty = authEndpoint(async (req, auth) => {
       auth.uid
     )
 
-    return { status: 'hi' }
+    transaction.update(commentDoc, {
+      bountyAwarded: FieldValue.increment(amount),
+    })
+
+    return txn
   })
 })
 

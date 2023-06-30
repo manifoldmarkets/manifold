@@ -390,5 +390,5 @@ export function awardBounty(params: {
   commentId: string
   amount: number | undefined
 }) {
-  return call(getApiUrl('awardbounty'), 'POST', params)
+  return call(getApiUrl('award-bounty'), 'POST', params)
 }
