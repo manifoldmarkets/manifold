@@ -23,7 +23,7 @@ import { TradesButton } from './trades-button'
 import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
 import { TiVolumeMute } from 'react-icons/ti'
 import { toast } from 'react-hot-toast'
-import React, { useState } from 'react'
+import React from 'react'
 import {
   ContractStatusLabel,
   VisibilityIcon,
@@ -171,7 +171,6 @@ function DetailedCard(props: {
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
-  const [hidden, setHidden] = useState(false)
   const path = contractPath(contract)
 
   const probChange =
@@ -204,155 +203,140 @@ function DetailedCard(props: {
       <Row className={clsx('grow gap-2 px-4 pb-2')}>
         <Col className="w-full">
           <Col className="w-full gap-0.5">
-            {!hidden ? (
-              <>
-                {/* Title is link to contract for open in new tab and a11y */}
-                <Col
-                  onClick={(e) => e.stopPropagation()}
-                  className={'w-full pt-4'}
-                >
-                  <Col className={'w-full flex-col gap-1.5'}>
-                    <Row className={'justify-between gap-1'}>
-                      <Link
-                        href={path}
-                        className={clsx(
-                          '-mt-1 text-lg',
-                          'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
-                          textColor
-                        )}
-                        // if open in new tab, don't open in this one
-                        onClick={(e) => {
-                          trackClick()
-                          e.stopPropagation()
-                        }}
+            {/* Title is link to contract for open in new tab and a11y */}
+            <Col onClick={(e) => e.stopPropagation()} className={'w-full pt-4'}>
+              <Col className={'w-full flex-col gap-1.5'}>
+                <Row className={'justify-between gap-1'}>
+                  <Link
+                    href={path}
+                    className={clsx(
+                      '-mt-1 text-lg',
+                      'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
+                      textColor
+                    )}
+                    // if open in new tab, don't open in this one
+                    onClick={(e) => {
+                      trackClick()
+                      e.stopPropagation()
+                    }}
+                  >
+                    <VisibilityIcon contract={contract} /> {contract.question}
+                    {item &&
+                      !item.isCopied &&
+                      (item.dataType === 'contract_probability_changed' ||
+                        item.dataType === 'trending_contract') && (
+                        <div className={'text-ink-400 text-sm'}>
+                          <Tooltip
+                            text={item?.reasonDescription}
+                            placement={'top'}
+                          >
+                            {item.dataType === 'contract_probability_changed'
+                              ? ' moved'
+                              : item.dataType === 'trending_contract'
+                              ? ' trending'
+                              : item.dataType === 'new_subsidy'
+                              ? ' subsidized'
+                              : ''}
+                          </Tooltip>
+                          <RelativeTimestamp
+                            time={item.createdTime}
+                            shortened={true}
+                          />{' '}
+                        </div>
+                      )}
+                  </Link>
+                  <Col className={'items-end'}>
+                    {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
+                      <ContractStatusLabel
+                        className={'-mt-1 text-lg font-bold'}
+                        contract={contract}
+                      />
+                    )}
+                    <span>
+                      {showChange && (
+                        <span
+                          className={clsx(
+                            'font-normal',
+                            probChange! > 0
+                              ? 'text-teal-500'
+                              : 'text-scarlet-500'
+                          )}
+                        >
+                          {probChange! > 0 ? '+' : ''}
+                          {probChange}%
+                        </span>
+                      )}
+                    </span>
+                  </Col>
+                </Row>
+                <Row className={'items-center justify-between gap-1'}>
+                  <Col>
+                    <Row className={'items-center gap-1'}>
+                      <Avatar
+                        size={'xs'}
+                        className={'mr-0.5'}
+                        avatarUrl={creatorAvatarUrl}
+                        username={creatorUsername}
+                      />
+                      <Row
+                        className={'text-ink-700 items-baseline gap-1 text-sm'}
                       >
-                        <VisibilityIcon contract={contract} />{' '}
-                        {contract.question}
+                        <UserLink
+                          name={contract.creatorName}
+                          username={creatorUsername}
+                        />
                         {item &&
                           !item.isCopied &&
-                          (item.dataType === 'contract_probability_changed' ||
-                            item.dataType === 'trending_contract') && (
-                            <div className={'text-ink-400 text-sm'}>
+                          item.dataType === 'new_contract' && (
+                            <span>
                               <Tooltip
                                 text={item?.reasonDescription}
                                 placement={'top'}
                               >
-                                {item.dataType ===
-                                'contract_probability_changed'
-                                  ? ' moved'
-                                  : item.dataType === 'trending_contract'
-                                  ? ' trending'
-                                  : item.dataType === 'new_subsidy'
-                                  ? ' subsidized'
-                                  : ''}
+                                asked
                               </Tooltip>
                               <RelativeTimestamp
                                 time={item.createdTime}
                                 shortened={true}
-                              />{' '}
-                            </div>
-                          )}
-                      </Link>
-                      <Col className={'items-end'}>
-                        {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-                          <ContractStatusLabel
-                            className={'-mt-1 text-lg font-bold'}
-                            contract={contract}
-                          />
-                        )}
-                        <span>
-                          {showChange && (
-                            <span
-                              className={clsx(
-                                'font-normal',
-                                probChange! > 0
-                                  ? 'text-teal-500'
-                                  : 'text-scarlet-500'
-                              )}
-                            >
-                              {probChange! > 0 ? '+' : ''}
-                              {probChange}%
+                                className="text-ink-400"
+                              />
                             </span>
                           )}
-                        </span>
-                      </Col>
-                    </Row>
-                    <Row className={'items-center justify-between gap-1'}>
-                      <Col>
-                        <Row className={'items-center gap-1'}>
-                          <Avatar
-                            size={'xs'}
-                            className={'mr-0.5'}
-                            avatarUrl={creatorAvatarUrl}
-                            username={creatorUsername}
-                          />
-                          <Row
-                            className={
-                              'text-ink-700 items-baseline gap-1 text-sm'
-                            }
-                          >
-                            <UserLink
-                              name={contract.creatorName}
-                              username={creatorUsername}
-                            />
-                            {item &&
-                              !item.isCopied &&
-                              item.dataType === 'new_contract' && (
-                                <span>
-                                  <Tooltip
-                                    text={item?.reasonDescription}
-                                    placement={'top'}
-                                  >
-                                    asked
-                                  </Tooltip>
-                                  <RelativeTimestamp
-                                    time={item.createdTime}
-                                    shortened={true}
-                                    className="text-ink-400"
-                                  />
-                                </span>
-                              )}
-                          </Row>
-                        </Row>
-                      </Col>
-                      {isBinaryCpmm && !isClosed && (
-                        <Col className="text-ink-500 items-center text-sm">
-                          <BetRow contract={contract} user={user} />
-                        </Col>
-                      )}
+                      </Row>
                     </Row>
                   </Col>
-                </Col>
-
-                {contract.outcomeType === 'MULTIPLE_CHOICE' && (
-                  <Col className="mt-4" onClick={(e) => e.stopPropagation()}>
-                    <AnswersPanel
-                      contract={contract}
-                      onAnswerCommentClick={() => {
-                        return undefined
-                      }}
-                      showResolver={false}
-                    />
-                  </Col>
-                )}
-
-                <Col className={'w-full items-center'}>
-                  {promotedData && (
-                    <ClaimButton
-                      {...promotedData}
-                      className={'z-10 my-2 whitespace-nowrap'}
-                    />
+                  {isBinaryCpmm && !isClosed && (
+                    <Col className="text-ink-500 items-center text-sm">
+                      <BetRow contract={contract} user={user} />
+                    </Col>
                   )}
-                </Col>
+                </Row>
+              </Col>
+            </Col>
 
-                {isBinaryCpmm && metrics && metrics.hasShares && (
-                  <YourMetricsFooter metrics={metrics} />
-                )}
-              </>
-            ) : (
-              <Row className={'text-ink-400 mt-2 text-sm'}>
-                <i>Market hidden</i>
-              </Row>
+            {contract.outcomeType === 'MULTIPLE_CHOICE' && (
+              <Col className="mt-4" onClick={(e) => e.stopPropagation()}>
+                <AnswersPanel
+                  contract={contract}
+                  onAnswerCommentClick={() => {
+                    return undefined
+                  }}
+                  showResolver={false}
+                />
+              </Col>
+            )}
+
+            <Col className={'w-full items-center'}>
+              {promotedData && (
+                <ClaimButton
+                  {...promotedData}
+                  className={'z-10 my-2 whitespace-nowrap'}
+                />
+              )}
+            </Col>
+
+            {isBinaryCpmm && metrics && metrics.hasShares && (
+              <YourMetricsFooter metrics={metrics} />
             )}
             <Row
               className="items-center justify-between pt-2"
@@ -360,13 +344,8 @@ function DetailedCard(props: {
             >
               <Col className={'w-full'}>
                 <Row className={'items-center justify-between'}>
-                  <DislikeButton
-                    user={user}
-                    contract={contract}
-                    item={item}
-                    interesting={!hidden}
-                    toggleInteresting={() => setHidden(!hidden)}
-                  />
+                  {/*// Placeholder for the dislike button*/}
+                  <div />
                   <TradesButton contract={contract} />
                   <CommentsButton contract={contract} user={user} />
 
@@ -393,14 +372,16 @@ function DetailedCard(props: {
   )
 }
 
-const DislikeButton = (props: {
+export const DislikeButton = (props: {
   contract: Contract
   item: FeedTimelineItem | undefined
   user: User | null | undefined
   interesting: boolean
   toggleInteresting: () => void
+  className?: string
 }) => {
-  const { contract, user, interesting, item, toggleInteresting } = props
+  const { contract, className, user, interesting, item, toggleInteresting } =
+    props
   if (!user) return null
 
   const markUninteresting = async () => {
@@ -419,7 +400,7 @@ const DislikeButton = (props: {
   }
 
   return (
-    <Tooltip text={'Hide this market'}>
+    <Tooltip text={'Hide this market'} className={className}>
       <button
         className={clsx(
           'text-ink-500 hover:text-ink-600 flex flex-col justify-center transition-transform disabled:cursor-not-allowed'
