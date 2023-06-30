@@ -40,7 +40,7 @@ import { addHouseSubsidy } from 'shared/helpers/add-house-subsidy'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { calculateUserMetrics } from 'common/calculate-metrics'
-import { runTxn, TxnData } from 'shared/run-txn'
+import { runTxn, TxnData } from 'shared/txn/run-txn'
 import { GroupResponse } from 'common/group'
 import {
   createSupabaseClient,
