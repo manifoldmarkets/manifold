@@ -22,6 +22,8 @@ export const awardQAndAAnswer = authEndpoint(async (req, auth) => {
   const userId = auth.uid
 
   const pg = createSupabaseDirectClient()
+
+  console.log('awarding', answerId, amount)
   const answer = await pg.one<q_and_a_answer>(
     `select * from q_and_a_answers
     where id = $1`,
