@@ -174,6 +174,7 @@ const ContractBetsEntry = (props: {
   const { bets, metrics, contract } = props
   const { profit, profitPercent } = metrics
 
+  const showExpander = bets.length > 2
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -195,23 +196,25 @@ const ContractBetsEntry = (props: {
         </Col>
       </Row>
 
-      <Row
-        className="cursor-pointer items-center gap-2 self-start"
-        tabIndex={0}
-        onClick={() => setExpanded(!expanded)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') setExpanded(!expanded)
-        }}
-      >
-        {expanded ? (
-          <ChevronUpIcon className="h-5 w-5" />
-        ) : (
-          <ChevronDownIcon className="h-5 w-5" />
-        )}
-        Bets
-      </Row>
+      {showExpander && (
+        <Row
+          className="cursor-pointer items-center gap-2 self-start"
+          tabIndex={0}
+          onClick={() => setExpanded(!expanded)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') setExpanded(!expanded)
+          }}
+        >
+          {expanded ? (
+            <ChevronUpIcon className="h-5 w-5" />
+          ) : (
+            <ChevronDownIcon className="h-5 w-5" />
+          )}
+          Bets
+        </Row>
+      )}
 
-      {expanded && (
+      {(!showExpander || expanded) && (
         <ContractBetsTable
           contract={contract}
           bets={bets}
