@@ -1,7 +1,8 @@
 import { createRNG } from 'common/util/random'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ensureDeviceToken } from 'web/components/auth-context'
 import { track } from 'web/lib/service/analytics'
+import { useEffectCheckEquality } from './use-effect-check-equality'
 
 const TEST_CACHE: any = {}
 
@@ -12,7 +13,7 @@ export const useABTest = <T>(
 ) => {
   const [variant, setVariant] = useState<T | undefined>(undefined)
 
-  useEffect(() => {
+  useEffectCheckEquality(() => {
     const deviceId = ensureDeviceToken()
     if (!deviceId) return
 
