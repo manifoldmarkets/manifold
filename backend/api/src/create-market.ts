@@ -123,7 +123,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
     if (totalBounty && totalBounty > 0) {
       if (totalBounty > user.balance)
-        throw new APIError(400, `Balance must be at least ${ante}.`)
+        throw new APIError(400, `Balance must be at least ${totalBounty}.`)
       const { status, txn } = await runPostBountyTxn(
         trans,
         {
