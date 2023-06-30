@@ -4,7 +4,10 @@ import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
 import Link from 'next/link'
-import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import {
+  DislikeButton,
+  FeedContractCard,
+} from 'web/components/contract/feed-contract-card'
 import { mergePeriodic } from 'web/components/feed/feed-items'
 import { Col } from 'web/components/layout/col'
 import { groupCommentsByContractsAndParents } from 'web/hooks/use-additional-feed-items'
@@ -17,13 +20,15 @@ import {
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
 import { ContractsTable } from '../contract/contracts-table'
-import { NewsArticle } from '../news-article'
+import { NewsArticle } from '../news/news-article'
 import { FeedBetsItem } from './feed-bet-item'
 import { FeedCommentItem } from './feed-comment-item'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { track } from 'web/lib/service/analytics'
+import React, { useState } from 'react'
+import { Row } from 'web/components/layout/row'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
@@ -83,6 +88,7 @@ export const FeedTimelineItems = (props: {
           if ('ad_id' in item) {
             return (
               <FeedContractAndRelatedItems
+                user={user}
                 contract={contract}
                 promotedData={{
                   adId: item.ad_id,
@@ -102,6 +108,7 @@ export const FeedTimelineItems = (props: {
           // Organic contract
           return (
             <FeedContractAndRelatedItems
+              user={user}
               contract={contract}
               parentComments={parentComments}
               childCommentsByParentCommentId={childCommentsByParentCommentId}
@@ -138,6 +145,7 @@ export const FeedTimelineItems = (props: {
       })}
       {manualContracts?.map((contract) => (
         <FeedContractAndRelatedItems
+          user={user}
           contract={contract}
           parentComments={[]}
           childCommentsByParentCommentId={{}}
@@ -150,6 +158,7 @@ export const FeedTimelineItems = (props: {
 
 const FeedContractAndRelatedItems = (props: {
   contract: Contract
+  user: User | null | undefined
   parentComments: ContractComment[]
   childCommentsByParentCommentId: Record<string, ContractComment[]>
   groupedBetsByTime?: Bet[][]
@@ -165,43 +174,66 @@ const FeedContractAndRelatedItems = (props: {
     childCommentsByParentCommentId,
     parentComments,
     keyPrefix,
+    user,
   } = props
   const hasRelatedItems =
     parentComments.length > 0 || (groupedBetsByTime ?? []).length > 0
+  const [hidden, setHidden] = useState(false)
 
   return (
     <FeedItemFrame
       item={item}
       key={keyPrefix + contract.id + '-feed-timeline-item-' + item?.id}
+      className={'relative'}
     >
-      <FeedContractCard
-        contract={contract}
-        promotedData={promotedData}
-        trackingPostfix="feed"
-        children={
-          hasRelatedItems ? (
-            <>
-              {parentComments.length > 0 && (
-                <FeedCommentItem
-                  contract={contract}
-                  commentThreads={parentComments.map((parentComment) => ({
-                    parentComment,
-                    childComments:
-                      childCommentsByParentCommentId[parentComment.id] ?? [],
-                  }))}
-                />
-              )}
-              {(!parentComments || parentComments.length === 0) &&
-                groupedBetsByTime?.length && (
-                  <FeedBetsItem
+      {!hidden ? (
+        <FeedContractCard
+          contract={contract}
+          promotedData={promotedData}
+          trackingPostfix="feed"
+          children={
+            hasRelatedItems ? (
+              <>
+                {parentComments.length > 0 && (
+                  <FeedCommentItem
                     contract={contract}
-                    groupedBets={groupedBetsByTime}
+                    commentThreads={parentComments.map((parentComment) => ({
+                      parentComment,
+                      childComments:
+                        childCommentsByParentCommentId[parentComment.id] ?? [],
+                    }))}
                   />
                 )}
-            </>
-          ) : undefined
-        }
+                {(!parentComments || parentComments.length === 0) &&
+                  groupedBetsByTime?.length && (
+                    <FeedBetsItem
+                      contract={contract}
+                      groupedBets={groupedBetsByTime}
+                    />
+                  )}
+              </>
+            ) : undefined
+          }
+          item={item}
+        />
+      ) : (
+        <Col
+          className={clsx(
+            'bg-canvas-0 border-canvas-0 rounded-xl border drop-shadow-md'
+          )}
+        >
+          <Row className={'text-ink-400 mb-10 px-4 pt-3 text-sm'}>
+            <i>Market hidden</i>
+          </Row>
+        </Col>
+      )}
+      <DislikeButton
+        className={'absolute bottom-2.5 left-4'}
+        user={user}
+        contract={contract}
         item={item}
+        interesting={!hidden}
+        toggleInteresting={() => setHidden(!hidden)}
       />
     </FeedItemFrame>
   )

@@ -1,13 +1,35 @@
-import Masonry from 'react-masonry-css'
-
 import { Col } from 'web/components/layout/col'
 import { useContracts } from 'web/hooks/use-contract-supabase'
 import { SimpleContractRow } from 'web/components/simple-contract-row'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
-import { NewsArticleOriginal } from 'web/components/news-article-original'
+import { DashboardNewsItem } from 'web/components/news/dashboard-news-item'
 import { NewsTopicsContentContainer } from 'web/components/widgets/news-topics-content-container'
 import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
+import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
+
+const SupremeCourt = createNewsDashboardTab(
+  'Supreme Court',
+  'Affirmative Action Ruling & More',
+  [
+    {
+      url: 'https://edition.cnn.com/politics/live-news/supreme-court-decisions',
+    },
+    { slug: 'will-harvard-lose-the-supreme-court' },
+    { slug: 'will-harvard-admit-a-class-that-is-71b4a35bf252' },
+    { slug: 'will-harvard-admit-a-class-of-more' },
+    { slug: 'will-any-top-10-university-admit-si' },
+    {
+      url: 'https://edition.cnn.com/2023/06/26/politics/supreme-court-final-week-preview/index.html',
+    },
+    { slug: 'will-the-supreme-court-permit-biden' },
+    { slug: 'will-student-loan-payments-resume-b-738383e534d9' },
+    { slug: 'will-the-us-supreme-court-rule-in-f' },
+    { slug: 'in-counterman-v-colorado-will-the-s' },
+    { slug: 'in-the-teamsters-scotus-case-will-t' },
+    { slug: 'will-scotus-decide-that-a-selfappoi' },
+  ]
+)
 
 export const ElonVersusZuckData = () => {
   const [fightMarket, winMarket, streamMarket, julyMarket] = useContracts([
@@ -21,7 +43,7 @@ export const ElonVersusZuckData = () => {
     <Col>
       <Title className="mb-4">Elon vs Zuck</Title>
       <NewsGrid>
-        <NewsArticleOriginal
+        <DashboardNewsItem
           title="Elon Musk and Mark Zuckerberg agree to hold cage fight"
           urlToImage="https://ichef.bbci.co.uk/news/976/cpsprodpb/AEC1/production/_130173744_fight-index-getty.jpg.webp"
           url="https://www.bbc.com/news/business-65981876"
@@ -47,7 +69,7 @@ export const ElonVersusZuckData = () => {
           />
         )}
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           title="Elon Musk vs. Mark Zuckerberg? Dana White prepared to make 'biggest fight ever in the history of the world'"
           urlToImage="https://img-s-msn-com.akamaized.net/tenant/amp/entityid/AA1cUcfI.img?w=768&h=511&m=6&x=144&y=83&s=693&d=254"
           url="https://www.msn.com/en-us/sports/other/elon-musk-vs-mark-zuckerberg-dana-white-prepared-to-make-biggest-fight-ever-in-the-history-of-the-world/ar-AA1cTY8R"
@@ -85,7 +107,7 @@ export const ElonVersusZuckData = () => {
   )
 }
 
-export const RussianCoupData = () => {
+const RussianCoupData = () => {
   const prigozhinMarkets = useContracts([
     'HZKHs5sbICIRrtBeGXMu',
     'Uj4VpjfgWxdwwek3b9UJ',
@@ -101,7 +123,7 @@ export const RussianCoupData = () => {
     <Col>
       <Title className="mb-4">Coup Over? Russian Merc Chief Stands Down</Title>
       <NewsGrid>
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Vladimir Putin says Wagner mutiny leaders will be 'brought to justice'"
           urlToImage="https://ichef.bbci.co.uk/news/976/cpsprodpb/B235/production/_130212654_vladimirputin.png.webp"
@@ -111,7 +133,7 @@ export const RussianCoupData = () => {
           published_time={Date.UTC(2023, 5, 26, 23, 30)}
         />
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Rumors grow that a top Russian general who knew of Prigozhin's attempted coup may be under arrest"
           urlToImage="https://s.yimg.com/ny/api/res/1.2/oXNcLmKnIjZRMTErBYsp9A--/YXBwaWQ9aGlnaGxhbmRlcjt3PTcwNTtoPTQ3MDtjZj13ZWJw/https://media.zenfs.com/en/business_insider_articles_888/ce08d4cc8e92c221186763d12243e885"
@@ -131,7 +153,7 @@ export const RussianCoupData = () => {
           </>
         ))}
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Wagner chief says he ordered his Russian mercenaries to halt march on Moscow and return to Ukraine"
           urlToImage="https://storage.googleapis.com/afs-prod/media/d4ed1506982c42e998398220ee61d51a/1000.jpeg"
@@ -141,7 +163,7 @@ export const RussianCoupData = () => {
           published_time={Date.UTC(2023, 5, 24, 18)}
         />
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Russia accuses Wagner mercenary boss Yevgeny Prigozhin of mutiny after he says Moscow killed 2,000 of his men"
           urlToImage="https://live-production.wcms.abc-cdn.net.au/0b572035d75fec649729bcc01e15ad56?impolicy=wcms_crop_resize&cropH=2811&cropW=4997&xPos=3&yPos=0&width=862&height=485"
@@ -151,7 +173,7 @@ export const RussianCoupData = () => {
           published_time={Date.UTC(2023, 5, 23, 22)}
         />
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Wagner boss Prigozhin says Russia's 'evil' defense ministry 'must be stopped' in latest shocking provocation"
           urlToImage="https://i.insider.com/6495e7aa65b9ce0018a49df7?width=1300&format=jpeg&auto=webp"
@@ -165,7 +187,7 @@ export const RussianCoupData = () => {
   )
 }
 
-export const UkraineWarData = () => {
+const UkraineWarData = () => {
   const contractIds = [
     'TCu9mfpMPGM9i7wjSGWC',
     '8dD3vNDbHnPCx3movLl9',
@@ -190,7 +212,7 @@ export const UkraineWarData = () => {
     <Col>
       <Title className="mb-4">Ukraine vs Russia</Title>
       <NewsGrid>
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Wagner boss Prigozhin says Russia's 'evil' defense ministry 'must be stopped' in latest shocking provocation"
           urlToImage="https://i.insider.com/6495e7aa65b9ce0018a49df7?width=1300&format=jpeg&auto=webp"
@@ -210,7 +232,7 @@ export const UkraineWarData = () => {
           </>
         ))}
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Ukrainian intelligence shows Moscow is plotting 'terror attack' on nuclear plant
 "
@@ -246,7 +268,7 @@ export const UkraineWarData = () => {
   )
 }
 
-export const RedditBlackoutData = () => {
+const RedditBlackoutData = () => {
   const contractIds = [
     'FsdPt9ZNM8bhJCH6poED',
     '3EK7ViWbBSj6mNKi2ZzV',
@@ -286,7 +308,7 @@ export const RedditBlackoutData = () => {
             </ul>
           }
         />
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Thousands of Reddit Communities Stay Dark as App Policy Protest Continues"
           urlToImage="https://static01.nyt.com/images/2023/06/21/multimedia/20xp-reddit1-print-lcjh/20xp-reddit1-lcjh-superJumbo.jpg?quality=75&auto=webp"
@@ -311,7 +333,7 @@ export const RedditBlackoutData = () => {
   )
 }
 
-export const MissingSubData = () => {
+const MissingSubData = () => {
   const contractIds = [
     'QLdcYfes6w4VSddzc5Lc',
     'dRjGomQYlRMDBaBskqOk',
@@ -383,7 +405,7 @@ export const MissingSubData = () => {
             </>
           ))}
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Search for Missing Titanic Submersible"
           urlToImage="https://i.ytimg.com/vi/l9_qNO37oFs/maxresdefault.jpg"
@@ -396,7 +418,7 @@ export const MissingSubData = () => {
   )
 }
 
-export const UsElectionsData = () => {
+const UsElectionsData = () => {
   const contractIds = [
     'XNVdtrFIbQvcNhGXueGl',
     'YTIuuSsNRn2OlA4KykRM',
@@ -415,7 +437,7 @@ export const UsElectionsData = () => {
     <Col>
       <Title className="mb-4">US Elections</Title>
       <NewsGrid>
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Judge set Mar-a-lago classified paper trial date for August 14th"
           urlToImage="https://static.independent.co.uk/2023/06/15/23/Trump_Classified_Documents_14918.jpg?quality=75&width=990&crop=4%3A3%2Csmart&auto=webp"
@@ -452,12 +474,12 @@ export const UsElectionsData = () => {
   )
 }
 
-const NewsGrid = (props: { children: React.ReactNode }) => (
-  <Masonry
-    breakpointCols={{ default: 2, 768: 1 }}
-    className="-ml-4 flex w-auto"
-    columnClassName="pl-4 bg-clip-padding"
-  >
-    {props.children}
-  </Masonry>
-)
+export const newsContent = [
+  SupremeCourt,
+  { title: 'Russian Coup?', content: <RussianCoupData /> },
+  { title: 'Elon v Zuck', content: <ElonVersusZuckData /> },
+  { title: 'Titanic Sub', content: <MissingSubData /> },
+  { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
+  { title: 'Ukraine War', content: <UkraineWarData /> },
+  { title: 'US Elections', content: <UsElectionsData /> },
+]

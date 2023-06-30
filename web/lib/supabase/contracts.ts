@@ -12,7 +12,7 @@ import { Sort, filter } from 'web/components/supabase-search'
 import { stateType } from 'web/components/supabase-search'
 import { supabaseSearchContracts } from '../firebase/api'
 import { db } from './db'
-import { chunk } from 'lodash'
+import { chunk, flatten, keyBy } from 'lodash'
 
 // A function to retrieve all contracts a user has bet on.
 export async function getUserBetContracts(
@@ -33,19 +33,28 @@ export async function getUserBetContracts(
 }
 
 export async function getPublicContractIds(contractIds: string[]) {
-  const { data } = await run(
-    db.from('public_contracts').select('data').in('id', contractIds)
+  const contractLists = await Promise.all(
+    chunk(contractIds, 100).map(async (ids) => {
+      const { data } = await run(
+        db.from('public_contracts').select('data').in('id', ids)
+      )
+      if (data && data.length > 0) {
+        return data.map((d) => d.data as Contract)
+      } else {
+        return []
+      }
+    })
   )
-  if (data && data.length > 0) {
-    return data.map((d) => d.data as Contract)
-  } else {
-    return []
-  }
+  const contractsById = keyBy(flatten(contractLists), 'id')
+  return filterDefined(contractIds.map((id) => contractsById[id]))
 }
 
-export async function getContracts(contractIds: string[]) {
+export async function getContracts(
+  contractIds: string[],
+  pk: 'id' | 'slug' = 'id'
+) {
   const { data } = await run(
-    db.from('contracts').select('data').in('id', contractIds)
+    db.from('contracts').select('data').in(pk, contractIds)
   )
   if (data && data.length > 0) {
     return data.map((d) => d.data as Contract)

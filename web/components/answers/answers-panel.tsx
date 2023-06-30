@@ -308,19 +308,21 @@ function OpenAnswer(props: {
 
       <div
         className={clsx(
-          'bg-canvas-100 relative w-full overflow-hidden rounded-lg py-1.5 px-3 ',
-          tradingAllowed(contract) ? 'text-ink-900' : 'text-ink-500'
+          'relative mb-3 w-full sm:mb-0',
+          tradingAllowed(contract) ? 'text-ink-900' : 'text-ink-700'
         )}
       >
         {/* probability bar */}
-        <div
-          className="absolute left-0 top-0 bottom-0 rounded-lg transition-all"
-          style={{ width: `${colorWidth}%`, background: color }}
-        />
+        <div className="bg-canvas-50 absolute left-0 right-0 bottom-0 -z-10 h-3 rounded transition-all sm:top-1/2 sm:h-10 sm:-translate-y-1/2 sm:bg-inherit">
+          <div
+            className="h-full rounded"
+            style={{ width: `max(8px, ${colorWidth}%)`, background: color }}
+          />
+        </div>
 
         {/*  */}
-        <div className="isolate block justify-between sm:flex">
-          <div className="inline items-center sm:flex">
+        <div className="flex-wrap items-center justify-between gap-x-4 text-sm !leading-none sm:flex sm:min-h-[40px] sm:flex-nowrap sm:pl-3 sm:text-base">
+          <div className="my-1 inline items-center sm:flex">
             {isFreeResponse &&
               (answerCreator ? (
                 <Avatar
@@ -332,12 +334,9 @@ function OpenAnswer(props: {
               ) : (
                 <EmptyAvatar />
               ))}
-            <Linkify
-              className="text-md whitespace-pre-line align-middle"
-              text={text}
-            />
+            <Linkify text={text} />
           </div>
-          <div className="float-right ml-2 inline items-center space-x-2 sm:flex [&>*]:align-middle">
+          <div className="relative float-right flex grow items-center justify-end gap-2">
             <span className="text-xl">{probPercent}</span>
             {tradingAllowed(contract) &&
               (isDpm ? (
@@ -373,17 +372,16 @@ function OpenAnswer(props: {
                 <ChatIcon className="text-ink-500 hover:text-ink-600 h-5 w-5 transition-colors" />
               </button>
             )}
+            {hasBets && contract.mechanism === 'cpmm-multi-1' && (
+              <AnswerPosition
+                className="absolute -bottom-3.5 right-0"
+                contract={contract}
+                userBets={userBets}
+              />
+            )}
           </div>
         </div>
       </div>
-
-      {hasBets && contract.mechanism === 'cpmm-multi-1' && (
-        <AnswerPosition
-          className="self-center"
-          contract={contract}
-          userBets={userBets}
-        />
-      )}
     </Col>
   )
 }

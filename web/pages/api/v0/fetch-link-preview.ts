@@ -16,6 +16,7 @@ export default async function handler(
   if (!url) return res.status(404).json({ error: 'url required' })
   try {
     const metadata = await fetchLinkPreview(url)
+    res.setHeader('Cache-Control', 's-maxage=86400')
     return res.status(200).json(metadata)
   } catch (error) {
     return res.status(500).json({ error: 'Error fetching link preview' })
