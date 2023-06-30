@@ -29,7 +29,7 @@ export type AuthUser =
   | (UserAndPrivateUser & { authLoaded: boolean })
 const CACHED_USER_KEY = 'CACHED_USER_KEY_V2'
 
-const ensureDeviceToken = () => {
+export const ensureDeviceToken = () => {
   let deviceToken = safeLocalStorage?.getItem('device-token')
   if (!deviceToken) {
     deviceToken = randomString()
