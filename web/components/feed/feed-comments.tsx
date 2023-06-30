@@ -44,14 +44,13 @@ import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Curve from 'web/public/custom-components/curve'
 import { Button, IconButton } from '../buttons/button'
+import { CommentEditHistoryButton } from '../comments/comment-edit-history-button'
 import { CommentInput } from '../comments/comment-input'
 import { ReplyToggle } from '../comments/reply-toggle'
+import { AwardBountyButton } from '../contract/bountied-question'
 import { Content } from '../widgets/editor'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
-import { CommentEditHistoryButton } from '../comments/comment-edit-history-button'
-import { AwardBountyButton } from '../contract/bountied-question'
-import { BsAwardFill } from 'react-icons/bs'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>

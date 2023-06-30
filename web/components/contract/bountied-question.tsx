@@ -1,24 +1,17 @@
-import { ENV_CONFIG } from 'common/envs/constants'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import { formatMoney } from 'common/util/format'
-import {
-  BountiedQuestion,
-  BountiedQuestionContract,
-  Contract,
-  NonBet,
-} from 'common/contract'
-import { ContractComment } from 'common/comment'
-import { Button } from '../buttons/button'
-import { useState } from 'react'
-import { User } from 'common/user'
-import { MODAL_CLASS, Modal } from '../layout/modal'
-import { Col } from '../layout/col'
-import { CollapsibleContent } from '../widgets/collapsible-content'
-import { BuyAmountInput } from '../widgets/amount-input'
-import { awardBounty } from 'web/lib/firebase/api'
 import clsx from 'clsx'
+import { ContractComment } from 'common/comment'
+import { BountiedQuestionContract } from 'common/contract'
+import { User } from 'common/user'
+import { formatMoney } from 'common/util/format'
+import { useState } from 'react'
 import Lottie from 'react-lottie'
+import { awardBounty } from 'web/lib/firebase/api'
 import * as award from '../../public/lottie/award.json'
+import { Button } from '../buttons/button'
+import { Col } from '../layout/col'
+import { MODAL_CLASS, Modal } from '../layout/modal'
+import { BuyAmountInput } from '../widgets/amount-input'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export function BountyLeft(props: { bountyLeft: number }) {
   const { bountyLeft } = props

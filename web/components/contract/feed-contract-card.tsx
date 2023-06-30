@@ -7,12 +7,26 @@ import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
+import React, { useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { FiThumbsDown } from 'react-icons/fi'
+import { TiVolumeMute } from 'react-icons/ti'
+import { ClaimButton } from 'web/components/ad/claim-ad-button'
+import {
+  ContractStatusLabel,
+  VisibilityIcon,
+} from 'web/components/contract/contracts-table'
+import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { Avatar } from 'web/components/widgets/avatar'
+import { UserLink } from 'web/components/widgets/user-link'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
+import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
+import { AnswersPanel } from '../answers/answers-panel'
 import { BetRow } from '../bet/bet-row'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -20,20 +34,6 @@ import { CommentsButton } from '../swipe/swipe-comments'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
-import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
-import { TiVolumeMute } from 'react-icons/ti'
-import { toast } from 'react-hot-toast'
-import React, { useState } from 'react'
-import {
-  ContractStatusLabel,
-  VisibilityIcon,
-} from 'web/components/contract/contracts-table'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { UserLink } from 'web/components/widgets/user-link'
-import { Avatar } from 'web/components/widgets/avatar'
-import { ClaimButton } from 'web/components/ad/claim-ad-button'
-import { AnswersPanel } from '../answers/answers-panel'
-import { FiThumbsDown } from 'react-icons/fi'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -131,7 +131,7 @@ function SimpleCard(props: {
               onClick={trackClick}
               href={contractPath(contract)}
             >
-              <VisibilityIcon contract={contract} /> {contract.question}
+              <VisibilityIcon contract={contract} /> {question}
             </Link>
           </Row>
         </Col>

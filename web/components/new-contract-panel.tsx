@@ -45,7 +45,6 @@ import { getGroup } from 'web/lib/supabase/group'
 import WaitingForSupabaseButton from './contract/waiting-for-supabase-button'
 import { Col } from './layout/col'
 import { BuyAmountInput } from './widgets/amount-input'
-import { set } from 'lodash'
 
 export type NewQuestionParams = {
   groupId?: string
