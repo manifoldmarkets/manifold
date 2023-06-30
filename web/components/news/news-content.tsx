@@ -15,6 +15,7 @@ const SupremeCourt = createNewsDashboardTab(
     {
       url: 'https://edition.cnn.com/politics/live-news/supreme-court-decisions',
     },
+    { slug: 'will-harvard-lose-the-supreme-court' },
     { slug: 'will-harvard-admit-a-class-that-is-71b4a35bf252' },
     { slug: 'will-harvard-admit-a-class-of-more' },
     { slug: 'will-any-top-10-university-admit-si' },
