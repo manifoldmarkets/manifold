@@ -211,6 +211,7 @@ const NewActivityButton = (props: {
             avatarUrl={url}
           />
         ))}
+        <div>New updates</div>
       </Row>
     </button>
   )
