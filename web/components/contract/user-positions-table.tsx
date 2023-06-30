@@ -29,7 +29,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useContractMetrics } from 'web/hooks/use-contract-metrics'
+import { useRealtimeContractMetrics } from 'web/hooks/use-contract-metrics'
 import { useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
@@ -76,10 +76,8 @@ export const BinaryUserPositionsTable = memo(
       return [positiveProfitPositions, negativeProfitPositions.reverse()]
     }, [contractMetricsByProfit])
 
-    const [livePositionsLimit, setLivePositionsLimit] = useState(100)
     const positions =
-      useContractMetrics(contractId, livePositionsLimit, outcomes) ??
-      props.positions
+      useRealtimeContractMetrics(contractId, outcomes) ?? props.positions
 
     const yesPositionsSorted =
       sortBy === 'shares' ? positions.YES ?? [] : positiveProfitPositions
@@ -110,13 +108,6 @@ export const BinaryUserPositionsTable = memo(
       yesPositionsSorted.length > noPositionsSorted.length
         ? yesPositionsSorted.length
         : noPositionsSorted.length
-
-    useEffect(() => {
-      // TODO: we should switch to using supabase realtime subscription for this
-      if (page === largestColumnLength / pageSize - 1) {
-        setLivePositionsLimit((livePositionsLimit) => livePositionsLimit + 100)
-      }
-    }, [page, largestColumnLength])
 
     const isBinary = contract.outcomeType === 'BINARY'
     const isStonk = contract.outcomeType === 'STONK'
