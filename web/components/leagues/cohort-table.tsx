@@ -8,10 +8,7 @@ import {
 
 import { Fragment, useState } from 'react'
 import { Row } from '../layout/row'
-import {
-  DIVISION_NAMES,
-  league_user_info,
-} from 'common/leagues'
+import { DIVISION_NAMES, league_user_info } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { User } from 'common/user'
 import { useUsers } from 'web/hooks/use-user-supabase'
