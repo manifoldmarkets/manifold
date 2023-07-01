@@ -80,7 +80,7 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 5, promotion: 5, doublePromotion: 0 }
   }
   if (division === 6) {
-    return { demotion: 5, promotion: 0, doublePromotion: 0 }
+    return { demotion: 10, promotion: 0, doublePromotion: 0 }
   }
   throw new Error(`Invalid division: ${division}`)
 }
@@ -111,11 +111,12 @@ export const COHORT_SIZE = 25
 export const MAX_COHORT_SIZE = 75
 
 export const prizesByDivisionAndRank = [
-  [500, 400, 300, 250, 200, 150, 100],
-  [1000, 750, 600, 500, 450, 400, 350, 300],
-  [1500, 1000, 750, 600, 500, 450, 400, 350, 300],
-  [2000, 1500, 1000, 750, 600, 500, 450, 400, 350, 300],
-  [2500, 2000, 1500, 1000, 750, 600, 500, 450, 400, 350, 300],
+  [100, 90, 80, 70, 60, 50, 40],
+  [200, 180, 160, 140, 120, 100, 80, 60],
+  [400, 360, 320, 280, 240, 200, 160, 120, 80],
+  [800, 720, 640, 560, 480, 400, 320, 240, 160, 80],
+  [1600, 1440, 1280, 1120, 960, 800, 640, 480, 320, 160],
+  [3200, 2880, 2560, 2240, 1920, 1600, 1280, 960, 640, 320],
 ]
 
 export const getLeaguePrize = (division: number, rank: number) => {
