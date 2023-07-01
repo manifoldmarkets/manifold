@@ -77,7 +77,7 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 5, promotion: 5, doublePromotion: 0 }
   }
   if (division === 5) {
-    return { demotion: 5, promotion: 5, doublePromotion: 0 }
+    return { demotion: 7, promotion: 4, doublePromotion: 0 }
   }
   if (division === 6) {
     return { demotion: 10, promotion: 0, doublePromotion: 0 }
