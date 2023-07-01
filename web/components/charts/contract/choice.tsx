@@ -145,20 +145,16 @@ export const ChoiceContractChart = (props: {
 
       return (
         <>
-          <Row className="items-center gap-2">
-            <span className="text-semibold text-base">
-              {formatDateInRange(d, start, end)}
-            </span>
-          </Row>
+          <span className="font-semibold">
+            {formatDateInRange(d, start, end)}
+          </span>
           <div className="flex max-w-xs flex-row justify-between gap-4">
             <Row className="items-center gap-2 overflow-hidden">
               <span
                 className="h-4 w-4 shrink-0 rounded-sm"
                 style={{ backgroundColor: color }}
               />
-              <span className="text-semibold overflow-hidden text-ellipsis">
-                {answer}
-              </span>
+              <span className="overflow-hidden text-ellipsis">{answer}</span>
             </Row>
             <span className="text-ink-600">{value}</span>
           </div>
