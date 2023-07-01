@@ -34,10 +34,10 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
   ],
 
   '🍿 Media': [
-    '📺 TV Shows',
+    '🍿 Movies',
     '🎮 Gaming',
+    '📺 TV Shows',
     '🎵 Music',
-    '📚 Books',
     '🌐 Internet Culture',
     '👥 Celebrities',
   ],

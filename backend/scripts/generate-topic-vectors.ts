@@ -25,7 +25,7 @@ const TOPICS_TO_WORDS: { [key: string]: string } = {
   Music:
     'music, pop music, rock music, hip hop, rap, country, classical music, concert tours',
   Movies:
-    'movies, films, cinema, movie reviews, movie ratings, Hollywood, box office',
+    'movies, films, cinema, movie reviews, movie ratings, Hollywood, box office, IMDB, Rotten Tomatoes, Academy Awards',
   Books: 'books, novels, fiction, non-fiction, book reviews, book ratings',
   'Internet Culture':
     'internet culture, memes, viral videos, TikTokers, Twitch streamers, online drama',
