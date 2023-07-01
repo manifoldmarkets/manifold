@@ -58,7 +58,6 @@ const ElonVersusZuck = createNewsDashboardTab(
   ]
 )
 
-
 const RussianCoupData = () => {
   const prigozhinMarkets = useContracts([
     'HZKHs5sbICIRrtBeGXMu',
