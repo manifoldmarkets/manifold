@@ -10,7 +10,7 @@ import {
 } from 'shared/supabase/init'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { secrets } from 'common/secrets'
-import { getSeasonDates } from 'common/leagues'
+import { CURRENT_SEASON, getSeasonDates } from 'common/leagues'
 import { getProfitMetrics } from 'common/calculate'
 
 export const updateLeague = functions
@@ -27,7 +27,7 @@ export const updateLeague = functions
 export async function updateLeagueCore() {
   const pg = createSupabaseDirectClient()
 
-  const season = 2 // CURRENT_SEASON
+  const season = CURRENT_SEASON
   const { start, end } = getSeasonDates(season)
   const seasonStart = start.getTime()
   const seasonEnd = end.getTime()

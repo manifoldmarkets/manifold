@@ -59,8 +59,12 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     'league-rows'
   )
 
+  const [hasLoaded, setHasLoaded] = useState<boolean>(false)
   useEffect(() => {
-    getLeagueRows().then(setRows)
+    getLeagueRows().then((rows) => {
+      setRows(rows)
+      setHasLoaded(true)
+    })
   }, [])
 
   const rowsBySeason = useMemo(() => groupBy(rows, 'season'), [rows])
@@ -80,9 +84,10 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     Object.keys(divisionToCohorts).map((division) => +division),
     (division) => division
   ).reverse()
+  const defaultDivision = Math.max(...divisions)
 
-  const [division, setDivision] = useState<number>(5)
-  const [cohort, setCohort] = useState(divisionToCohorts[4][0])
+  const [division, setDivision] = useState<number>(defaultDivision)
+  const [cohort, setCohort] = useState(divisionToCohorts[defaultDivision][0])
   const [highlightedUserId, setHighlightedUserId] = useState<
     string | undefined
   >()
@@ -129,7 +134,12 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   }
 
   useEffect(() => {
-    if (!isReady) return
+    if (
+      !isReady ||
+      (!hasLoaded && leagueSlugs && +leagueSlugs[0] !== CURRENT_SEASON)
+    ) {
+      return
+    }
 
     const { season, division, cohort, highlightedUserId } = parseLeaguePath(
       leagueSlugs ?? [],
@@ -140,7 +150,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     setDivision(division)
     setCohort(cohort)
     setHighlightedUserId(highlightedUserId)
-  }, [isReady, leagueSlugs, user])
+  }, [isReady, hasLoaded, leagueSlugs, user])
 
   const { demotion, promotion, doublePromotion } =
     getDemotionAndPromotionCount(division)
