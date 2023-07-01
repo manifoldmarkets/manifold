@@ -10,7 +10,6 @@ import { Fragment, useState } from 'react'
 import { Row } from '../layout/row'
 import {
   DIVISION_NAMES,
-  SECRET_NEXT_DIVISION,
   league_user_info,
 } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
@@ -45,9 +44,8 @@ export const CohortTable = (props: {
   const division = rows[0].division
   const nextDivision = division + 1
   const nextNextDivision = division + 2
-  const nextDivisionName = DIVISION_NAMES[nextDivision] ?? SECRET_NEXT_DIVISION
-  const nextNextDivisionName =
-    DIVISION_NAMES[nextNextDivision] ?? SECRET_NEXT_DIVISION
+  const nextDivisionName = DIVISION_NAMES[nextDivision]
+  const nextNextDivisionName = DIVISION_NAMES[nextNextDivision]
   const prevDivison = Math.max(division - 1, 1)
   const prevDivisionName = DIVISION_NAMES[prevDivison]
 

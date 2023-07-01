@@ -7,7 +7,10 @@ export const CURRENT_SEASON = 2
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
 
-const SEASON_END_TIMES = [new Date('2023-06-01T12:06:23-07:00')]
+const SEASON_END_TIMES = [
+  new Date('2023-06-01T12:06:23-07:00'),
+  new Date('2023-07-01T12:22:53-07:00'),
+]
 
 export const getSeasonMonth = (season: number) => {
   return getSeasonDates(season).start.toLocaleString('default', {
@@ -52,6 +55,7 @@ export const DIVISION_NAMES = {
   3: 'Gold',
   4: 'Platinum',
   5: 'Diamond',
+  6: 'Masters',
 } as { [key: number | string]: string }
 
 export const SECRET_NEXT_DIVISION = '???'
@@ -69,7 +73,16 @@ export const getDemotionAndPromotionCount = (division: number) => {
   if (division === 3) {
     return { demotion: 5, promotion: 6, doublePromotion: 0 }
   }
-  return { demotion: 5, promotion: 5, doublePromotion: 0 }
+  if (division === 4) {
+    return { demotion: 5, promotion: 5, doublePromotion: 0 }
+  }
+  if (division === 5) {
+    return { demotion: 5, promotion: 5, doublePromotion: 0 }
+  }
+  if (division === 6) {
+    return { demotion: 5, promotion: 0, doublePromotion: 0 }
+  }
+  throw new Error(`Invalid division: ${division}`)
 }
 
 export const getDivisionChange = (
