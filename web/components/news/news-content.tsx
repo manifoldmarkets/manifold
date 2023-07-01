@@ -31,54 +31,21 @@ const SupremeCourt = createNewsDashboardTab(
   ]
 )
 
-export const ElonVersusZuckData = () => {
-  const [fightMarket, winMarket, streamMarket, julyMarket] = useContracts([
-    'hqTneuDcF7jXJt4tEHlj',
-    'RqQdSlfdP7Vf6QmsJ80R',
-    'ntTT053ZYy5uWgEtQ9wt',
-    'EsCfODH8S0FC1lfvwYXa',
-  ])
-
-  return (
-    <Col>
-      <Title className="mb-4">Elon vs Zuck</Title>
-      <NewsGrid>
-        <DashboardNewsItem
-          title="Elon Musk and Mark Zuckerberg agree to hold cage fight"
-          urlToImage="https://ichef.bbci.co.uk/news/976/cpsprodpb/AEC1/production/_130173744_fight-index-getty.jpg.webp"
-          url="https://www.bbc.com/news/business-65981876"
-          description="Two of the world's most high-profile technology billionaires - Elon Musk and Mark Zuckerberg - have agreed to fight each other in a cage match."
-          author="Peter Hoskins"
-          published_time={Date.UTC(2023, 5, 22, 12)}
-          className="mb-4"
-        />
-
-        {fightMarket && (
-          <FeedContractCard
-            key={fightMarket.id}
-            contract={fightMarket}
-            className="mb-4"
-          />
-        )}
-
-        {winMarket && (
-          <FeedContractCard
-            key={winMarket.id}
-            contract={winMarket}
-            className="mb-4"
-          />
-        )}
-
-        <DashboardNewsItem
-          title="Elon Musk vs. Mark Zuckerberg? Dana White prepared to make 'biggest fight ever in the history of the world'"
-          urlToImage="https://img-s-msn-com.akamaized.net/tenant/amp/entityid/AA1cUcfI.img?w=768&h=511&m=6&x=144&y=83&s=693&d=254"
-          url="https://www.msn.com/en-us/sports/other/elon-musk-vs-mark-zuckerberg-dana-white-prepared-to-make-biggest-fight-ever-in-the-history-of-the-world/ar-AA1cTY8R"
-          description="According to UFC president Dana White, “both guys are absolutely dead serious.”"
-          author="Simon Samano"
-          published_time={Date.UTC(2023, 5, 23, 0)}
-          className="mb-4"
-        />
-
+const ElonVersusZuck = createNewsDashboardTab(
+  'Elon vs Zuck',
+  'Elon Musk and Mark Zuckerberg cage fight?',
+  [
+    { url: 'https://www.bbc.com/news/business-65981876' },
+    { slug: 'if-elon-zuck-fight-will-it-be-at-th' },
+    {
+      url: 'https://nypost.com/2023/06/30/elon-musk-mark-zuckerberg-can-fight-at-colosseum-italian-govt/',
+    },
+    { slug: 'when-will-the-zuckerberg-vs-musk-fi' },
+    { slug: 'conditional-in-the-fight-between-mu' },
+    { slug: 'if-elon-zuck-fight-will-either-brea' },
+    { slug: 'if-the-elon-musk-vs-zuckerberg-figh-92350f63685f' },
+    {
+      content: (
         <img
           src="https://media.discordapp.net/attachments/1100471650392223834/1121601859073871943/image0.jpg?width=862&height=686"
           width={862}
@@ -86,26 +53,11 @@ export const ElonVersusZuckData = () => {
           alt=""
           className="mb-4"
         />
+      ),
+    },
+  ]
+)
 
-        {streamMarket && (
-          <FeedContractCard
-            key={streamMarket.id}
-            contract={streamMarket}
-            className="mb-4"
-          />
-        )}
-
-        {julyMarket && (
-          <FeedContractCard
-            key={julyMarket.id}
-            contract={julyMarket}
-            className="mb-4"
-          />
-        )}
-      </NewsGrid>
-    </Col>
-  )
-}
 
 const RussianCoupData = () => {
   const prigozhinMarkets = useContracts([
@@ -476,10 +428,10 @@ const UsElectionsData = () => {
 
 export const newsContent = [
   SupremeCourt,
+  ElonVersusZuck,
   { title: 'Russian Coup?', content: <RussianCoupData /> },
-  { title: 'Elon v Zuck', content: <ElonVersusZuckData /> },
-  { title: 'Titanic Sub', content: <MissingSubData /> },
-  { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
+  // { title: 'Titanic Sub', content: <MissingSubData /> },
+  // { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
   { title: 'Ukraine War', content: <UkraineWarData /> },
   { title: 'US Elections', content: <UsElectionsData /> },
 ]
