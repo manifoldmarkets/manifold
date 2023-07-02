@@ -20,7 +20,7 @@ const FrenchRiots = createNewsDashboardTab(
     { slug: 'will-the-cop-who-shot-nahel-m-be-fo' },
     { slug: 'will-there-be-any-protests-or-riots' },
     {
-      url: 'https://www.bloomberg.com/news/articles/2023-07-02/riots-in-france-stretch-into-a-fifth-night-after-police-killing',
+      url: 'https://www.huffpost.com/entry/france-police-shooting-rioting_n_64a1b0b2e4b028e647318565',
     },
     { slug: 'will-macron-dissolve-the-assemblee' },
     { slug: 'will-emmanuel-macron-cease-being-pr' },
