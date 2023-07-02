@@ -8,6 +8,27 @@ import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
 
+const FrenchRiots = createNewsDashboardTab(
+  'French Riots',
+  'Rioting across France after police shooting',
+  [
+    {
+      url: 'https://www.npr.org/2023/06/30/1185394143/france-teen-police-shooting-protests-nahel',
+    },
+
+    { slug: 'in-the-french-riots-will-a-french-p' },
+    { slug: 'will-the-cop-who-shot-nahel-m-be-fo' },
+    { slug: 'will-there-be-any-protests-or-riots' },
+    {
+      url: 'https://www.bloomberg.com/news/articles/2023-07-02/riots-in-france-stretch-into-a-fifth-night-after-police-killing',
+    },
+    { slug: 'will-macron-dissolve-the-assemblee' },
+    { slug: 'will-emmanuel-macron-cease-being-pr' },
+    { slug: 'will-the-next-president-of-france-b' },
+    { slug: 'will-the-a-stage-2023-tour-de-franc' },
+    { slug: 'when-will-frances-tourism-levels-re' },
+  ]
+)
 const SupremeCourt = createNewsDashboardTab(
   'Supreme Court',
   'Affirmative Action Ruling & More',
@@ -426,6 +447,7 @@ const UsElectionsData = () => {
 }
 
 export const newsContent = [
+  FrenchRiots,
   SupremeCourt,
   ElonVersusZuck,
   { title: 'Russian Coup?', content: <RussianCoupData /> },
