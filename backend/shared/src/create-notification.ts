@@ -1045,7 +1045,7 @@ export const createUniqueBettorBonusNotification = async (
     uniqueBettorsExcludingCreator.length,
     mostRecentUniqueBettors,
     bettorsToTheirBets,
-    Math.round(amount * totalNewBettorsToReport)
+    amount * totalNewBettorsToReport
   )
 }
 
