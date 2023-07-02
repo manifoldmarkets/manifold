@@ -283,9 +283,9 @@ create or replace view
   user_league_info as (
     select
       *,
-      rank() over (
+      row_number() over (
         partition by
-          cohort
+          season, division, cohort
         order by
           mana_earned desc
       ) as rank
