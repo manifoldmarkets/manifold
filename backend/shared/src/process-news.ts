@@ -84,6 +84,11 @@ const processNewsArticle = async (
     return
   }
 
+  if (title.toLowerCase().includes('horoscope')) {
+    console.log('Skipping horoscope', title)
+    return
+  }
+
   const cleanTitle = title.split(' - ')[0]
   console.log(cleanTitle)
 
