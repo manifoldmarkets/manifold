@@ -20,6 +20,7 @@ import { ManaEarnedBreakdown } from './mana-earned-breakdown'
 import { Tooltip } from '../widgets/tooltip'
 
 export const CohortTable = (props: {
+  season: number
   cohort: string
   rows: league_user_info[]
   highlightedUserId: string | undefined
@@ -28,6 +29,7 @@ export const CohortTable = (props: {
   doublePromotionCount: number
 }) => {
   const {
+    season,
     cohort,
     rows,
     highlightedUserId,
@@ -75,6 +77,7 @@ export const CohortTable = (props: {
                   user={users[i]}
                   isHighlighted={highlightedUserId === user.id}
                   mana_earned_breakdown={row.mana_earned_breakdown as any}
+                  season={season}
                 />
               )}
               {!noPromotionDemotion && (
@@ -128,6 +131,7 @@ export const CohortTable = (props: {
 
 const UserRow = (props: {
   user: User
+  season: number
   mana_earned: number
   mana_earned_breakdown: { [key: string]: number }
   rank: number
@@ -136,6 +140,7 @@ const UserRow = (props: {
 }) => {
   const {
     user,
+    season,
     mana_earned,
     mana_earned_breakdown,
     rank,
@@ -208,6 +213,7 @@ const UserRow = (props: {
       {showDialog && (
         <ManaEarnedBreakdown
           user={user}
+          season={season}
           showDialog={showDialog}
           setShowDialog={setShowDialog}
           mana_earned={mana_earned}

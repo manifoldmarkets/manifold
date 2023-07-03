@@ -26,6 +26,7 @@ import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 
 export const ManaEarnedBreakdown = (props: {
   user: User
+  season: number
   showDialog: boolean
   setShowDialog: (show: boolean) => void
   mana_earned: number
@@ -33,6 +34,7 @@ export const ManaEarnedBreakdown = (props: {
 }) => {
   const {
     user,
+    season,
     showDialog,
     setShowDialog,
     mana_earned,
@@ -47,7 +49,7 @@ export const ManaEarnedBreakdown = (props: {
       (mana_earned_breakdown.AD_REDEEM ?? 0),
   } as { [key: string]: number }
 
-  const { start, end } = getSeasonDates(CURRENT_SEASON)
+  const { start, end } = getSeasonDates(season)
   const loadingBets = useBets({
     userId: user.id,
     afterTime: start.getTime(),

@@ -258,6 +258,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
               title: 'Rankings',
               content: cohorts[cohort] && (
                 <CohortTable
+                  season={season}
                   cohort={cohort}
                   rows={cohorts[cohort]}
                   highlightedUserId={highlightedUserId}
