@@ -190,8 +190,12 @@ export async function getGroupsWhereUserHasRole(userId: string) {
   )
 
   return groupThings.data.map((d) => {
+    const group = d.group_data as Group
+    const id = d.group_id as string
+    group.id = id
+
     return {
-      group: d.group_data as Group,
+      group,
       role: d.role as string,
     }
   })
