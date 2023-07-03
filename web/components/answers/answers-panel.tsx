@@ -9,6 +9,7 @@ import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
 import {
   CPMMMultiContract,
   MultiContract,
+  contractPath,
   tradingAllowed,
 } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
@@ -34,6 +35,7 @@ import { Subtitle } from '../widgets/subtitle'
 import { AnswerItem } from './answer-item'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { CreateAnswerPanel } from './create-answer-panel'
+import Link from 'next/link'
 
 export function getAnswerColor(
   answer: Answer | DpmAnswer,
@@ -45,14 +47,23 @@ export function getAnswerColor(
     : '#B1B1C7B3'
 }
 
+const NUM_TRUNCATED_ANSWERS = 4
+
 export function AnswersPanel(props: {
   contract: MultiContract
   onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
   showResolver?: boolean
   isInModal?: boolean
+  truncateAnswers?: boolean
 }) {
   const isAdmin = useAdmin()
-  const { contract, onAnswerCommentClick, showResolver, isInModal } = props
+  const {
+    contract,
+    onAnswerCommentClick,
+    showResolver,
+    isInModal,
+    truncateAnswers,
+  } = props
   const { creatorId, resolution, resolutions, outcomeType } = contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
 
@@ -75,7 +86,9 @@ export function AnswersPanel(props: {
       : answers.filter((answer) => answerToProb[answer.id] < 0.01)
 
   const sortedAnswers = sortBy(answers, (answer) =>
-    'index' in answer ? answer.index : -1 * answerToProb[answer.id]
+    !truncateAnswers && 'index' in answer
+      ? answer.index
+      : -1 * answerToProb[answer.id]
   )
 
   const [winningAnswers, losingAnswers] = partition(
@@ -90,9 +103,11 @@ export function AnswersPanel(props: {
       resolutions ? -1 * resolutions[answer.id] : 0
     ),
     ...(resolution ? [] : losingAnswers),
-  ]
+  ].slice(0, truncateAnswers ? NUM_TRUNCATED_ANSWERS : undefined)
 
-  const openAnswers = losingAnswers.length > 0 ? losingAnswers : answerItems
+  const openAnswers = (
+    losingAnswers.length > 0 ? losingAnswers : answerItems
+  ).slice(0, truncateAnswers ? NUM_TRUNCATED_ANSWERS : undefined)
 
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -223,6 +238,15 @@ export function AnswersPanel(props: {
               </Button>
             )}
           </Col>
+        )}
+
+        {truncateAnswers && answers.length > openAnswers.length && (
+          <Link
+            className="text-ink-500 hover:text-primary-500"
+            href={contractPath(contract)}
+          >
+            See all options
+          </Link>
         )}
 
         {answers.length === 0 && (

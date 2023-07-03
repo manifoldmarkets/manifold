@@ -322,6 +322,7 @@ function DetailedCard(props: {
                     return undefined
                   }}
                   showResolver={false}
+                  truncateAnswers
                 />
               </Col>
             )}
