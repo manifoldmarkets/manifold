@@ -3,7 +3,7 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 
-import { CURRENT_SEASON, getSeasonDates } from 'common/leagues'
+import { getSeasonDates } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { User } from 'common/user'
 import { Row } from '../layout/row'
