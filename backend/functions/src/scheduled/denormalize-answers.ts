@@ -39,7 +39,7 @@ export async function denormalizeAnswersCore() {
     Object.entries(answersByContractId).map(([contractId, answers]) => {
       const sortedAnswers = sortBy(
         answers,
-        (answer) => answer.index ?? answer.createdTime
+        (answer) => answer.index
       )
       return firestore.collection('contracts').doc(contractId).update({
         answers: sortedAnswers,
