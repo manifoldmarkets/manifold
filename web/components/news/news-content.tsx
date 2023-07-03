@@ -8,6 +8,23 @@ import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
 
+const WestBank = createNewsDashboardTab(
+  'West Bank',
+  'Israeli millitary operation in West Bank',
+  [
+    {
+      url: 'https://www.cnn.com/2023/07/02/middleeast/israel-jenin-camp-idf-raid-west-bank-intl-hnk/index.html',
+    },
+    { slug: 'will-more-than-500-palestinians-be' },
+    { slug: 'will-israel-seize-and-occupy-any-ne' },
+    {
+      url: 'https://www.timesofisrael.com/liveblog_entry/idf-west-bank-commander-jenin-raid-is-not-a-one-off-operation/',
+    },
+    { slug: 'will-the-3rd-intifada-begin-in-2023' },
+    { slug: 'will-israel-withdraw-from-the-west' },
+    { slug: 'will-israel-annex-any-part-of-the-w' },
+  ]
+)
 const FrenchRiots = createNewsDashboardTab(
   'French Riots',
   'Rioting across France after police shooting',
@@ -447,6 +464,7 @@ const UsElectionsData = () => {
 }
 
 export const newsContent = [
+  WestBank,
   FrenchRiots,
   SupremeCourt,
   ElonVersusZuck,
