@@ -183,6 +183,8 @@ function DetailedCard(props: {
     (item?.dataType === 'contract_probability_changed' ||
       item?.dataType === 'trending_contract') &&
     probChange != 0
+  const statusInlineWithUserlink =
+    item && !item.isCopied && item.dataType === 'new_contract'
   const metrics = useSavedContractMetrics(contract)
   return (
     <div
@@ -279,32 +281,33 @@ function DetailedCard(props: {
                         username={creatorUsername}
                       />
                       <Row
-                        className={
-                          'text-ink-700 items-baseline gap-0.5 text-sm'
-                        }
+                        className={'text-ink-700 items-baseline gap-1 text-sm'}
                       >
                         <UserLink
                           name={contract.creatorName}
                           username={creatorUsername}
-                          className={'w-full max-w-[6rem] text-ellipsis'}
-                        />
-                        {item &&
-                          !item.isCopied &&
-                          item.dataType === 'new_contract' && (
-                            <span className={'text-ink-400'}>
-                              <Tooltip
-                                text={item?.reasonDescription}
-                                placement={'top'}
-                              >
-                                asked
-                              </Tooltip>
-                              <RelativeTimestamp
-                                time={item.createdTime}
-                                shortened={true}
-                                className="text-ink-400"
-                              />
-                            </span>
+                          className={clsx(
+                            'w-full text-ellipsis sm:max-w-[12rem]',
+                            statusInlineWithUserlink
+                              ? 'max-w-[6.5rem]'
+                              : 'max-w-[10rem]'
                           )}
+                        />
+                        {statusInlineWithUserlink && (
+                          <span className={'text-ink-400'}>
+                            <Tooltip
+                              text={item?.reasonDescription}
+                              placement={'top'}
+                            >
+                              asked
+                            </Tooltip>
+                            <RelativeTimestamp
+                              time={item.createdTime}
+                              shortened={true}
+                              className="text-ink-400"
+                            />
+                          </span>
+                        )}
                       </Row>
                     </Row>
                   </Col>
