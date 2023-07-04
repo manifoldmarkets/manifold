@@ -407,61 +407,30 @@ const MissingSubData = () => {
   )
 }
 
-const UsElectionsData = () => {
-  const contractIds = [
-    'XNVdtrFIbQvcNhGXueGl',
-    'YTIuuSsNRn2OlA4KykRM',
-    '4amdGgZFKTxUMC3Fym6F',
-    'ixDhLuu8EJmC4OQQwRyq',
+const Election2024 = createNewsDashboardTab(
+  'US Elections',
+  '2024 US Presidential Election',
+  [
+    { slug: 'will-donald-trump-be-convicted-of-a-99e01f724b3f' },
+    {
+      url: 'https://www.theguardian.com/us-news/2023/jul/03/trump-hillary-clinton-president-under-indictment-comments',
+    },
+    { slug: 'who-will-be-the-republican-presiden-7bf11c066154' },
+    { slug: 'who-will-win-the-us-2024-democratic' },
+    { slug: 'who-will-win-2024-us-presidential-e' },
+    { slug: 'will-a-democrat-win-the-2024-us-pre' },
+    {
+      url: 'https://news.yahoo.com/hurd-says-won-t-support-150448106.html',
+    },
+    { slug: 'will-donald-trump-participate-in-th' },
+    { slug: 'will-ai-be-a-major-topic-during-the' },
+    {
+      url: 'https://www.thedailybeast.com/rfk-jr-presidential-campaign-boosted-by-dollar10-million-super-pac-contributions',
+    },
+    { slug: 'will-rfk-jr-break-his-google-trends' },
+    { slug: 'will-a-third-party-candidate-receiv' },
   ]
-  const contracts = useContracts(contractIds)
-  const newMarketsId = [
-    'HXN7yKJLxZyOxKhjB75s',
-    'tUwInVx79MKObXLzsrjC',
-    '4MLChi9mLtUA4ecz5tB0',
-    'vaPsnIxe8FdWJud7DzDq',
-  ]
-  const newMarkets = useContracts(newMarketsId)
-  return (
-    <Col>
-      <Title className="mb-4">US Elections</Title>
-      <NewsGrid>
-        <DashboardNewsItem
-          className="mb-4"
-          title="Judge set Mar-a-lago classified paper trial date for August 14th"
-          urlToImage="https://static.independent.co.uk/2023/06/15/23/Trump_Classified_Documents_14918.jpg?quality=75&width=990&crop=4%3A3%2Csmart&auto=webp"
-          url="https://www.independent.co.uk/news/world/americas/us-politics/trump-interview-fox-news-bret-baier-latest-b2360589.html"
-          description="Former allies pile criticism on Donald Trump over Mar-a-Lago classified documents indictment ahead of 2024 election"
-          author="Independent"
-        />
-        <NewsTopicsContentContainer
-          header="New Questions"
-          containerContent={
-            <>
-              {contracts &&
-                newMarkets.map((contract) => (
-                  <>
-                    <SimpleContractRow key={contract.id} contract={contract} />
-                  </>
-                ))}
-            </>
-          }
-        />
-        {contracts &&
-          contracts.length > 0 &&
-          contracts.map((contract) => (
-            <>
-              <FeedContractCard
-                key={contract.id}
-                contract={contract}
-                className="mb-4"
-              />
-            </>
-          ))}
-      </NewsGrid>
-    </Col>
-  )
-}
+)
 
 export const newsContent = [
   WestBank,
@@ -471,6 +440,6 @@ export const newsContent = [
   { title: 'Russian Coup?', content: <RussianCoupData /> },
   // { title: 'Titanic Sub', content: <MissingSubData /> },
   // { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
+  Election2024,
   { title: 'Ukraine War', content: <UkraineWarData /> },
-  { title: 'US Elections', content: <UsElectionsData /> },
 ]
