@@ -239,6 +239,11 @@ export const addContractToFeed = async (
       )
     )
   )
+  log(
+    `Added contract ${contract.id} to feed of ${
+      Object.keys(usersToReasonsInterestedInContract).length
+    } users`
+  )
 }
 export const addContractToFeedIfUnseenAndDeleteDuplicates = async (
   contract: Contract,

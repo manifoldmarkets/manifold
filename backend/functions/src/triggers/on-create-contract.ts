@@ -62,12 +62,15 @@ export const onCreateContract = functions
       contract.id,
       pg
     )
-    if (likelyNonPredictive)
-      await addGroupToContract(contract, {
+    log('likelyNonPredictive:', likelyNonPredictive)
+    if (likelyNonPredictive) {
+      const added = await addGroupToContract(contract, {
         id: NON_PREDICTIVE_GROUP_ID,
         slug: 'nonpredictive',
         name: 'Non-Predictive',
       })
+      log('Added contract to non-predictive group', added)
+    }
 
     await addContractToFeed(
       contract,
