@@ -9,7 +9,6 @@ import {
 } from 'web/components/charts/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { useMeasureSize } from 'web/hooks/use-measure-size'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
 import { useRouter } from 'next/router'
@@ -31,6 +30,8 @@ import { getContractFromSlug } from 'common/supabase/contracts'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { HistoryPoint } from 'common/chart'
 import { ContractCardAnswers } from 'web/components/bet/quick-bet'
+import { SizedContainer } from 'web/components/sized-container'
+import clsx from 'clsx'
 
 type Points = HistoryPoint<any>[]
 
@@ -141,13 +142,11 @@ const ContractChart = (props: {
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
       return (
-        <>
-          <ContractCardAnswers
-            contract={contract}
-            numAnswersFR={numBars(props.height)}
-            className="h-full justify-center pt-4"
-          />
-        </>
+        <ContractCardAnswers
+          contract={contract}
+          numAnswersFR={numBars(props.height)}
+          className="h-full justify-center"
+        />
       )
 
     case 'NUMERIC':
@@ -188,10 +187,10 @@ function ContractSmolView(props: {
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const isMulti =
+    outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
-
-  const { setElem, width: graphWidth, height: graphHeight } = useMeasureSize()
 
   const isDarkMode = useIsDarkMode()
 
@@ -234,17 +233,22 @@ function ContractSmolView(props: {
       </Row>
       <Details contract={contract} />
 
-      <div className="text-ink-1000 min-h-0 flex-1" ref={setElem}>
-        {graphWidth != null && graphHeight != null && (
+      <SizedContainer
+        className={clsx(
+          'text-ink-1000 my-4 min-h-0 flex-1',
+          !isMulti && 'pr-10'
+        )}
+      >
+        {(w, h) => (
           <ContractChart
             contract={contract}
             points={points}
-            width={graphWidth}
-            height={graphHeight}
+            width={w}
+            height={h}
             color={graphColor}
           />
         )}
-      </div>
+      </SizedContainer>
     </Col>
   )
 }

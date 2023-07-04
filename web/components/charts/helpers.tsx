@@ -14,11 +14,9 @@ import {
   useMemo,
   useRef,
 } from 'react'
-
-import { Margin } from 'common/chart'
 import { Contract } from 'common/contract'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
+import { clamp } from 'lodash'
 
 export interface ContinuousScale<T> extends AxisScale<T> {
   invert(n: number): T
@@ -175,7 +173,6 @@ export const SVGChart = <X, TT>(props: {
   children: ReactNode
   w: number
   h: number
-  margin: Margin
   xAxis: Axis<X>
   yAxis: Axis<number>
   ttParams?: TooltipParams<TT> | undefined
@@ -189,7 +186,6 @@ export const SVGChart = <X, TT>(props: {
     children,
     w,
     h,
-    margin,
     xAxis,
     yAxis,
     ttParams,
@@ -199,19 +195,16 @@ export const SVGChart = <X, TT>(props: {
     Tooltip,
     negativeThreshold,
   } = props
-  const tooltipMeasure = useMeasureSize()
   const overlayRef = useRef<SVGGElement>(null)
-  const innerW = w - (margin.left + margin.right)
-  const innerH = h - (margin.top + margin.bottom)
+
   const clipPathId = useId()
-  const isMobile = useIsMobile()
 
   const justSelected = useRef(false)
   useEffect(() => {
     if (onSelect != null && overlayRef.current) {
       const brush = brushX().extent([
         [0, 0],
-        [innerW, innerH],
+        [w, h],
       ])
       brush.on('end', (ev) => {
         // when we clear the brush after a selection, that would normally cause
@@ -235,21 +228,12 @@ export const SVGChart = <X, TT>(props: {
         .select('.selection')
         .attr('shape-rendering', 'null')
     }
-  }, [innerW, innerH, onSelect, onMouseLeave])
+  }, [w, h, onSelect, onMouseLeave])
 
   const onPointerMove = (ev: React.PointerEvent) => {
-    if (ev.pointerType === 'mouse' && onMouseOver) {
+    if (ev.pointerType === 'mouse' || ev.pointerType === 'pen') {
       const [x, y] = pointer(ev)
-      onMouseOver(x, y)
-    }
-  }
-
-  const onTouchMove = (ev: React.TouchEvent) => {
-    if (onMouseOver) {
-      const touch = ev.touches[0]
-      const x = touch.pageX - ev.currentTarget.getBoundingClientRect().left
-      const y = touch.pageY - ev.currentTarget.getBoundingClientRect().top
-      onMouseOver(x, y)
+      onMouseOver?.(x, y)
     }
   }
 
@@ -257,26 +241,18 @@ export const SVGChart = <X, TT>(props: {
     onMouseLeave?.()
   }
 
-  if (innerW <= 0 || innerH <= 0) {
+  if (w <= 0 || h <= 0) {
     // i.e. chart is smaller than margin
     return null
   }
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative">
       {ttParams && Tooltip && (
         <TooltipContainer
-          setElem={tooltipMeasure.setElem}
-          margin={margin}
-          pos={getTooltipPosition(
-            ttParams.x,
-            ttParams.y,
-            innerW,
-            innerH,
-            tooltipMeasure.width ?? 140,
-            tooltipMeasure.height ?? 35,
-            isMobile ?? false
-          )}
+          calculatePos={(ttw, tth) =>
+            getTooltipPosition(ttParams.x, ttParams.y, w, h, ttw, tth)
+          }
         >
           <Tooltip
             xScale={xAxis.scale()}
@@ -285,43 +261,31 @@ export const SVGChart = <X, TT>(props: {
           />
         </TooltipContainer>
       )}
-      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} overflow="visible">
         <clipPath id={clipPathId}>
-          <rect x={0} y={0} width={innerW} height={innerH} />
+          <rect x={0} y={0} width={w} height={h} />
         </clipPath>
-        <g transform={`translate(${margin.left}, ${margin.top})`}>
-          <XAxis axis={xAxis} w={innerW} h={innerH} />
+        <g>
+          <XAxis axis={xAxis} w={w} h={h} />
           <YAxis
             axis={yAxis}
-            w={innerW}
-            h={innerH}
+            w={w}
+            h={h}
             negativeThreshold={negativeThreshold}
           />
           <g clipPath={`url(#${clipPathId})`}>{children}</g>
-          {!isMobile ? (
-            <g
-              ref={overlayRef}
-              x="0"
-              y="0"
-              width={innerW}
-              height={innerH}
-              fill="none"
-              pointerEvents="all"
-              onPointerEnter={onPointerMove}
-              onPointerMove={onPointerMove}
-              onPointerLeave={onPointerLeave}
-            />
-          ) : (
-            <rect
-              x="0"
-              y="0"
-              width={innerW}
-              height={innerH}
-              fill="transparent"
-              onTouchMove={onTouchMove}
-              onTouchEnd={onPointerLeave}
-            />
-          )}
+          <g
+            ref={overlayRef}
+            x="0"
+            y="0"
+            width={w}
+            height={h}
+            fill="none"
+            pointerEvents="all"
+            onPointerEnter={onPointerMove}
+            onPointerMove={onPointerMove}
+            onPointerLeave={onPointerLeave}
+          />
         </g>
       </svg>
     </div>
@@ -336,26 +300,13 @@ export const getTooltipPosition = (
   containerWidth: number,
   containerHeight: number,
   tooltipWidth: number,
-  tooltipHeight: number,
-  isMobile: boolean
+  tooltipHeight: number
 ) => {
-  let left = mouseX + 12
-  let bottom = !isMobile
-    ? containerHeight - mouseY + 12
-    : containerHeight - tooltipHeight + 12
-  if (tooltipWidth != null) {
-    const overflow = left + tooltipWidth - containerWidth
-    if (overflow > 0) {
-      left -= overflow
-    }
-  }
+  let left = mouseX + 6
+  let bottom = containerHeight - mouseY + 6
 
-  if (tooltipHeight != null) {
-    const overflow = tooltipHeight - mouseY
-    if (overflow > 0) {
-      bottom -= overflow
-    }
-  }
+  left = clamp(left, 0, containerWidth - tooltipWidth)
+  bottom = clamp(bottom, 0, containerHeight - tooltipHeight)
 
   return { left, bottom }
 }
@@ -374,24 +325,23 @@ export type TooltipProps<X, T> = TooltipParams<T> & {
 
 export type TooltipComponent<X, T> = ComponentType<TooltipProps<X, T>>
 export const TooltipContainer = (props: {
-  setElem: (e: HTMLElement | null) => void
-  pos: TooltipPosition
-  margin: Margin
+  calculatePos: (width: number, height: number) => TooltipPosition
   className?: string
   children: React.ReactNode
 }) => {
-  const { setElem, pos, margin, className, children } = props
+  const { calculatePos, className, children } = props
+
+  const { elemRef, width, height } = useMeasureSize()
+  const pos = calculatePos(width ?? 0, height ?? 0)
+
   return (
     <div
-      ref={setElem}
+      ref={elemRef}
       className={clsx(
         className,
-        'border-ink-200 bg-canvas-0/70 pointer-events-none absolute z-10 whitespace-pre rounded border p-2 px-4 py-2 text-xs sm:text-sm'
+        'border-ink-200 bg-canvas-0/70 pointer-events-none absolute z-10 whitespace-pre rounded border px-4 py-2 text-sm'
       )}
-      style={{
-        margin: `${margin.top}px ${margin.right}px ${margin.bottom}px ${margin.left}px`,
-        ...pos,
-      }}
+      style={{ ...pos }}
     >
       {children}
     </div>

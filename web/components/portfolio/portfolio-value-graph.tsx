@@ -9,10 +9,6 @@ import { ControllableSingleValueHistoryChart } from 'web/components/charts/gener
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { HistoryPoint, viewScale } from 'common/chart'
 
-const MARGIN = { top: 12, right: 42, bottom: 20, left: 6 }
-const MARGIN_X = MARGIN.left + MARGIN.right
-const MARGIN_Y = MARGIN.top + MARGIN.bottom
-
 export type GraphMode = 'profit' | 'value' | 'balance'
 
 export const PortfolioTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
@@ -54,9 +50,8 @@ export const PortfolioGraph = (props: {
     <ControllableSingleValueHistoryChart
       w={width}
       h={height}
-      margin={MARGIN}
-      xScale={scaleTime([minDate, maxDate], [0, width - MARGIN_X])}
-      yScale={scaleLinear([minValue, maxValue], [height - MARGIN_Y, 0])}
+      xScale={scaleTime([minDate, maxDate], [0, width])}
+      yScale={scaleLinear([minValue, maxValue], [height, 0])}
       viewScaleProps={viewScaleProps}
       yKind="Ṁ"
       data={points}

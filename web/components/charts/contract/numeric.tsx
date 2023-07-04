@@ -36,7 +36,6 @@ export const NumericContractChart = (props: {
     <DistributionChart
       w={width}
       h={height}
-      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
       data={data}

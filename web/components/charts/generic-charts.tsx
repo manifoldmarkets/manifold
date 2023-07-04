@@ -18,7 +18,6 @@ import {
   AxisConstraints,
   DistributionPoint,
   HistoryPoint,
-  Margin,
   MultiPoint,
   Point,
   ValueKind,
@@ -150,12 +149,11 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   w: number
   h: number
   color: string
-  margin: Margin
   xScale: ScaleContinuousNumeric<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   curve?: CurveFactory
 }) => {
-  const { data, w, h, color, margin, yScale, curve } = props
+  const { data, w, h, color, yScale, curve } = props
 
   const [viewXScale, setViewXScale] =
     useState<ScaleContinuousNumeric<number, number>>()
@@ -183,14 +181,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   })
 
   return (
-    <SVGChart
-      w={w}
-      h={h}
-      margin={margin}
-      xAxis={xAxis}
-      yAxis={yAxis}
-      onSelect={onSelect}
-    >
+    <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis} onSelect={onSelect}>
       <AreaWithTopStroke
         color={color}
         data={data}
@@ -208,7 +199,6 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   w: number
   h: number
   colors: readonly string[]
-  margin: Margin
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   yKind?: ValueKind
@@ -216,7 +206,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
 }) => {
-  const { data, w, h, colors, margin, yScale, yKind, curve, Tooltip } = props
+  const { data, w, h, colors, yScale, yKind, curve, Tooltip } = props
 
   const [ttParams, setTTParams] = useState<TooltipParams<P>>()
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
@@ -285,7 +275,6 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     <SVGChart
       w={w}
       h={h}
-      margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
       ttParams={ttParams}
@@ -316,7 +305,6 @@ export const ControllableSingleValueHistoryChart = <
   w: number
   h: number
   color: string | ((p: P) => string)
-  margin: Margin
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   viewScaleProps: viewScale
@@ -328,8 +316,7 @@ export const ControllableSingleValueHistoryChart = <
   pct?: boolean
   negativeThreshold?: number
 }) => {
-  const { data, w, h, color, margin, Tooltip, noAxes, negativeThreshold } =
-    props
+  const { data, w, h, color, Tooltip, noAxes, negativeThreshold } = props
   const { viewXScale, setViewXScale, viewYScale, setViewYScale } =
     props.viewScaleProps
   const yKind = props.yKind ?? 'amount'
@@ -428,7 +415,6 @@ export const ControllableSingleValueHistoryChart = <
     <SVGChart
       w={w}
       h={h}
-      margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
       ttParams={mouse}

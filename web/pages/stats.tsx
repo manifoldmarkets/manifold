@@ -75,7 +75,7 @@ export function CustomAnalytics(props: Stats) {
   const currentEngaged = engagedUsers[engagedUsers.length - 1]
 
   return (
-    <Col className="px-2 sm:px-0">
+    <Col className="px-4 sm:pl-6 sm:pr-16">
       <Title children="Active users" />
       <p className="text-ink-500">
         An active user is a user who has traded in, commented on, or created a

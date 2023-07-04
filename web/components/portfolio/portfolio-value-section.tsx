@@ -286,7 +286,7 @@ export function PortfolioValueSkeleton(props: {
           />
         )}
       </Row>
-      <SizedContainer fullHeight={200} mobileHeight={150}>
+      <SizedContainer className="mb-4 h-[150px] pr-11 sm:h-[200px] lg:pr-0">
         {graphElement}
       </SizedContainer>
       {placement === 'bottom' && !hideSwitcher && (

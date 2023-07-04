@@ -1,11 +1,6 @@
 import { LimitBet } from 'common/bet'
-import {
-  CPMMBinaryContract,
-  PseudoNumericContract,
-  StonkContract,
-} from 'common/contract'
+import { CPMMBinaryContract, StonkContract } from 'common/contract'
 import { getDisplayProbability } from 'common/calculate'
-import { Col } from '../../layout/col'
 import { HistoryPoint } from 'common/chart'
 import { scaleLinear } from 'd3-scale'
 import { AreaWithTopStroke, SVGChart, formatPct } from '../helpers'
@@ -14,18 +9,13 @@ import { axisBottom, axisRight } from 'd3-axis'
 import { formatMoney } from 'common/util/format'
 
 export function DepthChart(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract
+  contract: CPMMBinaryContract | StonkContract
   yesBets: LimitBet[]
   noBets: LimitBet[]
   width: number
   height: number
 }) {
   const { contract, yesBets, noBets, width, height } = props
-
-  // Won't display a depth chart for numeric contracts, only binary contracts right now
-  if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    return null
-  }
 
   const yesData = cumulative(yesBets)
   const noData = cumulative(noBets)
@@ -45,13 +35,8 @@ export function DepthChart(props: {
 
   const currentValue = getDisplayProbability(contract)
 
-  const margin = { top: 10, bottom: 20, left: 20, right: 60 }
-
-  const innerW = width - (margin.left + margin.right)
-  const innerH = height - (margin.top + margin.bottom)
-
-  const xScale = scaleLinear().domain([0, 1]).range([0, innerW])
-  const yScale = scaleLinear().domain([0, maxAmount]).range([innerH, 0])
+  const xScale = scaleLinear().domain([0, 1]).range([0, width])
+  const yScale = scaleLinear().domain([0, maxAmount]).range([height, 0])
   const dl = line<HistoryPoint>()
     .x((p) => xScale(p.x))
     .y((p) => yScale(p.y))
@@ -66,44 +51,35 @@ export function DepthChart(props: {
   if (dYes === null || dNo === null) return null
 
   return (
-    <Col className="text-ink-800 items-center">
-      <h2>Question depth</h2>
-      <SVGChart
-        w={width}
-        h={height}
-        margin={margin}
-        xAxis={xAxis}
-        yAxis={yAxis}
-      >
-        <AreaWithTopStroke
-          color="#11b981"
-          data={yesData}
-          px={(p) => xScale(p.x)}
-          py0={yScale(0)}
-          py1={(p) => yScale(p.y)}
-          curve={curveStepBefore}
-        />
-        <AreaWithTopStroke
-          color="red"
-          data={noData}
-          px={(p) => xScale(p.x)}
-          py0={yScale(0)}
-          py1={(p) => yScale(p.y)}
-          curve={curveStepBefore}
-        />
+    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis}>
+      <AreaWithTopStroke
+        color="#11b981"
+        data={yesData}
+        px={(p) => xScale(p.x)}
+        py0={yScale(0)}
+        py1={(p) => yScale(p.y)}
+        curve={curveStepBefore}
+      />
+      <AreaWithTopStroke
+        color="red"
+        data={noData}
+        px={(p) => xScale(p.x)}
+        py0={yScale(0)}
+        py1={(p) => yScale(p.y)}
+        curve={curveStepBefore}
+      />
 
-        {/* line at current value */}
-        <line
-          x1={xScale(currentValue)}
-          y1={yScale(0)}
-          x2={xScale(currentValue)}
-          y2={yScale(maxAmount)}
-          stroke="rgb(99 102 241)"
-          strokeWidth={1}
-          strokeDasharray="2 2"
-        />
-      </SVGChart>
-    </Col>
+      {/* line at current value */}
+      <line
+        x1={xScale(currentValue)}
+        y1={yScale(0)}
+        x2={xScale(currentValue)}
+        y2={yScale(maxAmount)}
+        stroke="rgb(99 102 241)"
+        strokeWidth={1}
+        strokeDasharray="2 2"
+      />
+    </SVGChart>
   )
 }
 

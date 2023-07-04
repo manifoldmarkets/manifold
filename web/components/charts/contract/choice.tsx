@@ -32,9 +32,6 @@ export const CHOICE_ANSWER_COLORS = [
 export const CHOICE_OTHER_COLOR = '#B1B1C7B3'
 export const CHOICE_ALL_COLORS = [...CHOICE_ANSWER_COLORS, CHOICE_OTHER_COLOR]
 
-const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
-const MARGIN_X = MARGIN.left + MARGIN.right
-const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
 const getAnswers = (contract: MultiContract) => {
   const { answers, outcomeType } = contract
@@ -124,8 +121,8 @@ export const ChoiceContractChart = (props: {
     Date.now()
   )
   const visibleRange = [start, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
-  const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
+  const xScale = scaleTime(visibleRange, [0, width])
+  const yScale = scaleLinear([0, 1], [height, 0])
 
   const ChoiceTooltip = useMemo(
     () => (props: TooltipProps<Date, MultiPoint>) => {
@@ -168,7 +165,6 @@ export const ChoiceContractChart = (props: {
     <MultiValueHistoryChart
       w={width}
       h={height}
-      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
       yKind="percent"

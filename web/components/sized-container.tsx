@@ -1,43 +1,30 @@
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import { ReactNode } from 'react'
+import { useMeasureSize } from 'web/hooks/use-measure-size'
 
+/** Automatically calculate size and pass it to children */
 export const SizedContainer = (props: {
-  fullHeight: number
-  mobileHeight: number
-  mobileThreshold?: number
-  className?: string
   children: (width: number, height: number) => ReactNode
+  /**
+   * You must set width and height to a value (like h-8)
+   * or to a % of the parent (like w-full) for resizing.
+   * Unless the parent be flexin'
+   *
+   * (Normally the browser sets an element's width and height by its content)
+   *
+   * So, className is not optional. Set to "" only if you know what you're doing.
+   */
+  className: string
 }) => {
-  const { children, fullHeight, mobileHeight, className } = props
-  const threshold = props.mobileThreshold ?? 800
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState<number>()
-  const [height, setHeight] = useState<number>()
-  useEffect(() => {
-    if (containerRef.current) {
-      const handleResize = () => {
-        setHeight(window.innerWidth <= threshold ? mobileHeight : fullHeight)
-        setWidth(containerRef.current?.clientWidth)
-      }
-      handleResize()
-      const resizeObserver = new ResizeObserver(handleResize)
-      resizeObserver.observe(containerRef.current)
-      window.addEventListener('resize', handleResize)
-      return () => {
-        window.removeEventListener('resize', handleResize)
-        resizeObserver.disconnect()
-      }
-    }
-  }, [threshold, fullHeight, mobileHeight])
+  const { children, className } = props
+
+  const { elemRef, width, height } = useMeasureSize()
+
+  // put containerRef on the inner div so that size excludes padding
   return (
-    <div ref={containerRef} className={className}>
-      {width && height ? (
-        children(width, height)
-      ) : (
-        <>
-          <div className="sm:hidden" style={{ height: mobileHeight }} />
-          <div className="hidden sm:flex" style={{ height: fullHeight }} />
-        </>
-      )}
+    <div className={className}>
+      <div ref={elemRef} className="h-full w-full">
+        {width && height ? children(width, height) : null}
+      </div>
     </div>
   )
 }

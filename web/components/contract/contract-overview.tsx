@@ -95,7 +95,7 @@ const NumericOverview = (props: { contract: NumericContract }) => {
   return (
     <>
       <NumericResolutionOrExpectation contract={contract} />
-      <SizedContainer fullHeight={250} mobileHeight={150}>
+      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <NumericContractChart width={w} height={h} contract={contract} />
         )}
@@ -125,7 +125,8 @@ const BinaryOverview = (props: {
           color="green"
         />
       </Row>
-      <SizedContainer fullHeight={250} mobileHeight={150}>
+
+      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <BinaryContractChart
             width={w}
@@ -157,7 +158,7 @@ const ChoiceOverview = (props: {
   if (!onAnswerCommentClick) return null
   return (
     <>
-      <SizedContainer fullHeight={250} mobileHeight={150}>
+      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <ChoiceContractChart
             width={w}
@@ -168,7 +169,7 @@ const ChoiceOverview = (props: {
           />
         )}
       </SizedContainer>
-      <div />
+
       <AnswersPanel
         contract={contract}
         onAnswerCommentClick={onAnswerCommentClick}
@@ -202,7 +203,7 @@ const PseudoNumericOverview = (props: {
           color="indigo"
         />
       </Row>
-      <SizedContainer fullHeight={250} mobileHeight={150}>
+      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <PseudoNumericContractChart
             width={w}
@@ -241,7 +242,7 @@ const StonkOverview = (props: {
           color="green"
         />
       </Row>
-      <SizedContainer fullHeight={250} mobileHeight={150}>
+      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <StonkContractChart
             width={w}
