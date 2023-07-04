@@ -286,7 +286,9 @@ function OpenAnswer(props: {
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
 
   const user = useUser()
-  const hasBets = userBets && userBets.filter((b) => !b.isRedemption).length > 0
+  const hasBets =
+    userBets &&
+    userBets.filter((b) => !b.isRedemption && b.amount != 0).length > 0
 
   return (
     <Col className="relative">
