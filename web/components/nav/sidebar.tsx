@@ -57,7 +57,7 @@ export default function Sidebar(props: {
   }
 
   const navOptions = isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), true)
+    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true), true)
 
   const bottomNavOptions = bottomNav(
