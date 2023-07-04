@@ -385,7 +385,11 @@ function OpenAnswer(props: {
                   >
                     NO
                   </Button>
-                  <Button size="2xs" color='indigo-outline' onClick={() => setOutcome('LIMIT')}>
+                  <Button
+                    size="2xs"
+                    color="indigo-outline"
+                    onClick={() => setOutcome('LIMIT')}
+                  >
                     %
                   </Button>
                 </>
