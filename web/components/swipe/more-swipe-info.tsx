@@ -130,7 +130,7 @@ function MoreSwipeInfoDialog(props: {
       )}
     >
       <Col>
-        <SizedContainer className='h-[150px]'>
+        <SizedContainer className="h-[150px]">
           {(w, h) => (
             <BinaryContractChart
               width={w}

@@ -32,7 +32,6 @@ export const CHOICE_ANSWER_COLORS = [
 export const CHOICE_OTHER_COLOR = '#B1B1C7B3'
 export const CHOICE_ALL_COLORS = [...CHOICE_ANSWER_COLORS, CHOICE_OTHER_COLOR]
 
-
 const getAnswers = (contract: MultiContract) => {
   const { answers, outcomeType } = contract
   const validAnswers = (answers ?? []).filter(
