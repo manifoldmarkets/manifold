@@ -1,7 +1,7 @@
 import { bisector, extent } from 'd3-array'
 import { axisBottom, axisRight } from 'd3-axis'
-import { D3BrushEvent } from 'd3-brush'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
+import { D3ZoomEvent } from 'd3-zoom'
 import {
   CurveFactory,
   SeriesPoint,
@@ -169,19 +169,16 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     return { xAxis, yAxis }
   }, [w, xScale, yScale])
 
-  const onSelect = useEvent((ev: D3BrushEvent<P>) => {
-    if (ev.selection) {
-      const [mouseX0, mouseX1] = ev.selection as [number, number]
-      setViewXScale(() =>
-        xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
-      )
+  const onZoom = useEvent((ev: D3ZoomEvent<SVGElement, P> | null) => {
+    if (ev?.transform) {
+      setViewXScale(() => ev.transform.rescaleX(props.xScale))
     } else {
       setViewXScale(undefined)
     }
   })
 
   return (
-    <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis} onSelect={onSelect}>
+    <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis} onZoom={onZoom}>
       <AreaWithTopStroke
         color={color}
         data={data}
@@ -259,13 +256,9 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     setTTParams(undefined)
   })
 
-  const onSelect = useEvent((ev: D3BrushEvent<P>) => {
-    if (ev.selection) {
-      const [mouseX0, mouseX1] = ev.selection as [number, number]
-
-      setViewXScale(() =>
-        xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
-      )
+  const onZoom = useEvent((ev: D3ZoomEvent<SVGElement, unknown> | null) => {
+    if (ev?.transform) {
+      setViewXScale(() => ev.transform.rescaleX(props.xScale))
     } else {
       setViewXScale(undefined)
     }
@@ -278,7 +271,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
       xAxis={xAxis}
       yAxis={yAxis}
       ttParams={ttParams}
-      onSelect={onSelect}
+      onZoom={onZoom}
       onMouseOver={onMouseOver}
       onMouseLeave={onMouseLeave}
       Tooltip={Tooltip}
@@ -374,13 +367,11 @@ export const ControllableSingleValueHistoryChart = <
     setMouse(undefined)
   })
 
-  const onSelect = useEvent((ev: D3BrushEvent<P>) => {
-    if (ev.selection) {
-      const [mouseX0, mouseX1] = ev.selection as [number, number]
-      const xMin = xScale.invert(mouseX0)
-      const xMax = xScale.invert(mouseX1)
-      const newViewXScale = xScale.copy().domain([xMin, xMax])
-      setViewXScale(() => newViewXScale)
+  const onZoom = useEvent((ev: D3ZoomEvent<SVGElement, P> | null) => {
+    if (ev?.transform) {
+      const newXScale = ev.transform.rescaleX(props.xScale)
+      setViewXScale(() => newXScale)
+      const [xMin, xMax] = newXScale.domain()
 
       const bisect = bisector((p: P) => p.x)
       const iMin = bisect.right(data, xMin)
@@ -388,7 +379,7 @@ export const ControllableSingleValueHistoryChart = <
 
       // don't zoom axis if they selected an area with only one value
       if (iMin != iMax) {
-        const visibleYs = range(iMin - 1, iMax).map((i) => data[i].y)
+        const visibleYs = range(iMin - 1, iMax).map((i) => data[i]?.y)
         const [yMin, yMax] = extent(visibleYs) as [number, number]
         // try to add extra space on top and bottom before constraining
         const padding = (yMax - yMin) * 0.1
@@ -418,7 +409,7 @@ export const ControllableSingleValueHistoryChart = <
       xAxis={xAxis}
       yAxis={yAxis}
       ttParams={mouse}
-      onSelect={onSelect}
+      onZoom={onZoom}
       onMouseOver={onMouseOver}
       onMouseLeave={onMouseLeave}
       Tooltip={Tooltip}

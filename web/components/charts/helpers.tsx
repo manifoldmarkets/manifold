@@ -1,8 +1,8 @@
 import clsx from 'clsx'
 import { Axis, AxisScale } from 'd3-axis'
-import { D3BrushEvent, brushX } from 'd3-brush'
 import { pointer, select } from 'd3-selection'
 import { CurveFactory, area, line } from 'd3-shape'
+import { D3ZoomEvent, zoom } from 'd3-zoom'
 import dayjs from 'dayjs'
 import {
   ComponentType,
@@ -10,7 +10,6 @@ import {
   SVGProps,
   useDeferredValue,
   useEffect,
-  useId,
   useMemo,
   useRef,
 } from 'react'
@@ -28,8 +27,6 @@ export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   useEffect(() => {
     if (axisRef.current != null) {
       select(axisRef.current)
-        .transition()
-        .duration(250)
         .call(axis)
         .select('.domain')
         .attr('stroke-width', 0)
@@ -176,7 +173,7 @@ export const SVGChart = <X, TT>(props: {
   xAxis: Axis<X>
   yAxis: Axis<number>
   ttParams?: TooltipParams<TT> | undefined
-  onSelect?: (ev: D3BrushEvent<any>) => void
+  onZoom?: (ev: D3ZoomEvent<any, any> | null) => void
   onMouseOver?: (mouseX: number, mouseY: number) => void
   onMouseLeave?: () => void
   Tooltip?: TooltipComponent<X, TT>
@@ -189,46 +186,33 @@ export const SVGChart = <X, TT>(props: {
     xAxis,
     yAxis,
     ttParams,
-    onSelect,
+    onZoom,
     onMouseOver,
     onMouseLeave,
     Tooltip,
     negativeThreshold,
   } = props
-  const overlayRef = useRef<SVGGElement>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
 
-  const clipPathId = useId()
-
-  const justSelected = useRef(false)
   useEffect(() => {
-    if (onSelect != null && overlayRef.current) {
-      const brush = brushX().extent([
-        [0, 0],
-        [w, h],
-      ])
-      brush.on('end', (ev) => {
-        // when we clear the brush after a selection, that would normally cause
-        // another 'end' event, so we have to suppress it with this flag
-        if (!justSelected.current) {
-          justSelected.current = true
-          onSelect(ev)
-          onMouseLeave?.()
-          if (overlayRef.current) {
-            select(overlayRef.current).call(brush.clear)
-          }
-        } else {
-          justSelected.current = false
-        }
-      })
-      // mqp: shape-rendering null overrides the default d3-brush shape-rendering
-      // of `crisp-edges`, which seems to cause graphical glitches on Chrome
-      // (i.e. the bug where the area fill flickers white)
-      select(overlayRef.current)
-        .call(brush)
-        .select('.selection')
-        .attr('shape-rendering', 'null')
+    if (onZoom != null && svgRef.current) {
+      const zoomer = zoom<SVGSVGElement, unknown>()
+        .scaleExtent([1, 100])
+        .extent([
+          [0, 0],
+          [w, h],
+        ])
+        .translateExtent([
+          [0, 0],
+          [w, h],
+        ])
+        .on('zoom', (ev) => onZoom?.(ev))
+
+      select(svgRef.current)
+        .call(zoomer)
+        .on('dblclick.zoom', () => onZoom?.(null))
     }
-  }, [w, h, onSelect, onMouseLeave])
+  }, [w, h, onZoom])
 
   const onPointerMove = (ev: React.PointerEvent) => {
     if (ev.pointerType === 'mouse' || ev.pointerType === 'pen') {
@@ -247,7 +231,12 @@ export const SVGChart = <X, TT>(props: {
   }
 
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      onPointerEnter={onPointerMove}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
+    >
       {ttParams && Tooltip && (
         <TooltipContainer
           calculatePos={(ttw, tth) =>
@@ -261,10 +250,32 @@ export const SVGChart = <X, TT>(props: {
           />
         </TooltipContainer>
       )}
-      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} overflow="visible">
-        <clipPath id={clipPathId}>
-          <rect x={0} y={0} width={w} height={h} />
-        </clipPath>
+      <svg
+        width={w}
+        height={h}
+        viewBox={`0 0 ${w} ${h}`}
+        overflow="visible"
+        ref={svgRef}
+      >
+        <defs>
+          <filter id="blur">
+            <feGaussianBlur stdDeviation="8" />
+          </filter>
+          <mask id="mask">
+            <rect
+              x={-8}
+              y={-8}
+              width={w + 16}
+              height={h + 16}
+              fill="white"
+              filter="url(#blur)"
+            />
+          </mask>
+          <clipPath id="clip">
+            <rect x={-32} y={-32} width={w + 64} height={h + 64} />
+          </clipPath>
+        </defs>
+
         <g>
           <XAxis axis={xAxis} w={w} h={h} />
           <YAxis
@@ -273,19 +284,10 @@ export const SVGChart = <X, TT>(props: {
             h={h}
             negativeThreshold={negativeThreshold}
           />
-          <g clipPath={`url(#${clipPathId})`}>{children}</g>
-          <g
-            ref={overlayRef}
-            x="0"
-            y="0"
-            width={w}
-            height={h}
-            fill="none"
-            pointerEvents="all"
-            onPointerEnter={onPointerMove}
-            onPointerMove={onPointerMove}
-            onPointerLeave={onPointerLeave}
-          />
+          {/* clip to stop pointer events outside of graph, and mask for the blur to indicate zoom */}
+          <g clipPath="url(#clip)">
+            <g mask="url(#mask)">{children}</g>
+          </g>
         </g>
       </svg>
     </div>
