@@ -33,7 +33,7 @@ export function CalibrationChart(props: {
   const py = (p: Point) => yScale(p.y)
 
   return (
-    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis}>
+    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} noGridlines>
       {/* points */}
       {yesPoints.map((p, i) => (
         // triangle pointing up

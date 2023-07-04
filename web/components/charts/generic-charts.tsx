@@ -26,7 +26,6 @@ import {
 import { formatMoneyNumber } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
 import {
-  AreaPath,
   AreaWithTopStroke,
   SVGChart,
   SliceMarker,
@@ -36,6 +35,7 @@ import {
   formatPct,
 } from './helpers'
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
+import { nthColor } from './contract/choice'
 
 const Y_AXIS_CONSTRAINTS: Record<ValueKind, AxisConstraints> = {
   percent: { min: 0, max: 1, minExtent: 0.04 },
@@ -195,7 +195,6 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   data: P[]
   w: number
   h: number
-  colors: readonly string[]
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   yKind?: ValueKind
@@ -203,7 +202,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
 }) => {
-  const { data, w, h, colors, yScale, yKind, curve, Tooltip } = props
+  const { data, w, h, yScale, yKind, curve, Tooltip } = props
 
   const [ttParams, setTTParams] = useState<TooltipParams<P>>()
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
@@ -275,16 +274,19 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
       onMouseOver={onMouseOver}
       onMouseLeave={onMouseLeave}
       Tooltip={Tooltip}
+      noGridlines
+      className="group"
     >
       {series.map((s, i) => (
-        <AreaPath
+        <AreaWithTopStroke
           key={i}
           data={s}
           px={px}
           py0={py0}
           py1={py1}
           curve={curve ?? curveLinear}
-          fill={colors[i]}
+          color={nthColor(i)}
+          className="opacity-80 hover:!opacity-100 group-hover:opacity-60"
         />
       ))}
     </SVGChart>

@@ -35,6 +35,21 @@ export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   return <g ref={axisRef} transform={`translate(0, ${h})`} />
 }
 
+export const SimpleYAxis = <Y,>(props: { w: number; axis: Axis<Y> }) => {
+  const { w, axis } = props
+  const axisRef = useRef<SVGGElement>(null)
+  useEffect(() => {
+    if (axisRef.current != null) {
+      select(axisRef.current)
+        .call(axis)
+        .select('.domain')
+        .attr('stroke-width', 0)
+    }
+  }, [w, axis])
+  return <g ref={axisRef} transform={`translate(${w}, 0)`} />
+}
+
+// horizontal gridlines
 export const YAxis = <Y,>(props: {
   w: number
   h: number
@@ -126,8 +141,9 @@ export const AreaWithTopStroke = <P,>(props: {
   py0: number | ((p: P) => number)
   py1: number | ((p: P) => number)
   curve: CurveFactory
+  className?: string
 }) => {
-  const { data, color, px, py0, py1, curve } = props
+  const { data, color, px, py0, py1, curve, className } = props
   return (
     <g>
       <AreaPath
@@ -138,6 +154,7 @@ export const AreaWithTopStroke = <P,>(props: {
         curve={curve}
         fill={color}
         opacity={0.2}
+        className={className}
       />
       <LinePath data={data} px={px} py={py1} curve={curve} stroke={color} />
     </g>
@@ -178,6 +195,8 @@ export const SVGChart = <X, TT>(props: {
   onMouseLeave?: () => void
   Tooltip?: TooltipComponent<X, TT>
   negativeThreshold?: number
+  noGridlines?: boolean
+  className?: string
 }) => {
   const {
     children,
@@ -191,6 +210,8 @@ export const SVGChart = <X, TT>(props: {
     onMouseLeave,
     Tooltip,
     negativeThreshold,
+    noGridlines,
+    className,
   } = props
   const svgRef = useRef<SVGSVGElement>(null)
 
@@ -232,7 +253,7 @@ export const SVGChart = <X, TT>(props: {
 
   return (
     <div
-      className="relative"
+      className={clsx(className, 'relative')}
       onPointerEnter={onPointerMove}
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
@@ -278,12 +299,16 @@ export const SVGChart = <X, TT>(props: {
 
         <g>
           <XAxis axis={xAxis} w={w} h={h} />
-          <YAxis
-            axis={yAxis}
-            w={w}
-            h={h}
-            negativeThreshold={negativeThreshold}
-          />
+          {noGridlines ? (
+            <SimpleYAxis axis={yAxis} w={w} />
+          ) : (
+            <YAxis
+              axis={yAxis}
+              w={w}
+              h={h}
+              negativeThreshold={negativeThreshold}
+            />
+          )}
           {/* clip to stop pointer events outside of graph, and mask for the blur to indicate zoom */}
           <g clipPath="url(#clip)">
             <g mask="url(#mask)">{children}</g>

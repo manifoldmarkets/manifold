@@ -24,10 +24,7 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { BuyPanel } from '../bet/bet-panel'
-import {
-  CHOICE_ANSWER_COLORS,
-  useChartAnswers,
-} from '../charts/contract/choice'
+import { nthColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { GradientContainer } from '../widgets/gradient-container'
@@ -41,10 +38,9 @@ export function getAnswerColor(
   answer: Answer | DpmAnswer,
   answersArray: string[]
 ) {
-  const colorIndex = answersArray.indexOf(answer.text)
-  return colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
-    ? CHOICE_ANSWER_COLORS[colorIndex]
-    : '#B1B1C7B3'
+  const index =
+    'index' in answer ? answer.index : answersArray.indexOf(answer.text)
+  return nthColor(index)
 }
 
 const NUM_TRUNCATED_ANSWERS = 4
@@ -280,7 +276,7 @@ function OpenAnswer(props: {
   const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
     undefined
   )
-  const colorWidth = 100 * Math.max(prob, 0.01)
+  const colorWidth = 100 * prob
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
   const isDpm = contract.mechanism === 'dpm-2'
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
@@ -342,7 +338,11 @@ function OpenAnswer(props: {
         <div className="bg-canvas-50 absolute left-0 right-0 bottom-0 -z-10 h-3 rounded transition-all sm:top-1/2 sm:h-10 sm:-translate-y-1/2 sm:bg-inherit">
           <div
             className="h-full rounded"
-            style={{ width: `max(8px, ${colorWidth}%)`, background: color }}
+            style={{
+              width: `max(8px, ${colorWidth}%)`,
+              background: color,
+              opacity: 0.69,
+            }}
           />
         </div>
 

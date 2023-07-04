@@ -574,7 +574,7 @@ function ContractCardAnswer(props: {
   const answerColor = getAnswerColor(answer, answersArray)
   const color =
     type === 'loser' || (isClosed && type === 'contender')
-      ? '#D8D8EB80'
+      ? '#D8D8EB'
       : answerColor
   return (
     <div
@@ -587,6 +587,7 @@ function ContractCardAnswer(props: {
         className={'h-full rounded-r-md transition-all'}
         style={{
           backgroundColor: color,
+          opacity: 0.69,
           width: `${100 * prob}%`,
         }}
       />

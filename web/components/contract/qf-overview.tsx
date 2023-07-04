@@ -34,7 +34,7 @@ import QfTradesTable from './qf-trades-table'
 import { AlertBox } from '../widgets/alert-box'
 import { SiteLink } from '../widgets/site-link'
 import { sortBy } from 'lodash'
-import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
+import { nthColor } from '../charts/contract/choice'
 
 export function QfOverview(props: { contract: QuadraticFundingContract }) {
   const { contract } = props
@@ -124,7 +124,7 @@ function QfAnswersPanel(props: { contract: QuadraticFundingContract }) {
             answer={answer}
             total={totals[answer.id]}
             match={matches[answer.id]}
-            color={CHOICE_ANSWER_COLORS[i] ?? '#B1B1C7'}
+            color={nthColor(i)}
             txns={qfTxns}
             key={answer.id}
           />
