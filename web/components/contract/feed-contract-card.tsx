@@ -206,7 +206,7 @@ function DetailedCard(props: {
             {/* Title is link to contract for open in new tab and a11y */}
             <Col onClick={(e) => e.stopPropagation()} className={'w-full pt-4'}>
               <Col className={'w-full flex-col gap-1.5'}>
-                <Row className={'justify-between gap-1'}>
+                <Row className={'justify-between gap-4'}>
                   <Link
                     href={path}
                     className={clsx(
