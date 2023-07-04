@@ -270,7 +270,7 @@ function DetailedCard(props: {
                   </Col>
                 </Row>
                 <Row className={'items-center justify-between gap-1'}>
-                  <Col>
+                  <Col className={'w-full'}>
                     <Row className={'items-center gap-1'}>
                       <Avatar
                         size={'xs'}
@@ -279,16 +279,19 @@ function DetailedCard(props: {
                         username={creatorUsername}
                       />
                       <Row
-                        className={'text-ink-700 items-baseline gap-1 text-sm'}
+                        className={
+                          'text-ink-700 items-baseline gap-0.5 text-sm'
+                        }
                       >
                         <UserLink
                           name={contract.creatorName}
                           username={creatorUsername}
+                          className={'w-full max-w-[6rem] text-ellipsis'}
                         />
                         {item &&
                           !item.isCopied &&
                           item.dataType === 'new_contract' && (
-                            <span>
+                            <span className={'text-ink-400'}>
                               <Tooltip
                                 text={item?.reasonDescription}
                                 placement={'top'}
