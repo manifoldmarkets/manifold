@@ -240,7 +240,7 @@ export const isContractLikelyNonPredictive = async (
          <=>
         (select embedding from topic_embedding)) as distance`,
       [contractId],
-      (row) => row.distance < 0.075
+      (row) => row.distance < 0.1
     )
   )[0]
 }
