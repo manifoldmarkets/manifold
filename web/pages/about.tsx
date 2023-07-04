@@ -105,13 +105,6 @@ export default function AboutPage() {
 
         <Subtitle>📄 Pages</Subtitle>
         <LabSection>
-          {(!isNative || (isNative && platform !== 'ios')) && (
-            <LabCard
-              title="🫀 Charity"
-              description={`Turn mana into real charitable donations`}
-              href="/charity"
-            />
-          )}
           <LabCard
             title="💸 Referrals"
             description={`Refer a friend to earn ${formatMoney(
@@ -119,6 +112,15 @@ export default function AboutPage() {
             )}`}
             href="/referrals"
           />
+
+          {(!isNative || (isNative && platform !== 'ios')) && (
+            <LabCard
+              title="🫀 Charity"
+              description={`Turn mana into real charitable donations`}
+              href="/charity"
+            />
+          )}
+
           {(!isNative || (isNative && platform !== 'ios')) && (
             <LabCard
               title="💰 Get Mana"
@@ -126,6 +128,16 @@ export default function AboutPage() {
               description={`Top up your account with ${ENV_CONFIG.moneyMoniker}`}
             />
           )}
+          <LabCard
+            title="⚡️ Live feed"
+            description="Latest market activity"
+            href="/live"
+          />
+          <LabCard
+            title="📰 News"
+            description="Breaking news + questions"
+            href="/news"
+          />
           <LabCard
             title="🏆 Leaderboards"
             href="/leaderboards"
@@ -167,11 +179,7 @@ export default function AboutPage() {
               href="/lootbox"
             />
           )}
-          <LabCard
-            title="📰 News"
-            description="Breaking news + questions"
-            href="/news"
-          />
+
           <LabCard
             title="🔥 Swipe"
             description="Swipe-to-bet UI. Try via iOS/Android app."
@@ -186,11 +194,6 @@ export default function AboutPage() {
             title="✏ Posts"
             description="Go long on longform"
             href="/latestposts"
-          />
-          <LabCard
-            title="⚡️ Live feed"
-            description="Latest market activity"
-            href="/live"
           />
         </LabSection>
 

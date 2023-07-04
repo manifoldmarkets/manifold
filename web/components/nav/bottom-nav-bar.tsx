@@ -1,14 +1,8 @@
 import Link from 'next/link'
 
-import {
-  HomeIcon,
-  MenuAlt3Icon,
-  XIcon,
-  SearchIcon,
-} from '@heroicons/react/outline'
+import { HomeIcon, MenuAlt3Icon, XIcon } from '@heroicons/react/outline'
 import {
   DeviceMobileIcon,
-  NewspaperIcon,
   ScaleIcon,
   UserCircleIcon,
 } from '@heroicons/react/solid'
@@ -39,12 +33,10 @@ const itemClass =
 const selectedItemClass = 'bg-ink-100 text-primary-700'
 const touchItemClass = 'bg-primary-100'
 
-function getNavigation(user: User, isFeed: boolean) {
+function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    isFeed
-      ? { name: 'Search', href: '/find', icon: SearchIcon }
-      : { name: 'News', href: '/news', icon: NewspaperIcon },
+    { name: 'Questions', href: '/questions', icon: ScaleIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
@@ -88,7 +80,7 @@ export function BottomNavBar() {
   }
 
   const navigationOptions = user
-    ? getNavigation(user, true)
+    ? getNavigation(user)
     : signedOutNavigation(appStoreUrl)
 
   return (
@@ -107,10 +99,7 @@ export function BottomNavBar() {
             className={clsx(itemClass, sidebarOpen ? selectedItemClass : '')}
             onClick={() => setSidebarOpen(true)}
           >
-            <MenuAlt3Icon
-              className=" my-1 mx-auto h-6 w-6"
-              aria-hidden="true"
-            />
+            <MenuAlt3Icon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
             More
           </div>
           <MobileSidebar

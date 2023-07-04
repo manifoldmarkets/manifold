@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import clsx from 'clsx'
+import Link from 'next/link'
+import { SearchIcon } from '@heroicons/react/solid'
 
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
@@ -26,6 +28,9 @@ export function DailyStats(props: {
 
   return (
     <Row className={'z-30 w-full items-center justify-end gap-3'}>
+      <Link href="/find" className="flex sm:hidden">
+        <SearchIcon className="text-ink-500 hover:text-ink-900 h-6 w-6 cursor-pointer" />
+      </Link>
       <DailyLeagueStat user={user} />
       <QuestsOrStreak user={user} />
 

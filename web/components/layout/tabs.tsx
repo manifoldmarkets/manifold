@@ -66,9 +66,9 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
                 {tab.stackedTabIcon && (
                   <Row className="justify-center">{tab.stackedTabIcon}</Row>
                 )}
-                <Row className={'gap-1 '}>
-                  {tab.title}
+                <Row className={'gap-1 items-center'}>
                   {tab.inlineTabIcon}
+                  {tab.title}
                 </Row>
               </Tooltip>
             </Col>

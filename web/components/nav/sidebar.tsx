@@ -13,6 +13,7 @@ import {
   QuestionMarkCircleIcon,
   NewspaperIcon,
   SearchIcon,
+  LightningBoltIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -156,14 +157,12 @@ const getDesktopNav = (
 }
 
 // No sidebar when signed out
-const getMobileNav = (toggleModal: () => void, isFeed: boolean) => {
+const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
-    isFeed && { name: 'News', href: '/news', icon: NewspaperIcon },
-    isFeed
-      ? { name: 'Questions', href: '/questions', icon: ScaleIcon }
-      : { name: 'Search', href: '/search', icon: SearchIcon },
+    { name: 'Search', href: '/search', icon: SearchIcon },
     getIsNative() && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    { name: 'Live', href: '/live', icon: LightningBoltIcon },
     {
       name: 'Groups',
       icon: UserGroupIcon,
