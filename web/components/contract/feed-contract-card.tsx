@@ -146,6 +146,7 @@ function SimpleCard(props: {
         {isBinaryCpmm && <BetRow contract={contract} user={user} />}
       </Row>
       {children}
+      <BottomActionRow contract={contract} item={item} user={user} />
     </Col>
   )
 }
@@ -164,7 +165,6 @@ function DetailedCard(props: {
     isResolved,
     creatorUsername,
     creatorAvatarUrl,
-    question,
     outcomeType,
     mechanism,
   } = contract
@@ -202,7 +202,7 @@ function DetailedCard(props: {
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Row className={clsx('grow gap-2 px-4 pb-2')}>
+      <Row className={clsx('grow gap-2 px-4')}>
         <Col className="w-full">
           <Col className="w-full gap-0.5">
             {/* Title is link to contract for open in new tab and a11y */}
@@ -345,37 +345,48 @@ function DetailedCard(props: {
             {isBinaryCpmm && metrics && metrics.hasShares && (
               <YourMetricsFooter metrics={metrics} />
             )}
-            <Row
-              className="items-center justify-between pt-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Col className={'w-full'}>
-                <Row className={'items-center justify-between'}>
-                  {/*// Placeholder for the dislike button*/}
-                  <div />
-                  <TradesButton contract={contract} />
-                  <CommentsButton contract={contract} user={user} />
-
-                  <LikeButton
-                    contentId={contract.id}
-                    contentCreatorId={contract.creatorId}
-                    user={user}
-                    contentType={'contract'}
-                    totalLikes={contract.likedByUserCount ?? 0}
-                    contract={contract}
-                    contentText={question}
-                    size="md"
-                    color="gray"
-                    className="px-0"
-                    trackingLocation={'contract card (feed)'}
-                  />
-                </Row>
-              </Col>
-            </Row>
+            <BottomActionRow contract={contract} item={item} user={user} />
           </Col>
         </Col>
       </Row>
     </div>
+  )
+}
+const BottomActionRow = (props: {
+  contract: Contract
+  item: FeedTimelineItem | undefined
+  user: User | null | undefined
+}) => {
+  const { contract, user } = props
+  const { question } = contract
+  return (
+    <Row
+      className="items-center justify-between py-2"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Col className={'w-full'}>
+        <Row className={'items-center justify-between'}>
+          {/*// Placeholder for the dislike button*/}
+          <div />
+          <TradesButton contract={contract} />
+          <CommentsButton contract={contract} user={user} />
+
+          <LikeButton
+            contentId={contract.id}
+            contentCreatorId={contract.creatorId}
+            user={user}
+            contentType={'contract'}
+            totalLikes={contract.likedByUserCount ?? 0}
+            contract={contract}
+            contentText={question}
+            size="md"
+            color="gray"
+            className="px-0"
+            trackingLocation={'contract card (feed)'}
+          />
+        </Row>
+      </Col>
+    </Row>
   )
 }
 
