@@ -36,7 +36,7 @@ export function TradesButton(props: { contract: Contract }) {
       <Row className="relative gap-1.5 text-sm">
         <Tooltip
           text={'Traders'}
-          placement={'bottom'}
+          placement={'top'}
           className={clsx('flex flex-row items-center justify-center gap-1.5')}
         >
           <UserIcon className={clsx(' h-5')} />
