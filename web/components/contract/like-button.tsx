@@ -119,7 +119,7 @@ export const LikeButton = memo(function LikeButton(props: {
             'Like'
           )
         }
-        placement={'bottom'}
+        placement={'top'}
         noTap
         hasSafePolygon={showList}
       >
