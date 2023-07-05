@@ -97,8 +97,11 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   groupSlugs?: string[]
   groupLinks?: GroupLink[]
   uniqueBettorCount: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
   popularityScore: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
   importanceScore: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
   dailyScore: number
   likedByUserCount?: number
   unlistedById?: string

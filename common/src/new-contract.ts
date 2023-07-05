@@ -22,7 +22,7 @@ import { User } from './user'
 import { removeUndefinedProps } from './util/object'
 import { JSONContent } from '@tiptap/core'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
-
+export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
 export function getNewContract(
   id: string,
   slug: string,
@@ -81,7 +81,7 @@ export function getNewContract(
     closeTime,
     dailyScore: 0,
     popularityScore: 0,
-    importanceScore: 0,
+    importanceScore: NEW_MARKET_IMPORTANCE_SCORE,
     uniqueBettorCount: 0,
     lastUpdatedTime: createdTime,
 

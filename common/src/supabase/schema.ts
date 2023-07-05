@@ -350,6 +350,7 @@ export interface Database {
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
+          importance_score: number | null
           question: string | null
           question_fts: unknown | null
           question_nostop_fts: unknown | null
@@ -370,6 +371,7 @@ export interface Database {
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
+          importance_score?: number | null
           question?: string | null
           question_fts?: unknown | null
           question_nostop_fts?: unknown | null
@@ -390,6 +392,7 @@ export interface Database {
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
+          importance_score?: number | null
           question?: string | null
           question_fts?: unknown | null
           question_nostop_fts?: unknown | null

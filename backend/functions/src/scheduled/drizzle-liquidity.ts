@@ -52,13 +52,11 @@ const drizzleMarket = async (contractId: string) => {
   await firestore.runTransaction(async (trans) => {
     const snap = await trans.get(firestore.doc(`contracts/${contractId}`))
     const contract = snap.data() as CPMMContract | CPMMMultiContract
-    const { subsidyPool, slug, popularityScore } = contract
+    const { subsidyPool, slug } = contract
     if ((subsidyPool ?? 0) < 1e-7) return
 
     const r = Math.random()
-    const logPopularity = Math.log10((popularityScore ?? 0) + 10)
-    const v = Math.max(1, Math.min(4, logPopularity))
-    const amount = subsidyPool <= 1 ? subsidyPool : r * v * 0.2 * subsidyPool
+    const amount = subsidyPool <= 1 ? subsidyPool : r * 0.3 * subsidyPool
 
     if (contract.mechanism === 'cpmm-multi-1') {
       const answersSnap = await trans.get(

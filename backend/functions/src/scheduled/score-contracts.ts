@@ -20,10 +20,9 @@ export const importanceScoreScheduler = functions
   .runWith({ secrets })
   .pubsub.schedule(`every ${IMPORTANCE_MINUTE_INTERVAL} minutes`)
   .onRun(async () => {
-    const fr = admin.firestore()
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()
-    await calculateImportanceScore(fr, db, pg)
+    await calculateImportanceScore(db, pg)
   })
 
 export const scoreContractsScheduler = functions

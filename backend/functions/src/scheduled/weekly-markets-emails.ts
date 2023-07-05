@@ -150,10 +150,6 @@ const removeSimilarQuestions = (
   byContracts: Contract[],
   allowExactSameContracts: boolean
 ) => {
-  // log(
-  //   'contracts to filter by',
-  //   byContracts.map((c) => c.question + ' ' + c.popularityScore)
-  // )
   let contractsToRemove: Contract[] = []
   byContracts.length > 0 &&
     byContracts.forEach((contract) => {
