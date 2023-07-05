@@ -314,7 +314,7 @@ export async function getTrendingContracts() {
   const pg = createSupabaseDirectClient()
   return await pg.map(
     `select data from contracts 
-            where data->>'isResolved' = 'false' 
+            where resolution_time is null 
               and visibility = 'public'
               order by importance_score desc limit 500;`,
     [],
