@@ -8,23 +8,18 @@ import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
-import {
-  DESTINY_GROUP_SLUGS,
-  ENV_CONFIG,
-  HOME_BLOCKED_GROUP_SLUGS,
-} from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import TestimonialsPanel from './testimonials-panel'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
-import { Contract, CPMMBinaryContract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { LogoSEO } from 'web/components/LogoSEO'
-import { db } from 'web/lib/supabase/db'
 import { PrivacyAndTerms } from 'web/components/privacy-terms'
 import clsx from 'clsx'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
@@ -32,34 +27,13 @@ import { formatMoney } from 'common/util/format'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
 
-const excludedGroupSlugs = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
+export const getServerSideProps = redirectIfLoggedIn('/home')
 
-export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
-  const { data } = await db.from('trending_contracts').select('data').limit(20)
-  const contracts = (data ?? []).map((d) => d.data) as Contract[]
-
-  const trendingContracts = contracts
-    .filter(
-      (c) => !c.groupSlugs?.some((slug) => excludedGroupSlugs.includes(slug))
-    )
-    .filter((c) => c.coverImageUrl)
-    .filter((c) => c.outcomeType !== 'STONK')
-    .slice(0, 7)
-
-  return {
-    props: { trendingContracts },
-  }
-})
-
-export default function Home(props: {
-  trendingContracts: CPMMBinaryContract[]
-}) {
+export default function Home() {
   useSaveReferral()
   useRedirectAfterLogin()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
-
-  const { trendingContracts } = props
 
   return (
     <Page hideSidebar>
@@ -129,14 +103,8 @@ export default function Home(props: {
             />
           </Row>
         </Col>
-        <NewsTopicsTabs
-          homeContent={
-            <ContractsSection
-              contracts={trendingContracts}
-              className="w-full self-center"
-            />
-          }
-        />
+
+        <NewsTopicsTabs />
 
         <TestimonialsPanel />
 
