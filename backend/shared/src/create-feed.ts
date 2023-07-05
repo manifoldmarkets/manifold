@@ -1,5 +1,6 @@
 import {
   createSupabaseDirectClient,
+  pgp,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { Comment } from 'common/comment'
@@ -15,6 +16,7 @@ import { Reaction } from 'common/reaction'
 import { log } from 'shared/utils'
 import { buildArray } from 'common/util/array'
 import { getUsersWithSimilarInterestVectorToNews } from 'shared/supabase/users'
+import { convertObjectToSQLRow } from 'common/supabase/utils'
 
 export const insertDataToUserFeed = async (
   userId: string,
@@ -72,6 +74,51 @@ export const insertDataToUserFeed = async (
       idempotencyKey,
     ]
   )
+}
+export const bulkInsertDataToUserFeed = async (
+  usersToReasonsInterestedInContract: {
+    [userId: string]: FEED_REASON_TYPES
+  },
+  eventTime: number,
+  dataType: FEED_DATA_TYPES,
+  userIdsToExclude: string[],
+  dataProps: {
+    contractId?: string
+    commentId?: string
+    answerId?: string
+    creatorId?: string
+    betId?: string
+    newsId?: string
+    data?: any
+    groupId?: string
+    reactionId?: string
+    idempotencyKey?: string
+  },
+  pg: SupabaseDirectClient
+) => {
+  const eventTimeTz = new Date(eventTime).toISOString()
+
+  const feedRows = Object.entries(usersToReasonsInterestedInContract)
+    .filter(([userId]) => !userIdsToExclude.includes(userId))
+    .map(([userId, reason]) =>
+      convertObjectToSQLRow<any, 'user_feed'>({
+        ...dataProps,
+        userId,
+        reason,
+        dataType,
+        eventTime: eventTimeTz,
+      })
+    )
+  const cs = new pgp.helpers.ColumnSet(feedRows[0], { table: 'user_feed' })
+  const insert = pgp.helpers.insert(feedRows, cs) + ` ON CONFLICT DO NOTHING`
+
+  try {
+    await pg.none(insert)
+    log(`inserted ${feedRows.length} feed items`)
+  } catch (e) {
+    console.log('error inserting feed items')
+    console.error(e)
+  }
 }
 
 const findDuplicateContractsInFeed = async (
@@ -221,23 +268,17 @@ export const addContractToFeed = async (
       reasonsToInclude,
       maxDistanceFromUserInterestToContract
     )
-
-  await Promise.all(
-    Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
-      insertDataToUserFeed(
-        userId,
-        contract.createdTime,
-        dataType,
-        usersToReasonsInterestedInContract[userId],
-        userIdsToExclude,
-        {
-          contractId: contract.id,
-          creatorId: contract.creatorId,
-          idempotencyKey,
-        },
-        pg
-      )
-    )
+  await bulkInsertDataToUserFeed(
+    usersToReasonsInterestedInContract,
+    contract.createdTime,
+    dataType,
+    userIdsToExclude,
+    {
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+      idempotencyKey,
+    },
+    pg
   )
   log(
     `Added contract ${contract.id} to feed of ${
