@@ -14,7 +14,7 @@ import {
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
-const TOPIC_DISTANCE_THRESHOLD = 0.225
+const TOPIC_DISTANCE_THRESHOLD = 0.24
 const bodySchema = z.object({
   term: z.string(),
   filter: z.union([
