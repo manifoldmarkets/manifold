@@ -14,7 +14,9 @@ export type Item = {
 
 export function SidebarItem(props: { item: Item; currentPage?: string }) {
   const { item, currentPage } = props
-  const isCurrentPage = item.href != null && currentPage?.startsWith(item.href)
+
+  const currentBasePath = '/' + (currentPage?.split('/')[1] ?? '')
+  const isCurrentPage = item.href != null && currentBasePath === item.href
 
   const sidebarItem = (
     <div
