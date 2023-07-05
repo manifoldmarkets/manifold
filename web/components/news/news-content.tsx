@@ -13,8 +13,9 @@ const OpenAI = createNewsDashboardTab(
   'OpenAI announces Superalignment',
   [
     { url: 'https://openai.com/blog/introducing-superalignment' },
-    { slug: 'will-openai-hint-at-or-claim-to-hav' },
     { slug: 'will-superalignment-succeed' },
+    { slug: 'will-openais-superalignment-project' },
+    { slug: 'will-openai-hint-at-or-claim-to-hav' },
     { slug: 'will-openai-allow-full-access-to-th' },
     { slug: 'will-openai-an-ai-alignment-organiz' },
     { slug: 'will-openai-have-200-million-in-rev' },
