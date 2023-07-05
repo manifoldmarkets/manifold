@@ -8,6 +8,29 @@ import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
 
+const OpenAI = createNewsDashboardTab(
+  'OpenAI',
+  'OpenAI announces Superalignment',
+  [
+    { url: 'https://openai.com/blog/introducing-superalignment' },
+    { slug: 'will-openai-hint-at-or-claim-to-hav' },
+    { slug: 'will-superalignment-succeed' },
+    { slug: 'will-openai-allow-full-access-to-th' },
+    { slug: 'will-openai-an-ai-alignment-organiz' },
+    { slug: 'will-openai-have-200-million-in-rev' },
+    { slug: 'will-openai-anthropic-or-deepmind-s' },
+    { slug: 'what-will-be-the-average-pdoom-of-a' },
+    { slug: 'will-superposition-in-transformers' },
+    {
+      url: 'https://www.wired.com/story/google-deepmind-demis-hassabis-chatgpt/',
+    },
+    { slug: 'will-googles-gemini-beat-gpt4-in-te' },
+    { slug: 'will-google-deepmind-and-openai-hav' },
+    { slug: 'will-an-ai-get-gold-on-any-internat' },
+    { slug: 'will-ai-be-a-major-topic-during-the' },
+    // { slug: 'if-artificial-general-intelligence' }, // card looks too ugly
+  ]
+)
 const WestBank = createNewsDashboardTab(
   'West Bank',
   'Israeli millitary operation in West Bank',
@@ -409,7 +432,7 @@ const MissingSubData = () => {
 
 const Election2024 = createNewsDashboardTab(
   'US Elections',
-  '2024 US Presidential Election',
+  '2024 US Election Updates',
   [
     { slug: 'will-donald-trump-be-convicted-of-a-99e01f724b3f' },
     {
@@ -433,6 +456,8 @@ const Election2024 = createNewsDashboardTab(
 )
 
 export const newsContent = [
+  OpenAI,
+  Election2024,
   WestBank,
   FrenchRiots,
   SupremeCourt,
@@ -440,6 +465,5 @@ export const newsContent = [
   { title: 'Russian Coup?', content: <RussianCoupData /> },
   // { title: 'Titanic Sub', content: <MissingSubData /> },
   // { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
-  Election2024,
   { title: 'Ukraine War', content: <UkraineWarData /> },
 ]
