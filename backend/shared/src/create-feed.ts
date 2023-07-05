@@ -308,6 +308,7 @@ export const addContractToFeedIfUnseenAndDeleteDuplicates = async (
   const ignoreUsers = filterDefined(
     await Promise.all(
       userIds.map(async (userId) => {
+        // TODO: change this to a dictionary, search within the userids in the same sql query
         const previousContractFeedRows = await findDuplicateContractsInFeed(
           contract.id,
           userId,

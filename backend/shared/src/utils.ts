@@ -17,6 +17,7 @@ import {
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
 import { DAY_MS } from 'common/util/time'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -310,17 +311,14 @@ export function contractUrl(contract: Contract) {
 }
 
 export async function getTrendingContracts() {
-  const firestore = admin.firestore()
-  return await getValues<Contract>(
-    firestore
-      .collection('contracts')
-      .where('isResolved', '==', false)
-      .where('visibility', '==', 'public')
-      // can't use multiple inequality (/orderBy) operators on different fields,
-      // so have to filter for closed contracts separately
-      .orderBy('popularityScore', 'desc')
-      // might as well go big and do a quick filter for closed ones later
-      .limit(500)
+  const pg = createSupabaseDirectClient()
+  return await pg.map(
+    `select data from contracts 
+            where data->>'isResolved' = 'false' 
+              and visibility = 'public'
+              order by importance_score desc limit 500;`,
+    [],
+    (r) => r.data as Contract
   )
 }
 
