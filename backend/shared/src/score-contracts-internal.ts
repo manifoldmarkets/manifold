@@ -14,7 +14,6 @@ import { bulkUpdate } from 'shared/supabase/utils'
 export const MINUTE_INTERVAL = 15
 
 export async function scoreContractsInternal(
-  firestore: FirebaseFirestore.Firestore,
   db: SupabaseClient,
   pg: SupabaseDirectClient,
   readOnly = false
