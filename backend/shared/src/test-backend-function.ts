@@ -13,7 +13,7 @@ export async function testBackendFunction() {
   try {
     const pg = createSupabaseDirectClient()
     const db = createSupabaseClient()
-    await scoreContractsInternal(db, pg, true)
+    await scoreContractsInternal(db, pg)
   } catch (e) {
     console.error(e)
   }

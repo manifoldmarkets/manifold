@@ -69,18 +69,25 @@ export async function calculateImportanceScore(
   const contractsWithUpdates: Contract[] = []
 
   for (const contract of contracts) {
-    const { importanceScore } = computeContractScores(
-      now,
-      contract,
-      todayLikesByContract[contract.id] ?? 0,
-      thisWeekLikesByContract[contract.id] ?? 0,
-      todayTradersByContract[contract.id] ?? 0,
-      hourAgoTradersByContract[contract.id] ?? 0,
-      thisWeekTradersByContract[contract.id] ?? 0
-    )
+    const { importanceScore, popularityScore, dailyScore } =
+      computeContractScores(
+        now,
+        contract,
+        todayLikesByContract[contract.id] ?? 0,
+        thisWeekLikesByContract[contract.id] ?? 0,
+        todayTradersByContract[contract.id] ?? 0,
+        hourAgoTradersByContract[contract.id] ?? 0,
+        thisWeekTradersByContract[contract.id] ?? 0
+      )
 
-    if (contract.importanceScore !== importanceScore) {
+    if (
+      contract.importanceScore !== importanceScore ||
+      contract.popularityScore !== popularityScore ||
+      contract.dailyScore !== dailyScore
+    ) {
       contract.importanceScore = importanceScore
+      contract.popularityScore = popularityScore
+      contract.dailyScore = dailyScore
       contractsWithUpdates.push(contract)
     }
   }
@@ -121,6 +128,7 @@ export async function calculateImportanceScore(
         id: contract.id,
         data: `${JSON.stringify(contract)}::jsonb`,
         importance_score: contract.importanceScore,
+        popularity_score: contract.popularityScore,
       }))
     )
 }

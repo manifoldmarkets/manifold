@@ -17,6 +17,7 @@ import { log } from 'shared/utils'
 import { buildArray, filterDefined } from 'common/util/array'
 import { getUsersWithSimilarInterestVectorToNews } from 'shared/supabase/users'
 import { convertObjectToSQLRow } from 'common/supabase/utils'
+import { keyBy, mapValues } from 'lodash'
 
 export const insertDataToUserFeed = async (
   userId: string,
@@ -123,25 +124,32 @@ export const bulkInsertDataToUserFeed = async (
 
 const findDuplicateContractsInFeed = async (
   contractId: string,
-  userId: string,
+  userIds: string[],
   seenTime: number,
   pg: SupabaseDirectClient
 ) => {
-  const rowIds = await pg.manyOrNone<{
-    id: string
-    seen_time: Date | null
-  }>(
-    `select id, seen_time from user_feed 
-          where contract_id = $1 and 
-                user_id = $2 and 
+  const userIdsToExistingRows = await pg.map(
+    `select user_id,
+            array_agg(json_build_object('id', id, 'seen_time', seen_time)) AS rows
+            from user_feed
+            where contract_id = $1 and 
+                user_id = ANY($2) and 
                 created_time > $3
+                group by user_id
                 `,
-    [contractId, userId, new Date(seenTime).toISOString()]
+    [contractId, userIds, new Date(seenTime).toISOString()],
+    (row) => ({
+      userId: row.user_id,
+      rows: row.rows.map((r: { id: string; seen_time: string }) => ({
+        id: parseInt(r.id),
+        seenTime: r.seen_time ? new Date(r.seen_time) : null,
+      })),
+    })
   )
-  return rowIds.map((row) => ({
-    id: parseInt(row.id),
-    seenTime: row.seen_time ? new Date(row.seen_time) : null,
-  }))
+  return mapValues(
+    keyBy(userIdsToExistingRows, 'userId'),
+    (userRows) => userRows.rows
+  ) as { [userId: string]: { id: number; seenTime: Date | null }[] }
 }
 
 const deleteRowsFromUserFeed = async (
@@ -304,31 +312,32 @@ export const addContractToFeedIfUnseenAndDeleteDuplicates = async (
       minUserInterestDistanceToContract
     )
   const userIds = Object.keys(usersToReasonsInterestedInContract)
+  const usersToExistingContractFeedRows = await findDuplicateContractsInFeed(
+    contract.id,
+    userIds,
+    unseenNewerThanTime,
+    pg
+  )
+  const rowsToDelete: number[] = []
+
   // TODO: we should just insert the duplicate rows, and on the client order by importance and filter duplicates
   const ignoreUsers = filterDefined(
     await Promise.all(
       userIds.map(async (userId) => {
-        // TODO: change this to a dictionary, search within the userids in the same sql query
-        const previousContractFeedRows = await findDuplicateContractsInFeed(
-          contract.id,
-          userId,
-          unseenNewerThanTime,
-          pg
-        )
-        const seenContractFeedRows = previousContractFeedRows.filter(
+        const userFeedRows = usersToExistingContractFeedRows[userId] ?? []
+        const seenContractFeedRows = userFeedRows.filter(
           (row) => row.seenTime !== null
         )
-
         // If they've a duplicate row they've already seen, don't insert
         if (seenContractFeedRows.length > 0) return userId
-        await deleteRowsFromUserFeed(
-          previousContractFeedRows.map((row) => row.id),
-          pg
-        )
+        // Delete the unseen rows if they've too many duplicates
+        if (userFeedRows.length > 2)
+          rowsToDelete.push(...userFeedRows.map((row) => row.id))
         return null
       })
     )
   )
+  await deleteRowsFromUserFeed(rowsToDelete, pg)
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
     contract.createdTime,
@@ -380,17 +389,8 @@ export const insertNewsContractsToUsersFeeds = async (
   )
 }
 export const insertMarketMovementContractToUsersFeeds = async (
-  contract: Contract,
-  dailyScore: number
+  contract: Contract
 ) => {
-  log(
-    'adding contract to feed',
-    contract.id,
-    'with daily score',
-    dailyScore,
-    'prev score',
-    contract.dailyScore
-  )
   const nowDate = new Date()
   //TODO: Turn this into a select query, remove the idempotency key, add to top of feed
   //  as in trending contracts
