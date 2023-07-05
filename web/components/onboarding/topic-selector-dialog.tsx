@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { noop, uniq } from 'lodash'
+import Router from 'next/router'
+
 import { Col } from 'web/components/layout/col'
 import { leaveGroup } from 'web/lib/supabase/groups'
 import { useUser } from 'web/hooks/use-user'
@@ -23,6 +25,7 @@ export function TopicSelectorDialog(props: {
     string[] | undefined
   >()
   const [isLoading, setIsLoading] = useState(false)
+  const [open, setOpen] = useState(true)
 
   useEffect(() => {
     if (user && userSelectedTopics !== undefined) {
@@ -55,19 +58,15 @@ export function TopicSelectorDialog(props: {
   const closeDialog = (skipUpdate: boolean) => {
     setIsLoading(true)
 
-    if (user && !skipUpdate) {
-      updateUserEmbedding().then(() => {
-        // Reload to recompute feed!
-        window.location.reload()
-      })
-    } else {
-      window.location.reload()
-    }
+    if (user && !skipUpdate) updateUserEmbedding()
+
+    setOpen(false)
+    Router.replace('/questions')
   }
 
   return (
     <Modal
-      open={true}
+      open={open}
       setOpen={skippable ? closeDialog : noop}
       className="bg-canvas-0 overflow-hidden rounded-md"
       size={'lg'}
