@@ -16,7 +16,7 @@ import { isContractBlocked } from 'web/lib/firebase/users'
 import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items'
 import { DAY_MS } from 'common/util/time'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 25
 
 export type FeedTimelineItem = {
   // These are stored in the db
@@ -288,51 +288,42 @@ function createFeedTimelineItems(
   const nonNewsTimelineItems = uniqBy(
     data.map((item) => {
       const dataType = item.data_type as FEED_DATA_TYPES
-      // Parse new feed timeline data types here
+      const relevantContract = contracts?.find(
+        (contract) => contract.id === item.contract_id
+      )
+      // We may not find a relevant contract if they've already seen the same contract in their feed
+      if (!relevantContract) return
+      // If the contract is closed/resolved, only show it due to market movements or trending.
+      // Otherwise, we don't need to see comments on closed/resolved markets
       if (
-        dataType === 'contract_probability_changed' ||
-        dataType === 'new_comment' ||
-        dataType === 'new_contract' ||
-        dataType === 'popular_comment' ||
-        dataType === 'trending_contract'
-      ) {
-        const relevantContract = contracts?.find(
-          (contract) => contract.id === item.contract_id
-        )
-        // We may not find a relevant contract if they've already seen the same contract in their feed
-        if (!relevantContract) return
-        // If the contract is closed/resolved, only show it due to market movements or trending.
-        // Otherwise, we don't need to see comments on closed/resolved markets
-        if (
-          shouldIgnoreCommentsOnContract(relevantContract) &&
-          (dataType === 'new_comment' || dataType === 'popular_comment')
-        )
-          return
+        shouldIgnoreCommentsOnContract(relevantContract) &&
+        (dataType === 'new_comment' || dataType === 'popular_comment')
+      )
+        return
 
-        if (relevantContract.id === 'RqQdSlfdP7Vf6QmsJ80R') {
-          console.log('found it')
-        }
-        // Let's stick with one comment per feed item for now
-        const relevantComments = comments
-          ?.filter((comment) => comment.id === item.comment_id)
-          .filter(
-            (ct) =>
-              !ct.content?.content?.some((c) =>
-                IGNORE_COMMENT_FEED_CONTENT.includes(c.type ?? '')
-              )
-          )
-        if (item.comment_id && !relevantComments?.length) return
-        return {
-          ...getBaseTimelineItem(item),
-          contractId: item.contract_id,
-          commentId: item.comment_id,
-          avatarUrl: item.comment_id
-            ? relevantComments?.[0]?.userAvatarUrl
-            : relevantContract?.creatorAvatarUrl,
-          contract: relevantContract,
-          comments: relevantComments,
-        } as FeedTimelineItem
+      if (relevantContract.id === 'RqQdSlfdP7Vf6QmsJ80R') {
+        console.log('found it')
       }
+      // Let's stick with one comment per feed item for now
+      const relevantComments = comments
+        ?.filter((comment) => comment.id === item.comment_id)
+        .filter(
+          (ct) =>
+            !ct.content?.content?.some((c) =>
+              IGNORE_COMMENT_FEED_CONTENT.includes(c.type ?? '')
+            )
+        )
+      if (item.comment_id && !relevantComments?.length) return
+      return {
+        ...getBaseTimelineItem(item),
+        contractId: item.contract_id,
+        commentId: item.comment_id,
+        avatarUrl: item.comment_id
+          ? relevantComments?.[0]?.userAvatarUrl
+          : relevantContract?.creatorAvatarUrl,
+        contract: relevantContract,
+        comments: relevantComments,
+      } as FeedTimelineItem
     }),
     'contractId'
   )

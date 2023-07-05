@@ -24,7 +24,8 @@ export async function scoreContractsInternal(
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
   const activeContracts = await pg.map(
-    `select data from contracts where ((data->'lastUpdatedTime')::numeric) > $1`,
+    `select data from contracts where ((data->'lastUpdatedTime')::numeric) > $1
+            order by importance_score desc`,
     [lastUpdatedTime],
     (row) => row.data as Contract
   )
@@ -32,7 +33,9 @@ export async function scoreContractsInternal(
   const previouslyActiveContracts = await pg.map(
     `select data from contracts where
         (data ? 'dailyScore' AND (data->>'dailyScore')::numeric > 0)
-            or ((data->'popularityScore')::numeric) > 0`,
+            or popularity_score > 0
+            order by importance_score desc
+            `,
     [],
     (row) => row.data as Contract
   )
@@ -85,6 +88,7 @@ export async function scoreContractsInternal(
       await insertTrendingContractToUsersFeeds(contract, now - 2 * DAY_MS, {
         todayScore,
         thisWeekScore,
+        importanceScore: contract.importanceScore,
       })
     }
     // If it's already popular but has had 5 new traders in the past hour, add it to the feed
@@ -105,12 +109,21 @@ export async function scoreContractsInternal(
       await insertTrendingContractToUsersFeeds(contract, weekAgo, {
         tradersInPastHour: hourAgoTradersByContract[contract.id],
         popularityScore,
+        importanceScore: contract.importanceScore,
       })
     }
 
     // If it's just undergone a large prob change, add it to the feed
     if (dailyScore > 1.5 && dailyScore - contract.dailyScore > 1 && !readOnly) {
-      await insertMarketMovementContractToUsersFeeds(contract, dailyScore)
+      log(
+        'inserting market movement with daily score',
+        dailyScore.toFixed(2),
+        ' and prev score',
+        contract.dailyScore.toFixed(2),
+        'for contract',
+        contract.id
+      )
+      await insertMarketMovementContractToUsersFeeds(contract)
     }
     if (
       contract.popularityScore !== popularityScore ||
