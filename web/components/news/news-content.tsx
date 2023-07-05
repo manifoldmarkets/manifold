@@ -31,6 +31,29 @@ const OpenAI = createNewsDashboardTab(
     // { slug: 'if-artificial-general-intelligence' }, // card looks too ugly
   ]
 )
+
+const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
+  {
+    url: 'https://www.cbsnews.com/news/ukraine-russia-war-zaporizhzhia-nuclear-power-plant-attack-plot-claims/',
+  },
+  { slug: 'will-there-be-a-nuclear-disaster-at' },
+  { slug: 'will-any-part-of-the-zaporizhzhia-n' },
+  { slug: 'will-russia-nuke-ukraine' },
+  {
+    url: 'https://www.cnn.com/europe/live-news/russia-ukraine-war-news-07-05-23/index.html',
+  },
+  { slug: 'will-the-wagner-group-stop-operatin-ad2bc1b87277' },
+  { slug: 'will-the-black-sea-grain-deal-be-ex' },
+  {
+    slug: 'will-vladimir-putin-still-be-the-le',
+  },
+  { slug: 'will-ukraine-regain-control-over-cr' },
+  { slug: 'will-ukraine-sever-the-land-bridge' },
+  { slug: 'will-the-ukraine-war-be-over-by-the' },
+  { slug: '5-will-there-be-a-lasting-ceasefire' },
+  { slug: 'will-china-convene-and-mediate-peac' },
+])
+
 const WestBank = createNewsDashboardTab(
   'West Bank',
   'Israeli millitary operation in West Bank',
@@ -457,6 +480,7 @@ const Election2024 = createNewsDashboardTab(
 
 export const newsContent = [
   OpenAI,
+  UkraineWar,
   Election2024,
   WestBank,
   FrenchRiots,
@@ -465,5 +489,5 @@ export const newsContent = [
   { title: 'Russian Coup?', content: <RussianCoupData /> },
   // { title: 'Titanic Sub', content: <MissingSubData /> },
   // { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
-  { title: 'Ukraine War', content: <UkraineWarData /> },
+  // { title: 'Ukraine War', content: <UkraineWarData /> },
 ]
