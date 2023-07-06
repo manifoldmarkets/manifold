@@ -228,6 +228,12 @@ export const SVGChart = <X, TT>(props: {
           [w, h],
         ])
         .on('zoom', (ev) => onZoom?.(ev))
+        .filter((ev) => {
+          if (ev instanceof WheelEvent) {
+            return ev.ctrlKey || ev.metaKey || ev.altKey
+          }
+          return !ev.button
+        })
 
       select(svgRef.current)
         .call(zoomer)
