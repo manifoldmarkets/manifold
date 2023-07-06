@@ -8,6 +8,36 @@ import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
 
+const GlobalWarming = createNewsDashboardTab(
+  'Global Warming',
+  'New record for hottest day',
+  [
+    {
+      url: 'https://www.smithsonianmag.com/smart-news/earth-faces-hottest-day-ever-recorded-three-days-in-a-row-180982493/',
+    },
+    { slug: 'will-2023-be-the-hottest-year-on-re' },
+
+    {
+      content: (
+        <img
+          src="https://cdn.vox-cdn.com/uploads/chorus_asset/file/24771180/heat_waves_download1_2022.png"
+          className="mb-4"
+        />
+      ),
+    },
+    { slug: 'will-the-record-for-hottest-day-be' },
+    { slug: 'will-this-summer-be-the-hottest-rec' },
+    { slug: 'will-bryan-caplan-win-his-climate-b' },
+    { slug: 'arctic-sea-ice-extent-will-reach-a' },
+    { slug: 'will-climate-change-be-successfully ' },
+    { slug: 'will-climate-change-be-successfully' },
+    { slug: 'will-carbon-removal-be-pivotal-in-m' },
+    { slug: 'what-percentage-of-us-energy-will-b' },
+    {
+      url: 'https://www.vox.com/climate/2023/7/5/23784587/hottest-day-heat-wave-recorded-temperature-climate-change',
+    },
+  ]
+)
 const Threads = createNewsDashboardTab('Threads', 'Facebook Launches Threads', [
   {
     url: 'https://about.fb.com/news/2023/07/introducing-threads-new-app-text-sharing/',
@@ -136,6 +166,7 @@ const ElonVersusZuck = createNewsDashboardTab(
   'Elon vs Zuck',
   'Elon Musk and Mark Zuckerberg cage fight?',
   [
+    { slug: 'will-elon-musk-and-mark-zuckerberg-bd28b2349d95' },
     { url: 'https://www.bbc.com/news/business-65981876' },
     { slug: 'if-elon-zuck-fight-will-it-be-at-th' },
     {
@@ -496,15 +527,16 @@ const Election2024 = createNewsDashboardTab(
 )
 
 export const newsContent = [
+  GlobalWarming,
   Threads,
   OpenAI,
+  ElonVersusZuck,
   UkraineWar,
   Election2024,
-  ElonVersusZuck,
   WestBank,
   FrenchRiots,
   SupremeCourt,
   { title: 'Russian Coup?', content: <RussianCoupData /> },
-  // { title: 'Titanic Sub', content: <MissingSubData /> },
-  // { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
+  { title: 'Titanic Sub', content: <MissingSubData /> },
+  { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
 ]
