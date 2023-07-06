@@ -411,7 +411,7 @@ export function CommentActions(props: {
           contract={contract}
           comment={comment}
           user={user}
-          disabled={false}
+          disabled={contract.bountyLeft <= 0}
           buttonClassName={'mr-1'}
         />
       )}
