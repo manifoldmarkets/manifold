@@ -12,7 +12,6 @@ import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { CommentView } from 'common/events'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
@@ -454,19 +453,17 @@ function CommentStatus(props: {
   comment: ContractComment
 }) {
   const { contract, comment } = props
-  const { resolutionTime, resolution } = contract
-  const isStonk = contract.outcomeType === 'STONK'
+  const { resolution } = contract
   const {
-    commenterPositionProb: prob,
+    commenterPositionProb,
     commenterPositionOutcome,
     commenterPositionAnswerId,
     commenterPositionShares,
-    createdTime,
   } = comment
 
   if (
     comment.betId == null &&
-    prob != null &&
+    commenterPositionProb != null &&
     commenterPositionOutcome != null &&
     commenterPositionShares != null &&
     commenterPositionShares > 0 &&
@@ -474,17 +471,13 @@ function CommentStatus(props: {
   )
     return (
       <>
-        {resolution
-          ? 'predicted '
-          : `is ${isStonk ? 'holding' : 'predicting'} `}
+        {resolution ? 'predicted ' : `predicts `}
         <OutcomeLabel
           outcome={commenterPositionOutcome}
           answerId={commenterPositionAnswerId}
           contract={contract}
           truncate="short"
         />
-        {(resolutionTime ? resolutionTime > createdTime : true) &&
-          ' at ' + getFormattedMappedValue(contract, prob)}
       </>
     )
 
