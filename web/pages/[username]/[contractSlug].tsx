@@ -1,20 +1,30 @@
+import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { first } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { UserIcon } from '@heroicons/react/solid'
 
 import { Answer, DpmAnswer } from 'common/answer'
-import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
+import { unserializePoints } from 'common/chart'
+import {
+  ContractParams,
+  MaybeAuthedContractParams,
+  tradingAllowed,
+} from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
+import { ContractView } from 'common/events'
+import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { SEO } from 'web/components/SEO'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
+import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { BackButton } from 'web/components/contract/back-button'
+import { BountyLeft } from 'web/components/contract/bountied-question'
+import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import {
   AuthorInfo,
@@ -24,6 +34,7 @@ import {
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
+import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import {
   CreatorShareBoostPanel,
   NonCreatorSharePanel,
@@ -32,15 +43,25 @@ import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
+import { TitleOrEdit } from 'web/components/contract/title-edit'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
+import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import { ResolutionPanel } from 'web/components/resolution-panel'
+import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
+import {
+  useFirebasePublicAndRealtimePrivateContract,
+  useIsPrivateContractMember,
+} from 'web/hooks/use-contract-supabase'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
@@ -53,27 +74,10 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getContractParams } from 'web/lib/firebase/api'
 import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { Contract } from 'web/lib/firebase/contracts'
-import { tradingAllowed } from 'common/contract'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { User } from 'common/user'
-import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
-import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
-import { ContractView } from 'common/events'
-import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
-import { TitleOrEdit } from 'web/components/contract/title-edit'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
-import {
-  useFirebasePublicAndRealtimePrivateContract,
-  useIsPrivateContractMember,
-} from 'web/hooks/use-contract-supabase'
-import { VisibilityIcon } from 'web/components/contract/contracts-table'
-import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
-import { unserializePoints } from 'common/chart'
-import { Tooltip } from 'web/components/widgets/tooltip'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -248,7 +252,8 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     else if (
       (isCreator || isAdmin || trustworthy) &&
       (closeTime ?? 0) < Date.now() &&
-      outcomeType !== 'STONK'
+      outcomeType !== 'STONK' &&
+      contract.mechanism !== 'none'
     ) {
       setShowResolver(true)
     }
@@ -295,6 +300,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     observer.observe(element)
     return () => observer.unobserve(element)
   }, [titleRef])
+
   return (
     <>
       {creatorTwitter && (
@@ -410,22 +416,26 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
               <div className="text-ink-600 flex items-center justify-between text-sm">
                 <AuthorInfo contract={contract} />
 
-                <div className="flex gap-4">
-                  <Tooltip
-                    text="Traders"
-                    placement="bottom"
-                    noTap
-                    className="flex flex-row items-center gap-1"
-                  >
-                    <UserIcon className="text-ink-500 h-4 w-4" />
-                    <div>{uniqueBettorCount ?? 0}</div>
-                  </Tooltip>
+                {contract.outcomeType == 'BOUNTIED_QUESTION' ? (
+                  <BountyLeft bountyLeft={contract.bountyLeft} />
+                ) : (
+                  <div className="flex gap-4">
+                    <Tooltip
+                      text="Traders"
+                      placement="bottom"
+                      noTap
+                      className="flex flex-row items-center gap-1"
+                    >
+                      <UserIcon className="text-ink-500 h-4 w-4" />
+                      <div>{uniqueBettorCount ?? 0}</div>
+                    </Tooltip>
 
-                  <CloseOrResolveTime
-                    contract={contract}
-                    editable={user?.id === creatorId}
-                  />
-                </div>
+                    <CloseOrResolveTime
+                      contract={contract}
+                      editable={user?.id === creatorId}
+                    />
+                  </div>
+                )}
               </div>
 
               <ContractOverview

@@ -9,7 +9,7 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
-import { runTxn } from 'shared/run-txn'
+import { runTxn } from 'shared/txn/run-txn'
 import { isProd } from 'shared/utils'
 
 const bodySchema = z.object({

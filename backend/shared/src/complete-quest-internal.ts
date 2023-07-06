@@ -8,7 +8,7 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import { QuestRewardTxn } from 'common/txn'
-import { runTxn } from 'shared/run-txn'
+import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getRecentContractsCount } from 'common/supabase/contracts'
 import { getUniqueUserShareEventsCount } from 'common/supabase/user-events'

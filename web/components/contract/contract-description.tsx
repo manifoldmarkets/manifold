@@ -133,7 +133,7 @@ function ContractActions(props: {
       </CollapsibleContent>
       <Row className="my-4 items-center gap-2 text-xs">
         {isOnlyAdmin && 'Admin '}
-        {contract.outcomeType !== 'STONK' && (
+        {contract.outcomeType !== 'STONK' && contract.mechanism !== 'none' && (
           <Button
             color={highlightResolver ? 'red' : 'gray'}
             size="2xs"

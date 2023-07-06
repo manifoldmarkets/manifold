@@ -384,3 +384,11 @@ export function createQAndAAnswer(params: {
 export function awardQAndAAnswer(params: { answerId: string; amount: number }) {
   return call(getApiUrl('award-q-and-a-answer'), 'POST', params)
 }
+
+export function awardBounty(params: {
+  contractId: string
+  commentId: string
+  amount: number
+}) {
+  return call(getApiUrl('award-bounty'), 'POST', params)
+}

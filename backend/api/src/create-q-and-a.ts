@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { runTxn } from 'shared/run-txn'
+import { runTxn } from 'shared/txn/run-txn'
 import { randomString } from 'common/util/random'
 import { QAndACreateTxn } from 'common/txn'
 import { isProd } from 'shared/utils'

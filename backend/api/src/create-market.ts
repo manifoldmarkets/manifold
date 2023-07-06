@@ -3,6 +3,7 @@ import { JSONContent } from '@tiptap/core'
 import { FieldValue, Transaction } from 'firebase-admin/firestore'
 import { z } from 'zod'
 import { marked } from 'marked'
+import { runPostBountyTxn } from 'shared/txn/run-bounty-txn'
 
 import {
   Answer,
@@ -111,16 +112,36 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       min ?? 0,
       max ?? 0,
       isLogScale ?? false,
-      shouldAnswersSumToOne,
-      totalBounty ?? 0
+      shouldAnswersSumToOne
     )
 
     trans.create(contractRef, contract)
 
-    trans.update(userDoc.ref, {
-      balance: FieldValue.increment(-(ante + (totalBounty ?? 0))),
-      totalDeposits: FieldValue.increment(-(ante + (totalBounty ?? 0))),
-    })
+    if (!totalBounty) {
+      trans.update(userDoc.ref, {
+        balance: FieldValue.increment(-ante),
+        totalDeposits: FieldValue.increment(-ante),
+      })
+    }
+
+    if (totalBounty && totalBounty > 0) {
+      if (totalBounty > user.balance)
+        throw new APIError(400, `Balance must be at least ${totalBounty}.`)
+      const { status, txn } = await runPostBountyTxn(
+        trans,
+        {
+          fromId: userId,
+          fromType: 'USER',
+          toId: contract.id,
+          toType: 'CONTRACT',
+          amount: totalBounty,
+          token: 'M$',
+          category: 'BOUNTY_POSTED',
+        },
+        contractRef,
+        userDoc.ref
+      )
+    }
 
     return { user, contract }
   })

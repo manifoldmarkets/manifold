@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { getLeaguePrize, league_user_info } from 'common/leagues'
 import { SupabaseDirectClient } from './supabase/init'
 import { createLeagueChangedNotification } from './create-notification'
-import { runTxn } from './run-txn'
+import { runTxn } from './txn/run-txn'
 import { isProd } from './utils'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
