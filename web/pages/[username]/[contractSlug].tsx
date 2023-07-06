@@ -24,7 +24,10 @@ import {
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
-import { CreatorShareBoostPanel } from 'web/components/contract/creator-share-panel'
+import {
+  CreatorShareBoostPanel,
+  NonCreatorSharePanel,
+} from 'web/components/contract/creator-share-panel'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
@@ -492,12 +495,16 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
               />
             )}
 
-            {isCreator && !isResolved && !isClosed && (
-              <>
-                {showResolver && <Spacer h={4} />}
-                <CreatorShareBoostPanel contract={contract} />
-              </>
-            )}
+            {!isResolved &&
+              !isClosed &&
+              (isCreator ? (
+                <>
+                  {showResolver && <Spacer h={4} />}
+                  <CreatorShareBoostPanel contract={contract} />
+                </>
+              ) : (
+                <NonCreatorSharePanel contract={contract} />
+              ))}
 
             {outcomeType === 'NUMERIC' && allowTrade && (
               <NumericBetPanel className="xl:hidden" contract={contract} />
