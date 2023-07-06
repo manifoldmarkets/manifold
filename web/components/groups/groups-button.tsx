@@ -24,7 +24,6 @@ import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Subtitle } from '../widgets/subtitle'
 import { joinGroup } from 'web/lib/firebase/api'
-import { PrivacyStatusType } from 'common/group'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props

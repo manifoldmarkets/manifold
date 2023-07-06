@@ -15,7 +15,6 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import {
-  GroupAndRoleType,
   SearchGroupInfo,
   searchGroups,
 } from 'web/lib/supabase/groups'
