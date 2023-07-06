@@ -14,10 +14,7 @@ import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import {
-  SearchGroupInfo,
-  searchGroups,
-} from 'web/lib/supabase/groups'
+import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
