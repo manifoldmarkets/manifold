@@ -11,6 +11,7 @@ import {
   useShouldBlockDestiny,
   useUser,
 } from 'web/hooks/use-user'
+import Welcome from 'web/components/onboarding/welcome'
 
 export default function Search() {
   const user = useUser()
@@ -27,26 +28,29 @@ export default function Search() {
   const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
 
   return (
-    <Page>
-      <Col className="mx-auto w-full p-2">
-        <Title className="hidden lg:flex">Questions</Title>
-        <SupabaseContractSearch
-          persistPrefix="search"
-          autoFocus={autoFocus}
-          defaultSort={(s as Sort) || 'score'}
-          additionalFilter={{
-            excludeContractIds: privateUser?.blockedContractIds,
-            excludeGroupSlugs: [
-              ...(privateUser?.blockedGroupSlugs ?? []),
-              ...(shouldFilterDestiny ? DESTINY_GROUP_SLUGS : []),
-            ],
-            excludeUserIds: privateUser?.blockedUserIds,
-          }}
-          isWholePage
-          headerClassName={'bg-canvas-0'}
-          showTopics={true}
-        />
-      </Col>
-    </Page>
+    <>
+      <Welcome />
+      <Page>
+        <Col className="mx-auto w-full p-2">
+          <Title className="hidden lg:flex">Questions</Title>
+          <SupabaseContractSearch
+            persistPrefix="search"
+            autoFocus={autoFocus}
+            defaultSort={(s as Sort) || 'score'}
+            additionalFilter={{
+              excludeContractIds: privateUser?.blockedContractIds,
+              excludeGroupSlugs: [
+                ...(privateUser?.blockedGroupSlugs ?? []),
+                ...(shouldFilterDestiny ? DESTINY_GROUP_SLUGS : []),
+              ],
+              excludeUserIds: privateUser?.blockedUserIds,
+            }}
+            isWholePage
+            headerClassName={'bg-canvas-0'}
+            showTopics={true}
+          />
+        </Col>
+      </Page>
+    </>
   )
 }

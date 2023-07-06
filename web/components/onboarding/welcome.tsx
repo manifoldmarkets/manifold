@@ -25,8 +25,6 @@ export default function Welcome() {
   const [showSignedOutUser, setShowSignedOutUser] = useState(false)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
 
-  const router = useRouter()
-
   const availablePages = buildArray([
     <WhatIsManifoldPage />,
     <PredictionMarketPage />,
@@ -36,19 +34,8 @@ export default function Welcome() {
   const isLastPage = page === availablePages.length - 1
 
   useEffect(() => {
-    if (user) return
-    const { showHelpModal } = router.query
-    if (showHelpModal) {
-      setPage(0)
-      setShowSignedOutUser(true)
-      setOpen(true)
-      router.replace(router.pathname, router.pathname, { shallow: true })
-    }
-  }, [router.query])
-
-  useEffect(() => {
     if (user?.shouldShowWelcome) setOpen(true)
-  }, [user])
+  }, [user?.shouldShowWelcome])
 
   const close = () => {
     setOpen(false)
