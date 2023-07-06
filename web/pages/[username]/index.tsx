@@ -5,7 +5,7 @@ import {
   PencilIcon,
   ScaleIcon,
 } from '@heroicons/react/outline'
-import { LinkIcon } from '@heroicons/react/solid'
+import { ChartBarIcon, LinkIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
@@ -57,12 +57,6 @@ import { getPostsByUser } from 'web/lib/supabase/post'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
-import { getUserBetsFromResolvedContracts } from 'web/lib/supabase/bets'
-import {
-  calculateScore,
-  getCalibrationPoints,
-  getGrade,
-} from 'web/pages/[username]/calibration'
 import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -75,18 +69,12 @@ export const getStaticProps = async (props: {
   const { username } = props.params
   const user = await getUserByUsername(username)
   const posts = user ? await getPostsByUser(user?.id) : []
-  const bets = user
-    ? await getUserBetsFromResolvedContracts(user.id, 10000)
-    : []
-  const { yesBuckets, noBuckets } = getCalibrationPoints(bets)
-  const score = calculateScore(yesBuckets, noBuckets)
 
   return {
     props: {
       user,
       username,
       posts,
-      score,
     },
     revalidate: 60 * 5, // Regenerate after 5 minutes
   }
@@ -100,10 +88,9 @@ export default function UserPage(props: {
   user: User | null
   username: string
   posts: Post[]
-  score: number
 }) {
   const isAdmin = useAdmin()
-  const { user, username, posts, score } = props
+  const { user, username, posts } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
@@ -117,7 +104,7 @@ export default function UserPage(props: {
   return privateUser && blockedByCurrentUser ? (
     <BlockedUser user={user} privateUser={privateUser} />
   ) : (
-    <UserProfile user={user} posts={posts} score={score} />
+    <UserProfile user={user} posts={posts} />
   )
 }
 
@@ -140,13 +127,8 @@ const DeletedUser = () => {
   )
 }
 
-export function UserProfile(props: {
-  user: User
-  posts: Post[]
-  score: number
-}) {
+export function UserProfile(props: { user: User; posts: Post[] }) {
   const user = useUserById(props.user.id) ?? props.user
-  const { score } = props
 
   const router = useRouter()
   const currentUser = useUser()
@@ -243,7 +225,6 @@ export function UserProfile(props: {
             className=""
             user={user}
             isCurrentUser={isCurrentUser}
-            score={score}
           />
           {user.bio && (
             <div className="sm:text-md mt-1 text-sm">
@@ -377,10 +358,9 @@ type FollowsDialogTab = 'following' | 'followers'
 function ProfilePublicStats(props: {
   user: User
   isCurrentUser: boolean
-  score: number
   className?: string
 }) {
-  const { user, score, className, isCurrentUser } = props
+  const { user, className, isCurrentUser } = props
   const [isOpen, setIsOpen] = useState(false)
   const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
   const followingIds = useFollows(user.id)
@@ -437,7 +417,7 @@ function ProfilePublicStats(props: {
         href={'/' + user.username + '/calibration'}
         className={clsx(linkClass, 'cursor-pointer text-sm')}
       >
-        <span className={clsx('font-semibold')}>{getGrade(score)}</span>{' '}
+        <ChartBarIcon className="mr-1 mb-1 inline h-4 w-4" />
         Calibration
       </SiteLink>
 
