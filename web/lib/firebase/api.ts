@@ -388,7 +388,7 @@ export function awardQAndAAnswer(params: { answerId: string; amount: number }) {
 export function awardBounty(params: {
   contractId: string
   commentId: string
-  amount: number | undefined
+  amount: number
 }) {
   return call(getApiUrl('award-bounty'), 'POST', params)
 }

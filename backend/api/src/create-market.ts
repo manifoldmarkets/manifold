@@ -116,10 +116,12 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
     trans.create(contractRef, contract)
 
-    trans.update(userDoc.ref, {
-      balance: FieldValue.increment(-ante),
-      totalDeposits: FieldValue.increment(-ante),
-    })
+    if (!totalBounty) {
+      trans.update(userDoc.ref, {
+        balance: FieldValue.increment(-ante),
+        totalDeposits: FieldValue.increment(-ante),
+      })
+    }
 
     if (totalBounty && totalBounty > 0) {
       if (totalBounty > user.balance)

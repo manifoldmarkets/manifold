@@ -265,9 +265,9 @@ export type Stonk = {
 
 export type BountiedQuestion = {
   outcomeType: 'BOUNTIED_QUESTION'
-  // the bounty txn ids
   totalBounty: number
   bountyLeft: number
+  // the bounty txn ids
   bountyTxns: string[]
 }
 

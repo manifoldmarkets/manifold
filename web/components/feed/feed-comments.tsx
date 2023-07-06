@@ -266,26 +266,24 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   )
   const commentKind = userUsername === 'ManifoldDream' ? 'ub-dream-comment' : ''
   return (
-    <>
-      <FeedComment
-        contract={contract}
-        comment={comment}
-        onReplyClick={onReplyClick}
-        highlighted={highlighted}
-        showLike={showLike}
-        className={clsx('gap-2', commentKind)}
-        trackingLocation={trackingLocation}
-        inTimeline={inTimeline}
-        isParent={true}
-      >
-        <div ref={ref} />
-        <ReplyToggle
-          seeReplies={seeReplies}
-          numComments={numReplies}
-          onClick={onSeeReplyClick}
-        />
-      </FeedComment>
-    </>
+    <FeedComment
+      contract={contract}
+      comment={comment}
+      onReplyClick={onReplyClick}
+      highlighted={highlighted}
+      showLike={showLike}
+      className={clsx('gap-2', commentKind)}
+      trackingLocation={trackingLocation}
+      inTimeline={inTimeline}
+      isParent={true}
+    >
+      <div ref={ref} />
+      <ReplyToggle
+        seeReplies={seeReplies}
+        numComments={numReplies}
+        onClick={onSeeReplyClick}
+      />
+    </FeedComment>
   )
 })
 

@@ -684,7 +684,7 @@ const useNewContract = (
           description: editor?.getJSON(),
           initialProb: 50,
           ante,
-          closeTime: closeTime,
+          closeTime,
           min,
           max,
           initialValue,

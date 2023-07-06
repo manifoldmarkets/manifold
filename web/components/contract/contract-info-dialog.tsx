@@ -408,7 +408,7 @@ export function ContractInfoDialog(props: {
 
                   {contract.mechanism == 'none' ? (
                     <>
-                      Invite you friends to join, and earn a{' '}
+                      Invite your friends to join, and earn a{' '}
                       {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
                       person that signs up.
                     </>

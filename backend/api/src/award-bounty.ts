@@ -8,14 +8,13 @@ import { FieldValue } from 'firebase-admin/firestore'
 const bodySchema = z.object({
   contractId: z.string(),
   commentId: z.string(),
-  amount: z.number().gt(0).optional(),
+  amount: z.number().gt(0),
 })
 
 export const awardbounty = authEndpoint(async (req, auth) => {
   const { contractId, commentId, amount } = validate(bodySchema, req.body)
 
-  if (!amount || !isFinite(amount) || amount < 1)
-    throw new APIError(400, 'Invalid amount')
+  if (!isFinite(amount) || amount < 1) throw new APIError(400, 'Invalid amount')
 
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {

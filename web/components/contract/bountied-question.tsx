@@ -59,11 +59,13 @@ export function AwardBountyButton(props: {
   }
 
   async function onAwardBounty() {
-    awardBounty({
-      contractId: contract.id,
-      commentId: comment.id,
-      amount: amount,
-    }).then((_result) => setOpen(false))
+    if (amount) {
+      awardBounty({
+        contractId: contract.id,
+        commentId: comment.id,
+        amount: amount,
+      }).then((_result) => setOpen(false))
+    }
   }
   return (
     <>
