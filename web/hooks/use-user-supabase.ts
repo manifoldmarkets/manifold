@@ -4,7 +4,7 @@ import { getUser, getUsers } from 'web/lib/supabase/user'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { Answer, DpmAnswer } from 'common/answer'
 
-export function useUserById(userId: string) {
+export function useUserById(userId: string | undefined) {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   useEffect(() => {
     if (userId) {

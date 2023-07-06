@@ -1,18 +1,17 @@
-import { Group } from 'common/group'
 import { useUser } from 'web/hooks/use-user'
-import { GroupAndRoleType } from 'web/lib/supabase/groups'
+import { GroupAndRoleType, SearchGroupInfo } from 'web/lib/supabase/groups'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { GroupLine } from './discover-groups'
 
 export function GroupsList(props: {
-  groups: Group[] | undefined
+  groups: SearchGroupInfo[] | undefined
   loadMore?: () => Promise<boolean>
   yourGroupIds?: string[]
   className?: string
   yourGroupRoles?: GroupAndRoleType[] | null
-  stateIsEmpty?: boolean
+  emptyState?: React.ReactNode
 }) {
   const {
     groups,
@@ -20,7 +19,7 @@ export function GroupsList(props: {
     yourGroupIds,
     className,
     yourGroupRoles,
-    stateIsEmpty = true,
+    emptyState = null,
   } = props
 
   const user = useUser()
@@ -30,23 +29,19 @@ export function GroupsList(props: {
   }
 
   if (groups.length === 0) {
-    if (stateIsEmpty) {
-      return <div>No groups found</div>
-    }
-    return <></>
+    return <>{emptyState}</>
   }
   return (
     <Col className={className}>
-      {groups &&
-        groups.map((group) => (
-          <GroupLine
-            key={group.id}
-            group={group}
-            user={user}
-            isMember={!!yourGroupIds?.includes(group.id)}
-            yourGroupRoles={yourGroupRoles}
-          />
-        ))}
+      {groups.map((group) => (
+        <GroupLine
+          key={group.id}
+          group={group}
+          user={user}
+          isMember={!yourGroupIds || yourGroupIds.includes(group.id)}
+          role={yourGroupRoles?.find((r) => r.group_id === group.id)?.role}
+        />
+      ))}
 
       {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
     </Col>
