@@ -6,8 +6,7 @@ import { GroupsList } from 'web/components/groups/groups-list'
 import { useEvent } from 'web/hooks/use-event'
 import {
   useGroupsWhereUserHasRole,
-  useMemberPrivateGroups,
-  useYourNonPrivateNonModeratorGroups,
+  useMyGroupRoles,
 } from 'web/hooks/use-group-supabase'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import {
@@ -15,7 +14,11 @@ import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { GroupAndRoleType, searchGroups } from 'web/lib/supabase/groups'
+import {
+  GroupAndRoleType,
+  SearchGroupInfo,
+  searchGroups,
+} from 'web/lib/supabase/groups'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
@@ -30,7 +33,7 @@ const INITIAL_STATE = {
 const GROUPS_PER_PAGE = 20
 
 export type groupStateType = {
-  groups: Group[] | undefined
+  groups: SearchGroupInfo[] | undefined
   fuzzyGroupOffset: number
   shouldLoadMore: boolean
 }
@@ -41,7 +44,7 @@ export default function GroupSearch(props: {
   yourGroupIds?: string[]
   user?: User | null
 }) {
-  const { filter, persistPrefix, yourGroupIds, user } = props
+  const { filter, persistPrefix, yourGroupIds = [], user } = props
   const performQuery = useEvent(
     async (currentState, freshQuery?: boolean) =>
       (await debouncedQuery(currentState, freshQuery)) ?? false
@@ -67,7 +70,7 @@ export default function GroupSearch(props: {
     []
   )
 
-  const groupsYouModerate = useGroupsWhereUserHasRole(user?.id)
+  const groupsYouModerate = useGroupsWhereUserHasRole(user?.id) ?? []
   const query = async (currentState: groupStateType, freshQuery?: boolean) => {
     const id = ++requestId.current
     const offset = freshQuery
@@ -146,13 +149,7 @@ export default function GroupSearch(props: {
       />
       <Spacer h={1} />
       {user && filter?.yourGroups && (!inputTerm || inputTerm === '') ? (
-        <>
-          <YourGroupsList
-            user={user}
-            yourGroupIds={yourGroupIds}
-            groupsYouModerate={groupsYouModerate}
-          />
-        </>
+        <YourGroupsList user={user} />
       ) : (
         <GroupsList
           groups={groups}
@@ -160,65 +157,50 @@ export default function GroupSearch(props: {
           yourGroupIds={yourGroupIds}
           yourGroupRoles={groupsYouModerate}
           className="my-1"
+          emptyState={<div>No groups found</div>}
         />
       )}
     </Col>
   )
 }
 
-function YourGroupsList(props: {
-  user: User
-  yourGroupIds?: string[]
-  groupsYouModerate?: GroupAndRoleType[] | null
-}) {
-  const { yourGroupIds, user, groupsYouModerate } = props
-  const yourPrivateGroups = useMemberPrivateGroups(user?.id)
-  const yourPrivateGroupIds = yourPrivateGroups?.map((g) => g.id)
-  const [privateGroupsYouModerate, nonPrivateGroupsYouModerate] = partition(
-    groupsYouModerate,
-    (g) => yourPrivateGroupIds?.includes(g.group.id)
+function YourGroupsList(props: { user: User }) {
+  const { user } = props
+  const roles = useMyGroupRoles(user?.id) ?? []
+
+  roles.sort(
+    (a, b) =>
+      (b.role === 'admin' ? 2 : b.role === 'moderator' ? 1 : 0) -
+      (a.role === 'admin' ? 2 : a.role === 'moderator' ? 1 : 0)
   )
-  const privateGroupsYouDontModerate = yourPrivateGroups?.filter(
-    (g) =>
-      !privateGroupsYouModerate
-        ?.map((groupAndRole) => groupAndRole.group.id)
-        .includes(g.id)
+
+  const groups: SearchGroupInfo[] | null =
+    roles?.map((g) => ({
+      id: g.group_id!,
+      name: g.group_name!,
+      slug: g.group_slug!,
+      privacyStatus: g.privacy_status as any,
+      totalMembers: g.total_members!,
+      creatorId: g.creator_id!,
+    })) ?? null
+
+  const [privateGroups, nonPrivateGroups] = partition(
+    groups,
+    (g) => g.privacyStatus === 'private'
   )
-  const yourNonPrivateNonModeratorGroups = useYourNonPrivateNonModeratorGroups(
-    user.id
-  )
+
   return (
     <>
       <Row className="text-ink-400 mt-4 w-full items-center text-xs font-semibold">
         <div className="whitespace-nowrap">PRIVATE GROUPS</div>
         <hr className="border-ink-400 mx-2 w-full" />
       </Row>
-      <GroupsList
-        groups={privateGroupsYouModerate.map((g) => g.group)}
-        yourGroupIds={yourGroupIds}
-        yourGroupRoles={privateGroupsYouModerate}
-        stateIsEmpty={false}
-      />
-      <GroupsList
-        groups={privateGroupsYouDontModerate}
-        yourGroupIds={yourGroupIds}
-        stateIsEmpty={false}
-      />
+      <GroupsList groups={privateGroups} yourGroupRoles={roles} />
       <Row className="text-ink-400 mt-4 w-full items-center text-xs font-semibold">
         <div className="whitespace-nowrap">NON-PRIVATE GROUPS</div>
         <hr className="border-ink-400 mx-2 w-full" />
       </Row>
-      <GroupsList
-        groups={nonPrivateGroupsYouModerate.map((g) => g.group)}
-        yourGroupIds={yourGroupIds}
-        yourGroupRoles={nonPrivateGroupsYouModerate}
-        stateIsEmpty={false}
-      />
-      <GroupsList
-        groups={yourNonPrivateNonModeratorGroups}
-        yourGroupIds={yourGroupIds}
-        stateIsEmpty={false}
-      />
+      <GroupsList groups={nonPrivateGroups} yourGroupRoles={roles} />
     </>
   )
 }

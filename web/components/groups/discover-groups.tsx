@@ -1,7 +1,12 @@
 import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { Group, GroupsByTopic, groupPath } from 'common/group'
+import {
+  Group,
+  GroupsByTopic,
+  PrivacyStatusType,
+  groupPath,
+} from 'common/group'
 import { User } from 'common/user'
 import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
@@ -118,7 +123,7 @@ function Community(props: {
   )
 }
 
-export function GroupSummary(props: { group: Group }) {
+export function GroupSummary(props: { group: SearchGroupInfo }) {
   const { group } = props
   const { icon, status } = PRIVACY_STATUS_ITEMS[group.privacyStatus]
   return (
@@ -136,13 +141,13 @@ export function GroupSummary(props: { group: Group }) {
 }
 
 export function GroupLine(props: {
-  group: Group
+  group: SearchGroupInfo
   isMember: boolean
   user: User | undefined | null
-  yourGroupRoles?: GroupAndRoleType[] | null
+  role?: string | undefined | null
 }) {
-  const { group, isMember, user, yourGroupRoles } = props
-  const role = yourGroupRoles?.find((r) => r.group.id == group.id)?.role
+  const { group, isMember, user, role } = props
+
   const isCreator = user?.id == group.creatorId
   const isMobile = useIsMobile()
   const isPrivate = group.privacyStatus == 'private'
@@ -166,7 +171,6 @@ export function GroupLine(props: {
             <JoinOrLeaveGroupButton
               group={group}
               user={user}
-              disabled={isCreator}
               isMember={isMember}
               className={clsx(
                 isMobile ? 'rounded p-1' : '',

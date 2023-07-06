@@ -26,7 +26,7 @@ export function ContractGroupsList(props: {
   const groups = useGroupsWithContract(contract) ?? []
 
   const isCreator = contract.creatorId === user?.id
-  const adminGroups = useGroupsWhereUserHasRole(user?.id)?.map((g) => g.group)
+  const adminGroups = useGroupsWhereUserHasRole(user?.id)
 
   const isAdmin = useAdmin()
   function canRemoveFromGroup(group: Group) {
@@ -39,7 +39,7 @@ export function ContractGroupsList(props: {
       // if user is manifoldAdmin
       isAdmin ||
       // if user has admin role in that group
-      (adminGroups && adminGroups.some((g) => g.id === group.id))
+      (adminGroups && adminGroups.some((g) => g.group_id === group.id))
     )
   }
 
