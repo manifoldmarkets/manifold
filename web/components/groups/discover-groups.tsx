@@ -1,10 +1,7 @@
 import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import {
-  GroupsByTopic,
-  groupPath,
-} from 'common/group'
+import { GroupsByTopic, groupPath } from 'common/group'
 import { User } from 'common/user'
 import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
