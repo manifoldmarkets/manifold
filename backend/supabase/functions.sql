@@ -1317,3 +1317,15 @@ as $$
   order by count(*) desc
   limit limit_n
 $$;
+
+create or replace function get_notifications(uid text, unseen_only boolean, max_num int)
+returns table (notification jsonb)
+language sql
+stable parallel safe
+as $$
+  select n.data
+  from user_notifications as n
+  where n.user_id = uid and (not unseen_only or not ((n.data->'isSeen')::boolean))
+  order by ((n.data->'createdTime')::bigint) desc
+  limit max_num
+$$;

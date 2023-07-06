@@ -347,10 +347,10 @@ export interface Database {
           description_fts: unknown | null
           fs_updated_time: string
           id: string
+          importance_score: number | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
-          importance_score: number | null
           question: string | null
           question_fts: unknown | null
           question_nostop_fts: unknown | null
@@ -368,10 +368,10 @@ export interface Database {
           description_fts?: unknown | null
           fs_updated_time: string
           id: string
+          importance_score?: number | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
-          importance_score?: number | null
           question?: string | null
           question_fts?: unknown | null
           question_nostop_fts?: unknown | null
@@ -389,10 +389,10 @@ export interface Database {
           description_fts?: unknown | null
           fs_updated_time?: string
           id?: string
+          importance_score?: number | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
-          importance_score?: number | null
           question?: string | null
           question_fts?: unknown | null
           question_nostop_fts?: unknown | null
@@ -1131,12 +1131,12 @@ export interface Database {
           group_id: string | null
           id: number
           idempotency_key: string | null
+          is_copied: boolean
           news_id: string | null
           reaction_id: string | null
           reason: string
           seen_time: string | null
           user_id: string
-          is_copied: boolean
         }
         Insert: {
           answer_id?: string | null
@@ -1151,12 +1151,12 @@ export interface Database {
           group_id?: string | null
           id?: never
           idempotency_key?: string | null
+          is_copied?: boolean
           news_id?: string | null
           reaction_id?: string | null
           reason: string
           seen_time?: string | null
           user_id: string
-          is_copied?: boolean
         }
         Update: {
           answer_id?: string | null
@@ -1171,12 +1171,12 @@ export interface Database {
           group_id?: string | null
           id?: never
           idempotency_key?: string | null
+          is_copied?: boolean
           news_id?: string | null
           reaction_id?: string | null
           reason?: string
           seen_time?: string | null
           user_id?: string
-          is_copied?: boolean
         }
         Relationships: []
       }
@@ -2216,6 +2216,19 @@ export interface Database {
         }
         Returns: string
       }
+      get_notifications: {
+        Args: {
+          uid: string
+          unseen_only: boolean
+          max_num: number
+        }
+        Returns: {
+          data: Json
+          fs_updated_time: string
+          notification_id: string
+          user_id: string
+        }[]
+      }
       get_open_limit_bets_with_contracts: {
         Args: {
           uid: string
@@ -2440,13 +2453,6 @@ export interface Database {
         }
         Returns: unknown
       }
-      get_unique_bettors_since: {
-        Args: {
-          this_contract_id: string
-          since: number
-        }
-        Returns: number
-      }
       get_reply_chain_comments_for_comment_ids: {
         Args: {
           comment_ids: string[]
@@ -2482,7 +2488,14 @@ export interface Database {
           ad_funds: number
           ad_cost_per_view: number
           market_data: Json
+        }[]
+      }
+      get_unique_bettors_since: {
+        Args: {
+          this_contract_id: string
+          since: number
         }
+        Returns: number
       }
       get_unseen_reply_chain_comments_matching_contracts: {
         Args: {
