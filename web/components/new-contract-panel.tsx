@@ -145,9 +145,9 @@ export function NewContractPanel(props: {
               : {
                   'Yes\xa0/ No': 'BINARY', // non-breaking space
                   'Multiple choice': 'MULTIPLE_CHOICE',
-                  // Stock: 'STONK',
-                  // 'Free response': 'FREE_RESPONSE',
-                  // Numeric: 'PSEUDO_NUMERIC',
+                  'Free response': 'FREE_RESPONSE',
+                  Stock: 'STONK',
+                  Numeric: 'PSEUDO_NUMERIC',
                 }
           }
           disabled={isSubmitting}
