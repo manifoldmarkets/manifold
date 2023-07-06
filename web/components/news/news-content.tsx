@@ -8,6 +8,22 @@ import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
 
+const Threads = createNewsDashboardTab('Threads', 'Facebook Launches Threads', [
+  {
+    url: 'https://about.fb.com/news/2023/07/introducing-threads-new-app-text-sharing/',
+  },
+  { slug: 'will-threads-have-more-daily-active' },
+  { slug: 'will-twitter-have-more-users-than-m' },
+  {
+    url: 'https://www.bbc.com/news/technology-66112648',
+  },
+  { slug: 'how-many-users-will-threads-have-af' },
+  { slug: 'will-elon-musk-posy-on-instagram-th' },
+  { slug: 'will-twitter-have-more-users-than-m' },
+  { slug: 'will-threads-metas-twitter-alternat' },
+  { slug: 'which-twitter-alternative-will-have' },
+])
+
 const OpenAI = createNewsDashboardTab(
   'OpenAI',
   'OpenAI announces Superalignment',
@@ -480,15 +496,15 @@ const Election2024 = createNewsDashboardTab(
 )
 
 export const newsContent = [
+  Threads,
   OpenAI,
   UkraineWar,
   Election2024,
+  ElonVersusZuck,
   WestBank,
   FrenchRiots,
   SupremeCourt,
-  ElonVersusZuck,
   { title: 'Russian Coup?', content: <RussianCoupData /> },
   // { title: 'Titanic Sub', content: <MissingSubData /> },
   // { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
-  // { title: 'Ukraine War', content: <UkraineWarData /> },
 ]
