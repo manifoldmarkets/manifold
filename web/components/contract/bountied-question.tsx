@@ -3,15 +3,64 @@ import { ContractComment } from 'common/comment'
 import { BountiedQuestionContract } from 'common/contract'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { useState } from 'react'
+import { forwardRef, useEffect, useState } from 'react'
 import Lottie from 'react-lottie'
 import { awardBounty } from 'web/lib/firebase/api'
-import * as award from '../../public/lottie/award.json'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
+
+const loadLottie = () => import('react-lottie')
+const loadAnimationJson = () => import('../../public/lottie/award.json')
+
+let lottieLib: ReturnType<typeof loadLottie> | undefined
+let animationJson: ReturnType<typeof loadAnimationJson> | undefined
+
+export const loadImports = async () => {
+  lottieLib ??= loadLottie()
+  animationJson ??= loadAnimationJson()
+  return {
+    Lottie: (await lottieLib).default,
+    award: await animationJson,
+  }
+}
+
+export const LootboxAnimation = forwardRef(() => {
+  const [imports, setImports] =
+    useState<Awaited<ReturnType<typeof loadImports>>>()
+
+  useEffect(() => {
+    loadImports().then((x) => setImports(x))
+  }, [])
+
+  if (imports == null) {
+    return null
+  }
+  const { Lottie, award } = imports
+  return (
+    <Lottie
+      options={{
+        loop: true,
+        autoplay: true,
+        animationData: award,
+        rendererSettings: {
+          preserveAspectRatio: 'xMidYMid slice',
+        },
+      }}
+      height={200}
+      width={200}
+      isStopped={false}
+      isPaused={false}
+      style={{
+        color: '#6366f1',
+        pointerEvents: 'none',
+        background: 'transparent',
+      }}
+    />
+  )
+})
 
 export function BountyLeft(props: { bountyLeft: number }) {
   const { bountyLeft } = props
@@ -80,25 +129,7 @@ export function AwardBountyButton(props: {
       </Button>
       <Modal open={open} setOpen={setOpen}>
         <Col className={MODAL_CLASS}>
-          <Lottie
-            options={{
-              loop: true,
-              autoplay: true,
-              animationData: award,
-              rendererSettings: {
-                preserveAspectRatio: 'xMidYMid slice',
-              },
-            }}
-            height={200}
-            width={200}
-            isStopped={false}
-            isPaused={false}
-            style={{
-              color: '#6366f1',
-              pointerEvents: 'none',
-              background: 'transparent',
-            }}
-          />
+          <LootboxAnimation />
           <span>
             Award <b>{comment.userName}</b> a bounty
           </span>
