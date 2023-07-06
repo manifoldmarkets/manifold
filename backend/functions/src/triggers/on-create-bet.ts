@@ -51,10 +51,7 @@ import {
 } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
-import {
-  completeArchaeologyQuest,
-  completeReferralsQuest,
-} from 'shared/complete-quest-internal'
+import { completeReferralsQuest } from 'shared/complete-quest-internal'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_TRADE_FEE } from 'common/fees'
@@ -122,8 +119,6 @@ export const onCreateBet = functions
 
     await giveUniqueBettorAndLiquidityBonus(contract, eventId, bettor, bet)
     await updateUniqueBettors(contract, bet)
-
-    await completeArchaeologyQuest(bet, bettor, contract, eventId)
 
     const pg = createSupabaseDirectClient()
     await updateUserInterestEmbedding(pg, bettor.id)
