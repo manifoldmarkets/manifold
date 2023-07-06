@@ -1,5 +1,4 @@
-import { ReactNode, memo, useEffect, useState } from 'react'
-import Router from 'next/router'
+import { ReactNode, memo, useState } from 'react'
 import { ChartBarIcon, ScaleIcon } from '@heroicons/react/solid'
 import Link from 'next/link'
 
@@ -7,7 +6,6 @@ import { Page } from 'web/components/layout/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useUser } from 'web/hooks/use-user'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import TestimonialsPanel from './testimonials-panel'
@@ -26,13 +24,13 @@ import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { formatMoney } from 'common/util/format'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
+import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 
 export const getServerSideProps = redirectIfLoggedIn('/home')
 
 export default function Home() {
   useSaveReferral()
-  useRedirectAfterLogin()
-
+  useRedirectIfSignedIn()
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   return (
@@ -217,16 +215,6 @@ export function PredictionMarketExplainer() {
       </div>
     </>
   )
-}
-
-const useRedirectAfterLogin = () => {
-  const user = useUser()
-
-  useEffect(() => {
-    if (user) {
-      Router.replace('/home')
-    }
-  }, [user])
 }
 
 const ContractsSection = memo(function ContractsSection(props: {
