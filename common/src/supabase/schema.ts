@@ -1060,6 +1060,7 @@ export interface Database {
           created_at: string
           disinterest_embedding: string | null
           interest_embedding: string
+          pre_signup_embedding_is_default: boolean | null
           pre_signup_interest_embedding: string | null
           user_id: string
         }
@@ -1068,6 +1069,7 @@ export interface Database {
           created_at?: string
           disinterest_embedding?: string | null
           interest_embedding: string
+          pre_signup_embedding_is_default?: boolean | null
           pre_signup_interest_embedding?: string | null
           user_id: string
         }
@@ -1076,6 +1078,7 @@ export interface Database {
           created_at?: string
           disinterest_embedding?: string | null
           interest_embedding?: string
+          pre_signup_embedding_is_default?: boolean | null
           pre_signup_interest_embedding?: string | null
           user_id?: string
         }
@@ -1543,7 +1546,6 @@ export interface Database {
           avatar_url: string | null
           createdtime: number | null
           creator_id: string | null
-          group_data: Json | null
           group_id: string | null
           group_name: string | null
           group_slug: string | null
@@ -2046,6 +2048,7 @@ export interface Database {
           description_fts: unknown | null
           fs_updated_time: string
           id: string
+          importance_score: number | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
@@ -2628,6 +2631,13 @@ export interface Database {
         }
         Returns: unknown
       }
+      has_moderator_or_above_role: {
+        Args: {
+          this_group_id: string
+          this_user_id: string
+        }
+        Returns: boolean
+      }
       install_available_extensions_and_test: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -2812,12 +2822,12 @@ export interface Database {
         Returns: {
           creator_id: string | null
           data: Json
-          fs_updated_time: string
+          fs_updated_time: string | null
           id: string
-          name: string | null
+          name: string
           name_fts: unknown | null
           privacy_status: string | null
-          slug: string | null
+          slug: string
           total_members: number | null
         }[]
       }
