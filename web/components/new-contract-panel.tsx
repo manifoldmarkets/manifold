@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
+  NON_BETTING_OUTCOMES,
   OutcomeType,
   Visibility,
 } from 'common/contract'
@@ -302,6 +303,7 @@ export function NewContractPanel(props: {
           <BuyAmountInput
             inputClassName="w-full max-w-none"
             minimumAmount={5}
+            maximumAmount={250}
             amount={bountyAmount}
             onChange={(newAmount) => setBountyAmount(newAmount)}
             error={bountyError}
@@ -564,7 +566,6 @@ const useNewContract = (
 
   const [closeDate, setCloseDate] = usePersistentLocalState<undefined | string>(
     timeInMs ? initDate : undefined,
-
     'now-close-date'
   )
   const [closeHoursMinutes, setCloseHoursMinutes] = usePersistentLocalState<
@@ -592,20 +593,22 @@ const useNewContract = (
     : undefined
 
   useEffect(() => {
-    if (outcomeType === 'STONK') {
+    if (outcomeType === 'STONK' || NON_BETTING_OUTCOMES.includes(outcomeType)) {
       setCloseDate(dayjs().add(1000, 'year').format('YYYY-MM-DD'))
       setCloseHoursMinutes('23:59')
 
-      if (editor?.isEmpty) {
-        editor?.commands.setContent(
-          generateJSON(
-            `<div>
+      if (outcomeType == 'STONK') {
+        if (editor?.isEmpty) {
+          editor?.commands.setContent(
+            generateJSON(
+              `<div>
             ${STONK_YES}: good<br/>${STONK_NO}: bad<br/>Question trades based on sentiment & never
             resolves.
           </div>`,
-            extensions
+              extensions
+            )
           )
-        )
+        }
       }
     }
   }, [outcomeType])

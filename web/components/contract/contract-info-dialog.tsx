@@ -1,44 +1,42 @@
 import { CheckIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import React, { useState } from 'react'
-import { capitalize } from 'lodash'
-import { Contract } from 'common/contract'
-import { formatMoney } from 'common/util/format'
-import { updateContract } from 'web/lib/firebase/contracts'
-import { contractPool } from 'common/contract'
-import { Col } from '../layout/col'
-import { Modal } from '../layout/modal'
-import { Title } from '../widgets/title'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import { useAdmin, useDev } from 'web/hooks/use-admin'
-import { ENV_CONFIG, firestoreConsolePath } from 'common/envs/constants'
-import ShortToggle from '../widgets/short-toggle'
-import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
-import { Row } from '../layout/row'
-import { BETTORS, User } from 'common/user'
-import { Button } from '../buttons/button'
-import { AddLiquidityButton } from './add-liquidity-button'
-import { Table } from '../widgets/table'
-import { ShareEmbedButton } from '../buttons/share-embed-button'
-import { QRCode } from '../widgets/qr-code'
-import { getShareUrl } from 'common/util/share'
-import { formatTime } from 'web/lib/util/time'
-import { TweetButton } from '../buttons/tweet-button'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
-import { Tabs } from '../layout/tabs'
+import { Contract, contractPool } from 'common/contract'
 import { REFERRAL_AMOUNT } from 'common/economy'
-import { CopyLinkButton } from '../buttons/copy-link-button'
-import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
+import { ENV_CONFIG, firestoreConsolePath } from 'common/envs/constants'
+import { BETTORS, User } from 'common/user'
+import { formatMoney } from 'common/util/format'
+import { getShareUrl } from 'common/util/share'
+import { capitalize } from 'lodash'
+import { useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { TiVolumeMute } from 'react-icons/ti'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
-import { ReportButton } from '../buttons/report-button'
-import { Input } from '../widgets/input'
+import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
+import { useAdmin, useDev } from 'web/hooks/use-admin'
 import {
   unresolveMarket,
   updateUserDisinterestEmbedding,
 } from 'web/lib/firebase/api'
+import { updateContract } from 'web/lib/firebase/contracts'
+import { formatTime } from 'web/lib/util/time'
+import { Button } from '../buttons/button'
+import { CopyLinkButton } from '../buttons/copy-link-button'
+import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
+import { ReportButton } from '../buttons/report-button'
+import { ShareEmbedButton } from '../buttons/share-embed-button'
+import { TweetButton } from '../buttons/tweet-button'
+import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
+import { Row } from '../layout/row'
+import { Tabs } from '../layout/tabs'
+import { InfoTooltip } from '../widgets/info-tooltip'
+import { Input } from '../widgets/input'
+import { QRCode } from '../widgets/qr-code'
+import ShortToggle from '../widgets/short-toggle'
+import { Table } from '../widgets/table'
+import { AddLiquidityButton } from './add-liquidity-button'
 import { BoostButton } from './boost-button'
-import { toast } from 'react-hot-toast'
-import { TiVolumeMute } from 'react-icons/ti'
 
 export const Stats = (props: {
   contract: Contract
@@ -76,8 +74,11 @@ export const Stats = (props: {
       ? 'Free response'
       : outcomeType === 'MULTIPLE_CHOICE'
       ? 'Multiple choice'
+      : outcomeType === 'BOUNTIED_QUESTION'
+      ? 'Bountied question'
       : 'Numeric'
 
+  const isBettingContract = contract.mechanism !== 'none'
   return (
     <Table>
       <tbody>
@@ -101,6 +102,8 @@ export const Stats = (props: {
                     text={`Each share in an outcome is worth ${ENV_CONFIG.moneyMoniker}1 if it is chosen.`}
                   />
                 </>
+              ) : mechanism == 'none' ? (
+                <></>
               ) : (
                 <>
                   Parimutuel{' '}
@@ -116,42 +119,64 @@ export const Stats = (props: {
           <td>{formatTime(createdTime)}</td>
         </tr>
 
-        {closeTime && (
+        {contract.outcomeType == 'BOUNTIED_QUESTION' && (
+          <>
+            <tr>
+              <td>
+                Total bounty{' '}
+                <InfoTooltip text="The total bounty the creator has put up" />
+              </td>
+              <td>{formatMoney(contract.totalBounty)}</td>
+            </tr>
+            <tr>
+              <td>
+                Bounty paid{' '}
+                <InfoTooltip text="The bounty that has been paid out so far" />
+              </td>
+              <td>{formatMoney(contract.totalBounty - contract.bountyLeft)}</td>
+            </tr>
+          </>
+        )}
+
+        {closeTime && isBettingContract && (
           <tr>
             <td>Question close{closeTime > Date.now() ? 's' : 'd'}</td>
             <td>{formatTime(closeTime)}</td>
           </tr>
         )}
 
-        {resolutionTime && (
+        {resolutionTime && isBettingContract && (
           <tr>
             <td>Question resolved</td>
             <td>{formatTime(resolutionTime)}</td>
           </tr>
         )}
 
-        <tr>
-          <td>
-            <span className="mr-1">24 hour volume</span>
-            <InfoTooltip text="Amount bought or sold in the last 24 hours" />
-          </td>
-          <td>{formatMoney(contract.volume24Hours)}</td>
-        </tr>
+        {isBettingContract && (
+          <>
+            <tr>
+              <td>
+                <span className="mr-1">24 hour volume</span>
+                <InfoTooltip text="Amount bought or sold in the last 24 hours" />
+              </td>
+              <td>{formatMoney(contract.volume24Hours)}</td>
+            </tr>
 
-        <tr>
-          <td>
-            <span className="mr-1">Total volume</span>
-            <InfoTooltip text="Total amount bought or sold" />
-          </td>
-          <td>{formatMoney(contract.volume)}</td>
-        </tr>
+            <tr>
+              <td>
+                <span className="mr-1">Total volume</span>
+                <InfoTooltip text="Total amount bought or sold" />
+              </td>
+              <td>{formatMoney(contract.volume)}</td>
+            </tr>
 
-        <tr>
-          <td>{capitalize(BETTORS)}</td>
-          <td>{uniqueBettorCount ?? '0'}</td>
-        </tr>
-
-        {!hideAdvanced && !contract.resolution && (
+            <tr>
+              <td>{capitalize(BETTORS)}</td>
+              <td>{uniqueBettorCount ?? '0'}</td>
+            </tr>
+          </>
+        )}
+        {!hideAdvanced && !contract.resolution && isBettingContract && (
           <tr>
             <td>
               <Row>
@@ -177,18 +202,20 @@ export const Stats = (props: {
           </tr>
         )}
 
-        <tr>
-          <td>Liquidity subsidies</td>
-          <td>
-            {mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
-              ? `${formatMoney(
-                  contract.totalLiquidity - contract.subsidyPool
-                )} / ${formatMoney(contract.totalLiquidity)}`
-              : formatMoney(100)}
-          </td>
-        </tr>
+        {isBettingContract && (
+          <tr>
+            <td>Liquidity subsidies</td>
+            <td>
+              {mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
+                ? `${formatMoney(
+                    contract.totalLiquidity - contract.subsidyPool
+                  )} / ${formatMoney(contract.totalLiquidity)}`
+                : formatMoney(100)}
+            </td>
+          </tr>
+        )}
 
-        {!hideAdvanced && (
+        {!hideAdvanced && isBettingContract && (
           <tr>
             <td>Pool</td>
             <td>
@@ -285,7 +312,7 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
-        {!hideAdvanced && (
+        {!hideAdvanced && isBettingContract && (
           <tr className={clsx(isAdmin && 'bg-scarlet-500/20')}>
             <td>
               Non predictive
@@ -325,7 +352,9 @@ export function ContractInfoDialog(props: {
     <Modal open={open} setOpen={setOpen}>
       <Col className="bg-canvas-0 gap-4 rounded p-6">
         <Row className={'items-center justify-between'}>
-          <Title className="!mb-0">This Question</Title>
+          <div className="text-primary-700 line-clamp-2">
+            {contract.question}
+          </div>
           <FollowMarketButton contract={contract} user={user} />
         </Row>
 
@@ -377,11 +406,19 @@ export function ContractInfoDialog(props: {
                     className="self-center"
                   />
 
-                  <div className="text-ink-500 mt-4 mb-2 text-base">
-                    Invite traders to participate in this question and earn a{' '}
-                    {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
-                    trader that signs up.
-                  </div>
+                  {contract.mechanism == 'none' ? (
+                    <>
+                      Invite your friends to join, and earn a{' '}
+                      {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
+                      person that signs up.
+                    </>
+                  ) : (
+                    <div className="text-ink-500 mt-4 mb-2 text-base">
+                      Invite traders to participate in this question and earn a{' '}
+                      {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
+                      trader that signs up.
+                    </div>
+                  )}
 
                   <CopyLinkButton
                     url={getShareUrl(contract, user?.username)}

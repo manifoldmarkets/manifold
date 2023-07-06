@@ -70,6 +70,8 @@ export function CommentInput(props: {
     placeholder:
       !!parentCommentId || !!parentAnswerOutcome
         ? 'Write a reply...'
+        : contract?.outcomeType == 'BOUNTIED_QUESTION'
+        ? 'Write an answer...'
         : 'Write a comment...',
   })
 
