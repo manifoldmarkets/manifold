@@ -2,9 +2,7 @@ import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import {
-  Group,
   GroupsByTopic,
-  PrivacyStatusType,
   groupPath,
 } from 'common/group'
 import { User } from 'common/user'
@@ -15,7 +13,7 @@ import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { searchContract } from 'web/lib/supabase/contracts'
-import { GroupAndRoleType, SearchGroupInfo } from 'web/lib/supabase/groups'
+import { SearchGroupInfo } from 'web/lib/supabase/groups'
 import { shortenNumber } from 'web/lib/util/shortenNumber'
 import { ContractsTable } from '../contract/contracts-table'
 import { Row } from '../layout/row'
