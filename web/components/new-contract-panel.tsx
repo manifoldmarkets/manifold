@@ -303,6 +303,7 @@ export function NewContractPanel(props: {
           <BuyAmountInput
             inputClassName="w-full max-w-none"
             minimumAmount={5}
+            maximumAmount={250}
             amount={bountyAmount}
             onChange={(newAmount) => setBountyAmount(newAmount)}
             error={bountyError}
