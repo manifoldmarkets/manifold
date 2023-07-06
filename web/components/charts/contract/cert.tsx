@@ -15,10 +15,6 @@ import { scaleLinear, scaleTime } from 'd3-scale'
 import { Row } from 'web/components/layout/row'
 import { HistoryPoint } from 'common/chart'
 
-const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
-const MARGIN_X = MARGIN.left + MARGIN.right
-const MARGIN_Y = MARGIN.top + MARGIN.bottom
-
 const CertChartTooltip = (props: TooltipProps<Date, HistoryPoint<never>>) => {
   const { prev, x, xScale } = props
   const [start, end] = xScale.domain()
@@ -69,13 +65,12 @@ export const CertContractChart = (props: {
     Date.now()
   )
   const visibleRange = [start, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
-  const yScale = scaleLinear([minY, maxY], [height - MARGIN_Y, 0])
+  const xScale = scaleTime(visibleRange, [0, width])
+  const yScale = scaleLinear([minY, maxY], [height, 0])
   return (
     <SingleValueHistoryChart
       w={width}
       h={height}
-      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
       data={data}

@@ -1,11 +1,12 @@
+import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import Image from 'next/image'
+import clsx from 'clsx'
 
 import { STARTING_BALANCE } from 'common/economy'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
-import { useRouter } from 'next/router'
-import React, { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
@@ -13,7 +14,6 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { TopicSelectorDialog } from './topic-selector-dialog'
-import clsx from 'clsx'
 
 export default function Welcome() {
   const user = useUser()
@@ -25,8 +25,6 @@ export default function Welcome() {
   const [showSignedOutUser, setShowSignedOutUser] = useState(false)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
 
-  const router = useRouter()
-
   const availablePages = buildArray([
     <WhatIsManifoldPage />,
     <PredictionMarketPage />,
@@ -36,19 +34,8 @@ export default function Welcome() {
   const isLastPage = page === availablePages.length - 1
 
   useEffect(() => {
-    if (user) return
-    const { showHelpModal } = router.query
-    if (showHelpModal) {
-      setPage(0)
-      setShowSignedOutUser(true)
-      setOpen(true)
-      router.replace(router.pathname, router.pathname, { shallow: true })
-    }
-  }, [router.query])
-
-  useEffect(() => {
     if (user?.shouldShowWelcome) setOpen(true)
-  }, [user])
+  }, [user?.shouldShowWelcome])
 
   const close = () => {
     setOpen(false)
@@ -77,10 +64,11 @@ export default function Welcome() {
 
   if (!shouldShowWelcomeModals) return <></>
 
-  if (groupSelectorOpen) return <TopicSelectorDialog />
+  if (groupSelectorOpen)
+    return <TopicSelectorDialog skippable={true} opaque={false} />
 
   return (
-    <Modal open={open} setOpen={close} bgOpaque={true} size={'lg'}>
+    <Modal open={open} setOpen={increasePage} bgOpaque={false} size={'lg'}>
       <Col className="bg-canvas-0 place-content-between rounded-md px-8 py-6 text-sm md:text-lg">
         {availablePages[page]}
         <Col>

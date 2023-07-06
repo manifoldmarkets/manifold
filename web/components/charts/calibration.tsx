@@ -13,16 +13,8 @@ export function CalibrationChart(props: {
 }) {
   const { yesPoints, noPoints, width, height } = props
 
-  const margin = { top: 5, bottom: 30, left: 5, right: 30 }
-  const innerW = width - (margin.left + margin.right)
-  const innerH = height - (margin.top + margin.bottom)
-
-  const xScale = scaleLinear()
-    .domain([0, 1])
-    .range([5, innerW - 5])
-  const yScale = scaleLinear()
-    .domain([0, 1])
-    .range([innerH - 5, 5])
+  const xScale = scaleLinear().domain([0, 1]).range([0, width])
+  const yScale = scaleLinear().domain([0, 1]).range([height, 0])
 
   const tickVals = points.map((p) => p / 100)
 
@@ -41,7 +33,7 @@ export function CalibrationChart(props: {
   const py = (p: Point) => yScale(p.y)
 
   return (
-    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} margin={margin}>
+    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} noGridlines>
       {/* points */}
       {yesPoints.map((p, i) => (
         // triangle pointing up

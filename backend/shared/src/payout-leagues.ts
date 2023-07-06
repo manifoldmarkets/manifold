@@ -10,6 +10,7 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import { LeaguePrizeTxn } from 'common/txn'
+import { chunk } from 'lodash'
 
 export const sendEndOfSeasonNotificationsAndBonuses = async (
   pg: SupabaseDirectClient,
@@ -30,13 +31,18 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
     prevRows.map((r) => [r.user_id, r])
   )
 
-  for (const newRow of newRows) {
-    const prevRow = prevRowsByUserId[newRow.user_id] as
-      | league_user_info
-      | undefined
-    if (prevRow) {
-      await sendEndOfSeasonNotificationAndBonus(pg, prevRow, newRow)
-    }
+  for (const rows of chunk(newRows, 10)) {
+    await Promise.all(
+      rows.map((newRow) => {
+        const prevRow = prevRowsByUserId[newRow.user_id] as
+          | league_user_info
+          | undefined
+        if (prevRow) {
+          return sendEndOfSeasonNotificationAndBonus(pg, prevRow, newRow)
+        }
+        return Promise.resolve()
+      })
+    )
   }
 }
 

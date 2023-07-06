@@ -1,5 +1,6 @@
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
-  '🗳️ Politics': ['🇺🇸 US Politics', '🟠 Trump'],
+  '🗳️ Politics': ['🇺🇸 US Politics', '🟠 Trump', '👩‍⚖️ Supreme Court'],
+
   '💻 Technology': [
     '🤖 AI',
     '🪙 Crypto',
@@ -20,17 +21,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🏅 Sports',
   ],
 
-  '🍿 Media': [
-    '📺 TV Shows',
-    '🎮 Gaming',
-    '🎵 Music',
-    '📚 Books',
-    '🌐 Internet Culture',
-    '👥 Celebrities',
-  ],
   '💼 Business': ['💵 Finance', '💰 Economics', '🚀 Startups', '🚘 Elon Musk'],
-
-  '🪂 Lifestyle': ['🏳️‍🌈 LGBTQIA+', '⛪ Religion', '💪 Personal Development'],
 
   '🌍 World': [
     '🇷🇺🇺🇦 Russia & Ukraine',
@@ -42,8 +33,32 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🌍 Middle East',
   ],
 
+  '🍿 Media': [
+    '🍿 Movies',
+    '🎮 Gaming',
+    '📺 TV Shows',
+    '🎵 Music',
+    '🌐 Internet Culture',
+    '👥 Celebrities',
+  ],
+
+  '🪂 Lifestyle': ['🏳️‍🌈 LGBTQIA+', '⛪ Religion', '💪 Personal Development'],
+
   '👥 Communities': ['💗 Effective Altruism', '🎮 Destiny.gg'],
 }
+
+export const SELECTED_TOPICS = [
+  '🗳️ Politics',
+  '💻 Technology',
+  '🏟️ Sports',
+  '💰 Economics',
+  '🍿 Movies',
+  '🇷🇺🇺🇦 Russia & Ukraine',
+  '🇨🇳 China',
+  '🪙 Crypto',
+  '🎮 Gaming',
+  '🚀 Space',
+]
 
 const GROUP_IDs: { [key: string]: string } = {
   'CGP Grey': 'yXIziLaaVxHFOPG1aMrJ',
@@ -79,6 +94,7 @@ export const getSubtopics = (topic: string) =>
 export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
   .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))
   .flat()
+
 export const ALL_TOPICS_WITH_EMOJIS = Object.keys(TOPICS_TO_SUBTOPICS)
   .map((topic) => getSubtopics(topic).map(([subtopic]) => subtopic))
   .flat()

@@ -1,45 +1,46 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { SupabaseClient } from 'common/supabase/utils'
-import { DAY_MS, HOUR_MS } from 'common/util/time'
-import { loadPaginated, log } from 'shared/utils'
-import { Query } from 'firebase-admin/lib/firestore'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import { clamp } from 'lodash'
 import { logit } from 'common/util/math'
 
 import { BOT_USERNAMES } from 'common/envs/constants'
+import { bulkUpdate } from 'shared/supabase/utils'
 
 export const IMPORTANCE_MINUTE_INTERVAL = 2
-
 export async function calculateImportanceScore(
-  firestore: FirebaseFirestore.Firestore,
   db: SupabaseClient,
   pg: SupabaseDirectClient,
   readOnly = false
 ) {
   const now = Date.now()
+  const lastUpdatedTime = now - IMPORTANCE_MINUTE_INTERVAL * MINUTE_MS
   const hourAgo = now - HOUR_MS
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
-
-  const activeContracts = await loadPaginated(
-    firestore
-      .collection('contracts')
-      .where('lastUpdatedTime', '>', dayAgo) as Query<Contract>
+  const activeContracts = await pg.map(
+    `select data from contracts where ((data->'lastUpdatedTime')::numeric) > $1`,
+    [lastUpdatedTime],
+    (row) => row.data as Contract
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
-  const previouslyActiveContractsData = await db
-    .from('contracts')
-    .select('data')
-    .or('data->>importanceScore.gt.0.2')
+  const previouslyActiveContracts = await pg.map(
+    `select data from contracts where
+        ((data->'importanceScore')::numeric) > 0.2`,
+    [],
+    (row) => row.data as Contract
+  )
 
   const activeContractIds = activeContracts.map((c) => c.id)
-  const previouslyActiveContracts = (previouslyActiveContractsData.data ?? [])
-    .map((row) => row.data as Contract)
-    .filter((c) => !activeContractIds.includes(c.id))
+  const previouslyActiveContractsFiltered = (
+    previouslyActiveContracts ?? []
+  ).filter((c) => !activeContractIds.includes(c.id))
 
-  const contracts = activeContracts.concat(previouslyActiveContracts)
+  const contracts = activeContracts.concat(previouslyActiveContractsFiltered)
+  const contractIds = contracts.map((c) => c.id)
   log(
     `Found ${contracts.length} contracts to score`,
     'including',
@@ -49,14 +50,26 @@ export async function calculateImportanceScore(
 
   const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
   const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
-  const todayTradersByContract = await getContractTraders(pg, dayAgo)
-  const hourAgoTradersByContract = await getContractTraders(pg, hourAgo)
-  const thisWeekTradersByContract = await getContractTraders(pg, weekAgo)
+  const todayTradersByContract = await getContractTraders(
+    pg,
+    dayAgo,
+    contractIds
+  )
+  const hourAgoTradersByContract = await getContractTraders(
+    pg,
+    hourAgo,
+    contractIds
+  )
+  const thisWeekTradersByContract = await getContractTraders(
+    pg,
+    weekAgo,
+    contractIds
+  )
 
-  const updates: [number, Contract, Partial<Contract>][] = []
+  const contractsWithUpdates: Contract[] = []
 
   for (const contract of contracts) {
-    const { popularityScore, dailyScore, importanceScore } =
+    const { importanceScore, popularityScore, dailyScore } =
       computeContractScores(
         now,
         contract,
@@ -67,65 +80,63 @@ export async function calculateImportanceScore(
         thisWeekTradersByContract[contract.id] ?? 0
       )
 
-    if (contract.importanceScore !== importanceScore) {
-      updates.push([
-        importanceScore,
-        contract,
-        { popularityScore, dailyScore, importanceScore },
-      ])
+    if (
+      contract.importanceScore !== importanceScore ||
+      contract.popularityScore !== popularityScore ||
+      contract.dailyScore !== dailyScore
+    ) {
+      contract.importanceScore = importanceScore
+      contract.popularityScore = popularityScore
+      contract.dailyScore = dailyScore
+      contractsWithUpdates.push(contract)
     }
   }
 
   // sort in descending order by score
-  updates.sort((a, b) => b[0] - a[0])
+  contractsWithUpdates.sort((a, b) => b.importanceScore - a.importanceScore)
 
-  console.log('Found', updates.length, 'contracts to update')
+  console.log('Found', contractsWithUpdates.length, 'contracts to update')
 
-  if (updates.filter(([s]) => s < 0 || s > 1).length !== 0)
+  if (
+    contractsWithUpdates.filter(
+      (c) => c.importanceScore < 0 || c.importanceScore > 1
+    ).length !== 0
+  )
     console.log('WARNING: some scores are out of bounds')
 
   console.log('Top 15 contracts by score')
 
-  updates.slice(0, 15).forEach(([score, contract]) => {
-    console.log(score, contract.question)
+  contractsWithUpdates.slice(0, 15).forEach((contract) => {
+    console.log(contract.importanceScore, contract.question)
   })
 
   console.log('Bottom 5 contracts by score')
-  updates
+  contractsWithUpdates
     .slice()
     .reverse()
     .slice(0, 5)
-    .forEach(([score, contract]) => {
-      console.log(score, contract.question)
+    .forEach((contract) => {
+      console.log(contract.importanceScore, contract.question)
     })
 
-  if (!readOnly) await batchUpdates(firestore, updates)
-}
-
-const batchUpdates = async (
-  firestore: FirebaseFirestore.Firestore,
-  updates: [number, Contract, Partial<Contract>][]
-) => {
-  let batch = firestore.batch()
-
-  for (let i = 0; i < updates.length; i++) {
-    const [_, contract, updateObj] = updates[i]
-
-    const contractRef = firestore.collection('contracts').doc(contract.id)
-    batch.update(contractRef, updateObj)
-
-    if (i % 400 === 0) {
-      await batch.commit()
-      batch = firestore.batch()
-    }
-  }
-
-  await batch.commit()
+  if (!readOnly)
+    await bulkUpdate(
+      pg,
+      'contracts',
+      ['id'],
+      contractsWithUpdates.map((contract) => ({
+        id: contract.id,
+        data: `${JSON.stringify(contract)}::jsonb`,
+        importance_score: contract.importanceScore,
+        popularity_score: contract.popularityScore,
+      }))
+    )
 }
 
 export const getContractTraders = async (
   pg: SupabaseDirectClient,
-  since: number
+  since: number,
+  inContractIds: string[]
 ) => {
   return Object.fromEntries(
     await pg.map(
@@ -134,8 +145,9 @@ export const getContractTraders = async (
                 join users u on cb.user_id = u.id
        where cb.created_time >= millis_to_ts($1)
          and u.username <> ANY(ARRAY[$2])
+          and cb.contract_id = ANY(ARRAY[$3])
        group by cb.contract_id`,
-      [since, BOT_USERNAMES],
+      [since, BOT_USERNAMES, inContractIds],
       (r) => [r.contract_id as string, r.n as number]
     )
   )
@@ -208,7 +220,7 @@ export const computeContractScores = (
   return {
     todayScore,
     thisWeekScore,
-    popularityScore,
+    popularityScore: popularityScore >= 1 ? popularityScore : 0,
     freshnessScore,
     dailyScore,
     importanceScore,

@@ -16,7 +16,7 @@ import { isContractBlocked } from 'web/lib/firebase/users'
 import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items'
 import { DAY_MS } from 'common/util/time'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 25
 
 export type FeedTimelineItem = {
   // These are stored in the db
@@ -105,8 +105,18 @@ export const useFeedTimeline = (
         data.map((item) => (!item.seen_time ? item.comment_id : null))
       )
     )
-
-    const newsIds = uniq(filterDefined(data.map((item) => item.news_id)))
+    const alreadySavedNewsIds = filterDefined(
+      savedFeedItems?.map((item) => item.newsId) ?? []
+    )
+    const newsIds = uniq(
+      filterDefined(
+        data.map((item) =>
+          item.news_id && !alreadySavedNewsIds.includes(item.news_id)
+            ? item.news_id
+            : null
+        )
+      )
+    )
     const [
       comments,
       contracts,
@@ -239,7 +249,10 @@ export const useFeedTimeline = (
     loadMoreOlder: async () => loadMore({ old: true }),
     checkForNewer: async () => checkForNewer(),
     addTimelineItems,
-    boosts,
+    boosts: boosts?.filter(
+      (b) =>
+        !(savedFeedItems?.map((f) => f.contractId) ?? []).includes(b.market_id)
+    ),
     savedFeedItems,
   }
 }
@@ -286,16 +299,10 @@ function createFeedTimelineItems(
   })
   // TODO: The uniqBy will coalesce contract-based feed timeline elements non-deterministically
   const nonNewsTimelineItems = uniqBy(
-    data.map((item) => {
-      const dataType = item.data_type as FEED_DATA_TYPES
-      // Parse new feed timeline data types here
-      if (
-        dataType === 'contract_probability_changed' ||
-        dataType === 'new_comment' ||
-        dataType === 'new_contract' ||
-        dataType === 'popular_comment' ||
-        dataType === 'trending_contract'
-      ) {
+    data
+      .filter((d) => !d.news_id && d.contract_id)
+      .map((item) => {
+        const dataType = item.data_type as FEED_DATA_TYPES
         const relevantContract = contracts?.find(
           (contract) => contract.id === item.contract_id
         )
@@ -309,9 +316,6 @@ function createFeedTimelineItems(
         )
           return
 
-        if (relevantContract.id === 'RqQdSlfdP7Vf6QmsJ80R') {
-          console.log('found it')
-        }
         // Let's stick with one comment per feed item for now
         const relevantComments = comments
           ?.filter((comment) => comment.id === item.comment_id)
@@ -332,8 +336,7 @@ function createFeedTimelineItems(
           contract: relevantContract,
           comments: relevantComments,
         } as FeedTimelineItem
-      }
-    }),
+      }),
     'contractId'
   )
   return sortBy(

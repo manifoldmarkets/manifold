@@ -12,6 +12,7 @@ const TOPICS_TO_IGNORE_FOR_BLANK_TOPIC = [
 ]
 
 const TOPICS_TO_WORDS: { [key: string]: string } = {
+  'Supreme Court': 'Supreme Court, SCOTUS, Justice, Judge, Law, Constitution',
   'LGBTQIA+': 'lesbian, bisexual, gay, transgender, queer culture',
   'Effective Altruism':
     'effective altruism, charity, donations, philanthropy, animal rights, existential risk',
@@ -24,7 +25,7 @@ const TOPICS_TO_WORDS: { [key: string]: string } = {
   Music:
     'music, pop music, rock music, hip hop, rap, country, classical music, concert tours',
   Movies:
-    'movies, films, cinema, movie reviews, movie ratings, Hollywood, box office',
+    'movies, films, cinema, movie reviews, movie ratings, Hollywood, box office, IMDB, Rotten Tomatoes, Academy Awards',
   Books: 'books, novels, fiction, non-fiction, book reviews, book ratings',
   'Internet Culture':
     'internet culture, memes, viral videos, TikTokers, Twitch streamers, online drama',

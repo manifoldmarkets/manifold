@@ -288,7 +288,6 @@ const ResultOption = (props: {
 
 const MarketResults = (props: { markets: Contract[]; search?: string }) => {
   const markets = props.markets
-  if (!markets.length) return null
 
   return (
     <>

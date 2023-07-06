@@ -1,5 +1,5 @@
-import { range } from 'lodash'
-import { prizesByDivisionAndRank } from 'common/leagues'
+import { range, sortBy } from 'lodash'
+import { DIVISION_NAMES, prizesByDivisionAndRank } from 'common/leagues'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../widgets/title'
@@ -9,6 +9,10 @@ export function PrizesModal(props: {
   setOpen: (open: boolean) => void
 }) {
   const { open, setOpen } = props
+  const divisions = sortBy(
+    Object.entries(DIVISION_NAMES).filter(([division]) => +division > 0),
+    ([division]) => division
+  )
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'} noAutoFocus>
       <Col className={'bg-canvas-0 text-ink-1000 gap-4 rounded-lg py-3'}>
@@ -24,11 +28,11 @@ export function PrizesModal(props: {
             <thead>
               <tr>
                 <th className="border border-gray-300 px-4 py-2">Rank</th>
-                <th className="border border-gray-300 px-4 py-2">Bronze</th>
-                <th className="border border-gray-300 px-4 py-2">Silver</th>
-                <th className="border border-gray-300 px-4 py-2">Gold</th>
-                <th className="border border-gray-300 px-4 py-2">Platinum</th>
-                <th className="border border-gray-300 px-4 py-2">Diamond</th>
+                {divisions.map(([, divisionName]) => (
+                  <th className="border border-gray-300 px-4 py-2">
+                    {divisionName}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>

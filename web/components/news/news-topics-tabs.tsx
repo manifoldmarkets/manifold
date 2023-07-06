@@ -2,22 +2,24 @@ import { ReactNode } from 'react'
 import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { HomeIcon } from '@heroicons/react/solid'
 
 import { newsContent } from 'web/components/news/news-content'
 import { buildArray } from 'common/util/array'
 import { AllArticles } from 'web/pages/news'
-import { LiveFeed } from 'web/pages/live'
 
 export function NewsTopicsTabs(props: {
   homeContent?: ReactNode
   questionsContent?: ReactNode
 }) {
-  const { homeContent, questionsContent } = props
+  const { homeContent } = props
 
   const topics = buildArray(
-    !!homeContent && { title: 'Feed', content: homeContent as JSX.Element },
-    !!questionsContent && { title: 'Browse', content: questionsContent },
-    !!homeContent && { title: 'Live', content: <LiveFeed /> },
+    !!homeContent && {
+      title: 'For you',
+      inlineTabIcon: <HomeIcon className="h-4 w-4" />,
+      content: homeContent as JSX.Element,
+    },
     ...newsContent,
     { title: 'All Articles', content: <AllArticles /> }
   )

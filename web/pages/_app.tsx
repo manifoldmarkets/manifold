@@ -9,7 +9,6 @@ import {
   NativeMessageListener,
   postMessageToNative,
 } from 'web/components/native-message-listener'
-import Welcome from 'web/components/onboarding/welcome'
 import { SearchProvider } from 'web/components/search/search-context'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
@@ -127,7 +126,6 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
             <NativeMessageListener />
             <QueryClientProvider client={queryClient}>
               <SearchProvider>
-                <Welcome />
                 <Component {...pageProps} />
               </SearchProvider>
             </QueryClientProvider>

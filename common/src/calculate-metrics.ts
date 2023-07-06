@@ -4,10 +4,7 @@ import { Bet, LimitBet } from './bet'
 import { Contract, CPMMContract, DPMContract } from './contract'
 import { User } from './user'
 import { DAY_MS } from './util/time'
-import {
-  computeFills,
-  getNewMultiBetInfo,
-} from './new-bet'
+import { computeFills, getNewMultiBetInfo } from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { logit } from './util/math'
@@ -119,8 +116,10 @@ export const computeBinaryCpmmElasticity = (
   const resultNo = getCpmmProbability(poolN, pN)
 
   // handle AMM overflow
-  const safeYes = Number.isFinite(resultYes) ? resultYes : 1
-  const safeNo = Number.isFinite(resultNo) ? resultNo : 0
+  const safeYes = Number.isFinite(resultYes)
+    ? Math.min(resultYes, 0.995)
+    : 0.995
+  const safeNo = Number.isFinite(resultNo) ? Math.max(resultNo, 0.005) : 0.005
 
   return logit(safeYes) - logit(safeNo)
 }
@@ -139,7 +138,7 @@ export const computeBinaryCpmmElasticityFromAnte = (
 
   const {
     cpmmState: { pool: poolY, p: pY },
-  } = computeFills(cpmmState,'YES', betAmount, undefined, [], {})
+  } = computeFills(cpmmState, 'YES', betAmount, undefined, [], {})
   const resultYes = getCpmmProbability(poolY, pY)
 
   const {

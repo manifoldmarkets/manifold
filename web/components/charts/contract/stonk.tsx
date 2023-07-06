@@ -21,10 +21,6 @@ import { getStonkPriceAtProb } from 'common/stonk'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { HistoryPoint, viewScale } from 'common/chart'
 
-const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
-const MARGIN_X = MARGIN.left + MARGIN.right
-const MARGIN_Y = MARGIN.top + MARGIN.bottom
-
 const getScaleP = () => {
   return (p: number) => getStonkPriceAtProb({} as StonkContract, p)
 }
@@ -115,14 +111,13 @@ export const StonkContractChart = (props: {
     Date.now()
   )
   const visibleRange = [rangeStart, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
+  const xScale = scaleTime(visibleRange, [0, width])
   // clamp log scale to make sure zeroes go to the bottom
-  const yScale = scaleLinear([min, max], [height - MARGIN_Y, 0])
+  const yScale = scaleLinear([min, max], [height, 0])
   return (
     <ControllableSingleValueHistoryChart
       w={width}
       h={height}
-      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
       viewScaleProps={viewScaleProps}

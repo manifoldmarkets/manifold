@@ -148,8 +148,7 @@ export function CertOverview(props: { contract: CertContract }) {
         <span className="text-4xl">{price}</span>
       </div>
 
-      {/* Show a graph for the trades */}
-      <SizedContainer fullHeight={250} mobileHeight={150}>
+      <SizedContainer className="h-[150px] sm:h-[250px]">
         {(w, h) => (
           <CertContractChart
             width={w}

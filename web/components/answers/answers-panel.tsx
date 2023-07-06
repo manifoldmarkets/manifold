@@ -9,6 +9,7 @@ import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
 import {
   CPMMMultiContract,
   MultiContract,
+  contractPath,
   tradingAllowed,
 } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
@@ -23,10 +24,7 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { BuyPanel } from '../bet/bet-panel'
-import {
-  CHOICE_ANSWER_COLORS,
-  useChartAnswers,
-} from '../charts/contract/choice'
+import { nthColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { GradientContainer } from '../widgets/gradient-container'
@@ -34,25 +32,34 @@ import { Subtitle } from '../widgets/subtitle'
 import { AnswerItem } from './answer-item'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { CreateAnswerPanel } from './create-answer-panel'
+import Link from 'next/link'
 
 export function getAnswerColor(
   answer: Answer | DpmAnswer,
   answersArray: string[]
 ) {
-  const colorIndex = answersArray.indexOf(answer.text)
-  return colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
-    ? CHOICE_ANSWER_COLORS[colorIndex]
-    : '#B1B1C7B3'
+  const index =
+    'index' in answer ? answer.index : answersArray.indexOf(answer.text)
+  return nthColor(index)
 }
+
+const NUM_TRUNCATED_ANSWERS = 4
 
 export function AnswersPanel(props: {
   contract: MultiContract
   onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
   showResolver?: boolean
   isInModal?: boolean
+  truncateAnswers?: boolean
 }) {
   const isAdmin = useAdmin()
-  const { contract, onAnswerCommentClick, showResolver, isInModal } = props
+  const {
+    contract,
+    onAnswerCommentClick,
+    showResolver,
+    isInModal,
+    truncateAnswers,
+  } = props
   const { creatorId, resolution, resolutions, outcomeType } = contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
 
@@ -75,7 +82,9 @@ export function AnswersPanel(props: {
       : answers.filter((answer) => answerToProb[answer.id] < 0.01)
 
   const sortedAnswers = sortBy(answers, (answer) =>
-    'index' in answer ? answer.index : -1 * answerToProb[answer.id]
+    !truncateAnswers && 'index' in answer
+      ? answer.index
+      : -1 * answerToProb[answer.id]
   )
 
   const [winningAnswers, losingAnswers] = partition(
@@ -90,9 +99,11 @@ export function AnswersPanel(props: {
       resolutions ? -1 * resolutions[answer.id] : 0
     ),
     ...(resolution ? [] : losingAnswers),
-  ]
+  ].slice(0, truncateAnswers ? NUM_TRUNCATED_ANSWERS : undefined)
 
-  const openAnswers = losingAnswers.length > 0 ? losingAnswers : answerItems
+  const openAnswers = (
+    losingAnswers.length > 0 ? losingAnswers : answerItems
+  ).slice(0, truncateAnswers ? NUM_TRUNCATED_ANSWERS : undefined)
 
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -225,6 +236,15 @@ export function AnswersPanel(props: {
           </Col>
         )}
 
+        {truncateAnswers && answers.length > openAnswers.length && (
+          <Link
+            className="text-ink-500 hover:text-primary-500"
+            href={contractPath(contract)}
+          >
+            See all options
+          </Link>
+        )}
+
         {answers.length === 0 && (
           <div className="text-ink-500 pb-4">No answers yet...</div>
         )}
@@ -256,13 +276,15 @@ function OpenAnswer(props: {
   const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
     undefined
   )
-  const colorWidth = 100 * Math.max(prob, 0.01)
+  const colorWidth = 100 * prob
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
   const isDpm = contract.mechanism === 'dpm-2'
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
 
   const user = useUser()
-  const hasBets = userBets && userBets.filter((b) => !b.isRedemption).length > 0
+  const hasBets =
+    userBets &&
+    userBets.filter((b) => !b.isRedemption && b.amount != 0).length > 0
 
   return (
     <Col className="relative">
@@ -316,7 +338,11 @@ function OpenAnswer(props: {
         <div className="bg-canvas-50 absolute left-0 right-0 bottom-0 -z-10 h-3 rounded transition-all sm:top-1/2 sm:h-10 sm:-translate-y-1/2 sm:bg-inherit">
           <div
             className="h-full rounded"
-            style={{ width: `max(8px, ${colorWidth}%)`, background: color }}
+            style={{
+              width: `max(8px, ${colorWidth}%)`,
+              background: color,
+              opacity: 0.69,
+            }}
           />
         </div>
 
@@ -359,7 +385,11 @@ function OpenAnswer(props: {
                   >
                     NO
                   </Button>
-                  <Button size="2xs" onClick={() => setOutcome('LIMIT')}>
+                  <Button
+                    size="2xs"
+                    color="indigo-outline"
+                    onClick={() => setOutcome('LIMIT')}
+                  >
                     %
                   </Button>
                 </>

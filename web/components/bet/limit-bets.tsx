@@ -244,6 +244,7 @@ export function OrderBookButton(props: {
   const noBets = sortedBets.filter((bet) => bet.outcome === 'NO').reverse()
 
   const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   return (
     <>
@@ -258,7 +259,7 @@ export function OrderBookButton(props: {
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="bg-canvas-0 rounded p-4 py-6">
+        <Col className="bg-canvas-0 text-ink-800 rounded p-4 py-6">
           <Title className="flex">
             Order book{' '}
             <InfoTooltip
@@ -266,11 +267,15 @@ export function OrderBookButton(props: {
               className="ml-1 self-center"
             />
           </Title>
-          {!isCPMMMulti && (
-            <SizedContainer fullHeight={250} mobileHeight={200}>
+
+          <h2 className="mb-1 text-center">
+            Cumulative order size vs probability
+          </h2>
+          {!isCPMMMulti && !isPseudoNumeric && (
+            <SizedContainer className="mb-6 h-[200px] px-16">
               {(w, h) => (
                 <DepthChart
-                  contract={contract}
+                  contract={contract as any}
                   yesBets={yesBets}
                   noBets={noBets}
                   width={w}

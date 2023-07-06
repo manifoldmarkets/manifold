@@ -650,15 +650,16 @@ limit count offset start $$;
 create or replace function sample_resolved_bets(trader_threshold int, p numeric) 
 returns table (prob numeric, is_yes boolean) 
 stable parallel safe language sql as $$
-select  0.5 * ((contract_bets.data->>'probBefore')::numeric + (contract_bets.data->>'probAfter')::numeric)  as prob, 
-       ((contracts.data->>'resolution')::text = 'YES')::boolean as is_yes
+select  0.5 * ((contract_bets.prob_before)::numeric + (contract_bets.prob_after)::numeric)  as prob, 
+       ((contracts.resolution)::text = 'YES')::boolean as is_yes
 from contract_bets
   join contracts on contracts.id = contract_bets.contract_id
-where contracts.outcome_type = 'BINARY'
+where 
+   contracts.outcome_type = 'BINARY'
   and (contracts.resolution = 'YES' or contracts.resolution = 'NO')
-  and amount > 0
-  and (contracts.data->>'uniqueBettorCount')::int >= trader_threshold
   and contracts.visibility = 'public'
+  and (contracts.data->>'uniqueBettorCount')::int >= trader_threshold
+  and amount > 0
   and random() < p
 $$;
 

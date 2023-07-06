@@ -170,3 +170,26 @@ export const mapTypes = <R extends Selectable, T extends Record<string, any>>(
 
   return { ...data, ...newRows } as T
 }
+
+export const convertObjectToSQLRow = <
+  T extends Record<string, any>,
+  R extends Selectable
+>(
+  objData: Partial<T>
+) => {
+  const entries = Object.entries(objData)
+
+  const m = entries
+    .map((entry) => {
+      const [key, val] = entry as [string, T[keyof T]]
+
+      const decamelizeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()
+
+      return [decamelizeKey, val]
+    })
+    .filter((x) => x != null)
+
+  const newRows = Object.fromEntries(m as any)
+
+  return newRows as Partial<Row<R> & { data: any }>
+}

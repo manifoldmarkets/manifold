@@ -32,11 +32,7 @@ import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { SupabaseContractSearch } from 'web/components/supabase-search'
 import { useAdmin } from 'web/hooks/use-admin'
-import {
-  useGroupCreator,
-  useGroupFromSlug,
-  useRealtimeRole,
-} from 'web/hooks/use-group-supabase'
+import { useGroupFromSlug, useRealtimeRole } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -44,6 +40,7 @@ import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { getPostsByGroup } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { useUserById } from 'web/hooks/use-user-supabase'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
@@ -174,7 +171,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const bannerRef = useRef<HTMLDivElement | null>(null)
   const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
   const groupPosts = groupParams?.posts ?? []
-  const creator = useGroupCreator(group) ?? groupParams?.creator
+  const creator = useUserById(group?.creatorId) ?? groupParams?.creator
   const topTraders =
     useToTopUsers((group && group.cachedLeaderboard?.topTraders) ?? []) ??
     groupParams?.topTraders ??

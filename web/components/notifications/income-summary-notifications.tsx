@@ -56,7 +56,7 @@ export function combineAndSumIncomeNotifications(
 
       let sum = 0
       notificationsForSourceTitle.forEach(
-        (notification) => (sum = parseInt(notification.sourceText) + sum)
+        (notification) => (sum = parseFloat(notification.sourceText) + sum)
       )
 
       const newNotification = {

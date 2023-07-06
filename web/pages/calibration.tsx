@@ -8,13 +8,13 @@ import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { sampleResolvedBets } from 'web/lib/supabase/bets'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { SVGChart, formatPct } from 'web/components/charts/helpers'
 import { formatLargeNumber } from 'common/util/format'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Linkify } from 'web/components/widgets/linkify'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Spacer } from 'web/components/layout/spacer'
+import { SizedContainer } from 'web/components/sized-container'
 
 const TRADER_THRESHOLD = 10
 const SAMPLING_P = 0.02
@@ -45,8 +45,6 @@ export default function CalibrationPage(props: {
 }) {
   const { points, score, n } = props
 
-  const isMobile = useIsMobile()
-
   return (
     <Page>
       <SEO
@@ -59,18 +57,18 @@ export default function CalibrationPage(props: {
 
           <div className="mb-4">Manifold's overall track record.</div>
 
-          <div className="bg-canvas-0 relative max-w-[800px] rounded-md p-4 pr-12">
+          <div className="bg-canvas-0 relative w-full max-w-[600px] self-center rounded-md p-4 pr-12">
             <div className="absolute top-0 bottom-0 right-4 flex items-center">
               <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
                 Resolution probability
               </span>
             </div>
 
-            <CalibrationChart
-              points={points}
-              width={isMobile ? 290 : 700}
-              height={isMobile ? 200 : 400}
-            />
+            <SizedContainer className="aspect-square w-full pr-8 pb-8">
+              {(w, h) => (
+                <CalibrationChart points={points} width={w} height={h} />
+              )}
+            </SizedContainer>
             <div className="text-ink-800 text-center text-sm">
               Question probability
             </div>
@@ -127,16 +125,8 @@ export function CalibrationChart(props: {
 }) {
   const { points, width, height } = props
 
-  const margin = { top: 5, bottom: 30, left: 5, right: 30 }
-  const innerW = width - (margin.left + margin.right)
-  const innerH = height - (margin.top + margin.bottom)
-
-  const xScale = scaleLinear()
-    .domain([0, 1])
-    .range([5, innerW - 5])
-  const yScale = scaleLinear()
-    .domain([0, 1])
-    .range([innerH - 5, 5])
+  const xScale = scaleLinear().domain([0, 1]).range([0, width])
+  const yScale = scaleLinear().domain([0, 1]).range([height, 0])
 
   const tickVals = points.map((p) => p.x)
 
@@ -157,7 +147,7 @@ export function CalibrationChart(props: {
   const [tooltip, setTooltip] = useState<Point | null>(null)
 
   return (
-    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} margin={margin}>
+    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis}>
       {/* points */}
       {points.map((p, i) => (
         <circle

@@ -38,7 +38,6 @@ export const NewsDashboard = (props: {
   ) => {
     if ('url' in card) {
       const preview = previews.find((p) => p.url === card.url)
-      console.log('preview', preview, 'card url', card.url)
       if (!preview) return undefined
       return <DashboardNewsItem {...preview} className="mb-4" key={card.url} />
     }

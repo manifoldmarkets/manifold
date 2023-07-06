@@ -20,21 +20,19 @@ import { buildArray } from 'common/util/array'
 import { MultiPoint } from 'common/chart'
 import { DAY_MS } from 'common/util/time'
 
-export const CHOICE_ANSWER_COLORS = [
-  '#77AADDB3',
-  '#EE8866B3',
-  '#EEDD88B3',
-  '#FFAABBB3',
-  '#99DDFFB3',
-  '#44BB99B3',
-  '#BBCC33B3',
+const CHOICE_ANSWER_COLORS = [
+  '#77AADD',
+  '#EE8866',
+  '#EEDD88',
+  '#FFAABB',
+  '#99DDFF',
+  '#44BB99',
+  '#BBCC33',
 ]
-export const CHOICE_OTHER_COLOR = '#B1B1C7B3'
-export const CHOICE_ALL_COLORS = [...CHOICE_ANSWER_COLORS, CHOICE_OTHER_COLOR]
+const CHOICE_OTHER_COLOR = '#B1B1C7'
 
-const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
-const MARGIN_X = MARGIN.left + MARGIN.right
-const MARGIN_Y = MARGIN.top + MARGIN.bottom
+export const nthColor = (index: number) =>
+  CHOICE_ANSWER_COLORS[index] ?? CHOICE_OTHER_COLOR
 
 const getAnswers = (contract: MultiContract) => {
   const { answers, outcomeType } = contract
@@ -91,7 +89,9 @@ export const ChoiceContractChart = (props: {
   const isDpm = contract.mechanism === 'dpm-2'
   const [start, end] = getDateRange(contract)
   const answers = useChartAnswers(contract)
-  const topN = Math.min(CHOICE_ANSWER_COLORS.length, answers.length)
+  const topN = isDpm
+    ? Math.min(CHOICE_ANSWER_COLORS.length, answers.length)
+    : answers.length
   const betPoints = useMemo(
     () =>
       isDpm ? getDpmBetPoints(answers as DpmAnswer[], bets, topN) : points,
@@ -124,8 +124,8 @@ export const ChoiceContractChart = (props: {
     Date.now()
   )
   const visibleRange = [start, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
-  const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
+  const xScale = scaleTime(visibleRange, [0, width])
+  const yScale = scaleLinear([0, 1], [height, 0])
 
   const ChoiceTooltip = useMemo(
     () => (props: TooltipProps<Date, MultiPoint>) => {
@@ -140,25 +140,16 @@ export const ChoiceContractChart = (props: {
 
       const index = cum(prev.y).findIndex((p) => p >= 1 - prob)
       const answer = answers[index]?.text ?? 'Other'
-      const color = CHOICE_ALL_COLORS[index] ?? CHOICE_OTHER_COLOR
       const value = formatPct(prev.y[index])
 
       return (
         <>
-          <Row className="items-center gap-2">
-            <span className="text-semibold text-base">
-              {formatDateInRange(d, start, end)}
-            </span>
-          </Row>
+          <span className="font-semibold">
+            {formatDateInRange(d, start, end)}
+          </span>
           <div className="flex max-w-xs flex-row justify-between gap-4">
             <Row className="items-center gap-2 overflow-hidden">
-              <span
-                className="h-4 w-4 shrink-0 rounded-sm"
-                style={{ backgroundColor: color }}
-              />
-              <span className="text-semibold overflow-hidden text-ellipsis">
-                {answer}
-              </span>
+              <span className="overflow-hidden text-ellipsis">{answer}</span>
             </Row>
             <span className="text-ink-600">{value}</span>
           </div>
@@ -172,12 +163,10 @@ export const ChoiceContractChart = (props: {
     <MultiValueHistoryChart
       w={width}
       h={height}
-      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
       yKind="percent"
       data={data}
-      colors={CHOICE_ALL_COLORS}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={ChoiceTooltip}

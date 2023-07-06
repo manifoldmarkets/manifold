@@ -2,12 +2,15 @@ import { Row } from './supabase/utils'
 
 export type season = typeof SEASONS[number]
 
-export const SEASONS = [1, 2] as const
-export const CURRENT_SEASON = 2
+export const SEASONS = [1, 2, 3] as const
+export const CURRENT_SEASON = 3
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
 
-const SEASON_END_TIMES = [new Date('2023-06-01T12:06:23-07:00')]
+const SEASON_END_TIMES = [
+  new Date('2023-06-01T12:06:23-07:00'),
+  new Date('2023-07-01T12:22:53-07:00'),
+]
 
 export const getSeasonMonth = (season: number) => {
   return getSeasonDates(season).start.toLocaleString('default', {
@@ -30,13 +33,29 @@ export const getSeasonDates = (season: number) => {
   return { start, end }
 }
 
+export const getSeasonStatus = (season: number) => {
+  const { start, end } = getSeasonDates(season)
+  const now = new Date()
+  if (now < start) {
+    return 'upcoming'
+  } else if (now > end) {
+    if (!SEASON_END_TIMES[season - 1]) {
+      return 'closing-period'
+    }
+    return 'ended'
+  } else {
+    return 'current'
+  }
+}
+
 export const DIVISION_NAMES = {
-  0: 'Bots',
+  0: 'Silicon',
   1: 'Bronze',
   2: 'Silver',
   3: 'Gold',
   4: 'Platinum',
   5: 'Diamond',
+  6: 'Masters',
 } as { [key: number | string]: string }
 
 export const SECRET_NEXT_DIVISION = '???'
@@ -54,7 +73,16 @@ export const getDemotionAndPromotionCount = (division: number) => {
   if (division === 3) {
     return { demotion: 5, promotion: 6, doublePromotion: 0 }
   }
-  return { demotion: 5, promotion: 5, doublePromotion: 0 }
+  if (division === 4) {
+    return { demotion: 5, promotion: 5, doublePromotion: 0 }
+  }
+  if (division === 5) {
+    return { demotion: 7, promotion: 4, doublePromotion: 0 }
+  }
+  if (division === 6) {
+    return { demotion: 10, promotion: 0, doublePromotion: 0 }
+  }
+  throw new Error(`Invalid division: ${division}`)
 }
 
 export const getDivisionChange = (
@@ -83,11 +111,12 @@ export const COHORT_SIZE = 25
 export const MAX_COHORT_SIZE = 75
 
 export const prizesByDivisionAndRank = [
-  [500, 400, 300, 250, 200, 150, 100],
-  [1000, 750, 600, 500, 450, 400, 350, 300],
-  [1500, 1000, 750, 600, 500, 450, 400, 350, 300],
-  [2000, 1500, 1000, 750, 600, 500, 450, 400, 350, 300],
-  [2500, 2000, 1500, 1000, 750, 600, 500, 450, 400, 350, 300],
+  [100, 90, 80, 70, 60, 50, 40],
+  [200, 180, 160, 140, 120, 100, 80, 60],
+  [400, 360, 320, 280, 240, 200, 160, 120, 80],
+  [800, 720, 640, 560, 480, 400, 320, 240, 160, 80],
+  [1600, 1440, 1280, 1120, 960, 800, 640, 480, 320, 160],
+  [3200, 2880, 2560, 2240, 1920, 1600, 1280, 960, 640, 320],
 ]
 
 export const getLeaguePrize = (division: number, rank: number) => {

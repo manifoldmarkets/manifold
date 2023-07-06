@@ -38,9 +38,7 @@ export function listenForAnswersCpmm(
   return listenForValues<Answer>(
     getAnswersCpmmCollection(contractId),
     (answers) => {
-      answers.sort(
-        (c1, c2) => (c1.index ?? c1.createdTime) - (c2.index ?? c2.createdTime)
-      )
+      answers.sort((c1, c2) => c1.index - c2.index)
       setAnswers(answers)
     }
   )

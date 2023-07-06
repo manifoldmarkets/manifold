@@ -12,17 +12,19 @@ import {
 } from 'common/leagues'
 import { getCurrentPortfolio } from './helpers/portfolio'
 import { createLeagueChangedNotification } from 'shared/create-notification'
+import { bulkInsert } from './supabase/utils'
 
 export async function generateNextSeason(
   pg: SupabaseDirectClient,
-  currSeason: number
+  season: number
 ) {
-  const startDate = getSeasonDates(currSeason).start
+  const prevSeason = season - 1
+  const startDate = getSeasonDates(prevSeason).start
   const rows = await pg.manyOrNone<league_user_info>(
     `select * from user_league_info
     where season = $1
     order by mana_earned desc`,
-    [currSeason]
+    [prevSeason]
   )
 
   const activeUserIds = await pg.manyOrNone<{ user_id: string }>(
@@ -47,11 +49,10 @@ export async function generateNextSeason(
   const userCohorts = await generateCohorts(pg, usersByDivision)
   console.log('user cohorts', userCohorts)
 
-  const nextSeason = currSeason + 1
   const leagueInserts = Object.entries(userCohorts).map(
     ([userId, { division, cohort }]) => ({
       user_id: userId,
-      season: nextSeason,
+      season,
       division,
       cohort,
     })
@@ -127,13 +128,6 @@ const generateCohorts = async (
     )
 
     let remainingUserIds = divisionUserIds.concat()
-    const jamesId = '5LZ4LgYuySdL1huCWe7bti02ghx2'
-    if (remainingUserIds.includes(jamesId)) {
-      remainingUserIds = [
-        jamesId,
-        ...remainingUserIds.filter((u) => u !== jamesId),
-      ]
-    }
     let i = 0
     while (remainingUserIds.length > 0) {
       const cohortSize =
@@ -162,6 +156,49 @@ const generateCohorts = async (
   }
 
   return userCohorts
+}
+
+export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
+  const prevSeason = season - 1
+
+  // const alreadyAssignedBotIds = await pg.map(
+  //   `delete from leagues
+  //   where season = $1
+  //   and user_id in (
+  //     select id from users
+  //     where data->>'username' in ($2:csv)
+  //   )
+  //   `,
+  //   [season, BOT_USERNAMES],
+  //   (r) => r.user_id
+  // )
+
+  // console.log('alreadyAssignedBotIds', alreadyAssignedBotIds)
+
+  const startDate = getSeasonDates(prevSeason).start
+  const botIds = await pg.map(
+    `with active_user_ids as (
+        select distinct user_id
+        from contract_bets
+        where contract_bets.created_time > $1
+      )
+      select id from users
+      where data->>'username' in ($2:csv)
+      and id in (select user_id from active_user_ids)
+    `,
+    [startDate, BOT_USERNAMES],
+    (r) => r.id
+  )
+
+  console.log('botIds', botIds)
+  const botInserts = botIds.map((id) => ({
+    user_id: id,
+    season,
+    division: 0,
+    cohort: 'prophetic-programs',
+  }))
+  console.log('botInserts', botInserts)
+  await bulkInsert(pg, 'leagues', botInserts)
 }
 
 const getSmallestCohort = async (

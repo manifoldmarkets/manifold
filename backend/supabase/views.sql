@@ -107,7 +107,6 @@ create view
     select
       member_id,
       gp.id as group_id,
-      gp.data as group_data,
       gp.name as group_name,
       gp.slug as group_slug,
       gp.creator_id as creator_id,
@@ -283,8 +282,10 @@ create or replace view
   user_league_info as (
     select
       *,
-      rank() over (
+      row_number() over (
         partition by
+          season,
+          division,
           cohort
         order by
           mana_earned desc

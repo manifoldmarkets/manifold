@@ -34,7 +34,7 @@ export const getLinkPreview = async (url: string) => {
     const data = await res.json()
     if (!data) return undefined
     const { title } = data
-    const processedTitle = title.split(' | ')[0]
+    const processedTitle = title?.split(' | ')[0]
     return { ...data, title: processedTitle, url }
   })
 }
