@@ -454,6 +454,10 @@ create index if not exists contracts_importance_score on contracts (importance_s
 
 create index if not exists question_nostop_fts on contracts using gin (question_nostop_fts);
 
+-- for calibration page
+create index if not exists contracts_sample_filtering on contracts (outcome_type, resolution, visibility, ((data->>'uniqueBettorCount')));
+
+
 alter table contracts
 cluster on contracts_creator_id;
 
