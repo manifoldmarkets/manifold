@@ -1,37 +1,19 @@
-import { Comment } from 'common/comment'
-import { Contract } from 'common/contract'
-import { richTextToString } from 'common/util/parse'
-import { DAY_MS } from 'common/util/time'
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { Reaction } from 'common/reaction'
-import { getUser } from 'shared/utils'
-import {
-  createLikeNotification,
-  createTopLevelLikedCommentNotification,
-} from 'shared/create-notification'
+import { createLikeNotification } from 'shared/create-notification'
 import { secrets } from 'common/secrets'
 
 const firestore = admin.firestore()
-const MINIMUM_LIKES_TO_NOTIFY = 1
 
 export const onCreateReaction = functions
   .runWith({ secrets })
   .firestore.document('users/{userId}/reactions/{reactionId}')
-  .onCreate(async (change, context) => {
-    const { eventId } = context
+  .onCreate(async (change) => {
     const reaction = change.data() as Reaction
     const { type } = reaction
-    const { count, otherReactions } = await updateCountsOnDocuments(reaction)
     if (type === 'like') {
       await createLikeNotification(reaction)
-    }
-    if (
-      type === 'like' &&
-      reaction.contentType === 'comment' &&
-      count >= MINIMUM_LIKES_TO_NOTIFY
-    ) {
-      await handleTopLevelCommentLike(reaction, otherReactions, eventId)
     }
   })
 
@@ -75,37 +57,4 @@ const updateCommentLikes = async (reaction: Reaction, count: number) => {
     .update({
       likes: count,
     })
-}
-
-const handleTopLevelCommentLike = async (
-  reaction: Reaction,
-  otherReactions: Reaction[],
-  eventId: string
-) => {
-  const commentSnap = await firestore
-    .collection(`contracts/${reaction.contentParentId}/comments`)
-    .doc(reaction.contentId)
-    .get()
-  if (!commentSnap.exists) return
-  const comment = commentSnap.data() as Comment
-  // Only notify of recent, top-level comments (for now)
-  if (comment.replyToCommentId || comment.createdTime < Date.now() - 2 * DAY_MS)
-    return
-  const user = await getUser(comment.userId)
-  if (!user) return
-  const contractSnap = await firestore
-    .collection('contracts')
-    .doc(reaction.contentParentId)
-    .get()
-  if (!contractSnap.exists) return
-  const contract = contractSnap.data() as Contract
-  // await addLikedCommentOnContractToFeed(contract.id, reaction, comment, eventId)
-  await createTopLevelLikedCommentNotification(
-    comment.id,
-    user,
-    richTextToString(comment.content),
-    contract,
-    eventId,
-    otherReactions.map((r) => r.userId)
-  )
 }

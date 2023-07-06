@@ -11,8 +11,6 @@ export type notification_preferences = {
   all_comments_on_watched_markets: notification_destination_types[]
   all_answers_on_watched_markets: notification_destination_types[]
 
-  some_comments_on_watched_markets: notification_destination_types[]
-
   // Comments
   tipped_comments_on_watched_markets: notification_destination_types[]
   comments_by_followed_users_on_watched_markets: notification_destination_types[]
@@ -88,7 +86,6 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     // Watched Markets
     all_comments_on_watched_markets: constructPref(false, false, false),
     all_answers_on_watched_markets: constructPref(true, false, false),
-    some_comments_on_watched_markets: constructPref(true, false, false),
 
     // Comments
     tips_on_your_comments: constructPref(true, true, false),
