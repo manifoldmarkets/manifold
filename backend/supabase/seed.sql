@@ -302,15 +302,11 @@ with
 
 create index if not exists user_seen_markets_created_time_desc_idx on user_seen_markets (user_id, contract_id, created_time desc);
 
-create index concurrently if not exists user_seen_markets_type_created_time_desc_idx on user_seen_markets (
-  user_id,
-  contract_id,
-  type,
-  created_time desc
-);
+create index if not exists user_seen_markets_type_created_time_desc_idx
+    on user_seen_markets (contract_id, type, created_time desc);
 
 alter table user_seen_markets
-cluster on user_seen_markets_type_created_time_desc_idx;
+cluster on user_seen_markets_created_time_desc_idx;
 
 create table if not exists
   user_notifications (
@@ -380,8 +376,6 @@ drop policy if exists "user can update" on user_feed;
 create policy "user can update" on user_feed
 for update
   using (true);
-
-create index if not exists user_feed_data_gin on user_feed using GIN (data);
 
 create index if not exists user_feed_created_time on user_feed (user_id, created_time desc);
 
