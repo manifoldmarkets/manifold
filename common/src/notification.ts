@@ -128,10 +128,6 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'Answers on your own questions',
     verb: 'answered your question',
   },
-  some_comments_on_watched_markets: {
-    simple: 'Popular comments on questions you watch',
-    detailed: 'Comments on questions you watch that other users have liked',
-  },
   all_comments_on_my_markets: {
     simple: 'Comments on your questions',
     detailed: 'Comments on your own questions',
