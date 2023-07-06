@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 const firestore = admin.firestore()
 import { User } from 'common/user'
 import { QUEST_DETAILS, QuestType } from 'common/quest'
-import { getValues, isProd } from 'shared/utils'
+import { isProd } from 'shared/utils'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -19,9 +19,6 @@ import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
 import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
 import { SupabaseClient } from 'common/supabase/utils'
-import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
-import { sortBy } from 'lodash'
 import { getReferralCount } from 'common/supabase/referrals'
 
 dayjs.extend(utc)
@@ -69,42 +66,6 @@ export const completeReferralsQuest = async (user: User) => {
   const questDetails = QUEST_DETAILS['REFERRALS']
   const count = await getCurrentCountForQuest(user, 'REFERRALS', db)
   await setQuestScoreValue(user.id, questDetails.scoreId, count, db)
-}
-
-export const completeArchaeologyQuest = async (
-  mostRecentBet: Bet,
-  user: User,
-  contract: Contract,
-  idempotencyKey: string
-) => {
-  if (mostRecentBet.isRedemption) return
-  const bets = await getValues<Bet>(
-    firestore.collection('contracts').doc(contract.id).collection('bets')
-  )
-  if (bets.length === 0) return
-  const sortedEarlierBets = sortBy(
-    bets.filter(
-      (b) => !b.isRedemption && b.createdTime < mostRecentBet.createdTime
-    ),
-    (bet) => -bet.createdTime
-  )
-  const lastBetTime =
-    sortedEarlierBets.length < 1
-      ? contract.createdTime
-      : sortedEarlierBets[0].createdTime
-  const threeMonthsAgo = dayjs().subtract(3, 'month').valueOf()
-  if (lastBetTime <= threeMonthsAgo) {
-    const db = createSupabaseClient()
-    const oldEntry = await getQuestScore(user.id, 'ARCHAEOLOGIST', db)
-    if (oldEntry.idempotencyKey === idempotencyKey) return
-    await completeQuestInternal(
-      user,
-      'ARCHAEOLOGIST',
-      oldEntry.score,
-      oldEntry.score + 1,
-      idempotencyKey
-    )
-  }
 }
 
 const completeQuestInternal = async (

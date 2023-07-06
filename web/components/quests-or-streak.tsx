@@ -87,7 +87,6 @@ export function QuestsModal(props: {
   const streakStatus = questToCompletionStatus['BETTING_STREAK']
   const shareStatus = questToCompletionStatus['SHARES']
   const createStatus = questToCompletionStatus['MARKETS_CREATED']
-  const archeologistStatus = questToCompletionStatus['ARCHAEOLOGIST']
   const referralsStatus = questToCompletionStatus['REFERRALS']
 
   return (
@@ -141,20 +140,6 @@ export function QuestsModal(props: {
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
             href={'/create'}
           />
-          <QuestRow
-            emoji={'🏺'}
-            title={`Trade on an ancient question this week`}
-            complete={
-              archeologistStatus.currentCount >=
-              archeologistStatus.requiredCount
-            }
-            status={`(${archeologistStatus.currentCount}/${archeologistStatus.requiredCount})`}
-            reward={QUEST_DETAILS.ARCHAEOLOGIST.rewardAmount}
-            info={
-              'This has to be a question that no other user has bet on in the last 3 months'
-            }
-            href={'/ancient'}
-          />{' '}
           <QuestRow
             emoji={'🙋️'}
             title={`Refer a friend this week`}
