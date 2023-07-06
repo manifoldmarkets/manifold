@@ -36,7 +36,10 @@ import {
   UniqueBettorBonusTxn,
   ReferralTxn,
 } from 'common/txn'
-import { addHouseSubsidy } from 'shared/helpers/add-house-subsidy'
+import {
+  addHouseSubsidy,
+  addHouseSubsidyToAnswer,
+} from 'shared/helpers/add-house-subsidy'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { calculateUserMetrics } from 'common/calculate-metrics'
@@ -321,11 +324,14 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   })
   if (!result) return
 
-  if (
-    contract.mechanism === 'cpmm-1' ||
-    contract.mechanism === 'cpmm-multi-1'
-  ) {
+  if (contract.mechanism === 'cpmm-1') {
     await addHouseSubsidy(contract.id, UNIQUE_BETTOR_LIQUIDITY)
+  } else if (contract.mechanism === 'cpmm-multi-1' && answerId) {
+    await addHouseSubsidyToAnswer(
+      contract.id,
+      answerId,
+      UNIQUE_BETTOR_LIQUIDITY
+    )
   }
 
   if (result.status != 'success' || !result.txn) {
