@@ -16,8 +16,8 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { Spacer } from 'web/components/layout/spacer'
 import { SizedContainer } from 'web/components/sized-container'
 
-const TRADER_THRESHOLD = 10
-const SAMPLING_P = 0.02
+const TRADER_THRESHOLD = 15
+const SAMPLING_P = 0.01
 
 export const getStaticProps = async () => {
   const bets = await sampleResolvedBets(TRADER_THRESHOLD, SAMPLING_P)
