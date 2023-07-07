@@ -365,7 +365,6 @@ export function getSourceUrl(notification: Notification) {
     sourceContractCreatorUsername,
     sourceContractSlug,
     sourceSlug,
-    reason,
   } = notification
   if (sourceType === 'weekly_portfolio_update')
     return `/week/${sourceUserUsername}/${sourceSlug}`
