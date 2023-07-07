@@ -234,14 +234,16 @@ export function OrderBookButton(props: {
   const { limitBets, contract, className } = props
   const [open, setOpen] = useState(false)
 
-  const sortedBets = sortBy(
-    limitBets,
+  const yesBets = sortBy(
+    limitBets.filter((bet) => bet.outcome === 'YES'),
     (bet) => -1 * bet.limitProb,
     (bet) => bet.createdTime
   )
-
-  const yesBets = sortedBets.filter((bet) => bet.outcome === 'YES')
-  const noBets = sortedBets.filter((bet) => bet.outcome === 'NO').reverse()
+  const noBets = sortBy(
+    limitBets.filter((bet) => bet.outcome === 'NO'),
+    (bet) => bet.limitProb,
+    (bet) => bet.createdTime
+  )
 
   const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
