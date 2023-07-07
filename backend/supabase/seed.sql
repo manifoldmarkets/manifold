@@ -353,7 +353,7 @@ create index if not exists user_notifications_unseen_created_time_idx on user_no
 create index if not exists user_notifications_source_id on user_notifications (user_id, (data ->> 'sourceId'));
 
 alter table user_notifications
-cluster on user_notifications_created_time;
+cluster on user_notifications_created_time_idx;
 
 create table if not exists
   user_feed (
@@ -977,7 +977,7 @@ create table if not exists
     created_at timestamp not null default now(),
     interest_embedding vector (1536) not null,
     pre_signup_interest_embedding vector (1536),
-    card_view_embedding vector (1536),
+    contract_view_embedding vector (1536),
     disinterest_embedding vector (1536),
     pre_signup_embedding_is_default boolean default false
   );
