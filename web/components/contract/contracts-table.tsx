@@ -5,7 +5,7 @@ import { getValueFromBucket } from 'common/calculate-dpm'
 import { Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { formatPercentShort } from 'common/util/format'
+import { formatMoney, formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
 import { IoUnlink } from 'react-icons/io5'
 import { useUser } from 'web/hooks/use-user'
@@ -17,6 +17,7 @@ import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { Action } from './contract-table-action'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { Col } from '../layout/col'
 
 const lastItemClassName = 'rounded-r pr-2'
 const firstItemClassName = 'rounded-l pl-2 pr-4'
@@ -85,6 +86,14 @@ export function ContractStatusLabel(props: {
     }
     case 'QUADRATIC_FUNDING': {
       return <span>RAD</span>
+    }
+    case 'BOUNTIED_QUESTION': {
+      return (
+        <Col className="whitespace-nowrap text-sm font-bold text-teal-600">
+          {formatMoney(contract.bountyLeft)}{' '}
+          <span className="text-ink-600 -mt-1 text-xs font-normal">bounty</span>
+        </Col>
+      )
     }
     default:
       return <span>-</span>
