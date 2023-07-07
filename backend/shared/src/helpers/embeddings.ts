@@ -6,28 +6,17 @@ export async function getDefaultEmbedding(
 ) {
   const avg = await pg.one<{ average_embedding: string }>(
     `
-        WITH ignore_embeddings AS (
-            SELECT AVG(embedding) AS average_ignore
-            FROM topic_embeddings
-            WHERE topic IN (
-                SELECT UNNEST(ARRAY['destiny.gg', 'stock', 'planecrash', 'proofnik', 'permanent', 'personal']::text[])
-            )
-        ),
-       popular_avg AS (
-           SELECT AVG(embedding) AS average_contract
-           FROM (
-              SELECT contract_embeddings.embedding
-              FROM contract_embeddings
-                       JOIN (
-                  SELECT id
-                  FROM contracts
-                  ORDER BY popularity_score DESC
-                  LIMIT 100
-              ) AS top_contracts ON top_contracts.id = contract_embeddings.contract_id
-            ) AS subquery
-       )
-        SELECT (popular_avg.average_contract - ignore_embeddings.average_ignore) AS average_embedding
-        FROM popular_avg, ignore_embeddings;
+       select avg(embedding) as average_embedding
+       from (
+          select contract_embeddings.embedding
+          from contract_embeddings
+                   join (
+              select id
+              from contracts
+              order by popularity_score desc
+              limit 100
+          ) as top_contracts on top_contracts.id = contract_embeddings.contract_id
+        ) as subquery
     `
   )
   return JSON.parse(avg.average_embedding) as number[]
