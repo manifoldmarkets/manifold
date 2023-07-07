@@ -19,7 +19,7 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
 
   return (
-    <GradientContainer className="mb-8 max-w-md p-4">
+    <GradientContainer className="mb-8 flex w-full p-4">
       <div className="mb-2 flex items-center gap-2">
         <BoostButton contract={contract} color="gradient-pink" size="lg" />
 

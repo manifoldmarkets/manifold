@@ -61,8 +61,8 @@ export const LootboxAnimation = forwardRef(() => {
   )
 })
 
-export function BountyLeft(props: { bountyLeft: number; totalBounty: number }) {
-  const { bountyLeft, totalBounty } = props
+export function BountyLeft(props: { bountyLeft: number }) {
+  const { bountyLeft } = props
   if (!bountyLeft || bountyLeft < 1) {
     return (
       <span>
