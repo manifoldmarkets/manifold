@@ -214,13 +214,16 @@ const QuestRow = (props: {
   )
 }
 export const getQuestCompletionStatus = async (user: User) => {
-  const questToCompletionStatus = Object.fromEntries(
-    QUEST_TYPES.map((t) => [t, { requiredCount: 0, currentCount: 0 }])
+  const questTypes = QUEST_TYPES.filter(
+    (questType) => questType !== 'ARCHAEOLOGIST'
   )
-  const keys = QUEST_TYPES.map((questType) => QUEST_DETAILS[questType].scoreId)
+  const questToCompletionStatus = Object.fromEntries(
+    questTypes.map((t) => [t, { requiredCount: 0, currentCount: 0 }])
+  )
+  const keys = questTypes.map((questType) => QUEST_DETAILS[questType].scoreId)
   const scores = await getQuestScores(user.id, keys, db)
 
-  QUEST_TYPES.forEach((questType) => {
+  questTypes.forEach((questType) => {
     const questData = QUEST_DETAILS[questType]
     if (questType === 'BETTING_STREAK')
       questToCompletionStatus[questType] = {
