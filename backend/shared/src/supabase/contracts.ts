@@ -6,8 +6,9 @@ import {
 } from 'shared/supabase/users'
 import {
   CONTRACT_OR_USER_FEED_REASON_TYPES,
+  MINIMUM_SCORE,
+  NEW_USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD,
   NEW_USER_TO_CONTRACT_INTEREST_DISTANCE_THRESHOLD,
-  USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD,
 } from 'common/feed'
 
 export const getUniqueBettorIds = async (
@@ -98,7 +99,7 @@ export const getContractGroupMemberIds = async (
   return contractGroupMemberIds.map((r) => r.member_id)
 }
 
-const getUsersWithSimilarInterestVectorsToContract = async (
+export const getUsersWithSimilarInterestVectorsToContract = async (
   contractId: string,
   pg: SupabaseDirectClient,
   // -- distance of .125, probes at 10, lists at 500
@@ -120,27 +121,30 @@ const getUsersWithSimilarInterestVectorsToContract = async (
         from contract_embeddings
         where contract_id = $1
     )
-     select user_id, interest_distance, disinterest_distance, created_at
+     select user_id, interest_distance, score, disinterest_distance, created_at
      from (
               select ue.user_id,
                      (select embedding from ce) <=> ue.interest_embedding as interest_distance,
                      (select embedding from ce) <=> ue.disinterest_embedding as disinterest_distance,
-                     ue.created_at as created_at
+                     ue.created_at as created_at,
+                     (COALESCE((select embedding from ce) <=> ue.disinterest_embedding, 1)
+                          - ((select embedding from ce) <=> ue.interest_embedding)) AS score
               from user_embeddings as ue
           ) as distances
        where
            (created_at < current_date - interval '10 day' and interest_distance < $2
-               and (disinterest_distance is null or disinterest_distance > $3))
+               and score > $3)
           or
            (created_at >= current_date - interval '10 day' and interest_distance < $4
-               and (disinterest_distance is null or disinterest_distance > $3))
-       order by interest_distance;
+                -- score isn't useful for new users bc interest_distance is so underspecified
+               and (disinterest_distance is null or disinterest_distance > $5))
       `,
       [
         contractId,
         interestDistanceThreshold,
-        USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD,
+        MINIMUM_SCORE,
         NEW_USER_TO_CONTRACT_INTEREST_DISTANCE_THRESHOLD,
+        NEW_USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD,
       ]
     )
     return res
