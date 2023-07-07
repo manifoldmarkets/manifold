@@ -237,7 +237,6 @@ export function AnswerCpmmBetPanel(props: {
         }}
         user={me}
         initialOutcome={outcome}
-        hidden={false}
         singularView={outcome}
         onBuySuccess={() => setTimeout(closePanel, 500)}
         location={'contract page answer'}

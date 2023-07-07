@@ -83,7 +83,6 @@ function FeedBetButton(props: {
           <BuyPanel
             contract={contract}
             user={user}
-            hidden={false}
             initialOutcome={outcome}
             onBuySuccess={() =>
               setTimeout(() => setDialogueThatIsOpen(undefined), 500)
