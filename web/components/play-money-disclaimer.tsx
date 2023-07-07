@@ -11,7 +11,7 @@ export const PlayMoneyDisclaimer = (props: { text?: string }) => {
         ? text
         : `Get ${formatMoney(
             STARTING_BALANCE
-          )} play money to bet on the answer`}
+          )} play money`}
     </div>
   )
 }

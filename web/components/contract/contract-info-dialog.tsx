@@ -368,34 +368,38 @@ export function ContractInfoDialog(props: {
               title: 'Stats',
               content: (
                 <Col>
-                  <Stats contract={contract} user={user} />
+                  <Stats contract={contract} user={user} hideAdvanced={!user} />
 
-                  <Row className="mt-4 flex-wrap gap-2">
-                    <BoostButton
-                      size="sm"
-                      contract={contract}
-                      color="indigo-outline"
-                    />
+                  {!!user && (
+                    <>
+                      <Row className="mt-4 flex-wrap gap-2">
+                        <BoostButton
+                          size="sm"
+                          contract={contract}
+                          color="indigo-outline"
+                        />
 
-                    {(contract.mechanism === 'cpmm-1' ||
-                      contract.mechanism === 'cpmm-multi-1') && (
-                      <AddLiquidityButton contract={contract} />
-                    )}
+                        {(contract.mechanism === 'cpmm-1' ||
+                          contract.mechanism === 'cpmm-multi-1') && (
+                          <AddLiquidityButton contract={contract} />
+                        )}
 
-                    <DuplicateContractButton contract={contract} />
-                  </Row>
-                  <Row className="mt-4 flex-wrap gap-2">
-                    <ReportButton
-                      report={{
-                        contentId: contract.id,
-                        contentType: 'contract',
-                        contentOwnerId: contract.creatorId,
-                      }}
-                    />
+                        <DuplicateContractButton contract={contract} />
+                      </Row>
+                      <Row className="mt-4 flex-wrap gap-2">
+                        <ReportButton
+                          report={{
+                            contentId: contract.id,
+                            contentType: 'contract',
+                            contentOwnerId: contract.creatorId,
+                          }}
+                        />
 
-                    <BlockMarketButton contract={contract} />
-                    <DisinterestedButton contract={contract} user={user} />
-                  </Row>
+                        <BlockMarketButton contract={contract} />
+                        <DisinterestedButton contract={contract} user={user} />
+                      </Row>
+                    </>
+                  )}
                 </Col>
               ),
             },

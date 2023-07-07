@@ -1,30 +1,31 @@
 import Link from 'next/link'
-
-import { HomeIcon, MenuAlt3Icon, XIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
 import {
-  DeviceMobileIcon,
+  HomeIcon,
+  MenuAlt3Icon,
+  NewspaperIcon,
+  XIcon,
+  QuestionMarkCircleIcon,
   ScaleIcon,
   UserCircleIcon,
 } from '@heroicons/react/solid'
+import { animated } from '@react-spring/web'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment, useEffect } from 'react'
+import { useRouter } from 'next/router'
+
 import Sidebar from './sidebar'
 import { Item } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from '../widgets/avatar'
-import clsx from 'clsx'
-import { useRouter } from 'next/router'
 import NotificationsIcon from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { isIOS } from 'web/lib/util/device'
-import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import { animated } from '@react-spring/web'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -49,14 +50,15 @@ function getNavigation(user: User) {
   ]
 }
 
-const signedOutNavigation = (appStoreUrl: string) => [
-  { name: 'Home', href: '/', icon: HomeIcon },
+const signedOutNavigation = () => [
   { name: 'Questions', href: '/questions', icon: ScaleIcon },
-  {
-    name: 'Get app',
-    href: appStoreUrl,
-    icon: DeviceMobileIcon,
-  },
+  { name: 'News', href: '/news', icon: NewspaperIcon },
+  { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
+  // {
+  //   name: 'Get app',
+  //   href: appStoreUrl,
+  //   icon: DeviceMobileIcon,
+  // },
   { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
 ]
 
@@ -69,19 +71,17 @@ export function BottomNavBar() {
 
   const user = useUser()
 
-  const [appStoreUrl, setAppStoreUrl] = useState(APPLE_APP_URL)
-  useEffect(() => {
-    setAppStoreUrl(isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL)
-  }, [])
+  // const [appStoreUrl, setAppStoreUrl] = useState(APPLE_APP_URL)
+  // useEffect(() => {
+  //   setAppStoreUrl(isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL)
+  // }, [])
 
   const isIframe = useIsIframe()
   if (isIframe) {
     return null
   }
 
-  const navigationOptions = user
-    ? getNavigation(user)
-    : signedOutNavigation(appStoreUrl)
+  const navigationOptions = user ? getNavigation(user) : signedOutNavigation()
 
   return (
     <nav className="border-ink-200 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">

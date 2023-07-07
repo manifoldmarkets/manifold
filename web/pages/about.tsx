@@ -13,6 +13,7 @@ import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-co
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { PrivacyAndTerms } from 'web/components/privacy-terms'
 import { SEO } from 'web/components/SEO'
 import { Card } from 'web/components/widgets/card'
@@ -46,7 +47,8 @@ export default function AboutPage() {
       <SEO title="About" description="About Manifold" url="/sitemap" />
 
       <Col className="p-4">
-        <Title>About</Title>
+        <Title className="hidden sm:flex">About</Title>
+        <ManifoldLogo className="mb-4 flex sm:hidden" />
 
         <div className="mb-4 text-lg">
           Manifold is a play-money prediction market platform where you can bet

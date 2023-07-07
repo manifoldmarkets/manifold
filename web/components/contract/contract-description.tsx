@@ -60,8 +60,11 @@ export function ContractDescription(props: {
             content={contract.description}
             stateKey={`isCollapsed-contract-${contract.id}`}
             defaultCollapse={defaultCollapse}
+            hideButton={!user}
           />
-          {showEditHistory && <ContractEditHistoryButton contract={contract} />}
+          {showEditHistory && !!user && (
+            <ContractEditHistoryButton contract={contract} />
+          )}
         </>
       )}
     </div>

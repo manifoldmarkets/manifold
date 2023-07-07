@@ -140,7 +140,7 @@ const BinaryOverview = (props: {
         )}
       </SizedContainer>
 
-      {user && tradingAllowed(contract) && (
+      {tradingAllowed(contract) && (
         <SignedInBinaryMobileBetting contract={contract} user={user} />
       )}
     </>

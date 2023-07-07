@@ -48,7 +48,7 @@ export function NonCreatorSharePanel(props: { contract: Contract }) {
 
   return (
     <Row className="my-4 gap-4">
-      <Button color="gradient" size="lg" onClick={getOnClick(contract)}>
+      <Button color="indigo-outline" size="lg" onClick={getOnClick(contract)}>
         <LinkIcon className={'mr-1 h-4 w-4'} aria-hidden="true" />
         Share
       </Button>

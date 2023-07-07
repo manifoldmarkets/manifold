@@ -444,8 +444,6 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 showResolver={showResolver}
                 onAnswerCommentClick={onAnswerCommentClick}
               />
-
-              <SignUpFlow user={user} />
             </Col>
 
             {isCreator &&

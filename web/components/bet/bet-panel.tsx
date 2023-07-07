@@ -20,7 +20,7 @@ import {
   formatPercent,
 } from 'common/util/format'
 import { computeCpmmBet } from 'common/new-bet'
-import { User } from 'web/lib/firebase/users'
+import { User, firebaseLogin } from 'web/lib/firebase/users'
 import { LimitBet } from 'common/bet'
 import { APIError, placeBet } from 'web/lib/firebase/api'
 import { BuyAmountInput } from '../widgets/amount-input'
@@ -28,8 +28,8 @@ import { BuyAmountInput } from '../widgets/amount-input'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUnfilledBetsAndBalanceByUserId } from '../../hooks/use-bets'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
-import { track } from 'web/lib/service/analytics'
 import { YourOrders } from './order-book'
+import { track, withTracking } from 'web/lib/service/analytics'
 import { YesNoSelector } from './yes-no-selector'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
@@ -269,7 +269,7 @@ export function BuyPanel(props: {
             isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
           }
         />
-        {!isStonk && (
+        {!!user && !isStonk && (
           <Button
             color={seeLimit || selected ? 'indigo' : 'indigo-outline'}
             onClick={() => onOptionChoice('LIMIT')}
@@ -385,7 +385,7 @@ export function BuyPanel(props: {
         </Row>
         <Spacer h={2} />
 
-        {user && (
+        {user ? (
           <WarningConfirmationButton
             marketType="binary"
             amount={betAmount}
@@ -405,6 +405,14 @@ export function BuyPanel(props: {
                 : 'Bet'
             }
           />
+        ) : (
+          <Button
+            color={outcome === 'NO' ? 'red' : 'green'}
+            size="xl"
+            onClick={withTracking(firebaseLogin, 'login from bet panel')}
+          >
+            Sign up to bet
+          </Button>
         )}
       </Col>
 

@@ -11,7 +11,7 @@ import { BuyPanel } from './bet-panel'
 
 export function SignedInBinaryMobileBetting(props: {
   contract: BinaryContract | PseudoNumericContract | StonkContract
-  user: User
+  user: User | null | undefined
 }) {
   const { contract, user } = props
 
