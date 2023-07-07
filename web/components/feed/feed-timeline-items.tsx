@@ -3,7 +3,6 @@ import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
-import Link from 'next/link'
 import {
   DislikeButton,
   FeedContractCard,
