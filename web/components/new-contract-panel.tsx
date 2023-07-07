@@ -59,6 +59,11 @@ export type NewQuestionParams = {
   max?: string
   isLogScale?: string
   initValue?: string
+
+  // Answers encoded as:
+  // a0: string
+  // a1: string
+  // ...etc
 }
 
 // Allow user to create a new contract
@@ -507,26 +512,29 @@ const useNewContract = (
   creator: User,
   params: NewQuestionParams | undefined
 ) => {
+  // If params specify content like a question, store it separately in local storage.
+  const paramsKey = params?.q ?? ''
+
   const [outcomeType, setOutcomeType] = usePersistentLocalState<OutcomeType>(
     (params?.outcomeType as OutcomeType) ?? 'BINARY',
-    'new-outcome-type'
+    'new-outcome-type' + paramsKey
   )
   const [minString, setMinString] = usePersistentLocalState(
     params?.min ?? '',
-    'new-min'
+    'new-min' + paramsKey
   )
   const [maxString, setMaxString] = usePersistentLocalState(
     params?.max ?? '',
-    'new-max'
+    'new-max' + paramsKey
   )
   const [isLogScale, setIsLogScale] = usePersistentLocalState<boolean>(
     !!params?.isLogScale,
-    'new-is-log-scale'
+    'new-is-log-scale' + paramsKey
   )
 
   const [initialValueString, setInitialValueString] = usePersistentLocalState(
     params?.initValue,
-    'new-init-value'
+    'new-init-value' + paramsKey
   )
   const [visibility, setVisibility] = usePersistentLocalState<Visibility>(
     (params?.visibility as Visibility) ?? 'public',
@@ -535,10 +543,24 @@ const useNewContract = (
   const [newContract, setNewContract] = useState<Contract | undefined>(
     undefined
   )
-  // for multiple choice, init to 2 empty answers
-  const [answers, setAnswers] = usePersistentLocalState(['', ''], 'new-answers')
 
-  const [question, setQuestion] = usePersistentLocalState('', 'new-question')
+  const paramAnswers = []
+  let i = 0
+  while (params && (params as any)[`a${i}`]) {
+    paramAnswers.push((params as any)[`a${i}`])
+    i++
+  }
+  // for multiple choice, init to 2 empty answers
+  const [answers, setAnswers] = usePersistentLocalState(
+    paramAnswers.length ? paramAnswers : ['', ''],
+    'new-answers' + paramsKey
+  )
+  console.log('paramAnswers', paramAnswers, 'answers', answers)
+
+  const [question, setQuestion] = usePersistentLocalState(
+    '',
+    'new-question' + paramsKey
+  )
   useEffect(() => {
     if (params?.q) setQuestion(params?.q ?? '')
   }, [params?.q])
@@ -566,19 +588,19 @@ const useNewContract = (
 
   const [closeDate, setCloseDate] = usePersistentLocalState<undefined | string>(
     timeInMs ? initDate : undefined,
-    'now-close-date'
+    'now-close-date' + paramsKey
   )
   const [closeHoursMinutes, setCloseHoursMinutes] = usePersistentLocalState<
     string | undefined
-  >(timeInMs ? initTime : undefined, 'now-close-time')
+  >(timeInMs ? initTime : undefined, 'now-close-time' + paramsKey)
 
   const [selectedGroup, setSelectedGroup] = usePersistentLocalState<
     Group | undefined
-  >(undefined, 'new-selected-group')
+  >(undefined, 'new-selected-group' + paramsKey)
 
   const [bountyAmount, setBountyAmount] = usePersistentLocalState<
     number | undefined
-  >(50, 'new-bounty')
+  >(50, 'new-bounty' + paramsKey)
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -642,7 +664,7 @@ const useNewContract = (
   }, [isValid])
 
   const editor = useTextEditor({
-    key: 'create market',
+    key: 'create market' + paramsKey,
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
     defaultValue: params?.description
