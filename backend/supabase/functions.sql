@@ -647,9 +647,8 @@ where contracts.resolution_time is not null
   and contracts.outcome_type = 'BINARY'
 limit count offset start $$;
 
-create or replace function sample_resolved_bets(trader_threshold int, p numeric) 
-returns table (prob numeric, is_yes boolean) 
-stable parallel safe language sql as $$
+create
+or replace function sample_resolved_bets (trader_threshold int, p numeric) returns table (prob numeric, is_yes boolean) stable parallel safe language sql as $$
 select  0.5 * ((contract_bets.prob_before)::numeric + (contract_bets.prob_after)::numeric)  as prob, 
        ((contracts.resolution)::text = 'YES')::boolean as is_yes
 from contract_bets
@@ -839,7 +838,7 @@ limit match_count;
 $$;
 
 create
- or replace function get_top_market_ads (uid text) returns table (
+or replace function get_top_market_ads (uid text) returns table (
   ad_id text,
   market_id text,
   ad_funds numeric,
@@ -915,21 +914,20 @@ where
   and contracts.close_time > now()
 $$;
 
-
-CREATE OR REPLACE FUNCTION user_top_news(uid TEXT, similarity numeric, n numeric)
-RETURNS TABLE (
+create
+or replace function user_top_news (uid text, similarity numeric, n numeric) returns table (
   id numeric,
-    created_time timestamp,
-    title text,
-    url text,
-    published_time timestamp,
-    author text,
-    description text,
-    image_url text,
-    source_id text,
-    source_name text,
-    contract_ids text[]
-) AS $$
+  created_time timestamp,
+  title text,
+  url text,
+  published_time timestamp,
+  author text,
+  description text,
+  image_url text,
+  source_id text,
+  source_name text,
+  contract_ids text[]
+) as $$
 with 
 user_embedding as (
   select interest_embedding
@@ -944,7 +942,7 @@ user_embedding as (
     1 - (title_embedding <=> (select interest_embedding from user_embedding)) > similarity
   ORDER BY published_time DESC
   LIMIT n;
-$$ LANGUAGE SQL;
+$$ language sql;
 
 create
 or replace function save_user_topics (p_user_id text, p_topics text[]) returns void language sql as $$ with chosen_embedding as (
@@ -1304,11 +1302,8 @@ or replace function get_engaged_users () returns table (user_id text, username t
   )
 $$ language sql stable;
 
-create or replace function top_creators_for_user(uid text, excluded_ids text[], limit_n int)
-  returns table (user_id text, n float)
-  language sql
-  stable parallel safe
-as $$
+create
+or replace function top_creators_for_user (uid text, excluded_ids text[], limit_n int) returns table (user_id text, n float) language sql stable parallel safe as $$
   select c.creator_id as user_id, count(*) as n
   from contract_bets as cb
   join contracts as c on c.id = cb.contract_id
@@ -1318,14 +1313,11 @@ as $$
   limit limit_n
 $$;
 
-create or replace function get_notifications(uid text, unseen_only boolean, max_num int)
-returns table (notification jsonb)
-language sql
-stable parallel safe
-as $$
-  select n.data
-  from user_notifications as n
-  where n.user_id = uid and (not unseen_only or not ((n.data->'isSeen')::boolean))
-  order by ((n.data->'createdTime')::bigint) desc
-  limit max_num
-$$;
+create
+or replace function get_notifications (uid text, unseen_only boolean, max_num integer) returns setof user_notifications language sql stable parallel SAFE as $$
+select *
+from user_notifications as n
+where n.user_id = uid and (not unseen_only or not ((n.data->'isSeen')::boolean))
+order by ((n.data->'createdTime')::bigint) desc
+limit max_num
+$$

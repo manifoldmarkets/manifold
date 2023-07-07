@@ -38,7 +38,6 @@ export function useNotifications(
     { k: 'user_id', v: userId },
     () => getNotifications(db, userId, count)
   )
-
   return useMemo(() => rows?.map((r) => r.data as Notification), [rows])
 }
 

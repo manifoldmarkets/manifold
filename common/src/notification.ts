@@ -365,6 +365,7 @@ export function getSourceUrl(notification: Notification) {
     sourceContractCreatorUsername,
     sourceContractSlug,
     sourceSlug,
+    reason,
   } = notification
   if (sourceType === 'weekly_portfolio_update')
     return `/week/${sourceUserUsername}/${sourceSlug}`
@@ -385,16 +386,17 @@ export function getSourceUrl(notification: Notification) {
     ReactionNotificationTypes.includes(sourceType)
   )
     return `${sourceSlug}`
-  if (sourceContractCreatorUsername && sourceContractSlug)
+  if (sourceContractCreatorUsername && sourceContractSlug) {
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
       sourceId ?? '',
       sourceType
     )}`
-  else if (sourceSlug)
+  }
+  if (sourceSlug) {
     return `${
       sourceSlug.startsWith('/') ? sourceSlug : '/' + sourceSlug
     }#${getSourceIdForLinkComponent(sourceId ?? '', sourceType)}`
-
+  }
   return ''
 }
 

@@ -1489,7 +1489,11 @@ export const createBountyAwardedNotification = async (
     sourceUserName: bountyContract.creatorName,
     sourceUserUsername: bountyContract.creatorUsername,
     sourceUserAvatarUrl: bountyContract.creatorAvatarUrl ?? '',
+    sourceContractCreatorUsername: bountyContract.creatorUsername,
     sourceText: bountyAmount.toString(),
+    sourceContractTitle: bountyContract.question,
+    sourceContractSlug: bountyContract.slug,
+    sourceContractId: txnId,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
