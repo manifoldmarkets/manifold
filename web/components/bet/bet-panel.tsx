@@ -53,23 +53,19 @@ export function BuyPanel(props: {
     | CPMMMultiContract
   multiProps?: { answers: Answer[]; answerToBuy: Answer }
   user: User | null | undefined
-  hidden: boolean
   onBuySuccess?: () => void
   singularView?: 'YES' | 'NO' | 'LIMIT'
   initialOutcome?: binaryOutcomes | 'LIMIT'
   location?: string
-  className?: string
 }) {
   const {
     contract,
     multiProps,
     user,
-    hidden,
     onBuySuccess,
     singularView,
     initialOutcome,
     location = 'bet panel',
-    className,
   } = props
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
@@ -252,7 +248,7 @@ export function BuyPanel(props: {
   const selected = seeLimit ? 'LIMIT' : outcome
 
   return (
-    <Col className={clsx(className, hidden ? 'hidden' : '')}>
+    <Col>
       <Row
         className={clsx(
           'mb-2 w-full items-center gap-3',
