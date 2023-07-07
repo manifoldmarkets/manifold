@@ -23,6 +23,16 @@ export async function testBackendFunction() {
     console.log('defaultEmbedding', defaultEmbedding)
     console.log('magnitude', magnitude(defaultEmbedding))
     const normDefault = normalize(defaultEmbedding)
+    const u = await pg.map(
+      `
+    select interest_embedding from postgres.public.user_embeddings where user_id = 'XUpH3HIea7fkMNRQmcs9gzPJBBK2'`,
+      [],
+      (r: { interest_embedding: string }) =>
+        JSON.parse(r.interest_embedding) as number[]
+    )
+    console.log('user', u)
+    console.log('magnitude', magnitude(u[0]))
+
     console.log('normalized', normDefault)
     console.log('magnitude', magnitude(normDefault))
     await updateUsersViewEmbeddings(pg)

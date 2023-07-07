@@ -76,7 +76,7 @@ export async function updateUserInterestEmbedding(
     )
   })
 }
-export async function updateUserDisinterestEmbeddingInternal(
+export async function addContractToUserDisinterestEmbedding(
   pg: SupabaseDirectClient,
   userId: string,
   contractId: string,
@@ -97,21 +97,24 @@ export async function updateUserDisinterestEmbeddingInternal(
               values ($1, $2, $3, $4)`,
         [userId, contractId, creatorId, feedId]
       )
-    const disinterestedContractIds = await getDisinterestedContractIds(
-      pg,
-      userId
-    )
-    const disinterestEmbedding = await computeUserDisinterestEmbedding(
-      pg,
-      userId,
-      disinterestedContractIds
-    )
-
-    await pg.none(
-      'UPDATE user_embeddings SET disinterest_embedding = $2 WHERE user_id = $1',
-      [userId, disinterestEmbedding]
-    )
   })
+  await updateUserDisinterestEmbeddingInternal(pg, userId)
+}
+export async function updateUserDisinterestEmbeddingInternal(
+  pg: SupabaseDirectClient,
+  userId: string
+) {
+  const disinterestedContractIds = await getDisinterestedContractIds(pg, userId)
+  const disinterestEmbedding = await computeUserDisinterestEmbedding(
+    pg,
+    userId,
+    disinterestedContractIds
+  )
+
+  await pg.none(
+    'UPDATE user_embeddings SET disinterest_embedding = $2 WHERE user_id = $1',
+    [userId, disinterestEmbedding]
+  )
 }
 
 async function getInterestedContractIds(

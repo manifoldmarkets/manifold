@@ -5,6 +5,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import {
   getDefaultEmbedding,
+  updateUserDisinterestEmbeddingInternal,
   updateUserInterestEmbedding,
 } from 'shared/helpers/embeddings'
 import { chunk } from 'lodash'
@@ -40,7 +41,10 @@ async function main() {
   const chunks = chunk(totalUserIds, 500)
   for (const userIds of chunks) {
     await Promise.all(
-      userIds.map((userId) => updateUserInterestEmbedding(pg, userId))
+      userIds.map((userId) => {
+        updateUserInterestEmbedding(pg, userId)
+        updateUserDisinterestEmbeddingInternal(pg, userId)
+      })
     )
     count += userIds.length
     console.log(`Updated ${count} of ${totalUserIds.length} users`)

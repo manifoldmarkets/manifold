@@ -1,5 +1,5 @@
 import { authEndpoint, validate } from './helpers'
-import { updateUserDisinterestEmbeddingInternal } from 'shared/helpers/embeddings'
+import { addContractToUserDisinterestEmbedding } from 'shared/helpers/embeddings'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 
@@ -18,7 +18,7 @@ export const updateUserDisinterestEmbedding = authEndpoint(
       req.body
     )
 
-    await updateUserDisinterestEmbeddingInternal(
+    await addContractToUserDisinterestEmbedding(
       pg,
       auth.uid,
       contractId,
