@@ -310,8 +310,8 @@ function DetailedCard(props: {
       </Col>
 
       {contract.outcomeType === 'MULTIPLE_CHOICE' && (
-        <div>
-          <AnswersPanel contract={contract} truncateAnswers />
+        <div className="mt-2">
+          <AnswersPanel contract={contract} maxAnswers={4} linkToContract />
         </div>
       )}
 

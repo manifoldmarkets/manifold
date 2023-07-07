@@ -1,4 +1,4 @@
-import { ChevronDoubleDownIcon } from '@heroicons/react/outline'
+import { ArrowRightIcon, ChevronDoubleDownIcon } from '@heroicons/react/outline'
 import { groupBy, sortBy } from 'lodash'
 import { useState } from 'react'
 
@@ -41,18 +41,22 @@ export function getAnswerColor(
   return nthColor(index)
 }
 
-const NUM_TRUNCATED_ANSWERS = 4
-
 export function AnswersPanel(props: {
   contract: MultiContract
   onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
-  truncateAnswers?: boolean
+  linkToContract?: boolean
+  maxAnswers?: number
 }) {
-  const { contract, onAnswerCommentClick, truncateAnswers } = props
+  const {
+    contract,
+    onAnswerCommentClick,
+    linkToContract,
+    maxAnswers = Infinity,
+  } = props
   const { resolutions, outcomeType } = contract
-  const [showAllAnswers, setShowAllAnswers] = useState(false)
-
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
+
+  const [showSmallAnswers, setShowSmallAnswers] = useState(isMultipleChoice)
 
   const answers = contract.answers
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
@@ -63,15 +67,18 @@ export function AnswersPanel(props: {
     (answer) => (resolutions ? -1 * resolutions[answer.id] : 0),
     // then by prob or index
     (answer) =>
-      !truncateAnswers && 'index' in answer ? answer.index : -1 * answer.prob,
+      answers.length <= maxAnswers && 'index' in answer
+        ? answer.index
+        : -1 * answer.prob,
   ])
 
-  const answersToShow =
-    isMultipleChoice || showAllAnswers || answers.length <= 5
+  const answersToShow = (
+    showSmallAnswers || answers.length <= 5
       ? sortedAnswers
-      : sortedAnswers
-          .filter((answer) => answer.prob >= 0.01 || resolutions?.[answer.id])
-          .slice(0, NUM_TRUNCATED_ANSWERS)
+      : sortedAnswers.filter(
+          (answer) => answer.prob >= 0.01 || resolutions?.[answer.id]
+        )
+  ).slice(0, maxAnswers)
 
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -96,27 +103,26 @@ export function AnswersPanel(props: {
             userBets={userBetsByAnswer[answer.id]}
           />
         ))}
-        {answersToShow.length < answers.length && (
-          <Button
-            className="self-end"
-            color="gray-white"
-            onClick={() => setShowAllAnswers(true)}
-            size="xs"
-          >
-            {answers.length - answersToShow.length} more answers
-            <ChevronDoubleDownIcon className="ml-1 h-4 w-4" />
-          </Button>
-        )}
+        {answersToShow.length < answers.length &&
+          (linkToContract ? (
+            <Link
+              className="text-ink-500 hover:text-primary-500"
+              href={contractPath(contract)}
+            >
+              See {answers.length - answersToShow.length} more answers{' '}
+              <ArrowRightIcon className="inline h-4 w-4" />
+            </Link>
+          ) : (
+            <Button
+              color="gray-white"
+              onClick={() => setShowSmallAnswers(true)}
+              size="xs"
+            >
+              {answers.length - answersToShow.length} more answers
+              <ChevronDoubleDownIcon className="ml-1 h-4 w-4" />
+            </Button>
+          ))}
       </Col>
-
-      {truncateAnswers && answers.length > answersToShow.length && (
-        <Link
-          className="text-ink-500 hover:text-primary-500"
-          href={contractPath(contract)}
-        >
-          See all options
-        </Link>
-      )}
 
       {answers.length === 0 && (
         <div className="text-ink-500 pb-4">No answers yet...</div>
