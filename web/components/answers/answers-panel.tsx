@@ -1,4 +1,4 @@
-import { ChatIcon, ChevronDoubleDownIcon } from '@heroicons/react/outline'
+import { ChevronDoubleDownIcon } from '@heroicons/react/outline'
 import { groupBy, sortBy } from 'lodash'
 import { useState } from 'react'
 
@@ -12,23 +12,18 @@ import {
   contractPath,
   tradingAllowed,
 } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import { Button } from 'web/components/buttons/button'
-import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
-import { BuyPanel } from '../bet/bet-panel'
 import { nthColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
-import { Subtitle } from '../widgets/subtitle'
-import { AnswerBetPanel } from './answer-bet-panel'
 import { AnswerBar, AnswerLabel } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
-import { isClosed } from '../contract/contracts-table'
 import {
   AddComment,
   ClosedProb,
