@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { Answer, DpmAnswer } from 'common/answer'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
 import {
@@ -10,7 +9,6 @@ import {
   resolution,
 } from 'common/contract'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
-import { Tooltip } from './widgets/tooltip'
 import { Bet } from 'common/bet'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { AnswerLabel } from './answers/answer-item'
