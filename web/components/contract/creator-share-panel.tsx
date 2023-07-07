@@ -53,10 +53,7 @@ export function NonCreatorSharePanel(props: { contract: Contract }) {
         Share
       </Button>
       <TweetButton
-        tweetText={
-          'I created a question. ' +
-          getShareUrl(contract, contract.creatorUsername)
-        }
+        tweetText={getShareUrl(contract, contract.creatorUsername)}
       />
     </Row>
   )
