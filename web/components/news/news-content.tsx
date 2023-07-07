@@ -9,7 +9,7 @@ import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
 
 const GlobalWarming = createNewsDashboardTab(
-  'Global Warming',
+  'Record heat',
   'New record for hottest day',
   [
     {
@@ -80,6 +80,10 @@ const OpenAI = createNewsDashboardTab(
 )
 
 const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
+  {
+    url: 'https://www.washingtonpost.com/national-security/2023/07/06/biden-cluster-bombs-ukraine/',
+  },
+  { slug: 'will-the-us-openly-commit-in-2023-t' },
   {
     url: 'https://www.cbsnews.com/news/ukraine-russia-war-zaporizhzhia-nuclear-power-plant-attack-plot-claims/',
   },
@@ -527,11 +531,11 @@ const Election2024 = createNewsDashboardTab(
 )
 
 export const newsContent = [
-  GlobalWarming,
   Threads,
   OpenAI,
-  ElonVersusZuck,
   UkraineWar,
+  GlobalWarming,
+  ElonVersusZuck,
   Election2024,
   WestBank,
   FrenchRiots,
