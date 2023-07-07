@@ -154,6 +154,7 @@ export function NotificationSettings(props: {
       'referral_bonuses',
       'unique_bettors_on_your_contract',
       'quest_payout',
+      'bounty_awarded',
     ],
   }
   const otherBalances: SectionData = {

@@ -4,6 +4,8 @@ import { runAwardBountyTxn } from 'shared/txn/run-bounty-txn'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { FieldValue } from 'firebase-admin/firestore'
+import { createBountyAwardedNotification } from 'shared/create-notification'
+import { getContract } from 'shared/utils'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -43,7 +45,15 @@ export const awardbounty = authEndpoint(async (req, auth) => {
     transaction.update(commentDoc, {
       bountyAwarded: FieldValue.increment(amount),
     })
-
+    const contract = await getContract(contractId)
+    if (contract) {
+      await createBountyAwardedNotification(
+        comment.userId,
+        contract,
+        contractId,
+        amount
+      )
+    }
     return txn
   })
 })
