@@ -568,7 +568,6 @@ function FeedCommentHeader(props: {
   const marketCreator = contract.creatorId === userId
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
-  const user = useUser()
   return (
     <Col className={clsx('text-ink-600 text-sm ')}>
       <Row className="justify-between">

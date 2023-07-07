@@ -5,7 +5,6 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { getBetRows, getBets, getTotalBetCount } from 'common/supabase/bets'
 import { Filter } from 'common/supabase/realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { Contract } from 'common/contract'
 
 function getFilteredQuery(filteredParam: string, filterId?: string) {
   if (filteredParam === 'contractId' && filterId) {
