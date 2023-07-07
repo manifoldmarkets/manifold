@@ -38,6 +38,7 @@ export function useNotifications(
     { k: 'user_id', v: userId },
     () => getNotifications(db, userId, count)
   )
+
   return useMemo(() => rows?.map((r) => r.data as Notification), [rows])
 }
 
@@ -81,6 +82,7 @@ export function useUnseenNotifications(
 
 export function useGroupedNonBalanceChangeNotifications(userId: string) {
   const notifications = useNotifications(userId)
+
   const balanceChangeOnlyReasons: NotificationReason[] = ['loan_income']
   return useMemo(() => {
     const sortedNotifications =

@@ -113,6 +113,7 @@ export type notification_reason_types =
   | 'subsidized_your_market'
   | 'group_role_changed'
   | 'added_to_group'
+  | 'bounty_awarded'
 
 type notification_descriptions = {
   [key in notification_preference]: {
@@ -291,6 +292,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   added_to_group: {
     simple: 'Getting added to new groups',
     detailed: 'When an admin adds you to their group',
+  },
+  bounty_awarded: {
+    simple: 'Bounties you receive',
+    detailed: 'When the creator awards you a bounty for your comment',
   },
 }
 

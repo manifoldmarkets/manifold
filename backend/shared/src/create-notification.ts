@@ -1468,3 +1468,29 @@ export const createSignupBonusNotification = async (
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
 }
+
+export const createBountyAwardedNotification = async (
+  userId: string,
+  bountyContract: Contract,
+  txnId: string,
+  bountyAmount: number
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  if (userOptedOutOfBrowserNotifications(privateUser)) return
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: userId,
+    reason: 'bounty_awarded',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'contract',
+    sourceUserName: bountyContract.creatorName,
+    sourceUserUsername: bountyContract.creatorUsername,
+    sourceUserAvatarUrl: bountyContract.creatorAvatarUrl ?? '',
+    sourceText: bountyAmount.toString(),
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}
