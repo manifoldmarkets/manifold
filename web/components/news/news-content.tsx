@@ -60,6 +60,7 @@ const OpenAI = createNewsDashboardTab(
   [
     { url: 'https://openai.com/blog/introducing-superalignment' },
     { slug: 'will-superalignment-succeed' },
+    { slug: 'will-superalignment-succeed-accordi' },
     { slug: 'will-openais-superalignment-project' },
     { slug: 'will-openai-hint-at-or-claim-to-hav' },
     { slug: 'will-openai-allow-full-access-to-th' },
