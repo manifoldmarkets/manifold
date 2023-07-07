@@ -304,7 +304,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
 
     const bonusAmount =
       contract.mechanism === 'cpmm-multi-1'
-        ? UNIQUE_BETTOR_BONUS_AMOUNT / 2
+        ? Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
         : UNIQUE_BETTOR_BONUS_AMOUNT
 
     const bonusTxn: TxnData = {
@@ -327,11 +327,20 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   if (contract.mechanism === 'cpmm-1') {
     await addHouseSubsidy(contract.id, UNIQUE_BETTOR_LIQUIDITY)
   } else if (contract.mechanism === 'cpmm-multi-1' && answerId) {
-    await addHouseSubsidyToAnswer(
-      contract.id,
-      answerId,
-      UNIQUE_BETTOR_LIQUIDITY
-    )
+    // There are two ways to subsidize multi answer contracts:
+    // 1. Subsidize all answers (and gain efficiency b/c only one answer resolves YES.)
+    // 2. Subsidize one answer (and throw away excess YES or NO shares to maintain probability.)
+    // The second if preferred if the probability is not extreme, because it increases
+    // liquidity in a more traded answer. (Liquidity in less traded or unlikely answers is not that important.)
+    if (bet.probAfter < 0.15 || bet.probAfter > 0.95) {
+      await addHouseSubsidy(contract.id, UNIQUE_BETTOR_LIQUIDITY)
+    } else {
+      await addHouseSubsidyToAnswer(
+        contract.id,
+        answerId,
+        UNIQUE_BETTOR_LIQUIDITY
+      )
+    }
   }
 
   if (result.status != 'success' || !result.txn) {

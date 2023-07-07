@@ -326,6 +326,10 @@ export function getCpmmLiquidity(
   return YES ** p * NO ** (1 - p)
 }
 
+export function getMultiCpmmLiquidity(pool: { YES: number; NO: number }) {
+  return getCpmmLiquidity(pool, 0.5)
+}
+
 export function addCpmmLiquidity(
   pool: { [outcome: string]: number },
   p: number,
@@ -348,8 +352,31 @@ export function addCpmmLiquidity(
   return { newPool, liquidity, newP }
 }
 
+export function addCpmmLiquidityFixedP(
+  pool: { YES: number; NO: number },
+  amount: number
+) {
+  const prob = getCpmmProbability(pool, 0.5)
+  const newPool = { ...pool }
+
+  // Throws away some shares so that prob is maintained.
+  if (prob < 0.5) {
+    newPool.YES += amount
+    newPool.NO += (prob / (1 - prob)) * amount
+  } else {
+    newPool.NO += amount
+    newPool.YES += ((1 - prob) / prob) * amount
+  }
+
+  const oldLiquidity = getMultiCpmmLiquidity(pool)
+  const newLiquidity = getMultiCpmmLiquidity(newPool)
+  const liquidity = newLiquidity - oldLiquidity
+
+  return { newPool, liquidity }
+}
+
 export function addCpmmMultiLiquidity(
-  pools: { [answerId: string]: { [outcome: string]: number } },
+  pools: { [answerId: string]: { YES: number; NO: number } },
   amount: number
 ) {
   const numAnswers = Object.keys(pools).length

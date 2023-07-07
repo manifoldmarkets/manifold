@@ -43,6 +43,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
+import { getMultiCpmmLiquidity } from 'common/calculate-cpmm'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -390,7 +391,7 @@ async function createAnswers(
         poolYes,
         poolNo,
         prob,
-        totalLiquidity: poolYes ** 0.5 * poolNo ** 0.5,
+        totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
         subsidyPool: 0,
       }
       return firestore

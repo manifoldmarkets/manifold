@@ -1,7 +1,7 @@
 import { CheckIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import React, { useState } from 'react'
-import { capitalize } from 'lodash'
+import { capitalize, sumBy } from 'lodash'
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { updateContract } from 'web/lib/firebase/contracts'
@@ -182,7 +182,11 @@ export const Stats = (props: {
           <td>
             {mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
               ? `${formatMoney(
-                  contract.totalLiquidity - contract.subsidyPool
+                  contract.totalLiquidity -
+                    contract.subsidyPool -
+                    ('answers' in contract
+                      ? sumBy(contract.answers, 'subsidyPool')
+                      : 0)
                 )} / ${formatMoney(contract.totalLiquidity)}`
               : formatMoney(100)}
           </td>
