@@ -68,7 +68,10 @@ const drizzleMarket = async (contractId: string) => {
       )
       const newPools = addCpmmMultiLiquidity(poolsByAnswer, amount)
 
-      for (const [answerId, newPool] of Object.entries(newPools)) {
+      // Only update the first 495 answers to avoid exceeding the 500 document limit.
+      const poolEntries = Object.entries(newPools).slice(0, 495)
+
+      for (const [answerId, newPool] of poolEntries) {
         trans.update(
           firestore.doc(`contracts/${contract.id}/answersCpmm/${answerId}`),
           {
