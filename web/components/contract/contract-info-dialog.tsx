@@ -7,7 +7,7 @@ import { ENV_CONFIG, firestoreConsolePath } from 'common/envs/constants'
 import { BETTORS, User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { getShareUrl } from 'common/util/share'
-import { capitalize } from 'lodash'
+import { capitalize, sumBy } from 'lodash'
 import { useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
@@ -208,7 +208,11 @@ export const Stats = (props: {
             <td>
               {mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
                 ? `${formatMoney(
-                    contract.totalLiquidity - contract.subsidyPool
+                    contract.totalLiquidity -
+                      contract.subsidyPool -
+                      ('answers' in contract
+                        ? sumBy(contract.answers, 'subsidyPool')
+                        : 0)
                   )} / ${formatMoney(contract.totalLiquidity)}`
                 : formatMoney(100)}
             </td>

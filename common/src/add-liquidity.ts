@@ -7,12 +7,14 @@ export const getNewLiquidityProvision = (
   userId: string,
   amount: number,
   contract: CPMMContract | CPMMMultiContract,
-  newLiquidityProvisionId: string
+  newLiquidityProvisionId: string,
+  answerId?: string
 ) => {
   const { totalLiquidity, subsidyPool } = contract
 
   const newTotalLiquidity = (totalLiquidity ?? 0) + amount
-  const newSubsidyPool = (subsidyPool ?? 0) + amount
+  // If answerId is defined, amount will be added to the answer's subsidy pool
+  const newSubsidyPool = (subsidyPool ?? 0) + (answerId ? 0 : amount)
 
   let pool: { [outcome: string]: number } | undefined
   let liquidity: number | undefined
@@ -27,6 +29,7 @@ export const getNewLiquidityProvision = (
     id: newLiquidityProvisionId,
     userId: userId,
     contractId: contract.id,
+    answerId,
     amount,
     pool,
     liquidity,
