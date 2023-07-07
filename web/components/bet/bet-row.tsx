@@ -19,7 +19,7 @@ export function BetRow(props: {
   if (isClosed) return null
 
   return (
-    <Row>
+    <Row className="text-sm">
       <FeedBetButton
         dialogueThatIsOpen={dialogueThatIsOpen}
         setDialogueThatIsOpen={setDialogueThatIsOpen}

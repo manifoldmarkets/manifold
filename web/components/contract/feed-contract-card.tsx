@@ -34,6 +34,7 @@ import { CommentsButton } from '../swipe/swipe-comments'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
+import { ClickFrame } from '../widgets/click-frame'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -99,6 +100,7 @@ export function FeedContractCard(props: {
   )
 }
 
+// TODO: merge with DetailedCard
 function SimpleCard(props: {
   contract: Contract
   trackClick: () => void
@@ -113,12 +115,18 @@ function SimpleCard(props: {
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
 
+  const path = contractPath(contract)
+
   return (
-    <Col
+    <ClickFrame
       className={clsx(
         className,
-        'bg-canvas-0 border-canvas-0  hover:border-primary-300 grow justify-between gap-2 overflow-hidden rounded-xl border px-4 pt-2 drop-shadow-md'
+        'bg-canvas-0 border-canvas-0 hover:border-primary-300 relative flex cursor-pointer flex-col justify-between gap-2 overflow-hidden rounded-xl border px-4 pt-2 drop-shadow-md transition-colors'
       )}
+      onClick={(e) => {
+        Router.push(path)
+        e.currentTarget.focus()
+      }}
     >
       <Row className="items-start justify-between gap-1">
         <Col>
@@ -128,7 +136,10 @@ function SimpleCard(props: {
                 'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
                 textColor
               )}
-              onClick={trackClick}
+              onClick={(e) => {
+                trackClick()
+                e.stopPropagation()
+              }}
               href={contractPath(contract)}
             >
               <VisibilityIcon contract={contract} /> {contract.question}
@@ -142,12 +153,15 @@ function SimpleCard(props: {
         </Col>
       </Row>
 
-      <Row className="text-ink-500 mb-1.5 w-full items-center justify-end gap-3 text-sm">
-        {isBinaryCpmm && <BetRow contract={contract} user={user} />}
-      </Row>
+      {isBinaryCpmm && (
+        <div className="self-end">
+          <BetRow contract={contract} user={user} />
+        </div>
+      )}
+
       {children}
       <BottomActionRow contract={contract} item={item} user={user} />
-    </Col>
+    </ClickFrame>
   )
 }
 
@@ -187,164 +201,137 @@ function DetailedCard(props: {
     item && !item.isCopied && item.dataType === 'new_contract'
   const metrics = useSavedContractMetrics(contract)
   return (
-    <div
+    <ClickFrame
       className={clsx(
         className,
         'relative rounded-xl',
-        'bg-canvas-0 group flex cursor-pointer flex-col overflow-hidden',
-        'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border outline-none drop-shadow-md transition-colors'
+        'bg-canvas-0 cursor-pointer overflow-hidden',
+        'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border drop-shadow-md transition-colors',
+        'flex w-full flex-col gap-0.5 px-4'
       )}
-      // we have other links inside this card like the username, so can't make the whole card a button or link
-      tabIndex={-1}
       onClick={(e) => {
         trackClick()
         Router.push(path)
         e.currentTarget.focus() // focus the div like a button, for style
       }}
     >
-      <Row className={clsx('grow gap-2 px-4')}>
-        <Col className="w-full">
-          <Col className="w-full gap-0.5">
-            {/* Title is link to contract for open in new tab and a11y */}
-            <Col onClick={(e) => e.stopPropagation()} className={'w-full pt-4'}>
-              <Col className={'w-full flex-col gap-1.5'}>
-                <Row className={'justify-between gap-4'}>
-                  <Link
-                    href={path}
-                    className={clsx(
-                      '-mt-1 text-lg',
-                      'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
-                      textColor
-                    )}
-                    // if open in new tab, don't open in this one
-                    onClick={(e) => {
-                      trackClick()
-                      e.stopPropagation()
-                    }}
-                  >
-                    <VisibilityIcon contract={contract} /> {contract.question}
-                    {item &&
-                      !item.isCopied &&
-                      (item.dataType === 'contract_probability_changed' ||
-                        item.dataType === 'trending_contract') && (
-                        <div className={'text-ink-400 text-sm'}>
-                          <Tooltip
-                            text={item?.reasonDescription}
-                            placement={'top'}
-                          >
-                            {item.dataType === 'contract_probability_changed'
-                              ? ' moved'
-                              : item.dataType === 'trending_contract'
-                              ? ' trending'
-                              : item.dataType === 'new_subsidy'
-                              ? ' subsidized'
-                              : ''}
-                          </Tooltip>
-                          <RelativeTimestamp
-                            time={item.createdTime}
-                            shortened={true}
-                          />{' '}
-                        </div>
-                      )}
-                  </Link>
-                  <Col className={'items-end'}>
-                    {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-                      <ContractStatusLabel
-                        className={'-mt-1 text-lg font-bold'}
-                        contract={contract}
-                      />
-                    )}
-                    <span>
-                      {showChange && (
-                        <span
-                          className={clsx(
-                            'font-normal',
-                            probChange! > 0
-                              ? 'text-teal-500'
-                              : 'text-scarlet-500'
-                          )}
-                        >
-                          {probChange! > 0 ? '+' : ''}
-                          {probChange}%
-                        </span>
-                      )}
-                    </span>
-                  </Col>
-                </Row>
-                <Row className={'items-center justify-between gap-1'}>
-                  <Col className={'w-full'}>
-                    <Row className={'items-center gap-1'}>
-                      <Avatar
-                        size={'xs'}
-                        className={'mr-0.5'}
-                        avatarUrl={creatorAvatarUrl}
-                        username={creatorUsername}
-                      />
-                      <Row
-                        className={'text-ink-700 items-baseline gap-1 text-sm'}
-                      >
-                        <UserLink
-                          name={contract.creatorName}
-                          username={creatorUsername}
-                          className={clsx(
-                            'w-full text-ellipsis sm:max-w-[12rem]',
-                            statusInlineWithUserlink
-                              ? 'max-w-[6.5rem]'
-                              : 'max-w-[10rem]'
-                          )}
-                        />
-                        {statusInlineWithUserlink && (
-                          <span className={'text-ink-400'}>
-                            <Tooltip
-                              text={item?.reasonDescription}
-                              placement={'top'}
-                            >
-                              asked
-                            </Tooltip>
-                            <RelativeTimestamp
-                              time={item.createdTime}
-                              shortened={true}
-                              className="text-ink-400"
-                            />
-                          </span>
-                        )}
-                      </Row>
-                    </Row>
-                  </Col>
-                  {isBinaryCpmm && !isClosed && (
-                    <Col className="text-ink-500 items-center text-sm">
-                      <BetRow contract={contract} user={user} />
-                    </Col>
-                  )}
-                </Row>
-              </Col>
-            </Col>
-
-            {contract.outcomeType === 'MULTIPLE_CHOICE' && (
-              <Col className="mt-4" onClick={(e) => e.stopPropagation()}>
-                <AnswersPanel contract={contract} truncateAnswers />
-              </Col>
+      {/* Title is link to contract for open in new tab and a11y */}
+      <Col className={'w-full flex-col gap-1.5 pt-4'}>
+        <Row className={'justify-between gap-4'}>
+          <Link
+            href={path}
+            className={clsx(
+              '-mt-1 text-lg',
+              'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
+              textColor
             )}
-
-            <Col className={'w-full items-center'}>
-              {promotedData && (
-                <ClaimButton
-                  {...promotedData}
-                  className={'z-10 my-2 whitespace-nowrap'}
-                />
+            // if open in new tab, don't open in this one
+            onClick={(e) => {
+              trackClick()
+              e.stopPropagation()
+            }}
+          >
+            <VisibilityIcon contract={contract} /> {contract.question}
+            {item &&
+              !item.isCopied &&
+              (item.dataType === 'contract_probability_changed' ||
+                item.dataType === 'trending_contract') && (
+                <div className={'text-ink-400 text-sm'}>
+                  <Tooltip text={item?.reasonDescription} placement={'top'}>
+                    {item.dataType === 'contract_probability_changed'
+                      ? ' moved'
+                      : item.dataType === 'trending_contract'
+                      ? ' trending'
+                      : item.dataType === 'new_subsidy'
+                      ? ' subsidized'
+                      : ''}
+                  </Tooltip>
+                  <RelativeTimestamp time={item.createdTime} shortened={true} />{' '}
+                </div>
               )}
-            </Col>
-
-            {isBinaryCpmm && metrics && metrics.hasShares && (
-              <YourMetricsFooter metrics={metrics} />
+          </Link>
+          <Col className={'items-end'}>
+            {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
+              <ContractStatusLabel
+                className={'-mt-1 text-lg font-bold'}
+                contract={contract}
+              />
             )}
-            <BottomActionRow contract={contract} item={item} user={user} />
+            <span>
+              {showChange && (
+                <span
+                  className={clsx(
+                    'font-normal',
+                    probChange! > 0 ? 'text-teal-500' : 'text-scarlet-500'
+                  )}
+                >
+                  {probChange! > 0 ? '+' : ''}
+                  {probChange}%
+                </span>
+              )}
+            </span>
           </Col>
-        </Col>
-      </Row>
-    </div>
+        </Row>
+        <Row className={'items-center justify-between gap-1'}>
+          <Row className={'w-full items-center gap-1'}>
+            <Avatar
+              size={'xs'}
+              className={'mr-0.5'}
+              avatarUrl={creatorAvatarUrl}
+              username={creatorUsername}
+            />
+            <Row className={'text-ink-700 items-baseline gap-1 text-sm'}>
+              <UserLink
+                name={contract.creatorName}
+                username={creatorUsername}
+                className={clsx(
+                  'w-full text-ellipsis sm:max-w-[12rem]',
+                  statusInlineWithUserlink ? 'max-w-[6.5rem]' : 'max-w-[10rem]'
+                )}
+              />
+              {statusInlineWithUserlink && (
+                <span className={'text-ink-400'}>
+                  <Tooltip text={item?.reasonDescription} placement={'top'}>
+                    asked
+                  </Tooltip>
+                  <RelativeTimestamp
+                    time={item.createdTime}
+                    shortened={true}
+                    className="text-ink-400"
+                  />
+                </span>
+              )}
+            </Row>
+          </Row>
+          {isBinaryCpmm && !isClosed && (
+            <BetRow contract={contract} user={user} />
+          )}
+        </Row>
+      </Col>
+
+      {contract.outcomeType === 'MULTIPLE_CHOICE' && (
+        <div>
+          <AnswersPanel contract={contract} truncateAnswers />
+        </div>
+      )}
+
+      <Col className={'w-full items-center'}>
+        {promotedData && (
+          <ClaimButton
+            {...promotedData}
+            className={'z-10 my-2 whitespace-nowrap'}
+          />
+        )}
+      </Col>
+
+      {isBinaryCpmm && metrics && metrics.hasShares && (
+        <YourMetricsFooter metrics={metrics} />
+      )}
+      <BottomActionRow contract={contract} item={item} user={user} />
+    </ClickFrame>
   )
 }
+
 const BottomActionRow = (props: {
   contract: Contract
   item: FeedTimelineItem | undefined
@@ -353,32 +340,24 @@ const BottomActionRow = (props: {
   const { contract, user } = props
   const { question } = contract
   return (
-    <Row
-      className="items-center justify-between py-2"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <Col className={'w-full'}>
-        <Row className={'items-center justify-between'}>
-          {/*// Placeholder for the dislike button*/}
-          <div />
-          <TradesButton contract={contract} />
-          <CommentsButton contract={contract} user={user} />
-
-          <LikeButton
-            contentId={contract.id}
-            contentCreatorId={contract.creatorId}
-            user={user}
-            contentType={'contract'}
-            totalLikes={contract.likedByUserCount ?? 0}
-            contract={contract}
-            contentText={question}
-            size="md"
-            color="gray"
-            className="px-0"
-            trackingLocation={'contract card (feed)'}
-          />
-        </Row>
-      </Col>
+    <Row className={'items-center justify-between py-2'}>
+      {/*// Placeholder for the dislike button*/}
+      <div />
+      <TradesButton contract={contract} />
+      <CommentsButton contract={contract} user={user} />
+      <LikeButton
+        contentId={contract.id}
+        contentCreatorId={contract.creatorId}
+        user={user}
+        contentType={'contract'}
+        totalLikes={contract.likedByUserCount ?? 0}
+        contract={contract}
+        contentText={question}
+        size="md"
+        color="gray"
+        className="px-0"
+        trackingLocation={'contract card (feed)'}
+      />
     </Row>
   )
 }

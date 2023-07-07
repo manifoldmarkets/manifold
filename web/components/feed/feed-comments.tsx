@@ -111,9 +111,7 @@ export function FeedCommentThread(props: {
               <Button
                 size={'xs'}
                 color={'gray-white'}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
+                onClick={() => {
                   setCollapseToIndex(-1)
                 }}
               >
@@ -137,7 +135,7 @@ export function FeedCommentThread(props: {
           )
         )}
       {replyToUserInfo && (
-        <Col className="-pb-2 relative ml-6">
+        <Col className="stop-prop relative ml-6">
           <ContractCommentInput
             contract={contract}
             parentCommentId={parentComment.id}
@@ -333,7 +331,7 @@ export function DotMenu(props: {
         Icon={<DotsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
         Items={buildArray(
           {
-            name: 'Copy Link',
+            name: 'Copy link',
             icon: <LinkIcon className="h-5 w-5" />,
             onClick: () => {
               copyLinkToComment(
@@ -418,9 +416,7 @@ export function CommentActions(props: {
         <Tooltip text="Reply" placement="bottom">
           <IconButton
             size={'xs'}
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
+            onClick={() => {
               onReplyClick(comment)
             }}
           >
@@ -572,7 +568,6 @@ function FeedCommentHeader(props: {
   const marketCreator = contract.creatorId === userId
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
-  const user = useUser()
   return (
     <Col className={clsx('text-ink-600 text-sm ')}>
       <Row className="justify-between">

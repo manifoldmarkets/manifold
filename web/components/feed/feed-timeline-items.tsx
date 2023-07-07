@@ -239,19 +239,6 @@ const FeedContractAndRelatedItems = (props: {
   )
 }
 
-export function FeedRelatedItemFrame(props: {
-  children: React.ReactNode
-  href: string
-  className?: string
-}) {
-  const { children, href, className } = props
-  return (
-    <Link href={href} className={clsx(' z-10 mb-2 flex flex-col ', className)}>
-      {children}
-    </Link>
-  )
-}
-
 const FeedItemFrame = (props: {
   item: FeedTimelineItem | undefined
   children: React.ReactNode
