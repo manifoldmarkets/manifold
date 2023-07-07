@@ -11,7 +11,7 @@ import clsx from 'clsx'
 import {
   BinaryContractOutcomeLabel,
   CancelLabel,
-  FreeResponseOutcomeLabel,
+  MultiOutcomeLabel,
   NumericValueLabel,
 } from 'web/components/outcome-label'
 import { getMappedValue } from 'common/pseudo-numeric'
@@ -74,7 +74,7 @@ export function FreeResponseResolution(props: {
     <Row className="gap-2 text-3xl">
       <div className={clsx('text-base')}>Resolved</div>
 
-      <FreeResponseOutcomeLabel
+      <MultiOutcomeLabel
         contract={contract}
         resolution={resolution}
         truncate="none"

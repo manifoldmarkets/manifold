@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer, DpmAnswer } from 'common/answer'
-import { MultiContract } from 'common/contract'
+import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
 import { APIError, placeBet } from 'web/lib/firebase/api'
@@ -27,15 +27,17 @@ import {
   getOutcomeProbabilityAfterBet,
 } from 'common/calculate'
 import { removeUndefinedProps } from 'common/util/object'
+import { Subtitle } from '../widgets/subtitle'
+import { BuyPanel } from '../bet/bet-panel'
+import { User } from 'common/user'
 
 export function AnswerBetPanel(props: {
-  answer: DpmAnswer | Answer
+  answer: DpmAnswer
   contract: MultiContract
   closePanel: () => void
   className?: string
-  isModal?: boolean
 }) {
-  const { answer, contract, closePanel, className, isModal } = props
+  const { answer, contract, closePanel, className } = props
   const { id: answerId } = answer
 
   const user = useUser()
@@ -110,21 +112,10 @@ export function AnswerBetPanel(props: {
   return (
     <Col className={clsx(className)}>
       <Row className="items-center justify-between self-stretch">
-        <div className="text-xl">
-          Bet on {isModal ? `"${answer.text}"` : 'this answer'}
-        </div>
-
-        {!isModal && (
-          <button
-            className="hover:bg-ink-200 rounded-full"
-            onClick={closePanel}
-          >
-            <XIcon
-              className="text-ink-500 mx-auto h-8 w-8"
-              aria-hidden="true"
-            />
-          </button>
-        )}
+        <div className="text-xl">Bet on "{answer.text}"</div>
+        <button className="hover:bg-ink-200 rounded-full" onClick={closePanel}>
+          <XIcon className="text-ink-500 mx-auto h-8 w-8" aria-hidden />
+        </button>
       </Row>
       <Row className="text-ink-500 my-3 justify-between text-left text-sm">
         Amount
@@ -222,4 +213,35 @@ const getSimulatedBetInfo = (
     : 0
 
   return { resultProb, maxPayout, shares }
+}
+
+export function AnswerCpmmBetPanel(props: {
+  answer: Answer
+  contract: CPMMMultiContract
+  closePanel: () => void
+  outcome: 'YES' | 'NO' | 'LIMIT' | undefined
+  me: User | null | undefined
+}) {
+  const { answer, contract, closePanel, outcome, me } = props
+  return (
+    <Col className="gap-2">
+      <Row className="justify-between">
+        <Subtitle className="!mt-0">{answer.text}</Subtitle>
+        <div className="text-xl">{formatPercent(answer.prob)}</div>
+      </Row>
+      <BuyPanel
+        contract={contract}
+        multiProps={{
+          answers: contract.answers,
+          answerToBuy: answer as Answer,
+        }}
+        user={me}
+        initialOutcome={outcome}
+        hidden={false}
+        singularView={outcome}
+        onBuySuccess={() => setTimeout(closePanel, 500)}
+        location={'contract page answer'}
+      />
+    </Col>
+  )
 }
