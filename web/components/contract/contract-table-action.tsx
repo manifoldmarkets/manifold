@@ -13,6 +13,7 @@ import { NumericResolutionPanel } from '../numeric-resolution-panel'
 import { ResolutionPanel } from '../resolution-panel'
 import { QfResolutionPanel } from './qf-overview'
 import { isClosed } from './contracts-table'
+import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 
 export function Action(props: { contract: Contract; user?: User | null }) {
   const { contract, user } = props
@@ -141,14 +142,9 @@ export function SmallResolutionPanel(props: {
   ) : outcomeType === 'QUADRATIC_FUNDING' ? (
     <QfResolutionPanel contract={contract} />
   ) : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE' ? (
-    <AnswersPanel
-      contract={contract}
-      onAnswerCommentClick={() => {
-        console.log('YOU FOOL')
-      }}
-      showResolver={true}
-      isInModal={true}
-    />
+    <Col className="w-full">
+      <AnswersResolvePanel contract={contract} />
+    </Col>
   ) : (
     <></>
   )

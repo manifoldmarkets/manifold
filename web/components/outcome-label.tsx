@@ -13,6 +13,7 @@ import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Tooltip } from './widgets/tooltip'
 import { Bet } from 'common/bet'
 import { STONK_NO, STONK_YES } from 'common/stonk'
+import { AnswerLabel } from './answers/answer-item'
 
 export function OutcomeLabel(props: {
   contract: Contract
@@ -48,7 +49,7 @@ export function OutcomeLabel(props: {
     return (
       <span>
         {answerId && (
-          <FreeResponseOutcomeLabel
+          <MultiOutcomeLabel
             contract={contract}
             resolution={answerId}
             truncate={truncate}
@@ -65,7 +66,7 @@ export function OutcomeLabel(props: {
   }
 
   return (
-    <FreeResponseOutcomeLabel
+    <MultiOutcomeLabel
       contract={contract}
       resolution={outcome}
       truncate={truncate}
@@ -114,7 +115,7 @@ export function BinaryContractOutcomeLabel(props: {
   return <BinaryOutcomeLabel outcome={resolution} />
 }
 
-export function FreeResponseOutcomeLabel(props: {
+export function MultiOutcomeLabel(props: {
   contract: MultiContract
   resolution: string | 'CANCEL' | 'MKT'
   truncate: 'short' | 'long' | 'none'
@@ -127,10 +128,9 @@ export function FreeResponseOutcomeLabel(props: {
     return <MultiLabel />
 
   const chosen = contract.answers?.find((answer) => answer.id === resolution)
-  if (!chosen) return <AnswerNumberLabel number={resolution} />
   return (
     <AnswerLabel
-      answer={chosen}
+      text={chosen ? chosen.text : `Answer #${resolution}`}
       truncate={truncate}
       className={answerClassName}
     />
@@ -181,40 +181,6 @@ export function ProbPercentLabel(props: { prob: number }) {
 export function NumericValueLabel(props: { value: number }) {
   const { value } = props
   return <span className="text-sky-600">{formatLargeNumber(value)}</span>
-}
-
-export function AnswerNumberLabel(props: { number: string }) {
-  return <span className="text-teal-600">#{props.number}</span>
-}
-
-export function AnswerLabel(props: {
-  answer: Answer | DpmAnswer
-  truncate: 'short' | 'medium' | 'long' | 'none'
-  className?: string
-}) {
-  const { answer, truncate, className } = props
-  const { text } = answer
-  const ELLIPSES_LENGTH = 3
-
-  let truncated = text
-  const truncatedLength =
-    truncate === 'short'
-      ? 20
-      : truncated === 'medium'
-      ? 30
-      : truncated === 'long'
-      ? 75
-      : undefined
-
-  if (truncatedLength && text.length > truncatedLength + ELLIPSES_LENGTH) {
-    truncated = text.slice(0, truncatedLength) + '...'
-  }
-
-  return (
-    <Tooltip text={truncated === text ? false : text}>
-      <span className={clsx('break-anywhere', className)}>{truncated}</span>
-    </Tooltip>
-  )
 }
 
 export function BetOutcomeLabel(props: {

@@ -39,6 +39,7 @@ import { QfOverview } from './qf-overview'
 import { AnswersPanel } from '../answers/answers-panel'
 import { Answer, DpmAnswer } from 'common/answer'
 import { UserBetsSummary } from '../bet/bet-summary'
+import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 
 export const ContractOverview = memo(
   (props: {
@@ -170,15 +171,20 @@ const ChoiceOverview = (props: {
         )}
       </SizedContainer>
 
-      <AnswersPanel
-        contract={contract}
-        onAnswerCommentClick={onAnswerCommentClick}
-        showResolver={showResolver}
-      />
-      <UserBetsSummary
-        className="border-ink-200 mt-2 !mb-2 "
-        contract={contract}
-      />
+      {showResolver ? (
+        <AnswersResolvePanel contract={contract} />
+      ) : (
+        <>
+          <AnswersPanel
+            contract={contract}
+            onAnswerCommentClick={onAnswerCommentClick}
+          />
+          <UserBetsSummary
+            className="border-ink-200 mt-2 !mb-2 "
+            contract={contract}
+          />
+        </>
+      )}
     </>
   )
 }

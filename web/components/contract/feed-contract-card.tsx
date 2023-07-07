@@ -322,14 +322,7 @@ function DetailedCard(props: {
 
             {contract.outcomeType === 'MULTIPLE_CHOICE' && (
               <Col className="mt-4" onClick={(e) => e.stopPropagation()}>
-                <AnswersPanel
-                  contract={contract}
-                  onAnswerCommentClick={() => {
-                    return undefined
-                  }}
-                  showResolver={false}
-                  truncateAnswers
-                />
+                <AnswersPanel contract={contract} truncateAnswers />
               </Col>
             )}
 
