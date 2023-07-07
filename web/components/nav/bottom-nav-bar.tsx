@@ -11,7 +11,7 @@ import {
 } from '@heroicons/react/solid'
 import { animated } from '@react-spring/web'
 import { Transition, Dialog } from '@headlessui/react'
-import { useState, Fragment, useEffect } from 'react'
+import { useState, Fragment } from 'react'
 import { useRouter } from 'next/router'
 
 import Sidebar from './sidebar'
