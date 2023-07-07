@@ -307,7 +307,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 }
               : undefined
           }
-          className="mb-5"
+          className="mb-4"
           contract={contract}
           clearReply={clearReply}
           trackingLocation={'contract page'}

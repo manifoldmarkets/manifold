@@ -131,19 +131,19 @@ function ContractActions(props: {
           </Button>
         )}
       </CollapsibleContent>
-      <Row className="my-4 items-center gap-2 text-xs">
+      <Row className="items-center gap-2 text-xs">
         {isOnlyAdmin && 'Admin '}
         {contract.outcomeType !== 'STONK' && contract.mechanism !== 'none' && (
           <Button
             color={highlightResolver ? 'red' : 'gray'}
             size="2xs"
-            className="relative"
+            className="relative my-4"
             onClick={toggleResolver}
           >
             Resolve
           </Button>
         )}
-        <ContractEditHistoryButton contract={contract} />
+        <ContractEditHistoryButton contract={contract} className="my-4" />
       </Row>
     </>
   )
