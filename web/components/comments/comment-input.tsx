@@ -10,7 +10,7 @@ import { MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
 import Curve from 'web/public/custom-components/curve'
 import { getAnswerColor } from '../answers/answers-panel'
 import { Avatar } from '../widgets/avatar'
-import { TextEditor, useTextEditor } from '../widgets/editor'
+import { EditorSize, TextEditor, useTextEditor } from '../widgets/editor'
 import { CommentsAnswer } from '../feed/feed-answer-comment-group'
 import {
   CommentOnBetRow,
@@ -40,6 +40,7 @@ export function CommentInput(props: {
   pageId: string
   className?: string
   blocked?: boolean
+  size?: EditorSize
 }) {
   const {
     parentAnswerOutcome,
@@ -51,6 +52,7 @@ export function CommentInput(props: {
     replyToBet,
     clearReply,
     contract,
+    size,
   } = props
   const user = useUser()
 
@@ -128,6 +130,7 @@ export function CommentInput(props: {
             user={user}
             submit={submitComment}
             isSubmitting={isSubmitting}
+            size={size}
           />
         </div>
       </Row>
@@ -189,8 +192,9 @@ export function CommentInputTextArea(props: {
   editor: Editor | null
   submit: () => void
   isSubmitting: boolean
+  size?: EditorSize
 }) {
-  const { user, editor, submit, isSubmitting, replyTo } = props
+  const { user, editor, submit, isSubmitting, replyTo, size } = props
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
@@ -236,7 +240,7 @@ export function CommentInputTextArea(props: {
   }, [replyTo, editor])
 
   return (
-    <TextEditor editor={editor} simple>
+    <TextEditor editor={editor} simple size={size}>
       {user && !isSubmitting && (
         <button
           className="text-ink-400 hover:text-ink-600 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"

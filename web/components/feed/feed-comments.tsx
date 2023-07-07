@@ -539,6 +539,7 @@ export function ContractCommentInput(props: {
       pageId={contract.id}
       className={className}
       blocked={isBlocked(privateUser, contract.creatorId)}
+      size={contract.outcomeType == 'BOUNTIED_QUESTION' ? 'xs' : undefined}
     />
   )
 }
@@ -616,7 +617,7 @@ function FeedCommentHeader(props: {
           {!inTimeline && <DotMenu comment={comment} contract={contract} />}
         </Row>
         {bountyAwarded && bountyAwarded > 0 && (
-          <span className="text-primary-700 select-none">
+          <span className="select-none text-teal-600 dark:text-teal-400">
             +{formatMoney(bountyAwarded)}
           </span>
         )}

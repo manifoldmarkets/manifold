@@ -78,6 +78,7 @@ import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import ContractSharePanel from 'web/components/contract/contract-share-panel'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -505,17 +506,14 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
               />
             )}
 
-            {!isResolved &&
-              !isClosed &&
-              (isCreator ? (
-                <>
-                  {showResolver && <Spacer h={4} />}
-                  <CreatorShareBoostPanel contract={contract} />
-                </>
-              ) : (
-                <NonCreatorSharePanel contract={contract} />
-              ))}
-
+            {contract.outcomeType !== 'BOUNTIED_QUESTION' && (
+              <ContractSharePanel
+                isClosed={isClosed}
+                isCreator={isCreator}
+                showResolver={showResolver}
+                contract={contract}
+              />
+            )}
             {outcomeType === 'NUMERIC' && allowTrade && (
               <NumericBetPanel className="xl:hidden" contract={contract} />
             )}
@@ -550,6 +548,15 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 shareholderStats={shareholderStats}
               />
             </div>
+            {contract.outcomeType == 'BOUNTIED_QUESTION' && (
+              <ContractSharePanel
+                isClosed={isClosed}
+                isCreator={isCreator}
+                showResolver={showResolver}
+                contract={contract}
+                className={'mt-6 w-full'}
+              />
+            )}
           </Col>
         </Col>
         <RelatedContractsList

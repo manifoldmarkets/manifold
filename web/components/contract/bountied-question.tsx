@@ -79,12 +79,13 @@ export function BountyLeft(props: { bountyLeft: number }) {
     <span>
       <span className="font-semibold text-teal-600 dark:text-teal-400">
         {formatMoney(bountyLeft)}
-      </span>{' '}
-      bounty left{' '}
+      </span>
+      <span className="text-ink-500"> bounty left</span>{' '}
       <InfoTooltip
         text={`The bounty that the creator has left to pay out.`}
         className="z-50"
         tooltipParams={{ placement: 'bottom-end' }}
+        size="sm"
       />
     </span>
   )
