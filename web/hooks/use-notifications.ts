@@ -81,6 +81,7 @@ export function useUnseenNotifications(
 
 export function useGroupedNonBalanceChangeNotifications(userId: string) {
   const notifications = useNotifications(userId)
+
   const balanceChangeOnlyReasons: NotificationReason[] = ['loan_income']
   return useMemo(() => {
     const sortedNotifications =

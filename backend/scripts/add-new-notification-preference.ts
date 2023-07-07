@@ -12,8 +12,7 @@ import { filterDefined } from 'common/util/array'
 const firestore = admin.firestore()
 
 // Add your new pref here, and be sure to add the default as well
-const NEW_PREFERENCE_KEY: notification_preference =
-  'contract_from_private_group'
+const NEW_PREFERENCE_KEY: notification_preference = 'bounty_awarded'
 
 async function main() {
   const privateUsers = filterDefined(await getAllPrivateUsers())
