@@ -46,7 +46,7 @@ const getAnswers = (contract: MultiContract) => {
   )
 }
 
-const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[], topN?: number) => {
+const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[]) => {
   const sortedBets = sortBy(bets, (b) => b.createdTime)
   const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
   const sharesByOutcome = Object.fromEntries(
@@ -62,12 +62,7 @@ const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[], topN?: number) => {
     )
     const probs = answers.map((a) => sharesByOutcome[a.id] ** 2 / sharesSquared)
 
-    if (topN != null && answers.length > topN) {
-      const y = [...probs.slice(0, topN), sum(probs.slice(topN))]
-      points.push({ x: bet.createdTime, y, obj: bet })
-    } else {
-      points.push({ x: bet.createdTime, y: probs, obj: bet })
-    }
+    points.push({ x: bet.createdTime, y: probs, obj: bet })
   }
   return points
 }
@@ -89,14 +84,11 @@ export const ChoiceContractChart = (props: {
   const isDpm = contract.mechanism === 'dpm-2'
   const [start, end] = getDateRange(contract)
   const answers = useChartAnswers(contract)
-  const topN = isDpm
-    ? Math.min(CHOICE_ANSWER_COLORS.length, answers.length)
-    : answers.length
-  const betPoints = useMemo(
-    () =>
-      isDpm ? getDpmBetPoints(answers as DpmAnswer[], bets, topN) : points,
 
-    [answers, bets, topN, isDpm, points]
+  const betPoints = useMemo(
+    () => (isDpm ? getDpmBetPoints(answers as DpmAnswer[], bets) : points),
+
+    [answers, bets, isDpm, points]
   )
   const endProbs = useMemo(
     () => answers.map((a) => getAnswerProbability(contract, a.id)),
@@ -104,19 +96,15 @@ export const ChoiceContractChart = (props: {
   )
 
   const data = useMemo(() => {
-    const startY = buildArray(
-      range(0, topN).map(() => 1 / answers.length),
-      answers.length > topN ? 1 - topN / answers.length : undefined
-    )
-    const endY =
-      answers.length > topN
-        ? [...endProbs.slice(0, topN), sum(endProbs.slice(topN))]
-        : endProbs
+    if (!answers.length) return []
+
+    const startY: number[] = new Array(answers.length).fill(1 / answers.length)
+
     return buildArray(isMultipleChoice && { x: start, y: startY }, betPoints, {
       x: end ?? Date.now() + DAY_MS,
-      y: endY,
+      y: endProbs,
     })
-  }, [answers.length, topN, betPoints, endProbs, start, end, isMultipleChoice])
+  }, [answers.length, betPoints, endProbs, start, end, isMultipleChoice])
 
   const rightmostDate = getRightmostVisibleDate(
     end,
