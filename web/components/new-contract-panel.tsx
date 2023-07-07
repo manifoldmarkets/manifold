@@ -146,7 +146,7 @@ export function NewContractPanel(props: {
                   'Yes\xa0/ No': 'BINARY', // non-breaking space
                   'Multiple choice': 'MULTIPLE_CHOICE',
                   'Free response': 'FREE_RESPONSE',
-                  Stock: 'STONK',
+                  // Stock: 'STONK',
                   Numeric: 'PSEUDO_NUMERIC',
                 }
           }
