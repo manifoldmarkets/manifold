@@ -149,7 +149,7 @@ const BinaryOverview = (props: {
 
 const ChoiceOverview = (props: {
   bets?: Bet[]
-  points?: MultiPoint[]
+  points: MultiPoint[]
   contract: MultiContract
   showResolver: boolean
   onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
@@ -159,17 +159,19 @@ const ChoiceOverview = (props: {
   if (!onAnswerCommentClick) return null
   return (
     <>
-      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
-        {(w, h) => (
-          <ChoiceContractChart
-            width={w}
-            height={h}
-            bets={bets}
-            points={points}
-            contract={contract}
-          />
-        )}
-      </SizedContainer>
+      {!!points.length && (
+        <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
+          {(w, h) => (
+            <ChoiceContractChart
+              width={w}
+              height={h}
+              bets={bets}
+              points={points}
+              contract={contract}
+            />
+          )}
+        </SizedContainer>
+      )}
 
       {showResolver ? (
         <AnswersResolvePanel contract={contract} />
