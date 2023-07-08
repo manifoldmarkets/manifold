@@ -72,7 +72,7 @@ export const ContractEditHistoryButton = (props: {
         onClick={() => setShowEditHistory(true)}
         className={className}
       >
-        History
+        Edit history
       </Button>
       <Modal size={'lg'} open={showEditHistory} setOpen={setShowEditHistory}>
         <Col className={'bg-canvas-100 p-4'}>

@@ -36,7 +36,6 @@ import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 
-
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
@@ -77,6 +76,7 @@ import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
+import { isContentEmpty } from 'web/lib/util/isContentEmpty'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -245,6 +245,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
 
   // show the resolver by default if the market is closed and you can resolve it
   const [showResolver, setShowResolver] = useState(false)
+
   useEffect(() => {
     // Close resolve panel if you just resolved it.
     if (isResolved) setShowResolver(false)
