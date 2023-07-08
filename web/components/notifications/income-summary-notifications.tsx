@@ -83,7 +83,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const [open, setOpen] = useState(false)
   const data = notification.data as UniqueBettorData
   const numNewTraders =
-    'relatedNotifications' in data
+    data && 'relatedNotifications' in data
       ? (data as any).relatedNotifications.length
       : 1
 
