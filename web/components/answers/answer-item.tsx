@@ -188,7 +188,7 @@ export const AnswerBar = (props: {
   return (
     <div className={clsx('relative isolate w-full', className)}>
       {/* background bar */}
-      <div className="bg-canvas-50 absolute left-0 right-0 bottom-0 -z-10 h-3 rounded transition-all sm:top-1/2 sm:h-10 sm:-translate-y-1/2 sm:bg-inherit">
+      <div className="bg-canvas-50 absolute left-0 right-0 bottom-0 -z-10 h-3 rounded transition-all sm:top-1/2 sm:h-full sm:-translate-y-1/2 sm:bg-inherit">
         {/* bar outline if resolved */}
         {!!resolvedProb && (
           <div
@@ -208,7 +208,7 @@ export const AnswerBar = (props: {
         />
       </div>
 
-      <div className="justify-betwen flex-wrap items-center gap-x-4 leading-none sm:flex sm:min-h-[40px] sm:flex-nowrap sm:px-3">
+      <div className="flex-wrap items-center justify-between gap-x-4 leading-none sm:flex sm:min-h-[40px] sm:flex-nowrap sm:px-3">
         {label}
         <div className="relative float-right flex grow items-center justify-end gap-2">
           {end}
