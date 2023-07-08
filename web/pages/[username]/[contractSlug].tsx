@@ -76,7 +76,6 @@ import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
-import { isContentEmpty } from 'web/lib/util/isContentEmpty'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
