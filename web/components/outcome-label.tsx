@@ -152,11 +152,13 @@ export function BuyLabel() {
 }
 
 export function ShortLabel() {
-  return <span className="text-scarlet-600">{STONK_NO}</span>
+  return (
+    <span className="text-scarlet-600 dark:text-scarlet-400">{STONK_NO}</span>
+  )
 }
 
 export function NoLabel() {
-  return <span className="text-scarlet-600">NO</span>
+  return <span className="text-scarlet-600 dark:text-scarlet-400">NO</span>
 }
 
 export function CancelLabel() {
