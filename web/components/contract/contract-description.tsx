@@ -129,6 +129,7 @@ function ContractActions(props: {
         />
       )}
       <Row className="items-center justify-end gap-2 text-xs">
+        {isOnlyAdmin && 'Admin '}
         <ContractEditHistoryButton contract={contract} className="my-2" />
         {!isOnlyTrustworthy && (
           <EditDescriptionButton
@@ -145,7 +146,6 @@ function ContractActions(props: {
             buttonColor={'gray'}
           />
         )}
-        {isOnlyAdmin && 'Admin '}
         {contract.outcomeType !== 'STONK' && contract.mechanism !== 'none' && (
           <Button
             color={highlightResolver ? 'red' : 'gray'}
