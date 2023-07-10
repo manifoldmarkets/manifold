@@ -1,5 +1,7 @@
+import { groupBy } from 'lodash'
 import { Visibility } from './contract'
 import { Fees } from './fees'
+import { MultiSerializedPoint } from './chart'
 
 /************************************************
 
@@ -111,4 +113,24 @@ export type BetFilter = {
   beforeTime?: number
   order?: 'desc' | 'asc'
   limit?: number
+}
+
+type AnswerId = string
+/** Only for multi choice. Must include redemptions. Joins all prob shifts from a bet action into single object*/
+export const calculateMultiBets = (
+  bets: Bet[],
+  order: AnswerId[]
+): MultiSerializedPoint[] => {
+  const grouped = groupBy(bets, 'createdTime')
+  const points = Object.entries(grouped)
+    .map(
+      ([timeStr, bets]) =>
+        [
+          +timeStr,
+          order.map((id) => bets.find((bet) => bet.answerId === id)?.probAfter),
+        ] as const
+    )
+    .filter(([_, probs]) => probs.every((p) => p != null))
+    .sort(([a], [b]) => a - b)
+  return points as any
 }
