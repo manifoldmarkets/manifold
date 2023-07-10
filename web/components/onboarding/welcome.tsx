@@ -113,11 +113,11 @@ function WhatIsManifoldPage() {
         height={150}
         width={150}
       />
-      <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-xl font-normal">
+      <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-2xl font-normal">
         Welcome to Manifold
       </div>
       <p className="mb-4 text-lg">
-        Bet on anything and help people predict the future!
+        Bet on anything and see the market consensus on real-world questions.
       </p>
       <p> </p>
     </>
@@ -127,12 +127,12 @@ function WhatIsManifoldPage() {
 function PredictionMarketPage() {
   return (
     <>
-      <div className="text-primary-700 mt-3 mb-6 text-center text-xl font-normal">
+      <div className="text-primary-700 mt-3 mb-6 text-center text-2xl font-normal">
         How it works
       </div>
       <div className="mt-2 text-lg">
         Create a question on anything. Bet on the right answer. The probability
-        is the question's best estimate.
+        is the market's best estimate.
       </div>
       <Image
         src="/welcome/manifold-example.gif"
@@ -156,7 +156,7 @@ function ThankYouPage() {
         height={100}
       />
       <div
-        className="text-primary-700 mb-6 text-center text-xl font-normal"
+        className="text-primary-700 mb-6 text-center text-2xl font-normal"
         children="Start trading"
       />
       <p className="text-lg">

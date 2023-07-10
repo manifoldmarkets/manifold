@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { noop, uniq } from 'lodash'
-import Router from 'next/router'
 
 import { Col } from 'web/components/layout/col'
 import { leaveGroup } from 'web/lib/supabase/groups'
@@ -61,7 +60,7 @@ export function TopicSelectorDialog(props: {
     if (user && !skipUpdate) updateUserEmbedding()
 
     setOpen(false)
-    Router.replace('/questions')
+    if (window.location.pathname !== '/questions') window.location.reload()
   }
 
   return (
