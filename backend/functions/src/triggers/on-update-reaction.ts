@@ -12,6 +12,7 @@ export const onCreateReaction = functions
   .onCreate(async (change) => {
     const reaction = change.data() as Reaction
     const { type } = reaction
+    await updateCountsOnDocuments(reaction)
     if (type === 'like') {
       await createLikeNotification(reaction)
     }
