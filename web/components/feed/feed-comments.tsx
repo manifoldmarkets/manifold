@@ -79,6 +79,7 @@ export function FeedCommentThread(props: {
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const clearReply = useEvent(() => setReplyToUserInfo(undefined))
   const onReplyClick = useEvent((comment: ContractComment) => {
+    setSeeReplies(true)
     setReplyToUserInfo({ id: comment.id, username: comment.userUsername })
   })
   const [collapseToIndex, setCollapseToIndex] = useState<number>(

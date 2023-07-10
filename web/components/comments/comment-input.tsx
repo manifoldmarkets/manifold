@@ -98,6 +98,7 @@ export function CommentInput(props: {
   }
 
   if (user?.isBannedFromPosting) return <></>
+  console.log(ref)
 
   return blocked ? (
     <div className={'text-ink-500 mb-3 text-sm'}>
