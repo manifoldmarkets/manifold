@@ -40,8 +40,8 @@ export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
 }
 
 export const FeedExplanationDictionary: Record<
-  FEED_DATA_TYPES & DEPRECATED_FEED_REASON_TYPES,
-  Partial<Record<FEED_REASON_TYPES, string>>
+  FEED_DATA_TYPES,
+  Partial<Record<FEED_REASON_TYPES | DEPRECATED_FEED_REASON_TYPES, string>>
 > = {
   new_comment: {
     follow_contract: 'New comment on question you follow',
@@ -122,8 +122,8 @@ export const FeedExplanationDictionary: Record<
 }
 
 export function getExplanation(
-  feedDataType: FEED_DATA_TYPES & DEPRECATED_FEED_REASON_TYPES,
-  feedReasonType: FEED_REASON_TYPES
+  feedDataType: FEED_DATA_TYPES,
+  feedReasonType: FEED_REASON_TYPES | DEPRECATED_FEED_REASON_TYPES
 ): string | undefined {
   return FeedExplanationDictionary[feedDataType][feedReasonType]
 }

@@ -1320,4 +1320,4 @@ from user_notifications as n
 where n.user_id = uid and (not unseen_only or not ((n.data->'isSeen')::boolean))
 order by ((n.data->'createdTime')::bigint) desc
 limit max_num
-$$
+$$;
