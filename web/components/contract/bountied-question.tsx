@@ -109,11 +109,15 @@ export function AwardBountyButton(props: {
 
   async function onAwardBounty() {
     if (amount) {
+      const newDefault = bountyLeft - amount
       awardBounty({
         contractId: contract.id,
         commentId: comment.id,
         amount: amount,
-      }).then((_result) => setOpen(false))
+      }).then((_result) => {
+        setOpen(false)
+        setAmount(newDefault)
+      })
     }
   }
   return (
