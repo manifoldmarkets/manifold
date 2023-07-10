@@ -4,7 +4,6 @@ import {
   DEFAULT_USER_FEED_ID,
   FEED_REASON_TYPES,
   INTEREST_DISTANCE_THRESHOLDS,
-  USER_TO_USER_DISTANCE_THRESHOLD,
 } from 'common/feed'
 import { Row } from 'common/supabase/utils'
 import { log } from 'shared/utils'
@@ -22,44 +21,6 @@ export const getUserFollowerIds = async (
   return userFollowerIds.map((r) => r.user_id)
 }
 
-export const getUsersWithSimilarInterestVectorToUser = async (
-  userId: string,
-  pg: SupabaseDirectClient,
-  // -- user id used: AJwLWoo3xue32XIiAVrL5SyR1WB2, distance: .01
-  // -- probes at 5: 861 rows, 240 ms
-  // -- probes at 3: 814 rows, 115 ms
-  // -- probes at 1: 215 rows, 30ms
-  // Probably don't need more than 5
-  probes = 3
-) => {
-  const userIdsAndDistances = await pg.tx(async (t) => {
-    await t.none('SET LOCAL ivfflat.probes = $1', [probes])
-    const res = await t.manyOrNone<{
-      user_id: string
-      distance: number
-    }>(
-      `
-    with pe as (select interest_embedding, created_at
-                 from user_embeddings
-                 where user_id = $1
-                 and created_at < current_date - interval '14 day'
-                 )
-   select user_id, distance
-   from (
-            select ue.user_id, (select interest_embedding from pe) <=> ue.interest_embedding as distance
-            from user_embeddings as ue
-        ) as distances
-   where distance < $2
-   order by distance
-   limit 1000
-  `,
-      [userId, USER_TO_USER_DISTANCE_THRESHOLD]
-    )
-    return res
-  })
-
-  return userIdsAndDistances.map((r) => r.user_id).filter((id) => id !== userId)
-}
 export const getUsersWithSimilarInterestVectorToNews = async (
   newsId: string,
   pg: SupabaseDirectClient

@@ -214,7 +214,6 @@ export const addLikedCommentOnContractToFeed = async (
       pg,
       [
         'follow_user',
-        'similar_interest_vector_to_user',
         'contract_in_group_you_are_in',
         'similar_interest_vector_to_contract',
       ],
@@ -400,7 +399,6 @@ export const insertMarketMovementContractToUsersFeeds = async (
   await addContractToFeed(
     contract,
     buildArray([
-      // TODO: We already have these in our notifications, but might be nice in the feed
       'follow_contract',
       'liked_contract',
       'similar_interest_vector_to_contract',

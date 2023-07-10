@@ -1,9 +1,6 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs, map, merge, sortBy } from 'lodash'
-import {
-  getUserFollowerIds,
-  getUsersWithSimilarInterestVectorToUser,
-} from 'shared/supabase/users'
+import { getUserFollowerIds } from 'shared/supabase/users'
 import { CONTRACT_OR_USER_FEED_REASON_TYPES, MINIMUM_SCORE } from 'common/feed'
 
 export const getUniqueBettorIds = async (
@@ -157,10 +154,6 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       promise: getContractLikerIds(contractId, pg),
       importance: 2,
     },
-    viewed_contract: {
-      promise: getContractViewerIds(contractId, pg),
-      importance: 3,
-    },
     follow_user: {
       promise: getUserFollowerIds(userId, pg),
       importance: 4,
@@ -168,10 +161,6 @@ export const getUserToReasonsInterestedInContractAndUser = async (
     contract_in_group_you_are_in: {
       promise: getContractGroupMemberIds(contractId, pg),
       importance: 5,
-    },
-    similar_interest_vector_to_user: {
-      promise: getUsersWithSimilarInterestVectorToUser(userId, pg),
-      importance: 6,
     },
     similar_interest_vector_to_contract: {
       promise: getUsersWithSimilarInterestVectorsToContract(

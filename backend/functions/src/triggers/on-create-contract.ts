@@ -79,7 +79,6 @@ export const onCreateContract = functions
     else if (contract.visibility === 'public') {
       reasons.push(
         ...([
-          'similar_interest_vector_to_user',
           'similar_interest_vector_to_contract',
         ] as CONTRACT_OR_USER_FEED_REASON_TYPES[])
       )
