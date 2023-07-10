@@ -12,7 +12,7 @@ import {
   Visibility,
 } from 'common/contract'
 import { UNIQUE_BETTOR_BONUS_AMOUNT, getAnte } from 'common/economy'
-import { BOUNTIED_QUESTION_ENABLED, ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { Group, groupPath } from 'common/group'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -140,21 +140,14 @@ export function NewContractPanel(props: {
           setChoice={(choice) => {
             setOutcomeType(choice as OutcomeType)
           }}
-          choicesMap={
-            BOUNTIED_QUESTION_ENABLED
-              ? {
-                  'Yes\xa0/ No': 'BINARY', // non-breaking space
-                  'Multiple choice': 'MULTIPLE_CHOICE',
-                  'Bountied Question': 'BOUNTIED_QUESTION',
-                }
-              : {
-                  'Yes\xa0/ No': 'BINARY', // non-breaking space
-                  'Multiple choice': 'MULTIPLE_CHOICE',
-                  'Free response': 'FREE_RESPONSE',
-                  // Stock: 'STONK',
-                  Numeric: 'PSEUDO_NUMERIC',
-                }
-          }
+          choicesMap={{
+            'Yes\xa0/ No': 'BINARY', // non-breaking space
+            'Multiple choice': 'MULTIPLE_CHOICE',
+            'Free response': 'FREE_RESPONSE',
+            // Stock: 'STONK',
+            Numeric: 'PSEUDO_NUMERIC',
+            'Bountied Question': 'BOUNTIED_QUESTION',
+          }}
           disabled={isSubmitting}
           className={'col-span-4'}
         />
@@ -308,7 +301,6 @@ export function NewContractPanel(props: {
           <BuyAmountInput
             inputClassName="w-full max-w-none"
             minimumAmount={5}
-            maximumAmount={250}
             amount={bountyAmount}
             onChange={(newAmount) => setBountyAmount(newAmount)}
             error={bountyError}
