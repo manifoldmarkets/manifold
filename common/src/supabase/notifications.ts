@@ -1,20 +1,19 @@
-import { SupabaseClient } from 'common/supabase/utils'
+import { Row, SupabaseClient } from 'common/supabase/utils'
+import { filterDefined } from 'common/util/array'
+import { Notification } from 'common/notification'
 
 export async function getNotifications(
   db: SupabaseClient,
   userId: string,
   limit: number
 ) {
-  const { data } = await db.rpc(`get_notifications`, {
-    uid: userId,
-    unseen_only: false,
-    max_num: limit,
-  })
-  return (
-    data?.map((d: any) => {
-      return d
-    }) ?? []
-  )
+  const { data } = await db
+    .from('user_notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('data->createdTime', { ascending: false } as any)
+    .limit(limit)
+  return data?.map((d: Row<'user_notifications'>) => d) ?? []
 }
 
 export async function getUnseenNotifications(
@@ -22,14 +21,16 @@ export async function getUnseenNotifications(
   userId: string,
   limit: number
 ) {
-  const { data } = await db.rpc(`get_notifications`, {
-    uid: userId,
-    unseen_only: true,
-    max_num: limit,
-  })
-  return (
-    data?.map((d: any) => {
-      return d
-    }) ?? []
+  const { data } = await db
+    .from('user_notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('data->createdTime', { ascending: false } as any)
+    .limit(limit)
+
+  return filterDefined(
+    data?.map((d: Row<'user_notifications'>) =>
+      (d.data as Notification)?.isSeen ? null : d
+    ) ?? []
   )
 }
