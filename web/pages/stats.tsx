@@ -13,11 +13,13 @@ import { formatWithCommas } from 'common/util/format'
 import { InfoBox } from 'web/components/widgets/info-box'
 import { Linkify } from 'web/components/widgets/linkify'
 import { getIsNative } from 'web/lib/native/is-native'
-import { HOUR_MS } from 'common/util/time'
 
 export const getStaticProps = async () => {
   const stats = await getStats()
-  return { props: stats, revalidate: HOUR_MS }
+  return {
+    props: stats,
+    revalidate: 60 * 60, // One hour
+  }
 }
 
 export default function Analytics(props: Stats) {
