@@ -306,6 +306,7 @@ export function NewContractPanel(props: {
             error={bountyError}
             setError={setBountyError}
             sliderOptions={{ show: true, wrap: false }}
+            customRange={{ rangeMax: 500 }}
           />
           <Spacer h={6} />
         </>
