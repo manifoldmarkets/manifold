@@ -39,7 +39,13 @@ export const NewsDashboard = (props: {
     if ('url' in card) {
       const preview = previews.find((p) => p.url === card.url)
       if (!preview) return undefined
-      return <DashboardNewsItem {...preview} className="mb-4" key={card.url} />
+      return (
+        <DashboardNewsItem
+          {...preview}
+          className="mb-4"
+          key={title + card.url}
+        />
+      )
     }
 
     if ('slug' in card) {
@@ -47,7 +53,7 @@ export const NewsDashboard = (props: {
       if (!contract) return undefined
       return (
         <FeedContractCard
-          key={contract.id}
+          key={title + contract.id}
           contract={contract}
           className="mb-4"
         />

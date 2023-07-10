@@ -196,6 +196,7 @@ const ElonVersusZuck = createNewsDashboardTab(
 )
 
 const RussianCoupData = () => {
+  const key = 'russian-coup'
   const prigozhinMarkets = useContracts([
     'HZKHs5sbICIRrtBeGXMu',
     'Uj4VpjfgWxdwwek3b9UJ',
@@ -234,7 +235,7 @@ const RussianCoupData = () => {
         {prigozhinMarkets.map((contract) => (
           <>
             <FeedContractCard
-              key={contract.id}
+              key={key + contract.id}
               contract={contract}
               className="mb-4"
             />
@@ -357,6 +358,7 @@ const UkraineWarData = () => {
 }
 
 const RedditBlackoutData = () => {
+  const key = 'reddit-blackout'
   const contractIds = [
     'FsdPt9ZNM8bhJCH6poED',
     '3EK7ViWbBSj6mNKi2ZzV',
@@ -410,7 +412,7 @@ const RedditBlackoutData = () => {
           contracts.map((contract) => (
             <>
               <FeedContractCard
-                key={contract.id}
+                key={key + contract.id}
                 contract={contract}
                 className="mb-4"
               />
@@ -422,6 +424,7 @@ const RedditBlackoutData = () => {
 }
 
 const MissingSubData = () => {
+  const key = 'missing-sub'
   const contractIds = [
     'QLdcYfes6w4VSddzc5Lc',
     'dRjGomQYlRMDBaBskqOk',
@@ -486,7 +489,7 @@ const MissingSubData = () => {
           contracts.map((contract) => (
             <>
               <FeedContractCard
-                key={contract.id}
+                key={key + contract.id}
                 contract={contract}
                 className="mb-4"
               />
