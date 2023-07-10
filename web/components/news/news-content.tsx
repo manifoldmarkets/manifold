@@ -8,6 +8,25 @@ import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
 
+const SummitNATO = createNewsDashboardTab('NATO Summit', '2024 NATO Summit', [
+  { url: 'https://www.bbc.com/news/world-europe-66160319' },
+  { slug: 'will-sweden-join-nato-before-2024' },
+  { slug: 'will-sweden-join-nato-by-the-end-of' },
+  { slug: 'international-affairs-2023-turkey-a' },
+  {
+    url: 'https://www.nbcnews.com/news/world/zelenskyy-nato-ukraine-vilnius-russia-biden-war-membership-rcna93382',
+  },
+  { slug: 'will-zelenskyy-attend-the-2024-nato' },
+  {
+    url: 'https://abcnews.go.com/Business/wireStory/ukraine-tops-nato-summit-agenda-defense-plans-swedens-100997906',
+  },
+  { slug: 'will-nato-deploy-nuclear-weapons-to-6f38766ad8d8' },
+  { slug: 'will-nato-deploy-nuclear-weapons-to' },
+  { slug: 'any-country-invokes-article-5-of-na' },
+  { slug: 'will-ukraine-join-nato-by-2033' },
+  { slug: 'will-kazakhstan-join-nato-by-2033' },
+  { slug: 'will-moldova-join-the-eu-by-2025' },
+])
 const GlobalWarming = createNewsDashboardTab(
   'Record heat',
   'New record for hottest day',
@@ -535,6 +554,7 @@ const Election2024 = createNewsDashboardTab(
 )
 
 export const newsContent = [
+  SummitNATO,
   Threads,
   OpenAI,
   UkraineWar,
