@@ -117,11 +117,14 @@ function FeedTimelineContent() {
       const excludedContractIds = savedFeedItems
         .map((i) => i.contractId)
         .concat(manualContracts?.map((c) => c.id) ?? [])
-      const { data } = await db.rpc('get_recommended_contracts_embeddings', {
-        uid: user.id,
-        n: 20,
-        excluded_contract_ids: filterDefined(excludedContractIds),
-      })
+      const { data } = await db.rpc(
+        'get_recommended_contracts_embeddings_fast',
+        {
+          uid: user.id,
+          n: 20,
+          excluded_contract_ids: filterDefined(excludedContractIds),
+        }
+      )
 
       setManualContracts((data ?? []).map((row: any) => row.data as Contract))
     }
