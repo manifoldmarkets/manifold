@@ -242,9 +242,7 @@ function AnswersResolveOptions(props: {
 export const AnswersResolvePanel = (props: { contract: MultiContract }) => {
   const { contract } = props
 
-  const answers = contract.answers.filter(
-    (a) => !('number' in a) || a.number !== 0
-  )
+  const { answers } = contract
 
   const isAdmin = useAdmin()
   const user = useUser()
