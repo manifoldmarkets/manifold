@@ -11,7 +11,6 @@ export const useScrollToRefWithHeaderOffset = () => {
     if (ref.current) {
       const rect = ref.current.getBoundingClientRect()
       const scrollPosition = rect.top + window.scrollY - offset
-      console.log('scrollPosition', scrollPosition)
       window.scrollTo({ top: scrollPosition, behavior: 'smooth' })
     }
   }
