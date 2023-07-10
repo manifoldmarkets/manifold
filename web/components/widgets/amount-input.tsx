@@ -107,6 +107,10 @@ export function BuyAmountInput(props: {
     show: boolean
     wrap: boolean
   }
+  customRange?: {
+    rangeMin?: number
+    rangeMax?: number
+  }
 }) {
   const {
     amount,
@@ -124,6 +128,7 @@ export function BuyAmountInput(props: {
     inputRef,
     binaryOutcome,
     maximumAmount,
+    customRange,
   } = props
   const { show, wrap } = sliderOptions ?? {}
 
@@ -188,6 +193,7 @@ export function BuyAmountInput(props: {
               onAmountChange={onChange}
               binaryOutcome={binaryOutcome}
               maximumAmount={maximumAmount}
+              customRange={customRange}
             />
           )}
         </Row>

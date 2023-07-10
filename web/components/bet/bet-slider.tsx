@@ -11,8 +11,10 @@ export const BetSlider = (props: {
   onAmountChange: (newAmount: number | undefined) => void
   binaryOutcome?: binaryOutcomes
   maximumAmount?: number
+  customRange?: { rangeMin?: number; rangeMax?: number }
 }) => {
   const { amount, onAmountChange, binaryOutcome, maximumAmount } = props
+  const { rangeMin, rangeMax } = props.customRange ?? {}
 
   const mark = (value: number) => (
     <span className="text-ink-400 text-xs">
@@ -27,7 +29,7 @@ export const BetSlider = (props: {
         <Slider
           min={0}
           marks={
-            maximumAmount
+            maximumAmount || rangeMin || rangeMax
               ? { '0': mark(0) }
               : {
                   '0': mark(0),
@@ -37,7 +39,7 @@ export const BetSlider = (props: {
                   '100': mark(100),
                 }
           }
-          max={maximumAmount ?? 100}
+          max={rangeMax ?? maximumAmount ?? 100}
           activeDotStyle={{
             borderColor:
               binaryOutcome === 'YES'
