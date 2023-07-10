@@ -82,13 +82,13 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         />
         <meta
           name="description"
-          content="Create your own prediction market. Unfold the future."
+          content="Bet on anything and see the market consensus on real-world questions."
           key="description1"
         />
         <meta
           property="og:description"
           name="twitter:description"
-          content="Create your own prediction market. Unfold the future."
+          content="Bet on anything and see the market consensus on real-world questions."
           key="description2"
         />
         <meta property="og:url" content="https://manifold.markets" key="url" />
