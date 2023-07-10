@@ -325,6 +325,11 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               totalUniqueTraders: contract.uniqueBettorCount,
             })
           }}
+          customBestTooltip={
+            contract.outcomeType === 'BOUNTIED_QUESTION'
+              ? 'Highest bounty, then most likes'
+              : undefined
+          }
         />
       )}
       {contract.outcomeType === 'FREE_RESPONSE' && (
@@ -455,14 +460,22 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   )
 })
 
-export function SortRow(props: { sort: string; onSortClick: () => void }) {
-  const { sort, onSortClick } = props
+export function SortRow(props: {
+  sort: string
+  onSortClick: () => void
+  customBestTooltip?: string
+}) {
+  const { sort, onSortClick, customBestTooltip } = props
   return (
     <Row className="items-center justify-end gap-4">
       <Row className="items-center gap-1">
         <span className="text-ink-400 text-sm">Sort by:</span>
         <button className="text-ink-600 w-20 text-sm" onClick={onSortClick}>
-          <Tooltip text={sort === 'Best' ? 'Most likes first' : ''}>
+          <Tooltip
+            text={
+              sort === 'Best' ? customBestTooltip ?? 'Most likes first' : ''
+            }
+          >
             <Row className="items-center gap-1">
               {sort}
               <TriangleDownFillIcon className=" h-2 w-2" />
