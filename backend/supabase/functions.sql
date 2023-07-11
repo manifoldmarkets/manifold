@@ -1059,6 +1059,21 @@ or replace function get_reply_chain_comments_matching_contracts (contract_ids te
   SELECT * FROM reply_chain_comments;
 $$ language sql;
 
+CREATE OR REPLACE FUNCTION count_recent_comments_by_contract()
+RETURNS TABLE (contract_id TEXT, comment_count INTEGER) AS $$
+  SELECT
+    contract_id,
+    COUNT(*) AS comment_count
+  FROM
+    contract_comments
+  WHERE
+    created_time >= NOW() - INTERVAL '1 DAY'
+  GROUP BY
+    contract_id
+  ORDER BY
+    comment_count DESC;
+$$ LANGUAGE SQL;
+
 create
 or replace function get_contracts_with_unseen_liked_comments (
   available_contract_ids text[],

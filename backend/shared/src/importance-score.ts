@@ -2,7 +2,7 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { SupabaseClient } from 'common/supabase/utils'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { log } from 'shared/utils'
-import { Contract } from 'common/contract'
+import { BountiedQuestionContract, Contract } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import { clamp } from 'lodash'
 import { logit } from 'common/util/math'
@@ -11,6 +11,7 @@ import { BOT_USERNAMES } from 'common/envs/constants'
 import { bulkUpdate } from 'shared/supabase/utils'
 
 export const IMPORTANCE_MINUTE_INTERVAL = 2
+
 export async function calculateImportanceScore(
   db: SupabaseClient,
   pg: SupabaseDirectClient,
@@ -21,6 +22,7 @@ export async function calculateImportanceScore(
   const hourAgo = now - HOUR_MS
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
+
   const activeContracts = await pg.map(
     `select data from contracts where ((data->'lastUpdatedTime')::numeric) > $1`,
     [lastUpdatedTime],
@@ -48,6 +50,7 @@ export async function calculateImportanceScore(
     'previously active contracts'
   )
 
+  const todayComments = await getTodayComments(db)
   const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
   const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
   const todayTradersByContract = await getContractTraders(
@@ -73,6 +76,7 @@ export async function calculateImportanceScore(
       computeContractScores(
         now,
         contract,
+        todayComments[contract.id] ?? 0,
         todayLikesByContract[contract.id] ?? 0,
         thisWeekLikesByContract[contract.id] ?? 0,
         todayTradersByContract[contract.id] ?? 0,
@@ -133,6 +137,19 @@ export async function calculateImportanceScore(
     )
 }
 
+const getTodayComments = async (db: SupabaseClient) => {
+  const counts = await db
+    .rpc('count_recent_comments_by_contract' as any)
+    .then((res) =>
+      (res.data ?? []).map(({ contract_id, comment_count }) => [
+        contract_id,
+        comment_count,
+      ])
+    )
+
+  return Object.fromEntries(counts)
+}
+
 export const getContractTraders = async (
   pg: SupabaseDirectClient,
   since: number,
@@ -156,6 +173,7 @@ export const getContractTraders = async (
 export const computeContractScores = (
   now: number,
   contract: Contract,
+  commentsToday: number,
   likesToday: number,
   likesWeek: number,
   tradersToday: number,
@@ -168,6 +186,29 @@ export const computeContractScores = (
   const popularityScore = todayScore + thisWeekScoreWeight
   const freshnessScore = 1 + Math.log(1 + popularityScore)
   const wasCreatedToday = contract.createdTime > now - DAY_MS
+
+  const { createdTime, closeTime, isResolved, outcomeType } = contract
+
+  const commentScore = commentsToday
+    ? normalize(Math.log10(1 + commentsToday), Math.log10(50))
+    : 0
+
+  const newness =
+    !isResolved && wasCreatedToday
+      ? normalize(24 - (now - createdTime) / (1000 * 60 * 60), 24)
+      : 0
+
+  const closingSoonnness =
+    !isResolved &&
+    closeTime &&
+    closeTime > now &&
+    closeTime - now < 1000 * 60 * 60 * 24
+      ? normalize(24 - (closeTime - now) / (1000 * 60 * 60), 24)
+      : 0
+
+  const liquidityScore = isResolved
+    ? 0
+    : normalize(clamp(1 / contract.elasticity, 0, 100), 100)
 
   let dailyScore = 0
   let logOddsChange = 0
@@ -183,31 +224,13 @@ export const computeContractScores = (
   const marketMovt =
     normalize(logOddsChange, 5) * normalize(contract.uniqueBettorCount, 10) // ignore movt on small markets
 
-  const { closeTime, isResolved } = contract
-
-  const newness =
-    !isResolved && wasCreatedToday
-      ? normalize(24 - (now - contract.createdTime) / (1000 * 60 * 60), 24)
-      : 0
-
-  const closingSoonnness =
-    !isResolved &&
-    closeTime &&
-    closeTime > now &&
-    closeTime - now < 1000 * 60 * 60 * 24
-      ? normalize(24 - (closeTime - now) / (1000 * 60 * 60), 24)
-      : 0
-
-  const liquidityScore = isResolved
-    ? 0
-    : normalize(clamp(1 / contract.elasticity, 0, 100), 100)
-
   // recalibrate all of these numbers as site usage changes
   const rawImportance =
-    3 * marketMovt +
-    2 * newness +
-    2 * normalize(traderHour, 20) +
+    3 * normalize(traderHour, 20) +
     2 * normalize(todayScore, 100) +
+    2 * marketMovt +
+    newness +
+    commentScore +
     normalize(thisWeekScore, 200) +
     normalize(Math.log10(contract.volume24Hours), 5) +
     normalize(contract.uniqueBettorCount, 1000) +
@@ -215,7 +238,10 @@ export const computeContractScores = (
     liquidityScore +
     closingSoonnness
 
-  const importanceScore = normalize(rawImportance, 6)
+  const importanceScore =
+    outcomeType === 'BOUNTIED_QUESTION'
+      ? bountiedImportanceScore(contract, newness, commentScore)
+      : normalize(rawImportance, 6)
 
   return {
     todayScore,
@@ -225,6 +251,22 @@ export const computeContractScores = (
     dailyScore,
     importanceScore,
   }
+}
+
+const bountiedImportanceScore = (
+  contract: BountiedQuestionContract,
+  newness: number,
+  commentScore: number
+) => {
+  const { totalBounty, bountyLeft } = contract
+
+  const bountyScore = normalize(Math.log10(totalBounty), 5)
+  const bountyLeftScore = normalize(Math.log10(bountyLeft), 5)
+
+  const rawImportance =
+    3 * commentScore + newness + bountyScore + bountyLeftScore
+
+  return normalize(rawImportance, 6)
 }
 
 const sigmoid = (x: number) => 1 / (1 + Math.exp(-x))
