@@ -61,6 +61,7 @@ export function FeedCommentThread(props: {
   collapseMiddle?: boolean
   inTimeline?: boolean
   idInUrl?: string
+  showReplies?: boolean
 }) {
   const {
     contract,
@@ -70,16 +71,16 @@ export function FeedCommentThread(props: {
     trackingLocation,
     inTimeline,
     idInUrl,
+    showReplies,
   } = props
   const isBountiedQuestion = contract.outcomeType === 'BOUNTIED_QUESTION'
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
+  const user = useUser()
 
   const idInThisThread =
     idInUrl && threadComments.map((comment) => comment.id).includes(idInUrl)
 
-  const [seeReplies, setSeeReplies] = useState(
-    !isBountiedQuestion || !!idInThisThread
-  )
+  const [seeReplies, setSeeReplies] = useState(showReplies || !!idInThisThread)
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const clearReply = useEvent(() => setReplyToUserInfo(undefined))
@@ -196,7 +197,10 @@ export const FeedComment = memo(function FeedComment(props: {
         <FeedCommentReplyHeader comment={comment} contract={contract} />
       )}
       <Row ref={ref} className={clsx(className ? className : 'ml-9 gap-2')}>
-        <Col>
+        <Col className="relative">
+          {!isParent && (
+            <div className="bg-ink-200 absolute -top-3 left-4 h-3 w-0.5 grow" />
+          )}
           <Avatar
             username={userUsername}
             size={'sm'}
@@ -207,7 +211,7 @@ export const FeedComment = memo(function FeedComment(props: {
             )}
           />
           {!isParent && !isLastReplyInThread && (
-            <div className="bg-ink-200 mx-auto -mb-4 w-0.5 grow" />
+            <div className="bg-ink-200 ml-4 w-0.5 grow" />
           )}
         </Col>
         <Col
