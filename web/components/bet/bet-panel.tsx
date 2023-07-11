@@ -411,7 +411,7 @@ export function BuyPanel(props: {
             size="xl"
             onClick={withTracking(firebaseLogin, 'login from bet panel')}
           >
-            Sign up to bet
+            Sign up to predict
           </Button>
         )}
       </Col>
