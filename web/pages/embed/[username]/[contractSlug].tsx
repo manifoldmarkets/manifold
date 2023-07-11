@@ -36,7 +36,9 @@ type Points = HistoryPoint<any>[]
 async function getHistoryData(contract: Contract) {
   switch (contract.outcomeType) {
     case 'BINARY':
-    case 'PSEUDO_NUMERIC': {
+    case 'PSEUDO_NUMERIC':
+    case 'STONK': {
+      // get the last 50k bets, then reverse them (so they're chronological)
       const points = (
         await getBetFields(['createdTime', 'probAfter'], {
           contractId: contract.id,
@@ -45,10 +47,9 @@ async function getHistoryData(contract: Contract) {
           limit: 50000,
           order: 'desc',
         })
-      ).map((bet) => ({
-        x: bet.createdTime,
-        y: bet.probAfter,
-      }))
+      )
+        .map((bet) => ({ x: bet.createdTime, y: bet.probAfter }))
+        .reverse()
       return points
     }
 
