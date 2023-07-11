@@ -1,15 +1,9 @@
-import { ContractComment } from 'common/comment'
 import * as admin from 'firebase-admin'
-import { runAddBountyTxn, runAwardBountyTxn } from 'shared/txn/run-bounty-txn'
+import { createBountyAddedNotification } from 'shared/create-notification'
+import { runAddBountyTxn } from 'shared/txn/run-bounty-txn'
+import { getContract } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
-import { FieldValue } from 'firebase-admin/firestore'
-import {
-  createBountyAddedNotification,
-  createBountyAwardedNotification,
-} from 'shared/create-notification'
-import { getContract } from 'shared/utils'
-import { Contract } from 'common/contract'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -39,7 +33,6 @@ export const addbounty = authEndpoint(async (req, auth) => {
         contract.creatorId,
         contract,
         auth.uid,
-        contractId,
         amount
       )
     }

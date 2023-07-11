@@ -53,10 +53,15 @@ export async function runAddBountyTxn(
     )
   }
 
-  const fromDoc = firestore.doc(`users/${fromId}`)
+  const userDoc = firestore.doc(`users/${fromId}`)
+  const userSnap = await fbTransaction.get(userDoc)
+  const user = userSnap.data() as User
+
+  if (amount > user.balance)
+    throw new APIError(400, `Balance must be at least ${amount}.`)
 
   // update user
-  fbTransaction.update(fromDoc, {
+  fbTransaction.update(userDoc, {
     balance: FieldValue.increment(-amount),
     totalDeposits: FieldValue.increment(-amount),
   })

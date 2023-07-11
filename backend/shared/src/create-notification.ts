@@ -1503,7 +1503,6 @@ export const createBountyAddedNotification = async (
   userId: string,
   bountyContract: Contract,
   txnId: string,
-  contractId: string,
   bountyAmount: number
 ) => {
   const privateUser = await getPrivateUser(userId)
@@ -1525,7 +1524,7 @@ export const createBountyAddedNotification = async (
     sourceText: bountyAmount.toString(),
     sourceContractTitle: bountyContract.question,
     sourceContractSlug: bountyContract.slug,
-    sourceContractId: contractId,
+    sourceContractId: bountyContract.id,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
