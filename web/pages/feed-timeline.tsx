@@ -131,7 +131,7 @@ function FeedTimelineContent() {
   }
 
   return (
-    <Col className={'relative w-full items-center'}>
+    <Col className={'relative w-full gap-6'}>
       <VisibilityObserver
         className="pointer-events-none absolute top-0 h-5 w-full select-none "
         onVisibilityUpdated={(visible) => {

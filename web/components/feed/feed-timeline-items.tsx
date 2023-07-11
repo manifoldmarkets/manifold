@@ -79,7 +79,7 @@ export const FeedTimelineItems = (props: {
   )
 
   return (
-    <Col className="gap-6">
+    <>
       {feedTimelineItems.map((item) => {
         if (item.contract && ('ad_id' in item || 'contract' in item)) {
           const { contract } = item
@@ -151,7 +151,7 @@ export const FeedTimelineItems = (props: {
           keyPrefix={'manual-'}
         />
       ))}
-    </Col>
+    </>
   )
 }
 
@@ -183,7 +183,7 @@ const FeedContractAndRelatedItems = (props: {
     <FeedItemFrame
       item={item}
       key={keyPrefix + contract.id + '-feed-timeline-item-' + item?.id}
-      className={'relative'}
+      className={'relative min-w-0'}
     >
       {!hidden ? (
         <FeedContractCard
@@ -214,6 +214,7 @@ const FeedContractAndRelatedItems = (props: {
             ) : undefined
           }
           item={item}
+          className="max-w-full"
         />
       ) : (
         <Col
@@ -262,8 +263,8 @@ const FeedItemFrame = (props: {
   )
 
   return (
-    <Col ref={maybeVisibleHook?.ref} className={className}>
+    <div ref={maybeVisibleHook?.ref} className={className}>
       {children}
-    </Col>
+    </div>
   )
 }
