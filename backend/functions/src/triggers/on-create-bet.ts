@@ -70,6 +70,8 @@ export const onCreateBet = functions
     const { contractId } = context.params as { contractId: string }
     const { eventId } = context
 
+    log('onCreateBet', { contractId, eventId })
+
     const bet = change.data() as Bet
     if (bet.isChallenge) return
 
