@@ -21,7 +21,7 @@ export const Minibar = (props: { probs: number[] }) => {
 
 export const ContractMinibar = (props: { contract: MultiContract }) => {
   const { contract } = props
-  const answers = getTopNSortedAnswers(contract, 5)
+  const answers = getTopNSortedAnswers(contract, 10)
   const probs = answers.map((a) => getAnswerProbability(contract, a.id))
   return <Minibar probs={probs} />
 }
