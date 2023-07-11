@@ -136,6 +136,7 @@ export function FeedCommentThread(props: {
               showLike={true}
               onReplyClick={onReplyClick}
               trackingLocation={trackingLocation}
+              isLastReplyInThread={_commentIdx === threadComments.length - 1}
             />
           )
         )}
@@ -164,6 +165,7 @@ export const FeedComment = memo(function FeedComment(props: {
   className?: string
   inTimeline?: boolean
   isParent?: boolean
+  isLastReplyInThread?: boolean
 }) {
   const {
     contract,
@@ -176,6 +178,7 @@ export const FeedComment = memo(function FeedComment(props: {
     trackingLocation,
     inTimeline,
     isParent,
+    isLastReplyInThread,
   } = props
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
@@ -193,15 +196,20 @@ export const FeedComment = memo(function FeedComment(props: {
         <FeedCommentReplyHeader comment={comment} contract={contract} />
       )}
       <Row ref={ref} className={clsx(className ? className : 'ml-9 gap-2')}>
-        <Avatar
-          username={userUsername}
-          size={'sm'}
-          avatarUrl={userAvatarUrl}
-          className={clsx(
-            marketCreator ? 'shadow shadow-amber-300' : '',
-            'z-10'
+        <Col>
+          <Avatar
+            username={userUsername}
+            size={'sm'}
+            avatarUrl={userAvatarUrl}
+            className={clsx(
+              marketCreator ? 'shadow shadow-amber-300' : '',
+              'z-10'
+            )}
+          />
+          {!isParent && !isLastReplyInThread && (
+            <div className="bg-ink-200 mx-auto -mb-4 w-0.5 grow" />
           )}
-        />
+        </Col>
         <Col
           className={clsx(
             'w-full rounded-xl rounded-tl-none px-4 py-1',
