@@ -351,6 +351,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               parentComment={parent}
               threadComments={commentsByParent[parent.id] ?? []}
               trackingLocation={'contract page'}
+              idInUrl={hashInUrl}
             />
           ))}
       <div className="relative w-full">

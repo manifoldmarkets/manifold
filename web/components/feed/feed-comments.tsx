@@ -61,6 +61,7 @@ export function FeedCommentThread(props: {
   trackingLocation: string
   collapseMiddle?: boolean
   inTimeline?: boolean
+  idInUrl?: string
 }) {
   const {
     contract,
@@ -69,12 +70,16 @@ export function FeedCommentThread(props: {
     collapseMiddle,
     trackingLocation,
     inTimeline,
+    idInUrl,
   } = props
   const isBountiedQuestion = contract.outcomeType === 'BOUNTIED_QUESTION'
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
-  const [seeReplies, setSeeReplies] = useState(!isBountiedQuestion)
 
-  const idInUrl = useHashInUrl()
+  const idInThisThread =
+    idInUrl && threadComments.map((comment) => comment.id).includes(idInUrl)
+  const [seeReplies, setSeeReplies] = useState(
+    !isBountiedQuestion || !!idInThisThread
+  )
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const clearReply = useEvent(() => setReplyToUserInfo(undefined))
@@ -127,7 +132,7 @@ export function FeedCommentThread(props: {
               key={comment.id}
               contract={contract}
               comment={comment}
-              highlighted={idInUrl === comment.id}
+              highlighted={idInUrl === comment.id && seeReplies}
               showLike={true}
               onReplyClick={onReplyClick}
               trackingLocation={trackingLocation}
@@ -175,6 +180,10 @@ export const FeedComment = memo(function FeedComment(props: {
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
+
+  if (comment.id == 'ZInh91NFpd3ZlnfycFaP') {
+    console.log('highlighted', highlighted)
+  }
 
   useEffect(() => {
     if (highlighted && ref.current) {
