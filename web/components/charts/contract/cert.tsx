@@ -1,8 +1,6 @@
 import { useMemo } from 'react'
-import { last, max, sortBy } from 'lodash'
+import { last, max } from 'lodash'
 import { curveStepAfter } from 'd3-shape'
-
-import { DAY_MS } from 'common/util/time'
 import { CertContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import {
@@ -36,7 +34,7 @@ export const CertContractChart = (props: {
   color?: string
   onMouseOver?: (p: HistoryPoint<never> | undefined) => void
 }) => {
-  const { cert, width, height, color, onMouseOver } = props
+  const { cert, certPoints, width, height, color, onMouseOver } = props
   // Certs don't use closeTime yet; setting graph end to be null means it'll use the current time
   const [start, end] = [cert.createdTime, null]
 
@@ -47,23 +45,13 @@ export const CertContractChart = (props: {
   const startP = props.certPoints[0]?.y ?? 1
   const endP = last(props.certPoints)?.y ?? 1
 
-  const certPoints = useMemo(
-    () => sortBy(props.certPoints, (p) => p.x),
-    [props.certPoints]
-  )
+  const now = useMemo(Date.now, [certPoints])
+
   const data = useMemo(
-    () => [
-      { x: start, y: startP },
-      ...certPoints,
-      { x: end ?? Date.now() + DAY_MS, y: endP },
-    ],
+    () => [{ x: start, y: startP }, ...certPoints, { x: end ?? now, y: endP }],
     [certPoints, start, startP, end, endP]
   )
-  const rightmostDate = getRightmostVisibleDate(
-    end,
-    last(certPoints)?.x,
-    Date.now()
-  )
+  const rightmostDate = getRightmostVisibleDate(end, last(certPoints)?.x, now)
   const visibleRange = [start, rightmostDate]
   const xScale = scaleTime(visibleRange, [0, width])
   const yScale = scaleLinear([minY, maxY], [height, 0])

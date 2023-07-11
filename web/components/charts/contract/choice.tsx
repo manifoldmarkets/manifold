@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import { last, sum, sortBy, groupBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
-
 import { Bet } from 'common/bet'
 import { DpmAnswer } from 'common/answer'
 import { MultiContract } from 'common/contract'
@@ -18,7 +17,6 @@ import { MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { buildArray } from 'common/util/array'
 import { MultiPoint } from 'common/chart'
-import { DAY_MS } from 'common/util/time'
 
 const CHOICE_ANSWER_COLORS = [
   '#77AADD',
@@ -87,7 +85,6 @@ export const ChoiceContractChart = (props: {
 
   const betPoints = useMemo(
     () => (isDpm ? getDpmBetPoints(answers as DpmAnswer[], bets) : points),
-
     [answers, bets, isDpm, points]
   )
   const endProbs = useMemo(
@@ -95,22 +92,20 @@ export const ChoiceContractChart = (props: {
     [answers, contract]
   )
 
+  const now = useMemo(() => Date.now(), [betPoints])
+
   const data = useMemo(() => {
     if (!answers.length) return []
 
     const startY: number[] = new Array(answers.length).fill(1 / answers.length)
 
     return buildArray(isMultipleChoice && { x: start, y: startY }, betPoints, {
-      x: end ?? Date.now() + DAY_MS,
+      x: end ?? now,
       y: endProbs,
     })
-  }, [answers.length, betPoints, endProbs, start, end, isMultipleChoice])
+  }, [answers.length, betPoints, endProbs, start, end, now])
 
-  const rightmostDate = getRightmostVisibleDate(
-    end,
-    last(betPoints)?.x,
-    Date.now()
-  )
+  const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const visibleRange = [start, rightmostDate]
   const xScale = scaleTime(visibleRange, [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])

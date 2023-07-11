@@ -1,9 +1,7 @@
 import { useMemo } from 'react'
-import { last, maxBy, minBy, sortBy } from 'lodash'
+import { last, maxBy, minBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
-
-import { DAY_MS } from 'common/util/time'
 import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
@@ -29,11 +27,7 @@ const getBetPoints = (
   bets: HistoryPoint<Partial<Bet>>[],
   scaleP: (p: number) => number
 ) => {
-  return sortBy(bets, (b) => b.x).map((pt) => ({
-    x: pt.x,
-    y: scaleP(pt.y),
-    obj: pt.obj,
-  }))
+  return bets.map((pt) => ({ x: pt.x, y: scaleP(pt.y), obj: pt.obj }))
 }
 
 const StonkChartTooltip = (
@@ -97,19 +91,14 @@ export const StonkContractChart = (props: {
     () => getBetPoints(props.betPoints, scaleP),
     [props.betPoints, scaleP]
   )
+
+  const now = useMemo(Date.now, [])
+
   const data = useMemo(
-    () => [
-      { x: start, y: startP },
-      ...betPoints,
-      { x: end ?? Date.now() + DAY_MS, y: endP },
-    ],
+    () => [{ x: start, y: startP }, ...betPoints, { x: end ?? now, y: endP }],
     [betPoints, start, startP, end, endP]
   )
-  const rightmostDate = getRightmostVisibleDate(
-    end,
-    last(betPoints)?.x,
-    Date.now()
-  )
+  const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const visibleRange = [rangeStart, rightmostDate]
   const xScale = scaleTime(visibleRange, [0, width])
   // clamp log scale to make sure zeroes go to the bottom
