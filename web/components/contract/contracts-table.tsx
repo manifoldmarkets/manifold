@@ -19,7 +19,6 @@ import { Action } from './contract-table-action'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import {
-  useComments,
   useNumContractComments,
 } from 'web/hooks/use-comments-supabase'
 
