@@ -10,12 +10,10 @@ import {
   PseudoNumericContract,
 } from 'common/contract'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
-import {
-  BinaryContractChart,
-  ChoiceContractChart,
-  NumericContractChart,
-  PseudoNumericContractChart,
-} from 'web/components/charts/contract'
+import { NumericContractChart } from '../charts/contract/numeric'
+import { BinaryContractChart } from '../charts/contract/binary'
+import { ChoiceContractChart } from '../charts/contract/choice'
+import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
 import {
   BinaryResolutionOrChance,

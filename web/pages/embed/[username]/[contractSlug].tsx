@@ -2,11 +2,9 @@ import { Contract, contractPath } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useEffect } from 'react'
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
-import {
-  BinaryContractChart,
-  NumericContractChart,
-  PseudoNumericContractChart,
-} from 'web/components/charts/contract'
+import { BinaryContractChart } from 'web/components/charts/contract/binary'
+import { NumericContractChart } from 'web/components/charts/contract/numeric'
+import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import Custom404 from '../../404'
