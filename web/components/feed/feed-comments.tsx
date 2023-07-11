@@ -132,7 +132,7 @@ export function FeedCommentThread(props: {
               key={comment.id}
               contract={contract}
               comment={comment}
-              highlighted={idInUrl === comment.id && seeReplies}
+              highlighted={idInUrl === comment.id}
               showLike={true}
               onReplyClick={onReplyClick}
               trackingLocation={trackingLocation}
