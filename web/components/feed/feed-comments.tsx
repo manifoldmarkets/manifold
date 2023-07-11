@@ -77,7 +77,7 @@ export function FeedCommentThread(props: {
 
   const idInThisThread =
     idInUrl && threadComments.map((comment) => comment.id).includes(idInUrl)
-    
+
   const [seeReplies, setSeeReplies] = useState(
     !isBountiedQuestion || !!idInThisThread
   )
