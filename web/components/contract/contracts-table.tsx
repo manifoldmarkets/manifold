@@ -1,4 +1,4 @@
-import { LockClosedIcon, UserIcon } from '@heroicons/react/solid'
+import { ChatIcon, LockClosedIcon, UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
@@ -18,6 +18,10 @@ import { Avatar } from '../widgets/avatar'
 import { Action } from './contract-table-action'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
+import {
+  useComments,
+  useNumContractComments,
+} from 'web/hooks/use-comments-supabase'
 
 const lastItemClassName = 'rounded-r pr-2'
 const firstItemClassName = 'rounded-l pl-2 pr-4'
@@ -152,12 +156,15 @@ export function ContractsTable(props: {
       name: 'traders',
       header: 'Traders',
       visible: true,
-      content: (contract: Contract) => (
-        <Row className="align-center shrink-0 items-center gap-0.5">
-          <UserIcon className="h-4 w-4" />
-          {shortenNumber(contract.uniqueBettorCount)}
-        </Row>
-      ),
+      content: (contract: Contract) =>
+        contract.outcomeType == 'BOUNTIED_QUESTION' ? (
+          <BountiedContractComments contractId={contract.id} />
+        ) : (
+          <Row className="align-center shrink-0 items-center gap-0.5">
+            <UserIcon className="h-4 w-4" />
+            {shortenNumber(contract.uniqueBettorCount)}
+          </Row>
+        ),
     },
     // {
     //   name: 'visibility',
@@ -293,4 +300,15 @@ export function VisibilityIcon(props: {
   if (contract.visibility === 'unlisted') <IoUnlink className={iconClassName} />
 
   return <></>
+}
+
+export function BountiedContractComments(props: { contractId: string }) {
+  const { contractId } = props
+  const numComments = useNumContractComments(contractId)
+  return (
+    <Row className="align-center shrink-0 items-center gap-0.5">
+      <ChatIcon className="h-4 w-4" />
+      {numComments}
+    </Row>
+  )
 }
