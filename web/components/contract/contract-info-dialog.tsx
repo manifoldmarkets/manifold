@@ -37,6 +37,7 @@ import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
 import { AddLiquidityButton } from './add-liquidity-button'
 import { BoostButton } from './boost-button'
+import { AddBountyButton } from './bountied-question'
 
 export const Stats = (props: {
   contract: Contract
@@ -378,13 +379,14 @@ export function ContractInfoDialog(props: {
                           contract={contract}
                           color="indigo-outline"
                         />
-
                         {(contract.mechanism === 'cpmm-1' ||
                           contract.mechanism === 'cpmm-multi-1') && (
                           <AddLiquidityButton contract={contract} />
                         )}
-
                         <DuplicateContractButton contract={contract} />
+                        {contract.outcomeType == 'BOUNTIED_QUESTION' && (
+                          <AddBountyButton contract={contract} user={user} />
+                        )}
                       </Row>
                       <Row className="mt-4 flex-wrap gap-2">
                         <ReportButton

@@ -392,3 +392,7 @@ export function awardBounty(params: {
 }) {
   return call(getApiUrl('award-bounty'), 'POST', params)
 }
+
+export function addBounty(params: { contractId: string; amount: number }) {
+  return call(getApiUrl('add-bounty'), 'POST', params)
+}

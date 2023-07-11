@@ -18,7 +18,7 @@ import {
   User,
 } from 'common/user'
 import { Contract, MultiContract } from 'common/contract'
-import { getPrivateUser, getValues, log } from 'shared/utils'
+import { getPrivateUser, getUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
 import { groupBy, keyBy, mapValues, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
@@ -1494,6 +1494,37 @@ export const createBountyAwardedNotification = async (
     sourceContractTitle: bountyContract.question,
     sourceContractSlug: bountyContract.slug,
     sourceContractId: txnId,
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}
+
+export const createBountyAddedNotification = async (
+  userId: string,
+  bountyContract: Contract,
+  txnId: string,
+  bountyAmount: number
+) => {
+  const privateUser = await getPrivateUser(userId)
+  const sender = await getUser(txnId)
+  if (!privateUser || !sender) return
+  if (userOptedOutOfBrowserNotifications(privateUser)) return
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: userId,
+    reason: 'bounty_added',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'user',
+    sourceUserName: sender.name,
+    sourceUserUsername: sender.username,
+    sourceUserAvatarUrl: sender.avatarUrl ?? '',
+    sourceContractCreatorUsername: bountyContract.creatorUsername,
+    sourceText: bountyAmount.toString(),
+    sourceContractTitle: bountyContract.question,
+    sourceContractSlug: bountyContract.slug,
+    sourceContractId: bountyContract.id,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)

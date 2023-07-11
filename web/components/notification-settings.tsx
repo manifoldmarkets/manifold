@@ -145,6 +145,7 @@ export function NotificationSettings(props: {
       'all_comments_on_my_markets',
       'all_answers_on_my_markets',
       'subsidized_your_market',
+      'bounty_added',
     ],
   }
   const bonuses: SectionData = {
