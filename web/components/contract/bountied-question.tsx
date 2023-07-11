@@ -61,8 +61,8 @@ export const LootboxAnimation = forwardRef(() => {
   )
 })
 
-export function BountyLeft(props: { bountyLeft: number }) {
-  const { bountyLeft } = props
+export function BountyLeft(props: { bountyLeft: number; totalBounty: number }) {
+  const { bountyLeft, totalBounty } = props
   if (!bountyLeft || bountyLeft < 1) {
     return (
       <span>
@@ -80,7 +80,7 @@ export function BountyLeft(props: { bountyLeft: number }) {
       <span className="font-semibold text-teal-600 dark:text-teal-400">
         {formatMoney(bountyLeft)}
       </span>
-      <span className="text-ink-500"> bounty left</span>{' '}
+      <span className="text-ink-500 text-xs"> / {totalBounty} bounty left</span>{' '}
       <InfoTooltip
         text={`The bounty that the creator has left to pay out.`}
         className="z-50"
