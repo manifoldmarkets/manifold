@@ -73,9 +73,7 @@ export function FeedCommentThread(props: {
     idInUrl,
     showReplies,
   } = props
-  const isBountiedQuestion = contract.outcomeType === 'BOUNTIED_QUESTION'
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
-  const user = useUser()
 
   const idInThisThread =
     idInUrl && threadComments.map((comment) => comment.id).includes(idInUrl)

@@ -355,7 +355,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               threadComments={commentsByParent[parent.id] ?? []}
               trackingLocation={'contract page'}
               idInUrl={hashInUrl}
-              showReplies = {!isBountiedQuestion || (user && user.id === contract.creatorId)}
+              showReplies={
+                !isBountiedQuestion ||
+                (!!user && user.id === contract.creatorId)
+              }
             />
           ))}
       <div className="relative w-full">
