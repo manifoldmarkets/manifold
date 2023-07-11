@@ -1,6 +1,6 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { ITask } from 'pg-promise'
-import { sum } from 'lodash'
+import { chunk, sum } from 'lodash'
 
 export function magnitude(vector: number[]): number {
   const vectorSum = sum(vector.map((val) => val * val))
@@ -243,8 +243,21 @@ export async function updateUsersViewEmbeddings(
       )
     }
   )
-  console.log('userToEmbeddingMap', userToEmbeddingMap)
-  // TODO: rename this card_view_embedding to contract_view_embedding
-  // -- alter table user_embeddings rename column  card_view_embedding to contract_view_embedding;
-  // TODO: insert into user_embeddings (user_id, contract_view_embedding) values ($1, $2)
+
+  const totalUserIds = Object.keys(userToEmbeddingMap)
+  const chunks = chunk(totalUserIds, 500)
+  let count = 0
+  for (const userIds of chunks) {
+    await Promise.all(
+      userIds.map(async (userId) => {
+        if (userToEmbeddingMap[userId] === null) return
+        await pg.none(
+          'UPDATE user_embeddings SET contract_view_embedding = $2 WHERE user_id = $1',
+          [userId, userToEmbeddingMap[userId]]
+        )
+      })
+    )
+    count += userIds.length
+    console.log(`Updated ${count} of ${totalUserIds.length} users`)
+  }
 }
