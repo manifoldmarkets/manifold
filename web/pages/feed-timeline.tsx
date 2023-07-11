@@ -143,7 +143,7 @@ function FeedTimelineContent() {
           if (!visible) setTopIsVisible(false)
         }}
       />
-      {newAvatarUrls.length > 0 && !topIsVisible && (
+      {newAvatarUrls.length > 2 && !topIsVisible && (
         <NewActivityButton
           avatarUrls={newAvatarUrls}
           onClick={() => setLastSeen(Date.now)}
