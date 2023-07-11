@@ -115,6 +115,7 @@ export type notification_reason_types =
   | 'group_role_changed'
   | 'added_to_group'
   | 'bounty_awarded'
+  | 'bounty_added'
 
 type notification_descriptions = {
   [key in notification_preference]: {
