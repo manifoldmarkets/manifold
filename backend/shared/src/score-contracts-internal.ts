@@ -8,7 +8,7 @@ import {
   insertMarketMovementContractToUsersFeeds,
   insertTrendingContractToUsersFeeds,
 } from 'shared/create-feed'
-import { computeContractScores, getContractTraders } from './importance-score'
+import { computeContractScores, getContractTraders, getTodayComments } from './importance-score'
 import { bulkUpdate } from 'shared/supabase/utils'
 
 export const MINUTE_INTERVAL = 15
@@ -51,6 +51,7 @@ export async function scoreContractsInternal(
 
   const contractScoreUpdates: Contract[] = []
 
+  const todayComments = await getTodayComments(db)
   const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
   const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
   const todayTradersByContract = await getContractTraders(
@@ -75,6 +76,7 @@ export async function scoreContractsInternal(
       computeContractScores(
         now,
         contract,
+        todayComments[contract.id] ?? 0,
         todayLikesByContract[contract.id] ?? 0,
         thisWeekLikesByContract[contract.id] ?? 0,
         todayTradersByContract[contract.id] ?? 0,
