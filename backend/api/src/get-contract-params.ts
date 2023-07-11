@@ -1,4 +1,4 @@
-import { Bet } from 'common/bet'
+import { Bet, calculateMultiBets } from 'common/bet'
 import { getInitialProbability } from 'common/calculate'
 import {
   BinaryContract,
@@ -111,21 +111,10 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
 
   let multiBetPoints: MultiSerializedPoint[] = []
   if (includingMultiBetPts) {
-    const grouped = groupBy(bets, 'createdTime')
-    const points = Object.entries(grouped).map(
-      ([timeStr, bets]) =>
-        [
-          +timeStr,
-          contract.answers.map(({ id }) => {
-            const bet = bets.find((bet) => bet.answerId === id)
-            return bet?.probAfter ?? null
-          }),
-        ] as const
+    multiBetPoints = calculateMultiBets(
+      bets,
+      contract.answers.map((a) => a.id)
     )
-    multiBetPoints = points.filter(([_, probs]) =>
-      probs.every((p) => p != null)
-    ) as any
-    multiBetPoints.sort(([a], [b]) => a - b)
   }
 
   const comments = await getAllComments(db, contract.id, 100)

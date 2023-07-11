@@ -76,6 +76,7 @@ import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
+import { calculateMultiBets } from 'common/bet'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -109,7 +110,7 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
   }
 
   return (
-    <Page className=" !max-w-[1400px]" mainClassName="!col-span-10">
+    <Page className="!max-w-[1400px]" mainClassName="!col-span-10">
       {props.state === 'not authed' ? (
         <PrivateContractPage contractSlug={props.slug} />
       ) : (
@@ -202,7 +203,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   const newBets = useRealtimeBets({
     contractId: contract.id,
     afterTime: lastBetTime,
-    filterRedemptions: true,
+    filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
   })
   const totalBets = contractParams.totalBets + (newBets?.length ?? 0)
   const bets = useMemo(
@@ -213,16 +214,20 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   const betPoints = useMemo(() => {
     const points = unserializePoints(contractParams.historyData.points)
 
-    //  TODO: live update multiple choice. will need to include new redemptions...
-    if (contract.outcomeType !== 'MULTIPLE_CHOICE') {
-      points.concat(
-        newBets?.map((bet) => ({
-          x: bet.createdTime,
-          y: bet.probAfter,
-          obj: { userAvatarUrl: bet.userAvatarUrl },
-        })) ?? []
-      )
-    }
+    points.concat(
+      contract.outcomeType === 'MULTIPLE_CHOICE'
+        ? unserializePoints(
+            calculateMultiBets(
+              newBets,
+              contract.answers.map((a) => a.id)
+            )
+          )
+        : newBets.map((bet) => ({
+            x: bet.createdTime,
+            y: bet.probAfter,
+            obj: { userAvatarUrl: bet.userAvatarUrl },
+          }))
+    )
 
     return points
   }, [contractParams.historyData.points, newBets])
