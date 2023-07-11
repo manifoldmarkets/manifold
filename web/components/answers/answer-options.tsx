@@ -74,18 +74,12 @@ export const MultiBettor = (props: {
         />
       </Modal>
 
-      <Button size="2xs" color="green" onClick={() => setOutcome('YES')}>
-        YES
-      </Button>
-      <Button size="2xs" color="red" onClick={() => setOutcome('NO')}>
-        NO
-      </Button>
       <Button
         size="2xs"
         color="indigo-outline"
-        onClick={() => setOutcome('LIMIT')}
+        onClick={() => setOutcome('YES')}
       >
-        %
+        Bet
       </Button>
     </>
   )
