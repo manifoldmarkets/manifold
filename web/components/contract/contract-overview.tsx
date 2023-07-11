@@ -85,6 +85,8 @@ export const ContractOverview = memo(
         )
       case 'BOUNTIED_QUESTION':
         return <></>
+      case 'POLL':
+        return <></>
     }
   }
 )

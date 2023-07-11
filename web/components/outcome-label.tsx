@@ -63,6 +63,10 @@ export function OutcomeLabel(props: {
     return <></>
   }
 
+  if (outcomeType == 'POLL') {
+    return <></>
+  }
+
   return (
     <MultiOutcomeLabel
       contract={contract}

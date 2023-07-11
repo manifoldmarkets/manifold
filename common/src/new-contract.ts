@@ -12,6 +12,7 @@ import {
   NonBet,
   Numeric,
   OutcomeType,
+  Poll,
   PseudoNumeric,
   QuadraticFunding,
   Stonk,
@@ -58,6 +59,7 @@ export function getNewContract(
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(),
+    POLL: () => getPollProps(),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -282,5 +284,14 @@ const getBountiedQuestionProps = () => {
     bountyLeft: 0,
   }
 
+  return system
+}
+
+const getPollProps = () => {
+  const system: NonBet & Poll = {
+    mechanism: 'none',
+    outcomeType: 'POLL',
+    options: [{ option: '', votes: 0 }],
+  }
   return system
 }
