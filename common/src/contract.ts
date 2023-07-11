@@ -45,6 +45,7 @@ type AnyOutcomeType =
   | QuadraticFunding
   | Stonk
   | BountiedQuestion
+  | Poll
 
 type AnyContractType =
   | (CPMM & Binary)
@@ -59,6 +60,7 @@ type AnyContractType =
   | (CPMM & Stonk)
   | CPMMMulti
   | (NonBet & BountiedQuestion)
+  | (NonBet & Poll)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -130,6 +132,7 @@ export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
 export type CPMMStonkContract = StonkContract & CPMM
 export type BountiedQuestionContract = Contract & BountiedQuestion & NonBet
+export type PollContract = Contract & Poll & NonBet
 
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
@@ -269,6 +272,11 @@ export type BountiedQuestion = {
   bountyLeft: number
   // the bounty txn ids
   bountyTxns: string[]
+}
+
+export type Poll = {
+  outcomeType: 'POLL'
+  options: { option: string; votes: number }[]
 }
 
 export type MultiContract = (
