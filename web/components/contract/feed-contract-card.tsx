@@ -35,6 +35,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { ClickFrame } from '../widgets/click-frame'
+import { DAY_MS } from 'common/util/time'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -196,7 +197,9 @@ function DetailedCard(props: {
   const showChange =
     (item?.dataType === 'contract_probability_changed' ||
       item?.dataType === 'trending_contract') &&
-    probChange != 0
+    probChange != 0 &&
+    contract.createdTime < Date.now() - DAY_MS
+
   const statusInlineWithUserlink =
     item && !item.isCopied && item.dataType === 'new_contract'
   const metrics = useSavedContractMetrics(contract)
