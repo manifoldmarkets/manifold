@@ -61,6 +61,7 @@ export function FeedCommentThread(props: {
   collapseMiddle?: boolean
   inTimeline?: boolean
   idInUrl?: string
+  showReplies?: boolean
 }) {
   const {
     contract,
@@ -70,16 +71,14 @@ export function FeedCommentThread(props: {
     trackingLocation,
     inTimeline,
     idInUrl,
+    showReplies,
   } = props
-  const isBountiedQuestion = contract.outcomeType === 'BOUNTIED_QUESTION'
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
 
   const idInThisThread =
     idInUrl && threadComments.map((comment) => comment.id).includes(idInUrl)
 
-  const [seeReplies, setSeeReplies] = useState(
-    !isBountiedQuestion || !!idInThisThread
-  )
+  const [seeReplies, setSeeReplies] = useState(showReplies || !!idInThisThread)
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const clearReply = useEvent(() => setReplyToUserInfo(undefined))
@@ -136,6 +135,7 @@ export function FeedCommentThread(props: {
               showLike={true}
               onReplyClick={onReplyClick}
               trackingLocation={trackingLocation}
+              isLastReplyInThread={_commentIdx === threadComments.length - 1}
             />
           )
         )}
@@ -164,6 +164,7 @@ export const FeedComment = memo(function FeedComment(props: {
   className?: string
   inTimeline?: boolean
   isParent?: boolean
+  isLastReplyInThread?: boolean
 }) {
   const {
     contract,
@@ -176,6 +177,7 @@ export const FeedComment = memo(function FeedComment(props: {
     trackingLocation,
     inTimeline,
     isParent,
+    isLastReplyInThread,
   } = props
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
@@ -193,15 +195,23 @@ export const FeedComment = memo(function FeedComment(props: {
         <FeedCommentReplyHeader comment={comment} contract={contract} />
       )}
       <Row ref={ref} className={clsx(className ? className : 'ml-9 gap-2')}>
-        <Avatar
-          username={userUsername}
-          size={'sm'}
-          avatarUrl={userAvatarUrl}
-          className={clsx(
-            marketCreator ? 'shadow shadow-amber-300' : '',
-            'z-10'
+        <Col className="relative">
+          {!isParent && (
+            <div className="bg-ink-200 absolute -top-3 left-4 h-3 w-0.5 grow" />
           )}
-        />
+          <Avatar
+            username={userUsername}
+            size={'sm'}
+            avatarUrl={userAvatarUrl}
+            className={clsx(
+              marketCreator ? 'shadow shadow-amber-300' : '',
+              'z-10'
+            )}
+          />
+          {!isParent && !isLastReplyInThread && (
+            <div className="bg-ink-200 ml-4 w-0.5 grow" />
+          )}
+        </Col>
         <Col
           className={clsx(
             'w-full rounded-xl rounded-tl-none px-4 py-1',
