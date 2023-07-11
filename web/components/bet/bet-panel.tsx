@@ -271,7 +271,7 @@ export function BuyPanel(props: {
         />
         {!!user && !isStonk && (
           <Button
-            color={seeLimit || selected ? 'indigo' : 'indigo-outline'}
+            color={seeLimit ? 'indigo' : 'indigo-outline'}
             onClick={() => onOptionChoice('LIMIT')}
             className="px-3 text-lg sm:px-6"
             size="xl"
