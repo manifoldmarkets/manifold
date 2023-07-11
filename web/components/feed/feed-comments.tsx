@@ -61,6 +61,7 @@ export function FeedCommentThread(props: {
   trackingLocation: string
   collapseMiddle?: boolean
   inTimeline?: boolean
+  idInUrl?: string
 }) {
   const {
     contract,
@@ -69,12 +70,17 @@ export function FeedCommentThread(props: {
     collapseMiddle,
     trackingLocation,
     inTimeline,
+    idInUrl,
   } = props
   const isBountiedQuestion = contract.outcomeType === 'BOUNTIED_QUESTION'
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
-  const [seeReplies, setSeeReplies] = useState(!isBountiedQuestion)
 
-  const idInUrl = useHashInUrl()
+  const idInThisThread =
+    idInUrl && threadComments.map((comment) => comment.id).includes(idInUrl)
+    
+  const [seeReplies, setSeeReplies] = useState(
+    !isBountiedQuestion || !!idInThisThread
+  )
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const clearReply = useEvent(() => setReplyToUserInfo(undefined))
