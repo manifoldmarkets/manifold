@@ -233,9 +233,13 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     DEFAULT_PARENT_COMMENTS_TO_RENDER
   )
 
+  const user = useUser()
+
   const isBountiedQuestion = contract.outcomeType == 'BOUNTIED_QUESTION'
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>(
-    isBountiedQuestion ? 'Best' : 'Newest',
+    isBountiedQuestion && (!user || user.id !== contract.creatorId)
+      ? 'Best'
+      : 'Newest',
     {
       key: `comments-sort-${contract.id}`,
       store: inMemoryStore(),
@@ -247,7 +251,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const shouldBeNewestFirst = (c: ContractComment) =>
     c.replyToCommentId == undefined
 
-  const user = useUser()
   const sortedComments = useMemo(
     () =>
       sortBy(comments, [
