@@ -12,14 +12,14 @@ import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
 
 const loadLottie = () => import('react-lottie')
-const loadAnimationJson = () => import('../../public/lottie/award.json')
+const loadAwardJson = () => import('../../public/lottie/award.json')
 
 let lottieLib: ReturnType<typeof loadLottie> | undefined
-let animationJson: ReturnType<typeof loadAnimationJson> | undefined
+let animationJson: ReturnType<typeof loadAwardJson> | undefined
 
 export const loadImports = async () => {
   lottieLib ??= loadLottie()
-  animationJson ??= loadAnimationJson()
+  animationJson ??= loadAwardJson()
   return {
     Lottie: (await lottieLib).default,
     award: await animationJson,
