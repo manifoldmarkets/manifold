@@ -181,10 +181,6 @@ export const FeedComment = memo(function FeedComment(props: {
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
 
-  if (comment.id == 'ZInh91NFpd3ZlnfycFaP') {
-    console.log('highlighted', highlighted)
-  }
-
   useEffect(() => {
     if (highlighted && ref.current) {
       scrollIntoViewCentered(ref.current)
