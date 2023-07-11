@@ -111,6 +111,7 @@ export function BuyAmountInput(props: {
     rangeMin?: number
     rangeMax?: number
   }
+  disregardUserBalance?: boolean
 }) {
   const {
     amount,
@@ -129,6 +130,7 @@ export function BuyAmountInput(props: {
     binaryOutcome,
     maximumAmount,
     customRange,
+    disregardUserBalance,
   } = props
   const { show, wrap } = sliderOptions ?? {}
 
@@ -137,7 +139,7 @@ export function BuyAmountInput(props: {
   // Check for errors.
   useEffect(() => {
     if (amount !== undefined) {
-      if (user && user.balance < amount) {
+      if (!disregardUserBalance && user && user.balance < amount) {
         setError('Insufficient balance')
       } else if (minimumAmount && amount < minimumAmount) {
         setError('Minimum amount: ' + formatMoney(minimumAmount))

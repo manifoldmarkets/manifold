@@ -64,6 +64,7 @@ export type notification_source_types =
   | 'weekly_portfolio_update'
   | 'quest_reward'
   | 'league_change'
+  | 'bounty_added'
 
 export type notification_source_update_types =
   | 'created'
@@ -296,6 +297,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   bounty_awarded: {
     simple: 'Bounties you receive',
     detailed: 'When the creator awards you a bounty for your comment',
+  },
+  bounty_added: {
+    simple: 'Bounties added to your question',
+    detailed: 'When another user adds a bounty to your question',
   },
 }
 

@@ -1,4 +1,4 @@
-import { BountyAwardedTxn, BountyPostedTxn } from 'common/txn'
+import { BountyAddedTxn, BountyAwardedTxn, BountyPostedTxn } from 'common/txn'
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { removeUndefinedProps } from 'common/util/object'
@@ -29,6 +29,47 @@ export async function runPostBountyTxn(
     totalBounty: amount,
     bountyLeft: amount,
   })
+
+  return { status: 'success', txn }
+}
+
+export async function runAddBountyTxn(
+  fbTransaction: admin.firestore.Transaction,
+  txnData: Omit<BountyAddedTxn, 'id' | 'createdTime'>
+) {
+  const { amount, toId, fromId } = txnData
+
+  const contractDoc = firestore.doc(`contracts/${toId}`)
+  const contractSnap = await fbTransaction.get(contractDoc)
+  if (!contractSnap.exists) throw new APIError(400, 'Invalid contract')
+  const contract = contractSnap.data() as Contract
+  if (
+    contract.mechanism !== 'none' ||
+    contract.outcomeType !== 'BOUNTIED_QUESTION'
+  ) {
+    throw new APIError(
+      400,
+      'Invalid contract, only bountied questions are supported'
+    )
+  }
+
+  const fromDoc = firestore.doc(`users/${fromId}`)
+
+  // update user
+  fbTransaction.update(fromDoc, {
+    balance: FieldValue.increment(-amount),
+    totalDeposits: FieldValue.increment(-amount),
+  })
+
+  // update bountied contract
+  fbTransaction.update(contractDoc, {
+    totalBounty: FieldValue.increment(amount),
+    bountyLeft: FieldValue.increment(amount),
+  })
+
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
 
   return { status: 'success', txn }
 }

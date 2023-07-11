@@ -35,6 +35,7 @@ type AnyTxnType =
   | LeaguePrize
   | BountyPosted
   | BountyAwarded
+  | BountyAdded
 
 export type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
@@ -302,6 +303,13 @@ type BountyPosted = {
   token: 'M$'
 }
 
+type BountyAdded = {
+  category: 'BOUNTY_ADDED'
+  fromType: 'USER'
+  toType: 'CONTRACT'
+  token: 'M$'
+}
+
 type BountyAwarded = {
   category: 'BOUNTY_AWARDED'
   fromType: 'CONTRACT'
@@ -342,3 +350,4 @@ export type QAndAAwardTxn = Txn & QAndAAward
 export type LeaguePrizeTxn = Txn & LeaguePrize
 export type BountyAwardedTxn = Txn & BountyAwarded
 export type BountyPostedTxn = Txn & BountyPosted
+export type BountyAddedTxn = Txn & BountyAdded

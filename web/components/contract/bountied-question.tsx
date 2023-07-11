@@ -4,7 +4,7 @@ import { BountiedQuestionContract } from 'common/contract'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { forwardRef, useEffect, useState } from 'react'
-import { awardBounty } from 'web/lib/firebase/api'
+import { addBounty, awardBounty } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
@@ -147,6 +147,7 @@ export function AwardBountyButton(props: {
             minimumAmount={1}
             maximumAmount={bountyLeft}
             sliderOptions={{ show: true, wrap: false }}
+            disregardUserBalance={true}
           />
           <Button
             size="lg"
@@ -155,6 +156,62 @@ export function AwardBountyButton(props: {
             onClick={onAwardBounty}
           >
             Award {amount ? formatMoney(amount) : ''}
+          </Button>
+        </Col>
+      </Modal>
+    </>
+  )
+}
+
+export function AddBountyButton(props: {
+  contract: BountiedQuestionContract
+  user: User
+  buttonClassName?: string
+}) {
+  const { contract, user, buttonClassName } = props
+  const [open, setOpen] = useState(false)
+  const [error, setError] = useState<string | undefined>(undefined)
+  const [amount, setAmount] = useState<number | undefined>(undefined)
+
+  async function onAddBounty() {
+    if (amount) {
+      addBounty({
+        contractId: contract.id,
+        amount: amount,
+      }).then((_result) => {
+        setOpen(false)
+      })
+    }
+  }
+  return (
+    <>
+      <Button
+        className={clsx(buttonClassName)}
+        color={'green-outline'}
+        onClick={() => setOpen(true)}
+      >
+        💸 Add bounty
+      </Button>
+      <Modal open={open} setOpen={setOpen}>
+        <Col className={MODAL_CLASS}>
+          <span>Add more bounty to this question</span>
+          <BuyAmountInput
+            parentClassName="w-full"
+            inputClassName="w-full max-w-none"
+            amount={amount}
+            onChange={(newAmount) => setAmount(newAmount)}
+            error={error}
+            setError={setError}
+            minimumAmount={1}
+            sliderOptions={{ show: true, wrap: false }}
+          />
+          <Button
+            size="lg"
+            className="w-full"
+            disabled={!!error}
+            onClick={onAddBounty}
+          >
+            Add {amount ? formatMoney(amount) : ''}
           </Button>
         </Col>
       </Modal>
