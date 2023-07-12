@@ -17,6 +17,7 @@ import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items
 import { DAY_MS } from 'common/util/time'
 
 const PAGE_SIZE = 25
+const OLDEST_UNSEEN_TIME_OF_INTEREST = Date.now() - 3 * DAY_MS
 
 export type FeedTimelineItem = {
   // These are stored in the db
@@ -61,30 +62,58 @@ export const useFeedTimeline = (
   const oldestCreatedTimestamp = useRef(
     last(savedFeedItems)?.supabaseTimestamp ?? new Date().toISOString()
   )
-
+  const fetching = useRef(false)
+  const unseenCount = useRef(100)
+  const getUnseenCount = async () => {
+    if (
+      new Date(oldestCreatedTimestamp.current).valueOf() <
+      OLDEST_UNSEEN_TIME_OF_INTEREST
+    ) {
+      unseenCount.current = 0
+      return
+    }
+    const unseenCountQuery = db
+      .from('user_feed')
+      .select('*', { head: true, count: 'exact' })
+      .eq('user_id', userId)
+      .is('seen_time', null)
+      .lt('created_time', oldestCreatedTimestamp.current)
+      .gt(
+        'created_time',
+        new Date(OLDEST_UNSEEN_TIME_OF_INTEREST).toISOString()
+      )
+    const unseenCountData = await unseenCountQuery
+    unseenCount.current = unseenCountData.count ?? 0
+  }
   const fetchFeedItems = async (
     userId: string,
     options: {
-      new?: boolean
       newerThan?: string
       old?: boolean
     }
   ) => {
-    const time = options.new
-      ? new Date().toISOString()
-      : oldestCreatedTimestamp.current
+    if (fetching.current) return { timelineItems: [] as FeedTimelineItem[] }
     let query = db
       .from('user_feed')
       .select('*')
       .eq('user_id', userId)
-      .lt('created_time', time)
       .order('created_time', { ascending: false })
       .limit(PAGE_SIZE)
+    // Newer items should never be seen, don't need to filter them
     if (options.newerThan) {
       query = query.gt('created_time', options.newerThan)
     }
-
+    if (options.old) {
+      query = query.lt('created_time', oldestCreatedTimestamp.current)
+      if (unseenCount.current > 10) query = query.is('seen_time', null)
+    }
     const { data } = await run(query)
+    if (options.old && unseenCount.current > 0) {
+      const newUnseens = data
+        .map((item) => !item.seen_time)
+        .filter(Boolean).length
+      unseenCount.current = unseenCount.current - newUnseens
+    }
 
     // Filter out already saved ones to reduce bandwidth and avoid duplicates
     const alreadySavedContractIds = filterDefined(
@@ -102,7 +131,7 @@ export const useFeedTimeline = (
 
     const potentiallySeenCommentIds = uniq(
       filterDefined(
-        data.map((item) => (!item.seen_time ? item.comment_id : null))
+        data.map((item) => (item.seen_time ? null : item.comment_id))
       )
     )
     const alreadySavedNewsIds = filterDefined(
@@ -192,6 +221,7 @@ export const useFeedTimeline = (
       filteredNewComments,
       news
     )
+    fetching.current = false
 
     return { timelineItems }
   }
@@ -221,7 +251,7 @@ export const useFeedTimeline = (
   )
 
   const loadMore = useEvent(
-    async (options: { new?: boolean; old?: boolean; newerThan?: string }) => {
+    async (options: { old?: boolean; newerThan?: string }) => {
       if (!userId) return false
       const res = await fetchFeedItems(userId, options)
       const { timelineItems } = res
@@ -233,7 +263,6 @@ export const useFeedTimeline = (
   const checkForNewer = useEvent(async () => {
     if (!userId) return []
     const { timelineItems } = await fetchFeedItems(userId, {
-      new: true,
       newerThan: newestCreatedTimestamp.current,
     })
     return timelineItems
@@ -241,11 +270,11 @@ export const useFeedTimeline = (
 
   useEffect(() => {
     if (savedFeedItems?.length || !userId) return
-    loadMore({ new: true })
+    getUnseenCount()
+    loadMore({ old: true })
   }, [loadMore, userId])
 
   return {
-    loadNew: async () => loadMore({ new: true }),
     loadMoreOlder: async () => loadMore({ old: true }),
     checkForNewer: async () => checkForNewer(),
     addTimelineItems,

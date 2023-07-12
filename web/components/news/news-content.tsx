@@ -8,7 +8,12 @@ import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
 
-const SummitNATO = createNewsDashboardTab('NATO Summit', '2024 NATO Summit', [
+const SummitNATO = createNewsDashboardTab('NATO Summit', 'NATO Summit', [
+  { slug: 'will-ukraine-be-an-official-member' },
+  { slug: 'will-ukraine-join-nato-by-2033' },
+  {
+    url: 'https://www.washingtonpost.com/world/2023/07/11/ukraine-nato-summit-2023-sweden/',
+  },
   { url: 'https://www.bbc.com/news/world-europe-66160319' },
   { slug: 'will-sweden-join-nato-before-2024' },
   { slug: 'will-sweden-join-nato-by-the-end-of' },
@@ -23,7 +28,6 @@ const SummitNATO = createNewsDashboardTab('NATO Summit', '2024 NATO Summit', [
   { slug: 'will-nato-deploy-nuclear-weapons-to-6f38766ad8d8' },
   { slug: 'will-nato-deploy-nuclear-weapons-to' },
   { slug: 'any-country-invokes-article-5-of-na' },
-  { slug: 'will-ukraine-join-nato-by-2033' },
   { slug: 'will-kazakhstan-join-nato-by-2033' },
   { slug: 'will-moldova-join-the-eu-by-2025' },
 ])
@@ -68,7 +72,6 @@ const Threads = createNewsDashboardTab('Threads', 'Facebook Launches Threads', [
   },
   { slug: 'how-many-users-will-threads-have-af' },
   { slug: 'will-elon-musk-posy-on-instagram-th' },
-  { slug: 'will-twitter-have-more-users-than-m' },
   { slug: 'will-threads-metas-twitter-alternat' },
   { slug: 'which-twitter-alternative-will-have' },
 ])
@@ -564,7 +567,7 @@ export const newsContent = [
   WestBank,
   FrenchRiots,
   SupremeCourt,
-  { title: 'Russian Coup?', content: <RussianCoupData /> },
-  { title: 'Titanic Sub', content: <MissingSubData /> },
-  { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
+  // { title: 'Russian Coup?', content: <RussianCoupData /> },
+  // { title: 'Titanic Sub', content: <MissingSubData /> },
+  // { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
 ]
