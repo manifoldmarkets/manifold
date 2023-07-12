@@ -58,9 +58,13 @@ export function BetsSummary(props: {
   const userBets = useUserContractBets(metrics.userId, contract.id)
   const username = metrics.userUsername
 
-  const { payout, invested, totalShares, profit, profitPercent } = userBets
-    ? getContractBetMetrics(contract, userBets)
-    : metrics
+  const {
+    payout,
+    invested,
+    totalShares = {},
+    profit,
+    profitPercent,
+  } = userBets ? getContractBetMetrics(contract, userBets) : metrics
 
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
