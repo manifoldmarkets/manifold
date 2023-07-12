@@ -45,12 +45,14 @@
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
     "marked": "4.1.1",
+    "numeral": "2.0.6",
     "openai": "3.2.1",
     "pg-promise": "11.4.1"
   },
   "devDependencies": {
     "@types/mailgun-js": "0.22.12",
-    "@types/marked": "4.0.7"
+    "@types/marked": "4.0.7",
+    "@types/numeral": "2.0.2"
   },
   "private": true
 }

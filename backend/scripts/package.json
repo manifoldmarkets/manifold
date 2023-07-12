@@ -16,9 +16,11 @@
     "commander": "10.0.0",
     "firebase-admin": "11.5.0",
     "json2csv": "6.0.0-alpha.2",
-    "lodash": "4.17.21"
+    "lodash": "4.17.21",
+    "numeral": "2.0.6"
   },
   "devDependencies": {
+    "@types/numeral": "2.0.2",
     "puppeteer": "19.7.5",
     "tsc-alias": "1.8.2",
     "tsconfig-paths": "4.1.2"

@@ -40,6 +40,7 @@ export type OverallPerformanceData = {
   likes_received: string
   markets_created: string
   unique_bettors: string
+  league_rank: string
 }
 
 export const emailMoneyFormat = (amount: number) => {

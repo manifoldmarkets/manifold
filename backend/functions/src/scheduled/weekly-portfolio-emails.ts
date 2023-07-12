@@ -26,9 +26,18 @@ import {
   getUsersRecentBetContractIds,
   getUsersContractMetricsOrderedByProfit,
 } from 'common/supabase/contract-metrics'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { getContracts, getContractsByUsers } from 'common/supabase/contracts'
 import { secrets } from 'common/secrets'
+import {
+  CURRENT_SEASON,
+  DIVISION_NAMES,
+  league_user_info,
+} from 'common/leagues'
+import * as numeral from 'numeral'
 
 const USERS_TO_EMAIL = 600
 const WEEKLY_MOVERS_TO_SEND = 6
@@ -144,14 +153,23 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     ),
     db
   )) as CPMMBinaryContract[]
-
+  const pg = createSupabaseDirectClient()
   let sent = 0
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (privateUser) => {
       const user = await getUser(privateUser.id)
       // Don't send to a user unless they're over 5 days old
       if (!user || user.createdTime > Date.now() - 5 * DAY_MS) return
-
+      const leagueStat = await pg.oneOrNone(
+        `
+        select * from user_league_info where user_id = $1
+        and season = $2 limit 1`,
+        [privateUser.id, CURRENT_SEASON],
+        (r: league_user_info) =>
+          r
+            ? numeral(r.rank).format('0o') + ' in ' + DIVISION_NAMES[r.division]
+            : null
+      )
       // Compute fun auxiliary stats
       const totalContractsUserBetOnInLastWeek = uniqBy(
         contractIdsBetOnInLastWeek[privateUser.id],
@@ -178,7 +196,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         markets_traded: totalContractsUserBetOnInLastWeek.toString(),
         prediction_streak:
           (user.currentBettingStreak?.toString() ?? '0') + ' days',
-        // More options: bonuses, tips given,
+        league_rank: leagueStat ?? 'Unranked',
       } as OverallPerformanceData
 
       const weeklyMoverContracts = filterDefined(
