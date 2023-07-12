@@ -31,3 +31,11 @@ create index if not exists contracts_resolution_time on contracts (resolution_ti
 create index if not exists contracts_visibility_public on contracts (id)
 where
   visibility = 'public';
+
+create index contracts_outcome_type_binary on contracts (outcome_type)
+where
+  outcome_type = 'BINARY';
+
+create index contracts_outcome_type_not_binary on contracts (outcome_type)
+where
+  outcome_type <> 'BINARY';
