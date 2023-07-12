@@ -533,7 +533,6 @@ function SupabaseContractSearchControls(props: {
           listViewDisabled={true}
         />
       </Col>
-      {/* <Spacer h={2} /> */}
       {showTopics && (
         <Carousel>
           {SELECTED_TOPICS.map((t) => (
@@ -598,7 +597,6 @@ export function SearchFilters(props: {
           Items={generateFilterDropdownItems(FILTERS, selectFilter)}
           Icon={
             <Row className="items-center gap-0.5">
-              {/* <AiTwotoneFilter className="mr-0.5 h-4 w-4 text-gray-500" /> */}
               <span className="truncate whitespace-nowrap text-sm font-medium text-gray-500">
                 {filterLabel}
               </span>
@@ -619,7 +617,6 @@ export function SearchFilters(props: {
           )}
           Icon={
             <Row className=" items-center gap-0.5 ">
-              {/* <FaSort className="mr-0.5 h-4 w-4 text-gray-500" /> */}
               <span className="whitespace-nowrap text-sm font-medium text-gray-500">
                 {sortLabel}
               </span>
