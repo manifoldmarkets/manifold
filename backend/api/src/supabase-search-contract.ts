@@ -41,7 +41,7 @@ const bodySchema = z.object({
     z.literal('BINARY'),
     z.literal('MULTIPLE_CHOICE'),
     z.literal('FREE_RESPONSE'),
-    z.literal('NUMERIC'),
+    z.literal('PSEUDO_NUMERIC'),
     z.literal('BOUNTIED_QUESTION'),
   ]),
   topic: z.string().optional(),
