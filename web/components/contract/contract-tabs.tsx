@@ -252,7 +252,11 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         sort === 'Best'
           ? isBountiedQuestion
             ? (c: ContractComment) =>
-                isReply(c) ? c.createdTime : -(c?.bountyAwarded ?? 0)
+                isReply(c)
+                  ? c.createdTime
+                  : c.bountyAwarded
+                  ? -c.bountyAwarded * 1000
+                  : -(c.likes ?? 0)
             : (c) =>
                 isReply(c)
                   ? c.createdTime

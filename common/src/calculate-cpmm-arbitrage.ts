@@ -407,3 +407,94 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
 
   return { yesBetResults, noBetResult }
 }
+
+export const buyNoSharesUntilAnswersSumToOne = (
+  answers: Answer[],
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
+) => {
+  const unfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
+
+  let maxNoShares = 10
+  do {
+    const result = buyNoSharesInAnswers(
+      answers,
+      unfilledBetsByAnswer,
+      balanceByUserId,
+      maxNoShares
+    )
+    const newPools = result.noBetResults.map((r) => r.cpmmState.pool)
+    const probSum = sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5))
+    if (probSum < 1) break
+    maxNoShares *= 10
+  } while (true)
+
+  const noShares = binarySearch(0, maxNoShares, (noShares) => {
+    const result = buyNoSharesInAnswers(
+      answers,
+      unfilledBetsByAnswer,
+      balanceByUserId,
+      noShares
+    )
+    const newPools = result.noBetResults.map((r) => r.cpmmState.pool)
+    const diff = 1 - sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5))
+    return diff
+  })
+
+  return buyNoSharesInAnswers(
+    answers,
+    unfilledBetsByAnswer,
+    balanceByUserId,
+    noShares
+  )
+}
+
+const buyNoSharesInAnswers = (
+  answers: Answer[],
+  unfilledBetsByAnswer: Dictionary<LimitBet[]>,
+  balanceByUserId: { [userId: string]: number },
+  noShares: number
+) => {
+  const noAmounts = answers.map(({ id, poolYes, poolNo }) =>
+    calculateAmountToBuySharesFixedP(
+      { pool: { YES: poolYes, NO: poolNo }, p: 0.5 },
+      noShares,
+      'NO',
+      unfilledBetsByAnswer[id] ?? [],
+      balanceByUserId
+    )
+  )
+  const totalNoAmount = sum(noAmounts)
+
+  const noBetResults = noAmounts.map((noAmount, i) => {
+    const answer = answers[i]
+    const pool = { YES: answer.poolYes, NO: answer.poolNo }
+    return {
+      ...computeFills(
+        { pool, p: 0.5 },
+        'NO',
+        noAmount,
+        undefined,
+        unfilledBetsByAnswer[answer.id] ?? [],
+        balanceByUserId
+      ),
+      answer,
+    }
+  })
+
+  // Identity: No shares in all other answers is equal to noShares * (n-1) mana
+  const redeemedAmount = noShares * (answers.length - 1)
+  const extraMana = redeemedAmount - totalNoAmount
+
+  for (const noBetResult of noBetResults) {
+    const redemptionFill = {
+      matchedBetId: null,
+      amount: -sumBy(noBetResult.takers, 'amount'),
+      shares: -sumBy(noBetResult.takers, 'shares'),
+      timestamp: Date.now(),
+    }
+    noBetResult.takers.push(redemptionFill)
+  }
+
+  return { noBetResults, extraMana }
+}

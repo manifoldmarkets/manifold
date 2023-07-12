@@ -93,7 +93,10 @@ export const onCreateBet = functions
       eventId,
       bettor
     )
-    await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
+    
+    if (bet.shares !== 0) {
+      await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
+    }
 
     const isApiOrBot = bet.isApi || BOT_USERNAMES.includes(bettor.username)
     if (isApiOrBot) {

@@ -32,7 +32,10 @@ import {
   floatingLesserEqual,
 } from './util/math'
 import { Answer } from './answer'
-import { calculateCpmmMultiArbitrageBet } from './calculate-cpmm-arbitrage'
+import {
+  buyNoSharesUntilAnswersSumToOne,
+  calculateCpmmMultiArbitrageBet,
+} from './calculate-cpmm-arbitrage'
 
 export type CandidateBet<T extends Bet = Bet> = Omit<
   T,
@@ -644,5 +647,56 @@ const getNewMultiCpmmBetInfoSumsToOne = (
     makers: newBetResult.makers,
     ordersToCancel: newBetResult.ordersToCancel,
     otherBetResults: otherResultsWithBet,
+  }
+}
+
+export const getBetDownToOneMultiBetInfo = (
+  contract: CPMMMultiContract,
+  answers: Answer[],
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
+) => {
+  const { noBetResults, extraMana } = buyNoSharesUntilAnswersSumToOne(
+    answers,
+    unfilledBets,
+    balanceByUserId
+  )
+
+  const now = Date.now()
+
+  const betResults = noBetResults.map((result) => {
+    const { answer, takers, cpmmState } = result
+    const probBefore = answer.prob
+    const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
+
+    const bet: CandidateBet = removeUndefinedProps({
+      contractId: contract.id,
+      outcome: 'NO',
+      orderAmount: 0,
+      isCancelled: false,
+      amount: 0,
+      loanAmount: 0,
+      shares: 0,
+      answerId: answer.id,
+      fills: takers,
+      isFilled: true,
+      probBefore,
+      probAfter,
+      createdTime: now,
+      fees: noFees,
+      isAnte: false,
+      isRedemption: true,
+      isChallenge: false,
+      visibility: contract.visibility,
+    })
+    return {
+      ...result,
+      bet,
+    }
+  })
+
+  return {
+    betResults,
+    extraMana,
   }
 }

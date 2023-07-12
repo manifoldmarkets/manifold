@@ -397,3 +397,7 @@ export function awardBounty(params: {
 export function addBounty(params: { contractId: string; amount: number }) {
   return call(getApiUrl('add-bounty'), 'POST', params)
 }
+
+export function createAnswerCpmm(params: { contractId: string; text: string }) {
+  return call(getApiUrl('createanswercpmm'), 'POST', params)
+}

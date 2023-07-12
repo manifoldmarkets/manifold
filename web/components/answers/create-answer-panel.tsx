@@ -2,10 +2,10 @@ import clsx from 'clsx'
 import React, { useState } from 'react'
 import { findBestMatch } from 'string-similarity'
 
-import { FreeResponseContract } from 'common/contract'
+import { CPMMMultiContract, FreeResponseContract } from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
-import { APIError, createAnswer } from 'web/lib/firebase/api'
+import { APIError, createAnswer, createAnswerCpmm } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import {
   formatMoney,
@@ -26,6 +26,118 @@ import { withTracking } from 'web/lib/service/analytics'
 import { lowerCase } from 'lodash'
 import { Button } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { ANSWER_COST } from 'common/economy'
+
+export function CreateAnswerCpmmPanel(props: {
+  contract: CPMMMultiContract
+  onFinish: () => void
+}) {
+  const { contract, onFinish } = props
+  const user = useUser()
+  const [text, setText] = usePersistentInMemoryState(
+    '',
+    'create-answer-text' + contract.id
+  )
+  const [answerError, setAnswerError] = useState<string | undefined>()
+  const [possibleDuplicateAnswer, setPossibleDuplicateAnswer] = useState<
+    string | undefined
+  >()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { answers } = contract
+
+  const canSubmit = text && !isSubmitting && !answerError
+
+  const submitAnswer = async () => {
+    if (canSubmit) {
+      setIsSubmitting(true)
+
+      try {
+        await createAnswerCpmm({
+          contractId: contract.id,
+          text,
+        })
+        setText('')
+        setPossibleDuplicateAnswer(undefined)
+      } catch (e) {}
+
+      setIsSubmitting(false)
+      onFinish()
+    }
+  }
+
+  const changeAnswer = (text: string) => {
+    setText(text)
+    const existingAnswer = answers.find(
+      (a) => lowerCase(a.text) === lowerCase(text)
+    )
+
+    if (existingAnswer) {
+      setAnswerError(
+        existingAnswer
+          ? `"${existingAnswer.text}" already exists as an answer. Can't see it? Hit the 'Show More' button right above this box.`
+          : ''
+      )
+      return
+    } else {
+      setAnswerError('')
+    }
+
+    if (answers.length && text) {
+      const matches = findBestMatch(
+        lowerCase(text),
+        answers.map((a) => lowerCase(a.text))
+      )
+      setPossibleDuplicateAnswer(
+        matches.bestMatch.rating > 0.8
+          ? answers[matches.bestMatchIndex].text
+          : ''
+      )
+    }
+  }
+
+  if (user?.isBannedFromPosting) return <></>
+
+  return (
+    <Col className="bg-canvas-50 gap-4 rounded p-4">
+      <Col className="flex-1 gap-2 px-4 xl:px-0">
+        <div className="mb-1">Add a new answer</div>
+        <ExpandingInput
+          value={text}
+          onChange={(e) => changeAnswer(e.target.value)}
+          className="w-full"
+          placeholder="Type your answer..."
+          rows={1}
+          maxLength={MAX_ANSWER_LENGTH}
+          autoFocus
+        />
+        {answerError ? (
+          <AnswerError key={1} level="error" text={answerError} />
+        ) : possibleDuplicateAnswer ? (
+          <AnswerError
+            key={2}
+            level="warning"
+            text={`Did you mean to bet on "${possibleDuplicateAnswer}"?`}
+          />
+        ) : undefined}
+        <div />
+        <Row className={'mt-3 justify-end gap-2 pl-2 sm:mt-0'}>
+          <Button color="gray" onClick={onFinish}>
+            Cancel
+          </Button>
+          <Button
+            color="green"
+            loading={isSubmitting}
+            disabled={!canSubmit}
+            onClick={withTracking(submitAnswer, 'submit answer')}
+          >
+            Submit and pay {formatMoney(ANSWER_COST)}
+          </Button>
+        </Row>
+      </Col>
+    </Col>
+  )
+}
 
 export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
   const { contract } = props

@@ -68,6 +68,7 @@ import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
 import { awardbounty } from './award-bounty'
 import { addbounty } from './add-bounty'
+import { createanswercpmm } from './create-answer-cpmm'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -172,6 +173,7 @@ app.post('/create-q-and-a-answer', ...apiRoute(createQAndAAnswer))
 app.post('/award-q-and-a-answer', ...apiRoute(awardQAndAAnswer))
 app.post('/award-bounty', ...apiRoute(awardbounty))
 app.post('/add-bounty', ...apiRoute(addbounty))
+app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
 
 // Catch 404 errors - this should be the last route
 app.use((req, res, next) => {
