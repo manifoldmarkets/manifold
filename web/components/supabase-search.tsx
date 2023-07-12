@@ -83,7 +83,7 @@ export const CONTRACT_TYPES = [
   { label: 'Binary', value: 'BINARY' },
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
   { label: 'Free Response', value: 'FREE_RESPONSE' },
-  { label: 'Numeric', value: 'NUMERIC' },
+  { label: 'Numeric', value: 'PSEUDO_NUMERIC' },
   { label: 'Bountied Question', value: 'BOUNTIED_QUESTION' },
 ] as const
 
