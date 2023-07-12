@@ -244,25 +244,26 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
-  const shouldBeNewestFirst = (c: ContractComment) =>
-    c.replyToCommentId == undefined
+  const isReply = (c: ContractComment) => c.replyToCommentId !== undefined
 
   const sortedComments = useMemo(
     () =>
       sortBy(comments, [
         sort === 'Best'
           ? isBountiedQuestion
-            ? (c: ContractComment) => -(c?.bountyAwarded ?? 0)
+            ? (c: ContractComment) =>
+                isReply(c) ? c.createdTime : -(c?.bountyAwarded ?? 0)
             : (c) =>
-                // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-                likes &&
-                c.createdTime > Date.now() - 10 * MINUTE_MS &&
-                c.userId === user?.id &&
-                shouldBeNewestFirst(c)
+                isReply(c)
+                  ? c.createdTime
+                  : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+                  likes &&
+                    c.createdTime > Date.now() - 10 * MINUTE_MS &&
+                    c.userId === user?.id
                   ? -Infinity
                   : -(c?.likes ?? 0)
           : (c) => c,
-        (c) => (!shouldBeNewestFirst(c) ? c.createdTime : -c.createdTime),
+        (c) => (isReply(c) ? c.createdTime : -c.createdTime),
       ]),
     [comments, sort, likes, user?.id]
   )
@@ -271,7 +272,23 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     () => groupBy(sortedComments, (c) => c.replyToCommentId ?? '_'),
     [sortedComments]
   )
+
   const parentComments = commentsByParent['_'] ?? []
+
+  const childrensBounties =
+    contract.outcomeType == 'BOUNTIED_QUESTION'
+      ? Object.keys(commentsByParent).reduce(
+          (newObj: { [key: string]: number }, key) => {
+            newObj[key] = commentsByParent[key].reduce(
+              (sum, c) => sum + (c?.bountyAwarded ?? 0),
+              0
+            )
+            return newObj
+          },
+          {}
+        )
+      : {}
+
   const visibleCommentIds = useMemo(
     () =>
       parentComments
@@ -354,6 +371,11 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               showReplies={
                 !isBountiedQuestion ||
                 (!!user && user.id === contract.creatorId)
+              }
+              childrenBountyTotal={
+                contract.outcomeType == 'BOUNTIED_QUESTION'
+                  ? childrensBounties[parent.id]
+                  : undefined
               }
             />
           ))}

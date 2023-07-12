@@ -62,6 +62,7 @@ export function FeedCommentThread(props: {
   inTimeline?: boolean
   idInUrl?: string
   showReplies?: boolean
+  childrenBountyTotal?: number
 }) {
   const {
     contract,
@@ -72,6 +73,7 @@ export function FeedCommentThread(props: {
     inTimeline,
     idInUrl,
     showReplies,
+    childrenBountyTotal,
   } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
 
@@ -103,6 +105,7 @@ export function FeedCommentThread(props: {
         onReplyClick={onReplyClick}
         trackingLocation={trackingLocation}
         inTimeline={inTimeline}
+        childrenBountyTotal={childrenBountyTotal}
       />
       {seeReplies &&
         threadComments.map((comment, _commentIdx) =>
@@ -253,6 +256,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   onSeeReplyClick: () => void
   trackingLocation: string
   inTimeline?: boolean
+  childrenBountyTotal?: number
 }) {
   const {
     contract,
@@ -265,6 +269,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     numReplies,
     trackingLocation,
     inTimeline,
+    childrenBountyTotal,
   } = props
   const { userUsername } = comment
   const { ref } = useIsVisible(
@@ -293,6 +298,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
         seeReplies={seeReplies}
         numComments={numReplies}
         onClick={onSeeReplyClick}
+        childrenBountyTotal={childrenBountyTotal}
       />
     </FeedComment>
   )
