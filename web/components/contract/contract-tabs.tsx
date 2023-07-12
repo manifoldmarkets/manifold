@@ -402,7 +402,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const [olderBets, setOlderBets] = useState<Bet[]>([])
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
-  const bets = [...props.bets, ...olderBets]
+  const bets = [...props.bets.filter((b) => !b.isRedemption), ...olderBets]
   const oldestBet = last(bets)
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
