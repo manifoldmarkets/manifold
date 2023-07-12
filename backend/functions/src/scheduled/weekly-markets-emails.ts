@@ -12,13 +12,16 @@ import {
 import { createRNG, shuffle } from 'common/util/random'
 import { DAY_MS } from 'common/util/time'
 import { filterDefined } from 'common/util/array'
-import { uniq } from 'lodash'
+import { orderBy, uniq } from 'lodash'
 import { sendInterestingMarketsEmail } from 'shared/emails'
 import { getTrendingContracts } from 'shared/utils'
 import { secrets } from 'common/secrets'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { PrivateUser } from 'common/user'
-import { SupabaseClient } from '@supabase/supabase-js'
+import { Row } from 'common/supabase/utils'
 
 const USERS_TO_EMAIL = 500
 const numContractsToSend = 6
@@ -30,7 +33,7 @@ const GROUP_SLUGS_TO_IGNORE_IN_TRENDING = [
 
 // This should(?) work until we have ~60k users (500 * 120)
 export const weeklyMarketsEmails = functions
-  .runWith({ secrets, memory: '4GB', timeoutSeconds: 540 })
+  .runWith({ secrets, memory: '2GB', timeoutSeconds: 540 })
   // every minute on Monday for 2 hours starting at 12pm PT (UTC -07:00)
   .pubsub.schedule('* 19-20 * * 1')
   .timeZone('Etc/UTC')
@@ -64,15 +67,17 @@ export async function sendTrendingMarketsEmailsToAllUsers(isDebug = false) {
     return
   }
 
-  for (const privateUser of privateUsersToSendEmailsTo) {
-    await firestore
-      .collection('private-users')
-      .doc(privateUser.id)
-      .update({
-        weeklyTrendingEmailSent: true,
-      })
-      .catch((e) => log('error updating weeklyTrendingEmailSent', e))
-  }
+  await Promise.all(
+    privateUsersToSendEmailsTo.map((u) =>
+      firestore
+        .collection('private-users')
+        .doc(u.id)
+        .update({
+          weeklyTrendingEmailSent: true,
+        })
+        .catch((e) => log('error updating weeklyTrendingEmailSent', e))
+    )
+  )
 
   log(
     'Sending weekly trending emails to',
@@ -80,35 +85,64 @@ export async function sendTrendingMarketsEmailsToAllUsers(isDebug = false) {
     'users'
   )
 
-  const db = createSupabaseClient()
-
+  const pg = createSupabaseDirectClient()
   const fallbackContracts = await getUniqueTrendingContracts()
+  const userContracts = await getUsersRecommendedContracts(
+    privateUsersToSendEmailsTo.map((u) => u.id),
+    pg
+  )
   let sent = 0
-
-  for (const privateUser of privateUsersToSendEmailsTo) {
-    await sendEmailToPrivateUser(privateUser, fallbackContracts, db)
-      .then(() =>
-        log('sent email to', privateUser.email, ++sent, '/', USERS_TO_EMAIL)
+  await Promise.all(
+    privateUsersToSendEmailsTo.map(async (pu) =>
+      sendEmailToPrivateUser(pu, fallbackContracts, userContracts[pu.id])
+        .then(() => log('sent email to', pu.email, ++sent, '/', USERS_TO_EMAIL))
+        .catch((e) => log('error sending email', e))
+    )
+  )
+}
+export const getUsersRecommendedContracts = async (
+  userIds: string[],
+  pg: SupabaseDirectClient
+) => {
+  const userContractIds: { [userId: string]: string[] } = {}
+  const userContracts: { [userId: string]: Contract[] } = {}
+  await Promise.all(
+    userIds.map(async (userId) => {
+      await pg.map(
+        ` select contract_id
+                FROM user_feed
+                WHERE user_id = $1
+                and data_type = 'trending_contract'
+                and contract_id is not null
+                and seen_time is null ORDER BY created_time DESC LIMIT 25;
+        `,
+        [userId],
+        (r: { contract_id: string }) => {
+          if (!userContractIds[userId]) userContractIds[userId] = []
+          userContractIds[userId].push(r.contract_id)
+        }
       )
-      .catch((e) => log('error sending email', e))
-  }
+    })
+  )
+  const contracts = await pg.map(
+    `select data from contracts where id = ANY($1)`,
+    [uniq(Object.values(userContractIds).flat())],
+    (r: Row<'contracts'>) => r.data as Contract
+  )
+  userIds.forEach((userId) => {
+    userContracts[userId] = orderBy(
+      contracts.filter((c) => uniq(userContractIds[userId]).includes(c.id)),
+      (c) => -c.importanceScore
+    )
+  })
+  return userContracts
 }
 
 const sendEmailToPrivateUser = async (
   privateUser: PrivateUser,
   fallbackContracts: Contract[],
-  db: SupabaseClient
+  recommendations: Contract[]
 ) => {
-  if (!privateUser.email) return
-  // TODO: optimize this query, we should just get their most recent feed items and pick a few to serve
-  const { data } = await db.rpc('get_recommended_contracts_embeddings_fast', {
-    uid: privateUser.id,
-    n: 10,
-    excluded_contract_ids: [],
-  })
-
-  const recommendations = (data ?? []).map((row: any) => row.data as Contract)
-
   const contractsToSend = chooseRandomSubset(
     recommendations.length < numContractsToSend
       ? [...recommendations, ...fallbackContracts]
