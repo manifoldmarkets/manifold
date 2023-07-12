@@ -283,7 +283,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     contract.outcomeType == 'BOUNTIED_QUESTION'
       ? Object.keys(commentsByParent).reduce(
           (newObj: { [key: string]: number }, key) => {
-            // Perform your value modification here. In this case, we are appending " NEW" to each value.
             newObj[key] = commentsByParent[key].reduce(
               (sum, c) => sum + (c?.bountyAwarded ?? 0),
               0
