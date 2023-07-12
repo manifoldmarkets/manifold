@@ -1,7 +1,4 @@
-import {
-  ContractMetric,
-  ContractMetricsByOutcome,
-} from 'common/contract-metric'
+import { ContractMetric } from 'common/contract-metric'
 import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
@@ -33,8 +30,8 @@ export const useRealtimeContractMetrics = (
       })
       .sort((a, b) => b.totalShares[outcome] - a.totalShares[outcome])
 
-    return [outcome, val]
+    return [outcome, val] as const
   })
 
-  return Object.fromEntries(entries) as ContractMetricsByOutcome
+  return Object.fromEntries(entries)
 }
