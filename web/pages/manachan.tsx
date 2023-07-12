@@ -45,13 +45,13 @@ export default function ManachanPage() {
     <Page>
       <SEO
         title="Mana-chan speaks!"
-        description="Mana-chan is Manifold's official anime spokesperson"
+        description="Mana-chan is Manifold's official anime spokesgirl"
       />
 
       <Col className="bg-canvas-0 mx-auto max-w-[700px] gap-4 rounded p-4 py-8 sm:p-8 sm:shadow-md">
         <Title>Mana-chan speaks!</Title>
         <div>
-          Mana-chan is Manifold's official anime spokesperson...but she is very
+          Mana-chan is Manifold's official anime spokesgirl...but she is very
           shy and doesn't know what to say. For {formatMoney(1000)}, you can
           tell her what to tweet!
         </div>
