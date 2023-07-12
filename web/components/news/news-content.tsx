@@ -72,7 +72,6 @@ const Threads = createNewsDashboardTab('Threads', 'Facebook Launches Threads', [
   },
   { slug: 'how-many-users-will-threads-have-af' },
   { slug: 'will-elon-musk-posy-on-instagram-th' },
-  { slug: 'will-twitter-have-more-users-than-m' },
   { slug: 'will-threads-metas-twitter-alternat' },
   { slug: 'which-twitter-alternative-will-have' },
 ])
@@ -568,7 +567,7 @@ export const newsContent = [
   WestBank,
   FrenchRiots,
   SupremeCourt,
-  { title: 'Russian Coup?', content: <RussianCoupData /> },
-  { title: 'Titanic Sub', content: <MissingSubData /> },
-  { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
+  // { title: 'Russian Coup?', content: <RussianCoupData /> },
+  // { title: 'Titanic Sub', content: <MissingSubData /> },
+  // { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
 ]

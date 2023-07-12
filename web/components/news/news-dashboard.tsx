@@ -34,7 +34,8 @@ export const NewsDashboard = (props: {
     (urls.length > 0 && previews.length === 0)
 
   const renderCard = (
-    card: { url: string } | { slug: string } | { content: any }
+    card: { url: string } | { slug: string } | { content: any },
+    i: number
   ) => {
     if ('url' in card) {
       const preview = previews.find((p) => p.url === card.url)
@@ -60,10 +61,10 @@ export const NewsDashboard = (props: {
       )
     }
 
-    return <>{card.content}</>
+    return <div key={'news-tab-content' + title + i}>{card.content}</div>
   }
 
-  const content = data.map(renderCard)
+  const content = data.map(renderCard).filter((x) => !!x)
 
   return (
     <Col>
