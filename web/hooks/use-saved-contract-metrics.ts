@@ -19,7 +19,7 @@ export const useSavedContractMetrics = (contract: Contract) => {
 
   useEffect(() => {
     getUserContractMetrics(user?.id ?? '_', contract.id, db).then((metrics) => {
-      if (metrics) setSavedMetrics({ ...savedMetrics, ...metrics[0] })
+      if (metrics.length) setSavedMetrics({ ...savedMetrics, ...metrics[0] })
     }),
       []
   })
