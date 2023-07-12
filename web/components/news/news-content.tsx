@@ -10,6 +10,11 @@ import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
 
 const SummitNATO = createNewsDashboardTab('NATO Summit', 'NATO Summit', [
   {
+    url: 'https://edition.cnn.com/2023/07/12/politics/joe-biden-nato-summit-day-2/index.html',
+  },
+  { slug: 'will-ukraine-be-an-official-member' },
+  { slug: 'will-ukraine-join-nato-by-2033' },
+  {
     url: 'https://www.washingtonpost.com/world/2023/07/11/ukraine-nato-summit-2023-sweden/',
   },
   { url: 'https://www.bbc.com/news/world-europe-66160319' },
@@ -26,7 +31,6 @@ const SummitNATO = createNewsDashboardTab('NATO Summit', 'NATO Summit', [
   { slug: 'will-nato-deploy-nuclear-weapons-to-6f38766ad8d8' },
   { slug: 'will-nato-deploy-nuclear-weapons-to' },
   { slug: 'any-country-invokes-article-5-of-na' },
-  { slug: 'will-ukraine-join-nato-by-2033' },
   { slug: 'will-kazakhstan-join-nato-by-2033' },
   { slug: 'will-moldova-join-the-eu-by-2025' },
 ])
