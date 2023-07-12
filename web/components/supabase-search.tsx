@@ -117,6 +117,7 @@ export type SupabaseAdditionalFilter = {
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
   nonQueryFacetFilters?: string[]
+  contractType?: ContractTypeType
 }
 
 const AsListContext = createContext({
@@ -144,6 +145,9 @@ export function SupabaseContractSearch(props: {
     hideQuickBet?: boolean
     noLinkAvatar?: boolean
   }
+  listUIOptions?: {
+    hideActions?: boolean
+  }
   headerClassName?: string
   inputRowClassName?: string
   isWholePage?: boolean
@@ -158,6 +162,7 @@ export function SupabaseContractSearch(props: {
   contractSearchControlsClassName?: string
   showTopics?: boolean
   hideSearch?: boolean
+  hideFilters?: boolean
 }) {
   const {
     defaultSort,
@@ -166,6 +171,7 @@ export function SupabaseContractSearch(props: {
     onContractClick,
     hideOrderSelector,
     cardUIOptions,
+    listUIOptions,
     highlightContractIds,
     headerClassName,
     inputRowClassName,
@@ -177,6 +183,7 @@ export function SupabaseContractSearch(props: {
     fromGroupProps,
     listViewDisabled,
     showTopics,
+    hideFilters,
   } = props
 
   const [state, setState] = usePersistentInMemoryState<stateType>(
@@ -217,7 +224,7 @@ export function SupabaseContractSearch(props: {
           query,
           filter,
           sort,
-          contractType,
+          contractType: additionalFilter?.contractType ?? contractType,
           topic,
           offset: offset,
           limit: CONTRACTS_PER_PAGE,
@@ -318,6 +325,7 @@ export function SupabaseContractSearch(props: {
           autoFocus={autoFocus}
           listViewDisabled={listViewDisabled}
           showTopics={showTopics}
+          hideFilters={hideFilters}
         />
         {contracts && contracts.length === 0 ? (
           profile || fromGroupProps ? (
@@ -343,6 +351,7 @@ export function SupabaseContractSearch(props: {
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
             headerClassName={clsx(headerClassName, '!top-14')}
+            hideActions={listUIOptions?.hideActions}
           />
         ) : (
           <ContractsGrid
@@ -380,6 +389,7 @@ function SupabaseContractSearchControls(props: {
   autoFocus?: boolean
   listViewDisabled?: boolean
   showTopics?: boolean
+  hideFilters?: boolean
 }) {
   const {
     className,
@@ -394,6 +404,7 @@ function SupabaseContractSearchControls(props: {
     includeProbSorts,
     showTopics,
     inputRowClassName,
+    hideFilters,
   } = props
 
   const router = useRouter()
@@ -520,18 +531,20 @@ function SupabaseContractSearchControls(props: {
           className="w-full"
           autoFocus={autoFocus}
         />
-        <SearchFilters
-          filter={filter}
-          selectFilter={selectFilter}
-          sort={sort}
-          selectSort={selectSort}
-          contractType={contractType}
-          selectContractType={selectContractType}
-          hideOrderSelector={hideOrderSelector}
-          className={'flex flex-row gap-2'}
-          includeProbSorts={includeProbSorts}
-          listViewDisabled={true}
-        />
+        {!hideFilters && (
+          <SearchFilters
+            filter={filter}
+            selectFilter={selectFilter}
+            sort={sort}
+            selectSort={selectSort}
+            contractType={contractType}
+            selectContractType={selectContractType}
+            hideOrderSelector={hideOrderSelector}
+            className={'flex flex-row gap-2'}
+            includeProbSorts={includeProbSorts}
+            listViewDisabled={true}
+          />
+        )}
       </Col>
       {showTopics && (
         <Carousel>

@@ -108,6 +108,7 @@ export function ContractsTable(props: {
   highlightContractIds?: string[]
   headerClassName?: string
   hideHeader?: boolean
+  hideActions?: boolean
 }) {
   const {
     contracts,
@@ -116,6 +117,7 @@ export function ContractsTable(props: {
     highlightContractIds,
     headerClassName,
     hideHeader,
+    hideActions,
   } = props
 
   const user = useUser()
@@ -173,14 +175,18 @@ export function ContractsTable(props: {
     //     </div>
     //   ),
     // },
-    {
-      name: 'action',
-      header: '',
-      visible: !isMobile,
-      content: (contract: Contract) => (
-        <Action contract={contract} user={user} />
-      ),
-    },
+    ...(hideActions
+      ? []
+      : [
+          {
+            name: 'action',
+            header: '',
+            visible: !isMobile,
+            content: (contract: Contract) => (
+              <Action contract={contract} user={user} />
+            ),
+          },
+        ]),
   ]
 
   function ContractRow(props: { contract: Contract }) {
@@ -190,7 +196,8 @@ export function ContractsTable(props: {
         props.contract.id
       ) ?? props.contract
     const contractListEntryHighlightClass =
-      'bg-gradient-to-b from-primary-100 via-ink-0 to-ink-0 outline outline-2 outline-primary-400'
+      // 'bg-gradient-to-b from-primary-100 via-ink-0 to-ink-0 outline outline-2 outline-primary-400'
+      'bg-primary-100'
 
     const dataCellClassName = 'py-2 align-top'
     return (
