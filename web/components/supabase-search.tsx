@@ -50,6 +50,13 @@ export const PROB_SORTS = ['prob-descending', 'prob-ascending']
 
 export type filter = 'open' | 'closed' | 'resolved' | 'all'
 
+export type ContractTypeType =
+  | 'Binary'
+  | 'Multiple Choice'
+  | 'Free Response'
+  | 'Numeric'
+  | 'Bountied Question'
+
 export type SupabaseSearchParameters = {
   query: string
   sort: Sort
@@ -391,6 +398,16 @@ function SupabaseContractSearchControls(props: {
       ? undefined
       : {
           key: 'f',
+          store: urlParamStore(router),
+        }
+  )
+
+  const [contractType, setContractType] = usePersistentState(
+    '',
+    !useQueryUrlParam
+      ? undefined
+      : {
+          key: 'search-contract-type',
           store: urlParamStore(router),
         }
   )
