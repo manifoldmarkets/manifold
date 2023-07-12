@@ -1,3 +1,11 @@
+import { useState } from 'react'
+import Image from 'next/image'
+import Script from 'next/script'
+
+import { useUser } from 'web/hooks/use-user'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { tweetFromManaChan } from 'web/lib/firebase/api'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
@@ -6,11 +14,6 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { formatMoney } from 'common/util/format'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Button } from 'web/components/buttons/button'
-import { useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { tweetFromManaChan } from 'web/lib/firebase/api'
 
 export default function ManachanPage() {
   useTracking('view manachan page')
@@ -50,6 +53,13 @@ export default function ManachanPage() {
 
       <Col className="bg-canvas-0 mx-auto max-w-[700px] gap-4 rounded p-4 py-8 sm:p-8 sm:shadow-md">
         <Title>Mana-chan speaks!</Title>
+        <Image
+          src="/manachan.png"
+          width={300}
+          height={300}
+          alt={''}
+          className="self-center"
+        />
         <div>
           Mana-chan is Manifold's official anime spokesgirl...but she is very
           shy and doesn't know what to say. For {formatMoney(1000)}, you can
@@ -86,7 +96,7 @@ export default function ManachanPage() {
         >
           Tweets by manachan_waifu
         </a>{' '}
-        <script async src="https://platform.twitter.com/widgets.js"></script>
+        <Script async src="https://platform.twitter.com/widgets.js" />
       </Col>
     </Page>
   )
