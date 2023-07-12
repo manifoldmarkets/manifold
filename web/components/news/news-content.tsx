@@ -9,9 +9,6 @@ import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
 
 const SummitNATO = createNewsDashboardTab('NATO Summit', 'NATO Summit', [
-  {
-    url: 'https://edition.cnn.com/2023/07/12/politics/joe-biden-nato-summit-day-2/index.html',
-  },
   { slug: 'will-ukraine-be-an-official-member' },
   { slug: 'will-ukraine-join-nato-by-2033' },
   {
