@@ -1,6 +1,5 @@
 import { sum } from 'lodash'
 import { useEffect, useState } from 'react'
-
 import { MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
@@ -10,6 +9,9 @@ import { ResolveConfirmationButton } from '../buttons/confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
 import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useUser } from 'web/hooks/use-user'
+import { ResolutionAnswerItem } from './answer-item'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -52,7 +54,7 @@ function getAnswerResolveButtonLabel(
     : `${answers.length} answers`
 }
 
-export function AnswerResolvePanel(props: {
+function AnswersResolveOptions(props: {
   isAdmin: boolean
   isCreator: boolean
   contract: MultiContract
@@ -234,5 +236,81 @@ export function AnswerResolvePanel(props: {
       {!!error && <div className="text-scarlet-500">{error}</div>}
       {!!warning && <div className="text-warning">{warning}</div>}
     </Col>
+  )
+}
+
+export const AnswersResolvePanel = (props: { contract: MultiContract }) => {
+  const { contract } = props
+
+  const { answers } = contract
+
+  const isAdmin = useAdmin()
+  const user = useUser()
+
+  const [resolveOption, setResolveOption] = useState<
+    'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
+  >()
+  const [chosenAnswers, setChosenAnswers] = useState<{
+    [answerId: string]: number
+  }>({})
+
+  useEffect(() => {
+    setChosenAnswers({})
+  }, [resolveOption])
+
+  const chosenTotal = sum(Object.values(chosenAnswers))
+
+  const onChoose = (answerId: string, prob: number) => {
+    if (resolveOption === 'CHOOSE_ONE') {
+      setChosenAnswers({ [answerId]: prob })
+    } else {
+      setChosenAnswers((chosenAnswers) => {
+        return {
+          ...chosenAnswers,
+          [answerId]: prob,
+        }
+      })
+    }
+  }
+
+  const onDeselect = (answerId: string) => {
+    setChosenAnswers((chosenAnswers) => {
+      const newChosenAnswers = { ...chosenAnswers }
+      delete newChosenAnswers[answerId]
+      return newChosenAnswers
+    })
+  }
+
+  const showChoice = contract.resolution
+    ? undefined
+    : resolveOption === 'CHOOSE_ONE'
+    ? 'radio'
+    : resolveOption === 'CHOOSE_MULTIPLE'
+    ? 'checkbox'
+    : undefined
+
+  return (
+    <>
+      <AnswersResolveOptions
+        isAdmin={isAdmin}
+        isCreator={user?.id === contract.creatorId}
+        contract={contract}
+        resolveOption={resolveOption}
+        setResolveOption={setResolveOption}
+        chosenAnswers={chosenAnswers}
+      />
+      {answers.map((answer) => (
+        <ResolutionAnswerItem
+          key={answer.id}
+          answer={answer}
+          contract={contract}
+          showChoice={showChoice}
+          chosenProb={chosenAnswers[answer.id]}
+          totalChosenProb={chosenTotal}
+          onChoose={onChoose}
+          onDeselect={onDeselect}
+        />
+      ))}
+    </>
   )
 }

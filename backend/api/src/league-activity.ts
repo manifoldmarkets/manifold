@@ -46,6 +46,7 @@ export const getLeagueActivity = async (
       cb.user_id = any($1)
       and cb.created_time >= $2
       and cb.created_time < $3
+      and is_redemption = false
     order by cb.created_time desc
     limit 10000
   `,

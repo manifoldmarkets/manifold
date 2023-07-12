@@ -12,6 +12,7 @@ import {
   NonBet,
   Numeric,
   OutcomeType,
+  Poll,
   PseudoNumeric,
   QuadraticFunding,
   Stonk,
@@ -22,7 +23,7 @@ import { User } from './user'
 import { removeUndefinedProps } from './util/object'
 import { JSONContent } from '@tiptap/core'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
-
+export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
 export function getNewContract(
   id: string,
   slug: string,
@@ -43,8 +44,7 @@ export function getNewContract(
   min: number,
   max: number,
   isLogScale: boolean,
-  shouldAnswersSumToOne: boolean | undefined,
-  totalBounty: number
+  shouldAnswersSumToOne: boolean | undefined
 ) {
   const createdTime = Date.now()
 
@@ -58,7 +58,8 @@ export function getNewContract(
     CERT: () => getCertProps(ante),
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
     STONK: () => getStonkCpmmProps(initialProb, ante),
-    BOUNTIED_QUESTION: () => getBountiedQuestionProps(totalBounty),
+    BOUNTIED_QUESTION: () => getBountiedQuestionProps(),
+    POLL: () => getPollProps(),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -81,7 +82,7 @@ export function getNewContract(
     closeTime,
     dailyScore: 0,
     popularityScore: 0,
-    importanceScore: 0,
+    importanceScore: NEW_MARKET_IMPORTANCE_SCORE,
     uniqueBettorCount: 0,
     lastUpdatedTime: createdTime,
 
@@ -274,14 +275,23 @@ const getNumericProps = (
   return system
 }
 
-const getBountiedQuestionProps = (totalBounty: number) => {
+const getBountiedQuestionProps = () => {
   const system: NonBet & BountiedQuestion = {
     mechanism: 'none',
     outcomeType: 'BOUNTIED_QUESTION',
-    totalBounty,
-    bountyPaid: 0,
     bountyTxns: [],
+    totalBounty: 0,
+    bountyLeft: 0,
   }
 
+  return system
+}
+
+const getPollProps = () => {
+  const system: NonBet & Poll = {
+    mechanism: 'none',
+    outcomeType: 'POLL',
+    options: [{ option: '', votes: 0 }],
+  }
   return system
 }

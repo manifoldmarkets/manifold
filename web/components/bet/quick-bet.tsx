@@ -44,7 +44,7 @@ import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { Answer, DpmAnswer } from 'common/answer'
-import { AnswerLabel } from '../outcome-label'
+import { AnswerBar, AnswerLabel } from '../answers/answer-item'
 import { useChartAnswers } from '../charts/contract/choice'
 import { getAnswerColor } from '../answers/answers-panel'
 import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
@@ -53,6 +53,7 @@ import { floor } from 'lodash'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { ClosedProb, OpenProb } from '../answers/answer-options'
 
 const BET_SIZE = 10
 
@@ -529,78 +530,61 @@ export function ContractCardAnswers(props: {
     return <div>No answers yet...</div>
   }
   return (
-    <Col className={clsx('w-full gap-2', className)}>
+    <Col className={clsx('w-full gap-4', className)}>
       {answers.map((answer) => (
         <ContractCardAnswer
           key={answer.id}
           contract={contract}
           answer={answer}
           answersArray={answersArray}
-          type={getAnswerType(
-            answer,
-            contract.resolution,
-            contract.resolutions
-          )}
         />
       ))}
     </Col>
   )
 }
 
-function getAnswerType(
-  answer: Answer | DpmAnswer,
-  resolution?: string,
-  resolutions?: { [outcome: string]: number } | undefined
-) {
-  if (answer.id === resolution || (resolutions && resolutions[answer.id])) {
-    return 'winner'
-  }
-  if (!resolution) {
-    return 'contender'
-  }
-  return 'loser'
-}
-
 function ContractCardAnswer(props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
   answersArray: string[]
-  type: 'winner' | 'loser' | 'contender'
 }) {
-  const { contract, answer, answersArray, type } = props
+  const { contract, answer, answersArray } = props
+  const { resolution, resolutions } = contract
+
+  const resolvedProb =
+    resolution == undefined
+      ? undefined
+      : resolution === answer.id
+      ? 1
+      : (resolutions?.[answer.id] ?? 0) / 100
+
   const prob = getAnswerProbability(contract, answer.id)
-  const display = formatPercent(prob)
   const isClosed = (contract.closeTime ?? Infinity) < Date.now()
   const answerColor = getAnswerColor(answer, answersArray)
-  const color =
-    type === 'loser' || (isClosed && type === 'contender')
-      ? '#D8D8EB80'
-      : answerColor
+
   return (
-    <div
-      className={clsx(
-        'bg-ink-100 relative h-7 overflow-hidden rounded-md',
-        type === 'winner' && 'ring-[1.5px] ring-purple-500'
-      )}
-    >
-      <div
-        className={'h-full rounded-r-md transition-all'}
-        style={{
-          backgroundColor: color,
-          width: `${100 * prob}%`,
-        }}
-      />
-      <span
-        className={clsx(
-          'text-md',
-          type === 'loser' ? 'text-ink-600' : 'text-ink-900',
-          'absolute inset-0 flex items-center justify-between px-4'
-        )}
-      >
-        <AnswerLabel answer={answer} truncate={'short'} />
-        <div className="font-semibold">{display}</div>
-      </span>
-    </div>
+    <AnswerBar
+      color={answerColor}
+      prob={prob}
+      resolvedProb={resolvedProb}
+      label={
+        <AnswerLabel
+          text={answer.text}
+          truncate="short"
+          className={clsx(
+            resolvedProb === 0 && 'text-ink-600',
+            'text-sm sm:text-base'
+          )}
+        />
+      }
+      end={
+        isClosed ? (
+          <ClosedProb prob={prob} resolvedProb={resolvedProb} />
+        ) : (
+          <OpenProb prob={prob} />
+        )
+      }
+    />
   )
 }
 

@@ -11,7 +11,7 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import { APIError } from 'common/api'
-import { runTxn, TxnData } from 'shared/run-txn'
+import { runTxn, TxnData } from 'shared/txn/run-txn'
 import { secrets } from 'common/secrets'
 import { createSignupBonusNotification } from 'shared/create-notification'
 

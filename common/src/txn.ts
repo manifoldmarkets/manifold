@@ -33,8 +33,11 @@ type AnyTxnType =
   | QAndACreate
   | QAndAAward
   | LeaguePrize
+  | BountyPosted
+  | BountyAwarded
+  | BountyAdded
 
-type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
+export type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
   id: string
@@ -293,6 +296,27 @@ type LeaguePrize = {
   data: league_user_info
 }
 
+type BountyPosted = {
+  category: 'BOUNTY_POSTED'
+  fromType: 'USER'
+  toType: 'CONTRACT'
+  token: 'M$'
+}
+
+type BountyAdded = {
+  category: 'BOUNTY_ADDED'
+  fromType: 'USER'
+  toType: 'CONTRACT'
+  token: 'M$'
+}
+
+type BountyAwarded = {
+  category: 'BOUNTY_AWARDED'
+  fromType: 'CONTRACT'
+  toType: 'USER'
+  token: 'M$'
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -324,3 +348,6 @@ export type LootBoxPuchaseTxn = Txn & LootBoxPurchase
 export type QAndACreateTxn = Txn & QAndACreate
 export type QAndAAwardTxn = Txn & QAndAAward
 export type LeaguePrizeTxn = Txn & LeaguePrize
+export type BountyAwardedTxn = Txn & BountyAwarded
+export type BountyPostedTxn = Txn & BountyPosted
+export type BountyAddedTxn = Txn & BountyAdded

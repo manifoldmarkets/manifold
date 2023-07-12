@@ -93,9 +93,11 @@ export function BuyAmountInput(props: {
   error: string | undefined
   setError: (error: string | undefined) => void
   minimumAmount?: number
+  maximumAmount?: number
   quickAddAmount?: number
   disabled?: boolean
   showBalance?: boolean
+  parentClassName?: string
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -105,6 +107,11 @@ export function BuyAmountInput(props: {
     show: boolean
     wrap: boolean
   }
+  customRange?: {
+    rangeMin?: number
+    rangeMax?: number
+  }
+  disregardUserBalance?: boolean
 }) {
   const {
     amount,
@@ -114,12 +121,16 @@ export function BuyAmountInput(props: {
     sliderOptions,
     disabled,
     showBalance,
+    parentClassName,
     className,
     inputClassName,
     minimumAmount,
     quickAddAmount = 10,
     inputRef,
     binaryOutcome,
+    maximumAmount,
+    customRange,
+    disregardUserBalance,
   } = props
   const { show, wrap } = sliderOptions ?? {}
 
@@ -128,10 +139,12 @@ export function BuyAmountInput(props: {
   // Check for errors.
   useEffect(() => {
     if (amount !== undefined) {
-      if (user && user.balance < amount) {
+      if (!disregardUserBalance && user && user.balance < amount) {
         setError('Insufficient balance')
       } else if (minimumAmount && amount < minimumAmount) {
         setError('Minimum amount: ' + formatMoney(minimumAmount))
+      } else if (maximumAmount && amount > maximumAmount) {
+        setError('Maximum amount: ' + formatMoney(maximumAmount))
       } else {
         setError(undefined)
       }
@@ -158,7 +171,7 @@ export function BuyAmountInput(props: {
 
   return (
     <>
-      <Col>
+      <Col className={parentClassName}>
         <Row
           className={clsx(
             'items-center justify-between gap-x-4 gap-y-1 sm:justify-start',
@@ -174,13 +187,15 @@ export function BuyAmountInput(props: {
             className={className}
             inputClassName={clsx('pr-12', inputClassName)}
             inputRef={inputRef}
-            quickAddMoreButton={quickAddButton}
+            quickAddMoreButton={maximumAmount ? undefined : quickAddButton}
           />
           {show && (
             <BetSlider
               amount={amount}
               onAmountChange={onChange}
               binaryOutcome={binaryOutcome}
+              maximumAmount={maximumAmount}
+              customRange={customRange}
             />
           )}
         </Row>

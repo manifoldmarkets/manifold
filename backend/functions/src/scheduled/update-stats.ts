@@ -464,6 +464,7 @@ export const updateStatsCore = async () => {
 
   // Write to postgres
   await bulkUpsert(pg, 'stats', 'title', rows)
+  log('Done. Wrote', rows.length, ' rows to stats table')
 }
 
 export const updateStats = functions

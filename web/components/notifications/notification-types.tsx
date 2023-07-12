@@ -95,6 +95,16 @@ export function NotificationItem(props: {
       />
     )
   } else if (sourceType === 'user') {
+    if (reason === 'bounty_added') {
+      return (
+        <BountyAddedNotification
+          notification={notification}
+          highlighted={highlighted}
+          setHighlighted={setHighlighted}
+          isChildOfGroup={isChildOfGroup}
+        />
+      )
+    }
     return (
       <UserJoinedNotification
         notification={notification}
@@ -167,6 +177,15 @@ export function NotificationItem(props: {
           isChildOfGroup={isChildOfGroup}
           highlighted={highlighted}
           setHighlighted={setHighlighted}
+        />
+      )
+    } else if (reason === 'bounty_awarded') {
+      return (
+        <BountyAwardedNotification
+          notification={notification}
+          highlighted={highlighted}
+          setHighlighted={setHighlighted}
+          isChildOfGroup={isChildOfGroup}
         />
       )
     }
@@ -1297,6 +1316,94 @@ function WeeklyUpdateNotification(props: {
             {formatMoney(Math.abs(weeklyProfit))}
           </span>{' '}
           this week. Tap here to see your summary!
+        </span>
+      </>
+    </NotificationFrame>
+  )
+}
+
+function BountyAwardedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const sourceUrl = getSourceUrl(notification)
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💰'} />
+      }
+    >
+      <>
+        <span>
+          <UserLink
+            name={notification.sourceUserName}
+            username={notification.sourceUserUsername}
+          />
+          awarded you a{' '}
+          <span className="font-semibold text-teal-600 dark:text-teal-400">
+            {formatMoney(+notification?.sourceText)}
+          </span>{' '}
+          bounty
+          {!isChildOfGroup && (
+            <span>
+              {' '}
+              for your answer on{' '}
+              <PrimaryNotificationLink
+                text={notification.sourceContractTitle}
+              />
+            </span>
+          )}
+        </span>
+      </>
+    </NotificationFrame>
+  )
+}
+
+function BountyAddedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const sourceUrl = getSourceUrl(notification)
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💰'} />
+      }
+    >
+      <>
+        <span>
+          <UserLink
+            name={notification.sourceUserName}
+            username={notification.sourceUserUsername}
+          />
+          added{' '}
+          <span className="font-semibold text-teal-600 dark:text-teal-400">
+            {formatMoney(+notification?.sourceText)}
+          </span>{' '}
+          to your bountied question{' '}
+          {!isChildOfGroup && (
+            <span>
+              <PrimaryNotificationLink
+                text={notification.sourceContractTitle}
+              />
+            </span>
+          )}
         </span>
       </>
     </NotificationFrame>

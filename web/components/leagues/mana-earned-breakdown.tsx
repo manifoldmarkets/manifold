@@ -1,8 +1,9 @@
 import { uniq, keyBy, groupBy, sortBy, mapValues } from 'lodash'
 import Link from 'next/link'
 import clsx from 'clsx'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 
-import { CURRENT_SEASON, getSeasonDates } from 'common/leagues'
+import { getSeasonDates } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { User } from 'common/user'
 import { Row } from '../layout/row'
@@ -25,6 +26,7 @@ import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 
 export const ManaEarnedBreakdown = (props: {
   user: User
+  season: number
   showDialog: boolean
   setShowDialog: (show: boolean) => void
   mana_earned: number
@@ -32,6 +34,7 @@ export const ManaEarnedBreakdown = (props: {
 }) => {
   const {
     user,
+    season,
     showDialog,
     setShowDialog,
     mana_earned,
@@ -46,7 +49,7 @@ export const ManaEarnedBreakdown = (props: {
       (mana_earned_breakdown.AD_REDEEM ?? 0),
   } as { [key: string]: number }
 
-  const { start, end } = getSeasonDates(CURRENT_SEASON)
+  const { start, end } = getSeasonDates(season)
   const loadingBets = useBets({
     userId: user.id,
     afterTime: start.getTime(),
@@ -173,6 +176,9 @@ const ContractBetsEntry = (props: {
   const { bets, metrics, contract } = props
   const { profit, profitPercent } = metrics
 
+  const showExpander = bets.length > 2
+  const [expanded, setExpanded] = useState(false)
+
   return (
     <Col>
       <Row className="gap-2">
@@ -192,12 +198,32 @@ const ContractBetsEntry = (props: {
         </Col>
       </Row>
 
-      <ContractBetsTable
-        contract={contract}
-        bets={bets}
-        isYourBets={false}
-        hideRedemptionAndLoanMessages
-      />
+      {showExpander && (
+        <Row
+          className="cursor-pointer items-center gap-2 self-start"
+          tabIndex={0}
+          onClick={() => setExpanded(!expanded)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') setExpanded(!expanded)
+          }}
+        >
+          {expanded ? (
+            <ChevronUpIcon className="h-5 w-5" />
+          ) : (
+            <ChevronDownIcon className="h-5 w-5" />
+          )}
+          Bets
+        </Row>
+      )}
+
+      {(!showExpander || expanded) && (
+        <ContractBetsTable
+          contract={contract}
+          bets={bets}
+          isYourBets={false}
+          hideRedemptionAndLoanMessages
+        />
+      )}
     </Col>
   )
 }

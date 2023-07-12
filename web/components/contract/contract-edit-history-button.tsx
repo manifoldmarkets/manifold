@@ -15,8 +15,11 @@ import { uniqBy } from 'lodash'
 type EditHistory = Contract & {
   editCreatedTime: number
 }
-export const ContractEditHistoryButton = (props: { contract: Contract }) => {
-  const { contract } = props
+export const ContractEditHistoryButton = (props: {
+  contract: Contract
+  className?: string
+}) => {
+  const { contract, className } = props
   const [showEditHistory, setShowEditHistory] = useState(false)
   const [contractHasEdits, setContractHasEdits] = useState(false)
   const [edits, setEdits] = useState<EditHistory[] | undefined>(undefined)
@@ -67,8 +70,9 @@ export const ContractEditHistoryButton = (props: { contract: Contract }) => {
         color="gray"
         size={'2xs'}
         onClick={() => setShowEditHistory(true)}
+        className={className}
       >
-        History
+        Edit history
       </Button>
       <Modal size={'lg'} open={showEditHistory} setOpen={setShowEditHistory}>
         <Col className={'bg-canvas-100 p-4'}>

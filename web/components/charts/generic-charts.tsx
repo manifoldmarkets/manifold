@@ -1,7 +1,7 @@
 import { bisector, extent } from 'd3-array'
 import { axisBottom, axisRight } from 'd3-axis'
-import { D3BrushEvent } from 'd3-brush'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
+import { D3ZoomEvent } from 'd3-zoom'
 import {
   CurveFactory,
   SeriesPoint,
@@ -18,7 +18,6 @@ import {
   AxisConstraints,
   DistributionPoint,
   HistoryPoint,
-  Margin,
   MultiPoint,
   Point,
   ValueKind,
@@ -27,7 +26,6 @@ import {
 import { formatMoneyNumber } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
 import {
-  AreaPath,
   AreaWithTopStroke,
   SVGChart,
   SliceMarker,
@@ -37,6 +35,7 @@ import {
   formatPct,
 } from './helpers'
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
+import { nthColor } from './contract/choice'
 
 const Y_AXIS_CONSTRAINTS: Record<ValueKind, AxisConstraints> = {
   percent: { min: 0, max: 1, minExtent: 0.04 },
@@ -150,12 +149,11 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   w: number
   h: number
   color: string
-  margin: Margin
   xScale: ScaleContinuousNumeric<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   curve?: CurveFactory
 }) => {
-  const { data, w, h, color, margin, yScale, curve } = props
+  const { data, w, h, color, yScale, curve } = props
 
   const [viewXScale, setViewXScale] =
     useState<ScaleContinuousNumeric<number, number>>()
@@ -171,26 +169,16 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     return { xAxis, yAxis }
   }, [w, xScale, yScale])
 
-  const onSelect = useEvent((ev: D3BrushEvent<P>) => {
-    if (ev.selection) {
-      const [mouseX0, mouseX1] = ev.selection as [number, number]
-      setViewXScale(() =>
-        xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
-      )
+  const onZoom = useEvent((ev: D3ZoomEvent<SVGElement, P> | null) => {
+    if (ev?.transform) {
+      setViewXScale(() => ev.transform.rescaleX(props.xScale))
     } else {
       setViewXScale(undefined)
     }
   })
 
   return (
-    <SVGChart
-      w={w}
-      h={h}
-      margin={margin}
-      xAxis={xAxis}
-      yAxis={yAxis}
-      onSelect={onSelect}
-    >
+    <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis} onZoom={onZoom}>
       <AreaWithTopStroke
         color={color}
         data={data}
@@ -207,8 +195,6 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   data: P[]
   w: number
   h: number
-  colors: readonly string[]
-  margin: Margin
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   yKind?: ValueKind
@@ -216,7 +202,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
 }) => {
-  const { data, w, h, colors, margin, yScale, yKind, curve, Tooltip } = props
+  const { data, w, h, yScale, yKind, curve, Tooltip } = props
 
   const [ttParams, setTTParams] = useState<TooltipParams<P>>()
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
@@ -269,13 +255,9 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     setTTParams(undefined)
   })
 
-  const onSelect = useEvent((ev: D3BrushEvent<P>) => {
-    if (ev.selection) {
-      const [mouseX0, mouseX1] = ev.selection as [number, number]
-
-      setViewXScale(() =>
-        xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
-      )
+  const onZoom = useEvent((ev: D3ZoomEvent<SVGElement, unknown> | null) => {
+    if (ev?.transform) {
+      setViewXScale(() => ev.transform.rescaleX(props.xScale))
     } else {
       setViewXScale(undefined)
     }
@@ -285,24 +267,26 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     <SVGChart
       w={w}
       h={h}
-      margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
       ttParams={ttParams}
-      onSelect={onSelect}
+      onZoom={onZoom}
       onMouseOver={onMouseOver}
       onMouseLeave={onMouseLeave}
       Tooltip={Tooltip}
+      noGridlines
+      className="group"
     >
       {series.map((s, i) => (
-        <AreaPath
+        <AreaWithTopStroke
           key={i}
           data={s}
           px={px}
           py0={py0}
           py1={py1}
           curve={curve ?? curveLinear}
-          fill={colors[i]}
+          color={nthColor(i)}
+          className="opacity-80 hover:!opacity-100 group-hover:opacity-60"
         />
       ))}
     </SVGChart>
@@ -316,7 +300,6 @@ export const ControllableSingleValueHistoryChart = <
   w: number
   h: number
   color: string | ((p: P) => string)
-  margin: Margin
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   viewScaleProps: viewScale
@@ -328,8 +311,7 @@ export const ControllableSingleValueHistoryChart = <
   pct?: boolean
   negativeThreshold?: number
 }) => {
-  const { data, w, h, color, margin, Tooltip, noAxes, negativeThreshold } =
-    props
+  const { data, w, h, color, Tooltip, noAxes, negativeThreshold } = props
   const { viewXScale, setViewXScale, viewYScale, setViewYScale } =
     props.viewScaleProps
   const yKind = props.yKind ?? 'amount'
@@ -387,13 +369,11 @@ export const ControllableSingleValueHistoryChart = <
     setMouse(undefined)
   })
 
-  const onSelect = useEvent((ev: D3BrushEvent<P>) => {
-    if (ev.selection) {
-      const [mouseX0, mouseX1] = ev.selection as [number, number]
-      const xMin = xScale.invert(mouseX0)
-      const xMax = xScale.invert(mouseX1)
-      const newViewXScale = xScale.copy().domain([xMin, xMax])
-      setViewXScale(() => newViewXScale)
+  const onZoom = useEvent((ev: D3ZoomEvent<SVGElement, P> | null) => {
+    if (ev?.transform) {
+      const newXScale = ev.transform.rescaleX(props.xScale)
+      setViewXScale(() => newXScale)
+      const [xMin, xMax] = newXScale.domain()
 
       const bisect = bisector((p: P) => p.x)
       const iMin = bisect.right(data, xMin)
@@ -401,7 +381,7 @@ export const ControllableSingleValueHistoryChart = <
 
       // don't zoom axis if they selected an area with only one value
       if (iMin != iMax) {
-        const visibleYs = range(iMin - 1, iMax).map((i) => data[i].y)
+        const visibleYs = range(iMin - 1, iMax).map((i) => data[i]?.y)
         const [yMin, yMax] = extent(visibleYs) as [number, number]
         // try to add extra space on top and bottom before constraining
         const padding = (yMax - yMin) * 0.1
@@ -428,11 +408,10 @@ export const ControllableSingleValueHistoryChart = <
     <SVGChart
       w={w}
       h={h}
-      margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
       ttParams={mouse}
-      onSelect={onSelect}
+      onZoom={onZoom}
       onMouseOver={onMouseOver}
       onMouseLeave={onMouseLeave}
       Tooltip={Tooltip}

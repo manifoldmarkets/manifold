@@ -302,15 +302,11 @@ with
 
 create index if not exists user_seen_markets_created_time_desc_idx on user_seen_markets (user_id, contract_id, created_time desc);
 
-create index concurrently if not exists user_seen_markets_type_created_time_desc_idx on user_seen_markets (
-  user_id,
-  contract_id,
-  type,
-  created_time desc
-);
+create index if not exists user_seen_markets_type_created_time_desc_idx
+    on user_seen_markets (contract_id, type, created_time desc);
 
 alter table user_seen_markets
-cluster on user_seen_markets_type_created_time_desc_idx;
+cluster on user_seen_markets_created_time_desc_idx;
 
 create table if not exists
   user_notifications (
@@ -331,18 +327,33 @@ select
 
 create index if not exists user_notifications_data_gin on user_notifications using GIN (data);
 
-create index if not exists user_notifications_created_time on user_notifications (user_id, (to_jsonb(data) -> 'createdTime') desc);
+-- TODO: drop this one on july 7th
+create index if not exists user_notifications_created_time on user_notifications
+    (user_id,
+    (to_jsonb(data) -> 'createdTime') desc);
 
+create index if not exists user_notifications_created_time_idx on user_notifications (
+  user_id,
+  ((data->'createdTime')::bigint) desc
+    );
+
+-- TODO: drop this one, too on july 7th
 create index if not exists user_notifications_unseen_created_time on user_notifications (
   user_id,
   (to_jsonb(data) -> 'isSeen'),
   (to_jsonb(data) -> 'createdTime') desc
 );
 
+create index if not exists user_notifications_unseen_created_time_idx on user_notifications (
+  user_id,
+  ((data->'isSeen')::boolean),
+  ((data->'createdTime')::bigint) desc
+    );
+
 create index if not exists user_notifications_source_id on user_notifications (user_id, (data ->> 'sourceId'));
 
 alter table user_notifications
-cluster on user_notifications_created_time;
+cluster on user_notifications_created_time_idx;
 
 create table if not exists
   user_feed (
@@ -380,8 +391,6 @@ drop policy if exists "user can update" on user_feed;
 create policy "user can update" on user_feed
 for update
   using (true);
-
-create index if not exists user_feed_data_gin on user_feed using GIN (data);
 
 create index if not exists user_feed_created_time on user_feed (user_id, created_time desc);
 
@@ -453,6 +462,10 @@ create index if not exists idx_contracts_close_time_resolution_time_visibility o
 create index if not exists contracts_importance_score on contracts (importance_score desc);
 
 create index if not exists question_nostop_fts on contracts using gin (question_nostop_fts);
+
+-- for calibration page
+create index if not exists contracts_sample_filtering on contracts (outcome_type, resolution, visibility, ((data->>'uniqueBettorCount')));
+
 
 alter table contracts
 cluster on contracts_creator_id;
@@ -964,7 +977,7 @@ create table if not exists
     created_at timestamp not null default now(),
     interest_embedding vector (1536) not null,
     pre_signup_interest_embedding vector (1536),
-    card_view_embedding vector (1536),
+    contract_view_embedding vector (1536),
     disinterest_embedding vector (1536),
     pre_signup_embedding_is_default boolean default false
   );
@@ -1145,6 +1158,8 @@ create table if not exists
     pool_yes numeric, -- YES shares in the pool
     pool_no numeric, -- NO shares in the pool
     prob numeric, -- Probability of YES computed from pool_yes and pool_no
+    total_liquidity numeric default 0, -- for historical reasons, this the total subsidy amount added in M
+    subsidy_pool numeric default 0, -- current value of subsidy pool in M
     data jsonb not null,
     fs_updated_time timestamp not null
   );
@@ -1171,6 +1186,8 @@ begin
     new.pool_yes := ((new.data) ->> 'poolYes')::numeric;
     new.pool_no := ((new.data) ->> 'poolNo')::numeric;
     new.prob := ((new.data) ->> 'prob')::numeric;
+    new.total_liquidity := ((new.data) ->> 'totalLiquidity')::numeric;
+    new.subsidy_pool := ((new.data) ->> 'subsidyPool')::numeric;
   end if;
   return new;
 end

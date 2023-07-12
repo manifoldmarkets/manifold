@@ -117,18 +117,21 @@ function FeedTimelineContent() {
       const excludedContractIds = savedFeedItems
         .map((i) => i.contractId)
         .concat(manualContracts?.map((c) => c.id) ?? [])
-      const { data } = await db.rpc('get_recommended_contracts_embeddings', {
-        uid: user.id,
-        n: 20,
-        excluded_contract_ids: filterDefined(excludedContractIds),
-      })
+      const { data } = await db.rpc(
+        'get_recommended_contracts_embeddings_fast',
+        {
+          uid: user.id,
+          n: 20,
+          excluded_contract_ids: filterDefined(excludedContractIds),
+        }
+      )
 
       setManualContracts((data ?? []).map((row: any) => row.data as Contract))
     }
   }
 
   return (
-    <Col className={'relative w-full items-center'}>
+    <Col className={'relative w-full gap-6'}>
       <VisibilityObserver
         className="pointer-events-none absolute top-0 h-5 w-full select-none "
         onVisibilityUpdated={(visible) => {
@@ -140,7 +143,7 @@ function FeedTimelineContent() {
           if (!visible) setTopIsVisible(false)
         }}
       />
-      {newAvatarUrls.length > 0 && !topIsVisible && (
+      {newAvatarUrls.length > 2 && !topIsVisible && (
         <NewActivityButton
           avatarUrls={newAvatarUrls}
           onClick={() => setLastSeen(Date.now)}
@@ -201,7 +204,7 @@ const NewActivityButton = (props: {
       )}
       onClick={scrollToTop}
     >
-      <Row className="text-ink-600 align-middle">
+      <Row className="text-ink-600 items-center align-middle">
         <ArrowUpIcon className="text-ink-400 mr-3 h-5 w-5" />
         {avatarUrls.map((url) => (
           <Avatar
@@ -211,6 +214,7 @@ const NewActivityButton = (props: {
             avatarUrl={url}
           />
         ))}
+        <div className="ml-1">New updates</div>
       </Row>
     </button>
   )

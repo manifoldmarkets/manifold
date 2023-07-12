@@ -56,7 +56,7 @@ export function combineAndSumIncomeNotifications(
 
       let sum = 0
       notificationsForSourceTitle.forEach(
-        (notification) => (sum = parseInt(notification.sourceText) + sum)
+        (notification) => (sum = parseFloat(notification.sourceText) + sum)
       )
 
       const newNotification = {
@@ -83,7 +83,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const [open, setOpen] = useState(false)
   const data = notification.data as UniqueBettorData
   const numNewTraders =
-    'relatedNotifications' in data
+    data && 'relatedNotifications' in data
       ? (data as any).relatedNotifications.length
       : 1
 

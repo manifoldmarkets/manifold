@@ -1,16 +1,25 @@
 import { InformationCircleIcon } from '@heroicons/react/outline'
 import { Tooltip } from './tooltip'
 import clsx from 'clsx'
+import { Placement } from '@floating-ui/react'
 
 export function InfoTooltip(props: {
   text: string
   className?: string
   children?: React.ReactNode
   size?: 'sm' | 'md' | 'lg'
+  tooltipParams?: {
+    className?: string
+    placement?: Placement
+  }
 }) {
-  const { text, className, children, size } = props
+  const { text, className, children, size, tooltipParams } = props
   return (
-    <Tooltip className="inline-block" text={text}>
+    <Tooltip
+      className={clsx('inline-block', tooltipParams?.className)}
+      text={text}
+      placement={tooltipParams?.placement}
+    >
       {children ? (
         <span
           className={clsx(

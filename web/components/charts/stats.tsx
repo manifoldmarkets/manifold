@@ -10,10 +10,6 @@ import { TooltipProps } from './helpers'
 import { SizedContainer } from 'web/components/sized-container'
 import { HistoryPoint } from 'common/chart'
 
-const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
-const MARGIN_X = MARGIN.left + MARGIN.right
-const MARGIN_Y = MARGIN.top + MARGIN.bottom
-
 const getPoints = (startDate: number, dailyValues: number[]) => {
   const startDateDayJs = dayjs(startDate)
   return dailyValues.map((y, i) => ({
@@ -61,14 +57,13 @@ export function DailyChart(props: {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const maxValue = max(data.map((d) => d.y))!
   return (
-    <SizedContainer fullHeight={250} mobileHeight={250}>
+    <SizedContainer className="mb-4 h-[150px] pr-16 sm:h-[250px] sm:pr-0">
       {(width, height) => (
         <SingleValueHistoryChart
           w={width}
           h={height}
-          margin={MARGIN}
-          xScale={scaleTime([minDate, maxDate], [0, width - MARGIN_X])}
-          yScale={scaleLinear([0, maxValue], [height - MARGIN_Y, 0])}
+          xScale={scaleTime([minDate, maxDate], [0, width])}
+          yScale={scaleLinear([0, maxValue], [height, 0])}
           yKind={pct ? 'percent' : 'amount'}
           data={data}
           Tooltip={pct ? DailyPercentTooltip : DailyCountTooltip}

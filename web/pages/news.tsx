@@ -7,14 +7,14 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
 import { db } from 'web/lib/supabase/db'
-import { NewsArticle } from 'web/components/news-article'
+import { NewsArticle } from 'web/components/news/news-article'
 import { useContracts } from 'web/hooks/use-contract-supabase'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
 import { Contract } from 'common/contract'
 import { SimpleContractRow } from 'web/components/simple-contract-row'
-import { NewsTopicsTabs } from 'web/components/news-topics-tabs'
+import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
 
 export default function NewsPage() {
   useTracking('view news page')

@@ -1,99 +1,207 @@
-import Masonry from 'react-masonry-css'
-
 import { Col } from 'web/components/layout/col'
 import { useContracts } from 'web/hooks/use-contract-supabase'
 import { SimpleContractRow } from 'web/components/simple-contract-row'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
-import { NewsArticleOriginal } from 'web/components/news-article-original'
+import { DashboardNewsItem } from 'web/components/news/dashboard-news-item'
 import { NewsTopicsContentContainer } from 'web/components/widgets/news-topics-content-container'
 import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
+import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
 
-export const AffActionData = () => {
-  const markets = useContracts([
-    'hm8goGmn54zkWsboPOy7',
-    'tBYgyhWF06jGxvvNEnlf',
-    'qJ1IWNzWLTDS4ibc4UOR',
-  ])
+const SummitNATO = createNewsDashboardTab('NATO Summit', '2024 NATO Summit', [
+  { url: 'https://www.bbc.com/news/world-europe-66160319' },
+  { slug: 'will-sweden-join-nato-before-2024' },
+  { slug: 'will-sweden-join-nato-by-the-end-of' },
+  { slug: 'international-affairs-2023-turkey-a' },
+  {
+    url: 'https://www.nbcnews.com/news/world/zelenskyy-nato-ukraine-vilnius-russia-biden-war-membership-rcna93382',
+  },
+  { slug: 'will-zelenskyy-attend-the-2024-nato' },
+  {
+    url: 'https://abcnews.go.com/Business/wireStory/ukraine-tops-nato-summit-agenda-defense-plans-swedens-100997906',
+  },
+  { slug: 'will-nato-deploy-nuclear-weapons-to-6f38766ad8d8' },
+  { slug: 'will-nato-deploy-nuclear-weapons-to' },
+  { slug: 'any-country-invokes-article-5-of-na' },
+  { slug: 'will-ukraine-join-nato-by-2033' },
+  { slug: 'will-kazakhstan-join-nato-by-2033' },
+  { slug: 'will-moldova-join-the-eu-by-2025' },
+])
+const GlobalWarming = createNewsDashboardTab(
+  'Record heat',
+  'New record for hottest day',
+  [
+    {
+      url: 'https://www.smithsonianmag.com/smart-news/earth-faces-hottest-day-ever-recorded-three-days-in-a-row-180982493/',
+    },
+    { slug: 'will-2023-be-the-hottest-year-on-re' },
 
-  return (
-    <Col>
-      <Title className="mb-4">
-        Supreme Court Strikes Down Affirmative Action
-      </Title>
-      <NewsGrid>
-        <NewsArticleOriginal
-          title="Supreme Court guts affirmative action in college admissions"
-          urlToImage="https://dynaimage.cdn.cnn.com/cnn/digital-images/org/6634ed29-c67e-48b6-8765-fdd2ddd25e4e.jpg"
-          url="https://edition.cnn.com/politics/live-news/supreme-court-decisions"
-          description="The Supreme Court ruled colleges and universities can no longer take race into consideration as a specific basis in admissions — a landmark decision that overturns long-standing precedent that has benefited Black and Latino students in higher education."
-          author="CNN"
-          published_time={Date.UTC(2023, 5, 29, 14)}
+    {
+      content: (
+        <img
+          src="https://cdn.vox-cdn.com/uploads/chorus_asset/file/24771180/heat_waves_download1_2022.png"
           className="mb-4"
         />
+      ),
+    },
+    { slug: 'will-the-record-for-hottest-day-be' },
+    { slug: 'will-this-summer-be-the-hottest-rec' },
+    { slug: 'will-bryan-caplan-win-his-climate-b' },
+    { slug: 'arctic-sea-ice-extent-will-reach-a' },
+    { slug: 'will-climate-change-be-successfully ' },
+    { slug: 'will-climate-change-be-successfully' },
+    { slug: 'will-carbon-removal-be-pivotal-in-m' },
+    { slug: 'what-percentage-of-us-energy-will-b' },
+    {
+      url: 'https://www.vox.com/climate/2023/7/5/23784587/hottest-day-heat-wave-recorded-temperature-climate-change',
+    },
+  ]
+)
+const Threads = createNewsDashboardTab('Threads', 'Facebook Launches Threads', [
+  {
+    url: 'https://about.fb.com/news/2023/07/introducing-threads-new-app-text-sharing/',
+  },
+  { slug: 'will-threads-have-more-daily-active' },
+  { slug: 'will-twitter-have-more-users-than-m' },
+  {
+    url: 'https://www.bbc.com/news/technology-66112648',
+  },
+  { slug: 'how-many-users-will-threads-have-af' },
+  { slug: 'will-elon-musk-posy-on-instagram-th' },
+  { slug: 'will-twitter-have-more-users-than-m' },
+  { slug: 'will-threads-metas-twitter-alternat' },
+  { slug: 'which-twitter-alternative-will-have' },
+])
 
-        {markets.map((contract) => (
-          <>
-            <FeedContractCard
-              key={contract.id}
-              contract={contract}
-              className="mb-4"
-            />
-          </>
-        ))}
-      </NewsGrid>
-    </Col>
-  )
-}
+const OpenAI = createNewsDashboardTab(
+  'OpenAI',
+  'OpenAI announces Superalignment',
+  [
+    { url: 'https://openai.com/blog/introducing-superalignment' },
+    { slug: 'will-superalignment-succeed' },
+    { slug: 'will-superalignment-succeed-accordi' },
+    { slug: 'will-openais-superalignment-project' },
+    { slug: 'will-openai-hint-at-or-claim-to-hav' },
+    { slug: 'will-openai-allow-full-access-to-th' },
+    { slug: 'will-openai-an-ai-alignment-organiz' },
+    { slug: 'will-openai-have-200-million-in-rev' },
+    { slug: 'will-openai-anthropic-or-deepmind-s' },
+    { slug: 'what-will-be-the-average-pdoom-of-a' },
+    { slug: 'will-superposition-in-transformers' },
+    {
+      url: 'https://www.wired.com/story/google-deepmind-demis-hassabis-chatgpt/',
+    },
+    { slug: 'will-googles-gemini-beat-gpt4-in-te' },
+    { slug: 'will-google-deepmind-and-openai-hav' },
+    { slug: 'will-an-ai-get-gold-on-any-internat' },
+    { slug: 'will-ai-be-a-major-topic-during-the' },
+    // { slug: 'if-artificial-general-intelligence' }, // card looks too ugly
+  ]
+)
 
-export const ElonVersusZuckData = () => {
-  const [fightMarket, winMarket, streamMarket, julyMarket] = useContracts([
-    'hqTneuDcF7jXJt4tEHlj',
-    'RqQdSlfdP7Vf6QmsJ80R',
-    'ntTT053ZYy5uWgEtQ9wt',
-    'EsCfODH8S0FC1lfvwYXa',
-  ])
+const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
+  {
+    url: 'https://www.washingtonpost.com/national-security/2023/07/06/biden-cluster-bombs-ukraine/',
+  },
+  { slug: 'will-the-us-openly-commit-in-2023-t' },
+  {
+    url: 'https://www.cbsnews.com/news/ukraine-russia-war-zaporizhzhia-nuclear-power-plant-attack-plot-claims/',
+  },
+  { slug: 'will-there-be-a-nuclear-disaster-at' },
+  { slug: 'will-any-part-of-the-zaporizhzhia-n' },
+  { slug: 'will-russia-nuke-ukraine' },
+  {
+    url: 'https://www.cnn.com/europe/live-news/russia-ukraine-war-news-07-05-23/index.html',
+  },
+  { slug: 'will-the-wagner-group-stop-operatin-ad2bc1b87277' },
+  { slug: 'will-the-black-sea-grain-deal-be-ex' },
+  {
+    slug: 'will-vladimir-putin-still-be-the-le',
+  },
+  { slug: 'will-ukraine-regain-control-over-cr' },
+  { slug: 'will-ukraine-sever-the-land-bridge' },
+  { slug: 'will-the-ukraine-war-be-over-by-the' },
+  { slug: '5-will-there-be-a-lasting-ceasefire' },
+  { slug: 'will-china-convene-and-mediate-peac' },
+])
 
-  return (
-    <Col>
-      <Title className="mb-4">Elon vs Zuck</Title>
-      <NewsGrid>
-        <NewsArticleOriginal
-          title="Elon Musk and Mark Zuckerberg agree to hold cage fight"
-          urlToImage="https://ichef.bbci.co.uk/news/976/cpsprodpb/AEC1/production/_130173744_fight-index-getty.jpg.webp"
-          url="https://www.bbc.com/news/business-65981876"
-          description="Two of the world's most high-profile technology billionaires - Elon Musk and Mark Zuckerberg - have agreed to fight each other in a cage match."
-          author="Peter Hoskins"
-          published_time={Date.UTC(2023, 5, 22, 12)}
-          className="mb-4"
-        />
+const WestBank = createNewsDashboardTab(
+  'West Bank',
+  'Israeli millitary operation in West Bank',
+  [
+    {
+      url: 'https://www.cnn.com/2023/07/02/middleeast/israel-jenin-camp-idf-raid-west-bank-intl-hnk/index.html',
+    },
+    { slug: 'will-more-than-500-palestinians-be' },
+    { slug: 'will-israel-seize-and-occupy-any-ne' },
+    {
+      url: 'https://www.timesofisrael.com/liveblog_entry/idf-west-bank-commander-jenin-raid-is-not-a-one-off-operation/',
+    },
+    { slug: 'will-the-3rd-intifada-begin-in-2023' },
+    { slug: 'will-israel-withdraw-from-the-west' },
+    { slug: 'will-israel-annex-any-part-of-the-w' },
+  ]
+)
+const FrenchRiots = createNewsDashboardTab(
+  'French Riots',
+  'Rioting across France after police shooting',
+  [
+    {
+      url: 'https://www.npr.org/2023/06/30/1185394143/france-teen-police-shooting-protests-nahel',
+    },
 
-        {fightMarket && (
-          <FeedContractCard
-            key={fightMarket.id}
-            contract={fightMarket}
-            className="mb-4"
-          />
-        )}
+    { slug: 'in-the-french-riots-will-a-french-p' },
+    { slug: 'will-the-cop-who-shot-nahel-m-be-fo' },
+    { slug: 'will-there-be-any-protests-or-riots' },
+    {
+      url: 'https://www.huffpost.com/entry/france-police-shooting-rioting_n_64a1b0b2e4b028e647318565',
+    },
+    { slug: 'will-macron-dissolve-the-assemblee' },
+    { slug: 'will-emmanuel-macron-cease-being-pr' },
+    { slug: 'will-the-next-president-of-france-b' },
+    { slug: 'will-the-a-stage-2023-tour-de-franc' },
+    { slug: 'when-will-frances-tourism-levels-re' },
+  ]
+)
+const SupremeCourt = createNewsDashboardTab(
+  'Supreme Court',
+  'Affirmative Action Ruling & More',
+  [
+    {
+      url: 'https://edition.cnn.com/politics/live-news/supreme-court-decisions',
+    },
+    { slug: 'will-harvard-lose-the-supreme-court' },
+    { slug: 'will-harvard-admit-a-class-that-is-71b4a35bf252' },
+    { slug: 'will-harvard-admit-a-class-of-more' },
+    { slug: 'will-any-top-10-university-admit-si' },
+    {
+      url: 'https://edition.cnn.com/2023/06/26/politics/supreme-court-final-week-preview/index.html',
+    },
+    { slug: 'will-the-supreme-court-permit-biden' },
+    { slug: 'will-student-loan-payments-resume-b-738383e534d9' },
+    { slug: 'will-the-us-supreme-court-rule-in-f' },
+    { slug: 'in-counterman-v-colorado-will-the-s' },
+    { slug: 'in-the-teamsters-scotus-case-will-t' },
+    { slug: 'will-scotus-decide-that-a-selfappoi' },
+  ]
+)
 
-        {winMarket && (
-          <FeedContractCard
-            key={winMarket.id}
-            contract={winMarket}
-            className="mb-4"
-          />
-        )}
-
-        <NewsArticleOriginal
-          title="Elon Musk vs. Mark Zuckerberg? Dana White prepared to make 'biggest fight ever in the history of the world'"
-          urlToImage="https://img-s-msn-com.akamaized.net/tenant/amp/entityid/AA1cUcfI.img?w=768&h=511&m=6&x=144&y=83&s=693&d=254"
-          url="https://www.msn.com/en-us/sports/other/elon-musk-vs-mark-zuckerberg-dana-white-prepared-to-make-biggest-fight-ever-in-the-history-of-the-world/ar-AA1cTY8R"
-          description="According to UFC president Dana White, “both guys are absolutely dead serious.”"
-          author="Simon Samano"
-          published_time={Date.UTC(2023, 5, 23, 0)}
-          className="mb-4"
-        />
-
+const ElonVersusZuck = createNewsDashboardTab(
+  'Elon vs Zuck',
+  'Elon Musk and Mark Zuckerberg cage fight?',
+  [
+    { slug: 'will-elon-musk-and-mark-zuckerberg-bd28b2349d95' },
+    { url: 'https://www.bbc.com/news/business-65981876' },
+    { slug: 'if-elon-zuck-fight-will-it-be-at-th' },
+    {
+      url: 'https://nypost.com/2023/06/30/elon-musk-mark-zuckerberg-can-fight-at-colosseum-italian-govt/',
+    },
+    { slug: 'when-will-the-zuckerberg-vs-musk-fi' },
+    { slug: 'conditional-in-the-fight-between-mu' },
+    { slug: 'if-elon-zuck-fight-will-either-brea' },
+    { slug: 'if-the-elon-musk-vs-zuckerberg-figh-92350f63685f' },
+    {
+      content: (
         <img
           src="https://media.discordapp.net/attachments/1100471650392223834/1121601859073871943/image0.jpg?width=862&height=686"
           width={862}
@@ -101,28 +209,13 @@ export const ElonVersusZuckData = () => {
           alt=""
           className="mb-4"
         />
+      ),
+    },
+  ]
+)
 
-        {streamMarket && (
-          <FeedContractCard
-            key={streamMarket.id}
-            contract={streamMarket}
-            className="mb-4"
-          />
-        )}
-
-        {julyMarket && (
-          <FeedContractCard
-            key={julyMarket.id}
-            contract={julyMarket}
-            className="mb-4"
-          />
-        )}
-      </NewsGrid>
-    </Col>
-  )
-}
-
-export const RussianCoupData = () => {
+const RussianCoupData = () => {
+  const key = 'russian-coup'
   const prigozhinMarkets = useContracts([
     'HZKHs5sbICIRrtBeGXMu',
     'Uj4VpjfgWxdwwek3b9UJ',
@@ -138,7 +231,7 @@ export const RussianCoupData = () => {
     <Col>
       <Title className="mb-4">Coup Over? Russian Merc Chief Stands Down</Title>
       <NewsGrid>
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Vladimir Putin says Wagner mutiny leaders will be 'brought to justice'"
           urlToImage="https://ichef.bbci.co.uk/news/976/cpsprodpb/B235/production/_130212654_vladimirputin.png.webp"
@@ -148,7 +241,7 @@ export const RussianCoupData = () => {
           published_time={Date.UTC(2023, 5, 26, 23, 30)}
         />
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Rumors grow that a top Russian general who knew of Prigozhin's attempted coup may be under arrest"
           urlToImage="https://s.yimg.com/ny/api/res/1.2/oXNcLmKnIjZRMTErBYsp9A--/YXBwaWQ9aGlnaGxhbmRlcjt3PTcwNTtoPTQ3MDtjZj13ZWJw/https://media.zenfs.com/en/business_insider_articles_888/ce08d4cc8e92c221186763d12243e885"
@@ -161,14 +254,14 @@ export const RussianCoupData = () => {
         {prigozhinMarkets.map((contract) => (
           <>
             <FeedContractCard
-              key={contract.id}
+              key={key + contract.id}
               contract={contract}
               className="mb-4"
             />
           </>
         ))}
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Wagner chief says he ordered his Russian mercenaries to halt march on Moscow and return to Ukraine"
           urlToImage="https://storage.googleapis.com/afs-prod/media/d4ed1506982c42e998398220ee61d51a/1000.jpeg"
@@ -178,7 +271,7 @@ export const RussianCoupData = () => {
           published_time={Date.UTC(2023, 5, 24, 18)}
         />
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Russia accuses Wagner mercenary boss Yevgeny Prigozhin of mutiny after he says Moscow killed 2,000 of his men"
           urlToImage="https://live-production.wcms.abc-cdn.net.au/0b572035d75fec649729bcc01e15ad56?impolicy=wcms_crop_resize&cropH=2811&cropW=4997&xPos=3&yPos=0&width=862&height=485"
@@ -188,7 +281,7 @@ export const RussianCoupData = () => {
           published_time={Date.UTC(2023, 5, 23, 22)}
         />
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Wagner boss Prigozhin says Russia's 'evil' defense ministry 'must be stopped' in latest shocking provocation"
           urlToImage="https://i.insider.com/6495e7aa65b9ce0018a49df7?width=1300&format=jpeg&auto=webp"
@@ -202,7 +295,7 @@ export const RussianCoupData = () => {
   )
 }
 
-export const UkraineWarData = () => {
+const UkraineWarData = () => {
   const contractIds = [
     'TCu9mfpMPGM9i7wjSGWC',
     '8dD3vNDbHnPCx3movLl9',
@@ -227,7 +320,7 @@ export const UkraineWarData = () => {
     <Col>
       <Title className="mb-4">Ukraine vs Russia</Title>
       <NewsGrid>
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Wagner boss Prigozhin says Russia's 'evil' defense ministry 'must be stopped' in latest shocking provocation"
           urlToImage="https://i.insider.com/6495e7aa65b9ce0018a49df7?width=1300&format=jpeg&auto=webp"
@@ -247,7 +340,7 @@ export const UkraineWarData = () => {
           </>
         ))}
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Ukrainian intelligence shows Moscow is plotting 'terror attack' on nuclear plant
 "
@@ -283,7 +376,8 @@ export const UkraineWarData = () => {
   )
 }
 
-export const RedditBlackoutData = () => {
+const RedditBlackoutData = () => {
+  const key = 'reddit-blackout'
   const contractIds = [
     'FsdPt9ZNM8bhJCH6poED',
     '3EK7ViWbBSj6mNKi2ZzV',
@@ -323,7 +417,7 @@ export const RedditBlackoutData = () => {
             </ul>
           }
         />
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Thousands of Reddit Communities Stay Dark as App Policy Protest Continues"
           urlToImage="https://static01.nyt.com/images/2023/06/21/multimedia/20xp-reddit1-print-lcjh/20xp-reddit1-lcjh-superJumbo.jpg?quality=75&auto=webp"
@@ -337,7 +431,7 @@ export const RedditBlackoutData = () => {
           contracts.map((contract) => (
             <>
               <FeedContractCard
-                key={contract.id}
+                key={key + contract.id}
                 contract={contract}
                 className="mb-4"
               />
@@ -348,7 +442,8 @@ export const RedditBlackoutData = () => {
   )
 }
 
-export const MissingSubData = () => {
+const MissingSubData = () => {
+  const key = 'missing-sub'
   const contractIds = [
     'QLdcYfes6w4VSddzc5Lc',
     'dRjGomQYlRMDBaBskqOk',
@@ -413,14 +508,14 @@ export const MissingSubData = () => {
           contracts.map((contract) => (
             <>
               <FeedContractCard
-                key={contract.id}
+                key={key + contract.id}
                 contract={contract}
                 className="mb-4"
               />
             </>
           ))}
 
-        <NewsArticleOriginal
+        <DashboardNewsItem
           className="mb-4"
           title="Search for Missing Titanic Submersible"
           urlToImage="https://i.ytimg.com/vi/l9_qNO37oFs/maxresdefault.jpg"
@@ -433,68 +528,43 @@ export const MissingSubData = () => {
   )
 }
 
-export const UsElectionsData = () => {
-  const contractIds = [
-    'XNVdtrFIbQvcNhGXueGl',
-    'YTIuuSsNRn2OlA4KykRM',
-    '4amdGgZFKTxUMC3Fym6F',
-    'ixDhLuu8EJmC4OQQwRyq',
+const Election2024 = createNewsDashboardTab(
+  'US Elections',
+  '2024 US Election Updates',
+  [
+    { slug: 'will-donald-trump-be-convicted-of-a-99e01f724b3f' },
+    {
+      url: 'https://www.theguardian.com/us-news/2023/jul/03/trump-hillary-clinton-president-under-indictment-comments',
+    },
+    { slug: 'who-will-be-the-republican-presiden-7bf11c066154' },
+    { slug: 'who-will-win-the-us-2024-democratic' },
+    { slug: 'who-will-win-2024-us-presidential-e' },
+    { slug: 'will-a-democrat-win-the-2024-us-pre' },
+    {
+      url: 'https://news.yahoo.com/hurd-says-won-t-support-150448106.html',
+    },
+    { slug: 'will-donald-trump-participate-in-th' },
+    { slug: 'will-ai-be-a-major-topic-during-the' },
+    {
+      url: 'https://www.thedailybeast.com/rfk-jr-presidential-campaign-boosted-by-dollar10-million-super-pac-contributions',
+    },
+    { slug: 'will-rfk-jr-break-his-google-trends' },
+    { slug: 'will-a-third-party-candidate-receiv' },
   ]
-  const contracts = useContracts(contractIds)
-  const newMarketsId = [
-    'HXN7yKJLxZyOxKhjB75s',
-    'tUwInVx79MKObXLzsrjC',
-    '4MLChi9mLtUA4ecz5tB0',
-    'vaPsnIxe8FdWJud7DzDq',
-  ]
-  const newMarkets = useContracts(newMarketsId)
-  return (
-    <Col>
-      <Title className="mb-4">US Elections</Title>
-      <NewsGrid>
-        <NewsArticleOriginal
-          className="mb-4"
-          title="Judge set Mar-a-lago classified paper trial date for August 14th"
-          urlToImage="https://static.independent.co.uk/2023/06/15/23/Trump_Classified_Documents_14918.jpg?quality=75&width=990&crop=4%3A3%2Csmart&auto=webp"
-          url="https://www.independent.co.uk/news/world/americas/us-politics/trump-interview-fox-news-bret-baier-latest-b2360589.html"
-          description="Former allies pile criticism on Donald Trump over Mar-a-Lago classified documents indictment ahead of 2024 election"
-          author="Independent"
-        />
-        <NewsTopicsContentContainer
-          header="New Questions"
-          containerContent={
-            <>
-              {contracts &&
-                newMarkets.map((contract) => (
-                  <>
-                    <SimpleContractRow key={contract.id} contract={contract} />
-                  </>
-                ))}
-            </>
-          }
-        />
-        {contracts &&
-          contracts.length > 0 &&
-          contracts.map((contract) => (
-            <>
-              <FeedContractCard
-                key={contract.id}
-                contract={contract}
-                className="mb-4"
-              />
-            </>
-          ))}
-      </NewsGrid>
-    </Col>
-  )
-}
-
-const NewsGrid = (props: { children: React.ReactNode }) => (
-  <Masonry
-    breakpointCols={{ default: 2, 768: 1 }}
-    className="-ml-4 flex w-auto"
-    columnClassName="pl-4 bg-clip-padding"
-  >
-    {props.children}
-  </Masonry>
 )
+
+export const newsContent = [
+  SummitNATO,
+  Threads,
+  OpenAI,
+  UkraineWar,
+  GlobalWarming,
+  ElonVersusZuck,
+  Election2024,
+  WestBank,
+  FrenchRiots,
+  SupremeCourt,
+  { title: 'Russian Coup?', content: <RussianCoupData /> },
+  { title: 'Titanic Sub', content: <MissingSubData /> },
+  { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
+]

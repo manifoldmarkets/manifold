@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 
 import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -7,12 +7,14 @@ import { useUser } from 'web/hooks/use-user'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
-import { Button } from '../buttons/button'
+import { Button, ColorType } from '../buttons/button'
 import { Spacer } from '../layout/spacer'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { isTrustworthy } from 'common/envs/constants'
 import { ContractEditHistoryButton } from 'web/components/contract/contract-edit-history-button'
-import { PencilIcon } from '@heroicons/react/solid'
+import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
+import { isContentEmpty } from 'web/lib/util/isContentEmpty'
+import { Editor } from '@tiptap/core'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -60,8 +62,11 @@ export function ContractDescription(props: {
             content={contract.description}
             stateKey={`isCollapsed-contract-${contract.id}`}
             defaultCollapse={defaultCollapse}
+            hideButton={!user}
           />
-          {showEditHistory && <ContractEditHistoryButton contract={contract} />}
+          {showEditHistory && !!user && (
+            <ContractEditHistoryButton contract={contract} />
+          )}
         </>
       )}
     </div>
@@ -84,6 +89,8 @@ function ContractActions(props: {
   } = props
   const [editing, setEditing] = useState(false)
 
+  const emptyDescription = isContentEmpty(contract.description)
+
   const editor = useTextEditor({
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: contract.description,
@@ -98,7 +105,10 @@ function ContractActions(props: {
     <>
       <TextEditor editor={editor} />
       <Spacer h={2} />
-      <Row className="gap-2">
+      <Row className="w-full justify-end gap-2">
+        <Button color="gray" onClick={() => setEditing(false)}>
+          Cancel
+        </Button>
         <Button
           onClick={async () => {
             await saveDescription()
@@ -107,44 +117,68 @@ function ContractActions(props: {
         >
           Save
         </Button>
-        <Button color="gray" onClick={() => setEditing(false)}>
-          Cancel
-        </Button>
       </Row>
+      <Spacer h={2} />
     </>
   ) : (
     <>
-      <CollapsibleContent
-        content={contract.description}
-        stateKey={`isCollapsed-contract-${contract.id}`}
-      >
-        {!isOnlyTrustworthy && (
-          <Button
-            color="gray-white"
-            size="xs"
-            onClick={() => {
-              setEditing(true)
-              editor?.commands.focus('end')
-            }}
-          >
-            Edit description <PencilIcon className="ml-1 inline h-4 w-4" />
-          </Button>
-        )}
-      </CollapsibleContent>
-      <Row className="my-4 items-center gap-2 text-xs">
+      {!emptyDescription && (
+        <CollapsibleContent
+          content={contract.description}
+          stateKey={`isCollapsed-contract-${contract.id}`}
+        />
+      )}
+      <Row className="items-center justify-end gap-2 text-xs">
         {isOnlyAdmin && 'Admin '}
-        {contract.outcomeType !== 'STONK' && (
+        <ContractEditHistoryButton contract={contract} className="my-2" />
+        {!isOnlyTrustworthy && (
+          <EditDescriptionButton
+            setEditing={setEditing}
+            editor={editor}
+            text={emptyDescription ? 'Add description' : 'Edit description'}
+            icon={
+              emptyDescription ? (
+                <PlusIcon className="ml-1 inline h-4 w-4" />
+              ) : (
+                <PencilIcon className="ml-1 inline h-4 w-4" />
+              )
+            }
+            buttonColor={'gray'}
+          />
+        )}
+        {contract.outcomeType !== 'STONK' && contract.mechanism !== 'none' && (
           <Button
             color={highlightResolver ? 'red' : 'gray'}
             size="2xs"
-            className="relative"
+            className="relative my-2"
             onClick={toggleResolver}
           >
             Resolve
           </Button>
         )}
-        <ContractEditHistoryButton contract={contract} />
       </Row>
     </>
+  )
+}
+
+function EditDescriptionButton(props: {
+  setEditing: (editing: boolean) => void
+  editor: Editor | null
+  text: string
+  icon: ReactNode
+  buttonColor?: ColorType
+}) {
+  const { setEditing, editor, text, icon, buttonColor } = props
+  return (
+    <Button
+      color={buttonColor ?? 'gray-white'}
+      size="2xs"
+      onClick={() => {
+        setEditing(true)
+        editor?.commands.focus('end')
+      }}
+    >
+      {icon} {text}
+    </Button>
   )
 }

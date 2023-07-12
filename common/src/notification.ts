@@ -64,6 +64,7 @@ export type notification_source_types =
   | 'weekly_portfolio_update'
   | 'quest_reward'
   | 'league_change'
+  | 'bounty_added'
 
 export type notification_source_update_types =
   | 'created'
@@ -113,6 +114,8 @@ export type notification_reason_types =
   | 'subsidized_your_market'
   | 'group_role_changed'
   | 'added_to_group'
+  | 'bounty_awarded'
+  | 'bounty_added'
 
 type notification_descriptions = {
   [key in notification_preference]: {
@@ -127,10 +130,6 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Answers on your questions',
     detailed: 'Answers on your own questions',
     verb: 'answered your question',
-  },
-  some_comments_on_watched_markets: {
-    simple: 'Popular comments on questions you watch',
-    detailed: 'Comments on questions you watch that other users have liked',
   },
   all_comments_on_my_markets: {
     simple: 'Comments on your questions',
@@ -296,6 +295,14 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Getting added to new groups',
     detailed: 'When an admin adds you to their group',
   },
+  bounty_awarded: {
+    simple: 'Bounties you receive',
+    detailed: 'When the creator awards you a bounty for your comment',
+  },
+  bounty_added: {
+    simple: 'Bounties added to your question',
+    detailed: 'When another user adds a bounty to your question',
+  },
 }
 
 export type BettingStreakData = {
@@ -384,16 +391,17 @@ export function getSourceUrl(notification: Notification) {
     ReactionNotificationTypes.includes(sourceType)
   )
     return `${sourceSlug}`
-  if (sourceContractCreatorUsername && sourceContractSlug)
+  if (sourceContractCreatorUsername && sourceContractSlug) {
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
       sourceId ?? '',
       sourceType
     )}`
-  else if (sourceSlug)
+  }
+  if (sourceSlug) {
     return `${
       sourceSlug.startsWith('/') ? sourceSlug : '/' + sourceSlug
     }#${getSourceIdForLinkComponent(sourceId ?? '', sourceType)}`
-
+  }
   return ''
 }
 

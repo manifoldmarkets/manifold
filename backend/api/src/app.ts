@@ -66,6 +66,8 @@ import { createchatmessage } from 'api/create-chat-message'
 import { updatepost } from './update-post'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
+import { awardbounty } from './award-bounty'
+import { addbounty } from './add-bounty'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -168,6 +170,8 @@ app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/create-q-and-a', ...apiRoute(createQAndA))
 app.post('/create-q-and-a-answer', ...apiRoute(createQAndAAnswer))
 app.post('/award-q-and-a-answer', ...apiRoute(awardQAndAAnswer))
+app.post('/award-bounty', ...apiRoute(awardbounty))
+app.post('/add-bounty', ...apiRoute(addbounty))
 
 // Catch 404 errors - this should be the last route
 app.use((req, res, next) => {

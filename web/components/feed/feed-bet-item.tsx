@@ -4,7 +4,8 @@ import { Bet } from 'common/bet'
 import { Contract, contractPath } from 'common/contract'
 import { Row } from '../layout/row'
 import { SummarizeBets } from './feed-bets'
-import { FeedRelatedItemFrame } from './feed-timeline-items'
+import { ClickFrame } from '../widgets/click-frame'
+import { useRouter } from 'next/router'
 
 // not combining bet amounts on the backend (where the values are filled in on the comment)
 export const FeedBetsItem = (props: {
@@ -12,12 +13,18 @@ export const FeedBetsItem = (props: {
   groupedBets: Bet[][]
 }) => {
   const { contract, groupedBets } = props
+
+  const router = useRouter()
+
   if (!groupedBets || groupedBets.length === 0) {
     return <></>
   }
   return (
     // TODO: make more specific link
-    <FeedRelatedItemFrame className="bg-canvas-0" href={contractPath(contract)}>
+    <ClickFrame
+      className="bg-canvas-0 mb-2 flex flex-col"
+      onClick={() => router.push(contractPath(contract))}
+    >
       {groupedBets.map((bets) => (
         <Row className={'relative w-full py-2'} key={bets[0].id + 'summary'}>
           <SummarizeBets
@@ -28,6 +35,6 @@ export const FeedBetsItem = (props: {
           />
         </Row>
       ))}
-    </FeedRelatedItemFrame>
+    </ClickFrame>
   )
 }

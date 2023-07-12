@@ -12,8 +12,11 @@ import { Linkify } from '../widgets/linkify'
 import { Input } from '../widgets/input'
 import { getAnswerProbability } from 'common/calculate'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { ReactNode } from 'react'
+import { Tooltip } from '../widgets/tooltip'
 
-export function AnswerItem(props: {
+//  TODO: make this look better
+export function ResolutionAnswerItem(props: {
   answer: DpmAnswer | Answer
   contract: MultiContract
   showChoice: 'radio' | 'checkbox' | undefined
@@ -70,18 +73,12 @@ export function AnswerItem(props: {
             {user ? (
               <SiteLink className="relative" href={`/${user.username}`}>
                 <Row className="items-center gap-2">
-                  <Avatar avatarUrl={user.avatarUrl} size={'xs'} />
+                  <Avatar avatarUrl={user.avatarUrl} size="2xs" />
                   <div className="truncate">{user.name}</div>
                 </Row>
               </SiteLink>
             ) : (
               <EmptyAvatar />
-            )}
-            {/* TODO: Show total pool? */}
-            {'number' in answer && (
-              <div className="text-base">
-                {showChoice && '#' + answer.number}
-              </div>
             )}
           </Row>
         )}
@@ -175,5 +172,82 @@ export function AnswerItem(props: {
         )}
       </Row>
     </div>
+  )
+}
+
+export const AnswerBar = (props: {
+  color: string // 6 digit hex
+  prob: number // 0 - 1
+  resolvedProb?: number // 0 - 1
+  label: ReactNode
+  end: ReactNode
+  className?: string
+}) => {
+  const { color, prob, resolvedProb, label, end, className } = props
+
+  return (
+    <div className={clsx('relative isolate w-full', className)}>
+      {/* background bar */}
+      <div className="bg-canvas-50 absolute left-0 right-0 bottom-0 -z-10 h-3 rounded transition-all sm:top-1/2 sm:h-full sm:-translate-y-1/2 sm:bg-inherit">
+        {/* bar outline if resolved */}
+        {!!resolvedProb && (
+          <div
+            className="absolute top-0 h-full rounded bg-purple-100 ring-1 ring-purple-500 dark:bg-purple-900 sm:ring-2"
+            style={{
+              width: `${resolvedProb * 100}%`,
+            }}
+          />
+        )}
+        {/* main bar */}
+        <div
+          className="h-full rounded opacity-70"
+          style={{
+            width: `max(8px, ${prob * 100}%)`,
+            background: color,
+          }}
+        />
+      </div>
+
+      <div className="flex-wrap items-center justify-between gap-x-4 leading-none sm:flex sm:min-h-[40px] sm:flex-nowrap sm:px-3">
+        {label}
+        <div className="relative float-right flex grow items-center justify-end gap-2">
+          {end}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export const AnswerLabel = (props: {
+  text: string
+  truncate?: 'short' | 'long' | 'none' //  | medium (30)
+  creator?: { username: string; avatarUrl?: string } | false
+  className?: string
+}) => {
+  const { text, truncate = 'none', creator, className } = props
+
+  const ELLIPSES_LENGTH = 3
+  const maxLength = { short: 20, long: 75, none: undefined }[truncate]
+  const truncated =
+    maxLength && text.length > maxLength + ELLIPSES_LENGTH
+      ? text.slice(0, maxLength) + '...'
+      : text
+
+  return (
+    <Tooltip text={truncated === text ? false : text}>
+      <span className={clsx('my-1', className)}>
+        {creator === false ? (
+          <EmptyAvatar />
+        ) : creator ? (
+          <Avatar
+            className="mr-2 inline"
+            size="2xs"
+            username={creator.username}
+            avatarUrl={creator.avatarUrl}
+          />
+        ) : null}
+        <Linkify text={truncated} />
+      </span>
+    </Tooltip>
   )
 }

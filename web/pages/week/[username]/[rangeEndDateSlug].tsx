@@ -196,19 +196,17 @@ export default function RangePerformancePage(props: {
         </Col>
         <Col className={'items-center justify-center'}>
           {graphPoints.length > 0 && (
-            <Col className={'-mt-2 w-full max-w-md'}>
-              <SizedContainer fullHeight={250} mobileHeight={250}>
-                {(width, height) => (
-                  <PortfolioGraph
-                    mode="profit"
-                    points={graphPoints}
-                    width={width}
-                    height={height}
-                    viewScaleProps={graphView}
-                  />
-                )}
-              </SizedContainer>
-            </Col>
+            <SizedContainer className="h-[250px] w-full max-w-md">
+              {(width, height) => (
+                <PortfolioGraph
+                  mode="profit"
+                  points={graphPoints}
+                  width={width}
+                  height={height}
+                  viewScaleProps={graphView}
+                />
+              )}
+            </SizedContainer>
           )}
           <Col className={'my-6 '}>
             <ProfitChangeTable

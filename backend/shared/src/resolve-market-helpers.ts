@@ -18,7 +18,7 @@ import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { createContractResolvedNotifications } from './create-notification'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
-import { TxnData, runTxn, runContractPayoutTxn } from './run-txn'
+import { TxnData, runTxn, runContractPayoutTxn } from './txn/run-txn'
 import {
   revalidateStaticProps,
   isProd,

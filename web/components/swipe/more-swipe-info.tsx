@@ -5,7 +5,7 @@ import { InformationCircleIcon } from '@heroicons/react/outline'
 import { BinaryContract } from 'common/contract'
 import { richTextToString } from 'common/util/parse'
 import { useRecentBets } from 'web/hooks/use-bets'
-import { BinaryContractChart } from '../charts/contract'
+import { BinaryContractChart } from '../charts/contract/binary'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { SizedContainer } from '../sized-container'
@@ -130,7 +130,7 @@ function MoreSwipeInfoDialog(props: {
       )}
     >
       <Col>
-        <SizedContainer fullHeight={250} mobileHeight={150}>
+        <SizedContainer className="h-[150px]">
           {(w, h) => (
             <BinaryContractChart
               width={w}

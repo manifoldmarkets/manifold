@@ -28,7 +28,7 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { BinaryOutcomeLabel, HigherLabel, LowerLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
-import { OrderBookButton } from './limit-bets'
+import { OrderBookButton } from './order-book'
 import { LimitSlider, convertNumberToProb } from './limit-slider'
 
 export default function LimitOrderPanel(props: {

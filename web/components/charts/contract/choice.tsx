@@ -1,8 +1,7 @@
 import { useMemo } from 'react'
-import { last, range, sum, sortBy, groupBy } from 'lodash'
+import { last, sum, sortBy, groupBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
-
 import { Bet } from 'common/bet'
 import { DpmAnswer } from 'common/answer'
 import { MultiContract } from 'common/contract'
@@ -18,23 +17,58 @@ import { MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { buildArray } from 'common/util/array'
 import { MultiPoint } from 'common/chart'
-import { DAY_MS } from 'common/util/time'
 
-export const CHOICE_ANSWER_COLORS = [
-  '#77AADDB3',
-  '#EE8866B3',
-  '#EEDD88B3',
-  '#FFAABBB3',
-  '#99DDFFB3',
-  '#44BB99B3',
-  '#BBCC33B3',
+const CHOICE_ANSWER_COLORS = [
+  // The PEOPLE have SPOKEN
+  '#99DDFF', // sky
+  '#4A412A', // drab brown (please change oh my god)
+  '#BBCC33', // piss yellow (please change oh my god)
+  '#77AADD', // navy
+  '#9932CC', // 🍆
+  '#FFAABB', // pink
+  '#C70020', // blood red
+  '#FF8C00', // orange
+  '#44BB99', // forest
+  '#FFD700', // gold
+  '#7FFF00', // chartreuse
+  '#EE8866', // orange-red
+  '#9F00C5', // Grimace
+  '#FF8900', // octarine
+  '#EEDD88', // yellow
+
+  // The AI's favorite colors :)
+  '#3498DB', // Blue
+  '#2ECC71', // Green
+  '#F1C40F', // Yellow
+  '#9B59B6', // Purple
+  '#E67E22', // Orange
+  '#95A5A6', // Gray
+  '#FFA500', // Orange
+  '#FFC0CB', // Pink
+  '#FF69B4', // Hot Pink
+  '#F9C74F', // Yellow
+  '#90BE6D', // Green
+  '#FF6B6B', // Red
+  '#FF9F1C', // Orange
+  '#D3A8FF', // Purple
+  '#FFCCD5', // Pink
+  '#6EE7B7', // Cyan
+  '#F97171', // Salmon
+  '#A3DE83', // Pistachio
+  '#FFD166', // Apricot
+  '#B8D8B8', // Pale Green
+  '#FF85A1', // Watermelon
+  '#AFE3E7', // Baby Blue
+  '#FFBF69', // Peach
+  '#C3CED0', // Silver Blue
+  '#FFA69E', // Coral
+  '#DBD56E', // Mustard
+  '#C6E2E9', // Sky Blue
 ]
-export const CHOICE_OTHER_COLOR = '#B1B1C7B3'
-export const CHOICE_ALL_COLORS = [...CHOICE_ANSWER_COLORS, CHOICE_OTHER_COLOR]
+const CHOICE_OTHER_COLOR = '#B1B1C7'
 
-const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
-const MARGIN_X = MARGIN.left + MARGIN.right
-const MARGIN_Y = MARGIN.top + MARGIN.bottom
+export const nthColor = (index: number) =>
+  CHOICE_ANSWER_COLORS[index] ?? CHOICE_OTHER_COLOR
 
 const getAnswers = (contract: MultiContract) => {
   const { answers, outcomeType } = contract
@@ -48,7 +82,7 @@ const getAnswers = (contract: MultiContract) => {
   )
 }
 
-const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[], topN?: number) => {
+const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[]) => {
   const sortedBets = sortBy(bets, (b) => b.createdTime)
   const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
   const sharesByOutcome = Object.fromEntries(
@@ -64,12 +98,7 @@ const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[], topN?: number) => {
     )
     const probs = answers.map((a) => sharesByOutcome[a.id] ** 2 / sharesSquared)
 
-    if (topN != null && answers.length > topN) {
-      const y = [...probs.slice(0, topN), sum(probs.slice(topN))]
-      points.push({ x: bet.createdTime, y, obj: bet })
-    } else {
-      points.push({ x: bet.createdTime, y: probs, obj: bet })
-    }
+    points.push({ x: bet.createdTime, y: probs, obj: bet })
   }
   return points
 }
@@ -91,41 +120,33 @@ export const ChoiceContractChart = (props: {
   const isDpm = contract.mechanism === 'dpm-2'
   const [start, end] = getDateRange(contract)
   const answers = useChartAnswers(contract)
-  const topN = Math.min(CHOICE_ANSWER_COLORS.length, answers.length)
-  const betPoints = useMemo(
-    () =>
-      isDpm ? getDpmBetPoints(answers as DpmAnswer[], bets, topN) : points,
 
-    [answers, bets, topN, isDpm, points]
+  const betPoints = useMemo(
+    () => (isDpm ? getDpmBetPoints(answers as DpmAnswer[], bets) : points),
+    [answers, bets, isDpm, points]
   )
   const endProbs = useMemo(
     () => answers.map((a) => getAnswerProbability(contract, a.id)),
     [answers, contract]
   )
 
-  const data = useMemo(() => {
-    const startY = buildArray(
-      range(0, topN).map(() => 1 / answers.length),
-      answers.length > topN ? 1 - topN / answers.length : undefined
-    )
-    const endY =
-      answers.length > topN
-        ? [...endProbs.slice(0, topN), sum(endProbs.slice(topN))]
-        : endProbs
-    return buildArray(isMultipleChoice && { x: start, y: startY }, betPoints, {
-      x: end ?? Date.now() + DAY_MS,
-      y: endY,
-    })
-  }, [answers.length, topN, betPoints, endProbs, start, end, isMultipleChoice])
+  const now = useMemo(() => Date.now(), [betPoints])
 
-  const rightmostDate = getRightmostVisibleDate(
-    end,
-    last(betPoints)?.x,
-    Date.now()
-  )
+  const data = useMemo(() => {
+    if (!answers.length) return []
+
+    const startY: number[] = new Array(answers.length).fill(1 / answers.length)
+
+    return buildArray(isMultipleChoice && { x: start, y: startY }, betPoints, {
+      x: end ?? now,
+      y: endProbs,
+    })
+  }, [answers.length, betPoints, endProbs, start, end, now])
+
+  const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const visibleRange = [start, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
-  const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
+  const xScale = scaleTime(visibleRange, [0, width])
+  const yScale = scaleLinear([0, 1], [height, 0])
 
   const ChoiceTooltip = useMemo(
     () => (props: TooltipProps<Date, MultiPoint>) => {
@@ -140,25 +161,16 @@ export const ChoiceContractChart = (props: {
 
       const index = cum(prev.y).findIndex((p) => p >= 1 - prob)
       const answer = answers[index]?.text ?? 'Other'
-      const color = CHOICE_ALL_COLORS[index] ?? CHOICE_OTHER_COLOR
       const value = formatPct(prev.y[index])
 
       return (
         <>
-          <Row className="items-center gap-2">
-            <span className="text-semibold text-base">
-              {formatDateInRange(d, start, end)}
-            </span>
-          </Row>
+          <span className="font-semibold">
+            {formatDateInRange(d, start, end)}
+          </span>
           <div className="flex max-w-xs flex-row justify-between gap-4">
             <Row className="items-center gap-2 overflow-hidden">
-              <span
-                className="h-4 w-4 shrink-0 rounded-sm"
-                style={{ backgroundColor: color }}
-              />
-              <span className="text-semibold overflow-hidden text-ellipsis">
-                {answer}
-              </span>
+              <span className="overflow-hidden text-ellipsis">{answer}</span>
             </Row>
             <span className="text-ink-600">{value}</span>
           </div>
@@ -172,12 +184,10 @@ export const ChoiceContractChart = (props: {
     <MultiValueHistoryChart
       w={width}
       h={height}
-      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
       yKind="percent"
       data={data}
-      colors={CHOICE_ALL_COLORS}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={ChoiceTooltip}

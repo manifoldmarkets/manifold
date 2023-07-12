@@ -1,7 +1,5 @@
 // User interest to user interest distance:
-export const USER_TO_USER_DISTANCE_THRESHOLD = 0.004
-export const USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD = 0.12
-export const NEW_USER_TO_CONTRACT_INTEREST_DISTANCE_THRESHOLD = 0.9
+export const MINIMUM_SCORE = 0.0035
 export const DEFAULT_USER_FEED_ID = 'yYNDWRmBJDcWW0q1aZFi6xfKNcQ2'
 
 export type FEED_DATA_TYPES =
@@ -13,13 +11,15 @@ export type FEED_DATA_TYPES =
   | 'trending_contract'
   | 'new_subsidy'
 
+type DEPRECATED_FEED_REASON_TYPES =
+  | 'viewed_contract'
+  | 'similar_interest_vector_to_user'
+
 // TODO: add 'shared_contract'
 export type CONTRACT_OR_USER_FEED_REASON_TYPES =
   | 'follow_contract'
   | 'liked_contract'
-  | 'viewed_contract'
   | 'contract_in_group_you_are_in'
-  | 'similar_interest_vector_to_user'
   | 'similar_interest_vector_to_contract'
   | 'follow_user'
 
@@ -41,7 +41,7 @@ export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
 
 export const FeedExplanationDictionary: Record<
   FEED_DATA_TYPES,
-  Partial<Record<FEED_REASON_TYPES, string>>
+  Partial<Record<FEED_REASON_TYPES | DEPRECATED_FEED_REASON_TYPES, string>>
 > = {
   new_comment: {
     follow_contract: 'New comment on question you follow',
@@ -123,7 +123,7 @@ export const FeedExplanationDictionary: Record<
 
 export function getExplanation(
   feedDataType: FEED_DATA_TYPES,
-  feedReasonType: FEED_REASON_TYPES
+  feedReasonType: FEED_REASON_TYPES | DEPRECATED_FEED_REASON_TYPES
 ): string | undefined {
   return FeedExplanationDictionary[feedDataType][feedReasonType]
 }

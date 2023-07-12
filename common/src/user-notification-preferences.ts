@@ -11,8 +11,6 @@ export type notification_preferences = {
   all_comments_on_watched_markets: notification_destination_types[]
   all_answers_on_watched_markets: notification_destination_types[]
 
-  some_comments_on_watched_markets: notification_destination_types[]
-
   // Comments
   tipped_comments_on_watched_markets: notification_destination_types[]
   comments_by_followed_users_on_watched_markets: notification_destination_types[]
@@ -37,6 +35,8 @@ export type notification_preferences = {
   market_updates_on_watched_markets: notification_destination_types[]
   market_updates_on_watched_markets_with_shares_in: notification_destination_types[]
   probability_updates_on_watched_markets: notification_destination_types[]
+  bounty_awarded: notification_destination_types[]
+  bounty_added: notification_destination_types[]
 
   // Balance Changes
   loan_income: notification_destination_types[]
@@ -88,7 +88,6 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     // Watched Markets
     all_comments_on_watched_markets: constructPref(false, false, false),
     all_answers_on_watched_markets: constructPref(true, false, false),
-    some_comments_on_watched_markets: constructPref(true, false, false),
 
     // Comments
     tips_on_your_comments: constructPref(true, true, false),
@@ -149,6 +148,8 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
       true,
       true
     ),
+    bounty_awarded: constructPref(true, false, false),
+    bounty_added: constructPref(true, false, false),
 
     //Balance Changes
     loan_income: constructPref(true, false, false),
@@ -169,7 +170,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     league_changed: constructPref(true, false, false),
 
     // General
-    tagged_user: constructPref(true, true, false),
+    tagged_user: constructPref(true, true, true),
     on_new_follow: constructPref(true, true, false),
     contract_from_followed_user: constructPref(true, true, false),
     trending_markets: constructPref(false, true, false),

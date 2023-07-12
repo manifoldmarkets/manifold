@@ -70,9 +70,6 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
         <span className={clsx('break-anywhere whitespace-normal font-medium')}>
           {question}
         </span>
-        <span className="float-right ml-2 font-semibold">
-          <ContractStatusLabel contract={contract} />
-        </span>
       </div>
       <Row className="z-10 gap-2">
         <Avatar
@@ -86,6 +83,10 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
           className="text-ink-400 text-sm"
           createdTime={creatorCreatedTime}
         />
+
+        <div className="ml-auto font-semibold">
+          <ContractStatusLabel contract={contract} chanceLabel />
+        </div>
       </Row>
     </Col>
   )

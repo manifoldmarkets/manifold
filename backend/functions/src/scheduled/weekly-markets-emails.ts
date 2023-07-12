@@ -100,10 +100,10 @@ const sendEmailToPrivateUser = async (
   db: SupabaseClient
 ) => {
   if (!privateUser.email) return
-
-  const { data } = await db.rpc('get_recommended_contracts_embeddings', {
+  // TODO: optimize this query, we should just get their most recent feed items and pick a few to serve
+  const { data } = await db.rpc('get_recommended_contracts_embeddings_fast', {
     uid: privateUser.id,
-    n: 15,
+    n: 10,
     excluded_contract_ids: [],
   })
 
@@ -150,10 +150,6 @@ const removeSimilarQuestions = (
   byContracts: Contract[],
   allowExactSameContracts: boolean
 ) => {
-  // log(
-  //   'contracts to filter by',
-  //   byContracts.map((c) => c.question + ' ' + c.popularityScore)
-  // )
   let contractsToRemove: Contract[] = []
   byContracts.length > 0 &&
     byContracts.forEach((contract) => {

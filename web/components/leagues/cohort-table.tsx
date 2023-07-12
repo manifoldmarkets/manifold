@@ -8,11 +8,7 @@ import {
 
 import { Fragment, useState } from 'react'
 import { Row } from '../layout/row'
-import {
-  DIVISION_NAMES,
-  SECRET_NEXT_DIVISION,
-  league_user_info,
-} from 'common/leagues'
+import { DIVISION_NAMES, league_user_info } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { User } from 'common/user'
 import { useUsers } from 'web/hooks/use-user-supabase'
@@ -24,6 +20,7 @@ import { ManaEarnedBreakdown } from './mana-earned-breakdown'
 import { Tooltip } from '../widgets/tooltip'
 
 export const CohortTable = (props: {
+  season: number
   cohort: string
   rows: league_user_info[]
   highlightedUserId: string | undefined
@@ -32,6 +29,7 @@ export const CohortTable = (props: {
   doublePromotionCount: number
 }) => {
   const {
+    season,
     cohort,
     rows,
     highlightedUserId,
@@ -45,9 +43,8 @@ export const CohortTable = (props: {
   const division = rows[0].division
   const nextDivision = division + 1
   const nextNextDivision = division + 2
-  const nextDivisionName = DIVISION_NAMES[nextDivision] ?? SECRET_NEXT_DIVISION
-  const nextNextDivisionName =
-    DIVISION_NAMES[nextNextDivision] ?? SECRET_NEXT_DIVISION
+  const nextDivisionName = DIVISION_NAMES[nextDivision]
+  const nextNextDivisionName = DIVISION_NAMES[nextNextDivision]
   const prevDivison = Math.max(division - 1, 1)
   const prevDivisionName = DIVISION_NAMES[prevDivison]
 
@@ -80,6 +77,7 @@ export const CohortTable = (props: {
                   user={users[i]}
                   isHighlighted={highlightedUserId === user.id}
                   mana_earned_breakdown={row.mana_earned_breakdown as any}
+                  season={season}
                 />
               )}
               {!noPromotionDemotion && (
@@ -133,6 +131,7 @@ export const CohortTable = (props: {
 
 const UserRow = (props: {
   user: User
+  season: number
   mana_earned: number
   mana_earned_breakdown: { [key: string]: number }
   rank: number
@@ -141,6 +140,7 @@ const UserRow = (props: {
 }) => {
   const {
     user,
+    season,
     mana_earned,
     mana_earned_breakdown,
     rank,
@@ -213,6 +213,7 @@ const UserRow = (props: {
       {showDialog && (
         <ManaEarnedBreakdown
           user={user}
+          season={season}
           showDialog={showDialog}
           setShowDialog={setShowDialog}
           mana_earned={mana_earned}

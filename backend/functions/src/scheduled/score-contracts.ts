@@ -4,7 +4,6 @@ import {
   MINUTE_INTERVAL,
   scoreContractsInternal,
 } from 'shared/score-contracts-internal'
-import * as admin from 'firebase-admin'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -20,10 +19,9 @@ export const importanceScoreScheduler = functions
   .runWith({ secrets })
   .pubsub.schedule(`every ${IMPORTANCE_MINUTE_INTERVAL} minutes`)
   .onRun(async () => {
-    const fr = admin.firestore()
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()
-    await calculateImportanceScore(fr, db, pg)
+    await calculateImportanceScore(db, pg)
   })
 
 export const scoreContractsScheduler = functions
@@ -47,10 +45,9 @@ export const scoreContractsScheduler = functions
 export const scorecontracts = onRequest(
   { timeoutSeconds: 3600, memory: '1GiB', secrets },
   async (_req, res) => {
-    const fr = admin.firestore()
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()
-    await scoreContractsInternal(fr, db, pg)
+    await scoreContractsInternal(db, pg)
     res.status(200).json({ success: true })
   }
 )

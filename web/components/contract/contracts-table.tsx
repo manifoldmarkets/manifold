@@ -1,11 +1,11 @@
-import { LockClosedIcon, UserIcon } from '@heroicons/react/solid'
+import { ChatIcon, LockClosedIcon, UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
 import { Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { formatPercentShort } from 'common/util/format'
+import { formatMoney, formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
 import { IoUnlink } from 'react-icons/io5'
 import { useUser } from 'web/hooks/use-user'
@@ -17,6 +17,8 @@ import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { Action } from './contract-table-action'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { Col } from '../layout/col'
+import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 
 const lastItemClassName = 'rounded-r pr-2'
 const firstItemClassName = 'rounded-l pl-2 pr-4'
@@ -86,6 +88,14 @@ export function ContractStatusLabel(props: {
     case 'QUADRATIC_FUNDING': {
       return <span>RAD</span>
     }
+    case 'BOUNTIED_QUESTION': {
+      return (
+        <Col className="whitespace-nowrap text-sm font-bold text-teal-600">
+          {formatMoney(contract.bountyLeft)}{' '}
+          <span className="text-ink-600 -mt-1 text-xs font-normal">bounty</span>
+        </Col>
+      )
+    }
     default:
       return <span>-</span>
   }
@@ -143,12 +153,15 @@ export function ContractsTable(props: {
       name: 'traders',
       header: 'Traders',
       visible: true,
-      content: (contract: Contract) => (
-        <Row className="align-center shrink-0 items-center gap-0.5">
-          <UserIcon className="h-4 w-4" />
-          {shortenNumber(contract.uniqueBettorCount)}
-        </Row>
-      ),
+      content: (contract: Contract) =>
+        contract.outcomeType == 'BOUNTIED_QUESTION' ? (
+          <BountiedContractComments contractId={contract.id} />
+        ) : (
+          <Row className="align-center shrink-0 items-center gap-0.5">
+            <UserIcon className="h-4 w-4" />
+            {shortenNumber(contract.uniqueBettorCount)}
+          </Row>
+        ),
     },
     // {
     //   name: 'visibility',
@@ -284,4 +297,15 @@ export function VisibilityIcon(props: {
   if (contract.visibility === 'unlisted') <IoUnlink className={iconClassName} />
 
   return <></>
+}
+
+export function BountiedContractComments(props: { contractId: string }) {
+  const { contractId } = props
+  const numComments = useNumContractComments(contractId)
+  return (
+    <Row className="align-center shrink-0 items-center gap-0.5">
+      <ChatIcon className="h-4 w-4" />
+      {numComments}
+    </Row>
+  )
 }

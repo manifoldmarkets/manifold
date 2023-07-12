@@ -12,7 +12,6 @@ import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { CommentView } from 'common/events'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
@@ -32,7 +31,6 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useEvent } from 'web/hooks/use-event'
-import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { createCommentOnContract, hideComment } from 'web/lib/firebase/api'
@@ -42,14 +40,14 @@ import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import Curve from 'web/public/custom-components/curve'
 import { Button, IconButton } from '../buttons/button'
+import { CommentEditHistoryButton } from '../comments/comment-edit-history-button'
 import { CommentInput } from '../comments/comment-input'
 import { ReplyToggle } from '../comments/reply-toggle'
+import { AwardBountyButton } from '../contract/bountied-question'
 import { Content } from '../widgets/editor'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
-import { CommentEditHistoryButton } from '../comments/comment-edit-history-button'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -62,6 +60,8 @@ export function FeedCommentThread(props: {
   trackingLocation: string
   collapseMiddle?: boolean
   inTimeline?: boolean
+  idInUrl?: string
+  showReplies?: boolean
 }) {
   const {
     contract,
@@ -70,15 +70,20 @@ export function FeedCommentThread(props: {
     collapseMiddle,
     trackingLocation,
     inTimeline,
+    idInUrl,
+    showReplies,
   } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
-  const [seeReplies, setSeeReplies] = useState(true)
 
-  const idInUrl = useHashInUrl()
+  const idInThisThread =
+    idInUrl && threadComments.map((comment) => comment.id).includes(idInUrl)
+
+  const [seeReplies, setSeeReplies] = useState(showReplies || !!idInThisThread)
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const clearReply = useEvent(() => setReplyToUserInfo(undefined))
   const onReplyClick = useEvent((comment: ContractComment) => {
+    setSeeReplies(true)
     setReplyToUserInfo({ id: comment.id, username: comment.userUsername })
   })
   const [collapseToIndex, setCollapseToIndex] = useState<number>(
@@ -110,9 +115,7 @@ export function FeedCommentThread(props: {
               <Button
                 size={'xs'}
                 color={'gray-white'}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
+                onClick={() => {
                   setCollapseToIndex(-1)
                 }}
               >
@@ -132,11 +135,12 @@ export function FeedCommentThread(props: {
               showLike={true}
               onReplyClick={onReplyClick}
               trackingLocation={trackingLocation}
+              isLastReplyInThread={_commentIdx === threadComments.length - 1}
             />
           )
         )}
       {replyToUserInfo && (
-        <Col className="-pb-2 relative ml-6">
+        <Col className="stop-prop relative ml-6">
           <ContractCommentInput
             contract={contract}
             parentCommentId={parentComment.id}
@@ -159,6 +163,8 @@ export const FeedComment = memo(function FeedComment(props: {
   children?: ReactNode
   className?: string
   inTimeline?: boolean
+  isParent?: boolean
+  isLastReplyInThread?: boolean
 }) {
   const {
     contract,
@@ -170,6 +176,8 @@ export const FeedComment = memo(function FeedComment(props: {
     children,
     trackingLocation,
     inTimeline,
+    isParent,
+    isLastReplyInThread,
   } = props
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
@@ -182,47 +190,55 @@ export const FeedComment = memo(function FeedComment(props: {
   }, [highlighted])
 
   return (
-    <Row
-      ref={ref}
-      className={clsx(
-        className ? className : 'ml-9 gap-2',
-        isReplyToBet(comment) ? 'mt-6 sm:mt-2' : ''
+    <Col>
+      {isReplyToBet(comment) && (
+        <FeedCommentReplyHeader comment={comment} contract={contract} />
       )}
-    >
-      <Avatar
-        username={userUsername}
-        size={'sm'}
-        avatarUrl={userAvatarUrl}
-        className={clsx(marketCreator ? 'shadow shadow-amber-300' : '', 'z-10')}
-      />
-      <Col
-        className={clsx(
-          'w-full rounded-xl rounded-tl-none px-4 py-1',
-          highlighted ? 'bg-primary-50' : 'bg-ink-100'
-        )}
-      >
-        {isReplyToBet(comment) && (
-          <FeedCommentReplyHeader comment={comment} contract={contract} />
-        )}
-        <FeedCommentHeader
-          comment={comment}
-          contract={contract}
-          inTimeline={inTimeline}
-        />
-
-        <HideableContent comment={comment} />
-        <Row className={children ? 'justify-between' : 'justify-end'}>
-          {children}
-          <CommentActions
-            onReplyClick={onReplyClick}
-            comment={comment}
-            showLike={showLike}
-            contract={contract}
-            trackingLocation={trackingLocation}
+      <Row ref={ref} className={clsx(className ? className : 'ml-9 gap-2')}>
+        <Col className="relative">
+          {!isParent && (
+            <div className="bg-ink-200 absolute -top-3 left-4 h-3 w-0.5 grow" />
+          )}
+          <Avatar
+            username={userUsername}
+            size={'sm'}
+            avatarUrl={userAvatarUrl}
+            className={clsx(
+              marketCreator ? 'shadow shadow-amber-300' : '',
+              'z-10'
+            )}
           />
-        </Row>
-      </Col>
-    </Row>
+          {!isParent && !isLastReplyInThread && (
+            <div className="bg-ink-200 ml-4 w-0.5 grow" />
+          )}
+        </Col>
+        <Col
+          className={clsx(
+            'w-full rounded-xl rounded-tl-none px-4 py-1',
+            highlighted ? 'bg-primary-50' : 'bg-ink-100'
+          )}
+        >
+          <FeedCommentHeader
+            comment={comment}
+            contract={contract}
+            inTimeline={inTimeline}
+            isParent={isParent}
+          />
+
+          <HideableContent comment={comment} />
+          <Row className={children ? 'justify-between' : 'justify-end'}>
+            {children}
+            <CommentActions
+              onReplyClick={onReplyClick}
+              comment={comment}
+              showLike={showLike}
+              contract={contract}
+              trackingLocation={trackingLocation}
+            />
+          </Row>
+        </Col>
+      </Row>
+    </Col>
   )
 })
 
@@ -270,6 +286,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       className={clsx('gap-2', commentKind)}
       trackingLocation={trackingLocation}
       inTimeline={inTimeline}
+      isParent={true}
     >
       <div ref={ref} />
       <ReplyToggle
@@ -328,7 +345,7 @@ export function DotMenu(props: {
         Icon={<DotsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
         Items={buildArray(
           {
-            name: 'Copy Link',
+            name: 'Copy link',
             icon: <LinkIcon className="h-5 w-5" />,
             onClick: () => {
               copyLinkToComment(
@@ -391,15 +408,29 @@ export function CommentActions(props: {
   const user = useUser()
   const privateUser = usePrivateUser()
 
+  const isBountiedQuestion = contract.outcomeType === 'BOUNTIED_QUESTION'
+  const canGiveBounty =
+    isBountiedQuestion &&
+    user &&
+    user.id == contract.creatorId &&
+    comment.userId != user.id
+
   return (
     <Row className="grow items-center justify-end">
+      {canGiveBounty && (
+        <AwardBountyButton
+          contract={contract}
+          comment={comment}
+          user={user}
+          disabled={contract.bountyLeft <= 0}
+          buttonClassName={'mr-1'}
+        />
+      )}
       {user && onReplyClick && (
         <Tooltip text="Reply" placement="bottom">
           <IconButton
             size={'xs'}
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
+            onClick={() => {
               onReplyClick(comment)
             }}
           >
@@ -432,19 +463,17 @@ function CommentStatus(props: {
   comment: ContractComment
 }) {
   const { contract, comment } = props
-  const { resolutionTime, resolution } = contract
-  const isStonk = contract.outcomeType === 'STONK'
+  const { resolution } = contract
   const {
-    commenterPositionProb: prob,
+    commenterPositionProb,
     commenterPositionOutcome,
     commenterPositionAnswerId,
     commenterPositionShares,
-    createdTime,
   } = comment
 
   if (
     comment.betId == null &&
-    prob != null &&
+    commenterPositionProb != null &&
     commenterPositionOutcome != null &&
     commenterPositionShares != null &&
     commenterPositionShares > 0 &&
@@ -452,17 +481,13 @@ function CommentStatus(props: {
   )
     return (
       <>
-        {resolution
-          ? 'predicted '
-          : `is ${isStonk ? 'holding' : 'predicting'} `}
+        {resolution ? 'predicted ' : `predicts `}
         <OutcomeLabel
           outcome={commenterPositionOutcome}
           answerId={commenterPositionAnswerId}
           contract={contract}
           truncate="short"
         />
-        {(resolutionTime ? resolutionTime > createdTime : true) &&
-          ' at ' + getFormattedMappedValue(contract, prob)}
       </>
     )
 
@@ -528,6 +553,7 @@ export function ContractCommentInput(props: {
       pageId={contract.id}
       className={className}
       blocked={isBlocked(privateUser, contract.creatorId)}
+      size={contract.outcomeType == 'BOUNTIED_QUESTION' ? 'xs' : undefined}
     />
   )
 }
@@ -536,6 +562,7 @@ function FeedCommentHeader(props: {
   comment: ContractComment
   contract: Contract
   inTimeline?: boolean
+  isParent?: boolean
 }) {
   const { comment, contract, inTimeline } = props
   const {
@@ -550,6 +577,7 @@ function FeedCommentHeader(props: {
     betAmount,
     userId,
     isApi,
+    bountyAwarded,
   } = comment
 
   const marketCreator = contract.creatorId === userId
@@ -557,49 +585,56 @@ function FeedCommentHeader(props: {
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   return (
     <Col className={clsx('text-ink-600 text-sm ')}>
-      <Row className=" gap-1">
-        <span>
-          <UserLink
-            username={userUsername}
-            name={userName}
-            marketCreator={marketCreator}
-            className={'font-semibold'}
+      <Row className="justify-between">
+        <Row className=" gap-1">
+          <span>
+            <UserLink
+              username={userUsername}
+              name={userName}
+              marketCreator={marketCreator}
+              className={'font-semibold'}
+            />
+            {/* Hide my status if replying to a bet, it's too much clutter*/}
+            {bettorUsername == undefined && !inTimeline && (
+              <span className="text-ink-500 ml-1">
+                <CommentStatus contract={contract} comment={comment} />
+                {bought} {money}
+                {shouldDisplayOutcome && (
+                  <>
+                    {' '}
+                    of{' '}
+                    <OutcomeLabel
+                      outcome={betOutcome ? betOutcome : ''}
+                      answerId={betAnswerId}
+                      contract={contract}
+                      truncate="short"
+                    />
+                  </>
+                )}
+              </span>
+            )}
+          </span>
+          <CopyLinkDateTimeComponent
+            prefix={contract.creatorUsername}
+            slug={contract.slug}
+            createdTime={editedTime ? editedTime : createdTime}
+            elementId={comment.id}
+            seeEditsButton={<CommentEditHistoryButton comment={comment} />}
+            size={'sm'}
+            linkClassName="text-ink-500"
           />
-          {/* Hide my status if replying to a bet, it's too much clutter*/}
-          {bettorUsername == undefined && !inTimeline && (
-            <span className="text-ink-500 ml-1">
-              <CommentStatus contract={contract} comment={comment} />
-              {bought} {money}
-              {shouldDisplayOutcome && (
-                <>
-                  {' '}
-                  of{' '}
-                  <OutcomeLabel
-                    outcome={betOutcome ? betOutcome : ''}
-                    answerId={betAnswerId}
-                    contract={contract}
-                    truncate="short"
-                  />
-                </>
-              )}
-            </span>
+          {!inTimeline && isApi && (
+            <InfoTooltip text="Placed via API" className="mr-1">
+              🤖
+            </InfoTooltip>
           )}
-        </span>
-        <CopyLinkDateTimeComponent
-          prefix={contract.creatorUsername}
-          slug={contract.slug}
-          createdTime={editedTime ? editedTime : createdTime}
-          elementId={comment.id}
-          seeEditsButton={<CommentEditHistoryButton comment={comment} />}
-          size={'sm'}
-          linkClassName="text-ink-500"
-        />
-        {!inTimeline && isApi && (
-          <InfoTooltip text="Placed via API" className="mr-1">
-            🤖
-          </InfoTooltip>
+          {!inTimeline && <DotMenu comment={comment} contract={contract} />}
+        </Row>
+        {bountyAwarded && bountyAwarded > 0 && (
+          <span className="select-none text-teal-600 dark:text-teal-400">
+            +{formatMoney(bountyAwarded)}
+          </span>
         )}
-        {!inTimeline && <DotMenu comment={comment} contract={contract} />}
       </Row>
     </Col>
   )
@@ -658,32 +693,28 @@ export function CommentOnBetRow(props: {
   const { bought, money } = getBoughtMoney(betAmount)
 
   return (
-    <Row className={clsx('relative w-full', className)}>
-      <Row className={'absolute -top-8 -left-10  text-sm'}>
-        <Row className="relative">
-          <div className="absolute -bottom-2 left-1.5">
-            <Curve size={32} strokeWidth={1} color="#D8D8EB" />
-          </div>
-          <Row className="bg-canvas-100 ml-[38px] gap-1 whitespace-nowrap rounded-md p-1">
-            <UserLink
-              username={bettorUsername}
-              name={bettorName}
-              marketCreator={false}
-            />
-            {bought} {money} of
-            <OutcomeLabel
-              outcome={betOutcome ? betOutcome : ''}
-              answerId={betAnswerId}
-              contract={contract}
-              truncate="short"
-            />
-            {clearReply && (
-              <button onClick={clearReply}>
-                <XCircleIcon className={'absolute -top-1.5 -right-3 h-5 w-5'} />
-              </button>
-            )}
-          </Row>
-        </Row>
+    <Row className="ml-4 text-sm">
+      <Col className="h-grow justify-end">
+        <div className="border-ink-300 h-4 w-6 rounded-tl-lg border-2 border-r-0 border-b-0" />
+      </Col>
+      <Row className="bg-ink-200 text-ink-600 gap-1 whitespace-nowrap py-1 px-4">
+        <UserLink
+          username={bettorUsername}
+          name={bettorName}
+          marketCreator={false}
+        />
+        {bought} <span className="text-ink-1000">{money}</span> of
+        <OutcomeLabel
+          outcome={betOutcome ? betOutcome : ''}
+          answerId={betAnswerId}
+          contract={contract}
+          truncate="short"
+        />
+        {clearReply && (
+          <button onClick={clearReply}>
+            <XCircleIcon className={'absolute -top-1.5 -right-3 h-5 w-5'} />
+          </button>
+        )}
       </Row>
     </Row>
   )

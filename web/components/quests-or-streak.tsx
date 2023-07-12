@@ -87,7 +87,6 @@ export function QuestsModal(props: {
   const streakStatus = questToCompletionStatus['BETTING_STREAK']
   const shareStatus = questToCompletionStatus['SHARES']
   const createStatus = questToCompletionStatus['MARKETS_CREATED']
-  const archeologistStatus = questToCompletionStatus['ARCHAEOLOGIST']
   const referralsStatus = questToCompletionStatus['REFERRALS']
 
   return (
@@ -141,20 +140,6 @@ export function QuestsModal(props: {
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
             href={'/create'}
           />
-          <QuestRow
-            emoji={'🏺'}
-            title={`Trade on an ancient question this week`}
-            complete={
-              archeologistStatus.currentCount >=
-              archeologistStatus.requiredCount
-            }
-            status={`(${archeologistStatus.currentCount}/${archeologistStatus.requiredCount})`}
-            reward={QUEST_DETAILS.ARCHAEOLOGIST.rewardAmount}
-            info={
-              'This has to be a question that no other user has bet on in the last 3 months'
-            }
-            href={'/ancient'}
-          />{' '}
           <QuestRow
             emoji={'🙋️'}
             title={`Refer a friend this week`}
@@ -229,13 +214,16 @@ const QuestRow = (props: {
   )
 }
 export const getQuestCompletionStatus = async (user: User) => {
-  const questToCompletionStatus = Object.fromEntries(
-    QUEST_TYPES.map((t) => [t, { requiredCount: 0, currentCount: 0 }])
+  const questTypes = QUEST_TYPES.filter(
+    (questType) => questType !== 'ARCHAEOLOGIST'
   )
-  const keys = QUEST_TYPES.map((questType) => QUEST_DETAILS[questType].scoreId)
+  const questToCompletionStatus = Object.fromEntries(
+    questTypes.map((t) => [t, { requiredCount: 0, currentCount: 0 }])
+  )
+  const keys = questTypes.map((questType) => QUEST_DETAILS[questType].scoreId)
   const scores = await getQuestScores(user.id, keys, db)
 
-  QUEST_TYPES.forEach((questType) => {
+  questTypes.forEach((questType) => {
     const questData = QUEST_DETAILS[questType]
     if (questType === 'BETTING_STREAK')
       questToCompletionStatus[questType] = {

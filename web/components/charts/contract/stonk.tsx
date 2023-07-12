@@ -1,9 +1,7 @@
 import { useMemo } from 'react'
-import { last, maxBy, minBy, sortBy } from 'lodash'
+import { last, maxBy, minBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
-
-import { DAY_MS } from 'common/util/time'
 import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
@@ -21,10 +19,6 @@ import { getStonkPriceAtProb } from 'common/stonk'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { HistoryPoint, viewScale } from 'common/chart'
 
-const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
-const MARGIN_X = MARGIN.left + MARGIN.right
-const MARGIN_Y = MARGIN.top + MARGIN.bottom
-
 const getScaleP = () => {
   return (p: number) => getStonkPriceAtProb({} as StonkContract, p)
 }
@@ -33,11 +27,7 @@ const getBetPoints = (
   bets: HistoryPoint<Partial<Bet>>[],
   scaleP: (p: number) => number
 ) => {
-  return sortBy(bets, (b) => b.x).map((pt) => ({
-    x: pt.x,
-    y: scaleP(pt.y),
-    obj: pt.obj,
-  }))
+  return bets.map((pt) => ({ x: pt.x, y: scaleP(pt.y), obj: pt.obj }))
 }
 
 const StonkChartTooltip = (
@@ -101,28 +91,22 @@ export const StonkContractChart = (props: {
     () => getBetPoints(props.betPoints, scaleP),
     [props.betPoints, scaleP]
   )
+
+  const now = useMemo(Date.now, [])
+
   const data = useMemo(
-    () => [
-      { x: start, y: startP },
-      ...betPoints,
-      { x: end ?? Date.now() + DAY_MS, y: endP },
-    ],
+    () => [{ x: start, y: startP }, ...betPoints, { x: end ?? now, y: endP }],
     [betPoints, start, startP, end, endP]
   )
-  const rightmostDate = getRightmostVisibleDate(
-    end,
-    last(betPoints)?.x,
-    Date.now()
-  )
+  const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const visibleRange = [rangeStart, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
+  const xScale = scaleTime(visibleRange, [0, width])
   // clamp log scale to make sure zeroes go to the bottom
-  const yScale = scaleLinear([min, max], [height - MARGIN_Y, 0])
+  const yScale = scaleLinear([min, max], [height, 0])
   return (
     <ControllableSingleValueHistoryChart
       w={width}
       h={height}
-      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
       viewScaleProps={viewScaleProps}

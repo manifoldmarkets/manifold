@@ -13,6 +13,8 @@ import {
   QuestionMarkCircleIcon,
   NewspaperIcon,
   SearchIcon,
+  LightningBoltIcon,
+  LoginIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -26,11 +28,11 @@ import { CreateQuestionButton } from 'web/components/buttons/create-question-but
 import NotificationsIcon from 'web/components/notifications-icon'
 import { DarkModeContext, useIsDarkMode } from 'web/hooks/dark-mode-context'
 import { useUser } from 'web/hooks/use-user'
-import { firebaseLogout } from 'web/lib/firebase/users'
+import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
-import { SignInButton } from '../buttons/sign-in-button'
+import { SidebarSignUpButton } from '../buttons/sign-up-button'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { SearchButton } from './search-button'
@@ -56,7 +58,7 @@ export default function Sidebar(props: {
   }
 
   const navOptions = isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), true)
+    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true), true)
 
   const bottomNavOptions = bottomNav(
@@ -81,7 +83,7 @@ export default function Sidebar(props: {
 
       {user && !isMobile && <ProfileSummary user={user} />}
 
-      {!isMobile && <SearchButton className="mb-5" />}
+      {!isMobile && !!user && <SearchButton className="mb-5" />}
 
       <div className="mb-4 flex flex-col gap-1">
         {navOptions.map((item) => (
@@ -94,7 +96,7 @@ export default function Sidebar(props: {
           setIsModalOpen={setIsModalOpen}
         />
 
-        {user === null && <SignInButton />}
+        {user === null && <SidebarSignUpButton />}
 
         {createMarketButton}
       </div>
@@ -148,22 +150,20 @@ const getDesktopNav = (
     )
 
   return buildArray(
-    { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'Questions', href: '/questions', icon: ScaleIcon },
     { name: 'News', href: '/news', icon: NewspaperIcon },
+    { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
 }
 
 // No sidebar when signed out
-const getMobileNav = (toggleModal: () => void, isFeed: boolean) => {
+const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
-    isFeed && { name: 'News', href: '/news', icon: NewspaperIcon },
-    isFeed
-      ? { name: 'Questions', href: '/questions', icon: ScaleIcon }
-      : { name: 'Search', href: '/search', icon: SearchIcon },
+    { name: 'Search', href: '/search', icon: SearchIcon },
     getIsNative() && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    { name: 'Live', href: '/live', icon: LightningBoltIcon },
     {
       name: 'Groups',
       icon: UserGroupIcon,
@@ -181,6 +181,7 @@ const bottomNav = (
   toggleTheme: () => void
 ) =>
   buildArray(
+    !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     {
       name:
         theme === 'auto'
@@ -194,6 +195,6 @@ const bottomNav = (
           : SparklesIcon,
       onClick: toggleTheme,
     },
-    { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
+    loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )

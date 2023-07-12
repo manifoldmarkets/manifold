@@ -3,6 +3,7 @@ import { Json } from 'common/supabase/schema'
 import { useEffect, useState } from 'react'
 import {
   getCommentRows,
+  getNumContractComments,
   getNumUserComments,
   getPostCommentRows,
 } from 'web/lib/supabase/comments'
@@ -12,6 +13,20 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { getAllComments } from 'common/supabase/comments'
 import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+
+export function useNumContractComments(contractId: string) {
+  const [numComments, setNumComments] = useState<number>(0)
+
+  useEffect(() => {
+    if (contractId) {
+      getNumContractComments(contractId).then((result) =>
+        setNumComments(result)
+      )
+    }
+  }, [contractId])
+
+  return numComments
+}
 
 export function useComments(contractId: string, limit: number) {
   const [comments, setComments] = useState<Json[]>([])

@@ -1,11 +1,12 @@
+import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import Image from 'next/image'
+import clsx from 'clsx'
 
 import { STARTING_BALANCE } from 'common/economy'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
-import { useRouter } from 'next/router'
-import React, { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
@@ -13,7 +14,6 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { TopicSelectorDialog } from './topic-selector-dialog'
-import clsx from 'clsx'
 
 export default function Welcome() {
   const user = useUser()
@@ -25,8 +25,6 @@ export default function Welcome() {
   const [showSignedOutUser, setShowSignedOutUser] = useState(false)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
 
-  const router = useRouter()
-
   const availablePages = buildArray([
     <WhatIsManifoldPage />,
     <PredictionMarketPage />,
@@ -36,19 +34,8 @@ export default function Welcome() {
   const isLastPage = page === availablePages.length - 1
 
   useEffect(() => {
-    if (user) return
-    const { showHelpModal } = router.query
-    if (showHelpModal) {
-      setPage(0)
-      setShowSignedOutUser(true)
-      setOpen(true)
-      router.replace(router.pathname, router.pathname, { shallow: true })
-    }
-  }, [router.query])
-
-  useEffect(() => {
     if (user?.shouldShowWelcome) setOpen(true)
-  }, [user])
+  }, [user?.shouldShowWelcome])
 
   const close = () => {
     setOpen(false)
@@ -77,10 +64,11 @@ export default function Welcome() {
 
   if (!shouldShowWelcomeModals) return <></>
 
-  if (groupSelectorOpen) return <TopicSelectorDialog />
+  if (groupSelectorOpen)
+    return <TopicSelectorDialog skippable={true} opaque={false} />
 
   return (
-    <Modal open={open} setOpen={close} bgOpaque={true} size={'lg'}>
+    <Modal open={open} setOpen={increasePage} bgOpaque={false} size={'lg'}>
       <Col className="bg-canvas-0 place-content-between rounded-md px-8 py-6 text-sm md:text-lg">
         {availablePages[page]}
         <Col>
@@ -125,11 +113,11 @@ function WhatIsManifoldPage() {
         height={150}
         width={150}
       />
-      <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-xl font-normal">
+      <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-2xl font-normal">
         Welcome to Manifold
       </div>
       <p className="mb-4 text-lg">
-        Bet on anything and help people predict the future!
+        Bet on anything and see the market consensus on real-world questions.
       </p>
       <p> </p>
     </>
@@ -139,12 +127,12 @@ function WhatIsManifoldPage() {
 function PredictionMarketPage() {
   return (
     <>
-      <div className="text-primary-700 mt-3 mb-6 text-center text-xl font-normal">
+      <div className="text-primary-700 mt-3 mb-6 text-center text-2xl font-normal">
         How it works
       </div>
       <div className="mt-2 text-lg">
         Create a question on anything. Bet on the right answer. The probability
-        is the question's best estimate.
+        is the market's best estimate.
       </div>
       <Image
         src="/welcome/manifold-example.gif"
@@ -168,7 +156,7 @@ function ThankYouPage() {
         height={100}
       />
       <div
-        className="text-primary-700 mb-6 text-center text-xl font-normal"
+        className="text-primary-700 mb-6 text-center text-2xl font-normal"
         children="Start trading"
       />
       <p className="text-lg">

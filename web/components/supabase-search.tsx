@@ -25,7 +25,7 @@ import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { SiteLink } from './widgets/site-link'
 import { useIsAuthorized } from 'web/hooks/use-user'
-import { ALL_TOPICS_WITH_EMOJIS, cleanTopic } from 'common/topics'
+import { SELECTED_TOPICS, cleanTopic } from 'common/topics'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from './widgets/carousel'
 
@@ -467,7 +467,7 @@ function SupabaseContractSearchControls(props: {
       </Col>
       {showTopics && (
         <Carousel>
-          {ALL_TOPICS_WITH_EMOJIS.map((t) => (
+          {SELECTED_TOPICS.map((t) => (
             <PillButton
               key={'pill-' + t}
               selected={topic === cleanTopic(t)}

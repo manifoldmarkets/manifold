@@ -57,8 +57,9 @@ export function CollapsibleContent(props: {
   stateKey: string
   defaultCollapse?: boolean
   children?: React.ReactNode
+  hideButton?: boolean
 }) {
-  const { content, stateKey, defaultCollapse, children } = props
+  const { content, stateKey, defaultCollapse, children, hideButton } = props
   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
     useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -76,6 +77,7 @@ export function CollapsibleContent(props: {
         content={content}
         stateKey={stateKey}
         defaultCollapse={defaultCollapse}
+        hideButton={hideButton}
       >
         {children}
       </ActuallyCollapsibleContent>
@@ -95,8 +97,9 @@ function ActuallyCollapsibleContent(props: {
   stateKey: string
   defaultCollapse?: boolean
   children?: React.ReactNode
+  hideButton?: boolean
 }) {
-  const { content, stateKey, defaultCollapse, children } = props
+  const { content, stateKey, defaultCollapse, children, hideButton } = props
   const [collapsed, setCollapsed] = usePersistentState<boolean>(
     defaultCollapse ?? false,
     {
@@ -132,7 +135,7 @@ function ActuallyCollapsibleContent(props: {
         )}
       >
         <div>
-          <Row className="justify-end">{button}</Row>
+          {!hideButton && <Row className="justify-end">{button}</Row>}
           <Content content={content} />
         </div>
         {isCollapsed && (

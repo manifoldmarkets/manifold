@@ -1,36 +1,35 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { ITask } from 'pg-promise'
+import { chunk, sum } from 'lodash'
+
+export function magnitude(vector: number[]): number {
+  const vectorSum = sum(vector.map((val) => val * val))
+  return Math.sqrt(vectorSum)
+}
+export function normalize(vector: number[]): number[] {
+  const mag = magnitude(vector)
+  return vector.map((val) => val / mag)
+}
 
 export async function getDefaultEmbedding(
   pg: SupabaseDirectClient | ITask<any>
 ) {
   const avg = await pg.one<{ average_embedding: string }>(
     `
-        WITH ignore_embeddings AS (
-            SELECT AVG(embedding) AS average_ignore
-            FROM topic_embeddings
-            WHERE topic IN (
-                SELECT UNNEST(ARRAY['destiny.gg', 'stock', 'planecrash', 'proofnik', 'permanent', 'personal']::text[])
-            )
-        ),
-       popular_avg AS (
-           SELECT AVG(embedding) AS average_contract
-           FROM (
-              SELECT contract_embeddings.embedding
-              FROM contract_embeddings
-                       JOIN (
-                  SELECT id
-                  FROM contracts
-                  ORDER BY popularity_score DESC
-                  LIMIT 100
-              ) AS top_contracts ON top_contracts.id = contract_embeddings.contract_id
-            ) AS subquery
-       )
-        SELECT (popular_avg.average_contract - ignore_embeddings.average_ignore) AS average_embedding
-        FROM popular_avg, ignore_embeddings;
+       select avg(embedding) as average_embedding
+       from (
+          select contract_embeddings.embedding
+          from contract_embeddings
+                   join (
+              select id
+              from contracts
+              order by popularity_score desc
+              limit 100
+          ) as top_contracts on top_contracts.id = contract_embeddings.contract_id
+        ) as subquery
     `
   )
-  return JSON.parse(avg.average_embedding) as number[]
+  return normalize(JSON.parse(avg.average_embedding) as number[])
 }
 
 export async function getAverageContractEmbedding(
@@ -53,7 +52,7 @@ export async function getAverageContractEmbedding(
         const embed = await getDefaultEmbedding(pg)
         return { embed, defaultEmbed: true }
       }
-      const embed = JSON.parse(r.average_embedding) as number[]
+      const embed = normalize(JSON.parse(r.average_embedding) as number[])
       return { embed, defaultEmbed: false }
     }
   )
@@ -77,7 +76,7 @@ export async function updateUserInterestEmbedding(
     )
   })
 }
-export async function updateUserDisinterestEmbeddingInternal(
+export async function addContractToUserDisinterestEmbedding(
   pg: SupabaseDirectClient,
   userId: string,
   contractId: string,
@@ -98,21 +97,24 @@ export async function updateUserDisinterestEmbeddingInternal(
               values ($1, $2, $3, $4)`,
         [userId, contractId, creatorId, feedId]
       )
-    const disinterestedContractIds = await getDisinterestedContractIds(
-      pg,
-      userId
-    )
-    const disinterestEmbedding = await computeUserDisinterestEmbedding(
-      pg,
-      userId,
-      disinterestedContractIds
-    )
-
-    await pg.none(
-      'UPDATE user_embeddings SET disinterest_embedding = $2 WHERE user_id = $1',
-      [userId, disinterestEmbedding]
-    )
   })
+  await updateUserDisinterestEmbeddingInternal(pg, userId)
+}
+export async function updateUserDisinterestEmbeddingInternal(
+  pg: SupabaseDirectClient,
+  userId: string
+) {
+  const disinterestedContractIds = await getDisinterestedContractIds(pg, userId)
+  const disinterestEmbedding = await computeUserDisinterestEmbedding(
+    pg,
+    userId,
+    disinterestedContractIds
+  )
+
+  await pg.none(
+    'UPDATE user_embeddings SET disinterest_embedding = $2 WHERE user_id = $1',
+    [userId, disinterestEmbedding]
+  )
 }
 
 async function getInterestedContractIds(
@@ -185,7 +187,7 @@ async function computeUserInterestEmbedding(
         console.error('No average of embeddings for', contractIds)
         return await getDefaultEmbedding(pg)
       }
-      return JSON.parse(r.average_embedding) as number[]
+      return normalize(JSON.parse(r.average_embedding) as number[])
     }
   )
 }
@@ -206,16 +208,18 @@ async function computeUserDisinterestEmbedding(
         console.error('No average of embeddings for', contractIds)
         return null
       }
-      return JSON.parse(r.average_embedding) as number[]
+      return normalize(JSON.parse(r.average_embedding) as number[])
     }
   )
 }
-
-export async function updateUsersCardViewEmbeddings(
+export async function updateUsersViewEmbeddings(
   pg: SupabaseDirectClient | ITask<any>
 ) {
-  return await pg.none(
-    `with view_embedding as (
+  const userToEmbeddingMap: {
+    [userId: string]: number[] | null
+  } = {}
+  await pg.map(
+    `
       select
         user_seen_markets.user_id,
         avg(contract_embeddings.embedding) as average_embedding
@@ -224,17 +228,36 @@ export async function updateUsersCardViewEmbeddings(
         join user_seen_markets on user_seen_markets.contract_id = contract_embeddings.contract_id
         join users on users.id = user_seen_markets.user_id
       where
-          user_seen_markets.type = 'view market card'
+          user_seen_markets.type = 'view market'
       group by
           user_seen_markets.user_id
-    )
-    update
-      user_embeddings
-    set
-      card_view_embedding = view_embedding.average_embedding
-    from
-      view_embedding
-    where
-      user_embeddings.user_id = view_embedding.user_id`
+    `,
+    [],
+    (r: { user_id: string; average_embedding: string }) => {
+      if (r.average_embedding === null) {
+        console.error('No average of view embeddings for', r.user_id)
+        userToEmbeddingMap[r.user_id] = null
+      }
+      userToEmbeddingMap[r.user_id] = normalize(
+        JSON.parse(r.average_embedding) as number[]
+      )
+    }
   )
+
+  const totalUserIds = Object.keys(userToEmbeddingMap)
+  const chunks = chunk(totalUserIds, 500)
+  let count = 0
+  for (const userIds of chunks) {
+    await Promise.all(
+      userIds.map(async (userId) => {
+        if (userToEmbeddingMap[userId] === null) return
+        await pg.none(
+          'UPDATE user_embeddings SET contract_view_embedding = $2 WHERE user_id = $1',
+          [userId, userToEmbeddingMap[userId]]
+        )
+      })
+    )
+    count += userIds.length
+    console.log(`Updated ${count} of ${totalUserIds.length} users`)
+  }
 }

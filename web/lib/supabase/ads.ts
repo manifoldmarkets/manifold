@@ -57,7 +57,9 @@ export async function getUsersWhoSkipped(adId: string) {
 }
 
 export const getBoosts = async (privateUser: PrivateUser) => {
-  const { data } = await db.rpc('get_top_market_ads', { uid: privateUser.id })
+  const { data } = await db.rpc('get_top_market_ads' as any, {
+    uid: privateUser.id,
+  })
   return data?.filter(
     (d) => !isContractBlocked(privateUser, d.market_data as Contract)
   ) as BoostsType

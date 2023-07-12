@@ -1,9 +1,7 @@
 import { useMemo } from 'react'
-import { last, sortBy } from 'lodash'
+import { last } from 'lodash'
 import { scaleTime, scaleLog, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
-
-import { DAY_MS } from 'common/util/time'
 import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
@@ -20,10 +18,6 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { HistoryPoint, viewScale } from 'common/chart'
 
-const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
-const MARGIN_X = MARGIN.left + MARGIN.right
-const MARGIN_Y = MARGIN.top + MARGIN.bottom
-
 // mqp: note that we have an idiosyncratic version of 'log scale'
 // contracts. the values are stored "linearly" and can include zero.
 // as a result, we have to do some weird-looking stuff in this code
@@ -39,11 +33,7 @@ const getBetPoints = (
   bets: HistoryPoint<Partial<Bet>>[],
   scaleP: (p: number) => number
 ) => {
-  return sortBy(bets, (b) => b.x).map((pt) => ({
-    x: pt.x,
-    y: scaleP(pt.y),
-    obj: pt.obj,
-  }))
+  return bets.map((pt) => ({ x: pt.x, y: scaleP(pt.y), obj: pt.obj }))
 }
 
 const PseudoNumericChartTooltip = (
@@ -96,30 +86,24 @@ export const PseudoNumericContractChart = (props: {
     () => getBetPoints(props.betPoints, scaleP),
     [props.betPoints, scaleP]
   )
+
+  const now = useMemo(Date.now, [betPoints])
+
   const data = useMemo(
-    () => [
-      { x: start, y: startP },
-      ...betPoints,
-      { x: end ?? Date.now() + DAY_MS, y: endP },
-    ],
+    () => [{ x: start, y: startP }, ...betPoints, { x: end ?? now, y: endP }],
     [betPoints, start, startP, end, endP]
   )
-  const rightmostDate = getRightmostVisibleDate(
-    end,
-    last(betPoints)?.x,
-    Date.now()
-  )
+  const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const visibleRange = [rangeStart, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
+  const xScale = scaleTime(visibleRange, [0, width])
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = isLogScale
-    ? scaleLog([Math.max(min, 1), max], [height - MARGIN_Y, 0]).clamp(true)
-    : scaleLinear([min, max], [height - MARGIN_Y, 0])
+    ? scaleLog([Math.max(min, 1), max], [height, 0]).clamp(true)
+    : scaleLinear([min, max], [height, 0])
   return (
     <ControllableSingleValueHistoryChart
       w={width}
       h={height}
-      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
       viewScaleProps={viewScaleProps}

@@ -40,7 +40,7 @@ export const getSharesFromStonkShares = (
   totalShares: number
 ) => {
   const stonkShares = displayShares * getStonkPriceAtProb(contract, 1)
-  if (Math.abs(totalShares - stonkShares) < 0.5) {
+  if (Math.abs(totalShares - stonkShares) < 1) {
     return totalShares
   }
   return stonkShares

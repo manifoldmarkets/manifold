@@ -1,9 +1,5 @@
 import { runScript } from 'run-script'
-import { updateUsersCardViewEmbeddings } from 'shared/helpers/embeddings'
-import { addUserToLeague } from 'shared/generate-leagues'
 import { updateLeagueCore } from 'functions/scheduled/update-league'
-import { updateLeagueRanksCore } from 'functions/scheduled/update-league-ranks'
-import { getLeagueActivity } from 'api/league-activity'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {

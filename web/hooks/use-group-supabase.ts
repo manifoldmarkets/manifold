@@ -14,35 +14,17 @@ import {
   getMemberRole,
 } from 'web/lib/supabase/group'
 import {
-  GroupAndRoleType,
-  getGroup,
   getGroupsWhereUserHasRole,
-  getMemberPrivateGroups,
-  getYourNonPrivateNonModeratorGroups,
+  getMyGroupRoles,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
 import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { getUser } from 'web/lib/supabase/user'
 import { useAdmin } from './use-admin'
-import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized, useUser } from './use-user'
 import { Row } from 'common/supabase/utils'
 import { convertGroup } from 'common/supabase/groups'
-
-export const useGroup = (groupId: string | undefined) => {
-  const [group, setGroup] = useState<Group | undefined | null>(undefined)
-
-  useEffect(() => {
-    if (groupId)
-      getGroup(groupId).then((result) => {
-        setGroup(result)
-      })
-  }, [groupId])
-
-  return group
-}
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<
@@ -236,77 +218,30 @@ export async function setTranslatedMemberRole(
   }
 }
 
-export function useGroupFromSlug(groupSlug: string) {
-  const [group, setGroup] = useState<Group | null>(null)
+// TODO: maybe this belongs in a more general file
+function useAsyncData<T, R>(
+  prop: T | undefined,
+  asyncFn: (prop: T) => Promise<R>
+) {
+  const [data, setData] = useState<R | null>(null)
   useEffect(() => {
-    getGroupFromSlug(groupSlug, db)
-      .then((result) => {
-        setGroup(result)
-      })
-      .catch((e) => console.log(e))
-  }, [groupSlug])
-
-  return group
+    if (prop) asyncFn(prop).then(setData).catch(console.error)
+  }, [prop])
+  return data
 }
 
-export function useGroupCreator(group?: Group | null) {
-  const [creator, setCreator] = useState<User | null>(null)
-  useEffect(() => {
-    if (group && group.creatorId) {
-      getUser(group.creatorId).then((result) => setCreator(result))
-    }
-  }, [group])
-  return creator
+export function useGroupFromSlug(groupSlug: string) {
+  return useAsyncData(groupSlug, (slug) => getGroupFromSlug(slug, db))
 }
 
 export function useListGroupsBySlug(groupSlugs: string[]) {
-  const [groups, setGroups] = useState<Group[] | null>(null)
-  useEffectCheckEquality(() => {
-    if (groupSlugs.length > 0) {
-      listGroupsBySlug(groupSlugs).then((result) => {
-        setGroups(result)
-      })
-    }
-  }, [groupSlugs])
-  return groups
+  return useAsyncData(groupSlugs, listGroupsBySlug)
+}
+
+export function useMyGroupRoles(userId: string | undefined) {
+  return useAsyncData(userId, getMyGroupRoles)
 }
 
 export function useGroupsWhereUserHasRole(userId: string | undefined) {
-  const [groupsAndRoles, setGroupsAndRoles] = useState<
-    GroupAndRoleType[] | null
-  >(null)
-  useEffect(() => {
-    if (userId) {
-      getGroupsWhereUserHasRole(userId).then((result) => {
-        setGroupsAndRoles(result)
-      })
-    }
-  }, [userId])
-  return groupsAndRoles
-}
-
-export function useMemberPrivateGroups(userId: string | undefined) {
-  const [memberPrivateGroups, setMemberPrivateGroups] = useState<
-    Group[] | undefined
-  >(undefined)
-  useEffect(() => {
-    if (userId) {
-      getMemberPrivateGroups(userId).then((result) => {
-        setMemberPrivateGroups(result)
-      })
-    }
-  }, [userId])
-  return memberPrivateGroups
-}
-
-export function useYourNonPrivateNonModeratorGroups(userId: string) {
-  const [groups, setGroups] = useState<Group[] | undefined>(undefined)
-  useEffect(() => {
-    if (userId) {
-      getYourNonPrivateNonModeratorGroups(userId).then((result) => {
-        setGroups(result)
-      })
-    }
-  }, [userId])
-  return groups
+  return useAsyncData(userId, getGroupsWhereUserHasRole)
 }

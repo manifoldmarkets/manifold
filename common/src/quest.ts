@@ -34,17 +34,17 @@ export const QUEST_DETAILS: Record<
     scoreId: 'marketsCreatedThisWeek',
     title: 'Question Creation',
   },
-  ARCHAEOLOGIST: {
-    requiredCount: 1,
-    rewardAmount: 25,
-    scoreId: 'oldContractsBetOnThisWeek',
-    title: 'Archaeologist',
-  },
   REFERRALS: {
     requiredCount: 1,
     rewardAmount: 250,
     scoreId: 'referralsThisWeek',
     title: 'Referrals',
+  },
+  ARCHAEOLOGIST: {
+    requiredCount: 1,
+    rewardAmount: 25,
+    scoreId: 'oldContractsBetOnThisWeek',
+    title: 'Archaeologist',
   },
 }
 export const QUEST_SCORE_IDS = QUEST_TYPES.map((t) => QUEST_DETAILS[t].scoreId)

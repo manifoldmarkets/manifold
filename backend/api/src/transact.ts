@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { APIError, authEndpoint } from './helpers'
-import { runTxn } from 'shared/run-txn'
+import { runTxn } from 'shared/txn/run-txn'
 
 // TODO: We totally fail to validate most of the input to this function,
 // so anyone can spam our database with malformed transactions.

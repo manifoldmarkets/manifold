@@ -3,8 +3,8 @@ import { Contract, contractPath } from 'common/contract'
 import { FeedCommentThread, isReplyToBet } from './feed-comments'
 import { Col } from '../layout/col'
 import clsx from 'clsx'
-import { Row } from '../layout/row'
-import { FeedRelatedItemFrame } from './feed-timeline-items'
+import { ClickFrame } from '../widgets/click-frame'
+import { useRouter } from 'next/router'
 
 export const FeedCommentItem = (props: {
   contract: Contract
@@ -16,9 +16,11 @@ export const FeedCommentItem = (props: {
   const { contract, commentThreads } = props
   const firstCommentIsReplyToBet =
     commentThreads[0] && isReplyToBet(commentThreads[0].parentComment)
+
+  const router = useRouter()
+
   return (
-    // TODO: make more specific link
-    <FeedRelatedItemFrame href={contractPath(contract)} className="-mt-3">
+    <div>
       <Col
         className={clsx(
           'mb-2 w-full',
@@ -26,23 +28,23 @@ export const FeedCommentItem = (props: {
         )}
       >
         {commentThreads.map((ct) => (
-          <Row
-            className={'relative w-full'}
+          <ClickFrame
+            onClick={() => {
+              router.push(`${contractPath(contract)}#${ct.parentComment.id}`)
+            }}
             key={ct.parentComment.id + 'feed-thread'}
           >
-            <Col className={'w-full'}>
-              <FeedCommentThread
-                contract={contract}
-                threadComments={ct.childComments}
-                parentComment={ct.parentComment}
-                collapseMiddle={true}
-                trackingLocation={'feed'}
-                inTimeline={true}
-              />
-            </Col>
-          </Row>
+            <FeedCommentThread
+              contract={contract}
+              threadComments={ct.childComments}
+              parentComment={ct.parentComment}
+              collapseMiddle={true}
+              trackingLocation={'feed'}
+              inTimeline={true}
+            />
+          </ClickFrame>
         ))}
       </Col>
-    </FeedRelatedItemFrame>
+    </div>
   )
 }

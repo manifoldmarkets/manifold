@@ -10,12 +10,10 @@ import {
   PseudoNumericContract,
 } from 'common/contract'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
-import {
-  BinaryContractChart,
-  ChoiceContractChart,
-  NumericContractChart,
-  PseudoNumericContractChart,
-} from 'web/components/charts/contract'
+import { NumericContractChart } from '../charts/contract/numeric'
+import { BinaryContractChart } from '../charts/contract/binary'
+import { ChoiceContractChart } from '../charts/contract/choice'
+import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
 import {
   BinaryResolutionOrChance,
@@ -39,6 +37,7 @@ import { QfOverview } from './qf-overview'
 import { AnswersPanel } from '../answers/answers-panel'
 import { Answer, DpmAnswer } from 'common/answer'
 import { UserBetsSummary } from '../bet/bet-summary'
+import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 
 export const ContractOverview = memo(
   (props: {
@@ -86,6 +85,8 @@ export const ContractOverview = memo(
         )
       case 'BOUNTIED_QUESTION':
         return <></>
+      case 'POLL':
+        return <></>
     }
   }
 )
@@ -95,7 +96,7 @@ const NumericOverview = (props: { contract: NumericContract }) => {
   return (
     <>
       <NumericResolutionOrExpectation contract={contract} />
-      <SizedContainer fullHeight={250} mobileHeight={150}>
+      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <NumericContractChart width={w} height={h} contract={contract} />
         )}
@@ -125,7 +126,8 @@ const BinaryOverview = (props: {
           color="green"
         />
       </Row>
-      <SizedContainer fullHeight={250} mobileHeight={150}>
+
+      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <BinaryContractChart
             width={w}
@@ -138,7 +140,7 @@ const BinaryOverview = (props: {
         )}
       </SizedContainer>
 
-      {user && tradingAllowed(contract) && (
+      {tradingAllowed(contract) && (
         <SignedInBinaryMobileBetting contract={contract} user={user} />
       )}
     </>
@@ -147,7 +149,7 @@ const BinaryOverview = (props: {
 
 const ChoiceOverview = (props: {
   bets?: Bet[]
-  points?: MultiPoint[]
+  points: MultiPoint[]
   contract: MultiContract
   showResolver: boolean
   onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
@@ -157,27 +159,34 @@ const ChoiceOverview = (props: {
   if (!onAnswerCommentClick) return null
   return (
     <>
-      <SizedContainer fullHeight={250} mobileHeight={150}>
-        {(w, h) => (
-          <ChoiceContractChart
-            width={w}
-            height={h}
-            bets={bets}
-            points={points}
+      {!!points.length && (
+        <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
+          {(w, h) => (
+            <ChoiceContractChart
+              width={w}
+              height={h}
+              bets={bets}
+              points={points}
+              contract={contract}
+            />
+          )}
+        </SizedContainer>
+      )}
+
+      {showResolver ? (
+        <AnswersResolvePanel contract={contract} />
+      ) : (
+        <>
+          <AnswersPanel
+            contract={contract}
+            onAnswerCommentClick={onAnswerCommentClick}
+          />
+          <UserBetsSummary
+            className="border-ink-200 mt-2 !mb-2 "
             contract={contract}
           />
-        )}
-      </SizedContainer>
-      <div />
-      <AnswersPanel
-        contract={contract}
-        onAnswerCommentClick={onAnswerCommentClick}
-        showResolver={showResolver}
-      />
-      <UserBetsSummary
-        className="border-ink-200 mt-2 !mb-2 "
-        contract={contract}
-      />
+        </>
+      )}
     </>
   )
 }
@@ -202,7 +211,7 @@ const PseudoNumericOverview = (props: {
           color="indigo"
         />
       </Row>
-      <SizedContainer fullHeight={250} mobileHeight={150}>
+      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <PseudoNumericContractChart
             width={w}
@@ -241,7 +250,7 @@ const StonkOverview = (props: {
           color="green"
         />
       </Row>
-      <SizedContainer fullHeight={250} mobileHeight={150}>
+      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <StonkContractChart
             width={w}

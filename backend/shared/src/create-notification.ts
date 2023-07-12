@@ -18,7 +18,7 @@ import {
   User,
 } from 'common/user'
 import { Contract, MultiContract } from 'common/contract'
-import { getPrivateUser, getValues, log } from 'shared/utils'
+import { getPrivateUser, getUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
 import { groupBy, keyBy, mapValues, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
@@ -478,104 +478,6 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   // if they weren't notified previously, notify them now
   log('notifying followers')
   await notifyContractFollowers()
-}
-
-export const createTopLevelLikedCommentNotification = async (
-  sourceId: string,
-  sourceUser: User,
-  sourceText: string,
-  sourceContract: Contract,
-  idempotencyKey: string,
-  otherLikerIds: string[]
-) => {
-  const pg = createSupabaseDirectClient()
-  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
-    `select follow_id from contract_follows where contract_id = $1`,
-    [sourceContract.id]
-  )
-  const contractFollowerIds = followerIds.map((f) => f.follow_id)
-  const constructNotification = (userId: string) => {
-    const notification: Notification = {
-      id: idempotencyKey,
-      userId,
-      reason: 'some_comments_on_watched_markets',
-      createdTime: Date.now(),
-      isSeen: false,
-      sourceId,
-      sourceType: 'comment',
-      sourceUpdateType: 'created',
-      sourceContractId: sourceContract.id,
-      sourceUserName: sourceUser.name,
-      sourceUserUsername: sourceUser.username,
-      sourceUserAvatarUrl: sourceUser.avatarUrl,
-      sourceText,
-      sourceContractCreatorUsername: sourceContract.creatorUsername,
-      sourceContractTitle: sourceContract.question,
-      sourceContractSlug: sourceContract.slug,
-      sourceSlug: sourceContract.slug,
-      sourceTitle: sourceContract.question,
-    }
-    return removeUndefinedProps(notification)
-  }
-
-  const sendNotificationsIfSettingsPermit = async (
-    userId: string,
-    notification: Notification
-  ) => {
-    const privateUser = await getPrivateUser(userId)
-    if (
-      !privateUser ||
-      userId === sourceUser.id ||
-      otherLikerIds.includes(userId) ||
-      userIsBlocked(privateUser, sourceUser.id)
-    )
-      return
-
-    const { sendToBrowser, sendToEmail, sendToMobile, notificationPreference } =
-      getNotificationDestinationsForUser(privateUser, notification.reason)
-
-    const sameNotificationExists = await pg.one<{ count: number }>(
-      `select count(*) from user_notifications
-                where user_id = $1
-                  and (data->>'sourceId') = $2
-                limit 1`,
-      [notification.userId, notification.sourceId]
-    )
-    if (sameNotificationExists.count > 0) return
-
-    // Browser notifications
-    if (sendToBrowser) {
-      await insertNotificationToSupabase(notification, pg)
-    }
-
-    // Mobile push notifications
-    if (sendToMobile) {
-      const reasonText =
-        (notificationPreference &&
-          NOTIFICATION_DESCRIPTIONS[notificationPreference].verb) ??
-        'commented'
-      await createPushNotification(
-        notification,
-        privateUser,
-        `${sourceUser.name} ${reasonText} on ${sourceContract.question}`,
-        sourceText
-      )
-    }
-    if (sendToEmail)
-      await sendNewCommentEmail(
-        notification.reason,
-        privateUser,
-        sourceUser,
-        sourceContract,
-        sourceText,
-        sourceId
-      )
-  }
-  await Promise.all(
-    contractFollowerIds.map((userId) =>
-      sendNotificationsIfSettingsPermit(userId, constructNotification(userId))
-    )
-  )
 }
 
 export const createBetFillNotification = async (
@@ -1045,7 +947,7 @@ export const createUniqueBettorBonusNotification = async (
     uniqueBettorsExcludingCreator.length,
     mostRecentUniqueBettors,
     bettorsToTheirBets,
-    Math.round(amount * totalNewBettorsToReport)
+    amount * totalNewBettorsToReport
   )
 }
 
@@ -1562,6 +1464,67 @@ export const createSignupBonusNotification = async (
     sourceUserUsername: MANIFOLD_USER_USERNAME,
     sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
     sourceText: bonusAmount.toString(),
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}
+
+export const createBountyAwardedNotification = async (
+  userId: string,
+  bountyContract: Contract,
+  txnId: string,
+  bountyAmount: number
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  if (userOptedOutOfBrowserNotifications(privateUser)) return
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: userId,
+    reason: 'bounty_awarded',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'contract',
+    sourceUserName: bountyContract.creatorName,
+    sourceUserUsername: bountyContract.creatorUsername,
+    sourceUserAvatarUrl: bountyContract.creatorAvatarUrl ?? '',
+    sourceContractCreatorUsername: bountyContract.creatorUsername,
+    sourceText: bountyAmount.toString(),
+    sourceContractTitle: bountyContract.question,
+    sourceContractSlug: bountyContract.slug,
+    sourceContractId: txnId,
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}
+
+export const createBountyAddedNotification = async (
+  userId: string,
+  bountyContract: Contract,
+  txnId: string,
+  bountyAmount: number
+) => {
+  const privateUser = await getPrivateUser(userId)
+  const sender = await getUser(txnId)
+  if (!privateUser || !sender) return
+  if (userOptedOutOfBrowserNotifications(privateUser)) return
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: userId,
+    reason: 'bounty_added',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'user',
+    sourceUserName: sender.name,
+    sourceUserUsername: sender.username,
+    sourceUserAvatarUrl: sender.avatarUrl ?? '',
+    sourceContractCreatorUsername: bountyContract.creatorUsername,
+    sourceText: bountyAmount.toString(),
+    sourceContractTitle: bountyContract.question,
+    sourceContractSlug: bountyContract.slug,
+    sourceContractId: bountyContract.id,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)

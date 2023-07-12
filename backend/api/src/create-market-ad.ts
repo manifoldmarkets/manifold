@@ -3,10 +3,10 @@ import * as admin from 'firebase-admin'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
-import { runTxn } from 'shared/run-txn'
 import { MarketAdCreateTxn } from 'common/txn'
 import { log } from 'shared/utils'
 import { MIN_AD_COST_PER_VIEW } from 'common/boost'
+import { runTxn } from 'shared/txn/run-txn'
 
 const schema = z.object({
   marketId: z.string(),

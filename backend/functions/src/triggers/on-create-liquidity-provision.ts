@@ -40,7 +40,6 @@ export const onCreateLiquidityProvision = functions
         contract,
         [
           'similar_interest_vector_to_contract',
-          'similar_interest_vector_to_user',
           'follow_user',
           'contract_in_group_you_are_in',
         ],

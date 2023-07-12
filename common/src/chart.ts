@@ -32,13 +32,6 @@ export type viewScale = {
   >
 }
 
-export type Margin = {
-  top: number
-  right: number
-  bottom: number
-  left: number
-}
-
 export type AxisConstraints = {
   min?: number
   max?: number

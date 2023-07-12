@@ -1,14 +1,15 @@
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { Group } from 'common/group'
-import { run, SupabaseClient } from 'common/supabase/utils'
+import { Row, run, SupabaseClient } from 'common/supabase/utils'
 import { db } from './db'
 import { Contract } from '../firebase/contracts'
 import { groupStateType } from 'web/components/groups/group-search'
 import { supabaseSearchGroups } from '../firebase/api'
 import { convertGroup } from 'common/supabase/groups'
+
 export type SearchGroupInfo = Pick<
   Group,
-  'id' | 'name' | 'slug' | 'about' | 'totalMembers' | 'privacyStatus'
+  'id' | 'name' | 'slug' | 'totalMembers' | 'privacyStatus' | 'creatorId'
 >
 
 export async function getGroupContracts(groupId: string) {
@@ -174,40 +175,30 @@ export async function getMemberGroupsCount(userId: string) {
   return count
 }
 
-export type GroupAndRoleType = {
-  group: Group
-  role: string
-}
+export type GroupAndRoleType = Row<'group_role'>
+
 // gets all groups where the user is an admin or moderator
 export async function getGroupsWhereUserHasRole(userId: string) {
   const groupThings = await run(
     db
       .from('group_role')
-      .select('*')
+      .select()
       .eq('member_id', userId)
       .or('role.eq.admin,role.eq.moderator')
-      .order('name')
-  )
-
-  return groupThings.data.map((d) => {
-    return {
-      group: d.group_data as Group,
-      role: d.role as string,
-    }
-  })
-}
-
-// gets all groups where the user is member
-export async function getGroupsWhereUserIsMember(userId: string) {
-  const groupThings = await run(
-    db
-      .from('group_role')
-      .select('group_data')
-      .eq('member_id', userId)
-      .order('name')
   )
 
   return groupThings.data
+}
+
+export async function getMyGroupRoles(userId: string) {
+  const { data } = await run(
+    db
+      .from('group_role')
+      .select()
+      .eq('member_id', userId)
+      .order('createdtime', { ascending: false })
+  )
+  return data
 }
 
 // gets all public groups
@@ -255,14 +246,12 @@ export async function getMemberPrivateGroups(userId: string) {
   const { data } = await run(
     db
       .from('group_role')
-      .select('group_data')
+      .select('*')
       .eq('privacy_status', 'private')
       .eq('member_id', userId)
   )
-  if (data && data.length > 0) {
-    return data.map((group) => group.group_data as Group)
-  }
-  return []
+
+  return data ?? []
 }
 
 export async function getYourNonPrivateNonModeratorGroups(userId: string) {
@@ -272,15 +261,11 @@ export async function getYourNonPrivateNonModeratorGroups(userId: string) {
       .select('*')
       .eq('member_id', userId)
       .neq('privacy_status', 'private')
+      .neq('role', 'moderator')
+      .neq('role', 'admin')
       .order('createdtime', { ascending: false })
   )
-  if (data) {
-    const filteredData = data
-      .filter((item) => item.role !== 'admin' && item.role !== 'moderator')
-      .map((item) => item.group_data) // map to get only group_data
-    return filteredData as Group[]
-  }
-  return []
+  return data ?? []
 }
 
 export async function leaveGroup(groupId: string, userId: string) {

@@ -1,8 +1,8 @@
 import clsx from 'clsx'
 import { Axis, AxisScale } from 'd3-axis'
-import { D3BrushEvent, brushX } from 'd3-brush'
 import { pointer, select } from 'd3-selection'
 import { CurveFactory, area, line } from 'd3-shape'
+import { D3ZoomEvent, zoom } from 'd3-zoom'
 import dayjs from 'dayjs'
 import {
   ComponentType,
@@ -10,15 +10,12 @@ import {
   SVGProps,
   useDeferredValue,
   useEffect,
-  useId,
   useMemo,
   useRef,
 } from 'react'
-
-import { Margin } from 'common/chart'
 import { Contract } from 'common/contract'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
+import { clamp } from 'lodash'
 
 export interface ContinuousScale<T> extends AxisScale<T> {
   invert(n: number): T
@@ -30,8 +27,6 @@ export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   useEffect(() => {
     if (axisRef.current != null) {
       select(axisRef.current)
-        .transition()
-        .duration(250)
         .call(axis)
         .select('.domain')
         .attr('stroke-width', 0)
@@ -40,6 +35,21 @@ export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   return <g ref={axisRef} transform={`translate(0, ${h})`} />
 }
 
+export const SimpleYAxis = <Y,>(props: { w: number; axis: Axis<Y> }) => {
+  const { w, axis } = props
+  const axisRef = useRef<SVGGElement>(null)
+  useEffect(() => {
+    if (axisRef.current != null) {
+      select(axisRef.current)
+        .call(axis)
+        .select('.domain')
+        .attr('stroke-width', 0)
+    }
+  }, [w, axis])
+  return <g ref={axisRef} transform={`translate(${w}, 0)`} />
+}
+
+// horizontal gridlines
 export const YAxis = <Y,>(props: {
   w: number
   h: number
@@ -131,8 +141,9 @@ export const AreaWithTopStroke = <P,>(props: {
   py0: number | ((p: P) => number)
   py1: number | ((p: P) => number)
   curve: CurveFactory
+  className?: string
 }) => {
-  const { data, color, px, py0, py1, curve } = props
+  const { data, color, px, py0, py1, curve, className } = props
   return (
     <g>
       <AreaPath
@@ -143,6 +154,7 @@ export const AreaWithTopStroke = <P,>(props: {
         curve={curve}
         fill={color}
         opacity={0.2}
+        className={className}
       />
       <LinePath data={data} px={px} py={py1} curve={curve} stroke={color} />
     </g>
@@ -175,81 +187,64 @@ export const SVGChart = <X, TT>(props: {
   children: ReactNode
   w: number
   h: number
-  margin: Margin
   xAxis: Axis<X>
   yAxis: Axis<number>
   ttParams?: TooltipParams<TT> | undefined
-  onSelect?: (ev: D3BrushEvent<any>) => void
+  onZoom?: (ev: D3ZoomEvent<any, any> | null) => void
   onMouseOver?: (mouseX: number, mouseY: number) => void
   onMouseLeave?: () => void
   Tooltip?: TooltipComponent<X, TT>
   negativeThreshold?: number
+  noGridlines?: boolean
+  className?: string
 }) => {
   const {
     children,
     w,
     h,
-    margin,
     xAxis,
     yAxis,
     ttParams,
-    onSelect,
+    onZoom,
     onMouseOver,
     onMouseLeave,
     Tooltip,
     negativeThreshold,
+    noGridlines,
+    className,
   } = props
-  const tooltipMeasure = useMeasureSize()
-  const overlayRef = useRef<SVGGElement>(null)
-  const innerW = w - (margin.left + margin.right)
-  const innerH = h - (margin.top + margin.bottom)
-  const clipPathId = useId()
-  const isMobile = useIsMobile()
+  const svgRef = useRef<SVGSVGElement>(null)
 
-  const justSelected = useRef(false)
   useEffect(() => {
-    if (onSelect != null && overlayRef.current) {
-      const brush = brushX().extent([
-        [0, 0],
-        [innerW, innerH],
-      ])
-      brush.on('end', (ev) => {
-        // when we clear the brush after a selection, that would normally cause
-        // another 'end' event, so we have to suppress it with this flag
-        if (!justSelected.current) {
-          justSelected.current = true
-          onSelect(ev)
-          onMouseLeave?.()
-          if (overlayRef.current) {
-            select(overlayRef.current).call(brush.clear)
+    if (onZoom != null && svgRef.current) {
+      const zoomer = zoom<SVGSVGElement, unknown>()
+        .scaleExtent([1, 100])
+        .extent([
+          [0, 0],
+          [w, h],
+        ])
+        .translateExtent([
+          [0, 0],
+          [w, h],
+        ])
+        .on('zoom', (ev) => onZoom?.(ev))
+        .filter((ev) => {
+          if (ev instanceof WheelEvent) {
+            return ev.ctrlKey || ev.metaKey || ev.altKey
           }
-        } else {
-          justSelected.current = false
-        }
-      })
-      // mqp: shape-rendering null overrides the default d3-brush shape-rendering
-      // of `crisp-edges`, which seems to cause graphical glitches on Chrome
-      // (i.e. the bug where the area fill flickers white)
-      select(overlayRef.current)
-        .call(brush)
-        .select('.selection')
-        .attr('shape-rendering', 'null')
+          return !ev.button
+        })
+
+      select(svgRef.current)
+        .call(zoomer)
+        .on('dblclick.zoom', () => onZoom?.(null))
     }
-  }, [innerW, innerH, onSelect, onMouseLeave])
+  }, [w, h, onZoom])
 
   const onPointerMove = (ev: React.PointerEvent) => {
-    if (ev.pointerType === 'mouse' && onMouseOver) {
+    if (ev.pointerType === 'mouse' || ev.pointerType === 'pen') {
       const [x, y] = pointer(ev)
-      onMouseOver(x, y)
-    }
-  }
-
-  const onTouchMove = (ev: React.TouchEvent) => {
-    if (onMouseOver) {
-      const touch = ev.touches[0]
-      const x = touch.pageX - ev.currentTarget.getBoundingClientRect().left
-      const y = touch.pageY - ev.currentTarget.getBoundingClientRect().top
-      onMouseOver(x, y)
+      onMouseOver?.(x, y)
     }
   }
 
@@ -257,26 +252,23 @@ export const SVGChart = <X, TT>(props: {
     onMouseLeave?.()
   }
 
-  if (innerW <= 0 || innerH <= 0) {
+  if (w <= 0 || h <= 0) {
     // i.e. chart is smaller than margin
     return null
   }
 
   return (
-    <div className="relative overflow-hidden">
+    <div
+      className={clsx(className, 'relative')}
+      onPointerEnter={onPointerMove}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
+    >
       {ttParams && Tooltip && (
         <TooltipContainer
-          setElem={tooltipMeasure.setElem}
-          margin={margin}
-          pos={getTooltipPosition(
-            ttParams.x,
-            ttParams.y,
-            innerW,
-            innerH,
-            tooltipMeasure.width ?? 140,
-            tooltipMeasure.height ?? 35,
-            isMobile ?? false
-          )}
+          calculatePos={(ttw, tth) =>
+            getTooltipPosition(ttParams.x, ttParams.y, w, h, ttw, tth)
+          }
         >
           <Tooltip
             xScale={xAxis.scale()}
@@ -285,43 +277,48 @@ export const SVGChart = <X, TT>(props: {
           />
         </TooltipContainer>
       )}
-      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-        <clipPath id={clipPathId}>
-          <rect x={0} y={0} width={innerW} height={innerH} />
-        </clipPath>
-        <g transform={`translate(${margin.left}, ${margin.top})`}>
-          <XAxis axis={xAxis} w={innerW} h={innerH} />
-          <YAxis
-            axis={yAxis}
-            w={innerW}
-            h={innerH}
-            negativeThreshold={negativeThreshold}
-          />
-          <g clipPath={`url(#${clipPathId})`}>{children}</g>
-          {!isMobile ? (
-            <g
-              ref={overlayRef}
-              x="0"
-              y="0"
-              width={innerW}
-              height={innerH}
-              fill="none"
-              pointerEvents="all"
-              onPointerEnter={onPointerMove}
-              onPointerMove={onPointerMove}
-              onPointerLeave={onPointerLeave}
-            />
-          ) : (
+      <svg
+        width={w}
+        height={h}
+        viewBox={`0 0 ${w} ${h}`}
+        overflow="visible"
+        ref={svgRef}
+      >
+        <defs>
+          <filter id="blur">
+            <feGaussianBlur stdDeviation="8" />
+          </filter>
+          <mask id="mask">
             <rect
-              x="0"
-              y="0"
-              width={innerW}
-              height={innerH}
-              fill="transparent"
-              onTouchMove={onTouchMove}
-              onTouchEnd={onPointerLeave}
+              x={-8}
+              y={-8}
+              width={w + 16}
+              height={h + 16}
+              fill="white"
+              filter="url(#blur)"
+            />
+          </mask>
+          <clipPath id="clip">
+            <rect x={-32} y={-32} width={w + 64} height={h + 64} />
+          </clipPath>
+        </defs>
+
+        <g>
+          <XAxis axis={xAxis} w={w} h={h} />
+          {noGridlines ? (
+            <SimpleYAxis axis={yAxis} w={w} />
+          ) : (
+            <YAxis
+              axis={yAxis}
+              w={w}
+              h={h}
+              negativeThreshold={negativeThreshold}
             />
           )}
+          {/* clip to stop pointer events outside of graph, and mask for the blur to indicate zoom */}
+          <g clipPath="url(#clip)">
+            <g mask="url(#mask)">{children}</g>
+          </g>
         </g>
       </svg>
     </div>
@@ -336,26 +333,13 @@ export const getTooltipPosition = (
   containerWidth: number,
   containerHeight: number,
   tooltipWidth: number,
-  tooltipHeight: number,
-  isMobile: boolean
+  tooltipHeight: number
 ) => {
-  let left = mouseX + 12
-  let bottom = !isMobile
-    ? containerHeight - mouseY + 12
-    : containerHeight - tooltipHeight + 12
-  if (tooltipWidth != null) {
-    const overflow = left + tooltipWidth - containerWidth
-    if (overflow > 0) {
-      left -= overflow
-    }
-  }
+  let left = mouseX + 6
+  let bottom = containerHeight - mouseY + 6
 
-  if (tooltipHeight != null) {
-    const overflow = tooltipHeight - mouseY
-    if (overflow > 0) {
-      bottom -= overflow
-    }
-  }
+  left = clamp(left, 0, containerWidth - tooltipWidth)
+  bottom = clamp(bottom, 0, containerHeight - tooltipHeight)
 
   return { left, bottom }
 }
@@ -374,24 +358,23 @@ export type TooltipProps<X, T> = TooltipParams<T> & {
 
 export type TooltipComponent<X, T> = ComponentType<TooltipProps<X, T>>
 export const TooltipContainer = (props: {
-  setElem: (e: HTMLElement | null) => void
-  pos: TooltipPosition
-  margin: Margin
+  calculatePos: (width: number, height: number) => TooltipPosition
   className?: string
   children: React.ReactNode
 }) => {
-  const { setElem, pos, margin, className, children } = props
+  const { calculatePos, className, children } = props
+
+  const { elemRef, width, height } = useMeasureSize()
+  const pos = calculatePos(width ?? 0, height ?? 0)
+
   return (
     <div
-      ref={setElem}
+      ref={elemRef}
       className={clsx(
         className,
-        'border-ink-200 bg-canvas-0/70 pointer-events-none absolute z-10 whitespace-pre rounded border p-2 px-4 py-2 text-xs sm:text-sm'
+        'border-ink-200 bg-canvas-0/70 pointer-events-none absolute z-10 whitespace-pre rounded border px-4 py-2 text-sm'
       )}
-      style={{
-        margin: `${margin.top}px ${margin.right}px ${margin.bottom}px ${margin.left}px`,
-        ...pos,
-      }}
+      style={{ ...pos }}
     >
       {children}
     </div>

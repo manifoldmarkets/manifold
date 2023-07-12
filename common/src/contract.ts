@@ -45,6 +45,7 @@ type AnyOutcomeType =
   | QuadraticFunding
   | Stonk
   | BountiedQuestion
+  | Poll
 
 type AnyContractType =
   | (CPMM & Binary)
@@ -59,6 +60,7 @@ type AnyContractType =
   | (CPMM & Stonk)
   | CPMMMulti
   | (NonBet & BountiedQuestion)
+  | (NonBet & Poll)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -97,8 +99,11 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   groupSlugs?: string[]
   groupLinks?: GroupLink[]
   uniqueBettorCount: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
   popularityScore: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
   importanceScore: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
   dailyScore: number
   likedByUserCount?: number
   unlistedById?: string
@@ -126,7 +131,8 @@ export type DpmMultipleChoiceContract = Contract & MultipleChoice & DPM
 export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
 export type CPMMStonkContract = StonkContract & CPMM
-export type BountiedQuestionContract = Contract & BountiedQuestion
+export type BountiedQuestionContract = Contract & BountiedQuestion & NonBet
+export type PollContract = Contract & Poll & NonBet
 
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
@@ -175,6 +181,7 @@ export type NonBet = {
   mechanism: 'none'
 }
 
+export const NON_BETTING_OUTCOMES = ['BOUNTIED_QUESTION']
 /**
  * Implemented as a set of cpmm-1 binary contracts, one for each answer.
  * The mechanism is stored among the contract's answers, which each
@@ -262,9 +269,14 @@ export type Stonk = {
 export type BountiedQuestion = {
   outcomeType: 'BOUNTIED_QUESTION'
   totalBounty: number
-  bountyPaid: number
+  bountyLeft: number
   // the bounty txn ids
   bountyTxns: string[]
+}
+
+export type Poll = {
+  outcomeType: 'POLL'
+  options: { option: string; votes: number }[]
 }
 
 export type MultiContract = (
@@ -327,7 +339,8 @@ export function getBinaryProbPercent(contract: BinaryContract) {
 export function tradingAllowed(contract: Contract) {
   return (
     !contract.isResolved &&
-    (!contract.closeTime || contract.closeTime > Date.now())
+    (!contract.closeTime || contract.closeTime > Date.now()) &&
+    contract.mechanism !== 'none'
   )
 }
 

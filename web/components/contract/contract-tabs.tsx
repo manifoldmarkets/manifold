@@ -120,6 +120,20 @@ export function ContractTabs(props: {
 
   const positionsTitle = shortFormatNumber(totalPositions) + ' Positions'
 
+  if (contract.outcomeType == 'BOUNTIED_QUESTION') {
+    return (
+      <CommentsTabContent
+        contract={contract}
+        comments={comments}
+        setCommentsLength={setTotalComments}
+        answerResponse={answerResponse}
+        onCancelAnswerResponse={onCancelAnswerResponse}
+        blockedUserIds={blockedUserIds}
+        betResponse={replyToBet}
+        clearReply={() => setReplyToBet(undefined)}
+      />
+    )
+  }
   return (
     <ControlledTabs
       className="mb-4"
@@ -219,29 +233,38 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     DEFAULT_PARENT_COMMENTS_TO_RENDER
   )
 
-  const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
-    key: `comments-sort-${contract.id}`,
-    store: inMemoryStore(),
-  })
+  const user = useUser()
+
+  const isBountiedQuestion = contract.outcomeType == 'BOUNTIED_QUESTION'
+  const [sort, setSort] = usePersistentState<'Newest' | 'Best'>(
+    isBountiedQuestion && (!user || user.id !== contract.creatorId)
+      ? 'Best'
+      : 'Newest',
+    {
+      key: `comments-sort-${contract.id}`,
+      store: inMemoryStore(),
+    }
+  )
   const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const shouldBeNewestFirst = (c: ContractComment) =>
     c.replyToCommentId == undefined
 
-  const user = useUser()
   const sortedComments = useMemo(
     () =>
       sortBy(comments, [
         sort === 'Best'
-          ? (c) =>
-              // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-              likes &&
-              c.createdTime > Date.now() - 10 * MINUTE_MS &&
-              c.userId === user?.id &&
-              shouldBeNewestFirst(c)
-                ? -Infinity
-                : -(c?.likes ?? 0)
+          ? isBountiedQuestion
+            ? (c: ContractComment) => -(c?.bountyAwarded ?? 0)
+            : (c) =>
+                // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+                likes &&
+                c.createdTime > Date.now() - 10 * MINUTE_MS &&
+                c.userId === user?.id &&
+                shouldBeNewestFirst(c)
+                  ? -Infinity
+                  : -(c?.likes ?? 0)
           : (c) => c,
         (c) => (!shouldBeNewestFirst(c) ? c.createdTime : -c.createdTime),
       ]),
@@ -287,7 +310,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 }
               : undefined
           }
-          className="mb-5"
+          className="mb-4"
           contract={contract}
           clearReply={clearReply}
           trackingLocation={'contract page'}
@@ -305,6 +328,11 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               totalUniqueTraders: contract.uniqueBettorCount,
             })
           }}
+          customBestTooltip={
+            contract.outcomeType === 'BOUNTIED_QUESTION'
+              ? 'Highest bounty, then most likes'
+              : undefined
+          }
         />
       )}
       {contract.outcomeType === 'FREE_RESPONSE' && (
@@ -326,6 +354,11 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               parentComment={parent}
               threadComments={commentsByParent[parent.id] ?? []}
               trackingLocation={'contract page'}
+              idInUrl={hashInUrl}
+              showReplies={
+                !isBountiedQuestion ||
+                (!!user && user.id === contract.creatorId)
+              }
             />
           ))}
       <div className="relative w-full">
@@ -435,14 +468,22 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   )
 })
 
-export function SortRow(props: { sort: string; onSortClick: () => void }) {
-  const { sort, onSortClick } = props
+export function SortRow(props: {
+  sort: string
+  onSortClick: () => void
+  customBestTooltip?: string
+}) {
+  const { sort, onSortClick, customBestTooltip } = props
   return (
     <Row className="items-center justify-end gap-4">
       <Row className="items-center gap-1">
         <span className="text-ink-400 text-sm">Sort by:</span>
         <button className="text-ink-600 w-20 text-sm" onClick={onSortClick}>
-          <Tooltip text={sort === 'Best' ? 'Most likes first' : ''}>
+          <Tooltip
+            text={
+              sort === 'Best' ? customBestTooltip ?? 'Most likes first' : ''
+            }
+          >
             <Row className="items-center gap-1">
               {sort}
               <TriangleDownFillIcon className=" h-2 w-2" />

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { noop, uniq } from 'lodash'
+
 import { Col } from 'web/components/layout/col'
 import { leaveGroup } from 'web/lib/supabase/groups'
 import { useUser } from 'web/hooks/use-user'
@@ -13,16 +14,17 @@ import { getUserInterestTopics } from 'web/lib/supabase/user'
 import { Row } from 'web/components/layout/row'
 
 export function TopicSelectorDialog(props: {
-  setOpen?: (open: boolean) => void
-  open?: boolean
-  onFinishSelectingTopics?: (topics: string[]) => void
+  skippable: boolean
+  opaque: boolean
 }) {
-  const { setOpen, open, onFinishSelectingTopics } = props
+  const { skippable, opaque } = props
+
   const user = useUser()
   const [userSelectedTopics, setUserSelectedTopics] = useState<
     string[] | undefined
   >()
   const [isLoading, setIsLoading] = useState(false)
+  const [open, setOpen] = useState(true)
 
   useEffect(() => {
     if (user && userSelectedTopics !== undefined) {
@@ -52,30 +54,22 @@ export function TopicSelectorDialog(props: {
     })
   }, [user, userSelectedTopics, open])
 
-  const closeDialog = (skipped: boolean) => {
-    if (setOpen) {
-      user && !skipped ? updateUserEmbedding() : noop
-      onFinishSelectingTopics?.(userSelectedTopics ?? [])
-      setOpen(false)
-    } else if (user && !skipped) {
-      setIsLoading(true)
-      updateUserEmbedding().then(() => {
-        // Reload to recompute feed!
-        window.location.reload()
-      })
-    } else {
-      onFinishSelectingTopics?.(userSelectedTopics ?? [])
-      window.location.reload()
-    }
+  const closeDialog = (skipUpdate: boolean) => {
+    setIsLoading(true)
+
+    if (user && !skipUpdate) updateUserEmbedding()
+
+    setOpen(false)
+    if (window.location.pathname !== '/questions') window.location.reload()
   }
 
   return (
     <Modal
-      open={open !== undefined ? open : true}
-      setOpen={setOpen ? closeDialog : noop}
+      open={open}
+      setOpen={skippable ? closeDialog : noop}
       className="bg-canvas-0 overflow-hidden rounded-md"
       size={'lg'}
-      bgOpaque={true}
+      bgOpaque={opaque}
     >
       <Col className="h-[32rem] overflow-y-auto">
         <div className="bg-canvas-0 sticky top-0 py-4 px-6">
@@ -122,9 +116,11 @@ export function TopicSelectorDialog(props: {
 
         <div className="from-canvas-0 pointer-events-none sticky bottom-0 bg-gradient-to-t to-transparent text-right">
           <Row className="pointer-events-auto ml-auto justify-end gap-2  p-6 pt-2">
-            <Button onClick={() => closeDialog(true)} color={'gray'}>
-              Skip
-            </Button>
+            {skippable && (
+              <Button onClick={() => closeDialog(true)} color={'gray'}>
+                Skip
+              </Button>
+            )}
             <Button
               onClick={() => closeDialog(false)}
               disabled={(userSelectedTopics ?? []).length <= 2}

@@ -1,14 +1,7 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs, map, merge, sortBy } from 'lodash'
-import {
-  getUserFollowerIds,
-  getUsersWithSimilarInterestVectorToUser,
-} from 'shared/supabase/users'
-import {
-  CONTRACT_OR_USER_FEED_REASON_TYPES,
-  NEW_USER_TO_CONTRACT_INTEREST_DISTANCE_THRESHOLD,
-  USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD,
-} from 'common/feed'
+import { getUserFollowerIds } from 'shared/supabase/users'
+import { CONTRACT_OR_USER_FEED_REASON_TYPES, MINIMUM_SCORE } from 'common/feed'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -98,7 +91,7 @@ export const getContractGroupMemberIds = async (
   return contractGroupMemberIds.map((r) => r.member_id)
 }
 
-const getUsersWithSimilarInterestVectorsToContract = async (
+export const getUsersWithSimilarInterestVectorsToContract = async (
   contractId: string,
   pg: SupabaseDirectClient,
   // -- distance of .125, probes at 10, lists at 500
@@ -120,28 +113,19 @@ const getUsersWithSimilarInterestVectorsToContract = async (
         from contract_embeddings
         where contract_id = $1
     )
-     select user_id, interest_distance, disinterest_distance, created_at
+     select user_id, interest_distance, score, created_at
      from (
               select ue.user_id,
                      (select embedding from ce) <=> ue.interest_embedding as interest_distance,
-                     (select embedding from ce) <=> ue.disinterest_embedding as disinterest_distance,
-                     ue.created_at as created_at
+                     ue.created_at as created_at,
+                     (COALESCE((select embedding from ce) <=> ue.disinterest_embedding, 1)
+                          - ((select embedding from ce) <=> ue.interest_embedding)) AS score
               from user_embeddings as ue
           ) as distances
        where
-           (created_at < current_date - interval '10 day' and interest_distance < $2
-               and (disinterest_distance is null or disinterest_distance > $3))
-          or
-           (created_at >= current_date - interval '10 day' and interest_distance < $4
-               and (disinterest_distance is null or disinterest_distance > $3))
-       order by interest_distance;
+           interest_distance < $2 and score > $3
       `,
-      [
-        contractId,
-        interestDistanceThreshold,
-        USER_TO_CONTRACT_DISINTEREST_DISTANCE_THRESHOLD,
-        NEW_USER_TO_CONTRACT_INTEREST_DISTANCE_THRESHOLD,
-      ]
+      [contractId, interestDistanceThreshold, MINIMUM_SCORE]
     )
     return res
   })
@@ -170,10 +154,6 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       promise: getContractLikerIds(contractId, pg),
       importance: 2,
     },
-    viewed_contract: {
-      promise: getContractViewerIds(contractId, pg),
-      importance: 3,
-    },
     follow_user: {
       promise: getUserFollowerIds(userId, pg),
       importance: 4,
@@ -181,10 +161,6 @@ export const getUserToReasonsInterestedInContractAndUser = async (
     contract_in_group_you_are_in: {
       promise: getContractGroupMemberIds(contractId, pg),
       importance: 5,
-    },
-    similar_interest_vector_to_user: {
-      promise: getUsersWithSimilarInterestVectorToUser(userId, pg),
-      importance: 6,
     },
     similar_interest_vector_to_contract: {
       promise: getUsersWithSimilarInterestVectorsToContract(
@@ -240,7 +216,7 @@ export const isContractLikelyNonPredictive = async (
          <=>
         (select embedding from topic_embedding)) as distance`,
       [contractId],
-      (row) => row.distance < 0.125
+      (row) => row.distance < 0.1
     )
   )[0]
 }
