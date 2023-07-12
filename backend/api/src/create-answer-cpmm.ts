@@ -13,6 +13,7 @@ import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { removeUndefinedProps } from 'common/util/object'
+import { isAdminId } from 'common/envs/constants'
 
 const bodySchema = z.object({
   contractId: z.string().max(MAX_ANSWER_LENGTH),
@@ -36,6 +37,13 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
     const { closeTime } = contract
     if (closeTime && Date.now() > closeTime)
       throw new APIError(400, 'Trading is closed')
+
+    if (contract.creatorId !== auth.uid && !isAdminId(auth.uid)) {
+      throw new APIError(
+        400,
+        'Only the creator or an admin can create an answer'
+      )
+    }
 
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const userSnap = await transaction.get(userDoc)
