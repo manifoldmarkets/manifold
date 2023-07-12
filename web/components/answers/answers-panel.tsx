@@ -196,19 +196,16 @@ function Answer(props: {
                   contract={contract as any}
                 />
               )}
-              {hasBets && isCpmm && (
-                <AnswerPosition
-                  className="absolute -bottom-3.5 right-0"
-                  contract={contract}
-                  userBets={userBets}
-                />
-              )}
             </>
           )}
           {onAnswerCommentClick && isFreeResponse && (
             <AddComment onClick={() => onAnswerCommentClick(answer)} />
           )}
         </>
+      }
+      bottom={
+        hasBets &&
+        isCpmm && <AnswerPosition contract={contract} userBets={userBets} />
       }
     />
   )
