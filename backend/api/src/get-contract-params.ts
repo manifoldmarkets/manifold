@@ -9,9 +9,7 @@ import { MultiSerializedPoint, SerializedPoint } from 'common/src/chart'
 import { getBets, getTotalBetCount } from 'common/supabase/bets'
 import { getAllComments } from 'common/supabase/comments'
 import {
-  ShareholderStats,
   getCPMMContractUserContractMetrics,
-  getContractMetricsOutcomeCount,
   getTopContractMetrics,
   getTotalContractMetrics,
 } from 'common/supabase/contract-metrics'
@@ -128,19 +126,6 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
     ? await getTopContractMetrics(contract.id, 10, db)
     : []
 
-  let shareholderStats: ShareholderStats | undefined = undefined
-  if (contract.mechanism === 'cpmm-1') {
-    const yesCount = await getContractMetricsOutcomeCount(
-      contract.id,
-      'yes',
-      db
-    )
-    const noCount = await getContractMetricsOutcomeCount(contract.id, 'no', db)
-    shareholderStats = {
-      yesShareholders: yesCount,
-      noShareholders: noCount,
-    }
-  }
   const totalPositions =
     contract.mechanism === 'cpmm-1'
       ? await getTotalContractMetrics(contract.id, db)
@@ -185,7 +170,6 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
       topContractMetrics,
       creatorTwitter: creator?.twitterHandle,
       relatedContracts,
-      shareholderStats,
     }),
   }
 })

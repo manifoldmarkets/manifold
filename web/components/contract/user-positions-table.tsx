@@ -4,15 +4,11 @@ import {
   ContractMetric,
   ContractMetricsByOutcome,
 } from 'common/contract-metric'
-import {
-  ShareholderStats,
-  getContractMetricsForContractId,
-  getContractMetricsOutcomeCount,
-} from 'common/supabase/contract-metrics'
+import { getContractMetricsForContractId } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { partition } from 'lodash'
-import { memo, useEffect, useMemo, useState } from 'react'
+import { mapValues, partition, sum } from 'lodash'
+import { memo, use, useEffect, useMemo, useState } from 'react'
 import { SortRow } from 'web/components/contract/contract-tabs'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -27,7 +23,6 @@ import {
 import { Avatar } from 'web/components/widgets/avatar'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useRealtimeContractMetrics } from 'web/hooks/use-contract-metrics'
 import { useFollows } from 'web/hooks/use-follows'
@@ -40,8 +35,7 @@ export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
     contract: CPMMContract
     positions: ContractMetricsByOutcome
-    setTotalPositions?: (count: number) => void
-    shareholderStats?: ShareholderStats
+    setTotalPositions?: (totalPositions: number) => void
   }) {
     const { contract, setTotalPositions } = props
     const contractId = contract.id
@@ -53,10 +47,6 @@ export const BinaryUserPositionsTable = memo(
     const [contractMetricsByProfit, setContractMetricsByProfit] = useState<
       ContractMetric[] | undefined
     >()
-
-    const [shareholderStats, setShareholderStats] = useState<
-      ShareholderStats | undefined
-    >(props.shareholderStats)
 
     const [sortBy, setSortBy] = useState<'profit' | 'shares'>('shares')
 
@@ -79,22 +69,14 @@ export const BinaryUserPositionsTable = memo(
     const positions =
       useRealtimeContractMetrics(contractId, outcomes) ?? props.positions
 
+    useEffect(() => {
+      setTotalPositions?.(sum(Object.values(positions).map((a) => a.length)))
+    }, [positions])
+
     const yesPositionsSorted =
       sortBy === 'shares' ? positions.YES ?? [] : positiveProfitPositions
     const noPositionsSorted =
       sortBy === 'shares' ? positions.NO ?? [] : negativeProfitPositions
-    useEffect(() => {
-      Promise.all([
-        getContractMetricsOutcomeCount(contractId, 'yes', db),
-        getContractMetricsOutcomeCount(contractId, 'no', db),
-      ]).then(([yesCount, noCount]) => {
-        setShareholderStats({
-          yesShareholders: yesCount,
-          noShareholders: noCount,
-        })
-        setTotalPositions?.(yesCount + noCount)
-      })
-    }, [positions, contractId])
 
     const visibleYesPositions = yesPositionsSorted.slice(
       page * pageSize,
@@ -116,12 +98,7 @@ export const BinaryUserPositionsTable = memo(
     const getPositionsTitle = (outcome: 'YES' | 'NO') => {
       return outcome === 'YES' ? (
         <span>
-          <Tooltip
-            text={'Approximate count, refresh to update'}
-            placement={'top'}
-          >
-            {shareholderStats?.yesShareholders}{' '}
-          </Tooltip>
+          {yesPositionsSorted.length}{' '}
           {isBinary ? (
             <>
               <YesLabel /> payouts
@@ -140,12 +117,7 @@ export const BinaryUserPositionsTable = memo(
         </span>
       ) : (
         <span>
-          <Tooltip
-            text={'Approximate count, refresh to update'}
-            placement={'top'}
-          >
-            {shareholderStats?.noShareholders}{' '}
-          </Tooltip>
+          {noPositionsSorted.length}{' '}
           {isBinary ? (
             <>
               <NoLabel /> payouts

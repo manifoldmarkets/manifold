@@ -4,24 +4,6 @@ import { getContracts } from './contracts'
 import { Contract, CPMMContract } from '../contract'
 import { ContractMetric } from 'common/contract-metric'
 
-export async function getContractMetricsOutcomeCount(
-  contractId: string,
-  outcome: 'yes' | 'no',
-  db: SupabaseClient
-) {
-  const columnName = `has_${outcome}_shares`
-
-  const { count } = await run(
-    db
-      .from('user_contract_metrics')
-      .select(columnName, { count: 'exact' })
-      .eq('contract_id', contractId)
-      .eq(columnName, true)
-  )
-
-  return count ? count : 0
-}
-
 export async function getTopContractMetrics(
   contractId: string,
   limit: number,
@@ -299,9 +281,4 @@ export async function getContractMetricsForContractId(
     .order(`data->profit` as any, { ascending: false })
   const { data } = await run(q)
   return data.map((d) => d.data) as ContractMetric[]
-}
-
-export type ShareholderStats = {
-  yesShareholders: number
-  noShareholders: number
 }

@@ -156,7 +156,6 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     totalPositions,
     creatorTwitter,
     relatedContracts,
-    shareholderStats,
   } = contractParams
   const contract: typeof contractParams.contract =
     useFirebasePublicAndRealtimePrivateContract(
@@ -550,7 +549,6 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
-                shareholderStats={shareholderStats}
               />
             </div>
             {contract.outcomeType == 'BOUNTIED_QUESTION' && (
