@@ -66,11 +66,7 @@ service cloud.firestore {
   	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {
       allow read;
     }
-
-    match /{somePath=**}/contract-metrics/{contractId} {
-      allow read;
-    }
-
+    
     match /{somePath=**}/challenges/{challengeId}{
       allow read;
     }

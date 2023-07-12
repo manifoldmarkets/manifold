@@ -22,6 +22,7 @@ import {
 import { bulkInsert } from 'shared/supabase/utils'
 import { secrets } from 'common/secrets'
 import { getAnswersForContracts } from 'common/supabase/contracts'
+import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 
 const firestore = admin.firestore()
 
@@ -171,10 +172,7 @@ export async function updateUserMetricsCore() {
       })
     }
 
-    const contractMetricsCollection = userDoc.collection('contract-metrics')
-    for (const metrics of metricsByContract) {
-      writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
-    }
+    await bulkUpdateContractMetrics(metricsByContract)
 
     userUpdates.push({
       user: user,

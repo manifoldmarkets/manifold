@@ -110,7 +110,7 @@ create table if not exists
     user_id text not null,
     contract_id text not null,
     data jsonb not null,
-    fs_updated_time timestamp not null,
+    fs_updated_time timestamp,
     has_yes_shares boolean,
     has_no_shares boolean,
     total_shares_yes numeric,

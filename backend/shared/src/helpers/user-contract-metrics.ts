@@ -1,26 +1,38 @@
-import * as admin from 'firebase-admin'
 import { groupBy } from 'lodash'
-
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { calculateUserMetrics } from 'common/calculate-metrics'
-
-const firestore = admin.firestore()
+import { bulkUpsert } from 'shared/supabase/utils'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { ContractMetric } from 'common/contract-metric'
 
 export async function updateContractMetricsForUsers(
   contract: Contract,
   allContractBets: Bet[]
 ) {
-  const writer = firestore.bulkWriter()
-  const betsByUser = groupBy(allContractBets, 'userId')
+  const betsByUser = groupBy(allContractBets, (b) => b.userId)
+  const metrics: ContractMetric[] = []
+  for (const userId in betsByUser) {
+    const userBets = betsByUser[userId]
+    metrics.push(calculateUserMetrics(contract, userBets))
+  }
 
-  Object.entries(betsByUser).forEach(([userId, bets]) => {
-    const metrics = calculateUserMetrics(contract, bets)
-    writer.update(
-      firestore.collection(`users/${userId}/contract-metrics`).doc(contract.id),
-      metrics
+  await bulkUpdateContractMetrics(metrics)
+}
+
+export async function bulkUpdateContractMetrics(metrics: ContractMetric[]) {
+  const pg = createSupabaseDirectClient()
+  bulkUpsert(
+    pg,
+    'user_contract_metrics',
+    ['user_id', 'contract_id'],
+    metrics.map(
+      (m) =>
+        ({
+          contract_id: m.contractId,
+          user_id: m.userId,
+          data: m,
+        } as any)
     )
-  })
-
-  await writer.flush()
+  )
 }
