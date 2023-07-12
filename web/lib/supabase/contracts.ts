@@ -8,7 +8,7 @@ import {
   Tables,
 } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
-import { Sort, filter } from 'web/components/supabase-search'
+import { ContractTypeType, Sort, filter } from 'web/components/supabase-search'
 import { stateType } from 'web/components/supabase-search'
 import { supabaseSearchContracts } from '../firebase/api'
 import { db } from './db'
@@ -204,6 +204,7 @@ export async function searchContract(props: {
   query: string
   filter: filter
   sort: Sort
+  contractType?: ContractTypeType
   offset?: number
   topic?: string
   limit: number
@@ -215,11 +216,13 @@ export async function searchContract(props: {
     topic,
     filter,
     sort,
+    contractType = 'ALL',
     offset = 0,
     limit,
     group_id,
     creator_id,
   } = props
+
   const state = props.state ?? {
     contracts: undefined,
     fuzzyContractOffset: 0,
@@ -236,6 +239,7 @@ export async function searchContract(props: {
       term: '',
       filter,
       sort,
+      contractType,
       offset,
       limit,
       topic,
@@ -252,6 +256,7 @@ export async function searchContract(props: {
       query,
       filter,
       sort,
+      contractType,
       limit,
       group_id,
       creator_id,
@@ -264,6 +269,7 @@ export async function searchContract(props: {
     term: query,
     filter,
     sort,
+    contractType,
     offset,
     limit,
     fuzzy: false,
@@ -280,6 +286,7 @@ export async function searchContract(props: {
         query,
         filter,
         sort,
+        contractType,
         limit: limit - contracts.length,
         group_id,
         creator_id,
@@ -298,17 +305,28 @@ export async function searchContractFuzzy(props: {
   query: string
   filter: filter
   sort: Sort
+  contractType: ContractTypeType
   topic?: string
   limit: number
   group_id?: string
   creator_id?: string
 }) {
-  const { state, topic, query, filter, sort, limit, group_id, creator_id } =
-    props
+  const {
+    state,
+    topic,
+    query,
+    filter,
+    sort,
+    contractType,
+    limit,
+    group_id,
+    creator_id,
+  } = props
   const contracts = await supabaseSearchContracts({
     term: query,
     filter,
     sort,
+    contractType,
     offset: state.fuzzyContractOffset,
     limit,
     fuzzy: true,

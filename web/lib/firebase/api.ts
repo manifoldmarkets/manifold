@@ -9,7 +9,7 @@ import { Group, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
 export { APIError } from 'common/api'
-import { filter, Sort } from 'web/components/supabase-search'
+import { ContractTypeType, filter, Sort } from 'web/components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { Bet } from 'common/bet'
@@ -289,6 +289,7 @@ export function supabaseSearchContracts(params: {
   term: string
   filter: filter
   sort: Sort
+  contractType: ContractTypeType
   offset: number
   limit: number
   topic?: string

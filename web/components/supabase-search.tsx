@@ -1,4 +1,8 @@
-import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
+import {
+  ChevronDownIcon,
+  ViewGridIcon,
+  ViewListIcon,
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
@@ -28,6 +32,16 @@ import { useIsAuthorized } from 'web/hooks/use-user'
 import { SELECTED_TOPICS, cleanTopic } from 'common/topics'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from './widgets/carousel'
+import DropdownMenu from './comments/dropdown-menu'
+import { Row } from './layout/row'
+import generateFilterDropdownItems, {
+  getLabelFromValue,
+} from './search/search-dropdown-helpers'
+import { select } from 'd3-selection'
+import { AiTwotoneFilter } from 'react-icons/ai'
+import { FaSort } from 'react-icons/fa'
+import { IoMdDocument } from 'react-icons/io'
+import { Spacer } from './layout/spacer'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -48,19 +62,31 @@ export const SORTS = [
 export type Sort = typeof SORTS[number]['value']
 export const PROB_SORTS = ['prob-descending', 'prob-ascending']
 
-export type filter = 'open' | 'closed' | 'resolved' | 'all'
+export const FILTERS = [
+  { label: 'Open', value: 'open' },
+  { label: 'Closed', value: 'closed' },
+  { label: 'Resolved', value: 'resolved' },
+  { label: 'All', value: 'all' },
+] as const
 
-export type ContractTypeType =
-  | 'Binary'
-  | 'Multiple Choice'
-  | 'Free Response'
-  | 'Numeric'
-  | 'Bountied Question'
+export type filter = typeof FILTERS[number]['value']
+
+export const CONTRACT_TYPES = [
+  { label: 'All markets', value: 'ALL' },
+  { label: 'Binary', value: 'BINARY' },
+  { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
+  { label: 'Free Response', value: 'FREE_RESPONSE' },
+  { label: 'Numeric', value: 'NUMERIC' },
+  { label: 'Bountied Question', value: 'BOUNTIED_QUESTION' },
+] as const
+
+export type ContractTypeType = typeof CONTRACT_TYPES[number]['value']
 
 export type SupabaseSearchParameters = {
   query: string
   sort: Sort
   filter: filter
+  contractType: ContractTypeType
   topic: string
 }
 
@@ -171,7 +197,7 @@ export function SupabaseContractSearch(props: {
       if (searchParams.current == null) {
         return false
       }
-      const { query, sort, filter, topic } = searchParams.current
+      const { query, sort, filter, topic, contractType } = searchParams.current
       const id = ++requestId.current
       const offset = freshQuery
         ? 0
@@ -184,6 +210,7 @@ export function SupabaseContractSearch(props: {
           query,
           filter,
           sort,
+          contractType,
           topic,
           offset: offset,
           limit: CONTRACTS_PER_PAGE,
@@ -337,6 +364,7 @@ function SupabaseContractSearchControls(props: {
   inputRowClassName?: string
   defaultSort?: Sort
   defaultFilter?: filter
+  defaultContractType?: ContractTypeType
   persistPrefix?: string
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
@@ -350,6 +378,7 @@ function SupabaseContractSearchControls(props: {
     className,
     defaultSort = 'score',
     defaultFilter = 'open',
+    defaultContractType = 'ALL',
     persistPrefix,
     hideOrderSelector,
     onSearchParametersChanged,
@@ -383,15 +412,7 @@ function SupabaseContractSearchControls(props: {
           store: urlParamStore(router),
         }
   )
-  const [topic, setTopic] = usePersistentState(
-    '',
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 't',
-          store: urlParamStore(router),
-        }
-  )
+
   const [filterState, setFilter] = usePersistentState(
     defaultFilter,
     !useQueryUrlParam
@@ -403,11 +424,21 @@ function SupabaseContractSearchControls(props: {
   )
 
   const [contractType, setContractType] = usePersistentState(
-    '',
+    defaultContractType,
     !useQueryUrlParam
       ? undefined
       : {
           key: 'search-contract-type',
+          store: urlParamStore(router),
+        }
+  )
+
+  const [topic, setTopic] = usePersistentState(
+    '',
+    !useQueryUrlParam
+      ? undefined
+      : {
+          key: 't',
           store: urlParamStore(router),
         }
   )
@@ -423,17 +454,24 @@ function SupabaseContractSearchControls(props: {
     setQuery(newQuery)
   }
 
-  const selectFilter = (newFilter: filter) => {
-    if (newFilter === filterState) return
-    setFilter(newFilter)
-    track('select search filter', { filter: newFilter })
+  const selectFilter = (selection: filter) => {
+    if (selection === filterState) return
+    setFilter(selection)
+    track('select search filter', { filter: selection })
   }
 
-  const selectSort = (newSort: Sort) => {
-    if (newSort === sort) return
-    setSort(newSort)
-    track('select search sort', { sort: newSort })
+  const selectSort = (selection: Sort) => {
+    if (selection === sort) return
+    setSort(selection)
+    track('select search sort', { sort: selection })
   }
+
+  const selectContractType = (selection: ContractTypeType) => {
+    if (selection === contractType) return
+    setContractType(selection)
+    track('select contract type', { contractType: selection })
+  }
+
   const selectTopic = (newTopic: string) => {
     if (newTopic === topic) return setTopic('')
     setTopic(newTopic)
@@ -449,15 +487,16 @@ function SupabaseContractSearchControls(props: {
         sort: sort as Sort,
         topic: topic,
         filter: filter as filter,
+        contractType: contractType as ContractTypeType,
       })
     }
-  }, [query, sort, filter, topic, isAuth])
+  }, [query, sort, filter, topic, contractType, isAuth])
 
   return (
     <Col className={clsx('bg-canvas-50 sticky top-0 z-30 mb-2', className)}>
       <Col
         className={clsx(
-          'mb-1 items-stretch gap-2 pb-1 pt-px sm:flex-row sm:gap-2',
+          'mb-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
           inputRowClassName
         )}
       >
@@ -474,14 +513,17 @@ function SupabaseContractSearchControls(props: {
         <SearchFilters
           filter={filter}
           selectFilter={selectFilter}
-          hideOrderSelector={hideOrderSelector}
-          selectSort={selectSort}
           sort={sort}
+          selectSort={selectSort}
+          contractType={contractType}
+          selectContractType={selectContractType}
+          hideOrderSelector={hideOrderSelector}
           className={'flex flex-row gap-2'}
           includeProbSorts={includeProbSorts}
           listViewDisabled={true}
         />
       </Col>
+      {/* <Spacer h={2} /> */}
       {showTopics && (
         <Carousel>
           {SELECTED_TOPICS.map((t) => (
@@ -501,10 +543,12 @@ function SupabaseContractSearchControls(props: {
 
 export function SearchFilters(props: {
   filter: string
-  selectFilter: (newFilter: filter) => void
-  hideOrderSelector: boolean | undefined
-  selectSort: (newSort: Sort) => void
+  selectFilter: (selection: filter) => void
   sort: string
+  selectSort: (selection: Sort) => void
+  contractType: string
+  selectContractType: (selection: ContractTypeType) => void
+  hideOrderSelector: boolean | undefined
   className?: string
   includeProbSorts?: boolean
   listViewDisabled?: boolean
@@ -514,9 +558,11 @@ export function SearchFilters(props: {
   const {
     filter,
     selectFilter,
-    hideOrderSelector,
-    selectSort,
     sort,
+    selectSort,
+    contractType,
+    selectContractType,
+    hideOrderSelector,
     className,
     includeProbSorts,
     listViewDisabled,
@@ -528,33 +574,59 @@ export function SearchFilters(props: {
 
   const hideFilter = sort === 'resolve-date' || sort === 'close-date'
 
+  const filterLabel = getLabelFromValue(FILTERS, filter)
+  const sortLabel = getLabelFromValue(SORTS, sort)
+  const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
+
   return (
-    <div className={className}>
+    <div className={clsx(className, 'gap-4')}>
       {!hideFilter && (
-        <Select
-          value={filter}
-          onChange={(e) => selectFilter(e.target.value as filter)}
-          className="!h-full grow py-1"
-        >
-          <option value="open">Open</option>
-          <option value="closed">Closed</option>
-          <option value="resolved">Resolved</option>
-          <option value="all">All</option>
-        </Select>
+        <DropdownMenu
+          Items={generateFilterDropdownItems(FILTERS, selectFilter)}
+          Icon={
+            <Row className="items-center gap-0.5">
+              {/* <AiTwotoneFilter className="mr-0.5 h-4 w-4 text-gray-500" /> */}
+              <span className="truncate whitespace-nowrap text-sm font-medium text-gray-500">
+                {filterLabel}
+              </span>
+              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+            </Row>
+          }
+          menuItemsClass="left-0 right-auto"
+          selectedItemName={filterLabel}
+        />
       )}
       {!hideOrderSelector && (
-        <Select
-          value={sort}
-          onChange={(e) => selectSort(e.target.value as Sort)}
-          className="!h-full grow py-1"
-        >
-          {sorts.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
+        <DropdownMenu
+          Items={generateFilterDropdownItems(SORTS, selectSort)}
+          Icon={
+            <Row className=" items-center gap-0.5 ">
+              {/* <FaSort className="mr-0.5 h-4 w-4 text-gray-500" /> */}
+              <span className="whitespace-nowrap text-sm font-medium text-gray-500">
+                {sortLabel}
+              </span>
+              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+            </Row>
+          }
+          menuWidth={'w-36'}
+          menuItemsClass="left-0 right-auto"
+          selectedItemName={sortLabel}
+        />
       )}
+      <DropdownMenu
+        Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
+        Icon={
+          <Row className="items-center gap-0.5 ">
+            <span className="whitespace-nowrap text-sm font-medium text-gray-500">
+              {contractTypeLabel}
+            </span>
+            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+          </Row>
+        }
+        menuWidth={'w-36'}
+        menuItemsClass="left-0 right-auto"
+        selectedItemName={contractTypeLabel}
+      />
       {!listViewDisabled && (
         <button
           type="button"

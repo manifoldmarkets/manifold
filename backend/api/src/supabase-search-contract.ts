@@ -36,6 +36,14 @@ const bodySchema = z.object({
     z.literal('resolve-date'),
     z.literal('random'),
   ]),
+  contractType: z.union([
+    z.literal('ALL'),
+    z.literal('BINARY'),
+    z.literal('MULTIPLE_CHOICE'),
+    z.literal('FREE_RESPONSE'),
+    z.literal('NUMERIC'),
+    z.literal('BOUNTIED_QUESTION'),
+  ]),
   topic: z.string().optional(),
   offset: z.number().gte(0),
   limit: z.number().gt(0),
@@ -51,6 +59,7 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       topic,
       filter,
       sort,
+      contractType,
       offset,
       limit,
       fuzzy,
@@ -68,10 +77,12 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
             return r.check_group_accessibility
           })
       : undefined
+
     const searchMarketSQL = getSearchContractSQL({
       term,
       filter,
       sort,
+      contractType,
       offset,
       limit,
       fuzzy,
@@ -81,6 +92,8 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       hasGroupAccess,
       topic,
     })
+
+    console.log(searchMarketSQL)
     const contracts = await pg.map(
       searchMarketSQL,
       [term],
@@ -95,6 +108,7 @@ function getSearchContractSQL(contractInput: {
   term: string
   filter: string
   sort: string
+  contractType: string
   offset: number
   limit: number
   fuzzy?: boolean
@@ -108,6 +122,7 @@ function getSearchContractSQL(contractInput: {
     term,
     filter,
     sort,
+    contractType,
     offset,
     limit,
     fuzzy,
@@ -128,6 +143,7 @@ function getSearchContractSQL(contractInput: {
   const whereSqlBuilder = getSearchContractWhereSQL(
     filter,
     sort,
+    contractType,
     creatorId,
     uid,
     groupId,
@@ -398,6 +414,7 @@ select * from (
 function getSearchContractWhereSQL(
   filter: string,
   sort: string,
+  contractType: string,
   creatorId: string | undefined,
   uid: string | undefined,
   groupId: string | undefined,
@@ -411,6 +428,8 @@ function getSearchContractWhereSQL(
     resolved: 'resolution_time IS NOT NULL',
     all: 'true',
   }
+  const contractTypeFilter =
+    contractType != 'ALL' ? `outcome_type = '${contractType}'` : ''
 
   const stonkFilter = hideStonks ? `outcome_type != 'STONK'` : ''
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
@@ -428,6 +447,7 @@ function getSearchContractWhereSQL(
     where(filterSQL[filter]),
     where(stonkFilter),
     where(sortFilter),
+    where(contractTypeFilter),
     where(visibilitySQL),
     where(creatorFilter)
   )
