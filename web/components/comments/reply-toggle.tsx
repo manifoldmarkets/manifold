@@ -12,7 +12,7 @@ export function ReplyToggle(props: {
   const { seeReplies, numComments, onClick, childrenBountyTotal } = props
 
   return (
-    <Row className="items-center gap-4 text-sm">
+    <Row className="items-center gap-2 text-sm">
       <button
         className={clsx(
           'text-ink-500 text-left',
