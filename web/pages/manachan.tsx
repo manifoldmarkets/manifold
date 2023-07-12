@@ -42,6 +42,7 @@ export default function ManachanPage() {
       .catch(() => setError(true))
 
     setLoading(false)
+    setTweet('')
   }
 
   return (
@@ -94,8 +95,8 @@ export default function ManachanPage() {
           className="twitter-timeline"
           href="https://twitter.com/manachan_waifu?ref_src=twsrc%5Etfw"
         >
-          Tweets by manachan_waifu
-        </a>{' '}
+          Mana-chan's Tweets
+        </a>
         <Script async src="https://platform.twitter.com/widgets.js" />
       </Col>
     </Page>
