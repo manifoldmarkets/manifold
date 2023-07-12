@@ -9,7 +9,7 @@ import {
   RESOLUTIONS,
 } from 'common/contract'
 import { getUser } from 'shared/utils'
-import { isAdmin, isManifoldId, isTrustworthy } from 'common/envs/constants'
+import { isAdminId, isManifoldId, isTrustworthy } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
@@ -97,7 +97,6 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
   if (outcomeType === 'STONK') {
     throw new APIError(400, 'STONK contracts cannot be resolved')
   }
-  const firebaseUser = await admin.auth().getUser(auth.uid)
   const caller = await getUser(auth.uid)
 
   const isClosed = !!(contract.closeTime && contract.closeTime < Date.now())
@@ -106,7 +105,7 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
   if (
     creatorId !== auth.uid &&
     !isManifoldId(auth.uid) &&
-    !isAdmin(firebaseUser.email) &&
+    !isAdminId(auth.uid) &&
     !trustworthyResolvable
   )
     throw new APIError(403, 'User is not creator of contract')

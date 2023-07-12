@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
-import { isAdmin, isManifoldId } from 'common/envs/constants'
+import { isAdminId, isManifoldId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createAddedToGroupNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
@@ -52,7 +52,7 @@ export async function addGroupMemberHelper(
     if (newMemberExists)
       throw new APIError(400, 'User already exists in group!')
 
-    const isAdminRequest = isAdmin((await admin.auth().getUser(myId)).email)
+    const isAdminRequest = isAdminId(myId)
 
     if (userId === myId) {
       if (group.privacy_status === 'private' && !isLink) {

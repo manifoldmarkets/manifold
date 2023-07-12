@@ -1,14 +1,13 @@
 import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
-  isAdmin,
+  isAdminId,
 } from 'common/envs/constants'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders } from 'web/lib/api/cors'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { getUserId, initAdmin } from 'web/pages/api/v0/_firebase-utils'
-import { PrivateUser } from 'common/user'
 import { validate } from './_validate'
 import { Contract } from 'common/contract'
 
@@ -34,8 +33,6 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
 
   // Get the private-user to verify if user has an admin email
   const userId = await getUserId(req, res)
-  const privateDoc = await firestore.doc(`private-users/${userId}`).get()
-  const privateUser = privateDoc.data() as PrivateUser
 
   // Extract contractId from commentPath
   const contractId = commentPath.split('/')[1]
@@ -43,7 +40,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   const contract = contractDoc.data() as Contract
   const isContractCreator = contract.creatorId === userId
 
-  if (!isAdmin(privateUser.email) && !isContractCreator) {
+  if (!isAdminId(userId) && !isContractCreator) {
     return res
       .status(401)
       .json({ error: 'Only the market creator or an admin can hide markets' })

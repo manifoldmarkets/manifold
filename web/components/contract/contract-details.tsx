@@ -25,11 +25,11 @@ import {
   getGroupLinkToDisplay,
   getGroupLinksToDisplay,
   groupPath,
+  canEditContractGroup,
 } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
-import { IoEllipsisHorizontal } from 'react-icons/io5'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 
@@ -206,7 +206,7 @@ export function PublicMarketGroups(props: {
           <GroupDisplay key={group.groupId} groupToDisplay={group} />
         ))}
 
-        {user && (
+        {user && canEditContractGroup(contract, user) && (
           <button
             onClick={(e) => {
               e.preventDefault()
@@ -215,7 +215,7 @@ export function PublicMarketGroups(props: {
             }}
           >
             {groupsToDisplay.length ? (
-              <IoEllipsisHorizontal className="text-ink-1000 bg-ink-100 hover:bg-ink-200 h-6 w-6 rounded-full bg-opacity-90 px-1" />
+              <PencilIcon className="text-ink-1000 bg-ink-100 hover:bg-ink-200 h-6 w-6 rounded-full bg-opacity-90 px-1" />
             ) : (
               <span
                 className={clsx(

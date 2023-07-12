@@ -1,7 +1,7 @@
 import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
-  isAdmin,
+  isAdminId,
 } from 'common/envs/constants'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders } from 'web/lib/api/cors'
@@ -14,7 +14,6 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { FieldValue } from 'firebase-admin/firestore'
 import { chunk } from 'lodash'
-import { PrivateUser } from 'common/user'
 
 export const config = { api: { bodyParser: true } }
 
@@ -34,9 +33,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   // Get the private-user to verify if user has an admin email
   // Should we allow letting market creators unresolve their own markets?
   const userId = await getUserId(req, res)
-  const privateDoc = await firestore.doc(`private-users/${userId}`).get()
-  const privateUser = privateDoc.data() as PrivateUser
-  if (!isAdmin(privateUser.email)) {
+  if (!isAdminId(userId)) {
     return res.status(401).json({ error: 'Only admins can unresolve markets' })
   }
   await undoResolution(contractId)

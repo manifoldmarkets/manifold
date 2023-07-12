@@ -2,6 +2,8 @@ import { partition } from 'lodash'
 import { Contract } from './contract'
 import { Row } from './supabase/utils'
 import { JSONContent } from '@tiptap/core'
+import { User } from 'common/user'
+import { isAdminId, isTrustworthy } from 'common/envs/constants'
 
 export type Group = {
   id: string
@@ -105,4 +107,11 @@ export function getGroupLinksToDisplay(contract: Contract) {
     (g) => g.userId === contract.creatorId
   )
   return [...groupsCreatorAdded, ...otherGroups].slice(0, 3)
+}
+
+export const canEditContractGroup = (contract: Contract, user: User) => {
+  const isMarketCreator = contract.creatorId === user.id
+  const isManifoldAdmin = isAdminId(user.id)
+  const trustworthy = isTrustworthy(user?.username)
+  return isMarketCreator || isManifoldAdmin || trustworthy
 }

@@ -14,6 +14,7 @@ export type EnvConfig = {
 
   // Access controls
   adminEmails: string[]
+  adminIds: string[]
   visibility: 'PRIVATE' | 'PUBLIC'
 
   // Branding
@@ -73,6 +74,17 @@ export const PROD_CONFIG: EnvConfig = {
     'ingawei@gmail.com', //Inga
     'marshall@pol.rs', // Marshall
     'etherizecloud@gmail.com', // ian's dev-only email
+  ],
+  adminIds: [
+    'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
+    '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
+    'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
+    '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
+    'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold
+    'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
+    'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
+    'GRwzCexe5PM6ThrSsodKZT9ziln2', //Inga
+    '62TNqzdBx7X2q621HltsJm8UFht2', // Marshall
   ],
   visibility: 'PUBLIC',
 

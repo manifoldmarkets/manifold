@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { Contract } from 'common/contract'
 import { getUser } from 'shared/utils'
 
-import { isAdmin, isManifoldId } from 'common/envs/constants'
+import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
@@ -20,13 +20,8 @@ export const closemarket = authEndpoint(async (req, auth) => {
     throw new APIError(404, 'No contract exists with the provided ID')
   const contract = contractSnap.data() as Contract
   const { creatorId } = contract
-  const firebaseUser = await admin.auth().getUser(auth.uid)
 
-  if (
-    creatorId !== auth.uid &&
-    !isManifoldId(auth.uid) &&
-    !isAdmin(firebaseUser.email)
-  )
+  if (creatorId !== auth.uid && !isAdminId(auth.uid))
     throw new APIError(403, 'User is not creator of contract')
 
   const now = Date.now()

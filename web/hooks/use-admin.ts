@@ -1,9 +1,9 @@
-import { isAdmin } from 'common/envs/constants'
-import { usePrivateUser } from './use-user'
+import { useUser } from './use-user'
+import { isAdminId } from 'common/envs/constants'
 
 export const useAdmin = () => {
-  const privateUser = usePrivateUser()
-  return isAdmin(privateUser?.email || '')
+  const user = useUser()
+  return user ? isAdminId(user.id) : false
 }
 
 export const useDev = () => {
