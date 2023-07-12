@@ -8,7 +8,10 @@ import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
 
-const SummitNATO = createNewsDashboardTab('NATO Summit', '2024 NATO Summit', [
+const SummitNATO = createNewsDashboardTab('NATO Summit', 'NATO Summit', [
+  {
+    url: 'https://www.washingtonpost.com/world/2023/07/11/ukraine-nato-summit-2023-sweden/',
+  },
   { url: 'https://www.bbc.com/news/world-europe-66160319' },
   { slug: 'will-sweden-join-nato-before-2024' },
   { slug: 'will-sweden-join-nato-by-the-end-of' },
