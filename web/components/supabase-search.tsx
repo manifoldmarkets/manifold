@@ -6,9 +6,11 @@ import {
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
+import { SELECTED_TOPICS, cleanTopic } from 'common/topics'
 import { debounce, isEqual, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { createContext, useContext, useEffect, useRef } from 'react'
+import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import {
@@ -17,31 +19,23 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
+import { useIsAuthorized } from 'web/hooks/use-user'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import { searchContract } from 'web/lib/supabase/contracts'
 import { safeLocalStorage } from 'web/lib/util/local'
+import DropdownMenu from './comments/dropdown-menu'
 import { ShowTime } from './contract/contract-details'
 import { ContractsGrid } from './contract/contracts-grid'
 import { ContractsList } from './contract/contracts-list'
 import { groupRoleType } from './groups/group-member-modal'
 import { Col } from './layout/col'
-import { Input } from './widgets/input'
-import { Select } from './widgets/select'
-import { SiteLink } from './widgets/site-link'
-import { useIsAuthorized } from 'web/hooks/use-user'
-import { SELECTED_TOPICS, cleanTopic } from 'common/topics'
-import { PillButton } from 'web/components/buttons/pill-button'
-import { Carousel } from './widgets/carousel'
-import DropdownMenu from './comments/dropdown-menu'
 import { Row } from './layout/row'
 import generateFilterDropdownItems, {
   getLabelFromValue,
 } from './search/search-dropdown-helpers'
-import { select } from 'd3-selection'
-import { AiTwotoneFilter } from 'react-icons/ai'
-import { FaSort } from 'react-icons/fa'
-import { IoMdDocument } from 'react-icons/io'
-import { Spacer } from './layout/spacer'
+import { Carousel } from './widgets/carousel'
+import { Input } from './widgets/input'
+import { SiteLink } from './widgets/site-link'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -58,6 +52,19 @@ export const SORTS = [
   { label: 'Just resolved', value: 'resolve-date' },
   { label: '🎲 rAnDoM', value: 'random' },
 ] as const
+
+const predictionMarketSorts = new Set([
+  'daily-score',
+  '24-hour-vol',
+  'liquidity',
+  'close-date',
+  'resolve-date',
+  'most-popular',
+])
+
+export const NON_PREDICTION_MARKET_SORTS = SORTS.filter(
+  (item) => !predictionMarketSorts.has(item.value)
+)
 
 export type Sort = typeof SORTS[number]['value']
 export const PROB_SORTS = ['prob-descending', 'prob-ascending']
@@ -468,6 +475,9 @@ function SupabaseContractSearchControls(props: {
 
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
+    if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
+      setSort('score')
+    }
     setContractType(selection)
     track('select contract type', { contractType: selection })
   }
@@ -572,7 +582,10 @@ export function SearchFilters(props: {
     ? SORTS
     : SORTS.filter((sort) => !PROB_SORTS.includes(sort.value))
 
-  const hideFilter = sort === 'resolve-date' || sort === 'close-date'
+  const hideFilter =
+    sort === 'resolve-date' ||
+    sort === 'close-date' ||
+    contractType === 'BOUNTIED_QUESTION'
 
   const filterLabel = getLabelFromValue(FILTERS, filter)
   const sortLabel = getLabelFromValue(SORTS, sort)
@@ -598,7 +611,12 @@ export function SearchFilters(props: {
       )}
       {!hideOrderSelector && (
         <DropdownMenu
-          Items={generateFilterDropdownItems(SORTS, selectSort)}
+          Items={generateFilterDropdownItems(
+            contractType == 'BOUNTIED_QUESTION'
+              ? NON_PREDICTION_MARKET_SORTS
+              : SORTS,
+            selectSort
+          )}
           Icon={
             <Row className=" items-center gap-0.5 ">
               {/* <FaSort className="mr-0.5 h-4 w-4 text-gray-500" /> */}

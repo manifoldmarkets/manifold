@@ -93,7 +93,6 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       topic,
     })
 
-    console.log(searchMarketSQL)
     const contracts = await pg.map(
       searchMarketSQL,
       [term],
