@@ -9,7 +9,6 @@ import {
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { CPMMBinaryContract, Contract } from 'common/contract'
-import { ShareholderStats } from 'common/supabase/contract-metrics'
 import { buildArray } from 'common/util/array'
 import { shortFormatNumber } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
@@ -59,7 +58,6 @@ export function ContractTabs(props: {
   setActiveIndex: (i: number) => void
   totalBets: number
   totalPositions: number
-  shareholderStats?: ShareholderStats
 }) {
   const {
     contract,
@@ -71,7 +69,6 @@ export function ContractTabs(props: {
     setActiveIndex,
     totalBets,
     userPositionsByOutcome,
-    shareholderStats,
   } = props
   const betsWithoutAntes = useMemo(
     () => bets.filter((bet) => !bet.isAnte),
@@ -167,7 +164,6 @@ export function ContractTabs(props: {
                 positions={userPositionsByOutcome}
                 contract={contract as CPMMBinaryContract}
                 setTotalPositions={setTotalPositions}
-                shareholderStats={shareholderStats}
               />
             ),
           },

@@ -46,19 +46,6 @@ export const isBlocked = (
   )
 }
 
-export const useUserContractMetrics = (userId = '_', contractId: string) => {
-  const metricsDoc = doc(users, userId, 'contract-metrics', contractId)
-
-  const data = useStore<ContractMetric | null>(
-    ['user-contract-metrics', userId, contractId].join('/'),
-    (_, setValue) => listenForValue(metricsDoc, setValue)
-  )
-
-  if (userId === '_') return undefined
-
-  return data
-}
-
 export const useShouldBlockDestiny = (userId: string | undefined) => {
   const [shouldBlockDestiny, setShouldBlockDestiny] = useState(true)
 

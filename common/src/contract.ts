@@ -5,7 +5,6 @@ import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
 import { GroupLink } from 'common/group'
 import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
-import { ShareholderStats } from './supabase/contract-metrics'
 import { ContractComment } from './comment'
 import { ENV_CONFIG } from './envs/constants'
 import { formatMoney, formatPercent } from './util/format'
@@ -371,7 +370,6 @@ export type ContractParams = {
   topContractMetrics: ContractMetric[]
   creatorTwitter?: string
   relatedContracts: Contract[]
-  shareholderStats?: ShareholderStats
 }
 
 export type MaybeAuthedContractParams =

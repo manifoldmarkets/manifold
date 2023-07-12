@@ -69,7 +69,6 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getContractParams } from 'web/lib/firebase/api'
-import { getTopContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { Contract } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
@@ -77,6 +76,8 @@ import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { calculateMultiBets } from 'common/bet'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
+import { db } from 'web/lib/supabase/db'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -155,7 +156,6 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     totalPositions,
     creatorTwitter,
     relatedContracts,
-    shareholderStats,
   } = contractParams
   const contract: typeof contractParams.contract =
     useFirebasePublicAndRealtimePrivateContract(
@@ -182,7 +182,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   useEffect(() => {
     // If the contract resolves while the user is on the page, get the top contract metrics
     if (contract.resolution && topContractMetrics.length === 0) {
-      getTopContractMetrics(contract.id, 10).then(setTopContractMetrics)
+      getTopContractMetrics(contract.id, 10, db).then(setTopContractMetrics)
     }
   }, [contract.resolution, contract.id, topContractMetrics.length])
 
@@ -549,7 +549,6 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
-                shareholderStats={shareholderStats}
               />
             </div>
             {contract.outcomeType == 'BOUNTIED_QUESTION' && (
