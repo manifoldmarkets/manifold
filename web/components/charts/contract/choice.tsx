@@ -135,7 +135,14 @@ export const ChoiceContractChart = (props: {
   const data = useMemo(() => {
     if (!answers.length) return []
 
-    const startY: number[] = new Array(answers.length).fill(1 / answers.length)
+    const firstAnswerTime = answers[0].createdTime
+    const startAnswers = answers.filter(
+      (a) => a.createdTime <= firstAnswerTime + 1000
+    )
+    const startY: number[] = [
+      ...new Array(startAnswers.length).fill(1 / startAnswers.length),
+      ...new Array(answers.length - startAnswers.length).fill(0),
+    ]
 
     return buildArray(isMultipleChoice && { x: start, y: startY }, betPoints, {
       x: end ?? now,

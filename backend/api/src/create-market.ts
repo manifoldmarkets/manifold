@@ -391,12 +391,14 @@ async function createAnswers(
     // Also, cpmm identity for probability:
     //   1 / n = poolNo / (poolYes + poolNo)
     poolNo = ante / (2 * n - 2)
-    poolYes = ante - (n - 1) * poolNo
+    poolYes = ante / 2
 
     // Naive solution that doesn't maximize liquidity:
     // poolYes = ante * prob
     // poolNo = ante * (prob ** 2 / (1 - prob))
   }
+
+  const now = Date.now()
 
   await Promise.all(
     answers.map((text, i) => {
@@ -407,7 +409,7 @@ async function createAnswers(
         contractId: contract.id,
         userId: user.id,
         text,
-        createdTime: Date.now(),
+        createdTime: now,
 
         poolYes,
         poolNo,
