@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { Contract } from 'common/contract'
-import { isAdminId, isManifoldId, isTrustworthy } from 'common/envs/constants'
+import { isAdminId, isTrustworthy } from 'common/envs/constants'
 import { GroupResponse } from 'common/group'
 import { APIError, authEndpoint, validate } from './helpers'
 import { getUser } from 'shared/utils'
@@ -81,7 +81,7 @@ export async function canUserAddGroupToMarket(props: {
 
   const user = await getUser(userId)
   const isMarketCreator = !contract || contract.creatorId === userId
-  const isManifoldAdmin = isManifoldId(userId) || isAdminId(userId)
+  const isManifoldAdmin = isAdminId(userId)
   const trustworthy = isTrustworthy(user?.username)
 
   const isMember = membership != undefined

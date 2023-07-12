@@ -14,15 +14,6 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 
 export const ENV_CONFIG = CONFIGS[ENV]
 
-// Note: Checking for admin or trustworthy permissions is kind of a code mess
-// atm; should pull this into an enum inside the user object?
-/** @deprecated use isAdminId*/
-export function isAdmin(email?: string) {
-  if (!email) {
-    return false
-  }
-  return ENV_CONFIG.adminEmails.includes(email)
-}
 export function isAdminId(id: string) {
   return ENV_CONFIG.adminIds.includes(id)
 }
@@ -33,11 +24,6 @@ export function isTrustworthy(username?: string) {
   }
   return CHECK_USERNAMES.includes(username)
 }
-
-export function isManifoldId(userId: string) {
-  return userId === 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2'
-}
-
 export const DOMAIN = ENV_CONFIG.domain
 export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
 export const PROJECT_ID = ENV_CONFIG.firebaseConfig.projectId

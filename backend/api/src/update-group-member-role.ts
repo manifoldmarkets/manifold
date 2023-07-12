@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
-import { isAdmin, isManifoldId } from 'common/envs/constants'
+import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createGroupStatusChangeNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -41,10 +41,10 @@ export const updatememberrole = authEndpoint(async (req, auth) => {
       throw new APIError(400, 'Member cannot be found in group')
     if (!requesterUser) throw new APIError(400, 'You cannot be found')
 
-    const isAdminRequest = isAdmin((await admin.auth().getUser(auth.uid)).email)
+    const isAdminRequest = isAdminId(auth.uid)
 
     if (!requesterMembership) {
-      if (!isManifoldId(auth.uid) && !isAdminRequest) {
+      if (!isAdminRequest) {
         throw new APIError(400, 'User does not have permission to change roles')
       }
     } else {

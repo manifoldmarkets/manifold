@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
-import { isAdminId, isManifoldId } from 'common/envs/constants'
+import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createAddedToGroupNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
@@ -60,7 +60,7 @@ export async function addGroupMemberHelper(
       }
     } else {
       if (!requester) {
-        if (!isManifoldId(myId) || !isAdminRequest) {
+        if (!isAdminRequest) {
           throw new APIError(
             403,
             'User does not have permission to add members'

@@ -13,7 +13,6 @@ export type EnvConfig = {
   cloudRunRegion: string
 
   // Access controls
-  adminEmails: string[]
   adminIds: string[]
   visibility: 'PRIVATE' | 'PUBLIC'
 
@@ -63,18 +62,7 @@ export const PROD_CONFIG: EnvConfig = {
   twitchBotEndpoint: 'https://twitch-bot.manifold.markets',
   cloudRunId: 'nggbo3neva',
   cloudRunRegion: 'uc',
-  adminEmails: [
-    'akrolsmir@gmail.com', // Austin
-    'jahooma@gmail.com', // James
-    'taowell@gmail.com', // Stephen
-    'abc.sinclair@gmail.com', // Sinclair
-    'manticmarkets@gmail.com', // Manifold
-    'iansphilips@gmail.com', // Ian
-    'd4vidchee@gmail.com', // D4vid
-    'ingawei@gmail.com', //Inga
-    'marshall@pol.rs', // Marshall
-    'etherizecloud@gmail.com', // ian's dev-only email
-  ],
+
   adminIds: [
     'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
     '5LZ4LgYuySdL1huCWe7bti02ghx2', // James

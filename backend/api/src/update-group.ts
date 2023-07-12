@@ -4,7 +4,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
-import { isAdmin } from 'common/envs/constants'
+import { isAdminId } from 'common/envs/constants'
 import { contentSchema } from 'shared/zod-types'
 import { MAX_ABOUT_LENGTH } from 'common/group'
 
@@ -32,7 +32,7 @@ export const updategroup = authEndpoint(async (req, auth) => {
   if (
     requester?.role !== 'admin' &&
     creator?.creator_id !== auth.uid &&
-    !isAdmin((await admin.auth().getUser(auth.uid)).email)
+    !isAdminId(auth.uid)
   ) {
     throw new APIError(403, 'You do not have permission to update this group')
   }

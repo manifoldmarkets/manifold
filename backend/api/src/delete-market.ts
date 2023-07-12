@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { Contract, contractPath } from 'common/contract'
 import { revalidateStaticProps } from 'shared/utils'
 
-import { isAdmin, isManifoldId } from 'common/envs/constants'
+import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
@@ -21,11 +21,7 @@ export const deleteMarket = authEndpoint(async (req, auth) => {
   const { creatorId } = contract
   const firebaseUser = await admin.auth().getUser(auth.uid)
 
-  if (
-    creatorId !== auth.uid &&
-    !isManifoldId(auth.uid) &&
-    !isAdmin(firebaseUser.email)
-  )
+  if (creatorId !== auth.uid && !isAdminId(auth.uid))
     throw new APIError(403, 'User is not creator of contract')
 
   const { resolution, uniqueBettorCount } = contract

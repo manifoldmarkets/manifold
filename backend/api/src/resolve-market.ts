@@ -9,7 +9,7 @@ import {
   RESOLUTIONS,
 } from 'common/contract'
 import { getUser } from 'shared/utils'
-import { isAdminId, isManifoldId, isTrustworthy } from 'common/envs/constants'
+import { isAdminId, isTrustworthy } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
@@ -102,12 +102,7 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
   const isClosed = !!(contract.closeTime && contract.closeTime < Date.now())
   const trustworthyResolvable = isTrustworthy(caller?.username) && isClosed
 
-  if (
-    creatorId !== auth.uid &&
-    !isManifoldId(auth.uid) &&
-    !isAdminId(auth.uid) &&
-    !trustworthyResolvable
-  )
+  if (creatorId !== auth.uid && !isAdminId(auth.uid) && !trustworthyResolvable)
     throw new APIError(403, 'User is not creator of contract')
 
   if (contract.resolution) throw new APIError(400, 'Contract already resolved')

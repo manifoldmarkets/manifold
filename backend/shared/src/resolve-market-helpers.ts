@@ -28,7 +28,7 @@ import {
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common/api'
-import { CORE_USERNAMES, isAdmin } from 'common/envs/constants'
+import { CORE_USERNAMES } from 'common/envs/constants'
 
 export type ResolutionParams = {
   outcome: string

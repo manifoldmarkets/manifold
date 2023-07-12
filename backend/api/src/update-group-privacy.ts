@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { isAdmin, isManifoldId } from 'common/envs/constants'
+import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
 
@@ -39,8 +39,7 @@ export const updategroupprivacy = authEndpoint(async (req, auth) => {
   if (
     requester?.role !== 'admin' &&
     auth.uid !== group.creator_id &&
-    !isManifoldId(auth.uid) &&
-    !isAdmin(firebaseUser.email)
+    !isAdminId(auth.uid)
   )
     throw new APIError(
       403,
