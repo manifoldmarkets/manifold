@@ -286,7 +286,7 @@ export function ManaPaymentReceievedNotification(props: {
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       icon={
-        <AvatarNotificationIcon notification={notification} symbol={'💰'} />
+        <AvatarNotificationIcon notification={notification} symbol={'💸'} />
       }
       subtitle={<Linkify text={data?.message ?? ''} />}
       link={`/${sourceUserUsername}`}
