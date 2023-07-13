@@ -8,14 +8,12 @@ import { searchGiphy } from 'web/lib/firebase/api'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Input } from '../widgets/input'
-import { Gif } from '@giphy/react-components'
 
 export function GIFModal(props: {
   editor: Editor | null
   open: boolean
   setOpen: (open: boolean) => void
 }) {
-  // const giphy = new GiphyFetch(process.env.REACT_APP_GIPHY_KEY ?? 'no key')
   const { open, setOpen, editor } = props
   const [term, setTerm] = useState<string>('')
   const [gifResults, setGifResults] = useState<IGif[]>([])
