@@ -402,6 +402,10 @@ export function createAnswerCpmm(params: { contractId: string; text: string }) {
   return call(getApiUrl('createanswercpmm'), 'POST', params)
 }
 
+export function searchGiphy(params: { term: string; limit: number }) {
+  return call(getApiUrl('searchgiphy'), 'POST', params)
+}
+
 export function tweetFromManaChan(params: { tweet: string }) {
   return call(getApiUrl('manachantweet'), 'POST', params)
 }

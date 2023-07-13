@@ -69,6 +69,7 @@ import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
 import { awardbounty } from './award-bounty'
 import { addbounty } from './add-bounty'
 import { createanswercpmm } from './create-answer-cpmm'
+import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
 import { sendmana } from './send-mana'
 import { leavereview } from './leave-review'
@@ -177,6 +178,7 @@ app.post('/award-q-and-a-answer', ...apiRoute(awardQAndAAnswer))
 app.post('/award-bounty', ...apiRoute(awardbounty))
 app.post('/add-bounty', ...apiRoute(addbounty))
 app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
+app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/send-mana', ...apiRoute(sendmana))
 app.post('/leave-review', ...apiRoute(leavereview))

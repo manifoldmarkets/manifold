@@ -21,6 +21,7 @@
   "dependencies": {
     "@amplitude/node": "1.10.0",
     "@flat/in-app-purchase": "FlatIO/in-app-purchase#1.13.5",
+    "@giphy/js-fetch-api": "5.0.0",
     "@google-cloud/pubsub": "3.2.1",
     "@google-cloud/secret-manager": "4.2.1",
     "@supabase/supabase-js": "2.2.0",
