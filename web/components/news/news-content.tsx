@@ -104,6 +104,10 @@ const OpenAI = createNewsDashboardTab(
 
 const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
   {
+    url: 'https://www.reuters.com/world/europe/russian-general-dismissed-after-accusing-top-brass-failing-soldiers-2023-07-13/',
+  },
+  { slug: 'will-sergei-shoigu-still-be-the-rus' },
+  {
     url: 'https://www.washingtonpost.com/national-security/2023/07/06/biden-cluster-bombs-ukraine/',
   },
   { slug: 'will-the-us-openly-commit-in-2023-t' },
@@ -557,16 +561,16 @@ const Election2024 = createNewsDashboardTab(
 )
 
 export const newsContent = [
-  SummitNATO,
-  Threads,
-  OpenAI,
   UkraineWar,
-  GlobalWarming,
+  Threads,
+  SummitNATO,
+  OpenAI,
   ElonVersusZuck,
   Election2024,
+  SupremeCourt,
   WestBank,
   FrenchRiots,
-  SupremeCourt,
+  GlobalWarming,
   // { title: 'Russian Coup?', content: <RussianCoupData /> },
   // { title: 'Titanic Sub', content: <MissingSubData /> },
   // { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
