@@ -17,6 +17,7 @@ import {
   BettingStreakExpiringNotification,
   LeagueChangedNotification,
   LoanIncomeNotification,
+  ManaPaymentReceievedNotification,
   QuestIncomeNotification,
   UniqueBettorBonusIncomeNotification,
   UserJoinedNotification,
@@ -89,6 +90,14 @@ export function NotificationItem(props: {
   } else if (sourceType === 'loan') {
     return (
       <LoanIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'mana_payment') {
+    return (
+      <ManaPaymentReceievedNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}

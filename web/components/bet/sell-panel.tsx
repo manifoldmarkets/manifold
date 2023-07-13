@@ -177,7 +177,7 @@ export function SellPanel(props: {
             : Math.floor(displayAmount)
         }
         allowFloat={isStonk}
-        onChange={onAmountChange}
+        onChangeAmount={onAmountChange}
         label="Qty"
         error={error}
         disabled={isSubmitting}

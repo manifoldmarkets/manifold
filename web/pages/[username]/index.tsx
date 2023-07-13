@@ -60,6 +60,8 @@ import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { useAdmin } from 'web/hooks/use-admin'
+import { UserPayments } from 'web/pages/payments'
+import { FaMoneyBillTransfer } from 'react-icons/fa6'
 
 export const getStaticProps = async (props: {
   params: {
@@ -287,6 +289,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
         <Col className="mt-2">
           <QueryUncontrolledTabs
             currentPageForAnalytics={'profile'}
+            labelsParentClassName={'gap-0 sm:gap-4'}
             labelClassName={'pb-2 pt-1 sm:pt-4 '}
             tabs={[
               {
@@ -342,6 +345,18 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                     <Col>
                       <UserCommentsList user={user} />
                     </Col>
+                  </>
+                ),
+              },
+              {
+                title: 'Managrams',
+                stackedTabIcon: (
+                  <FaMoneyBillTransfer className="h-5 w-[1.1rem]" />
+                ),
+                content: (
+                  <>
+                    <Spacer h={4} />
+                    <UserPayments userId={user.id} />
                   </>
                 ),
               },

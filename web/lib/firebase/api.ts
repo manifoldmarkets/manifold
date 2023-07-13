@@ -405,3 +405,11 @@ export function createAnswerCpmm(params: { contractId: string; text: string }) {
 export function tweetFromManaChan(params: { tweet: string }) {
   return call(getApiUrl('manachantweet'), 'POST', params)
 }
+
+export function sendMana(params: {
+  toIds: string[]
+  amount: number
+  message: string
+}) {
+  return call(getApiUrl('send-mana'), 'POST', params)
+}

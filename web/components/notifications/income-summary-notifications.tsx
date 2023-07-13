@@ -32,6 +32,7 @@ import { BetOutcomeLabel } from 'web/components/outcome-label'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { DIVISION_NAMES } from 'common/leagues'
 import clsx from 'clsx'
+import { Linkify } from 'web/components/widgets/linkify'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -269,6 +270,32 @@ export function LoanIncomeNotification(props: {
         </span>
       </span>
       <LoansModal isOpen={open} setOpen={setOpen} />
+    </NotificationFrame>
+  )
+}
+export function ManaPaymentReceievedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const { data, sourceUserName, sourceUserUsername } = notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💰'} />
+      }
+      subtitle={<Linkify text={data?.message ?? ''} />}
+      link={`/${sourceUserUsername}`}
+    >
+      <span>
+        <UserLink name={sourceUserName} username={sourceUserUsername} />
+        <PrimaryNotificationLink text="sent you " />
+        <IncomeNotificationLabel notification={notification} />
+      </span>
     </NotificationFrame>
   )
 }
