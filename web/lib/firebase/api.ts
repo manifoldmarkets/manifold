@@ -413,3 +413,7 @@ export function sendMana(params: {
 }) {
   return call(getApiUrl('send-mana'), 'POST', params)
 }
+
+export function leaveReview(params: any) {
+  return call(getApiUrl('leave-review'), 'POST', params)
+}
