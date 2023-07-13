@@ -413,3 +413,7 @@ export function createPortfolio(params: {
 export function updatePortfolio(params: { id: string } & Partial<Portfolio>) {
   return call(getApiUrl('updateportfolio'), 'POST', params)
 }
+
+export function buyPortfolio(params: { portfolioId: string, amount: number } & Partial<Portfolio>) {
+  return call(getApiUrl('buyportfolio'), 'POST', params)
+}

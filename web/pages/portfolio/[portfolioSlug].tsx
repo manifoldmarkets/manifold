@@ -12,8 +12,7 @@ import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { getPortfolioBySlug } from 'web/lib/supabase/portfolio'
 import { Portfolio, portfolioPath } from 'common/portfolio'
-import { updatePortfolio } from 'web/lib/firebase/api'
-import { PortfolioWidget } from './create'
+import { buyPortfolio, updatePortfolio } from 'web/lib/firebase/api'
 import { getContracts } from 'web/lib/supabase/contracts'
 import { Contract } from 'common/contract'
 import { keyBy, mapValues, partition } from 'lodash'
@@ -21,6 +20,9 @@ import { ContractCard } from 'web/components/contract/contract-card'
 import { Col } from 'web/components/layout/col'
 import { BinaryOutcomeLabel } from 'web/components/outcome-label'
 import { Avatar } from 'web/components/widgets/avatar'
+import { AmountInput } from 'web/components/widgets/amount-input'
+import { useState } from 'react'
+import { Button } from 'web/components/buttons/button'
 
 export async function getStaticProps(props: {
   params: { portfolioSlug: string }
@@ -105,9 +107,43 @@ export default function PortfolioPage(props: {
         </Row>
 
         <Spacer h={2} />
+
+        <PurchaseWidget portfolio={portfolio} />
+
+        <Spacer h={2} />
+
         <PortfolioView contracts={contracts} positions={positions} />
       </Col>
     </Page>
+  )
+}
+
+const PurchaseWidget = (props: { portfolio: Portfolio }) => {
+  const { portfolio } = props
+  const [amount, setAmount] = useState<number>()
+
+  const onBuy = () => {
+    if (amount) {
+      buyPortfolio({
+        portfolioId: portfolio.id,
+        amount,
+      })
+    }
+  }
+
+  return (
+    <Col className="gap-4 border p-4">
+      <div>Purchase portfolio of markets</div>
+      <Row>
+        <AmountInput
+          amount={amount}
+          onChange={setAmount}
+          label={ENV_CONFIG.moneyMoniker}
+          inputClassName="mr-2 w-36"
+        />
+        <Button onClick={onBuy}>Buy portfolio</Button>
+      </Row>
+    </Col>
   )
 }
 

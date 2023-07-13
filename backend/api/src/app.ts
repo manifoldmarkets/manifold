@@ -71,6 +71,7 @@ import { addbounty } from './add-bounty'
 import { createanswercpmm } from './create-answer-cpmm'
 import { createportfolio } from './create-portfolio'
 import { updateportfolio } from './update-portfolio'
+import { buyportfolio } from './buy-portfolio'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -178,6 +179,7 @@ app.post('/add-bounty', ...apiRoute(addbounty))
 app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))
 app.post('/updateportfolio', ...apiRoute(updateportfolio))
+app.post('/buyportfolio', ...apiRoute(buyportfolio))
 
 // Catch 404 errors - this should be the last route
 app.use((req, res, next) => {

@@ -56,6 +56,7 @@ function CreatePortfolio() {
     }
     const result = await createPortfolio(portfolio)
     console.log('result', result)
+    window.location.href = `/portfolio/${result.portfolio.slug}`
   }
 
   return (
@@ -78,16 +79,16 @@ function CreatePortfolio() {
         />
       </Col>
 
-      <Button className="ml-auto" onClick={onSubmit}>
-        Create portfolio
-      </Button>
-
       <PortfolioWidget
         contracts={contracts}
         positions={positions}
         setContracts={setContracts}
         setPositions={setPositions}
       />
+
+      <Button className="ml-auto" onClick={onSubmit}>
+        Create portfolio
+      </Button>
 
       <div className={clsx('mt-6 px-1')}>
         <ContractSearch contracts={contracts} addContract={addContract} />

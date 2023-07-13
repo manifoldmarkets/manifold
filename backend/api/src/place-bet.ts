@@ -56,12 +56,21 @@ const numericSchema = z.object({
 
 export const placebet = authEndpoint(async (req, auth) => {
   log(`Inside endpoint handler for ${auth.uid}.`)
-  const { amount, contractId } = validate(bodySchema, req.body)
+  const isApi = auth.creds.kind === 'key'
+  return await placeBetMain(req.body, auth.uid, isApi)
+})
+
+export const placeBetMain = async (
+  body: unknown,
+  uid: string,
+  isApi: boolean
+) => {
+  const { amount, contractId } = validate(bodySchema, body)
 
   const result = await firestore.runTransaction(async (trans) => {
-    log(`Inside main transaction for ${auth.uid}.`)
+    log(`Inside main transaction for ${uid}.`)
     const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const userDoc = firestore.doc(`users/${auth.uid}`)
+    const userDoc = firestore.doc(`users/${uid}`)
     const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
 
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
@@ -109,7 +118,7 @@ export const placebet = authEndpoint(async (req, auth) => {
         mechanism == 'cpmm-1'
       ) {
         // eslint-disable-next-line prefer-const
-        let { outcome, limitProb, expiresAt } = validate(binarySchema, req.body)
+        let { outcome, limitProb, expiresAt } = validate(binarySchema, body)
 
         if (limitProb !== undefined && outcomeType === 'BINARY') {
           const isRounded = floatingEqual(
@@ -126,10 +135,10 @@ export const placebet = authEndpoint(async (req, auth) => {
         }
 
         log(
-          `Checking for limit orders in placebet for user ${auth.uid} on contract id ${contractId}.`
+          `Checking for limit orders in placebet for user ${uid} on contract id ${contractId}.`
         )
         const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(trans, contractDoc, auth.uid)
+          await getUnfilledBetsAndUserBalances(trans, contractDoc, uid)
 
         return getBinaryCpmmBetInfo(
           contract,
@@ -144,7 +153,7 @@ export const placebet = authEndpoint(async (req, auth) => {
         (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
         mechanism == 'dpm-2'
       ) {
-        const { answerId } = validate(multipleChoiceSchema, req.body)
+        const { answerId } = validate(multipleChoiceSchema, body)
         const answerDoc = contractDoc.collection('answers').doc(answerId)
         const answerSnap = await trans.get(answerDoc)
         if (!answerSnap.exists) throw new APIError(400, 'Invalid answerId')
@@ -158,7 +167,7 @@ export const placebet = authEndpoint(async (req, auth) => {
           outcome = 'YES',
           limitProb,
           expiresAt,
-        } = validate(multipleChoiceSchema, req.body)
+        } = validate(multipleChoiceSchema, body)
         const answersSnap = await trans.get(
           contractDoc.collection('answersCpmm')
         )
@@ -167,7 +176,7 @@ export const placebet = authEndpoint(async (req, auth) => {
         if (!answer) throw new APIError(400, 'Invalid answerId')
 
         const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(trans, contractDoc, auth.uid)
+          await getUnfilledBetsAndUserBalances(trans, contractDoc, uid)
 
         return getNewMultiCpmmBetInfo(
           contract,
@@ -181,15 +190,13 @@ export const placebet = authEndpoint(async (req, auth) => {
           expiresAt
         )
       } else if (outcomeType == 'NUMERIC' && mechanism == 'dpm-2') {
-        const { outcome, value } = validate(numericSchema, req.body)
+        const { outcome, value } = validate(numericSchema, body)
         return getNumericBetsInfo(value, outcome, amount, contract)
       } else {
         throw new APIError(500, 'Contract has invalid type/mechanism.')
       }
     })()
-    log(
-      `Calculated new bet information for ${user.username} - auth ${auth.uid}.`
-    )
+    log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
 
     if (
       mechanism == 'cpmm-1' &&
@@ -201,7 +208,6 @@ export const placebet = authEndpoint(async (req, auth) => {
     }
 
     const betDoc = contractDoc.collection('bets').doc()
-    const isApi = auth.creds.kind === 'key'
 
     trans.create(betDoc, {
       id: betDoc.id,
@@ -212,7 +218,7 @@ export const placebet = authEndpoint(async (req, auth) => {
       isApi,
       ...newBet,
     })
-    log(`Created new bet document for ${user.username} - auth ${auth.uid}.`)
+    log(`Created new bet document for ${user.username} - auth ${uid}.`)
 
     if (makers) {
       updateMakers(makers, betDoc.id, contractDoc, trans)
@@ -226,7 +232,7 @@ export const placebet = authEndpoint(async (req, auth) => {
     }
 
     trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
-    log(`Updated user ${user.username} balance - auth ${auth.uid}.`)
+    log(`Updated user ${user.username} balance - auth ${uid}.`)
 
     if (newBet.amount !== 0) {
       if (newBet.answerId) {
@@ -296,13 +302,13 @@ export const placebet = authEndpoint(async (req, auth) => {
         }
       }
 
-      log(`Updated contract ${contract.slug} properties - auth ${auth.uid}.`)
+      log(`Updated contract ${contract.slug} properties - auth ${uid}.`)
     }
 
     return { newBet, betId: betDoc.id, contract, makers, ordersToCancel, user }
   })
 
-  log(`Main transaction finished - auth ${auth.uid}.`)
+  log(`Main transaction finished - auth ${uid}.`)
 
   const { newBet, betId, contract, makers, ordersToCancel, user } = result
   const { mechanism } = contract
@@ -312,11 +318,11 @@ export const placebet = authEndpoint(async (req, auth) => {
     newBet.amount !== 0
   ) {
     const userIds = uniq([
-      auth.uid,
+      uid,
       ...(makers ?? []).map((maker) => maker.bet.userId),
     ])
     await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
-    log(`Share redemption transaction finished - auth ${auth.uid}.`)
+    log(`Share redemption transaction finished - auth ${uid}.`)
   }
   if (ordersToCancel) {
     await Promise.all(
@@ -333,7 +339,7 @@ export const placebet = authEndpoint(async (req, auth) => {
   }
 
   return { ...newBet, betId: betId }
-})
+}
 
 const firestore = admin.firestore()
 
