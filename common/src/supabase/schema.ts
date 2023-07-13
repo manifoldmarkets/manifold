@@ -1012,21 +1012,6 @@ export interface Database {
         }
         Relationships: []
       }
-      user_avg_ratings: {
-        Row: {
-          avg_rating: number
-          user_id: string
-        }
-        Insert: {
-          avg_rating: number
-          user_id: string
-        }
-        Update: {
-          avg_rating?: number
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_contract_metrics: {
         Row: {
           contract_id: string
