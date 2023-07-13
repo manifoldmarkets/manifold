@@ -16,6 +16,7 @@ import { Title } from 'web/components/widgets/title'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { useEvent } from 'web/hooks/use-event'
+import { createPortfolio } from 'web/lib/firebase/api'
 
 export default function Portfolio() {
   return (
@@ -26,6 +27,10 @@ export default function Portfolio() {
 }
 
 function CreatePortfolio() {
+  const [name, setName] = usePersistentInMemoryState<string>(
+    '',
+    'create-portfolio-name'
+  )
   const [contracts, setContracts] = usePersistentInMemoryState<Contract[]>(
     [],
     'create-portfolio-contract-ids'
@@ -40,6 +45,18 @@ function CreatePortfolio() {
       setContracts(contracts.filter((c) => c.id !== contract.id))
     } else setContracts([...contracts, contract])
   })
+
+  const onSubmit = async () => {
+    const portfolio = {
+      name,
+      items: contracts.map((c) => ({
+        contractId: c.id,
+        position: positions[c.id] ?? 'YES',
+      })),
+    }
+    const result = await createPortfolio(portfolio)
+    console.log('result', result)
+  }
 
   return (
     <Col className="relative gap-4">
@@ -56,6 +73,8 @@ function CreatePortfolio() {
         <Input
           className="max-w-[200px] border p-4"
           placeholder="Portfolio name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
       </Col>
 
@@ -117,7 +136,7 @@ function CreatePortfolio() {
         </Col>
       </Col>
 
-      <Button className="!ml-auto" onClick={() => {}}>
+      <Button className="ml-auto" onClick={onSubmit}>
         Create portfolio
       </Button>
 

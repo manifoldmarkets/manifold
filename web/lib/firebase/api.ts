@@ -16,6 +16,7 @@ import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Post } from 'common/post'
 import { MaybeAuthedContractParams } from 'common/contract'
+import { PortfolioItem } from 'common/portfolio'
 
 export async function call(url: string, method: string, params?: any) {
   const user = auth.currentUser
@@ -400,4 +401,11 @@ export function addBounty(params: { contractId: string; amount: number }) {
 
 export function createAnswerCpmm(params: { contractId: string; text: string }) {
   return call(getApiUrl('createanswercpmm'), 'POST', params)
+}
+
+export function createPortfolio(params: {
+  name: string
+  items: PortfolioItem[]
+}) {
+  return call(getApiUrl('createportfolio'), 'POST', params)
 }
