@@ -293,7 +293,7 @@ export function ManaPaymentReceievedNotification(props: {
     >
       <span>
         <UserLink name={sourceUserName} username={sourceUserUsername} />
-        <PrimaryNotificationLink text="sent you " />
+        <PrimaryNotificationLink text=" sent you " />
         <IncomeNotificationLabel notification={notification} />
       </span>
     </NotificationFrame>
