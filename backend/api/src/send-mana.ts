@@ -22,20 +22,20 @@ export const sendmana = authEndpoint(async (req, auth) => {
     // Look up the manalink
 
     if (amount <= 0 || isNaN(amount) || !isFinite(amount))
-      throw new APIError(500, 'Invalid amount')
+      throw new APIError(400, 'Invalid amount')
 
     const fromDoc = firestore.doc(`users/${fromId}`)
     const fromSnap = await transaction.get(fromDoc)
     if (!fromSnap.exists) {
-      throw new APIError(500, `User ${fromId} not found`)
+      throw new APIError(404, `User ${fromId} not found`)
     }
     const fromUser = fromSnap.data() as User
 
     const canCreate = await canSendMana(fromUser)
     if (!canCreate) {
       throw new APIError(
-        400,
-        `@${fromUser.name} is not authorized to send mana.`
+        401,
+        `You don't have at least 1000 mana or your account isn't 1 week old.`
       )
     }
 
