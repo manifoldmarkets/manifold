@@ -13,6 +13,14 @@ import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { getPortfolioBySlug } from 'web/lib/supabase/portfolio'
 import { Portfolio, portfolioPath } from 'common/portfolio'
 import { updatePortfolio } from 'web/lib/firebase/api'
+import { PortfolioWidget } from './create'
+import { getContracts } from 'web/lib/supabase/contracts'
+import { Contract } from 'common/contract'
+import { keyBy, mapValues, partition } from 'lodash'
+import { ContractCard } from 'web/components/contract/contract-card'
+import { Col } from 'web/components/layout/col'
+import { BinaryOutcomeLabel } from 'web/components/outcome-label'
+import { Avatar } from 'web/components/widgets/avatar'
 
 export async function getStaticProps(props: {
   params: { portfolioSlug: string }
@@ -22,10 +30,14 @@ export async function getStaticProps(props: {
   const portfolio = await getPortfolioBySlug(portfolioSlug)
   const creator = portfolio ? await getUser(portfolio.creatorId) : null
 
+  const contractIds = portfolio?.items.map((item) => item.contractId) ?? []
+  const contracts = await getContracts(contractIds)
+
   return {
     props: {
       portfolio,
       creator,
+      contracts,
     },
     revalidate: 60, // regenerate after a minute
   }
@@ -38,60 +50,117 @@ export async function getStaticPaths() {
 export default function PortfolioPage(props: {
   portfolio: Portfolio | null
   creator: User
+  contracts: Contract[]
 }) {
-  const { creator, portfolio } = props
+  const { creator, portfolio, contracts } = props
   const user = useUser()
 
   if (!portfolio) {
     return <Custom404 />
   }
+
+  const itemsByContractId = keyBy(portfolio.items, 'contractId')
+  const positions = mapValues(itemsByContractId, (item) => item.position)
+
   const path = portfolioPath(portfolio.slug)
   const shareUrl = `https://${ENV_CONFIG.domain}${path}`
 
   const canEdit = !!user && user.id === portfolio.creatorId
 
   return (
-    <Page>
+    <Page className="!max-w-[1720px]" mainClassName="!col-span-10">
       <SEO
         title={portfolio.name}
         description={'A portfolio of markets related to ' + portfolio.name}
         url={path}
       />
-      <div className="mx-auto mt-1 flex w-full max-w-2xl flex-col">
+      <Col className="mx-auto w-full gap-2">
         <EditInPlaceInput
-          className="-m-px px-2 !text-3xl"
+          className="px-2 !text-3xl sm:px-0"
           initialValue={portfolio.name}
           onSave={(name) => updatePortfolio({ id: portfolio.id, name })}
           disabled={!canEdit}
         >
-          {(value) => <Title className="!my-0 p-2" children={value} />}
+          {(value) => <Title className="!mb-0" children={value} />}
         </EditInPlaceInput>
-        <div className="h-2" />
-        <Row className="mt-4 items-center">
-          <div className="flex px-2">
-            <div className="text-ink-500 mr-1">Portfolio by</div>
-            <UserLink
-              className="text-ink-700"
-              name={creator.name}
-              username={creator.username}
-            />
-          </div>
-          <Row className="items-center sm:pr-2">
-            <CopyLinkButton
-              linkIconOnlyProps={{
-                tooltip: 'Copy link to post',
-              }}
-              url={shareUrl}
-              eventTrackingName={'copy post link'}
-            />
-          </Row>
+
+        <Row className="items-center gap-2">
+          <Avatar
+            size={'xs'}
+            avatarUrl={creator.avatarUrl}
+            username={creator.username}
+          />
+          <UserLink
+            className="text-ink-700"
+            name={creator.name}
+            username={creator.username}
+          />
+          <CopyLinkButton
+            linkIconOnlyProps={{
+              tooltip: 'Copy link to portfolio',
+            }}
+            url={shareUrl}
+            eventTrackingName={'copy portfolio link'}
+          />
         </Row>
 
         <Spacer h={2} />
-        <div className="bg-canvas-0 rounded-lg px-6 py-4 sm:py-0">
-          <div className="flex w-full flex-col py-2">...</div>
-        </div>
-      </div>
+        <PortfolioView contracts={contracts} positions={positions} />
+      </Col>
     </Page>
+  )
+}
+
+const PortfolioView = (props: {
+  contracts: Contract[]
+  positions: { [contractId: string]: 'YES' | 'NO' }
+}) => {
+  const { contracts, positions } = props
+  const [yesContracts, noContracts] = partition(
+    contracts,
+    (contract) => positions[contract.id] === 'YES'
+  )
+
+  return (
+    <Col className="gap-6">
+      {yesContracts.length > 0 && (
+        <Col className="gap-4">
+          <div className="text-ink-800 text-2xl">
+            Buy <BinaryOutcomeLabel outcome={'YES'} /> in
+          </div>
+          <Row className="flex-wrap gap-2">
+            {yesContracts.map((contract) => (
+              <Col>
+                <ContractCard
+                  className="max-w-[350px]"
+                  contract={contract}
+                  hideGroupLink
+                  hideQuickBet
+                />
+              </Col>
+            ))}
+          </Row>
+        </Col>
+      )}
+      {noContracts.length > 0 && (
+        <Col className="gap-4">
+          <Title className="text-ink-800">
+            Buy <BinaryOutcomeLabel outcome={'NO'} /> in
+          </Title>
+          <Row className="flex-wrap gap-2">
+            {noContracts.map((contract) => (
+              <Col>
+                <ContractCard
+                  className="max-w-[350px]"
+                  contract={contract}
+                  hideGroupLink
+                  hideQuickBet
+                />
+              </Col>
+            ))}
+          </Row>
+        </Col>
+      )}
+    </Col>
   )
 }

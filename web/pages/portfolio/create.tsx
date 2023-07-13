@@ -78,67 +78,16 @@ function CreatePortfolio() {
         />
       </Col>
 
-      <Col className="gap-4">
-        <Col className="border p-4">
-          {contracts.length === 0 ? (
-            <div className="text-ink-1000 text-sm">No questions selected.</div>
-          ) : (
-            <table>
-              <thead>
-                <tr className="text-left">
-                  <th className="text-ink-1000 text-sm">Question</th>
-                  <th className="text-ink-1000 text-sm">Prob</th>
-                  <th className="text-ink-1000 text-sm">Position</th>
-                  <th className="text-ink-1000 text-sm"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {contracts.map((c) => (
-                  <tr key={c.id}>
-                    <td className="text-ink-1000 p-1">{c.question}</td>
-                    <td className="text-ink-1000 p-1">
-                      {c.mechanism === 'cpmm-1'
-                        ? formatPercent(getProbability(c))
-                        : ''}
-                    </td>
-                    <td className="p-1">
-                      <ChoicesToggleGroup
-                        currentChoice={positions[c.id] ?? 'YES'}
-                        choicesMap={{
-                          YES: 'YES',
-                          NO: 'NO',
-                        }}
-                        setChoice={(choice) => {
-                          setPositions((positions) => ({
-                            ...positions,
-                            [c.id]: choice as 'YES' | 'NO',
-                          }))
-                        }}
-                      />
-                    </td>
-                    <td className="">
-                      <Button
-                        className="ml-2"
-                        size="xs"
-                        color="gray-outline"
-                        onClick={() => {
-                          setContracts(contracts.filter((c2) => c2.id !== c.id))
-                        }}
-                      >
-                        <XIcon className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </Col>
-      </Col>
-
       <Button className="ml-auto" onClick={onSubmit}>
         Create portfolio
       </Button>
+
+      <PortfolioWidget
+        contracts={contracts}
+        positions={positions}
+        setContracts={setContracts}
+        setPositions={setPositions}
+      />
 
       <div className={clsx('mt-6 px-1')}>
         <ContractSearch contracts={contracts} addContract={addContract} />
@@ -174,3 +123,70 @@ const ContractSearch = memo(
     )
   }
 )
+
+export const PortfolioWidget = (props: {
+  contracts: Contract[]
+  setContracts: any
+  setPositions: any
+  positions: any
+}) => {
+  const { contracts, positions, setContracts, setPositions } = props
+
+  return (
+    <Col className="border p-4">
+      {contracts.length === 0 ? (
+        <div className="text-ink-1000 text-sm">No questions selected.</div>
+      ) : (
+        <table>
+          <thead>
+            <tr className="text-left">
+              <th className="text-ink-1000 text-sm">Question</th>
+              <th className="text-ink-1000 text-sm">Prob</th>
+              <th className="text-ink-1000 text-sm">Position</th>
+              <th className="text-ink-1000 text-sm"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {contracts.map((c) => (
+              <tr key={c.id}>
+                <td className="text-ink-1000 p-1">{c.question}</td>
+                <td className="text-ink-1000 p-1">
+                  {c.mechanism === 'cpmm-1'
+                    ? formatPercent(getProbability(c))
+                    : ''}
+                </td>
+                <td className="p-1">
+                  <ChoicesToggleGroup
+                    currentChoice={positions[c.id] ?? 'YES'}
+                    choicesMap={{
+                      YES: 'YES',
+                      NO: 'NO',
+                    }}
+                    setChoice={(choice) => {
+                      setPositions((positions: any) => ({
+                        ...positions,
+                        [c.id]: choice as 'YES' | 'NO',
+                      }))
+                    }}
+                  />
+                </td>
+                <td className="">
+                  <Button
+                    className="ml-2"
+                    size="xs"
+                    color="gray-outline"
+                    onClick={() => {
+                      setContracts(contracts.filter((c2) => c2.id !== c.id))
+                    }}
+                  >
+                    <XIcon className="h-4 w-4" />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </Col>
+  )
+}
