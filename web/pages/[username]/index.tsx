@@ -48,7 +48,6 @@ import {
   isFresh,
   PostBanBadge,
   UserBadge,
-  UserLink,
 } from 'web/components/widgets/user-link'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Subtitle } from 'web/components/widgets/subtitle'
@@ -67,11 +66,7 @@ import { StarDisplay } from 'web/components/reviews/stars'
 import { useQuery } from 'react-query'
 import { getUserRating, getUserReviews } from 'web/lib/supabase/reviews'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Content } from 'web/components/widgets/editor'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { removeUndefinedProps } from 'common/util/object'
-import { useContract } from 'web/hooks/use-contract-supabase'
-import { ContractMention } from 'web/components/contract/contract-mention'
 import { Review } from 'web/components/reviews/review'
 
 export const getStaticProps = async (props: {
