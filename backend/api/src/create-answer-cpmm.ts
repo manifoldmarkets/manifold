@@ -24,6 +24,10 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
   const { contractId, text } = validate(bodySchema, req.body)
   console.log('Received', contractId, text)
 
+  if (true) {
+    throw new APIError(500, 'This endpoint is disabled for now.')
+  }
+
   // Run as transaction to prevent race conditions.
   const answer = await firestore.runTransaction(async (transaction) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)

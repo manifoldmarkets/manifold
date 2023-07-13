@@ -159,9 +159,6 @@ function ContractActions(props: {
             buttonColor={'gray'}
           />
         )}
-        {!isOnlyTrustworthy && contract.mechanism === 'cpmm-multi-1' && (
-          <AddAnswerButton buttonColor={'gray'} setEditing={setEditingAnswer} />
-        )}
         {contract.outcomeType !== 'STONK' && contract.mechanism !== 'none' && (
           <Button
             color={highlightResolver ? 'red' : 'gray'}
@@ -199,7 +196,8 @@ function EditDescriptionButton(props: {
   )
 }
 
-function AddAnswerButton(props: {
+// Disabled for now, until we support an Other answer.
+function _AddAnswerButton(props: {
   setEditing: (editing: boolean) => void
   buttonColor?: ColorType
 }) {
