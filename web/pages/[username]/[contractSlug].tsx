@@ -500,10 +500,11 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 </GradientContainer>
               ) : null)}
 
-            {isResolved && (
+            {isResolved && user && (
               <ReviewPanel
                 marketId={contract.id}
                 author={contract.creatorName}
+                user={user}
               />
             )}
 

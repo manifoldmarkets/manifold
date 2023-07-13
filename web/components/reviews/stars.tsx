@@ -2,14 +2,16 @@ import { StarIcon as StarOutline } from '@heroicons/react/outline'
 import { StarIcon } from '@heroicons/react/solid'
 import { clamp, range } from 'lodash'
 import { GradientContainer } from '../widgets/gradient-container'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '../buttons/button'
 import { leaveReview } from 'web/lib/firebase/api'
 import { TextEditor, useTextEditor } from '../widgets/editor'
 import { Col } from '../layout/col'
 import clsx from 'clsx'
-import { useMutation } from 'react-query'
+import { useMutation, useQuery } from 'react-query'
 import toast from 'react-hot-toast'
+import { User } from 'common/user'
+import { getMyReviewOnContract } from 'web/lib/supabase/reviews'
 
 export type Rating = 1 | 2 | 3 | 4 | 5
 
@@ -35,14 +37,30 @@ export const StarPicker = (props: {
   )
 }
 
-export const ReviewPanel = (props: { marketId: string; author: string }) => {
-  const { marketId, author } = props
+export const ReviewPanel = (props: {
+  marketId: string
+  author: string
+  user: User
+}) => {
+  const { marketId, author, user } = props
   const [rating, setRating] = useState<Rating>()
 
   const editor = useTextEditor({
     size: 'sm',
     placeholder: 'Add details (optional)',
   })
+
+  useEffect(() => {
+    if (editor)
+      getMyReviewOnContract(marketId, user.id).then((r) => {
+        if (r) {
+          setRating(r.rating as any)
+          if (r.content && !editor.isDestroyed) {
+            editor.commands.setContent(r.content as any)
+          }
+        }
+      })
+  }, [!!editor])
 
   const send = useMutation(['review'], leaveReview, {
     onError: (e) => {
