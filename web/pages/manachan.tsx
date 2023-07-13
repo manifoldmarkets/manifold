@@ -14,6 +14,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { formatMoney } from 'common/util/format'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Button } from 'web/components/buttons/button'
+import { track } from 'web/lib/service/analytics'
 
 export default function ManachanPage() {
   useTracking('view manachan page')
@@ -41,6 +42,8 @@ export default function ManachanPage() {
       .then(() => setSucess(true))
       .catch(() => setError(true))
 
+    track('buy manachan tweet', { tweet })
+
     setLoading(false)
     setTweet('')
   }
@@ -50,6 +53,7 @@ export default function ManachanPage() {
       <SEO
         title="Mana-chan speaks!"
         description="Mana-chan is Manifold's official anime spokesgirl"
+        image="/manachan.png"
       />
 
       <Col className="bg-canvas-0 mx-auto max-w-[700px] gap-4 rounded p-4 py-8 sm:p-8 sm:shadow-md">
