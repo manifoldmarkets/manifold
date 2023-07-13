@@ -36,8 +36,9 @@ export function GIFModal(props: {
     searchGiphy({ term: debouncedTerm, limit: 20 }).then((res) => {
       if (res.status === 'success') {
         setGifResults(res.data)
+      } else {
+        setError(res.data as string)
       }
-      setError(res.data as string)
     })
   }, [debouncedTerm])
 
@@ -49,6 +50,7 @@ export function GIFModal(props: {
           onChange={(e) => setTerm(e.target.value)}
           className="sticky top-0 h-8 w-full"
         />
+        {error && <div className="text-red-500">{error}</div>}
         <Masonry
           breakpointCols={2}
           className="-ml-4 flex h-[60ch] w-auto overflow-y-scroll"
