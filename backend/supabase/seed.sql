@@ -359,8 +359,6 @@ create index if not exists user_notifications_unseen_text_created_time_idx on us
   ((data->'createdTime')::bigint) desc
     );
 
-create index if not exists user_notifications_source_id on user_notifications (user_id, (data ->> 'sourceId'));
-
 alter table user_notifications
 cluster on user_notifications_created_time_idx;
 
