@@ -22,3 +22,8 @@ export const convertPortfolio = (portfolioRow: any) => {
     created_time: tsToMillis,
   }) as Portfolio
 }
+
+export function portfolioPath(portfolioSlug: string) {
+  return `/portfolio/${portfolioSlug}`
+}
+

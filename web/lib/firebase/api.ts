@@ -16,7 +16,7 @@ import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Post } from 'common/post'
 import { MaybeAuthedContractParams } from 'common/contract'
-import { PortfolioItem } from 'common/portfolio'
+import { Portfolio, PortfolioItem } from 'common/portfolio'
 
 export async function call(url: string, method: string, params?: any) {
   const user = auth.currentUser
@@ -408,4 +408,8 @@ export function createPortfolio(params: {
   items: PortfolioItem[]
 }) {
   return call(getApiUrl('createportfolio'), 'POST', params)
+}
+
+export function updatePortfolio(params: { id: string } & Partial<Portfolio>) {
+  return call(getApiUrl('updateportfolio'), 'POST', params)
 }
