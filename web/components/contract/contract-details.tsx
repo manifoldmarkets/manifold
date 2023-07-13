@@ -25,7 +25,6 @@ import {
   getGroupLinkToDisplay,
   getGroupLinksToDisplay,
   groupPath,
-  canEditContractGroup,
 } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
@@ -206,7 +205,7 @@ export function PublicMarketGroups(props: {
           <GroupDisplay key={group.groupId} groupToDisplay={group} />
         ))}
 
-        {user && canEditContractGroup(contract, user) && (
+        {user && (
           <button
             onClick={(e) => {
               e.preventDefault()
