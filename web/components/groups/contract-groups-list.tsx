@@ -17,6 +17,7 @@ import { GroupLinkItem } from 'web/pages/groups'
 import { GroupSelector } from './group-selector'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
+import { useState } from 'react'
 
 export function ContractGroupsList(props: {
   contract: Contract
@@ -27,7 +28,7 @@ export function ContractGroupsList(props: {
 
   const isCreator = contract.creatorId === user?.id
   const adminGroups = useGroupsWhereUserHasRole(user?.id)
-
+  const [error, setError] = useState<string>('')
   const isAdmin = useAdmin()
   function canRemoveFromGroup(group: Group) {
     if (!user) {
@@ -114,11 +115,15 @@ export function ContractGroupsList(props: {
                   addContractToGroup({
                     groupId: group.id,
                     contractId: contract.id,
+                  }).catch((e) => {
+                    console.error(e.message)
+                    setError(e.message)
                   })
                 }
                 selectedGroup={undefined}
                 isContractCreator={isCreator}
               />
+              <span className={'text-sm text-red-400'}>{error}</span>
             </Col>
           )}
         </Col>
