@@ -16,6 +16,7 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Button } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
 import { SiteLink } from 'web/components/widgets/site-link'
+import { MANACHAN_TWEET_COST } from 'common/economy'
 
 export default function ManachanPage() {
   useTracking('view manachan page')
@@ -68,8 +69,8 @@ export default function ManachanPage() {
         />
         <div>
           Mana-chan is Manifold's official anime spokesgirl...but she is very
-          shy and doesn't know what to say. For {formatMoney(1000)}, you can
-          tell her what to{' '}
+          shy and doesn't know what to say. For{' '}
+          {formatMoney(MANACHAN_TWEET_COST)}, you can tell her what to{' '}
           <SiteLink href="https://twitter.com/manachan_waifu" followsLinkClass>
             tweet
           </SiteLink>
@@ -91,7 +92,7 @@ export default function ManachanPage() {
           onClick={submit}
         >
           {loading && <LoadingIndicator className="mr-2" />} Tweet for{' '}
-          {formatMoney(1000)}
+          {formatMoney(MANACHAN_TWEET_COST)}
         </Button>
         {success && <div className="text-green-500">Tweet sent!</div>}
         {error && <div className="text-green-500">Error sending tweet</div>}

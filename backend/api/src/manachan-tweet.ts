@@ -5,12 +5,12 @@ import { User } from 'common/user'
 import { APIError, authEndpoint, validate } from './helpers'
 import { FieldValue } from 'firebase-admin/firestore'
 import { postTweet } from 'shared/twitter'
+import { MANACHAN_TWEET_COST } from 'common/economy'
 
 const bodySchema = z.object({
   tweet: z.string().trim().min(1).max(280),
 })
 
-const MANACHAN_TWEET_COST = 1000
 
 export const manachantweet = authEndpoint(async (req, auth) => {
   const { tweet } = validate(bodySchema, req.body)
