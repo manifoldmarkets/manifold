@@ -197,6 +197,11 @@ export default function AboutPage() {
             description="Go long on longform"
             href="/latestposts"
           />
+          <LabCard
+            title="🎤 Mana-chan"
+            description="Tweets from our anime spokesgirl"
+            href="/manachan"
+          />
         </LabSection>
 
         <Subtitle>👨‍💻️ Developers</Subtitle>
