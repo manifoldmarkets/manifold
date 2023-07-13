@@ -401,3 +401,7 @@ export function addBounty(params: { contractId: string; amount: number }) {
 export function createAnswerCpmm(params: { contractId: string; text: string }) {
   return call(getApiUrl('createanswercpmm'), 'POST', params)
 }
+
+export function searchGiphy(params: { term: string; limit: number }) {
+  return call(getApiUrl('searchgiphy'), 'POST', params)
+}

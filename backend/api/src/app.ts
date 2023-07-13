@@ -69,6 +69,7 @@ import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
 import { awardbounty } from './award-bounty'
 import { addbounty } from './add-bounty'
 import { createanswercpmm } from './create-answer-cpmm'
+import { searchgiphy } from './search-giphy'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -174,6 +175,7 @@ app.post('/award-q-and-a-answer', ...apiRoute(awardQAndAAnswer))
 app.post('/award-bounty', ...apiRoute(awardbounty))
 app.post('/add-bounty', ...apiRoute(addbounty))
 app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
+app.post('/searchgiphy', ...apiRoute(searchgiphy))
 
 // Catch 404 errors - this should be the last route
 app.use((req, res, next) => {
