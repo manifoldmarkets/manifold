@@ -13,7 +13,7 @@ import { EmbedModal } from './embed-modal'
 import { DreamModal } from './image-modal'
 import { MarketModal } from './market-modal'
 import type { UploadMutation } from './upload-extension'
-import { AiOutlineGif } from 'react-icons/ai'
+import { PiGifFill } from 'react-icons/pi'
 import { GIFModal } from './gif-modal'
 
 /* Toolbar, with buttons for images and embeds */
@@ -42,7 +42,7 @@ export function StickyFormatMenu(props: {
       </ToolbarButton>
       <ToolbarButton label="Add GIF" onClick={() => setGIFOpen(true)}>
         <GIFModal editor={editor} open={GIFOpen} setOpen={setGIFOpen} />
-        <AiOutlineGif className="h-5 w-5" aria-hidden />
+        <PiGifFill className="h-5 w-5" aria-hidden />
       </ToolbarButton>
       <ToolbarButton label="Add question" onClick={() => setMarketOpen(true)}>
         <MarketModal
