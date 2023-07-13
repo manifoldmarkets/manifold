@@ -78,6 +78,7 @@ import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { calculateMultiBets } from 'common/bet'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
+import { ReviewPanel } from 'web/components/reviews/stars'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -498,6 +499,13 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                   <QfResolutionPanel contract={contract} />
                 </GradientContainer>
               ) : null)}
+
+            {isResolved && (
+              <ReviewPanel
+                marketId={contract.id}
+                author={contract.creatorName}
+              />
+            )}
 
             <div className="my-4">
               <MarketGroups contract={contract} />

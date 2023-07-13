@@ -10,7 +10,6 @@ import { DAY_MS } from 'common/util/time'
 import { contentSchema } from 'shared/zod-types'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { randomUUID } from 'crypto'
-import { update } from 'lodash'
 import { updateData } from 'shared/supabase/utils'
 
 const postSchema = z

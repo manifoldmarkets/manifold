@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { Page } from 'web/components/layout/page'
+import { StarPicker } from 'web/components/reviews/stars'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
@@ -47,6 +48,7 @@ export default function StylePage() {
         url="www.example.com"
         eventTrackingName={'copy styles link'}
       />
+      <RatingSection />
     </Page>
   )
 }
@@ -195,4 +197,14 @@ function EditorExample() {
     defaultValue: '<p>Rich text editor from <code>editor.tsx</code></p>',
   })
   return <TextEditor editor={editor} />
+}
+
+function RatingSection() {
+  const [rating, setRating] = useState<number>()
+  return (
+    <div>
+      <Subtitle>Rating</Subtitle>
+      <StarPicker rating={rating as any} setRating={setRating} />
+    </div>
+  )
 }
