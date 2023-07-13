@@ -80,7 +80,7 @@ export type filter = typeof FILTERS[number]['value']
 
 export const CONTRACT_TYPES = [
   { label: 'All questions', value: 'ALL' },
-  { label: 'Binary', value: 'BINARY' },
+  { label: 'Yes/No', value: 'BINARY' },
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
   { label: 'Free Response', value: 'FREE_RESPONSE' },
   { label: 'Numeric', value: 'PSEUDO_NUMERIC' },

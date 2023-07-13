@@ -184,10 +184,9 @@ create index if not exists user_reactions_content_id on user_reactions (
 alter table user_reactions
 cluster on user_reactions_type;
 
-
 create table if not exists
-    user_share_events (
-                          id bigint generated always as identity primary key,
+  user_share_events (
+    id bigint generated always as identity primary key,
                           created_time timestamptz not null default now(),
                           user_id text not null,
                           contract_id text null,
@@ -200,11 +199,12 @@ drop policy if exists "public read" on user_share_events;
 
 create policy "public read" on user_share_events for
     select
-    using (true);
+  using (true);
 
 create index if not exists user_share_events_user_id on user_share_events (user_id);
+
 alter table user_share_events
-    cluster on user_share_events_user_id;
+cluster on user_share_events_user_id;
 
 create table if not exists
     user_disinterests (
@@ -223,9 +223,10 @@ drop policy if exists "public read" on user_disinterests;
 
 create policy "public read" on user_disinterests for
     select
-    using (true);
+  using (true);
 
 create index if not exists user_disinterests_user_id on user_disinterests (user_id);
+
 create index if not exists user_disinterests_user_id_contract_id on user_disinterests (user_id, contract_id);
 
 alter table user_disinterests
@@ -302,8 +303,11 @@ with
 
 create index if not exists user_seen_markets_created_time_desc_idx on user_seen_markets (user_id, contract_id, created_time desc);
 
-create index if not exists user_seen_markets_type_created_time_desc_idx
-    on user_seen_markets (contract_id, type, created_time desc);
+create index if not exists user_seen_markets_type_created_time_desc_idx on user_seen_markets (
+  contract_id,
+  type,
+  created_time desc
+);
 
 alter table user_seen_markets
 cluster on user_seen_markets_created_time_desc_idx;
@@ -328,14 +332,9 @@ select
 create index if not exists user_notifications_data_gin on user_notifications using GIN (data);
 
 -- TODO: drop this one on july 7th
-create index if not exists user_notifications_created_time on user_notifications
-    (user_id,
-    (to_jsonb(data) -> 'createdTime') desc);
+create index if not exists user_notifications_created_time on user_notifications (user_id, (to_jsonb(data) -> 'createdTime') desc);
 
-create index if not exists user_notifications_created_time_idx on user_notifications (
-  user_id,
-  ((data->'createdTime')::bigint) desc
-    );
+create index if not exists user_notifications_created_time_idx on user_notifications (user_id, ((data -> 'createdTime')::bigint) desc);
 
 -- TODO: drop this one, too on july 7th
 create index if not exists user_notifications_unseen_created_time on user_notifications (
@@ -394,11 +393,7 @@ for update
 
 create index if not exists user_feed_created_time on user_feed (user_id, created_time desc);
 
-create index concurrently if not exists user_feed_user_id_contract_id_created_time on user_feed (
-  user_id,
-  contract_id,
-  created_time desc
-);
+create index concurrently if not exists user_feed_user_id_contract_id_created_time on user_feed (user_id, contract_id, created_time desc);
 
 alter table user_feed
 cluster on user_feed_created_time;
@@ -464,8 +459,12 @@ create index if not exists contracts_importance_score on contracts (importance_s
 create index if not exists question_nostop_fts on contracts using gin (question_nostop_fts);
 
 -- for calibration page
-create index if not exists contracts_sample_filtering on contracts (outcome_type, resolution, visibility, ((data->>'uniqueBettorCount')));
-
+create index if not exists contracts_sample_filtering on contracts (
+  outcome_type,
+  resolution,
+  visibility,
+  ((data ->> 'uniqueBettorCount'))
+);
 
 alter table contracts
 cluster on contracts_creator_id;

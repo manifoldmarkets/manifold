@@ -53,7 +53,7 @@ export default function CreateAdPage() {
           <Subtitle>Buy views</Subtitle>
           <AmountInput
             amount={totalFunds}
-            onChange={setTotalFunds}
+            onChangeAmount={setTotalFunds}
             label={ENV_CONFIG.moneyMoniker}
             disabled={createAdMutation.isLoading}
           />

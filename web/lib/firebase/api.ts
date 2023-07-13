@@ -404,4 +404,18 @@ export function createAnswerCpmm(params: { contractId: string; text: string }) {
 
 export function searchGiphy(params: { term: string; limit: number }) {
   return call(getApiUrl('searchgiphy'), 'POST', params)
+export function tweetFromManaChan(params: { tweet: string }) {
+  return call(getApiUrl('manachantweet'), 'POST', params)
+}
+
+export function sendMana(params: {
+  toIds: string[]
+  amount: number
+  message: string
+}) {
+  return call(getApiUrl('send-mana'), 'POST', params)
+}
+
+export function leaveReview(params: any) {
+  return call(getApiUrl('leave-review'), 'POST', params)
 }

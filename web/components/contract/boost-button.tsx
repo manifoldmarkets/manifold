@@ -126,7 +126,7 @@ function BoostFormRow(props: { contract: Contract }) {
         Boost amount{' '}
         <AmountInput
           amount={totalCost}
-          onChange={setTotalCost}
+          onChangeAmount={setTotalCost}
           label={ENV_CONFIG.moneyMoniker}
           inputClassName="mr-2 w-36"
         />
@@ -141,7 +141,7 @@ function BoostFormRow(props: { contract: Contract }) {
             </div>
             <AmountInput
               amount={costPerView}
-              onChange={setCostPerView}
+              onChangeAmount={setCostPerView}
               label={ENV_CONFIG.moneyMoniker}
               error={error}
               inputClassName="mr-2 w-36"

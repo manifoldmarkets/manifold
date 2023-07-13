@@ -9060,10 +9060,10 @@ react-hot-toast@2.2.0:
   dependencies:
     goober "^2.1.1"
 
-react-icons@4.8.0:
-  version "4.8.0"
-  resolved "https://registry.yarnpkg.com/react-icons/-/react-icons-4.8.0.tgz#621e900caa23b912f737e41be57f27f6b2bff445"
-  integrity sha512-N6+kOLcihDiAnj5Czu637waJqSnwlMNROzVZMhfX68V/9bu9qHaMIJC4UdozWoOk57gahFCNHwVvWzm0MTzRjg==
+react-icons@^4.10.1:
+  version "4.10.1"
+  resolved "https://registry.yarnpkg.com/react-icons/-/react-icons-4.10.1.tgz#3f3b5eec1f63c1796f6a26174a1091ca6437a500"
+  integrity sha512-/ngzDP/77tlCfqthiiGNZeYFACw85fUjZtLbedmJ5DTlNDIwETxhwBzdOJ21zj4iJdvc0J3y7yOsX3PpxAJzrw==
 
 react-is@^16.12.0, react-is@^16.13.1, react-is@^16.7.0:
   version "16.13.1"
@@ -10376,6 +10376,11 @@ tweetnacl@^0.14.3, tweetnacl@~0.14.0:
   version "0.14.5"
   resolved "https://registry.yarnpkg.com/tweetnacl/-/tweetnacl-0.14.5.tgz#5ae68177f192d4456269d108afa93ff8743f4f64"
   integrity sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==
+
+twitter-api-v2@1.15.0:
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/twitter-api-v2/-/twitter-api-v2-1.15.0.tgz#ab8ff0f50158ac8d7897777b70ec39087d950f40"
+  integrity sha512-Cqg3pIGhSwPyFBndpBrucdeNXecNFnYcXy3ixQ4brJHd/3k1CAtBVcX0e3s6jRYl/QIx5BmyGXS/SHEGtYZ3gw==
 
 type-check@^0.4.0, type-check@~0.4.0:
   version "0.4.0"

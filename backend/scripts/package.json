@@ -17,7 +17,8 @@
     "firebase-admin": "11.5.0",
     "json2csv": "6.0.0-alpha.2",
     "lodash": "4.17.21",
-    "numeral": "2.0.6"
+    "numeral": "2.0.6",
+    "twitter-api-v2": "1.15.0"
   },
   "devDependencies": {
     "@types/numeral": "2.0.2",

@@ -17,6 +17,7 @@ import {
   BettingStreakExpiringNotification,
   LeagueChangedNotification,
   LoanIncomeNotification,
+  ManaPaymentReceievedNotification,
   QuestIncomeNotification,
   UniqueBettorBonusIncomeNotification,
   UserJoinedNotification,
@@ -44,6 +45,7 @@ import { floatingEqual } from 'common/util/math'
 import { useContract } from 'web/hooks/use-contract-supabase'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { linkClass, SiteLink } from '../widgets/site-link'
+import { StarDisplay } from '../reviews/stars'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -89,6 +91,14 @@ export function NotificationItem(props: {
   } else if (sourceType === 'loan') {
     return (
       <LoanIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'mana_payment') {
+    return (
+      <ManaPaymentReceievedNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
@@ -645,6 +655,7 @@ export function MarketResolvedNotification(props: {
       link={getSourceUrl(notification)}
     >
       {content}
+      <StarDisplay rating={0} />
     </NotificationFrame>
   )
 }

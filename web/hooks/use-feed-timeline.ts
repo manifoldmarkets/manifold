@@ -99,12 +99,13 @@ export const useFeedTimeline = (
       .eq('user_id', userId)
       .order('created_time', { ascending: false })
       .limit(PAGE_SIZE)
-    // Newer items should never be seen, don't need to filter them
+    // TODO: if you're loading older, unseen stuff, newer stuff could be seen
     if (options.newerThan) {
       query = query.gt('created_time', options.newerThan)
     }
     if (options.old) {
       query = query.lt('created_time', oldestCreatedTimestamp.current)
+      // TODO: create index on seen_time, drop old index
       if (unseenCount.current > 10) query = query.is('seen_time', null)
     }
     const { data } = await run(query)

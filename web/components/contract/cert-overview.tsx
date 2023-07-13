@@ -256,7 +256,7 @@ function BuySellWidget(props: { contract: CertContract }) {
               inputClassName="!w-32"
               label={ENV_CONFIG.moneyMoniker}
               amount={amount}
-              onChange={setAmount}
+              onChangeAmount={setAmount}
             />
           </div>
           <Button

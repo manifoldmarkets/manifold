@@ -60,6 +60,14 @@ import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { useAdmin } from 'web/hooks/use-admin'
+import { UserPayments } from 'web/pages/payments'
+import { FaMoneyBillTransfer } from 'react-icons/fa6'
+import { StarDisplay } from 'web/components/reviews/stars'
+import { useQuery } from 'react-query'
+import { getUserRating, getUserReviews } from 'web/lib/supabase/reviews'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { removeUndefinedProps } from 'common/util/object'
+import { Review } from 'web/components/reviews/review'
 
 export const getStaticProps = async (props: {
   params: {
@@ -68,14 +76,18 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
   const user = await getUserByUsername(username)
-  const posts = user ? await getPostsByUser(user?.id) : []
+  const posts = user ? await getPostsByUser(user.id) : []
+
+  const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
 
   return {
-    props: {
+    props: removeUndefinedProps({
       user,
       username,
       posts,
-    },
+      rating,
+      reviewCount: count,
+    }),
     revalidate: 60 * 5, // Regenerate after 5 minutes
   }
 }
@@ -88,9 +100,11 @@ export default function UserPage(props: {
   user: User | null
   username: string
   posts: Post[]
+  rating?: number
+  reviewCount?: number
 }) {
   const isAdmin = useAdmin()
-  const { user, username, posts } = props
+  const { username, user, ...profileProps } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
@@ -104,7 +118,7 @@ export default function UserPage(props: {
   return privateUser && blockedByCurrentUser ? (
     <BlockedUser user={user} privateUser={privateUser} />
   ) : (
-    <UserProfile user={user} posts={posts} />
+    <UserProfile user={user} {...profileProps} />
   )
 }
 
@@ -127,7 +141,13 @@ const DeletedUser = () => {
   )
 }
 
-export function UserProfile(props: { user: User; posts: Post[] }) {
+function UserProfile(props: {
+  user: User
+  posts: Post[]
+  rating?: number
+  reviewCount?: number
+}) {
+  const { rating, reviewCount } = props
   const user = useUserById(props.user.id) ?? props.user
 
   const router = useRouter()
@@ -222,9 +242,10 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
         </Row>
         <Col className={'mt-1'}>
           <ProfilePublicStats
-            className=""
             user={user}
             isCurrentUser={isCurrentUser}
+            rating={rating}
+            reviewCount={reviewCount}
           />
           {user.bio && (
             <div className="sm:text-md mt-1 text-sm">
@@ -287,6 +308,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
         <Col className="mt-2">
           <QueryUncontrolledTabs
             currentPageForAnalytics={'profile'}
+            labelsParentClassName={'gap-0 sm:gap-4'}
             labelClassName={'pb-2 pt-1 sm:pt-4 '}
             tabs={[
               {
@@ -345,6 +367,18 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   </>
                 ),
               },
+              {
+                title: 'Managrams',
+                stackedTabIcon: (
+                  <FaMoneyBillTransfer className="h-5 w-[1.1rem]" />
+                ),
+                content: (
+                  <>
+                    <Spacer h={4} />
+                    <UserPayments userId={user.id} />
+                  </>
+                ),
+              },
             ]}
           />
         </Col>
@@ -358,15 +392,18 @@ type FollowsDialogTab = 'following' | 'followers'
 function ProfilePublicStats(props: {
   user: User
   isCurrentUser: boolean
+  rating?: number
+  reviewCount?: number
   className?: string
 }) {
-  const { user, className, isCurrentUser } = props
-  const [isOpen, setIsOpen] = useState(false)
+  const { user, className, isCurrentUser, rating, reviewCount = 0 } = props
+  const [reviewsOpen, setReviewsOpen] = useState(false)
+  const [followsOpen, setFollowsOpen] = useState(false)
   const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
   const followingIds = useFollows(user.id)
   const followerIds = useFollowers(user.id)
-  const openDialog = (tabName: FollowsDialogTab) => {
-    setIsOpen(true)
+  const openFollowsDialog = (tabName: FollowsDialogTab) => {
+    setFollowsOpen(true)
     setFollowsTab(tabName)
   }
 
@@ -375,30 +412,28 @@ function ProfilePublicStats(props: {
   return (
     <Row
       className={clsx(
-        'text-ink-600 flex-wrap items-center space-x-2 text-sm',
+        'text-ink-600 flex-wrap items-center gap-x-2 text-sm',
         className
       )}
     >
-      <TextButton onClick={() => openDialog('following')} className={className}>
+      <TextButton onClick={() => openFollowsDialog('following')}>
         <span className={clsx('font-semibold')}>
           {followingIds?.length ?? ''}
         </span>{' '}
         Following
       </TextButton>
-      <TextButton onClick={() => openDialog('followers')} className={className}>
+      <TextButton onClick={() => openFollowsDialog('followers')}>
         <span className={clsx('font-semibold')}>
           {followerIds?.length ?? ''}
         </span>{' '}
         Followers
       </TextButton>
 
-      {isCurrentUser && (
-        <UserLikedContractsButton user={user} className={className} />
-      )}
+      {isCurrentUser && <UserLikedContractsButton user={user} />}
 
       {!isCurrentUser && leagueInfo && (
         <Link
-          className={clsx(linkClass, className)}
+          className={linkClass}
           href={getLeaguePath(
             leagueInfo.season,
             leagueInfo.division,
@@ -421,13 +456,26 @@ function ProfilePublicStats(props: {
         Calibration
       </SiteLink>
 
+      {rating && (
+        <button className="flex gap-0.5" onClick={() => setReviewsOpen(true)}>
+          <span className="font-semibold">{rating.toFixed(1)}</span>
+          <StarDisplay rating={rating} />
+          <span className="font-semibold">({reviewCount} reviews)</span>
+        </button>
+      )}
+
       <FollowsDialog
         user={user}
         defaultTab={followsTab}
         followingIds={followingIds}
         followerIds={followerIds}
-        isOpen={isOpen}
-        setIsOpen={setIsOpen}
+        isOpen={followsOpen}
+        setIsOpen={setFollowsOpen}
+      />
+      <ReviewsDialog
+        isOpen={reviewsOpen}
+        setIsOpen={setReviewsOpen}
+        userId={user.id}
       />
       {/* {isCurrentUser && <GroupsButton user={user} className={className} />}
       {isCurrentUser && <ReferralsButton user={user} className={className} />}
@@ -501,6 +549,38 @@ function FollowsDialog(props: {
           defaultIndex={defaultTab === 'following' ? 0 : 1}
         />
       </Col>
+    </Modal>
+  )
+}
+
+function ReviewsDialog(props: {
+  isOpen: boolean
+  setIsOpen: (isOpen: boolean) => void
+  userId: string
+}) {
+  const { isOpen, setIsOpen, userId } = props
+
+  const reviews = useQuery([`reviews ${userId}`], () => getUserReviews(userId))
+
+  return (
+    <Modal open={isOpen} setOpen={setIsOpen}>
+      <div className="bg-canvas-0 max-h-[90vh] overflow-y-auto rounded p-6">
+        <Title>Reviews</Title>
+        {reviews.isLoading && <LoadingIndicator className="text-center" />}
+
+        <Col className="divide-ink-300 divide-y-2">
+          {reviews.data?.map((review, i) => (
+            <Review
+              key={i}
+              userId={review.reviewer_id}
+              rating={review.rating}
+              created={review.created_time}
+              contractId={review.market_id}
+              text={review.content as any}
+            />
+          ))}
+        </Col>
+      </div>
     </Modal>
   )
 }

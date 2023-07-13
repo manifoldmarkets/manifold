@@ -22,6 +22,7 @@ type TabProps = {
   onClick?: (tabTitle: string, index: number) => void
   className?: string
   currentPageForAnalytics?: string
+  labelsParentClassName?: string
 }
 
 export function ControlledTabs(props: TabProps & { activeIndex: number }) {
@@ -32,11 +33,13 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
     onClick,
     className,
     currentPageForAnalytics,
+    labelsParentClassName,
   } = props
   return (
     <>
       <Carousel
         className={clsx('border-ink-200 border-b', className)}
+        labelsParentClassName={labelsParentClassName}
         aria-label="Tabs"
       >
         {tabs.map((tab, i) => (

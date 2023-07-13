@@ -38,7 +38,7 @@ export function UserAvatarAndBadge(props: {
 }) {
   const { name, username, avatarUrl, noLink, className } = props
   return (
-    <Row className={clsx('items-center gap-4', className)}>
+    <Row className={clsx('items-center gap-2', className)}>
       <Avatar
         avatarUrl={avatarUrl}
         username={username}
