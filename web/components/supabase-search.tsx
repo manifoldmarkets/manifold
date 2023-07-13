@@ -605,6 +605,7 @@ export function SearchFilters(props: {
           }
           menuItemsClass="left-0 right-auto"
           selectedItemName={filterLabel}
+          closeOnClick={true}
         />
       )}
       {!hideOrderSelector && (
@@ -626,6 +627,7 @@ export function SearchFilters(props: {
           menuWidth={'w-36'}
           menuItemsClass="left-0 right-auto"
           selectedItemName={sortLabel}
+          closeOnClick={true}
         />
       )}
       <DropdownMenu
@@ -641,6 +643,7 @@ export function SearchFilters(props: {
         menuWidth={'w-36'}
         menuItemsClass="left-0 right-auto"
         selectedItemName={contractTypeLabel}
+        closeOnClick={true}
       />
       {!listViewDisabled && (
         <button
