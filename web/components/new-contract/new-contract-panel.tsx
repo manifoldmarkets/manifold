@@ -1,18 +1,16 @@
 import clsx from 'clsx'
-import dayjs from 'dayjs'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useState } from 'react'
 
 import { User } from 'common/user'
 
-import { useNewContract } from 'web/hooks/use-new-contract'
+import { ChevronRightIcon } from '@heroicons/react/solid'
+import { OutcomeType } from 'common/contract'
 import { VisibilityTheme } from 'web/pages/create'
 import { Col } from '../layout/col'
-import { ContractParamsForm, getNameFromValue } from './contract-params-form'
-import { ChoosingContractForm } from './choosing-contract-form'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { OutcomeType } from 'common/contract'
 import { Row } from '../layout/row'
-import { ChevronRightIcon } from '@heroicons/react/solid'
+import { ChoosingContractForm } from './choosing-contract-form'
+import { ContractParamsForm } from './contract-params-form'
+import { getNameFromValue } from './create-contract-types'
 
 export type NewQuestionParams = {
   groupId?: string

@@ -39,7 +39,8 @@ import {
   ALL_CONTRACT_TYPES,
   NON_PREDICTIVE_CONTRACT_TYPES,
   PREDICTIVE_CONTRACT_TYPES,
-} from './choosing-contract-form'
+  getExampleFromValue,
+} from './create-contract-types'
 
 export function ContractParamsForm(props: {
   outcomeType: OutcomeType
@@ -114,35 +115,19 @@ export function ContractParamsForm(props: {
   return (
     <>
       <Col>
-        {outcomeType === 'STONK' ? (
-          <div className="flex w-full flex-col">
-            <label className="px-1 pt-2 pb-3">
-              Stock name<span className={'text-scarlet-500'}>*</span>
-            </label>
+        <div className="flex w-full flex-col">
+          <label className="px-1 pt-2 pb-3">
+            Question<span className={'text-scarlet-500'}>*</span>
+          </label>
 
-            <Input
-              placeholder="e.g. Destiny Stock"
-              autoFocus
-              maxLength={MAX_QUESTION_LENGTH}
-              value={question}
-              onChange={(e) => setQuestion(e.target.value || '')}
-            />
-          </div>
-        ) : (
-          <div className="flex w-full flex-col">
-            <label className="px-1 pt-2 pb-3">
-              Question<span className={'text-scarlet-500'}>*</span>
-            </label>
-
-            <ExpandingInput
-              placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
-              autoFocus
-              maxLength={MAX_QUESTION_LENGTH}
-              value={question}
-              onChange={(e) => setQuestion(e.target.value || '')}
-            />
-          </div>
-        )}
+          <ExpandingInput
+            placeholder={getExampleFromValue(outcomeType)}
+            autoFocus
+            maxLength={MAX_QUESTION_LENGTH}
+            value={question}
+            onChange={(e) => setQuestion(e.target.value || '')}
+          />
+        </div>
         <Spacer h={6} />
         <div className="mb-1 flex flex-col items-start gap-1">
           <label className="gap-2 px-1 py-2">
@@ -456,35 +441,3 @@ export function ContractParamsForm(props: {
 
 // get days from today until the end of this year:
 const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
-
-export function getNameFromValue(value: string) {
-  const types = Object.keys(ALL_CONTRACT_TYPES)
-
-  for (let i = 0; i < types.length; i++) {
-    const contractType = (ALL_CONTRACT_TYPES as { [index: string]: any })[
-      types[i]
-    ]
-    if (contractType.value === value) {
-      console.log('found value')
-      return contractType.name
-    }
-  }
-
-  return null // Return null or any default value when no match is found
-}
-
-export function getFromValue(value: string) {
-  const predictiveTypes = Object.keys(PREDICTIVE_CONTRACT_TYPES)
-  const nonPredictiveTypes = Object.keys(NON_PREDICTIVE_CONTRACT_TYPES)
-
-  for (let i = 0; i < nonPredictiveTypes.length; i++) {
-    const contractType = (ALL_CONTRACT_TYPES as { [index: string]: any })[
-      nonPredictiveTypes[i]
-    ]
-    if (contractType.value === value) {
-      return contractType.name
-    }
-  }
-
-  return null // Return null or any default value when no match is found
-}
