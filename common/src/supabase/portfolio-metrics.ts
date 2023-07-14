@@ -14,7 +14,7 @@ export async function getPortfolioHistory(
   if (end) {
     query = query.lt('ts', new Date(end).toISOString())
   }
-  query = query.order('ts', { ascending: false })
+  query = query.order('ts', { ascending: true })
 
   const { data } = await run(query)
   return data.map(convertPortfolioHistory)
