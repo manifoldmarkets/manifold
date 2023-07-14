@@ -187,11 +187,13 @@ export default function AboutPage() {
             description="Swipe-to-bet UI. Try via iOS/Android app."
             {...(isNative ? { href: '/swipe' } : appCallback)}
           />
-          <LabCard
-            title="❓ Q&A"
-            description="Ask and answer questions to win mana"
-            href="/q-and-a"
-          />
+          {user && (
+            <LabCard
+              title="📂 Create portfolio"
+              description="Curate in a set of positions to invest in"
+              href="/portfolio/create"
+            />
+          )}
           <LabCard
             title="✏ Posts"
             description="Go long on longform"
