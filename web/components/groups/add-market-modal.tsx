@@ -8,7 +8,7 @@ import { SelectMarkets } from '../contract-select-modal'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { UncontrolledTabs } from '../layout/tabs'
-import { NewContractPanel } from '../new-contract-panel'
+import { NewContractPanel } from '../new-contract/new-contract-panel'
 import { AddContractToGroupPermissionType } from './add-contract-to-group-button'
 
 export function AddMarketToGroupModal(props: {

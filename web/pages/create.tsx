@@ -7,13 +7,15 @@ import { SEO } from 'web/components/SEO'
 import {
   NewContractPanel,
   NewQuestionParams,
-} from 'web/components/new-contract-panel'
+} from 'web/components/new-contract/new-contract-panel'
 import { useUser } from 'web/hooks/use-user'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useState } from 'react'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 import { LockClosedIcon } from '@heroicons/react/solid'
+
+export type VisibilityTheme = 'private' | 'non-private'
 
 export default function Create() {
   useTracking('view create page')
@@ -22,7 +24,7 @@ export default function Create() {
   const user = useUser()
   const router = useRouter()
   const params = router.query as NewQuestionParams
-  const [theme, setTheme] = useState<'private' | 'non-private'>('non-private')
+  const [theme, setTheme] = useState<VisibilityTheme>('non-private')
 
   if (!user || !router.isReady) return <div />
 
@@ -51,7 +53,7 @@ export default function Create() {
           theme == 'private' ? ' bg-primary-100' : 'bg-canvas-0'
         )}
       >
-        <Row className="w-full justify-between">
+        {/* <Row className="w-full justify-between">
           <Title className={clsx('transition-colors')}>
             {`Create a ${theme == 'private' ? 'private' : ''} question`}
           </Title>
@@ -62,7 +64,7 @@ export default function Create() {
 
         <div className="text-ink-700 mb-4">
           Set up your own play-money prediction market on any question.
-        </div>
+        </div> */}
 
         <NewContractPanel params={params} creator={user} setTheme={setTheme} />
       </div>
