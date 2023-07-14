@@ -1562,3 +1562,27 @@ export const createBountyAddedNotification = async (
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
 }
+
+export const createCustomNotification = async (
+  recipientId: string,
+  title: string,
+  sender: User,
+  url?: string
+) => {
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: recipientId,
+    reason: 'announcement_created',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: '',
+    sourceType: 'user',
+    sourceUserName: sender.name,
+    sourceUserUsername: sender.username,
+    sourceUserAvatarUrl: sender.avatarUrl,
+    sourceText: title,
+    data: { url },
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}

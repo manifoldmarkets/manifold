@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import {
+  AnnouncementData,
   BetFillData,
   ContractResolutionData,
   getSourceUrl,
@@ -301,6 +302,14 @@ export function NotificationItem(props: {
   } else if (reason === 'profit_loss_updates') {
     return (
       <WeeklyUpdateNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'announcement_created') {
+    return (
+      <AnnouncementNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
@@ -1417,6 +1426,54 @@ function BountyAddedNotification(props: {
           )}
         </span>
       </>
+    </NotificationFrame>
+  )
+}
+
+function AnnouncementNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceUserName, sourceUserUsername, sourceText } = notification
+
+  const data = notification.data as AnnouncementData
+  const announcement = sourceText
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💬'} />
+      }
+      subtitle={
+        announcement ? (
+          <div className="line-clamp-2">{announcement}</div>
+        ) : (
+          <></>
+        )
+      }
+      link={data.url}
+    >
+      <div className="line-clamp-3">
+        {data.url ? (
+          <UserLink
+            name={sourceUserName || ''}
+            username={sourceUserUsername || ''}
+            className={'hover:text-primary-500 relative flex-shrink-0'}
+          />
+        ) : (
+          <span className="relative flex-shrink-0">
+            {sourceUserName || ''}
+            {sourceUserUsername ? ` (@${sourceUserUsername})` : ''}
+          </span>
+        )}{' '}
+        {!isChildOfGroup && <span>announced</span>}
+      </div>
     </NotificationFrame>
   )
 }

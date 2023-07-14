@@ -18,7 +18,7 @@ import {
   PARENT_NOTIFICATION_STYLE,
   QuestionOrGroupLink,
 } from 'web/components/notifications/notification-helpers'
-import { markAllNotifications } from 'web/lib/firebase/api'
+import { createAnnouncement, markAllNotifications } from 'web/lib/firebase/api'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'
@@ -38,6 +38,13 @@ import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useTextEditor } from 'web/components/widgets/editor'
+import { User } from 'common/user'
+import { savePost } from 'web/components/groups/group-about-section'
+import { Input } from 'web/components/widgets/input'
+import WaitingForSupabaseButton from 'web/components/contract/waiting-for-supabase-button'
+import { Button } from 'web/components/buttons/button'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -103,6 +110,75 @@ function NotificationsAppBanner(props: { userId: string }) {
   )
 }
 
+function SendCustomNotification() {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorText, setErrorText] = useState('')
+  const [url, setUrl] = useState('')
+  const [title, setTitle] = useState('')
+
+  // const editor = useTextEditor({
+  //   placeholder: 'Write your announcement here...',
+  //   size: 'md',
+  // })
+
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    setIsSubmitting(true)
+
+    const result = await createAnnouncement({ url, title }).catch((e) => {
+      const errorDetails = e.details[0]
+      if (errorDetails)
+        setErrorText(
+          `Error with ${errorDetails.field} field - ${errorDetails.error} `
+        )
+      else setErrorText(e.message)
+      setIsSubmitting(false)
+      console.error(e)
+      return e
+    })
+
+    if (!result.notification) {
+      setIsSubmitting(false)
+      return false
+    }
+    //   if (editor && !editor.isEmpty) {
+    //     savePost(editor, result.notification)
+    //   }
+    //   editor?.commands.clearContent(true)
+    //   setIsSubmitting(false)
+    //   setTitle('')
+    //   setUrl('')
+  }
+
+  return (
+    <form onSubmit={onSubmit}>
+      <Input
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Enter announcement"
+        required
+      />
+      <Input
+        type="text"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        placeholder="Enter URL if applicable"
+      />
+      <Button
+        className="w-full"
+        type="submit"
+        color="indigo"
+        size="xl"
+        loading={isSubmitting}
+      >
+        {isSubmitting ? 'Creating...' : 'Send announcement'}
+      </Button>
+    </form>
+  )
+}
+
 function NotificationsContent(props: {
   privateUser: PrivateUser
   section?: string
@@ -112,6 +188,44 @@ function NotificationsContent(props: {
     useGroupedNonBalanceChangeNotifications(privateUser.id)
   const balanceChangeGroupedNotifications =
     useGroupedBalanceChangeNotifications(privateUser.id)
+  const isAdmin = useAdmin()
+
+  const tabs = [
+    {
+      title: 'Notifications',
+      content: (
+        <NotificationsList
+          privateUser={privateUser}
+          groupedNotifications={groupedNotifications}
+          mostRecentNotification={mostRecentNotification}
+        />
+      ),
+    },
+    {
+      title: 'Balance Changes',
+      content: (
+        <NotificationsList
+          groupedNotifications={balanceChangeGroupedNotifications}
+        />
+      ),
+    },
+    {
+      title: 'Settings',
+      content: (
+        <NotificationSettings
+          navigateToSection={section}
+          privateUser={privateUser}
+        />
+      ),
+    },
+  ]
+
+  if (isAdmin) {
+    tabs.push({
+      title: 'Send Notif',
+      content: <SendCustomNotification />,
+    })
+  }
 
   return (
     <div className="relative h-full w-full">
@@ -121,35 +235,7 @@ function NotificationsContent(props: {
             currentPageForAnalytics={'notifications'}
             labelClassName={'pb-2 pt-1 '}
             className={'mb-0 sm:mb-2'}
-            tabs={[
-              {
-                title: 'Notifications',
-                content: (
-                  <NotificationsList
-                    privateUser={privateUser}
-                    groupedNotifications={groupedNotifications}
-                    mostRecentNotification={mostRecentNotification}
-                  />
-                ),
-              },
-              {
-                title: 'Balance Changes',
-                content: (
-                  <NotificationsList
-                    groupedNotifications={balanceChangeGroupedNotifications}
-                  />
-                ),
-              },
-              {
-                title: 'Settings',
-                content: (
-                  <NotificationSettings
-                    navigateToSection={section}
-                    privateUser={privateUser}
-                  />
-                ),
-              },
-            ]}
+            tabs={tabs}
           />
         )}
       </div>

@@ -417,3 +417,7 @@ export function sendMana(params: {
 export function leaveReview(params: any) {
   return call(getApiUrl('leave-review'), 'POST', params)
 }
+
+export function createAnnouncement(params: { url: string; title: string }) {
+  return call(getApiUrl('create-announcement'), 'POST', params)
+}
