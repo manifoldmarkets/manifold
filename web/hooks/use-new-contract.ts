@@ -69,7 +69,6 @@ export const useNewContract = (
     paramAnswers.length ? paramAnswers : ['', ''],
     'new-answers' + paramsKey
   )
-  console.log('paramAnswers', paramAnswers, 'answers', answers)
 
   const [question, setQuestion] = usePersistentLocalState(
     '',

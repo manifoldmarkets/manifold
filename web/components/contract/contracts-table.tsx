@@ -307,7 +307,6 @@ export function VisibilityIcon(props: {
 export function BountiedContractComments(props: { contractId: string }) {
   const { contractId } = props
   const numComments = useNumContractComments(contractId)
-  console.log('numComments', numComments)
   return (
     <Row className="align-center shrink-0 items-center gap-0.5">
       <ChatIcon className="h-4 w-4" />
