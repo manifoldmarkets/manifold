@@ -4,6 +4,7 @@ import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import {
   COHORT_SIZE,
+  CURRENT_SEASON,
   getDivisionChange,
   getSeasonDates,
   league_user_info,
@@ -229,7 +230,7 @@ const generateNewCohortName = async (
   return genNewAdjectiveAnimal(cohortSet)
 }
 
-export const addUserToLeague = async (
+const addUserToLeague = async (
   pg: SupabaseDirectClient,
   userId: string,
   season: number,
@@ -259,7 +260,7 @@ export const addUserToLeague = async (
       values ($1, $2, $3, $4)`,
     [userId, season, division, cohort]
   )
-  return cohort
+  return { season, division, cohort, userId }
 }
 
 export const getUsersNotInLeague = async (
@@ -311,7 +312,7 @@ export const addToLeagueIfNotInOne = async (
 
   const portfolio = await getCurrentPortfolio(pg, userId)
   const division = portfolio ? portfolioToDivision(portfolio) : 1
-  const cohort = await addUserToLeague(pg, userId, season, division)
+  const { cohort } = await addUserToLeague(pg, userId, season, division)
   await createLeagueChangedNotification(
     userId,
     undefined,
@@ -320,4 +321,23 @@ export const addToLeagueIfNotInOne = async (
     pg
   )
   return { season, division, cohort }
+}
+
+export const addNewUserToLeague = async (
+  pg: SupabaseDirectClient,
+  userId: string
+) => {
+  const { season, division, cohort } = await addUserToLeague(
+    pg,
+    userId,
+    CURRENT_SEASON,
+    1
+  )
+  await createLeagueChangedNotification(
+    userId,
+    undefined,
+    { season, division, cohort },
+    0,
+    pg
+  )
 }
