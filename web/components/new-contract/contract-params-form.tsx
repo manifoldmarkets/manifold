@@ -39,7 +39,7 @@ import {
   ALL_CONTRACT_TYPES,
   NON_PREDICTIVE_CONTRACT_TYPES,
   PREDICTIVE_CONTRACT_TYPES,
-  getExampleFromValue,
+  getContractTypeThingFromValue,
 } from './create-contract-types'
 
 export function ContractParamsForm(props: {
@@ -121,7 +121,7 @@ export function ContractParamsForm(props: {
           </label>
 
           <ExpandingInput
-            placeholder={getExampleFromValue(outcomeType)}
+            placeholder={getContractTypeThingFromValue('example', outcomeType)}
             autoFocus
             maxLength={MAX_QUESTION_LENGTH}
             value={question}

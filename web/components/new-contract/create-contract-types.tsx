@@ -85,32 +85,15 @@ export const ALL_CONTRACT_TYPES = {
   ...NON_PREDICTIVE_CONTRACT_TYPES,
 }
 
-export function getNameFromValue(value: string) {
-  const types = Object.keys(ALL_CONTRACT_TYPES)
+type ContractTypeParams =
+  typeof ALL_CONTRACT_TYPES[keyof typeof ALL_CONTRACT_TYPES]
 
-  for (let i = 0; i < types.length; i++) {
-    const contractType = (ALL_CONTRACT_TYPES as { [index: string]: any })[
-      types[i]
-    ]
-    if (contractType.value === value) {
-      return contractType.name
-    }
-  }
-
-  return null // Return null or any default value when no match is found
-}
-
-export function getExampleFromValue(value: string) {
-  const types = Object.keys(ALL_CONTRACT_TYPES)
-
-  for (let i = 0; i < types.length; i++) {
-    const contractType = (ALL_CONTRACT_TYPES as { [index: string]: any })[
-      types[i]
-    ]
-    if (contractType.value === value) {
-      return contractType.example
-    }
-  }
-
-  return null // Return null or any default value when no match is found
+export function getContractTypeThingFromValue(
+  thing: keyof ContractTypeParams,
+  value: string
+): string | undefined {
+  const contractType = Object.values(ALL_CONTRACT_TYPES).find(
+    (contract) => contract.value === value
+  )
+  return contractType ? (contractType as any)[thing] : undefined
 }

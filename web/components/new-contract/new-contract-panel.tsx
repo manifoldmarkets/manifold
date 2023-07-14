@@ -10,7 +10,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ChoosingContractForm } from './choosing-contract-form'
 import { ContractParamsForm } from './contract-params-form'
-import { getNameFromValue } from './create-contract-types'
+import { getContractTypeThingFromValue } from './create-contract-types'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -123,9 +123,9 @@ function CreateStepTracker(props: {
       >
         Create
         {outcomeType
-          ? ` a ${theme == 'private' ? 'private' : ''} ${getNameFromValue(
-              outcomeType
-            )}`
+          ? ` a ${
+              theme == 'private' ? 'private' : ''
+            } ${getContractTypeThingFromValue('name', outcomeType)}`
           : ''}
       </CreateStepButton>
     </Row>

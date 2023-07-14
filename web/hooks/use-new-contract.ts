@@ -22,8 +22,7 @@ import { createMarket } from 'web/lib/firebase/api'
 import { removeUndefinedProps } from 'common/util/object'
 import { track } from 'web/lib/service/analytics'
 
-const descriptionPlaceholder =
-  'Optional. Provide background info and question resolution criteria here.'
+const descriptionPlaceholder = 'Optional. Provide background info and details.'
 
 export const useNewContract = (
   creator: User,
