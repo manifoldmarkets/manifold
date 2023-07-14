@@ -30,8 +30,7 @@ export function UserContractsList(props: { creator: User }) {
     )
   }, [creator.id, allTime])
 
-
-  const user= useUser()
+  const user = useUser()
 
   return (
     <Col className={'w-full'}>
