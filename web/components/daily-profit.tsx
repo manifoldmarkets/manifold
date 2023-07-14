@@ -34,7 +34,9 @@ export const DailyProfit = memo(function DailyProfit(props: {
   const { user } = props
 
   const portfolio = useCurrentPortfolio(user?.id)
-  const investmentValue = portfolio ? portfolio.investmentValue : 0
+  const investment = portfolio
+    ? portfolio.investmentValue + (portfolio.loanTotal ?? 0)
+    : 0
 
   const [open, setOpen] = useState(false)
 
@@ -79,7 +81,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
       >
         <Row>
           <Col className="items-start">
-            <div>{formatMoney(investmentValue)}</div>
+            <div>{formatMoney(investment)}</div>
             <div className="text-ink-600 text-xs ">Invested</div>
           </Col>
 
@@ -103,7 +105,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
           metrics={data?.metrics}
           contracts={data?.contracts}
           dailyProfit={dailyProfit}
-          portfolio={investmentValue}
+          investment={investment}
         />
       )}
     </>
@@ -116,9 +118,9 @@ function DailyProfitModal(props: {
   metrics?: ContractMetric[]
   contracts?: CPMMContract[]
   dailyProfit: number
-  portfolio: number
+  investment: number
 }) {
-  const { open, setOpen, metrics, contracts, dailyProfit, portfolio } = props
+  const { open, setOpen, metrics, contracts, dailyProfit, investment } = props
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
@@ -130,7 +132,7 @@ function DailyProfitModal(props: {
               <div>Daily profit</div>
             </Col>
             <Col className="text-ink-600 items-end gap-2">
-              <div>{formatMoney(portfolio)}</div>
+              <div>{formatMoney(investment)}</div>
               <div
                 className={clsx(
                   dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
