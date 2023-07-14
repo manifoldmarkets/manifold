@@ -4,7 +4,7 @@ import { XIcon } from '@heroicons/react/solid'
 import { getProbability } from 'common/calculate'
 import { Contract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -40,6 +40,8 @@ function CreatePortfolio() {
     [contractId: string]: 'YES' | 'NO'
   }>({}, 'create-portfolio-positions')
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const addContract = useEvent(async (contract: Contract) => {
     if (contracts.find((c) => c.id === contract.id) !== undefined) {
       setContracts(contracts.filter((c) => c.id !== contract.id))
@@ -54,9 +56,12 @@ function CreatePortfolio() {
         position: positions[c.id] ?? 'YES',
       })),
     }
+    setIsSubmitting(true)
     const result = await createPortfolio(portfolio)
     console.log('result', result)
-    window.location.href = `/portfolio/${result.portfolio.slug}`
+    if (result.status === 'success')
+      window.location.href = `/portfolio/${result.portfolio.slug}`
+    else setIsSubmitting(false)
   }
 
   return (
@@ -86,7 +91,12 @@ function CreatePortfolio() {
         setPositions={setPositions}
       />
 
-      <Button className="ml-auto" onClick={onSubmit}>
+      <Button
+        className="ml-auto"
+        onClick={onSubmit}
+        disabled={isSubmitting}
+        loading={isSubmitting}
+      >
         Create portfolio
       </Button>
 

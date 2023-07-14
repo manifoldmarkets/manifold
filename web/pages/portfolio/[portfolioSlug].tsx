@@ -23,6 +23,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
+import toast from 'react-hot-toast'
 
 export async function getStaticProps(props: {
   params: { portfolioSlug: string }
@@ -76,7 +77,7 @@ export default function PortfolioPage(props: {
         description={'A portfolio of markets related to ' + portfolio.name}
         url={path}
       />
-      <Col className="mx-auto w-full gap-2">
+      <Col className="w-full gap-2 px-4 pt-4 sm:mx-auto lg:pt-0">
         <EditInPlaceInput
           className="px-2 !text-3xl sm:px-0"
           initialValue={portfolio.name}
@@ -121,19 +122,24 @@ export default function PortfolioPage(props: {
 const PurchaseWidget = (props: { portfolio: Portfolio }) => {
   const { portfolio } = props
   const [amount, setAmount] = useState<number>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const onBuy = () => {
+  const onBuy = async () => {
     if (amount) {
-      buyPortfolio({
+      setIsSubmitting(true)
+      const result = await buyPortfolio({
         portfolioId: portfolio.id,
         amount,
-      })
+      }).finally(() => setIsSubmitting(false))
+      if (result.status === 'success') {
+        toast.success('Portfolio purchased!')
+      }
     }
   }
 
   return (
     <Col className="gap-4 border p-4">
-      <div>Purchase portfolio of markets</div>
+      <div>Purchase portfolio of markets, evenly</div>
       <Row>
         <AmountInput
           amount={amount}
@@ -141,7 +147,9 @@ const PurchaseWidget = (props: { portfolio: Portfolio }) => {
           label={ENV_CONFIG.moneyMoniker}
           inputClassName="mr-2 w-36"
         />
-        <Button onClick={onBuy}>Buy portfolio</Button>
+        <Button onClick={onBuy} disabled={isSubmitting} loading={isSubmitting}>
+          Buy portfolio
+        </Button>
       </Row>
     </Col>
   )
@@ -180,9 +188,9 @@ const PortfolioView = (props: {
       )}
       {noContracts.length > 0 && (
         <Col className="gap-4">
-          <Title className="text-ink-800">
+          <div className="text-ink-800 text-2xl">
             Buy <BinaryOutcomeLabel outcome={'NO'} /> in
-          </Title>
+          </div>
           <Row className="flex-wrap gap-2">
             {noContracts.map((contract) => (
               <Col>
