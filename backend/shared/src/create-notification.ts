@@ -1576,7 +1576,7 @@ export const createCustomNotification = async (
     createdTime: Date.now(),
     isSeen: false,
     sourceId: '',
-    sourceType: 'user',
+    sourceType: 'announcement',
     sourceUserName: sender.name,
     sourceUserUsername: sender.username,
     sourceUserAvatarUrl: sender.avatarUrl,

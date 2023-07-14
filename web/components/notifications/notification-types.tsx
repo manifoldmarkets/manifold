@@ -105,6 +105,14 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (sourceType === 'announcement') {
+    return (
+      <AnnouncementNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (sourceType === 'user') {
     if (reason === 'bounty_added') {
       return (
@@ -302,14 +310,6 @@ export function NotificationItem(props: {
   } else if (reason === 'profit_loss_updates') {
     return (
       <WeeklyUpdateNotification
-        notification={notification}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (reason === 'announcement_created') {
-    return (
-      <AnnouncementNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}

@@ -72,7 +72,7 @@ import { createanswercpmm } from './create-answer-cpmm'
 import { manachantweet } from './manachan-tweet'
 import { sendmana } from './send-mana'
 import { leavereview } from './leave-review'
-// import { createannouncement } from './create-announcement'
+import { createannouncement } from './create-announcement'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -181,7 +181,7 @@ app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/send-mana', ...apiRoute(sendmana))
 app.post('/leave-review', ...apiRoute(leavereview))
-// app.post('/create-announcement', ...apiRoute(createannouncement))
+app.post('/create-announcement', ...apiRoute(createannouncement))
 
 // Catch 404 errors - this should be the last route
 app.use((req, res, next) => {

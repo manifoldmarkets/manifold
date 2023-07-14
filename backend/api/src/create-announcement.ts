@@ -11,7 +11,12 @@ import {
 import { isAdminId } from 'common/envs/constants'
 
 async function getAllUsersPaginated(pg: SupabaseDirectClient) {
-  return await pg.map(`select data from users`, [], (r: any) => r.data as User)
+  return await pg.map(
+    // TODO: change limit when ready, should chunk users as well
+    `select data from users limit 100`,
+    [],
+    (r: any) => r.data as User
+  )
 }
 
 const bodySchema = z.object({
@@ -31,11 +36,8 @@ export const createannouncement = authEndpoint(async (req, auth) => {
     throw new APIError(400, 'No user exists with the authenticated user ID.')
 
   const users = await getAllUsersPaginated(pg)
-
-  if (users !== null) {
-    for (const user of users) {
-      await createCustomNotification(user.id, title, sender, url)
-    }
+  for (const user of users) {
+    await createCustomNotification(user.id, title, sender, url)
   }
   return { status: 'success', message: 'Notifications sent successfully.' }
 })
