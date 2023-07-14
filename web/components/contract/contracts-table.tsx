@@ -195,9 +195,7 @@ export function ContractsTable(props: {
         props.contract.visibility,
         props.contract.id
       ) ?? props.contract
-    const contractListEntryHighlightClass =
-      // 'bg-gradient-to-b from-primary-100 via-ink-0 to-ink-0 outline outline-2 outline-primary-400'
-      'bg-primary-100'
+    const contractListEntryHighlightClass = 'bg-primary-100'
 
     const dataCellClassName = 'py-2 align-top'
     return (
