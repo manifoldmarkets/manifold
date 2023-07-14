@@ -160,7 +160,7 @@ const getDesktopNav = (
 // No sidebar when signed out
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
-    { name: 'Search', href: '/search', icon: SearchIcon },
+    { name: 'Search', href: '/find', icon: SearchIcon },
     getIsNative() && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
