@@ -35,6 +35,11 @@ import {
 } from './new-contract-panel'
 import { User } from 'common/user'
 import { VisibilityTheme } from 'web/pages/create'
+import {
+  ALL_CONTRACT_TYPES,
+  NON_PREDICTIVE_CONTRACT_TYPES,
+  PREDICTIVE_CONTRACT_TYPES,
+} from './choosing-contract-form'
 
 export function ContractParamsForm(props: {
   outcomeType: OutcomeType
@@ -108,8 +113,6 @@ export function ContractParamsForm(props: {
 
   return (
     <>
-      <label className="flex px-1 pt-2 pb-3">Answer type</label>
-      <Spacer h={6} />
       <Col>
         {outcomeType === 'STONK' ? (
           <div className="flex w-full flex-col">
@@ -148,7 +151,6 @@ export function ContractParamsForm(props: {
           <TextEditor editor={editor} />
         </div>
       </Col>
-
       {outcomeType === 'STONK' && (
         <div className="text-primary-700 mt-3 ml-1 text-sm">
           Tradeable shares of a stock based on sentiment. Never resolves.
@@ -166,7 +168,6 @@ export function ContractParamsForm(props: {
       )}
       <Spacer h={2} />
       {outcomeType === 'QUADRATIC_FUNDING' && <QfExplainer />}
-
       <Spacer h={4} />
       {outcomeType === 'MULTIPLE_CHOICE' && (
         <MultipleChoiceAnswers answers={answers} setAnswers={setAnswers} />
@@ -248,7 +249,6 @@ export function ContractParamsForm(props: {
           </div>
         </>
       )}
-
       {outcomeType == 'BOUNTIED_QUESTION' && (
         <>
           <label className="gap-2 px-1 py-2">
@@ -287,7 +287,6 @@ export function ContractParamsForm(props: {
           <Spacer h={6} />
         </>
       )}
-
       {outcomeType !== 'STONK' && outcomeType !== 'BOUNTIED_QUESTION' && (
         <div className="mb-1 flex flex-col items-start">
           <label className="mb-1 gap-2 px-1 py-2">
@@ -363,7 +362,6 @@ export function ContractParamsForm(props: {
         </>
       )}
       <Spacer h={6} />
-
       <span className={'text-error'}>{errorText}</span>
       <Row className="items-end justify-between">
         <div className="mb-1 flex flex-col items-start">
@@ -422,7 +420,6 @@ export function ContractParamsForm(props: {
           )}
         </div>
       </Row>
-
       <Spacer h={6} />
       <Row className="w-full justify-center">
         {newContract && (
@@ -452,7 +449,6 @@ export function ContractParamsForm(props: {
           </Button>
         )}
       </Row>
-
       <Spacer h={6} />
     </>
   )
@@ -460,3 +456,35 @@ export function ContractParamsForm(props: {
 
 // get days from today until the end of this year:
 const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
+
+export function getNameFromValue(value: string) {
+  const types = Object.keys(ALL_CONTRACT_TYPES)
+
+  for (let i = 0; i < types.length; i++) {
+    const contractType = (ALL_CONTRACT_TYPES as { [index: string]: any })[
+      types[i]
+    ]
+    if (contractType.value === value) {
+      console.log('found value')
+      return contractType.name
+    }
+  }
+
+  return null // Return null or any default value when no match is found
+}
+
+export function getFromValue(value: string) {
+  const predictiveTypes = Object.keys(PREDICTIVE_CONTRACT_TYPES)
+  const nonPredictiveTypes = Object.keys(NON_PREDICTIVE_CONTRACT_TYPES)
+
+  for (let i = 0; i < nonPredictiveTypes.length; i++) {
+    const contractType = (ALL_CONTRACT_TYPES as { [index: string]: any })[
+      nonPredictiveTypes[i]
+    ]
+    if (contractType.value === value) {
+      return contractType.name
+    }
+  }
+
+  return null // Return null or any default value when no match is found
+}

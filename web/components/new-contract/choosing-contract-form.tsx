@@ -2,7 +2,7 @@ import { useNewContract } from 'web/hooks/use-new-contract'
 import { Col } from '../layout/col'
 import { formatMoney } from 'common/util/format'
 import { OutcomeType } from 'common/contract'
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { Spacer } from '../layout/spacer'
 import {
   BsFillCheckCircleFill,
@@ -20,6 +20,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   binary: {
     label: 'Yes/No',
     value: 'BINARY',
+    name: 'yes/no question',
     descriptor: 'A yes/no question.',
     example: 'Will my dog throw up today?',
     visual: (
@@ -32,6 +33,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   multiple_choice: {
     label: 'Multiple choice',
     value: 'MULTIPLE_CHOICE',
+    name: 'multiple choice question',
     descriptor: 'A question with multiple answers that you define.',
     example: 'Which candidate will be elected in 2024?',
     visual: (
@@ -43,6 +45,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   free_response: {
     label: 'Free response',
     value: 'FREE_RESPONSE',
+    name: 'free response question',
     descriptor: 'A question that anyone can write an answer to.',
     example: 'What will happen to Trump?',
     visual: (
@@ -54,6 +57,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   numeric: {
     label: 'Numeric',
     value: 'PSEUDO_NUMERIC',
+    name: 'numeric question',
     descriptor: 'A question with a numerical answer.',
     example: 'How much will my coin collection sell for?',
     visual: (
@@ -68,6 +72,7 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
   bountied_question: {
     label: 'Bountied Question',
     value: 'BOUNTIED_QUESTION',
+    name: 'bountied question',
     descriptor: `A question that anyone can answer for a bounty. The bounty you put up can be distributed however you'd like.`,
     example: `I'll give ${formatMoney(
       1000
@@ -82,13 +87,17 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
   },
 }
 
+export const ALL_CONTRACT_TYPES = {
+  ...PREDICTIVE_CONTRACT_TYPES,
+  ...NON_PREDICTIVE_CONTRACT_TYPES,
+}
+
 export function ChoosingContractForm(props: {
   outcomeType: OutcomeType | undefined
   setOutcomeType: (outcomeType: OutcomeType) => void
   setState: (state: CreateContractStateType) => void
 }) {
   const { outcomeType, setOutcomeType, setState } = props
-
   return (
     <Col>
       <div className="text-lg">What would you like to create?</div>
@@ -163,11 +172,12 @@ function OutcomeButton(props: {
     setOutcomeType,
     setState,
   } = props
+  const [touch, setTouch] = useState(false)
   return (
     <button
       className={clsx(
-        'cursor-pointer rounded-lg py-2 px-4 text-left',
-        outcomeType == value
+        'hover:ring-primary-200 cursor-pointer rounded-lg py-2 px-4 text-left transition-all hover:ring-2',
+        outcomeType == value || touch
           ? selectClass
             ? selectClass
             : 'from-primary-100 ring-primary-500 bg-gradient-to-br to-transparent ring-2'
@@ -177,6 +187,8 @@ function OutcomeButton(props: {
         setOutcomeType(value as OutcomeType)
         setState('filling contract params')
       }}
+      onTouchStart={() => setTouch(true)}
+      onTouchEnd={() => setTouch(false)}
     >
       <Row className="gap-4">
         {visual}

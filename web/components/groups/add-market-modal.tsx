@@ -41,20 +41,12 @@ export function AddMarketToGroupModal(props: {
         </div>
         {addPermission == 'private' && (
           <Col className="w-full pt-4">
-            <NewContractFromGroup
-              group={group}
-              user={user}
-              setTheme={setTheme}
-            />
+            <NewContractFromGroup group={group} user={user} />
           </Col>
         )}
         {addPermission == 'new' && (
           <Col className="w-full pt-4">
-            <NewContractFromGroup
-              group={group}
-              user={user}
-              setTheme={setTheme}
-            />
+            <NewContractFromGroup group={group} user={user} />
           </Col>
         )}
         {addPermission == 'any' && (
@@ -63,13 +55,7 @@ export function AddMarketToGroupModal(props: {
               tabs={[
                 {
                   title: 'New question',
-                  content: (
-                    <NewContractFromGroup
-                      group={group}
-                      user={user}
-                      setTheme={setTheme}
-                    />
-                  ),
+                  content: <NewContractFromGroup group={group} user={user} />,
                 },
                 {
                   title: 'Existing question',
@@ -97,12 +83,8 @@ export function AddMarketToGroupModal(props: {
   )
 }
 
-export function NewContractFromGroup(props: {
-  group: Group
-  user: User
-  setTheme: (theme: 'private' | 'non-private') => void
-}) {
-  const { group, user, setTheme } = props
+export function NewContractFromGroup(props: { group: Group; user: User }) {
+  const { group, user } = props
   return (
     <NewContractPanel
       params={{
@@ -116,7 +98,6 @@ export function NewContractFromGroup(props: {
       }}
       creator={user}
       fromGroup={true}
-      setTheme={setTheme}
     />
   )
 }

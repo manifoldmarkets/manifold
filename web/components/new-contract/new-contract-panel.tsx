@@ -1,16 +1,18 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import { useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 
 import { User } from 'common/user'
 
 import { useNewContract } from 'web/hooks/use-new-contract'
 import { VisibilityTheme } from 'web/pages/create'
 import { Col } from '../layout/col'
-import { ContractParamsForm } from './contract-params-form'
+import { ContractParamsForm, getNameFromValue } from './contract-params-form'
 import { ChoosingContractForm } from './choosing-contract-form'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { OutcomeType } from 'common/contract'
+import { Row } from '../layout/row'
+import { ChevronRightIcon } from '@heroicons/react/solid'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -43,9 +45,8 @@ export function NewContractPanel(props: {
   params?: NewQuestionParams
   fromGroup?: boolean
   className?: string
-  setTheme: (theme: VisibilityTheme) => void
 }) {
-  const { creator, params, fromGroup, className, setTheme } = props
+  const { creator, params, fromGroup, className } = props
   const [outcomeType, setOutcomeType] = useState<OutcomeType | undefined>(
     (params?.outcomeType as OutcomeType) ?? undefined
   )
@@ -54,26 +55,99 @@ export function NewContractPanel(props: {
     params?.outcomeType ? 'filling contract params' : 'choosing contract'
   )
 
+  const [theme, setTheme] = useState<VisibilityTheme>('non-private')
+
   return (
-    <Col className={clsx(className, 'text-ink-1000')}>
-      {state == 'choosing contract' && (
-        <ChoosingContractForm
-          outcomeType={outcomeType}
-          setOutcomeType={setOutcomeType}
-          setState={setState}
-        />
+    <Col
+      className={clsx(
+        className,
+        'text-ink-1000 mx-auto w-full max-w-2xl transition-colors ',
+        theme == 'private' ? ' bg-primary-100' : 'bg-canvas-0'
       )}
-      {state == 'filling contract params' && outcomeType && (
-        <ContractParamsForm
-          outcomeType={outcomeType}
-          setOutcomeType={setOutcomeType}
-          setState={setState}
-          creator={creator}
-          setTheme={setTheme}
-          fromGroup={fromGroup}
-          params={params}
-        />
-      )}
+    >
+      <CreateStepTracker
+        outcomeType={outcomeType}
+        theme={theme}
+        setState={setState}
+        state={state}
+      />
+      <Col className="py-2 px-6">
+        {state == 'choosing contract' && (
+          <ChoosingContractForm
+            outcomeType={outcomeType}
+            setOutcomeType={setOutcomeType}
+            setState={setState}
+          />
+        )}
+        {state == 'filling contract params' && outcomeType && (
+          <ContractParamsForm
+            outcomeType={outcomeType}
+            setOutcomeType={setOutcomeType}
+            setState={setState}
+            creator={creator}
+            setTheme={setTheme}
+            fromGroup={fromGroup}
+            params={params}
+          />
+        )}
+      </Col>
     </Col>
+  )
+}
+
+function CreateStepTracker(props: {
+  outcomeType: OutcomeType | undefined
+  theme: VisibilityTheme
+  setState: (state: CreateContractStateType) => void
+  state: CreateContractStateType
+}) {
+  const { outcomeType, theme, setState, state } = props
+  return (
+    <Row className="text-ink-400 bg-canvas-0 sticky top-0 z-10 w-full items-center gap-1 px-6 py-2">
+      <CreateStepButton
+        className={'text-primary-500'}
+        onClick={() => setState('choosing contract')}
+      >
+        Choose
+      </CreateStepButton>
+      <ChevronRightIcon className={clsx('h-5 w-5')} />
+      <CreateStepButton
+        className={
+          state == 'filling contract params'
+            ? 'text-primary-500'
+            : 'text-ink-400'
+        }
+        onClick={() => {
+          if (outcomeType) {
+            setState('filling contract params')
+          }
+        }}
+      >
+        Create
+        {outcomeType
+          ? ` a ${theme == 'private' ? 'private' : ''} ${getNameFromValue(
+              outcomeType
+            )}`
+          : ''}
+      </CreateStepButton>
+    </Row>
+  )
+}
+
+function CreateStepButton(props: {
+  onClick: () => void
+  className: string
+  children: ReactNode
+  disabled?: boolean
+}) {
+  const { onClick, children, className, disabled } = props
+  return (
+    <button
+      className={clsx(className, 'transition-all disabled:cursor-not-allowed')}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {children}
+    </button>
   )
 }

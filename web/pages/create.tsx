@@ -24,7 +24,6 @@ export default function Create() {
   const user = useUser()
   const router = useRouter()
   const params = router.query as NewQuestionParams
-  const [theme, setTheme] = useState<VisibilityTheme>('non-private')
 
   if (!user || !router.isReady) return <div />
 
@@ -47,27 +46,8 @@ export default function Create() {
         description="Create a play-money prediction market on any question."
         url="/create"
       />
-      <div
-        className={clsx(
-          'mx-auto w-full max-w-2xl px-6 py-4 transition-colors ',
-          theme == 'private' ? ' bg-primary-100' : 'bg-canvas-0'
-        )}
-      >
-        {/* <Row className="w-full justify-between">
-          <Title className={clsx('transition-colors')}>
-            {`Create a ${theme == 'private' ? 'private' : ''} question`}
-          </Title>
-          {theme == 'private' && (
-            <LockClosedIcon className="text-primary-700 h-6 w-6 sm:h-8 sm:w-8" />
-          )}
-        </Row>
 
-        <div className="text-ink-700 mb-4">
-          Set up your own play-money prediction market on any question.
-        </div> */}
-
-        <NewContractPanel params={params} creator={user} setTheme={setTheme} />
-      </div>
+      <NewContractPanel params={params} creator={user} />
     </Page>
   )
 }
