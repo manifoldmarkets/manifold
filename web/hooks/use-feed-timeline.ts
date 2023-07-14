@@ -127,8 +127,12 @@ export const useFeedTimeline = (
         (id) => !alreadySavedContractIds.includes(id)
       )
     )
-    const newCommentsOnContractIds = uniq(
-      filterDefined(data.map((item) => item.comment_id))
+    const commentsByUserIds = groupBy(
+      data.filter((d) => d.comment_id),
+      (item) => item.creator_id
+    )
+    const newCommentsOnContractIds = filterDefined(
+      Object.values(commentsByUserIds).map((items) => first(items))
     )
 
     const potentiallySeenCommentIds = uniq(
@@ -162,7 +166,7 @@ export const useFeedTimeline = (
         .then((res) => res.data?.map((c) => c.data as ContractComment)),
       db
         .from('contracts')
-        .select('*')
+        .select('data')
         .in('id', newContractIds)
         .then((res) => res.data?.map((c) => c.data as Contract)),
       db
