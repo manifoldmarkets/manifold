@@ -143,7 +143,7 @@ const PurchaseWidget = (props: { portfolio: Portfolio }) => {
       <Row className="gap-2">
         <AmountInput
           amount={amount}
-          onChange={setAmount}
+          onChangeAmount={setAmount}
           label={ENV_CONFIG.moneyMoniker}
           inputClassName="w-36"
         />
