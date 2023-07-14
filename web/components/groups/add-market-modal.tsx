@@ -24,18 +24,9 @@ export function AddMarketToGroupModal(props: {
   useEffect(() => {
     getGroupContractIds(group.id).then((ids) => setGroupContractIds(ids))
   }, [group.id])
-  const [theme, setTheme] = useState<'private' | 'non-private'>(
-    group.privacyStatus == 'private' ? 'private' : 'non-private'
-  )
   return (
     <Modal open={open} setOpen={setOpen} size="lg">
-      <Col
-        className={clsx(
-          MODAL_CLASS,
-          SCROLLABLE_MODAL_CLASS,
-          theme == 'private' ? 'bg-primary-100' : 'bg-canvas-0'
-        )}
-      >
+      <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
         <div className="bg-primary-100 text-primary-800 fixed inset-x-0 top-0 z-40 w-full rounded-t-md py-2 px-8">
           {group.name}
         </div>
@@ -89,10 +80,8 @@ export function NewContractFromGroup(props: { group: Group; user: User }) {
     <NewContractPanel
       params={{
         q: '',
-        type: 'BINARY',
         description: '',
         closeTime: '',
-        outcomeType: 'BINARY',
         visibility: group.privacyStatus === 'private' ? 'private' : 'public',
         groupId: group.id,
       }}

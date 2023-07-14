@@ -75,7 +75,8 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
         <GiReceiveMoney className="h-12 w-12" />
       </Col>
     ),
-    selectClass:
+    className: 'hover:ring-teal-200/50',
+    selectClassName:
       'dark:from-teal-500/20 from-teal-500/30 ring-teal-500 bg-gradient-to-br to-transparent ring-2',
   },
 }

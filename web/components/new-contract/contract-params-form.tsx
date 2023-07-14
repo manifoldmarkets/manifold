@@ -24,42 +24,23 @@ import { Input } from 'web/components/widgets/input'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { QfExplainer } from '../contract/qf-overview'
 
+import { User } from 'common/user'
 import { useNewContract } from 'web/hooks/use-new-contract'
+import { VisibilityTheme } from 'web/pages/create'
 import WaitingForSupabaseButton from '../contract/waiting-for-supabase-button'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
-import {
-  ContractVisibilityType,
-  CreateContractStateType,
-  NewQuestionParams,
-} from './new-contract-panel'
-import { User } from 'common/user'
-import { VisibilityTheme } from 'web/pages/create'
-import {
-  ALL_CONTRACT_TYPES,
-  NON_PREDICTIVE_CONTRACT_TYPES,
-  PREDICTIVE_CONTRACT_TYPES,
-  getContractTypeThingFromValue,
-} from './create-contract-types'
+import { getContractTypeThingFromValue } from './create-contract-types'
+import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
 
 export function ContractParamsForm(props: {
   outcomeType: OutcomeType
-  setOutcomeType: (outcomeType: OutcomeType) => void
-  setState: (state: CreateContractStateType) => void
   creator: User
-  setTheme: (theme: VisibilityTheme) => void
+  setPrivacy: (theme: VisibilityTheme) => void
   fromGroup?: boolean
   params?: NewQuestionParams
 }) {
-  const {
-    outcomeType,
-    setOutcomeType,
-    setState,
-    creator,
-    setTheme,
-    fromGroup,
-    params,
-  } = props
+  const { outcomeType, creator, setPrivacy, fromGroup, params } = props
   const {
     question,
     setQuestion,
@@ -103,10 +84,10 @@ export function ContractParamsForm(props: {
   useEffect(() => {
     if (selectedGroup?.privacyStatus == 'private') {
       setVisibility('private')
-      setTheme('private')
+      setPrivacy('private')
     } else {
       setVisibility(toggleVisibility)
-      setTheme('non-private')
+      setPrivacy('non-private')
     }
   }, [selectedGroup?.privacyStatus, toggleVisibility])
 

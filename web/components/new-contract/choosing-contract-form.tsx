@@ -43,19 +43,28 @@ export function ChoosingContractForm(props: {
           )
         )}
       </Col>
-      <hr className="border-ink-300 my-2" />
+      <hr className="border-ink-200 my-2" />
       <Col className="mb-1 gap-2">
         {Object.entries(NON_PREDICTIVE_CONTRACT_TYPES).map(
           ([
             key,
-            { label, descriptor, example, value, visual, selectClass },
+            {
+              label,
+              descriptor,
+              example,
+              value,
+              visual,
+              className,
+              selectClassName,
+            },
           ]) => (
             <OutcomeButton
               label={label}
               descriptor={descriptor}
               example={example}
               value={value}
-              selectClass={selectClass}
+              className={className}
+              selectClassName={selectClassName}
               outcomeType={outcomeType}
               setOutcomeType={setOutcomeType}
               visual={visual}
@@ -74,7 +83,8 @@ function OutcomeButton(props: {
   example: string | ReactNode
   value: string
   visual: ReactNode
-  selectClass?: string
+  className?: string
+  selectClassName?: string
   outcomeType: OutcomeType | undefined
   setOutcomeType: (outcomeType: OutcomeType) => void
   setState: (state: CreateContractStateType) => void
@@ -85,7 +95,8 @@ function OutcomeButton(props: {
     example,
     value,
     visual,
-    selectClass,
+    className,
+    selectClassName,
     outcomeType,
     setOutcomeType,
     setState,
@@ -95,9 +106,10 @@ function OutcomeButton(props: {
     <button
       className={clsx(
         'hover:ring-primary-200 cursor-pointer rounded-lg py-2 px-4 text-left transition-all hover:ring-2',
+        className,
         outcomeType == value || touch
-          ? selectClass
-            ? selectClass
+          ? selectClassName
+            ? selectClassName
             : 'from-primary-100 ring-primary-500 bg-gradient-to-br to-transparent ring-2'
           : ''
       )}
