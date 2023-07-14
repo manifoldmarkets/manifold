@@ -105,9 +105,9 @@ export function Button(props: {
     >
       {loading && (
         <LoadingIndicator
-          className="mr-3 w-fit self-stretch"
+          className="mr-2 w-fit self-stretch"
           size={size === '2xs' || size === 'xs' ? 'sm' : 'md'}
-          spinnerClassName="!h-full !w-[unset] aspect-square"
+          spinnerClassName="!w-[unset] aspect-square"
         />
       )}
       {children}

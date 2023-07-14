@@ -102,7 +102,7 @@ export const createpost = authEndpoint(async (req, auth) => {
   }
 
   // currently uses the trigger to populate group_id, creator_id, created_time.
-  pg.none(`insert into posts (id, data) values ($1, $2)`, [post.id, post])
+  await pg.none(`insert into posts (id, data) values ($1, $2)`, [post.id, post])
 
   return { status: 'success', post }
 })

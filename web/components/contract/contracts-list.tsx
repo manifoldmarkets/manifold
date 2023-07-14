@@ -10,6 +10,7 @@ export function ContractsList(props: {
   loadMore?: () => Promise<boolean>
   onContractClick?: (contract: Contract) => void
   highlightContractIds?: string[]
+  hideActions?: boolean
   headerClassName?: string
 }) {
   const {
@@ -17,6 +18,7 @@ export function ContractsList(props: {
     loadMore,
     onContractClick,
     highlightContractIds,
+    hideActions,
     headerClassName,
   } = props
 
@@ -33,6 +35,7 @@ export function ContractsList(props: {
         onContractClick={onContractClick}
         isMobile={isMobile}
         highlightContractIds={highlightContractIds}
+        hideActions={hideActions}
         headerClassName={headerClassName}
       />
       {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}

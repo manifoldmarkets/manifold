@@ -8,7 +8,11 @@ import {
   insertMarketMovementContractToUsersFeeds,
   insertTrendingContractToUsersFeeds,
 } from 'shared/create-feed'
-import { computeContractScores, getContractTraders, getTodayComments } from './importance-score'
+import {
+  computeContractScores,
+  getContractTraders,
+  getTodayComments,
+} from './importance-score'
 import { bulkUpdate } from 'shared/supabase/utils'
 
 export const MINUTE_INTERVAL = 15
@@ -72,17 +76,22 @@ export async function scoreContractsInternal(
 
   for (const contract of contracts) {
     // scores themselves are not updated in importance-score
-    const { todayScore, thisWeekScore, popularityScore, dailyScore } =
-      computeContractScores(
-        now,
-        contract,
-        todayComments[contract.id] ?? 0,
-        todayLikesByContract[contract.id] ?? 0,
-        thisWeekLikesByContract[contract.id] ?? 0,
-        todayTradersByContract[contract.id] ?? 0,
-        hourAgoTradersByContract[contract.id] ?? 0,
-        thisWeekTradersByContract[contract.id] ?? 0
-      )
+    const {
+      todayScore,
+      logOddsChange,
+      thisWeekScore,
+      popularityScore,
+      dailyScore,
+    } = computeContractScores(
+      now,
+      contract,
+      todayComments[contract.id] ?? 0,
+      todayLikesByContract[contract.id] ?? 0,
+      thisWeekLikesByContract[contract.id] ?? 0,
+      todayTradersByContract[contract.id] ?? 0,
+      hourAgoTradersByContract[contract.id] ?? 0,
+      thisWeekTradersByContract[contract.id] ?? 0
+    )
 
     // This is a newly trending contract, and should be at the top of most users' feeds
     if (todayScore > 10 && todayScore / thisWeekScore > 0.5 && !readOnly) {
@@ -115,17 +124,17 @@ export async function scoreContractsInternal(
       })
     }
 
-    // If it's just undergone a large prob change, add it to the feed
-    if (dailyScore > 1.5 && dailyScore - contract.dailyScore > 1 && !readOnly) {
+    // If it's just undergone a large prob change and wasn't created today, add it to the feed
+    if (logOddsChange > 0.8 && contract.mechanism === 'cpmm-1') {
       log(
-        'inserting market movement with daily score',
-        dailyScore.toFixed(2),
-        ' and prev score',
-        contract.dailyScore.toFixed(2),
+        'inserting market movement with prob',
+        contract.prob,
+        ' and prev prob',
+        contract.prob - contract.probChanges.day,
         'for contract',
         contract.id
       )
-      await insertMarketMovementContractToUsersFeeds(contract)
+      if (!readOnly) await insertMarketMovementContractToUsersFeeds(contract)
     }
     if (
       contract.popularityScore !== popularityScore ||

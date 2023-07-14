@@ -30,7 +30,7 @@ export type FEED_REASON_TYPES =
 // TODO: now that we have disinterest vectors, increase this threshold
 // User interest to contract distances:
 export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
-  contract_probability_changed: 0.135,
+  contract_probability_changed: 0.13,
   trending_contract: 0.175,
   new_contract: 0.125,
   new_comment: 0.125,

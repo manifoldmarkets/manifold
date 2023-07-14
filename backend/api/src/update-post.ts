@@ -16,5 +16,5 @@ export const updatepost = authEndpoint(async (req) => {
 
   const db = createSupabaseDirectClient()
   await updateData(db, 'posts', id, data)
-  return { satus: 'success' }
+  return { status: 'success' }
 })

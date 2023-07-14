@@ -13,12 +13,11 @@ import { NativeShareData } from 'common/native-share-data'
 import { CheckIcon, DuplicateIcon } from '@heroicons/react/outline'
 import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon'
 import { getIsNative } from 'web/lib/native/is-native'
-import { ShareEventName } from 'common/events'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function CopyLinkButton(props: {
   url: string | undefined
-  eventTrackingName: ShareEventName
+  eventTrackingName: string // was type ShareEventName — why??
   linkIconOnlyProps?: {
     tooltip: string
     className?: string
