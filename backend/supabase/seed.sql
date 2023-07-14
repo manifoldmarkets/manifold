@@ -331,25 +331,19 @@ select
 
 create index if not exists user_notifications_data_gin on user_notifications using GIN (data);
 
--- TODO: drop this one on july 7th
-create index if not exists user_notifications_created_time on user_notifications (user_id, (to_jsonb(data) -> 'createdTime') desc);
+-- TODO: maybe drop this one on july 13
+create index if not exists user_notifications_created_time on user_notifications
+    (user_id,
+    (to_jsonb(data) -> 'createdTime') desc);
 
 create index if not exists user_notifications_created_time_idx on user_notifications (user_id, ((data -> 'createdTime')::bigint) desc);
 
--- TODO: drop this one, too on july 7th
-create index if not exists user_notifications_unseen_created_time on user_notifications (
+create index if not exists user_notifications_unseen_text_created_time_idx on user_notifications (
   user_id,
-  (to_jsonb(data) -> 'isSeen'),
-  (to_jsonb(data) -> 'createdTime') desc
-);
-
-create index if not exists user_notifications_unseen_created_time_idx on user_notifications (
-  user_id,
-  ((data->'isSeen')::boolean),
+  -- Unfortunately casting to a boolean doesn't work in postgrest  ((data->'isSeen')::boolean),
+  (data->>'isSeen'),
   ((data->'createdTime')::bigint) desc
     );
-
-create index if not exists user_notifications_source_id on user_notifications (user_id, (data ->> 'sourceId'));
 
 alter table user_notifications
 cluster on user_notifications_created_time_idx;

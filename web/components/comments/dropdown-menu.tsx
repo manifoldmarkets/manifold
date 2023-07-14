@@ -19,6 +19,7 @@ export default function DropdownMenu(props: {
   menuItemsClass?: string
   buttonDisabled?: boolean
   selectedItemName?: string
+  closeOnClick?: boolean
 }) {
   const {
     Items,
@@ -29,6 +30,7 @@ export default function DropdownMenu(props: {
     className,
     buttonDisabled,
     selectedItemName,
+    closeOnClick,
   } = props
   const icon = Icon ?? (
     <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
@@ -71,12 +73,15 @@ export default function DropdownMenu(props: {
           <div className="py-1">
             {Items.map((item) => (
               <Menu.Item key={item.name}>
-                {({ active }) => (
+                {({ active, close }) => (
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       e.preventDefault()
                       item.onClick()
+                      if (closeOnClick) {
+                        close()
+                      }
                     }}
                     className={clsx(
                       selectedItemName && item.name == selectedItemName

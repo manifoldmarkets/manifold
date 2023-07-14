@@ -36,6 +36,7 @@ type AnyTxnType =
   | BountyPosted
   | BountyAwarded
   | BountyAdded
+  | ManaPay
 
 export type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
@@ -317,6 +318,18 @@ type BountyAwarded = {
   token: 'M$'
 }
 
+type ManaPay = {
+  category: 'MANA_PAYMENT'
+  fromType: 'USER'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    visibility: 'public' | 'private'
+    message: string
+    groupId: string // for multiple payments
+  }
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -351,3 +364,4 @@ export type LeaguePrizeTxn = Txn & LeaguePrize
 export type BountyAwardedTxn = Txn & BountyAwarded
 export type BountyPostedTxn = Txn & BountyPosted
 export type BountyAddedTxn = Txn & BountyAdded
+export type ManaPayTxn = Txn & ManaPay

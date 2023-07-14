@@ -11,22 +11,24 @@ import 'rc-slider/assets/index.css'
 import { binaryOutcomes } from '../bet/bet-panel'
 import { BetSlider } from 'web/components/bet/bet-slider'
 
-export function AmountInput(props: {
-  amount: number | undefined
-  onChange: (newAmount: number | undefined) => void
-  error?: string
-  label: string
-  disabled?: boolean
-  className?: string
-  inputClassName?: string
-  // Needed to focus the amount input
-  inputRef?: React.MutableRefObject<any>
-  quickAddMoreButton?: ReactNode
-  allowFloat?: boolean
-}) {
+export function AmountInput(
+  props: {
+    amount: number | undefined
+    onChangeAmount: (newAmount: number | undefined) => void
+    error?: string
+    label: string
+    disabled?: boolean
+    className?: string
+    inputClassName?: string
+    // Needed to focus the amount input
+    inputRef?: React.MutableRefObject<any>
+    quickAddMoreButton?: ReactNode
+    allowFloat?: boolean
+  } & JSX.IntrinsicElements['input']
+) {
   const {
     amount,
-    onChange,
+    onChangeAmount,
     error,
     label,
     disabled,
@@ -45,7 +47,7 @@ export function AmountInput(props: {
   const onAmountChange = (str: string) => {
     const amount = parse(str)
     const isInvalid = !str || isNaN(amount)
-    onChange(isInvalid ? undefined : amount)
+    onChangeAmount(isInvalid ? undefined : amount)
   }
 
   return (
@@ -59,6 +61,7 @@ export function AmountInput(props: {
           )}
           <div className="flex">
             <Input
+              {...props}
               className={clsx(label && 'pl-9', ' !text-lg', inputClassName)}
               ref={inputRef}
               type={allowFloat ? 'number' : 'text'}
@@ -72,9 +75,9 @@ export function AmountInput(props: {
               onChange={(e) => onAmountChange(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowUp') {
-                  onChange((amount ?? 0) + 5)
+                  onChangeAmount((amount ?? 0) + 5)
                 } else if (e.key === 'ArrowDown') {
-                  onChange(Math.max(0, (amount ?? 0) - 5))
+                  onChangeAmount(Math.max(0, (amount ?? 0) - 5))
                 }
               }}
             />
@@ -180,7 +183,7 @@ export function BuyAmountInput(props: {
         >
           <AmountInput
             amount={amount}
-            onChange={onChange}
+            onChangeAmount={onChange}
             label={ENV_CONFIG.moneyMoniker}
             error={error}
             disabled={disabled}

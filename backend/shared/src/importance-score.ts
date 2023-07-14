@@ -250,6 +250,7 @@ export const computeContractScores = (
     freshnessScore,
     dailyScore,
     importanceScore,
+    logOddsChange,
   }
 }
 

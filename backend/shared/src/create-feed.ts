@@ -5,7 +5,7 @@ import {
 } from 'shared/supabase/init'
 import { Comment } from 'common/comment'
 import { getUserToReasonsInterestedInContractAndUser } from 'shared/supabase/contracts'
-import { Contract } from 'common/contract'
+import { Contract, CPMMContract } from 'common/contract'
 import {
   CONTRACT_OR_USER_FEED_REASON_TYPES,
   FEED_DATA_TYPES,
@@ -254,12 +254,16 @@ export const addContractToFeed = async (
     maxDistanceFromUserInterestToContract: number
     userIdResponsibleForEvent?: string
     idempotencyKey?: string
+    currentProb?: number
+    previousProb?: number
   }
 ) => {
   const {
     idempotencyKey,
     maxDistanceFromUserInterestToContract,
     userIdResponsibleForEvent,
+    currentProb,
+    previousProb,
   } = options
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
@@ -279,6 +283,10 @@ export const addContractToFeed = async (
       contractId: contract.id,
       creatorId: contract.creatorId,
       idempotencyKey,
+      data: {
+        currentProb,
+        previousProb,
+      },
     },
     pg
   )
@@ -388,7 +396,7 @@ export const insertNewsContractsToUsersFeeds = async (
   )
 }
 export const insertMarketMovementContractToUsersFeeds = async (
-  contract: Contract
+  contract: CPMMContract
 ) => {
   const nowDate = new Date()
   //TODO: Turn this into a select query, remove the idempotency key, add to top of feed
@@ -409,6 +417,8 @@ export const insertMarketMovementContractToUsersFeeds = async (
       maxDistanceFromUserInterestToContract:
         INTEREST_DISTANCE_THRESHOLDS.contract_probability_changed,
       idempotencyKey,
+      currentProb: contract.prob,
+      previousProb: contract.prob - contract.probChanges.day,
     }
   )
 }

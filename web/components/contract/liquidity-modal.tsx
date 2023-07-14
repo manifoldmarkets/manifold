@@ -90,7 +90,7 @@ function AddLiquidityPanel(props: {
       <Row>
         <AmountInput
           amount={amount}
-          onChange={onAmountChange}
+          onChangeAmount={onAmountChange}
           label={ENV_CONFIG.moneyMoniker}
           error={error}
           disabled={isLoading}

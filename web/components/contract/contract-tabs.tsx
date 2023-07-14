@@ -225,6 +225,14 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const comments = (useComments(contract.id) ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)
   )
+
+  const commentsWithoutLikes = useMemo(() => {
+    return comments.map((c) => {
+      const { likes, ...commentsWithoutLikes } = c
+      return commentsWithoutLikes
+    })
+  }, [comments])
+
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     DEFAULT_PARENT_COMMENTS_TO_RENDER
   )
@@ -269,7 +277,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           : (c) => c,
         (c) => (isReply(c) ? c.createdTime : -c.createdTime),
       ]),
-    [comments, sort, likes, user?.id]
+    [commentsWithoutLikes, sort, likes, user?.id]
   )
 
   const commentsByParent = useMemo(

@@ -14,7 +14,7 @@ export const markallnotifications = authEndpoint(async (req, auth) => {
     `update user_notifications
      SET data = jsonb_set(data, '{isSeen}', 'true'::jsonb)
     where user_id = $1
-    and to_jsonb(data->'isSeen') = 'false'`,
+    and data->>'isSeen' = 'false'`,
     [auth.uid]
   )
 

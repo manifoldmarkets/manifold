@@ -255,7 +255,7 @@ function AwardAnswerDialog(props: {
         <AmountInput
           className="w-full"
           amount={amount}
-          onChange={setAmount}
+          onChangeAmount={setAmount}
           error={
             isValid || bountyRemaining === undefined
               ? undefined
@@ -380,7 +380,7 @@ function CreateQAndA() {
         <AmountInput
           label={ENV_CONFIG.moneyMoniker}
           amount={bounty}
-          onChange={setBounty}
+          onChangeAmount={setBounty}
           disabled={isSubmitting}
           error={
             bounty !== undefined && bounty < 10
