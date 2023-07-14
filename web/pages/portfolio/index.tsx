@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { XIcon } from '@heroicons/react/solid'
+import Link from 'next/link'
 
 import { getProbability } from 'common/calculate'
 import { Contract } from 'common/contract'
@@ -17,10 +18,14 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { usePrivateUser } from 'web/hooks/use-user'
 import { useEvent } from 'web/hooks/use-event'
 import { createPortfolio } from 'web/lib/firebase/api'
+import { usePortfolios } from 'web/hooks/use-portfolios'
+import { Portfolio } from 'common/portfolio'
 
 export default function Portfolio() {
   return (
     <Page>
+      <PortfolioList />
+      <div className="pt-6" />
       <CreatePortfolio />
     </Page>
   )
@@ -199,5 +204,43 @@ export const PortfolioWidget = (props: {
         </table>
       )}
     </Col>
+  )
+}
+
+function PortfolioList() {
+  const portfolios = usePortfolios()
+
+  return (
+    <Col className="relative gap-4">
+      <Row className="items-start justify-between">
+        <Title className="!mb-0">Portfolios</Title>
+      </Row>
+
+      <div className="text-ink-1000 text-sm">
+        Portfolios are collections of questions that users can invest in.
+      </div>
+
+      <Row className="flex-wrap gap-4">
+        {portfolios.map((p) => (
+          <PortfolioCard key={p.id} portfolio={p} />
+        ))}
+      </Row>
+    </Col>
+  )
+}
+
+function PortfolioCard(props: { portfolio: Portfolio }) {
+  const { portfolio } = props
+
+  return (
+    <Link
+      href={`/portfolio/${portfolio.slug}`}
+      className="bg-canvas-0 rounded border px-3 py-2 shadow"
+    >
+      <div className="text-ink-1000">{portfolio.name}</div>
+      <div className="text-ink-1000 text-sm">
+        {portfolio.items.length} questions
+      </div>
+    </Link>
   )
 }

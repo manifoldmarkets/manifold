@@ -189,9 +189,9 @@ export default function AboutPage() {
           />
           {user && (
             <LabCard
-              title="📂 Create portfolio"
+              title="📂 Portfolios"
               description="Curate in a set of positions to invest in"
-              href="/portfolio/create"
+              href="/portfolio"
             />
           )}
           <LabCard

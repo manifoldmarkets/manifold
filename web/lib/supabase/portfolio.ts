@@ -9,3 +9,11 @@ export async function getPortfolioBySlug(slug: string) {
   }
   return null
 }
+
+export async function getAllPortfolios() {
+  const { data } = await run(db.from('portfolios').select('*'))
+  if (data && data.length > 0) {
+    return data.map(convertPortfolio)
+  }
+  return []
+}
