@@ -11,8 +11,9 @@ import { AllArticles } from 'web/pages/news'
 export function NewsTopicsTabs(props: {
   homeContent?: ReactNode
   questionsContent?: ReactNode
+  dontScroll?: boolean
 }) {
-  const { homeContent } = props
+  const { homeContent, dontScroll } = props
 
   const topics = buildArray(
     !!homeContent && {
@@ -28,7 +29,7 @@ export function NewsTopicsTabs(props: {
     <Col className="w-full gap-2 px-2 pb-8 sm:mx-auto sm:gap-6 sm:px-2 lg:pr-4">
       <QueryUncontrolledTabs
         className={'bg-canvas-50 sticky top-0 z-20'}
-        scrollToTop
+        scrollToTop={!dontScroll}
         tabs={topics.map((tab) => ({
           ...tab,
           onClick: () => {

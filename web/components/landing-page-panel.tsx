@@ -121,7 +121,7 @@ export function LandingPagePanel() {
               color="gradient-pink"
               size={isMobile ? 'xl' : '2xl'}
             >
-              Start trading
+              Get started
             </Button>
             <div
               className={clsx(
@@ -131,7 +131,7 @@ export function LandingPagePanel() {
                   : 'px-6 py-3 text-xl font-semibold'
               )}
             >
-              Start trading
+             Get started
             </div>
           </div>
           <div className="absolute top-6 right-8 sm:top-48 md:right-12">

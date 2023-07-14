@@ -1,5 +1,4 @@
-import { ReactNode, memo, useState } from 'react'
-import { ChartBarIcon, ScaleIcon } from '@heroicons/react/solid'
+import { ReactNode, useState } from 'react'
 import Link from 'next/link'
 
 import { Page } from 'web/components/layout/page'
@@ -11,7 +10,6 @@ import { Row } from 'web/components/layout/row'
 import TestimonialsPanel from './testimonials-panel'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
-import { Contract } from 'common/contract'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
@@ -19,8 +17,6 @@ import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-co
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { LogoSEO } from 'web/components/LogoSEO'
 import { PrivacyAndTerms } from 'web/components/privacy-terms'
-import clsx from 'clsx'
-import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { formatMoney } from 'common/util/format'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
@@ -41,7 +37,7 @@ export default function Home() {
             <ManifoldLogo />
             <LogoSEO />
 
-            <div className="hidden items-center gap-2 lg:flex">
+            <Row className="items-center gap-2">
               <SiteLink href="/about">
                 <Button color="gray-white" size="xs">
                   About
@@ -51,7 +47,7 @@ export default function Home() {
                 color="gray-white"
                 size="xs"
                 onClick={() => setIsModalOpen(true)}
-                className="whitespace-nowrap"
+                className="hidden whitespace-nowrap lg:flex"
               >
                 Get app
               </Button>
@@ -67,7 +63,7 @@ export default function Home() {
                 color="indigo"
                 size="xs"
                 onClick={firebaseLogin}
-                className="whitespace-nowrap"
+                className="hidden whitespace-nowrap lg:flex"
               >
                 Sign up
               </Button>
@@ -76,33 +72,13 @@ export default function Home() {
                 isModalOpen={isModalOpen}
                 setIsModalOpen={setIsModalOpen}
               />
-            </div>
+            </Row>
           </Row>
 
           <LandingPagePanel />
-
-          <Row className="w-full gap-2 sm:gap-4">
-            <InfoCard
-              icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
-              text="What is a prediction market?"
-              modal={<PredictionMarketExplainer />}
-            />
-
-            <InfoCard
-              icon={<div className="text-2xl">{ENV_CONFIG.moneyMoniker}</div>}
-              text="What is mana?"
-              modal={<ManaExplainer />}
-            />
-
-            <LinkInfoCard
-              link="/questions"
-              icon={<ScaleIcon className="mx-auto h-8 w-8" />}
-              text="Explore questions"
-            />
-          </Row>
         </Col>
 
-        <NewsTopicsTabs />
+        <NewsTopicsTabs dontScroll />
 
         <TestimonialsPanel />
 
@@ -216,17 +192,3 @@ export function PredictionMarketExplainer() {
     </>
   )
 }
-
-const ContractsSection = memo(function ContractsSection(props: {
-  contracts: Contract[]
-  className?: string
-}) {
-  const { contracts, className } = props
-  return (
-    <Col className={clsx('max-w-2xl gap-2', className)}>
-      {contracts.map((contract) => (
-        <FeedContractCard key={contract.id} contract={contract} />
-      ))}
-    </Col>
-  )
-})
