@@ -1,6 +1,6 @@
 import { Contract, contractPath } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
-import { useEffect } from 'react'
+import { use, useEffect } from 'react'
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import { BinaryContractChart } from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
@@ -30,6 +30,10 @@ import { HistoryPoint } from 'common/chart'
 import { ContractCardAnswers } from 'web/components/bet/quick-bet'
 import { SizedContainer } from 'web/components/sized-container'
 import clsx from 'clsx'
+import { BountyLeft } from 'web/components/contract/bountied-question'
+import { useNumContractComments } from 'web/hooks/use-comments-supabase'
+import Lottie from 'react-lottie'
+import * as money from '../../../public/lottie/money-bag.json'
 
 type Points = HistoryPoint<any>[]
 
@@ -188,6 +192,7 @@ function ContractSmolView(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isMulti =
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
+  const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
@@ -229,33 +234,68 @@ function ContractSmolView(props: {
         {outcomeType === 'STONK' && (
           <StonkPrice className="!flex-col !gap-0" contract={contract} />
         )}
-      </Row>
-      <Details contract={contract} />
-
-      <SizedContainer
-        className={clsx(
-          'text-ink-1000 my-4 min-h-0 flex-1',
-          !isMulti && 'pr-10'
-        )}
-      >
-        {(w, h) => (
-          <ContractChart
-            contract={contract}
-            points={points}
-            width={w}
-            height={h}
-            color={graphColor}
+        {isBountiedQuestion && (
+          <BountyLeft
+            bountyLeft={contract.bountyLeft}
+            totalBounty={contract.totalBounty}
+            inEmbed={true}
           />
         )}
-      </SizedContainer>
+      </Row>
+      <Details contract={contract} />
+      {!isBountiedQuestion && (
+        <SizedContainer
+          className={clsx(
+            'text-ink-1000 my-4 min-h-0 flex-1',
+            !isMulti && 'pr-10'
+          )}
+        >
+          {(w, h) => (
+            <ContractChart
+              contract={contract}
+              points={points}
+              width={w}
+              height={h}
+              color={graphColor}
+            />
+          )}
+        </SizedContainer>
+      )}
+      {isBountiedQuestion && (
+        <Lottie
+          options={{
+            loop: true,
+            autoplay: true,
+            animationData: money,
+            rendererSettings: {
+              preserveAspectRatio: 'xMidYMid slice',
+            },
+          }}
+          height={200}
+          width={200}
+          isStopped={false}
+          isPaused={false}
+          style={{
+            color: '#6366f1',
+            pointerEvents: 'none',
+            background: 'transparent',
+          }}
+        />
+      )}
     </Col>
   )
 }
 
 const Details = (props: { contract: Contract }) => {
-  const { creatorAvatarUrl, creatorUsername, creatorName, uniqueBettorCount } =
-    props.contract
+  const {
+    creatorAvatarUrl,
+    creatorUsername,
+    creatorName,
+    uniqueBettorCount,
+    outcomeType,
+  } = props.contract
 
+  const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
   return (
     <div className="text-ink-400 relative right-0 mt-2 flex flex-wrap items-center gap-4 text-xs">
       <span className="text-ink-600 flex gap-1">
@@ -267,8 +307,23 @@ const Details = (props: { contract: Contract }) => {
         />
         {creatorName}
       </span>
-      <CloseOrResolveTime contract={props.contract} />
-      <span>{uniqueBettorCount} traders</span>
+      {!isBountiedQuestion && (
+        <>
+          <CloseOrResolveTime contract={props.contract} />{' '}
+          <span>{uniqueBettorCount} traders</span>
+        </>
+      )}
+      {isBountiedQuestion && (
+        <>
+          <NumComments contract={props.contract} />
+        </>
+      )}
     </div>
   )
+}
+
+const NumComments = (props: { contract: Contract }) => {
+  const { contract } = props
+  const numComments = useNumContractComments(contract.id)
+  return <span>{numComments} comments</span>
 }

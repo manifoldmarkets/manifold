@@ -10,6 +10,7 @@ import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { Row } from '../layout/row'
 
 const loadLottie = () => import('react-lottie')
 const loadAwardJson = () => import('../../public/lottie/award.json')
@@ -61,8 +62,12 @@ export const LootboxAnimation = forwardRef(() => {
   )
 })
 
-export function BountyLeft(props: { bountyLeft: number; totalBounty: number }) {
-  const { bountyLeft, totalBounty } = props
+export function BountyLeft(props: {
+  bountyLeft: number
+  totalBounty: number
+  inEmbed: boolean
+}) {
+  const { bountyLeft, totalBounty, inEmbed } = props
   if (!bountyLeft || bountyLeft < 1) {
     return (
       <span>
@@ -73,6 +78,19 @@ export function BountyLeft(props: { bountyLeft: number; totalBounty: number }) {
           tooltipParams={{ placement: 'bottom-end' }}
         />
       </span>
+    )
+  }
+  if (inEmbed) {
+    return (
+      <Col className="text-ink-500">
+        <Row className="items-center gap-2 font-normal">
+          <span className="text-lg font-semibold text-teal-600 dark:text-teal-400">
+            {formatMoney(bountyLeft)}
+          </span>
+          <span> / {totalBounty}</span>{' '}
+        </Row>
+        <div className="text-sm">bounty left</div>
+      </Col>
     )
   }
   return (
