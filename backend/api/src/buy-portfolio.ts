@@ -7,10 +7,11 @@ import { placeBetMain } from './place-bet'
 const schema = z.object({
   portfolioId: z.string(),
   amount: z.number(),
+  buyOpposite: z.boolean().optional(),
 })
 
 export const buyportfolio = authEndpoint(async (req, auth) => {
-  const { portfolioId, amount } = validate(schema, req.body)
+  const { portfolioId, amount, buyOpposite } = validate(schema, req.body)
 
   const db = createSupabaseDirectClient()
 
@@ -44,7 +45,7 @@ export const buyportfolio = authEndpoint(async (req, auth) => {
     await placeBetMain(
       {
         contractId,
-        outcome: position,
+        outcome: buyOpposite ? oppositePosition(position) : position,
         amount: itemAmount,
       },
       user.id,
@@ -54,3 +55,6 @@ export const buyportfolio = authEndpoint(async (req, auth) => {
 
   return { status: 'success' }
 })
+
+const oppositePosition = (position: 'YES' | 'NO') =>
+  position === 'YES' ? 'NO' : 'YES'

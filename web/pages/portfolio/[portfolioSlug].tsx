@@ -1,6 +1,5 @@
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { Spacer } from 'web/components/layout/spacer'
 import { getUser, User } from 'web/lib/firebase/users'
 import { Row } from 'web/components/layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -77,7 +76,7 @@ export default function PortfolioPage(props: {
         description={'A portfolio of markets related to ' + portfolio.name}
         url={path}
       />
-      <Col className="w-full gap-2 px-4 pt-4 sm:mx-auto lg:pt-0">
+      <Col className="w-full gap-4 px-4 pt-4 sm:mx-auto lg:pt-0">
         <EditInPlaceInput
           className="px-2 !text-3xl sm:px-0"
           initialValue={portfolio.name}
@@ -107,11 +106,7 @@ export default function PortfolioPage(props: {
           />
         </Row>
 
-        <Spacer h={2} />
-
         <PurchaseWidget portfolio={portfolio} />
-
-        <Spacer h={2} />
 
         <PortfolioView contracts={contracts} positions={positions} />
       </Col>
@@ -123,32 +118,52 @@ const PurchaseWidget = (props: { portfolio: Portfolio }) => {
   const { portfolio } = props
   const [amount, setAmount] = useState<number>()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [boughtAnti, setBoughtAnti] = useState(false)
 
-  const onBuy = async () => {
+  const onBuy = async (opposite?: boolean) => {
     if (amount) {
       setIsSubmitting(true)
+      setBoughtAnti(!!opposite)
       const result = await buyPortfolio({
         portfolioId: portfolio.id,
         amount,
+        buyOpposite: !!opposite,
       }).finally(() => setIsSubmitting(false))
       if (result.status === 'success') {
-        toast.success('Portfolio purchased!')
+        toast.success(
+          opposite ? 'Anti-portfolio purchased!' : 'Portfolio purchased!'
+        )
       }
     }
   }
 
   return (
-    <Col className="gap-4 border p-4">
+    <Col className="gap-4 self-start border p-4">
       <div>Purchase portfolio of markets, evenly</div>
-      <Row>
+      <Row className="gap-2">
         <AmountInput
           amount={amount}
           onChange={setAmount}
           label={ENV_CONFIG.moneyMoniker}
-          inputClassName="mr-2 w-36"
+          inputClassName="w-36"
         />
-        <Button onClick={onBuy} disabled={isSubmitting} loading={isSubmitting}>
+        <Button
+          onClick={() => onBuy()}
+          disabled={isSubmitting}
+          loading={!boughtAnti && isSubmitting}
+          size="sm"
+          color="green"
+        >
           Buy portfolio
+        </Button>
+        <Button
+          onClick={() => onBuy(true)}
+          disabled={isSubmitting}
+          loading={boughtAnti && isSubmitting}
+          size="sm"
+          color="red"
+        >
+          Buy anti-portfolio
         </Button>
       </Row>
     </Col>
