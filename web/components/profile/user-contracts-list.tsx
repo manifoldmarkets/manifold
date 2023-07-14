@@ -12,6 +12,7 @@ import {
 } from 'web/lib/supabase/users'
 import { db } from 'web/lib/supabase/db'
 import { SupabaseContractSearch } from '../supabase-search'
+import { useUser } from 'web/hooks/use-user'
 
 export function UserContractsList(props: { creator: User }) {
   const { creator } = props
@@ -28,6 +29,9 @@ export function UserContractsList(props: { creator: User }) {
       setUnresolvedMarkets(count)
     )
   }, [creator.id, allTime])
+
+
+  const user= useUser()
 
   return (
     <Col className={'w-full'}>
@@ -78,7 +82,7 @@ export function UserContractsList(props: { creator: User }) {
           creatorId: creator.id,
         }}
         persistPrefix={`user-contracts-list-${creator.id}`}
-        profile={true}
+        profile={creator.id === user?.id}
       />
     </Col>
   )
