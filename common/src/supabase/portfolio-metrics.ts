@@ -1,5 +1,4 @@
-import { PortfolioMetrics } from 'common/portfolio-metrics'
-import { run, millisToTs, tsToMillis, SupabaseClient, mapTypes } from './utils'
+import { run, millisToTs, tsToMillis, SupabaseClient } from './utils'
 
 export async function getPortfolioHistory(
   userId: string,
@@ -36,15 +35,14 @@ export async function getCurrentPortfolio(userId: string, db: SupabaseClient) {
 }
 
 export const convertPortfolioHistory = (row: any) => {
-  const portfolio = mapTypes<'user_portfolio_history', PortfolioMetrics>(row, {
-    investment_value: (v) => +!v,
-    total_deposits: (v) => +!v,
-    balance: (v) => +!v,
-    loan_total: (v) => +!v,
-  })
-  // mqp: hack for temporary unwise choice of postgres timestamp without time zone type
-  // -- we have to make it look like an ISO9601 date or the JS date constructor will
-  // assume that it's in local time. will fix this up soon
-  portfolio.timestamp = tsToMillis(row.ts + '+0000')
-  return portfolio
+  return {
+    // mqp: hack for temporary unwise choice of postgres timestamp without time zone type
+    // -- we have to make it look like an ISO9601 date or the JS date constructor will
+    // assume that it's in local time. will fix this up soon
+    timestamp: tsToMillis(row.ts + '+0000'),
+    investmentValue: +row.investment_value,
+    totalDeposits: +row.total_deposits,
+    balance: +row.balance,
+    loanTotal: +row.loan_total,
+  }
 }
