@@ -142,6 +142,11 @@ export const CHECK_USERNAMES = [
   'MarcusAbramovitch',
   'KevinBurke',
   'LexFridman',
+  'PeterWildeford',
+  'ScottLawrence',
+  'NoaNabeshima',
+  'Mira',
+  'evergreenemily',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
