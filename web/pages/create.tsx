@@ -1,19 +1,15 @@
 import { useRouter } from 'next/router'
 
-import { Page } from 'web/components/layout/page'
-import { useTracking } from 'web/hooks/use-tracking'
-import { Title } from 'web/components/widgets/title'
 import { SEO } from 'web/components/SEO'
+import { Page } from 'web/components/layout/page'
 import {
   NewContractPanel,
   NewQuestionParams,
 } from 'web/components/new-contract/new-contract-panel'
-import { useUser } from 'web/hooks/use-user'
+import { Title } from 'web/components/widgets/title'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { useState } from 'react'
-import clsx from 'clsx'
-import { Row } from 'web/components/layout/row'
-import { LockClosedIcon } from '@heroicons/react/solid'
+import { useTracking } from 'web/hooks/use-tracking'
+import { useUser } from 'web/hooks/use-user'
 
 export type VisibilityTheme = 'private' | 'non-private'
 
