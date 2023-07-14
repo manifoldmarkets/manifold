@@ -56,6 +56,18 @@ export const computeInvestmentValueCustomProb = (
   })
 }
 
+const getLoanTotal = (
+  bets: Bet[],
+  contractsDict: { [k: string]: Contract }
+) => {
+  return sumBy(bets, (bet) => {
+    const contract = contractsDict[bet.contractId]
+    if (!contract || contract.isResolved) return 0
+    if (bet.sale || bet.isSold) return 0
+    return bet.loanAmount ?? 0
+  })
+}
+
 export const ELASTICITY_BET_AMOUNT = 100
 
 export const computeElasticity = (
@@ -171,10 +183,12 @@ export const calculateNewPortfolioMetrics = (
   unresolvedBets: Bet[]
 ) => {
   const investmentValue = computeInvestmentValue(unresolvedBets, contractsById)
+  const loanTotal = getLoanTotal(unresolvedBets, contractsById)
   const newPortfolio = {
     investmentValue: investmentValue,
     balance: user.balance,
     totalDeposits: user.totalDeposits,
+    loanTotal,
     timestamp: Date.now(),
     userId: user.id,
   }

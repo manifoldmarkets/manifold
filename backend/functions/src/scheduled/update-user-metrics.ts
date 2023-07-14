@@ -22,6 +22,7 @@ import {
 import { bulkInsert } from 'shared/supabase/utils'
 import { secrets } from 'common/secrets'
 import { getAnswersForContracts } from 'common/supabase/contracts'
+import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 
 const firestore = admin.firestore()
 
@@ -131,7 +132,8 @@ export async function updateUserMetricsCore() {
       currPortfolio === undefined ||
       currPortfolio.balance !== newPortfolio.balance ||
       currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
-      currPortfolio.investmentValue !== newPortfolio.investmentValue
+      currPortfolio.investmentValue !== newPortfolio.investmentValue ||
+      currPortfolio.loanTotal !== newPortfolio.loanTotal
 
     const allTimeProfit =
       newPortfolio.balance +
@@ -168,6 +170,7 @@ export async function updateUserMetricsCore() {
         investment_value: newPortfolio.investmentValue,
         balance: newPortfolio.balance,
         total_deposits: newPortfolio.totalDeposits,
+        loan_total: newPortfolio.loanTotal,
       })
     }
 
@@ -238,20 +241,12 @@ const getPortfolioSnapshot = async (
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `select distinct on (user_id) user_id, investment_value, balance, total_deposits
+      `select distinct on (user_id) user_id, investment_value, balance, total_deposits, loan_total
       from user_portfolio_history
       where user_id in ($1:list)
       order by user_id, ts desc`,
       [userIds],
-      (r) => [
-        r.user_id as string,
-        {
-          userId: r.user_id as string,
-          investmentValue: parseFloat(r.investment_value as string),
-          balance: parseFloat(r.balance as string),
-          totalDeposits: parseFloat(r.total_deposits as string),
-        },
-      ]
+      (r) => [r.user_id as string, convertPortfolioHistory(r)]
     )
   )
 }

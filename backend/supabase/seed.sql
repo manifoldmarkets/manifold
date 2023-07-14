@@ -89,6 +89,7 @@ create table if not exists
     investment_value numeric not null,
     balance numeric not null,
     total_deposits numeric not null,
+    loan_total numeric,
     primary key (user_id, portfolio_id)
   );
 

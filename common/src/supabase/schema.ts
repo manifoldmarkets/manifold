@@ -1257,6 +1257,7 @@ export interface Database {
           total_deposits: number | null
           ts: string | null
           user_id: string
+          loan_total: number | null
         }
         Insert: {
           balance?: number | null
@@ -1265,6 +1266,7 @@ export interface Database {
           total_deposits?: number | null
           ts?: string | null
           user_id: string
+          loan_total?: number | null
         }
         Update: {
           balance?: number | null
@@ -1273,6 +1275,7 @@ export interface Database {
           total_deposits?: number | null
           ts?: string | null
           user_id?: string
+          loan_total?: number | null
         }
         Relationships: []
       }
