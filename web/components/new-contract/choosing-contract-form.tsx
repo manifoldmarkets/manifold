@@ -55,6 +55,7 @@ export function ChoosingContractForm(props: {
               value,
               visual,
               className,
+              backgroundColor,
               selectClassName,
             },
           ]) => (
@@ -64,6 +65,7 @@ export function ChoosingContractForm(props: {
               example={example}
               value={value}
               className={className}
+              backgroundColor={backgroundColor}
               selectClassName={selectClassName}
               outcomeType={outcomeType}
               setOutcomeType={setOutcomeType}
@@ -84,6 +86,7 @@ function OutcomeButton(props: {
   value: string
   visual: ReactNode
   className?: string
+  backgroundColor?: string
   selectClassName?: string
   outcomeType: OutcomeType | undefined
   setOutcomeType: (outcomeType: OutcomeType) => void
@@ -96,6 +99,7 @@ function OutcomeButton(props: {
     value,
     visual,
     className,
+    backgroundColor,
     selectClassName,
     outcomeType,
     setOutcomeType,
@@ -111,7 +115,7 @@ function OutcomeButton(props: {
           ? selectClassName
             ? selectClassName
             : 'from-primary-100 ring-primary-500 bg-gradient-to-br to-transparent ring-2'
-          : ''
+          : backgroundColor ?? 'bg-primary-600/5'
       )}
       onClick={() => {
         setOutcomeType(value as OutcomeType)
