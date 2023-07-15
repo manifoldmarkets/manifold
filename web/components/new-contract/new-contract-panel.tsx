@@ -107,18 +107,16 @@ function CreateStepTracker(props: {
       )}
     >
       <CreateStepButton
-        className={'text-primary-500'}
+        className={clsx('text-primary-500')}
+        selected={state == 'choosing contract'}
         onClick={() => setState('choosing contract')}
       >
         Choose
       </CreateStepButton>
       <ChevronRightIcon className={clsx('h-5 w-5')} />
       <CreateStepButton
-        className={
-          state == 'filling contract params'
-            ? 'text-primary-500'
-            : 'text-ink-400'
-        }
+        disabled={!outcomeType}
+        selected={state == 'filling contract params'}
         onClick={() => {
           if (outcomeType) {
             setState('filling contract params')
@@ -138,14 +136,20 @@ function CreateStepTracker(props: {
 
 function CreateStepButton(props: {
   onClick: () => void
-  className: string
+  className?: string
   children: ReactNode
+  selected: boolean
   disabled?: boolean
 }) {
-  const { onClick, children, className, disabled } = props
+  const { onClick, children, className, selected, disabled } = props
   return (
     <button
-      className={clsx(className, 'transition-all disabled:cursor-not-allowed')}
+      className={clsx(
+        className,
+        'disabled:text-ink-400 transition-all disabled:cursor-not-allowed',
+        selected ? 'text-primary-500 font-semibold' : '',
+        disabled ? '' : 'hover:text-indigo-400 dark:hover:text-indigo-300'
+      )}
       onClick={onClick}
       disabled={disabled}
     >
