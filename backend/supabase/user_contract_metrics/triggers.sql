@@ -24,9 +24,3 @@ create trigger user_contract_metrics_populate before insert
 or
 update on user_contract_metrics for each row
 execute function user_contract_metric_populate_cols ();
-
-update user_contract_metrics
-set
-  fs_updated_time = fs_updated_time
-where
-  has_shares is null;

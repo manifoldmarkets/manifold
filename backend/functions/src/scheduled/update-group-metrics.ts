@@ -1,5 +1,4 @@
 import * as functions from 'firebase-functions'
-import * as admin from 'firebase-admin'
 import { groupBy, mapValues, sortBy } from 'lodash'
 
 import { log } from 'shared/utils'
@@ -16,7 +15,6 @@ export const updateGroupMetrics = functions
   })
 
 export async function updateGroupMetricsCore() {
-  const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading group IDs...')
   const groupIds = await getIds(pg, 'groups')

@@ -10,7 +10,7 @@ export async function updateContractMetricsForUsers(
   contract: Contract,
   allContractBets: Bet[]
 ) {
-  const betsByUser = groupBy(allContractBets, (b) => b.userId)
+  const betsByUser = groupBy(allContractBets, 'userId')
   const metrics: ContractMetric[] = []
   for (const userId in betsByUser) {
     const userBets = betsByUser[userId]

@@ -94,7 +94,7 @@ export const onCreateBet = functions
       eventId,
       bettor
     )
-    
+
     if (bet.shares !== 0) {
       await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
     }
@@ -422,6 +422,7 @@ const updateContractMetrics = async (contract: Contract, users: User[]) => {
       return calculateUserMetrics(contract, bets, user)
     })
   )
+
   await bulkUpdateContractMetrics(metrics)
 }
 
