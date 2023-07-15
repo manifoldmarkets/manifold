@@ -1,6 +1,6 @@
 import { Contract, contractPath } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
-import { use, useEffect } from 'react'
+import { useEffect } from 'react'
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import { BinaryContractChart } from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
