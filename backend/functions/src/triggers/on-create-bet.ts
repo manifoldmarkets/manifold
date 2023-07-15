@@ -60,6 +60,7 @@ import {
   getUniqueBettorIdsForAnswer,
 } from 'shared/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
+import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 
 const firestore = admin.firestore()
 
@@ -410,7 +411,7 @@ const notifyUsersOfLimitFills = async (
 }
 
 const updateContractMetrics = async (contract: Contract, users: User[]) => {
-  await Promise.all(
+  const metrics = await Promise.all(
     users.map(async (user) => {
       const betSnap = await firestore
         .collection(`contracts/${contract.id}/bets`)
@@ -418,14 +419,10 @@ const updateContractMetrics = async (contract: Contract, users: User[]) => {
         .get()
 
       const bets = betSnap.docs.map((doc) => doc.data() as Bet)
-      const newMetrics = calculateUserMetrics(contract, bets, user)
-
-      await firestore
-        .collection(`users/${user.id}/contract-metrics`)
-        .doc(contract.id)
-        .set(newMetrics)
+      return calculateUserMetrics(contract, bets, user)
     })
   )
+  await bulkUpdateContractMetrics(metrics)
 }
 
 async function handleReferral(staleUser: User, eventId: string) {
