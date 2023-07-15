@@ -304,6 +304,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const visibleCommentIds = useMemo(
     () =>
       parentComments
+        .slice(0, parentCommentsToRender)
         .map((c) => [c.id, ...(commentsByParent[c.id] ?? []).map((c) => c.id)])
         .flat(),
     [comments.length]
