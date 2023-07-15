@@ -425,6 +425,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                   <BountyLeft
                     bountyLeft={contract.bountyLeft}
                     totalBounty={contract.totalBounty}
+                    inEmbed={true}
                   />
                 ) : (
                   <div className="flex gap-4">
