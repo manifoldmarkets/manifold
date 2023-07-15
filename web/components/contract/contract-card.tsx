@@ -27,7 +27,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { MiscDetails, ShowTime } from './contract-details'
 import { ProbOrNumericChange } from './prob-change-table'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -71,11 +71,7 @@ export const ContractCard = memo(function ContractCard(props: {
     numAnswersFR,
     fromGroupProps,
   } = props
-  const contract =
-    useFirebasePublicAndRealtimePrivateContract(
-      props.contract.visibility,
-      props.contract.id
-    ) ?? props.contract
+  const contract = useRealtimeContract(props.contract.id) ?? props.contract
   const { isResolved, createdTime, featuredLabel, creatorCreatedTime } =
     contract
   const { question, outcomeType } = contract
