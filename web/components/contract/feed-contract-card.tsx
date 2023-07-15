@@ -19,8 +19,11 @@ import {
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
+import {
+  FeedTimelineItem,
+  marketMovementInfo,
+} from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -35,7 +38,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { ClickFrame } from '../widgets/click-frame'
-import { DAY_MS } from 'common/util/time'
+import { HOUR_MS } from 'common/util/time'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -49,11 +52,7 @@ export function FeedContractCard(props: {
   const { promotedData, trackingPostfix, item, className, children } = props
   const user = useUser()
 
-  const contract =
-    useFirebasePublicAndRealtimePrivateContract(
-      props.contract.visibility,
-      props.contract.id
-    ) ?? props.contract
+  const contract = useRealtimeContract(props.contract.id) ?? props.contract
 
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 
@@ -187,18 +186,11 @@ function DetailedCard(props: {
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
   const path = contractPath(contract)
-
-  const probChange =
-    contract.mechanism === 'cpmm-1' &&
-    Math.abs(contract.probChanges.day) > 0.01 &&
-    !contract.isResolved
-      ? Math.round(contract.probChanges.day * 100)
-      : 0
-  const showChange =
-    (item?.dataType === 'contract_probability_changed' ||
-      item?.dataType === 'trending_contract') &&
-    probChange != 0 &&
-    contract.createdTime < Date.now() - DAY_MS
+  const { probChange } = marketMovementInfo(
+    contract,
+    item?.dataType,
+    item?.data
+  )
 
   const statusInlineWithUserlink =
     item && !item.isCopied && item.dataType === 'new_contract'
@@ -240,16 +232,27 @@ function DetailedCard(props: {
               (item.dataType === 'contract_probability_changed' ||
                 item.dataType === 'trending_contract') && (
                 <div className={'text-ink-400 text-sm'}>
+                  {item.dataType === 'contract_probability_changed' && (
+                    <RelativeTimestamp
+                      time={item.createdTime - 24 * HOUR_MS}
+                      shortened={true}
+                    />
+                  )}
                   <Tooltip text={item?.reasonDescription} placement={'top'}>
                     {item.dataType === 'contract_probability_changed'
-                      ? ' moved'
+                      ? ' change'
                       : item.dataType === 'trending_contract'
                       ? ' trending'
                       : item.dataType === 'new_subsidy'
                       ? ' subsidized'
                       : ''}
                   </Tooltip>
-                  <RelativeTimestamp time={item.createdTime} shortened={true} />{' '}
+                  {item.dataType !== 'contract_probability_changed' && (
+                    <RelativeTimestamp
+                      time={item.createdTime}
+                      shortened={true}
+                    />
+                  )}
                 </div>
               )}
           </Link>
@@ -261,14 +264,14 @@ function DetailedCard(props: {
               />
             )}
             <span>
-              {showChange && (
+              {probChange && (
                 <span
                   className={clsx(
                     'font-normal',
-                    probChange! > 0 ? 'text-teal-500' : 'text-scarlet-500'
+                    probChange > 0 ? 'text-teal-500' : 'text-scarlet-500'
                   )}
                 >
-                  {probChange! > 0 ? '+' : ''}
+                  {probChange > 0 ? '+' : ''}
                   {probChange}%
                 </span>
               )}

@@ -97,7 +97,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         <meta name="twitter:site" content="@manifoldmarkets" />
         <meta
           name="twitter:image"
-          content="https://manifold.markets/logo-white.png"
+          content="https://manifold.markets/logo.png"
           key="image2"
         />
         <meta

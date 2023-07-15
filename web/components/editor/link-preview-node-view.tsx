@@ -38,7 +38,12 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
         </button>
       )}
       <a className="block" key={id} href={url} target="_blank">
-        <img className="m-0 object-contain" src={image} alt="" height={200} />
+        <img
+          className="m-0 h-[200px] w-full object-cover"
+          src={image}
+          alt=""
+          height={200}
+        />
         <Col className="bg-canvas-0 p-2 hover:underline">
           <div className="line-clamp-2 text-ink-900 text-base">{title}</div>
           <div className="line-clamp-3 text-ink-600 text-xs">{description}</div>

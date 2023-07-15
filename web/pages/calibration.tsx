@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Dictionary, range } from 'lodash'
 import { axisBottom, axisRight } from 'd3-axis'
 import { scaleLinear } from 'd3-scale'
 
@@ -7,7 +6,6 @@ import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { sampleResolvedBets } from 'web/lib/supabase/bets'
 import { SVGChart, formatPct } from 'web/components/charts/helpers'
 import { formatLargeNumber } from 'common/util/format'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -15,18 +13,19 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Spacer } from 'web/components/layout/spacer'
 import { SizedContainer } from 'web/components/sized-container'
+import { db } from 'web/lib/supabase/db'
 
 const TRADER_THRESHOLD = 15
-const SAMPLING_P = 0.01
+const SAMPLING_P = 0.02
 
 export const getStaticProps = async () => {
-  const bets = await sampleResolvedBets(TRADER_THRESHOLD, SAMPLING_P)
-  const n = bets?.length ?? 0
-  console.log('loaded', n, 'sampled bets')
+  const result = await db
+    .from('platform_calibration')
+    .select('*')
+    .order('created_time', { ascending: false })
+    .limit(1)
 
-  const buckets = getCalibrationPoints(bets ?? [])
-  const points = !bets ? [] : getXY(buckets)
-  const score = !bets ? 0 : brierScore(bets)
+  const { points, score, n } = result.data![0]?.data as any
 
   return {
     props: {
@@ -217,61 +216,6 @@ export function CalibrationChart(props: {
       />
     </SVGChart>
   )
-}
-
-interface BetSample {
-  prob: number
-  is_yes: boolean
-}
-
-export const points = [1, 3, 5, ...range(10, 100, 10), 95, 97, 99]
-
-const getCalibrationPoints = (data: BetSample[]) => {
-  const probBuckets = Object.fromEntries(points.map((p) => [p, 0]))
-  const countBuckets = Object.fromEntries(points.map((p) => [p, 0]))
-
-  for (const { prob, is_yes } of data) {
-    const rawP = prob * 100
-
-    // get probability bucket that's closest to a prespecified point
-    const p = points.reduce((prev, curr) =>
-      Math.abs(curr - rawP) < Math.abs(prev - rawP) ? curr : prev
-    )
-
-    if (is_yes) probBuckets[p]++
-    countBuckets[p]++
-  }
-
-  const buckets = Object.fromEntries(
-    points.map((p) => [
-      p,
-      countBuckets[p] ? probBuckets[p] / countBuckets[p] : 0,
-    ])
-  )
-
-  return buckets
-}
-
-const brierScore = (data: BetSample[]) => {
-  let total = 0
-
-  for (const { prob, is_yes } of data) {
-    const outcome = is_yes ? 1 : 0
-    total += (outcome - prob) ** 2
-  }
-  return !data.length ? 0 : total / data.length
-}
-
-const getXY = (probBuckets: Dictionary<number>) => {
-  const xy = []
-
-  for (const point of points) {
-    if (probBuckets[point] !== undefined) {
-      xy.push({ x: point / 100, y: probBuckets[point] })
-    }
-  }
-
-  return xy
 }
 
 export function WasabiCharts() {

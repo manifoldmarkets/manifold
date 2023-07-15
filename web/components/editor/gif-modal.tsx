@@ -19,26 +19,22 @@ export function GIFModal(props: {
   const [gifResults, setGifResults] = useState<IGif[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  const [debouncedTerm, setDebouncedTerm] = useState<string>(term)
-
   const debouncedSearch = useCallback(
-    debounce((newTerm) => setDebouncedTerm(newTerm), 250),
+    debounce((term) => {
+      searchGiphy({ term, limit: 20 }).then((res) => {
+        if (res.status === 'success') {
+          setGifResults(res.data)
+        } else {
+          setError(res.data as string)
+        }
+      })
+    }, 250),
     []
   )
 
   useEffect(() => {
-    debouncedSearch(term)
-  }, [term])
-
-  useEffect(() => {
-    searchGiphy({ term: debouncedTerm, limit: 20 }).then((res) => {
-      if (res.status === 'success') {
-        setGifResults(res.data)
-      } else {
-        setError(res.data as string)
-      }
-    })
-  }, [debouncedTerm])
+    if (open) debouncedSearch(term)
+  }, [term, open])
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -51,7 +47,7 @@ export function GIFModal(props: {
         {error && <div className="text-red-500">{error}</div>}
         <Masonry
           breakpointCols={2}
-          className="-ml-4 flex h-[60ch] w-auto overflow-y-scroll"
+          className="-ml-4 flex h-[60ch] overflow-y-auto"
           columnClassName="pl-4 bg-clip-padding"
         >
           {gifResults.map((gif) => (

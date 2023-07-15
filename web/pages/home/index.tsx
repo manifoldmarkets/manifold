@@ -14,6 +14,7 @@ import { useUser } from 'web/hooks/use-user'
 import MarketsHome from 'web/pages/markets-home'
 import { Title } from 'web/components/widgets/title'
 import Welcome from 'web/components/onboarding/welcome'
+import { SEO } from 'web/components/SEO'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -37,7 +38,12 @@ function HomeDashboard() {
 
   return (
     <>
+      <SEO
+        title="News"
+        description="Breaking news meets the wisdom of the crowd"
+      />
       <Welcome />
+
       <Page>
         {/* TODO: Improve design of row on desktop. (Mobile is fine) */}
         <Row className="mx-4 mb-2 items-center justify-between gap-4">

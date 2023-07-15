@@ -38,6 +38,7 @@ import { AnswersPanel } from '../answers/answers-panel'
 import { Answer, DpmAnswer } from 'common/answer'
 import { UserBetsSummary } from '../bet/bet-summary'
 import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
+import { CancelLabel } from '../outcome-label'
 
 export const ContractOverview = memo(
   (props: {
@@ -159,6 +160,12 @@ const ChoiceOverview = (props: {
   if (!onAnswerCommentClick) return null
   return (
     <>
+      {contract.resolution === 'CANCEL' && (
+        <div className="flex items-end gap-2 text-2xl sm:text-3xl">
+          <span className="text-base">Resolved</span>
+          <CancelLabel />
+        </div>
+      )}
       {!!points.length && (
         <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
           {(w, h) => (

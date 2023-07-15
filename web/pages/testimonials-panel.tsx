@@ -53,7 +53,7 @@ export default function TestimonialsPanel() {
               color="gradient-pink"
               size={isMobile ? 'xl' : '2xl'}
             >
-              Get started
+              Sign up now!
             </Button>
             <div
               className={clsx(
@@ -63,7 +63,7 @@ export default function TestimonialsPanel() {
                   : 'px-6 py-3 text-xl font-semibold'
               )}
             >
-              Get started
+              Sign up now!
             </div>
           </div>
           <div className="absolute top-6 left-8 sm:top-48 md:left-8">

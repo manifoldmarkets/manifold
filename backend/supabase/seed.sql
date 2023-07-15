@@ -89,6 +89,7 @@ create table if not exists
     investment_value numeric not null,
     balance numeric not null,
     total_deposits numeric not null,
+    loan_total numeric,
     primary key (user_id, portfolio_id)
   );
 
@@ -614,6 +615,24 @@ create index if not exists contract_bets_unexpired_limit_orders on contract_bets
 
 alter table contract_bets
 cluster on contract_bets_created_time;
+
+
+
+create table if not exists
+  platform_calibration (
+    id bigint generated always as identity primary key,
+    created_time timestamptz not null default now(),
+    data jsonb not null
+  );
+
+alter table platform_calibration enable row level security;
+
+drop policy if exists "public read" on platform_calibration;
+
+create policy "public read" on platform_calibration for
+select
+  using (true);
+
 
 create table if not exists
   contract_comments (

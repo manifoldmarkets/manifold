@@ -9,6 +9,7 @@ import { Group } from 'common/group'
 import { SELECTED_TOPICS, cleanTopic } from 'common/topics'
 import { debounce, isEqual, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
+import Router from 'next/router'
 import { createContext, useContext, useEffect, useRef } from 'react'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
@@ -36,6 +37,7 @@ import generateFilterDropdownItems, {
 import { Carousel } from './widgets/carousel'
 import { Input } from './widgets/input'
 import { SiteLink } from './widgets/site-link'
+import { Button } from './buttons/button'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -328,16 +330,30 @@ export function SupabaseContractSearch(props: {
           hideFilters={hideFilters}
         />
         {contracts && contracts.length === 0 ? (
-          profile || fromGroupProps ? (
-            <p className="text-ink-500 mx-2">No questions found</p>
-          ) : (
-            <p className="text-ink-500 mx-2">
-              No questions found. Why not{' '}
-              <SiteLink href="/create" className="text-ink-700 font-bold">
-                create one?
-              </SiteLink>
-            </p>
-          )
+          <p className="text-ink-500 mx-2">
+            No questions found.{' '}
+            {profile && (
+              <>
+                Why not{' '}
+                <SiteLink
+                  href="/create"
+                  followsLinkClass
+                  className="font-semibold"
+                >
+                  create one?
+                </SiteLink>
+                <br />
+                <Button
+                  color="gradient"
+                  size="md"
+                  className="mt-4 flex sm:hidden"
+                  onClick={() => Router.push('/create')}
+                >
+                  Create a question
+                </Button>
+              </>
+            )}
+          </p>
         ) : asList ? (
           <ContractsList
             key={

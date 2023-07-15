@@ -27,6 +27,7 @@ import {
 } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
 import { bulkUpsert } from 'shared/supabase/utils'
+import { saveCalibrationData } from './calculate-calibration'
 
 const firestore = admin.firestore()
 
@@ -465,6 +466,8 @@ export const updateStatsCore = async () => {
   // Write to postgres
   await bulkUpsert(pg, 'stats', 'title', rows)
   log('Done. Wrote', rows.length, ' rows to stats table')
+
+  await saveCalibrationData(pg)
 }
 
 export const updateStats = functions

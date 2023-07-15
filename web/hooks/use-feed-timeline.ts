@@ -37,6 +37,7 @@ export type FeedTimelineItem = {
   news?: News
   reasonDescription?: string
   isCopied?: boolean
+  data?: Record<string, any>
 }
 export const useFeedTimeline = (
   user: User | null | undefined,
@@ -126,8 +127,12 @@ export const useFeedTimeline = (
         (id) => !alreadySavedContractIds.includes(id)
       )
     )
-    const newCommentsOnContractIds = uniq(
-      filterDefined(data.map((item) => item.comment_id))
+    const commentsByUserIds = groupBy(
+      data.filter((d) => d.comment_id),
+      (item) => item.creator_id
+    )
+    const newCommentsOnContractIds = filterDefined(
+      Object.values(commentsByUserIds).map((items) => first(items))
     )
 
     const potentiallySeenCommentIds = uniq(
@@ -161,7 +166,7 @@ export const useFeedTimeline = (
         .then((res) => res.data?.map((c) => c.data as ContractComment)),
       db
         .from('contracts')
-        .select('*')
+        .select('data')
         .in('id', newContractIds)
         .then((res) => res.data?.map((c) => c.data as Contract)),
       db
@@ -299,6 +304,7 @@ const getBaseTimelineItem = (item: Row<'user_feed'>) =>
     createdTime: new Date(item.created_time).valueOf(),
     supabaseTimestamp: item.created_time,
     isCopied: item.is_copied,
+    data: item.data as Record<string, any>,
   } as FeedTimelineItem)
 
 function createFeedTimelineItems(
@@ -345,6 +351,14 @@ function createFeedTimelineItems(
           (dataType === 'new_comment' || dataType === 'popular_comment')
         )
           return
+        if (
+          marketMovementInfo(
+            relevantContract,
+            dataType,
+            item.data as Record<string, any>
+          ).ignore
+        )
+          return
 
         // Let's stick with one comment per feed item for now
         const relevantComments = comments
@@ -380,4 +394,40 @@ export const shouldIgnoreCommentsOnContract = (contract: Contract): boolean => {
     contract.isResolved ||
     (contract.closeTime ? contract.closeTime < Date.now() : false)
   )
+}
+
+export const marketMovementInfo = (
+  contract: Contract,
+  dataType?: FEED_DATA_TYPES,
+  data?: Record<string, any>
+) => {
+  const previousProbAbout50 =
+    (data?.previousProb ?? 0.5) > 0.48 && (data?.previousProb ?? 0.5) < 0.52
+  const probChangeSinceAdd =
+    contract.mechanism === 'cpmm-1' && data?.previousProb
+      ? contract.prob - data.previousProb
+      : null
+
+  const probChange =
+    contract.mechanism === 'cpmm-1' &&
+    contract.createdTime < Date.now() - DAY_MS &&
+    // make sure it wasn't made within the past 2 days and just moved from 50%
+    !(contract.createdTime > Date.now() - 2 * DAY_MS && previousProbAbout50) &&
+    Math.abs(probChangeSinceAdd ?? contract.probChanges.day) > 0.055 &&
+    !contract.isResolved
+      ? Math.round((probChangeSinceAdd ?? contract.probChanges.day) * 100)
+      : null
+
+  const showChange =
+    probChange != null &&
+    (dataType
+      ? dataType === 'contract_probability_changed' ||
+        dataType === 'trending_contract'
+      : true)
+
+  if (!showChange && dataType === 'contract_probability_changed') {
+    // console.log('filtering prob change', probChangeSinceAdd, contract)
+    return { ignore: true, probChange }
+  }
+  return { ignore: false, probChange }
 }

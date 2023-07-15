@@ -21,11 +21,6 @@ import { linkClass } from './site-link'
 import Iframe from 'common/util/tiptap-iframe'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
 import { debounce, noop } from 'lodash'
-import {
-  storageStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { FloatingFormatMenu } from '../editor/floating-format-menu'
 import { StickyFormatMenu } from '../editor/sticky-format-menu'
 import { DisplayTweet } from '../editor/tweet'
@@ -44,6 +39,7 @@ import {
   findLinksInContent,
   insertLinkPreviews,
 } from 'web/components/editor/link-preview-node-view'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
@@ -93,13 +89,9 @@ export function useTextEditor(props: {
   const { placeholder, max, defaultValue, size = 'md', key } = props
   const simple = size === 'sm'
 
-  const [content, saveContent] = usePersistentState<JSONContent | undefined>(
-    undefined,
-    {
-      key: `text ${key}`,
-      store: storageStore(safeLocalStorage),
-    }
-  )
+  const [content, saveContent] = usePersistentLocalState<
+    JSONContent | undefined
+  >(undefined, `text ${key}`)
   const fetchingLinks = useRef<boolean>(false)
 
   const save = useCallback(debounce(saveContent, 500), [])

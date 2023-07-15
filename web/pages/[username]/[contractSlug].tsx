@@ -56,7 +56,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import {
-  useFirebasePublicAndRealtimePrivateContract,
+  useRealtimeContract,
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
 import { useEvent } from 'web/hooks/use-event'
@@ -159,10 +159,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     relatedContracts,
   } = contractParams
   const contract: typeof contractParams.contract =
-    useFirebasePublicAndRealtimePrivateContract(
-      contractParams.contract.visibility,
-      contractParams.contract.id
-    ) ?? contractParams.contract
+    useRealtimeContract(contractParams.contract.id) ?? contractParams.contract
 
   if (
     'answers' in contractParams.contract &&
@@ -425,6 +422,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                   <BountyLeft
                     bountyLeft={contract.bountyLeft}
                     totalBounty={contract.totalBounty}
+                    inEmbed={true}
                   />
                 ) : (
                   <div className="flex gap-4">

@@ -18,7 +18,7 @@ import { useUser } from 'web/hooks/use-user'
 import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { db } from 'web/lib/supabase/db'
 import { getContractBetNullMetrics } from 'common/calculate'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 
 export default function TodaysUpdates() {
   const user = useUser()
@@ -102,10 +102,8 @@ const ContractChangeRow = forwardRef(
     ref: React.Ref<HTMLAnchorElement>
   ) => {
     const { metrics, onContractClick, className } = props
-    const contract = (useFirebasePublicAndRealtimePrivateContract(
-      props.contract.visibility,
-      props.contract.id
-    ) ?? props.contract) as CPMMContract
+    const contract = (useRealtimeContract(props.contract.id) ??
+      props.contract) as CPMMContract
     const {
       creatorUsername,
       creatorAvatarUrl,

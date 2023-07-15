@@ -12,8 +12,7 @@ import {
   sendWelcomeEmail,
 } from 'shared/emails'
 import { secrets } from 'common/secrets'
-import { CURRENT_SEASON } from 'common/leagues'
-import { addUserToLeague } from 'shared/generate-leagues'
+import { addNewUserToLeague } from 'shared/generate-leagues'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { spiceUpNewUsersFeedBasedOnTheirInterests } from 'shared/supabase/users'
 
@@ -26,7 +25,7 @@ export const onCreateUser = functions
     if (!privateUser) return
 
     const pg = createSupabaseDirectClient()
-    await addUserToLeague(pg, user.id, CURRENT_SEASON, 1)
+    await addNewUserToLeague(pg, user.id)
 
     await sendWelcomeEmail(user, privateUser)
 

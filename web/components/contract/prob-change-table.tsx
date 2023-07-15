@@ -10,7 +10,7 @@ import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ContractStatusLabel } from './contracts-table'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 
 export function ProbChangeTable(props: {
   changes: CPMMContract[] | undefined
@@ -45,10 +45,8 @@ const ContractWithProbChange = forwardRef(
     ref: React.Ref<HTMLAnchorElement>
   ) => {
     const { onContractClick, className } = props
-    const contract = (useFirebasePublicAndRealtimePrivateContract(
-      props.contract.visibility,
-      props.contract.id
-    ) ?? props.contract) as CPMMContract
+    const contract = (useRealtimeContract(props.contract.id) ??
+      props.contract) as CPMMContract
     const {
       creatorUsername,
       creatorAvatarUrl,

@@ -251,7 +251,7 @@ export function PortfolioValueSkeleton(props: {
             track('Portfolio Value Clicked')
           }}
         >
-          <div className="text-ink-600 text-xs sm:text-sm">Portfolio</div>
+          <div className="text-ink-600 text-xs sm:text-sm">Net worth</div>
           {valueElement}
         </Col>
 
