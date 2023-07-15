@@ -313,17 +313,17 @@ export function ContractParamsForm(props: {
         </div>
       </Col>
       {outcomeType === 'STONK' && (
-        <div className="text-primary-700 mt-3 ml-1 text-sm">
+        <div className="text-primary-500 mt-1 ml-1 text-sm">
           Tradeable shares of a stock based on sentiment. Never resolves.
         </div>
       )}
       {outcomeType === 'FREE_RESPONSE' && (
-        <div className="text-primary-700 mt-3 ml-1 text-sm">
+        <div className="text-primary-500 mt-1 ml-1 text-sm">
           Users can submit their own answers to this question.
         </div>
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
-        <div className="text-primary-700 mt-3 ml-1 text-sm">
+        <div className="text-primary-500 mt-1 ml-1 text-sm">
           Predict the value of a number.
         </div>
       )}

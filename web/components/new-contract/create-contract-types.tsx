@@ -69,7 +69,7 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
     descriptor: `A question that anyone can answer for a bounty. The bounty you put up can be distributed however you'd like.`,
     example: `I'll give ${formatMoney(
       1000
-    )} to whoever draws the best portrait of my cat?`,
+    )} to whoever draws the best portrait of my cat.`,
     visual: (
       <Col className="relative my-auto h-12 w-12 text-teal-400">
         <GiReceiveMoney className="h-12 w-12" />
