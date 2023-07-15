@@ -75,7 +75,7 @@ export default function Home() {
             </Row>
           </Row>
 
-          <Row className="justify-between rounded-lg bg-indigo-700 p-8 text-white">
+          <Row className="justify-between rounded-lg p-8">
             <Col className="max-w-sm gap-2">
               <h1 className="text-4xl">Predict the future</h1>
               <h1 className="text-lg">
@@ -83,7 +83,7 @@ export default function Home() {
                 questions
               </h1>
 
-              <Button color="gradient-cyan-pink" size="2xl" className="mt-8">
+              <Button color="gradient" size="2xl" className="mt-8">
                 Get started
               </Button>
 
@@ -97,7 +97,7 @@ export default function Home() {
               </div>
             </Col>
             <Col className="hidden sm:flex">
-              <img src="landing/white_foldy.png" width={220} />
+              <img src="welcome/manipurple.png" width={220} />
             </Col>
           </Row>
         </Col>
