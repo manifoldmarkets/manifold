@@ -1,7 +1,6 @@
 import {
   Contract,
   MaybeAuthedContractParams,
-  Visibility,
 } from 'common/contract'
 import { useEffect, useRef, useState } from 'react'
 import { getContractParams } from 'web/lib/firebase/api'
@@ -17,7 +16,6 @@ import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { useIsAuthorized } from './use-user'
-import { useContractFirebase } from './use-contract-firebase'
 
 export const usePublicContracts = (contractIds: string[] | undefined) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
