@@ -19,7 +19,7 @@ import {
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import {
   FeedTimelineItem,
   marketMovementInfo,
@@ -52,7 +52,11 @@ export function FeedContractCard(props: {
   const { promotedData, trackingPostfix, item, className, children } = props
   const user = useUser()
 
-  const contract = useRealtimeContract(props.contract.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
 
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 

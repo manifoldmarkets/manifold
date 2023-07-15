@@ -9,7 +9,7 @@ import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { ContractStatusLabel } from './contracts-table'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 
 export const RelatedContractsList = memo(function RelatedContractsList(props: {
   contracts: Contract[]
@@ -46,7 +46,11 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
 }) {
   const { onContractClick } = props
 
-  const contract = useRealtimeContract(props.contract.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
   const { creatorUsername, creatorAvatarUrl, question, creatorCreatedTime } =
     contract
 
