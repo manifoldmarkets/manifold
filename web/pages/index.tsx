@@ -83,7 +83,12 @@ export default function Home() {
                 questions
               </h1>
 
-              <Button color="gradient" size="2xl" className="mt-8">
+              <Button
+                color="gradient"
+                size="2xl"
+                className="mt-8"
+                onClick={firebaseLogin}
+              >
                 Get started
               </Button>
 
