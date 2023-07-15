@@ -1,7 +1,4 @@
-import {
-  Contract,
-  MaybeAuthedContractParams,
-} from 'common/contract'
+import { Contract, MaybeAuthedContractParams } from 'common/contract'
 import { useEffect, useRef, useState } from 'react'
 import { getContractParams } from 'web/lib/firebase/api'
 import {
