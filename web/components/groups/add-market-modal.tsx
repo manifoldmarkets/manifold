@@ -8,7 +8,7 @@ import { SelectMarkets } from '../contract-select-modal'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { UncontrolledTabs } from '../layout/tabs'
-import { NewContractPanel } from '../new-contract-panel'
+import { NewContractPanel } from '../new-contract/new-contract-panel'
 import { AddContractToGroupPermissionType } from './add-contract-to-group-button'
 
 export function AddMarketToGroupModal(props: {
@@ -24,37 +24,20 @@ export function AddMarketToGroupModal(props: {
   useEffect(() => {
     getGroupContractIds(group.id).then((ids) => setGroupContractIds(ids))
   }, [group.id])
-  const [theme, setTheme] = useState<'private' | 'non-private'>(
-    group.privacyStatus == 'private' ? 'private' : 'non-private'
-  )
   return (
     <Modal open={open} setOpen={setOpen} size="lg">
-      <Col
-        className={clsx(
-          MODAL_CLASS,
-          SCROLLABLE_MODAL_CLASS,
-          theme == 'private' ? 'bg-primary-100' : 'bg-canvas-0'
-        )}
-      >
+      <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
         <div className="bg-primary-100 text-primary-800 fixed inset-x-0 top-0 z-40 w-full rounded-t-md py-2 px-8">
           {group.name}
         </div>
         {addPermission == 'private' && (
           <Col className="w-full pt-4">
-            <NewContractFromGroup
-              group={group}
-              user={user}
-              setTheme={setTheme}
-            />
+            <NewContractFromGroup group={group} user={user} />
           </Col>
         )}
         {addPermission == 'new' && (
           <Col className="w-full pt-4">
-            <NewContractFromGroup
-              group={group}
-              user={user}
-              setTheme={setTheme}
-            />
+            <NewContractFromGroup group={group} user={user} />
           </Col>
         )}
         {addPermission == 'any' && (
@@ -63,13 +46,7 @@ export function AddMarketToGroupModal(props: {
               tabs={[
                 {
                   title: 'New question',
-                  content: (
-                    <NewContractFromGroup
-                      group={group}
-                      user={user}
-                      setTheme={setTheme}
-                    />
-                  ),
+                  content: <NewContractFromGroup group={group} user={user} />,
                 },
                 {
                   title: 'Existing question',
@@ -97,26 +74,19 @@ export function AddMarketToGroupModal(props: {
   )
 }
 
-export function NewContractFromGroup(props: {
-  group: Group
-  user: User
-  setTheme: (theme: 'private' | 'non-private') => void
-}) {
-  const { group, user, setTheme } = props
+export function NewContractFromGroup(props: { group: Group; user: User }) {
+  const { group, user } = props
   return (
     <NewContractPanel
       params={{
         q: '',
-        type: 'BINARY',
         description: '',
         closeTime: '',
-        outcomeType: 'BINARY',
         visibility: group.privacyStatus === 'private' ? 'private' : 'public',
         groupId: group.id,
       }}
       creator={user}
       fromGroup={true}
-      setTheme={setTheme}
     />
   )
 }
