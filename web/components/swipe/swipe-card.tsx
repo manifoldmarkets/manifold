@@ -19,7 +19,7 @@ import { MoreSwipeInfo } from './more-swipe-info'
 import { SwipeComments } from './swipe-comments'
 import { Percent } from './percent'
 import { SwitchHorizontalIcon } from '@heroicons/react/solid'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 
 export const SwipeCard = memo(
   (props: {
@@ -49,8 +49,10 @@ export const SwipeCard = memo(
       small,
       toggleView,
     } = props
-    const contract = (useRealtimeContract(props.contract.id) ??
-      props.contract) as BinaryContract
+    const contract = (useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract) as BinaryContract
     const { question, coverImageUrl } = contract
 
     const image =
