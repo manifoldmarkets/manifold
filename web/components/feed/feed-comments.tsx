@@ -218,7 +218,9 @@ export const FeedComment = memo(function FeedComment(props: {
         <Col
           className={clsx(
             'w-full rounded-xl rounded-tl-none px-4 py-1',
-            highlighted ? 'bg-primary-50' : 'bg-ink-100'
+            highlighted
+              ? 'bg-primary-100 border-primary-300 border-2'
+              : 'bg-ink-100'
           )}
         >
           <FeedCommentHeader
