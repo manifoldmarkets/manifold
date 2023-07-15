@@ -10,7 +10,6 @@ import { DAY_MS } from 'common/util/time'
 import { contentSchema } from 'shared/zod-types'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { randomUUID } from 'crypto'
-import { update } from 'lodash'
 import { updateData } from 'shared/supabase/utils'
 
 const postSchema = z
@@ -103,7 +102,7 @@ export const createpost = authEndpoint(async (req, auth) => {
   }
 
   // currently uses the trigger to populate group_id, creator_id, created_time.
-  pg.none(`insert into posts (id, data) values ($1, $2)`, [post.id, post])
+  await pg.none(`insert into posts (id, data) values ($1, $2)`, [post.id, post])
 
   return { status: 'success', post }
 })

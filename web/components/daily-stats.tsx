@@ -12,6 +12,8 @@ import { LoansModal } from 'web/components/profile/loans-modal'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { DailyLeagueStat } from './daily-league-stat'
+import { DailyProfit } from 'web/components/daily-profit'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export const dailyStatsClass = 'bg-canvas-0 rounded-lg px-2 py-1 shadow'
 
@@ -21,6 +23,7 @@ export function DailyStats(props: {
   className?: string
 }) {
   const { user, showLoans } = props
+  const isMobile = useIsMobile()
 
   const [showLoansModal, setShowLoansModal] = useState(false)
 
@@ -28,11 +31,12 @@ export function DailyStats(props: {
 
   return (
     <Row className={'z-30 w-full items-center justify-end gap-3'}>
+      {!isMobile && <DailyProfit user={user} />}
+      <DailyLeagueStat user={user} />
+      <QuestsOrStreak user={user} />
       <Link href="/find" className="flex sm:hidden">
         <SearchIcon className="text-ink-500 hover:text-ink-900 h-6 w-6 cursor-pointer" />
       </Link>
-      <DailyLeagueStat user={user} />
-      <QuestsOrStreak user={user} />
 
       {showLoans && (
         <Col

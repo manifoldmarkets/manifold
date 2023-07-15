@@ -910,6 +910,33 @@ export interface Database {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          content: Json | null
+          created_time: string
+          market_id: string
+          rating: number
+          reviewer_id: string
+          vendor_id: string
+        }
+        Insert: {
+          content?: Json | null
+          created_time?: string
+          market_id: string
+          rating: number
+          reviewer_id: string
+          vendor_id: string
+        }
+        Update: {
+          content?: Json | null
+          created_time?: string
+          market_id?: string
+          rating?: number
+          reviewer_id?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       stats: {
         Row: {
           daily_values: number[] | null
@@ -1230,6 +1257,7 @@ export interface Database {
           total_deposits: number | null
           ts: string | null
           user_id: string
+          loan_total: number | null
         }
         Insert: {
           balance?: number | null
@@ -1238,6 +1266,7 @@ export interface Database {
           total_deposits?: number | null
           ts?: string | null
           user_id: string
+          loan_total?: number | null
         }
         Update: {
           balance?: number | null
@@ -1246,6 +1275,7 @@ export interface Database {
           total_deposits?: number | null
           ts?: string | null
           user_id?: string
+          loan_total?: number | null
         }
         Relationships: []
       }
@@ -2256,6 +2286,15 @@ export interface Database {
           p_query: string
         }
         Returns: string
+      }
+      get_rating: {
+        Args: {
+          user_id: string
+        }
+        Returns: {
+          count: number
+          rating: number
+        }[]
       }
       get_profit: {
         Args: {

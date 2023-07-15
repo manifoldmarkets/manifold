@@ -17,8 +17,6 @@ declare module '@tiptap/core' {
   }
 }
 
-const iframeClasses = 'w-full h-80'
-
 export default Node.create<IframeOptions>({
   name: 'iframe',
 
@@ -29,7 +27,10 @@ export default Node.create<IframeOptions>({
   addOptions() {
     return {
       allowFullscreen: true,
-      HTMLAttributes: {},
+      HTMLAttributes: {
+        class: 'w-full h-80',
+        height: 80 * 4,
+      },
     }
   },
 
@@ -55,9 +56,7 @@ export default Node.create<IframeOptions>({
   renderHTML({ HTMLAttributes }) {
     return [
       'iframe',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        class: iframeClasses,
-      }),
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
     ]
   },
 

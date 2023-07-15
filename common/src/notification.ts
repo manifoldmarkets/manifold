@@ -65,6 +65,7 @@ export type notification_source_types =
   | 'quest_reward'
   | 'league_change'
   | 'bounty_added'
+  | 'mana_payment'
 
 export type notification_source_update_types =
   | 'created'
@@ -116,6 +117,7 @@ export type notification_reason_types =
   | 'added_to_group'
   | 'bounty_awarded'
   | 'bounty_added'
+  | 'mana_payment_received'
 
 type notification_descriptions = {
   [key in notification_preference]: {

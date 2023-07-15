@@ -181,40 +181,46 @@ export const AnswerBar = (props: {
   resolvedProb?: number // 0 - 1
   label: ReactNode
   end: ReactNode
+  bottom?: ReactNode
   className?: string
 }) => {
-  const { color, prob, resolvedProb, label, end, className } = props
+  const { color, prob, resolvedProb, label, end, bottom, className } = props
 
   return (
-    <div className={clsx('relative isolate w-full', className)}>
-      {/* background bar */}
-      <div className="bg-canvas-50 absolute left-0 right-0 bottom-0 -z-10 h-3 rounded transition-all sm:top-1/2 sm:h-full sm:-translate-y-1/2 sm:bg-inherit">
-        {/* bar outline if resolved */}
-        {!!resolvedProb && (
+    <Col>
+      <div className={clsx('relative isolate w-full', className)}>
+        {/* background bar */}
+        <div className="bg-canvas-50 absolute left-0 right-0 bottom-0 -z-10 h-3 rounded transition-all sm:top-1/2 sm:h-full sm:-translate-y-1/2 sm:bg-inherit">
+          {/* bar outline if resolved */}
+          {!!resolvedProb && (
+            <div
+              className="absolute top-0 h-full rounded bg-purple-100 ring-1 ring-purple-500 dark:bg-purple-900 sm:ring-2"
+              style={{
+                width: `${resolvedProb * 100}%`,
+              }}
+            />
+          )}
+          {/* main bar */}
           <div
-            className="absolute top-0 h-full rounded bg-purple-100 ring-1 ring-purple-500 dark:bg-purple-900 sm:ring-2"
+            className="h-full rounded opacity-70"
             style={{
-              width: `${resolvedProb * 100}%`,
+              width: `max(8px, ${prob * 100}%)`,
+              background: color,
             }}
           />
-        )}
-        {/* main bar */}
-        <div
-          className="h-full rounded opacity-70"
-          style={{
-            width: `max(8px, ${prob * 100}%)`,
-            background: color,
-          }}
-        />
-      </div>
+        </div>
 
-      <div className="flex-wrap items-center justify-between gap-x-4 leading-none sm:flex sm:min-h-[40px] sm:flex-nowrap sm:px-3">
-        {label}
-        <div className="relative float-right flex grow items-center justify-end gap-2">
-          {end}
+        <div className="flex-wrap items-center justify-between gap-x-4 leading-none sm:flex sm:min-h-[40px] sm:flex-nowrap sm:px-3">
+          {label}
+          <div className="relative float-right flex grow items-center justify-end gap-2">
+            {end}
+          </div>
         </div>
       </div>
-    </div>
+      {bottom && (
+        <div className="mt-0.5 self-end sm:mx-3 sm:mt-0">{bottom}</div>
+      )}
+    </Col>
   )
 }
 

@@ -15,6 +15,7 @@ import { ContractEditHistoryButton } from 'web/components/contract/contract-edit
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { isContentEmpty } from 'web/lib/util/isContentEmpty'
 import { Editor } from '@tiptap/core'
+import { CreateAnswerCpmmPanel } from '../answers/create-answer-panel'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -88,6 +89,7 @@ function ContractActions(props: {
     toggleResolver,
   } = props
   const [editing, setEditing] = useState(false)
+  const [editingAnswer, setEditingAnswer] = useState(false)
 
   const emptyDescription = isContentEmpty(contract.description)
 
@@ -99,6 +101,17 @@ function ContractActions(props: {
   async function saveDescription() {
     if (!editor) return
     await updateContract(contract.id, { description: editor.getJSON() })
+  }
+
+  if (editingAnswer && contract.mechanism === 'cpmm-multi-1') {
+    return (
+      <CreateAnswerCpmmPanel
+        contract={contract}
+        onFinish={() => {
+          setEditingAnswer(false)
+        }}
+      />
+    )
   }
 
   return editing ? (
@@ -128,7 +141,7 @@ function ContractActions(props: {
           stateKey={`isCollapsed-contract-${contract.id}`}
         />
       )}
-      <Row className="items-center justify-end gap-2 text-xs">
+      <Row className="flex-wrap items-center justify-end gap-2 text-xs">
         {isOnlyAdmin && 'Admin '}
         <ContractEditHistoryButton contract={contract} className="my-2" />
         {!isOnlyTrustworthy && (
@@ -179,6 +192,26 @@ function EditDescriptionButton(props: {
       }}
     >
       {icon} {text}
+    </Button>
+  )
+}
+
+// Disabled for now, until we support an Other answer.
+function _AddAnswerButton(props: {
+  setEditing: (editing: boolean) => void
+  buttonColor?: ColorType
+}) {
+  const { buttonColor, setEditing } = props
+
+  return (
+    <Button
+      color={buttonColor ?? 'gray-white'}
+      size="2xs"
+      onClick={() => {
+        setEditing(true)
+      }}
+    >
+      <PlusIcon className="ml-1 inline h-4 w-4" /> Add answer
     </Button>
   )
 }

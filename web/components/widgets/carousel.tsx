@@ -9,17 +9,18 @@ export function Carousel(props: {
   children: ReactNode
   loadMore?: () => void
   className?: string
+  labelsParentClassName?: string
 }) {
-  const { children, loadMore, className } = props
+  const { children, labelsParentClassName, loadMore, className } = props
 
   const ref = useRef<HTMLDivElement>(null)
 
   const th = (f: () => any) => throttle(f, 500, { trailing: false })
   const scrollLeft = th(() =>
-    ref.current?.scrollBy({ left: -ref.current.clientWidth })
+    ref.current?.scrollBy({ left: -(ref.current.clientWidth - 80) })
   )
   const scrollRight = th(() =>
-    ref.current?.scrollBy({ left: ref.current.clientWidth })
+    ref.current?.scrollBy({ left: ref.current.clientWidth - 80 })
   )
 
   const [atFront, setAtFront] = useState(true)
@@ -37,7 +38,10 @@ export function Carousel(props: {
   return (
     <div className={clsx('relative', className)}>
       <Row
-        className="scrollbar-hide w-full snap-x gap-4 overflow-x-auto scroll-smooth"
+        className={clsx(
+          'scrollbar-hide w-full snap-x overflow-x-auto scroll-smooth',
+          labelsParentClassName ?? 'gap-4'
+        )}
         ref={ref}
         onScroll={onScroll}
       >

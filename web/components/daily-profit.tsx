@@ -34,8 +34,8 @@ export const DailyProfit = memo(function DailyProfit(props: {
   const { user } = props
 
   const portfolio = useCurrentPortfolio(user?.id)
-  const portfolioValue = portfolio
-    ? portfolio.balance + portfolio.investmentValue
+  const investment = portfolio
+    ? portfolio.investmentValue + (portfolio.loanTotal ?? 0)
     : 0
 
   const [open, setOpen] = useState(false)
@@ -74,15 +74,15 @@ export const DailyProfit = memo(function DailyProfit(props: {
   return (
     <>
       <button
-        className={clsx(dailyStatsClass, ' text-center')}
+        className={clsx(dailyStatsClass)}
         onClick={withTracking(() => {
           setOpen(true)
         }, DAILY_PROFIT_CLICK_EVENT)}
       >
         <Row>
-          <Col className="items-start gap-1">
-            <div>{formatMoney(portfolioValue)}</div>
-            <div className="text-ink-600 text-sm ">Portfolio</div>
+          <Col className="items-start">
+            <div>{formatMoney(investment)}</div>
+            <div className="text-ink-600 text-xs ">Invested</div>
           </Col>
 
           {dailyProfit !== 0 && (
@@ -105,7 +105,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
           metrics={data?.metrics}
           contracts={data?.contracts}
           dailyProfit={dailyProfit}
-          portfolio={portfolioValue}
+          investment={investment}
         />
       )}
     </>
@@ -118,9 +118,9 @@ function DailyProfitModal(props: {
   metrics?: ContractMetric[]
   contracts?: CPMMContract[]
   dailyProfit: number
-  portfolio: number
+  investment: number
 }) {
-  const { open, setOpen, metrics, contracts, dailyProfit, portfolio } = props
+  const { open, setOpen, metrics, contracts, dailyProfit, investment } = props
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
@@ -128,11 +128,11 @@ function DailyProfitModal(props: {
         <Col className={'mb-4'}>
           <Row className="gap-2 text-2xl">
             <Col className="gap-2">
-              <div>Portfolio</div>
+              <div>Invested</div>
               <div>Daily profit</div>
             </Col>
             <Col className="text-ink-600 items-end gap-2">
-              <div>{formatMoney(portfolio)}</div>
+              <div>{formatMoney(investment)}</div>
               <div
                 className={clsx(
                   dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'

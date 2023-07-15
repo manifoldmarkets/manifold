@@ -54,3 +54,8 @@ export async function canCreateManalink(user: User, db: SupabaseClient) {
       user.creatorTraders.allTime > 10)
   )
 }
+export async function canSendMana(user: User) {
+  const oneWeekAgo = Date.now() - 7 * DAY_MS
+
+  return user.createdTime < oneWeekAgo && user.balance > 1000
+}

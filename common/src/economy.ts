@@ -1,7 +1,8 @@
 export const FIXED_ANTE = 50
+export const ANSWER_COST = FIXED_ANTE / 2
 const ANTES = {
   BINARY: FIXED_ANTE,
-  MULTIPLE_CHOICE: FIXED_ANTE / 2, // Amount per answer.
+  MULTIPLE_CHOICE: ANSWER_COST, // Amount per answer.
   FREE_RESPONSE: FIXED_ANTE * 2,
   PSEUDO_NUMERIC: FIXED_ANTE * 5,
   NUMERIC: FIXED_ANTE * 5,
@@ -39,3 +40,5 @@ export const MAX_TRADERS_FOR_BONUS = 100
 export const BETTING_STREAK_BONUS_AMOUNT = 5
 export const BETTING_STREAK_BONUS_MAX = 25
 export const BETTING_STREAK_RESET_HOUR = 7
+
+export const MANACHAN_TWEET_COST = 250

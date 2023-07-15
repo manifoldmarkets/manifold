@@ -3,6 +3,10 @@ import { track } from 'web/lib/service/analytics'
 
 export const PrivacyAndTerms = () => (
   <div className="text-ink-400 mt-8 mb-4 w-full text-center text-sm">
+    <Link href="/about" className="hover:underline">
+      About
+    </Link>
+    <span className="mx-2">&bull;</span>
     <Link
       href="/terms"
       className="hover:underline"

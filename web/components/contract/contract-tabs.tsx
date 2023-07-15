@@ -225,6 +225,14 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const comments = (useComments(contract.id) ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)
   )
+
+  const commentsWithoutLikes = useMemo(() => {
+    return comments.map((c) => {
+      const { likes, ...commentsWithoutLikes } = c
+      return commentsWithoutLikes
+    })
+  }, [comments])
+
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     DEFAULT_PARENT_COMMENTS_TO_RENDER
   )
@@ -244,34 +252,55 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
-  const shouldBeNewestFirst = (c: ContractComment) =>
-    c.replyToCommentId == undefined
+  const isReply = (c: ContractComment) => c.replyToCommentId !== undefined
 
   const sortedComments = useMemo(
     () =>
       sortBy(comments, [
         sort === 'Best'
           ? isBountiedQuestion
-            ? (c: ContractComment) => -(c?.bountyAwarded ?? 0)
+            ? (c: ContractComment) =>
+                isReply(c)
+                  ? c.createdTime
+                  : c.bountyAwarded
+                  ? -c.bountyAwarded * 1000
+                  : -(c.likes ?? 0)
             : (c) =>
-                // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-                likes &&
-                c.createdTime > Date.now() - 10 * MINUTE_MS &&
-                c.userId === user?.id &&
-                shouldBeNewestFirst(c)
+                isReply(c)
+                  ? c.createdTime
+                  : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+                  likes &&
+                    c.createdTime > Date.now() - 10 * MINUTE_MS &&
+                    c.userId === user?.id
                   ? -Infinity
                   : -(c?.likes ?? 0)
           : (c) => c,
-        (c) => (!shouldBeNewestFirst(c) ? c.createdTime : -c.createdTime),
+        (c) => (isReply(c) ? c.createdTime : -c.createdTime),
       ]),
-    [comments, sort, likes, user?.id]
+    [commentsWithoutLikes, sort, likes, user?.id]
   )
 
   const commentsByParent = useMemo(
     () => groupBy(sortedComments, (c) => c.replyToCommentId ?? '_'),
     [sortedComments]
   )
+
   const parentComments = commentsByParent['_'] ?? []
+
+  const childrensBounties =
+    contract.outcomeType == 'BOUNTIED_QUESTION'
+      ? Object.keys(commentsByParent).reduce(
+          (newObj: { [key: string]: number }, key) => {
+            newObj[key] = commentsByParent[key].reduce(
+              (sum, c) => sum + (c?.bountyAwarded ?? 0),
+              0
+            )
+            return newObj
+          },
+          {}
+        )
+      : {}
+
   const visibleCommentIds = useMemo(
     () =>
       parentComments
@@ -355,6 +384,11 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 !isBountiedQuestion ||
                 (!!user && user.id === contract.creatorId)
               }
+              childrenBountyTotal={
+                contract.outcomeType == 'BOUNTIED_QUESTION'
+                  ? childrensBounties[parent.id]
+                  : undefined
+              }
             />
           ))}
       <div className="relative w-full">
@@ -376,7 +410,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const [olderBets, setOlderBets] = useState<Bet[]>([])
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
-  const bets = [...props.bets, ...olderBets]
+  const bets = [...props.bets.filter((b) => !b.isRedemption), ...olderBets]
   const oldestBet = last(bets)
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE

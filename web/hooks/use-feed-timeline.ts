@@ -17,6 +17,7 @@ import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items
 import { DAY_MS } from 'common/util/time'
 
 const PAGE_SIZE = 25
+const OLDEST_UNSEEN_TIME_OF_INTEREST = Date.now() - 3 * DAY_MS
 
 export type FeedTimelineItem = {
   // These are stored in the db
@@ -36,6 +37,7 @@ export type FeedTimelineItem = {
   news?: News
   reasonDescription?: string
   isCopied?: boolean
+  data?: Record<string, any>
 }
 export const useFeedTimeline = (
   user: User | null | undefined,
@@ -61,30 +63,59 @@ export const useFeedTimeline = (
   const oldestCreatedTimestamp = useRef(
     last(savedFeedItems)?.supabaseTimestamp ?? new Date().toISOString()
   )
-
+  const fetching = useRef(false)
+  const unseenCount = useRef(100)
+  const getUnseenCount = async () => {
+    if (
+      new Date(oldestCreatedTimestamp.current).valueOf() <
+      OLDEST_UNSEEN_TIME_OF_INTEREST
+    ) {
+      unseenCount.current = 0
+      return
+    }
+    const unseenCountQuery = db
+      .from('user_feed')
+      .select('*', { head: true, count: 'exact' })
+      .eq('user_id', userId)
+      .is('seen_time', null)
+      .lt('created_time', oldestCreatedTimestamp.current)
+      .gt(
+        'created_time',
+        new Date(OLDEST_UNSEEN_TIME_OF_INTEREST).toISOString()
+      )
+    const unseenCountData = await unseenCountQuery
+    unseenCount.current = unseenCountData.count ?? 0
+  }
   const fetchFeedItems = async (
     userId: string,
     options: {
-      new?: boolean
       newerThan?: string
       old?: boolean
     }
   ) => {
-    const time = options.new
-      ? new Date().toISOString()
-      : oldestCreatedTimestamp.current
+    if (fetching.current) return { timelineItems: [] as FeedTimelineItem[] }
     let query = db
       .from('user_feed')
       .select('*')
       .eq('user_id', userId)
-      .lt('created_time', time)
       .order('created_time', { ascending: false })
       .limit(PAGE_SIZE)
+    // TODO: if you're loading older, unseen stuff, newer stuff could be seen
     if (options.newerThan) {
       query = query.gt('created_time', options.newerThan)
     }
-
+    if (options.old) {
+      query = query.lt('created_time', oldestCreatedTimestamp.current)
+      // TODO: create index on seen_time, drop old index
+      if (unseenCount.current > 10) query = query.is('seen_time', null)
+    }
     const { data } = await run(query)
+    if (options.old && unseenCount.current > 0) {
+      const newUnseens = data
+        .map((item) => !item.seen_time)
+        .filter(Boolean).length
+      unseenCount.current = unseenCount.current - newUnseens
+    }
 
     // Filter out already saved ones to reduce bandwidth and avoid duplicates
     const alreadySavedContractIds = filterDefined(
@@ -96,13 +127,17 @@ export const useFeedTimeline = (
         (id) => !alreadySavedContractIds.includes(id)
       )
     )
-    const newCommentsOnContractIds = uniq(
-      filterDefined(data.map((item) => item.comment_id))
+    const commentsByUserIds = groupBy(
+      data.filter((d) => d.comment_id),
+      (item) => item.creator_id
+    )
+    const newCommentsOnContractIds = filterDefined(
+      Object.values(commentsByUserIds).map((items) => first(items))
     )
 
     const potentiallySeenCommentIds = uniq(
       filterDefined(
-        data.map((item) => (!item.seen_time ? item.comment_id : null))
+        data.map((item) => (item.seen_time ? null : item.comment_id))
       )
     )
     const alreadySavedNewsIds = filterDefined(
@@ -131,7 +166,7 @@ export const useFeedTimeline = (
         .then((res) => res.data?.map((c) => c.data as ContractComment)),
       db
         .from('contracts')
-        .select('*')
+        .select('data')
         .in('id', newContractIds)
         .then((res) => res.data?.map((c) => c.data as Contract)),
       db
@@ -192,6 +227,7 @@ export const useFeedTimeline = (
       filteredNewComments,
       news
     )
+    fetching.current = false
 
     return { timelineItems }
   }
@@ -221,7 +257,7 @@ export const useFeedTimeline = (
   )
 
   const loadMore = useEvent(
-    async (options: { new?: boolean; old?: boolean; newerThan?: string }) => {
+    async (options: { old?: boolean; newerThan?: string }) => {
       if (!userId) return false
       const res = await fetchFeedItems(userId, options)
       const { timelineItems } = res
@@ -233,7 +269,6 @@ export const useFeedTimeline = (
   const checkForNewer = useEvent(async () => {
     if (!userId) return []
     const { timelineItems } = await fetchFeedItems(userId, {
-      new: true,
       newerThan: newestCreatedTimestamp.current,
     })
     return timelineItems
@@ -241,11 +276,11 @@ export const useFeedTimeline = (
 
   useEffect(() => {
     if (savedFeedItems?.length || !userId) return
-    loadMore({ new: true })
+    getUnseenCount()
+    loadMore({ old: true })
   }, [loadMore, userId])
 
   return {
-    loadNew: async () => loadMore({ new: true }),
     loadMoreOlder: async () => loadMore({ old: true }),
     checkForNewer: async () => checkForNewer(),
     addTimelineItems,
@@ -269,6 +304,7 @@ const getBaseTimelineItem = (item: Row<'user_feed'>) =>
     createdTime: new Date(item.created_time).valueOf(),
     supabaseTimestamp: item.created_time,
     isCopied: item.is_copied,
+    data: item.data as Record<string, any>,
   } as FeedTimelineItem)
 
 function createFeedTimelineItems(
@@ -315,6 +351,14 @@ function createFeedTimelineItems(
           (dataType === 'new_comment' || dataType === 'popular_comment')
         )
           return
+        if (
+          marketMovementInfo(
+            relevantContract,
+            dataType,
+            item.data as Record<string, any>
+          ).ignore
+        )
+          return
 
         // Let's stick with one comment per feed item for now
         const relevantComments = comments
@@ -350,4 +394,40 @@ export const shouldIgnoreCommentsOnContract = (contract: Contract): boolean => {
     contract.isResolved ||
     (contract.closeTime ? contract.closeTime < Date.now() : false)
   )
+}
+
+export const marketMovementInfo = (
+  contract: Contract,
+  dataType?: FEED_DATA_TYPES,
+  data?: Record<string, any>
+) => {
+  const previousProbAbout50 =
+    (data?.previousProb ?? 0.5) > 0.48 && (data?.previousProb ?? 0.5) < 0.52
+  const probChangeSinceAdd =
+    contract.mechanism === 'cpmm-1' && data?.previousProb
+      ? contract.prob - data.previousProb
+      : null
+
+  const probChange =
+    contract.mechanism === 'cpmm-1' &&
+    contract.createdTime < Date.now() - DAY_MS &&
+    // make sure it wasn't made within the past 2 days and just moved from 50%
+    !(contract.createdTime > Date.now() - 2 * DAY_MS && previousProbAbout50) &&
+    Math.abs(probChangeSinceAdd ?? contract.probChanges.day) > 0.055 &&
+    !contract.isResolved
+      ? Math.round((probChangeSinceAdd ?? contract.probChanges.day) * 100)
+      : null
+
+  const showChange =
+    probChange != null &&
+    (dataType
+      ? dataType === 'contract_probability_changed' ||
+        dataType === 'trending_contract'
+      : true)
+
+  if (!showChange && dataType === 'contract_probability_changed') {
+    // console.log('filtering prob change', probChangeSinceAdd, contract)
+    return { ignore: true, probChange }
+  }
+  return { ignore: false, probChange }
 }

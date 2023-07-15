@@ -19,13 +19,11 @@ import { buildArray } from 'common/util/array'
 import { MultiPoint } from 'common/chart'
 
 const CHOICE_ANSWER_COLORS = [
-  // The PEOPLE have SPOKEN
   '#99DDFF', // sky
-  '#4A412A', // drab brown (please change oh my god)
-  '#BBCC33', // piss yellow (please change oh my god)
+  '#FFDD99', // sand
+  '#FFAABB', // pink
   '#77AADD', // navy
   '#9932CC', // 🍆
-  '#FFAABB', // pink
   '#C70020', // blood red
   '#FF8C00', // orange
   '#44BB99', // forest
@@ -35,19 +33,16 @@ const CHOICE_ANSWER_COLORS = [
   '#9F00C5', // Grimace
   '#FF8900', // octarine
   '#EEDD88', // yellow
-
-  // The AI's favorite colors :)
   '#3498DB', // Blue
   '#2ECC71', // Green
   '#F1C40F', // Yellow
   '#9B59B6', // Purple
   '#E67E22', // Orange
-  '#95A5A6', // Gray
+  '#90BE6D', // Green
   '#FFA500', // Orange
   '#FFC0CB', // Pink
   '#FF69B4', // Hot Pink
   '#F9C74F', // Yellow
-  '#90BE6D', // Green
   '#FF6B6B', // Red
   '#FF9F1C', // Orange
   '#D3A8FF', // Purple
@@ -63,12 +58,11 @@ const CHOICE_ANSWER_COLORS = [
   '#C3CED0', // Silver Blue
   '#FFA69E', // Coral
   '#DBD56E', // Mustard
-  '#C6E2E9', // Sky Blue
 ]
-const CHOICE_OTHER_COLOR = '#B1B1C7'
+// const CHOICE_OTHER_COLOR = '#B1B1C7'
 
 export const nthColor = (index: number) =>
-  CHOICE_ANSWER_COLORS[index] ?? CHOICE_OTHER_COLOR
+  CHOICE_ANSWER_COLORS[index % CHOICE_ANSWER_COLORS.length]
 
 const getAnswers = (contract: MultiContract) => {
   const { answers, outcomeType } = contract
@@ -135,7 +129,14 @@ export const ChoiceContractChart = (props: {
   const data = useMemo(() => {
     if (!answers.length) return []
 
-    const startY: number[] = new Array(answers.length).fill(1 / answers.length)
+    const firstAnswerTime = answers[0].createdTime
+    const startAnswers = answers.filter(
+      (a) => a.createdTime <= firstAnswerTime + 1000
+    )
+    const startY: number[] = [
+      ...new Array(startAnswers.length).fill(1 / startAnswers.length),
+      ...new Array(answers.length - startAnswers.length).fill(0),
+    ]
 
     return buildArray(isMultipleChoice && { x: start, y: startY }, betPoints, {
       x: end ?? now,

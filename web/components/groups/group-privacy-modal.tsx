@@ -218,13 +218,13 @@ export const PRIVACY_STATUS_ITEMS = {
     bigIcon: <ShieldCheckIcon className="h-6 w-6" />,
     status: 'Curated',
     descriptor:
-      'Anyone can view and join this group, but only admins and moderators can add/remove questions',
+      'Anyone can view and join this group, but only admins and moderators can add/remove questions.',
   },
   private: {
     icon: <LockClosedIcon className="h-4 w-4" />,
     bigIcon: <LockClosedIcon className="h-6 w-6" />,
     status: 'Private',
     descriptor:
-      'The content in this group is not viewable by the public. Only approved users can join this group.',
+      'The content in this group is not viewable by the public. Only approved users can join this group. Manifold devs may view for development reasons.',
   },
 }

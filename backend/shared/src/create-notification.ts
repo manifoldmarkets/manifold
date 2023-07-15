@@ -681,6 +681,39 @@ export const createLoanIncomeNotification = async (
   await insertNotificationToSupabase(notification, pg)
 }
 
+export const createManaPaymentNotification = async (
+  fromUser: User,
+  toUserId: string,
+  amount: number,
+  message: string | undefined
+) => {
+  const privateUser = await getPrivateUser(toUserId)
+  if (!privateUser) return
+  const optedOut = userOptedOutOfBrowserNotifications(privateUser)
+  if (optedOut) return
+
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: toUserId,
+    reason: 'mana_payment_received',
+    createdTime: Date.now(),
+    isSeen: true,
+    sourceId: fromUser.id,
+    sourceType: 'mana_payment',
+    sourceUpdateType: 'created',
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceText: amount.toString(),
+    data: {
+      message: message ?? '',
+    },
+    sourceTitle: 'User payments',
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}
+
 const groupPath = (groupSlug: string) => `/group/${groupSlug}`
 
 export const createBettingStreakBonusNotification = async (
