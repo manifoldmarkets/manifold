@@ -42,7 +42,11 @@ export const CORS_ORIGIN_MANIFOLD = new RegExp(
 )
 // Vercel deployments, used for testing.
 export const CORS_ORIGIN_VERCEL = new RegExp(
-  '^https?://[a-zA-Z0-9\\-]+' + escapeRegExp('mantic.vercel.app') + '$'
+  '^https?://[a-zA-Z0-9\\-]+' +
+    escapeRegExp(
+      'manifold-js9u(?:-(?:git-test-)?amit0617.vercel.app|.vercel.app)'
+    ) +
+    '$'
 )
 // Any localhost server on any port
 export const CORS_ORIGIN_LOCALHOST = /^http:\/\/localhost:\d+$/

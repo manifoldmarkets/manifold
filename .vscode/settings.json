@@ -13,7 +13,7 @@
   "sqltools.connections": [
     {
       "previewLimit": 50,
-      "server": "db.pxidrgkatumlvfqaxcll.supabase.co",
+      "server": "db.qfoxftkiomoymchnaozl.supabase.co",
       "port": 5432,
       "driver": "PostgreSQL",
       "name": "Manifold Prod",

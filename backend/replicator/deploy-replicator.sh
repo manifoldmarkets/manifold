@@ -6,10 +6,10 @@ ENV=${1:-dev}
 case $ENV in
     dev)
       ENVIRONMENT=DEV
-      GCLOUD_PROJECT=dev-mantic-markets ;;
+      GCLOUD_PROJECT=mantic-market ;;
     prod)
       ENVIRONMENT=PROD
-      GCLOUD_PROJECT=mantic-markets ;;
+      GCLOUD_PROJECT=mantic-market ;;
     *)
       echo "Invalid environment; must be dev or prod."
       exit 1

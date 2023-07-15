@@ -11,10 +11,10 @@ ENV=${1:-dev}
 case $ENV in
     dev)
       ENVIRONMENT=DEV
-      GCLOUD_PROJECT=dev-mantic-markets ;;
+      GCLOUD_PROJECT=mantic-market ;;
     prod)
       ENVIRONMENT=PROD
-      GCLOUD_PROJECT=mantic-markets ;;
+      GCLOUD_PROJECT=mantic-market ;;
     *)
       echo "Invalid environment; must be dev or prod."
       exit 1
@@ -34,4 +34,5 @@ yarn build && \
          --cpu 2 \
          --memory 2Gi \
          --concurrency 1000 \
-         --min-instances 1
+         --min-instances 1 \
+         --allow-unauthenticated

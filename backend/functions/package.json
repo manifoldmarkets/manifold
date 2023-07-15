@@ -2,7 +2,7 @@
   "name": "functions",
   "version": "1.0.0",
   "config": {
-    "firestore": "dev-mantic-markets.appspot.com"
+    "firestore": "mantic-market.appspot.com"
   },
   "scripts": {
     "build": "yarn compile && yarn --cwd=../../common alias && yarn --cwd=../shared alias && yarn alias && yarn dist",

@@ -42,37 +42,37 @@ type FirebaseConfig = {
 }
 
 export const PROD_CONFIG: EnvConfig = {
-  domain: 'manifold.markets',
-  amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
-  supabaseInstanceId: 'pxidrgkatumlvfqaxcll',
+  domain: 'manifold-js9u.vercel.app',
+  amplitudeApiKey: '',
+  supabaseInstanceId: 'qfoxftkiomoymchnaozl',
   supabaseAnonKey:
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4aWRyZ2thdHVtbHZmcWF4Y2xsIiwicm9sZSI6ImFub24iLCJpYXQiOjE2Njg5OTUzOTgsImV4cCI6MTk4NDU3MTM5OH0.d_yYtASLzAoIIGdXUBIgRAGLBnNow7JG2SoaNMQ8ySg',
-  sprigEnvironmentId: 'sQcrq9TDqkib',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmb3hmdGtpb21veW1jaG5hb3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODk0MDg3MDMsImV4cCI6MjAwNDk4NDcwM30.t7sKEO_DmvFfDdevAUUrQfYEK5Ao-DZbuua5Tetdg34',
+  sprigEnvironmentId: '',
 
   firebaseConfig: {
-    apiKey: 'AIzaSyDp3J57vLeAZCzxLD-vcPaGIkAmBoGOSYw',
-    authDomain: 'mantic-markets.firebaseapp.com',
-    projectId: 'mantic-markets',
+    apiKey: 'AIzaSyCIku78FsmCjSFbkRN-nzkileDt9H9jIJg',
+    authDomain: 'mantic-market.firebaseapp.com',
+    projectId: 'mantic-market',
     region: 'us-central1',
-    storageBucket: 'mantic-markets.appspot.com',
-    messagingSenderId: '128925704902',
-    appId: '1:128925704902:web:f61f86944d8ffa2a642dc7',
-    measurementId: 'G-SSFK1Q138D',
+    storageBucket: 'mantic-market.appspot.com',
+    messagingSenderId: '388635777394',
+    appId: '1:388635777394:web:30adbc21e04b723c6325eb',
+    measurementId: 'G-PE0QZXTQ0Y',
   },
-  twitchBotEndpoint: 'https://twitch-bot.manifold.markets',
-  cloudRunId: 'nggbo3neva',
+  twitchBotEndpoint: '',
+  cloudRunId: '47u4ztjqea',
   cloudRunRegion: 'uc',
 
   adminIds: [
-    'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
-    '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
-    'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
-    '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
-    'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold
-    'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
-    'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
-    'GRwzCexe5PM6ThrSsodKZT9ziln2', //Inga
-    '62TNqzdBx7X2q621HltsJm8UFht2', // Marshall
+    // 'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
+    // '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
+    // 'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
+    // '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
+    // 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold
+    // 'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
+    // 'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
+    // 'GRwzCexe5PM6ThrSsodKZT9ziln2', //Inga
+    // '62TNqzdBx7X2q621HltsJm8UFht2', // Marshall
   ],
   visibility: 'PUBLIC',
 
@@ -88,11 +88,11 @@ export const PROD_CONFIG: EnvConfig = {
     'Will the Democrats win the 2024 presidential election?',
   ],
   expoConfig: {
-    iosClientId:
-      '128925704902-n0ic4j1s5tk51t2vu8anu8glh3t5jimo.apps.googleusercontent.com',
-    expoClientId:
-      '128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com',
-    androidClientId:
-      '128925704902-ur9hevfika2rs0sni6ju236u82hbct3i.apps.googleusercontent.com',
+    // iosClientId:
+    // '128925704902-n0ic4j1s5tk51t2vu8anu8glh3t5jimo.apps.googleusercontent.com',
+    // expoClientId:
+    // '128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com',
+    // androidClientId:
+    // '128925704902-ur9hevfika2rs0sni6ju236u82hbct3i.apps.googleusercontent.com',
   },
 }

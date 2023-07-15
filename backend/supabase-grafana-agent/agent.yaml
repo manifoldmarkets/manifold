@@ -20,7 +20,7 @@ metrics:
             username: service_role
             password: ${SUPABASE_KEY}
           static_configs:
-            - targets: ['pxidrgkatumlvfqaxcll.supabase.co']
+            - targets: ['qfoxftkiomoymchnaozl.supabase.co']
 
       remote_write:
         - url: https://prometheus-us-central1.grafana.net/api/prom/push

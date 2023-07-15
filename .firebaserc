@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "mantic-markets",
+    "default": "mantic-market",
     "prod": "mantic-markets",
     "dev": "dev-mantic-markets"
   }

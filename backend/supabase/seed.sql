@@ -1,7 +1,5 @@
 -- noinspection SqlNoDataSourceInspectionForFile
-/ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * /
 /* 0. database-wide configuration */
-/ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * /
 /* allow our backend and CLI users to have a long statement timeout */
 alter role postgres
 set
@@ -1269,9 +1267,7 @@ add table user_notifications;
 
 commit;
 
-/ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * /
 /* 2. internal machinery for making firestore replication work */
-/ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * /
 /* records all incoming writes to any logged firestore document */
 create table if not exists
   incoming_writes (
