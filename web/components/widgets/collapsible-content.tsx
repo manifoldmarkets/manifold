@@ -6,14 +6,10 @@ import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
 import { MouseEventHandler, useRef, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import {
-  storageStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { Row } from '../layout/row'
 import { Content } from './editor'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export const COLLAPSIBLE_HEIGHT = 26 * 3 // line height is 26px
 export const SHOW_COLLAPSE_TRESHOLD = 180
@@ -100,12 +96,9 @@ function ActuallyCollapsibleContent(props: {
   hideButton?: boolean
 }) {
   const { content, stateKey, defaultCollapse, children, hideButton } = props
-  const [collapsed, setCollapsed] = usePersistentState<boolean>(
+  const [collapsed, setCollapsed] = usePersistentLocalState<boolean>(
     defaultCollapse ?? false,
-    {
-      store: storageStore(safeLocalStorage),
-      key: stateKey,
-    }
+    stateKey
   )
   const [overrideCollaped, setOverrideCollaped] = useState(defaultCollapse)
   const isCollapsed = overrideCollaped ?? collapsed
