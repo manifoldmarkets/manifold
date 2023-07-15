@@ -226,13 +226,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     (c) => !blockedUserIds.includes(c.userId)
   )
 
-  const commentsWithoutLikes = useMemo(() => {
-    return comments.map((c) => {
-      const { likes, ...commentsWithoutLikes } = c
-      return commentsWithoutLikes
-    })
-  }, [comments])
-
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     DEFAULT_PARENT_COMMENTS_TO_RENDER
   )
@@ -254,7 +247,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   // replied to answers/comments are NOT newest, otherwise newest first
   const isReply = (c: ContractComment) => c.replyToCommentId !== undefined
 
-  const sortedComments = useMemo(
+  const strictlySortedComments = useMemo(
     () =>
       sortBy(comments, [
         sort === 'Best'
@@ -262,9 +255,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
             ? (c: ContractComment) =>
                 isReply(c)
                   ? c.createdTime
-                  : c.bountyAwarded
-                  ? -c.bountyAwarded * 1000
-                  : -(c.likes ?? 0)
+                  : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
             : (c) =>
                 isReply(c)
                   ? c.createdTime
@@ -277,12 +268,19 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           : (c) => c,
         (c) => (isReply(c) ? c.createdTime : -c.createdTime),
       ]),
-    [commentsWithoutLikes, sort, likes, user?.id]
+    [comments, sort, likes, user?.id]
+  )
+  const [originalSortIndices, setOriginalSortIndices] = useState(() =>
+    Object.fromEntries(strictlySortedComments.map((c, i) => [c.id, i]))
+  )
+  const sortedComments = sortBy(
+    strictlySortedComments,
+    (c) => originalSortIndices[c.id] ?? -1
   )
 
-  const commentsByParent = useMemo(
-    () => groupBy(sortedComments, (c) => c.replyToCommentId ?? '_'),
-    [sortedComments]
+  const commentsByParent = groupBy(
+    sortedComments,
+    (c) => c.replyToCommentId ?? '_'
   )
 
   const parentComments = commentsByParent['_'] ?? []
@@ -347,6 +345,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           sort={sort}
           onSortClick={() => {
             setSort(sort === 'Newest' ? 'Best' : 'Newest')
+            setOriginalSortIndices({})
             track('change-comments-sort', {
               contractSlug: contract.slug,
               contractName: contract.question,
