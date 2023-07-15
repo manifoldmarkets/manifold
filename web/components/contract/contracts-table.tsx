@@ -16,7 +16,7 @@ import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { Action } from './contract-table-action'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 
@@ -190,11 +190,7 @@ export function ContractsTable(props: {
   ]
 
   function ContractRow(props: { contract: Contract }) {
-    const contract =
-      useFirebasePublicAndRealtimePrivateContract(
-        props.contract.visibility,
-        props.contract.id
-      ) ?? props.contract
+    const contract = useRealtimeContract(props.contract.id) ?? props.contract
     const contractListEntryHighlightClass = 'bg-primary-100'
 
     const dataCellClassName = 'py-2 align-top'
