@@ -65,7 +65,7 @@ export const LootboxAnimation = forwardRef(() => {
 export function BountyLeft(props: {
   bountyLeft: number
   totalBounty: number
-  inEmbed: boolean
+  inEmbed?: boolean
 }) {
   const { bountyLeft, totalBounty, inEmbed } = props
   if (!bountyLeft || bountyLeft < 1) {
