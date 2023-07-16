@@ -48,7 +48,7 @@ export function FeedContractCard(props: {
   trackingPostfix?: string
   item?: FeedTimelineItem
   className?: string
-  hide: () => void
+  hide?: () => void
 }) {
   const { promotedData, trackingPostfix, item, className, children, hide } =
     props
@@ -116,7 +116,7 @@ function SimpleCard(props: {
   children: React.ReactNode
   item?: FeedTimelineItem
   className?: string
-  hide: () => void
+  hide?: () => void
 }) {
   const { contract, user, item, trackClick, className, children, hide } = props
   const { outcomeType, mechanism, closeTime, isResolved } = contract
@@ -185,7 +185,7 @@ function DetailedCard(props: {
   user: User | null | undefined
   promotedData?: { adId: string; reward: number }
   item?: FeedTimelineItem
-  hide: () => void
+  hide?: () => void
   className?: string
 }) {
   const { user, contract, trackClick, promotedData, item, hide, className } =
@@ -363,7 +363,7 @@ const BottomActionRow = (props: {
   contract: Contract
   item: FeedTimelineItem | undefined
   user: User | null | undefined
-  hide: () => void
+  hide?: () => void
 }) => {
   const { contract, user, item, hide } = props
   const { question } = contract
@@ -371,13 +371,15 @@ const BottomActionRow = (props: {
     <Row className={'items-center justify-between py-2'}>
       <TradesButton contract={contract} />
       <CommentsButton contract={contract} user={user} />
-      <DislikeButton
-        user={user}
-        contract={contract}
-        item={item}
-        interesting={true}
-        toggleInteresting={hide}
-      />
+      {hide && (
+        <DislikeButton
+          user={user}
+          contract={contract}
+          item={item}
+          interesting={true}
+          toggleInteresting={hide}
+        />
+      )}
       <LikeButton
         contentId={contract.id}
         contentCreatorId={contract.creatorId}
