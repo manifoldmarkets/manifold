@@ -27,7 +27,6 @@ import {
 } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
 import { bulkUpsert } from 'shared/supabase/utils'
-import { saveCalibrationData } from './calculate-calibration'
 
 const firestore = admin.firestore()
 
