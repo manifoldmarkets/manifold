@@ -4,7 +4,6 @@ import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
 import {
-  DislikeButton,
   FeedContractCard,
 } from 'web/components/contract/feed-contract-card'
 import { mergePeriodic } from 'web/components/feed/feed-items'
