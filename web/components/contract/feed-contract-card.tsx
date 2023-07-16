@@ -48,8 +48,10 @@ export function FeedContractCard(props: {
   trackingPostfix?: string
   item?: FeedTimelineItem
   className?: string
+  hide: () => void
 }) {
-  const { promotedData, trackingPostfix, item, className, children } = props
+  const { promotedData, trackingPostfix, item, className, children, hide } =
+    props
   const user = useUser()
 
   const contract =
@@ -89,6 +91,7 @@ export function FeedContractCard(props: {
           user={user}
           className={className}
           children={children}
+          hide={hide}
         />
       ) : (
         <DetailedCard
@@ -98,6 +101,7 @@ export function FeedContractCard(props: {
           promotedData={promotedData}
           item={item}
           className={className}
+          hide={hide}
         />
       )}
     </div>
@@ -112,8 +116,9 @@ function SimpleCard(props: {
   children: React.ReactNode
   item?: FeedTimelineItem
   className?: string
+  hide: () => void
 }) {
-  const { contract, user, item, trackClick, className, children } = props
+  const { contract, user, item, trackClick, className, children, hide } = props
   const { outcomeType, mechanism, closeTime, isResolved } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
@@ -164,7 +169,12 @@ function SimpleCard(props: {
       )}
 
       {children}
-      <BottomActionRow contract={contract} item={item} user={user} />
+      <BottomActionRow
+        contract={contract}
+        item={item}
+        user={user}
+        hide={hide}
+      />
     </ClickFrame>
   )
 }
@@ -175,9 +185,11 @@ function DetailedCard(props: {
   user: User | null | undefined
   promotedData?: { adId: string; reward: number }
   item?: FeedTimelineItem
+  hide: () => void
   className?: string
 }) {
-  const { user, contract, trackClick, promotedData, item, className } = props
+  const { user, contract, trackClick, promotedData, item, hide, className } =
+    props
   const {
     closeTime,
     isResolved,
@@ -337,7 +349,12 @@ function DetailedCard(props: {
       {isBinaryCpmm && metrics && metrics.hasShares && (
         <YourMetricsFooter metrics={metrics} />
       )}
-      <BottomActionRow contract={contract} item={item} user={user} />
+      <BottomActionRow
+        contract={contract}
+        item={item}
+        user={user}
+        hide={hide}
+      />
     </ClickFrame>
   )
 }
@@ -346,15 +363,21 @@ const BottomActionRow = (props: {
   contract: Contract
   item: FeedTimelineItem | undefined
   user: User | null | undefined
+  hide: () => void
 }) => {
-  const { contract, user } = props
+  const { contract, user, item, hide } = props
   const { question } = contract
   return (
     <Row className={'items-center justify-between py-2'}>
-      {/*// Placeholder for the dislike button*/}
-      <div />
       <TradesButton contract={contract} />
       <CommentsButton contract={contract} user={user} />
+      <DislikeButton
+        user={user}
+        contract={contract}
+        item={item}
+        interesting={true}
+        toggleInteresting={hide}
+      />
       <LikeButton
         contentId={contract.id}
         contentCreatorId={contract.creatorId}

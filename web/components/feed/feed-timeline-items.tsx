@@ -173,7 +173,6 @@ const FeedContractAndRelatedItems = (props: {
     childCommentsByParentCommentId,
     parentComments,
     keyPrefix,
-    user,
   } = props
   const hasRelatedItems =
     parentComments.length > 0 || (groupedBetsByTime ?? []).length > 0
@@ -190,6 +189,7 @@ const FeedContractAndRelatedItems = (props: {
           contract={contract}
           promotedData={promotedData}
           trackingPostfix="feed"
+          hide={() => setHidden(true)}
           children={
             hasRelatedItems ? (
               <>
@@ -222,19 +222,11 @@ const FeedContractAndRelatedItems = (props: {
             'bg-canvas-0 border-canvas-0 rounded-xl border drop-shadow-md'
           )}
         >
-          <Row className={'text-ink-400 mb-10 px-4 pt-3 text-sm'}>
+          <Row className={'text-ink-400 mb-4 px-4 pt-3 text-sm'}>
             <i>Market hidden</i>
           </Row>
         </Col>
       )}
-      <DislikeButton
-        className={'absolute bottom-2.5 left-4'}
-        user={user}
-        contract={contract}
-        item={item}
-        interesting={!hidden}
-        toggleInteresting={() => setHidden(!hidden)}
-      />
     </FeedItemFrame>
   )
 }
