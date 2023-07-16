@@ -297,7 +297,7 @@ function validateMarketBody(body: any) {
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
     ;({ answers, shouldAnswersSumToOne } = validate(multipleChoiceSchema, body))
-    if (!shouldAnswersSumToOne)
+    if (shouldAnswersSumToOne === false)
       throw new APIError(
         400,
         'Multiple choice answers that do not sum to one are not implemented.'
