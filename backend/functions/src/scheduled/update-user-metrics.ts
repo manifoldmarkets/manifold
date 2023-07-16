@@ -49,7 +49,7 @@ export async function updateUserMetricsCore() {
 
   log('Loading users...')
   const users = await pg.map(
-    `select data from users order by data->'metricsLastUpdated' asc nulls first limit 5000`,
+    `select data from users order by data->'metricsLastUpdated' asc nulls first limit 2500`,
     [],
     (r) => r.data as User
   )
