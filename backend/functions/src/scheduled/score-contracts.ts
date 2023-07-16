@@ -2,7 +2,6 @@ import * as functions from 'firebase-functions'
 import { secrets } from 'common/secrets'
 import {
   MINUTE_INTERVAL,
-  scoreContractsInternal,
 } from 'shared/score-contracts-internal'
 import {
   createSupabaseClient,
