@@ -24,7 +24,7 @@ export async function updateContractMetricsForUsers(
 export async function bulkUpdateContractMetrics(metrics: ContractMetric[]) {
   const pg = createSupabaseDirectClient()
   const updatedTime = new Date().toISOString()
-  bulkUpsert(
+  return bulkUpsert(
     pg,
     'user_contract_metrics',
     ['user_id', 'contract_id'],
