@@ -47,7 +47,7 @@ export const scorecontracts = onRequest(
   async (_req, res) => {
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()
-    await scoreContractsInternal(db, pg)
+    // await scoreContractsInternal(db, pg)
     res.status(200).json({ success: true })
   }
 )
