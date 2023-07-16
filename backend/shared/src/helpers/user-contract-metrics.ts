@@ -6,7 +6,6 @@ import { bulkUpsert } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ContractMetric } from 'common/contract-metric'
 import { Row } from 'common/supabase/utils'
-import { removeUndefinedProps } from 'common/util/object'
 
 export async function updateContractMetricsForUsers(
   contract: Contract,
@@ -31,18 +30,18 @@ export async function bulkUpdateContractMetrics(metrics: ContractMetric[]) {
     ['user_id', 'contract_id'],
     metrics.map(
       (m) =>
-        removeUndefinedProps({
+        ({
           contract_id: m.contractId,
           user_id: m.userId,
           data: m,
           fs_updated_time: updatedTime,
-          has_no_shares: m.hasNoShares,
           has_shares: m.hasShares,
           profit: m.profit,
+          has_no_shares: m.hasNoShares,
           has_yes_shares: m.hasYesShares,
-          total_shares_no: m.totalShares['NO'],
-          total_shares_yes: m.totalShares['YES'],
-        }) as Row<'user_contract_metrics'>
+          total_shares_no: m.totalShares['NO'] ?? null,
+          total_shares_yes: m.totalShares['YES'] ?? null,
+        } as Row<'user_contract_metrics'>)
     )
   )
 }

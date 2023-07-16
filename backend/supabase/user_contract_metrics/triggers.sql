@@ -19,8 +19,3 @@ or replace function user_contract_metric_populate_cols () returns trigger langua
     end if;
     return new;
 end $$;
-
-create trigger user_contract_metrics_populate before insert
-or
-update on user_contract_metrics for each row
-execute function user_contract_metric_populate_cols ();
