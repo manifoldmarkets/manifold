@@ -127,7 +127,8 @@ export const onCreateBet = functions
     await updateUniqueBettors(contract, bet)
 
     const pg = createSupabaseDirectClient()
-    await updateUserInterestEmbedding(pg, bettor.id)
+    // TODO: Reenable updateUserInterestEmbedding
+    // await updateUserInterestEmbedding(pg, bettor.id)
 
     await addToLeagueIfNotInOne(pg, bettor.id)
 
