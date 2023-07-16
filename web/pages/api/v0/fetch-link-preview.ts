@@ -35,6 +35,5 @@ export async function fetchLinkPreview(url: string) {
   const html = await response.text()
   const responseUrl = response.url
   const metadata = await scraper({ html, url: responseUrl })
-  console.log('link metadata', metadata)
   return metadata
 }
