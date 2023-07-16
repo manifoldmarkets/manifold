@@ -60,6 +60,8 @@ export async function bulkUpsert<
   idField: Col | Col[],
   values: ColumnValues[]
 ) {
+  if (!values.length) return
+
   const columnNames = Object.keys(values[0])
   const cs = new pgp.helpers.ColumnSet(columnNames, { table })
   const baseQuery = pgp.helpers.insert(values, cs)
