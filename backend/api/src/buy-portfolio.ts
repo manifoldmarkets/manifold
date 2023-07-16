@@ -11,6 +11,8 @@ const schema = z.object({
 })
 
 export const buyportfolio = authEndpoint(async (req, auth) => {
+  throw new APIError(400, 'This endpoint is disabled for now.')
+
   const { portfolioId, amount, buyOpposite } = validate(schema, req.body)
 
   const db = createSupabaseDirectClient()

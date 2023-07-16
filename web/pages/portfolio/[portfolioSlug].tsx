@@ -149,7 +149,8 @@ const PurchaseWidget = (props: { portfolio: Portfolio }) => {
         />
         <Button
           onClick={() => onBuy()}
-          disabled={isSubmitting}
+          // disabled={isSubmitting}
+          disabled
           loading={!boughtAnti && isSubmitting}
           size="sm"
           color="green"
@@ -158,7 +159,8 @@ const PurchaseWidget = (props: { portfolio: Portfolio }) => {
         </Button>
         <Button
           onClick={() => onBuy(true)}
-          disabled={isSubmitting}
+          // disabled={isSubmitting}
+          disabled
           loading={boughtAnti && isSubmitting}
           size="sm"
           color="red"
@@ -166,6 +168,9 @@ const PurchaseWidget = (props: { portfolio: Portfolio }) => {
           Buy anti-portfolio
         </Button>
       </Row>
+      <div className="text-sm">
+        Purchasing portfolios disabled for now. Try again later.
+      </div>
     </Col>
   )
 }
