@@ -3,9 +3,7 @@ import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
-import {
-  FeedContractCard,
-} from 'web/components/contract/feed-contract-card'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { mergePeriodic } from 'web/components/feed/feed-items'
 import { Col } from 'web/components/layout/col'
 import { groupCommentsByContractsAndParents } from 'web/hooks/use-additional-feed-items'
