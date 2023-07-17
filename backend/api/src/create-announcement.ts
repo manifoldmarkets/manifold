@@ -11,12 +11,24 @@ import {
 import { isAdminId } from 'common/envs/constants'
 
 async function getAllUsersPaginated(pg: SupabaseDirectClient) {
-  return await pg.map(
-    // TODO: change limit when ready, should chunk users as well
-    `select data from users limit 100`,
-    [],
-    (r: any) => r.data as User
-  )
+  const pageSize = 1000
+  let offset = 0
+  let users: User[] = []
+
+  while (true) {
+    const chunk = await pg.map(
+      `select data from users limit $1 offset $2`,
+      [pageSize, offset],
+      (r: any) => r.data as User
+    )
+
+    if (chunk.length === 0) break
+
+    users = [...users, ...chunk]
+    offset += pageSize
+  }
+
+  return users
 }
 
 const bodySchema = z.object({

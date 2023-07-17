@@ -33,18 +33,15 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser, useIsAuthorized } from 'web/hooks/use-user'
-import { XIcon } from '@heroicons/react/outline'
+import { ExclamationIcon, XIcon } from '@heroicons/react/outline'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useTextEditor } from 'web/components/widgets/editor'
-import { User } from 'common/user'
-import { savePost } from 'web/components/groups/group-about-section'
 import { Input } from 'web/components/widgets/input'
-import WaitingForSupabaseButton from 'web/components/contract/waiting-for-supabase-button'
-import { Button } from 'web/components/buttons/button'
+import { Button, ColorType, SizeType } from 'web/components/buttons/button'
+import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -116,11 +113,6 @@ function SendCustomNotification() {
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
 
-  // const editor = useTextEditor({
-  //   placeholder: 'Write your announcement here...',
-  //   size: 'md',
-  // })
-
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
@@ -142,39 +134,41 @@ function SendCustomNotification() {
       setIsSubmitting(false)
       return false
     }
-    //   if (editor && !editor.isEmpty) {
-    //     savePost(editor, result.notification)
-    //   }
-    //   editor?.commands.clearContent(true)
-    //   setIsSubmitting(false)
-    //   setTitle('')
-    //   setUrl('')
+  }
+
+  function handleOnSubmit(): void {
+    throw new Error('Function not implemented.')
   }
 
   return (
     <form onSubmit={onSubmit}>
-      <Input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Enter announcement"
-        required
-      />
-      <Input
-        type="text"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="Enter URL if applicable"
-      />
-      <Button
-        className="w-full"
-        type="submit"
+      <Row className={'flex flex-col py-4 md:flex-row'}>
+        <textarea
+          className={clsx(
+            'border-ink-300 bg-canvas-0 focus-within:border-primary-500 focus-within:ring-primary-500 resize-1  mb-4 w-full resize-y overflow-hidden rounded-lg border shadow-sm transition-colors focus-within:ring-1 md:mb-0 md:mr-1'
+          )}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Enter announcement"
+          rows={3}
+        />
+        <Input
+          className={'w-full md:mb-0 md:ml-1'}
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="Optional URL"
+        />
+      </Row>
+
+      <AnnouncementConfirmationButton
+        isSubmitting={isSubmitting}
+        disabled={false}
+        onSubmit={handleOnSubmit}
         color="indigo"
         size="xl"
-        loading={isSubmitting}
-      >
-        {isSubmitting ? 'Creating...' : 'Send announcement'}
-      </Button>
+        title={title}
+      />
     </form>
   )
 }
@@ -443,5 +437,53 @@ export function NotificationGroupItemComponent(props: {
         )}
       </div>
     </div>
+  )
+}
+
+export function AnnouncementConfirmationButton(props: {
+  isSubmitting: boolean
+  disabled: boolean
+  onSubmit: () => void
+  color: ColorType
+  size: SizeType
+  title: string
+  className?: string
+}) {
+  const { isSubmitting, disabled, onSubmit, color, size, title } = props
+
+  const buttonText = isSubmitting ? 'Creating...' : 'Send announcement'
+
+  return (
+    <ConfirmationButton
+      openModalBtn={{
+        label: buttonText,
+        size: size,
+
+        color: 'indigo',
+        disabled: isSubmitting || disabled || !title,
+      }}
+      cancelBtn={{
+        label: 'Cancel',
+        color: 'yellow',
+        disabled: isSubmitting,
+      }}
+      submitBtn={{
+        label: 'Submit',
+        color: 'indigo',
+        isSubmitting,
+      }}
+      onSubmit={onSubmit}
+    >
+      <Row className="items-center text-xl">
+        <ExclamationIcon
+          className="h-16 w-16 p-1 text-yellow-400"
+          aria-hidden="true"
+        />
+      </Row>
+      <p>
+        Are you sure you want to send this to notification to all users on the
+        site?
+      </p>
+    </ConfirmationButton>
   )
 }
