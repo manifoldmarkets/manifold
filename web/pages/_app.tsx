@@ -2,14 +2,9 @@ import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import Script from 'next/script'
 import { useEffect } from 'react'
-import { QueryClient, QueryClientProvider } from 'react-query'
-import { AuthProvider, AuthUser } from 'web/components/auth-context'
-import { DarkModeProvider } from 'web/components/dark-mode-provider'
-import {
-  NativeMessageListener,
-  postMessageToNative,
-} from 'web/components/native-message-listener'
-import { SearchProvider } from 'web/components/search/search-context'
+import { QueryClient } from 'react-query'
+import { AuthUser } from 'web/components/auth-context'
+import { postMessageToNative } from 'web/components/native-message-listener'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
@@ -121,16 +116,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           mainFont.variable
         )}
       >
-        <AuthProvider serverUser={pageProps.auth}>
-          <DarkModeProvider>
-            <NativeMessageListener />
-            <QueryClientProvider client={queryClient}>
-              <SearchProvider>
-                <Component {...pageProps} />
-              </SearchProvider>
-            </QueryClientProvider>
-          </DarkModeProvider>
-        </AuthProvider>
+        <div>Our db is down</div>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
         <div id="headlessui-portal-root">
           <div />
