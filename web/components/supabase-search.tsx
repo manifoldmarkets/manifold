@@ -6,7 +6,7 @@ import {
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
-import { SELECTABLE_TOPICS, cleanTopic } from 'common/topics'
+import { cleanTopic } from 'common/topics'
 import { debounce, isEqual, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import Router from 'next/router'
