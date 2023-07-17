@@ -6,7 +6,7 @@ import {
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
-import { cleanTopic } from 'common/topics'
+import { cleanTopic, SELECTABLE_TOPICS } from 'common/topics'
 import { debounce, isEqual, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import Router from 'next/router'
@@ -564,7 +564,7 @@ function SupabaseContractSearchControls(props: {
       </Col>
       {showTopics && (
         <Carousel>
-          {SELECTED_TOPICS.map((t) => (
+          {SELECTABLE_TOPICS.map((t) => (
             <PillButton
               key={'pill-' + t}
               selected={topic === cleanTopic(t)}
