@@ -12,9 +12,10 @@ import {
   withClause,
 } from 'shared/supabase/sql-builder'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
+import { buildArray } from 'common/util/array'
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
-const TOPIC_DISTANCE_THRESHOLD = 0.24
+const TOPIC_DISTANCE_THRESHOLD = 0.23
 const bodySchema = z.object({
   term: z.string(),
   filter: z.union([
@@ -35,6 +36,7 @@ const bodySchema = z.object({
     z.literal('close-date'),
     z.literal('resolve-date'),
     z.literal('random'),
+    z.literal('for-you'),
   ]),
   contractType: z.union([
     z.literal('ALL'),
@@ -163,6 +165,7 @@ function getSearchContractSQL(contractInput: {
     )
     sortAlgorithm = 'importance_score'
   }
+
   // Searching markets within a group
   else if (groupId) {
     // Blank search within group
@@ -180,6 +183,7 @@ function getSearchContractSQL(contractInput: {
         where('contractz.group_id = $1', [groupId])
       )
     }
+
     // Fuzzy search within group
     else if (fuzzy) {
       query = `
@@ -243,6 +247,7 @@ function getSearchContractSQL(contractInput: {
       sortAlgorithm = 'importance_score'
     }
   }
+
   // Searching markets by creator
   else if (creatorId) {
     // Blank search for markets by creator
@@ -266,6 +271,7 @@ function getSearchContractSQL(contractInput: {
         where('contractz.similarity_score > 0.1')
       )
     }
+
     // Normal prefix and exact match search for markets by creator
     else {
       query = `
@@ -307,30 +313,49 @@ function getSearchContractSQL(contractInput: {
       // Creators typically don't have that many markets so we don't have to sort by popularity score
     }
   }
+
   // Blank search for markets not by group nor creator
   else {
-    const topicJoin = topic
-      ? `contract_embeddings ON contracts.id = contract_embeddings.contract_id, topic_embedding`
-      : ''
-    const topicQuery = pgp.as.format(
-      'topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = $1 LIMIT 1)',
-      [topic]
-    )
-    const topicFilter = topic
-      ? `(contract_embeddings.embedding <=> topic_embedding.embedding < ${TOPIC_DISTANCE_THRESHOLD})`
-      : ''
+    const topicJoin = `contract_embeddings ON contracts.id = contract_embeddings.contract_id`
+    const topicFrom = `topic_embedding`
+    const topicQuery = `topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = ${topic} LIMIT 1)`
+    const topicFilter = `(contract_embeddings.embedding <=> topic_embedding.embedding < ${TOPIC_DISTANCE_THRESHOLD})`
     const topicSqlBuilder = buildSql(
-      withClause(topicQuery),
-      join(topicJoin),
-      where(topicFilter)
+      ...buildArray(
+        topic && withClause(topicQuery),
+        topic && from(topicFrom),
+        topic && join(topicJoin),
+        topic && where(topicFilter)
+      )
     )
 
+    const forYouSortEnabled = sort === 'for-you' && uid
+    const forYouQuery = `user_interest AS (
+         SELECT interest_embedding FROM user_embeddings WHERE user_id = '${uid}' LIMIT 1)`
+    const forYouFilter = forYouSortEnabled ? `importance_score > 0.1` : ''
+    const forYouFrom = `user_interest, contracts`
+    const forYouSqlBuilder = buildSql(
+      ...buildArray(
+        forYouSortEnabled && withClause(forYouQuery),
+        forYouSortEnabled && where(forYouFilter),
+        forYouSortEnabled && from(forYouFrom),
+        forYouSortEnabled && join(topicJoin)
+      )
+    )
+    // We'll pass a `for you` topic.
+    // multiply the (1-distance of the person's interest vector to the importance score),
+    // sort descending and pass this as the sortAlgorithm
     if (emptyTerm) {
       queryBuilder = buildSql(
-        select('data'),
-        from('contracts'),
+        forYouSortEnabled
+          ? select(
+              `data, importance_score/5 *  (1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) AS modified_importance_score`
+            )
+          : select('data'),
+        forYouSortEnabled ? undefined : from('contracts'),
         whereSqlBuilder,
-        topicSqlBuilder
+        topicSqlBuilder,
+        forYouSqlBuilder
       )
     }
     // Fuzzy search for markets not by group nor creator
@@ -461,6 +486,7 @@ function getSearchContractSortSQL(
   sortingAlgorithm: string | undefined
 ) {
   const sortFields: SortFields = {
+    'for-you': 'modified_importance_score',
     relevance: sortingAlgorithm
       ? sortingAlgorithm
       : empty

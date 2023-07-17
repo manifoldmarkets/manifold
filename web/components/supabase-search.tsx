@@ -42,6 +42,7 @@ import { Button } from './buttons/button'
 const CONTRACTS_PER_PAGE = 20
 
 export const SORTS = [
+  { label: 'For you', value: 'for-you' },
   { label: 'Relevance', value: 'relevance' },
   { label: 'New', value: 'newest' },
   { label: 'Trending', value: 'score' },
@@ -564,7 +565,7 @@ function SupabaseContractSearchControls(props: {
       </Col>
       {showTopics && (
         <Carousel>
-          {SELECTED_TOPICS.map((t) => (
+          {SELECTABLE_TOPICS.map((t) => (
             <PillButton
               key={'pill-' + t}
               selected={topic === cleanTopic(t)}
