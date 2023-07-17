@@ -101,9 +101,10 @@ Gets a group's markets by its unique ID.
 Requires no authorization.
 Note: group is singular in the URL.
 
-### `GET /v0/markets`
+### `GET /v0/markets or POST /v0/markets`
 
-Lists all markets, ordered by creation date descending.
+Lists all markets, ordered by creation date descending. Parameters can be given as query params
+or as a request body.
 
 Parameters:
 
@@ -112,12 +113,18 @@ Parameters:
   example, if you ask for the most recent 10 markets, and then perform a second
   query for 10 more markets with `before=[the id of the 10th market]`, you will
   get markets 11 through 20.
+- `ids`: Optional. A list of ids to filter for. When using query params this should be
+  given as several `ids` params separated by `&` like so: `https://manifold.markets/api/v0/markets?ids=LdwG63YHxMGErUKbADgX&ids=F3USZTz0xJh1YULGhaua&ids=HkkdQFveFo66Ef26SO3b`
 
 Requires no authorization.
 
 - Example request
   ```
   https://manifold.markets/api/v0/markets?limit=1
+  ```
+  or
+  ```
+  curl -X POST -H "Content-Type: application/json" -d '{"ids":["LdwG63YHxMGErUKbADgX","F3USZTz0xJh1YULGhaua","HkkdQFveFo66Ef26SO3b"]}' https://manifold.markets/api/v0/markets
   ```
 - Example response
   ```json

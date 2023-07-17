@@ -111,8 +111,15 @@ export const getPublicContracts = async (options: {
   limit: number
   beforeTime?: number
   order?: 'asc' | 'desc'
+  ids?: string[]
 }) => {
   let q = selectJson(db, 'public_contracts')
+
+  // If ids are provided, adjust query to only include those ids
+  if (options.ids) {
+    q = q.in('id', options.ids)
+  }
+
   q = q.order('created_time', {
     ascending: options?.order === 'asc',
   } as any)

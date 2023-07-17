@@ -18,6 +18,7 @@ const queryParams = z
       .or(z.string().regex(/\d+/).transform(Number))
       .refine((n) => n >= 0 && n <= 1000, 'Limit must be between 0 and 1000'),
     before: z.string().optional(),
+    ids: z.array(z.string()).optional(),
   })
   .strict()
 
@@ -43,7 +44,9 @@ export default async function handler(
 
   let params: z.infer<typeof queryParams>
   try {
-    params = validate(queryParams, req.query)
+    // Check both body and query for parameters, use body if both are present
+    const data = Object.keys(req.body).length > 0 ? req.body : req.query
+    params = validate(queryParams, data)
   } catch (e) {
     if (e instanceof ValidationError) {
       return res.status(400).json(e)
@@ -52,12 +55,11 @@ export default async function handler(
     return res.status(500).json({ error: 'Unknown error during validation' })
   }
 
-  const { limit } = params
+  const { limit, ids } = params
 
   try {
     const beforeTime = await getBeforeTime(params)
-    const contracts = await getPublicContracts({ limit, beforeTime })
-    // Serve from Vercel cache, then update. see https://vercel.com/docs/concepts/functions/edge-caching
+    const contracts = await getPublicContracts({ limit, beforeTime, ids })
     res.setHeader('Cache-Control', 's-maxage=45, stale-while-revalidate=45')
     res.status(200).json(contracts.map(toLiteMarket))
   } catch (e) {
