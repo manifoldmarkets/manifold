@@ -25,20 +25,12 @@ import {
 } from 'web/lib/supabase/users'
 
 export async function getStaticProps() {
-  const [allTime, monthly, weekly, daily] = await Promise.all([
-    queryLeaderboardUsers('allTime'),
-    queryLeaderboardUsers('monthly'),
-    queryLeaderboardUsers('weekly'),
-    queryLeaderboardUsers('daily'),
-  ])
+  const allTime = await queryLeaderboardUsers('allTime')
 
   const topReferrals = await getTopReferrals(db)
   return {
     props: {
       allTime,
-      monthly,
-      weekly,
-      daily,
       topReferrals,
     },
     revalidate: 60 * 15, // regenerate after 15 minutes
@@ -67,14 +59,9 @@ type ranking = {
 }
 export default function Leaderboards(props: {
   allTime: leaderboard
-  monthly: leaderboard
-  weekly: leaderboard
-  daily: leaderboard
   topReferrals: Awaited<ReturnType<typeof getTopReferrals>>
 }) {
-  const [myRanks, setMyRanks] = useState<
-    Record<Period, ranking | undefined> | undefined
-  >()
+  const [myRanks, setMyRanks] = useState<ranking>()
   const [userReferralInfo, setUserReferralInfo] =
     useState<Awaited<ReturnType<typeof getUserReferralsInfo>>>()
 
@@ -82,35 +69,28 @@ export default function Leaderboards(props: {
 
   useEffect(() => {
     if (!user?.profitCached) return
+    ;(async () => {
+      const rankings = {} as ranking
+      const myProfit = user.profitCached?.allTime
+      if (myProfit != null) {
+        rankings.profitRank = await getProfitRank(myProfit, 'allTime')
+      }
+      const myTraders = user.creatorTraders?.allTime
+      if (myTraders != null) {
+        rankings.tradersRank = await getCreatorRank(myTraders, 'allTime')
+      }
+      const referrerInfo = await getUserReferralsInfo(user.id, db)
+      setUserReferralInfo(referrerInfo)
+      rankings.referralsRank = referrerInfo.rank
 
-    const periods = ['allTime', 'monthly', 'weekly', 'daily'] as const
-    Promise.all(
-      periods.map(async (period) => {
-        const rankings = {} as ranking
-        const myProfit = user.profitCached?.[period]
-        if (myProfit != null) {
-          rankings.profitRank = await getProfitRank(myProfit, period)
-        }
-        const myTraders = user.creatorTraders?.[period]
-        if (myTraders != null) {
-          rankings.tradersRank = await getCreatorRank(myTraders, period)
-        }
-        if (period === 'allTime') {
-          const referrerInfo = await getUserReferralsInfo(user.id, db)
-          setUserReferralInfo(referrerInfo)
-          rankings.referralsRank = referrerInfo.rank
-        }
-        return rankings
-      })
-    ).then((results) => {
-      setMyRanks(Object.fromEntries(zip(periods, results)))
-    })
+      setMyRanks(rankings)
+    })()
   }, [user?.creatorTraders, user?.profitCached])
 
   const { topReferrals } = props
 
-  const LeaderboardWithPeriod = (period: Period, myRankForPeriod?: ranking) => {
-    const { topTraders, topCreators } = props[period]
+  const LeaderboardWithPeriod = (myRankForPeriod?: ranking) => {
+    const { topTraders, topCreators } = props.allTime
 
     const user = useUser()
     const topTraderEntries = topTraders.map((user, i) => ({
@@ -157,7 +137,7 @@ export default function Leaderboards(props: {
             columns={[
               {
                 header: 'Profit',
-                renderCell: (user) => formatMoney(user.profitCached[period]),
+                renderCell: (user) => formatMoney(user.profitCached.allTime),
               },
             ]}
             highlightUsername={user?.username}
@@ -170,41 +150,37 @@ export default function Leaderboards(props: {
               {
                 header: 'Traders',
                 renderCell: (user) =>
-                  formatWithCommas(user.creatorTraders[period]),
+                  formatWithCommas(user.creatorTraders.allTime),
               },
             ]}
             highlightUsername={user?.username}
           />
         </Col>
-        {period === 'allTime' ? (
-          <Col className="mx-4 my-10 items-center gap-10 lg:mx-0 lg:w-[35rem] lg:flex-row">
-            <Leaderboard
-              title="🏅 Top Referrers"
-              entries={topReferrals}
-              columns={[
-                {
-                  header: 'Referrals',
-                  renderCell: (user) => user.totalReferrals,
-                },
-                {
-                  header: (
-                    <span>
-                      Referred profits
-                      <InfoTooltip
-                        text={'Total profit earned by referred users'}
-                      />
-                    </span>
-                  ),
-                  renderCell: (user) =>
-                    formatMoney(user.totalReferredProfit ?? 0),
-                },
-              ]}
-              highlightUsername={user?.username}
-            />
-          </Col>
-        ) : (
-          <></>
-        )}
+        <Col className="mx-4 my-10 items-center gap-10 lg:mx-0 lg:w-[35rem] lg:flex-row">
+          <Leaderboard
+            title="🏅 Top Referrers"
+            entries={topReferrals}
+            columns={[
+              {
+                header: 'Referrals',
+                renderCell: (user) => user.totalReferrals,
+              },
+              {
+                header: (
+                  <span>
+                    Referred profits
+                    <InfoTooltip
+                      text={'Total profit earned by referred users'}
+                    />
+                  </span>
+                ),
+                renderCell: (user) =>
+                  formatMoney(user.totalReferredProfit ?? 0),
+              },
+            ]}
+            highlightUsername={user?.username}
+          />
+        </Col>
       </>
     )
   }
@@ -222,29 +198,7 @@ export default function Leaderboards(props: {
           Leaderboards <InfoTooltip text="Updated every 15 minutes" />
         </Title>
 
-        <QueryUncontrolledTabs
-          className="mb-4"
-          currentPageForAnalytics={'leaderboards'}
-          defaultIndex={3}
-          tabs={[
-            {
-              title: 'Daily',
-              content: LeaderboardWithPeriod('daily', myRanks?.['daily']),
-            },
-            {
-              title: 'Weekly',
-              content: LeaderboardWithPeriod('weekly', myRanks?.['weekly']),
-            },
-            {
-              title: 'Monthly',
-              content: LeaderboardWithPeriod('monthly', myRanks?.['monthly']),
-            },
-            {
-              title: 'All Time',
-              content: LeaderboardWithPeriod('allTime', myRanks?.['allTime']),
-            },
-          ]}
-        />
+        {LeaderboardWithPeriod(myRanks)}
       </Col>
     </Page>
   )
