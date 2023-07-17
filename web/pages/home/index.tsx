@@ -15,7 +15,6 @@ import MarketsHome from 'web/pages/markets-home'
 import { Title } from 'web/components/widgets/title'
 import Welcome from 'web/components/onboarding/welcome'
 import { SEO } from 'web/components/SEO'
-import { AlertBox } from 'web/components/widgets/alert-box'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -54,10 +53,6 @@ function HomeDashboard() {
           <Title className="!mb-0 hidden sm:flex">Home</Title>
           <DailyStats user={user} />
         </Row>
-        <AlertBox
-          title="Platform down"
-          text="Manifold is currently experiencing degraded performance due to database issues. Please bear with us as we attempt to address these problems."
-        />
 
         <NewsTopicsTabs
           homeContent={<FeedTimeline />}
