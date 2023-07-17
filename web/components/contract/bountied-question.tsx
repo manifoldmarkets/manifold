@@ -121,12 +121,14 @@ export function AwardBountyButton(props: {
   const [error, setError] = useState<string | undefined>(undefined)
   const { bountyLeft } = contract
   const [amount, setAmount] = useState<number | undefined>(bountyLeft)
+  const [loading, setLoading] = useState(false)
   if (!user || user.id !== contract.creatorId) {
     return <></>
   }
 
   async function onAwardBounty() {
     if (amount) {
+      setLoading(true)
       const newDefault = bountyLeft - amount
       awardBounty({
         contractId: contract.id,
@@ -135,6 +137,7 @@ export function AwardBountyButton(props: {
       }).then((_result) => {
         setOpen(false)
         setAmount(newDefault)
+        setLoading(false)
       })
     }
   }
@@ -172,6 +175,7 @@ export function AwardBountyButton(props: {
             className="w-full"
             disabled={!!error}
             onClick={onAwardBounty}
+            loading={loading}
           >
             Award {amount ? formatMoney(amount) : ''}
           </Button>
