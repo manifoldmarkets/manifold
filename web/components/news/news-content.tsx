@@ -103,18 +103,21 @@ const OpenAI = createNewsDashboardTab(
 )
 
 const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
+  { slug: 'will-the-black-sea-grain-deal-be-ex' },
+  { slug: 'will-ukraine-sever-the-land-bridge' },
   {
-    url: 'https://www.reuters.com/world/europe/russian-general-dismissed-after-accusing-top-brass-failing-soldiers-2023-07-13/',
+    url: 'https://edition.cnn.com/2023/07/17/europe/russia-ukraine-grain-deal-intl/index.html',
   },
+
+  { url: 'https://www.bbc.com/news/world-europe-66218869' },
+
   { slug: 'will-sergei-shoigu-still-be-the-rus' },
-  {
-    url: 'https://www.washingtonpost.com/national-security/2023/07/06/biden-cluster-bombs-ukraine/',
-  },
-  { slug: 'will-the-us-openly-commit-in-2023-t' },
+
+  { slug: 'will-there-be-a-nuclear-disaster-at' },
   {
     url: 'https://www.cbsnews.com/news/ukraine-russia-war-zaporizhzhia-nuclear-power-plant-attack-plot-claims/',
   },
-  { slug: 'will-there-be-a-nuclear-disaster-at' },
+
   { slug: 'will-any-part-of-the-zaporizhzhia-n' },
   { slug: 'will-russia-nuke-ukraine' },
   {
@@ -126,7 +129,7 @@ const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
     slug: 'will-vladimir-putin-still-be-the-le',
   },
   { slug: 'will-ukraine-regain-control-over-cr' },
-  { slug: 'will-ukraine-sever-the-land-bridge' },
+
   { slug: 'will-the-ukraine-war-be-over-by-the' },
   { slug: '5-will-there-be-a-lasting-ceasefire' },
   { slug: 'will-china-convene-and-mediate-peac' },
