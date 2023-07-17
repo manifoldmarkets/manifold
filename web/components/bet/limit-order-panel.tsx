@@ -310,8 +310,8 @@ export default function LimitOrderPanel(props: {
         setHighLimitProb={setHighLimitProb}
         maxProb={MAX_PROB}
         minProb={MIN_PROB}
-        isSubmitting={isSubmitting}
         invalidLowAndHighBet={invalidLowAndHighBet}
+        disabled={isSubmitting}
       />
 
       <Spacer h={6} />

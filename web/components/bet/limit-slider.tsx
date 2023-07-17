@@ -37,8 +37,8 @@ export function LimitSlider(props: {
   setHighLimitProb: (prob: number | undefined) => void
   maxProb: number
   minProb: number
-  isSubmitting: boolean
   invalidLowAndHighBet: boolean
+  disabled?: boolean
 }) {
   const {
     isPseudoNumeric,
@@ -49,8 +49,8 @@ export function LimitSlider(props: {
     setHighLimitProb,
     maxProb,
     minProb,
-    isSubmitting,
     invalidLowAndHighBet,
+    disabled,
   } = props
 
   const mark = (value: number) => (
@@ -72,7 +72,7 @@ export function LimitSlider(props: {
           contract={contract}
           prob={lowLimitProb}
           setProb={setLowLimitProb}
-          isSubmitting={isSubmitting}
+          disabled={disabled}
           placeholder={`${minProb}`}
           width={'w-full'}
         />
@@ -80,7 +80,7 @@ export function LimitSlider(props: {
           contract={contract}
           prob={highLimitProb}
           setProb={setHighLimitProb}
-          isSubmitting={isSubmitting}
+          disabled={disabled}
           placeholder={`${maxProb}`}
           width={'w-full'}
           error={invalidLowAndHighBet}
@@ -89,7 +89,7 @@ export function LimitSlider(props: {
       <Col className="px-2">
         <Slider
           range
-          disabled={isSubmitting}
+          disabled={disabled}
           marks={
             isPseudoNumeric
               ? undefined
@@ -103,9 +103,12 @@ export function LimitSlider(props: {
           min={minProb}
           max={maxProb}
           onChange={(value) => {
-            if (value && Array.isArray(value) && value.length > 1) {
-              setLowLimitProb(value[0] == minProb ? undefined : value[0])
-              setHighLimitProb(value[1] == maxProb ? undefined : value[1])
+            if (value && Array.isArray(value)) {
+              // eslint-disable-next-line prefer-const
+              let [low, high] = value
+              if (low === high) high++
+              setLowLimitProb(low === minProb ? undefined : low)
+              setHighLimitProb(high === maxProb ? undefined : high)
             }
           }}
           className={clsx(
@@ -135,20 +138,15 @@ export function LimitSlider(props: {
               backgroundColor: '#6366f1',
             },
           ]}
-          allowCross={false}
-          onBeforeChange={() => {}}
         />
       </Col>
       {invalidLowAndHighBet && (
         <div
           className={clsx(
-            'text-scarlet-500 dark:text-scarlet-300 absolute text-sm',
-            isPseudoNumeric
-              ? 'top-[135px] sm:top-[120px]'
-              : 'top-[145px] sm:top-[130px]'
+            'text-scarlet-500 dark:text-scarlet-300 absolute -bottom-12 text-sm'
           )}
         >
-          * Upper limit can not be less than or equal to lower limit!{' '}
+          * Upper limit must be higher than lower limit.{' '}
           <span>
             <button
               className="font-semibold text-indigo-500 underline"
@@ -165,7 +163,7 @@ export function LimitSlider(props: {
                 }
               }}
             >
-              Quick Fix
+              Swap
             </button>
           </span>
         </div>
