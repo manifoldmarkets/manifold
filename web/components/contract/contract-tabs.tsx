@@ -22,10 +22,6 @@ import { useEvent } from 'web/hooks/use-event'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLiquidity } from 'web/hooks/use-liquidity'
-import {
-  inMemoryStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
 import { useUser } from 'web/hooks/use-user'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
@@ -43,6 +39,7 @@ import { QfTrades } from './qf-overview'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export const EMPTY_USER = '_'
 
@@ -233,14 +230,11 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const user = useUser()
 
   const isBountiedQuestion = contract.outcomeType == 'BOUNTIED_QUESTION'
-  const [sort, setSort] = usePersistentState<'Newest' | 'Best'>(
+  const [sort, setSort] = usePersistentInMemoryState<'Newest' | 'Best'>(
     isBountiedQuestion && (!user || user.id !== contract.creatorId)
       ? 'Best'
       : 'Newest',
-    {
-      key: `comments-sort-${contract.id}`,
-      store: inMemoryStore(),
-    }
+    `comments-sort-${contract.id}`
   )
   const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
@@ -275,7 +269,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
   const sortedComments = sortBy(
     strictlySortedComments,
-    (c) => originalSortIndices[c.id] ?? -1
+    (c, i) => originalSortIndices[c.id] ?? i
   )
 
   const commentsByParent = groupBy(
