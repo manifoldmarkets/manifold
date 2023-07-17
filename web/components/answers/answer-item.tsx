@@ -252,7 +252,7 @@ export const AnswerLabel = (props: {
             avatarUrl={creator.avatarUrl}
           />
         ) : null}
-        <Linkify text={truncated} />
+        <Linkify text={truncated} className="[&_a]:text-primary-800" />
       </span>
     </Tooltip>
   )
