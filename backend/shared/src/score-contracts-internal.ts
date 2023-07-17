@@ -15,7 +15,7 @@ import {
 } from './importance-score'
 import { bulkUpdate } from 'shared/supabase/utils'
 
-export const MINUTE_INTERVAL = 15
+export const MINUTE_INTERVAL = 30
 
 export async function scoreContractsInternal(
   db: SupabaseClient,
