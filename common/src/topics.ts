@@ -47,7 +47,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
   '👥 Communities': ['💗 Effective Altruism', '🎮 Destiny.gg'],
 }
 
-export const SELECTED_TOPICS = [
+export const SELECTABLE_TOPICS = [
   '🗳️ Politics',
   '💻 Technology',
   '🏟️ Sports',
