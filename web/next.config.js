@@ -17,6 +17,14 @@ module.exports = {
       transform: 'lodash/{{member}}',
     },
   },
+  exportPathMap: async function (
+    defaultPathMap,
+    { dev, dir, outDir, distDir, buildId }
+  ) {
+    return {
+      '/downtime': { page: '/downtime' },
+    }
+  },
   transpilePackages: ['common'],
   experimental: {
     scrollRestoration: true,
