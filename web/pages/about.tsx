@@ -182,11 +182,6 @@ export default function AboutPage() {
             />
           )}
 
-          <LabCard
-            title="🔥 Swipe"
-            description="Swipe-to-bet UI. Try via iOS/Android app."
-            {...(isNative ? { href: '/swipe' } : appCallback)}
-          />
           {user && (
             <LabCard
               title="📂 Portfolios"
@@ -252,6 +247,11 @@ export default function AboutPage() {
           exorcise them.
         </div>
         <LabSection>
+          <LabCard
+            title="🔥 Swipe"
+            description="Swipe-to-bet UI. Try via iOS/Android app."
+            {...(isNative ? { href: '/swipe' } : appCallback)}
+          />
           <LabCard
             title="✏ Posts"
             description="Go long on longform"
