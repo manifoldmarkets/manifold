@@ -319,7 +319,7 @@ function UserProfile(props: {
                     <Spacer h={4} />
                     <PortfolioValueSection
                       userId={user.id}
-                      defaultTimePeriod={isCurrentUser ? 'daily' : 'allTime'}
+                      defaultTimePeriod={'weekly'}
                     />
                     <Spacer h={4} />
                     <UserBetsTable user={user} />
