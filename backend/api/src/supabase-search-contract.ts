@@ -12,6 +12,7 @@ import {
   withClause,
 } from 'shared/supabase/sql-builder'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
+import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
 const TOPIC_DISTANCE_THRESHOLD = 0.24
@@ -433,15 +434,12 @@ function getSearchContractWhereSQL(
   const stonkFilter = hideStonks ? `outcome_type != 'STONK'` : ''
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
-  const otherVisibilitySQL = `
-  OR (visibility = 'unlisted' AND creator_id='${uid}') 
-  OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))
-  `
-  const visibilitySQL =
-    (groupId && hasGroupAccess) || (!!creatorId && !!uid && creatorId === uid)
-      ? ''
-      : `(visibility = 'public' ${uid ? otherVisibilitySQL : ''})`
-
+  const visibilitySQL = getContractPrivacyWhereSQLFilter(
+    uid,
+    groupId,
+    creatorId,
+    hasGroupAccess
+  )
   return buildSql(
     where(filterSQL[filter]),
     where(stonkFilter),

@@ -76,6 +76,7 @@ import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
 import { sendmana } from './send-mana'
 import { leavereview } from './leave-review'
+import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -188,6 +189,10 @@ app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/send-mana', ...apiRoute(sendmana))
 app.post('/leave-review', ...apiRoute(leavereview))
+app.post(
+  '/get-user-contract-metrics-with-contracts',
+  ...apiRoute(getusercontractmetricswithcontracts)
+)
 
 // Catch 404 errors - this should be the last route
 app.use((req, res, next) => {

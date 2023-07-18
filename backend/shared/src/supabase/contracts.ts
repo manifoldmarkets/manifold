@@ -220,3 +220,19 @@ export const isContractLikelyNonPredictive = async (
     )
   )[0]
 }
+
+export const getContractPrivacyWhereSQLFilter = (
+  uid: string | undefined,
+  creatorId?: string,
+  groupId?: string,
+  hasGroupAccess?: boolean
+) => {
+  const otherVisibilitySQL = `
+  OR (visibility = 'unlisted' AND creator_id='${uid}') 
+  OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))
+  `
+  return (groupId && hasGroupAccess) ||
+    (!!creatorId && !!uid && creatorId === uid)
+    ? ''
+    : `(visibility = 'public' ${uid ? otherVisibilitySQL : ''})`
+}
