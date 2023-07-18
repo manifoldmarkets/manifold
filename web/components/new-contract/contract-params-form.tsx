@@ -49,6 +49,8 @@ import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
 import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
+import { set } from 'lodash'
+import clsx from 'clsx'
 
 export function ContractParamsForm(props: {
   outcomeType: OutcomeType
@@ -154,6 +156,19 @@ export function ContractParamsForm(props: {
     ? parseFloat(initialValueString)
     : undefined
 
+  let closeDateMap: { [key: string]: number | string } = {
+    'A day': 1,
+    'A week': 7,
+    '30 days': 30,
+    'This year': daysLeftInTheYear,
+  }
+
+  const NEVER_IN_DAYS = 30 * 12 * 1000 // ~1000 years
+  if (outcomeType == 'POLL') {
+    closeDateMap['Never'] = NEVER_IN_DAYS
+  }
+  const [neverCloses, setNeverCloses] = useState(false)
+
   useEffect(() => {
     if (outcomeType === 'STONK' || NON_BETTING_OUTCOMES.includes(outcomeType)) {
       setCloseDate(dayjs().add(1000, 'year').format('YYYY-MM-DD'))
@@ -172,6 +187,10 @@ export function ContractParamsForm(props: {
           )
         }
       }
+    }
+    if (outcomeType === 'POLL') {
+      setCloseDateInDays(NEVER_IN_DAYS)
+      setNeverCloses(true)
     }
   }, [outcomeType])
 
@@ -196,7 +215,8 @@ export function ContractParamsForm(props: {
         max - min > 0.01 &&
         min < initialValue &&
         initialValue < max)) &&
-    (outcomeType !== 'MULTIPLE_CHOICE' || isValidMultipleChoice)
+    ((outcomeType !== 'MULTIPLE_CHOICE' && outcomeType !== 'POLL') ||
+      isValidMultipleChoice)
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
@@ -236,6 +256,7 @@ export function ContractParamsForm(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function submit() {
+    console.log('params answer', answers)
     if (!isValid) return
     setIsSubmitting(true)
     try {
@@ -472,45 +493,50 @@ export function ContractParamsForm(props: {
             <ChoicesToggleGroup
               currentChoice={dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')}
               setChoice={(choice) => {
+                if (choice == NEVER_IN_DAYS) {
+                  setNeverCloses(true)
+                } else {
+                  setNeverCloses(false)
+                }
                 setCloseDateInDays(choice as number)
 
                 if (!closeHoursMinutes) {
                   setCloseHoursMinutes(initTime)
                 }
               }}
-              choicesMap={{
-                'A day': 1,
-                'A week': 7,
-                '30 days': 30,
-                'This year': daysLeftInTheYear,
-              }}
+              choicesMap={closeDateMap}
               disabled={isSubmitting}
-              className={'col-span-4 sm:col-span-2'}
+              className={clsx(
+                'col-span-4 sm:col-span-2',
+                outcomeType == 'POLL' ? 'text-xs sm:text-sm' : ''
+              )}
             />
           </Row>
-          <Row className="mt-4 gap-2">
-            <Input
-              type={'date'}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => {
-                setCloseDate(e.target.value)
-                if (!closeHoursMinutes) {
-                  setCloseHoursMinutes(initTime)
-                }
-              }}
-              min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
-              disabled={isSubmitting}
-              value={closeDate}
-            />
-            <Input
-              type={'time'}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setCloseHoursMinutes(e.target.value)}
-              min={'00:00'}
-              disabled={isSubmitting}
-              value={closeHoursMinutes}
-            />
-          </Row>
+          {!neverCloses && (
+            <Row className="mt-4 gap-2">
+              <Input
+                type={'date'}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  setCloseDate(e.target.value)
+                  if (!closeHoursMinutes) {
+                    setCloseHoursMinutes(initTime)
+                  }
+                }}
+                min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
+                disabled={isSubmitting}
+                value={closeDate}
+              />
+              <Input
+                type={'time'}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setCloseHoursMinutes(e.target.value)}
+                min={'00:00'}
+                disabled={isSubmitting}
+                value={closeHoursMinutes}
+              />
+            </Row>
+          )}
         </div>
       )}
       {visibility != 'private' && (

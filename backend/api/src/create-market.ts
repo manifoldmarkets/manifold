@@ -5,11 +5,7 @@ import { z } from 'zod'
 import { marked } from 'marked'
 import { runPostBountyTxn } from 'shared/txn/run-bounty-txn'
 
-import {
-  Answer,
-  MULTIPLE_CHOICE_MAX_ANSWERS,
-  getNoneAnswer,
-} from 'common/answer'
+import { Answer, MAX_ANSWERS, getNoneAnswer } from 'common/answer'
 import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
@@ -23,7 +19,6 @@ import {
   MAX_QUESTION_LENGTH,
   NumericContract,
   OUTCOME_TYPES,
-  PollContract,
   VISIBILITIES,
 } from 'common/contract'
 import { getAnte } from 'common/economy'
@@ -46,7 +41,6 @@ import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { getMultiCpmmLiquidity } from 'common/calculate-cpmm'
-import { PollOption } from 'common/poll-option'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -310,6 +304,10 @@ function validateMarketBody(body: any) {
   if (outcomeType === 'BOUNTIED_QUESTION') {
     ;({ totalBounty } = validate(bountiedQuestionSchema, body))
   }
+
+  if (outcomeType === 'POLL') {
+    ;({ answers } = validate(pollSchema, body))
+  }
   return {
     question,
     description,
@@ -444,7 +442,8 @@ async function generateAntes(
     outcomeType === 'BINARY' ||
     outcomeType === 'PSEUDO_NUMERIC' ||
     outcomeType === 'STONK' ||
-    outcomeType === 'MULTIPLE_CHOICE'
+    outcomeType === 'MULTIPLE_CHOICE' ||
+    outcomeType === 'POLL'
   ) {
     const liquidityDoc = firestore
       .collection(`contracts/${contract.id}/liquidity`)
@@ -546,13 +545,7 @@ const numericSchema = z.object({
 })
 
 const multipleChoiceSchema = z.object({
-  answers: z
-    .string()
-    .trim()
-    .min(1)
-    .array()
-    .min(2)
-    .max(MULTIPLE_CHOICE_MAX_ANSWERS),
+  answers: z.string().trim().min(1).array().min(2).max(MAX_ANSWERS),
   shouldAnswersSumToOne: z.boolean().optional(),
 })
 
@@ -560,8 +553,13 @@ const bountiedQuestionSchema = z.object({
   totalBounty: z.number().min(1),
 })
 
+const pollSchema = z.object({
+  answers: z.string().trim().min(1).array().min(2).max(MAX_ANSWERS),
+})
+
 type schema = z.infer<typeof bodySchema> &
   (z.infer<typeof binarySchema> | {}) &
   (z.infer<typeof numericSchema> | {}) &
   (z.infer<typeof multipleChoiceSchema> | {}) &
-  (z.infer<typeof bountiedQuestionSchema> | {})
+  (z.infer<typeof bountiedQuestionSchema> | {}) &
+  (z.infer<typeof pollSchema> | {})

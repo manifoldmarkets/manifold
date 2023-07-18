@@ -50,6 +50,7 @@ export function getNewContract(
   answers: string[]
 ) {
   const createdTime = Date.now()
+  console.log('get new contract answers', answers)
 
   const propsByOutcomeType = {
     BINARY: () => getBinaryCpmmProps(initialProb, ante),
@@ -300,6 +301,7 @@ const getPollProps = (answers: string[]) => {
     votes: 0,
   }))
 
+  console.log('answers', answers, '\n options', options)
   const system: NonBet & Poll = {
     mechanism: 'none',
     outcomeType: 'POLL',
