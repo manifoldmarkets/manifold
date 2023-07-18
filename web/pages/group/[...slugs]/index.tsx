@@ -409,14 +409,6 @@ export function TopGroupNavBar(props: {
         </h1>
         <div className="flex flex-1 justify-end">
           <Row className="items-center gap-2">
-            <JoinOrLeaveGroupButton
-              group={group}
-              isMember={isMember}
-              user={user}
-              isMobile={true}
-              disabled={bannerVisible}
-              className={transitionClass}
-            />
             <GroupOptions
               group={group}
               groupUrl={groupUrl}
