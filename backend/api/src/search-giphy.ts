@@ -1,13 +1,13 @@
-import { z } from 'zod'
-import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 import { GiphyFetch } from '@giphy/js-fetch-api'
+import { z } from 'zod'
+import { jsonEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   term: z.string(),
   limit: z.number(),
 })
 
-export const searchgiphy = MaybeAuthedEndpoint(async (req, auth) => {
+export const searchgiphy = jsonEndpoint(async (req) => {
   const { term, limit } = validate(bodySchema, req.body)
   if (!process.env.REACT_APP_GIPHY_KEY) {
     return { status: 'failure', data: 'Missing GIPHY API key' }
