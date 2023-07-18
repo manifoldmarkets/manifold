@@ -621,6 +621,22 @@ export function SearchFilters(props: {
 
   return (
     <div className={clsx(className, 'gap-4')}>
+      <DropdownMenu
+        Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
+        Icon={
+          <Row className="items-center gap-0.5 ">
+            <span className="whitespace-nowrap text-sm font-medium text-gray-500">
+              {contractTypeLabel}
+            </span>
+            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+          </Row>
+        }
+        menuWidth={'w-36'}
+        menuItemsClass="left-0 right-auto"
+        selectedItemName={contractTypeLabel}
+        closeOnClick={true}
+      />
+
       {!hideFilter && (
         <DropdownMenu
           Items={generateFilterDropdownItems(FILTERS, selectFilter)}
@@ -659,21 +675,7 @@ export function SearchFilters(props: {
           closeOnClick={true}
         />
       )}
-      <DropdownMenu
-        Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
-        Icon={
-          <Row className="items-center gap-0.5 ">
-            <span className="whitespace-nowrap text-sm font-medium text-gray-500">
-              {contractTypeLabel}
-            </span>
-            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-          </Row>
-        }
-        menuWidth={'w-36'}
-        menuItemsClass="left-0 right-auto"
-        selectedItemName={contractTypeLabel}
-        closeOnClick={true}
-      />
+
       {!listViewDisabled && (
         <button
           type="button"
