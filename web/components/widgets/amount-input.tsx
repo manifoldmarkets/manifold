@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
-import 'rc-slider/assets/index.css'
 import React, { ReactNode, useEffect, useState } from 'react'
 import { BetSlider } from 'web/components/bet/bet-slider'
 import { useUser } from 'web/hooks/use-user'

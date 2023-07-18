@@ -11,6 +11,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
+import { RangeSlider } from '../widgets/slider'
 
 export function convertNumberToProb(
   number: number,
@@ -53,13 +54,6 @@ export function LimitSlider(props: {
     disabled,
   } = props
 
-  const mark = (value: number) => (
-    <span className="text-ink-400 text-xs">
-      <div className={'sm:h-0.5'} />
-      {value}%
-    </span>
-  )
-
   return (
     <Col className="relative mb-8 w-full gap-3">
       <div className="text-ink-800 text-sm">
@@ -86,60 +80,21 @@ export function LimitSlider(props: {
           error={invalidLowAndHighBet}
         />
       </Row>
-      <Col className="px-2">
-        <Slider
-          range
-          disabled={disabled}
-          marks={
-            isPseudoNumeric
-              ? undefined
-              : {
-                  0: mark(minProb),
-                  50: mark(50),
-                  100: mark(maxProb),
-                }
-          }
-          value={[lowLimitProb ?? minProb, highLimitProb ?? maxProb]}
-          min={minProb}
-          max={maxProb}
-          onChange={(value) => {
-            if (value && Array.isArray(value)) {
-              // eslint-disable-next-line prefer-const
-              let [low, high] = value
-              if (low === high) high++
-              setLowLimitProb(low === minProb ? undefined : low)
-              setHighLimitProb(high === maxProb ? undefined : high)
-            }
-          }}
-          className={clsx(
-            '[&>.rc-slider-rail]:bg-ink-200 my-auto !h-1',
-            '[&>.rc-slider-handle]:z-10',
-            invalidLowAndHighBet
-              ? '[&>.rc-slider-track]:bg-scarlet-500'
-              : '[&>.rc-slider-track]:bg-primary-300'
-          )}
-          handleStyle={[
-            {
-              height: 20,
-              width: 20,
-              opacity: 1,
-              border: 'none',
-              boxShadow: 'none',
-              top: 2,
-              backgroundColor: invalidLowAndHighBet ? '#FF2400' : '#6366f1',
-            },
-            {
-              height: 20,
-              width: 20,
-              opacity: 1,
-              border: 'none',
-              boxShadow: 'none',
-              top: 2,
-              backgroundColor: '#6366f1',
-            },
-          ]}
-        />
-      </Col>
+      <RangeSlider
+        className="!px-2"
+        lowValue={lowLimitProb ?? minProb}
+        highValue={highLimitProb ?? maxProb}
+        setLow={(value) =>
+          setLowLimitProb(value === minProb ? undefined : value)
+        }
+        setHigh={(value) =>
+          setHighLimitProb(value === maxProb ? undefined : value)
+        }
+        marks={
+          isPseudoNumeric ? undefined : { 0: '0%', 50: '50%', 100: '100%' }
+        }
+        error={invalidLowAndHighBet}
+      />
       {invalidLowAndHighBet && (
         <div
           className={clsx(
