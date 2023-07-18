@@ -249,6 +249,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
             ? (c: ContractComment) =>
                 isReply(c)
                   ? c.createdTime
+                  : // For your own recent comments, show first.
+                  c.createdTime > Date.now() - 10 * MINUTE_MS &&
+                    c.userId === user?.id
+                  ? -Infinity
                   : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
             : (c) =>
                 isReply(c)
@@ -264,34 +268,46 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       ]),
     [comments, sort, likes, user?.id]
   )
-  const [originalSortIndices, setOriginalSortIndices] = useState(() =>
-    Object.fromEntries(strictlySortedComments.map((c, i) => [c.id, i]))
-  )
-  const sortedComments = sortBy(
-    strictlySortedComments,
-    (c, i) => originalSortIndices[c.id] ?? i
-  )
-
   const commentsByParent = groupBy(
-    sortedComments,
+    strictlySortedComments,
     (c) => c.replyToCommentId ?? '_'
   )
 
-  const parentComments = commentsByParent['_'] ?? []
+  const [originalComments, setOriginalComments] = useState(
+    strictlySortedComments
+  )
+  const originalCommentSet = useMemo(
+    () => new Set(originalComments.map((c) => c.id)),
+    [originalComments]
+  )
+  const firstOldCommentIndex = strictlySortedComments.findIndex((c) =>
+    originalCommentSet.has(c.id)
+  )
+  const sortedComments = [
+    ...strictlySortedComments.slice(0, firstOldCommentIndex),
+    // Lump the original comments in a contiguous chunk so they don't jump around.
+    ...originalComments,
+    ...strictlySortedComments
+      .slice(firstOldCommentIndex)
+      .filter((c) => !originalCommentSet.has(c.id)),
+  ]
 
-  const childrensBounties =
-    contract.outcomeType == 'BOUNTIED_QUESTION'
-      ? Object.keys(commentsByParent).reduce(
-          (newObj: { [key: string]: number }, key) => {
-            newObj[key] = commentsByParent[key].reduce(
-              (sum, c) => sum + (c?.bountyAwarded ?? 0),
-              0
-            )
-            return newObj
-          },
-          {}
-        )
-      : {}
+  const parentComments = sortedComments.filter(
+    (c) => c.replyToCommentId === undefined
+  )
+
+  const childrensBounties = isBountiedQuestion
+    ? Object.keys(commentsByParent).reduce(
+        (newObj: { [key: string]: number }, key) => {
+          newObj[key] = commentsByParent[key].reduce(
+            (sum, c) => sum + (c?.bountyAwarded ?? 0),
+            0
+          )
+          return newObj
+        },
+        {}
+      )
+    : {}
 
   const visibleCommentIds = useMemo(
     () =>
@@ -339,7 +355,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           sort={sort}
           onSortClick={() => {
             setSort(sort === 'Newest' ? 'Best' : 'Newest')
-            setOriginalSortIndices({})
+            setOriginalComments([])
             track('change-comments-sort', {
               contractSlug: contract.slug,
               contractName: contract.question,
