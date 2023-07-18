@@ -10,7 +10,6 @@ export function MultipleChoiceAnswers(props: {
   placeholder?: string
 }) {
   const { answers, setAnswers, placeholder } = props
-  console.log(answers)
 
   const setAnswer = (i: number, answer: string) => {
     const newAnswers = setElement(answers, i, answer)

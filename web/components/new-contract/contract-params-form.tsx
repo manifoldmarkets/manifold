@@ -256,7 +256,6 @@ export function ContractParamsForm(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function submit() {
-    console.log('params answer', answers)
     if (!isValid) return
     setIsSubmitting(true)
     try {
