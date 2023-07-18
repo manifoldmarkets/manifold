@@ -108,7 +108,7 @@ export default function AboutPage() {
         <Subtitle>📄 Pages</Subtitle>
         <LabSection>
           <LabCard
-            title="💸 Referrals"
+            title="🤗‍ Referrals"
             description={`Refer a friend to earn ${formatMoney(
               REFERRAL_AMOUNT
             )}`}
@@ -149,6 +149,11 @@ export default function AboutPage() {
             title="💸 Manalinks"
             description={`Send ${ENV_CONFIG.moneyMoniker} to anyone`}
             href="/links"
+          />
+          <LabCard
+            title="💸 Managrams"
+            description={`Send ${ENV_CONFIG.moneyMoniker} to any user`}
+            href="/payments"
           />
           <LabCard
             title="📏 Platform calibration"
