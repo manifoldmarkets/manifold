@@ -155,7 +155,7 @@ export function ContractParamsForm(props: {
     ? parseFloat(initialValueString)
     : undefined
 
-  let closeDateMap: { [key: string]: number | string } = {
+  const closeDateMap: { [key: string]: number | string } = {
     'A day': 1,
     'A week': 7,
     '30 days': 30,
