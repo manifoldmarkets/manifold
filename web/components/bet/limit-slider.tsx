@@ -6,7 +6,6 @@ import {
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
-import Slider from 'rc-slider'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
