@@ -1,7 +1,8 @@
 import { getReplicatorUrl } from 'common/api'
 import { log } from 'shared/utils'
-import { getLocalEnv } from 'shared/init-admin'
+import { getLocalEnv, initAdmin } from 'shared/init-admin'
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
+initAdmin()
 import * as admin from 'firebase-admin'
 
 // NOTE: the replicator instance does all of this automatically.

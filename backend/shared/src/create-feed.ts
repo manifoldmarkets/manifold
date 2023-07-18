@@ -12,7 +12,6 @@ import {
   FEED_REASON_TYPES,
   INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
-import { Reaction } from 'common/reaction'
 import { log } from 'shared/utils'
 import { buildArray, filterDefined } from 'common/util/array'
 import { getUsersWithSimilarInterestVectorToNews } from 'shared/supabase/users'
@@ -161,7 +160,7 @@ const deleteRowsFromUserFeed = async (
 }
 
 export const addCommentOnContractToFeed = async (
-  contractId: string,
+  contract: Contract,
   comment: Comment,
   userIdsToExclude: string[],
   idempotencyKey?: string
@@ -169,7 +168,7 @@ export const addCommentOnContractToFeed = async (
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
-      contractId,
+      contract,
       comment.userId,
       pg,
       [
@@ -186,7 +185,7 @@ export const addCommentOnContractToFeed = async (
     'new_comment',
     userIdsToExclude,
     {
-      contractId,
+      contractId: contract.id,
       commentId: comment.id,
       creatorId: comment.userId,
       idempotencyKey,
@@ -199,46 +198,46 @@ export const addCommentOnContractToFeed = async (
 // - creator of the comment & reaction
 // - have already seen the comment
 // - already have the comment in their feed (unique by contract id, comment id, user id)
-export const addLikedCommentOnContractToFeed = async (
-  contractId: string,
-  reaction: Reaction,
-  comment: Comment,
-  userIdsToExclude: string[],
-  idempotencyKey?: string
-) => {
-  const pg = createSupabaseDirectClient()
-  const usersToReasonsInterestedInContract =
-    await getUserToReasonsInterestedInContractAndUser(
-      contractId,
-      reaction.userId,
-      pg,
-      [
-        'follow_user',
-        'contract_in_group_you_are_in',
-        'similar_interest_vector_to_contract',
-      ],
-      INTEREST_DISTANCE_THRESHOLDS.popular_comment
-    )
-  await Promise.all(
-    Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
-      insertDataToUserFeed(
-        userId,
-        reaction.createdTime,
-        'popular_comment',
-        usersToReasonsInterestedInContract[userId],
-        userIdsToExclude,
-        {
-          contractId,
-          commentId: comment.id,
-          creatorId: reaction.userId,
-          reactionId: reaction.id,
-          idempotencyKey,
-        },
-        pg
-      )
-    )
-  )
-}
+// export const addLikedCommentOnContractToFeed = async (
+//   contractId: string,
+//   reaction: Reaction,
+//   comment: Comment,
+//   userIdsToExclude: string[],
+//   idempotencyKey?: string
+// ) => {
+//   const pg = createSupabaseDirectClient()
+//   const usersToReasonsInterestedInContract =
+//     await getUserToReasonsInterestedInContractAndUser(
+//       contractId,
+//       reaction.userId,
+//       pg,
+//       [
+//         'follow_user',
+//         'contract_in_group_you_are_in',
+//         'similar_interest_vector_to_contract',
+//       ],
+//       INTEREST_DISTANCE_THRESHOLDS.popular_comment
+//     )
+//   await Promise.all(
+//     Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
+//       insertDataToUserFeed(
+//         userId,
+//         reaction.createdTime,
+//         'popular_comment',
+//         usersToReasonsInterestedInContract[userId],
+//         userIdsToExclude,
+//         {
+//           contractId,
+//           commentId: comment.id,
+//           creatorId: reaction.userId,
+//           reactionId: reaction.id,
+//           idempotencyKey,
+//         },
+//         pg
+//       )
+//     )
+//   )
+// }
 
 //TODO: run this when a contract gets its 1st comment, 5th bet, 1st like
 // excluding those who:
@@ -268,7 +267,7 @@ export const addContractToFeed = async (
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
-      contract.id,
+      contract,
       userIdResponsibleForEvent ?? contract.creatorId,
       pg,
       reasonsToInclude,
@@ -312,7 +311,7 @@ export const addContractToFeedIfUnseenAndDeleteDuplicates = async (
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
-      contract.id,
+      contract,
       contract.creatorId,
       pg,
       reasonsToInclude,

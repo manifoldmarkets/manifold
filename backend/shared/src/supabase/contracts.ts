@@ -2,6 +2,7 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs, map, merge, sortBy } from 'lodash'
 import { getUserFollowerIds } from 'shared/supabase/users'
 import { CONTRACT_OR_USER_FEED_REASON_TYPES, MINIMUM_SCORE } from 'common/feed'
+import { Contract } from 'common/contract'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -134,12 +135,13 @@ export const getUsersWithSimilarInterestVectorsToContract = async (
 // Helpful firebase deploy arguments after changing the following function
 // functions:onCreateContract,functions:onCreateCommentOnContract,functions:onCreateLiquidityProvision,functions:scorecontracts
 export const getUserToReasonsInterestedInContractAndUser = async (
-  contractId: string,
+  contract: Contract,
   userId: string,
   pg: SupabaseDirectClient,
   reasonsToInclude: CONTRACT_OR_USER_FEED_REASON_TYPES[],
   userToContractDistanceThreshold: number
 ): Promise<{ [userId: string]: CONTRACT_OR_USER_FEED_REASON_TYPES }> => {
+  const { id: contractId } = contract
   const reasonsToRelevantUserIdsFunctions: {
     [key in CONTRACT_OR_USER_FEED_REASON_TYPES]: {
       promise: Promise<string[]>
@@ -170,16 +172,23 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       ),
       importance: 7,
     },
+    private_contract_shared_with_you: {
+      promise: getUsersWithAccessToContract(contract, pg),
+      importance: 8,
+    },
   }
 
-  const reasons = sortBy(
-    reasonsToInclude
-      ? reasonsToInclude
-      : (Object.keys(
-          reasonsToRelevantUserIdsFunctions
-        ) as CONTRACT_OR_USER_FEED_REASON_TYPES[]),
-    (reason) => reasonsToRelevantUserIdsFunctions[reason].importance
-  )
+  const reasons =
+    contract.visibility === 'private'
+      ? ['private_contract_shared_with_you' as const]
+      : sortBy(
+          reasonsToInclude
+            ? reasonsToInclude
+            : (Object.keys(
+                reasonsToRelevantUserIdsFunctions
+              ) as CONTRACT_OR_USER_FEED_REASON_TYPES[]),
+          (reason) => reasonsToRelevantUserIdsFunctions[reason].importance
+        )
 
   const promises = reasons.map(
     (reason) => reasonsToRelevantUserIdsFunctions[reason].promise
@@ -235,4 +244,19 @@ export const getContractPrivacyWhereSQLFilter = (
     (!!creatorId && !!uid && creatorId === uid)
     ? ''
     : `(visibility = 'public' ${uid ? otherVisibilitySQL : ''})`
+}
+
+export const getUsersWithAccessToContract = async (
+  contract: Contract,
+  pg: SupabaseDirectClient
+): Promise<string[]> => {
+  return await pg.map(
+    `
+    select member_id FROM group_members
+    JOIN group_contracts ON group_members.group_id = group_contracts.group_id
+    WHERE group_contracts.contract_id = $1
+    `,
+    [contract.id],
+    (row: { member_id: string }) => row.member_id
+  )
 }
