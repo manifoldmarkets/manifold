@@ -244,7 +244,7 @@ export function ContractParamsForm(props: {
     setCloseHoursMinutes(undefined)
     setSelectedGroup(undefined)
     setVisibility((params?.visibility as Visibility) ?? 'public')
-    setAnswers(['', '', ''])
+    setAnswers(['', ''])
     setMinString('')
     setMaxString('')
     setInitialValueString('')
