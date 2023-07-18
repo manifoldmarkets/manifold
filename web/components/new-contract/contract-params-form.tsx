@@ -30,6 +30,7 @@ import ShortToggle from 'web/components/widgets/short-toggle'
 import { QfExplainer } from '../contract/qf-overview'
 
 import { generateJSON } from '@tiptap/core'
+import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH, NON_BETTING_OUTCOMES } from 'common/contract'
 import { getAnte } from 'common/economy'
 import { Group } from 'common/group'
@@ -49,8 +50,6 @@ import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
 import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
-import { set } from 'lodash'
-import clsx from 'clsx'
 
 export function ContractParamsForm(props: {
   outcomeType: OutcomeType

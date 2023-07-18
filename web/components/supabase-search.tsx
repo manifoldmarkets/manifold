@@ -6,10 +6,9 @@ import {
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
-import { cleanTopic, SELECTABLE_TOPICS } from 'common/topics'
+import { SELECTABLE_TOPICS, cleanTopic } from 'common/topics'
 import { debounce, isEqual, uniqBy } from 'lodash'
-import { useRouter } from 'next/router'
-import Router from 'next/router'
+import Router, { useRouter } from 'next/router'
 import { createContext, useContext, useEffect, useRef } from 'react'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
@@ -24,6 +23,7 @@ import { useIsAuthorized } from 'web/hooks/use-user'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import { searchContract } from 'web/lib/supabase/contracts'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { Button } from './buttons/button'
 import DropdownMenu from './comments/dropdown-menu'
 import { ShowTime } from './contract/contract-details'
 import { ContractsGrid } from './contract/contracts-grid'
@@ -37,7 +37,6 @@ import generateFilterDropdownItems, {
 import { Carousel } from './widgets/carousel'
 import { Input } from './widgets/input'
 import { SiteLink } from './widgets/site-link'
-import { Button } from './buttons/button'
 
 const CONTRACTS_PER_PAGE = 20
 
