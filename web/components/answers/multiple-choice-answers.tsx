@@ -7,8 +7,9 @@ import { ExpandingInput } from '../widgets/expanding-input'
 export function MultipleChoiceAnswers(props: {
   answers: string[]
   setAnswers: (answers: string[]) => void
+  placeholder?: string
 }) {
-  const { answers, setAnswers } = props
+  const { answers, setAnswers, placeholder } = props
 
   const setAnswer = (i: number, answer: string) => {
     const newAnswers = setElement(answers, i, answer)
@@ -31,7 +32,7 @@ export function MultipleChoiceAnswers(props: {
             value={answer}
             onChange={(e) => setAnswer(i, e.target.value)}
             className="ml-2 w-full"
-            placeholder="Type your answer..."
+            placeholder={placeholder ?? `Option ${i + 1}`}
             rows={1}
             maxLength={MAX_ANSWER_LENGTH}
           />

@@ -330,8 +330,14 @@ export function ContractParamsForm(props: {
       <Spacer h={2} />
       {outcomeType === 'QUADRATIC_FUNDING' && <QfExplainer />}
       <Spacer h={4} />
-      {outcomeType === 'MULTIPLE_CHOICE' && (
-        <MultipleChoiceAnswers answers={answers} setAnswers={setAnswers} />
+      {(outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL') && (
+        <MultipleChoiceAnswers
+          answers={answers}
+          setAnswers={setAnswers}
+          placeholder={
+            outcomeType == 'MULTIPLE_CHOICE' ? 'Type your answer..' : undefined
+          }
+        />
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <>
@@ -451,8 +457,16 @@ export function ContractParamsForm(props: {
       {outcomeType !== 'STONK' && outcomeType !== 'BOUNTIED_QUESTION' && (
         <div className="mb-1 flex flex-col items-start">
           <label className="mb-1 gap-2 px-1 py-2">
-            <span>Question closes in </span>
-            <InfoTooltip text="Trading will be halted after this time (local timezone)." />
+            <span>
+              {outcomeType == 'POLL' ? 'Poll' : 'Question'} closes in{' '}
+            </span>
+            <InfoTooltip
+              text={
+                outcomeType == 'POLL'
+                  ? 'Voting on this poll will be halted and resolve to the most voted option'
+                  : 'Trading will be halted after this time (local timezone).'
+              }
+            />
           </label>
           <Row className={'w-full items-center gap-2'}>
             <ChoicesToggleGroup

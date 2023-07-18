@@ -23,6 +23,7 @@ import {
   MAX_QUESTION_LENGTH,
   NumericContract,
   OUTCOME_TYPES,
+  PollContract,
   VISIBILITIES,
 } from 'common/contract'
 import { getAnte } from 'common/economy'
@@ -45,6 +46,7 @@ import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { getMultiCpmmLiquidity } from 'common/calculate-cpmm'
+import { PollOption } from 'common/poll-option'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -112,7 +114,8 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       min ?? 0,
       max ?? 0,
       isLogScale ?? false,
-      shouldAnswersSumToOne
+      shouldAnswersSumToOne,
+      answers ?? []
     )
 
     trans.create(contractRef, contract)
@@ -168,7 +171,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     }
   }
 
-  if (contract.mechanism === 'cpmm-multi-1' && answers)
+  if (answers && contract.mechanism === 'cpmm-multi-1')
     await createAnswers(user, contract, ante, answers)
 
   await generateAntes(userId, user, contract, outcomeType, ante)

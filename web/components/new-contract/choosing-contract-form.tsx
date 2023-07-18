@@ -9,6 +9,7 @@ import {
   NON_PREDICTIVE_CONTRACT_TYPES,
   PREDICTIVE_CONTRACT_TYPES,
 } from './create-contract-types'
+import { POLLS_ENABLED } from 'common/envs/constants'
 
 export function ChoosingContractForm(props: {
   outcomeType: OutcomeType | undefined
@@ -106,6 +107,7 @@ function OutcomeButton(props: {
     setState,
   } = props
   const [touch, setTouch] = useState(false)
+  if (value == 'POLL' && !POLLS_ENABLED) return <></>
   return (
     <button
       className={clsx(

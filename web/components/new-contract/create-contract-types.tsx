@@ -8,6 +8,7 @@ import { GiReceiveMoney } from 'react-icons/gi'
 import { GoNumber } from 'react-icons/go'
 import { TfiWrite } from 'react-icons/tfi'
 import { Col } from '../layout/col'
+import { CgPoll } from 'react-icons/cg'
 
 export const PREDICTIVE_CONTRACT_TYPES = {
   binary: {
@@ -79,6 +80,22 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
     backgroundColor: 'bg-teal-500/5',
     selectClassName:
       'dark:from-teal-500/20 from-teal-500/30 ring-teal-500 bg-gradient-to-br to-transparent ring-2',
+  },
+  polls: {
+    label: 'Poll',
+    value: 'POLL',
+    name: 'poll',
+    descriptor: `A multiple choice question that people can vote on. Each person can only vote once.`,
+    example: `Which color should I wear to prom?`,
+    visual: (
+      <Col className="relative my-auto h-12 w-12 text-fuchsia-400">
+        <CgPoll className="h-12 w-12" />
+      </Col>
+    ),
+    className: 'hover:ring-fuchsia-500/50',
+    backgroundColor: 'bg-fuchsia-500/5',
+    selectClassName:
+      'dark:from-fuchsia-500/20 from-fuchsia-500/30 ring-fuchsia-500 bg-gradient-to-br to-transparent ring-2',
   },
 }
 
