@@ -1,5 +1,5 @@
 import { BellIcon } from '@heroicons/react/outline'
-import clsx from 'clsx'
+import { BellIcon as SolidBellIcon } from '@heroicons/react/solid'
 import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
@@ -9,16 +9,28 @@ import { PrivateUser } from 'common/user'
 import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
 import { keyBy } from 'lodash'
 
-export default function NotificationsIcon(props: { className?: string }) {
+export function NotificationsIcon(props: { className?: string }) {
   const privateUser = usePrivateUser()
 
   return (
     <Row className="relative justify-center">
       {privateUser && <UnseenNotificationsBubble privateUser={privateUser} />}
-      <BellIcon className={clsx(props.className)} />
+      <BellIcon className={props.className} />
     </Row>
   )
 }
+
+export function SolidNotificationsIcon(props: { className?: string }) {
+  const privateUser = usePrivateUser()
+
+  return (
+    <Row className="relative justify-center">
+      {privateUser && <UnseenNotificationsBubble privateUser={privateUser} />}
+      <SolidBellIcon className={props.className} />
+    </Row>
+  )
+}
+
 function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
   const { isReady, pathname, asPath } = useRouter()
   const { privateUser } = props

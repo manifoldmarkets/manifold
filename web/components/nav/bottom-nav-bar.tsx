@@ -19,7 +19,7 @@ import { Item } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from '../widgets/avatar'
-import NotificationsIcon from 'web/components/notifications-icon'
+import { SolidNotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
@@ -45,7 +45,7 @@ function getNavigation(user: User) {
     {
       name: 'Notifs',
       href: `/notifications`,
-      icon: NotificationsIcon,
+      icon: SolidNotificationsIcon,
     },
   ]
 }
