@@ -194,11 +194,7 @@ export default function AboutPage() {
               href="/portfolio"
             />
           )}
-          <LabCard
-            title="✏ Posts"
-            description="Go long on longform"
-            href="/latestposts"
-          />
+
           <LabCard
             title="🎤 Mana-chan"
             description="Tweets from our anime spokesgirl"
@@ -256,6 +252,11 @@ export default function AboutPage() {
           exorcise them.
         </div>
         <LabSection>
+          <LabCard
+            title="✏ Posts"
+            description="Go long on longform"
+            href="/latestposts"
+          />
           <LabCard
             title="🎱 Oddball"
             description="Guess the probability of events"

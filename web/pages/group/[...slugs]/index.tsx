@@ -22,7 +22,6 @@ import { GroupOptions } from 'web/components/groups/group-options'
 import GroupPrivacyStatusWidget, {
   GroupMembersWidget,
 } from 'web/components/groups/group-page-items'
-import { GroupPostSection } from 'web/components/groups/group-post-section'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import {
   InaccessiblePrivateThing,
@@ -170,7 +169,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const [writingNewAbout, setWritingNewAbout] = useState(false)
   const bannerRef = useRef<HTMLDivElement | null>(null)
   const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
-  const groupPosts = groupParams?.posts ?? []
   const creator = useUserById(group?.creatorId) ?? groupParams?.creator
   const topTraders =
     useToTopUsers((group && group.cachedLeaderboard?.topTraders) ?? []) ??
@@ -331,10 +329,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                   }}
                 />
               ),
-            },
-            {
-              title: 'Posts',
-              content: <GroupPostSection group={group} posts={groupPosts} />,
             },
             {
               title: 'Leaderboards',

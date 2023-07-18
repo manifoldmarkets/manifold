@@ -21,12 +21,9 @@ import { Title } from 'web/components/widgets/title'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
-import { usePostsByUser } from 'web/hooks/use-post'
 import { usePrefetchUsers, useUser, useUserById } from 'web/hooks/use-user'
 import { useDiscoverUsers } from 'web/hooks/use-users'
-import { track } from 'web/lib/service/analytics'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
-import { buttonClass } from 'web/components/buttons/button'
 import { TextButton } from 'web/components/buttons/text-button'
 import { UserFollowButton } from 'web/components/buttons/follow-button'
 import { UserCommentsList } from 'web/components/comments/comments-list'
@@ -38,7 +35,6 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
-import { PostCardList } from 'web/components/posts/post-card'
 import { SEO } from 'web/components/SEO'
 import { Avatar } from 'web/components/widgets/avatar'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
@@ -50,7 +46,6 @@ import {
   UserBadge,
 } from 'web/components/widgets/user-link'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
-import { Subtitle } from 'web/components/widgets/subtitle'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import { getPostsByUser } from 'web/lib/supabase/post'
@@ -154,7 +149,6 @@ function UserProfile(props: {
   const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
-  const userPosts = usePostsByUser(user.id) ?? props.posts
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -340,31 +334,9 @@ function UserProfile(props: {
                 title: 'Comments',
                 stackedTabIcon: <ChatAlt2Icon className="h-5" />,
                 content: (
-                  <>
-                    {userPosts && userPosts.length > 0 && (
-                      <>
-                        <Spacer h={4} />
-                        <Row className="mb-3 flex items-center justify-between">
-                          <Subtitle className="!my-0">Posts</Subtitle>
-                          {isCurrentUser && (
-                            <Link
-                              className={clsx(buttonClass('md', 'indigo'))}
-                              href={'/create-post'}
-                              onClick={() => track('profile click create post')}
-                            >
-                              Create Post
-                            </Link>
-                          )}
-                        </Row>
-
-                        <PostCardList posts={userPosts} limit={6} />
-                        <Subtitle>Comments</Subtitle>
-                      </>
-                    )}
-                    <Col>
-                      <UserCommentsList user={user} />
-                    </Col>
-                  </>
+                  <Col>
+                    <UserCommentsList user={user} />
+                  </Col>
                 ),
               },
               {
