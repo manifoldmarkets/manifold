@@ -1,4 +1,4 @@
-import { MAX_ANSWER_LENGTH, MULTIPLE_CHOICE_MAX_ANSWERS } from 'common/answer'
+import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
 import { XIcon } from '@heroicons/react/solid'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -10,6 +10,7 @@ export function MultipleChoiceAnswers(props: {
   placeholder?: string
 }) {
   const { answers, setAnswers, placeholder } = props
+  console.log(answers)
 
   const setAnswer = (i: number, answer: string) => {
     const newAnswers = setElement(answers, i, answer)
@@ -48,7 +49,7 @@ export function MultipleChoiceAnswers(props: {
         </Row>
       ))}
 
-      {answers.length < MULTIPLE_CHOICE_MAX_ANSWERS && (
+      {answers.length < MAX_ANSWERS && (
         <Row className="justify-end">
           <button
             type="button"
