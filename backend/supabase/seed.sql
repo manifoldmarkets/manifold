@@ -388,7 +388,7 @@ for update
 
 create index if not exists user_feed_created_time on user_feed (user_id, created_time desc);
 
-create index concurrently if not exists user_feed_user_id_contract_id_created_time on user_feed (user_id, contract_id, created_time desc);
+create index if not exists user_feed_user_id_contract_id_created_time on user_feed (user_id, contract_id, created_time desc);
 
 alter table user_feed
 cluster on user_feed_created_time;

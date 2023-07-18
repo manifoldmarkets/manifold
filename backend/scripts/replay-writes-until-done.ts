@@ -1,7 +1,24 @@
 import { getReplicatorUrl } from 'common/api'
 import { log } from 'shared/utils'
+import { getLocalEnv } from 'shared/init-admin'
+import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
+import * as admin from 'firebase-admin'
 
+// NOTE: the replicator instance does all of this automatically.
+// You can run this if you want to see how many failed writes there are.
 const main = async () => {
+  const env = getLocalEnv()
+  const credentials = getServiceAccountCredentials(env)
+  await loadSecretsToEnv(credentials)
+  const firestore = admin.firestore()
+  const failedWritesCount = await firestore
+    .collection('replicationState')
+    .doc('supabase')
+    .collection('failedWrites')
+    .count()
+    .get()
+
+  console.log('failedWritesCount', failedWritesCount.data().count)
   let n = 1
   while (n > 0) {
     const url = getReplicatorUrl() + '/replay-failed'
