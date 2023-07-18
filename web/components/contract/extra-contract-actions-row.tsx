@@ -47,8 +47,7 @@ export function ExtraContractActionsRow(props: {
         linkIconOnlyProps={{
           tooltip: 'Copy question share link',
           //TODO: less spaghetti way of styling the button and icon
-          className:
-            '!p-2 [&_svg]:h-5 [&_svg]:w-5 text-ink-500 hover:text-ink-600',
+          className: 'text-ink-500 hover:text-ink-600',
         }}
         eventTrackingName="copy market link"
       />

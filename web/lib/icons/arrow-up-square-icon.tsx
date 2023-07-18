@@ -1,13 +1,15 @@
 // Icon from Bootstrap: https://icons.getbootstrap.com/
-export default function ArrowUpSquareIcon(props: { className?: string }) {
+export default function ArrowUpSquareIcon(
+  props: React.SVGProps<SVGSVGElement>
+) {
   return (
     <svg
-      className={props.className}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
       strokeWidth={2}
       stroke="currentColor"
+      {...props}
     >
       <path
         strokeLinecap="round"
