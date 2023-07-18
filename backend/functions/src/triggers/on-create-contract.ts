@@ -48,41 +48,40 @@ export const onCreateContract = functions
       richTextToString(desc),
       mentioned
     )
-    const pg = createSupabaseDirectClient()
-    const contractEmbedding = await pg.oneOrNone<{ embedding: string }>(
-      `select embedding
-        from contract_embeddings
-        where contract_id = $1`,
-      [contract.id]
-    )
-    const contractHasEmbedding = (contractEmbedding?.embedding ?? []).length > 0
-    log('contractHasEmbedding:', contractHasEmbedding)
-    if (!contractHasEmbedding) {
-      // Wait 5 seconds, hopefully the embedding will be there by then
-      await new Promise((resolve) => setTimeout(resolve, 5000))
-    }
-    const likelyNonPredictive = await isContractLikelyNonPredictive(
-      contract.id,
-      pg
-    )
-    log('likelyNonPredictive:', likelyNonPredictive)
-    if (likelyNonPredictive) {
-      const added = await addGroupToContract(contract, {
-        id: NON_PREDICTIVE_GROUP_ID,
-        slug: 'nonpredictive',
-        name: 'Non-Predictive',
-      })
-      log('Added contract to non-predictive group', added)
-    }
-    const reasons: CONTRACT_OR_USER_FEED_REASON_TYPES[] = ['follow_user']
-    if (contract.visibility === 'unlisted') return
-    else if (contract.visibility === 'public') {
-      reasons.push(
-        ...([
-          'similar_interest_vector_to_contract',
-        ] as CONTRACT_OR_USER_FEED_REASON_TYPES[])
+    if (contract.visibility !== 'private') {
+      const pg = createSupabaseDirectClient()
+      const contractEmbedding = await pg.oneOrNone<{ embedding: string }>(
+        `select embedding
+         from contract_embeddings
+         where contract_id = $1`,
+        [contract.id]
       )
+      const contractHasEmbedding =
+        (contractEmbedding?.embedding ?? []).length > 0
+      log('contractHasEmbedding:', contractHasEmbedding)
+      if (!contractHasEmbedding) {
+        // Wait 5 seconds, hopefully the embedding will be there by then
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+      }
+      const likelyNonPredictive = await isContractLikelyNonPredictive(
+        contract.id,
+        pg
+      )
+      log('likelyNonPredictive:', likelyNonPredictive)
+      if (likelyNonPredictive) {
+        const added = await addGroupToContract(contract, {
+          id: NON_PREDICTIVE_GROUP_ID,
+          slug: 'nonpredictive',
+          name: 'Non-Predictive',
+        })
+        log('Added contract to non-predictive group', added)
+      }
     }
+    if (contract.visibility === 'unlisted') return
+    const reasons: CONTRACT_OR_USER_FEED_REASON_TYPES[] = [
+      'follow_user',
+      'similar_interest_vector_to_contract',
+    ]
     await addContractToFeed(
       contract,
       reasons,
