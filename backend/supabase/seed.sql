@@ -310,6 +310,9 @@ create index if not exists user_seen_markets_type_created_time_desc_idx on user_
   created_time desc
 );
 
+create index if not exists user_seen_markets_user_type_created_time_desc_idx on user_seen_markets
+    (user_id,type, created_time desc);
+
 alter table user_seen_markets
 cluster on user_seen_markets_created_time_desc_idx;
 
