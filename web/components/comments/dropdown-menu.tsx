@@ -94,7 +94,7 @@ export default function DropdownMenu(props: {
                   >
                     <Row className={'gap-2'}>
                       {item.icon && <div className="w-5">{item.icon}</div>}
-                      <div className="text-left">{item.name}</div>
+                      <div className="text-left whitespace-nowrap">{item.name}</div>
                     </Row>
                   </button>
                 )}

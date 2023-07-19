@@ -72,6 +72,8 @@ export const PROB_SORTS = ['prob-descending', 'prob-ascending']
 export const FILTERS = [
   { label: 'Open', value: 'open' },
   { label: 'Closed', value: 'closed' },
+  { label: 'Closing this month', value: 'closing-this-month' },
+  { label: 'Closing next month', value: 'closing-next-month' },
   { label: 'Resolved', value: 'resolved' },
   { label: 'All', value: 'all' },
 ] as const
