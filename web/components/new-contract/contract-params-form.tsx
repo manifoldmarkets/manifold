@@ -244,8 +244,9 @@ export function ContractParamsForm(props: {
     setCloseDate(undefined)
     setCloseHoursMinutes(undefined)
     setSelectedGroup(undefined)
-    setVisibility((params?.visibility as Visibility) ?? 'public')
+    setVisibility('public')
     setAnswers(['Yes', 'No'])
+    setOutcomeType('MULTIPLE_CHOICE')
     setMinString('')
     setMaxString('')
     setInitialValueString('')
@@ -260,7 +261,8 @@ export function ContractParamsForm(props: {
     const outcomeTypeToSubmit: OutcomeType =
       filteredAnswers.length === 2 &&
       filteredAnswers.every(
-        (a) => a.toLowerCase() === 'yes' || a.toLowerCase() === 'no'
+        (a) =>
+          a.trim().toLowerCase() === 'yes' || a.trim().toLowerCase() === 'no'
       )
         ? 'BINARY'
         : outcomeType
