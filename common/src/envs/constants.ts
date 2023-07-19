@@ -102,10 +102,10 @@ export const CORE_USERNAMES = [
   'DavidChee',
   'mqp',
   'IngaWei',
-  'ManifoldMarkets',
 ]
 
 export const CHECK_USERNAMES = [
+  'Manifold',
   'EliezerYudkowsky',
   'memestiny',
   'ScottAlexander',

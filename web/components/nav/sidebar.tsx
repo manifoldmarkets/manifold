@@ -73,7 +73,7 @@ export default function Sidebar(props: {
   return (
     <nav
       aria-label="Sidebar"
-      className={clsx(' flex h-screen flex-col xl:ml-2', className)}
+      className={clsx('flex h-screen flex-col xl:ml-2', className)}
     >
       <ManifoldLogo className="pt-6 pb-3" />
 
@@ -99,7 +99,9 @@ export default function Sidebar(props: {
         {createMarketButton}
       </div>
       <div className="mt-auto mb-6 flex flex-col gap-1">
-        {user !== null && <AppBadgesOrGetAppButton hideOnDesktop={true} />}
+        {user !== null && (
+          <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
+        )}
         {bottomNavOptions.map((item) => (
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}

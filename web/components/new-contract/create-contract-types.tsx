@@ -14,7 +14,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   binary: {
     label: 'Yes/No',
     value: 'BINARY',
-    name: 'yes/no question',
+    name: 'yes/no',
     descriptor: 'A yes/no question.',
     example: 'Will NASA confirm the discovery of aliens before 2025?',
     visual: (
@@ -27,9 +27,9 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   multiple_choice: {
     label: 'Multiple choice',
     value: 'MULTIPLE_CHOICE',
-    name: 'multiple choice question',
+    name: 'multiple choice',
     descriptor: 'A question with multiple answers that you define.',
-    example: 'Which candidate will be elected in 2024?',
+    example: 'Which of the following candidates will be elected in 2024?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <BsUiChecks className="h-12 w-12" />
@@ -39,9 +39,9 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   free_response: {
     label: 'Free response',
     value: 'FREE_RESPONSE',
-    name: 'free response question',
+    name: 'free response',
     descriptor: 'A question that anyone can write an answer to.',
-    example: 'What will be the highest grossing film in 2023?',
+    example: 'What is the true cause of the UAPs?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <TfiWrite className="h-12 w-12" />
@@ -51,9 +51,9 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   numeric: {
     label: 'Numeric',
     value: 'PSEUDO_NUMERIC',
-    name: 'numeric question',
+    name: 'numeric',
     descriptor: 'A question with a numerical answer.',
-    example: 'How much will my coin collection sell for?',
+    example: 'How many people will come to Taco Tuesday?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <GoNumber className="h-12 w-12" />
@@ -64,13 +64,13 @@ export const PREDICTIVE_CONTRACT_TYPES = {
 
 export const NON_PREDICTIVE_CONTRACT_TYPES = {
   bountied_question: {
-    label: 'Bountied Question',
+    label: 'Bounty',
     value: 'BOUNTIED_QUESTION',
-    name: 'bountied question',
+    name: 'bounty',
     descriptor: `A question that anyone can answer for a bounty. The bounty you put up can be distributed however you'd like.`,
-    example: `I'll give ${formatMoney(
-      1000
-    )} to whoever draws the best portrait of my cat.`,
+    example: `Recommend me sci-fi books, ${formatMoney(
+      100
+    )} for each good submission.`,
     visual: (
       <Col className="relative my-auto h-12 w-12 text-teal-400">
         <GiReceiveMoney className="h-12 w-12" />

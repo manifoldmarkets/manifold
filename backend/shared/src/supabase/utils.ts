@@ -1,5 +1,5 @@
 import { pgp, SupabaseDirectClient } from './init'
-import { DataFor, Tables, TableName } from 'common/supabase/utils'
+import { DataFor, Tables, TableName, Row, Column } from 'common/supabase/utils'
 
 export async function getIds<T extends TableName>(
   db: SupabaseDirectClient,
@@ -43,8 +43,7 @@ export async function bulkUpdate<
     const columnNames = Object.keys(values[0])
     const cs = new pgp.helpers.ColumnSet(columnNames, { table })
     const clause = idFields.map((f) => `v.${f} = t.${f}`).join(' and ')
-    const query =
-      pgp.helpers.update(values, cs) + ` WHERE ${clause}`
+    const query = pgp.helpers.update(values, cs) + ` WHERE ${clause}`
     // Hack to properly cast jsonb values.
     const q = query.replace(/::jsonb'/g, "'::jsonb")
     await db.none(q)
@@ -54,11 +53,11 @@ export async function bulkUpdate<
 export async function bulkUpsert<
   T extends TableName,
   ColumnValues extends Tables[T]['Insert'],
-  Row extends Tables[T]['Row']
+  Col extends Column<T>
 >(
   db: SupabaseDirectClient,
   table: T,
-  idField: string & keyof Row,
+  idField: Col | Col[],
   values: ColumnValues[]
 ) {
   if (!values.length) return
@@ -69,8 +68,9 @@ export async function bulkUpsert<
   // Hack to properly cast jsonb values.
   const baseQueryReplaced = baseQuery.replace(/::jsonb'/g, "'::jsonb")
 
+  const primaryKey = Array.isArray(idField) ? idField.join(', ') : idField
   const upsertAssigns = cs.assignColumns({ from: 'excluded', skip: idField })
-  const query = `${baseQueryReplaced} on conflict(${idField}) do update set ${upsertAssigns}`
+  const query = `${baseQueryReplaced} on conflict(${primaryKey}) do update set ${upsertAssigns}`
   await db.none(query)
 }
 

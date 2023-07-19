@@ -8,7 +8,7 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { SELECTABLE_TOPICS, cleanTopic } from 'common/topics'
 import { debounce, isEqual, uniqBy } from 'lodash'
-import Router, { useRouter } from 'next/router'
+import { useRouter } from 'next/router'
 import { createContext, useContext, useEffect, useRef } from 'react'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
@@ -23,7 +23,6 @@ import { useIsAuthorized } from 'web/hooks/use-user'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import { searchContract } from 'web/lib/supabase/contracts'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { Button } from './buttons/button'
 import DropdownMenu from './comments/dropdown-menu'
 import { ShowTime } from './contract/contract-details'
 import { ContractsGrid } from './contract/contracts-grid'
@@ -36,7 +35,7 @@ import generateFilterDropdownItems, {
 } from './search/search-dropdown-helpers'
 import { Carousel } from './widgets/carousel'
 import { Input } from './widgets/input'
-import { SiteLink } from './widgets/site-link'
+import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -329,30 +328,18 @@ export function SupabaseContractSearch(props: {
           hideFilters={hideFilters}
         />
         {contracts && contracts.length === 0 ? (
-          <p className="text-ink-500 mx-2">
-            No questions found.{' '}
+          <Col className={''}>
+            <Row className="text-ink-500 mx-2 items-center gap-2">
+              No questions found.
+            </Row>
             {profile && (
-              <>
-                Why not{' '}
-                <SiteLink
-                  href="/create"
-                  followsLinkClass
-                  className="font-semibold"
-                >
-                  create one?
-                </SiteLink>
-                <br />
-                <Button
-                  color="gradient"
-                  size="md"
-                  className="mt-4 flex sm:hidden"
-                  onClick={() => Router.push('/create')}
-                >
-                  Create a question
-                </Button>
-              </>
+              <Row className={' items-center justify-center'}>
+                <Col className={'mt-8 w-full items-center justify-center'}>
+                  <CreateQuestionButton className={'!mt-0 max-w-[15rem]'} />
+                </Col>
+              </Row>
             )}
-          </p>
+          </Col>
         ) : asList ? (
           <ContractsList
             key={

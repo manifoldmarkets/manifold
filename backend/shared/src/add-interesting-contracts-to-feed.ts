@@ -13,11 +13,10 @@ import {
   getContractTraders,
   getTodayComments,
 } from './importance-score'
-import { bulkUpdate } from 'shared/supabase/utils'
 
 export const MINUTE_INTERVAL = 30
 
-export async function scoreContractsInternal(
+export async function addInterestingContractsToFeed(
   db: SupabaseClient,
   pg: SupabaseDirectClient,
   readOnly = false
@@ -28,18 +27,18 @@ export async function scoreContractsInternal(
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
   const activeContracts = await pg.map(
-    `select data from contracts where ((data->'lastUpdatedTime')::numeric) > $1
+    `select data from contracts 
+            where ((data->'lastUpdatedTime')::numeric) > $1
             order by importance_score desc`,
     [lastUpdatedTime],
     (row) => row.data as Contract
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
-    `select data from contracts where
-        (data ? 'dailyScore' AND (data->>'dailyScore')::numeric > 0)
-            or popularity_score > 0
-            order by importance_score desc
-            `,
+    `select data from contracts 
+            where importance_score > 0.1
+            order by importance_score desc 
+            limit 5000`,
     [],
     (row) => row.data as Contract
   )
@@ -52,8 +51,6 @@ export async function scoreContractsInternal(
   const contracts = activeContracts.concat(previouslyActiveContractsFiltered)
   const contractIds = contracts.map((c) => c.id)
   log(`Found ${contracts.length} contracts to score`)
-
-  const contractScoreUpdates: Contract[] = []
 
   const todayComments = await getTodayComments(db)
   const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
@@ -81,7 +78,7 @@ export async function scoreContractsInternal(
       logOddsChange,
       thisWeekScore,
       popularityScore,
-      dailyScore,
+      importanceScore,
     } = computeContractScores(
       now,
       contract,
@@ -101,13 +98,7 @@ export async function scoreContractsInternal(
         thisWeekScore,
         importanceScore: contract.importanceScore,
       })
-    }
-    // If it's already popular but has had 5 new traders in the past hour, add it to the feed
-    else if (
-      popularityScore > 20 &&
-      hourAgoTradersByContract[contract.id] > 5 &&
-      !readOnly
-    ) {
+    } else if (importanceScore > 0.25 && !readOnly) {
       log(
         'inserting generally trending, recently popular contract',
         contract.id,
@@ -136,24 +127,5 @@ export async function scoreContractsInternal(
       )
       if (!readOnly) await insertMarketMovementContractToUsersFeeds(contract)
     }
-    if (
-      contract.popularityScore !== popularityScore ||
-      contract.dailyScore !== dailyScore
-    ) {
-      contract.popularityScore = popularityScore
-      contract.dailyScore = dailyScore
-      contractScoreUpdates.push(contract)
-    }
   }
-  await bulkUpdate(
-    pg,
-    'contracts',
-    ['id'],
-    contractScoreUpdates.map((contract) => ({
-      id: contract.id,
-      data: `${JSON.stringify(contract)}::jsonb`,
-      popularity_score: contract.popularityScore,
-    }))
-  )
-  log(`Finished scoring ${contractScoreUpdates.length} contracts`)
 }

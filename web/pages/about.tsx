@@ -240,9 +240,9 @@ export default function AboutPage() {
             href="/stats"
           />
           <LabCard
-            title="🎨 Design system"
-            href="/styles"
-            description="How we make things pretty"
+            title="🚨🛠️🚨 ADMIN 🔥💽🔥"
+            description="Is the site on FIRE??"
+            href="/admin"
           />
         </LabSection>
 
@@ -311,7 +311,7 @@ export default function AboutPage() {
   )
 }
 
-const LabCard = (props: {
+export const LabCard = (props: {
   title: string
   description?: string
   href: string

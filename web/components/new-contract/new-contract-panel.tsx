@@ -11,6 +11,7 @@ import { Row } from '../layout/row'
 import { ChoosingContractForm } from './choosing-contract-form'
 import { ContractParamsForm } from './contract-params-form'
 import { getContractTypeThingFromValue } from './create-contract-types'
+import { capitalize } from 'lodash'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -102,7 +103,7 @@ function CreateStepTracker(props: {
   return (
     <Row
       className={clsx(
-        'text-ink-400 bg-canvas-0 sm:text-md border-1 border-ink-200 sticky z-10 w-full items-center gap-1 border-b pt-4 pb-2 text-sm',
+        'text-ink-400 bg-canvas-0 border-1 border-ink-200 sticky z-10 w-full items-center gap-1 border-b pt-4 pb-2',
         fromGroup ? '-px-1 top-4' : 'top-0 px-6'
       )}
     >
@@ -111,7 +112,7 @@ function CreateStepTracker(props: {
         selected={state == 'choosing contract'}
         onClick={() => setState('choosing contract')}
       >
-        Choose
+        Choose question type
       </CreateStepButton>
       <ChevronRightIcon className={clsx('h-5 w-5')} />
       <CreateStepButton
@@ -123,11 +124,10 @@ function CreateStepTracker(props: {
           }
         }}
       >
-        Create
         {outcomeType
-          ? ` a ${
-              privacy == 'private' ? 'private' : ''
-            } ${getContractTypeThingFromValue('name', outcomeType)}`
+          ? `${privacy == 'private' ? 'private' : ''} ${capitalize(
+              getContractTypeThingFromValue('name', outcomeType)
+            )}`
           : ''}
       </CreateStepButton>
     </Row>

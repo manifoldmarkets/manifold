@@ -307,6 +307,8 @@ export function ContractParamsForm(props: {
 
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
+  const isMulti =
+    outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
   return (
     <>
       <Col>
@@ -581,11 +583,21 @@ export function ContractParamsForm(props: {
               <span>
                 {' '}
                 or <span className=" text-teal-500">FREE </span>
-                if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
+                if you get{' '}
+                {isMulti
+                  ? ante / (UNIQUE_BETTOR_BONUS_AMOUNT / 2)
+                  : ante / UNIQUE_BETTOR_BONUS_AMOUNT}
+                + participants{' '}
                 <InfoTooltip
-                  text={`You'll earn a bonus of ${formatMoney(
-                    UNIQUE_BETTOR_BONUS_AMOUNT
-                  )} for each unique trader you get on your question.`}
+                  text={
+                    isMulti
+                      ? `You'll earn a bonus of ${formatMoney(
+                          Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
+                        )} for each unique trader you get on each answer.`
+                      : `You'll earn a bonus of ${formatMoney(
+                          UNIQUE_BETTOR_BONUS_AMOUNT
+                        )} for each unique trader you get on your question.`
+                  }
                 />
               </span>
             )}

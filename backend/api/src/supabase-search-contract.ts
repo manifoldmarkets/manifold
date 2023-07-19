@@ -15,7 +15,7 @@ import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
-const TOPIC_DISTANCE_THRESHOLD = 0.24
+const TOPIC_DISTANCE_THRESHOLD = 0.23
 const bodySchema = z.object({
   term: z.string(),
   filter: z.union([

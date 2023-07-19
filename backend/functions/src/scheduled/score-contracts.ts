@@ -2,8 +2,8 @@ import * as functions from 'firebase-functions'
 import { secrets } from 'common/secrets'
 import {
   MINUTE_INTERVAL,
-  scoreContractsInternal,
-} from 'shared/score-contracts-internal'
+  addInterestingContractsToFeed,
+} from 'shared/add-interesting-contracts-to-feed'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -47,7 +47,7 @@ export const scorecontracts = onRequest(
   async (_req, res) => {
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()
-    await scoreContractsInternal(db, pg)
+    await addInterestingContractsToFeed(db, pg)
     res.status(200).json({ success: true })
   }
 )
