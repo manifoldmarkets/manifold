@@ -9,7 +9,6 @@ import {
   SparklesIcon,
   StarIcon,
   UserGroupIcon,
-  FireIcon,
   QuestionMarkCircleIcon,
   NewspaperIcon,
   SearchIcon,
@@ -37,7 +36,6 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
-import { getIsNative } from 'web/lib/native/is-native'
 
 export default function Sidebar(props: {
   className?: string
@@ -161,7 +159,6 @@ const getDesktopNav = (
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
-    getIsNative() && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
     {

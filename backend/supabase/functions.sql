@@ -598,9 +598,9 @@ create
 or replace function get_contract_metrics_with_contracts (uid text, count int, start int) returns table (contract_id text, metrics jsonb, contract jsonb) stable parallel safe language sql as $$
 select ucm.contract_id,
   ucm.data as metrics,
-  c.data as contract
+    c.data as contract
 from user_contract_metrics as ucm
-  join contracts_rbac as c on c.id = ucm.contract_id
+    join contracts_rbac as c on c.id = ucm.contract_id
 where ucm.user_id = uid
   and ucm.data->'lastBetTime' is not null
 order by ((ucm.data)->'lastBetTime')::bigint desc offset start

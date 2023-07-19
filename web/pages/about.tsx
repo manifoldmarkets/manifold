@@ -108,7 +108,7 @@ export default function AboutPage() {
         <Subtitle>📄 Pages</Subtitle>
         <LabSection>
           <LabCard
-            title="💸 Referrals"
+            title="🤗‍ Referrals"
             description={`Refer a friend to earn ${formatMoney(
               REFERRAL_AMOUNT
             )}`}
@@ -151,6 +151,11 @@ export default function AboutPage() {
             href="/links"
           />
           <LabCard
+            title="💸 Managrams"
+            description={`Send ${ENV_CONFIG.moneyMoniker} to any user`}
+            href="/payments"
+          />
+          <LabCard
             title="📏 Platform calibration"
             description="Manifold's overall track record"
             href="/calibration"
@@ -182,11 +187,6 @@ export default function AboutPage() {
             />
           )}
 
-          <LabCard
-            title="🔥 Swipe"
-            description="Swipe-to-bet UI. Try via iOS/Android app."
-            {...(isNative ? { href: '/swipe' } : appCallback)}
-          />
           {user && (
             <LabCard
               title="📂 Portfolios"
@@ -194,11 +194,7 @@ export default function AboutPage() {
               href="/portfolio"
             />
           )}
-          <LabCard
-            title="✏ Posts"
-            description="Go long on longform"
-            href="/latestposts"
-          />
+
           <LabCard
             title="🎤 Mana-chan"
             description="Tweets from our anime spokesgirl"
@@ -256,6 +252,16 @@ export default function AboutPage() {
           exorcise them.
         </div>
         <LabSection>
+          <LabCard
+            title="🔥 Swipe"
+            description="Swipe-to-bet UI. Try via iOS/Android app."
+            {...(isNative ? { href: '/swipe' } : appCallback)}
+          />
+          <LabCard
+            title="✏ Posts"
+            description="Go long on longform"
+            href="/latestposts"
+          />
           <LabCard
             title="🎱 Oddball"
             description="Guess the probability of events"

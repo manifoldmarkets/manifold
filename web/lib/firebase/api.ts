@@ -443,3 +443,14 @@ export function sendMana(params: {
 export function leaveReview(params: any) {
   return call(getApiUrl('leave-review'), 'POST', params)
 }
+export function getUserContractsMetricsWithContracts(params: {
+  userId: string
+  offset: number
+  limit: number
+}) {
+  return maybeAuthedCall(
+    getApiUrl('get-user-contract-metrics-with-contracts'),
+    'POST',
+    params
+  )
+}

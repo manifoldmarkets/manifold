@@ -388,7 +388,7 @@ for update
 
 create index if not exists user_feed_created_time on user_feed (user_id, created_time desc);
 
-create index concurrently if not exists user_feed_user_id_contract_id_created_time on user_feed (user_id, contract_id, created_time desc);
+create index if not exists user_feed_user_id_contract_id_created_time on user_feed (user_id, contract_id, created_time desc);
 
 alter table user_feed
 cluster on user_feed_created_time;
@@ -1261,16 +1261,10 @@ alter publication supabase_realtime
 add table group_members;
 
 alter publication supabase_realtime
-add table posts;
-
-alter publication supabase_realtime
 add table post_comments;
 
 alter publication supabase_realtime
 add table group_contracts;
-
-alter publication supabase_realtime
-add table contract_follows;
 
 alter publication supabase_realtime
 add table chat_messages;

@@ -1402,7 +1402,7 @@ function BountyAddedNotification(props: {
           <UserLink
             name={notification.sourceUserName}
             username={notification.sourceUserUsername}
-          />
+          />{' '}
           added{' '}
           <span className="font-semibold text-teal-600 dark:text-teal-400">
             {formatMoney(+notification?.sourceText)}
