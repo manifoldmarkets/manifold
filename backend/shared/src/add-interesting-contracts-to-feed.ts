@@ -98,7 +98,12 @@ export async function addInterestingContractsToFeed(
         thisWeekScore,
         importanceScore: contract.importanceScore,
       })
-    } else if (importanceScore > 0.25 && !readOnly) {
+    } else if (
+      importanceScore > 0.35 ||
+      (importanceScore > 0.15 &&
+        hourAgoTradersByContract[contract.id] >= 3 &&
+        !readOnly)
+    ) {
       log(
         'inserting generally trending, recently popular contract',
         contract.id,
