@@ -7,7 +7,9 @@ import {
   ReactionNotificationTypes,
 } from 'common/notification'
 import { formatMoney } from 'common/util/format'
+import { floatingEqual } from 'common/util/math'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
+import { sortBy } from 'lodash'
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -28,8 +30,13 @@ import {
   NumericValueLabel,
   ProbPercentLabel,
 } from 'web/components/outcome-label'
+import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
+import { useContract } from 'web/hooks/use-contract-supabase'
+import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
+import { StarDisplay } from '../reviews/stars'
 import { Linkify } from '../widgets/linkify'
+import { linkClass, SiteLink } from '../widgets/site-link'
 import {
   AvatarNotificationIcon,
   NOTIFICATION_ICON_SIZE,
@@ -39,13 +46,6 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { Avatar } from 'web/components/widgets/avatar'
-import { sortBy } from 'lodash'
-import { floatingEqual } from 'common/util/math'
-import { useContract } from 'web/hooks/use-contract-supabase'
-import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
-import { linkClass, SiteLink } from '../widgets/site-link'
-import { StarDisplay } from '../reviews/stars'
 
 export function NotificationItem(props: {
   notification: Notification

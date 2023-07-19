@@ -5,11 +5,7 @@ import { z } from 'zod'
 import { marked } from 'marked'
 import { runPostBountyTxn } from 'shared/txn/run-bounty-txn'
 
-import {
-  Answer,
-  MULTIPLE_CHOICE_MAX_ANSWERS,
-  getNoneAnswer,
-} from 'common/answer'
+import { Answer, MAX_ANSWERS, getNoneAnswer } from 'common/answer'
 import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
@@ -112,7 +108,8 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       min ?? 0,
       max ?? 0,
       isLogScale ?? false,
-      shouldAnswersSumToOne
+      shouldAnswersSumToOne,
+      answers ?? []
     )
 
     trans.create(contractRef, contract)
@@ -168,7 +165,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     }
   }
 
-  if (contract.mechanism === 'cpmm-multi-1' && answers)
+  if (answers && contract.mechanism === 'cpmm-multi-1')
     await createAnswers(user, contract, ante, answers)
 
   await generateAntes(userId, user, contract, outcomeType, ante)
@@ -306,6 +303,10 @@ function validateMarketBody(body: any) {
 
   if (outcomeType === 'BOUNTIED_QUESTION') {
     ;({ totalBounty } = validate(bountiedQuestionSchema, body))
+  }
+
+  if (outcomeType === 'POLL') {
+    ;({ answers } = validate(pollSchema, body))
   }
   return {
     question,
@@ -543,13 +544,7 @@ const numericSchema = z.object({
 })
 
 const multipleChoiceSchema = z.object({
-  answers: z
-    .string()
-    .trim()
-    .min(1)
-    .array()
-    .min(2)
-    .max(MULTIPLE_CHOICE_MAX_ANSWERS),
+  answers: z.string().trim().min(1).array().min(2).max(MAX_ANSWERS),
   shouldAnswersSumToOne: z.boolean().optional(),
 })
 
@@ -557,8 +552,13 @@ const bountiedQuestionSchema = z.object({
   totalBounty: z.number().min(1),
 })
 
+const pollSchema = z.object({
+  answers: z.string().trim().min(1).array().min(2).max(MAX_ANSWERS),
+})
+
 type schema = z.infer<typeof bodySchema> &
   (z.infer<typeof binarySchema> | {}) &
   (z.infer<typeof numericSchema> | {}) &
   (z.infer<typeof multipleChoiceSchema> | {}) &
-  (z.infer<typeof bountiedQuestionSchema> | {})
+  (z.infer<typeof bountiedQuestionSchema> | {}) &
+  (z.infer<typeof pollSchema> | {})

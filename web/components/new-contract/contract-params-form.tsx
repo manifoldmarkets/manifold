@@ -30,6 +30,7 @@ import ShortToggle from 'web/components/widgets/short-toggle'
 import { QfExplainer } from '../contract/qf-overview'
 
 import { generateJSON } from '@tiptap/core'
+import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH, NON_BETTING_OUTCOMES } from 'common/contract'
 import { getAnte } from 'common/economy'
 import { Group } from 'common/group'
@@ -154,6 +155,19 @@ export function ContractParamsForm(props: {
     ? parseFloat(initialValueString)
     : undefined
 
+  const closeDateMap: { [key: string]: number | string } = {
+    'A day': 1,
+    'A week': 7,
+    '30 days': 30,
+    'This year': daysLeftInTheYear,
+  }
+
+  const NEVER_IN_DAYS = 30 * 12 * 1000 // ~1000 years
+  if (outcomeType == 'POLL') {
+    closeDateMap['Never'] = NEVER_IN_DAYS
+  }
+  const [neverCloses, setNeverCloses] = useState(false)
+
   useEffect(() => {
     if (outcomeType === 'STONK' || NON_BETTING_OUTCOMES.includes(outcomeType)) {
       setCloseDate(dayjs().add(1000, 'year').format('YYYY-MM-DD'))
@@ -172,6 +186,10 @@ export function ContractParamsForm(props: {
           )
         }
       }
+    }
+    if (outcomeType === 'POLL') {
+      setCloseDateInDays(NEVER_IN_DAYS)
+      setNeverCloses(true)
     }
   }, [outcomeType])
 
@@ -196,7 +214,8 @@ export function ContractParamsForm(props: {
         max - min > 0.01 &&
         min < initialValue &&
         initialValue < max)) &&
-    (outcomeType !== 'MULTIPLE_CHOICE' || isValidMultipleChoice)
+    ((outcomeType !== 'MULTIPLE_CHOICE' && outcomeType !== 'POLL') ||
+      isValidMultipleChoice)
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
@@ -225,7 +244,7 @@ export function ContractParamsForm(props: {
     setCloseHoursMinutes(undefined)
     setSelectedGroup(undefined)
     setVisibility((params?.visibility as Visibility) ?? 'public')
-    setAnswers(['', '', ''])
+    setAnswers(['', ''])
     setMinString('')
     setMaxString('')
     setInitialValueString('')
@@ -330,8 +349,14 @@ export function ContractParamsForm(props: {
       <Spacer h={2} />
       {outcomeType === 'QUADRATIC_FUNDING' && <QfExplainer />}
       <Spacer h={4} />
-      {outcomeType === 'MULTIPLE_CHOICE' && (
-        <MultipleChoiceAnswers answers={answers} setAnswers={setAnswers} />
+      {(outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL') && (
+        <MultipleChoiceAnswers
+          answers={answers}
+          setAnswers={setAnswers}
+          placeholder={
+            outcomeType == 'MULTIPLE_CHOICE' ? 'Type your answer..' : undefined
+          }
+        />
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <>
@@ -451,52 +476,65 @@ export function ContractParamsForm(props: {
       {outcomeType !== 'STONK' && outcomeType !== 'BOUNTIED_QUESTION' && (
         <div className="mb-1 flex flex-col items-start">
           <label className="mb-1 gap-2 px-1 py-2">
-            <span>Question closes in </span>
-            <InfoTooltip text="Trading will be halted after this time (local timezone)." />
+            <span>
+              {outcomeType == 'POLL' ? 'Poll' : 'Question'} closes in{' '}
+            </span>
+            <InfoTooltip
+              text={
+                outcomeType == 'POLL'
+                  ? 'Voting on this poll will be halted and resolve to the most voted option'
+                  : 'Trading will be halted after this time (local timezone).'
+              }
+            />
           </label>
           <Row className={'w-full items-center gap-2'}>
             <ChoicesToggleGroup
               currentChoice={dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')}
               setChoice={(choice) => {
+                if (choice == NEVER_IN_DAYS) {
+                  setNeverCloses(true)
+                } else {
+                  setNeverCloses(false)
+                }
                 setCloseDateInDays(choice as number)
 
                 if (!closeHoursMinutes) {
                   setCloseHoursMinutes(initTime)
                 }
               }}
-              choicesMap={{
-                'A day': 1,
-                'A week': 7,
-                '30 days': 30,
-                'This year': daysLeftInTheYear,
-              }}
+              choicesMap={closeDateMap}
               disabled={isSubmitting}
-              className={'col-span-4 sm:col-span-2'}
+              className={clsx(
+                'col-span-4 sm:col-span-2',
+                outcomeType == 'POLL' ? 'text-xs sm:text-sm' : ''
+              )}
             />
           </Row>
-          <Row className="mt-4 gap-2">
-            <Input
-              type={'date'}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => {
-                setCloseDate(e.target.value)
-                if (!closeHoursMinutes) {
-                  setCloseHoursMinutes(initTime)
-                }
-              }}
-              min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
-              disabled={isSubmitting}
-              value={closeDate}
-            />
-            <Input
-              type={'time'}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setCloseHoursMinutes(e.target.value)}
-              min={'00:00'}
-              disabled={isSubmitting}
-              value={closeHoursMinutes}
-            />
-          </Row>
+          {!neverCloses && (
+            <Row className="mt-4 gap-2">
+              <Input
+                type={'date'}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  setCloseDate(e.target.value)
+                  if (!closeHoursMinutes) {
+                    setCloseHoursMinutes(initTime)
+                  }
+                }}
+                min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
+                disabled={isSubmitting}
+                value={closeDate}
+              />
+              <Input
+                type={'time'}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setCloseHoursMinutes(e.target.value)}
+                min={'00:00'}
+                disabled={isSubmitting}
+                value={closeHoursMinutes}
+              />
+            </Row>
+          )}
         </div>
       )}
       {visibility != 'private' && (

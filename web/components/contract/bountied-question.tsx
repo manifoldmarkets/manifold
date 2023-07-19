@@ -8,9 +8,9 @@ import { addBounty, awardBounty } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
+import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { Row } from '../layout/row'
 
 const loadLottie = () => import('react-lottie')
 const loadAwardJson = () => import('../../public/lottie/award.json')

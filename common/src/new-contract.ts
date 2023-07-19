@@ -23,6 +23,8 @@ import { User } from './user'
 import { removeUndefinedProps } from './util/object'
 import { JSONContent } from '@tiptap/core'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
+import { randomString } from './util/random'
+import { PollOption } from './poll-option'
 export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
 export function getNewContract(
   id: string,
@@ -44,7 +46,8 @@ export function getNewContract(
   min: number,
   max: number,
   isLogScale: boolean,
-  shouldAnswersSumToOne: boolean | undefined
+  shouldAnswersSumToOne: boolean | undefined,
+  answers: string[]
 ) {
   const createdTime = Date.now()
 
@@ -59,7 +62,7 @@ export function getNewContract(
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(),
-    POLL: () => getPollProps(),
+    POLL: () => getPollProps(answers),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -287,11 +290,20 @@ const getBountiedQuestionProps = () => {
   return system
 }
 
-const getPollProps = () => {
+const getPollProps = (answers: string[]) => {
+  const ids = answers.map(() => randomString())
+
+  const options: PollOption[] = answers.map((answer, i) => ({
+    id: ids[i],
+    index: i,
+    text: answer,
+    votes: 0,
+  }))
+
   const system: NonBet & Poll = {
     mechanism: 'none',
     outcomeType: 'POLL',
-    options: [{ option: '', votes: 0 }],
+    options: options,
   }
   return system
 }
