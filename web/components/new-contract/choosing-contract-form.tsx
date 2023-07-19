@@ -19,15 +19,8 @@ export function ChoosingContractForm(props: {
   const { outcomeType, setOutcomeType, setState } = props
   return (
     <Col>
-      <div className="text-lg">What would you like to create?</div>
-      <Spacer h={6} />
-      <div className="text-primary-400 text-sm font-semibold">
-        PREDICTION MARKET
-      </div>
-      <div className="text-ink-700">
-        A question about the future that people can bet on.
-      </div>
-      <Spacer h={2} />
+      <div className="text-lg">Choose your question type.</div>
+      <Spacer h={4} />
       <Col className="gap-2">
         {Object.entries(PREDICTIVE_CONTRACT_TYPES).map(
           ([key, { label, descriptor, example, value, visual }]) => (
