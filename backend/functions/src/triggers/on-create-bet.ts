@@ -59,6 +59,7 @@ import {
   getUniqueBettorIdsForAnswer,
 } from 'shared/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
+import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 
 const firestore = admin.firestore()
 
@@ -125,8 +126,7 @@ export const onCreateBet = functions
     await updateUniqueBettors(contract, bet)
 
     const pg = createSupabaseDirectClient()
-    // TODO: Reenable updateUserInterestEmbedding
-    // await updateUserInterestEmbedding(pg, bettor.id)
+    await updateUserInterestEmbedding(pg, bettor.id)
 
     await addToLeagueIfNotInOne(pg, bettor.id)
 
