@@ -13,23 +13,37 @@ export const leavereview = authEndpoint(async (req, auth) => {
   const { marketId, review, rating } = validate(schema, req.body)
   const db = createSupabaseClient()
 
-  const { data, error } = await db
+  const contract = await db
     .from('contracts')
     .select('creator_id')
     .eq('id', marketId)
     .single()
 
-  if (error) {
+  if (contract.error) {
     throw new APIError(404, `No market found with id ${marketId}`)
   }
 
-  const creatorId = data.creator_id
+  const creatorId = contract.data.creator_id
   if (!creatorId) {
     throw new APIError(500, `Market has no creator`)
   }
 
   if (creatorId === auth.uid) {
     throw new APIError(403, `You can't review your own market`)
+  }
+
+  const user = await db
+    .from('users')
+    .select('data')
+    .eq('id', creatorId)
+    .single()
+
+  if (user.error) {
+    throw new APIError(500, `Error fetching creator`)
+  }
+
+  if ((user.data as any).isBannedFromPosting) {
+    throw new APIError(403, `You are banned`)
   }
 
   // TODO: check that the user has bet in the market?
