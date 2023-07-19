@@ -329,19 +329,21 @@ function getSearchContractSQL(contractInput: {
       )
     )
 
-    const forYouSortEnabled = sort === 'for-you' && uid
-    const forYouQuery = `user_interest AS (
-         SELECT interest_embedding FROM user_embeddings WHERE user_id = '${uid}' LIMIT 1)`
-    const forYouFilter = forYouSortEnabled ? `importance_score > 0.1` : ''
-    const forYouFrom = `user_interest, contracts`
-    const forYouSqlBuilder = buildSql(
-      ...buildArray(
-        forYouSortEnabled && withClause(forYouQuery),
-        forYouSortEnabled && where(forYouFilter),
-        forYouSortEnabled && from(forYouFrom),
-        forYouSortEnabled && join(topicJoin)
-      )
-    )
+    const forYouSortEnabled = sort === 'for-you' && !!uid
+    const forYouSqlBuilder = !forYouSortEnabled
+      ? undefined
+      : buildSql(
+          ...buildArray(
+            withClause(`user_interest AS (
+         SELECT interest_embedding FROM user_embeddings WHERE user_id = '${uid}' LIMIT 1)`),
+            where(`importance_score > 0.1`),
+            // where(
+            //   `(contract_embeddings.embedding <=> user_interest.disinterest_embedding) > 0.12`
+            // ),
+            from(`user_interest, contracts`),
+            join(topicJoin)
+          )
+        )
     // We'll pass a `for you` topic.
     // multiply the (1-distance of the person's interest vector to the importance score),
     // sort descending and pass this as the sortAlgorithm
@@ -349,7 +351,13 @@ function getSearchContractSQL(contractInput: {
       queryBuilder = buildSql(
         forYouSortEnabled
           ? select(
-              `data, importance_score/5 *  (1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) AS modified_importance_score`
+              'data, ' +
+                `importance_score
+                * 10 *( (1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
+                ` +
+                ' AS modified_importance_score'
+              // todo: consider including disinterest vector once good enough for new users via :
+              //  15 * ((contract_embeddings.embedding <=> user_interest.disinterest_embedding) - 0.1)
             )
           : select('data'),
         forYouSortEnabled ? undefined : from('contracts'),
