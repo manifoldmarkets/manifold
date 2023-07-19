@@ -43,12 +43,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     // '🌍 Africa',
   ],
 
-  '🪂 Lifestyle': [
-    '🏳️‍🌈 LGBTQIA+',
-    '❤️‍🔥 Sex and love',
-    '⛪ Religion',
-    '💪 Personal Development',
-  ],
+  '🪂 Lifestyle': ['🏳️‍🌈 LGBTQIA+', '❤️‍🔥 Sex and love', '💪 Personal Development'],
 
   '👥 Communities': ['💗 Effective Altruism', '🎮 Destiny.gg'],
 }
