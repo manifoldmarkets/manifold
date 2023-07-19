@@ -127,7 +127,7 @@ const Results = (props: { query: string }) => {
 
   const userHitLimit = !prefix ? 2 : prefix === '@' ? 25 : 0
   const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
-  const marketHitLimit = !prefix ? 20 : prefix === '%' ? 25 : 0
+  const marketHitLimit = !prefix ? 5 : prefix === '%' ? 25 : 0
 
   const [
     { pageHits, userHits, groupHits, sortHit, marketHits },
@@ -217,10 +217,10 @@ const Results = (props: { query: string }) => {
   return (
     <>
       <PageResults pages={pageHits} />
-      <UserResults users={userHits} search={search} />
-      <GroupResults groups={groupHits} search={search} />
-      {sortHit && <MarketSortResults {...sortHit} />}
       <MarketResults markets={marketHits} search={search} />
+      <GroupResults groups={groupHits} search={search} />
+      <UserResults users={userHits} search={search} />
+      {sortHit && <MarketSortResults {...sortHit} />}
     </>
   )
 }
@@ -311,7 +311,7 @@ const MarketResult = (props: { market: Contract }) => {
       }}
     >
       <div className="flex gap-2">
-        <span className="grow">{market.question}</span>
+        <span className="line-clamp-2 grow">{market.question}</span>
         <span className="font-bold">
           <ContractStatusLabel contract={market} />
         </span>
@@ -345,7 +345,7 @@ const UserResults = (props: { users: UserSearchResult[]; search?: string }) => {
             />
             {name}
             {username !== name && (
-              <span className="text-ink-400">@{username}</span>
+              <span className="text-ink-400 line-clamp-1">@{username}</span>
             )}
           </div>
         </ResultOption>
@@ -370,7 +370,7 @@ const GroupResults = (props: {
       {props.groups.map((group) => (
         <ResultOption value={{ id: group.id, slug: `/group/${group.slug}` }}>
           <div className="flex items-center gap-3">
-            <span className="grow">{group.name}</span>
+            <span className="line-clamp-1 grow">{group.name}</span>
             <span className="flex items-center">
               <UsersIcon className="mr-1 h-4 w-4" />
               {group.totalMembers}
