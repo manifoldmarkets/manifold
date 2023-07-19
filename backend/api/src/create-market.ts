@@ -442,8 +442,7 @@ async function generateAntes(
     outcomeType === 'BINARY' ||
     outcomeType === 'PSEUDO_NUMERIC' ||
     outcomeType === 'STONK' ||
-    outcomeType === 'MULTIPLE_CHOICE' ||
-    outcomeType === 'POLL'
+    outcomeType === 'MULTIPLE_CHOICE'
   ) {
     const liquidityDoc = firestore
       .collection(`contracts/${contract.id}/liquidity`)
