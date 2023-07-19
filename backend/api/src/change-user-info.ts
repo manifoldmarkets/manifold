@@ -6,7 +6,6 @@ import {
   FreeResponseContract,
   MultipleChoiceContract,
 } from 'common/contract'
-import { ContractMetric } from 'common/contract-metric'
 import { User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
@@ -128,26 +127,6 @@ export const changeUser = async (
     bulkWriter.update(ref, betUpdate)
   }
   log(`Updated ${betRows.length} bets.`)
-
-  log('Updating denormalized user data on contract metrics docs...')
-  const contractMetricsRows = await pg.manyOrNone(
-    `select contract_id from user_contract_metrics where user_id = $1`,
-    [user.id]
-  )
-  const contractMetricsUpdate: Partial<ContractMetric> = removeUndefinedProps({
-    userName: update.name,
-    userUsername: update.username,
-    userAvatarUrl: update.avatarUrl,
-  })
-  for (const row of contractMetricsRows) {
-    const ref = firestore
-      .collection('users')
-      .doc(user.id)
-      .collection('contract-metrics')
-      .doc(row.contract_id)
-    bulkWriter.update(ref, contractMetricsUpdate)
-  }
-  log(`Updated ${contractMetricsRows.length} contract metrics docs.`)
 
   log('Updating denormalized user data on answers...')
   const answerRows = await pg.manyOrNone(
