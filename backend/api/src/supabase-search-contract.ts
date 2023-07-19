@@ -20,9 +20,9 @@ const bodySchema = z.object({
   term: z.string(),
   filter: z.union([
     z.literal('open'),
-    z.literal('closed'),
     z.literal('closing-this-month'),
     z.literal('closing-next-month'),
+    z.literal('closed'),
     z.literal('resolved'),
     z.literal('all'),
   ]),
