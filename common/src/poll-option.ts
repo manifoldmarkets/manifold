@@ -1,4 +1,3 @@
-import { User } from './user'
 
 export type PollOption = {
   id: string
