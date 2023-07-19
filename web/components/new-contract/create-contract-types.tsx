@@ -29,7 +29,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     value: 'MULTIPLE_CHOICE',
     name: 'multiple choice',
     descriptor: 'A question with multiple answers that you define.',
-    example: 'Which of the following candidates will be elected in 2024?',
+    example: 'NASA confirms the discovery of aliens before the end of 2025',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <BsUiChecks className="h-12 w-12" />

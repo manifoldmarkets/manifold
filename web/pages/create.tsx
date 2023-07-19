@@ -2,14 +2,13 @@ import { useRouter } from 'next/router'
 
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import {
-  NewContractPanel,
-  NewQuestionParams,
-} from 'web/components/new-contract/new-contract-panel'
+import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
 import { Title } from 'web/components/widgets/title'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
+import { ContractParamsForm } from 'web/components/new-contract/contract-params-form'
+import { OutcomeType } from 'common/contract'
 
 export type VisibilityTheme = 'private' | 'non-private'
 
@@ -43,7 +42,11 @@ export default function Create() {
         url="/create"
       />
 
-      <NewContractPanel params={params} creator={user} />
+      <ContractParamsForm
+        outcomeType={(params.outcomeType as OutcomeType) ?? 'MULTIPLE_CHOICE'}
+        params={params}
+        creator={user}
+      />
     </Page>
   )
 }

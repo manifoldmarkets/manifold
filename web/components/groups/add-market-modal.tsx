@@ -8,8 +8,8 @@ import { SelectMarkets } from '../contract-select-modal'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { UncontrolledTabs } from '../layout/tabs'
-import { NewContractPanel } from '../new-contract/new-contract-panel'
 import { AddContractToGroupPermissionType } from './add-contract-to-group-button'
+import { ContractParamsForm } from 'web/components/new-contract/contract-params-form'
 
 export function AddMarketToGroupModal(props: {
   group: Group
@@ -77,7 +77,7 @@ export function AddMarketToGroupModal(props: {
 export function NewContractFromGroup(props: { group: Group; user: User }) {
   const { group, user } = props
   return (
-    <NewContractPanel
+    <ContractParamsForm
       params={{
         q: '',
         description: '',

@@ -44,22 +44,24 @@ import { createMarket } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { getGroup } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { VisibilityTheme } from 'web/pages/create'
 import WaitingForSupabaseButton from '../contract/waiting-for-supabase-button'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
 import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
+import { HiArrowsUpDown } from 'react-icons/hi2'
 
 export function ContractParamsForm(props: {
-  outcomeType: OutcomeType
   creator: User
-  setPrivacy: (theme: VisibilityTheme) => void
+  outcomeType?: OutcomeType
   fromGroup?: boolean
   params?: NewQuestionParams
 }) {
-  const { outcomeType, creator, setPrivacy, fromGroup, params } = props
+  const { creator, fromGroup, params } = props
   const paramsKey = params?.q ?? ''
+  const [outcomeType, setOutcomeType] = useState<OutcomeType>(
+    params?.outcomeType ?? 'MULTIPLE_CHOICE'
+  )
 
   const [minString, setMinString] = usePersistentLocalState(
     params?.min ?? '',
@@ -93,8 +95,8 @@ export function ContractParamsForm(props: {
     i++
   }
   // for multiple choice, init to 2 empty answers
-  const [answers, setAnswers] = usePersistentLocalState(
-    paramAnswers.length ? paramAnswers : ['', ''],
+  const [answers, setAnswers] = usePersistentLocalState<string[]>(
+    paramAnswers.length ? paramAnswers : ['Yes', 'No'],
     'new-answers' + paramsKey
   )
 
@@ -116,7 +118,12 @@ export function ContractParamsForm(props: {
     }
   }, [creator.id, params?.groupId])
 
-  const ante = getAnte(outcomeType, answers.length, visibility === 'private')
+  const filteredAnswers = answers.filter((a) => a.trim().length > 0)
+  const ante = getAnte(
+    outcomeType,
+    filteredAnswers.length,
+    visibility === 'private'
+  )
 
   // If params.closeTime is set, extract out the specified date and time
   // By default, close the question a week from today
@@ -193,10 +200,6 @@ export function ContractParamsForm(props: {
     }
   }, [outcomeType])
 
-  const isValidMultipleChoice = answers.every(
-    (answer) => answer.trim().length > 0
-  )
-
   const isValid =
     question.length > 0 &&
     ante !== undefined &&
@@ -213,9 +216,7 @@ export function ContractParamsForm(props: {
         min < max &&
         max - min > 0.01 &&
         min < initialValue &&
-        initialValue < max)) &&
-    ((outcomeType !== 'MULTIPLE_CHOICE' && outcomeType !== 'POLL') ||
-      isValidMultipleChoice)
+        initialValue < max))
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
@@ -244,7 +245,7 @@ export function ContractParamsForm(props: {
     setCloseHoursMinutes(undefined)
     setSelectedGroup(undefined)
     setVisibility((params?.visibility as Visibility) ?? 'public')
-    setAnswers(['', ''])
+    setAnswers(['Yes', 'No'])
     setMinString('')
     setMaxString('')
     setInitialValueString('')
@@ -256,12 +257,19 @@ export function ContractParamsForm(props: {
 
   async function submit() {
     if (!isValid) return
+    const outcomeTypeToSubmit: OutcomeType =
+      filteredAnswers.length === 2 &&
+      filteredAnswers.every(
+        (a) => a.toLowerCase() === 'yes' || a.toLowerCase() === 'no'
+      )
+        ? 'BINARY'
+        : outcomeType
     setIsSubmitting(true)
     try {
       const newContract = (await createMarket(
         removeUndefinedProps({
           question,
-          outcomeType,
+          outcomeType: outcomeTypeToSubmit,
           description: editor?.getJSON(),
           initialProb: 50,
           ante,
@@ -270,7 +278,7 @@ export function ContractParamsForm(props: {
           max,
           initialValue,
           isLogScale,
-          answers,
+          answers: filteredAnswers,
           groupId: selectedGroup?.id,
           visibility,
           utcOffset: new Date().getTimezoneOffset(),
@@ -298,10 +306,8 @@ export function ContractParamsForm(props: {
   useEffect(() => {
     if (selectedGroup?.privacyStatus == 'private') {
       setVisibility('private')
-      setPrivacy('private')
     } else {
       setVisibility(toggleVisibility)
-      setPrivacy('non-private')
     }
   }, [selectedGroup?.privacyStatus, toggleVisibility])
 
@@ -310,8 +316,8 @@ export function ContractParamsForm(props: {
   const isMulti =
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
   return (
-    <>
-      <Col>
+    <Col className={'p-4'}>
+      <Col className={''}>
         <div className="flex w-full flex-col">
           <label className="px-1 pt-2 pb-3">
             Question<span className={'text-scarlet-500'}>*</span>
@@ -352,13 +358,28 @@ export function ContractParamsForm(props: {
       {outcomeType === 'QUADRATIC_FUNDING' && <QfExplainer />}
       <Spacer h={4} />
       {(outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL') && (
-        <MultipleChoiceAnswers
-          answers={answers}
-          setAnswers={setAnswers}
-          placeholder={
-            outcomeType == 'MULTIPLE_CHOICE' ? 'Type your answer..' : undefined
-          }
-        />
+        <Col className={'p-2'}>
+          <Row className={'mb-2 items-end justify-between'}>
+            <div>Possible answers</div>
+            <Button
+              onClick={() => setOutcomeType('BOUNTIED_QUESTION')}
+              color={'gray-outline'}
+              size={'xs'}
+            >
+              <HiArrowsUpDown className={'mr-1 h-5 w-5'} />
+              Bounty
+            </Button>
+          </Row>
+          <MultipleChoiceAnswers
+            answers={answers}
+            setAnswers={setAnswers}
+            placeholder={
+              outcomeType == 'MULTIPLE_CHOICE'
+                ? 'Type your answer..'
+                : undefined
+            }
+          />
+        </Col>
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <>
@@ -438,11 +459,21 @@ export function ContractParamsForm(props: {
         </>
       )}
       {outcomeType == 'BOUNTIED_QUESTION' && (
-        <>
-          <label className="gap-2 px-1 py-2">
-            <span className="mb-1 mr-1">Bounty</span>
-            <InfoTooltip text="The award you give good answers. You can divide this amongst answers however you'd like." />
-          </label>
+        <Col className={'p-2'}>
+          <Row className={'items-end justify-between pb-2'}>
+            <label className="gap-2">
+              <span className="mb-1 mr-1">Bounty</span>
+              <InfoTooltip text="The award you give good answers. You can divide this amongst answers however you'd like." />
+            </label>
+            <Button
+              onClick={() => setOutcomeType('MULTIPLE_CHOICE')}
+              color={'gray-outline'}
+              size={'xs'}
+            >
+              <HiArrowsUpDown className={'mr-1 h-5 w-5'} />
+              Set answers
+            </Button>
+          </Row>
           <BuyAmountInput
             inputClassName="w-full max-w-none"
             minimumAmount={5}
@@ -454,11 +485,11 @@ export function ContractParamsForm(props: {
             customRange={{ rangeMax: 500 }}
           />
           <Spacer h={6} />
-        </>
+        </Col>
       )}
       {!fromGroup && (
         <>
-          <Row className={'items-end gap-x-2'}>
+          <Row className={'items-end gap-x-2 pt-1'}>
             <GroupSelector
               selectedGroup={selectedGroup}
               setSelectedGroup={setSelectedGroup}
@@ -527,14 +558,14 @@ export function ContractParamsForm(props: {
                 disabled={isSubmitting}
                 value={closeDate}
               />
-              <Input
-                type={'time'}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setCloseHoursMinutes(e.target.value)}
-                min={'00:00'}
-                disabled={isSubmitting}
-                value={closeHoursMinutes}
-              />
+              {/*<Input*/}
+              {/*  type={'time'}*/}
+              {/*  onClick={(e) => e.stopPropagation()}*/}
+              {/*  onChange={(e) => setCloseHoursMinutes(e.target.value)}*/}
+              {/*  min={'00:00'}*/}
+              {/*  disabled={isSubmitting}*/}
+              {/*  value={closeHoursMinutes}*/}
+              {/*/>*/}
             </Row>
           )}
         </div>
@@ -661,7 +692,7 @@ export function ContractParamsForm(props: {
         )}
       </Row>
       <Spacer h={6} />
-    </>
+    </Col>
   )
 }
 
