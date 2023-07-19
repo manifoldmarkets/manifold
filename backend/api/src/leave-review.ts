@@ -32,11 +32,7 @@ export const leavereview = authEndpoint(async (req, auth) => {
     throw new APIError(403, `You can't review your own market`)
   }
 
-  const user = await db
-    .from('users')
-    .select('data')
-    .eq('id', creatorId)
-    .single()
+  const user = await db.from('users').select('data').eq('id', auth.uid).single()
 
   if (user.error) {
     throw new APIError(500, `Error fetching creator`)
