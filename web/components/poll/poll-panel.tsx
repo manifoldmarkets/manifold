@@ -1,51 +1,30 @@
 import { PollContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { AnswerBar } from '../answers/answer-item'
+import { PollOption } from 'common/poll-option'
 
 export function PollPanel(props: { contract: PollContract }) {
+  const { options } = props.contract
+  const totalVotes = options.reduce((acc, option) => acc + option.votes, 0)
   return (
     <Col>
-      <AnswerBar
-        color={color}
-        prob={prob}
-        resolvedProb={resolvedProb}
-        label={
-          <AnswerLabel
-            text={answer.text}
-            creator={isFreeResponse ? answerCreator ?? false : undefined}
-            className={clsx(
-              'items-center text-sm !leading-none sm:flex sm:text-base',
-              resolvedProb === 0 ? 'text-ink-600' : 'text-ink-900'
-            )}
-          />
-        }
-        end={
-          <>
-            {!tradingAllowed(contract) ? (
-              <ClosedProb prob={prob} resolvedProb={resolvedProb} />
-            ) : (
+      {options.map((option: PollOption) => {
+        const prob = option.votes / totalVotes
+
+        return (
+          <AnswerBar
+            color={'#F9FAFB'}
+            prob={prob}
+            resolvedProb={undefined}
+            label={<div>{option.text}</div>}
+            end={
               <>
-                <OpenProb prob={prob} />
-                {isDpm ? (
-                  <DPMMultiBettor answer={answer as any} contract={contract} />
-                ) : (
-                  <MultiBettor
-                    answer={answer as any}
-                    contract={contract as any}
-                  />
-                )}
+                <div>{option.votes}</div>
               </>
-            )}
-            {onAnswerCommentClick && isFreeResponse && (
-              <AddComment onClick={() => onAnswerCommentClick(answer)} />
-            )}
-          </>
-        }
-        bottom={
-          hasBets &&
-          isCpmm && <AnswerPosition contract={contract} userBets={userBets} />
-        }
-      />
+            }
+          />
+        )
+      })}
     </Col>
   )
 }
