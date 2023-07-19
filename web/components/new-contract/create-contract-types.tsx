@@ -14,7 +14,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   binary: {
     label: 'Yes/No',
     value: 'BINARY',
-    name: 'yes/no question',
+    name: 'yes/no',
     descriptor: 'A yes/no question.',
     example: 'Will NASA confirm the discovery of aliens before 2025?',
     visual: (
@@ -27,7 +27,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   multiple_choice: {
     label: 'Multiple choice',
     value: 'MULTIPLE_CHOICE',
-    name: 'multiple choice question',
+    name: 'multiple choice',
     descriptor: 'A question with multiple answers that you define.',
     example: 'Which of the following candidates will be elected in 2024?',
     visual: (
@@ -39,7 +39,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   free_response: {
     label: 'Free response',
     value: 'FREE_RESPONSE',
-    name: 'free response question',
+    name: 'free response',
     descriptor: 'A question that anyone can write an answer to.',
     example: 'What is the true cause of the UAPs?',
     visual: (
@@ -51,7 +51,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   numeric: {
     label: 'Numeric',
     value: 'PSEUDO_NUMERIC',
-    name: 'numeric question',
+    name: 'numeric',
     descriptor: 'A question with a numerical answer.',
     example: 'How many people will come to Taco Tuesday?',
     visual: (
@@ -64,13 +64,13 @@ export const PREDICTIVE_CONTRACT_TYPES = {
 
 export const NON_PREDICTIVE_CONTRACT_TYPES = {
   bountied_question: {
-    label: 'Bountied Question',
+    label: 'Bounty',
     value: 'BOUNTIED_QUESTION',
-    name: 'bountied question',
+    name: 'bounty',
     descriptor: `A question that anyone can answer for a bounty. The bounty you put up can be distributed however you'd like.`,
     example: `Recommend me sci-fi books, ${formatMoney(
       100
-    )} to the top 5 I choose.`,
+    )} for each good submission.`,
     visual: (
       <Col className="relative my-auto h-12 w-12 text-teal-400">
         <GiReceiveMoney className="h-12 w-12" />

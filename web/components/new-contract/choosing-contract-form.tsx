@@ -23,7 +23,7 @@ export function ChoosingContractForm(props: {
       <Spacer h={4} />
       <Col className="gap-2">
         {Object.entries(PREDICTIVE_CONTRACT_TYPES).map(
-          ([key, { label, descriptor, example, value, visual }]) => (
+          ([_, { label, descriptor, example, value, visual }]) => (
             <OutcomeButton
               label={label}
               descriptor={descriptor}
@@ -41,7 +41,7 @@ export function ChoosingContractForm(props: {
       <Col className="mb-1 gap-2">
         {Object.entries(NON_PREDICTIVE_CONTRACT_TYPES).map(
           ([
-            key,
+            _,
             {
               label,
               descriptor,
@@ -88,7 +88,6 @@ function OutcomeButton(props: {
 }) {
   const {
     label,
-    descriptor,
     example,
     value,
     visual,
