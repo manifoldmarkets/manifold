@@ -235,6 +235,11 @@ export default function AboutPage() {
             href="/twitch"
           />
           <LabCard
+            title="📈 Stats"
+            description="See how Manifold is doing"
+            href="/stats"
+          />
+          <LabCard
             title="🚨🛠️🚨 ADMIN 🔥💽🔥"
             description="Is the site on FIRE??"
             href="/admin"
