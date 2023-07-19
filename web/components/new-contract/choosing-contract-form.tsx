@@ -131,7 +131,6 @@ function OutcomeButton(props: {
         <Col>
           <div className="font-semibold sm:text-lg">{label}</div>
           <Col className="sm:text-md text-sm">
-            <div className={'text-ink-700'}>{descriptor}</div>
             <span className="text-ink-700 mt-0.5 italic">{example}</span>
           </Col>
         </Col>

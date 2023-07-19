@@ -29,7 +29,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     value: 'MULTIPLE_CHOICE',
     name: 'multiple choice question',
     descriptor: 'A question with multiple answers that you define.',
-    example: 'Which candidate will be elected in 2024?',
+    example: 'Which of the following candidates will be elected in 2024?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <BsUiChecks className="h-12 w-12" />
@@ -41,7 +41,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     value: 'FREE_RESPONSE',
     name: 'free response question',
     descriptor: 'A question that anyone can write an answer to.',
-    example: 'What will be the highest grossing film in 2023?',
+    example: 'What is the true cause of the UAPs?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <TfiWrite className="h-12 w-12" />
@@ -53,7 +53,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     value: 'PSEUDO_NUMERIC',
     name: 'numeric question',
     descriptor: 'A question with a numerical answer.',
-    example: 'How much will my coin collection sell for?',
+    example: 'How many people will come to Taco Tuesday?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <GoNumber className="h-12 w-12" />
@@ -68,9 +68,9 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
     value: 'BOUNTIED_QUESTION',
     name: 'bountied question',
     descriptor: `A question that anyone can answer for a bounty. The bounty you put up can be distributed however you'd like.`,
-    example: `I'll give ${formatMoney(
-      1000
-    )} to whoever draws the best portrait of my cat.`,
+    example: `Recommend me sci-fi books, ${formatMoney(
+      100
+    )} to the top 5 I choose.`,
     visual: (
       <Col className="relative my-auto h-12 w-12 text-teal-400">
         <GiReceiveMoney className="h-12 w-12" />
