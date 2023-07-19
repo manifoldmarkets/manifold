@@ -11,7 +11,6 @@ import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { db } from 'web/lib/supabase/db'
 import { joinGroup, updateUserEmbedding } from 'web/lib/firebase/api'
 import { getUserInterestTopics } from 'web/lib/supabase/user'
-import { Row } from 'web/components/layout/row'
 
 export function TopicSelectorDialog(props: {
   skippable: boolean
