@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { first } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
@@ -49,10 +50,8 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
-import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { ReviewPanel } from 'web/components/reviews/stars'
-import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -79,6 +78,7 @@ import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import { Button } from 'web/components/buttons/button'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -510,9 +510,23 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
               />
             )}
 
-            <div className="my-4">
+            <Row className="my-4 flex-wrap gap-2 sm:flex-nowrap">
               <MarketGroups contract={contract} />
-            </div>
+              {outcomeType === 'BOUNTIED_QUESTION' && (
+                <Link
+                  className="self-end"
+                  href={`/questions?s=score&f=open&search-contract-type=BOUNTIED_QUESTION`}
+                >
+                  <Button
+                    className="whitespace-nowrap"
+                    color="green-outline"
+                    size="xs"
+                  >
+                    More bountied questions
+                  </Button>
+                </Link>
+              )}
+            </Row>
 
             {outcomeType === 'NUMERIC' && (
               <AlertBox
@@ -594,19 +608,6 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>
   )
-}
-
-function SignUpFlow({ user }: { user: User | null | undefined }) {
-  if (user === null)
-    return (
-      <Col className="mt-1 w-full">
-        <BetSignUpPrompt className="xl:self-center" size="xl" />
-        <PlayMoneyDisclaimer />
-      </Col>
-    )
-  if (user === undefined) return <div className="h-[72px] w-full" />
-
-  return <></>
 }
 
 export function ContractSEO(props: {
