@@ -244,7 +244,7 @@ export function MobileSidebar(props: {
                 </div>
               </Transition.Child>
               <div className="mx-2 h-0 flex-1 overflow-y-auto">
-                <Sidebar className="pl-2" isMobile />
+                <Sidebar isMobile />
               </div>
             </div>
           </Transition.Child>
