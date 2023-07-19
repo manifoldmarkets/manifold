@@ -99,7 +99,9 @@ export default function Sidebar(props: {
         {createMarketButton}
       </div>
       <div className="mt-auto mb-6 flex flex-col gap-1">
-        {user !== null && <AppBadgesOrGetAppButton hideOnDesktop={true} />}
+        {user !== null && (
+          <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
+        )}
         {bottomNavOptions.map((item) => (
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
