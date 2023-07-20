@@ -60,7 +60,7 @@ export const createpost = authEndpoint(async (req, auth) => {
           visibility: 'unlisted',
           initialProb: 50,
           // Dating group!
-          groupId: 'j3ZE8fkeqiKmRGumy3O1',
+          groupIds: ['j3ZE8fkeqiKmRGumy3O1'],
         },
         auth
       )
