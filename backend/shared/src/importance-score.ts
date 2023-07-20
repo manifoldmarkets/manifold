@@ -30,8 +30,7 @@ export async function calculateImportanceScore(
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
-    `select data from contracts where
-        ((data->'importanceScore')::numeric) > 0.2`,
+    `select data from contracts where importance_score > 0.2`,
     [],
     (row) => row.data as Contract
   )
