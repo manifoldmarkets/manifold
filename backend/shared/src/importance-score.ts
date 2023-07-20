@@ -4,7 +4,7 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { BountiedQuestionContract, Contract } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
-import { clamp } from 'lodash'
+import { clamp, sortBy } from 'lodash'
 import { logit } from 'common/util/math'
 
 import { BOT_USERNAMES } from 'common/envs/constants'
@@ -210,6 +210,23 @@ export const computeContractScores = (
     ? 0
     : normalize(clamp(1 / contract.elasticity, 0, 100), 100)
 
+  let uncertainness = 0.5
+  if (contract.mechanism === 'cpmm-1') {
+    const { prob } = contract
+    uncertainness = normalize(prob * (1 - prob), 0.25)
+  } else if (contract.mechanism === 'cpmm-multi-1') {
+    const { answers } = contract
+    const probs = sortBy(answers.map((a) => a.prob)).reverse()
+    if (probs.length < 3) {
+      const prob = probs[0]
+      uncertainness = normalize(prob * (1 - prob), 0.25)
+    } else {
+      const [p1, p2] = probs.slice(0, 2)
+      const product = p1 * p2 * (1 - p1 - p2)
+      uncertainness = normalize(product, 1 / 3 ** 3)
+    }
+  }
+
   let dailyScore = 0
   let logOddsChange = 0
 
@@ -236,7 +253,8 @@ export const computeContractScores = (
     normalize(contract.uniqueBettorCount, 1000) +
     normalize(Math.log10(contract.volume), 7) +
     liquidityScore +
-    closingSoonnness
+    closingSoonnness +
+    uncertainness / 2
 
   const importanceScore =
     outcomeType === 'BOUNTIED_QUESTION'
