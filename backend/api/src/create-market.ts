@@ -41,6 +41,7 @@ import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { getMultiCpmmLiquidity } from 'common/calculate-cpmm'
+import { SupabaseClient } from 'common/supabase/utils'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -54,7 +55,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     descriptionMarkdown,
     closeTime,
     outcomeType,
-    groupId,
+    groupIds,
     visibility,
     isTwitchContract,
     utcOffset,
@@ -69,7 +70,11 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
   const userId = auth.uid
 
-  let group = groupId ? await getGroup(groupId, visibility, userId) : null
+  let groups = groupIds
+    ? await Promise.all(
+        groupIds.map(async (gId) => getGroup(gId, visibility, userId))
+      )
+    : null
 
   const contractRef = firestore.collection('contracts').doc()
 
@@ -152,17 +157,23 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     ante || 0
   )
 
-  if (group) {
-    await addGroupToContract(contract, group)
-    if (contract.visibility == 'private') {
-      const contractCreator = await getUser(contract.creatorId)
-      if (!contractCreator) throw new Error('Could not find contract creator')
-      await createNewContractFromPrivateGroupNotification(
-        contractCreator,
-        contract,
-        group
-      )
-    }
+  const db = createSupabaseClient()
+  if (groups) {
+    await Promise.all(
+      groups.map(async (g) => {
+        await addGroupToContract(contract, g, db)
+        if (contract.visibility == 'private') {
+          const contractCreator = await getUser(contract.creatorId)
+          if (!contractCreator)
+            throw new Error('Could not find contract creator')
+          await createNewContractFromPrivateGroupNotification(
+            contractCreator,
+            contract,
+            g
+          )
+        }
+      })
+    )
   }
 
   if (answers && contract.mechanism === 'cpmm-multi-1')
@@ -170,16 +181,19 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
   await generateAntes(userId, user, contract, outcomeType, ante)
 
-  await generateContractEmbeddings(contract)
+  await generateContractEmbeddings(contract, db)
 
   return contract
 }
 
-const generateContractEmbeddings = async (contract: Contract) => {
+const generateContractEmbeddings = async (
+  contract: Contract,
+  db: SupabaseClient
+) => {
   const embedding = await generateEmbeddings(contract.question)
   if (!embedding) return
 
-  await createSupabaseClient()
+  await db
     .from('contract_embeddings')
     .insert({ contract_id: contract.id, embedding: embedding as any })
 }
@@ -247,7 +261,7 @@ function validateMarketBody(body: any) {
     descriptionMarkdown,
     closeTime,
     outcomeType,
-    groupId,
+    groupIds,
     visibility = 'public',
     isTwitchContract,
     utcOffset,
@@ -261,7 +275,7 @@ function validateMarketBody(body: any) {
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined
 
-  if (visibility == 'private' && !groupId) {
+  if (visibility == 'private' && !groupIds?.length) {
     throw new APIError(
       400,
       'Private markets cannot exist outside a private group.'
@@ -315,7 +329,7 @@ function validateMarketBody(body: any) {
     descriptionMarkdown,
     closeTime,
     outcomeType,
-    groupId,
+    groupIds,
     visibility,
     isTwitchContract,
     utcOffset,
@@ -523,7 +537,7 @@ const bodySchema = z.object({
     )
     .optional(),
   outcomeType: z.enum(OUTCOME_TYPES),
-  groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+  groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
   visibility: z.enum(VISIBILITIES).optional(),
   isTwitchContract: z.boolean().optional(),
   utcOffset: z.number().optional(),

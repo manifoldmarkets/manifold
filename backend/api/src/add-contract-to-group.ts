@@ -63,8 +63,7 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
       `User does not have permission to add this market to group "${group.name}".`
     )
   }
-
-  const isNew = await addGroupToContract(contract, group)
+  const isNew = await addGroupToContract(contract, group, db)
 
   return { status: 'success', existed: !isNew }
 })

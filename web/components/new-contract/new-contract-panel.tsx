@@ -1,22 +1,18 @@
 import { OutcomeType } from 'common/contract'
 
 export type NewQuestionParams = {
-  groupId?: string
+  groupIds?: string[]
   q: string
   description: string
-  closeTime: string
+  closeTime: number
   outcomeType?: OutcomeType
   visibility: string
   // Params for PSEUDO_NUMERIC outcomeType
-  min?: string
-  max?: string
-  isLogScale?: string
-  initValue?: string
-
-  // Answers encoded as:
-  // a0: string
-  // a1: string
-  // ...etc
+  min?: number
+  max?: number
+  isLogScale?: boolean
+  initValue?: number
+  answers?: string[]
 }
 
 export type ContractVisibilityType = 'public' | 'unlisted'

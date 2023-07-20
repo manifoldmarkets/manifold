@@ -14,7 +14,10 @@ import {
   INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
 import { createNewContractNotification } from 'shared/create-notification'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { isContractLikelyNonPredictive } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
@@ -69,11 +72,16 @@ export const onCreateContract = functions
       )
       log('likelyNonPredictive:', likelyNonPredictive)
       if (likelyNonPredictive) {
-        const added = await addGroupToContract(contract, {
-          id: NON_PREDICTIVE_GROUP_ID,
-          slug: 'nonpredictive',
-          name: 'Non-Predictive',
-        })
+        const db = createSupabaseClient()
+        const added = await addGroupToContract(
+          contract,
+          {
+            id: NON_PREDICTIVE_GROUP_ID,
+            slug: 'nonpredictive',
+            name: 'Non-Predictive',
+          },
+          db
+        )
         log('Added contract to non-predictive group', added)
       }
     }

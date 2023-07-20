@@ -1,4 +1,3 @@
-import { ExternalLinkIcon } from '@heroicons/react/outline'
 import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
@@ -11,7 +10,6 @@ import {
 } from 'common/contract'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { groupPath } from 'common/group'
 import { formatMoney } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
 import { AddFundsModal } from 'web/components/add-funds-modal'
@@ -50,25 +48,28 @@ import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
 import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
 import { HiArrowsUpDown } from 'react-icons/hi2'
+import { uniqBy } from 'lodash'
+import { GroupLinkItem } from 'web/pages/groups'
+import { LockClosedIcon, XCircleIcon } from '@heroicons/react/solid'
+import { toast } from 'react-hot-toast'
 
 export function ContractParamsForm(props: {
   creator: User
   outcomeType?: OutcomeType
-  fromGroup?: boolean
   params?: NewQuestionParams
 }) {
-  const { creator, fromGroup, params } = props
+  const { creator, params } = props
   const paramsKey = params?.q ?? ''
   const [outcomeType, setOutcomeType] = useState<OutcomeType>(
     params?.outcomeType ?? 'MULTIPLE_CHOICE'
   )
 
   const [minString, setMinString] = usePersistentLocalState(
-    params?.min ?? '',
+    params?.min?.toString() ?? '',
     'new-min' + paramsKey
   )
   const [maxString, setMaxString] = usePersistentLocalState(
-    params?.max ?? '',
+    params?.max?.toString() ?? '',
     'new-max' + paramsKey
   )
   const [isLogScale, setIsLogScale] = usePersistentLocalState<boolean>(
@@ -77,34 +78,30 @@ export function ContractParamsForm(props: {
   )
 
   const [initialValueString, setInitialValueString] = usePersistentLocalState(
-    params?.initValue,
+    params?.initValue?.toString(),
     'new-init-value' + paramsKey
   )
   const [visibility, setVisibility] = usePersistentLocalState<Visibility>(
     (params?.visibility as Visibility) ?? 'public',
-    `new-visibility${'-' + params?.groupId ?? ''}`
+    `new-visibility` + paramsKey
   )
   const [newContract, setNewContract] = useState<Contract | undefined>(
     undefined
   )
 
-  const paramAnswers = []
-  let i = 0
-  while (params && (params as any)[`a${i}`]) {
-    paramAnswers.push((params as any)[`a${i}`])
-    i++
-  }
   // for multiple choice, init to 2 empty answers
   const [answers, setAnswers] = usePersistentLocalState<string[]>(
-    paramAnswers.length ? paramAnswers : ['Yes', 'No'],
+    params?.answers ? params.answers : ['Yes', 'No'],
     'new-answers' + paramsKey
   )
 
   useEffect(() => {
-    if (answers.length && answers.every((a) => a.trim().length === 0)) {
+    if (params?.answers) {
+      setAnswers(params.answers)
+    } else if (answers.length && answers.every((a) => a.trim().length === 0)) {
       setAnswers(['Yes', 'No'])
     }
-  }, [])
+  }, [params?.answers])
 
   const [question, setQuestion] = usePersistentLocalState(
     '',
@@ -115,14 +112,16 @@ export function ContractParamsForm(props: {
   }, [params?.q])
 
   useEffect(() => {
-    if (params?.groupId) {
-      getGroup(params?.groupId).then((group) => {
-        if (group) {
-          setSelectedGroup(group)
-        }
-      })
+    if (!params?.groupIds) return
+    const groupIds = params.groupIds
+    const setGroups = async () => {
+      const groups = await Promise.all(groupIds.map((id) => getGroup(id))).then(
+        (groups) => groups.filter((g) => g)
+      )
+      setSelectedGroups(groups as Group[])
     }
-  }, [creator.id, params?.groupId])
+    setGroups()
+  }, [creator.id, params?.groupIds])
 
   const filteredAnswers = answers.filter((a) => a.trim().length > 0)
   const ante = getAnte(
@@ -148,9 +147,10 @@ export function ContractParamsForm(props: {
     string | undefined
   >(timeInMs ? initTime : undefined, 'now-close-time' + paramsKey)
 
-  const [selectedGroup, setSelectedGroup] = usePersistentLocalState<
-    Group | undefined
-  >(undefined, 'new-selected-group' + paramsKey)
+  const [selectedGroups, setSelectedGroups] = usePersistentLocalState<Group[]>(
+    [],
+    'new-selected-groups' + paramsKey
+  )
 
   const [bountyAmount, setBountyAmount] = usePersistentLocalState<
     number | undefined
@@ -249,7 +249,7 @@ export function ContractParamsForm(props: {
     setQuestion('')
     setCloseDate(undefined)
     setCloseHoursMinutes(undefined)
-    setSelectedGroup(undefined)
+    setSelectedGroups([])
     setVisibility('public')
     setAnswers(['Yes', 'No'])
     setOutcomeType('MULTIPLE_CHOICE')
@@ -288,7 +288,7 @@ export function ContractParamsForm(props: {
           initialValue,
           isLogScale,
           answers: filteredAnswers,
-          groupId: selectedGroup?.id,
+          groupIds: selectedGroups.map((g) => g.id),
           visibility,
           utcOffset: new Date().getTimezoneOffset(),
           totalBounty: bountyAmount,
@@ -300,7 +300,7 @@ export function ContractParamsForm(props: {
 
       track('create market', {
         slug: newContract.slug,
-        selectedGroup: selectedGroup?.id,
+        selectedGroups: selectedGroups.map((g) => g.id),
         outcomeType,
       })
     } catch (e) {
@@ -313,12 +313,10 @@ export function ContractParamsForm(props: {
   const [toggleVisibility, setToggleVisibility] =
     useState<ContractVisibilityType>('public')
   useEffect(() => {
-    if (selectedGroup?.privacyStatus == 'private') {
+    if (selectedGroups.some((g) => g.privacyStatus == 'private'))
       setVisibility('private')
-    } else {
-      setVisibility(toggleVisibility)
-    }
-  }, [selectedGroup?.privacyStatus, toggleVisibility])
+    else setVisibility(toggleVisibility)
+  }, [selectedGroups?.length, toggleVisibility])
 
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
@@ -345,6 +343,7 @@ export function ContractParamsForm(props: {
               onChange={(e) => setQuestion(e.target.value || '')}
             />
           </div>
+
           <Spacer h={6} />
           <div className="mb-1 flex flex-col items-start gap-1">
             <label className="gap-2 px-1 py-2">
@@ -353,6 +352,36 @@ export function ContractParamsForm(props: {
             <TextEditor editor={editor} />
           </div>
         </Col>
+        {outcomeType == 'BOUNTIED_QUESTION' && (
+          <Col className={'p-2'}>
+            <Row className={'items-end justify-between pb-2'}>
+              <label className="gap-2">
+                <span className="mb-1 mr-1">Bounty</span>
+                <InfoTooltip text="The award you give good answers. You can divide this amongst answers however you'd like." />
+              </label>
+              <Button
+                onClick={() => setOutcomeType('MULTIPLE_CHOICE')}
+                color={'indigo-outline'}
+                size={'xs'}
+              >
+                <HiArrowsUpDown className={'mr-1 h-5 w-5'} />
+                Set answers
+              </Button>
+            </Row>
+            <BuyAmountInput
+              inputClassName="w-full max-w-none"
+              minimumAmount={5}
+              amount={bountyAmount}
+              onChange={(newAmount) => setBountyAmount(newAmount)}
+              error={bountyError}
+              setError={setBountyError}
+              sliderOptions={{ show: true, wrap: false }}
+              customRange={{ rangeMax: 500 }}
+            />
+            <Spacer h={6} />
+          </Col>
+        )}
+
         {outcomeType === 'STONK' && (
           <div className="text-primary-500 mt-1 ml-1 text-sm">
             Tradeable shares of a stock based on sentiment. Never resolves.
@@ -472,54 +501,62 @@ export function ContractParamsForm(props: {
             </div>
           </>
         )}
-        {outcomeType == 'BOUNTIED_QUESTION' && (
-          <Col className={'p-2'}>
-            <Row className={'items-end justify-between pb-2'}>
-              <label className="gap-2">
-                <span className="mb-1 mr-1">Bounty</span>
-                <InfoTooltip text="The award you give good answers. You can divide this amongst answers however you'd like." />
-              </label>
-              <Button
-                onClick={() => setOutcomeType('MULTIPLE_CHOICE')}
-                color={'indigo-outline'}
-                size={'xs'}
-              >
-                <HiArrowsUpDown className={'mr-1 h-5 w-5'} />
-                Set answers
-              </Button>
-            </Row>
-            <BuyAmountInput
-              inputClassName="w-full max-w-none"
-              minimumAmount={5}
-              amount={bountyAmount}
-              onChange={(newAmount) => setBountyAmount(newAmount)}
-              error={bountyError}
-              setError={setBountyError}
-              sliderOptions={{ show: true, wrap: false }}
-              customRange={{ rangeMax: 500 }}
+
+        <Col className={'mb-2'}>
+          <Row className={'items-end gap-x-2 py-1'}>
+            <GroupSelector
+              setSelectedGroup={(group) => {
+                if (
+                  (selectedGroups.length > 0 &&
+                    group.privacyStatus === 'private') ||
+                  (selectedGroups.length > 0 &&
+                    selectedGroups.some((g) => g.privacyStatus === 'private'))
+                ) {
+                  toast(
+                    `Questions are only allowed one group if the group is private.`,
+                    { icon: '🚫' }
+                  )
+                  return
+                }
+                setSelectedGroups((groups) =>
+                  uniqBy([...(groups ?? []), group], 'id')
+                )
+              }}
+              ignoreGroupIds={selectedGroups.map((g) => g.id)}
+              showLabel={true}
+              isContractCreator={true}
+              newContract={true}
             />
-            <Spacer h={6} />
-          </Col>
-        )}
-        {!fromGroup && (
-          <>
-            <Row className={'items-end gap-x-2 pt-1'}>
-              <GroupSelector
-                selectedGroup={selectedGroup}
-                setSelectedGroup={setSelectedGroup}
-                options={{ showSelector: true, showLabel: true }}
-                isContractCreator={true}
-                newContract={true}
-              />
-              {selectedGroup && (
-                <a target="_blank" href={groupPath(selectedGroup.slug)}>
-                  <ExternalLinkIcon className=" text-ink-500 ml-1 mb-3 h-5 w-5" />
-                </a>
-              )}
-            </Row>
-            <Spacer h={6} />
-          </>
-        )}
+          </Row>
+          <Row className={'mt-2 gap-2'}>
+            {selectedGroups.map((group) => (
+              <div
+                key={group.id}
+                className={
+                  'bg-canvas-100 relative rounded-full px-4 py-1.5 hover:bg-blue-600 focus-visible:bg-blue-600'
+                }
+              >
+                <GroupLinkItem group={group} />
+                {group.privacyStatus === 'private' && (
+                  <LockClosedIcon className={'ml-1 inline h-5 w-5 pb-1'} />
+                )}
+                <button
+                  className={
+                    'hover:bg-canvas-100 absolute -top-1 -right-1 z-10 rounded-full'
+                  }
+                  onClick={() =>
+                    setSelectedGroups((groups) =>
+                      groups?.filter((g) => g.id !== group.id)
+                    )
+                  }
+                >
+                  <XCircleIcon className="hover:text-ink-700 text-ink-400 h-5 w-5" />
+                </button>
+              </div>
+            ))}
+          </Row>
+        </Col>
+
         {outcomeType !== 'STONK' && outcomeType !== 'BOUNTIED_QUESTION' && (
           <div className="mb-1 flex flex-col items-start">
             <label className="mb-1 gap-2 px-1 py-2">
