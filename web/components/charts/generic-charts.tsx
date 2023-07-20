@@ -233,7 +233,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
 
   const series = useMemo(() => {
     const d3Stack = stack<P, number>()
-      .keys(range(0, Math.max(...data.map(({ y }) => y.length))))
+      .keys(range(0, Math.max(0, ...data.map(({ y }) => y.length))))
       .value(({ y }, k) => y[k])
       .order(stackOrderReverse)
     return d3Stack(data)

@@ -10,6 +10,8 @@ import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { UncontrolledTabs } from '../layout/tabs'
 import { AddContractToGroupPermissionType } from './add-contract-to-group-button'
 import { ContractParamsForm } from 'web/components/new-contract/contract-params-form'
+import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
+import { DAY_MS } from 'common/util/time'
 
 export function AddMarketToGroupModal(props: {
   group: Group
@@ -78,15 +80,16 @@ export function NewContractFromGroup(props: { group: Group; user: User }) {
   const { group, user } = props
   return (
     <ContractParamsForm
-      params={{
-        q: '',
-        description: '',
-        closeTime: '',
-        visibility: group.privacyStatus === 'private' ? 'private' : 'public',
-        groupId: group.id,
-      }}
+      params={
+        {
+          q: '',
+          description: '',
+          closeTime: Date.now() + 7 * DAY_MS,
+          visibility: group.privacyStatus === 'private' ? 'private' : 'public',
+          groupIds: [group.id],
+        } as NewQuestionParams
+      }
       creator={user}
-      fromGroup={true}
     />
   )
 }
