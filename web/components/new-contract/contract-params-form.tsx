@@ -100,6 +100,12 @@ export function ContractParamsForm(props: {
     'new-answers' + paramsKey
   )
 
+  useEffect(() => {
+    if (answers.length && answers.every((a) => a.trim().length === 0)) {
+      setAnswers(['Yes', 'No'])
+    }
+  }, [])
+
   const [question, setQuestion] = usePersistentLocalState(
     '',
     'new-question' + paramsKey
