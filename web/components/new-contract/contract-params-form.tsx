@@ -265,6 +265,7 @@ export function ContractParamsForm(props: {
   async function submit() {
     if (!isValid) return
     const outcomeTypeToSubmit: OutcomeType =
+      outcomeType === 'MULTIPLE_CHOICE' &&
       filteredAnswers.length === 2 &&
       filteredAnswers.every(
         (a) =>
