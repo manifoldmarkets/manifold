@@ -59,8 +59,6 @@ create policy "public read" on users for
 select
   using (true);
 
-create index if not exists users_data_gin on users using GIN (data);
-
 /* indexes supporting @-mention autocomplete */
 create index if not exists users_name_gin on users using GIN ((data ->> 'name') gin_trgm_ops);
 
@@ -148,8 +146,6 @@ drop policy if exists "public read" on user_follows;
 create policy "public read" on user_follows for
 select
   using (true);
-
-create index if not exists user_follows_data_gin on user_follows using GIN (data);
 
 alter table user_follows
 cluster on user_follows_pkey;
@@ -332,8 +328,6 @@ drop policy if exists "public read" on user_notifications;
 create policy "public read" on user_notifications for
 select
   using (true);
-
-create index if not exists user_notifications_data_gin on user_notifications using GIN (data);
 
 -- TODO: maybe drop this one on july 13
 create index if not exists user_notifications_created_time on user_notifications (user_id, (to_jsonb(data) -> 'createdTime') desc);
@@ -579,8 +573,6 @@ or
 update on contract_bets for each row
 execute function contract_bet_populate_cols ();
 
-create index if not exists contract_bets_data_gin on contract_bets using GIN (data);
-
 /* serves bets API pagination */
 create index if not exists contract_bets_bet_id on contract_bets (bet_id);
 
@@ -651,8 +643,6 @@ drop policy if exists "public read" on contract_comments;
 create policy "public read" on contract_comments for
 select
   using (true);
-
-create index if not exists contract_comments_data_gin on contract_comments using GIN (data);
 
 create index contract_comments_data_likes_idx on contract_comments (((data -> 'likes')::numeric));
 
@@ -743,8 +733,6 @@ create policy "public read" on contract_follows for
 select
   using (true);
 
-create index if not exists contract_follows_data_gin on contract_follows using GIN (data);
-
 alter table contract_follows
 cluster on contract_follows_pkey;
 
@@ -764,8 +752,6 @@ drop policy if exists "public read" on contract_liquidity;
 create policy "public read" on contract_liquidity for
 select
   using (true);
-
-create index if not exists contract_liquidity_data_gin on contract_liquidity using GIN (data);
 
 alter table contract_liquidity
 cluster on contract_liquidity_pkey;
@@ -790,8 +776,6 @@ drop policy if exists "public read" on groups;
 create policy "public read" on groups for
 select
   using (true);
-
-create index if not exists groups_data_gin on groups using GIN (data);
 
 alter table groups
 cluster on groups_pkey;
@@ -874,8 +858,6 @@ create policy "public read" on manalinks for
 select
   using (true);
 
-create index if not exists manalinks_data_gin on manalinks using GIN (data);
-
 alter table manalinks
 cluster on manalinks_pkey;
 
@@ -897,8 +879,6 @@ drop policy if exists "public read" on posts;
 create policy "public read" on posts for
 select
   using (true);
-
-create index if not exists posts_data_gin on posts using GIN (data);
 
 alter table posts
 cluster on posts_pkey;
@@ -928,8 +908,6 @@ drop policy if exists "user can insert" on post_comments;
 create policy "user can insert" on post_comments for insert
 with
   check (true);
-
-create index if not exists post_comments_data_gin on post_comments using GIN (data);
 
 alter table post_comments
 cluster on post_comments_pkey;
