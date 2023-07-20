@@ -95,6 +95,8 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       topic,
     })
 
+    console.log('sql', searchMarketSQL)
+
     const contracts = await pg.map(
       searchMarketSQL,
       [term],
@@ -318,7 +320,7 @@ function getSearchContractSQL(contractInput: {
   else {
     const topicJoin = `contract_embeddings ON contracts.id = contract_embeddings.contract_id`
     const topicFrom = `topic_embedding`
-    const topicQuery = `topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = ${topic} LIMIT 1)`
+    const topicQuery = `topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = '${topic}' LIMIT 1)`
     const topicFilter = `(contract_embeddings.embedding <=> topic_embedding.embedding < ${TOPIC_DISTANCE_THRESHOLD})`
     const topicSqlBuilder = buildSql(
       ...buildArray(
@@ -337,16 +339,11 @@ function getSearchContractSQL(contractInput: {
             withClause(`user_interest AS (
          SELECT interest_embedding FROM user_embeddings WHERE user_id = '${uid}' LIMIT 1)`),
             where(`importance_score > 0.1`),
-            // where(
-            //   `(contract_embeddings.embedding <=> user_interest.disinterest_embedding) > 0.12`
-            // ),
             from(`user_interest, contracts`),
-            join(topicJoin)
+            !topic && join(topicJoin)
           )
         )
-    // We'll pass a `for you` topic.
-    // multiply the (1-distance of the person's interest vector to the importance score),
-    // sort descending and pass this as the sortAlgorithm
+
     if (emptyTerm) {
       queryBuilder = buildSql(
         forYouSortEnabled
@@ -360,10 +357,10 @@ function getSearchContractSQL(contractInput: {
               //  15 * ((contract_embeddings.embedding <=> user_interest.disinterest_embedding) - 0.1)
             )
           : select('data'),
-        forYouSortEnabled ? undefined : from('contracts'),
         whereSqlBuilder,
         topicSqlBuilder,
-        forYouSqlBuilder
+        forYouSqlBuilder,
+        forYouSortEnabled ? undefined : from('contracts')
       )
     }
     // Fuzzy search for markets not by group nor creator
