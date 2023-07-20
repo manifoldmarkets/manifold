@@ -36,7 +36,7 @@ export async function addInterestingContractsToFeed(
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
     `select data from contracts 
-            where importance_score > 0.1
+            where importance_score > 0.2
             order by importance_score desc 
             limit 5000`,
     [],
@@ -99,8 +99,8 @@ export async function addInterestingContractsToFeed(
         importanceScore: contract.importanceScore,
       })
     } else if (
-      importanceScore > 0.35 ||
-      (importanceScore > 0.15 &&
+      importanceScore > 0.5 ||
+      (importanceScore > 0.2 &&
         hourAgoTradersByContract[contract.id] >= 3 &&
         !readOnly)
     ) {
