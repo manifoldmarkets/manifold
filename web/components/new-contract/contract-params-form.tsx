@@ -542,7 +542,7 @@ export function ContractParamsForm(props: {
                 )}
                 <button
                   className={
-                    'hover:bg-canvas-100 absolute -top-1 -right-1 z-10 rounded-full'
+                    'hover:bg-canvas-100 absolute -top-1 -right-1 rounded-full'
                   }
                   onClick={() =>
                     setSelectedGroups((groups) =>
