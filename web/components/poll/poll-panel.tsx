@@ -8,11 +8,12 @@ import { getHasVoted } from 'web/lib/supabase/polls'
 import { AnswerBar } from '../answers/answer-item'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
+import { sumBy } from 'lodash'
 
 export function PollPanel(props: { contract: PollContract }) {
   const { contract } = props
   const { options, closeTime } = contract
-  const totalVotes = options.reduce((acc, option) => acc + option.votes, 0)
+  const totalVotes = sumBy(options, (option) => option.votes)
   const votingOpen = !closeTime || closeTime > Date.now()
   const [hasVoted, setHasVoted] = useState<boolean | undefined>(undefined)
   const user = useUser()
