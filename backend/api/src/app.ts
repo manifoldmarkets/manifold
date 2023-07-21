@@ -77,6 +77,7 @@ import { manachantweet } from './manachan-tweet'
 import { sendmana } from './send-mana'
 import { leavereview } from './leave-review'
 import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
+import { claimdestinysub } from './claim-destiny-sub'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -193,6 +194,8 @@ app.post(
   '/get-user-contract-metrics-with-contracts',
   ...apiRoute(getusercontractmetricswithcontracts)
 )
+
+app.post('/claimdestinysub', ...apiRoute(claimdestinysub))
 
 // Catch 404 errors - this should be the last route
 app.use((req, res, next) => {
