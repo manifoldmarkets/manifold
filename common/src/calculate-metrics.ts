@@ -184,7 +184,7 @@ export const calculateNewPortfolioMetrics = (
 ) => {
   const investmentValue = computeInvestmentValue(unresolvedBets, contractsById)
   const loanTotal = getLoanTotal(unresolvedBets, contractsById)
-  const newPortfolio = {
+  return {
     investmentValue: investmentValue,
     balance: user.balance,
     totalDeposits: user.totalDeposits,
@@ -192,7 +192,6 @@ export const calculateNewPortfolioMetrics = (
     timestamp: Date.now(),
     userId: user.id,
   }
-  return newPortfolio
 }
 
 export const calculateMetricsByContract = (

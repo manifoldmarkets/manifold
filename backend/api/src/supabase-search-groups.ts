@@ -1,9 +1,6 @@
-import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, Json, MaybeAuthedEndpoint, validate } from './helpers'
-import { FIRESTORE_DOC_REF_ID_REGEX } from './supabase-search-contract'
-import { Group } from 'common/group'
 
 const SIMILARITY_THRESHOLD = 0.2
 
