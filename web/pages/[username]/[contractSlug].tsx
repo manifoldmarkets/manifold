@@ -79,6 +79,7 @@ import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { Button } from 'web/components/buttons/button'
+import { WhatIsAPM, WhatIsMana, WhyManifold } from '../about'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -587,14 +588,25 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
             )}
           </Col>
         </Col>
-        <RelatedContractsList
-          className="hidden min-h-full max-w-[375px] xl:flex"
-          contracts={relatedMarkets}
-          onContractClick={(c) =>
-            track('click related market', { contractId: c.id })
-          }
-          loadMore={loadMore}
-        />
+        <Col className="hidden min-h-full max-w-[375px] xl:flex">
+          {!user && (
+            <>
+              <h2 className={clsx('text-ink-600 mb-2 text-xl')}>
+                What is this?
+              </h2>
+              <WhatIsAPM />
+              <WhatIsMana />
+              <WhyManifold />
+            </>
+          )}
+          <RelatedContractsList
+            contracts={relatedMarkets}
+            onContractClick={(c) =>
+              track('click related market', { contractId: c.id })
+            }
+            loadMore={loadMore}
+          />
+        </Col>
       </Row>
       <RelatedContractsList
         className="mx-auto mt-8 min-w-[300px] max-w-[600px] xl:hidden"
