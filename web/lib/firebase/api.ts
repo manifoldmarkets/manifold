@@ -454,3 +454,7 @@ export function getUserContractsMetricsWithContracts(params: {
     params
   )
 }
+
+export function castPollVote(params: { contractId: string; voteId: string }) {
+  return call(getApiUrl('cast-poll-vote'), 'POST', params)
+}
