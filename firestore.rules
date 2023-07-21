@@ -27,7 +27,7 @@ service cloud.firestore {
       allow read;
     }
 
-     match /destiny-subs/{sub} {
+     match /destiny-subs2/{sub} {
       allow read;
     }
 

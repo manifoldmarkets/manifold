@@ -77,6 +77,7 @@ import { manachantweet } from './manachan-tweet'
 import { sendmana } from './send-mana'
 import { leavereview } from './leave-review'
 import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
+import { claimdestinysub } from './claim-destiny-sub'
 import { castpollvote } from './cast-poll-vote'
 
 const allowCors: RequestHandler = cors({
@@ -195,6 +196,8 @@ app.post(
   ...apiRoute(getusercontractmetricswithcontracts)
 )
 app.post('/cast-poll-vote', ...apiRoute(castpollvote))
+
+app.post('/claimdestinysub', ...apiRoute(claimdestinysub))
 
 // Catch 404 errors - this should be the last route
 app.use((req, res, next) => {

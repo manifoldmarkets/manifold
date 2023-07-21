@@ -21,6 +21,7 @@ export const secrets = (
     'NEWS_API_KEY',
     'REACT_APP_GIPHY_KEY',
     'TWITTER_API_KEY_JSON',
+    'DESTINY_API_KEY',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()
