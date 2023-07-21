@@ -45,17 +45,8 @@ export type GroupLink = {
   userId?: string
 }
 
-export function groupPath(
-  groupSlug: string,
-  subpath?:
-    | 'edit'
-    | 'markets'
-    | 'about'
-    | typeof GROUP_CHAT_SLUG
-    | 'leaderboards'
-    | 'posts'
-) {
-  return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
+export function groupPath(groupSlug: string) {
+  return `/group/${groupSlug}`
 }
 
 export const GroupsByTopic = {
