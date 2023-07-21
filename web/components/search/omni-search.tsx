@@ -43,7 +43,7 @@ export const OmniSearch = (props: {
   const [debouncedQuery, setDebouncedQuery] = useState(query)
 
   const debouncedSearch = useCallback(
-    debounce((newQuery) => setDebouncedQuery(newQuery), 250),
+    debounce((newQuery) => setDebouncedQuery(newQuery), 50),
     []
   )
 
