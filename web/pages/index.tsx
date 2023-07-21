@@ -30,10 +30,10 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   return (
-    <Page hideSidebar>
+    <Page>
       <Col className="mx-auto mb-8 w-full gap-8 px-4">
         <Col className="gap-4">
-          <Row className="items-center justify-between">
+          {/* <Row className="items-center justify-between">
             <ManifoldLogo />
             <LogoSEO />
 
@@ -73,27 +73,28 @@ export default function Home() {
                 setIsModalOpen={setIsModalOpen}
               />
             </Row>
-          </Row>
+          </Row> */}
 
           <Row className="justify-between rounded-lg p-8">
             <Col className="max-w-sm gap-2">
               <h1 className="text-4xl">Predict the future</h1>
               <h1 className="text-lg">
-                Bet on anything and see the market consensus on real-world
-                questions
+                A new way to get answers to real-world questions and news.
               </h1>
-
+              <h1 className="text-lg">
+                Compete and climb the ranks by betting on literally anything.
+              </h1>
               <Button
                 color="gradient"
                 size="2xl"
                 className="mt-8"
                 onClick={firebaseLogin}
               >
-                Get started
+                Play Now!
               </Button>
 
               <div className="text-sm text-white">
-                and get{'   '}
+                to get{'   '}
                 <span className="relative z-10 font-semibold">
                   {formatMoney(STARTING_BALANCE)}
                 </span>
