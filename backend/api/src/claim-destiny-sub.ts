@@ -11,70 +11,74 @@ const bodySchema = z.object({
 })
 
 export const claimdestinysub = authEndpoint(async (req, auth) => {
-    const { destinyUsername } = validate(bodySchema, req.body)
+  const { destinyUsername } = validate(bodySchema, req.body)
 
-    return await firestore.runTransaction(async (trans) => {
-      const privateSnap = await trans.get(
-        firestore.collection('private-users').doc(auth.uid)
-      )
-      if (!privateSnap.exists)
-        throw new APIError(400, 'Private user not found.')
-      const privateUser = privateSnap.data() as PrivateUser
+  return await firestore.runTransaction(async (trans) => {
+    const privateSnap = await trans.get(
+      firestore.collection('private-users').doc(auth.uid)
+    )
+    if (!privateSnap.exists) throw new APIError(400, 'Private user not found.')
+    const privateUser = privateSnap.data() as PrivateUser
 
-      if (privateUser.destinySubClaimed)
-        throw new APIError(400, 'Destiny sub already claimed.')
+    if (privateUser.destinySub2Claimed)
+      throw new APIError(400, 'Destiny sub already claimed.')
 
-      const userSnap = await trans.get(
-        firestore.collection('users').doc(auth.uid)
-      )
-      if (!userSnap.exists) throw new APIError(400, 'User not found.')
+    const userSnap = await trans.get(
+      firestore.collection('users').doc(auth.uid)
+    )
+    if (!userSnap.exists) throw new APIError(400, 'User not found.')
 
-      const user = userSnap.data() as User
-      if (user.balance < DESTINY_SUB_COST)
-        throw new APIError(400, 'Insufficient balance.')
+    const user = userSnap.data() as User
+    if (user.balance < DESTINY_SUB_COST)
+      throw new APIError(400, 'Insufficient balance.')
 
-      const response = await fetch(
-        'https://www.destiny.gg/api/mm/award-sub?privatekey=' +
-          process.env.DESTINY_API_KEY,
-        {
-          method: 'post',
-          body: JSON.stringify({ username: destinyUsername }),
-          headers: { 'Content-Type': 'application/json' },
-        }
-      )
-
-      const result = await response.json()
-      const destinySubId = result?.data?.newSubId
-
-      if (!destinySubId) {
-        throw new APIError(
-          400,
-          'Error claiming Destiny sub: ' + result?.message
-        )
+    const response = await fetch(
+      'https://www.destiny.gg/api/mm/award-sub?privatekey=' +
+        process.env.DESTINY_API_KEY,
+      {
+        method: 'post',
+        body: JSON.stringify({ username: destinyUsername }),
+        headers: { 'Content-Type': 'application/json' },
       }
+    )
 
-      const subDoc = firestore.collection('destiny-subs').doc()
+    const result = await response.json()
+    const destinySubId = result?.data?.newSubId
 
-      const sub: DestinySub = {
-        id: subDoc.id,
-        createdTime: Date.now(),
-        destinySubId,
-        cost: DESTINY_SUB_COST,
-        userId: user.id,
-        username: user.username,
-        destinyUsername,
-      }
+    if (!destinySubId) {
+      throw new APIError(400, 'Error claiming Destiny sub: ' + result?.message)
+    }
 
-      trans.create(subDoc, sub)
-      trans.update(userSnap.ref, {
-        balance: FieldValue.increment(-DESTINY_SUB_COST),
-        totalDeposits: FieldValue.increment(-DESTINY_SUB_COST),
-      })
-      trans.update(privateSnap.ref, { destinySubClaimed: true })
+    const subDoc = firestore.collection('destiny-subs2').doc()
 
-      return { success: true }
+    const sub: DestinySub = {
+      id: subDoc.id,
+      createdTime: Date.now(),
+      destinySubId,
+      cost: DESTINY_SUB_COST,
+      userId: user.id,
+      username: user.username,
+      destinyUsername,
+    }
+
+    trans.create(subDoc, sub)
+    trans.update(userSnap.ref, {
+      balance: FieldValue.increment(-DESTINY_SUB_COST),
+      totalDeposits: FieldValue.increment(-DESTINY_SUB_COST),
     })
-  }
-)
+    trans.update(privateSnap.ref, {
+      destinySub2Claimed: true,
+    } as Partial<PrivateUser>)
+
+    console.log(
+      'claimed destiny sub for',
+      destinyUsername,
+      'by Manifold user',
+      user.username
+    )
+
+    return { success: true }
+  })
+})
 
 const firestore = admin.firestore()

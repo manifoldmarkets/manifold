@@ -67,7 +67,7 @@ export default function DestinyLandingPage(props: {
   const privateUser = usePrivateUser()
   const user = useUser()
 
-  const destinySubClaimed = privateUser?.destinySubClaimed ?? false
+  const destinySubClaimed = privateUser?.destinySub2Claimed ?? false
 
   const submit = async () => {
     if (!destinyUsername) return
