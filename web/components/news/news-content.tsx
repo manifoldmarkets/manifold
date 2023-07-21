@@ -551,7 +551,17 @@ const Election2024 = createNewsDashboardTab(
   ]
 )
 
+const RPlace = createNewsDashboardTab('r/place', 'r/place', [
+  { slug: 'will-rplace-say-fuck-spez-when-it-c' },
+  { url: 'https://www.reddit.com/r/place/?screenmode=preview' },
+  { slug: 'how-long-will-rplace-last' },
+  { slug: 'will-the-rplace-canvas-expand-by-th' },
+  { slug: 'will-i-be-convinced-that-the-destin' },
+  { slug: 'will-there-be-a-recognizable-manifo' },
+])
+
 export const newsContent = [
+  RPlace,
   UkraineWar,
   Threads,
   SummitNATO,
