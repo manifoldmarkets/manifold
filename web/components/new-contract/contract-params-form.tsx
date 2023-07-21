@@ -673,15 +673,6 @@ export function ContractParamsForm(props: {
           )}
         </div>
       </Row>
-      <Spacer h={6} />
-      <Row className="w-full justify-center">
-        {newContract && (
-          <WaitingForSupabaseButton
-            contractId={newContract.id}
-            router={router}
-          />
-        )}
-      </Row>
 
       <Spacer h={6} />
       <Row className="w-full justify-center">
