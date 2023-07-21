@@ -6,8 +6,9 @@ import { Button } from '../buttons/button'
 import { Row } from '../layout/row'
 import { castPollVote } from 'web/lib/firebase/api'
 import { useEffect, useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { getHasVoted } from 'web/lib/supabase/polls'
+import { firebaseLogin } from 'web/lib/firebase/users'
 
 export function PollPanel(props: { contract: PollContract }) {
   const { contract } = props
@@ -25,7 +26,12 @@ export function PollPanel(props: { contract: PollContract }) {
       })
     }
   }, [contract.id, user])
+
   const castVote = (voteId: string) => {
+    if (!user) {
+      firebaseLogin()
+      return
+    }
     castPollVote({ contractId: contract.id, voteId: voteId })
     setHasVoted(true)
   }
