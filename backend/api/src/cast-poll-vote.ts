@@ -19,10 +19,6 @@ export const castpollvote = authEndpoint(async (req, auth) => {
     `select user_id from votes where contract_id = $1 and id = $2`,
     [contractId, voteId]
   )
-  console.log(
-    voters,
-    voters.map((v) => v.user_id)
-  )
 
   if (voters.some((v) => v.user_id === auth.uid)) {
     throw new APIError(403, 'You have already voted on this poll')
@@ -57,8 +53,6 @@ export const castpollvote = authEndpoint(async (req, auth) => {
     [voteId, contractId, auth.uid]
   )
 
-  // // return something
-  // return { inviteSlug: id }
   return { status: 'success', voteId: id }
 })
 
