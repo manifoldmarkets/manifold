@@ -5,7 +5,7 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 
-import { addInterestingContractsToFeed } from 'shared/add-interesting-contracts-to-feed'
+import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -14,13 +14,15 @@ export async function testBackendFunction() {
   try {
     const pg = createSupabaseDirectClient()
     const db = createSupabaseClient()
-    await addInterestingContractsToFeed(db, pg, true)
+    const groupIds = await pg.map(
+      `select id from groups`,
+      [],
+      (r: { id: string }) => r.id
+    )
 
-    // await getUsersWithSimilarInterestVectorsToContract(
-    //   'YTIuuSsNRn2OlA4KykRM',
-    //   pg,
-    //   0.15
-    // )
+    for (const groupId of groupIds) {
+      await upsertGroupEmbedding(pg, groupId)
+    }
   } catch (e) {
     console.error(e)
   }

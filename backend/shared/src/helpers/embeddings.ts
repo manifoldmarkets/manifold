@@ -11,6 +11,14 @@ export function normalize(vector: number[]): number[] {
   return vector.map((val) => val / mag)
 }
 
+async function normalizeOrGetDefault(
+  pg: SupabaseDirectClient | ITask<any>,
+  embedding: string | null
+) {
+  if (embedding === null) return await getDefaultEmbedding(pg)
+  return normalize(JSON.parse(embedding) as number[])
+}
+
 export async function getDefaultEmbedding(
   pg: SupabaseDirectClient | ITask<any>
 ) {
@@ -30,6 +38,27 @@ export async function getDefaultEmbedding(
     `
   )
   return normalize(JSON.parse(avg.average_embedding) as number[])
+}
+
+export async function upsertGroupEmbedding(
+  pg: SupabaseDirectClient,
+  groupId: string
+) {
+  const startTime = Date.now()
+  const groupContractIds = await pg.map(
+    `select contract_id from group_contracts where group_id = $1`,
+    [groupId],
+    (r: { contract_id: string }) => r.contract_id
+  )
+  const { embed } = await getAverageContractEmbedding(pg, groupContractIds)
+  await pg.none(
+    'insert into group_embeddings (group_id, embedding) values ($1, $2) on conflict (group_id) do update set embedding = $2',
+    [groupId, embed]
+  )
+  const endTime = Date.now()
+  console.log(
+    `Upserted embedding for group ${groupId} in ${endTime - startTime}ms`
+  )
 }
 
 export async function getAverageContractEmbedding(
@@ -76,6 +105,7 @@ export async function updateUserInterestEmbedding(
     )
   })
 }
+
 export async function addContractToUserDisinterestEmbedding(
   pg: SupabaseDirectClient,
   userId: string,
@@ -100,6 +130,7 @@ export async function addContractToUserDisinterestEmbedding(
   })
   await updateUserDisinterestEmbeddingInternal(pg, userId)
 }
+
 export async function updateUserDisinterestEmbeddingInternal(
   pg: SupabaseDirectClient,
   userId: string
@@ -127,7 +158,7 @@ async function getInterestedContractIds(
       select contract_id, max(created_time) as created_time from contract_bets
       where user_id = $1
       group by contract_id
-      order by 2
+      order by created_time desc
       limit 1000
      ) as bet_on_contract_ids
      union
@@ -139,6 +170,7 @@ async function getInterestedContractIds(
     (r: { contract_id: string }) => r.contract_id
   )
 }
+
 async function getDisinterestedContractIds(
   pg: SupabaseDirectClient | ITask<any>,
   userId: string
@@ -178,19 +210,27 @@ async function computeUserInterestEmbedding(
       select pre_signup_interest_embedding as combined_embedding
       from user_embeddings
       where user_id = $2
-     )
+      union all 
+      -- Append group embeddings of bet-on contracts to be averaged in.
+      select embedding as combined_embedding
+      from group_embeddings 
+      where group_id = any(
+      (select group_id from group_contracts where contract_id = any($1)))
+      union all
+      -- Append group embeddings of groups joined to be averaged in.
+      select embedding as combined_embedding
+      from group_embeddings
+      where group_id = any(
+      (select group_id from group_members where member_id = $2)
+     ))
     select avg(combined_embedding) as average_embedding
     from combined_embeddings`,
     [contractIds, userId],
-    async (r: { average_embedding: string }) => {
-      if (r.average_embedding === null) {
-        console.error('No average of embeddings for', contractIds)
-        return await getDefaultEmbedding(pg)
-      }
-      return normalize(JSON.parse(r.average_embedding) as number[])
-    }
+    async (r: { average_embedding: string }) =>
+      normalizeOrGetDefault(pg, r.average_embedding)
   )
 }
+
 async function computeUserDisinterestEmbedding(
   pg: SupabaseDirectClient | ITask<any>,
   userId: string,
@@ -203,15 +243,11 @@ async function computeUserDisinterestEmbedding(
       where contract_id = any($1)
     `,
     [contractIds, userId],
-    async (r: { average_embedding: string }) => {
-      if (r.average_embedding === null) {
-        console.error('No average of embeddings for', contractIds)
-        return null
-      }
-      return normalize(JSON.parse(r.average_embedding) as number[])
-    }
+    async (r: { average_embedding: string }) =>
+      normalizeOrGetDefault(pg, r.average_embedding)
   )
 }
+
 export async function updateUsersViewEmbeddings(
   pg: SupabaseDirectClient | ITask<any>
 ) {
