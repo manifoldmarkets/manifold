@@ -94,13 +94,14 @@ async function handleUpdatedCloseTime(
 }
 
 const getPropsThatTriggerRevalidation = (contract: Contract) => {
-  const { volume, question, closeTime, description, groupLinks } = contract
+  const { volume, question, closeTime, description, groupLinks, lastCommentTime } = contract
   return {
     volume,
     question,
     closeTime,
     description,
     groupLinks,
+    lastCommentTime,
   }
 }
 
