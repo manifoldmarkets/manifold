@@ -45,7 +45,7 @@ export const castpollvote = authEndpoint(async (req, auth) => {
   // Write the updated options back to the document
   contractRef.update({ options: options })
 
-  // create if not exists the group invite link row
+  // create the vote row
   const { id } = await pg.one(
     `insert into votes(id, contract_id, user_id)
       values ($1, $2, $3)
