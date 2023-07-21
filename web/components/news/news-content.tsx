@@ -553,7 +553,9 @@ const Election2024 = createNewsDashboardTab(
 
 const RPlace = createNewsDashboardTab('r/place', 'r/place', [
   { slug: 'will-rplace-say-fuck-spez-when-it-c' },
-  { url: 'https://www.reddit.com/r/place/?screenmode=preview' },
+  {
+    url: 'https://www.theverge.com/2023/7/20/23801716/reddits-r-place-protest-art',
+  },
   { slug: 'how-long-will-rplace-last' },
   { slug: 'will-the-rplace-canvas-expand-by-th' },
   { slug: 'will-i-be-convinced-that-the-destin' },
