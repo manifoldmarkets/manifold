@@ -78,6 +78,7 @@ import { sendmana } from './send-mana'
 import { leavereview } from './leave-review'
 import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
 import { claimdestinysub } from './claim-destiny-sub'
+import { castpollvote } from './cast-poll-vote'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -194,6 +195,7 @@ app.post(
   '/get-user-contract-metrics-with-contracts',
   ...apiRoute(getusercontractmetricswithcontracts)
 )
+app.post('/cast-poll-vote', ...apiRoute(castpollvote))
 
 app.post('/claimdestinysub', ...apiRoute(claimdestinysub))
 

@@ -9,10 +9,7 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { secrets } from 'common/secrets'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { addContractToFeed } from 'shared/create-feed'
-import {
-  CONTRACT_OR_USER_FEED_REASON_TYPES,
-  INTEREST_DISTANCE_THRESHOLDS,
-} from 'common/feed'
+import { INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 import { createNewContractNotification } from 'shared/create-notification'
 import {
   createSupabaseClient,
@@ -21,6 +18,7 @@ import {
 import { isContractLikelyNonPredictive } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 
 export const onCreateContract = functions
   .runWith({
@@ -51,8 +49,8 @@ export const onCreateContract = functions
       richTextToString(desc),
       mentioned
     )
+    const pg = createSupabaseDirectClient()
     if (contract.visibility !== 'private') {
-      const pg = createSupabaseDirectClient()
       const contractEmbedding = await pg.oneOrNone<{ embedding: string }>(
         `select embedding
          from contract_embeddings
@@ -86,13 +84,9 @@ export const onCreateContract = functions
       }
     }
     if (contract.visibility === 'unlisted') return
-    const reasons: CONTRACT_OR_USER_FEED_REASON_TYPES[] = [
-      'follow_user',
-      'similar_interest_vector_to_contract',
-    ]
     await addContractToFeed(
       contract,
-      reasons,
+      ['follow_user', 'similar_interest_vector_to_contract'],
       'new_contract',
       [contractCreator.id],
       {
@@ -100,5 +94,10 @@ export const onCreateContract = functions
         maxDistanceFromUserInterestToContract:
           INTEREST_DISTANCE_THRESHOLDS.new_contract,
       }
+    )
+    await Promise.all(
+      (contract.groupLinks ?? [])
+        .map((gl) => gl.groupId)
+        .map(async (groupId) => upsertGroupEmbedding(pg, groupId))
     )
   })
