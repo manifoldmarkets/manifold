@@ -25,14 +25,21 @@ export function PollPanel(props: { contract: PollContract }) {
       })
     }
   }, [contract.id, user])
+  const [votingId, setVotingId] = useState<string | undefined>(undefined)
 
   const castVote = (voteId: string) => {
     if (!user) {
       firebaseLogin()
       return
     }
+    setVotingId(voteId)
     castPollVote({ contractId: contract.id, voteId: voteId })
-    setHasVoted(true)
+      .then(() => {
+        setHasVoted(true)
+      })
+      .finally(() => {
+        setVotingId(undefined)
+      })
   }
 
   return (
@@ -56,7 +63,11 @@ export function PollPanel(props: { contract: PollContract }) {
                   </span>
                 )}
                 {!hasVoted && votingOpen && (
-                  <VoteButton onClick={() => castVote(option.id)} />
+                  <VoteButton
+                    loading={!!votingId && votingId === option.id}
+                    onClick={() => castVote(option.id)}
+                    disabled={!!votingId}
+                  />
                 )}
               </>
             }
@@ -69,14 +80,20 @@ export function PollPanel(props: { contract: PollContract }) {
   )
 }
 
-export function VoteButton(props: { onClick: () => void }) {
-  const { onClick } = props
+export function VoteButton(props: {
+  loading: boolean
+  onClick: () => void
+  disabled: boolean
+}) {
+  const { loading, onClick, disabled } = props
   return (
     <Button
       onClick={onClick}
       size="2xs"
+      loading={loading}
       color="indigo-outline"
       className="!ring-1"
+      disabled={disabled}
     >
       Vote
     </Button>

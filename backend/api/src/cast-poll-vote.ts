@@ -15,15 +15,6 @@ export const castpollvote = authEndpoint(async (req, auth) => {
   const { contractId, voteId } = validate(schema, req.body)
   const pg = createSupabaseDirectClient()
 
-  const voters = await pg.manyOrNone(
-    `select user_id from votes where contract_id = $1 and id = $2`,
-    [contractId, voteId]
-  )
-
-  if (voters.some((v) => v.user_id === auth.uid)) {
-    throw new APIError(403, 'You have already voted on this poll')
-  }
-
   const contractRef = firestore.collection('contracts').doc(contractId)
   const contractSnap = await contractRef.get()
   if (!contractSnap.exists) throw new APIError(404, 'Contract cannot be found')
@@ -37,23 +28,36 @@ export const castpollvote = authEndpoint(async (req, auth) => {
   // Find the option to update
   let optionToUpdate = options.find((o) => o.id === voteId)
 
-  // Update the votes field
-  if (optionToUpdate) {
-    optionToUpdate.votes = voters.length + 1
-  }
+  return pg.tx(async (t) => {
+    const voters = await t.manyOrNone(
+      `select user_id from votes where contract_id = $1 and id = $2`,
+      [contractId, voteId]
+    )
 
-  // Write the updated options back to the document
-  contractRef.update({ options: options })
+    if (voters.some((v) => v.user_id === auth.uid)) {
+      throw new APIError(403, 'You have already voted on this poll')
+    }
 
-  // create the vote row
-  const { id } = await pg.one(
-    `insert into votes(id, contract_id, user_id)
-      values ($1, $2, $3)
-      returning id`,
-    [voteId, contractId, auth.uid]
-  )
+    // Update the votes field
+    if (optionToUpdate) {
+      optionToUpdate.votes = voters.length + 1
+    }
 
-  return { status: 'success', voteId: id }
+    // Write the updated options back to the document
+    await admin.firestore().runTransaction(async (transaction) => {
+      transaction.update(contractRef, { options: options })
+    })
+
+    // create the vote row
+    const { id } = await t.one(
+      `insert into votes(id, contract_id, user_id)
+        values ($1, $2, $3)
+        returning id`,
+      [voteId, contractId, auth.uid]
+    )
+
+    return { status: 'success', voteId: id }
+  })
 })
 
 const firestore = admin.firestore()
