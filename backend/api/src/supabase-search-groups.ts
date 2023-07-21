@@ -102,8 +102,8 @@ function getSearchGroupSQL(groupInput: {
     // exclude your own groups, because it will be shown above
     if (emptyTerm) {
       query = `
-      select groupz.data from (
-        select groups.data as data,
+      select groupz.data, groupz.id from (
+        select groups.data as data, group_id as id,
         group_members.data as gm_data from groups
         join group_members on group_members.group_id = groups.id
         where group_members.member_id = '${uid}'
@@ -114,7 +114,7 @@ function getSearchGroupSQL(groupInput: {
     // if search is fuzzy
     else if (fuzzy) {
       query = `
-      select groupz.data
+      select groupz.data, groupz.id
       from (
         select groups.*,
             similarity(groups.name,$1) AS similarity_score
@@ -128,7 +128,7 @@ function getSearchGroupSQL(groupInput: {
       `
     } else {
       query = `
-      select groups.data
+      select groups.data, groups.id
         from groups 
         join group_members 
         on groups.id = group_members.group_id,
@@ -141,7 +141,7 @@ function getSearchGroupSQL(groupInput: {
   } else {
     if (emptyTerm) {
       query = `
-        select data
+        select data, id
         from groups
         ${discoverGroupSearchWhereSQL('groups')}
         ${getAddingToContractWhereSQL('groups')}
@@ -151,7 +151,7 @@ function getSearchGroupSQL(groupInput: {
     // if search is fuzzy
     else if (fuzzy) {
       query = `
-      SELECT groupz.data
+      SELECT groupz.data, groupz.id
       FROM (
         SELECT groups.*,
             similarity(groups.name,$1) AS similarity_score
@@ -164,7 +164,7 @@ function getSearchGroupSQL(groupInput: {
       `
     } else {
       query = `
-        SELECT groups.*
+        SELECT groups.data, groups.id
         FROM groups,
         websearch_to_tsquery('english',  $1) as query
        ${discoverGroupSearchWhereSQL('groups')}
