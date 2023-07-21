@@ -24,11 +24,9 @@ import { claimDestinySub } from 'web/lib/firebase/api'
 import { ManaExplainer } from '.'
 import { Modal } from 'web/components/layout/modal'
 import GoToIcon from 'web/lib/icons/go-to-icon'
-import { AlertBox } from 'web/components/widgets/alert-box'
 import { Contract } from 'common/contract'
 import { searchContract } from 'web/lib/supabase/contracts'
 import { getTotalSubs } from 'web/lib/firebase/utils'
-
 
 export async function getStaticProps() {
   const subCount = await getTotalSubs()
@@ -55,7 +53,6 @@ export async function getStaticProps() {
 export default function DestinyLandingPage(props: {
   subCount: number
   trendingContracts: Contract[]
-  subCount: number
 }) {
   const { subCount, trendingContracts } = props
 
@@ -107,35 +104,32 @@ export default function DestinyLandingPage(props: {
             <CheckmarkIcon className="mr-2" /> Destiny subscription claimed!
           </Row>
         ) : (
-          <Row className="mt-8">
-            <Input
-              type="text"
-              placeholder="Destiny.gg account name"
-              className="mr-4 w-[50%]"
-              disabled={disabled}
-              value={destinyUsername}
-              onChange={(e) => setDestinyUsername(e.target.value)}
-            />
-            <Button
-              color="gradient-pink"
-              disabled={disabled}
-              loading={isSubmitting}
-              onClick={submit}
-            >
-              Pay {formatMoney(1000)} for sub
-            </Button>
-          </Row>
+          subCount < 1000 && (
+            <Row className="mt-8">
+              <Input
+                type="text"
+                placeholder="Destiny.gg account name"
+                className="mr-4 w-[50%]"
+                disabled={disabled}
+                value={destinyUsername}
+                onChange={(e) => setDestinyUsername(e.target.value)}
+              />
+              <Button
+                color="gradient-pink"
+                disabled={disabled}
+                loading={isSubmitting}
+                onClick={submit}
+              >
+                Pay {formatMoney(1000)} for sub
+              </Button>
+            </Row>
+          )
         )}
         {error && <div className="mt-2 text-sm text-red-500">{error}</div>}
 
         <div className="mt-4 pt-6 sm:mt-0">
           Total subs claimed: {subCount + (isSuccess ? 1 : 0)} / 1,000
         </div>
-
-        <Spacer h={2} />
-        <AlertBox title="Sub redemption ending" text="">
-          Claim your sub before March 1st, 2023.
-        </AlertBox>
 
         <Spacer h={2} />
         <Subtitle>New to Manifold?</Subtitle>
