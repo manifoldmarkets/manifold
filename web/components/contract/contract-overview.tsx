@@ -88,11 +88,7 @@ export const ContractOverview = memo(
       case 'BOUNTIED_QUESTION':
         return <></>
       case 'POLL':
-        return (
-          <PollPanel
-            contract={contract}
-          />
-        )
+        return <PollPanel contract={contract} />
     }
   }
 )
