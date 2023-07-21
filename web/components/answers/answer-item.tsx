@@ -183,14 +183,21 @@ export const AnswerBar = (props: {
   end: ReactNode
   bottom?: ReactNode
   className?: string
+  hideBar?: boolean
 }) => {
-  const { color, prob, resolvedProb, label, end, bottom, className } = props
+  const { color, prob, resolvedProb, label, end, bottom, className, hideBar } =
+    props
 
   return (
     <Col className="relative h-full w-full">
-      <div className="bg-canvas-50 absolute left-0 right-0 bottom-0 -z-10 h-full rounded transition-all ">
+      <div
+        className={clsx(
+          'absolute left-0 right-0 bottom-0 -z-10 h-full rounded transition-all ',
+          hideBar ? 'bg-ink-200' : 'bg-canvas-50'
+        )}
+      >
         {/* bar outline if resolved */}
-        {!!resolvedProb && (
+        {!!resolvedProb && !hideBar && (
           <div
             className="absolute top-0 h-full rounded bg-purple-100 ring-1 ring-purple-500 dark:bg-purple-900 sm:ring-2"
             style={{
@@ -199,14 +206,23 @@ export const AnswerBar = (props: {
           />
         )}
         {/* main bar */}
-        <div
-          className="h-full rounded opacity-70 dark:opacity-40"
-          style={{
-            width: `max(8px, ${prob * 100}%)`,
-            background: color,
-          }}
-        />
+        {!hideBar && (
+          <div
+            className="h-full rounded opacity-70 dark:opacity-40"
+            style={{
+              width: `max(8px, ${prob * 100}%)`,
+              background: color,
+            }}
+          />
+        )}
       </div>
+
+      {/* <div
+        className={clsx(
+          'bg-ink-200 absolute left-0 right-0 bottom-0 z-10 h-full rounded transition-all',
+          hideBar ? 'opacity-100' : 'opacity-0'
+        )}
+      /> */}
 
       <Row className="items-center justify-between gap-x-4 px-3 py-2 leading-none">
         <div className="flex-grow">{label}</div>

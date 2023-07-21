@@ -28,7 +28,7 @@ export async function addGroupToContract(
   })
 
   // update group slugs and group links
-  await firestore
+  await firestore 
     .collection('contracts')
     .doc(contract.id)
     .update({
