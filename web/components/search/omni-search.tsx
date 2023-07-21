@@ -39,7 +39,8 @@ export const OmniSearch = (props: {
 
   const { setOpen } = useSearchContext() ?? {}
   const router = useRouter()
-
+  const user = useUser()
+  const recentMarkets = useYourRecentContracts(db, user?.id) ?? []
   const [debouncedQuery, setDebouncedQuery] = useState(query)
 
   const debouncedSearch = useCallback(
@@ -87,9 +88,9 @@ export const OmniSearch = (props: {
             className="text-ink-700 flex flex-col overflow-y-auto px-1"
           >
             {debouncedQuery ? (
-              <Results query={debouncedQuery} />
+              <Results query={debouncedQuery} recentMarkets={recentMarkets} />
             ) : (
-              <DefaultResults />
+              <DefaultResults recentMarkets={recentMarkets} />
             )}
           </Combobox.Options>
         </>
@@ -98,13 +99,11 @@ export const OmniSearch = (props: {
   )
 }
 
-const DefaultResults = () => {
-  const user = useUser()
-  const markets = useYourRecentContracts(db, user?.id) ?? []
-
+const DefaultResults = (props: { recentMarkets: Contract[] }) => {
+  const { recentMarkets } = props
   return (
     <>
-      <MarketResults markets={markets} />
+      <MarketResults markets={recentMarkets.slice(0, 7)} />
       <PageResults pages={defaultPages} />
       <div className="mx-2 my-2 text-xs">
         <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
@@ -119,8 +118,8 @@ const Key = (props: { children: ReactNode }) => (
   <code className="bg-ink-300 mx-0.5 rounded p-0.5">{props.children}</code>
 )
 
-const Results = (props: { query: string }) => {
-  const { query } = props
+const Results = (props: { query: string; recentMarkets: Contract[] }) => {
+  const { query, recentMarkets } = props
 
   const prefix = query.match(/^(%|#|@)/) ? query.charAt(0) : ''
   const search = prefix ? query.slice(1) : query
@@ -179,10 +178,16 @@ const Results = (props: { query: string }) => {
       const groupHits = g.status === 'fulfilled' ? g.value.data : []
       const marketHits = m.status === 'fulfilled' ? m.value.data : []
       const sortHit = s.status === 'fulfilled' ? s.value : null
+      const recentMarketHits = recentMarkets.filter((m) =>
+        m.question.toLowerCase().includes(search.toLowerCase())
+      )
 
       if (thisNonce === nonce.current) {
         const pageHits = prefix ? [] : searchPages(search, 2)
-        const uniqueMarketHits = uniqBy<Contract>(marketHits, 'id')
+        const uniqueMarketHits = uniqBy<Contract>(
+          recentMarketHits.concat(marketHits),
+          'id'
+        )
         const uniqueGroupHits = uniqBy<Group>(groupHits, 'id')
         setSearchResults({
           pageHits,

@@ -22,7 +22,7 @@ export function useYourRecentContracts(
   useEffect(() => {
     if (!userId) return
 
-    getYourRecentContracts(db, userId, 7).then((contracts) => {
+    getYourRecentContracts(db, userId, 20).then((contracts) => {
       if (!contracts) setContracts([])
       else setContracts(contracts)
     })
