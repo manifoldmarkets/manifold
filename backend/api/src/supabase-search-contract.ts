@@ -46,6 +46,7 @@ const bodySchema = z.object({
     z.literal('FREE_RESPONSE'),
     z.literal('PSEUDO_NUMERIC'),
     z.literal('BOUNTIED_QUESTION'),
+    z.literal('STONK'),
   ]),
   topic: z.string().optional(),
   offset: z.number().gte(0),
@@ -436,7 +437,8 @@ function getSearchContractWhereSQL(
   const contractTypeFilter =
     contractType != 'ALL' ? `outcome_type = '${contractType}'` : ''
 
-  const stonkFilter = hideStonks ? `outcome_type != 'STONK'` : ''
+  const stonkFilter =
+    hideStonks && contractType !== 'STONK' ? `outcome_type != 'STONK'` : ''
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
   const visibilitySQL = getContractPrivacyWhereSQLFilter(
