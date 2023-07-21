@@ -1,14 +1,13 @@
 import { PollContract } from 'common/contract'
-import { Col } from '../layout/col'
-import { AnswerBar } from '../answers/answer-item'
 import { PollOption } from 'common/poll-option'
-import { Button } from '../buttons/button'
-import { Row } from '../layout/row'
-import { castPollVote } from 'web/lib/firebase/api'
 import { useEffect, useState } from 'react'
-import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { getHasVoted } from 'web/lib/supabase/polls'
+import { useUser } from 'web/hooks/use-user'
+import { castPollVote } from 'web/lib/firebase/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { getHasVoted } from 'web/lib/supabase/polls'
+import { AnswerBar } from '../answers/answer-item'
+import { Button } from '../buttons/button'
+import { Col } from '../layout/col'
 
 export function PollPanel(props: { contract: PollContract }) {
   const { contract } = props
@@ -56,12 +55,12 @@ export function PollPanel(props: { contract: PollContract }) {
                     <span className="text-ink-500 text-xs">votes</span>
                   </span>
                 )}
-                {!hasVoted && (
+                {!hasVoted && votingOpen && (
                   <VoteButton onClick={() => castVote(option.id)} />
                 )}
               </>
             }
-            hideBar={!hasVoted}
+            hideBar={!hasVoted || !votingOpen}
             className={'min-h-[40px]'}
           />
         )
