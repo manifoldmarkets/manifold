@@ -19,8 +19,8 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     example: 'Will NASA confirm the discovery of aliens before 2025?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
-        <BsFillCheckCircleFill className="h-6 w-6" />
-        <BsFillXCircleFill className=" absolute bottom-0 right-0 h-6 w-6" />
+        <BsFillCheckCircleFill className="mr-4 h-6 w-8" />
+        <BsFillXCircleFill className=" absolute bottom-0 right-0 ml-4 h-6 w-8" />
       </Col>
     ),
   },
@@ -29,7 +29,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     value: 'MULTIPLE_CHOICE',
     name: 'multiple choice',
     descriptor: 'A question with multiple answers that you define.',
-    example: 'NASA confirms the discovery of aliens before the end of 2025',
+    example: 'Which of the following candidates will be elected in 2024?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <BsUiChecks className="h-12 w-12" />

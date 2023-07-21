@@ -47,23 +47,20 @@ import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
 import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
-import { HiArrowsUpDown } from 'react-icons/hi2'
 import { uniqBy } from 'lodash'
 import { GroupLinkItem } from 'web/pages/groups'
 import { LockClosedIcon, XCircleIcon } from '@heroicons/react/solid'
 import { toast } from 'react-hot-toast'
+import { VisibilityTheme } from 'web/pages/create'
 
 export function ContractParamsForm(props: {
   creator: User
-  outcomeType?: OutcomeType
+  outcomeType: OutcomeType
+  setPrivacy: (theme: VisibilityTheme) => void
   params?: NewQuestionParams
 }) {
-  const { creator, params } = props
-  const paramsKey = params?.q ?? ''
-  const [outcomeType, setOutcomeType] = useState<OutcomeType>(
-    params?.outcomeType ?? 'MULTIPLE_CHOICE'
-  )
-
+  const { creator, params, setPrivacy, outcomeType } = props
+  const paramsKey = params?.q ?? '' + params?.groupIds?.join('') ?? ''
   const [minString, setMinString] = usePersistentLocalState(
     params?.min?.toString() ?? '',
     'new-min' + paramsKey
@@ -90,8 +87,8 @@ export function ContractParamsForm(props: {
   )
 
   // for multiple choice, init to 2 empty answers
-  const [answers, setAnswers] = usePersistentLocalState<string[]>(
-    params?.answers ? params.answers : ['Yes', 'No'],
+  const [answers, setAnswers] = usePersistentLocalState(
+    params?.answers ? params.answers : ['', ''],
     'new-answers' + paramsKey
   )
 
@@ -99,7 +96,7 @@ export function ContractParamsForm(props: {
     if (params?.answers) {
       setAnswers(params.answers)
     } else if (answers.length && answers.every((a) => a.trim().length === 0)) {
-      setAnswers(['Yes', 'No'])
+      setAnswers(['', ''])
     }
   }, [params?.answers])
 
@@ -123,12 +120,7 @@ export function ContractParamsForm(props: {
     setGroups()
   }, [creator.id, params?.groupIds])
 
-  const filteredAnswers = answers.filter((a) => a.trim().length > 0)
-  const ante = getAnte(
-    outcomeType,
-    filteredAnswers.length,
-    visibility === 'private'
-  )
+  const ante = getAnte(outcomeType, answers.length, visibility === 'private')
 
   // If params.closeTime is set, extract out the specified date and time
   // By default, close the question a week from today
@@ -206,6 +198,10 @@ export function ContractParamsForm(props: {
     }
   }, [outcomeType])
 
+  const isValidMultipleChoice = answers.every(
+    (answer) => answer.trim().length > 0
+  )
+
   const isValid =
     question.length > 0 &&
     ante !== undefined &&
@@ -222,7 +218,9 @@ export function ContractParamsForm(props: {
         min < max &&
         max - min > 0.01 &&
         min < initialValue &&
-        initialValue < max))
+        initialValue < max)) &&
+    ((outcomeType !== 'MULTIPLE_CHOICE' && outcomeType !== 'POLL') ||
+      isValidMultipleChoice)
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
@@ -250,9 +248,8 @@ export function ContractParamsForm(props: {
     setCloseDate(undefined)
     setCloseHoursMinutes(undefined)
     setSelectedGroups([])
-    setVisibility('public')
-    setAnswers(['Yes', 'No'])
-    setOutcomeType('MULTIPLE_CHOICE')
+    setVisibility((params?.visibility as Visibility) ?? 'public')
+    setAnswers(['', ''])
     setMinString('')
     setMaxString('')
     setInitialValueString('')
@@ -264,21 +261,12 @@ export function ContractParamsForm(props: {
 
   async function submit() {
     if (!isValid) return
-    const outcomeTypeToSubmit: OutcomeType =
-      outcomeType === 'MULTIPLE_CHOICE' &&
-      filteredAnswers.length === 2 &&
-      filteredAnswers.every(
-        (a) =>
-          a.trim().toLowerCase() === 'yes' || a.trim().toLowerCase() === 'no'
-      )
-        ? 'BINARY'
-        : outcomeType
     setIsSubmitting(true)
     try {
       const newContract = (await createMarket(
         removeUndefinedProps({
           question,
-          outcomeType: outcomeTypeToSubmit,
+          outcomeType,
           description: editor?.getJSON(),
           initialProb: 50,
           ante,
@@ -287,8 +275,8 @@ export function ContractParamsForm(props: {
           max,
           initialValue,
           isLogScale,
-          answers: filteredAnswers,
           groupIds: selectedGroups.map((g) => g.id),
+          answers,
           visibility,
           utcOffset: new Date().getTimezoneOffset(),
           totalBounty: bountyAmount,
@@ -313,9 +301,13 @@ export function ContractParamsForm(props: {
   const [toggleVisibility, setToggleVisibility] =
     useState<ContractVisibilityType>('public')
   useEffect(() => {
-    if (selectedGroups.some((g) => g.privacyStatus == 'private'))
+    if (selectedGroups.some((g) => g.privacyStatus == 'private')) {
       setVisibility('private')
-    else setVisibility(toggleVisibility)
+      setPrivacy('private')
+    } else {
+      setVisibility(toggleVisibility)
+      setPrivacy('non-private')
+    }
   }, [selectedGroups?.length, toggleVisibility])
 
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
@@ -323,427 +315,404 @@ export function ContractParamsForm(props: {
   const isMulti =
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
   return (
-    <Col className={'items-center justify-center p-4'}>
-      <Col className={'w-full max-w-lg'}>
-        <Col>
-          <div className={'mb-2 text-2xl'}>Create a question</div>
-          <div className="flex w-full flex-col">
-            <label className="px-1 pt-2 pb-3">
-              Question<span className={'text-scarlet-500'}>*</span>
-            </label>
+    <Col>
+      <Col>
+        <div className="flex w-full flex-col">
+          <label className="px-1 pt-2 pb-3">
+            Question<span className={'text-scarlet-500'}>*</span>
+          </label>
 
-            <ExpandingInput
-              placeholder={getContractTypeThingFromValue(
-                'example',
-                outcomeType
-              )}
-              autoFocus
-              maxLength={MAX_QUESTION_LENGTH}
-              value={question}
-              onChange={(e) => setQuestion(e.target.value || '')}
-            />
-          </div>
-
-          <Spacer h={6} />
-          <div className="mb-1 flex flex-col items-start gap-1">
+          <ExpandingInput
+            placeholder={getContractTypeThingFromValue('example', outcomeType)}
+            autoFocus
+            maxLength={MAX_QUESTION_LENGTH}
+            value={question}
+            onChange={(e) => setQuestion(e.target.value || '')}
+          />
+        </div>
+        <Spacer h={6} />
+        <div className="mb-1 flex flex-col items-start gap-1">
+          <label className="gap-2 px-1 py-2">
+            <span className="mb-1">Description</span>
+          </label>
+          <TextEditor editor={editor} />
+        </div>
+      </Col>
+      {outcomeType === 'STONK' && (
+        <div className="text-primary-500 mt-1 ml-1 text-sm">
+          Tradeable shares of a stock based on sentiment. Never resolves.
+        </div>
+      )}
+      {outcomeType === 'FREE_RESPONSE' && (
+        <div className="text-primary-500 mt-1 ml-1 text-sm">
+          Users can submit their own answers to this question.
+        </div>
+      )}
+      {outcomeType === 'PSEUDO_NUMERIC' && (
+        <div className="text-primary-500 mt-1 ml-1 text-sm">
+          Predict the value of a number.
+        </div>
+      )}
+      <Spacer h={2} />
+      {outcomeType === 'QUADRATIC_FUNDING' && <QfExplainer />}
+      <Spacer h={4} />
+      {(outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL') && (
+        <MultipleChoiceAnswers
+          answers={answers}
+          setAnswers={setAnswers}
+          placeholder={
+            outcomeType == 'MULTIPLE_CHOICE' ? 'Type your answer..' : undefined
+          }
+        />
+      )}
+      {outcomeType === 'PSEUDO_NUMERIC' && (
+        <>
+          <div className="mb-2 flex flex-col items-start">
             <label className="gap-2 px-1 py-2">
-              <span className="mb-1">Description</span>
+              <span className="mb-1">Range </span>
+              <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
             </label>
-            <TextEditor editor={editor} />
-          </div>
-        </Col>
-        {outcomeType == 'BOUNTIED_QUESTION' && (
-          <Col className={'p-2'}>
-            <Row className={'items-end justify-between pb-2'}>
-              <label className="gap-2">
-                <span className="mb-1 mr-1">Bounty</span>
-                <InfoTooltip text="The award you give good answers. You can divide this amongst answers however you'd like." />
-              </label>
-              <Button
-                onClick={() => setOutcomeType('MULTIPLE_CHOICE')}
-                color={'indigo-outline'}
-                size={'xs'}
-              >
-                <HiArrowsUpDown className={'mr-1 h-5 w-5'} />
-                Set answers
-              </Button>
-            </Row>
-            <BuyAmountInput
-              inputClassName="w-full max-w-none"
-              minimumAmount={5}
-              amount={bountyAmount}
-              onChange={(newAmount) => setBountyAmount(newAmount)}
-              error={bountyError}
-              setError={setBountyError}
-              sliderOptions={{ show: true, wrap: false }}
-              customRange={{ rangeMax: 500 }}
-            />
-            <Spacer h={6} />
-          </Col>
-        )}
 
-        {outcomeType === 'STONK' && (
-          <div className="text-primary-500 mt-1 ml-1 text-sm">
-            Tradeable shares of a stock based on sentiment. Never resolves.
-          </div>
-        )}
-        {outcomeType === 'FREE_RESPONSE' && (
-          <div className="text-primary-500 mt-1 ml-1 text-sm">
-            Users can submit their own answers to this question.
-          </div>
-        )}
-        {outcomeType === 'PSEUDO_NUMERIC' && (
-          <div className="text-primary-500 mt-1 ml-1 text-sm">
-            Predict the value of a number.
-          </div>
-        )}
-        <Spacer h={2} />
-        {outcomeType === 'QUADRATIC_FUNDING' && <QfExplainer />}
-        <Spacer h={4} />
-        {(outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL') && (
-          <Col className={'p-2'}>
-            <Row className={'mb-2 items-end justify-between'}>
-              <div>Possible answers</div>
-              <Button
-                onClick={() => setOutcomeType('BOUNTIED_QUESTION')}
-                color={'indigo-outline'}
-                size={'xs'}
-              >
-                <HiArrowsUpDown className={'mr-1 h-5 w-5'} />
-                Bounty
-              </Button>
-            </Row>
-            <MultipleChoiceAnswers
-              answers={answers}
-              setAnswers={setAnswers}
-              placeholder={
-                outcomeType == 'MULTIPLE_CHOICE'
-                  ? 'Type your answer..'
-                  : undefined
-              }
-            />
-          </Col>
-        )}
-        {outcomeType === 'PSEUDO_NUMERIC' && (
-          <>
-            <div className="mb-2 flex flex-col items-start">
-              <label className="gap-2 px-1 py-2">
-                <span className="mb-1">Range </span>
-                <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
-              </label>
-
-              <Row className="gap-2">
-                <Input
-                  type="number"
-                  className="w-32"
-                  placeholder="LOW"
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => setMinString(e.target.value)}
-                  min={Number.MIN_SAFE_INTEGER}
-                  max={Number.MAX_SAFE_INTEGER}
-                  disabled={isSubmitting}
-                  value={minString ?? ''}
-                />
-                <Input
-                  type="number"
-                  className="w-32"
-                  placeholder="HIGH"
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => setMaxString(e.target.value)}
-                  min={Number.MIN_SAFE_INTEGER}
-                  max={Number.MAX_SAFE_INTEGER}
-                  disabled={isSubmitting}
-                  value={maxString}
-                />
-              </Row>
-
-              <Checkbox
-                className="my-2 text-sm"
-                label="Log scale"
-                checked={isLogScale}
-                toggle={() => setIsLogScale(!isLogScale)}
+            <Row className="gap-2">
+              <Input
+                type="number"
+                className="w-32"
+                placeholder="LOW"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setMinString(e.target.value)}
+                min={Number.MIN_SAFE_INTEGER}
+                max={Number.MAX_SAFE_INTEGER}
                 disabled={isSubmitting}
+                value={minString ?? ''}
               />
+              <Input
+                type="number"
+                className="w-32"
+                placeholder="HIGH"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setMaxString(e.target.value)}
+                min={Number.MIN_SAFE_INTEGER}
+                max={Number.MAX_SAFE_INTEGER}
+                disabled={isSubmitting}
+                value={maxString}
+              />
+            </Row>
 
-              {min !== undefined && max !== undefined && min >= max && (
+            <Checkbox
+              className="my-2 text-sm"
+              label="Log scale"
+              checked={isLogScale}
+              toggle={() => setIsLogScale(!isLogScale)}
+              disabled={isSubmitting}
+            />
+
+            {min !== undefined && max !== undefined && min >= max && (
+              <div className="text-scarlet-500 mt-2 mb-2 text-sm">
+                The maximum value must be greater than the minimum.
+              </div>
+            )}
+          </div>
+          <div className="mb-2 flex flex-col items-start">
+            <label className="gap-2 px-1 py-2">
+              <span className="mb-1">Initial value </span>
+              <InfoTooltip text="The starting value for this question. Should be in between min and max values." />
+            </label>
+
+            <Row className="gap-2">
+              <Input
+                type="number"
+                placeholder="Initial value"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setInitialValueString(e.target.value)}
+                max={Number.MAX_SAFE_INTEGER}
+                disabled={isSubmitting}
+                value={initialValueString ?? ''}
+              />
+            </Row>
+
+            {initialValue !== undefined &&
+              min !== undefined &&
+              max !== undefined &&
+              min < max &&
+              (initialValue <= min || initialValue >= max) && (
                 <div className="text-scarlet-500 mt-2 mb-2 text-sm">
-                  The maximum value must be greater than the minimum.
+                  Initial value must be in between {min} and {max}.{' '}
                 </div>
               )}
-            </div>
-            <div className="mb-2 flex flex-col items-start">
-              <label className="gap-2 px-1 py-2">
-                <span className="mb-1">Initial value </span>
-                <InfoTooltip text="The starting value for this question. Should be in between min and max values." />
-              </label>
+          </div>
+        </>
+      )}
 
-              <Row className="gap-2">
-                <Input
-                  type="number"
-                  placeholder="Initial value"
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => setInitialValueString(e.target.value)}
-                  max={Number.MAX_SAFE_INTEGER}
-                  disabled={isSubmitting}
-                  value={initialValueString ?? ''}
-                />
-              </Row>
-
-              {initialValue !== undefined &&
-                min !== undefined &&
-                max !== undefined &&
-                min < max &&
-                (initialValue <= min || initialValue >= max) && (
-                  <div className="text-scarlet-500 mt-2 mb-2 text-sm">
-                    Initial value must be in between {min} and {max}.{' '}
-                  </div>
-                )}
-            </div>
-          </>
-        )}
-
-        <Col className={'mb-2'}>
-          <Row className={'items-end gap-x-2 py-1'}>
-            <GroupSelector
-              setSelectedGroup={(group) => {
-                if (
-                  (selectedGroups.length > 0 &&
-                    group.privacyStatus === 'private') ||
-                  (selectedGroups.length > 0 &&
-                    selectedGroups.some((g) => g.privacyStatus === 'private'))
-                ) {
-                  toast(
-                    `Questions are only allowed one group if the group is private.`,
-                    { icon: '🚫' }
-                  )
-                  return
-                }
-                setSelectedGroups((groups) =>
-                  uniqBy([...(groups ?? []), group], 'id')
+      {outcomeType == 'BOUNTIED_QUESTION' && (
+        <>
+          <label className="gap-2 px-1 py-2">
+            <span className="mb-1 mr-1">Bounty</span>
+            <InfoTooltip text="The award you give good answers. You can divide this amongst answers however you'd like." />
+          </label>
+          <BuyAmountInput
+            inputClassName="w-full max-w-none"
+            minimumAmount={5}
+            amount={bountyAmount}
+            onChange={(newAmount) => setBountyAmount(newAmount)}
+            error={bountyError}
+            setError={setBountyError}
+            sliderOptions={{ show: true, wrap: false }}
+            customRange={{ rangeMax: 500 }}
+          />
+          <Spacer h={6} />
+        </>
+      )}
+      <Col>
+        <Row>
+          <GroupSelector
+            setSelectedGroup={(group) => {
+              if (
+                (selectedGroups.length > 0 &&
+                  group.privacyStatus === 'private') ||
+                (selectedGroups.length > 0 &&
+                  selectedGroups.some((g) => g.privacyStatus === 'private'))
+              ) {
+                toast(
+                  `Questions are only allowed one group if the group is private.`,
+                  { icon: '🚫' }
                 )
-              }}
-              ignoreGroupIds={selectedGroups.map((g) => g.id)}
-              showLabel={true}
-              isContractCreator={true}
-              newContract={true}
-            />
-          </Row>
-          <Row className={'mt-2 gap-2'}>
-            {selectedGroups.map((group) => (
-              <div
-                key={group.id}
+                return
+              }
+              setSelectedGroups((groups) =>
+                uniqBy([...(groups ?? []), group], 'id')
+              )
+            }}
+            ignoreGroupIds={selectedGroups.map((g) => g.id)}
+            showLabel={true}
+            isContractCreator={true}
+            newContract={true}
+          />
+        </Row>
+        <Row className={'mt-2 gap-2'}>
+          {selectedGroups.map((group) => (
+            <div
+              key={group.id}
+              className={
+                'bg-canvas-100 relative rounded-full px-4 py-1.5 hover:bg-blue-600 focus-visible:bg-blue-600'
+              }
+            >
+              <GroupLinkItem group={group} />
+              {group.privacyStatus === 'private' && (
+                <LockClosedIcon className={'ml-1 inline h-5 w-5 pb-1'} />
+              )}
+              <button
                 className={
-                  'bg-canvas-100 relative rounded-full px-4 py-1.5 hover:bg-blue-600 focus-visible:bg-blue-600'
+                  'hover:bg-canvas-100 absolute -top-1 -right-1 rounded-full'
+                }
+                onClick={() =>
+                  setSelectedGroups((groups) =>
+                    groups?.filter((g) => g.id !== group.id)
+                  )
                 }
               >
-                <GroupLinkItem group={group} />
-                {group.privacyStatus === 'private' && (
-                  <LockClosedIcon className={'ml-1 inline h-5 w-5 pb-1'} />
-                )}
-                <button
-                  className={
-                    'hover:bg-canvas-100 absolute -top-1 -right-1 rounded-full'
-                  }
-                  onClick={() =>
-                    setSelectedGroups((groups) =>
-                      groups?.filter((g) => g.id !== group.id)
-                    )
-                  }
-                >
-                  <XCircleIcon className="hover:text-ink-700 text-ink-400 h-5 w-5" />
-                </button>
-              </div>
-            ))}
-          </Row>
-        </Col>
+                <XCircleIcon className="hover:text-ink-700 text-ink-400 h-5 w-5" />
+              </button>
+            </div>
+          ))}
+        </Row>
+      </Col>
 
-        {outcomeType !== 'STONK' && outcomeType !== 'BOUNTIED_QUESTION' && (
-          <div className="mb-1 flex flex-col items-start">
-            <label className="mb-1 gap-2 px-1 py-2">
-              <span>
-                {outcomeType == 'POLL' ? 'Poll' : 'Question'} closes in{' '}
-              </span>
-              <InfoTooltip
-                text={
-                  outcomeType == 'POLL'
-                    ? 'Voting on this poll will be halted and resolve to the most voted option'
-                    : 'Trading will be halted after this time (local timezone).'
+      {outcomeType !== 'STONK' && outcomeType !== 'BOUNTIED_QUESTION' && (
+        <div className="mb-1 flex flex-col items-start">
+          <label className="mb-1 gap-2 px-1 py-2">
+            <span>
+              {outcomeType == 'POLL' ? 'Poll' : 'Question'} closes in{' '}
+            </span>
+            <InfoTooltip
+              text={
+                outcomeType == 'POLL'
+                  ? 'Voting on this poll will be halted and resolve to the most voted option'
+                  : 'Trading will be halted after this time (local timezone).'
+              }
+            />
+          </label>
+          <Row className={'w-full items-center gap-2'}>
+            <ChoicesToggleGroup
+              currentChoice={dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')}
+              setChoice={(choice) => {
+                if (choice == NEVER_IN_DAYS) {
+                  setNeverCloses(true)
+                } else {
+                  setNeverCloses(false)
                 }
-              />
-            </label>
-            <Row className={'w-full items-center gap-2'}>
-              <ChoicesToggleGroup
-                currentChoice={dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')}
-                setChoice={(choice) => {
-                  if (choice == NEVER_IN_DAYS) {
-                    setNeverCloses(true)
-                  } else {
-                    setNeverCloses(false)
-                  }
-                  setCloseDateInDays(choice as number)
+                setCloseDateInDays(choice as number)
 
+                if (!closeHoursMinutes) {
+                  setCloseHoursMinutes(initTime)
+                }
+              }}
+              choicesMap={closeDateMap}
+              disabled={isSubmitting}
+              className={clsx(
+                'col-span-4 sm:col-span-2',
+                outcomeType == 'POLL' ? 'text-xs sm:text-sm' : ''
+              )}
+            />
+          </Row>
+          {!neverCloses && (
+            <Row className="mt-4 gap-2">
+              <Input
+                type={'date'}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  setCloseDate(e.target.value)
                   if (!closeHoursMinutes) {
                     setCloseHoursMinutes(initTime)
                   }
                 }}
-                choicesMap={closeDateMap}
+                min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
                 disabled={isSubmitting}
-                className={clsx(
-                  'col-span-4 sm:col-span-2',
-                  outcomeType == 'POLL' ? 'text-xs sm:text-sm' : ''
-                )}
+                value={closeDate}
               />
+              {/*<Input*/}
+              {/*  type={'time'}*/}
+              {/*  onClick={(e) => e.stopPropagation()}*/}
+              {/*  onChange={(e) => setCloseHoursMinutes(e.target.value)}*/}
+              {/*  min={'00:00'}*/}
+              {/*  disabled={isSubmitting}*/}
+              {/*  value={closeHoursMinutes}*/}
+              {/*/>*/}
             </Row>
-            {!neverCloses && (
-              <Row className="mt-4 gap-2">
-                <Input
-                  type={'date'}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => {
-                    setCloseDate(e.target.value)
-                    if (!closeHoursMinutes) {
-                      setCloseHoursMinutes(initTime)
-                    }
-                  }}
-                  min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
-                  disabled={isSubmitting}
-                  value={closeDate}
-                />
-                {/*<Input*/}
-                {/*  type={'time'}*/}
-                {/*  onClick={(e) => e.stopPropagation()}*/}
-                {/*  onChange={(e) => setCloseHoursMinutes(e.target.value)}*/}
-                {/*  min={'00:00'}*/}
-                {/*  disabled={isSubmitting}*/}
-                {/*  value={closeHoursMinutes}*/}
-                {/*/>*/}
-              </Row>
-            )}
-          </div>
-        )}
-        {visibility != 'private' && (
-          <>
-            <Spacer h={6} />
-            <Row className="items-center gap-2">
+          )}
+        </div>
+      )}
+      {visibility != 'private' && (
+        <>
+          <Spacer h={6} />
+          <Row className="items-center gap-2">
+            <span>
+              Publicly listed{' '}
+              <InfoTooltip
+                text={
+                  visibility === 'public'
+                    ? 'Visible on home page and search results'
+                    : "Only visible via link. Won't notify followers"
+                }
+              />
+            </span>
+            <ShortToggle
+              on={toggleVisibility === 'public'}
+              setOn={(on) => {
+                setToggleVisibility(on ? 'public' : 'unlisted')
+              }}
+            />
+          </Row>
+        </>
+      )}
+      <Spacer h={6} />
+      <span className={'text-error'}>{errorText}</span>
+      <Row className="items-end justify-between">
+        <div className="mb-1 flex flex-col items-start">
+          <label className="mb-1 gap-2 px-1 py-2">
+            <span>Cost </span>
+            <InfoTooltip
+              text={
+                outcomeType == 'BOUNTIED_QUESTION'
+                  ? 'Your bounty. This amount is put upfront.'
+                  : `Cost to create your question. This amount is used to subsidize predictions.`
+              }
+            />
+          </label>
+
+          <div className="text-ink-700 pl-1 text-sm">
+            {outcomeType !== 'BOUNTIED_QUESTION' && <>{formatMoney(ante)}</>}
+            {outcomeType !== 'BOUNTIED_QUESTION' && visibility === 'public' && (
               <span>
-                Publicly listed{' '}
+                {' '}
+                or <span className=" text-teal-500">FREE </span>
+                if you get{' '}
+                {isMulti
+                  ? ante / (UNIQUE_BETTOR_BONUS_AMOUNT / 2)
+                  : ante / UNIQUE_BETTOR_BONUS_AMOUNT}
+                + participants{' '}
                 <InfoTooltip
                   text={
-                    visibility === 'public'
-                      ? 'Visible on home page and search results'
-                      : "Only visible via link. Won't notify followers"
+                    isMulti
+                      ? `You'll earn a bonus of ${formatMoney(
+                          Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
+                        )} for each unique trader you get on each answer.`
+                      : `You'll earn a bonus of ${formatMoney(
+                          UNIQUE_BETTOR_BONUS_AMOUNT
+                        )} for each unique trader you get on your question.`
                   }
                 />
               </span>
-              <ShortToggle
-                on={toggleVisibility === 'public'}
-                setOn={(on) => {
-                  setToggleVisibility(on ? 'public' : 'unlisted')
-                }}
-              />
-            </Row>
-          </>
-        )}
-        <Spacer h={6} />
-        <span className={'text-error'}>{errorText}</span>
-        <Row className="items-end justify-between">
-          <div className="mb-1 flex flex-col items-start">
-            <label className="mb-1 gap-2 px-1 py-2">
-              <span>Cost </span>
-              <InfoTooltip
-                text={
-                  outcomeType == 'BOUNTIED_QUESTION'
-                    ? 'Your bounty. This amount is put upfront.'
-                    : `Cost to create your question. This amount is used to subsidize predictions.`
-                }
-              />
-            </label>
-
-            <div className="text-ink-700 pl-1 text-sm">
-              {outcomeType !== 'BOUNTIED_QUESTION' && <>{formatMoney(ante)}</>}
-              {outcomeType !== 'BOUNTIED_QUESTION' && visibility === 'public' && (
-                <span>
-                  {' '}
-                  or <span className=" text-teal-500">FREE </span>
-                  if you get{' '}
-                  {isMulti
-                    ? ante / (UNIQUE_BETTOR_BONUS_AMOUNT / 2)
-                    : ante / UNIQUE_BETTOR_BONUS_AMOUNT}
-                  + participants{' '}
-                  <InfoTooltip
-                    text={
-                      isMulti
-                        ? `You'll earn a bonus of ${formatMoney(
-                            Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
-                          )} for each unique trader you get on each answer.`
-                        : `You'll earn a bonus of ${formatMoney(
-                            UNIQUE_BETTOR_BONUS_AMOUNT
-                          )} for each unique trader you get on your question.`
-                    }
-                  />
-                </span>
-              )}
-              {outcomeType == 'BOUNTIED_QUESTION' && (
-                <span>
-                  {bountyAmount
-                    ? formatMoney(bountyAmount)
-                    : `${ENV_CONFIG.moneyMoniker} --`}
-                </span>
-              )}
-            </div>
-            <div className="text-ink-500 pl-1"></div>
-
-            {ante > balance && (
-              <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-                <span className="text-scarlet-500 mr-2">
-                  Insufficient balance
-                </span>
-                <Button
-                  size="xs"
-                  color="green"
-                  onClick={() => setFundsModalOpen(true)}
-                >
-                  Get {ENV_CONFIG.moneyMoniker}
-                </Button>
-                <AddFundsModal
-                  open={fundsModalOpen}
-                  setOpen={setFundsModalOpen}
-                />
-              </div>
+            )}
+            {outcomeType == 'BOUNTIED_QUESTION' && (
+              <span>
+                {bountyAmount
+                  ? formatMoney(bountyAmount)
+                  : `${ENV_CONFIG.moneyMoniker} --`}
+              </span>
             )}
           </div>
-        </Row>
-        <Spacer h={6} />
-        <Row className="w-full justify-center">
-          {newContract && (
-            <WaitingForSupabaseButton
-              contractId={newContract.id}
-              router={router}
-            />
+          <div className="text-ink-500 pl-1"></div>
+
+          {ante > balance && (
+            <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
+              <span className="text-scarlet-500 mr-2">
+                Insufficient balance
+              </span>
+              <Button
+                size="xs"
+                color="green"
+                onClick={() => setFundsModalOpen(true)}
+              >
+                Get {ENV_CONFIG.moneyMoniker}
+              </Button>
+              <AddFundsModal
+                open={fundsModalOpen}
+                setOpen={setFundsModalOpen}
+              />
+            </div>
           )}
-          {!newContract && (
-            <Button
-              className="w-full"
-              type="submit"
-              color="indigo"
-              size="xl"
-              loading={isSubmitting}
-              disabled={
-                !isValid ||
-                editor?.storage.upload.mutation.isLoading ||
-                (outcomeType == 'BOUNTIED_QUESTION' && bountyError)
-              }
-              onClick={(e) => {
-                e.preventDefault()
-                submit()
-              }}
-            >
-              {isSubmitting ? 'Creating...' : 'Create question'}
-            </Button>
-          )}
-        </Row>
-        <Spacer h={6} />
-      </Col>
+        </div>
+      </Row>
+      <Spacer h={6} />
+      <Row className="w-full justify-center">
+        {newContract && (
+          <WaitingForSupabaseButton
+            contractId={newContract.id}
+            router={router}
+          />
+        )}
+      </Row>
+
+      <Spacer h={6} />
+      <Row className="w-full justify-center">
+        {newContract && (
+          <WaitingForSupabaseButton
+            contractId={newContract.id}
+            router={router}
+          />
+        )}
+        {!newContract && (
+          <Button
+            className="w-full"
+            type="submit"
+            color="indigo"
+            size="xl"
+            loading={isSubmitting}
+            disabled={
+              !isValid ||
+              editor?.storage.upload.mutation.isLoading ||
+              (outcomeType == 'BOUNTIED_QUESTION' && bountyError)
+            }
+            onClick={(e) => {
+              e.preventDefault()
+              submit()
+            }}
+          >
+            {isSubmitting ? 'Creating...' : 'Create question'}
+          </Button>
+        )}
+      </Row>
+      <Spacer h={6} />
     </Col>
   )
 }
