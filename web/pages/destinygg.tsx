@@ -45,6 +45,7 @@ export async function getStaticProps() {
 
   return {
     props: {
+      subCount,
       trendingContracts,
     },
     revalidate: 60, // regenerate after a minute
@@ -52,10 +53,11 @@ export async function getStaticProps() {
 }
 
 export default function DestinyLandingPage(props: {
+  subCount: number
   trendingContracts: Contract[]
   subCount: number
 }) {
-  const { trendingContracts } = props
+  const { subCount, trendingContracts } = props
 
   useSaveReferral()
   useTracking('view destiny landing page')
@@ -127,8 +129,6 @@ export default function DestinyLandingPage(props: {
         {error && <div className="mt-2 text-sm text-red-500">{error}</div>}
 
         <div className="mt-4 pt-6 sm:mt-0">
-          {/* hard coded correct answer, now that redemption is over */}
-          Final total subs claimed: 501
           Total subs claimed: {subCount + (isSuccess ? 1 : 0)} / 1,000
         </div>
 
