@@ -51,15 +51,12 @@ export function PollPanel(props: { contract: PollContract }) {
                   </span>
                 )}
                 {!hasVoted && (
-                  <VoteButton
-                    contractId={contract.id}
-                    voteId={option.id}
-                    onClick={() => castVote(option.id)}
-                  />
+                  <VoteButton onClick={() => castVote(option.id)} />
                 )}
               </>
             }
             hideBar={!hasVoted}
+            className={'min-h-[40px]'}
           />
         )
       })}
@@ -70,7 +67,12 @@ export function PollPanel(props: { contract: PollContract }) {
 export function VoteButton(props: { onClick: () => void }) {
   const { onClick } = props
   return (
-    <Button onClick={onClick} size="2xs">
+    <Button
+      onClick={onClick}
+      size="2xs"
+      color="indigo-outline"
+      className="!ring-1"
+    >
       Vote
     </Button>
   )

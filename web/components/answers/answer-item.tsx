@@ -189,7 +189,7 @@ export const AnswerBar = (props: {
     props
 
   return (
-    <Col className="relative h-full w-full">
+    <Col className={clsx('relative w-full h-full', className)}>
       <div
         className={clsx(
           'absolute left-0 right-0 bottom-0 -z-10 h-full rounded transition-all ',
@@ -216,13 +216,6 @@ export const AnswerBar = (props: {
           />
         )}
       </div>
-
-      {/* <div
-        className={clsx(
-          'bg-ink-200 absolute left-0 right-0 bottom-0 z-10 h-full rounded transition-all',
-          hideBar ? 'opacity-100' : 'opacity-0'
-        )}
-      /> */}
 
       <Row className="items-center justify-between gap-x-4 px-3 py-2 leading-none">
         <div className="flex-grow">{label}</div>
