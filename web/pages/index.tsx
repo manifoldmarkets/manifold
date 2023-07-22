@@ -77,7 +77,7 @@ export default function Home() {
 
           <Row className="justify-between rounded-lg p-8">
             <Col className="max-w-lg gap-2">
-              <h1 className="text-4xl mb-4">Predict the future</h1>
+              <h1 className="mb-4 text-4xl">Predict the future</h1>
               <h1 className="text-lg">
                 A new way to get news and answers to real-world questions.
               </h1>
