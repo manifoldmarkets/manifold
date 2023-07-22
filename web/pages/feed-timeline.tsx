@@ -113,7 +113,7 @@ function FeedTimelineContent() {
   ).slice(0, 3)
   const fetchMoreOlderContent = async () => {
     const moreFeedItems = await loadMoreOlder()
-    if (moreFeedItems <= 3 && user) {
+    if (moreFeedItems == 0 && user) {
       const excludedContractIds = savedFeedItems
         .map((i) => i.contractId)
         .concat(manualContracts?.map((c) => c.id) ?? [])
@@ -121,7 +121,7 @@ function FeedTimelineContent() {
         'get_recommended_contracts_embeddings_fast',
         {
           uid: user.id,
-          n: 20,
+          n: 10,
           excluded_contract_ids: filterDefined(excludedContractIds),
         }
       )

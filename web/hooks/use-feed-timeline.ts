@@ -18,7 +18,7 @@ import { DAY_MS } from 'common/util/time'
 
 const PAGE_SIZE = 25
 const OLDEST_UNSEEN_TIME_OF_INTEREST = new Date(
-  Date.now() - 3 * DAY_MS
+  Date.now() - 5 * DAY_MS
 ).toISOString()
 
 export type FeedTimelineItem = {
@@ -87,10 +87,6 @@ export const useFeedTimeline = (
       query = query.gt('created_time', options.newerThan)
     }
     if (options.old) {
-      query = query
-        .gt('created_time', OLDEST_UNSEEN_TIME_OF_INTEREST)
-        .is('seen_time', null)
-
       // get the highest priority items first
       const bestFeedRowsQuery = db
         .from('user_feed')
@@ -100,9 +96,15 @@ export const useFeedTimeline = (
         .order('created_time', { ascending: false })
         .gt('created_time', OLDEST_UNSEEN_TIME_OF_INTEREST)
         .is('seen_time', null)
-        .limit(10)
+        .limit(15)
       const { data: highSignalData } = await run(bestFeedRowsQuery)
       data.push(...highSignalData)
+
+      query = query
+        .gt('created_time', OLDEST_UNSEEN_TIME_OF_INTEREST)
+        .is('seen_time', null)
+      if (highSignalData.length > 0)
+        query = query.not('id', 'in', `(${highSignalData.map((d) => d.id)})`)
     }
     const { data: lowerSignalData } = await run(query)
     data.push(...lowerSignalData)

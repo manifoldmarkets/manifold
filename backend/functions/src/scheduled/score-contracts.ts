@@ -43,7 +43,7 @@ export const scoreContractsScheduler = functions
 // TODO: Make more robust.
 // This process is really slow
 export const scorecontracts = onRequest(
-  { timeoutSeconds: MINUTE_INTERVAL * 60, memory: '1GiB', secrets },
+  { timeoutSeconds: (MINUTE_INTERVAL + 10) * 60, memory: '1GiB', secrets },
   async (_req, res) => {
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()

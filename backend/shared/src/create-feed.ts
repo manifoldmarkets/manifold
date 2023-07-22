@@ -108,6 +108,7 @@ export const bulkInsertDataToUserFeed = async (
         eventTime: eventTimeTz,
       })
     )
+  if (feedRows.length === 0) return
   const cs = new pgp.helpers.ColumnSet(feedRows[0], { table: 'user_feed' })
   const insert = pgp.helpers.insert(feedRows, cs) + ` ON CONFLICT DO NOTHING`
 
