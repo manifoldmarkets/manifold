@@ -113,7 +113,7 @@ function FeedTimelineContent() {
   ).slice(0, 3)
   const fetchMoreOlderContent = async () => {
     const moreFeedItems = await loadMoreOlder()
-    if (!moreFeedItems && user) {
+    if (moreFeedItems <= 3 && user) {
       const excludedContractIds = savedFeedItems
         .map((i) => i.contractId)
         .concat(manualContracts?.map((c) => c.id) ?? [])

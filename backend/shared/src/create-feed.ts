@@ -13,10 +13,9 @@ import {
   INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
 import { log } from 'shared/utils'
-import { buildArray, filterDefined } from 'common/util/array'
+import { buildArray } from 'common/util/array'
 import { getUsersWithSimilarInterestVectorToNews } from 'shared/supabase/users'
 import { convertObjectToSQLRow } from 'common/supabase/utils'
-import { keyBy, mapValues } from 'lodash'
 
 export const insertDataToUserFeed = async (
   userId: string,
@@ -121,34 +120,24 @@ export const bulkInsertDataToUserFeed = async (
   }
 }
 
-const findDuplicateContractsInFeed = async (
+const userIdsWithFeedRowsMatchingContract = async (
   contractId: string,
   userIds: string[],
   seenTime: number,
+  dataType: FEED_DATA_TYPES,
   pg: SupabaseDirectClient
 ) => {
-  const userIdsToExistingRows = await pg.map(
-    `select user_id,
-            array_agg(json_build_object('id', id, 'seen_time', seen_time)) AS rows
+  return await pg.map(
+    `select distinct user_id
             from user_feed
             where contract_id = $1 and 
                 user_id = ANY($2) and 
-                created_time > $3
-                group by user_id
+                created_time > $3 and
+                data_type = $4
                 `,
-    [contractId, userIds, new Date(seenTime).toISOString()],
-    (row) => ({
-      userId: row.user_id,
-      rows: row.rows.map((r: { id: string; seen_time: string }) => ({
-        id: parseInt(r.id),
-        seenTime: r.seen_time ? new Date(r.seen_time) : null,
-      })),
-    })
+    [contractId, userIds, new Date(seenTime).toISOString(), dataType],
+    (row: { user_id: string }) => row.user_id
   )
-  return mapValues(
-    keyBy(userIdsToExistingRows, 'userId'),
-    (userRows) => userRows.rows
-  ) as { [userId: string]: { id: number; seenTime: Date | null }[] }
 }
 
 const deleteRowsFromUserFeed = async (
@@ -296,7 +285,7 @@ export const addContractToFeed = async (
   )
 }
 
-export const addContractToFeedIfUnseenAndDeleteDuplicates = async (
+export const addContractToFeedIfNotDuplicative = async (
   contract: Contract,
   reasonsToInclude: CONTRACT_OR_USER_FEED_REASON_TYPES[],
   dataType: FEED_DATA_TYPES,
@@ -317,38 +306,19 @@ export const addContractToFeedIfUnseenAndDeleteDuplicates = async (
       reasonsToInclude,
       minUserInterestDistanceToContract
     )
-  const userIds = Object.keys(usersToReasonsInterestedInContract)
-  const usersToExistingContractFeedRows = await findDuplicateContractsInFeed(
+  const ignoreUserIds = await userIdsWithFeedRowsMatchingContract(
     contract.id,
-    userIds,
+    Object.keys(usersToReasonsInterestedInContract),
     unseenNewerThanTime,
+    dataType,
     pg
   )
-  const rowsToDelete: number[] = []
 
-  // TODO: we should just insert the duplicate rows, and on the client order by importance and filter duplicates
-  const ignoreUsers = filterDefined(
-    await Promise.all(
-      userIds.map(async (userId) => {
-        const userFeedRows = usersToExistingContractFeedRows[userId] ?? []
-        const seenContractFeedRows = userFeedRows.filter(
-          (row) => row.seenTime !== null
-        )
-        // If they've a duplicate row they've already seen, don't insert
-        if (seenContractFeedRows.length > 0) return userId
-        // Delete the unseen rows if they've too many duplicates
-        if (userFeedRows.length > 2)
-          rowsToDelete.push(...userFeedRows.map((row) => row.id))
-        return null
-      })
-    )
-  )
-  await deleteRowsFromUserFeed(rowsToDelete, pg)
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
     contract.createdTime,
     dataType,
-    userIdsToExclude.concat(ignoreUsers),
+    userIdsToExclude.concat(ignoreUserIds),
     {
       contractId: contract.id,
       creatorId: contract.creatorId,
@@ -426,7 +396,7 @@ export const insertTrendingContractToUsersFeeds = async (
   unseenNewerThanTime: number,
   data?: Record<string, any>
 ) => {
-  await addContractToFeedIfUnseenAndDeleteDuplicates(
+  await addContractToFeedIfNotDuplicative(
     contract,
     [
       'follow_contract',
