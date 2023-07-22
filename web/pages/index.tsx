@@ -17,6 +17,10 @@ import { formatMoney } from 'common/util/format'
 import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { STARTING_BALANCE } from 'common/economy'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
+import { LogoSEO } from 'web/components/LogoSEO'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 
 export const getServerSideProps = redirectIfLoggedIn('/home')
 
@@ -26,10 +30,10 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   return (
-    <Page>
+    <Page hideSidebar>
       <Col className="mx-auto mb-8 w-full gap-8 px-4">
         <Col className="gap-4">
-          {/* <Row className="items-center justify-between">
+          <Row className="items-center justify-between">
             <ManifoldLogo />
             <LogoSEO />
 
@@ -69,28 +73,29 @@ export default function Home() {
                 setIsModalOpen={setIsModalOpen}
               />
             </Row>
-          </Row> */}
+          </Row>
 
           <Row className="justify-between rounded-lg p-8">
-            <Col className="max-w-sm gap-2">
-              <h1 className="text-4xl">Predict the future</h1>
+            <Col className="max-w-lg gap-2">
+              <h1 className="text-4xl mb-4">Predict the future</h1>
               <h1 className="text-lg">
-                A new way to get answers to real-world questions and news.
+                A new way to get news and answers to real-world questions.
               </h1>
               <h1 className="text-lg">
-                Compete and climb the ranks by betting on literally anything.
+                Compete with your friends by betting on literally anything.
               </h1>
+
               <Button
                 color="gradient"
                 size="2xl"
                 className="mt-8"
                 onClick={firebaseLogin}
               >
-                Play Now!
+                Play now
               </Button>
 
               <div className="text-sm text-white">
-                to get{'   '}
+                and get{'   '}
                 <span className="relative z-10 font-semibold">
                   {formatMoney(STARTING_BALANCE)}
                 </span>
