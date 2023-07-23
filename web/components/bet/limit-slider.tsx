@@ -6,11 +6,11 @@ import {
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
-import Slider from 'rc-slider'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
+import { RangeSlider } from '../widgets/slider'
 
 export function convertNumberToProb(
   number: number,
@@ -37,8 +37,8 @@ export function LimitSlider(props: {
   setHighLimitProb: (prob: number | undefined) => void
   maxProb: number
   minProb: number
-  isSubmitting: boolean
   invalidLowAndHighBet: boolean
+  disabled?: boolean
 }) {
   const {
     isPseudoNumeric,
@@ -49,16 +49,9 @@ export function LimitSlider(props: {
     setHighLimitProb,
     maxProb,
     minProb,
-    isSubmitting,
     invalidLowAndHighBet,
+    disabled,
   } = props
-
-  const mark = (value: number) => (
-    <span className="text-ink-400 text-xs">
-      <div className={'sm:h-0.5'} />
-      {value}%
-    </span>
-  )
 
   return (
     <Col className="relative mb-8 w-full gap-3">
@@ -72,7 +65,7 @@ export function LimitSlider(props: {
           contract={contract}
           prob={lowLimitProb}
           setProb={setLowLimitProb}
-          isSubmitting={isSubmitting}
+          disabled={disabled}
           placeholder={`${minProb}`}
           width={'w-full'}
         />
@@ -80,75 +73,34 @@ export function LimitSlider(props: {
           contract={contract}
           prob={highLimitProb}
           setProb={setHighLimitProb}
-          isSubmitting={isSubmitting}
+          disabled={disabled}
           placeholder={`${maxProb}`}
           width={'w-full'}
           error={invalidLowAndHighBet}
         />
       </Row>
-      <Col className="px-2">
-        <Slider
-          range
-          disabled={isSubmitting}
-          marks={
-            isPseudoNumeric
-              ? undefined
-              : {
-                  0: mark(minProb),
-                  50: mark(50),
-                  100: mark(maxProb),
-                }
-          }
-          value={[lowLimitProb ?? minProb, highLimitProb ?? maxProb]}
-          min={minProb}
-          max={maxProb}
-          onChange={(value) => {
-            if (value && Array.isArray(value) && value.length > 1) {
-              setLowLimitProb(value[0] == minProb ? undefined : value[0])
-              setHighLimitProb(value[1] == maxProb ? undefined : value[1])
-            }
-          }}
-          className={clsx(
-            '[&>.rc-slider-rail]:bg-ink-200 my-auto !h-1',
-            '[&>.rc-slider-handle]:z-10',
-            invalidLowAndHighBet
-              ? '[&>.rc-slider-track]:bg-scarlet-500'
-              : '[&>.rc-slider-track]:bg-primary-300'
-          )}
-          handleStyle={[
-            {
-              height: 20,
-              width: 20,
-              opacity: 1,
-              border: 'none',
-              boxShadow: 'none',
-              top: 2,
-              backgroundColor: invalidLowAndHighBet ? '#FF2400' : '#6366f1',
-            },
-            {
-              height: 20,
-              width: 20,
-              opacity: 1,
-              border: 'none',
-              boxShadow: 'none',
-              top: 2,
-              backgroundColor: '#6366f1',
-            },
-          ]}
-          allowCross={false}
-          onBeforeChange={() => {}}
-        />
-      </Col>
+      <RangeSlider
+        className="!px-2"
+        lowValue={lowLimitProb ?? minProb}
+        highValue={highLimitProb ?? maxProb}
+        setLow={(value) =>
+          setLowLimitProb(value === minProb ? undefined : value)
+        }
+        setHigh={(value) =>
+          setHighLimitProb(value === maxProb ? undefined : value)
+        }
+        marks={
+          isPseudoNumeric ? undefined : { 0: '0%', 50: '50%', 100: '100%' }
+        }
+        error={invalidLowAndHighBet}
+      />
       {invalidLowAndHighBet && (
         <div
           className={clsx(
-            'text-scarlet-500 dark:text-scarlet-300 absolute text-sm',
-            isPseudoNumeric
-              ? 'top-[135px] sm:top-[120px]'
-              : 'top-[145px] sm:top-[130px]'
+            'text-scarlet-500 dark:text-scarlet-300 absolute -bottom-12 text-sm'
           )}
         >
-          * Upper limit can not be less than or equal to lower limit!{' '}
+          * Upper limit must be higher than lower limit.{' '}
           <span>
             <button
               className="font-semibold text-indigo-500 underline"
@@ -165,7 +117,7 @@ export function LimitSlider(props: {
                 }
               }}
             >
-              Quick Fix
+              Swap
             </button>
           </span>
         </div>

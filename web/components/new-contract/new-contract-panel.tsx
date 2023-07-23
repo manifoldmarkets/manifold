@@ -11,24 +11,21 @@ import { Row } from '../layout/row'
 import { ChoosingContractForm } from './choosing-contract-form'
 import { ContractParamsForm } from './contract-params-form'
 import { getContractTypeThingFromValue } from './create-contract-types'
+import { capitalize } from 'lodash'
 
 export type NewQuestionParams = {
-  groupId?: string
+  groupIds?: string[]
   q: string
   description: string
-  closeTime: string
-  outcomeType?: string
+  closeTime: number
+  outcomeType?: OutcomeType
   visibility: string
   // Params for PSEUDO_NUMERIC outcomeType
-  min?: string
-  max?: string
-  isLogScale?: string
-  initValue?: string
-
-  // Answers encoded as:
-  // a0: string
-  // a1: string
-  // ...etc
+  min?: number
+  max?: number
+  isLogScale?: boolean
+  initValue?: number
+  answers?: string[]
 }
 
 export type ContractVisibilityType = 'public' | 'unlisted'
@@ -40,10 +37,8 @@ export type CreateContractStateType =
 export function NewContractPanel(props: {
   creator: User
   params?: NewQuestionParams
-  fromGroup?: boolean
-  className?: string
 }) {
-  const { creator, params, fromGroup, className } = props
+  const { creator, params } = props
   const [outcomeType, setOutcomeType] = useState<OutcomeType | undefined>(
     (params?.outcomeType as OutcomeType) ?? undefined
   )
@@ -67,9 +62,8 @@ export function NewContractPanel(props: {
         setState={setState}
         state={state}
         privacy={privacy}
-        fromGroup={fromGroup}
       />
-      <Col className={clsx('py-2', fromGroup ? 'px-1' : 'px-6')}>
+      <Col className={clsx('py-2 px-6')}>
         {state == 'choosing contract' && (
           <ChoosingContractForm
             outcomeType={outcomeType}
@@ -82,7 +76,6 @@ export function NewContractPanel(props: {
             outcomeType={outcomeType}
             creator={creator}
             setPrivacy={setPrivacy}
-            fromGroup={fromGroup}
             params={params}
           />
         )}
@@ -96,14 +89,13 @@ function CreateStepTracker(props: {
   setState: (state: CreateContractStateType) => void
   state: CreateContractStateType
   privacy: VisibilityTheme
-  fromGroup?: boolean
 }) {
-  const { outcomeType, setState, state, privacy, fromGroup } = props
+  const { outcomeType, setState, state, privacy } = props
   return (
     <Row
       className={clsx(
-        'text-ink-400 bg-canvas-0 sm:text-md border-1 border-ink-200 sticky z-10 w-full items-center gap-1 border-b pt-4 pb-2 text-sm',
-        fromGroup ? '-px-1 top-4' : 'top-0 px-6'
+        'text-ink-400 bg-canvas-0 border-1 border-ink-200 sticky z-10 w-full items-center gap-1 border-b pt-4 pb-2',
+        'top-0 px-6'
       )}
     >
       <CreateStepButton
@@ -111,7 +103,7 @@ function CreateStepTracker(props: {
         selected={state == 'choosing contract'}
         onClick={() => setState('choosing contract')}
       >
-        Choose
+        Choose question type
       </CreateStepButton>
       <ChevronRightIcon className={clsx('h-5 w-5')} />
       <CreateStepButton
@@ -123,11 +115,10 @@ function CreateStepTracker(props: {
           }
         }}
       >
-        Create
         {outcomeType
-          ? ` a ${
-              privacy == 'private' ? 'private' : ''
-            } ${getContractTypeThingFromValue('name', outcomeType)}`
+          ? `${privacy == 'private' ? 'private' : ''} ${capitalize(
+              getContractTypeThingFromValue('name', outcomeType)
+            )}`
           : ''}
       </CreateStepButton>
     </Row>

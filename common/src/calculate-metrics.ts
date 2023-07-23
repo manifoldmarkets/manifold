@@ -1,4 +1,4 @@
-import { Dictionary, partition, sumBy, uniq } from 'lodash'
+import { Dictionary, first, partition, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetrics } from './calculate'
 import { Bet, LimitBet } from './bet'
 import { Contract, CPMMContract, DPMContract } from './contract'
@@ -184,7 +184,7 @@ export const calculateNewPortfolioMetrics = (
 ) => {
   const investmentValue = computeInvestmentValue(unresolvedBets, contractsById)
   const loanTotal = getLoanTotal(unresolvedBets, contractsById)
-  const newPortfolio = {
+  return {
     investmentValue: investmentValue,
     balance: user.balance,
     totalDeposits: user.totalDeposits,
@@ -192,7 +192,6 @@ export const calculateNewPortfolioMetrics = (
     timestamp: Date.now(),
     userId: user.id,
   }
-  return newPortfolio
 }
 
 export const calculateMetricsByContract = (
@@ -223,15 +222,15 @@ export const calculateUserMetrics = (
       ])
     )
   }
-
+  const bet = first(bets)
   return removeUndefinedProps({
     contractId: contract.id,
     ...current,
     from: periodMetrics,
-    userName: user?.name,
-    userId: user?.id,
-    userUsername: user?.username,
-    userAvatarUrl: user?.avatarUrl,
+    userName: user?.name ?? bet?.userName,
+    userId: user?.id ?? bet?.userId,
+    userUsername: user?.username ?? bet?.userUsername,
+    userAvatarUrl: user?.avatarUrl ?? bet?.userAvatarUrl,
   } as ContractMetric)
 }
 

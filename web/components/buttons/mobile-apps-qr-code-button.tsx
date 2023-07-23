@@ -6,19 +6,11 @@ import { QRCode } from 'web/components/widgets/qr-code'
 import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { Tabs } from 'web/components/layout/tabs'
 
-export const MobileAppsQRCodeButton = (props: { size?: 'md' | 'lg' }) => {
+export const MobileAppsQRCodeButton = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { size } = props
   return (
     <>
-      <Button
-        // Don't change this color to gradient!
-        // The most prominent CTA when signed out
-        // should be the signup button, not this one.
-        color="green-outline"
-        size={size}
-        onClick={() => setIsModalOpen(true)}
-      >
+      <Button color="indigo-outline" onClick={() => setIsModalOpen(true)}>
         Get the app
       </Button>
       <MobileAppsQRCodeDialog

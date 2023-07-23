@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { first } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
@@ -36,6 +37,9 @@ import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 
+import { calculateMultiBets } from 'common/bet'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
+import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
@@ -46,9 +50,8 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
-import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import { ResolutionPanel } from 'web/components/resolution-panel'
-import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
+import { ReviewPanel } from 'web/components/reviews/stars'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -71,14 +74,12 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getContractParams } from 'web/lib/firebase/api'
 import { Contract } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
+import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import ContractSharePanel from 'web/components/contract/contract-share-panel'
-import { calculateMultiBets } from 'common/bet'
-import { getTopContractMetrics } from 'common/supabase/contract-metrics'
-import { db } from 'web/lib/supabase/db'
-import { ReviewPanel } from 'web/components/reviews/stars'
+import { Button } from 'web/components/buttons/button'
+import { WhatIsAPM, WhatIsMana, WhyManifold } from '../about'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -206,7 +207,8 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     afterTime: lastBetTime,
     filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
   })
-  const totalBets = contractParams.totalBets + (newBets?.length ?? 0)
+  const totalBets =
+    contractParams.totalBets + newBets.filter((bet) => !bet.isRedemption).length
   const bets = useMemo(
     () => contractParams.historyData.bets.concat(newBets ?? []),
     [contractParams.historyData.bets, newBets]
@@ -509,9 +511,23 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
               />
             )}
 
-            <div className="my-4">
+            <Row className="my-4 flex-wrap gap-2 sm:flex-nowrap">
               <MarketGroups contract={contract} />
-            </div>
+              {outcomeType === 'BOUNTIED_QUESTION' && (
+                <Link
+                  className="self-end"
+                  href={`/questions?s=score&f=open&search-contract-type=BOUNTIED_QUESTION`}
+                >
+                  <Button
+                    className="whitespace-nowrap"
+                    color="green-outline"
+                    size="xs"
+                  >
+                    More bountied questions
+                  </Button>
+                </Link>
+              )}
+            </Row>
 
             {outcomeType === 'NUMERIC' && (
               <AlertBox
@@ -572,14 +588,25 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
             )}
           </Col>
         </Col>
-        <RelatedContractsList
-          className="hidden min-h-full max-w-[375px] xl:flex"
-          contracts={relatedMarkets}
-          onContractClick={(c) =>
-            track('click related market', { contractId: c.id })
-          }
-          loadMore={loadMore}
-        />
+        <Col className="hidden min-h-full max-w-[375px] xl:flex">
+          {!user && (
+            <>
+              <h2 className={clsx('text-ink-600 mb-2 text-xl')}>
+                What is this?
+              </h2>
+              <WhatIsAPM />
+              <WhatIsMana />
+              <WhyManifold />
+            </>
+          )}
+          <RelatedContractsList
+            contracts={relatedMarkets}
+            onContractClick={(c) =>
+              track('click related market', { contractId: c.id })
+            }
+            loadMore={loadMore}
+          />
+        </Col>
       </Row>
       <RelatedContractsList
         className="mx-auto mt-8 min-w-[300px] max-w-[600px] xl:hidden"
@@ -593,19 +620,6 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>
   )
-}
-
-function SignUpFlow({ user }: { user: User | null | undefined }) {
-  if (user === null)
-    return (
-      <Col className="mt-1 w-full">
-        <BetSignUpPrompt className="xl:self-center" size="xl" />
-        <PlayMoneyDisclaimer />
-      </Col>
-    )
-  if (user === undefined) return <div className="h-[72px] w-full" />
-
-  return <></>
 }
 
 export function ContractSEO(props: {

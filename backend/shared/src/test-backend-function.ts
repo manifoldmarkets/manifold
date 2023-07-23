@@ -5,7 +5,7 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 
-import { scoreContractsInternal } from 'shared/score-contracts-internal'
+import { addInterestingContractsToFeed } from 'shared/add-interesting-contracts-to-feed'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -14,13 +14,7 @@ export async function testBackendFunction() {
   try {
     const pg = createSupabaseDirectClient()
     const db = createSupabaseClient()
-    await scoreContractsInternal(db, pg, true)
-
-    // await getUsersWithSimilarInterestVectorsToContract(
-    //   'YTIuuSsNRn2OlA4KykRM',
-    //   pg,
-    //   0.15
-    // )
+    await addInterestingContractsToFeed(db, pg)
   } catch (e) {
     console.error(e)
   }

@@ -68,7 +68,7 @@ export function ProbabilityOrNumericInput(props: {
     | CPMMMultiContract
   prob: number | undefined
   setProb: (prob: number | undefined) => void
-  isSubmitting: boolean
+  disabled?: boolean
   className?: string
   inputClassName?: string
   placeholder?: string
@@ -79,7 +79,7 @@ export function ProbabilityOrNumericInput(props: {
     contract,
     prob,
     setProb,
-    isSubmitting,
+    disabled,
     placeholder,
     className,
     inputClassName,
@@ -95,7 +95,7 @@ export function ProbabilityOrNumericInput(props: {
       onChange={setProb}
       minValue={contract.min}
       maxValue={contract.max}
-      disabled={isSubmitting}
+      disabled={disabled}
       placeholder={placeholder}
       error={error}
     />
@@ -105,7 +105,7 @@ export function ProbabilityOrNumericInput(props: {
       inputClassName={inputClassName}
       prob={prob}
       onChange={setProb}
-      disabled={isSubmitting}
+      disabled={disabled}
       placeholder={placeholder}
       error={error}
     />

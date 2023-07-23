@@ -4,14 +4,14 @@ import { groupBy, mapValues, sumBy } from 'lodash'
 import { FieldValue, Transaction } from 'firebase-admin/firestore'
 import { APIError } from 'common/api'
 import { ENV } from 'common/envs/constants'
+import { getServiceAccountCredentials } from 'common/secrets'
 
 export function initAdmin() {
   // This is the stringified JSON of the Firebase Admin SDK service account key
   // Configured on Vercel, eg for dev: https://vercel.com/mantic/dev/settings/environment-variables
-  // For local development, run `vercel env pull` from web/: https://vercel.com/docs/concepts/projects/environment-variables#development-environment-variables
-  // You'll also need to delete the quotes around the key, eg `PROD_FIREBASE_SERVICE_ACCOUNT_KEY={...}`
-  const key = process.env[`${ENV}_FIREBASE_SERVICE_ACCOUNT_KEY`]
-  const serviceAccount = JSON.parse(key ?? '')
+  const serviceAccount = getServiceAccountCredentials(ENV)
+  console.log('service account', serviceAccount)
+
   if (admin.apps.length === 0) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),

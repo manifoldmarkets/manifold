@@ -19,7 +19,10 @@ export default function Create() {
 
   const user = useUser()
   const router = useRouter()
-  const params = router.query as NewQuestionParams
+  const { params: jsonParams } = router.query
+  const params = jsonParams
+    ? JSON.parse(jsonParams as string)
+    : ({} as NewQuestionParams)
 
   if (!user || !router.isReady) return <div />
 

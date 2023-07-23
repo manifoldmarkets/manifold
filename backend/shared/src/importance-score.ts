@@ -1,10 +1,10 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { SupabaseClient } from 'common/supabase/utils'
-import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS, WEEK_MS, YEAR_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { BountiedQuestionContract, Contract } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
-import { clamp } from 'lodash'
+import { clamp, sortBy } from 'lodash'
 import { logit } from 'common/util/math'
 
 import { BOT_USERNAMES } from 'common/envs/constants'
@@ -30,8 +30,7 @@ export async function calculateImportanceScore(
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
-    `select data from contracts where
-        ((data->'importanceScore')::numeric) > 0.2`,
+    `select data from contracts where importance_score > 0.2`,
     [],
     (row) => row.data as Contract
   )
@@ -199,16 +198,40 @@ export const computeContractScores = (
       : 0
 
   const closingSoonnness =
-    !isResolved &&
-    closeTime &&
-    closeTime > now &&
-    closeTime - now < 1000 * 60 * 60 * 24
-      ? normalize(24 - (closeTime - now) / (1000 * 60 * 60), 24)
+    !isResolved && closeTime && closeTime > now
+      ? closeTime <= now + DAY_MS
+        ? 1
+        : closeTime <= now + WEEK_MS
+        ? 0.9
+        : closeTime <= now + MONTH_MS
+        ? 0.75
+        : closeTime <= now + MONTH_MS * 3
+        ? 0.5
+        : closeTime <= now + YEAR_MS
+        ? 0.33
+        : 0.25
       : 0
 
   const liquidityScore = isResolved
     ? 0
     : normalize(clamp(1 / contract.elasticity, 0, 100), 100)
+
+  let uncertainness = 0.5
+  if (contract.mechanism === 'cpmm-1') {
+    const { prob } = contract
+    uncertainness = normalize(prob * (1 - prob), 0.25)
+  } else if (contract.mechanism === 'cpmm-multi-1') {
+    const { answers } = contract
+    const probs = sortBy(answers.map((a) => a.prob)).reverse()
+    if (probs.length < 3) {
+      const prob = probs[0]
+      uncertainness = normalize(prob * (1 - prob), 0.25)
+    } else {
+      const [p1, p2] = probs.slice(0, 2)
+      const product = p1 * p2 * (1 - p1 - p2)
+      uncertainness = normalize(product, 1 / 3 ** 3)
+    }
+  }
 
   let dailyScore = 0
   let logOddsChange = 0
@@ -236,12 +259,13 @@ export const computeContractScores = (
     normalize(contract.uniqueBettorCount, 1000) +
     normalize(Math.log10(contract.volume), 7) +
     liquidityScore +
-    closingSoonnness
+    closingSoonnness * 2 +
+    uncertainness / 2
 
   const importanceScore =
     outcomeType === 'BOUNTIED_QUESTION'
       ? bountiedImportanceScore(contract, newness, commentScore)
-      : normalize(rawImportance, 6)
+      : normalize(rawImportance, 7)
 
   return {
     todayScore,

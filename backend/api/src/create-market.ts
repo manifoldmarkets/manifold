@@ -5,11 +5,7 @@ import { z } from 'zod'
 import { marked } from 'marked'
 import { runPostBountyTxn } from 'shared/txn/run-bounty-txn'
 
-import {
-  Answer,
-  MULTIPLE_CHOICE_MAX_ANSWERS,
-  getNoneAnswer,
-} from 'common/answer'
+import { Answer, MAX_ANSWERS, getNoneAnswer } from 'common/answer'
 import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
@@ -40,11 +36,16 @@ import { getUser, htmlToRichText } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { getMultiCpmmLiquidity } from 'common/calculate-cpmm'
+import { SupabaseClient } from 'common/supabase/utils'
+import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -58,7 +59,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     descriptionMarkdown,
     closeTime,
     outcomeType,
-    groupId,
+    groupIds,
     visibility,
     isTwitchContract,
     utcOffset,
@@ -73,7 +74,11 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
   const userId = auth.uid
 
-  let group = groupId ? await getGroup(groupId, visibility, userId) : null
+  let groups = groupIds
+    ? await Promise.all(
+        groupIds.map(async (gId) => getGroup(gId, visibility, userId))
+      )
+    : null
 
   const contractRef = firestore.collection('contracts').doc()
 
@@ -112,7 +117,8 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       min ?? 0,
       max ?? 0,
       isLogScale ?? false,
-      shouldAnswersSumToOne
+      shouldAnswersSumToOne,
+      answers ?? []
     )
 
     trans.create(contractRef, contract)
@@ -155,34 +161,45 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     ante || 0
   )
 
-  if (group) {
-    await addGroupToContract(contract, group)
-    if (contract.visibility == 'private') {
-      const contractCreator = await getUser(contract.creatorId)
-      if (!contractCreator) throw new Error('Could not find contract creator')
-      await createNewContractFromPrivateGroupNotification(
-        contractCreator,
-        contract,
-        group
-      )
-    }
+  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
+  if (groups) {
+    await Promise.all(
+      groups.map(async (g) => {
+        await addGroupToContract(contract, g, db)
+        if (contract.visibility == 'private') {
+          const contractCreator = await getUser(contract.creatorId)
+          if (!contractCreator)
+            throw new Error('Could not find contract creator')
+          await createNewContractFromPrivateGroupNotification(
+            contractCreator,
+            contract,
+            g
+          )
+        }
+        await upsertGroupEmbedding(pg, g.id)
+      })
+    )
   }
 
-  if (contract.mechanism === 'cpmm-multi-1' && answers)
+  if (answers && contract.mechanism === 'cpmm-multi-1')
     await createAnswers(user, contract, ante, answers)
 
   await generateAntes(userId, user, contract, outcomeType, ante)
 
-  await generateContractEmbeddings(contract)
+  await generateContractEmbeddings(contract, db)
 
   return contract
 }
 
-const generateContractEmbeddings = async (contract: Contract) => {
+const generateContractEmbeddings = async (
+  contract: Contract,
+  db: SupabaseClient
+) => {
   const embedding = await generateEmbeddings(contract.question)
   if (!embedding) return
 
-  await createSupabaseClient()
+  await db
     .from('contract_embeddings')
     .insert({ contract_id: contract.id, embedding: embedding as any })
 }
@@ -250,7 +267,7 @@ function validateMarketBody(body: any) {
     descriptionMarkdown,
     closeTime,
     outcomeType,
-    groupId,
+    groupIds,
     visibility = 'public',
     isTwitchContract,
     utcOffset,
@@ -264,7 +281,7 @@ function validateMarketBody(body: any) {
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined
 
-  if (visibility == 'private' && !groupId) {
+  if (visibility == 'private' && !groupIds?.length) {
     throw new APIError(
       400,
       'Private markets cannot exist outside a private group.'
@@ -307,6 +324,10 @@ function validateMarketBody(body: any) {
   if (outcomeType === 'BOUNTIED_QUESTION') {
     ;({ totalBounty } = validate(bountiedQuestionSchema, body))
   }
+
+  if (outcomeType === 'POLL') {
+    ;({ answers } = validate(pollSchema, body))
+  }
   return {
     question,
     description,
@@ -314,7 +335,7 @@ function validateMarketBody(body: any) {
     descriptionMarkdown,
     closeTime,
     outcomeType,
-    groupId,
+    groupIds,
     visibility,
     isTwitchContract,
     utcOffset,
@@ -522,7 +543,7 @@ const bodySchema = z.object({
     )
     .optional(),
   outcomeType: z.enum(OUTCOME_TYPES),
-  groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+  groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
   visibility: z.enum(VISIBILITIES).optional(),
   isTwitchContract: z.boolean().optional(),
   utcOffset: z.number().optional(),
@@ -543,13 +564,7 @@ const numericSchema = z.object({
 })
 
 const multipleChoiceSchema = z.object({
-  answers: z
-    .string()
-    .trim()
-    .min(1)
-    .array()
-    .min(2)
-    .max(MULTIPLE_CHOICE_MAX_ANSWERS),
+  answers: z.string().trim().min(1).array().min(2).max(MAX_ANSWERS),
   shouldAnswersSumToOne: z.boolean().optional(),
 })
 
@@ -557,8 +572,13 @@ const bountiedQuestionSchema = z.object({
   totalBounty: z.number().min(1),
 })
 
+const pollSchema = z.object({
+  answers: z.string().trim().min(1).array().min(2).max(MAX_ANSWERS),
+})
+
 type schema = z.infer<typeof bodySchema> &
   (z.infer<typeof binarySchema> | {}) &
   (z.infer<typeof numericSchema> | {}) &
   (z.infer<typeof multipleChoiceSchema> | {}) &
-  (z.infer<typeof bountiedQuestionSchema> | {})
+  (z.infer<typeof bountiedQuestionSchema> | {}) &
+  (z.infer<typeof pollSchema> | {})

@@ -1,3 +1,5 @@
+import { OutcomeType } from 'common/contract'
+
 export const FIXED_ANTE = 50
 export const ANSWER_COST = FIXED_ANTE / 2
 const ANTES = {
@@ -13,7 +15,7 @@ const ANTES = {
 }
 
 export const getAnte = (
-  outcomeType: string,
+  outcomeType: OutcomeType,
   numAnswers: number | undefined,
   isPrivate: boolean
 ) => {

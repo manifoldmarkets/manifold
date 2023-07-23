@@ -8,6 +8,7 @@ import { searchGiphy } from 'web/lib/firebase/api'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Input } from '../widgets/input'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function GIFModal(props: {
   editor: Editor | null
@@ -18,16 +19,22 @@ export function GIFModal(props: {
   const [term, setTerm] = useState<string>('')
   const [gifResults, setGifResults] = useState<IGif[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState<boolean>(false)
 
   const debouncedSearch = useCallback(
     debounce((term) => {
-      searchGiphy({ term, limit: 20 }).then((res) => {
-        if (res.status === 'success') {
-          setGifResults(res.data)
-        } else {
-          setError(res.data as string)
-        }
-      })
+      setLoading(true)
+      searchGiphy({ term, limit: 20 })
+        .then((res) => {
+          if (res.status === 'success') {
+            setGifResults(res.data)
+          } else {
+            setError(res.data as string)
+          }
+        })
+        .finally(() => {
+          setLoading(false)
+        })
     }, 250),
     []
   )
@@ -44,21 +51,29 @@ export function GIFModal(props: {
           onChange={(e) => setTerm(e.target.value)}
           className="sticky top-0 h-8 w-full"
         />
-        {error && <div className="text-red-500">{error}</div>}
-        <Masonry
-          breakpointCols={2}
-          className="-ml-4 flex h-[60ch] overflow-y-auto"
-          columnClassName="pl-4 bg-clip-padding"
-        >
-          {gifResults.map((gif) => (
-            <GifButton
-              gif={gif}
-              editor={editor}
-              setOpen={setOpen}
-              key={gif.id}
-            />
-          ))}
-        </Masonry>
+        <Col className="h-[60ch]">
+          {error && <div className="text-red-500">{error}</div>}
+          {loading && <LoadingIndicator size="lg" />}
+          {!loading && gifResults.length > 0 && (
+            <Masonry
+              breakpointCols={2}
+              className="-ml-4 flex h-full overflow-y-auto"
+              columnClassName="pl-4 bg-clip-padding"
+            >
+              {gifResults.map((gif) => (
+                <GifButton
+                  gif={gif}
+                  editor={editor}
+                  setOpen={setOpen}
+                  key={gif.id}
+                />
+              ))}
+            </Masonry>
+          )}
+          {!loading && gifResults.length === 0 && (
+            <span className="text-ink-500">No gif results</span>
+          )}
+        </Col>
       </Col>
     </Modal>
   )

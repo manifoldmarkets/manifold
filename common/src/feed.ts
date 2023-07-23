@@ -22,6 +22,7 @@ export type CONTRACT_OR_USER_FEED_REASON_TYPES =
   | 'contract_in_group_you_are_in'
   | 'similar_interest_vector_to_contract'
   | 'follow_user'
+  | 'private_contract_shared_with_you'
 
 export type FEED_REASON_TYPES =
   | CONTRACT_OR_USER_FEED_REASON_TYPES
@@ -54,6 +55,8 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'New comment on a question you may be interested in',
     follow_user: 'New comment by a creator you follow',
+    private_contract_shared_with_you:
+      'New comment on a private question shared with you',
   },
   news_with_related_contracts: {
     follow_contract: 'News about question you follow',
@@ -66,6 +69,8 @@ export const FeedExplanationDictionary: Record<
       'News related to a question you may be interested in',
     follow_user: 'News about a question by a creator you follow',
     similar_interest_vector_to_news_vector: 'News you may be interested in',
+    private_contract_shared_with_you:
+      'News about a private question shared with you',
   },
   new_contract: {
     contract_in_group_you_are_in: 'New question in a group you are in',
@@ -74,6 +79,7 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'New question you may be interested in',
     follow_user: 'New question by a creator you follow',
+    private_contract_shared_with_you: 'New private question shared with you',
   },
   contract_probability_changed: {
     follow_contract: 'Market movement on question you follow',
@@ -86,6 +92,8 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'Market movement on question you may be interested in',
     follow_user: 'Market movement on question by a creator you follow',
+    private_contract_shared_with_you:
+      'Market movement on a private question shared with you',
   },
   popular_comment: {
     follow_contract: 'Popular comment on question you follow',
@@ -98,6 +106,8 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'Popular comment on a question you may be interested in',
     follow_user: 'Popular comment by a creator you follow',
+    private_contract_shared_with_you:
+      'Popular comment on a private question shared with you',
   },
   trending_contract: {
     follow_contract: 'Trending question you follow',
@@ -109,6 +119,8 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'Trending question you may be interested in',
     follow_user: 'Trending question by a creator you follow',
+    private_contract_shared_with_you:
+      'Trending private question shared with you',
   },
   new_subsidy: {
     contract_in_group_you_are_in:
@@ -118,6 +130,8 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'New subsidy on a question you may be interested in',
     follow_user: 'New subsidy by a creator you follow',
+    private_contract_shared_with_you:
+      'New subsidy on a private question shared with you',
   },
 }
 
