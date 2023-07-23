@@ -12,13 +12,16 @@ import {
   withClause,
 } from 'shared/supabase/sql-builder'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
+import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
-const TOPIC_DISTANCE_THRESHOLD = 0.24
+const TOPIC_DISTANCE_THRESHOLD = 0.23
 const bodySchema = z.object({
   term: z.string(),
   filter: z.union([
     z.literal('open'),
+    z.literal('closing-this-month'),
+    z.literal('closing-next-month'),
     z.literal('closed'),
     z.literal('resolved'),
     z.literal('all'),
@@ -43,6 +46,7 @@ const bodySchema = z.object({
     z.literal('FREE_RESPONSE'),
     z.literal('PSEUDO_NUMERIC'),
     z.literal('BOUNTIED_QUESTION'),
+    z.literal('STONK'),
   ]),
   topic: z.string().optional(),
   offset: z.number().gte(0),
@@ -424,24 +428,25 @@ function getSearchContractWhereSQL(
   const filterSQL: FilterSQL = {
     open: 'resolution_time IS NULL AND close_time > NOW()',
     closed: 'close_time < NOW() AND resolution_time IS NULL',
+    // Include an extra day to capture markets that close on the first of the month. Add 7 hours to shift UTC time zone to PT.
+    'closing-this-month': `close_time > now() AND close_time < (date_trunc('month', now()) + interval '1 month' + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
+    'closing-next-month': `close_time > ((date_trunc('month', now()) + interval '1 month') + interval '1 day' + interval '7 hours') AND close_time < (date_trunc('month', now()) + interval '2 month' + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
     resolved: 'resolution_time IS NOT NULL',
     all: 'true',
   }
   const contractTypeFilter =
     contractType != 'ALL' ? `outcome_type = '${contractType}'` : ''
 
-  const stonkFilter = hideStonks ? `outcome_type != 'STONK'` : ''
+  const stonkFilter =
+    hideStonks && contractType !== 'STONK' ? `outcome_type != 'STONK'` : ''
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
-  const otherVisibilitySQL = `
-  OR (visibility = 'unlisted' AND creator_id='${uid}') 
-  OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))
-  `
-  const visibilitySQL =
-    (groupId && hasGroupAccess) || (!!creatorId && !!uid && creatorId === uid)
-      ? ''
-      : `(visibility = 'public' ${uid ? otherVisibilitySQL : ''})`
-
+  const visibilitySQL = getContractPrivacyWhereSQLFilter(
+    uid,
+    groupId,
+    creatorId,
+    hasGroupAccess
+  )
   return buildSql(
     where(filterSQL[filter]),
     where(stonkFilter),

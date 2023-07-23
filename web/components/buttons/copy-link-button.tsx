@@ -12,8 +12,10 @@ import { postMessageToNative } from 'web/components/native-message-listener'
 import { NativeShareData } from 'common/native-share-data'
 import { CheckIcon, DuplicateIcon } from '@heroicons/react/outline'
 import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon'
-import { getIsNative } from 'web/lib/native/is-native'
+import { getNativePlatform } from 'web/lib/native/is-native'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { useBrowserOS } from 'web/hooks/use-browser-os'
+import { ShareIcon } from '@heroicons/react/outline'
 
 export function CopyLinkButton(props: {
   url: string | undefined
@@ -40,8 +42,8 @@ export function CopyLinkButton(props: {
   } = props
   const { className, tooltip } = linkIconOnlyProps ?? {}
   // TODO: this is resulting in hydration errors on mobile dev
-  const isNative = getIsNative()
-
+  const { isNative, platform } = getNativePlatform()
+  const { os } = useBrowserOS()
   // "copied" success state animations
   const [bgPressed, setBgPressed] = useState(false)
   const [iconPressed, setIconPressed] = useState(false)
@@ -69,38 +71,43 @@ export function CopyLinkButton(props: {
   const Button = (props: { onClick: () => void }) => {
     const { onClick } = props
     return (
-      <Tooltip
-        text={tooltip ?? (iconPressed ? 'Copied!' : 'Copy link')}
-        noTap
-        placement="bottom"
+      <IconButton
+        onClick={onClick}
+        className={className}
+        loading={!url}
+        disabled={!url}
       >
-        <IconButton
-          size="2xs"
-          onClick={onClick}
-          className={className}
-          loading={!url}
-          disabled={!url}
+        <Col
+          className={clsx(
+            'items-center gap-x-2 sm:flex-row',
+            linkButtonClassName
+          )}
         >
-          <Col
-            className={clsx(
-              'items-center gap-x-2 sm:flex-row',
-              linkButtonClassName
-            )}
+          <Tooltip
+            text={tooltip ?? (iconPressed ? 'Copied!' : 'Copy link')}
+            noTap
+            placement="bottom"
           >
             {loading ? (
               <LoadingIndicator size="md" spinnerClassName="!h-5 !w-5" />
-            ) : isNative ? (
-              <ArrowUpSquareIcon className={'h-5 w-5'} />
+            ) : (isNative && platform === 'ios') || os === 'ios' ? (
+              <ArrowUpSquareIcon className={'h-[1.4rem]'} />
+            ) : (isNative && platform === 'android') || os === 'android' ? (
+              <ShareIcon strokeWidth={'2.5'} className={'h-[1.4rem]'} />
             ) : linkIconOnlyProps ? (
-              <LinkIcon className={clsx('h-5 w-5')} aria-hidden="true" />
+              <LinkIcon
+                strokeWidth={'2.5'}
+                className={'h-5'}
+                aria-hidden="true"
+              />
             ) : iconPressed ? (
               <CheckIcon className="h-5 w-5" />
             ) : (
               <DuplicateIcon className="h-5 w-5" />
             )}
-          </Col>
-        </IconButton>
-      </Tooltip>
+          </Tooltip>
+        </Col>
+      </IconButton>
     )
   }
 

@@ -6,10 +6,9 @@ import {
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
-import { SELECTED_TOPICS, cleanTopic } from 'common/topics'
+import { SELECTABLE_TOPICS, cleanTopic } from 'common/topics'
 import { debounce, isEqual, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
-import Router from 'next/router'
 import { createContext, useContext, useEffect, useRef } from 'react'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
@@ -36,8 +35,7 @@ import generateFilterDropdownItems, {
 } from './search/search-dropdown-helpers'
 import { Carousel } from './widgets/carousel'
 import { Input } from './widgets/input'
-import { SiteLink } from './widgets/site-link'
-import { Button } from './buttons/button'
+import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -73,6 +71,8 @@ export const PROB_SORTS = ['prob-descending', 'prob-ascending']
 
 export const FILTERS = [
   { label: 'Open', value: 'open' },
+  { label: 'Closing this month', value: 'closing-this-month' },
+  { label: 'Closing next month', value: 'closing-next-month' },
   { label: 'Closed', value: 'closed' },
   { label: 'Resolved', value: 'resolved' },
   { label: 'All', value: 'all' },
@@ -86,7 +86,8 @@ export const CONTRACT_TYPES = [
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
   { label: 'Free Response', value: 'FREE_RESPONSE' },
   { label: 'Numeric', value: 'PSEUDO_NUMERIC' },
-  { label: 'Bountied Question', value: 'BOUNTIED_QUESTION' },
+  { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
+  { label: 'Stock', value: 'STONK' },
 ] as const
 
 export type ContractTypeType = typeof CONTRACT_TYPES[number]['value']
@@ -330,30 +331,18 @@ export function SupabaseContractSearch(props: {
           hideFilters={hideFilters}
         />
         {contracts && contracts.length === 0 ? (
-          <p className="text-ink-500 mx-2">
-            No questions found.{' '}
+          <Col className={''}>
+            <Row className="text-ink-500 mx-2 items-center gap-2">
+              No questions found.
+            </Row>
             {profile && (
-              <>
-                Why not{' '}
-                <SiteLink
-                  href="/create"
-                  followsLinkClass
-                  className="font-semibold"
-                >
-                  create one?
-                </SiteLink>
-                <br />
-                <Button
-                  color="gradient"
-                  size="md"
-                  className="mt-4 flex sm:hidden"
-                  onClick={() => Router.push('/create')}
-                >
-                  Create a question
-                </Button>
-              </>
+              <Row className={' items-center justify-center'}>
+                <Col className={'mt-8 w-full items-center justify-center'}>
+                  <CreateQuestionButton className={'!mt-0 max-w-[15rem]'} />
+                </Col>
+              </Row>
             )}
-          </p>
+          </Col>
         ) : asList ? (
           <ContractsList
             key={
@@ -564,7 +553,7 @@ function SupabaseContractSearchControls(props: {
       </Col>
       {showTopics && (
         <Carousel>
-          {SELECTED_TOPICS.map((t) => (
+          {SELECTABLE_TOPICS.map((t) => (
             <PillButton
               key={'pill-' + t}
               selected={topic === cleanTopic(t)}
@@ -621,6 +610,22 @@ export function SearchFilters(props: {
 
   return (
     <div className={clsx(className, 'gap-4')}>
+      <DropdownMenu
+        Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
+        Icon={
+          <Row className="items-center gap-0.5 ">
+            <span className="whitespace-nowrap text-sm font-medium text-gray-500">
+              {contractTypeLabel}
+            </span>
+            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+          </Row>
+        }
+        menuWidth={'w-36'}
+        menuItemsClass="left-0 right-auto"
+        selectedItemName={contractTypeLabel}
+        closeOnClick={true}
+      />
+
       {!hideFilter && (
         <DropdownMenu
           Items={generateFilterDropdownItems(FILTERS, selectFilter)}
@@ -659,21 +664,7 @@ export function SearchFilters(props: {
           closeOnClick={true}
         />
       )}
-      <DropdownMenu
-        Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
-        Icon={
-          <Row className="items-center gap-0.5 ">
-            <span className="whitespace-nowrap text-sm font-medium text-gray-500">
-              {contractTypeLabel}
-            </span>
-            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-          </Row>
-        }
-        menuWidth={'w-36'}
-        menuItemsClass="left-0 right-auto"
-        selectedItemName={contractTypeLabel}
-        closeOnClick={true}
-      />
+
       {!listViewDisabled && (
         <button
           type="button"

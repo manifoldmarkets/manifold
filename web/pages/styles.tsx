@@ -10,6 +10,7 @@ import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Select } from 'web/components/widgets/select'
 import ShortToggle from 'web/components/widgets/short-toggle'
+import { RangeSlider, Slider } from 'web/components/widgets/slider'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
 
@@ -43,6 +44,7 @@ export default function StylePage() {
         placeholder="ExpandingInput (try typing a lot)"
       />
       <EditorExample />
+      <SliderExample />
       <Subtitle>Copy Link</Subtitle>
       <CopyLinkButton
         url="www.example.com"
@@ -196,7 +198,32 @@ function EditorExample() {
   const editor = useTextEditor({
     defaultValue: '<p>Rich text editor from <code>editor.tsx</code></p>',
   })
-  return <TextEditor editor={editor} />
+  return <TextEditor editor={editor} className="mb-4" />
+}
+
+function SliderExample() {
+  const [amount, setAmount] = useState<number>(0)
+  const [low, setLow] = useState<number>(0)
+  const [high, setHigh] = useState<number>(100)
+
+  return (
+    <>
+      <Slider
+        // min={0}
+        // max={100}
+        // color="green"
+        marks={{ 0: '0%', 50: '$50', 100: 100 }}
+        amount={amount}
+        onChange={setAmount}
+      />
+      <RangeSlider
+        lowValue={low}
+        highValue={high}
+        setLow={setLow}
+        setHigh={setHigh}
+      />
+    </>
+  )
 }
 
 function RatingSection() {

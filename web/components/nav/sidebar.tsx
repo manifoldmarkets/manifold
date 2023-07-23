@@ -9,7 +9,6 @@ import {
   SparklesIcon,
   StarIcon,
   UserGroupIcon,
-  FireIcon,
   QuestionMarkCircleIcon,
   NewspaperIcon,
   SearchIcon,
@@ -25,7 +24,7 @@ import { useContext, useState } from 'react'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
-import NotificationsIcon from 'web/components/notifications-icon'
+import { NotificationsIcon } from 'web/components/notifications-icon'
 import { DarkModeContext, useIsDarkMode } from 'web/hooks/dark-mode-context'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
@@ -37,7 +36,6 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
-import { getIsNative } from 'web/lib/native/is-native'
 
 export default function Sidebar(props: {
   className?: string
@@ -75,7 +73,7 @@ export default function Sidebar(props: {
   return (
     <nav
       aria-label="Sidebar"
-      className={clsx(' flex h-screen flex-col xl:ml-2', className)}
+      className={clsx('flex h-screen flex-col xl:ml-2', className)}
     >
       <ManifoldLogo className="pt-6 pb-3" />
 
@@ -101,7 +99,9 @@ export default function Sidebar(props: {
         {createMarketButton}
       </div>
       <div className="mt-auto mb-6 flex flex-col gap-1">
-        {user !== null && <AppBadgesOrGetAppButton hideOnDesktop={true} />}
+        {user !== null && (
+          <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
+        )}
         {bottomNavOptions.map((item) => (
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
@@ -161,7 +161,6 @@ const getDesktopNav = (
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
-    getIsNative() && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
     {

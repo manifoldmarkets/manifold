@@ -12,12 +12,10 @@ import {
   FEED_REASON_TYPES,
   INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
-import { Reaction } from 'common/reaction'
 import { log } from 'shared/utils'
-import { buildArray, filterDefined } from 'common/util/array'
+import { buildArray } from 'common/util/array'
 import { getUsersWithSimilarInterestVectorToNews } from 'shared/supabase/users'
 import { convertObjectToSQLRow } from 'common/supabase/utils'
-import { keyBy, mapValues } from 'lodash'
 
 export const insertDataToUserFeed = async (
   userId: string,
@@ -110,6 +108,7 @@ export const bulkInsertDataToUserFeed = async (
         eventTime: eventTimeTz,
       })
     )
+  if (feedRows.length === 0) return
   const cs = new pgp.helpers.ColumnSet(feedRows[0], { table: 'user_feed' })
   const insert = pgp.helpers.insert(feedRows, cs) + ` ON CONFLICT DO NOTHING`
 
@@ -122,34 +121,24 @@ export const bulkInsertDataToUserFeed = async (
   }
 }
 
-const findDuplicateContractsInFeed = async (
+const userIdsWithFeedRowsMatchingContract = async (
   contractId: string,
   userIds: string[],
   seenTime: number,
+  dataType: FEED_DATA_TYPES,
   pg: SupabaseDirectClient
 ) => {
-  const userIdsToExistingRows = await pg.map(
-    `select user_id,
-            array_agg(json_build_object('id', id, 'seen_time', seen_time)) AS rows
+  return await pg.map(
+    `select distinct user_id
             from user_feed
             where contract_id = $1 and 
                 user_id = ANY($2) and 
-                created_time > $3
-                group by user_id
+                created_time > $3 and
+                data_type = $4
                 `,
-    [contractId, userIds, new Date(seenTime).toISOString()],
-    (row) => ({
-      userId: row.user_id,
-      rows: row.rows.map((r: { id: string; seen_time: string }) => ({
-        id: parseInt(r.id),
-        seenTime: r.seen_time ? new Date(r.seen_time) : null,
-      })),
-    })
+    [contractId, userIds, new Date(seenTime).toISOString(), dataType],
+    (row: { user_id: string }) => row.user_id
   )
-  return mapValues(
-    keyBy(userIdsToExistingRows, 'userId'),
-    (userRows) => userRows.rows
-  ) as { [userId: string]: { id: number; seenTime: Date | null }[] }
 }
 
 const deleteRowsFromUserFeed = async (
@@ -161,7 +150,7 @@ const deleteRowsFromUserFeed = async (
 }
 
 export const addCommentOnContractToFeed = async (
-  contractId: string,
+  contract: Contract,
   comment: Comment,
   userIdsToExclude: string[],
   idempotencyKey?: string
@@ -169,7 +158,7 @@ export const addCommentOnContractToFeed = async (
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
-      contractId,
+      contract,
       comment.userId,
       pg,
       [
@@ -186,7 +175,7 @@ export const addCommentOnContractToFeed = async (
     'new_comment',
     userIdsToExclude,
     {
-      contractId,
+      contractId: contract.id,
       commentId: comment.id,
       creatorId: comment.userId,
       idempotencyKey,
@@ -199,46 +188,46 @@ export const addCommentOnContractToFeed = async (
 // - creator of the comment & reaction
 // - have already seen the comment
 // - already have the comment in their feed (unique by contract id, comment id, user id)
-export const addLikedCommentOnContractToFeed = async (
-  contractId: string,
-  reaction: Reaction,
-  comment: Comment,
-  userIdsToExclude: string[],
-  idempotencyKey?: string
-) => {
-  const pg = createSupabaseDirectClient()
-  const usersToReasonsInterestedInContract =
-    await getUserToReasonsInterestedInContractAndUser(
-      contractId,
-      reaction.userId,
-      pg,
-      [
-        'follow_user',
-        'contract_in_group_you_are_in',
-        'similar_interest_vector_to_contract',
-      ],
-      INTEREST_DISTANCE_THRESHOLDS.popular_comment
-    )
-  await Promise.all(
-    Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
-      insertDataToUserFeed(
-        userId,
-        reaction.createdTime,
-        'popular_comment',
-        usersToReasonsInterestedInContract[userId],
-        userIdsToExclude,
-        {
-          contractId,
-          commentId: comment.id,
-          creatorId: reaction.userId,
-          reactionId: reaction.id,
-          idempotencyKey,
-        },
-        pg
-      )
-    )
-  )
-}
+// export const addLikedCommentOnContractToFeed = async (
+//   contractId: string,
+//   reaction: Reaction,
+//   comment: Comment,
+//   userIdsToExclude: string[],
+//   idempotencyKey?: string
+// ) => {
+//   const pg = createSupabaseDirectClient()
+//   const usersToReasonsInterestedInContract =
+//     await getUserToReasonsInterestedInContractAndUser(
+//       contractId,
+//       reaction.userId,
+//       pg,
+//       [
+//         'follow_user',
+//         'contract_in_group_you_are_in',
+//         'similar_interest_vector_to_contract',
+//       ],
+//       INTEREST_DISTANCE_THRESHOLDS.popular_comment
+//     )
+//   await Promise.all(
+//     Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
+//       insertDataToUserFeed(
+//         userId,
+//         reaction.createdTime,
+//         'popular_comment',
+//         usersToReasonsInterestedInContract[userId],
+//         userIdsToExclude,
+//         {
+//           contractId,
+//           commentId: comment.id,
+//           creatorId: reaction.userId,
+//           reactionId: reaction.id,
+//           idempotencyKey,
+//         },
+//         pg
+//       )
+//     )
+//   )
+// }
 
 //TODO: run this when a contract gets its 1st comment, 5th bet, 1st like
 // excluding those who:
@@ -268,7 +257,7 @@ export const addContractToFeed = async (
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
-      contract.id,
+      contract,
       userIdResponsibleForEvent ?? contract.creatorId,
       pg,
       reasonsToInclude,
@@ -297,7 +286,7 @@ export const addContractToFeed = async (
   )
 }
 
-export const addContractToFeedIfUnseenAndDeleteDuplicates = async (
+export const addContractToFeedIfNotDuplicative = async (
   contract: Contract,
   reasonsToInclude: CONTRACT_OR_USER_FEED_REASON_TYPES[],
   dataType: FEED_DATA_TYPES,
@@ -312,44 +301,25 @@ export const addContractToFeedIfUnseenAndDeleteDuplicates = async (
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
-      contract.id,
+      contract,
       contract.creatorId,
       pg,
       reasonsToInclude,
       minUserInterestDistanceToContract
     )
-  const userIds = Object.keys(usersToReasonsInterestedInContract)
-  const usersToExistingContractFeedRows = await findDuplicateContractsInFeed(
+  const ignoreUserIds = await userIdsWithFeedRowsMatchingContract(
     contract.id,
-    userIds,
+    Object.keys(usersToReasonsInterestedInContract),
     unseenNewerThanTime,
+    dataType,
     pg
   )
-  const rowsToDelete: number[] = []
 
-  // TODO: we should just insert the duplicate rows, and on the client order by importance and filter duplicates
-  const ignoreUsers = filterDefined(
-    await Promise.all(
-      userIds.map(async (userId) => {
-        const userFeedRows = usersToExistingContractFeedRows[userId] ?? []
-        const seenContractFeedRows = userFeedRows.filter(
-          (row) => row.seenTime !== null
-        )
-        // If they've a duplicate row they've already seen, don't insert
-        if (seenContractFeedRows.length > 0) return userId
-        // Delete the unseen rows if they've too many duplicates
-        if (userFeedRows.length > 2)
-          rowsToDelete.push(...userFeedRows.map((row) => row.id))
-        return null
-      })
-    )
-  )
-  await deleteRowsFromUserFeed(rowsToDelete, pg)
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
     contract.createdTime,
     dataType,
-    userIdsToExclude.concat(ignoreUsers),
+    userIdsToExclude.concat(ignoreUserIds),
     {
       contractId: contract.id,
       creatorId: contract.creatorId,
@@ -427,7 +397,7 @@ export const insertTrendingContractToUsersFeeds = async (
   unseenNewerThanTime: number,
   data?: Record<string, any>
 ) => {
-  await addContractToFeedIfUnseenAndDeleteDuplicates(
+  await addContractToFeedIfNotDuplicative(
     contract,
     [
       'follow_contract',

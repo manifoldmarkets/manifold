@@ -8,14 +8,15 @@ import {
 } from './supabase/init'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 import { updateNonPredictiveEmbedding } from 'shared/supabase/groups'
+import { SupabaseClient } from 'common/supabase/utils'
 
 const firestore = admin.firestore()
 
 export async function addGroupToContract(
   contract: Contract,
-  group: { id: string; slug: string; name: string }
+  group: { id: string; slug: string; name: string },
+  db: SupabaseClient
 ) {
-  const db = createSupabaseClient()
   if ((contract?.groupLinks ?? []).some((g) => g.groupId === group.id)) {
     console.log('contract already has group')
     return false
@@ -28,7 +29,7 @@ export async function addGroupToContract(
   })
 
   // update group slugs and group links
-  await firestore
+  await firestore 
     .collection('contracts')
     .doc(contract.id)
     .update({

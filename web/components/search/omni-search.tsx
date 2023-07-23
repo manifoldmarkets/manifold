@@ -39,11 +39,12 @@ export const OmniSearch = (props: {
 
   const { setOpen } = useSearchContext() ?? {}
   const router = useRouter()
-
+  const user = useUser()
+  const recentMarkets = useYourRecentContracts(db, user?.id) ?? []
   const [debouncedQuery, setDebouncedQuery] = useState(query)
 
   const debouncedSearch = useCallback(
-    debounce((newQuery) => setDebouncedQuery(newQuery), 250),
+    debounce((newQuery) => setDebouncedQuery(newQuery), 50),
     []
   )
 
@@ -87,9 +88,9 @@ export const OmniSearch = (props: {
             className="text-ink-700 flex flex-col overflow-y-auto px-1"
           >
             {debouncedQuery ? (
-              <Results query={debouncedQuery} />
+              <Results query={debouncedQuery} recentMarkets={recentMarkets} />
             ) : (
-              <DefaultResults />
+              <DefaultResults recentMarkets={recentMarkets} />
             )}
           </Combobox.Options>
         </>
@@ -98,13 +99,11 @@ export const OmniSearch = (props: {
   )
 }
 
-const DefaultResults = () => {
-  const user = useUser()
-  const markets = useYourRecentContracts(db, user?.id) ?? []
-
+const DefaultResults = (props: { recentMarkets: Contract[] }) => {
+  const { recentMarkets } = props
   return (
     <>
-      <MarketResults markets={markets} />
+      <MarketResults markets={recentMarkets.slice(0, 7)} />
       <PageResults pages={defaultPages} />
       <div className="mx-2 my-2 text-xs">
         <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
@@ -119,15 +118,15 @@ const Key = (props: { children: ReactNode }) => (
   <code className="bg-ink-300 mx-0.5 rounded p-0.5">{props.children}</code>
 )
 
-const Results = (props: { query: string }) => {
-  const { query } = props
+const Results = (props: { query: string; recentMarkets: Contract[] }) => {
+  const { query, recentMarkets } = props
 
   const prefix = query.match(/^(%|#|@)/) ? query.charAt(0) : ''
   const search = prefix ? query.slice(1) : query
 
   const userHitLimit = !prefix ? 2 : prefix === '@' ? 25 : 0
   const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
-  const marketHitLimit = !prefix ? 20 : prefix === '%' ? 25 : 0
+  const marketHitLimit = !prefix ? 5 : prefix === '%' ? 25 : 0
 
   const [
     { pageHits, userHits, groupHits, sortHit, marketHits },
@@ -179,10 +178,16 @@ const Results = (props: { query: string }) => {
       const groupHits = g.status === 'fulfilled' ? g.value.data : []
       const marketHits = m.status === 'fulfilled' ? m.value.data : []
       const sortHit = s.status === 'fulfilled' ? s.value : null
+      const recentMarketHits = recentMarkets.filter((m) =>
+        m.question.toLowerCase().includes(search.toLowerCase())
+      )
 
       if (thisNonce === nonce.current) {
         const pageHits = prefix ? [] : searchPages(search, 2)
-        const uniqueMarketHits = uniqBy<Contract>(marketHits, 'id')
+        const uniqueMarketHits = uniqBy<Contract>(
+          recentMarketHits.concat(marketHits),
+          'id'
+        )
         const uniqueGroupHits = uniqBy<Group>(groupHits, 'id')
         setSearchResults({
           pageHits,
@@ -217,10 +222,10 @@ const Results = (props: { query: string }) => {
   return (
     <>
       <PageResults pages={pageHits} />
-      <UserResults users={userHits} search={search} />
-      <GroupResults groups={groupHits} search={search} />
-      {sortHit && <MarketSortResults {...sortHit} />}
       <MarketResults markets={marketHits} search={search} />
+      <GroupResults groups={groupHits} search={search} />
+      <UserResults users={userHits} search={search} />
+      {sortHit && <MarketSortResults {...sortHit} />}
     </>
   )
 }
@@ -311,7 +316,7 @@ const MarketResult = (props: { market: Contract }) => {
       }}
     >
       <div className="flex gap-2">
-        <span className="grow">{market.question}</span>
+        <span className="line-clamp-2 grow">{market.question}</span>
         <span className="font-bold">
           <ContractStatusLabel contract={market} />
         </span>
@@ -345,7 +350,7 @@ const UserResults = (props: { users: UserSearchResult[]; search?: string }) => {
             />
             {name}
             {username !== name && (
-              <span className="text-ink-400">@{username}</span>
+              <span className="text-ink-400 line-clamp-1">@{username}</span>
             )}
           </div>
         </ResultOption>
@@ -370,7 +375,7 @@ const GroupResults = (props: {
       {props.groups.map((group) => (
         <ResultOption value={{ id: group.id, slug: `/group/${group.slug}` }}>
           <div className="flex items-center gap-3">
-            <span className="grow">{group.name}</span>
+            <span className="line-clamp-1 grow">{group.name}</span>
             <span className="flex items-center">
               <UsersIcon className="mr-1 h-4 w-4" />
               {group.totalMembers}

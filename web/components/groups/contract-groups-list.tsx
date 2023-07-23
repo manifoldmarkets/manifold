@@ -105,11 +105,8 @@ export function ContractGroupsList(props: {
                 Add to group
               </Row>
               <GroupSelector
-                options={{
-                  showSelector: true,
-                  showLabel: false,
-                  ignoreGroupIds: groups.map((g) => g.id),
-                }}
+                showLabel={false}
+                ignoreGroupIds={groups.map((g) => g.id)}
                 setSelectedGroup={(group) =>
                   group &&
                   addContractToGroup({
@@ -120,7 +117,6 @@ export function ContractGroupsList(props: {
                     setError(e.message)
                   })
                 }
-                selectedGroup={undefined}
                 isContractCreator={isCreator}
               />
               <span className={'text-sm text-red-400'}>{error}</span>

@@ -113,7 +113,7 @@ function FeedTimelineContent() {
   ).slice(0, 3)
   const fetchMoreOlderContent = async () => {
     const moreFeedItems = await loadMoreOlder()
-    if (!moreFeedItems && user) {
+    if (moreFeedItems == 0 && user) {
       const excludedContractIds = savedFeedItems
         .map((i) => i.contractId)
         .concat(manualContracts?.map((c) => c.id) ?? [])
@@ -121,7 +121,7 @@ function FeedTimelineContent() {
         'get_recommended_contracts_embeddings_fast',
         {
           uid: user.id,
-          n: 20,
+          n: 10,
           excluded_contract_ids: filterDefined(excludedContractIds),
         }
       )
@@ -200,11 +200,11 @@ const NewActivityButton = (props: {
     <button
       className={clsx(
         'bg-canvas-50 border-ink-200 hover:bg-ink-200 rounded-full border-2 py-2 pr-3 pl-2 text-sm transition-colors',
-        'sticky top-7 z-20'
+        'sticky top-7 z-20 self-center'
       )}
       onClick={scrollToTop}
     >
-      <Row className="text-ink-600 items-center align-middle">
+      <Row className="text-ink-600 items-center ">
         <ArrowUpIcon className="text-ink-400 mr-3 h-5 w-5" />
         {avatarUrls.map((url) => (
           <Avatar

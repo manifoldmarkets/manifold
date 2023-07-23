@@ -1,7 +1,7 @@
-import { partition } from 'lodash'
 import { Contract } from './contract'
 import { Row } from './supabase/utils'
 import { JSONContent } from '@tiptap/core'
+import { first, partition } from 'lodash'
 
 export type Group = {
   id: string
@@ -82,21 +82,12 @@ export const GroupsByTopic = {
 }
 
 export function getGroupLinkToDisplay(contract: Contract) {
-  const { groupLinks } = contract
-  const sortedGroupLinks = groupLinks?.sort(
-    (a, b) => b.createdTime - a.createdTime
-  )
-  const groupCreatorAdded = sortedGroupLinks?.find(
-    (g) => g.userId === contract.creatorId
-  )
-  const groupToDisplay = groupCreatorAdded
-    ? groupCreatorAdded
-    : sortedGroupLinks?.[0] ?? null
-  return groupToDisplay
+  return first(sortGroups(contract))
 }
 
-export function getGroupLinksToDisplay(contract: Contract) {
+export const sortGroups = (contract: Contract) => {
   const { groupLinks } = contract
+
   const sortedGroupLinks =
     groupLinks?.sort((a, b) => b.createdTime - a.createdTime) ?? []
 
@@ -104,5 +95,5 @@ export function getGroupLinksToDisplay(contract: Contract) {
     sortedGroupLinks,
     (g) => g.userId === contract.creatorId
   )
-  return [...groupsCreatorAdded, ...otherGroups].slice(0, 3)
+  return [...groupsCreatorAdded, ...otherGroups]
 }

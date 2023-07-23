@@ -104,22 +104,12 @@ const OpenAI = createNewsDashboardTab(
 
 const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
   {
-    url: 'https://www.reuters.com/world/europe/russian-general-dismissed-after-accusing-top-brass-failing-soldiers-2023-07-13/',
+    url: 'https://www.aljazeera.com/news/2023/7/17/crimea-bridge-attack-what-happened-why-is-the-bridge-important',
   },
-  { slug: 'will-sergei-shoigu-still-be-the-rus' },
-  {
-    url: 'https://www.washingtonpost.com/national-security/2023/07/06/biden-cluster-bombs-ukraine/',
-  },
-  { slug: 'will-the-us-openly-commit-in-2023-t' },
-  {
-    url: 'https://www.cbsnews.com/news/ukraine-russia-war-zaporizhzhia-nuclear-power-plant-attack-plot-claims/',
-  },
+  { slug: 'will-ukraine-sever-the-land-bridge-58877ff44c53' },
   { slug: 'will-there-be-a-nuclear-disaster-at' },
   { slug: 'will-any-part-of-the-zaporizhzhia-n' },
   { slug: 'will-russia-nuke-ukraine' },
-  {
-    url: 'https://www.cnn.com/europe/live-news/russia-ukraine-war-news-07-05-23/index.html',
-  },
   { slug: 'will-the-wagner-group-stop-operatin-ad2bc1b87277' },
   { slug: 'will-the-black-sea-grain-deal-be-ex' },
   {
@@ -130,6 +120,7 @@ const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
   { slug: 'will-the-ukraine-war-be-over-by-the' },
   { slug: '5-will-there-be-a-lasting-ceasefire' },
   { slug: 'will-china-convene-and-mediate-peac' },
+  { slug: 'will-sergei-shoigu-still-be-the-rus' },
 ])
 
 const WestBank = createNewsDashboardTab(
@@ -560,7 +551,19 @@ const Election2024 = createNewsDashboardTab(
   ]
 )
 
+const RPlace = createNewsDashboardTab('r/place', 'r/place', [
+  { slug: 'will-rplace-say-fuck-spez-when-it-c' },
+  {
+    url: 'https://www.theverge.com/2023/7/20/23801716/reddits-r-place-protest-art',
+  },
+  { slug: 'how-long-will-rplace-last' },
+  { slug: 'will-the-rplace-canvas-expand-by-th' },
+  { slug: 'will-i-be-convinced-that-the-destin' },
+  { slug: 'will-there-be-a-recognizable-manifo' },
+])
+
 export const newsContent = [
+  RPlace,
   UkraineWar,
   Threads,
   SummitNATO,

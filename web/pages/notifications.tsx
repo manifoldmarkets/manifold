@@ -89,14 +89,9 @@ function NotificationsAppBanner(props: { userId: string }) {
         }
       />
       <span className={'text-ink-600 text-sm sm:text-base'}>
-        <Row className={'items-center'}>
-          Get notified when markets resolve, your streak is expiring, or when
-          someone @'s you.
-          <Col
-            className={'min-w-fit items-center justify-center p-2 md:flex-row'}
-          >
-            <AppBadgesOrGetAppButton />
-          </Col>
+        <Row className={'items-center gap-2'}>
+          Get the app for the best experience
+          <AppBadgesOrGetAppButton />
         </Row>
       </span>
     </Row>

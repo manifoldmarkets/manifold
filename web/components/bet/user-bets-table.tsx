@@ -1,11 +1,10 @@
-import { Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
+import { debounce, Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
 import React, { ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { LimitBet } from 'common/bet'
 import { getContractBetNullMetrics } from 'common/calculate'
 import { contractPath, CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
 import { buildArray } from 'common/util/array'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
@@ -38,6 +37,8 @@ import { BetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { ProfitBadge } from 'web/components/profit-badge'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { getUserContractsMetricsWithContracts } from 'web/lib/firebase/api'
+import { useEvent } from 'web/hooks/use-event'
 
 type BetSort =
   | 'newest'
@@ -79,18 +80,27 @@ export function UserBetsTable(props: { user: User }) {
       key: `user-open-limit-bets-${user.id}`,
       store: inMemoryStore(),
     })
-
+  const debounceGetMetrics = useEvent(debounce(() => getMetrics(), 100))
   useEffect(() => {
-    getUserContractMetricsWithContracts(user.id, db, 5000).then(
-      (metricsWithContracts) => {
-        const { contracts, metricsByContract } = metricsWithContracts
-        setMetricsByContract(metricsByContract)
-        setInitialContracts((c) =>
-          uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
-        )
+    debounceGetMetrics()
+  }, [user.id, isAuth])
+  const getMetrics = () =>
+    getUserContractsMetricsWithContracts({
+      userId: user.id,
+      offset: 0,
+      limit: 5000,
+    }).then((res) => {
+      const { data, error } = res
+      if (error) {
+        console.error(error)
+        return
       }
-    )
-  }, [user.id, setMetricsByContract, setInitialContracts, isAuth])
+      const { contracts, metricsByContract } = data
+      setMetricsByContract(metricsByContract)
+      setInitialContracts((c) =>
+        uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
+      )
+    })
 
   useEffect(() => {
     getOpenLimitOrdersWithContracts(user.id, 5000).then((betsWithContracts) => {

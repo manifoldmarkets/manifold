@@ -4,10 +4,14 @@ import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/creat
 import { Contract, contractPath } from 'common/contract'
 import * as admin from 'firebase-admin'
 
-import { isEqual } from 'lodash'
+import { difference, isEqual } from 'lodash'
 import { secrets } from 'common/secrets'
 import { run } from 'common/supabase/utils'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 
 export const onUpdateContract = functions
   .runWith({ secrets })
@@ -16,9 +20,11 @@ export const onUpdateContract = functions
     const contract = change.after.data() as Contract
     const previousContract = change.before.data() as Contract
     const { eventId } = context
-    const { closeTime, question, description, resolution } = contract
+    const { closeTime, question, description, resolution, groupLinks } =
+      contract
 
     const db = createSupabaseClient()
+    const pg = createSupabaseDirectClient()
 
     if (
       !isEqual(previousContract.description, description) ||
@@ -35,6 +41,20 @@ export const onUpdateContract = functions
         })
       )
     }
+
+    // Update group embeddings if group links changed
+    const previousGroupIds = (previousContract.groupLinks ?? []).map(
+      (gl) => gl.groupId
+    )
+    const newGroupIds = (groupLinks ?? []).map((gl) => gl.groupId)
+    const differentGroupIds = difference(previousGroupIds, newGroupIds).concat(
+      difference(newGroupIds, previousGroupIds)
+    )
+    await Promise.all(
+      differentGroupIds.map(async (groupId) =>
+        upsertGroupEmbedding(pg, groupId)
+      )
+    )
 
     if (
       (previousContract.closeTime !== closeTime ||
@@ -94,13 +114,21 @@ async function handleUpdatedCloseTime(
 }
 
 const getPropsThatTriggerRevalidation = (contract: Contract) => {
-  const { volume, question, closeTime, description, groupLinks } = contract
+  const {
+    volume,
+    question,
+    closeTime,
+    description,
+    groupLinks,
+    lastCommentTime,
+  } = contract
   return {
     volume,
     question,
     closeTime,
     description,
     groupLinks,
+    lastCommentTime,
   }
 }
 

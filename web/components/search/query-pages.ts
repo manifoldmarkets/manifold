@@ -33,11 +33,19 @@ const pages: PageData[] = [
 ]
 
 export function searchPages(query: string, limit: number) {
-  const filtered = pages.filter((page) => {
-    return query.length > 2
-      ? searchInAny(query, page.label, ...(page.keywords ?? []))
-      : beginsWith(page.label, query)
-  })
+  const filtered = pages
+    // No need to repeat the pages we have results for or are in the sidebar
+    .filter(
+      (page) =>
+        page.label !== 'Questions' &&
+        page.label !== 'Groups' &&
+        page.label !== 'Users'
+    )
+    .filter((page) => {
+      return query.length > 2
+        ? searchInAny(query, page.label, ...(page.keywords ?? []))
+        : beginsWith(page.label, query)
+    })
 
   return orderBy(
     filtered,
