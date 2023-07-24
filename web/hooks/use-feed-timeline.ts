@@ -16,6 +16,8 @@ import { isContractBlocked } from 'web/lib/firebase/users'
 import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items'
 import { DAY_MS } from 'common/util/time'
 import { convertContractComment } from 'web/lib/supabase/comments'
+import { Group } from 'common/group'
+import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 
 const PAGE_SIZE = 25
 const OLDEST_UNSEEN_TIME_OF_INTEREST = new Date(
@@ -37,22 +39,36 @@ export type FeedTimelineItem = {
   contract?: Contract
   contracts?: Contract[]
   comments?: ContractComment[]
+  groups?: Group[]
   news?: News
   reasonDescription?: string
   isCopied?: boolean
   data?: Record<string, any>
 }
+const baseUserFeedQuery = (userId: string, privateUser: PrivateUser) =>
+  db
+    .from('user_feed')
+    .select('*')
+    .eq('user_id', userId)
+    .not(
+      'creator_id',
+      'in',
+      `(${privateUser.blockedUserIds.concat(privateUser.blockedByUserIds)})`
+    )
+    .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
+    .order('created_time', { ascending: false })
+
 export const useFeedTimeline = (
   user: User | null | undefined,
-  privateUser: PrivateUser | null | undefined,
+  privateUser: PrivateUser,
   key: string
 ) => {
   const [boosts, setBoosts] = usePersistentInMemoryState<
     BoostsType | undefined
   >(undefined, `boosts-${user?.id}-${key}`)
   useEffect(() => {
-    if (privateUser) getBoosts(privateUser).then(setBoosts)
-  }, [privateUser])
+    getBoosts(privateUser).then(setBoosts)
+  }, [])
 
   const [savedFeedItems, setSavedFeedItems] = usePersistentInMemoryState<
     FeedTimelineItem[] | undefined
@@ -77,25 +93,17 @@ export const useFeedTimeline = (
   ) => {
     if (fetching.current) return { timelineItems: [] as FeedTimelineItem[] }
     const data = [] as Row<'user_feed'>[]
-    let query = db
-      .from('user_feed')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_time', { ascending: false })
-      .limit(PAGE_SIZE)
+    let query = baseUserFeedQuery(userId, privateUser).limit(PAGE_SIZE)
     // TODO: if you're loading older, unseen stuff, newer stuff could be seen
     if (options.newerThan) {
       query = query.gt('created_time', options.newerThan)
     }
     if (options.old) {
       // get the highest priority items first
-      const bestFeedRowsQuery = db
-        .from('user_feed')
-        .select('*')
-        .eq('user_id', userId)
+      const bestFeedRowsQuery = baseUserFeedQuery(userId, privateUser)
         .in('data_type', ['contract_probability_changed', 'trending_contract'])
-        .order('created_time', { ascending: false })
         .gt('created_time', OLDEST_UNSEEN_TIME_OF_INTEREST)
+        .lt('created_time', oldestCreatedTimestamp.current)
         .is('seen_time', null)
         .limit(15)
       const { data: highSignalData } = await run(bestFeedRowsQuery)
@@ -104,51 +112,26 @@ export const useFeedTimeline = (
       query = query
         .gt('created_time', OLDEST_UNSEEN_TIME_OF_INTEREST)
         .is('seen_time', null)
+        .lt('created_time', oldestCreatedTimestamp.current)
       if (highSignalData.length > 0)
         query = query.not('id', 'in', `(${highSignalData.map((d) => d.id)})`)
     }
     const { data: lowerSignalData } = await run(query)
     data.push(...lowerSignalData)
 
-    // Filter out already saved ones to reduce bandwidth and avoid duplicates
-    const alreadySavedContractIds = filterDefined(
-      savedFeedItems?.map((item) => item.contractId) ?? []
-    )
+    const {
+      newContractIds,
+      newCommentsOnContractIds,
+      potentiallySeenCommentIds,
+      newsIds,
+      groupIds,
+    } = getNewContentIds(data, savedFeedItems)
 
-    const newContractIds = uniq(
-      filterDefined(data.map((item) => item.contract_id)).filter(
-        (id) => !alreadySavedContractIds.includes(id)
-      )
-    )
-    const commentsByUserIds = groupBy(
-      data.filter((d) => d.comment_id),
-      (item) => item.creator_id
-    )
-    const newCommentsOnContractIds = filterDefined(
-      Object.values(commentsByUserIds).map((items) => first(items)?.comment_id)
-    )
-
-    const potentiallySeenCommentIds = uniq(
-      filterDefined(
-        data.map((item) => (item.seen_time ? null : item.comment_id))
-      )
-    )
-    const alreadySavedNewsIds = filterDefined(
-      savedFeedItems?.map((item) => item.newsId) ?? []
-    )
-    const newsIds = uniq(
-      filterDefined(
-        data.map((item) =>
-          item.news_id && !alreadySavedNewsIds.includes(item.news_id)
-            ? item.news_id
-            : null
-        )
-      )
-    )
     const [
       comments,
       contracts,
       news,
+      groups,
       uninterestingContractIds,
       seenCommentIds,
     ] = await Promise.all([
@@ -180,6 +163,17 @@ export const useFeedTimeline = (
           )
         ),
       db
+        .from('groups')
+        .select('data, id')
+        .in('id', groupIds)
+        .not('slug', 'in', `(${privateUser.blockedGroupSlugs})`)
+        .then((res) =>
+          res.data?.map((r) => {
+            const data = r.data as Group
+            return { ...data, id: r.id } as Group
+          })
+        ),
+      db
         .from('user_disinterests')
         .select('contract_id')
         .eq('user_id', userId)
@@ -207,21 +201,14 @@ export const useFeedTimeline = (
         !c.hidden &&
         !seenCommentIds?.includes(c.id)
     )
-    // New comments on contracts they've already seen in their feed can be interesting
-    const savedContractsWithNewComments: Contract[] = filterDefined(
-      (filteredNewComments ?? []).map(
-        (item) =>
-          savedFeedItems?.find((i) => i.contractId === item.contractId)
-            ?.contract
-      )
-    )
 
     // It's possible we're missing contracts for news items bc of the duplicate filter
     const timelineItems = createFeedTimelineItems(
       data,
-      (filteredNewContracts ?? []).concat(savedContractsWithNewComments),
+      filteredNewContracts,
       filteredNewComments,
-      news
+      news,
+      groups
     )
     fetching.current = false
 
@@ -315,7 +302,8 @@ function createFeedTimelineItems(
   data: Row<'user_feed'>[],
   contracts: Contract[] | undefined,
   comments: ContractComment[] | undefined,
-  news: News[] | undefined
+  news: News[] | undefined,
+  groups: Group[] | undefined
 ): FeedTimelineItem[] {
   const newsData = Object.entries(
     groupBy(
@@ -323,17 +311,19 @@ function createFeedTimelineItems(
       (item) => item.news_id
     )
   ).map(([newsId, newsItems]) => {
-    const contractIds = data
-      .filter((item) => item.news_id === newsId)
-      .map((i) => i.contract_id)
     const relevantContracts = contracts?.filter((contract) =>
-      contractIds.includes(contract.id)
+      newsItems.map((i) => i.contract_id).includes(contract.id)
     )
+    const relevantGroups = groups?.filter((group) =>
+      newsItems.map((i) => i.group_id).includes(group.id)
+    )
+
     return {
       ...getBaseTimelineItem(newsItems[0]),
       newsId,
       avatarUrl: relevantContracts?.[0]?.creatorAvatarUrl,
       contracts: relevantContracts,
+      groups: relevantGroups,
       news: news?.find((news) => news.id === newsId),
     } as FeedTimelineItem
   })
@@ -356,7 +346,7 @@ function createFeedTimelineItems(
         )
           return
         if (
-          marketMovementInfo(
+          getMarketMovementInfo(
             relevantContract,
             dataType,
             item.data as Record<string, any>
@@ -393,45 +383,56 @@ function createFeedTimelineItems(
   )
 }
 
-export const shouldIgnoreCommentsOnContract = (contract: Contract): boolean => {
+const shouldIgnoreCommentsOnContract = (contract: Contract): boolean => {
   return (
     contract.isResolved ||
     (contract.closeTime ? contract.closeTime < Date.now() : false)
   )
 }
 
-export const marketMovementInfo = (
-  contract: Contract,
-  dataType?: FEED_DATA_TYPES,
-  data?: Record<string, any>
+const getNewContentIds = (
+  data: Row<'user_feed'>[],
+  savedFeedItems: FeedTimelineItem[] | undefined
 ) => {
-  const previousProbAbout50 =
-    (data?.previousProb ?? 0.5) > 0.48 && (data?.previousProb ?? 0.5) < 0.52
-  const probChangeSinceAdd =
-    contract.mechanism === 'cpmm-1' && data?.previousProb
-      ? contract.prob - data.previousProb
-      : null
+  // Filter out already saved ones to reduce bandwidth and avoid duplicates
+  const alreadySavedContractIds = filterDefined(
+    savedFeedItems?.map((item) => item.contractId) ?? []
+  )
+  const newContractIds = uniq(
+    filterDefined(data.map((item) => item.contract_id)).filter(
+      (id) => !alreadySavedContractIds.includes(id)
+    )
+  )
+  const commentsByUserIds = groupBy(
+    data.filter((d) => d.comment_id),
+    (item) => item.creator_id
+  )
+  const newCommentsOnContractIds = filterDefined(
+    Object.values(commentsByUserIds).map((items) => first(items)?.comment_id)
+  )
 
-  const probChange =
-    contract.mechanism === 'cpmm-1' &&
-    contract.createdTime < Date.now() - DAY_MS &&
-    // make sure it wasn't made within the past 2 days and just moved from 50%
-    !(contract.createdTime > Date.now() - 2 * DAY_MS && previousProbAbout50) &&
-    Math.abs(probChangeSinceAdd ?? contract.probChanges.day) > 0.055 &&
-    !contract.isResolved
-      ? Math.round((probChangeSinceAdd ?? contract.probChanges.day) * 100)
-      : null
+  const groupIds = uniq(filterDefined(data.map((item) => item.group_id)))
 
-  const showChange =
-    probChange != null &&
-    (dataType
-      ? dataType === 'contract_probability_changed' ||
-        dataType === 'trending_contract'
-      : true)
-
-  if (!showChange && dataType === 'contract_probability_changed') {
-    // console.log('filtering prob change', probChangeSinceAdd, contract)
-    return { ignore: true, probChange }
+  const potentiallySeenCommentIds = uniq(
+    filterDefined(data.map((item) => (item.seen_time ? null : item.comment_id)))
+  )
+  const alreadySavedNewsIds = filterDefined(
+    savedFeedItems?.map((item) => item.newsId) ?? []
+  )
+  const newsIds = uniq(
+    filterDefined(
+      data.map((item) =>
+        item.news_id && !alreadySavedNewsIds.includes(item.news_id)
+          ? item.news_id
+          : null
+      )
+    )
+  )
+  return {
+    newContractIds,
+    newCommentsOnContractIds,
+    potentiallySeenCommentIds,
+    newsIds,
+    groupIds,
   }
-  return { ignore: false, probChange }
 }

@@ -20,10 +20,7 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
-import {
-  FeedTimelineItem,
-  marketMovementInfo,
-} from 'web/hooks/use-feed-timeline'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -39,6 +36,7 @@ import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { ClickFrame } from '../widgets/click-frame'
 import { HOUR_MS } from 'common/util/time'
+import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -202,7 +200,7 @@ function DetailedCard(props: {
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
   const path = contractPath(contract)
-  const { probChange } = marketMovementInfo(
+  const { probChange } = getMarketMovementInfo(
     contract,
     item?.dataType,
     item?.data

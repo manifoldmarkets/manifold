@@ -21,6 +21,7 @@ import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
 import { Page } from 'web/components/layout/page'
 import { MINUTE_MS } from 'common/util/time'
+import { PrivateUser } from 'common/user'
 
 export default function FeedTimelinePage() {
   return (
@@ -30,11 +31,13 @@ export default function FeedTimelinePage() {
   )
 }
 export function FeedTimeline() {
+  const privateUser = usePrivateUser()
+
   return (
     <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
       <Col className={clsx('gap-6')}>
         <Col>
-          <FeedTimelineContent />
+          {privateUser && <FeedTimelineContent privateUser={privateUser} />}
           <button
             type="button"
             className={clsx(
@@ -54,9 +57,9 @@ export function FeedTimeline() {
     </Col>
   )
 }
-function FeedTimelineContent() {
+function FeedTimelineContent(props: { privateUser: PrivateUser }) {
   const user = useUser()
-  const privateUser = usePrivateUser()
+  const { privateUser } = props
   const {
     boosts,
     checkForNewer,

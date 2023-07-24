@@ -7,12 +7,8 @@ import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { mergePeriodic } from 'web/components/feed/feed-items'
 import { Col } from 'web/components/layout/col'
 import { groupCommentsByContractsAndParents } from 'web/hooks/use-additional-feed-items'
-import { useUnseenReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
 import { BoostsType } from 'web/hooks/use-feed'
-import {
-  FeedTimelineItem,
-  shouldIgnoreCommentsOnContract,
-} from 'web/hooks/use-feed-timeline'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
 import { ContractsTable } from '../contract/contracts-table'
@@ -51,23 +47,8 @@ export const FeedTimelineItems = (props: {
       return { contract: { ...market_data }, ...rest }
     }) ?? []
 
-  const contractIdsWithoutComments = filterDefined(
-    savedFeedTimelineItems.map((item) =>
-      item.contract?.id &&
-      !item.comments &&
-      !shouldIgnoreCommentsOnContract(item.contract)
-        ? item.contractId
-        : null
-    )
-  )
-
-  const recentComments = useUnseenReplyChainCommentsOnContracts(
-    contractIdsWithoutComments,
-    user?.id ?? '_'
-  )
-
   const { parentCommentsByContractId, childCommentsByParentCommentId } =
-    groupCommentsByContractsAndParents(savedFeedComments.concat(recentComments))
+    groupCommentsByContractsAndParents(savedFeedComments)
 
   const feedTimelineItems = mergePeriodic(
     savedFeedTimelineItems,
