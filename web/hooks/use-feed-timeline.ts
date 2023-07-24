@@ -15,6 +15,7 @@ import { FEED_DATA_TYPES, FEED_REASON_TYPES, getExplanation } from 'common/feed'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items'
 import { DAY_MS } from 'common/util/time'
+import { convertContractComment } from 'web/lib/supabase/comments'
 
 const PAGE_SIZE = 25
 const OLDEST_UNSEEN_TIME_OF_INTEREST = new Date(
@@ -153,10 +154,10 @@ export const useFeedTimeline = (
     ] = await Promise.all([
       db
         .from('contract_comments')
-        .select('data')
+        .select()
         .in('comment_id', newCommentsOnContractIds)
         .gt('data->likes', 0)
-        .then((res) => res.data?.map((c) => c.data as ContractComment)),
+        .then((res) => res.data?.map(convertContractComment)),
       db
         .from('contracts')
         .select('data')

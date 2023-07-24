@@ -1,7 +1,7 @@
 import { Contract } from 'common/contract'
 import { Comment } from 'common/comment'
 import { useTextEditor } from 'web/components/widgets/editor'
-import { MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
+import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { Col } from 'web/components/layout/col'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { Modal } from 'web/components/layout/modal'
