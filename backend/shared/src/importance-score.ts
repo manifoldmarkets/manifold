@@ -1,6 +1,13 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { SupabaseClient } from 'common/supabase/utils'
-import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS, WEEK_MS, YEAR_MS } from 'common/util/time'
+import {
+  DAY_MS,
+  HOUR_MS,
+  MINUTE_MS,
+  MONTH_MS,
+  WEEK_MS,
+  YEAR_MS,
+} from 'common/util/time'
 import { log } from 'shared/utils'
 import { BountiedQuestionContract, Contract } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
@@ -107,9 +114,9 @@ export async function calculateImportanceScore(
   )
     console.log('WARNING: some scores are out of bounds')
 
-  console.log('Top 15 contracts by score')
+  console.log('Top 30 contracts by score')
 
-  contractsWithUpdates.slice(0, 15).forEach((contract) => {
+  contractsWithUpdates.slice(0, 30).forEach((contract) => {
     console.log(contract.importanceScore, contract.question)
   })
 
@@ -198,7 +205,7 @@ export const computeContractScores = (
       : 0
 
   const closingSoonnness =
-    !isResolved && closeTime && closeTime > now
+    !isResolved && closeTime && closeTime > now && outcomeType !== 'STONK'
       ? closeTime <= now + DAY_MS
         ? 1
         : closeTime <= now + WEEK_MS
@@ -252,20 +259,20 @@ export const computeContractScores = (
     3 * normalize(traderHour, 20) +
     2 * normalize(todayScore, 100) +
     2 * marketMovt +
-    newness +
+    2 * closingSoonnness +
+    2 * newness +
     commentScore +
     normalize(thisWeekScore, 200) +
     normalize(Math.log10(contract.volume24Hours), 5) +
     normalize(contract.uniqueBettorCount, 1000) +
     normalize(Math.log10(contract.volume), 7) +
     liquidityScore +
-    closingSoonnness * 2 +
-    uncertainness / 2
+    uncertainness
 
   const importanceScore =
     outcomeType === 'BOUNTIED_QUESTION'
       ? bountiedImportanceScore(contract, newness, commentScore)
-      : normalize(rawImportance, 7)
+      : normalize(rawImportance, 8)
 
   return {
     todayScore,
