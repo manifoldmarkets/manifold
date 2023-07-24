@@ -766,7 +766,8 @@ create table if not exists
     name text not null,
     name_fts tsvector generated always as (to_tsvector('english'::regconfig, name)) stored,
     creator_id text,
-    total_members numeric default 0
+    total_members numeric default 0,
+    importance_score numeric default 0
   );
 
 alter table groups enable row level security;
@@ -1556,7 +1557,8 @@ create table if not exists
     source_id text,
     source_name text,
     title_embedding vector (1536) not null,
-    contract_ids text[] not null
+    contract_ids text[] not null,
+    group_ids text[] null
   );
 
 alter table news enable row level security;

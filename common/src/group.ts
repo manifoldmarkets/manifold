@@ -25,6 +25,7 @@ export type Group = {
   }
   bannerUrl?: string
   privacyStatus: PrivacyStatusType
+  importanceScore: number
 }
 
 export type GroupResponse = Row<'groups'>
