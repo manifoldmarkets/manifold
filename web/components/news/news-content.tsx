@@ -104,10 +104,12 @@ const OpenAI = createNewsDashboardTab(
 
 const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
   {
-    url: 'https://www.aljazeera.com/news/2023/7/17/crimea-bridge-attack-what-happened-why-is-the-bridge-important',
+    url: 'https://www.bbc.co.uk/news/world-europe-66289136',
   },
   { slug: 'will-ukraine-sever-the-land-bridge-58877ff44c53' },
+
   { slug: 'will-there-be-a-nuclear-disaster-at' },
+  { slug: 'how-will-the-ukrainerussia-border-l' },
   { slug: 'will-any-part-of-the-zaporizhzhia-n' },
   { slug: 'will-russia-nuke-ukraine' },
   { slug: 'will-the-wagner-group-stop-operatin-ad2bc1b87277' },
@@ -554,15 +556,44 @@ const Election2024 = createNewsDashboardTab(
 const RPlace = createNewsDashboardTab('r/place', 'r/place', [
   { slug: 'will-rplace-say-fuck-spez-when-it-c' },
   {
-    url: 'https://www.theverge.com/2023/7/20/23801716/reddits-r-place-protest-art',
+    content: (
+      <NewsTopicsContentContainer
+        containerContent={
+          <>
+            Redditors create live animation of the anime Bad Apple:
+            <Link
+              className="text-indigo-500 underline"
+              href="https://twitter.com/MrFoxWasTaken/status/1683184769012748288"
+            >
+              Watch on Twitter
+            </Link>
+          </>
+        }
+      />
+    ),
   },
   { slug: 'how-long-will-rplace-last' },
-  { slug: 'will-the-rplace-canvas-expand-by-th' },
+  { slug: 'what-will-the-final-color-be-at-0-0' },
+  { slug: 'is-this-rplace-a-good-business-move' },
+
   { slug: 'will-i-be-convinced-that-the-destin' },
-  { slug: 'will-there-be-a-recognizable-manifo' },
+  { slug: 'will-manifold-make-it-on-rplace' },
+  { slug: 'will-destiny-be-the-most-represente' },
+])
+
+const XCom = createNewsDashboardTab('X.com', 'Twitter rebrands to X.com', [
+  { url: 'https://www.bbc.co.uk/news/business-66284304' },
+  { slug: 'will-twitter-rename-to-x-in-a-week' },
+  { slug: 'will-graphic-designers-think-twitte' },
+  { slug: 'will-x-formerly-twitter-release-cre' },
+  { slug: 'at-the-end-of-2023-will-manifold-us' },
+  { slug: 'will-xcom-switch-to-a-different-x-l' },
+  { slug: '28-will-twitters-net-income-be-high' },
+  { slug: 'when-will-twitter-actually-collapse' },
 ])
 
 export const newsContent = [
+  XCom,
   RPlace,
   UkraineWar,
   Threads,
