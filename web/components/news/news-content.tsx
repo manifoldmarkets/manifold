@@ -590,10 +590,28 @@ const XCom = createNewsDashboardTab('X.com', 'Twitter rebrands to X.com', [
   { slug: 'will-xcom-switch-to-a-different-x-l' },
   { slug: '28-will-twitters-net-income-be-high' },
   { slug: 'when-will-twitter-actually-collapse' },
+  { slug: 'will-xeeting-catch-on-as-the-new-te' },
+  { slug: 'will-microsoft-win-10-million-from' },
 ])
+
+const IsraeliCourt = createNewsDashboardTab(
+  'Israel',
+  'Israeli gov limits Supreme Court',
+  [
+    {
+      url: 'https://www.cnn.com/2023/07/24/middleeast/israel-supreme-court-power-stripped-intl/index.html',
+    },
+    { slug: 'will-israel-pass-the-judicial-refor-8c16e795af91' },
+    { slug: 'will-israel-pass-the-judicial-refor' },
+    { slug: 'will-the-israeli-supreme-justice-co' },
+    { slug: 'will-an-israeli-protester-be-killed' },
+    { slug: 'will-there-be-restrictions-on-israe' },
+  ]
+)
 
 export const newsContent = [
   XCom,
+  IsraeliCourt,
   RPlace,
   UkraineWar,
   Threads,
