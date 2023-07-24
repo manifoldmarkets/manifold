@@ -13,7 +13,6 @@ import { CollapsibleContent } from '../widgets/collapsible-content'
 import { isTrustworthy } from 'common/envs/constants'
 import { ContractEditHistoryButton } from 'web/components/contract/contract-edit-history-button'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
-import { isContentEmpty } from 'web/lib/util/isContentEmpty'
 import { Editor } from '@tiptap/core'
 import { CreateAnswerCpmmPanel } from '../answers/create-answer-panel'
 
@@ -91,12 +90,12 @@ function ContractActions(props: {
   const [editing, setEditing] = useState(false)
   const [editingAnswer, setEditingAnswer] = useState(false)
 
-  const emptyDescription = isContentEmpty(contract.description)
-
   const editor = useTextEditor({
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: contract.description,
   })
+
+  const emptyDescription = editor?.isEmpty
 
   async function saveDescription() {
     if (!editor) return
