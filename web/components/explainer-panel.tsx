@@ -43,10 +43,10 @@ const Break = () => <div className="my-2"></div>
 
 export const WhatIsAPM = () => (
   <ExpandSection title="📈 What is a prediction market?">
-    Prediction markets allow you to bet on the outcome of future events.
+    Prediction markets let you bet on the outcome of future events.
     <Break />
-    The price of shares of an outcome varies as people buy and sell it. This
-    then reflects the probability of the event occuring.
+    The price of shares in an outcome vary as people buy and sell it. This
+    reflects the probability of the event occuring.
     <Break />
     Prediction markets, including ours, have proven to be incredibly accurate at
     estimating the correct odds.
@@ -55,8 +55,7 @@ export const WhatIsAPM = () => (
 
 export const WhatIsMana = () => (
   <ExpandSection title="💰 What is mana (Ṁ)?">
-    • Mana (Ṁ) is the play-money used by our platform to keep track of your
-    bets.
+    • Mana (Ṁ) is the play-money used by to bet on our platform.
     <Break />
     • All users start with Ṁ500 for free and can earn more by winning bets and
     gaining free bonuses.
@@ -67,11 +66,10 @@ export const WhatIsMana = () => (
 
 export const WhyManifold = () => (
   <ExpandSection title="🤔 Why Manifold?">
-    • <b>NEWS</b> - Build your understanding of current events with accurate
-    probabilities rather than misleading media news engineered for engagement.
+    • <b>NEWS</b> - Build a deep understanding of current events with precise
+    probabilities, not sensationalist media.
     <Break />• <b>COMPETE</b> with your friends and our vibrant community to win
     bets and progress up the leagues to earn prizes!
-    <Break />• <b>ASK</b> - Anyone can create a question about anything they
-    want!
+    <Break />• <b>ASK</b> - Create a question about anything you want!
   </ExpandSection>
 )
