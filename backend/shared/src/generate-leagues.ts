@@ -38,7 +38,7 @@ export async function generateNextSeason(
     join users on users.id = user_id
     where coalesce(users.data->>'isBannedFromPosting', 'false') = 'false'
     and coalesce(users.data->>'userDeleted', 'false') = 'false'
-    and users.data->>'username' not in ($2:csv)
+    and users.username not in ($2:csv)
     `,
     [startDate, BOT_USERNAMES]
   )
@@ -167,7 +167,7 @@ export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
   //   where season = $1
   //   and user_id in (
   //     select id from users
-  //     where data->>'username' in ($2:csv)
+  //     where data.username in ($2:csv)
   //   )
   //   `,
   //   [season, BOT_USERNAMES],
@@ -184,7 +184,7 @@ export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
         where contract_bets.created_time > $1
       )
       select id from users
-      where data->>'username' in ($2:csv)
+      where data.username in ($2:csv)
       and id in (select user_id from active_user_ids)
     `,
     [startDate, BOT_USERNAMES],

@@ -42,44 +42,6 @@ $$;
 /* 1. tables containing firestore content */
 /******************************************/
 create table if not exists
-  users (
-    id text not null primary key,
-    data jsonb not null,
-    fs_updated_time timestamp not null,
-    name_username_vector tsvector generated always as (
-      to_tsvector((data ->> 'username') || ' ' || (data ->> 'name'))
-    ) stored
-  );
-
-alter table users enable row level security;
-
-drop policy if exists "public read" on users;
-
-create policy "public read" on users for
-select
-  using (true);
-
-/* indexes supporting @-mention autocomplete */
-create index if not exists users_name_gin on users using GIN ((data ->> 'name') gin_trgm_ops);
-
-create index if not exists users_username_gin on users using GIN ((data ->> 'username') gin_trgm_ops);
-
-create index users_name_username_vector_idx on users using gin (name_username_vector);
-
-create index if not exists users_follower_count_cached on users ((to_jsonb(data -> 'followerCountCached')) desc);
-
-create index if not exists user_referrals_idx on users ((data ->> 'referredByUserId'))
-where
-  data ->> 'referredByUserId' is not null;
-
-create index if not exists user_profit_cached_all_time_idx on users (((data -> 'profitCached' ->> 'allTime')::numeric));
-
-create index if not exists users_betting_streak_idx on users (((data -> 'currentBettingStreak')::int));
-
-alter table users
-cluster on users_pkey;
-
-create table if not exists
   user_portfolio_history (
     user_id text not null,
     portfolio_id text not null,
@@ -306,8 +268,11 @@ create index if not exists user_seen_markets_type_created_time_desc_idx on user_
   created_time desc
 );
 
-create index if not exists user_seen_markets_user_type_created_time_desc_idx on user_seen_markets
-    (user_id,type, created_time desc);
+create index if not exists user_seen_markets_user_type_created_time_desc_idx on user_seen_markets (
+  user_id,
+  type,
+  created_time desc
+);
 
 alter table user_seen_markets
 cluster on user_seen_markets_created_time_desc_idx;
@@ -1033,19 +998,19 @@ drop policy if exists "admin write access" on topic_embeddings;
 create policy "admin write access" on topic_embeddings as PERMISSIVE for all to service_role;
 
 create table if not exists
-    group_embeddings (
-                         group_id text not null primary key,
-                         created_time timestamp not null default now(),
-                         embedding vector (1536) not null
-);
+  group_embeddings (
+    group_id text not null primary key,
+    created_time timestamp not null default now(),
+    embedding vector (1536) not null
+  );
 
 alter table group_embeddings enable row level security;
 
 drop policy if exists "public read" on group_embeddings;
 
 create policy "public read" on group_embeddings for
-    select
-    using (true);
+select
+  using (true);
 
 drop policy if exists "admin write access" on group_embeddings;
 
@@ -1246,6 +1211,7 @@ create publication supabase_realtime;
 
 alter publication supabase_realtime
 add table contracts;
+
 alter publication supabase_realtime
 add table contract_bets;
 

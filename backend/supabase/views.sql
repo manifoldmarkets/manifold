@@ -111,7 +111,7 @@ create view
       gp.slug as group_slug,
       gp.creator_id as creator_id,
       gp.total_members as total_members,
-      users.data ->> 'name' as name,
+      users.name as name,
       users.username as username,
       users.data ->> 'avatarUrl' as avatar_url,
       (
@@ -135,8 +135,8 @@ create or replace view
   user_groups as (
     select
       users.id as id,
-      users.data ->> 'name' as name,
-      users.data ->> 'username' as username,
+      users.name as name,
+      users.username as username,
       users.data ->> 'avatarUrl' as avatarurl,
       (users.data ->> 'followerCountCached')::integer as follower_count,
       coalesce(user_groups.groups, '{}') as groups
