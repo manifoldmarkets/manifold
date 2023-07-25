@@ -10,7 +10,7 @@ export const CreateQuestionButton = (props: { className?: string }) => {
       href="/create"
       className={clsx(
         buttonClass('xl', 'gradient'),
-        'mt-4 w-full bg-gradient-to-r !px-3 text-white',
+        'w-full bg-gradient-to-r px-3 text-white',
         className
       )}
     >

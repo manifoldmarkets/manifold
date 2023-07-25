@@ -67,7 +67,7 @@ export default function Sidebar(props: {
   )
 
   const createMarketButton = user && !user.isBannedFromPosting && (
-    <CreateQuestionButton key="create-market-button" />
+    <CreateQuestionButton key="create-market-button" className={'mt-4'} />
   )
 
   return (

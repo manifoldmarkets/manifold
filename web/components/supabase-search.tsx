@@ -338,7 +338,7 @@ export function SupabaseContractSearch(props: {
             {profile && (
               <Row className={' items-center justify-center'}>
                 <Col className={'mt-8 w-full items-center justify-center'}>
-                  <CreateQuestionButton className={'!mt-0 max-w-[15rem]'} />
+                  <CreateQuestionButton className={'max-w-[15rem]'} />
                 </Col>
               </Row>
             )}
