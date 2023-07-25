@@ -76,10 +76,10 @@ const processNewsArticle = async (
   readOnly: boolean
 ) => {
   const publishedAtDate = new Date(publishedAt)
-  // if (publishedAtDate <= lastPublished) {
-  //   console.log('Skipping', title)
-  //   return
-  // }
+  if (publishedAtDate <= lastPublished) {
+    console.log('Skipping', title)
+    return
+  }
 
   if (url.includes('youtube.com')) {
     console.log('Skipping youtube video', title)
