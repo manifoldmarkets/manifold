@@ -1,5 +1,6 @@
 import { run } from 'common/supabase/utils'
 import { db } from './db'
+import { User } from 'common/user'
 
 export async function getHasVoted(contractId: string, userId: string) {
   const { data } = await run(
@@ -13,4 +14,14 @@ export async function getHasVoted(contractId: string, userId: string) {
     return true
   }
   return false
+}
+
+export async function getContractVoters(contractId: string) {
+  const { data } = await db.rpc('get_contract_voters', {
+    this_contract_id: contractId,
+  })
+  if (data && data.length > 0) {
+    return data.map((d) => (d as any).data) as User[]
+  }
+  return []
 }

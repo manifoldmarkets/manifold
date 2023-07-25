@@ -1,4 +1,4 @@
-import { PollContract } from 'common/contract'
+import { PollContract, contractPath } from 'common/contract'
 import { PollOption } from 'common/poll-option'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
@@ -9,9 +9,14 @@ import { AnswerBar } from '../answers/answer-item'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { sumBy } from 'lodash'
+import Link from 'next/link'
+import { ArrowRightIcon } from '@heroicons/react/solid'
 
-export function PollPanel(props: { contract: PollContract }) {
-  const { contract } = props
+export function PollPanel(props: {
+  contract: PollContract
+  maxOptions?: number
+}) {
+  const { contract, maxOptions } = props
   const { options, closeTime } = contract
   const totalVotes = sumBy(options, (option) => option.votes)
   const votingOpen = !closeTime || closeTime > Date.now()
@@ -43,9 +48,11 @@ export function PollPanel(props: { contract: PollContract }) {
       })
   }
 
+  const optionsToShow = maxOptions ? options.slice(0, maxOptions) : options
+
   return (
-    <Col className="gap-2">
-      {options.map((option: PollOption) => {
+    <Col className="text-ink-1000 gap-2">
+      {optionsToShow.map((option: PollOption) => {
         const prob = option.votes === 0 ? 0 : option.votes / totalVotes
 
         return (
@@ -77,6 +84,15 @@ export function PollPanel(props: { contract: PollContract }) {
           />
         )
       })}
+      {optionsToShow.length < options.length && (
+        <Link
+          className="text-ink-500 hover:text-primary-500"
+          href={contractPath(contract)}
+        >
+          See {options.length - optionsToShow.length} more options{' '}
+          <ArrowRightIcon className="inline h-4 w-4" />
+        </Link>
+      )}
     </Col>
   )
 }

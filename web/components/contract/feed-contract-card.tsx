@@ -36,6 +36,7 @@ import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { ClickFrame } from '../widgets/click-frame'
 import { HOUR_MS } from 'common/util/time'
+import { PollPanel } from '../poll/poll-panel'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 
 export function FeedContractCard(props: {
@@ -329,6 +330,11 @@ function DetailedCard(props: {
         </Row>
       </Col>
 
+      {contract.outcomeType === 'POLL' && (
+        <div className="mt-2">
+          <PollPanel contract={contract} maxOptions={4} />
+        </div>
+      )}
       {contract.outcomeType === 'MULTIPLE_CHOICE' && (
         <div className="mt-2">
           <AnswersPanel contract={contract} maxAnswers={4} linkToContract />
