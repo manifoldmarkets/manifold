@@ -43,7 +43,6 @@ export const getUsersWithSimilarInterestVectorToNews = async (
              from user_embeddings as ue
          ) as distances
     where distance < $2
-    limit 10000;
   `,
     [newsId, INTEREST_DISTANCE_THRESHOLDS.news_with_related_contracts]
   )
