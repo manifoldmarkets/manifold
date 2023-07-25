@@ -1557,7 +1557,8 @@ create table if not exists
     source_id text,
     source_name text,
     title_embedding vector (1536) not null,
-    contract_ids text[] not null,
+    -- A news row should have contract_ids and/or group_ids
+    contract_ids text[] null,
     group_ids text[] null
   );
 

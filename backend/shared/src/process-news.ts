@@ -5,6 +5,7 @@ import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { insertNewsToUsersFeeds } from 'shared/create-feed'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
+import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 
 export const processNews = async (
   apiKey: string,
@@ -75,10 +76,10 @@ const processNewsArticle = async (
   readOnly: boolean
 ) => {
   const publishedAtDate = new Date(publishedAt)
-  if (publishedAtDate <= lastPublished) {
-    console.log('Skipping', title)
-    return
-  }
+  // if (publishedAtDate <= lastPublished) {
+  //   console.log('Skipping', title)
+  //   return
+  // }
 
   if (url.includes('youtube.com')) {
     console.log('Skipping youtube video', title)
@@ -100,27 +101,33 @@ const processNewsArticle = async (
   }
   console.log('Embedding generated. Searching...')
 
-  const { data: groupsData } = await db.rpc('search_group_embeddings' as any, {
-    query_embedding: embedding,
+  const { data: groupsData } = await db.rpc('search_group_embeddings', {
+    query_embedding: embedding as any,
     similarity_threshold: 0.825, // hand-selected; don't change unless you know what you're doing
-    max_count: 15,
+    max_count: 20,
     name_similarity_threshold: 0.6,
   })
 
-  const groups = groupsData
-    ? await pg.map(
-        `
+  const groups =
+    groupsData && groupsData.length > 0
+      ? await pg.map(
+          `
             select data, id, importance_score from groups where id in ($1:list)
-              and (privacy_status = 'public' or privacy_status = 'curated')
+              and privacy_status = 'public'
+              and slug not in ($2:list)
+              and total_members > 1
               order by importance_score desc
           `,
-        [groupsData.map((g: any) => g.group_id)],
-        (r) => {
-          const data = r.data as Group
-          return { ...data, id: r.id, importanceScore: r.importance_score }
-        }
-      )
-    : []
+          [groupsData.flat().map((g) => g.group_id), DEEMPHASIZED_GROUP_SLUGS],
+          (r) => {
+            const data = r.data as Group
+            return { ...data, id: r.id, importanceScore: r.importance_score }
+          }
+        )
+      : []
+
+  console.log('Groups found:', groups.map((g) => g.name).join(', '))
+  console.log('Group slugs:', groups.map((g) => g.slug).join(', '))
 
   const { data } = await db.rpc('search_contract_embeddings', {
     query_embedding: embedding as any,
@@ -128,13 +135,16 @@ const processNewsArticle = async (
     match_count: 20,
   })
 
-  const contracts: Contract[] = await pg.map(
-    `
+  const contracts: Contract[] =
+    data && data.length > 0
+      ? await pg.map(
+          `
         select data from contracts where id in ($1:list)
         `,
-    [data?.map((c: any) => c.contract_id)],
-    (r) => r.data as Contract
-  )
+          [data?.flat().map((c) => c.contract_id)],
+          (r) => r.data as Contract
+        )
+      : []
 
   const questions = contracts
     .filter(

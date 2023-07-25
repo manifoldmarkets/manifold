@@ -173,7 +173,7 @@ export const DESTINY_GROUP_SLUGS = [
   'mumbowl-stonks',
 ]
 
-export const HOME_BLOCKED_GROUP_SLUGS = [
+export const DEEMPHASIZED_GROUP_SLUGS = [
   'fun',
   'selfresolving',
   'experimental',
@@ -183,6 +183,12 @@ export const HOME_BLOCKED_GROUP_SLUGS = [
   'whale-watching',
   'spam',
   'test',
+  'no-resolution',
+  'eto',
+  'friend-stocks',
+  'austin-less-wrong-2023-predictions',
+  'fantasy-football-stock-exchange',
+  'ancient-markets',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
