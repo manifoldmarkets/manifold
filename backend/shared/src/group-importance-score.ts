@@ -1,18 +1,24 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
-import { orderBy, uniq } from 'lodash'
-
+import { map, orderBy, range, sum, uniq } from 'lodash'
 import { bulkUpdate } from 'shared/supabase/utils'
-import { average } from 'common/util/math'
+
+const MARKETS_PER_GROUP = 50
+const MIN_IMPORTANCE_SCORE = 0.05
 
 export async function calculateGroupImportanceScore(
   pg: SupabaseDirectClient,
   readOnly = false
 ) {
   const importantContracts = await pg.map(
-    `select data from contracts where importance_score > 0.2`,
-    [],
-    (row) => row.data as Contract
+    `select importance_score, (data->'groupLinks') as group_links
+            from contracts where importance_score > $1`,
+    [MIN_IMPORTANCE_SCORE],
+    (row) =>
+      ({
+        importanceScore: row.importance_score,
+        groupLinks: row.group_links,
+      } as Pick<Contract, 'groupLinks' | 'importanceScore'>)
   )
 
   const uniqueGroupIds = uniq(
@@ -29,7 +35,7 @@ export async function calculateGroupImportanceScore(
           (c.groupLinks ?? []).map((gl) => gl.groupId).includes(id)
         ),
         (c) => -c.importanceScore
-      ).slice(0, 20),
+      ).slice(0, MARKETS_PER_GROUP),
     ])
   )
 
@@ -41,14 +47,20 @@ export async function calculateGroupImportanceScore(
       uniqueGroupIds.map((id) => ({
         id: id,
         importance_score: calculateGroupImportanceScoreForGroup(
-          mostImportantContractsByGroupId[id]
+          MARKETS_PER_GROUP,
+          mostImportantContractsByGroupId[id].map((c) => c.importanceScore)
         ),
       }))
     )
 }
-
-//TODO: probably will want to do something more sophisticated here,
-// just averages the top n contracts by importance score for now
-const calculateGroupImportanceScoreForGroup = (contracts: Contract[]) => {
-  return average(contracts.map((c) => c.importanceScore))
+// [sum from i = 1 to n of 1/i * (importance_i) ] / log n
+function calculateGroupImportanceScoreForGroup(
+  n: number,
+  scoresOrderedByImportance: number[]
+): number {
+  const indexes = range(1, n + 1)
+  const scoresSum = sum(
+    map(indexes, (i) => (1 / i) * (scoresOrderedByImportance[i - 1] ?? 0))
+  )
+  return scoresSum / Math.log(n)
 }
