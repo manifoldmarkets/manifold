@@ -77,6 +77,8 @@ export const Stats = (props: {
       ? 'Multiple choice'
       : outcomeType === 'BOUNTIED_QUESTION'
       ? 'Bounty'
+      : outcomeType === 'POLL'
+      ? 'Poll'
       : 'Numeric'
 
   const isBettingContract = contract.mechanism !== 'none'
