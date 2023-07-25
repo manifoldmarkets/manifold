@@ -332,7 +332,7 @@ function DetailedCard(props: {
 
       {contract.outcomeType === 'POLL' && (
         <div className="mt-2">
-          <PollPanel contract={contract} />
+          <PollPanel contract={contract} maxOptions={4} />
         </div>
       )}
       {contract.outcomeType === 'MULTIPLE_CHOICE' && (
