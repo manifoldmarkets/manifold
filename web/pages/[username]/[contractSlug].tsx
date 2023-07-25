@@ -435,7 +435,9 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 ) : (
                   <div className="flex gap-4">
                     <Tooltip
-                      text="Traders"
+                      text={
+                        contract.outcomeType == 'POLL' ? 'Voters' : 'Traders'
+                      }
                       placement="bottom"
                       noTap
                       className="flex flex-row items-center gap-1"

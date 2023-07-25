@@ -155,6 +155,15 @@ export function CloseOrResolveTime(props: {
     return <></>
   }
 
+  const almostForeverTime = dayjs(contract.createdTime).add(
+    dayjs.duration(900, 'year')
+  )
+  if (
+    contract.outcomeType === 'POLL' &&
+    dayjs(closeTime).isAfter(almostForeverTime)
+  ) {
+    return <>Never closes</>
+  }
   if (!!closeTime || !!isResolved) {
     return (
       <Row className={clsx('select-none items-center', className)}>

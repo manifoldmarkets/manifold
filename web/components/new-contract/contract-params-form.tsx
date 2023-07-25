@@ -135,9 +135,13 @@ export function ContractParamsForm(props: {
     timeInMs ? initDate : undefined,
     'now-close-date' + paramsKey
   )
+
   const [closeHoursMinutes, setCloseHoursMinutes] = usePersistentLocalState<
     string | undefined
-  >(timeInMs ? initTime : undefined, 'now-close-time' + paramsKey)
+  >(
+    timeInMs || outcomeType == 'POLL' ? initTime : undefined,
+    'now-close-time' + paramsKey
+  )
 
   const [selectedGroups, setSelectedGroups] = usePersistentLocalState<Group[]>(
     [],
@@ -314,6 +318,7 @@ export function ContractParamsForm(props: {
 
   const isMulti =
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
+
   return (
     <Col>
       <Col>
