@@ -52,7 +52,6 @@ import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { ReviewPanel } from 'web/components/reviews/stars'
-import { AlertBox } from 'web/components/widgets/alert-box'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -79,7 +78,8 @@ import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { Button } from 'web/components/buttons/button'
-import { WhatIsAPM, WhatIsMana, WhyManifold } from '../about'
+import { ExplainerPanel } from 'web/components/explainer-panel'
+import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -308,6 +308,9 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     return () => observer.unobserve(element)
   }, [titleRef])
 
+  const showExplainerPanel =
+    !user || user.createdTime > Date.now() - 24 * 60 * 60 * 1000
+
   return (
     <>
       {creatorTwitter && (
@@ -529,14 +532,13 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
               )}
             </Row>
 
-            {outcomeType === 'NUMERIC' && (
-              <AlertBox
-                title="Warning"
-                text="Distributional numeric questions were introduced as an experimental feature and are now deprecated."
-              />
+            {showExplainerPanel && (
+              <ExplainerPanel className="flex xl:hidden" />
             )}
 
-            {contract.outcomeType !== 'BOUNTIED_QUESTION' && (
+            {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
+
+            {!!user && contract.outcomeType !== 'BOUNTIED_QUESTION' && (
               <ContractSharePanel
                 isClosed={isClosed}
                 isCreator={isCreator}
@@ -589,16 +591,8 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
           </Col>
         </Col>
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
-          {!user && (
-            <>
-              <h2 className={clsx('text-ink-600 mb-2 text-xl')}>
-                What is this?
-              </h2>
-              <WhatIsAPM />
-              <WhatIsMana />
-              <WhyManifold />
-            </>
-          )}
+          {showExplainerPanel && <ExplainerPanel />}
+
           <RelatedContractsList
             contracts={relatedMarkets}
             onContractClick={(c) =>
@@ -608,6 +602,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
           />
         </Col>
       </Row>
+
       <RelatedContractsList
         className="mx-auto mt-8 min-w-[300px] max-w-[600px] xl:hidden"
         contracts={relatedMarkets}
