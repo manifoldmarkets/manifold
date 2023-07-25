@@ -14,6 +14,9 @@ import { db } from 'web/lib/supabase/db'
 import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Col } from 'web/components/layout/col'
+import { useContractVoters } from 'web/hooks/use-votes'
+import { Avatar } from '../widgets/avatar'
+import { UserLink } from '../widgets/user-link'
 
 export function TradesButton(props: { contract: Contract }) {
   const { contract } = props
@@ -22,6 +25,7 @@ export function TradesButton(props: { contract: Contract }) {
   useEffect(() => {
     setUniqueTraders(contract.uniqueBettorCount)
   }, [contract.uniqueBettorCount])
+  const isPoll = contract.outcomeType === 'POLL'
   return (
     <button
       disabled={uniqueTraders === 0}
@@ -51,16 +55,46 @@ export function TradesButton(props: { contract: Contract }) {
       >
         <div className={'bg-canvas-0 sticky top-0'}>
           <span className="font-bold">{contract.question}</span>
+          {isPoll && <span> voters</span>}
         </div>
         <div className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
           {/*In case we need it:*/}
           {/*<span className={'text-ink-500 text-xs'}>*/}
           {/*  Currently held positions may not equal total traders*/}
           {/*</span>*/}
-          <BetsModalContent contract={contract} />
+          {isPoll && <VotesModalContent contract={contract} />}
+          {!isPoll && <BetsModalContent contract={contract} />}
         </div>
       </Modal>
     </button>
+  )
+}
+
+function VotesModalContent(props: { contract: Contract }) {
+  const { contract } = props
+  const voters = useContractVoters(contract.id)
+
+  return (
+    <Col className="mt-4 gap-3">
+      {!voters ? (
+        <LoadingIndicator />
+      ) : voters.length == 0 ? (
+        'No votes yet...'
+      ) : (
+        voters.map((voter) => {
+          return (
+            <Row className="items-center gap-2">
+              <Avatar
+                username={voter.username}
+                avatarUrl={voter.avatarUrl}
+                size={'sm'}
+              />
+              <UserLink name={voter.name} username={voter.username} />
+            </Row>
+          )
+        })
+      )}
+    </Col>
   )
 }
 

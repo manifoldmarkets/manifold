@@ -44,7 +44,7 @@ export function PollPanel(props: { contract: PollContract }) {
   }
 
   return (
-    <Col className="gap-2">
+    <Col className="text-ink-1000 gap-2">
       {options.map((option: PollOption) => {
         const prob = option.votes === 0 ? 0 : option.votes / totalVotes
 

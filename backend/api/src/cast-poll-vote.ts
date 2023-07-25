@@ -29,23 +29,29 @@ export const castpollvote = authEndpoint(async (req, auth) => {
   let optionToUpdate = options.find((o) => o.id === voteId)
 
   return pg.tx(async (t) => {
-    const voters = await t.manyOrNone(
-      `select user_id from votes where contract_id = $1 and id = $2`,
+    const totalVoters = await t.manyOrNone(
+      `select * from votes where contract_id = $1`,
       [contractId, voteId]
     )
 
-    if (voters.some((v) => v.user_id === auth.uid)) {
+    const idVoters = totalVoters.filter((v) => v.id == voteId)
+
+    if (totalVoters.some((v) => v.user_id === auth.uid)) {
       throw new APIError(403, 'You have already voted on this poll')
     }
 
     // Update the votes field
     if (optionToUpdate) {
-      optionToUpdate.votes = voters.length + 1
+      optionToUpdate.votes = idVoters.length + 1
     }
+    console.log(options)
 
     // Write the updated options back to the document
     await admin.firestore().runTransaction(async (transaction) => {
-      transaction.update(contractRef, { options: options })
+      transaction.update(contractRef, {
+        options: options,
+        uniqueBettorCount: totalVoters.length + 1,
+      })
     })
 
     // create the vote row
