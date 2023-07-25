@@ -5,12 +5,24 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
 
 export const cleanOldFeedRowsScheduler = functions.pubsub
-  // 2am on Sunday PST
-  .schedule('0 2 * * 0')
+  // 1am on Saturday PST
+  .schedule('0 1 * * 6')
   .timeZone('America/Los_Angeles')
   .onRun(async () => {
     try {
       console.log(await invokeFunction('cleanoldfeedrows'))
+    } catch (e) {
+      console.error(e)
+    }
+  })
+
+export const cleanOldNotificationsScheduler = functions.pubsub
+  // 1am on Sunday PST
+  .schedule('0 1 * * 0')
+  .timeZone('America/Los_Angeles')
+  .onRun(async () => {
+    try {
+      console.log(await invokeFunction('cleanoldnotifications'))
     } catch (e) {
       console.error(e)
     }
@@ -41,17 +53,6 @@ export const cleanoldfeedrows = onRequest(
     res.status(200).json({ success: true })
   }
 )
-export const cleanOldNotificationsScheduler = functions.pubsub
-  // 4am on Sunday PST
-  .schedule('0 4 * * 0')
-  .timeZone('America/Los_Angeles')
-  .onRun(async () => {
-    try {
-      console.log(await invokeFunction('cleanoldnotifications'))
-    } catch (e) {
-      console.error(e)
-    }
-  })
 
 export const cleanoldnotifications = onRequest(
   { timeoutSeconds: 3600, memory: '256MiB', secrets },
