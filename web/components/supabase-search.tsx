@@ -166,7 +166,6 @@ export function SupabaseContractSearch(props: {
   showTopics?: boolean
   hideSearch?: boolean
   hideFilters?: boolean
-  useQueryUrlParam?: boolean
 }) {
   const {
     defaultSort,
@@ -188,7 +187,6 @@ export function SupabaseContractSearch(props: {
     listViewDisabled,
     showTopics,
     hideFilters,
-    useQueryUrlParam,
   } = props
 
   const [state, setState] = usePersistentInMemoryState<stateType>(
@@ -324,13 +322,13 @@ export function SupabaseContractSearch(props: {
           defaultFilter={defaultFilter}
           persistPrefix={persistPrefix}
           hideOrderSelector={hideOrderSelector}
+          useQueryUrlParam={isWholePage}
           includeProbSorts={includeProbSorts}
           onSearchParametersChanged={onSearchParametersChanged}
           autoFocus={autoFocus}
           listViewDisabled={listViewDisabled}
           showTopics={showTopics}
           hideFilters={hideFilters}
-          useQueryUrlParam={useQueryUrlParam}
         />
         {contracts && contracts.length === 0 ? (
           <Col className={''}>
@@ -392,11 +390,11 @@ function SupabaseContractSearchControls(props: {
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
   onSearchParametersChanged: (params: SupabaseSearchParameters) => void
+  useQueryUrlParam?: boolean
   autoFocus?: boolean
   listViewDisabled?: boolean
   showTopics?: boolean
   hideFilters?: boolean
-  useQueryUrlParam?: boolean
 }) {
   const {
     className,
@@ -406,18 +404,23 @@ function SupabaseContractSearchControls(props: {
     persistPrefix,
     hideOrderSelector,
     onSearchParametersChanged,
+    useQueryUrlParam,
     autoFocus,
     includeProbSorts,
     showTopics,
     inputRowClassName,
     hideFilters,
-    useQueryUrlParam,
   } = props
 
   const router = useRouter()
   const [query, setQuery] = usePersistentState(
     '',
-    useQueryUrlParam ? { key: 'q', store: urlParamStore(router) } : undefined
+    !useQueryUrlParam
+      ? undefined
+      : {
+          key: 'q',
+          store: urlParamStore(router),
+        }
   )
 
   const sortKey = `${persistPrefix}-search-sort`
@@ -425,42 +428,42 @@ function SupabaseContractSearchControls(props: {
 
   const [sort, setSort] = usePersistentState(
     savedSort ?? defaultSort,
-    useQueryUrlParam
-      ? {
+    !useQueryUrlParam
+      ? undefined
+      : {
           key: 's',
           store: urlParamStore(router),
         }
-      : undefined
   )
 
   const [filterState, setFilter] = usePersistentState(
     defaultFilter,
-    useQueryUrlParam
-      ? {
+    !useQueryUrlParam
+      ? undefined
+      : {
           key: 'f',
           store: urlParamStore(router),
         }
-      : undefined
   )
 
   const [contractType, setContractType] = usePersistentState(
     defaultContractType,
-    useQueryUrlParam
-      ? {
-          key: 'c',
+    !useQueryUrlParam
+      ? undefined
+      : {
+          key: 'search-contract-type',
           store: urlParamStore(router),
         }
-      : undefined
   )
 
   const [topic, setTopic] = usePersistentState(
     '',
-    useQueryUrlParam
-      ? {
+    !useQueryUrlParam
+      ? undefined
+      : {
           key: 't',
           store: urlParamStore(router),
         }
-      : undefined
   )
 
   const filter =
