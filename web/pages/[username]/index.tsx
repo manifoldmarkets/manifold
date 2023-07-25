@@ -25,7 +25,7 @@ import { usePrefetchUsers, useUser, useUserById } from 'web/hooks/use-user'
 import { useDiscoverUsers } from 'web/hooks/use-users'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { TextButton } from 'web/components/buttons/text-button'
-import { UserFollowButton } from 'web/components/buttons/follow-button'
+import { FollowButton } from 'web/components/buttons/follow-button'
 import { UserCommentsList } from 'web/components/comments/comments-list'
 import { FollowList } from 'web/components/follow-list'
 import { Col } from 'web/components/layout/col'
@@ -229,7 +229,7 @@ function UserProfile(props: {
             </Row>
           ) : (
             <Row className="items-center gap-1 sm:gap-2">
-              <UserFollowButton userId={user.id} />
+              <FollowButton userId={user.id} />
               <MoreOptionsUserButton user={user} />
             </Row>
           )}
@@ -501,30 +501,15 @@ function FollowsDialog(props: {
           tabs={[
             {
               title: 'Following',
-              content: (
-                <FollowList
-                  userIds={followingIds}
-                  myFollowedIds={myFollowedIds}
-                />
-              ),
+              content: <FollowList userIds={followingIds} />,
             },
             {
               title: 'Followers',
-              content: (
-                <FollowList
-                  userIds={followerIds}
-                  myFollowedIds={myFollowedIds}
-                />
-              ),
+              content: <FollowList userIds={followerIds} />,
             },
             {
               title: 'Similar',
-              content: (
-                <FollowList
-                  userIds={suggestedUserIds}
-                  myFollowedIds={myFollowedIds}
-                />
-              ),
+              content: <FollowList userIds={suggestedUserIds} />,
             },
           ]}
           defaultIndex={defaultTab === 'following' ? 0 : 1}

@@ -1031,18 +1031,10 @@ export const createNewContractNotification = async (
     if (reason === 'contract_from_followed_user')
       await sendNewFollowedMarketEmail(reason, userId, privateUser, contract)
   }
-  const followersSnapshot = await firestore
-    .collectionGroup('follows')
-    .where('userId', '==', contractCreator.id)
-    .get()
 
-  const followerUserIds = filterDefined(
-    followersSnapshot.docs.map((doc) => {
-      const followerUserId = doc.ref.parent.parent?.id
-      return followerUserId && followerUserId != contractCreator.id
-        ? followerUserId
-        : undefined
-    })
+  const followerUserIds = await pg.manyOrNone(
+    `select user_id from user_follows where follow_id = $1 and user_id != $1`,
+    [contractCreator.id]
   )
 
   // As it is coded now, the tag notification usurps the new contract notification

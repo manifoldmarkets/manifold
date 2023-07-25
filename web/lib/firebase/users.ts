@@ -246,35 +246,6 @@ export async function unfollow(userId: string, unfollowedUserId: string) {
   await deleteDoc(followDoc)
 }
 
-export function listenForFollows(
-  userId: string,
-  setFollowIds: (followIds: string[]) => void
-) {
-  const follows = collection(users, userId, 'follows')
-  return listenForValues<{ userId: string }>(follows, (docs) =>
-    setFollowIds(docs.map(({ userId }) => userId))
-  )
-}
-
-export function listenForFollowers(
-  userId: string,
-  setFollowerIds: (followerIds: string[]) => void
-) {
-  const followersQuery = query(
-    collectionGroup(db, 'follows'),
-    where('userId', '==', userId)
-  )
-  return onSnapshot(
-    followersQuery,
-    { includeMetadataChanges: true },
-    (snapshot) => {
-      if (snapshot.metadata.fromCache) return
-
-      const values = snapshot.docs.map((doc) => doc.ref.parent.parent?.id)
-      setFollowerIds(filterDefined(values))
-    }
-  )
-}
 export function listenForReferrals(
   userId: string,
   setReferralIds: (referralIds: string[]) => void

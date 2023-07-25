@@ -12,7 +12,6 @@ import { FollowButton } from 'web/components/buttons/follow-button'
 import { User } from 'common/user'
 import { useFollows } from 'web/hooks/use-follows'
 import { useUser } from 'web/hooks/use-user'
-import { firebaseLogin, follow, unfollow } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
@@ -32,8 +31,6 @@ export default function Users() {
     'creatorTraders',
     'profitCached',
   ])
-  const currentUser = useUser()
-  const myFollowedIds = useFollows(currentUser?.id)
 
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value)
@@ -59,16 +56,7 @@ export default function Users() {
         />
         <Col className={'mt-2 gap-4 p-2'}>
           {users?.map((user) => {
-            return (
-              <UserListEntry
-                key={user.id}
-                user={user}
-                currentUser={currentUser}
-                isFollowing={
-                  (myFollowedIds && myFollowedIds.includes(user.id)) ?? false
-                }
-              />
-            )
+            return <UserListEntry key={user.id} user={user} />
           })}
         </Col>
         <VisibilityObserver
@@ -81,12 +69,8 @@ export default function Users() {
   )
 }
 
-const UserListEntry = (props: {
-  user: UserSearchResult
-  currentUser: User | null | undefined
-  isFollowing: boolean
-}) => {
-  const { user, currentUser, isFollowing } = props
+const UserListEntry = (props: { user: UserSearchResult }) => {
+  const { user } = props
   const { avatarUrl, username, name, id } = user
   const { followerCountCached, creatorTraders, profitCached } = user
   const Metadata = (props: { children: ReactNode; className?: string }) => (
@@ -132,18 +116,7 @@ const UserListEntry = (props: {
             </Row>
           </Col>
 
-          <FollowButton
-            isFollowing={isFollowing}
-            size={'xs'}
-            onFollow={() => {
-              if (!currentUser) return firebaseLogin()
-              follow(currentUser.id, id)
-            }}
-            onUnfollow={() => {
-              if (!currentUser) return firebaseLogin()
-              unfollow(currentUser.id, id)
-            }}
-          />
+          <FollowButton userId={id} />
         </Row>
         <span className={'line-clamp-2 text-ink-600 mt-1 text-sm'}>
           {user.bio}
