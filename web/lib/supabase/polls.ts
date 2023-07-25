@@ -21,7 +21,7 @@ export async function getContractVoters(contractId: string) {
     this_contract_id: contractId,
   })
   if (data && data.length > 0) {
-    return data.map((d) => d.data) as User[]
+    return data.map((d) => (d as any).data) as User[]
   }
   return []
 }

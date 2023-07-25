@@ -44,7 +44,6 @@ export const castpollvote = authEndpoint(async (req, auth) => {
     if (optionToUpdate) {
       optionToUpdate.votes = idVoters.length + 1
     }
-    console.log(options)
 
     // Write the updated options back to the document
     await admin.firestore().runTransaction(async (transaction) => {
