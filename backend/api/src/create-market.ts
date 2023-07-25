@@ -7,9 +7,11 @@ import { runPostBountyTxn } from 'shared/txn/run-bounty-txn'
 
 import { Answer, MAX_ANSWERS, getNoneAnswer } from 'common/answer'
 import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getNumericAnte,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import {
   Contract,
@@ -27,12 +29,16 @@ import { getNewContract } from 'common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from 'common/numeric-constants'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { QfAddPoolTxn } from 'common/txn'
-import { User } from 'common/user'
+import {
+  getAvailableBalancePerQuestion,
+  marketCreationCosts,
+  User,
+} from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { mintAndPoolCert } from 'shared/helpers/cert-txns'
 import { generateEmbeddings, getCloseDate } from 'shared/helpers/openai-utils'
-import { getUser, htmlToRichText } from 'shared/utils'
+import { getUser, htmlToRichText, isProd } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
@@ -82,7 +88,11 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
   const contractRef = firestore.collection('contracts').doc()
 
-  const ante = getAnte(outcomeType, answers?.length, visibility === 'private')
+  const ante =
+    totalBounty ??
+    getAnte(outcomeType, answers?.length, visibility === 'private')
+
+  if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
   const closeTimestamp = await getCloseTimestamp(closeTime, question, utcOffset)
 
@@ -96,8 +106,15 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     if (user.isBannedFromPosting)
       throw new APIError(400, 'User banned from creating markets.')
 
-    if (ante > user.balance)
-      throw new APIError(400, `Balance must be at least ${ante}.`)
+    const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
+      user,
+      ante
+    )
+    if (ante > getAvailableBalancePerQuestion(user))
+      throw new APIError(
+        400,
+        `Balance must be at least ${amountSuppliedByUser}.`
+      )
 
     const slug = await getSlug(trans, question)
 
@@ -121,35 +138,23 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       answers ?? []
     )
 
+    const houseId = isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+    const houseDoc =
+      amountSuppliedByHouse > 0
+        ? await trans.get(firestore.collection('users').doc(houseId))
+        : undefined
     trans.create(contractRef, contract)
-
-    if (!totalBounty) {
-      trans.update(userDoc.ref, {
-        balance: FieldValue.increment(-ante),
-        totalDeposits: FieldValue.increment(-ante),
-      })
-    }
-
-    if (totalBounty && totalBounty > 0) {
-      if (totalBounty > user.balance)
-        throw new APIError(400, `Balance must be at least ${totalBounty}.`)
-      const { status, txn } = await runPostBountyTxn(
-        trans,
-        {
-          fromId: userId,
-          fromType: 'USER',
-          toId: contract.id,
-          toType: 'CONTRACT',
-          amount: totalBounty,
-          token: 'M$',
-          category: 'BOUNTY_POSTED',
-        },
-        contractRef,
-        userDoc.ref
-      )
-    }
-
-    return { user, contract }
+    return runCreateMarketTxn(
+      contract,
+      ante,
+      user,
+      userDoc.ref,
+      contractRef,
+      houseDoc,
+      trans
+    )
   })
 
   console.log(
@@ -190,6 +195,74 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
   await generateContractEmbeddings(contract, db)
 
   return contract
+}
+
+const runCreateMarketTxn = async (
+  contract: Contract,
+  ante: number,
+  user: User,
+  userDocRef: admin.firestore.DocumentReference,
+  contractRef: admin.firestore.DocumentReference,
+  houseDoc: admin.firestore.DocumentSnapshot | undefined,
+  trans: Transaction
+) => {
+  const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
+    user,
+    ante
+  )
+
+  if (contract.outcomeType !== 'BOUNTIED_QUESTION') {
+    if (amountSuppliedByHouse > 0 && houseDoc)
+      trans.update(houseDoc.ref, {
+        balance: FieldValue.increment(-amountSuppliedByHouse),
+        totalDeposits: FieldValue.increment(-amountSuppliedByHouse),
+      })
+
+    if (amountSuppliedByUser > 0)
+      trans.update(userDocRef, {
+        balance: FieldValue.increment(-amountSuppliedByUser),
+        totalDeposits: FieldValue.increment(-amountSuppliedByUser),
+      })
+  } else {
+    // Even if their debit is 0, it seems important that the user posts the bounty
+    await runPostBountyTxn(
+      trans,
+      {
+        fromId: user.id,
+        fromType: 'USER',
+        toId: contract.id,
+        toType: 'CONTRACT',
+        amount: amountSuppliedByUser,
+        token: 'M$',
+        category: 'BOUNTY_POSTED',
+      },
+      contractRef,
+      userDocRef
+    )
+
+    if (amountSuppliedByHouse > 0 && houseDoc)
+      await runPostBountyTxn(
+        trans,
+        {
+          fromId: houseDoc.id,
+          fromType: 'USER',
+          toId: contract.id,
+          toType: 'CONTRACT',
+          amount: amountSuppliedByHouse,
+          token: 'M$',
+          category: 'BOUNTY_ADDED',
+        },
+        contractRef,
+        houseDoc.ref
+      )
+  }
+
+  if (amountSuppliedByHouse > 0)
+    trans.update(userDocRef, {
+      freeQuestionsCreated: FieldValue.increment(1),
+    })
+
+  return { user, contract }
 }
 
 const generateContractEmbeddings = async (

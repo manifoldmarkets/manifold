@@ -20,8 +20,14 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
 import { Page } from 'web/components/layout/page'
-import { MINUTE_MS } from 'common/util/time'
-import { PrivateUser } from 'common/user'
+import { DAY_MS, MINUTE_MS } from 'common/util/time'
+import {
+  DAYS_TO_USE_FREE_QUESTIONS,
+  freeQuestionRemaining,
+  PrivateUser,
+} from 'common/user'
+import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
 export default function FeedTimelinePage() {
   return (
@@ -32,11 +38,29 @@ export default function FeedTimelinePage() {
 }
 export function FeedTimeline() {
   const privateUser = usePrivateUser()
-
+  const user = useUser()
+  const remaining = freeQuestionRemaining(
+    user?.freeQuestionsCreated,
+    user?.createdTime
+  )
+  console.log('remaining', remaining)
   return (
     <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
       <Col className={clsx('gap-6')}>
         <Col>
+          {user && remaining > 0 && (
+            <Row className="text-ink-600 mb-2 items-center justify-between gap-2 rounded-md bg-green-200 p-2 text-sm">
+              <span className={'text-gray-700'}>
+                🎉 You've got {remaining} free questions! Use them before they
+                expire in{' '}
+                {shortenedFromNow(
+                  user.createdTime - DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
+                )}
+                .
+              </span>
+              <CreateQuestionButton className={'max-w-[10rem]'} />
+            </Row>
+          )}
           {privateUser && <FeedTimelineContent privateUser={privateUser} />}
           <button
             type="button"

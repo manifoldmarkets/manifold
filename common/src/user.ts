@@ -1,5 +1,6 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
+import { DAY_MS } from 'common/util/time'
 
 export type User = {
   id: string
@@ -53,6 +54,7 @@ export type User = {
   userDeleted?: boolean
   metricsLastUpdated?: number
   optOutBetWarnings?: boolean
+  freeQuestionsCreated?: number
 }
 
 export type PrivateUser = {
@@ -99,3 +101,47 @@ export const PLURAL_BETS = ENV_CONFIG.nounBet + 's' ?? 'trades' // predictions (
 export const PAST_BET = ENV_CONFIG.verbPastBet ?? 'traded' // predicted (verb)
 
 export type UserAndPrivateUser = { user: User; privateUser: PrivateUser }
+
+const MAX_FREE_QUESTIONS = 3
+export const DAYS_TO_USE_FREE_QUESTIONS = 3
+export const MAX_FREE_QUESTION_VALUE = 250
+
+export const getAvailableBalancePerQuestion = (user: User): number => {
+  return (
+    user.balance +
+    (freeQuestionRemaining(user.freeQuestionsCreated, user.createdTime) > 0
+      ? MAX_FREE_QUESTION_VALUE
+      : 0)
+  )
+}
+
+export const marketCreationCosts = (user: User, ante: number) => {
+  let amountSuppliedByUser = ante
+  let amountSuppliedByHouse = 0
+  if (freeQuestionRemaining(user.freeQuestionsCreated, user.createdTime) > 0) {
+    amountSuppliedByUser = Math.max(ante - MAX_FREE_QUESTION_VALUE, 0)
+    amountSuppliedByHouse = Math.min(ante, MAX_FREE_QUESTION_VALUE)
+  }
+  return { amountSuppliedByUser, amountSuppliedByHouse }
+}
+
+export const freeQuestionRemaining = (
+  freeQuestionsCreated: number | undefined = 0,
+  createdTime: number | undefined
+) => {
+  if (!createdTime) return 0
+  const now = getCurrentUtcTime()
+  if (freeQuestionsCreated >= MAX_FREE_QUESTIONS) {
+    return 0
+  }
+  const daysSinceCreation =
+    (now.getTime() - createdTime) / (DAYS_TO_USE_FREE_QUESTIONS * DAY_MS)
+  if (daysSinceCreation >= 1) return 0
+  return MAX_FREE_QUESTIONS - freeQuestionsCreated
+}
+
+export function getCurrentUtcTime(): Date {
+  const currentDate = new Date()
+  const utcDate = currentDate.toISOString()
+  return new Date(utcDate)
+}

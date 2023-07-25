@@ -33,7 +33,11 @@ import { MAX_DESCRIPTION_LENGTH, NON_BETTING_OUTCOMES } from 'common/contract'
 import { getAnte } from 'common/economy'
 import { Group } from 'common/group'
 import { STONK_NO, STONK_YES } from 'common/stonk'
-import { User } from 'common/user'
+import {
+  getAvailableBalancePerQuestion,
+  marketCreationCosts,
+  User,
+} from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { extensions } from 'common/util/parse'
 import { useTextEditor } from 'web/components/widgets/editor'
@@ -148,6 +152,11 @@ export function ContractParamsForm(props: {
     'new-selected-groups' + paramsKey
   )
 
+  const balance = getAvailableBalancePerQuestion(creator)
+  const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
+    creator,
+    outcomeType !== 'BOUNTIED_QUESTION' ? ante : 250
+  )
   const [bountyAmount, setBountyAmount] = usePersistentLocalState<
     number | undefined
   >(50, 'new-bounty' + paramsKey)
@@ -155,8 +164,6 @@ export function ContractParamsForm(props: {
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
-
-  const balance = creator.balance || 0
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
@@ -283,7 +290,8 @@ export function ContractParamsForm(props: {
           answers,
           visibility,
           utcOffset: new Date().getTimezoneOffset(),
-          totalBounty: bountyAmount,
+          totalBounty:
+            amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
         })
       )) as Contract
 
@@ -454,16 +462,22 @@ export function ContractParamsForm(props: {
             <span className="mb-1 mr-1">Bounty</span>
             <InfoTooltip text="The award you give good answers. You can divide this amongst answers however you'd like." />
           </label>
-          <BuyAmountInput
-            inputClassName="w-full max-w-none"
-            minimumAmount={5}
-            amount={bountyAmount}
-            onChange={(newAmount) => setBountyAmount(newAmount)}
-            error={bountyError}
-            setError={setBountyError}
-            sliderOptions={{ show: true, wrap: false }}
-            customRange={{ rangeMax: 500 }}
-          />
+          {amountSuppliedByHouse === 0 ? (
+            <BuyAmountInput
+              inputClassName="w-full max-w-none"
+              minimumAmount={5}
+              amount={bountyAmount}
+              onChange={(newAmount) => setBountyAmount(newAmount)}
+              error={bountyError}
+              setError={setBountyError}
+              sliderOptions={{ show: true, wrap: false }}
+              customRange={{ rangeMax: 500 }}
+            />
+          ) : (
+            <div className="text-ink-700 pl-1 text-sm">
+              {formatMoney(amountSuppliedByHouse)} (Supplied by the house)
+            </div>
+          )}
           <Spacer h={6} />
         </>
       )}
@@ -625,33 +639,38 @@ export function ContractParamsForm(props: {
           </label>
 
           <div className="text-ink-700 pl-1 text-sm">
-            {outcomeType !== 'BOUNTIED_QUESTION' && <>{formatMoney(ante)}</>}
-            {outcomeType !== 'BOUNTIED_QUESTION' && visibility === 'public' && (
+            {amountSuppliedByUser === 0 ? (
+              <span className="text-teal-500">FREE </span>
+            ) : outcomeType !== 'BOUNTIED_QUESTION' ? (
+              <>
+                {formatMoney(amountSuppliedByUser)}
+                {visibility === 'public' && (
+                  <span>
+                    {' '}
+                    or <span className=" text-teal-500">FREE </span>
+                    if you get{' '}
+                    {isMulti
+                      ? amountSuppliedByUser / (UNIQUE_BETTOR_BONUS_AMOUNT / 2)
+                      : amountSuppliedByUser / UNIQUE_BETTOR_BONUS_AMOUNT}
+                    + participants{' '}
+                    <InfoTooltip
+                      text={
+                        isMulti
+                          ? `You'll earn a bonus of ${formatMoney(
+                              Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
+                            )} for each unique trader you get on each answer.`
+                          : `You'll earn a bonus of ${formatMoney(
+                              UNIQUE_BETTOR_BONUS_AMOUNT
+                            )} for each unique trader you get on your question.`
+                      }
+                    />
+                  </span>
+                )}
+              </>
+            ) : (
               <span>
-                {' '}
-                or <span className=" text-teal-500">FREE </span>
-                if you get{' '}
-                {isMulti
-                  ? ante / (UNIQUE_BETTOR_BONUS_AMOUNT / 2)
-                  : ante / UNIQUE_BETTOR_BONUS_AMOUNT}
-                + participants{' '}
-                <InfoTooltip
-                  text={
-                    isMulti
-                      ? `You'll earn a bonus of ${formatMoney(
-                          Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
-                        )} for each unique trader you get on each answer.`
-                      : `You'll earn a bonus of ${formatMoney(
-                          UNIQUE_BETTOR_BONUS_AMOUNT
-                        )} for each unique trader you get on your question.`
-                  }
-                />
-              </span>
-            )}
-            {outcomeType == 'BOUNTIED_QUESTION' && (
-              <span>
-                {bountyAmount
-                  ? formatMoney(bountyAmount)
+                {amountSuppliedByUser
+                  ? formatMoney(amountSuppliedByUser)
                   : `${ENV_CONFIG.moneyMoniker} --`}
               </span>
             )}
