@@ -535,7 +535,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
             </Row>
 
             {showExplainerPanel && (
-              <ExplainerPanel className="flex xl:hidden" />
+              <ExplainerPanel className="bg-canvas-50 -mx-4 flex rounded-lg p-4 pb-0 xl:hidden" />
             )}
 
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}

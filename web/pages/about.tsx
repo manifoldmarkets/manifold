@@ -1,4 +1,3 @@
-import { ChevronDoubleDownIcon } from '@heroicons/react/solid'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import {
   APPLE_APP_URL,
@@ -25,6 +24,11 @@ import { useUser } from 'web/hooks/use-user'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { isIOS } from 'web/lib/util/device'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
+import {
+  WhatIsAPM,
+  WhatIsMana,
+  WhyManifold,
+} from 'web/components/explainer-panel'
 
 export default function AboutPage() {
   const { isNative, platform } = getNativePlatform()
@@ -178,7 +182,7 @@ export default function AboutPage() {
             title="🏆 CSPI/Salem tournament"
             description="Seperate site hosting special contest"
             href="https://salemcenter.manifold.markets/"
-            target="blank_"
+            target="_blank"
           />
           <LabCard
             title="📜 Community guidelines"
@@ -331,57 +335,25 @@ export default function AboutPage() {
 export const LabCard = (props: {
   title: string
   description?: string
-  href?: string
+  href: string
   onClick?: () => void
   target?: string
-  fullDescription?: React.ReactNode
 }) => {
-  const { title, description, href, onClick, target, fullDescription } = props
-  const [isExpanded, setIsExpanded] = useState(false)
+  const { title, description, href, onClick, target } = props
 
-  const handleExpandClick = () => {
-    setIsExpanded(!isExpanded)
-  }
-
-  const arrowStyles = {
-    transform: `rotate(${isExpanded ? '180deg' : '0deg'})`,
-
-    display: 'inline-block',
-    marginLeft: 'auto',
-  }
-
-  const cardContent = (
-    <Card onClick={handleExpandClick} className="flex flex-col gap-2 px-4 py-3">
-      <div className="flex items-center justify-between">
-        <div className="text-lg font-semibold">{title}</div>
-        {fullDescription && (
-          <ChevronDoubleDownIcon className="h-4 w-4" style={arrowStyles} />
-        )}
-        {target && (
-          <ExternalLinkIcon className="ml-auto inline-block h-4 w-4" />
-        )}
-      </div>
-      <p className="text-ink-600">{description}</p>
-      {isExpanded && fullDescription && (
-        <p className="text-ink-600">{fullDescription}</p>
-      )}
-    </Card>
+  return (
+    <Link href={href} onClick={onClick} target={target} className="mb-4 block">
+      <Card className="flex flex-col gap-2 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="text-lg font-semibold">{title}</div>
+          {target && (
+            <ExternalLinkIcon className="ml-auto inline-block h-4 w-4" />
+          )}
+        </div>
+        <p className="text-ink-600">{description}</p>
+      </Card>
+    </Link>
   )
-
-  if (href) {
-    return (
-      <Link
-        href={href}
-        onClick={onClick}
-        target={target}
-        className="mb-4 block"
-      >
-        {cardContent}
-      </Link>
-    )
-  }
-
-  return <div className="mb-4 block">{cardContent}</div>
 }
 
 const LabSection = (props: { children: React.ReactNode }) => (
@@ -392,57 +364,4 @@ const LabSection = (props: { children: React.ReactNode }) => (
   >
     {props.children}
   </Masonry>
-)
-
-const Break = () => <div className="my-2"></div>
-
-export const WhatIsAPM = () => (
-  <LabCard
-    title="📈 What is a prediction market?"
-    fullDescription={
-      <>
-        Prediction markets allow you to bet on the outcome of future events.
-        <Break />
-        The price of shares of an outcome varies as people buy and sell it. This
-        then reflects the probability of the event occuring.
-        <Break />
-        Prediction markets, including ours, have proven to be incredibly
-        accurate at estimating the correct odds.
-      </>
-    }
-  />
-)
-
-export const WhatIsMana = () => (
-  <LabCard
-    title="💰 What is mana (Ṁ)?"
-    fullDescription={
-      <>
-        • Mana (Ṁ) is the play-money used by our platform to keep track of your
-        bets.
-        <Break />
-        • All users start with Ṁ500 for free and can earn more by winning bets
-        and gaining free bonuses.
-        <Break />• It cannot be converted to cash, but can be redeemed for real
-        charity donations at a rate of Ṁ100 to $1.
-      </>
-    }
-  />
-)
-
-export const WhyManifold = () => (
-  <LabCard
-    title="🤔 Why Manifold?"
-    fullDescription={
-      <>
-        • <b>NEWS</b> - Build your understanding of current events with accurate
-        probabilities rather than misleading media news engineered for
-        engagement.
-        <Break />• <b>COMPETE</b> with your friends and our vibrant community to
-        win bets and progress up the leagues to earn prizes!
-        <Break />• <b>ASK</b> - Anyone can create a question about anything they
-        want!
-      </>
-    }
-  />
 )
