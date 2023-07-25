@@ -770,7 +770,7 @@ export interface Database {
       news: {
         Row: {
           author: string | null
-          contract_ids: string[]
+          contract_ids: string[] | null
           created_time: string
           description: string | null
           group_ids: string[] | null
@@ -785,7 +785,7 @@ export interface Database {
         }
         Insert: {
           author?: string | null
-          contract_ids: string[]
+          contract_ids?: string[] | null
           created_time?: string
           description?: string | null
           group_ids?: string[] | null
@@ -800,7 +800,7 @@ export interface Database {
         }
         Update: {
           author?: string | null
-          contract_ids?: string[]
+          contract_ids?: string[] | null
           created_time?: string
           description?: string | null
           group_ids?: string[] | null
