@@ -39,7 +39,7 @@ import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
+import { useComments } from 'web/hooks/use-comments'
 
 export const EMPTY_USER = '_'
 
@@ -220,7 +220,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     clearReply,
   } = props
   const comments = (
-    useRealtimeCommentsOnContract(contract.id) ?? props.comments
+    useComments(contract.id) ?? props.comments
   ).filter((c) => !blockedUserIds.includes(c.userId))
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
