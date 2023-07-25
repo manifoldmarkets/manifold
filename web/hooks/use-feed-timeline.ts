@@ -317,6 +317,8 @@ function createFeedTimelineItems(
     const relevantGroups = groups?.filter((group) =>
       newsItems.map((i) => i.group_id).includes(group.id)
     )
+    // TODO: display relevant groups
+    if ((relevantContracts ?? []).length === 0) return
 
     return {
       ...getBaseTimelineItem(newsItems[0]),
