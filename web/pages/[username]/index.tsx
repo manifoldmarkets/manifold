@@ -494,10 +494,10 @@ function FollowsDialog(props: {
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
-      <Col className="bg-canvas-0 max-h-[90vh] rounded p-6 pb-2">
-        <div className="p-2 pb-1 text-xl">{user.name}</div>
-        <div className="text-ink-500 p-2 pt-0 text-sm">@{user.username}</div>
+      <Col className="bg-canvas-0 max-h-[90vh] rounded pt-6">
+        <div className="px-6 pb-1 text-center text-xl">{user.name}</div>
         <Tabs
+          className="mx-6"
           tabs={[
             {
               title: 'Following',
