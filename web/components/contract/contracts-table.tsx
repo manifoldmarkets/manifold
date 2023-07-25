@@ -19,7 +19,6 @@ import { Action } from './contract-table-action'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
-import { CgPoll } from 'react-icons/cg'
 import { Tooltip } from '../widgets/tooltip'
 import { RiBarChartFill } from 'react-icons/ri'
 
