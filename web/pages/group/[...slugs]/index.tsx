@@ -305,7 +305,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
             const path = `/group/${group.slug}/${
               groupSubpages[index + 1] ?? ''
             }`
-            Router.push(path, undefined, { shallow: true })
+            router.push(path, undefined, { shallow: true })
             setActiveIndex(index)
           }}
           className={'mb-2'}
