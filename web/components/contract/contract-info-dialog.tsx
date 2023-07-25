@@ -250,6 +250,24 @@ export const Stats = (props: {
                 >
                   {id}
                 </a>
+                <CopyLinkButton
+                  url={id}
+                  linkIconOnlyProps={{ tooltip: 'Copy link to contract id' }}
+                  eventTrackingName={'admin copy contract id'}
+                />
+              </td>
+            </tr>
+            <tr className="bg-scarlet-500/20">
+              <td>SQL query</td>
+              <td>
+                <span>select * from contracts...</span>
+                <CopyLinkButton
+                  url={`select * from contracts where id = '${id}';`}
+                  linkIconOnlyProps={{
+                    tooltip: 'Copy sql query to contract id',
+                  }}
+                  eventTrackingName={'admin copy contract id'}
+                />
               </td>
             </tr>
             {contract.isResolved && (
