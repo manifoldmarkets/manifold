@@ -219,9 +219,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     betResponse,
     clearReply,
   } = props
-  const comments = (
-    useComments(contract.id) ?? props.comments
-  ).filter((c) => !blockedUserIds.includes(c.userId))
+  const comments = (useComments(contract.id) ?? props.comments).filter(
+    (c) => !blockedUserIds.includes(c.userId)
+  )
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     DEFAULT_PARENT_COMMENTS_TO_RENDER
