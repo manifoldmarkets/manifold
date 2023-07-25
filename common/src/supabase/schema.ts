@@ -1471,22 +1471,25 @@ export interface Database {
           data: Json
           fs_updated_time: string
           id: string
+          name: string
           name_username_vector: unknown | null
-          username: string | null
+          username: string
         }
         Insert: {
           data: Json
           fs_updated_time: string
           id: string
+          name: string
           name_username_vector?: unknown | null
-          username?: string | null
+          username: string
         }
         Update: {
           data?: Json
           fs_updated_time?: string
           id?: string
+          name?: string
           name_username_vector?: unknown | null
-          username?: string | null
+          username?: string
         }
         Relationships: []
       }
@@ -2989,8 +2992,9 @@ export interface Database {
           data: Json
           fs_updated_time: string
           id: string
+          name: string
           name_username_vector: unknown | null
-          username: string | null
+          username: string
         }[]
       }
       set_limit: {
