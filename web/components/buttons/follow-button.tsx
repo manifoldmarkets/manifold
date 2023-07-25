@@ -1,6 +1,6 @@
 import { useIsFollowing } from 'web/hooks/use-follows'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { follow, unfollow } from 'web/lib/firebase/users'
+import { follow, unfollow } from 'web/lib/supabase/follows'
 import { track } from 'web/lib/service/analytics'
 import { Button } from './button'
 

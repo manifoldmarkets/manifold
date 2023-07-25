@@ -15,6 +15,18 @@ export async function getContractFollows(contractId: string) {
   }
 }
 
+export const follow = async (user_id: string, follow_id: string) =>
+  run(db.from('user_follows').insert([{ user_id, follow_id }]))
+
+export const unfollow = async (user_id: string, follow_id: string) =>
+  run(
+    db
+      .from('user_follows')
+      .delete()
+      .eq('user_id', user_id)
+      .eq('follow_id', follow_id)
+  )
+
 export async function getUserFollows(userId: string) {
   const { data } = await run(
     db.from('user_follows').select().eq('user_id', userId)

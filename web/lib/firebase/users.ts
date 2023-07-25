@@ -231,19 +231,6 @@ export function getUsers() {
   return getValues<User>(users)
 }
 
-export async function follow(userId: string, followedUserId: string) {
-  const followDoc = doc(collection(users, userId, 'follows'), followedUserId)
-  await setDoc(followDoc, {
-    userId: followedUserId,
-    timestamp: Date.now(),
-  })
-}
-
-export async function unfollow(userId: string, unfollowedUserId: string) {
-  const followDoc = doc(collection(users, userId, 'follows'), unfollowedUserId)
-  await deleteDoc(followDoc)
-}
-
 export function listenForReferrals(
   userId: string,
   setReferralIds: (referralIds: string[]) => void
