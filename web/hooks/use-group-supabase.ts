@@ -45,11 +45,11 @@ export function useIsGroupMember(groupSlug: string) {
 }
 
 export function useRealtimeMemberGroupIds(
-  user: User | undefined | null
+  userId: string | undefined | null
 ): string[] | undefined {
   const { rows } = useSubscription('group_members', {
     k: 'member_id',
-    v: user?.id ?? '_',
+    v: userId ?? '_',
   })
   return rows?.map((row) => row.group_id) ?? undefined
 }

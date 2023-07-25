@@ -189,6 +189,8 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'austin-less-wrong-2023-predictions',
   'fantasy-football-stock-exchange',
   'ancient-markets',
+  'jokes',
+  'olivia',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

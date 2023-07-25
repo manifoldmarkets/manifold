@@ -364,7 +364,7 @@ const GroupResults = (props: {
   search?: string
 }) => {
   const me = useUser()
-  const myGroups = useRealtimeMemberGroupIds(me) || []
+  const myGroups = useRealtimeMemberGroupIds(me?.id) || []
   const { search } = props
   if (!props.groups.length) return null
   return (

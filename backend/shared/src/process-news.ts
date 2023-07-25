@@ -186,7 +186,7 @@ const processNewsArticle = async (
         source.name ?? null,
         embedding,
         contracts.map((c) => c.id),
-        groups.map((g) => g.id),
+        groups.map((g) => g.id).slice(0, 10),
       ]
     )
     .catch((err) => console.error(err))

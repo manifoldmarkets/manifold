@@ -9,7 +9,7 @@ import { getBoosts } from 'web/lib/supabase/ads'
 import { BoostsType } from 'web/hooks/use-feed'
 import { Row, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { first, groupBy, last, sortBy, uniq, uniqBy } from 'lodash'
+import { first, groupBy, last, orderBy, sortBy, uniq, uniqBy } from 'lodash'
 import { News } from 'common/news'
 import { FEED_DATA_TYPES, FEED_REASON_TYPES, getExplanation } from 'common/feed'
 import { isContractBlocked } from 'web/lib/firebase/users'
@@ -18,6 +18,7 @@ import { DAY_MS } from 'common/util/time'
 import { convertContractComment } from 'web/lib/supabase/comments'
 import { Group } from 'common/group'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
+import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 
 const PAGE_SIZE = 25
 const OLDEST_UNSEEN_TIME_OF_INTEREST = new Date(
@@ -166,7 +167,11 @@ export const useFeedTimeline = (
         .from('groups')
         .select('data, id')
         .in('id', groupIds)
-        .not('slug', 'in', `(${privateUser.blockedGroupSlugs})`)
+        .not(
+          'slug',
+          'in',
+          `(${privateUser.blockedGroupSlugs.concat(DEEMPHASIZED_GROUP_SLUGS)})`
+        )
         .then((res) =>
           res.data?.map((r) => {
             const data = r.data as Group
@@ -314,11 +319,12 @@ function createFeedTimelineItems(
     const relevantContracts = contracts?.filter((contract) =>
       newsItems.map((i) => i.contract_id).includes(contract.id)
     )
-    const relevantGroups = groups?.filter((group) =>
-      newsItems.map((i) => i.group_id).includes(group.id)
-    )
-    // TODO: display relevant groups
-    if ((relevantContracts ?? []).length === 0) return
+    const relevantGroups = orderBy(
+      groups?.filter((group) =>
+        newsItems.map((i) => i.group_id).includes(group.id)
+      ),
+      (g) => -g.importanceScore
+    ).slice(0, 5)
 
     return {
       ...getBaseTimelineItem(newsItems[0]),
