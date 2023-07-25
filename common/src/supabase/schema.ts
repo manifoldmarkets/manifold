@@ -3157,6 +3157,12 @@ export interface Database {
         }
         Returns: number
       }
+      get_contract_voters: {
+        Args: {
+          this_contract_id: string
+        }
+        Returns: {data:Json}[]
+      }
     }
     Enums: {
       [_ in never]: never
