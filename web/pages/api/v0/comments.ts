@@ -1,11 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { Comment, listAllComments } from 'web/lib/firebase/comments'
+import type { Comment } from 'common/comment'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { ApiError, ValidationError } from './_types'
 import { z } from 'zod'
 import { validate } from './_validate'
 import { db } from 'web/lib/supabase/db'
+import { getCommentsOnContract } from 'web/lib/supabase/comments'
 
 const queryParams = z
   .object({
@@ -55,7 +56,7 @@ export default async function handler(
     if (!contractId) {
       return res.status(400).json({ error: 'You must specify a contract.' })
     }
-    const comments = await listAllComments(contractId)
+    const comments = await getCommentsOnContract(contractId, params.limit)
 
     res.setHeader('Cache-Control', 'max-age=15, public')
     return res.status(200).json(comments)

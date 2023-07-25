@@ -2,7 +2,6 @@ import { Menu, Transition } from '@headlessui/react'
 import { DotsHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Fragment, ReactNode } from 'react'
-import { Row } from 'web/components/layout/row'
 
 export type DropdownItem = {
   name: string
@@ -89,15 +88,11 @@ export default function DropdownMenu(props: {
                         : active
                         ? 'bg-ink-100 text-ink-900'
                         : 'text-ink-700',
-                      'block w-full px-4 py-2 text-sm'
+                      'flex w-full gap-2 px-4 py-2 text-left text-sm'
                     )}
                   >
-                    <Row className={'gap-2'}>
-                      {item.icon && <div className="w-5">{item.icon}</div>}
-                      <div className="whitespace-nowrap text-left">
-                        {item.name}
-                      </div>
-                    </Row>
+                    {item.icon && <div className="w-5">{item.icon}</div>}
+                    {item.name}
                   </button>
                 )}
               </Menu.Item>

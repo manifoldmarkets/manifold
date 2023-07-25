@@ -58,3 +58,40 @@ select contracts.data from
     contracts join group_contracts on group_contracts.contract_id = contracts.id
     where group_contracts.group_id = this_group_id 
     $$;
+
+create
+    or replace function search_group_embeddings (
+    query_embedding vector (1536),
+    similarity_threshold float,
+    max_count int,
+    name_similarity_threshold float
+) returns table (name text, group_id text, similarity float) language sql as $$
+    with groups_similar_to_news as (
+    select name,
+           group_id,
+           1 - (group_embeddings.embedding <=> query_embedding) as similarity,
+           row_number() over (order by (group_embeddings.embedding <=> query_embedding)) as row_num
+    from group_embeddings
+             left join groups on groups.id = group_embeddings.group_id
+    where 1 - (
+            group_embeddings.embedding <=> query_embedding
+        ) > similarity_threshold
+    order by group_embeddings.embedding <=> query_embedding
+    limit max_count+10 -- add some to account for duplicates
+    ),
+    filtered_groups as (
+         select
+             g1.*
+         from
+             groups_similar_to_news as g1
+         where not exists (
+             select 1
+             from groups_similar_to_news as g2
+             where g1.row_num > g2.row_num
+               and similarity(g1.name, g2.name) > name_similarity_threshold
+         )
+     )
+    select name, group_id, similarity from filtered_groups
+    order by similarity desc
+    limit max_count;
+$$;

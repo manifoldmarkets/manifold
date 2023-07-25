@@ -17,7 +17,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useComments } from 'web/hooks/use-comments'
 import { useEvent } from 'web/hooks/use-event'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -40,6 +39,7 @@ import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 
 export const EMPTY_USER = '_'
 
@@ -219,9 +219,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     betResponse,
     clearReply,
   } = props
-  const comments = (useComments(contract.id) ?? props.comments).filter(
-    (c) => !blockedUserIds.includes(c.userId)
-  )
+  const comments = (
+    useRealtimeCommentsOnContract(contract.id) ?? props.comments
+  ).filter((c) => !blockedUserIds.includes(c.userId))
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     DEFAULT_PARENT_COMMENTS_TO_RENDER
@@ -344,7 +344,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 }
               : undefined
           }
-          className="mb-4"
+          className="mb-4 mt-px mr-px"
           contract={contract}
           clearReply={clearReply}
           trackingLocation={'contract page'}

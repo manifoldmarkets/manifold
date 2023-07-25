@@ -1,15 +1,18 @@
 import React from 'react'
 import { useRouter } from 'next/router'
+import clsx from 'clsx'
 
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from './button'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
+import { Col } from '../layout/col'
 
-export const SidebarSignUpButton = () => {
+export const SidebarSignUpButton = (props: { className?: string }) => {
+  const { className } = props
   const router = useRouter()
 
   return (
-    <>
+    <Col className={clsx('mt-4', className)}>
       <Button
         color="gradient"
         size="xl"
@@ -19,12 +22,12 @@ export const SidebarSignUpButton = () => {
           await firebaseLogin()
           router.replace(router.asPath)
         }}
-        className="mt-4"
+        className="w-full"
       >
         Sign up
       </Button>
       <PlayMoneyDisclaimer />
-    </>
+    </Col>
   )
 }
 

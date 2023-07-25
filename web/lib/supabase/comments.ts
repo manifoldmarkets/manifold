@@ -1,12 +1,26 @@
 import { ContractComment, PostComment } from 'common/comment'
-import { run, selectJson } from 'common/supabase/utils'
+import { Row, mapTypes, run, tsToMillis } from 'common/supabase/utils'
 import { db } from './db'
 import { JSONContent } from '@tiptap/core'
 import { Post } from 'common/post'
 import { User } from 'common/user'
 import { track } from '../service/analytics'
 
-export async function getCommentRows(limit: number) {
+export async function getComment(commentId: string) {
+  const res = await db
+    .from('contract_comments')
+    .select()
+    .eq('comment_id', commentId)
+    .single()
+
+  if (res.error) {
+    return null
+  }
+
+  return convertContractComment(res.data)
+}
+
+export async function getAllCommentRows(limit: number) {
   const { data } = await run(
     db
       .from('contract_comments')
@@ -19,12 +33,34 @@ export async function getCommentRows(limit: number) {
   return data
 }
 
-export async function getComments(limit: number) {
-  const q = selectJson(db, 'contract_comments')
-    .order('created_time', { ascending: false } as any)
-    .limit(limit)
+export async function getCommentRows(contractId: string) {
+  const { data } = await run(
+    db
+      .from('contract_comments')
+      .select()
+      .eq('contract_id', contractId)
+      .order('created_time', { ascending: false })
+  )
+  return data
+}
+
+export async function getCommentsOnContract(
+  contractId: string,
+  limit?: number
+) {
+  const q = db
+    .from('contract_comments')
+    .select()
+    .eq('contract_id', contractId)
+    .order('created_time', { ascending: false })
+
+  if (limit) {
+    q.limit(limit)
+  }
+
   const { data } = await run(q)
-  return data.map((c) => c.data)
+
+  return data.map(convertContractComment)
 }
 
 export async function getUserComments(
@@ -35,15 +71,13 @@ export async function getUserComments(
   const { data } = await run(
     db
       .from('contract_comments')
-      .select('data')
+      .select()
       .eq('user_id', userId)
       .order('created_time', { ascending: false } as any)
       .range(page * limit, page * limit + limit - 1)
   )
   if (data) {
-    return data.map((c) => {
-      return c.data as ContractComment
-    })
+    return data.map(convertContractComment)
   } else {
     return []
   }
@@ -58,6 +92,12 @@ export async function getNumUserComments(userId: string) {
   )
   return count as number
 }
+
+export const convertContractComment = (row: Row<'contract_comments'>) =>
+  mapTypes<'contract_comments', ContractComment>(row, {
+    fs_updated_time: false,
+    created_time: tsToMillis as any,
+  })
 
 // post comments
 

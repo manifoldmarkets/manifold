@@ -58,7 +58,7 @@ export default function Groups() {
 
 export function GroupsPageContent(props: { user: User | null | undefined }) {
   const { user } = props
-  const yourGroupIds = useRealtimeMemberGroupIds(user)
+  const yourGroupIds = useRealtimeMemberGroupIds(user?.id)
   if (user === undefined || yourGroupIds === undefined) {
     return <LoadingIndicator />
   }

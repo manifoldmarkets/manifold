@@ -2,7 +2,11 @@ import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { useRouter } from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { Sort, SupabaseContractSearch, filter } from 'web/components/supabase-search'
+import {
+  Sort,
+  SupabaseContractSearch,
+  filter,
+} from 'web/components/supabase-search'
 import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useTracking } from 'web/hooks/use-tracking'

@@ -329,9 +329,13 @@ export const addContractToFeedIfNotDuplicative = async (
   )
 }
 
-export const insertNewsContractsToUsersFeeds = async (
+export const insertNewsToUsersFeeds = async (
   newsId: string,
   contracts: {
+    id: string
+    creatorId: string
+  }[],
+  groups: {
     id: string
     creatorId: string
   }[],
@@ -348,7 +352,7 @@ export const insertNewsContractsToUsersFeeds = async (
     Object.keys(usersToReasons).length
   )
 
-  return await Promise.all(
+  await Promise.all(
     contracts.map(async (contract) => {
       await bulkInsertDataToUserFeed(
         usersToReasons,
@@ -358,6 +362,23 @@ export const insertNewsContractsToUsersFeeds = async (
         {
           contractId: contract.id,
           creatorId: contract.creatorId,
+          newsId,
+        },
+        pg
+      )
+    })
+  )
+  await Promise.all(
+    groups.map(async (group) => {
+      await bulkInsertDataToUserFeed(
+        usersToReasons,
+        eventTime,
+        // Should we change this to news_with_related_groups?
+        'news_with_related_contracts',
+        [],
+        {
+          groupId: group.id,
+          creatorId: group.creatorId,
           newsId,
         },
         pg
