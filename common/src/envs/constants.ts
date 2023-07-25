@@ -191,6 +191,8 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'ancient-markets',
   'jokes',
   'olivia',
+  'planecrash',
+  'glowfic',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

@@ -76,7 +76,7 @@ const processNewsArticle = async (
   readOnly: boolean
 ) => {
   const publishedAtDate = new Date(publishedAt)
-  if (publishedAtDate <= lastPublished) {
+  if (publishedAtDate <= lastPublished && !readOnly) {
     console.log('Skipping', title)
     return
   }
@@ -103,7 +103,7 @@ const processNewsArticle = async (
 
   const { data: groupsData } = await db.rpc('search_group_embeddings', {
     query_embedding: embedding as any,
-    similarity_threshold: 0.825, // hand-selected; don't change unless you know what you're doing
+    similarity_threshold: 0.84, // hand-selected; don't change unless you know what you're doing
     max_count: 20,
     name_similarity_threshold: 0.6,
   })
@@ -125,9 +125,17 @@ const processNewsArticle = async (
           }
         )
       : []
-
-  console.log('Groups found:', groups.map((g) => g.name).join(', '))
-  console.log('Group slugs:', groups.map((g) => g.slug).join(', '))
+  if (groupsData)
+    for (const groupData of groupsData.flat()) {
+      console.log(
+        'similarity',
+        groupData.similarity,
+        'name',
+        groups.find((g) => g.id === groupData.group_id)?.name,
+        'slug',
+        groups.find((g) => g.id === groupData.group_id)?.slug
+      )
+    }
 
   const { data } = await db.rpc('search_contract_embeddings', {
     query_embedding: embedding as any,
@@ -158,8 +166,9 @@ const processNewsArticle = async (
     .sort((a, b) => b.importanceScore - a.importanceScore)
     .slice(0, 5)
 
-  if (questions.length === 0 && groups.length === 0) {
-    console.log('No related markets nor groups found\n\n')
+  const totalItems = questions.length + groups.length
+  if (totalItems < 3) {
+    console.log('Not enough related markets & groups found\n\n')
     return
   }
 
