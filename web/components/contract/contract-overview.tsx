@@ -283,7 +283,9 @@ const StonkOverview = (props: {
 export const useTimePicker = (contract: Contract) => {
   const viewScale = useSingleValueHistoryChartViewScale()
   const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>(
-    contract.createdTime > Date.now() - DAY_MS ? 'allTime' : 'daily'
+    contract.isResolved || contract.createdTime > Date.now() - DAY_MS
+      ? 'allTime'
+      : 'daily'
   )
 
   //zooms out of graph if zoomed in upon time selection change
