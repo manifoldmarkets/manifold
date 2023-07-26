@@ -16,13 +16,15 @@ import { useSingleValueHistoryChartViewScale } from '../charts/generic-charts'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
+import { IoIosHourglass } from 'react-icons/io'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
     userId: string
     defaultTimePeriod: Period
+    lastUpdatedTime: number | undefined
   }) {
-    const { userId, defaultTimePeriod } = props
+    const { userId, defaultTimePeriod, lastUpdatedTime } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
     const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
@@ -68,36 +70,55 @@ export const PortfolioValueSection = memo(
       <div className="text-ink-500 animate-pulse text-lg sm:text-xl">---</div>
     )
 
-    // placeholder when loading
-    if (graphPoints === undefined || !lastPortfolioMetrics) {
+    if (
+      !graphPoints ||
+      graphPoints.length <= 1 ||
+      !lastUpdatedTime ||
+      !lastPortfolioMetrics
+    ) {
       return (
         <PortfolioValueSkeleton
           userId={userId}
           graphMode={graphMode}
           onClickNumber={onClickNumber}
+          hideSwitcher={true}
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
           profitElement={placeholderSection}
           balanceElement={placeholderSection}
           valueElement={placeholderSection}
-          graphElement={(_width, height) => (
-            <div
-              style={{
-                height: `${height - 40}px`,
-                margin: '20px 70px 20px 10px',
-              }}
-            >
-              <PlaceholderGraph className="text-ink-400 h-full w-full animate-pulse" />
-            </div>
-          )}
+          graphElement={(_width, height) => {
+            if (graphPoints || !lastUpdatedTime) {
+              return (
+                <Col
+                  style={{
+                    height: `${height}px`,
+                  }}
+                  className={'text-ink-500 mt-2'}
+                >
+                  <Row className={'gap-2'}>
+                    <IoIosHourglass className={'h-6 w-6'} />
+                    <span>Come back soon to see your portfolio history.</span>
+                  </Row>
+                </Col>
+              )
+            }
+            return (
+              <div
+                style={{
+                  height: `${height - 40}px`,
+                  margin: '20px 70px 20px 10px',
+                }}
+              >
+                <PlaceholderGraph className="text-ink-400 h-full w-full animate-pulse" />
+              </div>
+            )
+          }}
           disabled={true}
           placement={isMobile ? 'bottom' : undefined}
         />
       )
     }
-
-    // hide graph if there's no data
-    const hideGraph = graphPoints.length <= 1
 
     const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
     const totalValue = balance + investmentValue
@@ -109,7 +130,6 @@ export const PortfolioValueSection = memo(
         onClickNumber={onClickNumber}
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setTimePeriod}
-        hideSwitcher={hideGraph}
         switcherColor={
           graphMode === 'profit'
             ? totalProfit > 0
@@ -161,26 +181,22 @@ export const PortfolioValueSection = memo(
               : formatMoney(totalValue)}
           </div>
         }
-        graphElement={
-          hideGraph
-            ? () => <></> //TODO: better empty state so there isn't content shift from a flash of placeholder
-            : (width, height) => (
-                <PortfolioGraph
-                  key={graphMode} // we need to reset axis scale state if mode changes
-                  mode={graphMode}
-                  points={graphPoints}
-                  width={width}
-                  height={height}
-                  viewScaleProps={graphView}
-                  onMouseOver={handleGraphDisplayChange}
-                  negativeThreshold={
-                    graphMode == 'profit' && currentTimePeriod != 'allTime'
-                      ? graphPoints[0].y
-                      : undefined
-                  }
-                />
-              )
-        }
+        graphElement={(width, height) => (
+          <PortfolioGraph
+            key={graphMode} // we need to reset axis scale state if mode changes
+            mode={graphMode}
+            points={graphPoints}
+            width={width}
+            height={height}
+            viewScaleProps={graphView}
+            onMouseOver={handleGraphDisplayChange}
+            negativeThreshold={
+              graphMode == 'profit' && currentTimePeriod != 'allTime'
+                ? graphPoints[0].y
+                : undefined
+            }
+          />
+        )}
         placement={isMobile ? 'bottom' : undefined}
       />
     )

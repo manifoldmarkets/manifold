@@ -314,6 +314,7 @@ function UserProfile(props: {
                     <PortfolioValueSection
                       userId={user.id}
                       defaultTimePeriod={'weekly'}
+                      lastUpdatedTime={user.metricsLastUpdated}
                     />
                     <Spacer h={4} />
                     <UserBetsTable user={user} />
