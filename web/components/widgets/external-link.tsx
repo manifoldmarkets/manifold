@@ -1,6 +1,5 @@
 import { ExternalLinkIcon } from '@heroicons/react/outline'
 import Link from 'next/link'
-import { Row } from '../layout/row'
 
 export const ExternalLink = (props: {
   title: string

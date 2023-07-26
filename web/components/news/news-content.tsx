@@ -7,7 +7,6 @@ import { NewsTopicsContentContainer } from 'web/components/widgets/news-topics-c
 import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
-import { SiteLink } from '../widgets/site-link'
 import { ExternalLink } from '../widgets/external-link'
 
 const SummitNATO = createNewsDashboardTab('NATO Summit', 'NATO Summit', [
