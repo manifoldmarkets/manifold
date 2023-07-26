@@ -153,8 +153,8 @@ export const BinaryUserPositionsTable = memo(
         </Row>
 
         <Row className={'gap-1'}>
-          <Col className={'w-1/2 gap-2'}>
-            <Row className={'text-ink-500 justify-end px-2'}>
+          <Col className={'w-1/2'}>
+            <Row className={'text-ink-500 justify-end p-2'}>
               {sortBy === 'profit' ? (
                 <span className={'text-ink-500'}>Profit</span>
               ) : (
@@ -185,8 +185,8 @@ export const BinaryUserPositionsTable = memo(
               )
             })}
           </Col>
-          <Col className={'w-1/2 gap-2'}>
-            <Row className={'text-ink-500 justify-end px-2'}>
+          <Col className={'w-1/2'}>
+            <Row className={'text-ink-500 justify-end p-2'}>
               {sortBy === 'profit' ? (
                 <span className={'text-ink-500'}>Loss</span>
               ) : (
@@ -242,7 +242,7 @@ const PositionRow = memo(function PositionRow(props: {
   return (
     <Row
       className={clsx(
-        'border-ink-300 items-center justify-between gap-2 rounded-sm border-b p-2',
+        'border-ink-300 items-center justify-between gap-2 border-b px-2 py-3',
         currentUser?.id === position.userId && 'bg-amber-500/20',
         followedUsers?.includes(position.userId) && 'bg-blue-500/20'
       )}
