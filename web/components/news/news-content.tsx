@@ -610,7 +610,7 @@ const IsraeliCourt = createNewsDashboardTab(
 )
 
 const STPSuper = createNewsDashboardTab(
-  'Superconductor?',
+  'Superconductor',
   'Scientists announce room temp superconductor',
   [
     { url: 'https://arxiv.org/abs/2307.12008' },
@@ -619,6 +619,7 @@ const STPSuper = createNewsDashboardTab(
     { slug: 'will-we-have-the-first-roomtemperat' },
     { slug: 'is-the-room-temperature-superconduc' },
     { slug: 'will-a-roomtemperature-atmospheric' },
+    { slug: 'will-the-first-roomtemperature-ambi' },
   ]
 )
 
