@@ -1,4 +1,4 @@
-import { groupBy, last, sortBy } from 'lodash'
+import { groupBy, last, mapValues, sortBy, sumBy } from 'lodash'
 import { memo, useEffect, useMemo, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
@@ -58,6 +58,7 @@ export function ContractTabs(props: {
 }) {
   const {
     contract,
+    comments,
     bets,
     answerResponse,
     onCancelAnswerResponse,
@@ -70,13 +71,6 @@ export function ContractTabs(props: {
   const betsWithoutAntes = useMemo(
     () => bets.filter((bet) => !bet.isAnte),
     [bets]
-  )
-  const comments = useMemo(
-    () =>
-      props.comments.filter(
-        (comment) => !blockedUserIds.includes(comment.userId)
-      ),
-    [props.comments, blockedUserIds]
   )
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
@@ -241,33 +235,30 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   // replied to answers/comments are NOT newest, otherwise newest first
   const isReply = (c: ContractComment) => c.replyToCommentId !== undefined
 
-  const strictlySortedComments = useMemo(
-    () =>
-      sortBy(comments, [
-        sort === 'Best'
-          ? isBountiedQuestion
-            ? (c: ContractComment) =>
-                isReply(c)
-                  ? c.createdTime
-                  : // For your own recent comments, show first.
-                  c.createdTime > Date.now() - 10 * MINUTE_MS &&
-                    c.userId === user?.id
-                  ? -Infinity
-                  : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
-            : (c) =>
-                isReply(c)
-                  ? c.createdTime
-                  : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-                  likes &&
-                    c.createdTime > Date.now() - 10 * MINUTE_MS &&
-                    c.userId === user?.id
-                  ? -Infinity
-                  : -(c?.likes ?? 0)
-          : (c) => c,
-        (c) => (isReply(c) ? c.createdTime : -c.createdTime),
-      ]),
-    [comments, sort, likes, user?.id]
-  )
+  const strictlySortedComments = sortBy(comments, [
+    sort === 'Best'
+      ? isBountiedQuestion
+        ? (c: ContractComment) =>
+            isReply(c)
+              ? c.createdTime
+              : // For your own recent comments, show first.
+              c.createdTime > Date.now() - 10 * MINUTE_MS &&
+                c.userId === user?.id
+              ? -Infinity
+              : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
+        : (c) =>
+            isReply(c)
+              ? c.createdTime
+              : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+              likes &&
+                c.createdTime > Date.now() - 10 * MINUTE_MS &&
+                c.userId === user?.id
+              ? -Infinity
+              : -(c?.likes ?? 0)
+      : (c) => c,
+    (c) => (isReply(c) ? c.createdTime : -c.createdTime),
+  ])
+
   const commentsByParent = groupBy(
     strictlySortedComments,
     (c) => c.replyToCommentId ?? '_'
@@ -297,15 +288,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
 
   const childrensBounties = isBountiedQuestion
-    ? Object.keys(commentsByParent).reduce(
-        (newObj: { [key: string]: number }, key) => {
-          newObj[key] = commentsByParent[key].reduce(
-            (sum, c) => sum + (c?.bountyAwarded ?? 0),
-            0
-          )
-          return newObj
-        },
-        {}
+    ? mapValues(commentsByParent, (comments) =>
+        sumBy(comments, (c) => c?.bountyAwarded ?? 0)
       )
     : {}
 
