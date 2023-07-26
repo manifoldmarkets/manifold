@@ -34,6 +34,7 @@ import { getAnte } from 'common/economy'
 import { Group } from 'common/group'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import {
+  freeQuestionRemaining,
   getAvailableBalancePerQuestion,
   marketCreationCosts,
   User,
@@ -151,15 +152,22 @@ export function ContractParamsForm(props: {
     [],
     'new-selected-groups' + paramsKey
   )
+  const [bountyAmount, setBountyAmount] = usePersistentLocalState<
+    number | undefined
+  >(50, 'new-bounty' + paramsKey)
 
   const balance = getAvailableBalancePerQuestion(creator)
   const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
     creator,
-    outcomeType !== 'BOUNTIED_QUESTION' ? ante : 250
+    outcomeType !== 'BOUNTIED_QUESTION'
+      ? ante
+      : freeQuestionRemaining(
+          creator.freeQuestionsCreated,
+          creator.createdTime
+        ) > 0
+      ? 250
+      : bountyAmount ?? 50
   )
-  const [bountyAmount, setBountyAmount] = usePersistentLocalState<
-    number | undefined
-  >(50, 'new-bounty' + paramsKey)
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
