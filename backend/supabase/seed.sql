@@ -437,6 +437,8 @@ create index if not exists contracts_creator_id on contracts (creator_id, create
 
 create index if not exists contracts_created_time on contracts (created_time desc);
 
+create index if not exists contracts_unique_bettors on contracts (((data->>'uniqueBettorCount')::integer) desc);
+
 create index if not exists contracts_close_time on contracts (close_time desc);
 
 create index if not exists contracts_popularity_score on contracts (popularity_score desc);
