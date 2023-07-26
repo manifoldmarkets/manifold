@@ -16,15 +16,15 @@ import { useSingleValueHistoryChartViewScale } from '../charts/generic-charts'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
-import { IoIosHourglass } from 'react-icons/io'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
     userId: string
     defaultTimePeriod: Period
+    isCurrentUser: boolean
     lastUpdatedTime: number | undefined
   }) {
-    const { userId, defaultTimePeriod, lastUpdatedTime } = props
+    const { userId, isCurrentUser, defaultTimePeriod, lastUpdatedTime } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
     const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
@@ -87,18 +87,19 @@ export const PortfolioValueSection = memo(
           profitElement={placeholderSection}
           balanceElement={placeholderSection}
           valueElement={placeholderSection}
+          className={'h-8'}
           graphElement={(_width, height) => {
             if (graphPoints || !lastUpdatedTime) {
               return (
-                <Col
-                  style={{
-                    height: `${height}px`,
-                  }}
-                  className={'text-ink-500 mt-2'}
-                >
+                <Col className={'text-ink-500 mt-2'}>
                   <Row className={'gap-2'}>
-                    <IoIosHourglass className={'h-6 w-6'} />
-                    <span>Come back soon to see your portfolio history.</span>
+                    {isCurrentUser ? (
+                      <span>
+                        Portfolio history is available ~20m after your 1st bet.
+                      </span>
+                    ) : (
+                      <span>User has no portfolio history, yet.</span>
+                    )}
                   </Row>
                 </Col>
               )
@@ -213,6 +214,7 @@ export function PortfolioValueSkeleton(props: {
   balanceElement: ReactNode
   graphElement: (width: number, height: number) => ReactNode
   hideSwitcher?: boolean
+  className?: string
   switcherColor?: ColorType
   userId?: string
   disabled?: boolean
@@ -232,6 +234,7 @@ export function PortfolioValueSkeleton(props: {
     userId,
     disabled,
     placement,
+    className,
   } = props
   return (
     <>
@@ -302,7 +305,11 @@ export function PortfolioValueSkeleton(props: {
           />
         )}
       </Row>
-      <SizedContainer className="mb-4 h-[150px] pr-11 sm:h-[200px] lg:pr-0">
+      <SizedContainer
+        className={clsx(
+          className ? className : 'mb-4 h-[150px] pr-11 sm:h-[200px] lg:pr-0'
+        )}
+      >
         {graphElement}
       </SizedContainer>
       {placement === 'bottom' && !hideSwitcher && (

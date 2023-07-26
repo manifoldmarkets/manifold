@@ -230,16 +230,13 @@ export function UserBetsTable(props: { user: User }) {
 const NoBets = ({ user }: { user: User }) => {
   const me = useUser()
   return (
-    <div className="text-ink-500 border-ink-200 border-t py-4">
-      {user.id === me?.id ? (
+    <div className="text-ink-500">
+      {user.id === me?.id && (
         <>
-          You have not made any bets yet.{' '}
           <SiteLink href="/home" className="text-primary-500 hover:underline">
             Find a prediction market!
           </SiteLink>
         </>
-      ) : (
-        <>{user.name} has not made any bets yet</>
       )}
     </div>
   )

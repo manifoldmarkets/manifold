@@ -315,6 +315,7 @@ function UserProfile(props: {
                       userId={user.id}
                       defaultTimePeriod={'weekly'}
                       lastUpdatedTime={user.metricsLastUpdated}
+                      isCurrentUser={isCurrentUser}
                     />
                     <Spacer h={4} />
                     <UserBetsTable user={user} />
