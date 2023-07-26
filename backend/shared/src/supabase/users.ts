@@ -1,6 +1,7 @@
 import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs } from 'lodash'
 import {
+  ALL_FEED_USER_ID,
   DEFAULT_USER_FEED_ID,
   FEED_REASON_TYPES,
   INTEREST_DISTANCE_THRESHOLDS,
@@ -71,19 +72,20 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
              SELECT contract_id,
                     (SELECT interest_embedding FROM user_embedding) <=> embedding AS distance
              FROM contract_embeddings
-             ORDER BY distance
-            LIMIT $2
+             where (SELECT interest_embedding FROM user_embedding) <=> embedding < $2
            ),
            filtered_user_feed AS (
-               SELECT *
+               SELECT DISTINCT ON (contract_id) *
                FROM user_feed
                WHERE contract_id IN (SELECT contract_id FROM interesting_contract_embeddings)
-               and created_time > now() - interval '3 days'
+               and created_time > now() - interval '10 days'
+               and user_id = $3
+               limit $4
            )
-          SELECT DISTINCT ON (contract_id) *
+          SELECT *
           FROM filtered_user_feed
         `,
-      [userId, 100]
+      [userId, 0.25, ALL_FEED_USER_ID, 250]
     )
     log('found relatedFeedItems', relatedFeedItems.length)
 
