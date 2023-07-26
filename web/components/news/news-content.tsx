@@ -7,6 +7,8 @@ import { NewsTopicsContentContainer } from 'web/components/widgets/news-topics-c
 import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
+import { SiteLink } from '../widgets/site-link'
+import { ExternalLink } from '../widgets/external-link'
 
 const SummitNATO = createNewsDashboardTab('NATO Summit', 'NATO Summit', [
   { slug: 'will-ukraine-be-an-official-member' },
@@ -614,12 +616,44 @@ const STPSuper = createNewsDashboardTab(
   'Scientists announce room temp superconductor',
   [
     { url: 'https://arxiv.org/abs/2307.12008' },
-
     { slug: 'will-the-lk99-room-temp-ambient-pre' },
     { slug: 'will-we-have-the-first-roomtemperat' },
-    { slug: 'is-the-room-temperature-superconduc' },
-    { slug: 'will-a-roomtemperature-atmospheric' },
+    {
+      content: (
+        <NewsTopicsContentContainer
+          header="Additional Context"
+          containerContent={
+            <>
+              <ExternalLink
+                title="Companion Paper"
+                href="https://arxiv.org/abs/2307.12037"
+              />
+
+              <ExternalLink
+                title="What would RTP superconductors mean?"
+                href="https://theconversation.com/room-temperature-superconductors-could-revolutionize-electronics-an-electrical-engineer-explains-the-materials-potential-201849"
+              />
+
+              <ExternalLink
+                title="Papers on room temp superconductors from different authors have previously been retracted"
+                href="https://www.nature.com/articles/s41586-020-2801-z"
+              />
+
+              <ExternalLink
+                title="Hacker News thread discussion"
+                href="https://news.ycombinator.com/item?id=36864624"
+              />
+              <p className="mb-4">
+                Materials used are relatively cheap and not complicated, so it
+                should be easy for others to replicate.
+              </p>
+            </>
+          }
+        />
+      ),
+    },
     { slug: 'will-the-first-roomtemperature-ambi' },
+    { slug: 'will-a-roomtemperature-atmospheric' },
   ]
 )
 
