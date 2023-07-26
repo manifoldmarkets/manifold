@@ -59,6 +59,7 @@ export const WhatIsMana = () => (
     <Break />
     • All users start with Ṁ500 for free and can earn more by winning bets and
     gaining free bonuses.
+    <Break />• Most of our users never spend real money!
     <Break />• It cannot be converted to cash, but can be redeemed for real
     charity donations at a rate of Ṁ100 to $1.
   </ExpandSection>
@@ -71,5 +72,8 @@ export const WhyManifold = () => (
     <Break />• <b>COMPETE</b> with your friends and our vibrant community to win
     bets and progress up the leagues to earn prizes!
     <Break />• <b>ASK</b> - Create a question about anything you want!
+    <Break />• <b>RESOLVE</b> - Users who create a question are responsible for
+    choosing the outcome. This allows scalability and personal questions! Our
+    admins may step in if a market is misresolved.
   </ExpandSection>
 )
