@@ -1,5 +1,5 @@
 import { groupBy, keyBy, last, mapValues, sortBy, sumBy } from 'lodash'
-import { memo, use, useEffect, useMemo, useReducer, useState } from 'react'
+import { memo, useEffect, useMemo, useReducer, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
 import {
