@@ -1,5 +1,5 @@
-import { groupBy, last, mapValues, sortBy, sumBy } from 'lodash'
-import { memo, useEffect, useMemo, useState } from 'react'
+import { groupBy, keyBy, last, mapValues, sortBy, sumBy } from 'lodash'
+import { memo, use, useEffect, useMemo, useReducer, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
 import {
@@ -238,7 +238,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const strictlySortedComments = sortBy(comments, [
     sort === 'Best'
       ? isBountiedQuestion
-        ? (c: ContractComment) =>
+        ? (c) =>
             isReply(c)
               ? c.createdTime
               : // For your own recent comments, show first.
@@ -264,23 +264,25 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     (c) => c.replyToCommentId ?? '_'
   )
 
-  const [originalComments, setOriginalComments] = useState(
-    strictlySortedComments
+  const commentById = keyBy(comments, 'id')
+
+  // lump comments on load/sort to prevent jumping
+  const [frozenCommentIds, refreezeIds] = useReducer(
+    () => strictlySortedComments.map((c) => c.id),
+    strictlySortedComments.map((c) => c.id)
   )
-  const originalCommentSet = useMemo(
-    () => new Set(originalComments.map((c) => c.id)),
-    [originalComments]
-  )
+
   const firstOldCommentIndex = strictlySortedComments.findIndex((c) =>
-    originalCommentSet.has(c.id)
+    frozenCommentIds.includes(c.id)
   )
+
   const sortedComments = [
     ...strictlySortedComments.slice(0, firstOldCommentIndex),
     // Lump the original comments in a contiguous chunk so they don't jump around.
-    ...originalComments,
+    ...frozenCommentIds.map((id) => commentById[id]),
     ...strictlySortedComments
       .slice(firstOldCommentIndex)
-      .filter((c) => !originalCommentSet.has(c.id)),
+      .filter((c) => !frozenCommentIds.includes(c.id)),
   ]
 
   const parentComments = sortedComments.filter(
@@ -339,7 +341,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           sort={sort}
           onSortClick={() => {
             setSort(sort === 'Newest' ? 'Best' : 'Newest')
-            setOriginalComments([])
+            refreezeIds()
             track('change-comments-sort', {
               contractSlug: contract.slug,
               contractName: contract.question,
