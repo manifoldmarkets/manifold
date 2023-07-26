@@ -69,8 +69,7 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
             WHERE user_id = $1
           ),
           interesting_contract_embeddings AS (
-             SELECT contract_id,
-                    (SELECT interest_embedding FROM user_embedding) <=> embedding AS distance
+             SELECT contract_id
              FROM contract_embeddings
              where (SELECT interest_embedding FROM user_embedding) <=> embedding < $2
            ),
