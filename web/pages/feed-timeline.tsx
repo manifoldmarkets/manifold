@@ -43,7 +43,6 @@ export function FeedTimeline() {
     user?.freeQuestionsCreated,
     user?.createdTime
   )
-  console.log('remaining', remaining)
   return (
     <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
       <Col className={clsx('gap-6')}>

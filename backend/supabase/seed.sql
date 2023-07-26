@@ -306,8 +306,11 @@ create index if not exists user_seen_markets_type_created_time_desc_idx on user_
   created_time desc
 );
 
-create index if not exists user_seen_markets_user_type_created_time_desc_idx on user_seen_markets
-    (user_id,type, created_time desc);
+create index if not exists user_seen_markets_user_type_created_time_desc_idx on user_seen_markets (
+  user_id,
+  type,
+  created_time desc
+);
 
 alter table user_seen_markets
 cluster on user_seen_markets_created_time_desc_idx;
@@ -1033,19 +1036,19 @@ drop policy if exists "admin write access" on topic_embeddings;
 create policy "admin write access" on topic_embeddings as PERMISSIVE for all to service_role;
 
 create table if not exists
-    group_embeddings (
-                         group_id text not null primary key,
-                         created_time timestamp not null default now(),
-                         embedding vector (1536) not null
-);
+  group_embeddings (
+    group_id text not null primary key,
+    created_time timestamp not null default now(),
+    embedding vector (1536) not null
+  );
 
 alter table group_embeddings enable row level security;
 
 drop policy if exists "public read" on group_embeddings;
 
 create policy "public read" on group_embeddings for
-    select
-    using (true);
+select
+  using (true);
 
 drop policy if exists "admin write access" on group_embeddings;
 
@@ -1246,14 +1249,12 @@ create publication supabase_realtime;
 
 alter publication supabase_realtime
 add table contracts;
+
 alter publication supabase_realtime
 add table contract_bets;
 
 alter publication supabase_realtime
 add table contract_comments;
-
-alter publication supabase_realtime
-add table group_members;
 
 alter publication supabase_realtime
 add table post_comments;
@@ -1262,10 +1263,13 @@ alter publication supabase_realtime
 add table group_contracts;
 
 alter publication supabase_realtime
-add table chat_messages;
+add table group_members;
 
 alter publication supabase_realtime
 add table user_notifications;
+
+alter publication supabase_realtime
+add table user_contract_metrics;
 
 commit;
 

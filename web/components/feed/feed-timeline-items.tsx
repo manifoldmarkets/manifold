@@ -76,7 +76,7 @@ export const FeedTimelineItems = (props: {
                 }}
                 parentComments={[]}
                 childCommentsByParentCommentId={{}}
-                keyPrefix={'ad-'}
+                key={item.ad_id}
               />
             )
           }
@@ -93,6 +93,7 @@ export const FeedTimelineItems = (props: {
               parentComments={parentComments}
               childCommentsByParentCommentId={childCommentsByParentCommentId}
               item={item}
+              key={item.id}
             />
           )
         } else if ('news' in item && item.news) {
@@ -147,7 +148,7 @@ export const FeedTimelineItems = (props: {
           contract={contract}
           parentComments={[]}
           childCommentsByParentCommentId={{}}
-          keyPrefix={'manual-'}
+          key={contract.id + 'feed-timeline-item'}
         />
       ))}
     </>
@@ -162,7 +163,6 @@ const FeedContractAndRelatedItems = (props: {
   groupedBetsByTime?: Bet[][]
   item?: FeedTimelineItem
   promotedData?: { adId: string; reward: number }
-  keyPrefix?: string
 }) => {
   const {
     contract,
@@ -171,18 +171,13 @@ const FeedContractAndRelatedItems = (props: {
     groupedBetsByTime,
     childCommentsByParentCommentId,
     parentComments,
-    keyPrefix,
   } = props
   const hasRelatedItems =
     parentComments.length > 0 || (groupedBetsByTime ?? []).length > 0
   const [hidden, setHidden] = useState(false)
 
   return (
-    <FeedItemFrame
-      item={item}
-      key={keyPrefix + contract.id + '-feed-timeline-item-' + item?.id}
-      className={'relative min-w-0'}
-    >
+    <FeedItemFrame item={item} className={'relative min-w-0'}>
       {!hidden ? (
         <FeedContractCard
           contract={contract}

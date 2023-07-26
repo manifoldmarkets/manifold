@@ -104,11 +104,11 @@ export const StarDisplay = (props: { rating: number }) => {
 
   return (
     <div className="inline-flex align-top">
-      {starFullness.map((fraction) => {
+      {starFullness.map((fraction, i) => {
         // star path is about 15 px in a 20px wide viewbox
         const clipPx = fraction * 15 + 2.5
         return (
-          <div className="relative">
+          <div className="relative" key={i}>
             <StarIcon
               className="absolute h-5 w-5 text-yellow-500"
               viewBox={`${-clipPx} 0 20 20`}
