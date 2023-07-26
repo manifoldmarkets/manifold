@@ -7,6 +7,7 @@ import { Comment } from 'common/comment'
 import { getUserToReasonsInterestedInContractAndUser } from 'shared/supabase/contracts'
 import { Contract, CPMMContract } from 'common/contract'
 import {
+  ALL_FEED_USER_ID,
   CONTRACT_OR_USER_FEED_REASON_TYPES,
   FEED_DATA_TYPES,
   FEED_REASON_TYPES,
@@ -17,63 +18,6 @@ import { buildArray } from 'common/util/array'
 import { getUsersWithSimilarInterestVectorToNews } from 'shared/supabase/users'
 import { convertObjectToSQLRow } from 'common/supabase/utils'
 
-export const insertDataToUserFeed = async (
-  userId: string,
-  eventTime: number,
-  dataType: FEED_DATA_TYPES,
-  reason: FEED_REASON_TYPES,
-  userIdsToExclude: string[],
-  dataProps: {
-    contractId?: string
-    commentId?: string
-    answerId?: string
-    creatorId?: string
-    betId?: string
-    newsId?: string
-    data?: any
-    groupId?: string
-    reactionId?: string
-    idempotencyKey?: string
-  },
-  pg: SupabaseDirectClient
-) => {
-  if (userIdsToExclude.includes(userId)) return
-  const eventTimeTz = new Date(eventTime).toISOString()
-  const {
-    groupId,
-    contractId,
-    commentId,
-    answerId,
-    creatorId,
-    betId,
-    newsId,
-    data,
-    reactionId,
-    idempotencyKey,
-  } = dataProps
-  await pg.none(
-    `insert into user_feed 
-    (user_id, data_type, reason, contract_id, comment_id, answer_id, creator_id, bet_id, news_id, group_id, event_time, data, reaction_id, idempotency_key)
-    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
-    on conflict do nothing`,
-    [
-      userId,
-      dataType,
-      reason,
-      contractId,
-      commentId,
-      answerId,
-      creatorId,
-      betId,
-      newsId,
-      groupId,
-      eventTimeTz,
-      data,
-      reactionId,
-      idempotencyKey,
-    ]
-  )
-}
 export const bulkInsertDataToUserFeed = async (
   usersToReasonsInterestedInContract: {
     [userId: string]: FEED_REASON_TYPES
@@ -99,6 +43,7 @@ export const bulkInsertDataToUserFeed = async (
 
   const feedRows = Object.entries(usersToReasonsInterestedInContract)
     .filter(([userId]) => !userIdsToExclude.includes(userId))
+    .concat([[ALL_FEED_USER_ID, 'similar_interest_vector_to_contract']])
     .map(([userId, reason]) =>
       convertObjectToSQLRow<any, 'user_feed'>({
         ...dataProps,
@@ -133,20 +78,12 @@ const userIdsWithFeedRowsMatchingContract = async (
             from user_feed
             where contract_id = $1 and 
                 user_id = ANY($2) and 
-                created_time > $3 and
+                (created_time > $3 or seen_time > $3) and
                 data_type = $4
                 `,
     [contractId, userIds, new Date(seenTime).toISOString(), dataType],
     (row: { user_id: string }) => row.user_id
   )
-}
-
-const deleteRowsFromUserFeed = async (
-  rowIds: number[],
-  pg: SupabaseDirectClient
-) => {
-  if (rowIds.length === 0) return
-  await pg.none(`delete from user_feed where id = any($1)`, [rowIds])
 }
 
 export const addCommentOnContractToFeed = async (

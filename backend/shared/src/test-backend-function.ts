@@ -4,8 +4,7 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { freeQuestionRemaining, getCurrentUtcTime } from 'common/user'
-import { DAY_MS } from 'common/util/time'
+import { addInterestingContractsToFeed } from 'shared/add-interesting-contracts-to-feed'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -14,12 +13,8 @@ export async function testBackendFunction() {
   try {
     const pg = createSupabaseDirectClient()
     const db = createSupabaseClient()
-    // await addInterestingContractsToFeed(db, pg)
+    await addInterestingContractsToFeed(db, pg)
     // await calculateGroupImportanceScore(pg)
-    const currentTime = getCurrentUtcTime()
-    console.log('time', currentTime)
-    const fq = freeQuestionRemaining(0, Date.now() - DAY_MS * 3 + 1000)
-    console.log('free q?', fq)
     // const apiKey = process.env.NEWS_API_KEY
     // if (!apiKey) {
     //   throw new Error('Missing NEWS_API_KEY')

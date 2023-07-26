@@ -1,6 +1,7 @@
 // User interest to user interest distance:
 export const MINIMUM_SCORE = 0.0035
 export const DEFAULT_USER_FEED_ID = 'yYNDWRmBJDcWW0q1aZFi6xfKNcQ2'
+export const ALL_FEED_USER_ID = 'IG3WZ8i3IzY6R4wuTDxuvsXbkxD3'
 
 export type FEED_DATA_TYPES =
   | 'new_comment'
