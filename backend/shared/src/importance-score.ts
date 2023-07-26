@@ -205,7 +205,11 @@ export const computeContractScores = (
       : 0
 
   const closingSoonnness =
-    !isResolved && closeTime && closeTime > now && outcomeType !== 'STONK'
+    !wasCreatedToday &&
+    !isResolved &&
+    closeTime &&
+    closeTime > now &&
+    outcomeType !== 'STONK'
       ? closeTime <= now + DAY_MS
         ? 1
         : closeTime <= now + WEEK_MS
