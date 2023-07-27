@@ -50,7 +50,6 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
-import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { completeReferralsQuest } from 'shared/complete-quest-internal'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { FieldValue } from 'firebase-admin/firestore'
@@ -60,6 +59,7 @@ import {
   getUniqueBettorIdsForAnswer,
 } from 'shared/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
+import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 
 const firestore = admin.firestore()

@@ -8,7 +8,7 @@ import { Contract } from 'common/contract'
 
 export async function runPostBountyTxn(
   fbTransaction: admin.firestore.Transaction,
-  txnData: Omit<BountyPostedTxn, 'id' | 'createdTime'>,
+  txnData: Omit<BountyPostedTxn | BountyAddedTxn, 'id' | 'createdTime'>,
   contractRef: admin.firestore.DocumentReference,
   userRef: admin.firestore.DocumentReference
 ) {

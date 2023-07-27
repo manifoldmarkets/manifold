@@ -19,11 +19,8 @@ import {
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
-import {
-  FeedTimelineItem,
-  marketMovementInfo,
-} from 'web/hooks/use-feed-timeline'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -39,6 +36,8 @@ import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { ClickFrame } from '../widgets/click-frame'
 import { HOUR_MS } from 'common/util/time'
+import { PollPanel } from '../poll/poll-panel'
+import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -48,11 +47,17 @@ export function FeedContractCard(props: {
   trackingPostfix?: string
   item?: FeedTimelineItem
   className?: string
+  hide?: () => void
 }) {
-  const { promotedData, trackingPostfix, item, className, children } = props
+  const { promotedData, trackingPostfix, item, className, children, hide } =
+    props
   const user = useUser()
 
-  const contract = useRealtimeContract(props.contract.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
 
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 
@@ -85,6 +90,7 @@ export function FeedContractCard(props: {
           user={user}
           className={className}
           children={children}
+          hide={hide}
         />
       ) : (
         <DetailedCard
@@ -94,6 +100,7 @@ export function FeedContractCard(props: {
           promotedData={promotedData}
           item={item}
           className={className}
+          hide={hide}
         />
       )}
     </div>
@@ -108,8 +115,9 @@ function SimpleCard(props: {
   children: React.ReactNode
   item?: FeedTimelineItem
   className?: string
+  hide?: () => void
 }) {
-  const { contract, user, item, trackClick, className, children } = props
+  const { contract, user, item, trackClick, className, children, hide } = props
   const { outcomeType, mechanism, closeTime, isResolved } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
@@ -160,7 +168,12 @@ function SimpleCard(props: {
       )}
 
       {children}
-      <BottomActionRow contract={contract} item={item} user={user} />
+      <BottomActionRow
+        contract={contract}
+        item={item}
+        user={user}
+        hide={hide}
+      />
     </ClickFrame>
   )
 }
@@ -171,9 +184,11 @@ function DetailedCard(props: {
   user: User | null | undefined
   promotedData?: { adId: string; reward: number }
   item?: FeedTimelineItem
+  hide?: () => void
   className?: string
 }) {
-  const { user, contract, trackClick, promotedData, item, className } = props
+  const { user, contract, trackClick, promotedData, item, hide, className } =
+    props
   const {
     closeTime,
     isResolved,
@@ -186,7 +201,7 @@ function DetailedCard(props: {
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
   const path = contractPath(contract)
-  const { probChange } = marketMovementInfo(
+  const { probChange } = getMarketMovementInfo(
     contract,
     item?.dataType,
     item?.data
@@ -315,6 +330,11 @@ function DetailedCard(props: {
         </Row>
       </Col>
 
+      {contract.outcomeType === 'POLL' && (
+        <div className="mt-2">
+          <PollPanel contract={contract} maxOptions={4} />
+        </div>
+      )}
       {contract.outcomeType === 'MULTIPLE_CHOICE' && (
         <div className="mt-2">
           <AnswersPanel contract={contract} maxAnswers={4} linkToContract />
@@ -333,7 +353,12 @@ function DetailedCard(props: {
       {isBinaryCpmm && metrics && metrics.hasShares && (
         <YourMetricsFooter metrics={metrics} />
       )}
-      <BottomActionRow contract={contract} item={item} user={user} />
+      <BottomActionRow
+        contract={contract}
+        item={item}
+        user={user}
+        hide={hide}
+      />
     </ClickFrame>
   )
 }
@@ -342,15 +367,23 @@ const BottomActionRow = (props: {
   contract: Contract
   item: FeedTimelineItem | undefined
   user: User | null | undefined
+  hide?: () => void
 }) => {
-  const { contract, user } = props
+  const { contract, user, item, hide } = props
   const { question } = contract
   return (
     <Row className={'items-center justify-between py-2'}>
-      {/*// Placeholder for the dislike button*/}
-      <div />
       <TradesButton contract={contract} />
       <CommentsButton contract={contract} user={user} />
+      {hide && (
+        <DislikeButton
+          user={user}
+          contract={contract}
+          item={item}
+          interesting={true}
+          toggleInteresting={hide}
+        />
+      )}
       <LikeButton
         contentId={contract.id}
         contentCreatorId={contract.creatorId}

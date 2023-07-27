@@ -3,19 +3,12 @@ import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
-import {
-  DislikeButton,
-  FeedContractCard,
-} from 'web/components/contract/feed-contract-card'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { mergePeriodic } from 'web/components/feed/feed-items'
 import { Col } from 'web/components/layout/col'
 import { groupCommentsByContractsAndParents } from 'web/hooks/use-additional-feed-items'
-import { useUnseenReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
 import { BoostsType } from 'web/hooks/use-feed'
-import {
-  FeedTimelineItem,
-  shouldIgnoreCommentsOnContract,
-} from 'web/hooks/use-feed-timeline'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
 import { ContractsTable } from '../contract/contracts-table'
@@ -28,6 +21,8 @@ import { ContractComment } from 'common/comment'
 import { track } from 'web/lib/service/analytics'
 import React, { useState } from 'react'
 import { Row } from 'web/components/layout/row'
+import { GroupLinkItem } from 'web/pages/groups'
+import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
@@ -47,6 +42,7 @@ export const FeedTimelineItems = (props: {
   const savedFeedComments = filterDefined(
     savedFeedTimelineItems.map((item) => item.comments)
   ).flat()
+  const memberGroups = useRealtimeMemberGroupIds(user?.id)
 
   const boostedContractItems =
     boosts?.map((boost) => {
@@ -54,23 +50,8 @@ export const FeedTimelineItems = (props: {
       return { contract: { ...market_data }, ...rest }
     }) ?? []
 
-  const contractIdsWithoutComments = filterDefined(
-    savedFeedTimelineItems.map((item) =>
-      item.contract?.id &&
-      !item.comments &&
-      !shouldIgnoreCommentsOnContract(item.contract)
-        ? item.contractId
-        : null
-    )
-  )
-
-  const recentComments = useUnseenReplyChainCommentsOnContracts(
-    contractIdsWithoutComments,
-    user?.id ?? '_'
-  )
-
   const { parentCommentsByContractId, childCommentsByParentCommentId } =
-    groupCommentsByContractsAndParents(savedFeedComments.concat(recentComments))
+    groupCommentsByContractsAndParents(savedFeedComments)
 
   const feedTimelineItems = mergePeriodic(
     savedFeedTimelineItems,
@@ -95,7 +76,7 @@ export const FeedTimelineItems = (props: {
                 }}
                 parentComments={[]}
                 childCommentsByParentCommentId={{}}
-                keyPrefix={'ad-'}
+                key={item.ad_id}
               />
             )
           }
@@ -112,6 +93,7 @@ export const FeedTimelineItems = (props: {
               parentComments={parentComments}
               childCommentsByParentCommentId={childCommentsByParentCommentId}
               item={item}
+              key={item.id}
             />
           )
         } else if ('news' in item && item.news) {
@@ -127,7 +109,7 @@ export const FeedTimelineItems = (props: {
                 published_time={(news as any)?.published_time}
                 {...news}
               />
-              {item.contracts && (
+              {item.contracts && item.contracts.length > 0 && (
                 <Col className="px-4 pt-2 pb-3">
                   <span className="text-ink-500 text-sm">
                     Related Questions
@@ -136,6 +118,24 @@ export const FeedTimelineItems = (props: {
                     contracts={item.contracts}
                     hideHeader={true}
                   />
+                </Col>
+              )}
+              {item.groups && item.groups.length > 0 && (
+                <Col className="px-4 pt-2 pb-3">
+                  <span className="text-ink-500 text-sm">Related Groups</span>
+                  <Row className={'gap-1'}>
+                    {item.groups.map((group) => (
+                      <div
+                        key={group.id}
+                        className={clsx(
+                          'bg-canvas-100 relative rounded-full px-4 py-1 hover:bg-blue-600 focus-visible:bg-blue-600',
+                          memberGroups?.includes(group.id) && 'bg-blue-800'
+                        )}
+                      >
+                        <GroupLinkItem group={group} />
+                      </div>
+                    ))}
+                  </Row>
                 </Col>
               )}
             </FeedItemFrame>
@@ -148,7 +148,7 @@ export const FeedTimelineItems = (props: {
           contract={contract}
           parentComments={[]}
           childCommentsByParentCommentId={{}}
-          keyPrefix={'manual-'}
+          key={contract.id + 'feed-timeline-item'}
         />
       ))}
     </>
@@ -163,7 +163,6 @@ const FeedContractAndRelatedItems = (props: {
   groupedBetsByTime?: Bet[][]
   item?: FeedTimelineItem
   promotedData?: { adId: string; reward: number }
-  keyPrefix?: string
 }) => {
   const {
     contract,
@@ -172,24 +171,19 @@ const FeedContractAndRelatedItems = (props: {
     groupedBetsByTime,
     childCommentsByParentCommentId,
     parentComments,
-    keyPrefix,
-    user,
   } = props
   const hasRelatedItems =
     parentComments.length > 0 || (groupedBetsByTime ?? []).length > 0
   const [hidden, setHidden] = useState(false)
 
   return (
-    <FeedItemFrame
-      item={item}
-      key={keyPrefix + contract.id + '-feed-timeline-item-' + item?.id}
-      className={'relative min-w-0'}
-    >
+    <FeedItemFrame item={item} className={'relative min-w-0'}>
       {!hidden ? (
         <FeedContractCard
           contract={contract}
           promotedData={promotedData}
           trackingPostfix="feed"
+          hide={() => setHidden(true)}
           children={
             hasRelatedItems ? (
               <>
@@ -222,19 +216,11 @@ const FeedContractAndRelatedItems = (props: {
             'bg-canvas-0 border-canvas-0 rounded-xl border drop-shadow-md'
           )}
         >
-          <Row className={'text-ink-400 mb-10 px-4 pt-3 text-sm'}>
+          <Row className={'text-ink-400 mb-4 px-4 pt-3 text-sm'}>
             <i>Market hidden</i>
           </Row>
         </Col>
       )}
-      <DislikeButton
-        className={'absolute bottom-2.5 left-4'}
-        user={user}
-        contract={contract}
-        item={item}
-        interesting={!hidden}
-        toggleInteresting={() => setHidden(!hidden)}
-      />
     </FeedItemFrame>
   )
 }

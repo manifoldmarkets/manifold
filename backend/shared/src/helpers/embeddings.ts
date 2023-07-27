@@ -1,6 +1,7 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { ITask } from 'pg-promise'
-import { chunk, sum } from 'lodash'
+import { chunk, mean, sum, zip } from 'lodash'
+import { bulkUpdate } from 'shared/supabase/utils'
 
 export function magnitude(vector: number[]): number {
   const vectorSum = sum(vector.map((val) => val * val))
@@ -9,6 +10,14 @@ export function magnitude(vector: number[]): number {
 export function normalize(vector: number[]): number[] {
   const mag = magnitude(vector)
   return vector.map((val) => val / mag)
+}
+
+async function normalizeOrGetDefault(
+  pg: SupabaseDirectClient | ITask<any>,
+  embedding: string | null
+) {
+  if (embedding === null) return await getDefaultEmbedding(pg)
+  return normalize(JSON.parse(embedding) as number[])
 }
 
 export async function getDefaultEmbedding(
@@ -23,7 +32,7 @@ export async function getDefaultEmbedding(
                    join (
               select id
               from contracts
-              order by popularity_score desc
+              order by importance_score desc
               limit 100
           ) as top_contracts on top_contracts.id = contract_embeddings.contract_id
         ) as subquery
@@ -32,13 +41,29 @@ export async function getDefaultEmbedding(
   return normalize(JSON.parse(avg.average_embedding) as number[])
 }
 
+export async function upsertGroupEmbedding(
+  pg: SupabaseDirectClient,
+  groupId: string
+) {
+  const groupContractIds = await pg.map(
+    `select contract_id from group_contracts where group_id = $1`,
+    [groupId],
+    (r: { contract_id: string }) => r.contract_id
+  )
+  const embed = await getAverageContractEmbedding(pg, groupContractIds)
+  if (!embed) return
+  await pg.none(
+    'insert into group_embeddings (group_id, embedding) values ($1, $2) on conflict (group_id) do update set embedding = $2',
+    [groupId, embed]
+  )
+}
+
 export async function getAverageContractEmbedding(
   pg: SupabaseDirectClient,
   contractIds: string[] | undefined
 ) {
   if (!contractIds || contractIds.length === 0) {
-    const embed = await getDefaultEmbedding(pg)
-    return { embed, defaultEmbed: true }
+    return null
   }
 
   return await pg.one(
@@ -47,13 +72,8 @@ export async function getAverageContractEmbedding(
     where contract_id = any($1)`,
     [contractIds],
     async (r: { average_embedding: string }) => {
-      if (r.average_embedding === null) {
-        console.error('No average of embeddings for', contractIds)
-        const embed = await getDefaultEmbedding(pg)
-        return { embed, defaultEmbed: true }
-      }
-      const embed = normalize(JSON.parse(r.average_embedding) as number[])
-      return { embed, defaultEmbed: false }
+      if (r.average_embedding === null) return null
+      return normalize(JSON.parse(r.average_embedding) as number[])
     }
   )
 }
@@ -71,11 +91,14 @@ export async function updateUserInterestEmbedding(
     )
 
     await pg.none(
-      'insert into user_embeddings (user_id, interest_embedding) values ($1, $2) on conflict (user_id) do update set interest_embedding = $2',
+      `insert into user_embeddings (user_id, interest_embedding) 
+                values ($1, $2) 
+                on conflict (user_id) do update set interest_embedding = $2`,
       [userId, interestEmbedding]
     )
   })
 }
+
 export async function addContractToUserDisinterestEmbedding(
   pg: SupabaseDirectClient,
   userId: string,
@@ -100,6 +123,7 @@ export async function addContractToUserDisinterestEmbedding(
   })
   await updateUserDisinterestEmbeddingInternal(pg, userId)
 }
+
 export async function updateUserDisinterestEmbeddingInternal(
   pg: SupabaseDirectClient,
   userId: string
@@ -127,7 +151,7 @@ async function getInterestedContractIds(
       select contract_id, max(created_time) as created_time from contract_bets
       where user_id = $1
       group by contract_id
-      order by 2
+      order by created_time desc
       limit 1000
      ) as bet_on_contract_ids
      union
@@ -139,6 +163,7 @@ async function getInterestedContractIds(
     (r: { contract_id: string }) => r.contract_id
   )
 }
+
 async function getDisinterestedContractIds(
   pg: SupabaseDirectClient | ITask<any>,
   userId: string
@@ -174,23 +199,31 @@ async function computeUserInterestEmbedding(
       from user_topics
       where user_id = $2
       union all
-      -- Append user's pre-signup interest embeddings once to be averaged in.
-      select pre_signup_interest_embedding as combined_embedding
+      -- Append user's viewed contracts interest embeddings once to be averaged in.
+      select contract_view_embedding as combined_embedding
       from user_embeddings
       where user_id = $2
-     )
+      union all 
+      -- Append group embeddings of bet-on contracts to be averaged in.
+      select embedding as combined_embedding
+      from group_embeddings 
+      where group_id = any(
+      (select group_id from group_contracts where contract_id = any($1)))
+      union all
+      -- Append group embeddings of groups joined to be averaged in.
+      select embedding as combined_embedding
+      from group_embeddings
+      where group_id = any(
+      (select group_id from group_members where member_id = $2)
+     ))
     select avg(combined_embedding) as average_embedding
     from combined_embeddings`,
     [contractIds, userId],
-    async (r: { average_embedding: string }) => {
-      if (r.average_embedding === null) {
-        console.error('No average of embeddings for', contractIds)
-        return await getDefaultEmbedding(pg)
-      }
-      return normalize(JSON.parse(r.average_embedding) as number[])
-    }
+    async (r: { average_embedding: string }) =>
+      normalizeOrGetDefault(pg, r.average_embedding)
   )
 }
+
 async function computeUserDisinterestEmbedding(
   pg: SupabaseDirectClient | ITask<any>,
   userId: string,
@@ -203,61 +236,100 @@ async function computeUserDisinterestEmbedding(
       where contract_id = any($1)
     `,
     [contractIds, userId],
-    async (r: { average_embedding: string }) => {
-      if (r.average_embedding === null) {
-        console.error('No average of embeddings for', contractIds)
-        return null
-      }
-      return normalize(JSON.parse(r.average_embedding) as number[])
-    }
+    async (r: { average_embedding: string }) =>
+      normalizeOrGetDefault(pg, r.average_embedding)
   )
 }
-export async function updateUsersViewEmbeddings(
-  pg: SupabaseDirectClient | ITask<any>
+
+export async function updateViewsAndViewersEmbeddings(
+  pg: SupabaseDirectClient
 ) {
-  const userToEmbeddingMap: {
-    [userId: string]: number[] | null
-  } = {}
-  await pg.map(
-    `
-      select
-        user_seen_markets.user_id,
-        avg(contract_embeddings.embedding) as average_embedding
-      from
-        contract_embeddings
-        join user_seen_markets on user_seen_markets.contract_id = contract_embeddings.contract_id
-        join users on users.id = user_seen_markets.user_id
-      where
-          user_seen_markets.type = 'view market'
-      group by
-          user_seen_markets.user_id
-    `,
+  const userToEmbeddingMap: { [userId: string]: number[] | null } = {}
+  const viewerIds = await pg.map(
+    `select distinct 
+    id
+    from users
+     where ((data->'lastBetTime' is null)
+            or
+            (millis_to_ts((data->('lastBetTime'))::bigint) < now() - interval '10 day')) 
+            -- give up on users who haven't bet in 6 months
+            and millis_to_ts(((data->'createdTime')::bigint)) > now() - interval '6 months'
+`,
     [],
-    (r: { user_id: string; average_embedding: string }) => {
-      if (r.average_embedding === null) {
-        console.error('No average of view embeddings for', r.user_id)
-        userToEmbeddingMap[r.user_id] = null
-      }
-      userToEmbeddingMap[r.user_id] = normalize(
-        JSON.parse(r.average_embedding) as number[]
-      )
-    }
+    (r: { id: string }) => r.id
   )
 
-  const totalUserIds = Object.keys(userToEmbeddingMap)
-  const chunks = chunk(totalUserIds, 500)
-  let count = 0
-  for (const userIds of chunks) {
-    await Promise.all(
-      userIds.map(async (userId) => {
-        if (userToEmbeddingMap[userId] === null) return
-        await pg.none(
-          'UPDATE user_embeddings SET contract_view_embedding = $2 WHERE user_id = $1',
-          [userId, userToEmbeddingMap[userId]]
+  await pg.map(
+    `
+    select
+        a.user_id,
+        a.average_embedding as contract_view_average_embedding,
+        b.average_embedding as group_view_average_embedding
+    from
+        (
+            -- Contract view embeddings
+            select
+                user_seen_markets.user_id,
+                avg(contract_embeddings.embedding) as average_embedding
+            from
+                contract_embeddings
+                    join user_seen_markets on user_seen_markets.contract_id = contract_embeddings.contract_id
+            where
+                user_seen_markets.user_id in ($1:list)
+              and user_seen_markets.type = 'view market'
+            group by
+                user_seen_markets.user_id
+        ) as a
+            left join
+        (
+            -- Group view embeddings (Groups of contracts viewed by user)
+            select
+                user_seen_markets.user_id,
+                avg(group_embeddings.embedding) as average_embedding
+            from
+                group_embeddings
+                    join group_contracts on group_contracts.group_id = group_embeddings.group_id
+                    join user_seen_markets on user_seen_markets.contract_id = group_contracts.contract_id
+            where
+                user_seen_markets.user_id in ($1:list)
+              and user_seen_markets.type = 'view market'
+            group by
+                user_seen_markets.user_id
+        ) as b on a.user_id = b.user_id;
+    `,
+    [viewerIds],
+    (r: {
+      user_id: string
+      contract_view_average_embedding: string | null
+      group_view_average_embedding: string | null
+    }) => {
+      const zipped = zip(
+        normalize(
+          JSON.parse(r.contract_view_average_embedding ?? '[]') as number[]
+        ),
+        normalize(
+          JSON.parse(r.group_view_average_embedding ?? '[]') as number[]
         )
-      })
+      )
+      const normAverage = normalize(zipped.map((vector) => mean(vector)))
+      if (normAverage.length > 0) userToEmbeddingMap[r.user_id] = normAverage
+    }
+  )
+  await bulkUpdate(
+    pg,
+    'user_embeddings',
+    ['user_id'],
+    Object.keys(userToEmbeddingMap).map((userId) => ({
+      user_id: userId,
+      contract_view_embedding: userToEmbeddingMap[userId] as any,
+    }))
+  )
+  // chunk users to update their interest embeddings
+  const chunkSize = 500
+  const chunks = chunk(Object.keys(userToEmbeddingMap), chunkSize)
+  for (const chunk of chunks) {
+    await Promise.all(
+      chunk.map((userId) => updateUserInterestEmbedding(pg, userId))
     )
-    count += userIds.length
-    console.log(`Updated ${count} of ${totalUserIds.length} users`)
   }
 }

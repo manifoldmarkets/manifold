@@ -6,6 +6,7 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
 import Link from 'next/link'
 import { getLinkTarget } from 'web/components/widgets/site-link'
+import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
 
 export function DuplicateContractButton(props: { contract: Contract }) {
   const { contract } = props
@@ -38,7 +39,7 @@ function duplicateContractHref(contract: Contract) {
     description: descriptionString,
     outcomeType: contract.outcomeType,
     visibility: contract.visibility,
-  } as Record<string, any>
+  } as NewQuestionParams
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
     params.min = contract.min
@@ -51,20 +52,12 @@ function duplicateContractHref(contract: Contract) {
   }
 
   if (contract.outcomeType === 'MULTIPLE_CHOICE') {
-    const answers = contract.answers.map((a) => a.text)
-    for (let i = 0; i < answers.length; i++) {
-      params[`a${i}`] = answers[i]
-    }
+    params.answers = contract.answers.map((a) => a.text)
   }
 
   if (contract.groupLinks && contract.groupLinks.length > 0) {
-    params.groupId = contract.groupLinks[0].groupId
+    params.groupIds = contract.groupLinks.map((gl) => gl.groupId)
   }
 
-  return (
-    `/create?` +
-    Object.entries(params)
-      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
-      .join('&')
-  )
+  return `/create?params=` + encodeURIComponent(JSON.stringify(params))
 }

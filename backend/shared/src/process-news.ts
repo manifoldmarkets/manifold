@@ -2,8 +2,10 @@ import { SupabaseClient } from 'common/supabase/utils'
 import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
-import { insertNewsContractsToUsersFeeds } from 'shared/create-feed'
+import { insertNewsToUsersFeeds } from 'shared/create-feed'
 import { Contract } from 'common/contract'
+import { Group } from 'common/group'
+import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 
 export const processNews = async (
   apiKey: string,
@@ -74,7 +76,7 @@ const processNewsArticle = async (
   readOnly: boolean
 ) => {
   const publishedAtDate = new Date(publishedAt)
-  if (publishedAtDate <= lastPublished) {
+  if (publishedAtDate <= lastPublished && !readOnly) {
     console.log('Skipping', title)
     return
   }
@@ -99,22 +101,58 @@ const processNewsArticle = async (
   }
   console.log('Embedding generated. Searching...')
 
-  const { data } = await db.rpc('search_contract_embeddings' as any, {
-    query_embedding: embedding,
-    similarity_threshold: 0.825, // hand-selected; don't change unless you know what you're doing
-    match_count: 10,
+  const { data: groupsData } = await db.rpc('search_group_embeddings', {
+    query_embedding: embedding as any,
+    similarity_threshold: 0.84, // hand-selected; don't change unless you know what you're doing
+    max_count: 20,
+    name_similarity_threshold: 0.6,
   })
 
-  const getContract = (cid: string) =>
-    db
-      .from('contracts')
-      .select('data')
-      .eq('id', cid)
-      .then((r) => (r?.data as any)[0].data)
+  const groups =
+    groupsData && groupsData.length > 0
+      ? await pg.map(
+          `
+            select data, id, importance_score from groups where id in ($1:list)
+              and privacy_status = 'public'
+              and slug not in ($2:list)
+              and total_members > 1
+              order by importance_score desc
+          `,
+          [groupsData.flat().map((g) => g.group_id), DEEMPHASIZED_GROUP_SLUGS],
+          (r) => {
+            const data = r.data as Group
+            return { ...data, id: r.id, importanceScore: r.importance_score }
+          }
+        )
+      : []
+  if (groupsData)
+    for (const groupData of groupsData.flat()) {
+      console.log(
+        'similarity',
+        groupData.similarity,
+        'name',
+        groups.find((g) => g.id === groupData.group_id)?.name,
+        'slug',
+        groups.find((g) => g.id === groupData.group_id)?.slug
+      )
+    }
 
-  const contractsIds = (data as any).map((d: any) => d.contract_id)
+  const { data } = await db.rpc('search_contract_embeddings', {
+    query_embedding: embedding as any,
+    similarity_threshold: 0.825, // hand-selected; don't change unless you know what you're doing
+    match_count: 20,
+  })
 
-  const contracts: Contract[] = await Promise.all(contractsIds.map(getContract))
+  const contracts: Contract[] =
+    data && data.length > 0
+      ? await pg.map(
+          `
+        select data from contracts where id in ($1:list)
+        `,
+          [data?.flat().map((c) => c.contract_id)],
+          (r) => r.data as Contract
+        )
+      : []
 
   const questions = contracts
     .filter(
@@ -128,8 +166,9 @@ const processNewsArticle = async (
     .sort((a, b) => b.importanceScore - a.importanceScore)
     .slice(0, 5)
 
-  if (questions.length === 0) {
-    console.log('No related markets found\n\n')
+  const totalItems = questions.length + groups.length
+  if (totalItems < 3) {
+    console.log('Not enough related markets & groups found\n\n')
     return
   }
 
@@ -144,7 +183,7 @@ const processNewsArticle = async (
 
   const newsRowJustId = await pg
     .one<{ id: number }>(
-      'insert into news (title, url, published_time, author, description, image_url, source_id, source_name, title_embedding, contract_ids) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id',
+      'insert into news (title, url, published_time, author, description, image_url, source_id, source_name, title_embedding, contract_ids, group_ids) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id',
       [
         cleanTitle,
         url,
@@ -155,7 +194,8 @@ const processNewsArticle = async (
         source.id ?? null,
         source.name ?? null,
         embedding,
-        contractsIds,
+        contracts.map((c) => c.id),
+        groups.map((g) => g.id).slice(0, 10),
       ]
     )
     .catch((err) => console.error(err))
@@ -169,9 +209,10 @@ const processNewsArticle = async (
     publishedAtDate.toISOString()
   )
 
-  await insertNewsContractsToUsersFeeds(
+  await insertNewsToUsersFeeds(
     newsId,
     questions,
+    groups,
     publishedAtDate.valueOf(),
     pg
   )

@@ -20,7 +20,14 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
 import { Page } from 'web/components/layout/page'
-import { MINUTE_MS } from 'common/util/time'
+import { DAY_MS, MINUTE_MS } from 'common/util/time'
+import {
+  DAYS_TO_USE_FREE_QUESTIONS,
+  freeQuestionRemaining,
+  PrivateUser,
+} from 'common/user'
+import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
 export default function FeedTimelinePage() {
   return (
@@ -30,11 +37,30 @@ export default function FeedTimelinePage() {
   )
 }
 export function FeedTimeline() {
+  const privateUser = usePrivateUser()
+  const user = useUser()
+  const remaining = freeQuestionRemaining(
+    user?.freeQuestionsCreated,
+    user?.createdTime
+  )
   return (
     <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
       <Col className={clsx('gap-6')}>
         <Col>
-          <FeedTimelineContent />
+          {user && remaining > 0 && (
+            <Row className="text-ink-600 mb-2 items-center justify-between gap-2 rounded-md bg-green-200 p-2 text-sm">
+              <span className={'text-gray-700'}>
+                🎉 You've got {remaining} free questions! Use them before they
+                expire in{' '}
+                {shortenedFromNow(
+                  user.createdTime - DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
+                )}
+                .
+              </span>
+              <CreateQuestionButton className={'max-w-[10rem]'} />
+            </Row>
+          )}
+          {privateUser && <FeedTimelineContent privateUser={privateUser} />}
           <button
             type="button"
             className={clsx(
@@ -54,9 +80,9 @@ export function FeedTimeline() {
     </Col>
   )
 }
-function FeedTimelineContent() {
+function FeedTimelineContent(props: { privateUser: PrivateUser }) {
   const user = useUser()
-  const privateUser = usePrivateUser()
+  const { privateUser } = props
   const {
     boosts,
     checkForNewer,
@@ -113,7 +139,7 @@ function FeedTimelineContent() {
   ).slice(0, 3)
   const fetchMoreOlderContent = async () => {
     const moreFeedItems = await loadMoreOlder()
-    if (!moreFeedItems && user) {
+    if (moreFeedItems == 0 && user) {
       const excludedContractIds = savedFeedItems
         .map((i) => i.contractId)
         .concat(manualContracts?.map((c) => c.id) ?? [])
@@ -121,7 +147,7 @@ function FeedTimelineContent() {
         'get_recommended_contracts_embeddings_fast',
         {
           uid: user.id,
-          n: 20,
+          n: 10,
           excluded_contract_ids: filterDefined(excludedContractIds),
         }
       )
@@ -200,11 +226,11 @@ const NewActivityButton = (props: {
     <button
       className={clsx(
         'bg-canvas-50 border-ink-200 hover:bg-ink-200 rounded-full border-2 py-2 pr-3 pl-2 text-sm transition-colors',
-        'sticky top-7 z-20'
+        'sticky top-7 z-20 self-center'
       )}
       onClick={scrollToTop}
     >
-      <Row className="text-ink-600 items-center align-middle">
+      <Row className="text-ink-600 items-center ">
         <ArrowUpIcon className="text-ink-400 mr-3 h-5 w-5" />
         {avatarUrls.map((url) => (
           <Avatar

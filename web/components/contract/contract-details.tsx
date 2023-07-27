@@ -23,14 +23,15 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   GroupLink,
   getGroupLinkToDisplay,
-  getGroupLinksToDisplay,
   groupPath,
+  sortGroups,
 } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -154,6 +155,15 @@ export function CloseOrResolveTime(props: {
     return <></>
   }
 
+  const almostForeverTime = dayjs(contract.createdTime).add(
+    dayjs.duration(900, 'year')
+  )
+  if (
+    contract.outcomeType === 'POLL' &&
+    dayjs(closeTime).isAfter(almostForeverTime)
+  ) {
+    return <>Never closes</>
+  }
   if (!!closeTime || !!isResolved) {
     return (
       <Row className={clsx('select-none items-center', className)}>
@@ -187,14 +197,16 @@ export function PublicMarketGroups(props: {
 }) {
   const [open, setOpen] = useState(false)
   const user = useUser()
+  const isMobile = useIsMobile()
   const { contract, className, justGroups } = props
-  const groupsToDisplay = getGroupLinksToDisplay(contract)
+
+  const groupsToDisplay = sortGroups(contract).slice(0, isMobile ? 3 : 5)
 
   return (
     <>
       <Row
         className={clsx(
-          'w-full flex-wrap items-end gap-1',
+          'flex-wrap items-end gap-1',
           (!groupsToDisplay || groupsToDisplay.length == 0) && justGroups
             ? 'hidden'
             : '',

@@ -39,6 +39,7 @@ import { Answer, DpmAnswer } from 'common/answer'
 import { UserBetsSummary } from '../bet/bet-summary'
 import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 import { CancelLabel } from '../outcome-label'
+import { PollPanel } from '../poll/poll-panel'
 
 export const ContractOverview = memo(
   (props: {
@@ -87,7 +88,7 @@ export const ContractOverview = memo(
       case 'BOUNTIED_QUESTION':
         return <></>
       case 'POLL':
-        return <></>
+        return <PollPanel contract={contract} />
     }
   }
 )

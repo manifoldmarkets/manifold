@@ -65,7 +65,7 @@ export default function Welcome() {
   if (!shouldShowWelcomeModals) return <></>
 
   if (groupSelectorOpen)
-    return <TopicSelectorDialog skippable={true} opaque={false} />
+    return <TopicSelectorDialog skippable={false} opaque={false} />
 
   return (
     <Modal open={open} setOpen={increasePage} bgOpaque={false} size={'lg'}>
@@ -117,7 +117,8 @@ function WhatIsManifoldPage() {
         Welcome to Manifold
       </div>
       <p className="mb-4 text-lg">
-        Bet on anything and see the market consensus on real-world questions.
+        Manifold is a new way to get news and answers to real-world questions.
+        Compete with your friends by betting on literally anything.
       </p>
       <p> </p>
     </>

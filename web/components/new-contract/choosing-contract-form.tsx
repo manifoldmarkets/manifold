@@ -1,14 +1,15 @@
 import clsx from 'clsx'
 import { OutcomeType } from 'common/contract'
+import { POLLS_ENABLED } from 'common/envs/constants'
 import { ReactNode, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
-import { CreateContractStateType } from './new-contract-panel'
 import {
   NON_PREDICTIVE_CONTRACT_TYPES,
   PREDICTIVE_CONTRACT_TYPES,
 } from './create-contract-types'
+import { CreateContractStateType } from './new-contract-panel'
 
 export function ChoosingContractForm(props: {
   outcomeType: OutcomeType | undefined
@@ -18,18 +19,11 @@ export function ChoosingContractForm(props: {
   const { outcomeType, setOutcomeType, setState } = props
   return (
     <Col>
-      <div className="text-lg">What would you like to create?</div>
-      <Spacer h={6} />
-      <div className="text-primary-400 text-sm font-semibold">
-        PREDICTION MARKET
-      </div>
-      <div className="text-ink-700">
-        A question about the future that people can bet on.
-      </div>
-      <Spacer h={2} />
+      <div className="text-lg">Choose your question type.</div>
+      <Spacer h={4} />
       <Col className="gap-2">
         {Object.entries(PREDICTIVE_CONTRACT_TYPES).map(
-          ([key, { label, descriptor, example, value, visual }]) => (
+          ([_, { label, descriptor, example, value, visual }]) => (
             <OutcomeButton
               label={label}
               descriptor={descriptor}
@@ -47,7 +41,7 @@ export function ChoosingContractForm(props: {
       <Col className="mb-1 gap-2">
         {Object.entries(NON_PREDICTIVE_CONTRACT_TYPES).map(
           ([
-            key,
+            _,
             {
               label,
               descriptor,
@@ -94,7 +88,6 @@ function OutcomeButton(props: {
 }) {
   const {
     label,
-    descriptor,
     example,
     value,
     visual,
@@ -106,6 +99,7 @@ function OutcomeButton(props: {
     setState,
   } = props
   const [touch, setTouch] = useState(false)
+  if (value == 'POLL' && !POLLS_ENABLED) return <></>
   return (
     <button
       className={clsx(
@@ -129,7 +123,6 @@ function OutcomeButton(props: {
         <Col>
           <div className="font-semibold sm:text-lg">{label}</div>
           <Col className="sm:text-md text-sm">
-            <div className={'text-ink-700'}>{descriptor}</div>
             <span className="text-ink-700 mt-0.5 italic">{example}</span>
           </Col>
         </Col>

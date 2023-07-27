@@ -105,7 +105,10 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           content="https://manifold.markets/logo-cover.png"
           key="image1"
         />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1,maximum-scale=1, user-scalable=no"
+        />
         <meta name="apple-itunes-app" content="app-id=6444136749" />
         <link
           rel="search"

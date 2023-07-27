@@ -4,8 +4,7 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-
-import { scoreContractsInternal } from 'shared/score-contracts-internal'
+import { updateViewsAndViewersEmbeddings } from 'shared/helpers/embeddings'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -14,13 +13,17 @@ export async function testBackendFunction() {
   try {
     const pg = createSupabaseDirectClient()
     const db = createSupabaseClient()
-    await scoreContractsInternal(db, pg, true)
-
-    // await getUsersWithSimilarInterestVectorsToContract(
-    //   'YTIuuSsNRn2OlA4KykRM',
-    //   pg,
-    //   0.15
-    // )
+    await updateViewsAndViewersEmbeddings(pg)
+    // await updateUsersViewEmbeddings(pg)
+    // await addInterestingContractsToFeed(db, pg)
+    // await calculateGroupImportanceScore(pg)
+    // const apiKey = process.env.NEWS_API_KEY
+    // if (!apiKey) {
+    //   throw new Error('Missing NEWS_API_KEY')
+    // }
+    //
+    // console.log('Polling news...')
+    // await processNews(apiKey, db, pg, true)
   } catch (e) {
     console.error(e)
   }

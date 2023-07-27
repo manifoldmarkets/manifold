@@ -4,8 +4,6 @@ import { useEffect } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { auth } from './users'
 
-// declare const google: any
-
 async function handleResponse(response: any) {
   const idToken = response.credential
   const credential = GoogleAuthProvider.credential(idToken)

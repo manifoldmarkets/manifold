@@ -61,6 +61,7 @@ export const creategroup = authEndpoint(async (req, auth) => {
     totalMembers: memberIds.length,
     postIds: [],
     privacyStatus: privacyStatus as PrivacyStatusType,
+    importanceScore: 0,
   })
 
   const group = await pg.one(

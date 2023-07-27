@@ -7,6 +7,7 @@ import { NewsTopicsContentContainer } from 'web/components/widgets/news-topics-c
 import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
+import { ExternalLink } from '../widgets/external-link'
 
 const SummitNATO = createNewsDashboardTab('NATO Summit', 'NATO Summit', [
   { slug: 'will-ukraine-be-an-official-member' },
@@ -104,22 +105,14 @@ const OpenAI = createNewsDashboardTab(
 
 const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
   {
-    url: 'https://www.reuters.com/world/europe/russian-general-dismissed-after-accusing-top-brass-failing-soldiers-2023-07-13/',
+    url: 'https://www.bbc.co.uk/news/world-europe-66289136',
   },
-  { slug: 'will-sergei-shoigu-still-be-the-rus' },
-  {
-    url: 'https://www.washingtonpost.com/national-security/2023/07/06/biden-cluster-bombs-ukraine/',
-  },
-  { slug: 'will-the-us-openly-commit-in-2023-t' },
-  {
-    url: 'https://www.cbsnews.com/news/ukraine-russia-war-zaporizhzhia-nuclear-power-plant-attack-plot-claims/',
-  },
+  { slug: 'will-ukraine-sever-the-land-bridge-58877ff44c53' },
+
   { slug: 'will-there-be-a-nuclear-disaster-at' },
+  { slug: 'how-will-the-ukrainerussia-border-l' },
   { slug: 'will-any-part-of-the-zaporizhzhia-n' },
   { slug: 'will-russia-nuke-ukraine' },
-  {
-    url: 'https://www.cnn.com/europe/live-news/russia-ukraine-war-news-07-05-23/index.html',
-  },
   { slug: 'will-the-wagner-group-stop-operatin-ad2bc1b87277' },
   { slug: 'will-the-black-sea-grain-deal-be-ex' },
   {
@@ -130,6 +123,7 @@ const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
   { slug: 'will-the-ukraine-war-be-over-by-the' },
   { slug: '5-will-there-be-a-lasting-ceasefire' },
   { slug: 'will-china-convene-and-mediate-peac' },
+  { slug: 'will-sergei-shoigu-still-be-the-rus' },
 ])
 
 const WestBank = createNewsDashboardTab(
@@ -560,7 +554,126 @@ const Election2024 = createNewsDashboardTab(
   ]
 )
 
+const RPlace = createNewsDashboardTab('r/place', 'r/place', [
+  { slug: 'will-rplace-say-fuck-spez-when-it-c' },
+  {
+    content: (
+      <NewsTopicsContentContainer
+        containerContent={
+          <>
+            Redditors create live animation of the anime Bad Apple:
+            <Link
+              className="text-indigo-500 underline"
+              href="https://twitter.com/MrFoxWasTaken/status/1683184769012748288"
+            >
+              Watch on Twitter
+            </Link>
+          </>
+        }
+      />
+    ),
+  },
+  { slug: 'how-long-will-rplace-last' },
+  { slug: 'what-will-the-final-color-be-at-0-0' },
+  { slug: 'is-this-rplace-a-good-business-move' },
+
+  { slug: 'will-i-be-convinced-that-the-destin' },
+  { slug: 'will-manifold-make-it-on-rplace' },
+  { slug: 'will-destiny-be-the-most-represente' },
+])
+
+const XCom = createNewsDashboardTab('X.com', 'Twitter rebrands to X.com', [
+  { url: 'https://www.bbc.co.uk/news/business-66284304' },
+  { slug: 'will-twitter-rename-to-x-in-a-week' },
+  { slug: 'will-graphic-designers-think-twitte' },
+  { slug: 'will-x-formerly-twitter-release-cre' },
+  { slug: 'at-the-end-of-2023-will-manifold-us' },
+  { slug: 'will-xcom-switch-to-a-different-x-l' },
+  { slug: '28-will-twitters-net-income-be-high' },
+  { slug: 'when-will-twitter-actually-collapse' },
+  { slug: 'will-xeeting-catch-on-as-the-new-te' },
+  { slug: 'will-microsoft-win-10-million-from' },
+])
+
+const IsraeliCourt = createNewsDashboardTab(
+  'Israel',
+  'Israeli gov limits Supreme Court',
+  [
+    {
+      url: 'https://www.cnn.com/2023/07/24/middleeast/israel-supreme-court-power-stripped-intl/index.html',
+    },
+    { slug: 'will-israel-pass-the-judicial-refor-8c16e795af91' },
+    { slug: 'will-israel-pass-the-judicial-refor' },
+    { slug: 'will-the-israeli-supreme-justice-co' },
+    { slug: 'will-an-israeli-protester-be-killed' },
+    { slug: 'will-there-be-restrictions-on-israe' },
+  ]
+)
+
+const STPSuper = createNewsDashboardTab(
+  'Superconductor',
+  'Scientists announce room temp superconductor',
+  [
+    { slug: 'will-the-lk99-room-temp-ambient-pre' },
+    { slug: 'when-will-we-know-whether-the-room' },
+    {
+      content: (
+        <NewsTopicsContentContainer
+          header="Additional Context"
+          containerContent={
+            <>
+              <ExternalLink
+                title="Main Paper"
+                href="https://arxiv.org/abs/2307.12008"
+              />
+
+              <ExternalLink
+                title="Companion Paper"
+                href="https://arxiv.org/abs/2307.12037"
+              />
+
+              <ExternalLink
+                title="First claims of replication from China"
+                href="https://www.zhihu.com/question/613850973/answer/3136316439?utm_id=0"
+              />
+
+              <ExternalLink
+                title="What would RTP superconductors mean?"
+                href="https://theconversation.com/room-temperature-superconductors-could-revolutionize-electronics-an-electrical-engineer-explains-the-materials-potential-201849"
+              />
+
+              <ExternalLink
+                title="Papers on room temp superconductors from different authors have previously been retracted"
+                href="https://www.nature.com/articles/s41586-020-2801-z"
+              />
+
+              <ExternalLink
+                title="Hacker News thread discussion"
+                href="https://news.ycombinator.com/item?id=36864624"
+              />
+              <p className="mb-4">
+                Materials used are relatively cheap and not complicated, so it
+                should be easy for others to replicate.
+              </p>
+            </>
+          }
+        />
+      ),
+    },
+
+    { slug: 'will-the-first-roomtemperature-ambi' },
+    { slug: 'will-we-have-the-first-roomtemperat' },
+    { slug: 'will-a-roomtemperature-atmospheric' },
+    { slug: 'will-the-first-roomtemperature-ambi-61c98e502e09' },
+    { slug: 'which-financial-instruments-should' },
+  ]
+)
+
 export const newsContent = [
+  STPSuper,
+  XCom,
+  IsraeliCourt,
+  RPlace,
   UkraineWar,
   Threads,
   SummitNATO,

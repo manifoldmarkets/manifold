@@ -1,12 +1,11 @@
 import { CheckIcon, EyeIcon, EyeOffIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { User } from 'common/user'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { Row } from 'web/components/layout/row'
-import { useRealtimeContractFollows } from 'web/hooks/use-follows-supabase'
 import {
   Contract,
   followContract,
@@ -14,26 +13,39 @@ import {
 } from 'web/lib/firebase/contracts'
 import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
+import { db } from 'web/lib/supabase/db'
 
 export const FollowMarketButton = (props: {
   contract: Contract
   user: User | undefined | null
 }) => {
   const { contract, user } = props
-  const followers = useRealtimeContractFollows(contract.id)
+  const [following, setFollowing] = useState<boolean>()
   const [open, setOpen] = useState(false)
-
-  const watching = followers?.includes(user?.id ?? 'nope')
-
+  useEffect(() => {
+    if (!user?.id) return
+    db.from('contract_follows')
+      .select('contract_id')
+      .eq('follow_id', user.id)
+      .eq('contract_id', contract.id)
+      .then((res) => {
+        setFollowing((res.data?.length ?? 0) > 0)
+      })
+  }, [user?.id, open])
   return (
     <Button
+      loading={following === undefined}
       size="sm"
       onClick={async () => {
         if (!user) return firebaseLogin()
-        if (followers?.includes(user.id)) {
-          unfollowMarket(contract.id, contract.slug, user)
+        if (following) {
+          unfollowMarket(contract.id, contract.slug, user).then(() =>
+            setFollowing(false)
+          )
         } else {
-          followMarket(contract.id, contract.slug, user)
+          followMarket(contract.id, contract.slug, user).then(() =>
+            setFollowing(true)
+          )
         }
         if (!user.hasSeenContractFollowModal) {
           await updateUser(user.id, {
@@ -43,7 +55,7 @@ export const FollowMarketButton = (props: {
         }
       }}
     >
-      {watching ? (
+      {following ? (
         <Row className={'items-center gap-x-2 sm:flex-row'}>
           <EyeOffIcon className={clsx('h-5 w-5')} aria-hidden="true" />
           Unwatch
@@ -57,9 +69,7 @@ export const FollowMarketButton = (props: {
       <WatchMarketModal
         open={open}
         setOpen={setOpen}
-        title={`You ${
-          followers?.includes(user?.id ?? 'nope') ? 'watched' : 'unwatched'
-        } a question!`}
+        title={`You ${following ? 'watched' : 'unwatched'} a question!`}
       />
     </Button>
   )

@@ -1,15 +1,14 @@
 import clsx from 'clsx'
-import React, { ReactNode, useEffect, useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
-import { formatMoney } from 'common/util/format'
-import { Col } from '../layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { Row } from '../layout/row'
-import { AddFundsModal } from '../add-funds-modal'
-import { Input } from './input'
-import 'rc-slider/assets/index.css'
-import { binaryOutcomes } from '../bet/bet-panel'
+import { formatMoney } from 'common/util/format'
+import React, { ReactNode, useEffect, useState } from 'react'
 import { BetSlider } from 'web/components/bet/bet-slider'
+import { useUser } from 'web/hooks/use-user'
+import { AddFundsModal } from '../add-funds-modal'
+import { binaryOutcomes } from '../bet/bet-panel'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { Input } from './input'
 
 export function AmountInput(
   props: {

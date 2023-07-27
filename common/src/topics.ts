@@ -1,36 +1,27 @@
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
-  '🗳️ Politics': ['🇺🇸 US Politics', '🟠 Trump', '👩‍⚖️ Supreme Court'],
+  '🗳️ Politics': ['🇺🇸 US Politics', '🟠 Trump'],
 
   '💻 Technology': [
     '🤖 AI',
     '🪙 Crypto',
+    '🚀 Space',
     '🪸 Climate',
+    '☢️ Nuclear',
     '🧬 Biotech',
     '💻 Programming',
     '🔬 Science',
     '🧮 Math',
-    '☢️ Nuclear',
-    '🚀 Space',
   ],
 
+  '💼 Business': ['💵 Finance', '💰 Economics', '🚀 Startups', '🚘 Elon Musk'],
+
   '🏟️ Sports': [
+    '🏈 NFL',
     '🏀 Basketball',
     '⚽ Soccer',
     '♟️ Chess',
     '🏎️ Racing',
     '🏅 Sports',
-  ],
-
-  '💼 Business': ['💵 Finance', '💰 Economics', '🚀 Startups', '🚘 Elon Musk'],
-
-  '🌍 World': [
-    '🇷🇺🇺🇦 Russia & Ukraine',
-    '🇨🇳 China',
-    '🇮🇳 India',
-    '🌏 Asia',
-    '🌍 Europe',
-    '🌎 Latin America',
-    '🌍 Middle East',
   ],
 
   '🍿 Media': [
@@ -39,15 +30,25 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '📺 TV Shows',
     '🎵 Music',
     '🌐 Internet Culture',
-    '👥 Celebrities',
   ],
 
-  '🪂 Lifestyle': ['🏳️‍🌈 LGBTQIA+', '⛪ Religion', '💪 Personal Development'],
+  '🌍 World': [
+    '🇷🇺🇺🇦 Russia & Ukraine',
+    '🇨🇳 China',
+    '🇮🇳 India',
+    // '🌏 Asia',
+    '🇪🇺 Europe',
+    // '🌎 Latin America',
+    // '🌍 Middle East',
+    // '🌍 Africa',
+  ],
+
+  '🪂 Lifestyle': ['🏳️‍🌈 LGBTQIA+', '❤️‍🔥 Sex and love', '💪 Personal Development'],
 
   '👥 Communities': ['💗 Effective Altruism', '🎮 Destiny.gg'],
 }
 
-export const SELECTED_TOPICS = [
+export const SELECTABLE_TOPICS = [
   '🗳️ Politics',
   '💻 Technology',
   '🏟️ Sports',
@@ -74,13 +75,6 @@ export const cleanTopic = (topic: string) =>
     // eslint-disable-next-line no-control-regex
     .replace(/[^\x00-\x7F]/g, '')
     .trim()
-
-export const getEmojiFromTopic = (topic: string) => {
-  const textWithEmoji = Object.values(TOPICS_TO_SUBTOPICS)
-    .flat()
-    .find((t) => t.includes(topic))
-  return textWithEmoji ? textWithEmoji.split(' ')[0] : ''
-}
 
 export const getSubtopics = (topic: string) =>
   TOPICS_TO_SUBTOPICS[topic].map(

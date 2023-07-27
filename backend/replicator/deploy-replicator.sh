@@ -33,7 +33,6 @@ yarn build && \
          --memory 512Mi \
          --concurrency 1000 \
          --min-instances 1 \
-         --no-allow-unauthenticated \
          --no-cpu-throttling
 
 # to establish subscription to service, e.g.:

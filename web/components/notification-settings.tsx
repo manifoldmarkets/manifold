@@ -136,6 +136,7 @@ export function NotificationSettings(props: {
       'market_updates_on_watched_markets_with_shares_in',
       'resolutions_on_watched_markets',
       'resolutions_on_watched_markets_with_shares_in',
+      'all_votes_on_watched_markets',
     ],
   }
   const yourMarkets: SectionData = {
@@ -146,6 +147,7 @@ export function NotificationSettings(props: {
       'all_answers_on_my_markets',
       'subsidized_your_market',
       'bounty_added',
+      'vote_on_your_contract',
     ],
   }
   const bonuses: SectionData = {

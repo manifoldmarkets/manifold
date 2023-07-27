@@ -9,7 +9,7 @@ prohibit us from implementing it like that.
 
 You must have set up the `gcloud` cli following the [functions/README](../functions/README.md#installing-for-local-development).
 
-`./deploy.sh [dev|prod]` will deploy to the respective environments.
+`./deploy-replicator.sh [dev|prod]` will deploy to the respective environments.
 
 ## Related
 

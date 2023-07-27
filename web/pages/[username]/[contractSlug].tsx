@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { first } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
@@ -15,7 +16,6 @@ import {
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
-import { ContractView } from 'common/events'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { SEO } from 'web/components/SEO'
@@ -36,6 +36,9 @@ import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 
+import { calculateMultiBets } from 'common/bet'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
+import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
@@ -46,17 +49,15 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
-import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import { ResolutionPanel } from 'web/components/resolution-panel'
-import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
-import { AlertBox } from 'web/components/widgets/alert-box'
+import { ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import {
-  useRealtimeContract,
+  useFirebasePublicAndRealtimePrivateContract,
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
 import { useEvent } from 'web/hooks/use-event'
@@ -71,14 +72,13 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getContractParams } from 'web/lib/firebase/api'
 import { Contract } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
+import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import ContractSharePanel from 'web/components/contract/contract-share-panel'
-import { calculateMultiBets } from 'common/bet'
-import { getTopContractMetrics } from 'common/supabase/contract-metrics'
-import { db } from 'web/lib/supabase/db'
-import { ReviewPanel } from 'web/components/reviews/stars'
+import { ExplainerPanel } from 'web/components/explainer-panel'
+import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
+import { linkClass } from 'web/components/widgets/site-link'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -159,7 +159,10 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     relatedContracts,
   } = contractParams
   const contract: typeof contractParams.contract =
-    useRealtimeContract(contractParams.contract.id) ?? contractParams.contract
+    useFirebasePublicAndRealtimePrivateContract(
+      contractParams.contract.visibility,
+      contractParams.contract.id
+    ) ?? contractParams.contract
 
   if (
     'answers' in contractParams.contract &&
@@ -185,15 +188,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   }, [contract.resolution, contract.id, topContractMetrics.length])
 
   useSaveCampaign()
-  useTracking(
-    'view market',
-    {
-      slug: contract.slug,
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-    } as ContractView,
-    true
-  )
+  useTracking('view market', {}, true)
   useSaveContractVisitsLocally(user === null, contract.id)
 
   // Static props load bets in descending order by time
@@ -204,8 +199,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
   })
   const totalBets =
-    contractParams.totalBets +
-    (newBets?.filter((b) => !b.isRedemption)?.length ?? 0)
+    contractParams.totalBets + newBets.filter((bet) => !bet.isRedemption).length
   const bets = useMemo(
     () => contractParams.historyData.bets.concat(newBets ?? []),
     [contractParams.historyData.bets, newBets]
@@ -304,6 +298,9 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     observer.observe(element)
     return () => observer.unobserve(element)
   }, [titleRef])
+
+  const showExplainerPanel =
+    !user || user.createdTime > Date.now() - 24 * 60 * 60 * 1000
 
   return (
     <>
@@ -429,7 +426,9 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 ) : (
                   <div className="flex gap-4">
                     <Tooltip
-                      text="Traders"
+                      text={
+                        contract.outcomeType == 'POLL' ? 'Voters' : 'Traders'
+                      }
                       placement="bottom"
                       noTap
                       className="flex flex-row items-center gap-1"
@@ -477,16 +476,16 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
               user &&
               !resolution &&
               (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
-                <GradientContainer>
+                <GradientContainer className="my-2">
                   <NumericResolutionPanel
-                    isAdmin={!!isAdmin}
+                    isAdmin={isAdmin}
                     creator={user}
                     isCreator={!isAdmin}
                     contract={contract}
                   />
                 </GradientContainer>
               ) : outcomeType === 'BINARY' ? (
-                <GradientContainer>
+                <GradientContainer className="my-2">
                   <ResolutionPanel
                     isAdmin={isAdmin || trustworthy}
                     creator={user}
@@ -495,7 +494,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                   />
                 </GradientContainer>
               ) : outcomeType === 'QUADRATIC_FUNDING' ? (
-                <GradientContainer>
+                <GradientContainer className="my-2">
                   <QfResolutionPanel contract={contract} />
                 </GradientContainer>
               ) : null)}
@@ -505,21 +504,29 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 marketId={contract.id}
                 author={contract.creatorName}
                 user={user}
+                className="my-2"
               />
             )}
 
-            <div className="my-4">
+            <Row className="my-2 flex-wrap items-center justify-between gap-y-2">
               <MarketGroups contract={contract} />
-            </div>
+              {outcomeType === 'BOUNTIED_QUESTION' && (
+                <Link
+                  className={clsx(linkClass, 'text-primary-500 ml-2 text-sm')}
+                  href={`/questions?s=score&f=open&search-contract-type=BOUNTIED_QUESTION`}
+                >
+                  More Bountied Questions &rarr;
+                </Link>
+              )}
+            </Row>
 
-            {outcomeType === 'NUMERIC' && (
-              <AlertBox
-                title="Warning"
-                text="Distributional numeric questions were introduced as an experimental feature and are now deprecated."
-              />
+            {showExplainerPanel && (
+              <ExplainerPanel className="bg-canvas-50 -mx-4 flex rounded-lg p-4 pb-0 xl:hidden" />
             )}
 
-            {contract.outcomeType !== 'BOUNTIED_QUESTION' && (
+            {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
+
+            {!!user && contract.outcomeType !== 'BOUNTIED_QUESTION' && (
               <ContractSharePanel
                 isClosed={isClosed}
                 isCreator={isCreator}
@@ -571,15 +578,19 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
             )}
           </Col>
         </Col>
-        <RelatedContractsList
-          className="hidden min-h-full max-w-[375px] xl:flex"
-          contracts={relatedMarkets}
-          onContractClick={(c) =>
-            track('click related market', { contractId: c.id })
-          }
-          loadMore={loadMore}
-        />
+        <Col className="hidden min-h-full max-w-[375px] xl:flex">
+          {showExplainerPanel && <ExplainerPanel />}
+
+          <RelatedContractsList
+            contracts={relatedMarkets}
+            onContractClick={(c) =>
+              track('click related market', { contractId: c.id })
+            }
+            loadMore={loadMore}
+          />
+        </Col>
       </Row>
+
       <RelatedContractsList
         className="mx-auto mt-8 min-w-[300px] max-w-[600px] xl:hidden"
         contracts={relatedMarkets}
@@ -592,19 +603,6 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>
   )
-}
-
-function SignUpFlow({ user }: { user: User | null | undefined }) {
-  if (user === null)
-    return (
-      <Col className="mt-1 w-full">
-        <BetSignUpPrompt className="xl:self-center" size="xl" />
-        <PlayMoneyDisclaimer />
-      </Col>
-    )
-  if (user === undefined) return <div className="h-[72px] w-full" />
-
-  return <></>
 }
 
 export function ContractSEO(props: {

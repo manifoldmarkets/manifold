@@ -7,6 +7,8 @@ export const ENV = (process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD') as
   | 'PROD'
   | 'DEV'
 
+export const POLLS_ENABLED = ENV === 'DEV'
+
 export const CONFIGS: { [env: string]: EnvConfig } = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,
@@ -87,6 +89,8 @@ export const BOT_USERNAMES = [
   'Botflux',
   '7',
   'hyperkaehler',
+  'NcyBot',
+  'Seldon',
 ]
 
 export const CORE_USERNAMES = [
@@ -99,10 +103,10 @@ export const CORE_USERNAMES = [
   'DavidChee',
   'mqp',
   'IngaWei',
-  'ManifoldMarkets',
 ]
 
 export const CHECK_USERNAMES = [
+  'Manifold',
   'EliezerYudkowsky',
   'memestiny',
   'ScottAlexander',
@@ -169,7 +173,7 @@ export const DESTINY_GROUP_SLUGS = [
   'mumbowl-stonks',
 ]
 
-export const HOME_BLOCKED_GROUP_SLUGS = [
+export const DEEMPHASIZED_GROUP_SLUGS = [
   'fun',
   'selfresolving',
   'experimental',
@@ -179,6 +183,16 @@ export const HOME_BLOCKED_GROUP_SLUGS = [
   'whale-watching',
   'spam',
   'test',
+  'no-resolution',
+  'eto',
+  'friend-stocks',
+  'austin-less-wrong-2023-predictions',
+  'fantasy-football-stock-exchange',
+  'ancient-markets',
+  'jokes',
+  'olivia',
+  'planecrash',
+  'glowfic',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

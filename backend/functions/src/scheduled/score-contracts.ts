@@ -2,8 +2,8 @@ import * as functions from 'firebase-functions'
 import { secrets } from 'common/secrets'
 import {
   MINUTE_INTERVAL,
-  scoreContractsInternal,
-} from 'shared/score-contracts-internal'
+  addInterestingContractsToFeed,
+} from 'shared/add-interesting-contracts-to-feed'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -43,11 +43,11 @@ export const scoreContractsScheduler = functions
 // TODO: Make more robust.
 // This process is really slow
 export const scorecontracts = onRequest(
-  { timeoutSeconds: 3600, memory: '1GiB', secrets },
+  { timeoutSeconds: (MINUTE_INTERVAL + 10) * 60, memory: '1GiB', secrets },
   async (_req, res) => {
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()
-    await scoreContractsInternal(db, pg)
+    await addInterestingContractsToFeed(db, pg)
     res.status(200).json({ success: true })
   }
 )

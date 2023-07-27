@@ -25,7 +25,7 @@ import {
 } from 'web/components/contract/contract-price'
 import { db } from 'web/lib/supabase/db'
 import { getContractFromSlug } from 'common/supabase/contracts'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { HistoryPoint } from 'common/chart'
 import { ContractCardAnswers } from 'web/components/bet/quick-bet'
 import { SizedContainer } from 'web/components/sized-container'
@@ -84,7 +84,11 @@ export default function ContractEmbedPage(props: {
   contract: Contract
   points: Points | null
 }) {
-  const contract = useRealtimeContract(props.contract.id) ?? props.contract
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
 
   useEffect(() => {
     if (contract?.id)

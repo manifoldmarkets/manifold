@@ -179,12 +179,6 @@ export default function ProfilePage(props: {
       <Col className="bg-canvas-0 max-w-lg rounded p-6 shadow-md sm:mx-auto">
         <Row className="items-start justify-between">
           <Title>Edit Profile</Title>
-          <Link
-            href={`/${user.username}`}
-            className={buttonClass('md', 'green')}
-          >
-            Done
-          </Link>
         </Row>
         <Col className="gap-4">
           <Row className="items-center gap-4">
@@ -268,7 +262,14 @@ export default function ProfilePage(props: {
             />
           ))}
 
-          <div>
+          <Link
+            href={`/${user.username}`}
+            className={buttonClass('lg', 'green')}
+          >
+            Done
+          </Link>
+
+          <div className={'mt-8'}>
             <label className="mb-1 block">Email</label>
             <div className="text-ink-500">{privateUser.email ?? '\u00a0'}</div>
           </div>

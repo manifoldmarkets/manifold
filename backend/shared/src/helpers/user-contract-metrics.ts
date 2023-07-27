@@ -5,6 +5,7 @@ import { calculateUserMetrics } from 'common/calculate-metrics'
 import { bulkUpsert } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ContractMetric } from 'common/contract-metric'
+import { Row } from 'common/supabase/utils'
 
 export async function updateContractMetricsForUsers(
   contract: Contract,
@@ -22,7 +23,8 @@ export async function updateContractMetricsForUsers(
 
 export async function bulkUpdateContractMetrics(metrics: ContractMetric[]) {
   const pg = createSupabaseDirectClient()
-  bulkUpsert(
+  const updatedTime = new Date().toISOString()
+  return bulkUpsert(
     pg,
     'user_contract_metrics',
     ['user_id', 'contract_id'],
@@ -32,7 +34,14 @@ export async function bulkUpdateContractMetrics(metrics: ContractMetric[]) {
           contract_id: m.contractId,
           user_id: m.userId,
           data: m,
-        } as any)
+          fs_updated_time: updatedTime,
+          has_shares: m.hasShares,
+          profit: m.profit,
+          has_no_shares: m.hasNoShares,
+          has_yes_shares: m.hasYesShares,
+          total_shares_no: m.totalShares['NO'] ?? null,
+          total_shares_yes: m.totalShares['YES'] ?? null,
+        } as Row<'user_contract_metrics'>)
     )
   )
 }

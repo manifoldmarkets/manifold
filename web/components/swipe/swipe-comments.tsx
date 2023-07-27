@@ -5,13 +5,13 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Col } from '../layout/col'
-import { useComments } from 'web/hooks/use-comments'
 import { CommentsTabContent } from '../contract/contract-tabs'
 import { ContractComment } from 'common/comment'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { Tooltip } from '../widgets/tooltip'
 import { User } from 'common/user'
+import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 
 export function SwipeComments(props: {
   contract: Contract
@@ -24,7 +24,7 @@ export function SwipeComments(props: {
     setIsModalOpen(open)
   }
 
-  const comments = useComments(contract.id) ?? []
+  const comments = useRealtimeCommentsOnContract(contract.id) ?? []
 
   return (
     <button
@@ -58,7 +58,7 @@ export function CommentsButton(props: {
 
   const [open, setOpen] = useState(false)
 
-  const comments = useComments(contract.id) ?? []
+  const comments = useRealtimeCommentsOnContract(contract.id) ?? []
 
   return (
     <Tooltip text={`Comments`} placement="top" className={'z-10'}>

@@ -23,7 +23,6 @@ import { getUser } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
 import { getIsAdmin } from 'common/supabase/is-admin'
-import { groupBy } from 'lodash'
 import { buildArray } from 'common/util/array'
 
 const bodySchema = z.object({

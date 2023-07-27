@@ -13,7 +13,6 @@ import { CollapsibleContent } from '../widgets/collapsible-content'
 import { isTrustworthy } from 'common/envs/constants'
 import { ContractEditHistoryButton } from 'web/components/contract/contract-edit-history-button'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
-import { isContentEmpty } from 'web/lib/util/isContentEmpty'
 import { Editor } from '@tiptap/core'
 import { CreateAnswerCpmmPanel } from '../answers/create-answer-panel'
 
@@ -66,7 +65,9 @@ export function ContractDescription(props: {
             hideButton={!user}
           />
           {showEditHistory && !!user && (
-            <ContractEditHistoryButton contract={contract} />
+            <div className="flex w-full justify-end">
+              <ContractEditHistoryButton contract={contract} className="mt-1" />
+            </div>
           )}
         </>
       )}
@@ -91,12 +92,12 @@ function ContractActions(props: {
   const [editing, setEditing] = useState(false)
   const [editingAnswer, setEditingAnswer] = useState(false)
 
-  const emptyDescription = isContentEmpty(contract.description)
-
   const editor = useTextEditor({
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: contract.description,
   })
+
+  const emptyDescription = editor?.isEmpty
 
   async function saveDescription() {
     if (!editor) return
@@ -141,7 +142,7 @@ function ContractActions(props: {
           stateKey={`isCollapsed-contract-${contract.id}`}
         />
       )}
-      <Row className="flex-wrap items-center justify-end gap-2 text-xs">
+      <Row className="mt-2 flex-wrap items-center justify-end gap-2 text-xs">
         {isOnlyAdmin && 'Admin '}
         {!isOnlyTrustworthy &&
           contract.mechanism === 'cpmm-multi-1' &&
@@ -151,6 +152,7 @@ function ContractActions(props: {
               buttonColor={'gray'}
             />
           )}
+        <ContractEditHistoryButton contract={contract} />
         {!isOnlyTrustworthy && (
           <EditDescriptionButton
             setEditing={setEditing}
@@ -171,7 +173,6 @@ function ContractActions(props: {
           <Button
             color={highlightResolver ? 'red' : 'gray'}
             size="2xs"
-            className="relative my-2"
             onClick={toggleResolver}
           >
             Resolve

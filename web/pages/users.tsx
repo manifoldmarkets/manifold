@@ -20,6 +20,7 @@ import { shortFormatNumber } from 'common/util/format'
 import { useSearchQueryParameter } from 'web/hooks/use-search-query-parameter'
 import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { BackButton } from 'web/components/contract/back-button'
 
 export default function Users() {
   const isMobile = useIsMobile()
@@ -42,7 +43,10 @@ export default function Users() {
   return (
     <Page>
       <Col className={'w-full p-2'}>
-        <Title className={'!mb-2'}>Users</Title>
+        <Row className={'mb-2 items-center'}>
+          <BackButton className={'mr-2 md:hidden'} />
+          <Title className={'!mb-0'}>Users</Title>
+        </Row>
         <Input
           type="text"
           inputMode="search"

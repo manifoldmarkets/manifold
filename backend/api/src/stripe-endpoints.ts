@@ -34,6 +34,7 @@ const manticDollarStripePrice = isProd()
       1000: 'price_1KFQp1GdoFKoCJW7Iu0dsF65',
       2500: 'price_1KFQqNGdoFKoCJW7SDvrSaEB',
       10000: 'price_1KFQraGdoFKoCJW77I4XCwM3',
+      20000: 'price_1NYYkmGdoFKoCJW73bEpIR93', // temporary conference amount
       100000: 'price_1N0TeXGdoFKoCJW7htfCrFd7',
     }
   : {
@@ -41,7 +42,8 @@ const manticDollarStripePrice = isProd()
       1000: 'price_1K8bC1GdoFKoCJW76k3g5MJk',
       2500: 'price_1K8bDSGdoFKoCJW7avAwpV0e',
       10000: 'price_1K8bEiGdoFKoCJW7Us4UkRHE',
-      100000: 'price_1N0Td3GdoFKoCJW7rbQYmwho'
+      20000: 'price_1NYHJ2GdoFKoCJW7WK0wOeBJ',
+      100000: 'price_1N0Td3GdoFKoCJW7rbQYmwho',
     }
 
 export const createcheckoutsession = async (req: Request, res: Response) => {

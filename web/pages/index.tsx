@@ -9,18 +9,18 @@ import { Row } from 'web/components/layout/row'
 import TestimonialsPanel from './testimonials-panel'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
-import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
-import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
-import { LogoSEO } from 'web/components/LogoSEO'
 import { PrivacyAndTerms } from 'web/components/privacy-terms'
 import { formatMoney } from 'common/util/format'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { STARTING_BALANCE } from 'common/economy'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
+import { LogoSEO } from 'web/components/LogoSEO'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 
 export const getServerSideProps = redirectIfLoggedIn('/home')
 
@@ -76,11 +76,13 @@ export default function Home() {
           </Row>
 
           <Row className="justify-between rounded-lg p-8">
-            <Col className="max-w-sm gap-2">
-              <h1 className="text-4xl">Predict the future</h1>
+            <Col className="max-w-lg gap-2">
+              <h1 className="mb-4 text-4xl">Predict the future</h1>
               <h1 className="text-lg">
-                Bet on anything and see the market consensus on real-world
-                questions
+                A new way to get news and answers to real-world questions.
+              </h1>
+              <h1 className="text-lg">
+                Compete with your friends by betting on literally anything.
               </h1>
 
               <Button
@@ -89,7 +91,7 @@ export default function Home() {
                 className="mt-8"
                 onClick={firebaseLogin}
               >
-                Get started
+                Play now
               </Button>
 
               <div className="text-sm text-white">

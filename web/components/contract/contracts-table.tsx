@@ -16,9 +16,11 @@ import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { Action } from './contract-table-action'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
+import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
+import { Tooltip } from '../widgets/tooltip'
+import { RiBarChartFill } from 'react-icons/ri'
 
 const lastItemClassName = 'rounded-r pr-2'
 const firstItemClassName = 'rounded-l pl-2 pr-4'
@@ -94,6 +96,15 @@ export function ContractStatusLabel(props: {
           {formatMoney(contract.bountyLeft)}{' '}
           <span className="text-ink-600 -mt-1 text-xs font-normal">bounty</span>
         </Col>
+      )
+    }
+    case 'POLL': {
+      return (
+        <span>
+          <Tooltip text="Poll">
+            <RiBarChartFill className="text-ink-500 h-5 w-5" />
+          </Tooltip>
+        </span>
       )
     }
     default:
@@ -190,7 +201,11 @@ export function ContractsTable(props: {
   ]
 
   function ContractRow(props: { contract: Contract }) {
-    const contract = useRealtimeContract(props.contract.id) ?? props.contract
+    const contract =
+      useFirebasePublicAndRealtimePrivateContract(
+        props.contract.visibility,
+        props.contract.id
+      ) ?? props.contract
     const contractListEntryHighlightClass = 'bg-primary-100'
 
     const dataCellClassName = 'py-2 align-top'

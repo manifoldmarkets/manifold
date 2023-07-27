@@ -11,6 +11,7 @@ import { formatMoney, formatPercent } from './util/format'
 import { getLiquidity } from './calculate-cpmm-multi'
 import { sum } from 'lodash'
 import { getDisplayProbability } from 'common/calculate'
+import { PollOption } from './poll-option'
 
 /************************************************
 
@@ -281,7 +282,7 @@ export type BountiedQuestion = {
 
 export type Poll = {
   outcomeType: 'POLL'
-  options: { option: string; votes: number }[]
+  options: PollOption[]
 }
 
 export type MultiContract = (
@@ -306,6 +307,7 @@ export const OUTCOME_TYPES = [
   'QUADRATIC_FUNDING',
   'STONK',
   'BOUNTIED_QUESTION',
+  'POLL',
 ] as const
 
 export function contractPathWithoutContract(
