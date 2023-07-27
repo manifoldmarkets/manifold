@@ -139,7 +139,6 @@ export function SeeVotesModalContent(props: {
 }) {
   const { option, contractId } = props
   const voters = useOptionVoters(contractId, option.id)
-  console.log('VOTERSS')
   return (
     <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
       <div className="bg-canvas-0 fixed inset-x-0 top-0 z-40 w-full rounded-t-md py-2 px-4 sm:px-8">
