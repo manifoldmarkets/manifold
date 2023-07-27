@@ -40,7 +40,6 @@ import { UserBetsSummary } from '../bet/bet-summary'
 import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
-import { DAY_MS } from 'common/util/time'
 
 export const ContractOverview = memo(
   (props: {
@@ -282,11 +281,7 @@ const StonkOverview = (props: {
 
 export const useTimePicker = (contract: Contract) => {
   const viewScale = useSingleValueHistoryChartViewScale()
-  const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>(
-    contract.isResolved || contract.createdTime > Date.now() - DAY_MS
-      ? 'allTime'
-      : 'daily'
-  )
+  const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('allTime')
 
   //zooms out of graph if zoomed in upon time selection change
   const setTimePeriod = useEvent((timePeriod: Period) => {
