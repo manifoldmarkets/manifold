@@ -1,7 +1,11 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs, map, merge, sortBy } from 'lodash'
 import { getUserFollowerIds } from 'shared/supabase/users'
-import { CONTRACT_OR_USER_FEED_REASON_TYPES, MINIMUM_SCORE } from 'common/feed'
+import {
+  ALL_FEED_USER_ID,
+  CONTRACT_OR_USER_FEED_REASON_TYPES,
+  MINIMUM_SCORE,
+} from 'common/feed'
 import { Contract } from 'common/contract'
 
 export const getUniqueBettorIds = async (
@@ -197,7 +201,7 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   const results = await Promise.all(promises)
 
   return merge(
-    {},
+    { [ALL_FEED_USER_ID]: 'similar_interest_vector_to_news_vector' },
     ...results
       .map((result, index) => {
         const reason = reasons[index]

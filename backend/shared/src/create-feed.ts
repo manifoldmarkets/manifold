@@ -7,7 +7,6 @@ import { Comment } from 'common/comment'
 import { getUserToReasonsInterestedInContractAndUser } from 'shared/supabase/contracts'
 import { Contract, CPMMContract } from 'common/contract'
 import {
-  ALL_FEED_USER_ID,
   CONTRACT_OR_USER_FEED_REASON_TYPES,
   FEED_DATA_TYPES,
   FEED_REASON_TYPES,
@@ -43,7 +42,6 @@ export const bulkInsertDataToUserFeed = async (
 
   const feedRows = Object.entries(usersToReasonsInterestedInContract)
     .filter(([userId]) => !userIdsToExclude.includes(userId))
-    .concat([[ALL_FEED_USER_ID, 'similar_interest_vector_to_contract']])
     .map(([userId, reason]) =>
       convertObjectToSQLRow<any, 'user_feed'>({
         ...dataProps,
