@@ -182,7 +182,6 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
             g
           )
         }
-        await upsertGroupEmbedding(pg, g.id)
       })
     )
   }

@@ -95,9 +95,8 @@ export const onCreateContract = functions
           INTEREST_DISTANCE_THRESHOLDS.new_contract,
       }
     )
+    const groupIds = (contract.groupLinks ?? []).map((gl) => gl.groupId)
     await Promise.all(
-      (contract.groupLinks ?? [])
-        .map((gl) => gl.groupId)
-        .map(async (groupId) => upsertGroupEmbedding(pg, groupId))
+      groupIds.map(async (groupId) => upsertGroupEmbedding(pg, groupId))
     )
   })
