@@ -5,6 +5,7 @@ import { APIError, authEndpoint, validate } from './helpers'
 import * as admin from 'firebase-admin'
 import { PollOption } from 'common/poll-option'
 import { Contract, PollContract } from 'common/contract'
+import { createVotedOnPollNotification } from 'shared/create-notification'
 
 const schema = z.object({
   contractId: z.string(),
@@ -61,6 +62,11 @@ export const castpollvote = authEndpoint(async (req, auth) => {
       [voteId, contractId, auth.uid]
     )
 
+    await createVotedOnPollNotification(
+      auth.uid,
+      optionToUpdate?.text ?? '',
+      contract
+    )
     return { status: 'success', voteId: id }
   })
 })
