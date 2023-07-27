@@ -4,7 +4,7 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { addInterestingContractsToFeed } from 'shared/add-interesting-contracts-to-feed'
+import { updateViewsAndViewersEmbeddings } from 'shared/helpers/embeddings'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -13,7 +13,9 @@ export async function testBackendFunction() {
   try {
     const pg = createSupabaseDirectClient()
     const db = createSupabaseClient()
-    await addInterestingContractsToFeed(db, pg)
+    await updateViewsAndViewersEmbeddings(pg)
+    // await updateUsersViewEmbeddings(pg)
+    // await addInterestingContractsToFeed(db, pg)
     // await calculateGroupImportanceScore(pg)
     // const apiKey = process.env.NEWS_API_KEY
     // if (!apiKey) {
