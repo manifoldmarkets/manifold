@@ -175,7 +175,7 @@ export function BetsSummary(props: {
           <Col>
             <div className="text-ink-500 whitespace-nowrap text-sm">
               Profit{' '}
-              <InfoTooltip text="How much you've made or lost (includes both realized & unrealized profits)." />
+              <InfoTooltip text="How much you've made or lost on this question across all bets (includes both realized & unrealized profits)." />
             </div>
             <div className="whitespace-nowrap">
               {formatMoney(profit)}
