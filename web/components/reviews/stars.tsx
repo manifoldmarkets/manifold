@@ -41,8 +41,9 @@ export const ReviewPanel = (props: {
   marketId: string
   author: string
   user: User
+  className?: string
 }) => {
-  const { marketId, author, user } = props
+  const { marketId, author, user, className } = props
   const [rating, setRating] = useState<Rating>()
 
   const editor = useTextEditor({
@@ -72,7 +73,7 @@ export const ReviewPanel = (props: {
   })
 
   return (
-    <GradientContainer>
+    <GradientContainer className={className}>
       <Col className="items-center gap-2">
         <h2 className="text-primary-500 text-xl">Rate {author}</h2>
         <span className="text-sm italic">

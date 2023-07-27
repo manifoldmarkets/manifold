@@ -206,7 +206,7 @@ export function PublicMarketGroups(props: {
     <>
       <Row
         className={clsx(
-          'w-full flex-wrap items-end gap-1',
+          'flex-wrap items-end gap-1',
           (!groupsToDisplay || groupsToDisplay.length == 0) && justGroups
             ? 'hidden'
             : '',

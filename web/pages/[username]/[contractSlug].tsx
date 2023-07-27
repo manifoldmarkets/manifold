@@ -79,6 +79,7 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { Button } from 'web/components/buttons/button'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
+import { linkClass } from 'web/components/widgets/site-link'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -476,7 +477,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
               user &&
               !resolution &&
               (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
-                <GradientContainer>
+                <GradientContainer className="my-2">
                   <NumericResolutionPanel
                     isAdmin={isAdmin}
                     creator={user}
@@ -485,7 +486,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                   />
                 </GradientContainer>
               ) : outcomeType === 'BINARY' ? (
-                <GradientContainer>
+                <GradientContainer className="my-2">
                   <ResolutionPanel
                     isAdmin={isAdmin || trustworthy}
                     creator={user}
@@ -494,7 +495,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                   />
                 </GradientContainer>
               ) : outcomeType === 'QUADRATIC_FUNDING' ? (
-                <GradientContainer>
+                <GradientContainer className="my-2">
                   <QfResolutionPanel contract={contract} />
                 </GradientContainer>
               ) : null)}
@@ -504,23 +505,18 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 marketId={contract.id}
                 author={contract.creatorName}
                 user={user}
+                className="my-2"
               />
             )}
 
-            <Row className="my-4 flex-wrap gap-2 sm:flex-nowrap">
+            <Row className="my-2 flex-wrap items-center justify-between gap-y-2">
               <MarketGroups contract={contract} />
               {outcomeType === 'BOUNTIED_QUESTION' && (
                 <Link
-                  className="self-end"
+                  className={clsx(linkClass, 'text-primary-500 ml-2 text-sm')}
                   href={`/questions?s=score&f=open&search-contract-type=BOUNTIED_QUESTION`}
                 >
-                  <Button
-                    className="whitespace-nowrap"
-                    color="green-outline"
-                    size="xs"
-                  >
-                    More bountied questions
-                  </Button>
+                  More Bountied Questions &rarr;
                 </Link>
               )}
             </Row>
