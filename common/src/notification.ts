@@ -311,6 +311,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Votes on polls you follow',
     detailed: 'When a user votes on a poll you follow',
   },
+  vote_on_your_contract: {
+    simple: 'Votes on your polls',
+    detailed: 'When a user votes on a poll you created',
+  },
 }
 
 export type BettingStreakData = {

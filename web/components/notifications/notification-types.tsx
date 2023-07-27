@@ -198,6 +198,18 @@ export function NotificationItem(props: {
           isChildOfGroup={isChildOfGroup}
         />
       )
+    } else if (
+      reason === 'vote_on_your_contract' ||
+      reason === 'all_votes_on_watched_markets'
+    ) {
+      return (
+        <VotedNotification
+          notification={notification}
+          highlighted={highlighted}
+          setHighlighted={setHighlighted}
+          isChildOfGroup={isChildOfGroup}
+        />
+      )
     }
     return (
       <MarketUpdateNotification
@@ -1410,6 +1422,47 @@ function BountyAddedNotification(props: {
           to your bountied question{' '}
           {!isChildOfGroup && (
             <span>
+              <PrimaryNotificationLink
+                text={notification.sourceContractTitle}
+              />
+            </span>
+          )}
+        </span>
+      </>
+    </NotificationFrame>
+  )
+}
+
+function VotedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const sourceUrl = getSourceUrl(notification)
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'🗳️'} />
+      }
+    >
+      <>
+        <span>
+          <UserLink
+            name={notification.sourceUserName}
+            username={notification.sourceUserUsername}
+          />{' '}
+          voted on <b>{notification.sourceText}</b>
+          {!isChildOfGroup && (
+            <span>
+              {' '}
+              on{' '}
               <PrimaryNotificationLink
                 text={notification.sourceContractTitle}
               />

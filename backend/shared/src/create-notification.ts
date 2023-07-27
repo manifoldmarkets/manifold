@@ -1644,9 +1644,11 @@ export const createVotedOnPollNotification = async (
 
   const notifyContractFollowers = async () => {
     await Promise.all(
-      Object.keys(contractFollowersIds).map((userId) =>
-        sendNotificationsIfSettingsPermit(userId, 'vote_on_poll_you_follow')
-      )
+      Object.keys(contractFollowersIds).map((userId) => {
+        if (userId !== sourceContract.creatorId) {
+          sendNotificationsIfSettingsPermit(userId, 'vote_on_poll_you_follow')
+        }
+      })
     )
   }
 

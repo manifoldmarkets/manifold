@@ -28,6 +28,7 @@ export type notification_preferences = {
   all_comments_on_my_markets: notification_destination_types[]
   all_answers_on_my_markets: notification_destination_types[]
   subsidized_your_market: notification_destination_types[]
+  vote_on_your_contract: notification_destination_types[]
 
   // Market updates
   resolutions_on_watched_markets: notification_destination_types[]
@@ -135,6 +136,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     all_comments_on_my_markets: constructPref(true, true, false),
     all_answers_on_my_markets: constructPref(true, true, false),
     subsidized_your_market: constructPref(true, true, false),
+    vote_on_your_contract: constructPref(true, true, false),
 
     // Market updates
     resolutions_on_watched_markets: constructPref(true, false, true),

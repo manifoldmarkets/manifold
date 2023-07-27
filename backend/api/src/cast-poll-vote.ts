@@ -62,7 +62,11 @@ export const castpollvote = authEndpoint(async (req, auth) => {
       [voteId, contractId, auth.uid]
     )
 
-    await createVotedOnPollNotification(auth.uid, 'voted', contract)
+    await createVotedOnPollNotification(
+      auth.uid,
+      optionToUpdate?.text ?? '',
+      contract
+    )
     return { status: 'success', voteId: id }
   })
 })
