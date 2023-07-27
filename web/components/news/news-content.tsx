@@ -614,9 +614,8 @@ const STPSuper = createNewsDashboardTab(
   'Superconductor',
   'Scientists announce room temp superconductor',
   [
-    { url: 'https://arxiv.org/abs/2307.12008' },
     { slug: 'will-the-lk99-room-temp-ambient-pre' },
-    { slug: 'will-we-have-the-first-roomtemperat' },
+    { slug: 'when-will-we-know-whether-the-room' },
     {
       content: (
         <NewsTopicsContentContainer
@@ -624,8 +623,18 @@ const STPSuper = createNewsDashboardTab(
           containerContent={
             <>
               <ExternalLink
+                title="Main Paper"
+                href="https://arxiv.org/abs/2307.12008"
+              />
+
+              <ExternalLink
                 title="Companion Paper"
                 href="https://arxiv.org/abs/2307.12037"
+              />
+
+              <ExternalLink
+                title="First claims of replication from China"
+                href="https://www.zhihu.com/question/613850973/answer/3136316439?utm_id=0"
               />
 
               <ExternalLink
@@ -651,8 +660,12 @@ const STPSuper = createNewsDashboardTab(
         />
       ),
     },
+
     { slug: 'will-the-first-roomtemperature-ambi' },
+    { slug: 'will-we-have-the-first-roomtemperat' },
     { slug: 'will-a-roomtemperature-atmospheric' },
+    { slug: 'will-the-first-roomtemperature-ambi-61c98e502e09' },
+    { slug: 'which-financial-instruments-should' },
   ]
 )
 
