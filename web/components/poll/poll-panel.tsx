@@ -126,51 +126,45 @@ export function SeeVotesButton(props: {
           votes
         </span>
       </button>
-      <SeeVotesModal
-        option={option}
-        contractId={contractId}
-        open={open}
-        setOpen={setOpen}
-      />
+      <Modal open={open} setOpen={setOpen}>
+        <SeeVotesModalContent option={option} contractId={contractId} />
+      </Modal>
     </>
   )
 }
 
-export function SeeVotesModal(props: {
+export function SeeVotesModalContent(props: {
   option: PollOption
   contractId: string
-  open: boolean
-  setOpen: (open: boolean) => void
 }) {
-  const { option, contractId, open, setOpen } = props
+  const { option, contractId } = props
   const voters = useOptionVoters(contractId, option.id)
+  console.log('VOTERSS')
   return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
-        <div className="bg-canvas-0 fixed inset-x-0 top-0 z-40 w-full rounded-t-md py-2 px-8">
-          Votes on <b>{option.text}</b>
-        </div>
-        <Spacer h={2} />
-        {!voters ? (
-          <LoadingIndicator />
-        ) : voters.length == 0 ? (
-          'No votes yet...'
-        ) : (
-          voters.map((voter) => {
-            return (
-              <Row className="w-full items-center gap-2">
-                <Avatar
-                  username={voter.username}
-                  avatarUrl={voter.avatarUrl}
-                  size={'sm'}
-                />
-                <UserLink name={voter.name} username={voter.username} />
-              </Row>
-            )
-          })
-        )}
-      </Col>
-    </Modal>
+    <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
+      <div className="bg-canvas-0 fixed inset-x-0 top-0 z-40 w-full rounded-t-md py-2 px-4 sm:px-8">
+        Votes on <b>{option.text}</b>
+      </div>
+      <Spacer h={2} />
+      {!voters ? (
+        <LoadingIndicator />
+      ) : voters.length == 0 ? (
+        'No votes yet...'
+      ) : (
+        voters.map((voter) => {
+          return (
+            <Row className="w-full items-center gap-2" key={voter.id}>
+              <Avatar
+                username={voter.username}
+                avatarUrl={voter.avatarUrl}
+                size={'sm'}
+              />
+              <UserLink name={voter.name} username={voter.username} />
+            </Row>
+          )
+        })
+      )}
+    </Col>
   )
 }
 
