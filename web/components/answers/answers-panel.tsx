@@ -90,6 +90,8 @@ export function AnswersPanel(props: {
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
+  const moreCount = answers.length - answersToShow.length
+
   return (
     <Col className="gap-3">
       <Col className="gap-2">
@@ -103,13 +105,13 @@ export function AnswersPanel(props: {
             userBets={userBetsByAnswer[answer.id]}
           />
         ))}
-        {answersToShow.length < answers.length &&
+        {moreCount > 0 &&
           (linkToContract ? (
             <Link
               className="text-ink-500 hover:text-primary-500"
               href={contractPath(contract)}
             >
-              See {answers.length - answersToShow.length} more answers{' '}
+              See {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}{' '}
               <ArrowRightIcon className="inline h-4 w-4" />
             </Link>
           ) : (
@@ -118,7 +120,7 @@ export function AnswersPanel(props: {
               onClick={() => setShowSmallAnswers(true)}
               size="xs"
             >
-              {answers.length - answersToShow.length} more answers
+              {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
               <ChevronDoubleDownIcon className="ml-1 h-4 w-4" />
             </Button>
           ))}
