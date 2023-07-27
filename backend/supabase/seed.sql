@@ -490,7 +490,6 @@ begin
     new.resolution_probability := ((new.data) ->> 'resolutionProbability')::numeric;
     new.resolution := (new.data) ->> 'resolution';
     new.popularity_score := coalesce(((new.data) ->> 'popularityScore')::numeric, 0);
-    new.importance_score := coalesce(((new.data) ->> 'importanceScore')::numeric, 0);
   end if;
   return new;
 end
