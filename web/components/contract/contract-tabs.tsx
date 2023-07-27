@@ -279,7 +279,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const sortedComments = [
     ...strictlySortedComments.slice(0, firstOldCommentIndex),
     // Lump the original comments in a contiguous chunk so they don't jump around.
-    ...frozenCommentIds.map((id) => commentById[id]),
+    ...frozenCommentIds.map((id) => commentById[id]).filter(Boolean),
     ...strictlySortedComments
       .slice(firstOldCommentIndex)
       .filter((c) => !frozenCommentIds.includes(c.id)),
