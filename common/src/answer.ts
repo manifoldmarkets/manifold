@@ -14,6 +14,9 @@ export type Answer = {
   prob: number // Computed from poolYes and poolNo.
   totalLiquidity: number // for historical reasons, this the total subsidy amount added in M
   subsidyPool: number // current value of subsidy pool in M
+
+  // Is this 'Other', the answer that represents all other answers, including answers added in the future.
+  isOther?: boolean
 }
 
 export type DpmAnswer = {

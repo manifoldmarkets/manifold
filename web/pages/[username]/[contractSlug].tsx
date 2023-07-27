@@ -203,7 +203,9 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     afterTime: lastBetTime,
     filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
   })
-  const totalBets = contractParams.totalBets + (newBets?.length ?? 0)
+  const totalBets =
+    contractParams.totalBets +
+    (newBets?.filter((b) => !b.isRedemption)?.length ?? 0)
   const bets = useMemo(
     () => contractParams.historyData.bets.concat(newBets ?? []),
     [contractParams.historyData.bets, newBets]

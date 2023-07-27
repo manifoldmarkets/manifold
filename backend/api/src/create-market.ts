@@ -16,6 +16,7 @@ import {
   getNumericAnte,
 } from 'common/antes'
 import {
+  add_answers_mode,
   Contract,
   CPMMBinaryContract,
   CPMMMultiContract,
@@ -67,6 +68,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     initialProb,
     isLogScale,
     answers,
+    addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
   } = validateMarketBody(body)
@@ -112,6 +114,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       min ?? 0,
       max ?? 0,
       isLogScale ?? false,
+      addAnswersMode,
       shouldAnswersSumToOne
     )
 
@@ -261,6 +264,7 @@ function validateMarketBody(body: any) {
     initialProb: number | undefined,
     isLogScale: boolean | undefined,
     answers: string[] | undefined,
+    addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined
 
@@ -296,7 +300,10 @@ function validateMarketBody(body: any) {
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
-    ;({ answers, shouldAnswersSumToOne } = validate(multipleChoiceSchema, body))
+    ;({ answers, addAnswersMode, shouldAnswersSumToOne } = validate(
+      multipleChoiceSchema,
+      body
+    ))
   }
 
   if (outcomeType === 'BOUNTIED_QUESTION') {
@@ -318,6 +325,7 @@ function validateMarketBody(body: any) {
     initialProb,
     isLogScale,
     answers,
+    addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
   }
@@ -373,7 +381,7 @@ async function createAnswers(
   ante: number,
   answers: string[]
 ) {
-  const { shouldAnswersSumToOne } = contract
+  const { addAnswersMode, shouldAnswersSumToOne } = contract
   const ids = answers.map(() => randomString())
 
   let prob = 0.5
@@ -416,6 +424,7 @@ async function createAnswers(
         prob,
         totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
         subsidyPool: 0,
+        isOther: addAnswersMode !== 'DISABLED' && i === answers.length - 1,
       }
       return firestore
         .collection(`contracts/${contract.id}/answersCpmm`)
@@ -545,6 +554,10 @@ const multipleChoiceSchema = z.object({
     .array()
     .min(2)
     .max(MULTIPLE_CHOICE_MAX_ANSWERS),
+  addAnswersMode: z
+    .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
+    .default('DISABLED')
+    .optional(),
   shouldAnswersSumToOne: z.boolean().optional(),
 })
 

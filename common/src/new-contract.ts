@@ -1,5 +1,6 @@
 import { range } from 'lodash'
 import {
+  add_answers_mode,
   Binary,
   BountiedQuestion,
   Cert,
@@ -23,7 +24,9 @@ import { User } from './user'
 import { removeUndefinedProps } from './util/object'
 import { JSONContent } from '@tiptap/core'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
+
 export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
+
 export function getNewContract(
   id: string,
   slug: string,
@@ -44,6 +47,7 @@ export function getNewContract(
   min: number,
   max: number,
   isLogScale: boolean,
+  addAnswersMode: add_answers_mode | undefined,
   shouldAnswersSumToOne: boolean | undefined
 ) {
   const createdTime = Date.now()
@@ -53,7 +57,8 @@ export function getNewContract(
     PSEUDO_NUMERIC: () =>
       getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale),
     NUMERIC: () => getNumericProps(ante, bucketCount, min, max),
-    MULTIPLE_CHOICE: () => getMultipleChoiceProps(shouldAnswersSumToOne, ante),
+    MULTIPLE_CHOICE: () =>
+      getMultipleChoiceProps(addAnswersMode, shouldAnswersSumToOne, ante),
     QUADRATIC_FUNDING: () => getQfProps(ante),
     CERT: () => getCertProps(ante),
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
@@ -229,12 +234,14 @@ const _getDpmMultipleChoiceProps = (ante: number, answers: string[]) => {
 }
 
 const getMultipleChoiceProps = (
+  addAnswersMode: add_answers_mode | undefined,
   shouldAnswersSumToOne: boolean | undefined,
   ante: number
 ) => {
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
     outcomeType: 'MULTIPLE_CHOICE',
+    addAnswersMode: addAnswersMode ?? 'DISABLED',
     shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
     answers: [],
     totalLiquidity: ante,

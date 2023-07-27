@@ -1,5 +1,5 @@
 import { ArrowRightIcon, ChevronDoubleDownIcon } from '@heroicons/react/outline'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, sortBy, sumBy } from 'lodash'
 import { useState } from 'react'
 
 import clsx from 'clsx'
@@ -31,6 +31,7 @@ import {
   MultiBettor,
   OpenProb,
 } from './answer-options'
+import { floatingEqual } from 'common/util/math'
 
 export function getAnswerColor(
   answer: Answer | DpmAnswer,
@@ -162,9 +163,10 @@ function Answer(props: {
       ? 1
       : (resolutions?.[answer.id] ?? 0) / 100
 
-  const hasBets =
-    userBets &&
-    userBets.filter((b) => !b.isRedemption && b.amount != 0).length > 0
+  const sharesSum = sumBy(userBets, (bet) =>
+    bet.outcome === 'YES' ? bet.shares : -bet.shares
+  )
+  const hasBets = userBets && !floatingEqual(sharesSum, 0)
 
   return (
     <AnswerBar

@@ -8,6 +8,7 @@ import {
   MAX_QUESTION_LENGTH,
   OutcomeType,
   Visibility,
+  add_answers_mode,
 } from 'common/contract'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -96,6 +97,8 @@ export function ContractParamsForm(props: {
     paramAnswers.length ? paramAnswers : ['', ''],
     'new-answers' + paramsKey
   )
+  const [addAnswersMode, setAddAnswersMode] =
+    useState<add_answers_mode>('DISABLED')
 
   const [question, setQuestion] = usePersistentLocalState(
     '',
@@ -252,6 +255,7 @@ export function ContractParamsForm(props: {
           initialValue,
           isLogScale,
           answers,
+          addAnswersMode,
           groupId: selectedGroup?.id,
           visibility,
           utcOffset: new Date().getTimezoneOffset(),
@@ -332,6 +336,20 @@ export function ContractParamsForm(props: {
       <Spacer h={4} />
       {outcomeType === 'MULTIPLE_CHOICE' && (
         <MultipleChoiceAnswers answers={answers} setAnswers={setAnswers} />
+      )}
+      {outcomeType === 'MULTIPLE_CHOICE' && (
+        <Col className="mb-4 gap-2 self-start">
+          <div className="ml-1">Who can add new answers?</div>
+          <ChoicesToggleGroup
+            currentChoice={addAnswersMode}
+            choicesMap={{
+              'No one': 'DISABLED',
+              Creator: 'ONLY_CREATOR',
+              Anyone: 'ANYONE',
+            }}
+            setChoice={setAddAnswersMode as any}
+          />
+        </Col>
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <>

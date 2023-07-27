@@ -37,7 +37,7 @@ export function average(xs: number[]) {
   return sum(xs) / xs.length
 }
 
-const EPSILON = 0.00000001
+export const EPSILON = 0.00000001
 
 export function floatingEqual(a: number, b: number, epsilon = EPSILON) {
   return Math.abs(a - b) < epsilon
