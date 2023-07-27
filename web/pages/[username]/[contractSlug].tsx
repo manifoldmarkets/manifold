@@ -478,7 +478,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
               (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
                 <GradientContainer>
                   <NumericResolutionPanel
-                    isAdmin={!!isAdmin}
+                    isAdmin={isAdmin}
                     creator={user}
                     isCreator={!isAdmin}
                     contract={contract}

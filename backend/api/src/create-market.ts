@@ -51,7 +51,6 @@ import { createNewContractFromPrivateGroupNotification } from 'shared/create-not
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { getMultiCpmmLiquidity } from 'common/calculate-cpmm'
 import { SupabaseClient } from 'common/supabase/utils'
-import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -167,7 +166,6 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
   )
 
   const db = createSupabaseClient()
-  const pg = createSupabaseDirectClient()
   if (groups) {
     await Promise.all(
       groups.map(async (g) => {
