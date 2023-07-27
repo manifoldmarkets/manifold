@@ -25,3 +25,14 @@ export async function getContractVoters(contractId: string) {
   }
   return []
 }
+
+export async function getOptionVoters(contractId: string, optionId: string) {
+  const { data } = await db.rpc('get_option_voters', {
+    this_contract_id: contractId,
+    this_option_id: optionId,
+  })
+  if (data && data.length > 0) {
+    return data.map((d) => (d as any).data) as User[]
+  }
+  return []
+}
