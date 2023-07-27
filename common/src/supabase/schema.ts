@@ -3161,7 +3161,14 @@ export interface Database {
         Args: {
           this_contract_id: string
         }
-        Returns: {data:Json}[]
+        Returns: { data: Json }[]
+      }
+      get_option_voters: {
+        Args: {
+          this_contract_id: string
+          this_option_id: string
+        }
+        Returns: { data: Json }[]
       }
     }
     Enums: {
