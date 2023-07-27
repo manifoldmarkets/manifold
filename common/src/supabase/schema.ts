@@ -1157,8 +1157,6 @@ export interface Database {
           created_at: string
           disinterest_embedding: string | null
           interest_embedding: string
-          pre_signup_embedding_is_default: boolean | null
-          pre_signup_interest_embedding: string | null
           user_id: string
         }
         Insert: {
@@ -1166,8 +1164,6 @@ export interface Database {
           created_at?: string
           disinterest_embedding?: string | null
           interest_embedding: string
-          pre_signup_embedding_is_default?: boolean | null
-          pre_signup_interest_embedding?: string | null
           user_id: string
         }
         Update: {
@@ -1175,8 +1171,6 @@ export interface Database {
           created_at?: string
           disinterest_embedding?: string | null
           interest_embedding?: string
-          pre_signup_embedding_is_default?: boolean | null
-          pre_signup_interest_embedding?: string | null
           user_id?: string
         }
         Relationships: []
