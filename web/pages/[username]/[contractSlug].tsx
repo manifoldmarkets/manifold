@@ -16,7 +16,6 @@ import {
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
-import { ContractView } from 'common/events'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { SEO } from 'web/components/SEO'
@@ -189,15 +188,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   }, [contract.resolution, contract.id, topContractMetrics.length])
 
   useSaveCampaign()
-  useTracking(
-    'view market',
-    {
-      slug: contract.slug,
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-    } as ContractView,
-    true
-  )
+  useTracking('view market', {}, true)
   useSaveContractVisitsLocally(user === null, contract.id)
 
   // Static props load bets in descending order by time
