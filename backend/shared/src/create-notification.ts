@@ -1663,3 +1663,103 @@ export const createVotedOnPollNotification = async (
   log('notifying followers')
   await notifyContractFollowers()
 }
+
+export const createPollClosedNotification = async (
+  sourceText: string,
+  sourceContract: Contract
+) => {
+  const pg = createSupabaseDirectClient()
+  console.log('contract', sourceContract)
+  const usersToReceivedNotifications: Record<
+    string,
+    notification_destination_types[]
+  > = {}
+
+  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
+    `select follow_id from contract_follows where contract_id = $1`,
+    [sourceContract.id]
+  )
+  const contractFollowersIds = mapValues(
+    keyBy(followerIds, 'follow_id'),
+    () => true
+  )
+  console.log('CONTRACT FOLLOWER IDS', contractFollowersIds)
+
+  const constructNotification = (
+    userId: string,
+    reason: notification_reason_types
+  ) => {
+    const notification: Notification = {
+      id: crypto.randomUUID(),
+      userId,
+      reason,
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: sourceContract.id,
+      sourceType: 'contract',
+      sourceContractId: sourceContract.id,
+      sourceUserName: sourceContract.creatorName,
+      sourceUserUsername: sourceContract.creatorUsername,
+      sourceUserAvatarUrl: sourceContract.creatorAvatarUrl ?? '',
+      sourceText,
+      sourceContractCreatorUsername: sourceContract.creatorUsername,
+      sourceContractTitle: sourceContract.question,
+      sourceContractSlug: sourceContract.slug,
+      sourceSlug: sourceContract.slug,
+      sourceTitle: sourceContract.question,
+    }
+    return removeUndefinedProps(notification)
+  }
+
+  const stillFollowingContract = (userId: string) => {
+    // Should be better performance than includes
+    return contractFollowersIds[userId] !== undefined
+  }
+
+  const sendNotificationsIfSettingsPermit = async (
+    userId: string,
+    reason: notification_reason_types
+  ) => {
+    // A user doesn't have to follow a market to receive a notification with their tag
+    if (!stillFollowingContract(userId)) return
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
+    if (userIsBlocked(privateUser, sourceContract.creatorId)) return
+
+    const { sendToBrowser } = getNotificationDestinationsForUser(
+      privateUser,
+      reason
+    )
+
+    const receivedNotifications = usersToReceivedNotifications[userId] ?? []
+
+    // Browser notifications
+    if (sendToBrowser && !receivedNotifications.includes('browser')) {
+      const notification = constructNotification(userId, reason)
+      await insertNotificationToSupabase(notification, pg)
+      receivedNotifications.push('browser')
+    }
+  }
+
+  const notifyContractFollowers = async () => {
+    await Promise.all(
+      Object.keys(contractFollowersIds).map((userId) => {
+        if (userId !== sourceContract.creatorId) {
+          sendNotificationsIfSettingsPermit(userId, 'poll_you_follow_closed')
+        }
+      })
+    )
+  }
+
+  const notifyContractCreator = async () => {
+    console.log('notifying creator')
+    await sendNotificationsIfSettingsPermit(
+      sourceContract.creatorId,
+      'your_poll_closed'
+    )
+  }
+  log('notifying creator')
+  await notifyContractCreator()
+  log('notifying followers')
+  await notifyContractFollowers()
+}
