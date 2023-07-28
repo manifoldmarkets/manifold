@@ -14,7 +14,6 @@ export const pollPollResolutions = functions
   .pubsub.schedule('every 5 minutes') // runs every minute
   .onRun(async () => {
     const pg = createSupabaseDirectClient()
-    const firestore = admin.firestore()
     const closedPolls = await pg.manyOrNone(
       `select data from contracts where outcome_type = 'POLL' and close_time < now() and resolution_time is null`
     )
@@ -47,3 +46,5 @@ function getMaxVoteId(arr: PollOption[]): string[] {
 
   return result.maxVoteIds
 }
+
+const firestore = admin.firestore()
