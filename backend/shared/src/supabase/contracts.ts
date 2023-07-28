@@ -7,7 +7,10 @@ import {
   MINIMUM_SCORE,
 } from 'common/feed'
 import { Contract } from 'common/contract'
-import { cosineDistance, userInterestEmbeddings } from 'shared/supabase/vectors'
+import {
+  unitVectorCosineDistance,
+  userInterestEmbeddings,
+} from 'shared/supabase/vectors'
 import { filterDefined } from 'common/util/array'
 
 export const getUniqueBettorIds = async (
@@ -148,11 +151,14 @@ export const getUsersWithSimilarInterestVectorsToContractServerSide = async (
 
   const userIdsInterestedInContract = Object.entries(userInterestEmbeddings)
     .map(([userId, user]) => {
-      const interestDistance = cosineDistance(contractEmbedding, user.interest)
+      const interestDistance = unitVectorCosineDistance(
+        contractEmbedding,
+        user.interest
+      )
       if (interestDistance > interestDistanceThreshold) return null
 
       const disinterestDistance = user.disinterest
-        ? cosineDistance(contractEmbedding, user.disinterest)
+        ? unitVectorCosineDistance(contractEmbedding, user.disinterest)
         : 1
       const score = disinterestDistance - interestDistance
       if (score < MINIMUM_SCORE) return null

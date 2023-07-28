@@ -1,4 +1,4 @@
-import { map, sum, zipWith } from 'lodash'
+import { sum, zipWith } from 'lodash'
 
 export const userInterestEmbeddings: Record<
   string,
@@ -14,14 +14,10 @@ function dotProduct(vecA: number[], vecB: number[]) {
   return sum(zipWith(vecA, vecB, (a, b) => a * b))
 }
 
-function magnitude(vec: number[]) {
-  return Math.sqrt(sum(map(vec, (val) => val * val)))
+function unitVectorCosineSimilarity(vecA: number[], vecB: number[]) {
+  return dotProduct(vecA, vecB)
 }
 
-function cosineSimilarity(vecA: number[], vecB: number[]) {
-  return dotProduct(vecA, vecB) / (magnitude(vecA) * magnitude(vecB))
-}
-
-export function cosineDistance(vecA: number[], vecB: number[]) {
-  return 1 - cosineSimilarity(vecA, vecB)
+export function unitVectorCosineDistance(vecA: number[], vecB: number[]) {
+  return 1 - unitVectorCosineSimilarity(vecA, vecB)
 }
