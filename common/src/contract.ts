@@ -277,6 +277,7 @@ export type BountiedQuestion = {
 export type Poll = {
   outcomeType: 'POLL'
   options: PollOption[]
+  resolutions?: string[]
 }
 
 export type MultiContract = (
