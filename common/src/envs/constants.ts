@@ -91,6 +91,7 @@ export const BOT_USERNAMES = [
   'hyperkaehler',
   'NcyBot',
   'Seldon',
+  'OnePercentBot',
 ]
 
 export const CORE_USERNAMES = [
