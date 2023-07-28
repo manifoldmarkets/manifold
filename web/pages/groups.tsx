@@ -16,17 +16,6 @@ import { Title } from 'web/components/widgets/title'
 import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
 
-function PrivateGroupsBanner() {
-  return (
-    <Row className="dark:border-indigo-00 gap- mb-4 rounded bg-indigo-200 bg-opacity-70 px-2 py-1 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100">
-      <span>
-        <FlagIcon className="mt-0.5 h-5 w-5" />
-      </span>
-      <span>Private groups are now in beta! Create a private group today</span>
-    </Row>
-  )
-}
-
 export default function Groups() {
   const user = useUser()
   return (
@@ -38,7 +27,6 @@ export default function Groups() {
       />
       <Col className="items-center">
         <Col className="w-full max-w-2xl px-4 sm:px-2">
-          <PrivateGroupsBanner />
           <Row className="items-start justify-between">
             <Title>Groups</Title>
             {user && (
