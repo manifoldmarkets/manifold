@@ -210,6 +210,18 @@ export function NotificationItem(props: {
           isChildOfGroup={isChildOfGroup}
         />
       )
+    } else if (
+      reason == 'poll_close_on_watched_markets' ||
+      reason == 'your_poll_closed'
+    ) {
+      return (
+        <PollClosedNotification
+          notification={notification}
+          highlighted={highlighted}
+          setHighlighted={setHighlighted}
+          isChildOfGroup={isChildOfGroup}
+        />
+      )
     }
     return (
       <MarketUpdateNotification
@@ -1468,6 +1480,55 @@ function VotedNotification(props: {
               />
             </span>
           )}
+        </span>
+      </>
+    </NotificationFrame>
+  )
+}
+
+function PollClosedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <NotificationIcon
+          symbol={'🗳️'}
+          symbolBackgroundClass="bg-gradient-to-br from-fuchsia-500 to-fuchsia-200"
+        />
+      }
+      subtitle={notification.sourceText}
+    >
+      <>
+        <span>
+          {notification.reason == 'your_poll_closed' ? (
+            <span>Your poll</span>
+          ) : (
+            <span>
+              <UserLink
+                name={notification.sourceUserName}
+                username={notification.sourceUserUsername}
+              />
+              {`'s poll`}
+            </span>
+          )}
+          {!isChildOfGroup && (
+            <span>
+              <PrimaryNotificationLink
+                text={notification.sourceContractTitle}
+              />
+            </span>
+          )}{' '}
+          has autoclosed!
         </span>
       </>
     </NotificationFrame>

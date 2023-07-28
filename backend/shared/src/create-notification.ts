@@ -1669,7 +1669,6 @@ export const createPollClosedNotification = async (
   sourceContract: Contract
 ) => {
   const pg = createSupabaseDirectClient()
-  console.log('contract', sourceContract)
   const usersToReceivedNotifications: Record<
     string,
     notification_destination_types[]
@@ -1683,7 +1682,6 @@ export const createPollClosedNotification = async (
     keyBy(followerIds, 'follow_id'),
     () => true
   )
-  console.log('CONTRACT FOLLOWER IDS', contractFollowersIds)
 
   const constructNotification = (
     userId: string,
@@ -1752,7 +1750,6 @@ export const createPollClosedNotification = async (
   }
 
   const notifyContractCreator = async () => {
-    console.log('notifying creator')
     await sendNotificationsIfSettingsPermit(
       sourceContract.creatorId,
       'your_poll_closed'

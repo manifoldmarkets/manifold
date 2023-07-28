@@ -22,11 +22,9 @@ export async function pollPollResolutionsFn() {
     `select data from contracts where outcome_type = 'POLL' and close_time < now() and resolution_time is null`
   )
 
-  console.log('closedPolls', closedPolls)
   await Promise.all(
     closedPolls.map((poll) => {
       const maxVoteIds = getMaxVoteId(poll.data.options)
-      console.log('maxVoteIds', maxVoteIds)
 
       const update = {
         resolutionTime: Date.now(),
@@ -40,7 +38,6 @@ export async function pollPollResolutionsFn() {
           (option: PollOption) => option.id === maxVoteIds[0]
         )
       }
-      console.log('data', poll.data)
       createPollClosedNotification(
         winner
           ? `'${winner.text}' won with ${winner.votes} votes`

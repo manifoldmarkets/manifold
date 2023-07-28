@@ -72,7 +72,7 @@ export function PollPanel(props: {
             label={<div>{option.text}</div>}
             end={
               <>
-                {hasVoted && (
+                {(hasVoted || !votingOpen) && (
                   <SeeVotesButton option={option} contractId={contract.id} />
                 )}
                 {!hasVoted && votingOpen && (

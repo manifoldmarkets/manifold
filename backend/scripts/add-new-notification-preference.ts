@@ -12,7 +12,8 @@ import { filterDefined } from 'common/util/array'
 const firestore = admin.firestore()
 
 // Add your new pref here, and be sure to add the default as well
-const NEW_PREFERENCE_KEY: notification_preference = 'your_poll_closed'
+const NEW_PREFERENCE_KEY: notification_preference =
+  'poll_close_on_watched_markets'
 
 async function main() {
   const privateUsers = filterDefined(await getAllPrivateUsers())
