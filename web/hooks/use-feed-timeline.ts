@@ -19,6 +19,7 @@ import { convertContractComment } from 'web/lib/supabase/comments'
 import { Group } from 'common/group'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
+import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
 
 const PAGE_SIZE = 25
 const OLDEST_UNSEEN_TIME_OF_INTEREST = new Date(
@@ -70,6 +71,7 @@ export const useFeedTimeline = (
   useEffect(() => {
     getBoosts(privateUser).then(setBoosts)
   }, [])
+  const followedIds = useFollowedIdsSupabase(privateUser.id)
 
   const [savedFeedItems, setSavedFeedItems] = usePersistentInMemoryState<
     FeedTimelineItem[] | undefined
@@ -122,14 +124,16 @@ export const useFeedTimeline = (
 
     const {
       newContractIds,
-      newCommentsOnContractIds,
+      newCommentIds,
+      newCommentIdsFromFollowed,
       potentiallySeenCommentIds,
       newsIds,
       groupIds,
-    } = getNewContentIds(data, savedFeedItems)
+    } = getNewContentIds(data, savedFeedItems, followedIds)
 
     const [
       comments,
+      commentsFromFollowed,
       contracts,
       news,
       groups,
@@ -139,13 +143,21 @@ export const useFeedTimeline = (
       db
         .from('contract_comments')
         .select()
-        .in('comment_id', newCommentsOnContractIds)
+        .in('comment_id', newCommentIds)
         .gt('data->likes', 0)
+        .is('data->hidden', null)
+        .not('user_id', 'in', `(${privateUser.blockedUserIds})`)
+        .then((res) => res.data?.map(convertContractComment)),
+      db
+        .from('contract_comments')
+        .select()
+        .in('comment_id', newCommentIdsFromFollowed)
         .then((res) => res.data?.map(convertContractComment)),
       db
         .from('contracts')
         .select('data')
         .in('id', newContractIds)
+        .not('visibility', 'eq', 'unlisted')
         .is('resolution_time', null)
         .gt('close_time', new Date().toISOString())
         .then((res) => res.data?.map((c) => c.data as Contract)),
@@ -197,15 +209,11 @@ export const useFeedTimeline = (
     const filteredNewContracts = contracts?.filter(
       (c) =>
         !isContractBlocked(privateUser, c) &&
-        !c.isResolved &&
         !uninterestingContractIds?.includes(c.id)
     )
-    const filteredNewComments = comments?.filter(
-      (c) =>
-        !privateUser?.blockedUserIds?.includes(c.userId) &&
-        !c.hidden &&
-        !seenCommentIds?.includes(c.id)
-    )
+    const filteredNewComments = (comments ?? [])
+      .concat(commentsFromFollowed ?? [])
+      .filter((c) => !seenCommentIds?.includes(c.id))
 
     // It's possible we're missing contracts for news items bc of the duplicate filter
     const timelineItems = createFeedTimelineItems(
@@ -400,7 +408,8 @@ const shouldIgnoreCommentsOnContract = (contract: Contract): boolean => {
 
 const getNewContentIds = (
   data: Row<'user_feed'>[],
-  savedFeedItems: FeedTimelineItem[] | undefined
+  savedFeedItems: FeedTimelineItem[] | undefined,
+  followedIds?: string[]
 ) => {
   // Filter out already saved ones to reduce bandwidth and avoid duplicates
   const alreadySavedContractIds = filterDefined(
@@ -411,12 +420,17 @@ const getNewContentIds = (
       (id) => !alreadySavedContractIds.includes(id)
     )
   )
-  const commentsByUserIds = groupBy(
-    data.filter((d) => d.comment_id),
-    (item) => item.creator_id
+  const newCommentIdsFromFollowed = filterDefined(
+    data.map((item) =>
+      followedIds?.includes(item.creator_id ?? '_') ? item.comment_id : null
+    )
   )
-  const newCommentsOnContractIds = filterDefined(
-    Object.values(commentsByUserIds).map((items) => first(items)?.comment_id)
+  const newCommentIds = filterDefined(
+    data.map((item) =>
+      newCommentIdsFromFollowed.includes(item.comment_id ?? '_')
+        ? null
+        : item.comment_id
+    )
   )
 
   const groupIds = uniq(filterDefined(data.map((item) => item.group_id)))
@@ -438,7 +452,8 @@ const getNewContentIds = (
   )
   return {
     newContractIds,
-    newCommentsOnContractIds,
+    newCommentIds,
+    newCommentIdsFromFollowed,
     potentiallySeenCommentIds,
     newsIds,
     groupIds,
