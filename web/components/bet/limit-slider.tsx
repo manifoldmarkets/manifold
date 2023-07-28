@@ -53,6 +53,7 @@ export function LimitSlider(props: {
     disabled,
   } = props
 
+  console.log(isPseudoNumeric, lowLimitProb, highLimitProb, maxProb, minProb)
   return (
     <Col className="relative mb-8 w-full gap-3">
       <div className="text-ink-800 text-sm">
@@ -80,6 +81,8 @@ export function LimitSlider(props: {
         />
       </Row>
       <RangeSlider
+        min={minProb}
+        max={maxProb}
         className="!px-2"
         lowValue={lowLimitProb ?? minProb}
         highValue={highLimitProb ?? maxProb}

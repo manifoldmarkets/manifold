@@ -77,6 +77,7 @@ export function ControllableNumberInput(props: {
     maxValue,
     error,
   } = props
+  console.log('MINVALUE', minValue, maxValue)
 
   const onNumChange = (str: string) => {
     let n = parseInt(str.replace(/\D/g, ''))
@@ -96,7 +97,6 @@ export function ControllableNumberInput(props: {
       type="text"
       pattern="[0-9]*"
       inputMode="numeric"
-      maxLength={2}
       placeholder={placeholder ?? '0'}
       value={num ?? ''}
       disabled={disabled}
