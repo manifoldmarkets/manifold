@@ -1,6 +1,6 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { SupabaseClient } from 'common/supabase/utils'
-import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
@@ -13,14 +13,16 @@ import {
   getContractTraders,
   getTodayComments,
 } from './importance-score'
+import { userInterestEmbeddings } from 'shared/supabase/vectors'
 
-export const MINUTE_INTERVAL = 30
+export const MINUTE_INTERVAL = 20
 
 export async function addInterestingContractsToFeed(
   db: SupabaseClient,
   pg: SupabaseDirectClient,
   readOnly = false
 ) {
+  await loadUserEmbeddingsToStore(pg)
   const now = Date.now()
   const lastUpdatedTime = now - MINUTE_INTERVAL * MINUTE_MS
   const hourAgo = now - HOUR_MS
@@ -101,7 +103,7 @@ export async function addInterestingContractsToFeed(
     } else if (
       importanceScore > 0.6 ||
       (importanceScore > 0.25 &&
-        (hourAgoTradersByContract[contract.id] ?? 0) >= 3 &&
+        (hourAgoTradersByContract[contract.id] ?? 0) >= 4 &&
         !readOnly)
     ) {
       log(
@@ -133,4 +135,43 @@ export async function addInterestingContractsToFeed(
       if (!readOnly) await insertMarketMovementContractToUsersFeeds(contract)
     }
   }
+}
+
+const loadUserEmbeddingsToStore = async (pg: SupabaseDirectClient) => {
+  const longAgo = Date.now() - MONTH_MS
+
+  await pg.map(
+    `
+      select u.id as user_id,
+      ((u.data->'createdTime')::bigint) as created_time,
+      ((u.data->'lastBetTime')::bigint) as last_bet_time,
+      interest_embedding,
+      disinterest_embedding 
+    from user_embeddings
+    join users u on u.id = user_embeddings.user_id
+    join (
+        select usm.user_id, max(usm.created_time) as max_created_time
+        from user_seen_markets usm
+        group by usm.user_id
+    ) as usm on u.id = usm.user_id
+    where ((u.data->'lastBetTime')::bigint is not null and (u.data->'lastBetTime')::bigint >= $1) 
+        or ((u.data->'lastBetTime')::bigint is null and (u.data->'createdTime')::bigint >= $1)
+        or (usm.max_created_time >= $2)
+        or (random() <= 0.1)
+    `,
+    [longAgo, new Date(longAgo).toISOString()],
+    (row) => {
+      const interest = JSON.parse(row.interest_embedding) as number[]
+      const disinterest = row.disinterest_embedding
+        ? (JSON.parse(row.disinterest_embedding) as number[])
+        : null
+
+      userInterestEmbeddings[row.user_id] = {
+        interest,
+        disinterest,
+        lastBetTime: row.last_bet_time,
+        createdTime: row.created_time,
+      }
+    }
+  )
 }

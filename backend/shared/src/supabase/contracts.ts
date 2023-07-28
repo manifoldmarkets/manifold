@@ -7,6 +7,8 @@ import {
   MINIMUM_SCORE,
 } from 'common/feed'
 import { Contract } from 'common/contract'
+import { cosineDistance, userInterestEmbeddings } from 'shared/supabase/vectors'
+import { filterDefined } from 'common/util/array'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -99,20 +101,12 @@ export const getContractGroupMemberIds = async (
 export const getUsersWithSimilarInterestVectorsToContract = async (
   contractId: string,
   pg: SupabaseDirectClient,
-  // -- distance of .125, probes at 10, lists at 500
-  // -- chatbot 2k traders: 2k users, contract id: 5ssg7ccYrrsEwZLYh9tP
-  // -- isaac king 40 traders: 1.8k users, contract id:  CPa23v0jJykJMhUjgT9J
-  // -- taiwan fighter 5 traders, 500 users, contract id:  a4tsshKK3MCE8PvS7Yfv
   interestDistanceThreshold = 0.125,
-  // -- contract id used: 5ssg7ccYrrsEwZLYh9tP, distance: .125
-  // -- probes at 10: 2k rows, 200 ms
-  // -- probes at 5: 600 rows, 65 ms
-  // -- probes at 1: 71 rows, 10ms
   probes = 10
 ): Promise<string[]> => {
   const userIdsAndDistances = await pg.tx(async (t) => {
     await t.none('SET LOCAL ivfflat.probes = $1', [probes])
-    const res = await t.manyOrNone(
+    return await t.manyOrNone(
       `with ce as (
         select embedding
         from contract_embeddings
@@ -132,10 +126,44 @@ export const getUsersWithSimilarInterestVectorsToContract = async (
       `,
       [contractId, interestDistanceThreshold, MINIMUM_SCORE]
     )
-    return res
   })
   return userIdsAndDistances.map((r) => r.user_id)
 }
+
+export const getUsersWithSimilarInterestVectorsToContractServerSide = async (
+  contractId: string,
+  pg: SupabaseDirectClient,
+  interestDistanceThreshold = 0.125
+): Promise<string[]> => {
+  const contractEmbedding = (
+    await pg.map(
+      'select embedding from contract_embeddings where contract_id = $1',
+      [contractId],
+      (row) => JSON.parse(row.embedding) as number[]
+    )
+  ).flat()
+
+  if (Object.keys(userInterestEmbeddings).length === 0)
+    throw new Error('userInterestEmbeddings is not loaded')
+
+  const userIdsInterestedInContract = Object.entries(userInterestEmbeddings)
+    .map(([userId, user]) => {
+      const interestDistance = cosineDistance(contractEmbedding, user.interest)
+      if (interestDistance > interestDistanceThreshold) return null
+
+      const disinterestDistance = user.disinterest
+        ? cosineDistance(contractEmbedding, user.disinterest)
+        : 1
+      const score = disinterestDistance - interestDistance
+      if (score < MINIMUM_SCORE) return null
+
+      return userId
+    })
+    .map((userId) => userId)
+
+  return filterDefined(userIdsInterestedInContract)
+}
+
 // Helpful firebase deploy arguments after changing the following function
 // functions:onCreateContract,functions:onCreateCommentOnContract,functions:onCreateLiquidityProvision,functions:scorecontracts
 export const getUserToReasonsInterestedInContractAndUser = async (
@@ -169,7 +197,7 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       importance: 5,
     },
     similar_interest_vector_to_contract: {
-      promise: getUsersWithSimilarInterestVectorsToContract(
+      promise: getUsersWithSimilarInterestVectorsToContractServerSide(
         contractId,
         pg,
         userToContractDistanceThreshold
@@ -201,7 +229,7 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   const results = await Promise.all(promises)
 
   return merge(
-    { [ALL_FEED_USER_ID]: 'similar_interest_vector_to_news_vector' },
+    { [ALL_FEED_USER_ID]: 'similar_interest_vector_to_contract' },
     ...results
       .map((result, index) => {
         const reason = reasons[index]
