@@ -117,19 +117,12 @@ export function SeeVotesButton(props: {
   return (
     <>
       <button
-        className="disabled:text-ink-500 disabled:pointer-none group whitespace-nowrap transition-colors hover:text-indigo-400 disabled:cursor-not-allowed"
+        className="disabled:text-ink-900/60 disabled:pointer-none group whitespace-nowrap transition-colors hover:text-indigo-800 disabled:cursor-not-allowed hover:dark:text-indigo-300"
         onClick={() => setOpen(true)}
         disabled={disabled}
       >
         <span>{option.votes}</span>{' '}
-        <span
-          className={clsx(
-            'text-ink-500 text-xs transition-colors',
-            disabled ? '' : 'group-hover:text-indigo-400'
-          )}
-        >
-          votes
-        </span>
+        <span className={clsx('text-xs opacity-80')}>votes</span>
       </button>
       <Modal open={open} setOpen={setOpen}>
         <SeeVotesModalContent option={option} contractId={contractId} />
