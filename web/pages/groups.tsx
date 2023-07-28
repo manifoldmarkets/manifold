@@ -1,4 +1,3 @@
-import { FlagIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { groupPath } from 'common/group'
 import { User } from 'common/user'
