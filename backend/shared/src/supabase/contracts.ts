@@ -165,7 +165,7 @@ export const getUsersWithSimilarInterestVectorsToContractServerSide = async (
 }
 
 // Helpful firebase deploy arguments after changing the following function
-// functions:onCreateContract,functions:onCreateCommentOnContract,functions:onCreateLiquidityProvision,functions:scorecontracts
+// functions:onCreateContract,functions:onCreateCommentOnContract,functions:onCreateLiquidityProvision,functions:addcontractstofeed
 export const getUserToReasonsInterestedInContractAndUser = async (
   contract: Contract,
   userId: string,
