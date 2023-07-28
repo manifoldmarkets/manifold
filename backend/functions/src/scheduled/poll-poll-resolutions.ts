@@ -1,37 +1,34 @@
 import * as functions from 'firebase-functions'
 
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
-import { processNews } from 'shared/process-news'
+import { PollOption } from 'common/poll-option'
 import { secrets } from 'common/secrets'
 import * as admin from 'firebase-admin'
-import { PollOption } from 'common/poll-option'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const pollPollResolutions = functions
   .runWith({
-    timeoutSeconds: 540,
+    timeoutSeconds: 180,
     secrets,
   })
-  .pubsub.schedule('*/1 * * * *') // runs every minute
+  // .pubsub.schedule('*/1 * * * *') // runs every minute
+  .pubsub.schedule('every 5 minutes') // runs every minute
   .onRun(async () => {
     const pg = createSupabaseDirectClient()
     const firestore = admin.firestore()
-    const bulkWriter = firestore.bulkWriter()
     const closedPolls = await pg.manyOrNone(
       `select data from contracts where outcome_type = 'POLL' and close_time < now() and resolution_time is null`
     )
 
-    for (const poll of closedPolls) {
-      const maxVoteIds = getMaxVoteId(poll.data.options)
-      const ref = firestore.collection('contracts').doc(poll.id)
-      bulkWriter.update(ref, {
-        resolutionTime: new Date(),
-        resolutions: maxVoteIds,
-        isResolved: true,
+    await Promise.all(
+      closedPolls.map((poll) => {
+        const maxVoteIds = getMaxVoteId(poll.data.options)
+        return firestore.collection('contracts').doc(poll.data.id).update({
+          resolutionTime: new Date(),
+          resolutions: maxVoteIds,
+          isResolved: true,
+        })
       })
-    }
+    )
   })
 
 function getMaxVoteId(arr: PollOption[]): string[] {
