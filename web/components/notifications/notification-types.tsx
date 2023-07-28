@@ -1523,6 +1523,7 @@ function PollClosedNotification(props: {
           )}
           {!isChildOfGroup && (
             <span>
+              {' '}
               <PrimaryNotificationLink
                 text={notification.sourceContractTitle}
               />

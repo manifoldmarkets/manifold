@@ -499,7 +499,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 </GradientContainer>
               ) : null)}
 
-            {isResolved && user && (
+            {isResolved && user && contract.outcomeType !== 'POLL' && (
               <ReviewPanel
                 marketId={contract.id}
                 author={contract.creatorName}

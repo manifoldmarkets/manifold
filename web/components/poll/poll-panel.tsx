@@ -68,7 +68,12 @@ export function PollPanel(props: {
             key={option.id}
             color={'#6366f1b3'}
             prob={prob}
-            resolvedProb={undefined}
+            resolvedProb={
+              contract.isResolved &&
+              contract.resolutions?.some((s) => s == option.id)
+                ? 1
+                : undefined
+            }
             label={<div>{option.text}</div>}
             end={
               <>
