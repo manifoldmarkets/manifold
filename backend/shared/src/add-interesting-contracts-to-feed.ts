@@ -40,7 +40,7 @@ export async function addInterestingContractsToFeed(
     `select data from contracts 
             where importance_score > 0.15
             order by importance_score desc 
-            limit 5000`,
+            `,
     [],
     (row) => row.data as Contract
   )
@@ -75,30 +75,25 @@ export async function addInterestingContractsToFeed(
 
   for (const contract of contracts) {
     // scores themselves are not updated in importance-score
-    const {
-      todayScore,
-      logOddsChange,
-      thisWeekScore,
-      popularityScore,
-      importanceScore,
-    } = computeContractScores(
-      now,
-      contract,
-      todayComments[contract.id] ?? 0,
-      todayLikesByContract[contract.id] ?? 0,
-      thisWeekLikesByContract[contract.id] ?? 0,
-      todayTradersByContract[contract.id] ?? 0,
-      hourAgoTradersByContract[contract.id] ?? 0,
-      thisWeekTradersByContract[contract.id] ?? 0
-    )
+    const { todayScore, logOddsChange, thisWeekScore, importanceScore } =
+      computeContractScores(
+        now,
+        contract,
+        todayComments[contract.id] ?? 0,
+        todayLikesByContract[contract.id] ?? 0,
+        thisWeekLikesByContract[contract.id] ?? 0,
+        todayTradersByContract[contract.id] ?? 0,
+        hourAgoTradersByContract[contract.id] ?? 0,
+        thisWeekTradersByContract[contract.id] ?? 0
+      )
 
     // This is a newly trending contract, and should be at the top of most users' feeds
     if (todayScore > 10 && todayScore / thisWeekScore > 0.5 && !readOnly) {
-      log('inserting specifically today trending contract', contract.id)
+      log('Inserting specifically today trending contract', contract.id)
       await insertTrendingContractToUsersFeeds(contract, now - 2 * DAY_MS, {
         todayScore,
         thisWeekScore,
-        importanceScore: contract.importanceScore,
+        importanceScore: parseFloat(importanceScore.toPrecision(2)),
       })
     } else if (
       importanceScore > 0.6 ||
@@ -107,25 +102,24 @@ export async function addInterestingContractsToFeed(
         !readOnly)
     ) {
       log(
-        'inserting generally trending, recently popular contract',
+        'Inserting generally trending, recently popular contract',
         contract.id,
-        'with popularity score',
-        popularityScore,
+        'with importance score',
+        importanceScore,
         'and',
         hourAgoTradersByContract[contract.id],
         'traders in the past hour'
       )
       await insertTrendingContractToUsersFeeds(contract, now - 3 * DAY_MS, {
         tradersInPastHour: hourAgoTradersByContract[contract.id] ?? 0,
-        popularityScore,
-        importanceScore: contract.importanceScore,
+        importanceScore: parseFloat(importanceScore.toPrecision(2)),
       })
     }
 
     // If it's just undergone a large prob change and wasn't created today, add it to the feed
     if (logOddsChange > 0.8 && contract.mechanism === 'cpmm-1') {
       log(
-        'inserting market movement with prob',
+        'Inserting market movement with prob',
         contract.prob,
         ' and prev prob',
         contract.prob - contract.probChanges.day,
@@ -135,6 +129,7 @@ export async function addInterestingContractsToFeed(
       if (!readOnly) await insertMarketMovementContractToUsersFeeds(contract)
     }
   }
+  log('Done adding trending contracts to feed')
 }
 
 const loadUserEmbeddingsToStore = async (pg: SupabaseDirectClient) => {
