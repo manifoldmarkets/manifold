@@ -151,10 +151,10 @@ const loadUserEmbeddingsToStore = async (pg: SupabaseDirectClient) => {
     ) as usm on u.id = usm.user_id
     where ((u.data->'lastBetTime')::bigint is not null and (u.data->'lastBetTime')::bigint >= $1) 
         or ((u.data->'lastBetTime')::bigint is null and (u.data->'createdTime')::bigint >= $1)
-        or (usm.max_created_time >= $2)
+        or (usm.max_created_time >= millis_to_ts($1))
         or (random() <= 0.1)
     `,
-    [longAgo, new Date(longAgo).toISOString()],
+    [longAgo],
     (row) => {
       const interest = JSON.parse(row.interest_embedding) as number[]
       const disinterest = row.disinterest_embedding
