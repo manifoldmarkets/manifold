@@ -117,6 +117,10 @@ export const stripewebhook = async (req: Request, res: Response) => {
 const issueMoneys = async (session: StripeSession) => {
   const { id: sessionId } = session
   const { userId, manticDollarQuantity } = session.metadata
+  if (manticDollarQuantity === undefined) {
+    console.log('skipping session', sessionId, '; no mana amount')
+    return
+  }
   const deposit = Number.parseInt(manticDollarQuantity)
 
   const success = await firestore.runTransaction(async (trans) => {
