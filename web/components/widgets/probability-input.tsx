@@ -74,6 +74,8 @@ export function ProbabilityOrNumericInput(props: {
   placeholder?: string
   width?: string
   error?: boolean
+  inputError: boolean
+  setInputError: (error: boolean) => void
 }) {
   const {
     contract,
@@ -98,6 +100,8 @@ export function ProbabilityOrNumericInput(props: {
       disabled={disabled}
       placeholder={placeholder}
       error={error}
+      inputError={props.inputError}
+      setInputError={props.setInputError}
     />
   ) : (
     <ProbabilityInput
