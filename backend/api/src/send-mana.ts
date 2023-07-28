@@ -9,7 +9,7 @@ import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
 
 const bodySchema = z.object({
-  amount: z.number(),
+  amount: z.number().gt(0).finite(),
   toIds: z.array(z.string()),
   message: z.string(),
 })
@@ -20,10 +20,6 @@ export const sendmana = authEndpoint(async (req, auth) => {
   // Run as transaction to prevent race conditions.
   return await firestore.runTransaction(async (transaction) => {
     // Look up the manalink
-
-    if (amount <= 0 || isNaN(amount) || !isFinite(amount))
-      throw new APIError(400, 'Invalid amount')
-
     const fromDoc = firestore.doc(`users/${fromId}`)
     const fromSnap = await transaction.get(fromDoc)
     if (!fromSnap.exists) {

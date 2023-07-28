@@ -20,8 +20,8 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
 const bodySchema = z.object({
-  username: z.string().optional(),
-  name: z.string().optional(),
+  username: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
   avatarUrl: z.string().optional(),
 })
 

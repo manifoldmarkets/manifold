@@ -8,13 +8,12 @@ import { APIError, authEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   contractId: z.string(),
-  amount: z.number().gt(0),
+  amount: z.number().int().gt(0).finite(),
 })
 
 export const addsubsidy = authEndpoint(async (req, auth) => {
   const { amount, contractId } = validate(bodySchema, req.body)
 
-  if (!isFinite(amount) || amount < 1) throw new APIError(400, 'Invalid amount')
 
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {

@@ -11,14 +11,12 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 
 const bodySchema = z.object({
   contractId: z.string().max(MAX_ANSWER_LENGTH),
-  amount: z.number().gt(0),
+  amount: z.number().gt(0).int().finite(),
   text: z.string(),
 })
 
 export const createanswer = authEndpoint(async (req, auth) => {
   const { contractId, amount, text } = validate(bodySchema, req.body)
-
-  if (!isFinite(amount)) throw new APIError(400, 'Invalid amount')
 
   // Run as transaction to prevent race conditions.
   const answer = await firestore.runTransaction(async (transaction) => {
