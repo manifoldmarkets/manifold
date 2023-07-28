@@ -92,19 +92,24 @@ export function ContractParamsForm(props: {
     undefined
   )
 
-  // for multiple choice, init to 2 empty answers
+  // For multiple choice, init to 2 empty answers
+  const defaultAnswers = ['', '']
+
   const [answers, setAnswers] = usePersistentLocalState(
-    params?.answers ? params.answers : ['', ''],
-    'new-answers' + paramsKey
+    params?.answers ? params.answers : defaultAnswers,
+    'new-answers-with-other' + paramsKey
   )
   const [addAnswersMode, setAddAnswersMode] =
     useState<add_answers_mode>('DISABLED')
+
+  const numAnswers =
+    addAnswersMode === 'DISABLED' ? answers.length : answers.length + 1
 
   useEffect(() => {
     if (params?.answers) {
       setAnswers(params.answers)
     } else if (answers.length && answers.every((a) => a.trim().length === 0)) {
-      setAnswers(['', ''])
+      setAnswers(defaultAnswers)
     }
   }, [params?.answers])
 
@@ -128,7 +133,7 @@ export function ContractParamsForm(props: {
     setGroups()
   }, [creator.id, params?.groupIds])
 
-  const ante = getAnte(outcomeType, answers.length, visibility === 'private')
+  const ante = getAnte(outcomeType, numAnswers, visibility === 'private')
 
   // If params.closeTime is set, extract out the specified date and time
   // By default, close the question a week from today
@@ -271,7 +276,7 @@ export function ContractParamsForm(props: {
     setCloseHoursMinutes(undefined)
     setSelectedGroups([])
     setVisibility((params?.visibility as Visibility) ?? 'public')
-    setAnswers(['', ''])
+    setAnswers(defaultAnswers)
     setMinString('')
     setMaxString('')
     setInitialValueString('')
@@ -288,7 +293,8 @@ export function ContractParamsForm(props: {
       const newContract = (await createMarket(
         removeUndefinedProps({
           question,
-          outcomeType,
+          outcomeType:
+            outcomeType === 'FREE_RESPONSE' ? 'MULTIPLE_CHOICE' : outcomeType,
           description: editor?.getJSON(),
           initialProb: 50,
           ante,
@@ -299,7 +305,8 @@ export function ContractParamsForm(props: {
           isLogScale,
           groupIds: selectedGroups.map((g) => g.id),
           answers,
-          addAnswersMode,
+          addAnswersMode:
+            outcomeType === 'FREE_RESPONSE' ? 'ANYONE' : addAnswersMode,
           visibility,
           utcOffset: new Date().getTimezoneOffset(),
           totalBounty:
@@ -385,24 +392,14 @@ export function ContractParamsForm(props: {
         <MultipleChoiceAnswers
           answers={answers}
           setAnswers={setAnswers}
+          includeOtherAnswer={addAnswersMode !== 'DISABLED'}
+          setIncludeOtherAnswer={(include) =>
+            setAddAnswersMode(include ? 'ONLY_CREATOR' : 'DISABLED')
+          }
           placeholder={
             outcomeType == 'MULTIPLE_CHOICE' ? 'Type your answer..' : undefined
           }
         />
-      )}
-      {outcomeType === 'MULTIPLE_CHOICE' && (
-        <Col className="mb-4 gap-2 self-start">
-          <div className="ml-1">Who can add new answers?</div>
-          <ChoicesToggleGroup
-            currentChoice={addAnswersMode}
-            choicesMap={{
-              'No one': 'DISABLED',
-              Creator: 'ONLY_CREATOR',
-              Anyone: 'ANYONE',
-            }}
-            setChoice={setAddAnswersMode as any}
-          />
-        </Col>
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <>

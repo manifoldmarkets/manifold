@@ -8,7 +8,7 @@ import { CandidateBet, getBetDownToOneMultiBetInfo } from 'common/new-bet'
 import {
   Answer,
   MAX_ANSWER_LENGTH,
-  MULTIPLE_CHOICE_MAX_ANSWERS,
+  MAX_ANSWERS,
 } from 'common/answer'
 import { APIError, authEndpoint, validate } from './helpers'
 import { ANSWER_COST } from 'common/economy'
@@ -78,10 +78,10 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
       )
     }
 
-    if (answers.length >= MULTIPLE_CHOICE_MAX_ANSWERS) {
+    if (answers.length >= MAX_ANSWERS) {
       throw new APIError(
         400,
-        `Cannot add an answer: Maximum number (${MULTIPLE_CHOICE_MAX_ANSWERS}) of answers reached.`
+        `Cannot add an answer: Maximum number (${MAX_ANSWERS}) of answers reached.`
       )
     }
 

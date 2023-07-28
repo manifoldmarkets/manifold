@@ -25,6 +25,7 @@ export function ChoosingContractForm(props: {
         {Object.entries(PREDICTIVE_CONTRACT_TYPES).map(
           ([_, { label, descriptor, example, value, visual }]) => (
             <OutcomeButton
+              key={value}
               label={label}
               descriptor={descriptor}
               example={example}
@@ -54,6 +55,7 @@ export function ChoosingContractForm(props: {
             },
           ]) => (
             <OutcomeButton
+              key={value}
               label={label}
               descriptor={descriptor}
               example={example}

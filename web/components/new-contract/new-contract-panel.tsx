@@ -4,7 +4,7 @@ import { ReactNode, useState } from 'react'
 import { User } from 'common/user'
 
 import { ChevronRightIcon } from '@heroicons/react/solid'
-import { OutcomeType } from 'common/contract'
+import { OutcomeType, add_answers_mode } from 'common/contract'
 import { VisibilityTheme } from 'web/pages/create'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -26,6 +26,7 @@ export type NewQuestionParams = {
   isLogScale?: boolean
   initValue?: number
   answers?: string[]
+  addAnswersMode?: add_answers_mode
 }
 
 export type ContractVisibilityType = 'public' | 'unlisted'
