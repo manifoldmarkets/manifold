@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ReactNode, useState } from 'react'
+import { ReactNode } from 'react'
 
 import React from 'react'
 import { Col } from '../layout/col'
@@ -83,7 +83,7 @@ export function ControllableNumberInput(props: {
   } = props
 
   const onNumChange = (str: string) => {
-    let n = parseInt(str.replace(/\D/g, ''))
+    const n = parseInt(str.replace(/\D/g, ''))
     const isInvalid = !str || isNaN(n)
     if (n > maxValue || n < minValue) {
       setInputError(true)
