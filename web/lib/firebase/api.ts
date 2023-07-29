@@ -35,7 +35,7 @@ export async function call(url: string, method: string, params?: any) {
   return await fetch(req).then(async (resp) => {
     const json = (await resp.json()) as { [k: string]: any }
     if (!resp.ok) {
-      throw new APIError(resp.status, json?.message, json?.details)
+      throw new APIError(resp.status as any, json?.message, json?.details)
     }
     return json
   })
@@ -59,7 +59,7 @@ export async function maybeAuthedCall(
   return await fetch(req).then(async (resp) => {
     const json = (await resp.json()) as { [k: string]: any }
     if (!resp.ok) {
-      throw new APIError(resp.status, json?.message, json?.details)
+      throw new APIError(resp.status as any, json?.message, json?.details)
     }
     return json
   })
