@@ -30,14 +30,14 @@ export const sendmana = authEndpoint(async (req, auth) => {
     const canCreate = await canSendMana(fromUser)
     if (!canCreate) {
       throw new APIError(
-        401,
+        403,
         `You don't have at least 1000 mana or your account isn't 1 week old.`
       )
     }
 
     if (fromUser.balance < amount) {
       throw new APIError(
-        400,
+        403,
         `Insufficient balance: ${fromUser.name} needed ${amount} but only had ${fromUser.balance} `
       )
     }

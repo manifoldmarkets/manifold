@@ -25,37 +25,37 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
   console.log('Received', contractId, text)
 
   if (true) {
-    throw new APIError(500, 'This endpoint is disabled for now.')
+    throw new APIError(403, 'This endpoint is disabled for now.')
   }
 
   // Run as transaction to prevent race conditions.
   const answer = await firestore.runTransaction(async (transaction) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const contractSnap = await transaction.get(contractDoc)
-    if (!contractSnap.exists) throw new APIError(400, 'Invalid contract')
+    if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
     const contract = contractSnap.data() as Contract
 
     if (contract.mechanism !== 'cpmm-multi-1')
-      throw new APIError(400, 'Requires a cpmm multiple choice contract')
+      throw new APIError(403, 'Requires a cpmm multiple choice contract')
 
     const { closeTime } = contract
     if (closeTime && Date.now() > closeTime)
-      throw new APIError(400, 'Trading is closed')
+      throw new APIError(403, 'Trading is closed')
 
     if (contract.creatorId !== auth.uid && !isAdminId(auth.uid)) {
       throw new APIError(
-        400,
+        403,
         'Only the creator or an admin can create an answer'
       )
     }
 
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const userSnap = await transaction.get(userDoc)
-    if (!userSnap.exists) throw new APIError(400, 'User not found')
+    if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
     const user = userSnap.data() as User
 
     if (user.balance < ANSWER_COST)
-      throw new APIError(400, 'Insufficient balance, need M' + ANSWER_COST)
+      throw new APIError(403, 'Insufficient balance, need M' + ANSWER_COST)
 
     const answersSnap = await transaction.get(
       firestore.collection(`contracts/${contractId}/answersCpmm`)

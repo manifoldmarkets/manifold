@@ -41,8 +41,8 @@ export const sellshares = authEndpoint(async (req, auth) => {
       transaction.get(betsQ),
       getUnfilledBetsAndUserBalances(transaction, contractDoc, auth.uid),
     ])
-    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
-    if (!userSnap.exists) throw new APIError(400, 'User not found.')
+    if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
+    if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
     const userBets = userBetsSnap.docs.map((doc) => doc.data() as Bet)
 
     const contract = contractSnap.data() as Contract
@@ -51,9 +51,9 @@ export const sellshares = authEndpoint(async (req, auth) => {
     const { closeTime, mechanism, collectedFees, volume } = contract
 
     if (mechanism !== 'cpmm-1')
-      throw new APIError(400, 'You can only sell shares on CPMM-1 contracts.')
+      throw new APIError(403, 'You can only sell shares on CPMM-1 contracts')
     if (closeTime && Date.now() > closeTime)
-      throw new APIError(400, 'Trading is closed.')
+      throw new APIError(403, 'Trading is closed.')
 
     const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
     const betsByOutcome = groupBy(userBets, (bet) => bet.outcome)
@@ -69,7 +69,7 @@ export const sellshares = authEndpoint(async (req, auth) => {
         ([_k, v]) => !floatingEqual(0, v)
       )
       if (nonzeroShares.length == 0) {
-        throw new APIError(400, "You don't own any shares in this market.")
+        throw new APIError(403, "You don't own any shares in this market.")
       }
       if (nonzeroShares.length > 1) {
         throw new APIError(
@@ -85,7 +85,7 @@ export const sellshares = authEndpoint(async (req, auth) => {
 
     if (!maxShares)
       throw new APIError(
-        400,
+        403,
         `You don't have any ${chosenOutcome} shares to sell.`
       )
 
@@ -112,7 +112,7 @@ export const sellshares = authEndpoint(async (req, auth) => {
       !isFinite(newP) ||
       Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY
     ) {
-      throw new APIError(400, 'Sale too large for current liquidity pool.')
+      throw new APIError(403, 'Sale too large for current liquidity pool.')
     }
 
     const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()

@@ -94,13 +94,11 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
   const { user, contract } = await firestore.runTransaction(async (trans) => {
     const userDoc = await trans.get(firestore.collection('users').doc(userId))
-    if (!userDoc.exists)
-      throw new APIError(400, 'No user exists with the authenticated user ID.')
+    if (!userDoc.exists) throw new APIError(401, 'Your account was not found')
 
     const user = userDoc.data() as User
 
-    if (user.isBannedFromPosting)
-      throw new APIError(400, 'User banned from creating markets.')
+    if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
     const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
       user,
@@ -108,7 +106,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     )
     if (ante > getAvailableBalancePerQuestion(user))
       throw new APIError(
-        400,
+        403,
         `Balance must be at least ${amountSuppliedByUser}.`
       )
 
@@ -350,7 +348,7 @@ function validateMarketBody(body: any) {
 
   if (visibility == 'private' && !groupIds?.length) {
     throw new APIError(
-      400,
+      403,
       'Private markets cannot exist outside a private group.'
     )
   }
@@ -383,7 +381,7 @@ function validateMarketBody(body: any) {
     ;({ answers, shouldAnswersSumToOne } = validate(multipleChoiceSchema, body))
     if (shouldAnswersSumToOne === false)
       throw new APIError(
-        400,
+        403,
         'Multiple choice answers that do not sum to one are not implemented.'
       )
   }
@@ -439,7 +437,7 @@ async function getGroup(groupId: string, visibility: string, userId: string) {
     (group.privacy_status != 'private' && visibility == 'private')
   ) {
     throw new APIError(
-      400,
+      403,
       `Both "${group.name}" and market must be of the same private visibility.`
     )
   }

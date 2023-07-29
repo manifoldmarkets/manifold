@@ -26,9 +26,9 @@ export const sellbet = authEndpoint(async (req, auth) => {
       userDoc,
       betDoc
     )
-    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
-    if (!userSnap.exists) throw new APIError(400, 'User not found.')
-    if (!betSnap.exists) throw new APIError(400, 'Bet not found.')
+    if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
+    if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
+    if (!betSnap.exists) throw new APIError(404, 'Bet not found')
 
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
@@ -36,14 +36,13 @@ export const sellbet = authEndpoint(async (req, auth) => {
 
     const { closeTime, mechanism, collectedFees, volume } = contract
     if (mechanism !== 'dpm-2')
-      throw new APIError(400, 'You can only sell bets on DPM-2 contracts.')
+      throw new APIError(403, 'You can only sell bets on DPM-2 contracts')
     if (closeTime && Date.now() > closeTime)
-      throw new APIError(400, 'Trading is closed.')
+      throw new APIError(403, 'Trading is closed')
 
     if (auth.uid !== bet.userId)
-      throw new APIError(400, 'The specified bet does not belong to you.')
-    if (bet.isSold)
-      throw new APIError(400, 'The specified bet is already sold.')
+      throw new APIError(403, 'You did not make this bet')
+    if (bet.isSold) throw new APIError(403, 'Bet is already sold')
 
     const { newBet, newPool, newTotalShares, newTotalBets, fees } =
       getSellBetInfo(bet, contract)

@@ -29,15 +29,15 @@ export const changeuserinfo = authEndpoint(async (req, auth) => {
   const { username, name, avatarUrl } = validate(bodySchema, req.body)
 
   const user = await getUser(auth.uid)
-  if (!user) throw new APIError(400, 'User not found')
+  if (!user) throw new APIError(401, 'Your account was not found')
   const cleanedUsername = username ? cleanUsername(username) : undefined
 
   if (username) {
     if (!cleanedUsername) throw new APIError(400, 'Invalid username')
     const reservedName = RESERVED_PATHS.includes(cleanedUsername)
-    if (reservedName) throw new APIError(400, 'This username is reserved')
+    if (reservedName) throw new APIError(403, 'This username is reserved')
     const otherUserExists = await getUserByUsername(cleanedUsername)
-    if (otherUserExists) throw new APIError(400, 'Username already taken')
+    if (otherUserExists) throw new APIError(403, 'Username already taken')
   }
 
   // TODO not sure about denying duplicate display names

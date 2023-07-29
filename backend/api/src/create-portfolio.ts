@@ -29,8 +29,7 @@ export const createportfolio = authEndpoint(async (req, auth) => {
   const { name, items } = validate(portfolioSchema, req.body)
 
   const creator = await getUser(auth.uid)
-  if (!creator)
-    throw new APIError(400, 'No user exists with the authenticated user ID.')
+  if (!creator) throw new APIError(401, 'Your account was not found')
 
   const slug = await getSlug(name)
 

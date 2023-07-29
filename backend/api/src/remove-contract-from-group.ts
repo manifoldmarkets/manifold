@@ -38,7 +38,7 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
 
   if (group.privacy_status == 'private' || contract.visibility == 'private') {
     throw new APIError(
-      400,
+      403,
       'You can not remove a private market from a private group!'
     )
   }
@@ -51,7 +51,7 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
   })
   if (!canAdd) {
     throw new APIError(
-      400,
+      403,
       `User does not have permission to remove this market from group "${group.name}".`
     )
   }

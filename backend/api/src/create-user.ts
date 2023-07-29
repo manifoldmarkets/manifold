@@ -47,7 +47,7 @@ export const createuser = authEndpoint(async (req, auth) => {
   const isTestUser = firebaseUser.providerData[0].providerId === 'password'
   if (isTestUser && adminToken !== process.env.TEST_CREATE_USER_KEY) {
     throw new APIError(
-      400,
+      401,
       'Must use correct TEST_CREATE_USER_KEY to create user with email/password'
     )
   }
@@ -89,7 +89,7 @@ export const createuser = authEndpoint(async (req, auth) => {
 
       const preexistingUser = await trans.get(userRef)
       if (preexistingUser.exists)
-        throw new APIError(400, 'User already exists', {
+        throw new APIError(403, 'User already exists', {
           userId: auth.uid,
         })
 
@@ -98,7 +98,7 @@ export const createuser = authEndpoint(async (req, auth) => {
         firestore.collection('users').where('username', '==', username)
       )
       if (!sameNameUser.empty)
-        throw new APIError(400, 'Username already taken', { username })
+        throw new APIError(403, 'Username already taken', { username })
 
       // Only undefined prop should be avatarUrl
       const user: User = removeUndefinedProps({

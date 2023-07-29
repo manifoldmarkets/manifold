@@ -110,13 +110,10 @@ export const validateComment = async (
   const creator = await getUser(userId)
   const contract = await getContract(contractId)
 
-  if (!creator)
-    throw new APIError(400, 'No user exists with the authenticated user ID.')
-  if (creator.isBannedFromPosting)
-    throw new APIError(400, 'User banned from commented.')
+  if (!creator) throw new APIError(401, 'Your account was not found')
+  if (creator.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-  if (!contract)
-    throw new APIError(400, 'No contract exists with the given ID.')
+  if (!contract) throw new APIError(404, 'Contract not found')
 
   let contentJson = null
   if (content) {

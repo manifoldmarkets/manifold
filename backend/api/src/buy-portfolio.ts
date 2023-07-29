@@ -22,11 +22,11 @@ export const buyportfolio = authEndpoint(async (req, auth) => {
   )
 
   if (!user) {
-    throw new APIError(400, 'No user exists with the authenticated user ID.')
+    throw new APIError(401, 'Your account was not found')
   }
 
   if (user.balance < amount) {
-    throw new APIError(400, 'Insufficient balance')
+    throw new APIError(403, 'Insufficient balance')
   }
 
   const portfolio = await db.one(
@@ -36,7 +36,7 @@ export const buyportfolio = authEndpoint(async (req, auth) => {
   )
 
   if (!portfolio) {
-    throw new APIError(400, 'No portfolio exists with the given ID.')
+    throw new APIError(403, 'No portfolio exists with the given ID.')
   }
 
   for (const item of portfolio.items) {

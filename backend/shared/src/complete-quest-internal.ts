@@ -88,7 +88,7 @@ const completeQuestInternal = async (
   if (count !== oldScore && count === QUEST_DETAILS[questType].requiredCount) {
     const resp = await awardQuestBonus(user, questType, count)
     if (!resp.txn)
-      throw new APIError(400, resp.message ?? 'Could not award quest bonus')
+      throw new APIError(500, resp.message ?? 'Could not award quest bonus')
     await createQuestPayoutNotification(
       user,
       resp.txn.id,

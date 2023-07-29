@@ -50,7 +50,7 @@ export async function addGroupMemberHelper(
 
     if (!group) throw new APIError(404, 'Group cannot be found')
     if (newMemberExists)
-      throw new APIError(400, 'User already exists in group!')
+      throw new APIError(403, 'User already exists in group!')
 
     const isAdminRequest = isAdminId(myId)
 

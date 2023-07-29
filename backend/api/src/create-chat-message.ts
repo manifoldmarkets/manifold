@@ -17,14 +17,11 @@ export const MAX_COMMENT_JSON_LENGTH = 20000
 // For now, only supports creating a new top-level comment on a contract.
 // Replies, posts, chats are not supported yet.
 export const createchatmessage = authEndpoint(async (req, auth) => {
-  const firestore = admin.firestore()
   const { content, channelId } = validate(postSchema, req.body)
 
   const creator = await getUser(auth.uid)
-  if (!creator)
-    throw new APIError(400, 'No user exists with the authenticated user ID.')
-  if (creator.isBannedFromPosting)
-    throw new APIError(400, 'User banned from chat.')
+  if (!creator) throw new APIError(401, 'Your account was not found')
+  if (creator.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
   const chatMessage = removeUndefinedProps({
     content: content as Json,

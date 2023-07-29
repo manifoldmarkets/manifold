@@ -7,10 +7,8 @@ import {
   ContractResolutionPayoutTxn,
   ContractUndoResolutionPayoutTxn,
   Txn,
-  SourceType,
 } from 'common/txn'
 import { createSupabaseDirectClient } from '../supabase/init'
-import { BountiedQuestionContract } from 'common/contract'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 

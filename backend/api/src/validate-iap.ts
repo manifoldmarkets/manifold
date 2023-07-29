@@ -36,12 +36,12 @@ export const validateiap = authEndpoint(async (req, auth) => {
   })
   await iap.setup().catch((error: any) => {
     log('Error setting up iap', error)
-    throw new APIError(400, 'iap setup failed')
+    throw new APIError(500, 'iap setup failed')
   })
 
   const validatedData = await iap.validate(receipt).catch((error: any) => {
     log('error on validate data:', error)
-    throw new APIError(400, 'iap receipt validation failed')
+    throw new APIError(500, 'iap receipt validation failed')
   })
 
   // TODO uncomment this after app is accepted by Apple.
@@ -72,7 +72,7 @@ export const validateiap = authEndpoint(async (req, auth) => {
 
   if (!query.empty) {
     log('transactionId', transactionId, 'already processed')
-    throw new APIError(400, 'iap transaction already processed')
+    throw new APIError(403, 'iap transaction already processed')
   }
 
   const payout = PRODUCTS_TO_AMOUNTS[productId] * quantity
@@ -124,10 +124,10 @@ export const validateiap = authEndpoint(async (req, auth) => {
   log('user', userId, 'paid M$', payout)
 
   const user = await getUser(userId)
-  if (!user) throw new APIError(400, 'user not found')
+  if (!user) throw new APIError(401, 'Your account was not found')
 
   const privateUser = await getPrivateUser(userId)
-  if (!privateUser) throw new APIError(400, 'private user not found')
+  if (!privateUser) throw new APIError(500, 'Private user not found')
 
   await sendThankYouEmail(user, privateUser)
   log('iap revenue', revenue)

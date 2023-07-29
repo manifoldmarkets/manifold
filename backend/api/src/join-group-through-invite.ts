@@ -25,10 +25,10 @@ export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
     invite.expire_time &&
     now >= new Date(invite.expire_time)
   ) {
-    throw new APIError(400, 'This link has expired')
+    throw new APIError(403, 'This link has expired')
   }
   if (invite.is_max_uses_reached) {
-    throw new APIError(400, 'The max uses has been reached for this link')
+    throw new APIError(403, 'The max uses has been reached for this link')
   }
   const ret = await addGroupMemberHelper(
     invite.group_id,
