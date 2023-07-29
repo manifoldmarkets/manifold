@@ -39,6 +39,8 @@ export function LimitSlider(props: {
   minProb: number
   invalidLowAndHighBet: boolean
   disabled?: boolean
+  inputError: boolean
+  setInputError: (error: boolean) => void
 }) {
   const {
     isPseudoNumeric,
@@ -51,6 +53,8 @@ export function LimitSlider(props: {
     minProb,
     invalidLowAndHighBet,
     disabled,
+    inputError,
+    setInputError,
   } = props
 
   return (
@@ -68,6 +72,8 @@ export function LimitSlider(props: {
           disabled={disabled}
           placeholder={`${minProb}`}
           width={'w-full'}
+          inputError={inputError}
+          setInputError={setInputError}
         />
         <ProbabilityOrNumericInput
           contract={contract}
@@ -77,9 +83,13 @@ export function LimitSlider(props: {
           placeholder={`${maxProb}`}
           width={'w-full'}
           error={invalidLowAndHighBet}
+          inputError={inputError}
+          setInputError={setInputError}
         />
       </Row>
       <RangeSlider
+        min={minProb}
+        max={maxProb}
         className="!px-2"
         lowValue={lowLimitProb ?? minProb}
         highValue={highLimitProb ?? maxProb}

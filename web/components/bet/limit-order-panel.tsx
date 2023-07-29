@@ -64,6 +64,7 @@ export default function LimitOrderPanel(props: {
 
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
+  const [inputError, setInputError] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Expiring orders
   const [addExpiration, setAddExpiration] = useState(false)
@@ -312,6 +313,8 @@ export default function LimitOrderPanel(props: {
         minProb={MIN_PROB}
         invalidLowAndHighBet={invalidLowAndHighBet}
         disabled={isSubmitting}
+        inputError={inputError}
+        setInputError={setInputError}
       />
 
       <Spacer h={6} />
@@ -462,7 +465,7 @@ export default function LimitOrderPanel(props: {
       {user && (
         <Button
           size="xl"
-          disabled={betDisabled}
+          disabled={betDisabled || inputError}
           color={'indigo'}
           loading={isSubmitting}
           className="flex-1"
