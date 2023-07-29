@@ -85,7 +85,7 @@ export function ControllableNumberInput(props: {
   const onNumChange = (str: string) => {
     let n = parseInt(str.replace(/\D/g, ''))
     const isInvalid = !str || isNaN(n)
-    if (num && (num > maxValue || num < minValue)) {
+    if (n > maxValue || n < minValue) {
       setInputError(true)
     } else {
       setInputError(false)
