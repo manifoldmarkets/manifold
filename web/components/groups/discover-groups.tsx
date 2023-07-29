@@ -278,18 +278,3 @@ function SingleGroupInfo(props: {
     </div>
   )
 }
-export function GroupLinkItem(props: {
-  group: { slug: string; name: string }
-  className?: string
-}) {
-  const { group, className } = props
-
-  return (
-    <SiteLink
-      href={groupPath(group.slug)}
-      className={clsx('z-10 truncate', className)}
-    >
-      {group.name}
-    </SiteLink>
-  )
-}
