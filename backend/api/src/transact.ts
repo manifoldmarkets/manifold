@@ -1,26 +1,26 @@
 import * as admin from 'firebase-admin'
-import { APIError, authEndpoint } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers'
 import { runTxn } from 'shared/txn/run-txn'
+import { z } from 'zod'
 
-// TODO: We totally fail to validate most of the input to this function,
-// so anyone can spam our database with malformed transactions.
+const txnSchema = z.object({
+  fromType: z.enum(['USER']),
+  fromId: z.string(),
+  amount: z.number().positive().safe(),
+  toType: z.enum(['USER', 'CHARITY']),
+  toId: z.string(),
+  token: z.enum(['M$']),
+  category: z.string(),
+  description: z.string().optional(),
+})
 
 export const transact = authEndpoint(async (req, auth) => {
   const firestore = admin.firestore()
   const data = req.body
-  const { amount, fromType, fromId } = data
-
-  if (fromType !== 'USER')
-    throw new APIError(400, "From type is only implemented for type 'user'.")
+  const { fromType, fromId } = validate(data, txnSchema)
 
   if (fromId !== auth.uid)
-    throw new APIError(
-      403,
-      'Must be authenticated with userId equal to specified fromId.'
-    )
-
-  if (isNaN(amount) || !isFinite(amount))
-    throw new APIError(400, 'Invalid amount')
+    throw new APIError(403, 'You can only send txns from yourself!')
 
   // Run as transaction to prevent race conditions.
   return await firestore.runTransaction(async (transaction) => {
