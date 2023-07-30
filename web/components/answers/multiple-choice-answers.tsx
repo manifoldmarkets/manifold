@@ -11,7 +11,7 @@ export function MultipleChoiceAnswers(props: {
   answers: string[]
   setAnswers: (answers: string[]) => void
   includeOtherAnswer: boolean
-  setIncludeOtherAnswer: (include: boolean) => void
+  setIncludeOtherAnswer: ((include: boolean) => void) | undefined
   placeholder?: string
 }) {
   const {
@@ -38,22 +38,24 @@ export function MultipleChoiceAnswers(props: {
 
   return (
     <Col className="gap-2">
-      <Row className="mb-4 items-center gap-2">
-        <ShortToggle on={includeOtherAnswer} setOn={setIncludeOtherAnswer} />
-        <div
-          className="cursor-pointer"
-          onClick={() => setIncludeOtherAnswer(!includeOtherAnswer)}
-        >
-          Support adding new answers later
-        </div>
-        <div>
-          <InfoTooltip
-            text={
-              'If enabled, you will be able to add new answers after question creation, and an "Other" answer will be included.'
-            }
-          />
-        </div>
-      </Row>
+      {setIncludeOtherAnswer && (
+        <Row className="mb-4 items-center gap-2">
+          <ShortToggle on={includeOtherAnswer} setOn={setIncludeOtherAnswer} />
+          <div
+            className="cursor-pointer"
+            onClick={() => setIncludeOtherAnswer(!includeOtherAnswer)}
+          >
+            Support adding new answers later
+          </div>
+          <div>
+            <InfoTooltip
+              text={
+                'If enabled, you will be able to add new answers after question creation, and an "Other" answer will be included.'
+              }
+            />
+          </div>
+        </Row>
+      )}
       {answers.slice(0, answers.length).map((answer, i) => (
         <Row className="items-center gap-2 align-middle" key={i}>
           {i + 1}.{' '}
@@ -65,7 +67,9 @@ export function MultipleChoiceAnswers(props: {
             rows={1}
             maxLength={MAX_ANSWER_LENGTH}
           />
-          {numAnswers > 2 && (
+          {(setIncludeOtherAnswer == undefined ||
+            numAnswers > 2 ||
+            (numAnswers > 1 && includeOtherAnswer)) && (
             <button
               onClick={() => removeAnswer(i)}
               type="button"

@@ -1,9 +1,8 @@
 import clsx from 'clsx'
 import { ReactNode, useState } from 'react'
+import { ChevronRightIcon } from '@heroicons/react/solid'
 
 import { User } from 'common/user'
-
-import { ChevronRightIcon } from '@heroicons/react/solid'
 import { OutcomeType, add_answers_mode } from 'common/contract'
 import { VisibilityTheme } from 'web/pages/create'
 import { Col } from '../layout/col'

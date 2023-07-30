@@ -88,7 +88,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
   const numAnswers =
     (answers?.length ?? 0) + (addAnswersMode === 'DISABLED' ? 0 : 1)
   const ante =
-    totalBounty ?? getAnte(outcomeType, numAnswers, visibility === 'private')
+    totalBounty ?? getAnte(outcomeType, numAnswers)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
@@ -396,7 +396,7 @@ function validateMarketBody(body: any) {
     if (answers.length < 2 && addAnswersMode === 'DISABLED')
       throw new APIError(
         400,
-        'Multiple choice markets must have at least 2 answers, including Other.'
+        'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
       )
   }
 
@@ -598,7 +598,7 @@ const numericSchema = z.object({
 })
 
 const multipleChoiceSchema = z.object({
-  answers: z.string().trim().min(1).array().min(1).max(MAX_ANSWERS),
+  answers: z.string().trim().min(1).array().max(MAX_ANSWERS),
   addAnswersMode: z
     .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
     .default('DISABLED')

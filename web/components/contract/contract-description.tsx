@@ -146,7 +146,7 @@ function ContractActions(props: {
         {isOnlyAdmin && 'Admin '}
         {!isOnlyTrustworthy &&
           contract.mechanism === 'cpmm-multi-1' &&
-          contract.addAnswersMode !== 'DISABLED' && (
+          contract.addAnswersMode === 'ONLY_CREATOR' && (
             <AddAnswerButton
               setEditing={setEditingAnswer}
               buttonColor={'gray'}

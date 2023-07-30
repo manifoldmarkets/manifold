@@ -291,7 +291,7 @@ function createAnswers(
   let poolYes = ante
   let poolNo = ante
 
-  if (shouldAnswersSumToOne) {
+  if (shouldAnswersSumToOne && answers.length > 1) {
     const n = answers.length
     prob = 1 / n
     // Maximize use of ante given constraint that one answer resolves YES and

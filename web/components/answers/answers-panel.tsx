@@ -8,6 +8,7 @@ import { Bet } from 'common/bet'
 import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
 import {
   CPMMMultiContract,
+  FreeResponseContract,
   MultiContract,
   contractPath,
   tradingAllowed,
@@ -23,7 +24,7 @@ import { nthColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { AnswerBar, AnswerLabel } from './answer-item'
-import { CreateAnswerPanel } from './create-answer-panel'
+import { CreateAnswerCpmmPanel, CreateAnswerPanel } from './create-answer-panel'
 import {
   AddComment,
   ClosedProb,
@@ -56,6 +57,12 @@ export function AnswersPanel(props: {
   } = props
   const { resolutions, outcomeType } = contract
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
+  const addAnswersMode =
+    'addAnswersMode' in contract
+      ? contract.addAnswersMode
+      : outcomeType === 'FREE_RESPONSE'
+      ? 'ANYONE'
+      : 'DISABLED'
 
   const [showSmallAnswers, setShowSmallAnswers] = useState(isMultipleChoice)
 
@@ -95,48 +102,58 @@ export function AnswersPanel(props: {
 
   return (
     <Col className="gap-3">
-      <Col className="gap-2">
-        {answersToShow.map((answer) => (
-          <Answer
-            key={answer.id}
-            answer={answer}
-            contract={contract}
-            onAnswerCommentClick={onAnswerCommentClick}
-            color={getAnswerColor(answer, answersArray)}
-            userBets={userBetsByAnswer[answer.id]}
-          />
-        ))}
-        {moreCount > 0 &&
-          (linkToContract ? (
-            <Link
-              className="text-ink-500 hover:text-primary-500"
-              href={contractPath(contract)}
-            >
-              See {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}{' '}
-              <ArrowRightIcon className="inline h-4 w-4" />
-            </Link>
-          ) : (
-            <Button
-              color="gray-white"
-              onClick={() => setShowSmallAnswers(true)}
-              size="xs"
-            >
-              {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
-              <ChevronDoubleDownIcon className="ml-1 h-4 w-4" />
-            </Button>
+      {/* Note: Answers can be length 1 if it is "Other".
+          In that case, we'll wait until another answer is added before showing any answers.
+      */}
+      {answers.length !== 1 && (
+        <Col className="gap-2">
+          {answersToShow.map((answer) => (
+            <Answer
+              key={answer.id}
+              answer={answer}
+              contract={contract}
+              onAnswerCommentClick={onAnswerCommentClick}
+              color={getAnswerColor(answer, answersArray)}
+              userBets={userBetsByAnswer[answer.id]}
+            />
           ))}
-      </Col>
+          {moreCount > 0 &&
+            (linkToContract ? (
+              <Link
+                className="text-ink-500 hover:text-primary-500"
+                href={contractPath(contract)}
+              >
+                See {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}{' '}
+                <ArrowRightIcon className="inline h-4 w-4" />
+              </Link>
+            ) : (
+              <Button
+                color="gray-white"
+                onClick={() => setShowSmallAnswers(true)}
+                size="xs"
+              >
+                {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
+                <ChevronDoubleDownIcon className="ml-1 h-4 w-4" />
+              </Button>
+            ))}
+        </Col>
+      )}
 
-      {answers.length === 0 && (
+      {(answers.length === 0 ||
+        (answers.length === 1 && outcomeType === 'MULTIPLE_CHOICE')) && (
         <div className="text-ink-500 pb-4">No answers yet...</div>
       )}
 
-      {outcomeType === 'FREE_RESPONSE' &&
+      {addAnswersMode === 'ANYONE' &&
         user &&
         tradingAllowed(contract) &&
-        !privateUser?.blockedByUserIds.includes(contract.creatorId) && (
-          <CreateAnswerPanel contract={contract} />
-        )}
+        !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
+        (outcomeType === 'MULTIPLE_CHOICE' &&
+        contract.mechanism === 'cpmm-multi-1' ? (
+          <CreateAnswerCpmmPanel contract={contract} />
+        ) : (
+          <CreateAnswerPanel contract={contract as FreeResponseContract} />
+        ))}
     </Col>
   )
 }

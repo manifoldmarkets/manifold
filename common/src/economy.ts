@@ -5,7 +5,7 @@ export const ANSWER_COST = FIXED_ANTE / 2
 const ANTES = {
   BINARY: FIXED_ANTE,
   MULTIPLE_CHOICE: ANSWER_COST, // Amount per answer.
-  FREE_RESPONSE: FIXED_ANTE * 2,
+  FREE_RESPONSE: ANSWER_COST,
   PSEUDO_NUMERIC: FIXED_ANTE * 5,
   NUMERIC: FIXED_ANTE * 5,
   CERT: FIXED_ANTE * 10,
@@ -16,16 +16,15 @@ const ANTES = {
 
 export const getAnte = (
   outcomeType: OutcomeType,
-  numAnswers: number | undefined,
-  isPrivate: boolean
+  numAnswers: number | undefined
 ) => {
   const ante = ANTES[outcomeType as keyof typeof ANTES] ?? FIXED_ANTE
-  const privateFee = isPrivate ? 200 : 0
 
-  return (
-    privateFee +
-    (outcomeType === 'MULTIPLE_CHOICE' && numAnswers ? ante * numAnswers : ante)
-  )
+  if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE') {
+    return ante * (numAnswers ?? 0)
+  }
+
+  return ante
 }
 
 export const STARTING_BALANCE = 500
