@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 
 import { CPMMBinaryContract, CPMMContract } from 'common/contract'
 import {
-  getAllPrivateUsers,
+  getAllPrivateUsersNotSent,
   getPrivateUser,
   getUser,
   getValues,
@@ -64,15 +64,16 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       // await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
       // await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
       // ])
-      await getAllPrivateUsers()
+      await getAllPrivateUsersNotSent(
+        'weeklyPortfolioUpdateEmailSent',
+        'profit_loss_updates'
+      )
     : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers
     .filter((user) => {
       return isProd()
-        ? user.notificationPreferences.profit_loss_updates.includes('email') &&
-            !user.notificationPreferences.opt_out_all.includes('email') &&
-            !user.weeklyPortfolioUpdateEmailSent &&
+        ? !user.notificationPreferences.opt_out_all.includes('email') &&
             user.email
         : user.notificationPreferences.profit_loss_updates.includes('email')
     })

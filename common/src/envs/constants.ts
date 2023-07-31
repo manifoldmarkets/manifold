@@ -196,6 +196,16 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'glowfic',
 ]
 
+export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
+  'manifold-features',
+  'manifold-6748e065087e',
+  'destinygg',
+  'manifold-features-25bad7c7792e',
+  'bugs',
+  'manifold-leagues',
+  'nonpredictive',
+]
+
 export const EXTERNAL_REDIRECTS = ['/umami']
 
 export const DISCORD_INVITE_LINK = 'https://discord.com/invite/eHQBNBqXuh'
