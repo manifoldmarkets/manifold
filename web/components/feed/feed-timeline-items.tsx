@@ -119,7 +119,7 @@ export const FeedTimelineItems = (props: {
                 </Col>
               )}
               {item.groups && item.groups.length > 0 && (
-                <Row className="gap-1 px-4 pt-1 pb-3">
+                <Row className="mx-4 gap-1 overflow-hidden pt-1 pb-3">
                   {item.groups.map((group) => (
                     <GroupTag key={group.id} group={group} />
                   ))}
