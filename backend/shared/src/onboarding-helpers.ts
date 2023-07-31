@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { runTxnFromBank, TxnData } from 'shared/txn/run-txn'
+import { runTxnFromBank } from 'shared/txn/run-txn'
 import { STARTING_BONUS } from 'common/economy'
 import { getUser, log } from 'shared/utils'
 
@@ -61,7 +61,10 @@ export async function sendOnboardingNotificationsInternal(
           const privateUser = toUserSnap.data() as PrivateUser
           let manaBonusTxn
           if (!privateUser.manaBonusSent) {
-            const signupBonusTxn: TxnData = {
+            const signupBonusTxn: Omit<
+              SignupBonusTxn,
+              'fromId' | 'id' | 'createdTime'
+            > = {
               fromType: 'BANK',
               amount: STARTING_BONUS,
               category: 'SIGNUP_BONUS',
@@ -70,7 +73,7 @@ export async function sendOnboardingNotificationsInternal(
               toType: 'USER',
               description: 'Signup bonus',
               data: {},
-            } as SignupBonusTxn
+            }
             manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
             if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
               transaction.update(toDoc, {

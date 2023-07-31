@@ -14,6 +14,7 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
+import { merge } from 'lodash'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
@@ -62,7 +63,7 @@ export async function runTxn(
 }
 export async function runTxnFromBank(
   fbTransaction: admin.firestore.Transaction,
-  data: TxnData
+  data: Omit<TxnData, 'fromId'>
 ) {
   const { amount, fromType, toId, toType } = data
   if (fromType !== 'BANK')
@@ -71,9 +72,11 @@ export async function runTxnFromBank(
       message: 'This method is only for fromType = BANK',
     }
 
-  data.fromId = isProd()
-    ? HOUSE_LIQUIDITY_PROVIDER_ID
-    : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+  data = merge(data, {
+    fromId: isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  })
 
   if (!isFinite(amount) || amount <= 0) {
     return { status: 'error', message: 'Invalid amount' }

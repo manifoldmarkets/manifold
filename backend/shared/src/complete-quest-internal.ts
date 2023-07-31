@@ -2,13 +2,9 @@ import * as admin from 'firebase-admin'
 const firestore = admin.firestore()
 import { User } from 'common/user'
 import { QUEST_DETAILS, QuestType } from 'common/quest'
-import { isProd } from 'shared/utils'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
+
 import { QuestRewardTxn } from 'common/txn'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnFromBank } from 'shared/txn/run-txn'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getRecentContractsCount } from 'common/supabase/contracts'
 import { getUniqueUserShareEventsCount } from 'common/supabase/user-events'
@@ -142,10 +138,6 @@ const awardQuestBonus = async (
         message: 'Already awarded quest bonus',
       }
     }
-    const fromUserId = isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-
     const rewardAmount = QUEST_DETAILS[questType].rewardAmount
 
     const bonusTxnData = {
@@ -153,8 +145,7 @@ const awardQuestBonus = async (
       questCount: newCount,
     }
 
-    const bonusTxn = {
-      fromId: fromUserId,
+    const bonusTxn: Omit<QuestRewardTxn, 'fromId' | 'id' | 'createdTime'> = {
       fromType: 'BANK',
       toId: user.id,
       toType: 'USER',
@@ -162,9 +153,8 @@ const awardQuestBonus = async (
       token: 'M$',
       category: 'QUEST_REWARD',
       data: bonusTxnData,
-    } as Omit<QuestRewardTxn, 'id' | 'createdTime'>
-
-    const { message, txn, status } = await runTxn(trans, bonusTxn)
+    }
+    const { message, txn, status } = await runTxnFromBank(trans, bonusTxn)
     return { message, txn, status, bonusAmount: rewardAmount }
   })
 }

@@ -43,7 +43,7 @@ import {
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { calculateUserMetrics } from 'common/calculate-metrics'
-import { runTxn, TxnData } from 'shared/txn/run-txn'
+import { runTxnFromBank } from 'shared/txn/run-txn'
 import { GroupResponse } from 'common/group'
 import {
   createSupabaseClient,
@@ -167,15 +167,15 @@ const updateBettingStreak = async (
       BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
       BETTING_STREAK_BONUS_MAX
     )
-    const fromUserId = isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+
     const bonusTxnDetails = {
       currentBettingStreak: newBettingStreak,
     }
 
-    const bonusTxn: TxnData = {
-      fromId: fromUserId,
+    const bonusTxn: Omit<
+      BettingStreakBonusTxn,
+      'id' | 'createdTime' | 'fromId'
+    > = {
       fromType: 'BANK',
       toId: user.id,
       toType: 'USER',
@@ -184,8 +184,8 @@ const updateBettingStreak = async (
       category: 'BETTING_STREAK_BONUS',
       description: JSON.stringify(bonusTxnDetails),
       data: bonusTxnDetails,
-    } as Omit<BettingStreakBonusTxn, 'id' | 'createdTime'>
-    const { message, txn, status } = await runTxn(trans, bonusTxn)
+    }
+    const { message, txn, status } = await runTxnFromBank(trans, bonusTxn)
     return { message, txn, status, bonusAmount }
   })
   if (result.status != 'success') {
@@ -308,8 +308,10 @@ export const giveUniqueBettorAndLiquidityBonus = async (
         ? Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
         : UNIQUE_BETTOR_BONUS_AMOUNT
 
-    const bonusTxn: TxnData = {
-      fromId: fromUserId,
+    const bonusTxn: Omit<
+      UniqueBettorBonusTxn,
+      'id' | 'createdTime' | 'fromId'
+    > = {
       fromType: 'BANK',
       toId: contract.creatorId,
       toType: 'USER',
@@ -318,9 +320,9 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       category: 'UNIQUE_BETTOR_BONUS',
       description: JSON.stringify(bonusTxnData),
       data: bonusTxnData,
-    } as Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'>
+    }
 
-    const { status, message, txn } = await runTxn(trans, bonusTxn)
+    const { status, message, txn } = await runTxnFromBank(trans, bonusTxn)
     return { status, message, txn }
   })
   if (!result) return

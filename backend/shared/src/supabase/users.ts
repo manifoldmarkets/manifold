@@ -132,8 +132,6 @@ export const populateNewUsersFeedFromDefaultFeed = async (
     )
 
     log('found', relatedFeedItems.length, 'feed items to copy')
-    if (relatedFeedItems.length === 0) return []
-
     return copyOverFeedItems(userId, relatedFeedItems, t)
   })
 }
@@ -143,6 +141,7 @@ const copyOverFeedItems = async (
   relatedFeedItems: userFeedRowAndDistance[],
   pg: ITask<IClient> & IClient
 ) => {
+  if (relatedFeedItems.length === 0) return []
   const now = Date.now()
   const updatedRows = relatedFeedItems.map((row, i) => {
     // assuming you want to change the 'columnToChange' column
