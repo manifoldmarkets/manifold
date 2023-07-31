@@ -47,6 +47,7 @@ const bodySchema = z.object({
     z.literal('PSEUDO_NUMERIC'),
     z.literal('BOUNTIED_QUESTION'),
     z.literal('STONK'),
+    z.literal('POLL'),
   ]),
   topic: z.string().optional(),
   offset: z.number().gte(0),
