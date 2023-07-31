@@ -173,6 +173,12 @@ function Answer(props: {
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
   const isDpm = contract.mechanism === 'dpm-2'
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
+  const addAnswersMode =
+    'addAnswersMode' in contract
+      ? contract.addAnswersMode ?? 'DISABLED'
+      : isFreeResponse
+      ? 'ANYONE'
+      : 'DISABLED'
 
   const { resolution, resolutions } = contract
   const resolvedProb =
@@ -195,7 +201,9 @@ function Answer(props: {
       label={
         <AnswerLabel
           text={answer.text}
-          creator={isFreeResponse ? answerCreator ?? false : undefined}
+          creator={
+            addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
+          }
           className={clsx(
             'items-center text-sm !leading-none sm:flex sm:text-base',
             resolvedProb === 0 ? 'text-ink-600' : 'text-ink-900'
