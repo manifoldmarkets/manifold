@@ -88,6 +88,7 @@ export const CONTRACT_TYPES = [
   { label: 'Numeric', value: 'PSEUDO_NUMERIC' },
   { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
   { label: 'Stock', value: 'STONK' },
+  { label: 'Poll', value: 'POLL' },
 ] as const
 
 export type ContractTypeType = typeof CONTRACT_TYPES[number]['value']
