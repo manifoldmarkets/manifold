@@ -1,5 +1,6 @@
 import { range } from 'lodash'
 import {
+  add_answers_mode,
   Binary,
   BountiedQuestion,
   Cert,
@@ -25,7 +26,11 @@ import { JSONContent } from '@tiptap/core'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
 import { randomString } from './util/random'
 import { PollOption } from './poll-option'
+import { Answer } from './answer'
+import { getMultiCpmmLiquidity } from './calculate-cpmm'
+
 export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
+
 export function getNewContract(
   id: string,
   slug: string,
@@ -46,8 +51,9 @@ export function getNewContract(
   min: number,
   max: number,
   isLogScale: boolean,
-  shouldAnswersSumToOne: boolean | undefined,
-  answers: string[]
+  answers: string[],
+  addAnswersMode: add_answers_mode | undefined,
+  shouldAnswersSumToOne: boolean | undefined
 ) {
   const createdTime = Date.now()
 
@@ -56,7 +62,15 @@ export function getNewContract(
     PSEUDO_NUMERIC: () =>
       getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale),
     NUMERIC: () => getNumericProps(ante, bucketCount, min, max),
-    MULTIPLE_CHOICE: () => getMultipleChoiceProps(shouldAnswersSumToOne, ante),
+    MULTIPLE_CHOICE: () =>
+      getMultipleChoiceProps(
+        id,
+        creator.id,
+        answers,
+        addAnswersMode ?? 'DISABLED',
+        shouldAnswersSumToOne ?? true,
+        ante
+      ),
     QUADRATIC_FUNDING: () => getQfProps(ante),
     CERT: () => getCertProps(ante),
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
@@ -232,19 +246,90 @@ const _getDpmMultipleChoiceProps = (ante: number, answers: string[]) => {
 }
 
 const getMultipleChoiceProps = (
-  shouldAnswersSumToOne: boolean | undefined,
+  contractId: string,
+  userId: string,
+  answers: string[],
+  addAnswersMode: add_answers_mode,
+  shouldAnswersSumToOne: boolean,
   ante: number
 ) => {
+  const answersWithOther = answers.concat(
+    addAnswersMode === 'DISABLED' ? [] : ['Other']
+  )
+  const answerObjects = createAnswers(
+    contractId,
+    userId,
+    addAnswersMode,
+    shouldAnswersSumToOne,
+    ante,
+    answersWithOther
+  )
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
     outcomeType: 'MULTIPLE_CHOICE',
+    addAnswersMode: addAnswersMode ?? 'DISABLED',
     shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
-    answers: [],
+    answers: answerObjects,
     totalLiquidity: ante,
     subsidyPool: 0,
   }
 
   return system
+}
+
+function createAnswers(
+  contractId: string,
+  userId: string,
+  addAnswersMode: add_answers_mode,
+  shouldAnswersSumToOne: boolean,
+  ante: number,
+  answers: string[]
+) {
+  const ids = answers.map(() => randomString())
+
+  let prob = 0.5
+  let poolYes = ante
+  let poolNo = ante
+
+  if (shouldAnswersSumToOne && answers.length > 1) {
+    const n = answers.length
+    prob = 1 / n
+    // Maximize use of ante given constraint that one answer resolves YES and
+    // the rest resolve NO.
+    // Means that:
+    //   ante = poolYes + (n - 1) * poolNo
+    // because this pays out ante mana to winners in this case.
+    // Also, cpmm identity for probability:
+    //   1 / n = poolNo / (poolYes + poolNo)
+    poolNo = ante / (2 * n - 2)
+    poolYes = ante / 2
+
+    // Naive solution that doesn't maximize liquidity:
+    // poolYes = ante * prob
+    // poolNo = ante * (prob ** 2 / (1 - prob))
+  }
+
+  const now = Date.now()
+
+  return answers.map((text, i) => {
+    const id = ids[i]
+    const answer: Answer = {
+      id,
+      index: i,
+      contractId,
+      userId,
+      text,
+      createdTime: now,
+
+      poolYes,
+      poolNo,
+      prob,
+      totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
+      subsidyPool: 0,
+      isOther: addAnswersMode !== 'DISABLED' && i === answers.length - 1,
+    }
+    return answer
+  })
 }
 
 const getNumericProps = (

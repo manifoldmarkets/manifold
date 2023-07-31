@@ -26,6 +26,7 @@ import { Answer, DpmAnswer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { Group } from 'common/group'
 import {
+  sendBonusWithInterestingMarketsEmail,
   sendMarketCloseEmail,
   sendMarketResolutionEmail,
   sendNewAnswerEmail,
@@ -58,6 +59,7 @@ import { getGroupMemberIds } from 'common/supabase/groups'
 import { richTextToString } from 'common/util/parse'
 import { JSONContent } from '@tiptap/core'
 import { league_user_info } from 'common/leagues'
+import { getInterestingMarketsForUsers } from 'shared/interesting-markets-email-helpers'
 
 const firestore = admin.firestore()
 
@@ -1478,15 +1480,14 @@ export const createQuestPayoutNotification = async (
 
 export const createSignupBonusNotification = async (
   user: User,
+  privateUser: PrivateUser,
   txnId: string,
   bonusAmount: number
 ) => {
-  const privateUser = await getPrivateUser(user.id)
-  if (!privateUser) return
   if (userOptedOutOfBrowserNotifications(privateUser)) return
   const notification: Notification = {
     id: crypto.randomUUID(),
-    userId: user.id,
+    userId: privateUser.id,
     reason: 'onboarding_flow',
     createdTime: Date.now(),
     isSeen: false,
@@ -1500,6 +1501,28 @@ export const createSignupBonusNotification = async (
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
+
+  // This is email is of both types, so try either
+  const { sendToEmail } = getNotificationDestinationsForUser(
+    privateUser,
+    'onboarding_flow'
+  )
+  const { sendToEmail: trendingSendToEmail } =
+    getNotificationDestinationsForUser(privateUser, 'trending_markets')
+
+  if (!sendToEmail && !trendingSendToEmail) return
+
+  const { contractsToSend } = await getInterestingMarketsForUsers(
+    [privateUser],
+    firestore
+  )
+
+  await sendBonusWithInterestingMarketsEmail(
+    user,
+    privateUser,
+    contractsToSend[privateUser.id],
+    bonusAmount
+  )
 }
 
 export const createBountyAwardedNotification = async (

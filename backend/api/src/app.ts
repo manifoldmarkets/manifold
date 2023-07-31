@@ -200,13 +200,11 @@ app.post('/cast-poll-vote', ...apiRoute(castpollvote))
 app.post('/claimdestinysub', ...apiRoute(claimdestinysub))
 
 // Catch 404 errors - this should be the last route
-app.use((req, res, next) => {
+app.use(allowCors, (req, res) => {
   res
     .status(404)
     .set('Content-Type', 'application/json')
     .json({
-      error: {
-        message: `The requested route '${req.path}' does not exist. Please check your URL for any misspellings or refer to app.ts`,
-      },
+      message: `The requested route '${req.path}' does not exist. Please check your URL for any misspellings or refer to app.ts`,
     })
 })

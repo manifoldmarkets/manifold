@@ -231,6 +231,9 @@ export const SVGChart = <X, TT>(props: {
         .filter((ev) => {
           if (ev instanceof WheelEvent) {
             return ev.ctrlKey || ev.metaKey || ev.altKey
+          } else if (ev instanceof TouchEvent) {
+            // disable on touch devices entirely for now to not interfere with scroll
+            return false
           }
           return !ev.button
         })

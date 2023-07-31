@@ -31,7 +31,7 @@ import { ANSWER_COST } from 'common/economy'
 
 export function CreateAnswerCpmmPanel(props: {
   contract: CPMMMultiContract
-  onFinish: () => void
+  onFinish?: () => void
 }) {
   const { contract, onFinish } = props
   const user = useUser()
@@ -62,7 +62,7 @@ export function CreateAnswerCpmmPanel(props: {
       } catch (e) {}
 
       setIsSubmitting(false)
-      onFinish()
+      if (onFinish) onFinish()
     }
   }
 
@@ -122,9 +122,11 @@ export function CreateAnswerCpmmPanel(props: {
         ) : undefined}
         <div />
         <Row className={'mt-3 justify-end gap-2 pl-2 sm:mt-0'}>
-          <Button color="gray" onClick={onFinish}>
-            Cancel
-          </Button>
+          {onFinish && (
+            <Button color="gray" onClick={onFinish}>
+              Cancel
+            </Button>
+          )}
           <Button
             color="green"
             loading={isSubmitting}

@@ -460,8 +460,7 @@ function ProfilePublicStats(props: {
         setIsOpen={setReviewsOpen}
         userId={user.id}
       />
-      {/* {isCurrentUser && <GroupsButton user={user} className={className} />}
-      {isCurrentUser && <ReferralsButton user={user} className={className} />}
+      {/*{isCurrentUser && <ReferralsButton user={user} className={className} />}
       {isCurrentUser && (
         <UserLikedContractsButton user={user} className={className} />
       )} */}

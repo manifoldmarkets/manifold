@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { marked } from 'marked'
 import { runPostBountyTxn } from 'shared/txn/run-bounty-txn'
 
-import { Answer, MAX_ANSWERS, getNoneAnswer } from 'common/answer'
+import { MAX_ANSWERS, getNoneAnswer } from 'common/answer'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   getCpmmInitialLiquidity,
@@ -14,6 +14,7 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import {
+  add_answers_mode,
   Contract,
   CPMMBinaryContract,
   CPMMMultiContract,
@@ -46,7 +47,6 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
-import { getMultiCpmmLiquidity } from 'common/calculate-cpmm'
 import { SupabaseClient } from 'common/supabase/utils'
 
 export const createmarket = authEndpoint(async (req, auth) => {
@@ -70,6 +70,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     initialProb,
     isLogScale,
     answers,
+    addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
   } = validateMarketBody(body)
@@ -84,9 +85,10 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
   const contractRef = firestore.collection('contracts').doc()
 
+  const numAnswers =
+    (answers?.length ?? 0) + (addAnswersMode === 'DISABLED' ? 0 : 1)
   const ante =
-    totalBounty ??
-    getAnte(outcomeType, answers?.length, visibility === 'private')
+    totalBounty ?? getAnte(outcomeType, numAnswers)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
@@ -130,8 +132,9 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       min ?? 0,
       max ?? 0,
       isLogScale ?? false,
-      shouldAnswersSumToOne,
-      answers ?? []
+      answers ?? [],
+      addAnswersMode,
+      shouldAnswersSumToOne
     )
 
     const houseId = isProd()
@@ -162,6 +165,9 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
     ante || 0
   )
 
+  if (answers && contract.mechanism === 'cpmm-multi-1')
+    await createAnswers(contract)
+
   const db = createSupabaseClient()
   if (groups) {
     await Promise.all(
@@ -180,9 +186,6 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       })
     )
   }
-
-  if (answers && contract.mechanism === 'cpmm-multi-1')
-    await createAnswers(user, contract, ante, answers)
 
   await generateAntes(userId, user, contract, outcomeType, ante)
 
@@ -345,6 +348,7 @@ function validateMarketBody(body: any) {
     initialProb: number | undefined,
     isLogScale: boolean | undefined,
     answers: string[] | undefined,
+    addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined
 
@@ -380,11 +384,19 @@ function validateMarketBody(body: any) {
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
-    ;({ answers, shouldAnswersSumToOne } = validate(multipleChoiceSchema, body))
+    ;({ answers, addAnswersMode, shouldAnswersSumToOne } = validate(
+      multipleChoiceSchema,
+      body
+    ))
     if (shouldAnswersSumToOne === false)
       throw new APIError(
         400,
         'Multiple choice answers that do not sum to one are not implemented.'
+      )
+    if (answers.length < 2 && addAnswersMode === 'DISABLED')
+      throw new APIError(
+        400,
+        'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
       )
   }
 
@@ -411,6 +423,7 @@ function validateMarketBody(body: any) {
     initialProb,
     isLogScale,
     answers,
+    addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
   }
@@ -460,59 +473,13 @@ async function getGroup(groupId: string, visibility: string, userId: string) {
   return group
 }
 
-async function createAnswers(
-  user: User,
-  contract: CPMMMultiContract,
-  ante: number,
-  answers: string[]
-) {
-  const { shouldAnswersSumToOne } = contract
-  const ids = answers.map(() => randomString())
-
-  let prob = 0.5
-  let poolYes = ante
-  let poolNo = ante
-
-  if (shouldAnswersSumToOne) {
-    const n = answers.length
-    prob = 1 / n
-    // Maximize use of ante given constraint that one answer resolves YES and
-    // the rest resolve NO.
-    // Means that:
-    //   ante = poolYes + (n - 1) * poolNo
-    // because this pays out ante mana to winners in this case.
-    // Also, cpmm identity for probability:
-    //   1 / n = poolNo / (poolYes + poolNo)
-    poolNo = ante / (2 * n - 2)
-    poolYes = ante / 2
-
-    // Naive solution that doesn't maximize liquidity:
-    // poolYes = ante * prob
-    // poolNo = ante * (prob ** 2 / (1 - prob))
-  }
-
-  const now = Date.now()
-
+async function createAnswers(contract: CPMMMultiContract) {
+  const { answers } = contract
   await Promise.all(
-    answers.map((text, i) => {
-      const id = ids[i]
-      const answer: Answer = {
-        id,
-        index: i,
-        contractId: contract.id,
-        userId: user.id,
-        text,
-        createdTime: now,
-
-        poolYes,
-        poolNo,
-        prob,
-        totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
-        subsidyPool: 0,
-      }
+    answers.map((answer) => {
       return firestore
         .collection(`contracts/${contract.id}/answersCpmm`)
-        .doc(id)
+        .doc(answer.id)
         .set(answer)
     })
   )
@@ -631,7 +598,11 @@ const numericSchema = z.object({
 })
 
 const multipleChoiceSchema = z.object({
-  answers: z.string().trim().min(1).array().min(2).max(MAX_ANSWERS),
+  answers: z.string().trim().min(1).array().max(MAX_ANSWERS),
+  addAnswersMode: z
+    .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
+    .default('DISABLED')
+    .optional(),
   shouldAnswersSumToOne: z.boolean().optional(),
 })
 

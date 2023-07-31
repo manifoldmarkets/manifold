@@ -1,10 +1,5 @@
 import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
-import {
-  FireIcon,
-  LockClosedIcon,
-  PencilIcon,
-  PlusIcon,
-} from '@heroicons/react/solid'
+import { FireIcon, PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
@@ -20,18 +15,14 @@ import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import {
-  GroupLink,
-  getGroupLinkToDisplay,
-  groupPath,
-  sortGroups,
-} from 'common/group'
+import { getGroupLinkToDisplay, groupPath, sortGroups } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { GroupTag } from 'web/pages/groups'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -113,7 +104,7 @@ function PrivateMarketGroups(props: { contract: Contract }) {
   if (contract.groupLinks) {
     return (
       <div className="flex">
-        <GroupDisplay groupToDisplay={contract.groupLinks[0]} isPrivate />
+        <GroupTag group={contract.groupLinks[0]} isPrivate />
       </div>
     )
   }
@@ -214,7 +205,7 @@ export function PublicMarketGroups(props: {
         )}
       >
         {groupsToDisplay.map((group) => (
-          <GroupDisplay key={group.groupId} groupToDisplay={group} />
+          <GroupTag key={group.groupId} group={group} />
         ))}
 
         {user && (
@@ -224,15 +215,12 @@ export function PublicMarketGroups(props: {
               e.stopPropagation()
               setOpen(true)
             }}
+            className="hover:bg-primary-400/20 text-primary-700 rounded-sm text-sm"
           >
             {groupsToDisplay.length ? (
-              <PencilIcon className="text-ink-1000 bg-ink-100 hover:bg-ink-200 h-6 w-6 rounded-full bg-opacity-90 px-1" />
+              <PencilIcon className="h-6 w-6 px-1" />
             ) : (
-              <span
-                className={clsx(
-                  'bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-sm'
-                )}
-              >
+              <span className={clsx('flex items-center py-0.5 px-1')}>
                 <PlusIcon className="mr-1 h-4 w-4" /> Group
               </span>
             )}
@@ -249,34 +237,6 @@ export function PublicMarketGroups(props: {
         </Col>
       </Modal>
     </>
-  )
-}
-
-function GroupDisplay(props: {
-  groupToDisplay: GroupLink
-  isPrivate?: boolean
-}) {
-  const { groupToDisplay, isPrivate } = props
-
-  return (
-    <Link
-      prefetch={false}
-      href={groupPath(groupToDisplay.slug)}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
-      className={clsx(
-        'text-ink-1000 bg-ink-100 hover:bg-ink-200 w-fit max-w-[200px] truncate whitespace-nowrap rounded-full bg-opacity-90 py-0.5 px-2 text-sm sm:max-w-[250px]',
-        isPrivate
-          ? 'text-ink-1000 bg-indigo-200 dark:bg-indigo-700'
-          : 'bg-ink-400 text-ink-0'
-      )}
-    >
-      <Row className="gap-0.5">
-        {isPrivate && <LockClosedIcon className="my-auto h-3 w-3" />}
-        {groupToDisplay.name}
-      </Row>
-    </Link>
   )
 }
 

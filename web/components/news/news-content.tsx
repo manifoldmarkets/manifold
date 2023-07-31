@@ -669,21 +669,71 @@ const STPSuper = createNewsDashboardTab(
   ]
 )
 
+const UFOs = createNewsDashboardTab(
+  'UFOs',
+  'Intel officer claims UFOs recovered',
+  [
+    {
+      url: 'https://www.npr.org/2023/07/27/1190390376/ufo-hearing-non-human-biologics-uaps',
+    },
+    { slug: 'will-claims-of-a-retrieved-craft-of' },
+    { slug: 'will-a-highranking-us-official-endo' },
+    { slug: 'will-the-us-government-confirm-the' },
+    { slug: 'will-the-ufo-retrieval-program-clai' },
+    { slug: 'will-the-next-state-of-the-union-ad' },
+    { slug: 'will-the-us-government-reveal-that' },
+    {
+      content: (
+        <img
+          className="mb-4"
+          alt="Tic Tac UFO"
+          src="https://nybreaking.com/wp-content/uploads/2023/07/1690479621_174_What-was-the-Tic-Tac-UFO-The-story-behind-retired.jpg"
+        />
+      ),
+    },
+    { slug: 'will-the-president-of-the-usa-ackno' },
+    { slug: 'by-2025-over-60-of-americans-will-b' },
+    { slug: 'will-a-clear-4k-video-of-a-uap-be-r' },
+    { slug: 'will-eliezer-yudkowsky-win-his-1500' },
+    { slug: 'will-the-ufo-shot-down-in-alaska-on' },
+    {
+      content: (
+        <iframe
+          className="mb-4 h-48 w-full"
+          src="https://www.youtube.com/embed/KQ7Dw-739VY?start=2550"
+          title="Grusch UFO testimony"
+          allow=""
+        ></iframe>
+      ),
+    },
+    {
+      content: (
+        <img
+          className="mb-4"
+          alt="Alien"
+          src="https://preview.redd.it/tell-me-this-lil-fella-didnt-just-steal-your-heart-at-this-v0-7ukx8e9u8tbb1.png?auto=webp&s=8e0b01e616a9442dc64ededd657e9643bbdadcb0"
+        />
+      ),
+    },
+  ]
+)
+
 export const newsContent = [
   STPSuper,
+  UFOs,
   XCom,
+  Election2024,
+  UkraineWar,
   IsraeliCourt,
   RPlace,
-  UkraineWar,
   Threads,
-  SummitNATO,
   OpenAI,
   ElonVersusZuck,
-  Election2024,
-  SupremeCourt,
-  WestBank,
-  FrenchRiots,
   GlobalWarming,
+  // SummitNATO,
+  // SupremeCourt,
+  // WestBank,
+  // FrenchRiots,
   // { title: 'Russian Coup?', content: <RussianCoupData /> },
   // { title: 'Titanic Sub', content: <MissingSubData /> },
   // { title: 'Reddit Blackout', content: <RedditBlackoutData /> },

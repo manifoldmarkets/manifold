@@ -144,6 +144,14 @@ function ContractActions(props: {
       )}
       <Row className="mt-2 flex-wrap items-center justify-end gap-2 text-xs">
         {isOnlyAdmin && 'Admin '}
+        {!isOnlyTrustworthy &&
+          contract.mechanism === 'cpmm-multi-1' &&
+          contract.addAnswersMode === 'ONLY_CREATOR' && (
+            <AddAnswerButton
+              setEditing={setEditingAnswer}
+              buttonColor={'gray'}
+            />
+          )}
         <ContractEditHistoryButton contract={contract} />
         {!isOnlyTrustworthy && (
           <EditDescriptionButton
@@ -160,6 +168,7 @@ function ContractActions(props: {
             buttonColor={'gray'}
           />
         )}
+        <ContractEditHistoryButton contract={contract} className="my-2" />
         {contract.outcomeType !== 'STONK' && contract.mechanism !== 'none' && (
           <Button
             color={highlightResolver ? 'red' : 'gray'}
@@ -196,8 +205,7 @@ function EditDescriptionButton(props: {
   )
 }
 
-// Disabled for now, until we support an Other answer.
-function _AddAnswerButton(props: {
+function AddAnswerButton(props: {
   setEditing: (editing: boolean) => void
   buttonColor?: ColorType
 }) {
@@ -211,7 +219,7 @@ function _AddAnswerButton(props: {
         setEditing(true)
       }}
     >
-      <PlusIcon className="ml-1 inline h-4 w-4" /> Add answer
+      <PlusIcon className="mr-1 inline h-4 w-4" /> Add answer
     </Button>
   )
 }

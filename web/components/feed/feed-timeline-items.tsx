@@ -21,8 +21,7 @@ import { ContractComment } from 'common/comment'
 import { track } from 'web/lib/service/analytics'
 import React, { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { GroupLinkItem } from 'web/pages/groups'
-import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
+import { GroupTag } from 'web/pages/groups'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
@@ -42,7 +41,6 @@ export const FeedTimelineItems = (props: {
   const savedFeedComments = filterDefined(
     savedFeedTimelineItems.map((item) => item.comments)
   ).flat()
-  const memberGroups = useRealtimeMemberGroupIds(user?.id)
 
   const boostedContractItems =
     boosts?.map((boost) => {
@@ -121,22 +119,11 @@ export const FeedTimelineItems = (props: {
                 </Col>
               )}
               {item.groups && item.groups.length > 0 && (
-                <Col className="px-4 pt-2 pb-3">
-                  <span className="text-ink-500 text-sm">Related Groups</span>
-                  <Row className={'gap-1'}>
-                    {item.groups.map((group) => (
-                      <div
-                        key={group.id}
-                        className={clsx(
-                          'bg-canvas-100 relative rounded-full px-4 py-1 hover:bg-blue-600 focus-visible:bg-blue-600',
-                          memberGroups?.includes(group.id) && 'bg-blue-800'
-                        )}
-                      >
-                        <GroupLinkItem group={group} />
-                      </div>
-                    ))}
-                  </Row>
-                </Col>
+                <Row className="gap-1 px-4 pt-1 pb-3">
+                  {item.groups.map((group) => (
+                    <GroupTag key={group.id} group={group} />
+                  ))}
+                </Row>
               )}
             </FeedItemFrame>
           )
