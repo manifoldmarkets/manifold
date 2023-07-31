@@ -1,12 +1,18 @@
 import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
+import { XIcon } from '@heroicons/react/outline'
+import { uniqBy } from 'lodash'
+import { toast } from 'react-hot-toast'
+import { generateJSON } from '@tiptap/core'
+import clsx from 'clsx'
 
 import {
   Contract,
   MAX_QUESTION_LENGTH,
   OutcomeType,
   Visibility,
+  add_answers_mode,
 } from 'common/contract'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -26,9 +32,6 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { QfExplainer } from '../contract/qf-overview'
-
-import { generateJSON } from '@tiptap/core'
-import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH, NON_BETTING_OUTCOMES } from 'common/contract'
 import { getAnte } from 'common/economy'
 import { Group } from 'common/group'
@@ -51,12 +54,9 @@ import WaitingForSupabaseButton from '../contract/waiting-for-supabase-button'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
-import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
-import { uniqBy } from 'lodash'
 import { GroupTag } from 'web/pages/groups'
-import { toast } from 'react-hot-toast'
+import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
 import { VisibilityTheme } from 'web/pages/create'
-import { XIcon } from '@heroicons/react/outline'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -91,19 +91,37 @@ export function ContractParamsForm(props: {
     undefined
   )
 
-  // for multiple choice, init to 2 empty answers
+  // For multiple choice, init to 2 empty answers
+  const defaultAnswers = outcomeType === 'MULTIPLE_CHOICE' ? ['', ''] : []
+
   const [answers, setAnswers] = usePersistentLocalState(
-    params?.answers ? params.answers : ['', ''],
-    'new-answers' + paramsKey
+    params?.answers ? params.answers : defaultAnswers,
+    'new-answers-with-other' + paramsKey
   )
+  const [addAnswersMode, setAddAnswersMode] = useState<add_answers_mode>(
+    outcomeType === 'FREE_RESPONSE' ? 'ANYONE' : 'DISABLED'
+  )
+
+  const numAnswers =
+    addAnswersMode === 'DISABLED' ? answers.length : answers.length + 1
 
   useEffect(() => {
     if (params?.answers) {
       setAnswers(params.answers)
     } else if (answers.length && answers.every((a) => a.trim().length === 0)) {
-      setAnswers(['', ''])
+      setAnswers(defaultAnswers)
+    } else if (outcomeType === 'MULTIPLE_CHOICE' && answers.length < 2) {
+      if (answers.length === 0) setAnswers(defaultAnswers)
+      else setAnswers(answers.concat(['']))
     }
   }, [params?.answers])
+
+  useEffect(() => {
+    if (addAnswersMode === 'DISABLED' && answers.length < 2) {
+      if (answers.length === 0) setAnswers(defaultAnswers)
+      else setAnswers(answers.concat(['']))
+    }
+  })
 
   const [question, setQuestion] = usePersistentLocalState(
     '',
@@ -125,7 +143,7 @@ export function ContractParamsForm(props: {
     setGroups()
   }, [creator.id, params?.groupIds])
 
-  const ante = getAnte(outcomeType, answers.length, visibility === 'private')
+  const ante = getAnte(outcomeType, numAnswers)
 
   // If params.closeTime is set, extract out the specified date and time
   // By default, close the question a week from today
@@ -268,7 +286,7 @@ export function ContractParamsForm(props: {
     setCloseHoursMinutes(undefined)
     setSelectedGroups([])
     setVisibility((params?.visibility as Visibility) ?? 'public')
-    setAnswers(['', ''])
+    setAnswers(defaultAnswers)
     setMinString('')
     setMaxString('')
     setInitialValueString('')
@@ -285,7 +303,8 @@ export function ContractParamsForm(props: {
       const newContract = (await createMarket(
         removeUndefinedProps({
           question,
-          outcomeType,
+          outcomeType:
+            outcomeType === 'FREE_RESPONSE' ? 'MULTIPLE_CHOICE' : outcomeType,
           description: editor?.getJSON(),
           initialProb: 50,
           ante,
@@ -296,6 +315,8 @@ export function ContractParamsForm(props: {
           isLogScale,
           groupIds: selectedGroups.map((g) => g.id),
           answers,
+          addAnswersMode:
+            outcomeType === 'FREE_RESPONSE' ? 'ANYONE' : addAnswersMode,
           visibility,
           utcOffset: new Date().getTimezoneOffset(),
           totalBounty:
@@ -377,13 +398,18 @@ export function ContractParamsForm(props: {
       <Spacer h={2} />
       {outcomeType === 'QUADRATIC_FUNDING' && <QfExplainer />}
       <Spacer h={4} />
-      {(outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL') && (
+      {(isMulti || outcomeType == 'POLL') && (
         <MultipleChoiceAnswers
           answers={answers}
           setAnswers={setAnswers}
-          placeholder={
-            outcomeType == 'MULTIPLE_CHOICE' ? 'Type your answer..' : undefined
+          includeOtherAnswer={addAnswersMode !== 'DISABLED'}
+          setIncludeOtherAnswer={
+            outcomeType === 'FREE_RESPONSE'
+              ? undefined
+              : (include) =>
+                  setAddAnswersMode(include ? 'ONLY_CREATOR' : 'DISABLED')
           }
+          placeholder={isMulti ? 'Type your answer..' : undefined}
         />
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (

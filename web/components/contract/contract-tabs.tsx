@@ -68,8 +68,8 @@ export function ContractTabs(props: {
     totalBets,
     userPositionsByOutcome,
   } = props
-  const betsWithoutAntes = useMemo(
-    () => bets.filter((bet) => !bet.isAnte),
+  const betsWithoutAntesOrRedemptions = useMemo(
+    () => bets.filter((bet) => !bet.isAnte && !bet.isRedemption),
     [bets]
   )
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
@@ -165,7 +165,7 @@ export function ContractTabs(props: {
             <Col className={'gap-4'}>
               <BetsTabContent
                 contract={contract}
-                bets={betsWithoutAntes}
+                bets={betsWithoutAntesOrRedemptions}
                 setReplyToBet={setReplyToBet}
               />
             </Col>
@@ -406,7 +406,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const [olderBets, setOlderBets] = useState<Bet[]>([])
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
-  const bets = [...props.bets.filter((b) => !b.isRedemption), ...olderBets]
+  const bets = [...props.bets, ...olderBets]
   const oldestBet = last(bets)
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
