@@ -275,32 +275,35 @@ async function convertOtherAnswerShares(
   newAnswerId: string
 ) {
   // Run as transaction to prevent race conditions.
-  return await firestore.runTransaction(async (transaction) => {
-    const now = Date.now()
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const answersSnap = await transaction.get(
-      contractDoc.collection('answersCpmm').orderBy('index')
-    )
-    const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
-    const newAnswer = answers.find((a) => a.id === newAnswerId)!
-    const otherAnswer = answers.find((a) => a.isOther)!
-
-    const betsSnap = await transaction.get(
-      contractDoc.collection('bets').where('answerId', '==', otherAnswer.id)
-    )
-    const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
-    const betsByUserId = groupBy(bets, (b) => b.userId)
-
-    // Gain YES shares in new answer for each YES share in Other.
-    for (const [userId, bets] of Object.entries(betsByUserId)) {
-      const position = sumBy(
-        bets,
-        (b) => b.shares * (b.outcome === 'YES' ? 1 : -1)
+  const { answers, betsByUserId, newAnswer, otherAnswer } =
+    await firestore.runTransaction(async (transaction) => {
+      const now = Date.now()
+      const contractDoc = firestore.doc(`contracts/${contractId}`)
+      const answersSnap = await transaction.get(
+        contractDoc.collection('answersCpmm').orderBy('index')
       )
-      if (!floatingEqual(position, 0) && position > 0) {
-        const betDoc = contractDoc.collection('bets').doc()
-        const freeYesSharesBet: CandidateBet & { id: string; userId: string } =
-          {
+      const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+      const newAnswer = answers.find((a) => a.id === newAnswerId)!
+      const otherAnswer = answers.find((a) => a.isOther)!
+
+      const betsSnap = await transaction.get(
+        contractDoc.collection('bets').where('answerId', '==', otherAnswer.id)
+      )
+      const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
+      const betsByUserId = groupBy(bets, (b) => b.userId)
+
+      // Gain YES shares in new answer for each YES share in Other.
+      for (const [userId, bets] of Object.entries(betsByUserId)) {
+        const position = sumBy(
+          bets,
+          (b) => b.shares * (b.outcome === 'YES' ? 1 : -1)
+        )
+        if (!floatingEqual(position, 0) && position > 0) {
+          const betDoc = contractDoc.collection('bets').doc()
+          const freeYesSharesBet: CandidateBet & {
+            id: string
+            userId: string
+          } = {
             id: betDoc.id,
             contractId,
             userId,
@@ -321,65 +324,42 @@ async function convertOtherAnswerShares(
             visibility: bets[0].visibility,
             isApi: false,
           }
-        transaction.create(betDoc, freeYesSharesBet)
-      }
-    }
-
-    // Convert NO shares in Other answer to YES shares in all other answers (excluding new answer).
-    for (const [userId, bets] of Object.entries(betsByUserId)) {
-      const noPosition = sumBy(
-        bets,
-        (b) => b.shares * (b.outcome === 'YES' ? -1 : 1)
-      )
-      if (!floatingEqual(noPosition, 0) && noPosition > 0) {
-        const betDoc = contractDoc.collection('bets').doc()
-        const convertNoSharesBet: CandidateBet & {
-          id: string
-          userId: string
-        } = {
-          id: betDoc.id,
-          contractId,
-          userId,
-          answerId: otherAnswer.id,
-          outcome: 'NO',
-          shares: -noPosition,
-          amount: 0,
-          isCancelled: false,
-          isFilled: true,
-          loanAmount: 0,
-          probBefore: otherAnswer.prob,
-          probAfter: otherAnswer.prob,
-          createdTime: now,
-          fees: noFees,
-          isAnte: false,
-          isRedemption: true,
-          isChallenge: false,
-          visibility: bets[0].visibility,
-          isApi: false,
+          transaction.create(betDoc, freeYesSharesBet)
         }
-        transaction.create(betDoc, convertNoSharesBet)
+      }
 
-        const previousAnswers = answers.filter(
-          (a) => a.id !== newAnswer.id && a.id !== otherAnswer.id
+      return { answers, betsByUserId, newAnswer, otherAnswer }
+    })
+
+  await Promise.all(
+    // Convert NO shares in Other answer to YES shares in all other answers (excluding new answer).
+    Object.entries(betsByUserId).map(async ([userId, bets]) => {
+      // Run each in a separate transaction so we don't hit 500 doc limit.
+      await firestore.runTransaction(async (transaction) => {
+        const now = Date.now()
+        const contractDoc = firestore.doc(`contracts/${contractId}`)
+        const noPosition = sumBy(
+          bets,
+          (b) => b.shares * (b.outcome === 'YES' ? -1 : 1)
         )
-        for (const answer of previousAnswers) {
+        if (!floatingEqual(noPosition, 0) && noPosition > 0) {
           const betDoc = contractDoc.collection('bets').doc()
-          const gainYesSharesBet: CandidateBet & {
+          const convertNoSharesBet: CandidateBet & {
             id: string
             userId: string
           } = {
             id: betDoc.id,
             contractId,
             userId,
-            answerId: answer.id,
-            outcome: 'YES',
-            shares: noPosition,
+            answerId: otherAnswer.id,
+            outcome: 'NO',
+            shares: -noPosition,
             amount: 0,
             isCancelled: false,
             isFilled: true,
             loanAmount: 0,
-            probBefore: answer.prob,
-            probAfter: answer.prob,
+            probBefore: otherAnswer.prob,
+            probAfter: otherAnswer.prob,
             createdTime: now,
             fees: noFees,
             isAnte: false,
@@ -388,10 +368,42 @@ async function convertOtherAnswerShares(
             visibility: bets[0].visibility,
             isApi: false,
           }
-          transaction.create(betDoc, gainYesSharesBet)
+          transaction.create(betDoc, convertNoSharesBet)
+
+          const previousAnswers = answers.filter(
+            (a) => a.id !== newAnswer.id && a.id !== otherAnswer.id
+          )
+          for (const answer of previousAnswers) {
+            const betDoc = contractDoc.collection('bets').doc()
+            const gainYesSharesBet: CandidateBet & {
+              id: string
+              userId: string
+            } = {
+              id: betDoc.id,
+              contractId,
+              userId,
+              answerId: answer.id,
+              outcome: 'YES',
+              shares: noPosition,
+              amount: 0,
+              isCancelled: false,
+              isFilled: true,
+              loanAmount: 0,
+              probBefore: answer.prob,
+              probAfter: answer.prob,
+              createdTime: now,
+              fees: noFees,
+              isAnte: false,
+              isRedemption: true,
+              isChallenge: false,
+              visibility: bets[0].visibility,
+              isApi: false,
+            }
+            transaction.create(betDoc, gainYesSharesBet)
+          }
         }
-      }
-    }
-    return answers
-  })
+      })
+    })
+  )
+  return answers
 }
