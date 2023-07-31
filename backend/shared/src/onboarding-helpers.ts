@@ -1,19 +1,15 @@
 import * as admin from 'firebase-admin'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { runTxn, TxnData } from 'shared/txn/run-txn'
+import { runTxnFromBank, TxnData } from 'shared/txn/run-txn'
 import { STARTING_BONUS } from 'common/economy'
-import { getUser, isProd, log } from 'shared/utils'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
+import { getUser, log } from 'shared/utils'
+
 import { SignupBonusTxn } from 'common/txn'
 import { PrivateUser } from 'common/user'
 import { createSignupBonusNotification } from 'shared/create-notification'
 import * as dayjs from 'dayjs'
 import { sendCreatorGuideEmail } from 'shared/emails'
 const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
-
 export async function sendOnboardingNotificationsInternal(
   firestore: admin.firestore.Firestore
 ) {
@@ -72,31 +68,29 @@ export async function sendOnboardingNotificationsInternal(
               toId: userId,
               token: 'M$',
               toType: 'USER',
-              fromId: isProd()
-                ? HOUSE_LIQUIDITY_PROVIDER_ID
-                : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
               description: 'Signup bonus',
               data: {},
             } as SignupBonusTxn
-            manaBonusTxn = await runTxn(transaction, signupBonusTxn)
-            if (manaBonusTxn.status != 'error' && manaBonusTxn.txn)
+            manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
+            if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
               transaction.update(toDoc, {
                 manaBonusSent: true,
                 weeklyTrendingEmailSent: true, // not yet, but about to!
               })
+              log(`Sent mana bonus to user ${userId}`)
+              manaBonuses++
+            }
+          } else {
+            log(
+              `No mana bonus sent to user ${userId}: ${transactionResult.message}`
+            )
+            skipped++
           }
           return { ...manaBonusTxn, privateUser }
         }
       )
-      if (transactionResult.status === 'error' || !transactionResult.txn) {
-        log(
-          `No mana bonus sent to user ${userId}: ${transactionResult.message}`
-        )
-        skipped++
-      }
-      const privateUser = transactionResult.privateUser
-      if (transactionResult.txn && privateUser) {
-        manaBonuses++
+      const { privateUser } = transactionResult
+      if (privateUser && transactionResult.txn) {
         const user = await getUser(privateUser.id)
         if (!user) return
         await createSignupBonusNotification(
