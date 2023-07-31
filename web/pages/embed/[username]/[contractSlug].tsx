@@ -148,7 +148,7 @@ const ContractChart = (props: {
         <ContractCardAnswers
           contract={contract}
           numAnswersFR={numBars(props.height)}
-          className="h-full justify-center"
+          className="isolate h-full justify-center"
         />
       )
 
