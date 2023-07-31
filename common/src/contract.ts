@@ -207,7 +207,6 @@ export type CPMMMulti = {
 
 export type add_answers_mode = 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
 
-
 export type Cert = {
   outcomeType: 'CERT'
 }

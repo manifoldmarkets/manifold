@@ -428,14 +428,10 @@ export function getContractBetNullMetrics() {
 }
 export function getTopAnswer(contract: MultiContract) {
   const { answers } = contract
-  const top = maxBy(
-    answers?.map((answer) => ({
-      answer,
-      prob: getOutcomeProbability(contract, answer.id),
-    })),
-    ({ prob }) => prob
+  const top = maxBy<Answer | DpmAnswer>(answers, (answer) =>
+    'prob' in answer ? answer.prob : getOutcomeProbability(contract, answer.id)
   )
-  return top?.answer
+  return top
 }
 
 export function getTopNSortedAnswers(contract: MultiContract, n: number) {
