@@ -5,11 +5,7 @@ import { groupBy, partition, sumBy } from 'lodash'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { CandidateBet, getBetDownToOneMultiBetInfo } from 'common/new-bet'
-import {
-  Answer,
-  MAX_ANSWER_LENGTH,
-  MAX_ANSWERS,
-} from 'common/answer'
+import { Answer, MAX_ANSWER_LENGTH, MAX_ANSWERS } from 'common/answer'
 import { APIError, authEndpoint, validate } from './helpers'
 import { ANSWER_COST } from 'common/economy'
 import { randomString } from 'common/util/random'
@@ -43,11 +39,18 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
     if (contract.mechanism !== 'cpmm-multi-1')
       throw new APIError(400, 'Requires a cpmm multiple choice contract')
 
-    const { closeTime } = contract
+    const { closeTime, addAnswersMode } = contract
     if (closeTime && Date.now() > closeTime)
       throw new APIError(400, 'Trading is closed')
 
-    if (contract.creatorId !== auth.uid && !isAdminId(auth.uid)) {
+    if (!addAnswersMode || addAnswersMode === 'DISABLED') {
+      throw new APIError(400, 'Adding answers is disabled')
+    }
+    if (
+      contract.addAnswersMode === 'ONLY_CREATOR' &&
+      contract.creatorId !== auth.uid &&
+      !isAdminId(auth.uid)
+    ) {
       throw new APIError(
         400,
         'Only the creator or an admin can create an answer'
@@ -254,7 +257,9 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
     }
 
     transaction.update(userDoc, { balance: FieldValue.increment(-ANSWER_COST) })
-    transaction.update(contractDoc, { totalLiquidity: FieldValue.increment(ANSWER_COST)})
+    transaction.update(contractDoc, {
+      totalLiquidity: FieldValue.increment(ANSWER_COST),
+    })
     return newAnswer.id
   })
 
