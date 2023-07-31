@@ -36,10 +36,12 @@ export function PollPanel(props: {
   useEffect(() => {
     if (!user) {
       setHasVoted(false)
+      setUserVotedId(undefined)
     } else {
       getUserVote(contract.id, user?.id).then((result) => {
         if (!result) {
           setHasVoted(false)
+          setUserVotedId(undefined)
         } else {
           setHasVoted(true)
           setUserVotedId(result)
