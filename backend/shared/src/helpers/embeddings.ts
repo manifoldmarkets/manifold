@@ -3,6 +3,7 @@ import { ITask } from 'pg-promise'
 import { chunk, mean, sum, zip } from 'lodash'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { MONTH_MS } from 'common/util/time'
+import { log } from 'shared/utils'
 
 export function magnitude(vector: number[]): number {
   const vectorSum = sum(vector.map((val) => val * val))
@@ -262,6 +263,7 @@ export async function updateViewsAndViewersEmbeddings(
     [longAgo],
     (r: { id: string }) => r.id
   )
+  log('Found', viewerIds.length, 'viewers to update')
 
   await pg.map(
     `
@@ -319,6 +321,11 @@ export async function updateViewsAndViewersEmbeddings(
       if (normAverage.length > 0) userToEmbeddingMap[r.user_id] = normAverage
     }
   )
+  log(
+    'Found',
+    Object.keys(userToEmbeddingMap).length,
+    'view embedding updates to write'
+  )
   await bulkUpdate(
     pg,
     'user_embeddings',
@@ -328,12 +335,15 @@ export async function updateViewsAndViewersEmbeddings(
       contract_view_embedding: userToEmbeddingMap[userId] as any,
     }))
   )
+  log('Updated user view embeddings')
   // chunk users to update their interest embeddings
   const chunkSize = 500
   const chunks = chunk(Object.keys(userToEmbeddingMap), chunkSize)
+  log('Updating interest embeddings for', chunks.length, 'chunks')
   for (const chunk of chunks) {
     await Promise.all(
       chunk.map((userId) => updateUserInterestEmbedding(pg, userId))
     )
+    log('Updated interest embeddings for chunk of', chunk.length, 'users')
   }
 }

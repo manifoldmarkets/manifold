@@ -12,6 +12,7 @@ import {
   userInterestEmbeddings,
 } from 'shared/supabase/vectors'
 import { filterDefined } from 'common/util/array'
+import { log } from 'shared/utils'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -146,8 +147,10 @@ export const getUsersWithSimilarInterestVectorsToContractServerSide = async (
     )
   ).flat()
 
-  if (Object.keys(userInterestEmbeddings).length === 0)
+  const userEmbeddingsCount = Object.keys(userInterestEmbeddings).length
+  if (userEmbeddingsCount === 0)
     throw new Error('userInterestEmbeddings is not loaded')
+  else log('found ' + userEmbeddingsCount + ' user interest embeddings to use')
 
   const userIdsInterestedInContract = Object.entries(userInterestEmbeddings)
     .map(([userId, user]) => {
