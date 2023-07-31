@@ -27,7 +27,12 @@ export const addTrendingFeedContractsScheduler = functions
   })
 
 export const addcontractstofeed = onRequest(
-  { timeoutSeconds: (MINUTE_INTERVAL + 10) * 60, memory: '2GiB', secrets },
+  {
+    timeoutSeconds: (MINUTE_INTERVAL + 10) * 60,
+    memory: '2GiB',
+    secrets,
+    cpu: 2,
+  },
   async (_req, res) => {
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()

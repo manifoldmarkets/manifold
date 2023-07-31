@@ -13,7 +13,7 @@ import {
 
 // This should work until we have 60k users subscribed to trending_markets and not opted out
 export const weeklyMarketsEmails = functions
-  .runWith({ secrets, memory: '2GB', timeoutSeconds: 540 })
+  .runWith({ secrets, memory: '4GB', timeoutSeconds: 540 })
   // every minute on Monday for 2 hours starting at 12pm PT
   .pubsub.schedule('* 12-13 * * 1')
   .timeZone('America/Los_Angeles')
