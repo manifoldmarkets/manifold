@@ -12,6 +12,7 @@ const ANTES = {
   QUADRATIC_FUNDING: FIXED_ANTE * 10,
   STONK: FIXED_ANTE,
   BOUNTIED_QUESTION: 0,
+  POLL: 10,
 }
 
 export const getAnte = (

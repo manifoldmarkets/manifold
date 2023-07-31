@@ -87,8 +87,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
 
   const numAnswers =
     (answers?.length ?? 0) + (addAnswersMode === 'DISABLED' ? 0 : 1)
-  const ante =
-    totalBounty ?? getAnte(outcomeType, numAnswers)
+  const ante = totalBounty ?? getAnte(outcomeType, numAnswers)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
@@ -108,6 +107,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       user,
       ante
     )
+
     if (ante > getAvailableBalancePerQuestion(user))
       throw new APIError(
         400,

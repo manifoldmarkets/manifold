@@ -92,7 +92,8 @@ export function ContractParamsForm(props: {
   )
 
   // For multiple choice, init to 2 empty answers
-  const defaultAnswers = outcomeType === 'MULTIPLE_CHOICE' ? ['', ''] : []
+  const defaultAnswers =
+    outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL' ? ['', ''] : []
 
   const [answers, setAnswers] = usePersistentLocalState(
     params?.answers ? params.answers : defaultAnswers,
@@ -404,11 +405,12 @@ export function ContractParamsForm(props: {
           setAnswers={setAnswers}
           includeOtherAnswer={addAnswersMode !== 'DISABLED'}
           setIncludeOtherAnswer={
-            outcomeType === 'FREE_RESPONSE'
+            outcomeType === 'FREE_RESPONSE' || outcomeType === 'POLL'
               ? undefined
               : (include) =>
                   setAddAnswersMode(include ? 'ONLY_CREATOR' : 'DISABLED')
           }
+          outcomeType={outcomeType}
           placeholder={isMulti ? 'Type your answer..' : undefined}
         />
       )}
@@ -667,7 +669,8 @@ export function ContractParamsForm(props: {
           <div className="text-ink-700 pl-1 text-sm">
             {amountSuppliedByUser === 0 ? (
               <span className="text-teal-500">FREE </span>
-            ) : outcomeType !== 'BOUNTIED_QUESTION' ? (
+            ) : outcomeType !== 'BOUNTIED_QUESTION' &&
+              outcomeType !== 'POLL' ? (
               <>
                 {formatMoney(amountSuppliedByUser)}
                 {visibility === 'public' && (
