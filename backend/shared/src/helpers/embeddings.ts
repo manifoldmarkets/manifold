@@ -2,8 +2,8 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { ITask } from 'pg-promise'
 import { chunk, mean, sum, zip } from 'lodash'
 import { bulkUpdate } from 'shared/supabase/utils'
-import { MONTH_MS } from 'common/util/time'
 import { log } from 'shared/utils'
+import { getWhenToIgnoreUsersTime } from 'shared/supabase/users'
 
 export function magnitude(vector: number[]): number {
   const vectorSum = sum(vector.map((val) => val * val))
@@ -246,7 +246,7 @@ async function computeUserDisinterestEmbedding(
 export async function updateViewsAndViewersEmbeddings(
   pg: SupabaseDirectClient
 ) {
-  const longAgo = Date.now() - MONTH_MS
+  const longAgo = getWhenToIgnoreUsersTime()
   const userToEmbeddingMap: { [userId: string]: number[] | null } = {}
   const viewerIds = await pg.map(
     `select id

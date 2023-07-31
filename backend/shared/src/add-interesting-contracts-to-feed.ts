@@ -1,6 +1,6 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { SupabaseClient } from 'common/supabase/utils'
-import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
@@ -14,6 +14,7 @@ import {
   getTodayComments,
 } from './importance-score'
 import { userInterestEmbeddings } from 'shared/supabase/vectors'
+import { getWhenToIgnoreUsersTime } from 'shared/supabase/users'
 const rowToContract = (row: any) =>
   ({
     ...(row.data as Contract),
@@ -139,11 +140,7 @@ export async function addInterestingContractsToFeed(
 }
 
 const loadUserEmbeddingsToStore = async (pg: SupabaseDirectClient) => {
-  // Always get the same time a month ago today so postgres can cache the query
-  const today = new Date()
-  today.setUTCHours(0, 0, 0, 0)
-  const longAgo = today.getTime() - MONTH_MS
-
+  const longAgo = getWhenToIgnoreUsersTime()
   await pg.map(
     `
       select u.id as user_id,

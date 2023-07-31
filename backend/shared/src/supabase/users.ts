@@ -10,6 +10,7 @@ import { Row } from 'common/supabase/utils'
 import { log } from 'shared/utils'
 import { ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
+import { MONTH_MS } from 'common/util/time'
 
 export const getUserFollowerIds = async (
   userId: string,
@@ -162,4 +163,11 @@ const copyOverFeedItems = async (
   }
 
   return relatedFeedItems
+}
+
+export const getWhenToIgnoreUsersTime = () => {
+  // Always get the same time a month ago today so postgres can cache the query
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  return today.getTime() - MONTH_MS
 }
