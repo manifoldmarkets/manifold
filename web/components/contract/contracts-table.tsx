@@ -19,8 +19,6 @@ import { Action } from './contract-table-action'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
-import { Tooltip } from '../widgets/tooltip'
-import { RiBarChartFill } from 'react-icons/ri'
 
 const lastItemClassName = 'rounded-r pr-2'
 const firstItemClassName = 'rounded-l pl-2 pr-4'
