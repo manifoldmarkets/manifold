@@ -27,7 +27,6 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { populateNewUsersFeedFromDefaultFeed } from 'shared/supabase/users'
-import { DEFAULT_USER_FEED_ID } from 'common/feed'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
