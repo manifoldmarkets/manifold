@@ -248,7 +248,7 @@ export const AnswerLabel = (props: {
     <Tooltip text={truncated === text ? false : text}>
       <span className={clsx('my-1', className)}>
         {creator === false ? (
-          <EmptyAvatar />
+          <EmptyAvatar className="mr-2 inline" size={4} />
         ) : creator ? (
           <Avatar
             className="mr-2 inline"
