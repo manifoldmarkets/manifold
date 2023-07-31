@@ -254,6 +254,7 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
     }
 
     transaction.update(userDoc, { balance: FieldValue.increment(-ANSWER_COST) })
+    transaction.update(contractDoc, { totalLiquidity: FieldValue.increment(ANSWER_COST)})
     return newAnswer.id
   })
 
