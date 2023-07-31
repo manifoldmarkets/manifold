@@ -60,9 +60,8 @@ export type User = {
 export type PrivateUser = {
   id: string // same as User.id
   email?: string
-  // TODO: move these to non-optional in a couple weeks so we can include them in a fb query
-  weeklyTrendingEmailSent?: boolean
-  weeklyPortfolioUpdateEmailSent?: boolean
+  weeklyTrendingEmailSent: boolean
+  weeklyPortfolioUpdateEmailSent: boolean
   manaBonusSent?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string

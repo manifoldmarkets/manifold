@@ -39,7 +39,7 @@ export const updateDefaultUserEmbedding = functions
   })
 
 export const updatecontractviewembeddings = onRequest(
-  { timeoutSeconds: 3600, memory: '512MiB', secrets },
+  { timeoutSeconds: 3600, memory: '1GiB', secrets },
   async (_req, res) => {
     const pg = createSupabaseDirectClient()
     await updateViewsAndViewersEmbeddings(pg)

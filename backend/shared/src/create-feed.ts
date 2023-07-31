@@ -13,9 +13,9 @@ import {
   INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
 import { log } from 'shared/utils'
-import { buildArray } from 'common/util/array'
 import { getUsersWithSimilarInterestVectorToNews } from 'shared/supabase/users'
 import { convertObjectToSQLRow } from 'common/supabase/utils'
+import { DAY_MS } from 'common/util/time'
 
 export const bulkInsertDataToUserFeed = async (
   usersToReasonsInterestedInContract: {
@@ -227,12 +227,9 @@ export const addContractToFeedIfNotDuplicative = async (
   dataType: FEED_DATA_TYPES,
   userIdsToExclude: string[],
   unseenNewerThanTime: number,
-  options: {
-    minUserInterestDistanceToContract: number
-    data?: Record<string, any>
-  }
+  minUserInterestDistanceToContract: number,
+  data?: Record<string, any>
 ) => {
-  const { minUserInterestDistanceToContract, data } = options
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
@@ -242,6 +239,11 @@ export const addContractToFeedIfNotDuplicative = async (
       reasonsToInclude,
       minUserInterestDistanceToContract
     )
+  log(
+    'checking users for feed rows:',
+    Object.keys(usersToReasonsInterestedInContract).length
+  )
+
   const ignoreUserIds = await userIdsWithFeedRowsMatchingContract(
     contract.id,
     Object.keys(usersToReasonsInterestedInContract),
@@ -324,25 +326,18 @@ export const insertNewsToUsersFeeds = async (
 export const insertMarketMovementContractToUsersFeeds = async (
   contract: CPMMContract
 ) => {
-  const nowDate = new Date()
-  //TODO: Turn this into a select query, remove the idempotency key, add to top of feed
-  //  as in trending contracts
-  const idempotencyKey = `${
-    contract.id
-  }-prob-change-${nowDate.getFullYear()}-${nowDate.getMonth()}-${nowDate.getDate()}`
-  await addContractToFeed(
+  await addContractToFeedIfNotDuplicative(
     contract,
-    buildArray([
+    [
       'follow_contract',
       'liked_contract',
       'similar_interest_vector_to_contract',
-    ]),
+    ],
     'contract_probability_changed',
     [],
+    Date.now() - DAY_MS,
+    INTEREST_DISTANCE_THRESHOLDS.contract_probability_changed,
     {
-      maxDistanceFromUserInterestToContract:
-        INTEREST_DISTANCE_THRESHOLDS.contract_probability_changed,
-      idempotencyKey,
       currentProb: contract.prob,
       previousProb: contract.prob - contract.probChanges.day,
     }
@@ -363,11 +358,8 @@ export const insertTrendingContractToUsersFeeds = async (
     'trending_contract',
     [contract.creatorId],
     unseenNewerThanTime,
-    {
-      minUserInterestDistanceToContract:
-        INTEREST_DISTANCE_THRESHOLDS.trending_contract,
-      data,
-    }
+    INTEREST_DISTANCE_THRESHOLDS.trending_contract,
+    data
   )
 }
 

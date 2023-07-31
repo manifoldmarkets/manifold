@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
-import { LockClosedIcon, XCircleIcon } from '@heroicons/react/solid'
+import { XIcon } from '@heroicons/react/outline'
 import { uniqBy } from 'lodash'
 import { toast } from 'react-hot-toast'
 import { generateJSON } from '@tiptap/core'
@@ -54,8 +54,8 @@ import WaitingForSupabaseButton from '../contract/waiting-for-supabase-button'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
+import { GroupTag } from 'web/pages/groups'
 import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
-import { GroupLinkItem } from 'web/pages/groups'
 import { VisibilityTheme } from 'web/pages/create'
 
 export function ContractParamsForm(props: {
@@ -543,29 +543,21 @@ export function ContractParamsForm(props: {
         </Row>
         <Row className={'mt-2 gap-2'}>
           {selectedGroups.map((group) => (
-            <div
-              key={group.id}
-              className={
-                'bg-canvas-100 relative rounded-full px-4 py-1.5 hover:bg-blue-600 focus-visible:bg-blue-600'
-              }
+            <GroupTag
+              group={group}
+              isPrivate={group.privacyStatus === 'private'}
+              className="bg-ink-100"
             >
-              <GroupLinkItem group={group} />
-              {group.privacyStatus === 'private' && (
-                <LockClosedIcon className={'ml-1 inline h-5 w-5 pb-1'} />
-              )}
               <button
-                className={
-                  'hover:bg-canvas-100 absolute -top-1 -right-1 rounded-full'
-                }
                 onClick={() =>
                   setSelectedGroups((groups) =>
                     groups?.filter((g) => g.id !== group.id)
                   )
                 }
               >
-                <XCircleIcon className="hover:text-ink-700 text-ink-400 h-5 w-5" />
+                <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
               </button>
-            </div>
+            </GroupTag>
           ))}
         </Row>
       </Col>

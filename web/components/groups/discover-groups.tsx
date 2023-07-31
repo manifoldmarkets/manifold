@@ -15,7 +15,6 @@ import { shortenNumber } from 'web/lib/util/shortenNumber'
 import { ContractsTable } from '../contract/contracts-table'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { SiteLink } from '../widgets/site-link'
 import { Subtitle } from '../widgets/subtitle'
 import { MemberRoleTag } from './group-member-modal'
 import { PRIVACY_STATUS_ITEMS } from './group-privacy-modal'
@@ -276,20 +275,5 @@ function SingleGroupInfo(props: {
         <div className="flex gap-4">{children}</div>
       </div>
     </div>
-  )
-}
-export function GroupLinkItem(props: {
-  group: { slug: string; name: string }
-  className?: string
-}) {
-  const { group, className } = props
-
-  return (
-    <SiteLink
-      href={groupPath(group.slug)}
-      className={clsx('z-10 truncate', className)}
-    >
-      {group.name}
-    </SiteLink>
   )
 }

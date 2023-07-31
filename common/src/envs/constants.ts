@@ -91,6 +91,7 @@ export const BOT_USERNAMES = [
   'hyperkaehler',
   'NcyBot',
   'Seldon',
+  'OnePercentBot',
 ]
 
 export const CORE_USERNAMES = [
@@ -193,6 +194,16 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'olivia',
   'planecrash',
   'glowfic',
+]
+
+export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
+  'manifold-features',
+  'manifold-6748e065087e',
+  'destinygg',
+  'manifold-features-25bad7c7792e',
+  'bugs',
+  'manifold-leagues',
+  'nonpredictive',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

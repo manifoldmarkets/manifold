@@ -2,6 +2,7 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { ITask } from 'pg-promise'
 import { chunk, mean, sum, zip } from 'lodash'
 import { bulkUpdate } from 'shared/supabase/utils'
+import { MONTH_MS } from 'common/util/time'
 
 export function magnitude(vector: number[]): number {
   const vectorSum = sum(vector.map((val) => val * val))
@@ -244,18 +245,21 @@ async function computeUserDisinterestEmbedding(
 export async function updateViewsAndViewersEmbeddings(
   pg: SupabaseDirectClient
 ) {
+  const longAgo = Date.now() - MONTH_MS
   const userToEmbeddingMap: { [userId: string]: number[] | null } = {}
   const viewerIds = await pg.map(
-    `select distinct 
-    id
-    from users
-     where ((data->'lastBetTime' is null)
-            or
-            (millis_to_ts((data->('lastBetTime'))::bigint) < now() - interval '10 day')) 
-            -- give up on users who haven't bet in 6 months
-            and millis_to_ts(((data->'createdTime')::bigint)) > now() - interval '6 months'
+    `select id
+            from users
+            join (
+             select usm.user_id, max(usm.created_time) as max_created_time
+             from user_seen_markets usm
+             group by usm.user_id
+         ) as usm on id = usm.user_id
+     where ((data->'lastBetTime')::bigint is not null and (data->'lastBetTime')::bigint >= $1)
+        or ((data->'lastBetTime')::bigint is null and (data->'createdTime')::bigint >= $1)
+        or (usm.max_created_time >= millis_to_ts($1))
 `,
-    [],
+    [longAgo],
     (r: { id: string }) => r.id
   )
 
