@@ -23,8 +23,8 @@ export async function pollPollResolutionsFn() {
   )
 
   await Promise.all(
-    closedPolls.map((poll) => {
-      const maxVoteIds = getMaxVoteId(poll.data.options)
+    closedPolls.map(async (poll) => {
+      const maxVoteIds = getMaxVoteIds(poll.data.options)
 
       const update = {
         resolutionTime: Date.now(),
@@ -38,7 +38,7 @@ export async function pollPollResolutionsFn() {
           (option: PollOption) => option.id === maxVoteIds[0]
         )
       }
-      createPollClosedNotification(
+      await createPollClosedNotification(
         winner
           ? `'${winner.text}' won with ${winner.votes} votes`
           : `It's a tie!`,
@@ -49,7 +49,7 @@ export async function pollPollResolutionsFn() {
   )
 }
 
-export function getMaxVoteId(arr: PollOption[]): string[] {
+export function getMaxVoteIds(arr: PollOption[]): string[] {
   // Reduce the array to a structure that keeps track of maxVotes and maxVoteIds
   const result = arr.reduce<{ maxVotes: number; maxVoteIds: string[] }>(
     (acc, item) => {
