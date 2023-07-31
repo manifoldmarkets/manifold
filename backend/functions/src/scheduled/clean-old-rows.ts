@@ -6,8 +6,8 @@ import { secrets } from 'common/secrets'
 import { chunk } from 'lodash'
 
 export const cleanOldFeedRowsScheduler = functions.pubsub
-  // 1am on Saturday PST
-  .schedule('0 1 * * 6')
+  // 1am every day PST
+  .schedule('0 1 * * *')
   .timeZone('America/Los_Angeles')
   .onRun(async () => {
     try {
@@ -18,8 +18,8 @@ export const cleanOldFeedRowsScheduler = functions.pubsub
   })
 
 export const cleanOldNotificationsScheduler = functions.pubsub
-  // 1am on Sunday PST
-  .schedule('0 1 * * *')
+  // 2am every day PST
+  .schedule('0 2 * * *')
   .timeZone('America/Los_Angeles')
   .onRun(async () => {
     try {
@@ -72,8 +72,15 @@ export const cleanoldnotifications = onRequest(
   async (_req, res) => {
     console.log('Running clean old notification rows...')
     const pg = createSupabaseDirectClient()
-    await pg.none(
-      `
+    const userIds = await pg.map(
+      `select distinct id from users`,
+      [],
+      (r) => r.id as string
+    )
+    const chunks = chunk(userIds, 500)
+
+    for (const batch of chunks) {
+      const query = `
       delete from user_notifications
       where (user_id, notification_id) in (
           select user_id, notification_id from (
@@ -86,11 +93,16 @@ export const cleanoldnotifications = onRequest(
                      ) as rn
              from
                  user_notifications
+             where
+                 user_id in ($1:list)
          ) as user_notif_rows
           where
               rn > 1000
-          );`
-    )
+          )`
+      await pg.none(query, [batch])
+      log(`Deleted notifications from ${batch.length} users`)
+    }
+
     res.status(200).json({ success: true })
   }
 )
