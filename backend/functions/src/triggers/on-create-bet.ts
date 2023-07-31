@@ -61,6 +61,7 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
+import { Answer } from 'common/answer'
 
 const firestore = admin.firestore()
 
@@ -274,6 +275,12 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   // Check max bonus exceeded.
   if (uniqueBettorIds.length > MAX_TRADERS_FOR_BONUS) return
 
+  const answer =
+    answerId && 'answers' in contract
+      ? (contract.answers as Answer[]).find((a) => a.id == answerId)
+      : undefined
+  const answerCreatorId = answer?.userId
+
   // They may still have bet on this previously, use a transaction to be sure
   // we haven't sent creator a bonus already
   const result = await firestore.runTransaction(async (trans) => {
@@ -283,7 +290,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
     const query = firestore
       .collection('txns')
       .where('fromId', '==', fromUserId)
-      .where('toId', '==', contract.creatorId)
+      .where('toId', '==', answerCreatorId ?? contract.creatorId)
       .where('category', '==', 'UNIQUE_BETTOR_BONUS')
       .where('data.uniqueNewBettorId', '==', bettor.id)
       .where('data.contractId', '==', contract.id)
@@ -313,7 +320,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       'id' | 'createdTime' | 'fromId'
     > = {
       fromType: 'BANK',
-      toId: contract.creatorId,
+      toId: answerCreatorId ?? contract.creatorId,
       toType: 'USER',
       amount: bonusAmount,
       token: 'M$',
