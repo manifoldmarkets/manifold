@@ -100,11 +100,9 @@ export function ContractStatusLabel(props: {
     }
     case 'POLL': {
       return (
-        <span>
-          <Tooltip text="Poll">
-            <RiBarChartFill className="text-ink-500 h-5 w-5" />
-          </Tooltip>
-        </span>
+        <div className="gap-0.5 rounded-full bg-indigo-500/20 px-2 py-0.5 text-sm text-indigo-500">
+          Poll
+        </div>
       )
     }
     default:

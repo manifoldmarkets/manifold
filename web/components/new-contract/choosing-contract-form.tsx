@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { OutcomeType } from 'common/contract'
-import { POLLS_ENABLED } from 'common/envs/constants'
 import { ReactNode, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -101,7 +100,6 @@ function OutcomeButton(props: {
     setState,
   } = props
   const [touch, setTouch] = useState(false)
-  if (value == 'POLL' && !POLLS_ENABLED) return <></>
   return (
     <button
       className={clsx(

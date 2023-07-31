@@ -137,6 +137,7 @@ export function NotificationSettings(props: {
       'resolutions_on_watched_markets',
       'resolutions_on_watched_markets_with_shares_in',
       'all_votes_on_watched_markets',
+      'poll_close_on_watched_markets',
     ],
   }
   const yourMarkets: SectionData = {
@@ -148,6 +149,7 @@ export function NotificationSettings(props: {
       'subsidized_your_market',
       'bounty_added',
       'vote_on_your_contract',
+      'your_poll_closed',
     ],
   }
   const bonuses: SectionData = {

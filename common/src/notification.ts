@@ -120,6 +120,8 @@ export type notification_reason_types =
   | 'bounty_awarded'
   | 'bounty_added'
   | 'mana_payment_received'
+  | 'poll_you_follow_closed'
+  | 'your_poll_closed'
 
 type notification_descriptions = {
   [key in notification_preference]: {
@@ -314,6 +316,14 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   vote_on_your_contract: {
     simple: 'Votes on your polls',
     detailed: 'When a user votes on a poll you created',
+  },
+  poll_close_on_watched_markets: {
+    simple: 'Polls you follow close',
+    detailed: 'When a poll you follow closes',
+  },
+  your_poll_closed: {
+    simple: 'Your poll closes',
+    detailed: 'When a poll you created closes',
   },
 }
 

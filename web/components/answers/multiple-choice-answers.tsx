@@ -6,12 +6,14 @@ import { Row } from '../layout/row'
 import { ExpandingInput } from '../widgets/expanding-input'
 import ShortToggle from '../widgets/short-toggle'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { OutcomeType } from 'common/contract'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]
   setAnswers: (answers: string[]) => void
   includeOtherAnswer: boolean
   setIncludeOtherAnswer: ((include: boolean) => void) | undefined
+  outcomeType: OutcomeType
   placeholder?: string
 }) {
   const {
@@ -19,6 +21,7 @@ export function MultipleChoiceAnswers(props: {
     setAnswers,
     includeOtherAnswer,
     setIncludeOtherAnswer,
+    outcomeType,
     placeholder,
   } = props
 
@@ -107,7 +110,7 @@ export function MultipleChoiceAnswers(props: {
             onClick={addAnswer}
             className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
           >
-            Add answer
+            Add {outcomeType == 'POLL' ? 'option' : 'answer'}
           </button>
         </Row>
       )}
