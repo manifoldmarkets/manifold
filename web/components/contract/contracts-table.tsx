@@ -221,7 +221,9 @@ export function ContractsTable(props: {
               (isClosed(contract) && contract.creatorId !== user?.id) ||
               contract.isResolved
             }
-            onClick={() => onContractClick?.(contract)}
+            onClick={
+              onContractClick ? () => onContractClick(contract) : undefined
+            }
           />
         ))}
       </tbody>
