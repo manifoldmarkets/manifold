@@ -26,24 +26,24 @@ export default function DiscoverGroups(props: { yourGroupIds: string[] }) {
   const communities = [
     {
       name: '🎮 Destiny.gg',
-      description: 'gamers betting on "stocks" for streamers',
-      slugs: GroupsByTopic.destiny,
-    },
-    {
-      name: '💡 EA & Rationality',
-      description: 'nerds with a math-based life philosophy',
-      slugs: GroupsByTopic.rat,
-    },
-    {
-      name: '🤖 AI',
-      description: 'robots taking over, soon-ish',
-      slugs: GroupsByTopic.ai,
-    },
-    {
-      name: '🎲 Fun',
-      description: 'degens gambling on manifold',
-      slugs: GroupsByTopic.ponzi,
-    },
+    description: 'gamers betting on "stocks" for streamers',
+    slugs: GroupsByTopic.destiny,
+  },
+  {
+    name: '💡 EA & Rationality',
+    description: 'nerds with a math-based life philosophy',
+    slugs: GroupsByTopic.rat,
+  },
+  {
+    name: '🤖 AI',
+    description: 'robots taking over, soon-ish',
+    slugs: GroupsByTopic.ai,
+  },
+  {
+    name: '🎲 Fun',
+    description: 'degens gambling on manifold',
+    slugs: GroupsByTopic.ponzi,
+  },
   ]
 
   const allSpecialGroupSlugs = Object.values(GroupsByTopic).flat()
@@ -56,6 +56,7 @@ export default function DiscoverGroups(props: { yourGroupIds: string[] }) {
       <Subtitle>Top Communities</Subtitle>
       {communities.map((c, i) => (
         <Community
+          key={c.name}
           name={c.name}
           description={c.description}
           selected={i === selectedCommunity}

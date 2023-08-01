@@ -340,7 +340,7 @@ const UserResults = (props: { users: UserSearchResult[]; search?: string }) => {
         Users
       </SectionTitle>
       {props.users.map(({ id, name, username, avatarUrl }) => (
-        <ResultOption value={{ id, slug: `/${username}` }}>
+        <ResultOption key={id} value={{ id, slug: `/${username}` }}>
           <div className="flex items-center gap-2">
             <Avatar
               username={username}
@@ -373,7 +373,10 @@ const GroupResults = (props: {
         Groups
       </SectionTitle>
       {props.groups.map((group) => (
-        <ResultOption value={{ id: group.id, slug: `/group/${group.slug}` }}>
+        <ResultOption
+          key={group.id}
+          value={{ id: group.id, slug: `/group/${group.slug}` }}
+        >
           <div className="flex items-center gap-3">
             <span className="line-clamp-1 grow">{group.name}</span>
             <span className="flex items-center">
