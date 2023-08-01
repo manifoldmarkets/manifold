@@ -1,7 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, Json, MaybeAuthedEndpoint, validate } from './helpers'
-import { convertGroup } from 'common/supabase/groups'
 
 const SIMILARITY_THRESHOLD = 0.2
 
@@ -36,7 +35,10 @@ export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
     addingToContract,
     newContract,
   })
-  const groups = await pg.map(searchGroupSQL, [term], convertGroup)
+  const groups = await pg.map(searchGroupSQL, [term], (r) => ({
+    id: r.id,
+    ...r.data,
+  }))
 
   return (groups ?? []) as unknown as Json
 })
@@ -97,21 +99,22 @@ function getSearchGroupSQL(groupInput: {
     // exclude your own groups, because it will be shown above
     if (emptyTerm) {
       query = `
-      select * from (
-        select groups.*,
-        group_members.created_time as created from groups
+      select groupz.data, groupz.id from (
+        select groups.data as data, group_id as id,
+        group_members.data as gm_data from groups
         join group_members on group_members.group_id = groups.id
         where group_members.member_id = '${uid}'
       ) as groupz
-      order by created desc
+      order by groupz.gm_data->>'createdTime' desc
       `
     }
     // if search is fuzzy
     else if (fuzzy) {
       query = `
-      select *
+      select groupz.data, groupz.id
       from (
-        select groups.*, similarity(groups.name,$1) AS similarity_score
+        select groups.*,
+            similarity(groups.name,$1) AS similarity_score
         FROM groups 
         join group_members 
         on groups.id = group_members.group_id
@@ -122,7 +125,7 @@ function getSearchGroupSQL(groupInput: {
       `
     } else {
       query = `
-      select groups.*
+      select groups.data, groups.id
         from groups 
         join group_members 
         on groups.id = group_members.group_id,
@@ -135,7 +138,7 @@ function getSearchGroupSQL(groupInput: {
   } else {
     if (emptyTerm) {
       query = `
-        select *
+        select data, id
         from groups
         ${discoverGroupSearchWhereSQL('groups')}
         ${getAddingToContractWhereSQL('groups')}
@@ -145,7 +148,7 @@ function getSearchGroupSQL(groupInput: {
     // if search is fuzzy
     else if (fuzzy) {
       query = `
-      SELECT groupz.*
+      SELECT groupz.data, groupz.id
       FROM (
         SELECT groups.*,
             similarity(groups.name,$1) AS similarity_score
@@ -158,7 +161,7 @@ function getSearchGroupSQL(groupInput: {
       `
     } else {
       query = `
-        select groups.*
+        SELECT groups.data, groups.id
         FROM groups,
         websearch_to_tsquery('english',  $1) as query
        ${discoverGroupSearchWhereSQL('groups')}
