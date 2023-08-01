@@ -1252,23 +1252,23 @@ add table contracts;
 alter publication supabase_realtime
 add table contract_bets;
 
--- alter publication supabase_realtime
--- add table contract_comments;
+alter publication supabase_realtime
+add table contract_comments;
 
--- alter publication supabase_realtime
--- add table post_comments;
+alter publication supabase_realtime
+add table post_comments;
 
--- alter publication supabase_realtime
--- add table group_contracts;
+alter publication supabase_realtime
+add table group_contracts;
 
--- alter publication supabase_realtime
--- add table group_members;
+alter publication supabase_realtime
+add table group_members;
 
--- alter publication supabase_realtime
--- add table user_notifications;
+alter publication supabase_realtime
+add table user_notifications;
 
--- alter publication supabase_realtime
--- add table user_contract_metrics;
+alter publication supabase_realtime
+add table user_contract_metrics;
 
 commit;
 
