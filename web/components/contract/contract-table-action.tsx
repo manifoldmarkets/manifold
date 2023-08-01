@@ -13,9 +13,11 @@ import { ResolutionPanel } from '../resolution-panel'
 import { QfResolutionPanel } from './qf-overview'
 import { isClosed } from './contracts-table'
 import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
+import { useUser } from 'web/hooks/use-user'
 
-export function Action(props: { contract: Contract; user?: User | null }) {
-  const { contract, user } = props
+export function Action(props: { contract: Contract }) {
+  const { contract } = props
+  const user = useUser()
   return (
     <Row className="flex-wrap gap-2">
       <BetButton contract={contract} user={user} />

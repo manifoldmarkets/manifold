@@ -19,6 +19,8 @@ import { Action } from './contract-table-action'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
+import { useEffect } from 'react'
+import { buildArray } from 'common/util/array'
 
 const lastItemClassName = 'rounded-r pr-2'
 const firstItemClassName = 'rounded-l pl-2 pr-4'
@@ -108,6 +110,60 @@ export function ContractStatusLabel(props: {
   }
 }
 
+const contractColumns = {
+  question: {
+    header: 'Question',
+    content: (contract: Contract) => (
+      <Row className="gap-2 sm:gap-4">
+        <Avatar
+          username={contract.creatorUsername}
+          avatarUrl={contract.creatorAvatarUrl}
+          size="xs"
+          preventDefault={true}
+        />
+        <div className="">
+          <VisibilityIcon contract={contract} /> {contract.question}
+        </div>
+      </Row>
+    ),
+  },
+  prob: {
+    header: 'Prob',
+    content: (contract: Contract) => (
+      <div className="font-semibold">
+        <ContractStatusLabel contract={contract} />
+      </div>
+    ),
+  },
+
+  traders: {
+    header: 'Traders',
+    content: (contract: Contract) =>
+      contract.outcomeType == 'BOUNTIED_QUESTION' ? (
+        <BountiedContractComments contractId={contract.id} />
+      ) : (
+        <Row className="align-center shrink-0 items-center gap-0.5">
+          <UserIcon className="h-4 w-4" />
+          {shortenNumber(contract.uniqueBettorCount)}
+        </Row>
+      ),
+  },
+  // visibility: {
+  //   header: '',
+  //   content: (contract: Contract) => (
+  //     <div className="mt-1">
+  //       <Visibility contract={contract} />
+  //     </div>
+  //   ),
+  // },
+  action: {
+    header: '',
+    content: (contract: Contract) => <Action contract={contract} />,
+  },
+} as const
+
+type ColumnKey = keyof typeof contractColumns
+
 export function ContractsTable(props: {
   contracts: Contract[]
   onContractClick?: (contract: Contract) => void
@@ -128,129 +184,14 @@ export function ContractsTable(props: {
   } = props
 
   const user = useUser()
-  const contractColumns = [
-    {
-      name: 'question',
-      header: 'Question',
-      visible: true,
-      content: (contract: Contract) => (
-        <Row className="gap-2 sm:gap-4">
-          <Avatar
-            username={contract.creatorUsername}
-            avatarUrl={contract.creatorAvatarUrl}
-            size="xs"
-            preventDefault={true}
-          />
-          <div className="">
-            <VisibilityIcon contract={contract} /> {contract.question}
-          </div>
-        </Row>
-      ),
-    },
-    {
-      name: 'prob',
-      header: 'Prob',
-      visible: true,
-      content: (contract: Contract) => (
-        <div className="font-semibold">
-          <ContractStatusLabel contract={contract} />
-        </div>
-      ),
-    },
 
-    {
-      name: 'traders',
-      header: 'Traders',
-      visible: true,
-      content: (contract: Contract) =>
-        contract.outcomeType == 'BOUNTIED_QUESTION' ? (
-          <BountiedContractComments contractId={contract.id} />
-        ) : (
-          <Row className="align-center shrink-0 items-center gap-0.5">
-            <UserIcon className="h-4 w-4" />
-            {shortenNumber(contract.uniqueBettorCount)}
-          </Row>
-        ),
-    },
-    // {
-    //   name: 'visibility',
-    //   header: '',
-    //   visible: !isMobile,
-    //   content: (contract: Contract) => (
-    //     <div className="mt-1">
-    //       <Visibility contract={contract} />
-    //     </div>
-    //   ),
-    // },
-    ...(hideActions
-      ? []
-      : [
-          {
-            name: 'action',
-            header: '',
-            visible: !isMobile,
-            content: (contract: Contract) => (
-              <Action contract={contract} user={user} />
-            ),
-          },
-        ]),
-  ]
-
-  function ContractRow(props: { contract: Contract }) {
-    const contract =
-      useFirebasePublicAndRealtimePrivateContract(
-        props.contract.visibility,
-        props.contract.id
-      ) ?? props.contract
-    const contractListEntryHighlightClass = 'bg-primary-100'
-
-    const dataCellClassName = 'py-2 align-top'
-    return (
-      <tr
-        key={contract.id}
-        className={clsx(
-          highlightContractIds?.includes(contract.id)
-            ? contractListEntryHighlightClass
-            : '',
-          (isClosed(contract) && contract.creatorId !== user?.id) ||
-            contract.isResolved
-            ? 'text-ink-500'
-            : '',
-          'hover:bg-primary-50 focus:bg-primary-50 group relative cursor-pointer'
-        )}
-      >
-        {contractColumns.map(
-          (column, index) =>
-            column.visible && (
-              <td
-                key={column.name}
-                className={clsx(
-                  index === 0
-                    ? firstItemClassName
-                    : index === contractColumns.length - 1
-                    ? lastItemClassName
-                    : 'pr-2 sm:pr-4',
-                  dataCellClassName
-                )}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Link
-                  onClick={(e) => {
-                    if (!onContractClick) return
-                    onContractClick(contract)
-                    e.preventDefault()
-                  }}
-                  href={contractPath(contract)}
-                  className="contents"
-                >
-                  {column.content(contract)}
-                </Link>
-              </td>
-            )
-        )}
-      </tr>
-    )
-  }
+  const columns = buildArray([
+    'question',
+    'prob',
+    'traders',
+    // 'visibility',
+    !isMobile && !hideActions && 'action',
+  ])
 
   return (
     <table>
@@ -262,32 +203,101 @@ export function ContractsTable(props: {
           )}
         >
           <tr>
-            {contractColumns.map(
-              (column, index) =>
-                column.visible && (
-                  <th
-                    key={column.name}
-                    className={clsx(
-                      index === 0
-                        ? firstItemClassName
-                        : index === contractColumns.length - 1
-                        ? lastItemClassName
-                        : 'pr-2 sm:pr-4'
-                    )}
-                  >
-                    {column.header}
-                  </th>
-                )
-            )}
+            {columns.map((key, index) => {
+              const column = contractColumns[key]
+              return (
+                <th
+                  key={key}
+                  className={clsx(
+                    index === 0
+                      ? firstItemClassName
+                      : index === columns.length - 1
+                      ? lastItemClassName
+                      : 'pr-2 sm:pr-4'
+                  )}
+                >
+                  {column.header}
+                </th>
+              )
+            })}
           </tr>
         </thead>
       )}
       <tbody>
         {contracts.map((contract) => (
-          <ContractRow key={contract.id} contract={contract} />
+          <ContractRow
+            key={contract.id}
+            contract={contract}
+            columns={columns}
+            highlighted={highlightContractIds?.includes(contract.id)}
+            faded={
+              (isClosed(contract) && contract.creatorId !== user?.id) ||
+              contract.isResolved
+            }
+            onClick={() => onContractClick?.(contract)}
+          />
         ))}
       </tbody>
     </table>
+  )
+}
+
+function ContractRow(props: {
+  contract: Contract
+  columns: ColumnKey[]
+  highlighted?: boolean
+  faded?: boolean
+  onClick?: () => void
+}) {
+  const contract =
+    useFirebasePublicAndRealtimePrivateContract(
+      props.contract.visibility,
+      props.contract.id
+    ) ?? props.contract
+  const { columns, highlighted, faded, onClick } = props
+
+  const visibleColumns = columns.map((key) => ({
+    key,
+    ...contractColumns[key],
+  }))
+
+  const dataCellClassName = 'py-2 align-top'
+  return (
+    <tr
+      key={contract.id}
+      className={clsx(
+        highlighted && 'bg-primary-100',
+        faded && 'text-ink-500',
+        'hover:bg-primary-50 focus:bg-primary-50 group relative cursor-pointer'
+      )}
+    >
+      {visibleColumns.map((column, index) => (
+        <td
+          key={column.key}
+          className={clsx(
+            index === 0
+              ? firstItemClassName
+              : index === visibleColumns.length - 1
+              ? lastItemClassName
+              : 'pr-2 sm:pr-4',
+            dataCellClassName
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Link
+            onClick={(e) => {
+              if (!onClick) return
+              onClick()
+              e.preventDefault()
+            }}
+            href={contractPath(contract)}
+            className="contents"
+          >
+            {column.content(contract)}
+          </Link>
+        </td>
+      ))}
+    </tr>
   )
 }
 
