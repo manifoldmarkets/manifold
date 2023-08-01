@@ -51,6 +51,7 @@ export const SORTS = [
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Just resolved', value: 'resolve-date' },
   { label: '🎲 rAnDoM', value: 'random' },
+  { label: 'Bounty amount', value: 'bounty-amount' },
 ] as const
 
 const predictionMarketSorts = new Set([
@@ -62,8 +63,18 @@ const predictionMarketSorts = new Set([
   'most-popular',
 ])
 
-export const NON_PREDICTION_MARKET_SORTS = SORTS.filter(
+const bountySorts = new Set(['bounty-amount'])
+
+export const BOUNTY_MARKET_SORTS = SORTS.filter(
   (item) => !predictionMarketSorts.has(item.value)
+)
+
+export const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
+  (item) => item.value != 'bounty-amount'
+)
+
+export const PREDICTION_MARKET_SORTS = SORTS.filter(
+  (item) => !bountySorts.has(item.value)
 )
 
 export type Sort = typeof SORTS[number]['value']
@@ -492,7 +503,12 @@ function SupabaseContractSearchControls(props: {
 
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
-    if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
+    if (
+      (selection === 'BOUNTIED_QUESTION' &&
+      predictionMarketSorts.has(sort)) || (
+      selection !== 'BOUNTIED_QUESTION' &&
+      bountySorts.has(sort))
+    ) {
       setSort('score')
     }
     setContractType(selection)
@@ -647,8 +663,10 @@ export function SearchFilters(props: {
         <DropdownMenu
           Items={generateFilterDropdownItems(
             contractType == 'BOUNTIED_QUESTION'
-              ? NON_PREDICTION_MARKET_SORTS
-              : SORTS,
+              ? BOUNTY_MARKET_SORTS
+              : contractType == 'POLL'
+              ? POLL_SORTS
+              : PREDICTION_MARKET_SORTS,
             selectSort
           )}
           Icon={
