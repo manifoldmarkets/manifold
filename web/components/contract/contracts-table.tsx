@@ -19,7 +19,6 @@ import { Action } from './contract-table-action'
 import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
-import { useEffect } from 'react'
 import { buildArray } from 'common/util/array'
 
 const lastItemClassName = 'rounded-r pr-2'
