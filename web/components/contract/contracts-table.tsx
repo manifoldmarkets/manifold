@@ -21,8 +21,8 @@ import { Col } from '../layout/col'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 import { buildArray } from 'common/util/array'
 
-const lastItemClassName = 'rounded-r pr-2'
-const firstItemClassName = 'rounded-l pl-2 pr-4'
+const cellClassName =
+  'pr-2 first:rounded-l first:pl-2 last:rounded-r last:pr-2 sm:pr-4'
 
 export function isClosed(contract: Contract) {
   return (contract.closeTime &&
@@ -202,23 +202,11 @@ export function ContractsTable(props: {
           )}
         >
           <tr>
-            {columns.map((key, index) => {
-              const column = contractColumns[key]
-              return (
-                <th
-                  key={key}
-                  className={clsx(
-                    index === 0
-                      ? firstItemClassName
-                      : index === columns.length - 1
-                      ? lastItemClassName
-                      : 'pr-2 sm:pr-4'
-                  )}
-                >
-                  {column.header}
-                </th>
-              )
-            })}
+            {columns.map((key) => (
+              <th key={key} className={cellClassName}>
+                {contractColumns[key].header}
+              </th>
+            ))}
           </tr>
         </thead>
       )}
@@ -270,17 +258,10 @@ function ContractRow(props: {
         'hover:bg-primary-50 focus:bg-primary-50 group relative cursor-pointer'
       )}
     >
-      {visibleColumns.map((column, index) => (
+      {visibleColumns.map((column) => (
         <td
           key={column.key}
-          className={clsx(
-            index === 0
-              ? firstItemClassName
-              : index === visibleColumns.length - 1
-              ? lastItemClassName
-              : 'pr-2 sm:pr-4',
-            dataCellClassName
-          )}
+          className={clsx(cellClassName, dataCellClassName)}
           onClick={(e) => e.stopPropagation()}
         >
           <Link
