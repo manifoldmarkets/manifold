@@ -109,7 +109,7 @@ export function CreateAnswerCpmmPanel(props: {
           placeholder="Type your answer..."
           rows={1}
           maxLength={MAX_ANSWER_LENGTH}
-          autoFocus
+          autoFocus={!!onFinish}
         />
         {answerError ? (
           <AnswerError key={1} level="error" text={answerError} />
