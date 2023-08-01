@@ -19,7 +19,7 @@ export async function sendOnboardingNotificationsInternal(
     `select id, (data->'createdTime') as created_time from users 
           where 
               millis_to_ts(((data->'createdTime')::bigint)) < now() - interval '23 hours' and
-              millis_to_ts(((data->'createdTime')::bigint)) > now() - interval '2 week'
+              millis_to_ts(((data->'createdTime')::bigint)) > now() - interval '1 week'
 --             and username like '%manifoldtestnewuser%'
             `,
     [],
@@ -41,7 +41,7 @@ export async function sendOnboardingNotificationsInternal(
   let manaBonuses = 0
   let skipped = 0
   console.log(
-    'Users created older than 1 day, younger than 2 weeks:',
+    'Users created older than 1 day, younger than 1 week:',
     userIds.length
   )
   await Promise.all(
@@ -50,43 +50,33 @@ export async function sendOnboardingNotificationsInternal(
         async (transaction) => {
           const toDoc = firestore.doc(`private-users/${userId}`)
           const toUserSnap = await transaction.get(toDoc)
-          if (!toUserSnap.exists) {
-            return {
-              status: 'error',
-              message: 'User not found',
-              txn: null,
-              privateUser: null,
-            }
-          }
+          if (!toUserSnap.exists) return { txn: null, privateUser: null }
+
           const privateUser = toUserSnap.data() as PrivateUser
-          let manaBonusTxn
-          if (!privateUser.manaBonusSent) {
-            const signupBonusTxn: Omit<
-              SignupBonusTxn,
-              'fromId' | 'id' | 'createdTime'
-            > = {
-              fromType: 'BANK',
-              amount: STARTING_BONUS,
-              category: 'SIGNUP_BONUS',
-              toId: userId,
-              token: 'M$',
-              toType: 'USER',
-              description: 'Signup bonus',
-              data: {},
-            }
-            manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
-            if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
-              transaction.update(toDoc, {
-                manaBonusSent: true,
-                weeklyTrendingEmailSent: true, // not yet, but about to!
-              })
-              log(`Sent mana bonus to user ${userId}`)
-              manaBonuses++
-            }
+          if (privateUser.manaBonusSent) return { txn: null, privateUser }
+          const signupBonusTxn: Omit<
+            SignupBonusTxn,
+            'fromId' | 'id' | 'createdTime'
+          > = {
+            fromType: 'BANK',
+            amount: STARTING_BONUS,
+            category: 'SIGNUP_BONUS',
+            toId: userId,
+            token: 'M$',
+            toType: 'USER',
+            description: 'Signup bonus',
+            data: {},
+          }
+          const manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
+          if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
+            transaction.update(toDoc, {
+              manaBonusSent: true,
+              weeklyTrendingEmailSent: true, // not yet, but about to!
+            })
+            log(`Sent mana bonus to user ${userId}`)
+            manaBonuses++
           } else {
-            log(
-              `No mana bonus sent to user ${userId}: ${transactionResult.message}`
-            )
+            log(`No mana bonus sent to user ${userId}: ${manaBonusTxn.message}`)
             skipped++
           }
           return { ...manaBonusTxn, privateUser }
