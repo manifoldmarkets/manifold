@@ -643,18 +643,24 @@ const STPSuper = createNewsDashboardTab(
               />
 
               <ExternalLink
-                title="Papers on room temp superconductors from different authors have previously been retracted"
-                href="https://www.nature.com/articles/s41586-020-2801-z"
-              />
-
-              <ExternalLink
                 title="Hacker News thread discussion"
                 href="https://news.ycombinator.com/item?id=36864624"
               />
-              <p className="mb-4">
+
+              <ExternalLink
+                title="Table of all current replication attempts"
+                href="https://forums.spacebattles.com/threads/claims-of-room-temperature-and-ambient-pressure-superconductor.1106083/page-11?post=94266395#post-94266395"
+              />
+
+              <ExternalLink
+                title="Chinese team finds theoretical basis for LK-99 superconductivity"
+                href="https://arxiv.org/abs/2307.16040"
+              />
+
+              {/* <p className="mb-4">
                 Materials used are relatively cheap and not complicated, so it
                 should be easy for others to replicate.
-              </p>
+              </p> */}
             </>
           }
         />
