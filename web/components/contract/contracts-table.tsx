@@ -99,7 +99,7 @@ export function ContractStatusLabel(props: {
     }
     case 'POLL': {
       return (
-        <div className="gap-0.5 rounded-full bg-indigo-500/20 px-2 py-0.5 text-sm text-indigo-500">
+        <div className="w-min gap-0.5 rounded-full bg-indigo-500/20 px-2 py-0.5 text-sm text-indigo-500">
           Poll
         </div>
       )
