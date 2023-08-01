@@ -55,6 +55,10 @@ export async function getCPMMContractUserContractMetrics(
   limit: number,
   db: SupabaseClient
 ) {
+  // Disable contract user metrics for now.
+
+  return { YES: [], NO: [] }
+
   async function fetchOutcomeMetrics(outcome: 'yes' | 'no') {
     const hasSharesColumn = `has_${outcome}_shares`
     const totalSharesColumn = `total_shares_${outcome}`
