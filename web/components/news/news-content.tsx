@@ -664,7 +664,7 @@ const STPSuper = createNewsDashboardTab(
       ),
     },
 
-    {slug: 'will-there-be-a-highcredibility-spu'},
+    { slug: 'will-there-be-a-highcredibility-spu' },
     { slug: 'will-the-first-roomtemperature-ambi' },
     { slug: 'will-we-have-the-first-roomtemperat' },
     { slug: 'will-a-roomtemperature-atmospheric' },
