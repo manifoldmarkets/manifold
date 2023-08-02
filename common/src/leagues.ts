@@ -2,8 +2,8 @@ import { Row } from './supabase/utils'
 
 export type season = typeof SEASONS[number]
 
-export const SEASONS = [1, 2, 3] as const
-export const CURRENT_SEASON = 3
+export const SEASONS = [1, 2, 3, 4] as const
+export const CURRENT_SEASON = 4
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
 
@@ -58,8 +58,17 @@ export const DIVISION_NAMES = {
   5: 'Diamond',
   6: 'Masters',
 } as { [key: number | string]: string }
+const DIVISION_NAME_TO_NUMBER = Object.fromEntries(
+  Object.entries(DIVISION_NAMES).map(([k, v]) => [v, +k])
+) as { [key: string]: number }
 
 export const SECRET_NEXT_DIVISION = '???'
+
+export const getDivisionNumber = (division: string) => {
+  const num = DIVISION_NAME_TO_NUMBER[division]
+  if (num === undefined) throw new Error(`Invalid division: ${division}`)
+  return num
+}
 
 export const getDemotionAndPromotionCount = (division: number) => {
   if (division === 0) {
@@ -81,7 +90,7 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 7, promotion: 4, doublePromotion: 0 }
   }
   if (division === 6) {
-    return { demotion: 10, promotion: 0, doublePromotion: 0 }
+    return { demotion: 17, promotion: 0, doublePromotion: 0 }
   }
   throw new Error(`Invalid division: ${division}`)
 }
@@ -109,6 +118,8 @@ export type league_row = Row<'leagues'>
 export type league_user_info = league_row & { rank: number }
 
 export const COHORT_SIZE = 25
+export const BRONZE_COHORT_SIZE = 35
+export const MASTERS_COHORT_SIZE = COHORT_SIZE * 2
 export const MAX_COHORT_SIZE = 75
 
 export const prizesByDivisionAndRank = [
