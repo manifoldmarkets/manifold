@@ -14,7 +14,7 @@ import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
 import { ChoiceContractChart } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
-import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
+import { useViewScale } from 'web/components/charts/generic-charts'
 import {
   BinaryResolutionOrChance,
   NumericResolutionOrExpectation,
@@ -280,7 +280,7 @@ const StonkOverview = (props: {
 }
 
 export const useTimePicker = (contract: Contract) => {
-  const viewScale = useSingleValueHistoryChartViewScale()
+  const viewScale = useViewScale()
   const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('allTime')
 
   //zooms out of graph if zoomed in upon time selection change
@@ -290,13 +290,14 @@ export const useTimePicker = (contract: Contract) => {
     viewScale.setViewYScale(undefined)
   })
 
-  const [, endRange] = getDateRange(contract)
+  const [startRange, endRange] = getDateRange(contract)
   const end = endRange ?? Date.now()
+
   const start =
     currentTimePeriod === 'allTime'
       ? undefined
       : end - periodDurations[currentTimePeriod]
-  const maxRange = end - contract.createdTime
+  const maxRange = end - startRange
 
   return { viewScale, currentTimePeriod, setTimePeriod, start, maxRange }
 }

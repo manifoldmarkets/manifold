@@ -99,8 +99,7 @@ export const StonkContractChart = (props: {
     [betPoints, start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
-  const visibleRange = [rangeStart, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width])
+  const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = scaleLinear([min, max], [height, 0])
   return (

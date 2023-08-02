@@ -12,7 +12,7 @@ import { useEvent } from 'web/hooks/use-event'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { ColorType } from '../widgets/choices-toggle-group'
-import { useSingleValueHistoryChartViewScale } from '../charts/generic-charts'
+import { useViewScale } from '../charts/generic-charts'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
@@ -56,7 +56,7 @@ export const PortfolioValueSection = memo(
       setGraphDisplayNumber(null)
       graphView.setViewYScale(undefined)
     })
-    const graphView = useSingleValueHistoryChartViewScale()
+    const graphView = useViewScale()
     const isMobile = useIsMobile()
 
     //zooms out of graph if zoomed in upon time selection change

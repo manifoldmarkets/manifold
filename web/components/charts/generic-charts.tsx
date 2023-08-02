@@ -447,7 +447,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(
     'viewScaleProps'
   >
 ) => {
-  const viewScaleProps = useSingleValueHistoryChartViewScale()
+  const viewScaleProps = useViewScale()
 
   return (
     <ControllableSingleValueHistoryChart
@@ -457,7 +457,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(
   )
 }
 
-export const useSingleValueHistoryChartViewScale = () => {
+export const useViewScale = () => {
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const [viewYScale, setViewYScale] =
     useState<ScaleContinuousNumeric<number, number>>()

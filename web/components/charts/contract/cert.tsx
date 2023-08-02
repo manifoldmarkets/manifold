@@ -52,8 +52,7 @@ export const CertContractChart = (props: {
     [certPoints, start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(certPoints)?.x, now)
-  const visibleRange = [start, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width])
+  const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear([minY, maxY], [height, 0])
   return (
     <SingleValueHistoryChart

@@ -145,8 +145,7 @@ export const ChoiceContractChart = (props: {
   }, [answers.length, betPoints, endProbs, start, end, now])
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
-  const visibleRange = [start, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width])
+  const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
 
   const ChoiceTooltip = useMemo(

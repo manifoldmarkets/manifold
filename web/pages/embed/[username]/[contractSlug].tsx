@@ -11,7 +11,7 @@ import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
-import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
+import { useViewScale } from 'web/components/charts/generic-charts'
 import { getBetFields } from 'web/lib/supabase/bets'
 import { NoSEO } from 'web/components/NoSEO'
 import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
@@ -121,7 +121,7 @@ const ContractChart = (props: {
   color?: string
 }) => {
   const { contract, points, ...rest } = props
-  const viewScale = useSingleValueHistoryChartViewScale()
+  const viewScale = useViewScale()
 
   switch (contract.outcomeType) {
     case 'BINARY':

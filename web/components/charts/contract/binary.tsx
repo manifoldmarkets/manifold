@@ -69,8 +69,7 @@ export const BinaryContractChart = (props: {
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
 
-  const visibleRange = [rangeStart, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width])
+  const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
   return (
     <ControllableSingleValueHistoryChart
