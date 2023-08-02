@@ -2,7 +2,7 @@ import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs } from 'lodash'
 import {
   ALL_FEED_USER_ID,
-  DEFAULT_USER_FEED_ID,
+  DEFAULT_FEED_USER_ID,
   FEED_REASON_TYPES,
   INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
@@ -129,7 +129,7 @@ export const populateNewUsersFeedFromDefaultFeed = async (
           where user_feed.user_id = $2
           order by interesting_contracts.distance;
           `,
-      [userId, DEFAULT_USER_FEED_ID]
+      [userId, DEFAULT_FEED_USER_ID]
     )
 
     log('found', relatedFeedItems.length, 'feed items to copy')
