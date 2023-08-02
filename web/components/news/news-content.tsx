@@ -105,16 +105,14 @@ const OpenAI = createNewsDashboardTab(
 
 const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
   {
-    url: 'https://www.bbc.co.uk/news/world-europe-66289136',
+    url: 'https://apnews.com/article/russia-ukraine-war-drone-strikes-odesa-kyiv-8b20147a55f29a0c0bc465b59274357e',
   },
-  { slug: 'will-ukraine-sever-the-land-bridge-58877ff44c53' },
+  { slug: 'will-moscow-be-hit-by-another-drone' },
+  { url: 'https://www.bbc.co.uk/news/world-europe-66374032' },
 
-  { slug: 'will-there-be-a-nuclear-disaster-at' },
   { slug: 'how-will-the-ukrainerussia-border-l' },
   { slug: 'will-any-part-of-the-zaporizhzhia-n' },
   { slug: 'will-russia-nuke-ukraine' },
-  { slug: 'will-the-wagner-group-stop-operatin-ad2bc1b87277' },
-  { slug: 'will-the-black-sea-grain-deal-be-ex' },
   {
     slug: 'will-vladimir-putin-still-be-the-le',
   },
@@ -123,7 +121,6 @@ const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
   { slug: 'will-the-ukraine-war-be-over-by-the' },
   { slug: '5-will-there-be-a-lasting-ceasefire' },
   { slug: 'will-china-convene-and-mediate-peac' },
-  { slug: 'will-sergei-shoigu-still-be-the-rus' },
 ])
 
 const WestBank = createNewsDashboardTab(
@@ -724,12 +721,23 @@ const UFOs = createNewsDashboardTab(
   ]
 )
 
+const Trump = createNewsDashboardTab('Trump', 'Trump indicted', [
+  {
+    url: 'https://apnews.com/article/trump-indicted-jan-6-investigation-special-counsel-debb59bb7a4d9f93f7e2dace01feccdc',
+  },
+  { slug: 'will-trump-be-indicted-by-three-or' },
+  { slug: 'who-will-be-the-republican-presiden-7bf11c066154' },
+  { slug: 'when-will-trump-be-imprisoned' },
+  { slug: 'will-there-be-large-scale-protests' },
+])
+
 export const newsContent = [
   STPSuper,
+  Trump,
+  UkraineWar,
   UFOs,
   XCom,
   Election2024,
-  UkraineWar,
   IsraeliCourt,
   RPlace,
   Threads,
