@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { Axis, AxisScale } from 'd3-axis'
 import { pointer, select } from 'd3-selection'
 import { CurveFactory, area, line } from 'd3-shape'
-import { D3ZoomEvent, zoom } from 'd3-zoom'
+import { zoom } from 'd3-zoom'
 import dayjs from 'dayjs'
 import {
   ComponentType,
@@ -12,7 +12,6 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
 } from 'react'
 import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
