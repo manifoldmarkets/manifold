@@ -70,6 +70,7 @@ export const PortfolioValueSection = memo(
       <div className="text-ink-500 animate-pulse text-lg sm:text-xl">---</div>
     )
 
+    const showDisclaimer = graphPoints || !lastUpdatedTime
     if (
       !graphPoints ||
       graphPoints.length <= 1 ||
@@ -87,9 +88,9 @@ export const PortfolioValueSection = memo(
           profitElement={placeholderSection}
           balanceElement={placeholderSection}
           valueElement={placeholderSection}
-          className={'h-8'}
+          className={showDisclaimer ? 'h-8' : ''}
           graphElement={(_width, height) => {
-            if (graphPoints || !lastUpdatedTime) {
+            if (showDisclaimer) {
               return (
                 <Col className={'text-ink-500 mt-2'}>
                   <Row className={'gap-2'}>
