@@ -4,6 +4,7 @@ import {
   ContractMetric,
   ContractMetricsByOutcome,
 } from 'common/contract-metric'
+import { getContractMetricsForContractId } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { partition, sum } from 'lodash'
@@ -27,6 +28,7 @@ import { useRealtimeContractMetrics } from 'web/hooks/use-contract-metrics'
 import { useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
+import { db } from 'web/lib/supabase/db'
 import { getStonkDisplayShares } from 'common/stonk'
 
 export const BinaryUserPositionsTable = memo(
@@ -50,9 +52,9 @@ export const BinaryUserPositionsTable = memo(
 
     useEffect(() => {
       if (sortBy === 'profit' && contractMetricsByProfit === undefined) {
-        // getContractMetricsForContractId(contractId, db, sortBy).then(
-        //   setContractMetricsByProfit
-        // )
+        getContractMetricsForContractId(contractId, db, sortBy).then(
+          setContractMetricsByProfit
+        )
       }
     }, [contractId, contractMetricsByProfit, sortBy])
 
