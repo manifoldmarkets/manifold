@@ -80,12 +80,7 @@ export function GroupTag(props: {
   const { group, isPrivate, className, children } = props
 
   return (
-    <Link
-      prefetch={false}
-      href={groupPath(group.slug)}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
+    <div
       className={clsx(
         'group flex w-fit min-w-0 max-w-[200px] shrink-0 truncate whitespace-nowrap rounded-sm px-1 py-0.5 text-sm transition-colors sm:max-w-[250px]',
         isPrivate
@@ -94,15 +89,23 @@ export function GroupTag(props: {
         className
       )}
     >
-      {isPrivate ? (
-        <LockClosedIcon className="my-auto mr-0.5 h-3 w-3" />
-      ) : (
-        <span className="text-primary-700/50 mr-px transition-colors group-hover:text-inherit">
-          #
-        </span>
-      )}
-      {group.name}
+      <Link
+        prefetch={false}
+        href={groupPath(group.slug)}
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
+      >
+        {isPrivate ? (
+          <LockClosedIcon className="my-auto mr-0.5 h-3 w-3" />
+        ) : (
+          <span className="text-primary-700/50 mr-px transition-colors group-hover:text-inherit">
+            #
+          </span>
+        )}
+        {group.name}
+      </Link>
       {children}
-    </Link>
+    </div>
   )
 }
