@@ -13,6 +13,7 @@ import {
 } from 'shared/supabase/vectors'
 import { filterDefined } from 'common/util/array'
 import { log } from 'shared/utils'
+import { isAdminId } from 'common/envs/constants'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -279,6 +280,7 @@ export const getContractPrivacyWhereSQLFilter = (
 ) => {
   const otherVisibilitySQL = `
   OR (visibility = 'unlisted' AND creator_id='${uid}') 
+  OR (visibility = 'unlisted' AND ${isAdminId(uid ?? '_')}) 
   OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))
   `
   return (groupId && hasGroupAccess) ||
