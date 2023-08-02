@@ -499,14 +499,17 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 </GradientContainer>
               ) : null)}
 
-            {isResolved && user && contract.outcomeType !== 'POLL' && (
-              <ReviewPanel
-                marketId={contract.id}
-                author={contract.creatorName}
-                user={user}
-                className="my-2"
-              />
-            )}
+            {isResolved &&
+              user &&
+              user.id !== contract.creatorId &&
+              contract.outcomeType !== 'POLL' && (
+                <ReviewPanel
+                  marketId={contract.id}
+                  author={contract.creatorName}
+                  user={user}
+                  className="my-2"
+                />
+              )}
 
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2">
               <MarketGroups contract={contract} />
