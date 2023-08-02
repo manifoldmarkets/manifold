@@ -80,7 +80,9 @@ export function FeedCommentThread(props: {
   const idInThisThread =
     idInUrl && threadComments.map((comment) => comment.id).includes(idInUrl)
 
-  const [seeReplies, setSeeReplies] = useState(showReplies || !!idInThisThread)
+  const [seeReplies, setSeeReplies] = useState(
+    !parentComment.hidden && (showReplies || !!idInThisThread)
+  )
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const clearReply = useEvent(() => setReplyToUserInfo(undefined))
@@ -696,7 +698,6 @@ export function CommentOnBetRow(props: {
     betAnswerId,
     contract,
     clearReply,
-    className,
   } = props
   const { bought, money } = getBoughtMoney(betAmount)
 
