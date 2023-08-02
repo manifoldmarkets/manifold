@@ -219,8 +219,10 @@ function SliderExample() {
       <RangeSlider
         lowValue={low}
         highValue={high}
-        setLow={setLow}
-        setHigh={setHigh}
+        setValues={(low, high) => {
+          setLow(low)
+          setHigh(high)
+        }}
       />
     </>
   )

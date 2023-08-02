@@ -1,7 +1,6 @@
 import { bisector, extent } from 'd3-array'
 import { axisBottom, axisRight } from 'd3-axis'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
-import { D3ZoomEvent } from 'd3-zoom'
 import {
   CurveFactory,
   SeriesPoint,
@@ -36,6 +35,7 @@ import {
 } from './helpers'
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import { nthColor } from './contract/choice'
+import { ZoomSlider } from './zoom-slider'
 
 const Y_AXIS_CONSTRAINTS: Record<ValueKind, AxisConstraints> = {
   percent: { min: 0, max: 1, minExtent: 0.04 },
@@ -169,16 +169,15 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     return { xAxis, yAxis }
   }, [w, xScale, yScale])
 
-  const onZoom = useEvent((ev: D3ZoomEvent<SVGElement, P> | null) => {
-    if (ev?.transform) {
-      setViewXScale(() => ev.transform.rescaleX(props.xScale))
-    } else {
-      setViewXScale(undefined)
-    }
-  })
-
   return (
-    <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis} onZoom={onZoom}>
+    <SVGChart
+      w={w}
+      h={h}
+      xAxis={xAxis}
+      yAxis={yAxis}
+      fullScale={props.xScale}
+      onRescale={(scale) => setViewXScale(scale ? () => scale : undefined)}
+    >
       <AreaWithTopStroke
         color={color}
         data={data}
@@ -255,14 +254,6 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     setTTParams(undefined)
   })
 
-  const onZoom = useEvent((ev: D3ZoomEvent<SVGElement, unknown> | null) => {
-    if (ev?.transform) {
-      setViewXScale(() => ev.transform.rescaleX(props.xScale))
-    } else {
-      setViewXScale(undefined)
-    }
-  })
-
   return (
     <SVGChart
       w={w}
@@ -270,7 +261,8 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
       xAxis={xAxis}
       yAxis={yAxis}
       ttParams={ttParams}
-      onZoom={onZoom}
+      fullScale={props.xScale}
+      onRescale={(scale) => setViewXScale(scale ? () => scale : undefined)}
       onMouseOver={onMouseOver}
       onMouseLeave={onMouseLeave}
       Tooltip={Tooltip}
@@ -369,9 +361,8 @@ export const ControllableSingleValueHistoryChart = <
     setMouse(undefined)
   })
 
-  const onZoom = useEvent((ev: D3ZoomEvent<SVGElement, P> | null) => {
-    if (ev?.transform) {
-      const newXScale = ev.transform.rescaleX(props.xScale)
+  const rescale = useCallback((newXScale: ScaleTime<number, number> | null) => {
+    if (newXScale) {
       setViewXScale(() => newXScale)
       const [xMin, xMax] = newXScale.domain()
 
@@ -395,7 +386,7 @@ export const ControllableSingleValueHistoryChart = <
       setViewXScale(undefined)
       setViewYScale(undefined)
     }
-  })
+  }, [])
 
   const gradientId = useId()
   const stops = useMemo(
@@ -405,39 +396,53 @@ export const ControllableSingleValueHistoryChart = <
   )
 
   return (
-    <SVGChart
-      w={w}
-      h={h}
-      xAxis={xAxis}
-      yAxis={yAxis}
-      ttParams={mouse}
-      onZoom={onZoom}
-      onMouseOver={onMouseOver}
-      onMouseLeave={onMouseLeave}
-      Tooltip={Tooltip}
-      negativeThreshold={negativeThreshold}
-    >
-      {stops && (
-        <defs>
-          <linearGradient gradientUnits="userSpaceOnUse" id={gradientId}>
-            {stops.map((s, i) => (
-              <stop key={i} offset={`${s.x / w}`} stopColor={s.color} />
-            ))}
-          </linearGradient>
-        </defs>
-      )}
-      <AreaWithTopStroke
-        color={typeof color === 'string' ? color : `url(#${gradientId})`}
-        data={data}
-        px={px}
-        py0={py0}
-        py1={py1}
-        curve={curve ?? curveLinear}
+    <>
+      <SVGChart
+        w={w}
+        h={h}
+        xAxis={xAxis}
+        yAxis={yAxis}
+        ttParams={mouse}
+        fullScale={props.xScale}
+        onRescale={rescale}
+        onMouseOver={onMouseOver}
+        onMouseLeave={onMouseLeave}
+        Tooltip={Tooltip}
+        negativeThreshold={negativeThreshold}
+      >
+        {stops && (
+          <defs>
+            <linearGradient gradientUnits="userSpaceOnUse" id={gradientId}>
+              {stops.map((s, i) => (
+                <stop key={i} offset={`${s.x / w}`} stopColor={s.color} />
+              ))}
+            </linearGradient>
+          </defs>
+        )}
+        <AreaWithTopStroke
+          color={typeof color === 'string' ? color : `url(#${gradientId})`}
+          data={data}
+          px={px}
+          py0={py0}
+          py1={py1}
+          curve={curve ?? curveLinear}
+        />
+        {mouse && (
+          <SliceMarker
+            color="#5BCEFF"
+            x={mouse.x}
+            y0={mouse.y0}
+            y1={mouse.y1}
+          />
+        )}
+      </SVGChart>
+      <ZoomSlider
+        fullScale={props.xScale}
+        visibleScale={xScale}
+        setVisibleScale={rescale}
+        className="relative top-6"
       />
-      {mouse && (
-        <SliceMarker color="#5BCEFF" x={mouse.x} y0={mouse.y0} y1={mouse.y1} />
-      )}
-    </SVGChart>
+    </>
   )
 }
 

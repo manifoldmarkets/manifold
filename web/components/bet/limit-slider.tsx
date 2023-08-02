@@ -90,15 +90,13 @@ export function LimitSlider(props: {
       <RangeSlider
         min={minProb}
         max={maxProb}
-        className="!px-2"
+        className="px-2 pt-1"
         lowValue={lowLimitProb ?? minProb}
         highValue={highLimitProb ?? maxProb}
-        setLow={(value) =>
-          setLowLimitProb(value === minProb ? undefined : value)
-        }
-        setHigh={(value) =>
-          setHighLimitProb(value === maxProb ? undefined : value)
-        }
+        setValues={(low, high) => {
+          setLowLimitProb(low === minProb ? undefined : low)
+          setHighLimitProb(high === maxProb ? undefined : high)
+        }}
         marks={
           isPseudoNumeric ? undefined : { 0: '0%', 50: '50%', 100: '100%' }
         }

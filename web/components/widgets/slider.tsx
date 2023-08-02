@@ -45,7 +45,7 @@ export function Slider(props: {
         marks={mapValues(marks, (value) => (
           <Mark>{value}</Mark>
         ))}
-        className={'[&>.rc-slider-rail]:bg-ink-200 !h-4'}
+        className={'[&>.rc-slider-rail]:bg-ink-200'}
         dotStyle={{ borderColor: 'lightgray' }}
         activeDotStyle={{ borderColor: dark }}
         trackStyle={{ backgroundColor: light }}
@@ -58,8 +58,7 @@ export function Slider(props: {
 export function RangeSlider(props: {
   lowValue: number
   highValue: number
-  setLow: (low: number) => void
-  setHigh: (high: number) => void
+  setValues: (low: number, high: number) => void
   min?: number
   max?: number
   disabled?: boolean
@@ -67,13 +66,13 @@ export function RangeSlider(props: {
   marks?: { [key: number]: ReactNode }
   overlappable?: boolean
   color?: keyof typeof colors
+  handleSize?: number
   className?: string
 }) {
   const {
     lowValue,
     highValue,
-    setLow,
-    setHigh,
+    setValues,
     min,
     max,
     marks,
@@ -86,7 +85,7 @@ export function RangeSlider(props: {
   const [light, dark] = colors[props.color ?? 'indigo']
 
   return (
-    <div className={clsx('h-10 px-3 pt-1', className)}>
+    <div className={clsx('h-10', className)}>
       <RcSlider
         range
         draggableTrack
@@ -99,14 +98,13 @@ export function RangeSlider(props: {
             // eslint-disable-next-line prefer-const
             let [low, high] = value
             if (low === high && !overlappable) high++
-            setLow(low)
-            setHigh(high)
+            setValues(low, high)
           }
         }}
         marks={mapValues(marks, (value) => (
           <Mark>{value}</Mark>
         ))}
-        className={'[&>.rc-slider-rail]:bg-ink-200 !h-4 !bg-inherit'}
+        className={'[&>.rc-slider-rail]:bg-ink-200 !bg-inherit'}
         dotStyle={{ borderColor: 'lightgray' }}
         activeDotStyle={{ borderColor: dark }}
         trackStyle={{
