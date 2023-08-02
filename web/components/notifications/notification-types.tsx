@@ -1364,7 +1364,6 @@ function BountyAwardedNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
-  const sourceUrl = getSourceUrl(notification)
   return (
     <NotificationFrame
       notification={notification}
@@ -1409,7 +1408,6 @@ function BountyAddedNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
-  const sourceUrl = getSourceUrl(notification)
   return (
     <NotificationFrame
       notification={notification}
@@ -1452,7 +1450,6 @@ function VotedNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
-  const sourceUrl = getSourceUrl(notification)
   return (
     <NotificationFrame
       notification={notification}

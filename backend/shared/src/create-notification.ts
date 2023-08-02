@@ -39,6 +39,7 @@ import { filterDefined } from 'common/util/array'
 import {
   getNotificationDestinationsForUser,
   notification_destination_types,
+  notification_preference,
   userIsBlocked,
   userOptedOutOfBrowserNotifications,
 } from 'common/user-notification-preferences'
@@ -1611,7 +1612,7 @@ export const createVotedOnPollNotification = async (
 
   const constructNotification = (
     userId: string,
-    reason: notification_reason_types
+    reason: notification_preference
   ) => {
     const notification: Notification = {
       id: crypto.randomUUID(),
@@ -1642,7 +1643,7 @@ export const createVotedOnPollNotification = async (
 
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
-    reason: notification_reason_types
+    reason: notification_preference
   ) => {
     // A user doesn't have to follow a market to receive a notification with their tag
     if (!stillFollowingContract(userId) || voter.id == userId) return
@@ -1669,7 +1670,10 @@ export const createVotedOnPollNotification = async (
     await Promise.all(
       Object.keys(contractFollowersIds).map((userId) => {
         if (userId !== sourceContract.creatorId) {
-          sendNotificationsIfSettingsPermit(userId, 'vote_on_poll_you_follow')
+          sendNotificationsIfSettingsPermit(
+            userId,
+            'all_votes_on_watched_markets'
+          )
         }
       })
     )

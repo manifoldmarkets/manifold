@@ -74,7 +74,7 @@ export type notification_source_update_types =
   | 'deleted'
   | 'closed'
 
-/* Optional - if possible use a notification_preference */
+/** @deprecated - use a notification_preference (in user-notification-preferences.ts) */
 export type notification_reason_types =
   | 'tagged_user'
   | 'on_new_follow'
@@ -93,11 +93,9 @@ export type notification_reason_types =
   | 'liked_and_tipped_your_contract'
   | 'comment_on_your_contract'
   | 'answer_on_your_contract'
-  | 'vote_on_your_contract'
   | 'comment_on_contract_you_follow'
   | 'answer_on_contract_you_follow'
   | 'update_on_contract_you_follow'
-  | 'vote_on_poll_you_follow'
   | 'resolution_on_contract_you_follow'
   | 'comment_on_contract_with_users_shares_in'
   | 'answer_on_contract_with_users_shares_in'
