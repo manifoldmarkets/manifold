@@ -725,15 +725,28 @@ const Trump = createNewsDashboardTab('Trump', 'Trump indicted', [
   {
     url: 'https://apnews.com/article/trump-indicted-jan-6-investigation-special-counsel-debb59bb7a4d9f93f7e2dace01feccdc',
   },
+  { slug: 'will-donald-trump-be-the-2024-nomin' },
   { slug: 'will-trump-be-indicted-by-three-or' },
   { slug: 'who-will-be-the-republican-presiden-7bf11c066154' },
   { slug: 'when-will-trump-be-imprisoned' },
   { slug: 'will-there-be-large-scale-protests' },
 ])
 
+const NigerCoup = createNewsDashboardTab('Niger coup', 'Niger coup', [
+  {
+    url: 'https://apnews.com/article/niger-coup-west-africa-use-of-force-mali-burkina-faso-0b951ec77a89033c84e6f0972cc21b5f',
+  },
+  { slug: 'will-the-coup-in-niger-succeed' },
+  { slug: 'will-ecowas-militarily-intervene-in' },
+  { slug: 'will-president-bazoum-of-niger-be-r' },
+  { slug: 'will-us-troops-participate-in-a-mil' },
+  { slug: 'conditional-upon-a-military-interve' },
+])
+
 export const newsContent = [
   STPSuper,
   Trump,
+  NigerCoup,
   UkraineWar,
   UFOs,
   XCom,
