@@ -138,6 +138,7 @@ const BinaryOverview = (props: {
             viewScaleProps={viewScale}
             controlledStart={start}
             contract={contract}
+            showZoomer
           />
         )}
       </SizedContainer>
@@ -228,6 +229,7 @@ const PseudoNumericOverview = (props: {
             viewScaleProps={viewScale}
             controlledStart={start}
             contract={contract}
+            showZoomer
           />
         )}
       </SizedContainer>

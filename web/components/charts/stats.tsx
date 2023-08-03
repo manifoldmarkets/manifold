@@ -57,7 +57,7 @@ export function DailyChart(props: {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const maxValue = max(data.map((d) => d.y))!
   return (
-    <SizedContainer className="mb-4 h-[150px] pr-16 sm:h-[250px] sm:pr-0">
+    <SizedContainer className="mb-10 h-[150px] pr-16 sm:h-[250px] sm:pr-0">
       {(width, height) => (
         <SingleValueHistoryChart
           w={width}
@@ -68,6 +68,7 @@ export function DailyChart(props: {
           data={data}
           Tooltip={pct ? DailyPercentTooltip : DailyCountTooltip}
           color="#11b981"
+          showZoomer
         />
       )}
     </SizedContainer>
