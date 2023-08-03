@@ -585,7 +585,7 @@ const XCom = createNewsDashboardTab('X.com', 'Twitter rebrands to X.com', [
   { slug: 'will-graphic-designers-think-twitte' },
   { slug: 'will-x-formerly-twitter-release-cre' },
   { slug: 'at-the-end-of-2023-will-manifold-us' },
-  { slug: 'will-xcom-switch-to-a-different-x-l' },
+  { slug: 'will-twitter-remove-rate-limits-by' },
   { slug: '28-will-twitters-net-income-be-high' },
   { slug: 'when-will-twitter-actually-collapse' },
   { slug: 'will-xeeting-catch-on-as-the-new-te' },
@@ -744,8 +744,48 @@ const NigerCoup = createNewsDashboardTab('Niger coup', 'Niger coup', [
   { slug: 'conditional-upon-a-military-interve' },
 ])
 
+const CancerPill = createNewsDashboardTab(
+  'Cancer pill',
+  'AOH1996 = miracle cancer pill?',
+  [
+    { slug: 'is-the-pcnatargeting-cancer-drug-pa' },
+    {
+      content: (
+        <NewsTopicsContentContainer
+          header="Facts"
+          containerContent={
+            <>
+              <p className="mb-4">
+                A new study claims oral cancer drug AOH1996 kills 100% of solid
+                tumors across many cancer types in animals with no discernible
+                side effects.
+              </p>
+              <p className="mb-4">
+                The drug works by interfering with PCNA which clamps DNA to
+                allow replication tools to attach.
+              </p>
+              <p className="mb-4">The drug is in Phase I clinical trials.</p>
+
+              <ExternalLink
+                title="Main paper"
+                href="https://www.cell.com/cell-chemical-biology/pdfExtended/S2451-9456(23)00221-0"
+              />
+            </>
+          }
+        />
+      ),
+    },
+
+    { slug: 'will-aoh1996-be-fda-approved-before' },
+    { slug: 'when-will-the-100-effective-against-7a6fcbc9b217' },
+    { slug: 'will-aoh1996-succeed-in-phase-i-tri' },
+    { slug: 'will-the-preclinical-results-on-the' },
+  ]
+)
+
 export const newsContent = [
   STPSuper,
+  CancerPill,
   Trump,
   NigerCoup,
   UkraineWar,
@@ -753,11 +793,11 @@ export const newsContent = [
   XCom,
   Election2024,
   IsraeliCourt,
-  RPlace,
+  // RPlace,
   Threads,
   OpenAI,
   ElonVersusZuck,
-  GlobalWarming,
+  // GlobalWarming,
   // SummitNATO,
   // SupremeCourt,
   // WestBank,

@@ -101,6 +101,47 @@ const processNewsArticle = async (
   }
   console.log('Embedding generated. Searching...')
 
+  const { data } = await db.rpc('search_contract_embeddings', {
+    query_embedding: embedding as any,
+    similarity_threshold: 0.825, // hand-selected; don't change unless you know what you're doing
+    match_count: 20,
+  })
+
+  const contracts: Contract[] =
+    data && data.length > 0
+      ? await pg.map(
+          `
+        select data from contracts where id in ($1:list)
+        `,
+          [data?.flat().map((c) => c.contract_id)],
+          (r) => r.data as Contract
+        )
+      : []
+
+  const questions = contracts
+    .filter(
+      (c) =>
+        c.outcomeType !== 'STONK' &&
+        !c.isResolved &&
+        c.visibility === 'public' &&
+        c.importanceScore
+    )
+    // sort in descending order of importance score
+    .sort((a, b) => b.importanceScore - a.importanceScore)
+    .slice(0, 5)
+
+  if (questions.length < 1) {
+    console.log('Not enough related markets & groups found\n\n')
+    return
+  }
+
+  console.log('Markets:')
+  for (const q of questions) {
+    console.log(q.question)
+  }
+  console.log()
+  console.log()
+
   const { data: groupsData } = await db.rpc('search_group_embeddings', {
     query_embedding: embedding as any,
     similarity_threshold: 0.84, // hand-selected; don't change unless you know what you're doing
@@ -136,48 +177,6 @@ const processNewsArticle = async (
         groups.find((g) => g.id === groupData.group_id)?.slug
       )
     }
-
-  const { data } = await db.rpc('search_contract_embeddings', {
-    query_embedding: embedding as any,
-    similarity_threshold: 0.825, // hand-selected; don't change unless you know what you're doing
-    match_count: 20,
-  })
-
-  const contracts: Contract[] =
-    data && data.length > 0
-      ? await pg.map(
-          `
-        select data from contracts where id in ($1:list)
-        `,
-          [data?.flat().map((c) => c.contract_id)],
-          (r) => r.data as Contract
-        )
-      : []
-
-  const questions = contracts
-    .filter(
-      (c) =>
-        c.outcomeType !== 'STONK' &&
-        !c.isResolved &&
-        c.visibility === 'public' &&
-        c.importanceScore
-    )
-    // sort in descending order of importance score
-    .sort((a, b) => b.importanceScore - a.importanceScore)
-    .slice(0, 5)
-
-  const totalItems = questions.length + groups.length
-  if (totalItems < 3) {
-    console.log('Not enough related markets & groups found\n\n')
-    return
-  }
-
-  console.log('Markets:')
-  for (const q of questions) {
-    console.log(q.question)
-  }
-  console.log()
-  console.log()
 
   if (readOnly) return
 

@@ -96,13 +96,9 @@ export const addCommentOnContractToFeed = async (
       contract,
       comment.userId,
       pg,
-      [
-        'follow_contract',
-        'follow_user',
-        'liked_contract',
-        'similar_interest_vector_to_contract',
-      ],
-      INTEREST_DISTANCE_THRESHOLDS.new_comment
+      ['follow_contract', 'follow_user'],
+      INTEREST_DISTANCE_THRESHOLDS.new_comment,
+      false
     )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
@@ -196,7 +192,8 @@ export const addContractToFeed = async (
       userIdResponsibleForEvent ?? contract.creatorId,
       pg,
       reasonsToInclude,
-      maxDistanceFromUserInterestToContract
+      maxDistanceFromUserInterestToContract,
+      false
     )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
@@ -237,7 +234,8 @@ export const addContractToFeedIfNotDuplicative = async (
       contract.creatorId,
       pg,
       reasonsToInclude,
-      minUserInterestDistanceToContract
+      minUserInterestDistanceToContract,
+      true
     )
   log(
     'checking users for feed rows:',
@@ -288,14 +286,15 @@ export const insertNewsToUsersFeeds = async (
     newsId,
     Object.keys(usersToReasons).length
   )
-
+  const userIdsToExclude = ['FSqqnRObrqf0GX63gp5Hk4lUvqn1'] //bday present for SL
+  const dataType = 'news_with_related_contracts'
   await Promise.all(
     contracts.map(async (contract) => {
       await bulkInsertDataToUserFeed(
         usersToReasons,
         eventTime,
-        'news_with_related_contracts',
-        [],
+        dataType,
+        userIdsToExclude,
         {
           contractId: contract.id,
           creatorId: contract.creatorId,
@@ -311,8 +310,8 @@ export const insertNewsToUsersFeeds = async (
         usersToReasons,
         eventTime,
         // Should we change this to news_with_related_groups?
-        'news_with_related_contracts',
-        [],
+        dataType,
+        userIdsToExclude,
         {
           groupId: group.id,
           creatorId: group.creatorId,
