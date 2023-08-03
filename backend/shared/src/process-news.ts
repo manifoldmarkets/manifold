@@ -101,42 +101,6 @@ const processNewsArticle = async (
   }
   console.log('Embedding generated. Searching...')
 
-  const { data: groupsData } = await db.rpc('search_group_embeddings', {
-    query_embedding: embedding as any,
-    similarity_threshold: 0.84, // hand-selected; don't change unless you know what you're doing
-    max_count: 20,
-    name_similarity_threshold: 0.6,
-  })
-
-  const groups =
-    groupsData && groupsData.length > 0
-      ? await pg.map(
-          `
-            select data, id, importance_score from groups where id in ($1:list)
-              and privacy_status = 'public'
-              and slug not in ($2:list)
-              and total_members > 1
-              order by importance_score desc
-          `,
-          [groupsData.flat().map((g) => g.group_id), DEEMPHASIZED_GROUP_SLUGS],
-          (r) => {
-            const data = r.data as Group
-            return { ...data, id: r.id, importanceScore: r.importance_score }
-          }
-        )
-      : []
-  if (groupsData)
-    for (const groupData of groupsData.flat()) {
-      console.log(
-        'similarity',
-        groupData.similarity,
-        'name',
-        groups.find((g) => g.id === groupData.group_id)?.name,
-        'slug',
-        groups.find((g) => g.id === groupData.group_id)?.slug
-      )
-    }
-
   const { data } = await db.rpc('search_contract_embeddings', {
     query_embedding: embedding as any,
     similarity_threshold: 0.825, // hand-selected; don't change unless you know what you're doing
@@ -177,6 +141,42 @@ const processNewsArticle = async (
   }
   console.log()
   console.log()
+
+  const { data: groupsData } = await db.rpc('search_group_embeddings', {
+    query_embedding: embedding as any,
+    similarity_threshold: 0.84, // hand-selected; don't change unless you know what you're doing
+    max_count: 20,
+    name_similarity_threshold: 0.6,
+  })
+
+  const groups =
+    groupsData && groupsData.length > 0
+      ? await pg.map(
+          `
+            select data, id, importance_score from groups where id in ($1:list)
+              and privacy_status = 'public'
+              and slug not in ($2:list)
+              and total_members > 1
+              order by importance_score desc
+          `,
+          [groupsData.flat().map((g) => g.group_id), DEEMPHASIZED_GROUP_SLUGS],
+          (r) => {
+            const data = r.data as Group
+            return { ...data, id: r.id, importanceScore: r.importance_score }
+          }
+        )
+      : []
+  if (groupsData)
+    for (const groupData of groupsData.flat()) {
+      console.log(
+        'similarity',
+        groupData.similarity,
+        'name',
+        groups.find((g) => g.id === groupData.group_id)?.name,
+        'slug',
+        groups.find((g) => g.id === groupData.group_id)?.slug
+      )
+    }
 
   if (readOnly) return
 
