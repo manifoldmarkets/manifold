@@ -53,11 +53,3 @@ export function searchPages(query: string, limit: number) {
     ['desc']
   ).slice(0, limit)
 }
-
-const pagesByLabel = keyBy(pages, 'label')
-
-export const defaultPages = [
-  pagesByLabel['Users'],
-  pagesByLabel['Groups'],
-  pagesByLabel['Live feed'],
-]
