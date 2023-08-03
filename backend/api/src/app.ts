@@ -79,7 +79,6 @@ import { leavereview } from './leave-review'
 import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
 import { claimdestinysub } from './claim-destiny-sub'
 import { castpollvote } from './cast-poll-vote'
-import { fetchlinkpreview } from './fetch-link-preview'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -189,7 +188,6 @@ app.post('/createportfolio', ...apiRoute(createportfolio))
 app.post('/updateportfolio', ...apiRoute(updateportfolio))
 app.post('/buyportfolio', ...apiRoute(buyportfolio))
 app.post('/searchgiphy', ...apiRoute(searchgiphy))
-app.post('/fetch-link-preview', ...apiRoute(fetchlinkpreview))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/send-mana', ...apiRoute(sendmana))
 app.post('/leave-review', ...apiRoute(leavereview))

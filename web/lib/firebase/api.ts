@@ -425,7 +425,7 @@ export function buyPortfolio(
 }
 
 export function searchGiphy(params: { term: string; limit: number }) {
-  return maybeAuthedCall(getApiUrl('searchgiphy'), 'POST', params)
+  return call(getApiUrl('searchgiphy'), 'POST', params)
 }
 
 export function tweetFromManaChan(params: { tweet: string }) {
@@ -457,8 +457,4 @@ export function getUserContractsMetricsWithContracts(params: {
 
 export function castPollVote(params: { contractId: string; voteId: string }) {
   return call(getApiUrl('cast-poll-vote'), 'POST', params)
-}
-
-export function fetchLinkPreview(params: { url: string }) {
-  return maybeAuthedCall(getApiUrl('fetch-link-preview'), 'POST', params)
 }
