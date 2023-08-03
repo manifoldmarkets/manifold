@@ -172,6 +172,8 @@ export function SupabaseContractSearch(props: {
   headerClassName?: string
   inputRowClassName?: string
   isWholePage?: boolean
+
+  // used to determine if search params should be updated in the URL
   useUrlParams?: boolean
   includeProbSorts?: boolean
   autoFocus?: boolean
@@ -438,8 +440,12 @@ function SupabaseContractSearchControls(props: {
   const router = useRouter()
   const { query: routerQuery } = router
   const { q, s, ct, f, t } = routerQuery
+
   const [query, setQuery] = usePersistentState(
     typeof q == 'string' ? q : '',
+
+    // there is an error using this method of url param storage when the url contains other parameters
+    // basically if the search is not the whole page, use the function handleTabbedUrlParam for url param storage
     useUrlParams && isWholePage
       ? {
           key: QUERY_KEY,
