@@ -34,6 +34,9 @@ import { BountyLeft } from 'web/components/contract/bountied-question'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 import Lottie from 'react-lottie'
 import * as money from '../../../public/lottie/money-bag.json'
+import { formatMoney } from 'common/util/format'
+import Image from 'next/image'
+import { TbMoneybag } from 'react-icons/tb'
 
 type Points = HistoryPoint<any>[]
 
@@ -177,7 +180,7 @@ const numBars = (height: number) => {
   return 6
 }
 
-function ContractSmolView(props: {
+export function ContractSmolView(props: {
   contract: Contract
   points: Points | null
 }) {
@@ -234,13 +237,13 @@ function ContractSmolView(props: {
         {outcomeType === 'STONK' && (
           <StonkPrice className="!flex-col !gap-0" contract={contract} />
         )}
-        {isBountiedQuestion && (
+        {/* {isBountiedQuestion && (
           <BountyLeft
             bountyLeft={contract.bountyLeft}
             totalBounty={contract.totalBounty}
             inEmbed={true}
           />
-        )}
+        )} */}
       </Row>
       <Details contract={contract} />
       {!isBountiedQuestion && (
@@ -262,25 +265,21 @@ function ContractSmolView(props: {
         </SizedContainer>
       )}
       {isBountiedQuestion && (
-        <Lottie
-          options={{
-            loop: true,
-            autoplay: true,
-            animationData: money,
-            rendererSettings: {
-              preserveAspectRatio: 'xMidYMid slice',
-            },
-          }}
-          height={200}
-          width={200}
-          isStopped={false}
-          isPaused={false}
-          style={{
-            color: '#6366f1',
-            pointerEvents: 'none',
-            background: 'transparent',
-          }}
-        />
+        <Col className="relative h-full w-full">
+          <Image
+            className="mx-auto my-auto opacity-40"
+            height={250}
+            width={250}
+            src={'/money-bag.svg'}
+            alt={''}
+          />
+          <Col className="absolute top-16 bottom-0 left-0 right-0">
+            <Col className="mx-auto my-auto gap-1 text-center">
+              <div className="text-3xl">{formatMoney(contract.bountyLeft)}</div>
+              <div className="text-ink-500">bounty</div>
+            </Col>
+          </Col>
+        </Col>
       )}
     </Col>
   )
