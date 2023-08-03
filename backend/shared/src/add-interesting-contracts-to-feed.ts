@@ -18,7 +18,7 @@ import { getWhenToIgnoreUsersTime } from 'shared/supabase/users'
 const rowToContract = (row: any) =>
   ({
     ...(row.data as Contract),
-    importanceScore: parseFloat(row.importance_score),
+    importanceScore: row.importance_score,
   } as Contract)
 
 export const MINUTE_INTERVAL = 20
