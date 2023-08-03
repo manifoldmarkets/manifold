@@ -1,5 +1,7 @@
 import { jsonEndpoint, validate } from 'api/helpers'
 import { z } from 'zod'
+import { getLinkPreview, getPreviewFromContent } from 'link-preview-js'
+import { first } from 'lodash'
 
 const bodySchema = z.object({
   url: z.string(),
@@ -9,22 +11,17 @@ export const fetchlinkpreview = jsonEndpoint(async (req) => {
   try {
     const metadata = await fetchLinkPreviewInternal(url)
     console.log('meta', metadata)
-    return { status: 'success', data: metadata }
+    return {
+      status: 'success',
+      data: metadata,
+    }
   } catch (error) {
     return { status: 'failure', data: error }
   }
 })
 
 async function fetchLinkPreviewInternal(url: string) {
-  const metascraper = require('metascraper')([
-    require('metascraper-description')(),
-    require('metascraper-image')(),
-    require('metascraper-title')(),
-    require('metascraper-url')(),
-  ])
-
-  const response = await fetch(url)
-  const html = await response.text()
-  const responseUrl = response.url
-  return await metascraper({ html, url: responseUrl })
+  const preview = await getLinkPreview(url)
+  const hasImage = 'images' in preview
+  return { ...preview, image: hasImage ? first(preview.images) : null }
 }
