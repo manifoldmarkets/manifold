@@ -744,8 +744,45 @@ const NigerCoup = createNewsDashboardTab('Niger coup', 'Niger coup', [
   { slug: 'conditional-upon-a-military-interve' },
 ])
 
+const CancerPill = createNewsDashboardTab(
+  'Cancer pill',
+  'AOH1996 = miracle cancer pill?',
+  [
+    { slug: 'is-the-pcnatargeting-cancer-drug-pa' },
+    {
+      content: (
+        <NewsTopicsContentContainer
+          header="Facts"
+          containerContent={
+            <>
+              <p className="mb-4">
+                A new study claims oral cancer drug AOH1996 kills 100% of solid
+                tumors across many cancer types in animals with no discernible
+                side effects.
+              </p>
+              <p className="mb-4">
+                The drug works by interfering with PCNA which clamps DNA to
+                allow replication tools to attach.
+              </p>
+              <p className="mb-4">The drug is in Phase I clinical trials.</p>
+
+              <ExternalLink
+                title="Main paper"
+                href="https://www.cell.com/cell-chemical-biology/pdfExtended/S2451-9456(23)00221-0"
+              />
+            </>
+          }
+        />
+      ),
+    },
+
+    { slug: 'will-aoh1996-be-fda-approved-before' },
+  ]
+)
+
 export const newsContent = [
   STPSuper,
+  CancerPill,
   Trump,
   NigerCoup,
   UkraineWar,
