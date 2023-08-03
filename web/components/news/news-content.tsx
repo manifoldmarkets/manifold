@@ -777,7 +777,7 @@ const CancerPill = createNewsDashboardTab(
     },
 
     { slug: 'will-aoh1996-be-fda-approved-before' },
-    { slug: 'when-will-the-100-effective-against' },
+    { slug: 'when-will-the-100-effective-against-7a6fcbc9b217' },
     { slug: 'will-aoh1996-succeed-in-phase-i-tri' },
     { slug: 'will-the-preclinical-results-on-the' },
   ]
