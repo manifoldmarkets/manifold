@@ -237,13 +237,6 @@ export function ContractSmolView(props: {
         {outcomeType === 'STONK' && (
           <StonkPrice className="!flex-col !gap-0" contract={contract} />
         )}
-        {/* {isBountiedQuestion && (
-          <BountyLeft
-            bountyLeft={contract.bountyLeft}
-            totalBounty={contract.totalBounty}
-            inEmbed={true}
-          />
-        )} */}
       </Row>
       <Details contract={contract} />
       {!isBountiedQuestion && (
@@ -268,13 +261,13 @@ export function ContractSmolView(props: {
         <Col className="relative h-full w-full">
           <Image
             className="mx-auto my-auto opacity-40"
-            height={250}
-            width={250}
+            height={200}
+            width={200}
             src={'/money-bag.svg'}
             alt={''}
           />
-          <Col className="absolute top-16 bottom-0 left-0 right-0">
-            <Col className="mx-auto my-auto gap-1 text-center">
+          <Col className="absolute top-12 bottom-0 left-0 right-0">
+            <Col className="mx-auto my-auto text-center">
               <div className="text-3xl">{formatMoney(contract.bountyLeft)}</div>
               <div className="text-ink-500">bounty</div>
             </Col>
