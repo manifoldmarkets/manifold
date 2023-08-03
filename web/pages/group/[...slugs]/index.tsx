@@ -327,6 +327,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                     group: group,
                     userRole: isManifoldAdmin ? 'admin' : userRole ?? null,
                   }}
+                  useUrlParams
                 />
               ),
             },

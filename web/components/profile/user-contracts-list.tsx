@@ -82,6 +82,7 @@ export function UserContractsList(props: { creator: User }) {
         }}
         persistPrefix={`user-contracts-list-${creator.id}`}
         profile={creator.id === user?.id}
+        useUrlParams
       />
     </Col>
   )

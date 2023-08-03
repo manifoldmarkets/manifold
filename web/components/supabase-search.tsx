@@ -8,7 +8,7 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { SELECTABLE_TOPICS, cleanTopic } from 'common/topics'
 import { debounce, isEqual, uniqBy } from 'lodash'
-import { useRouter } from 'next/router'
+import { NextRouter, useRouter } from 'next/router'
 import { createContext, useContext, useEffect, useRef } from 'react'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
@@ -112,6 +112,12 @@ export type SupabaseSearchParameters = {
   topic: string
 }
 
+const QUERY_KEY = 'q'
+const SORT_KEY = 's'
+const FILTER_KEY = 'f'
+const CONTRACT_TYPE_KEY = 'ct'
+const TOPIC_KEY = 't'
+
 function getShowTime(sort: Sort) {
   return sort === 'close-date' || sort === 'resolve-date' ? sort : null
 }
@@ -166,6 +172,9 @@ export function SupabaseContractSearch(props: {
   headerClassName?: string
   inputRowClassName?: string
   isWholePage?: boolean
+
+  // used to determine if search params should be updated in the URL
+  useUrlParams?: boolean
   includeProbSorts?: boolean
   autoFocus?: boolean
   profile?: boolean | undefined
@@ -193,6 +202,7 @@ export function SupabaseContractSearch(props: {
     persistPrefix,
     includeProbSorts,
     isWholePage,
+    useUrlParams,
     autoFocus,
     profile,
     fromGroupProps,
@@ -334,7 +344,8 @@ export function SupabaseContractSearch(props: {
           defaultFilter={defaultFilter}
           persistPrefix={persistPrefix}
           hideOrderSelector={hideOrderSelector}
-          useQueryUrlParam={isWholePage}
+          isWholePage={isWholePage}
+          useUrlParams={useUrlParams}
           includeProbSorts={includeProbSorts}
           onSearchParametersChanged={onSearchParametersChanged}
           autoFocus={autoFocus}
@@ -402,7 +413,8 @@ function SupabaseContractSearchControls(props: {
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
   onSearchParametersChanged: (params: SupabaseSearchParameters) => void
-  useQueryUrlParam?: boolean
+  isWholePage?: boolean
+  useUrlParams?: boolean
   autoFocus?: boolean
   listViewDisabled?: boolean
   showTopics?: boolean
@@ -416,7 +428,8 @@ function SupabaseContractSearchControls(props: {
     persistPrefix,
     hideOrderSelector,
     onSearchParametersChanged,
-    useQueryUrlParam,
+    isWholePage,
+    useUrlParams,
     autoFocus,
     includeProbSorts,
     showTopics,
@@ -425,57 +438,58 @@ function SupabaseContractSearchControls(props: {
   } = props
 
   const router = useRouter()
+
   const [query, setQuery] = usePersistentState(
     '',
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 'q',
+    useUrlParams
+      ? {
+          key: QUERY_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const sortKey = `${persistPrefix}-search-sort`
   const savedSort = safeLocalStorage?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
-    savedSort ?? defaultSort,
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 's',
+    defaultSort,
+    useUrlParams
+      ? {
+          key: SORT_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const [filterState, setFilter] = usePersistentState(
     defaultFilter,
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 'f',
+    useUrlParams
+      ? {
+          key: FILTER_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const [contractType, setContractType] = usePersistentState(
     defaultContractType,
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 'search-contract-type',
+    useUrlParams
+      ? {
+          key: CONTRACT_TYPE_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const [topic, setTopic] = usePersistentState(
     '',
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 't',
+    useUrlParams
+      ? {
+          key: TOPIC_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const filter =
