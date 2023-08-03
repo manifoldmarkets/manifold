@@ -286,14 +286,15 @@ export const insertNewsToUsersFeeds = async (
     newsId,
     Object.keys(usersToReasons).length
   )
-
+  const userIdsToExclude = ['FSqqnRObrqf0GX63gp5Hk4lUvqn1'] //bday present for SL
+  const dataType = 'news_with_related_contracts'
   await Promise.all(
     contracts.map(async (contract) => {
       await bulkInsertDataToUserFeed(
         usersToReasons,
         eventTime,
-        'news_with_related_contracts',
-        ['FSqqnRObrqf0GX63gp5Hk4lUvqn1'], //bday present for SL
+        dataType,
+        userIdsToExclude,
         {
           contractId: contract.id,
           creatorId: contract.creatorId,
@@ -309,8 +310,8 @@ export const insertNewsToUsersFeeds = async (
         usersToReasons,
         eventTime,
         // Should we change this to news_with_related_groups?
-        'news_with_related_contracts',
-        [],
+        dataType,
+        userIdsToExclude,
         {
           groupId: group.id,
           creatorId: group.creatorId,
