@@ -121,35 +121,6 @@ const isTabSelected = (router: NextRouter, queryParam: string, tab: Tab) => {
   }
 }
 
-// export function QueryUncontrolledTabs(
-//   props: TabProps & { defaultIndex?: number; scrollToTop?: boolean }
-// ) {
-//   const { tabs, defaultIndex, onClick, scrollToTop, ...rest } = props
-//   const router = useRouter()
-//   const [tab, setTab] = usePersistentState(
-//     tabs[defaultIndex ?? 0].title.toLowerCase(),
-//     {
-//       key: 'tab',
-//       store: urlParamStore(router),
-//     }
-//   )
-
-//   return (
-//     <ControlledTabs
-//       {...rest}
-//       tabs={tabs}
-//       activeIndex={tabs.findIndex((t) => t.title.toLowerCase() === tab)}
-//       onClick={(title, i) => {
-//         if (scrollToTop) window.scrollTo({ top: 0 })
-
-//         onClick?.(title, i)
-
-//         setTab(title.toLowerCase())
-//       }}
-//     />
-//   )
-// }
-
 export function QueryUncontrolledTabs(
   props: TabProps & { defaultIndex?: number; scrollToTop?: boolean }
 ) {
