@@ -60,6 +60,7 @@ export const PseudoNumericContractChart = (props: {
   width: number
   height: number
   viewScaleProps: viewScale
+  showZoomer?: boolean
   controlledStart?: number
   color?: string
   onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
@@ -69,6 +70,7 @@ export const PseudoNumericContractChart = (props: {
     width,
     height,
     viewScaleProps,
+    showZoomer,
     controlledStart,
     color,
     onMouseOver,
@@ -106,6 +108,7 @@ export const PseudoNumericContractChart = (props: {
       xScale={xScale}
       yScale={yScale}
       viewScaleProps={viewScaleProps}
+      showZoomer={showZoomer}
       data={data}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}

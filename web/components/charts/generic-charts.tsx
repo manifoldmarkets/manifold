@@ -295,6 +295,7 @@ export const ControllableSingleValueHistoryChart = <
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   viewScaleProps: viewScale
+  showZoomer?: boolean
   yKind?: ValueKind
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
@@ -303,7 +304,8 @@ export const ControllableSingleValueHistoryChart = <
   pct?: boolean
   negativeThreshold?: number
 }) => {
-  const { data, w, h, color, Tooltip, noAxes, negativeThreshold } = props
+  const { data, w, h, color, Tooltip, noAxes, negativeThreshold, showZoomer } =
+    props
   const { viewXScale, setViewXScale, viewYScale, setViewYScale } =
     props.viewScaleProps
   const yKind = props.yKind ?? 'amount'
@@ -436,12 +438,14 @@ export const ControllableSingleValueHistoryChart = <
           />
         )}
       </SVGChart>
-      <ZoomSlider
-        fullScale={props.xScale}
-        visibleScale={xScale}
-        setVisibleScale={rescale}
-        className="relative top-6"
-      />
+      {showZoomer && (
+        <ZoomSlider
+          fullScale={props.xScale}
+          visibleScale={xScale}
+          setVisibleScale={rescale}
+          className="relative top-6"
+        />
+      )}
     </>
   )
 }

@@ -46,6 +46,7 @@ export const BinaryContractChart = (props: {
   controlledStart?: number
   color?: string
   onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
+  showZoomer?: boolean
 }) => {
   const {
     contract,
@@ -56,6 +57,7 @@ export const BinaryContractChart = (props: {
     onMouseOver,
     color,
     betPoints,
+    showZoomer,
   } = props
   const [start, end] = getDateRange(contract)
   const rangeStart = controlledStart ?? start
@@ -78,6 +80,7 @@ export const BinaryContractChart = (props: {
       xScale={xScale}
       yScale={yScale}
       viewScaleProps={viewScaleProps}
+      showZoomer={showZoomer}
       yKind="percent"
       data={data}
       color={color ?? YES_GRAPH_COLOR}
