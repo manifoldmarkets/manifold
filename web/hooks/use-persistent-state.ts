@@ -68,8 +68,6 @@ export const urlParamStore = (router: NextRouter): PersistentStore<string> => ({
     if (typeof window !== 'undefined') {
       // see relevant discussion here https://github.com/vercel/next.js/discussions/18072
       const url = withURLParam(window.location, k, v).toString()
-      // const updatedState = { ...window.history.state, as: url, url }
-      // window.history.replaceState(updatedState, '', url)
       router.push(url, undefined, { shallow: true })
     }
   },

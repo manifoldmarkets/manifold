@@ -441,8 +441,6 @@ function SupabaseContractSearchControls(props: {
 
   const [query, setQuery] = usePersistentState(
     '',
-    // there is an error using this method of url param storage when the url contains other parameters
-    // basically if the search is not the whole page, use the function handleTabbedUrlParam for url param storage
     useUrlParams
       ? {
           key: QUERY_KEY,
@@ -451,8 +449,8 @@ function SupabaseContractSearchControls(props: {
       : undefined
   )
 
-  // const sortKey = `${persistPrefix}-search-sort`
-  // const savedSort = safeLocalStorage?.getItem(sortKey)
+  const sortKey = `${persistPrefix}-search-sort`
+  const savedSort = safeLocalStorage?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
     defaultSort,
@@ -530,11 +528,8 @@ function SupabaseContractSearchControls(props: {
   }
 
   const selectTopic = (newTopic: string) => {
-    if (newTopic === topic) {
-      setTopic('')
-    } else {
-      setTopic(newTopic)
-    }
+    if (newTopic === topic) return setTopic('')
+    setTopic(newTopic)
     track('select search topic', { topic: newTopic })
   }
 
@@ -716,22 +711,4 @@ export function SearchFilters(props: {
       )}
     </div>
   )
-}
-
-function handleTabbedUrlParam(
-  useUrlParams: boolean,
-  isWholePage: boolean,
-  selection: string,
-  key: string,
-  router: NextRouter
-) {
-  if (useUrlParams && !isWholePage) {
-    router.replace(
-      { query: { ...router.query, [key]: selection } },
-      undefined,
-      {
-        shallow: true,
-      }
-    )
-  }
 }
