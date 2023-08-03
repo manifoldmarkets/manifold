@@ -172,6 +172,8 @@ export function SupabaseContractSearch(props: {
   headerClassName?: string
   inputRowClassName?: string
   isWholePage?: boolean
+
+  // used to determine if search params should be updated in the URL
   useUrlParams?: boolean
   includeProbSorts?: boolean
   autoFocus?: boolean
@@ -436,11 +438,10 @@ function SupabaseContractSearchControls(props: {
   } = props
 
   const router = useRouter()
-  const { query: routerQuery } = router
-  const { q, s, ct, f, t } = routerQuery
+
   const [query, setQuery] = usePersistentState(
-    typeof q == 'string' ? q : '',
-    useUrlParams && isWholePage
+    '',
+    useUrlParams
       ? {
           key: QUERY_KEY,
           store: urlParamStore(router),
@@ -452,8 +453,8 @@ function SupabaseContractSearchControls(props: {
   const savedSort = safeLocalStorage?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
-    typeof s == 'string' ? s : savedSort ?? defaultSort,
-    useUrlParams && isWholePage
+    defaultSort,
+    useUrlParams
       ? {
           key: SORT_KEY,
           store: urlParamStore(router),
@@ -462,8 +463,8 @@ function SupabaseContractSearchControls(props: {
   )
 
   const [filterState, setFilter] = usePersistentState(
-    typeof f == 'string' ? f : defaultFilter,
-    useUrlParams && isWholePage
+    defaultFilter,
+    useUrlParams
       ? {
           key: FILTER_KEY,
           store: urlParamStore(router),
@@ -472,8 +473,8 @@ function SupabaseContractSearchControls(props: {
   )
 
   const [contractType, setContractType] = usePersistentState(
-    typeof ct == 'string' ? ct : defaultContractType,
-    useUrlParams && isWholePage
+    defaultContractType,
+    useUrlParams
       ? {
           key: CONTRACT_TYPE_KEY,
           store: urlParamStore(router),
@@ -482,8 +483,8 @@ function SupabaseContractSearchControls(props: {
   )
 
   const [topic, setTopic] = usePersistentState(
-    typeof t == 'string' ? t : '',
-    useUrlParams && isWholePage
+    '',
+    useUrlParams
       ? {
           key: TOPIC_KEY,
           store: urlParamStore(router),

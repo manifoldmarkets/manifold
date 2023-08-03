@@ -39,7 +39,7 @@ export default function MarketsHome() {
           excludeUserIds: privateUser?.blockedUserIds,
         }}
         isWholePage
-        useUrlParams={true}
+        useUrlParams
         showTopics={true}
         headerClassName={'bg-canvas-0 !static pt-0'}
         inputRowClassName="hidden"
