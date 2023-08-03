@@ -1,5 +1,5 @@
 import { beginsWith, searchInAny } from 'common/util/parse'
-import { keyBy, orderBy } from 'lodash'
+import { orderBy } from 'lodash'
 
 export interface PageData {
   label: string
