@@ -7,6 +7,8 @@ import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 
 export const pgp = pgPromise()
+pgp.pg.types.setTypeParser(20, BigInt) // Type Id 20 = BIGINT | BIGSERIAL
+pgp.pg.types.setTypeParser(1700, parseFloat) // Type Id 1700 = NUMERIC
 
 export type SupabaseDirectClient = ReturnType<typeof createSupabaseDirectClient>
 

@@ -20,7 +20,7 @@ import { SORTS, Sort } from '../supabase-search'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { searchMarketSorts } from './query-market-sorts'
-import { PageData, defaultPages, searchPages } from './query-pages'
+import { PageData, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
 
 export interface Option {
@@ -104,7 +104,6 @@ const DefaultResults = (props: { recentMarkets: Contract[] }) => {
   return (
     <>
       <MarketResults markets={recentMarkets.slice(0, 7)} />
-      <PageResults pages={defaultPages} />
       <div className="mx-2 my-2 text-xs">
         <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
         Start with <Key>%</Key> for questions, <Key>@</Key> for users, or{' '}

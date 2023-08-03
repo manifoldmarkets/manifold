@@ -79,9 +79,7 @@ export async function updateData<
   T extends TableName,
   K extends Record<string, any>
 >(db: SupabaseDirectClient, table: T, id: string, data: Partial<K>) {
-  await db.none(`
-  update ${table}
-  set data = data || '${JSON.stringify(data)}'
-  where id = '${id}'
-`)
+  await db.none(`update ${table} set data = data || $1 where id = '${id}'`, [
+    JSON.stringify(data),
+  ])
 }
