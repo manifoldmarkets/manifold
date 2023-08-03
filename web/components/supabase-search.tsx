@@ -8,7 +8,7 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { SELECTABLE_TOPICS, cleanTopic } from 'common/topics'
 import { debounce, isEqual, uniqBy } from 'lodash'
-import { useRouter } from 'next/router'
+import { NextRouter, useRouter } from 'next/router'
 import { createContext, useContext, useEffect, useRef } from 'react'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
@@ -112,6 +112,12 @@ export type SupabaseSearchParameters = {
   topic: string
 }
 
+const QUERY_KEY = 'q'
+const SORT_KEY = 's'
+const FILTER_KEY = 'f'
+const CONTRACT_TYPE_KEY = 'ct'
+const TOPIC_KEY = 't'
+
 function getShowTime(sort: Sort) {
   return sort === 'close-date' || sort === 'resolve-date' ? sort : null
 }
@@ -166,6 +172,7 @@ export function SupabaseContractSearch(props: {
   headerClassName?: string
   inputRowClassName?: string
   isWholePage?: boolean
+  useUrlParams?: boolean
   includeProbSorts?: boolean
   autoFocus?: boolean
   profile?: boolean | undefined
@@ -193,6 +200,7 @@ export function SupabaseContractSearch(props: {
     persistPrefix,
     includeProbSorts,
     isWholePage,
+    useUrlParams,
     autoFocus,
     profile,
     fromGroupProps,
@@ -334,7 +342,8 @@ export function SupabaseContractSearch(props: {
           defaultFilter={defaultFilter}
           persistPrefix={persistPrefix}
           hideOrderSelector={hideOrderSelector}
-          useQueryUrlParam={isWholePage}
+          isWholePage={isWholePage}
+          useUrlParams={useUrlParams}
           includeProbSorts={includeProbSorts}
           onSearchParametersChanged={onSearchParametersChanged}
           autoFocus={autoFocus}
@@ -402,7 +411,8 @@ function SupabaseContractSearchControls(props: {
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
   onSearchParametersChanged: (params: SupabaseSearchParameters) => void
-  useQueryUrlParam?: boolean
+  isWholePage?: boolean
+  useUrlParams?: boolean
   autoFocus?: boolean
   listViewDisabled?: boolean
   showTopics?: boolean
@@ -416,7 +426,8 @@ function SupabaseContractSearchControls(props: {
     persistPrefix,
     hideOrderSelector,
     onSearchParametersChanged,
-    useQueryUrlParam,
+    isWholePage,
+    useUrlParams,
     autoFocus,
     includeProbSorts,
     showTopics,
@@ -425,57 +436,59 @@ function SupabaseContractSearchControls(props: {
   } = props
 
   const router = useRouter()
+  const { query: routerQuery } = router
+  const { q, s, ct, f, t } = routerQuery
   const [query, setQuery] = usePersistentState(
-    '',
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 'q',
+    typeof q == 'string' ? q : '',
+    useUrlParams && isWholePage
+      ? {
+          key: QUERY_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const sortKey = `${persistPrefix}-search-sort`
   const savedSort = safeLocalStorage?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
-    savedSort ?? defaultSort,
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 's',
+    typeof s == 'string' ? s : savedSort ?? defaultSort,
+    useUrlParams && isWholePage
+      ? {
+          key: SORT_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const [filterState, setFilter] = usePersistentState(
-    defaultFilter,
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 'f',
+    typeof f == 'string' ? f : defaultFilter,
+    useUrlParams && isWholePage
+      ? {
+          key: FILTER_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const [contractType, setContractType] = usePersistentState(
-    defaultContractType,
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 'search-contract-type',
+    typeof ct == 'string' ? ct : defaultContractType,
+    useUrlParams && isWholePage
+      ? {
+          key: CONTRACT_TYPE_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const [topic, setTopic] = usePersistentState(
-    '',
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 't',
+    typeof t == 'string' ? t : '',
+    useUrlParams && isWholePage
+      ? {
+          key: TOPIC_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const filter =
@@ -487,35 +500,82 @@ function SupabaseContractSearchControls(props: {
 
   const updateQuery = (newQuery: string) => {
     setQuery(newQuery)
+    handleTabbedUrlParam(
+      !!useUrlParams,
+      !!isWholePage,
+      newQuery,
+      QUERY_KEY,
+      router
+    )
   }
 
   const selectFilter = (selection: filter) => {
     if (selection === filterState) return
     setFilter(selection)
+    handleTabbedUrlParam(
+      !!useUrlParams,
+      !!isWholePage,
+      selection,
+      FILTER_KEY,
+      router
+    )
     track('select search filter', { filter: selection })
   }
 
   const selectSort = (selection: Sort) => {
     if (selection === sort) return
     setSort(selection)
+
+    handleTabbedUrlParam(
+      !!useUrlParams,
+      !!isWholePage,
+      selection,
+      SORT_KEY,
+      router
+    )
     track('select search sort', { sort: selection })
   }
 
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
-    if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
-      setSort('bounty-amount')
-    }
-    if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
+    if (
+      (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) ||
+      (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort))
+    ) {
       setSort('score')
+      handleTabbedUrlParam(
+        !!useUrlParams,
+        !!isWholePage,
+        'score',
+        SORT_KEY,
+        router
+      )
     }
     setContractType(selection)
+    handleTabbedUrlParam(
+      !!useUrlParams,
+      !!isWholePage,
+      selection,
+      CONTRACT_TYPE_KEY,
+      router
+    )
     track('select contract type', { contractType: selection })
   }
 
   const selectTopic = (newTopic: string) => {
-    if (newTopic === topic) return setTopic('')
-    setTopic(newTopic)
+    if (newTopic === topic) {
+      setTopic('')
+      handleTabbedUrlParam(!!useUrlParams, !!isWholePage, '', TOPIC_KEY, router)
+    } else {
+      setTopic(newTopic)
+      handleTabbedUrlParam(
+        !!useUrlParams,
+        !!isWholePage,
+        newTopic,
+        TOPIC_KEY,
+        router
+      )
+    }
     track('select search topic', { topic: newTopic })
   }
 
@@ -697,4 +757,22 @@ export function SearchFilters(props: {
       )}
     </div>
   )
+}
+
+function handleTabbedUrlParam(
+  useUrlParams: boolean,
+  isWholePage: boolean,
+  selection: string,
+  key: string,
+  router: NextRouter
+) {
+  if (useUrlParams && !isWholePage) {
+    router.replace(
+      { query: { ...router.query, [key]: selection } },
+      undefined,
+      {
+        shallow: true,
+      }
+    )
+  }
 }

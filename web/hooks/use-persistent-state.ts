@@ -69,6 +69,7 @@ export const urlParamStore = (router: NextRouter): PersistentStore<string> => ({
       // see relevant discussion here https://github.com/vercel/next.js/discussions/18072
       const url = withURLParam(window.location, k, v).toString()
       const updatedState = { ...window.history.state, as: url, url }
+      console.log('URL', url, '\nUPDATED STATE', updatedState)
       window.history.replaceState(updatedState, '', url)
     }
   },
