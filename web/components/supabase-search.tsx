@@ -538,10 +538,17 @@ function SupabaseContractSearchControls(props: {
 
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
-    if (
-      (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) ||
-      (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort))
-    ) {
+    if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
+      setSort('bounty-amount')
+      handleTabbedUrlParam(
+        !!useUrlParams,
+        !!isWholePage,
+        'bounty-amount',
+        SORT_KEY,
+        router
+      )
+    }
+    if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
       setSort('score')
       handleTabbedUrlParam(
         !!useUrlParams,
