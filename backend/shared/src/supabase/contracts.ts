@@ -181,7 +181,8 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   userId: string,
   pg: SupabaseDirectClient,
   reasonsToInclude: CONTRACT_OR_USER_FEED_REASON_TYPES[],
-  userToContractDistanceThreshold: number
+  userToContractDistanceThreshold: number,
+  serverSideCalculation: boolean
 ): Promise<{ [userId: string]: CONTRACT_OR_USER_FEED_REASON_TYPES }> => {
   const { id: contractId } = contract
   const reasonsToRelevantUserIdsFunctions: {
@@ -207,11 +208,17 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       importance: 5,
     },
     similar_interest_vector_to_contract: {
-      promise: getUsersWithSimilarInterestVectorsToContractServerSide(
-        contractId,
-        pg,
-        userToContractDistanceThreshold
-      ),
+      promise: serverSideCalculation
+        ? getUsersWithSimilarInterestVectorsToContractServerSide(
+            contractId,
+            pg,
+            userToContractDistanceThreshold
+          )
+        : getUsersWithSimilarInterestVectorsToContract(
+            contractId,
+            pg,
+            userToContractDistanceThreshold
+          ),
       importance: 7,
     },
     private_contract_shared_with_you: {

@@ -102,7 +102,8 @@ export const addCommentOnContractToFeed = async (
         'liked_contract',
         'similar_interest_vector_to_contract',
       ],
-      INTEREST_DISTANCE_THRESHOLDS.new_comment
+      INTEREST_DISTANCE_THRESHOLDS.new_comment,
+      false
     )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
@@ -196,7 +197,8 @@ export const addContractToFeed = async (
       userIdResponsibleForEvent ?? contract.creatorId,
       pg,
       reasonsToInclude,
-      maxDistanceFromUserInterestToContract
+      maxDistanceFromUserInterestToContract,
+      false
     )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
@@ -237,7 +239,8 @@ export const addContractToFeedIfNotDuplicative = async (
       contract.creatorId,
       pg,
       reasonsToInclude,
-      minUserInterestDistanceToContract
+      minUserInterestDistanceToContract,
+      true
     )
   log(
     'checking users for feed rows:',
