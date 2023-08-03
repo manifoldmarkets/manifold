@@ -72,7 +72,7 @@ function getSearchGroupSQL(groupInput: {
       : ')'
     return `where (privacy_status != 'private' ${privateGroupWhereSQL}`
   }
-  const discoverGroupOrderBySQL = 'order by total_members desc'
+  const discoverGroupOrderBySQL = 'order by importance_score desc'
 
   function getAddingToContractWhereSQL(groupTable: string) {
     const curatedModeratorWhereSQL = uid
