@@ -300,7 +300,8 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   }, [titleRef])
 
   const showExplainerPanel =
-    !user || user.createdTime > Date.now() - 24 * 60 * 60 * 1000
+    user === null ||
+    (user && user.createdTime > Date.now() - 24 * 60 * 60 * 1000)
 
   return (
     <>
