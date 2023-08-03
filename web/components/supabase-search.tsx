@@ -438,15 +438,12 @@ function SupabaseContractSearchControls(props: {
   } = props
 
   const router = useRouter()
-  const { query: routerQuery } = router
-  const { q, s, ct, f, t } = routerQuery
 
   const [query, setQuery] = usePersistentState(
-    typeof q == 'string' ? q : '',
-
+    '',
     // there is an error using this method of url param storage when the url contains other parameters
     // basically if the search is not the whole page, use the function handleTabbedUrlParam for url param storage
-    useUrlParams && isWholePage
+    useUrlParams
       ? {
           key: QUERY_KEY,
           store: urlParamStore(router),
@@ -454,12 +451,12 @@ function SupabaseContractSearchControls(props: {
       : undefined
   )
 
-  const sortKey = `${persistPrefix}-search-sort`
-  const savedSort = safeLocalStorage?.getItem(sortKey)
+  // const sortKey = `${persistPrefix}-search-sort`
+  // const savedSort = safeLocalStorage?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
-    typeof s == 'string' ? s : savedSort ?? defaultSort,
-    useUrlParams && isWholePage
+    defaultSort,
+    useUrlParams
       ? {
           key: SORT_KEY,
           store: urlParamStore(router),
@@ -468,8 +465,8 @@ function SupabaseContractSearchControls(props: {
   )
 
   const [filterState, setFilter] = usePersistentState(
-    typeof f == 'string' ? f : defaultFilter,
-    useUrlParams && isWholePage
+    defaultFilter,
+    useUrlParams
       ? {
           key: FILTER_KEY,
           store: urlParamStore(router),
@@ -478,8 +475,8 @@ function SupabaseContractSearchControls(props: {
   )
 
   const [contractType, setContractType] = usePersistentState(
-    typeof ct == 'string' ? ct : defaultContractType,
-    useUrlParams && isWholePage
+    defaultContractType,
+    useUrlParams
       ? {
           key: CONTRACT_TYPE_KEY,
           store: urlParamStore(router),
@@ -488,8 +485,8 @@ function SupabaseContractSearchControls(props: {
   )
 
   const [topic, setTopic] = usePersistentState(
-    typeof t == 'string' ? t : '',
-    useUrlParams && isWholePage
+    '',
+    useUrlParams
       ? {
           key: TOPIC_KEY,
           store: urlParamStore(router),
@@ -506,39 +503,17 @@ function SupabaseContractSearchControls(props: {
 
   const updateQuery = (newQuery: string) => {
     setQuery(newQuery)
-    handleTabbedUrlParam(
-      !!useUrlParams,
-      !!isWholePage,
-      newQuery,
-      QUERY_KEY,
-      router
-    )
   }
 
   const selectFilter = (selection: filter) => {
     if (selection === filterState) return
     setFilter(selection)
-    handleTabbedUrlParam(
-      !!useUrlParams,
-      !!isWholePage,
-      selection,
-      FILTER_KEY,
-      router
-    )
     track('select search filter', { filter: selection })
   }
 
   const selectSort = (selection: Sort) => {
     if (selection === sort) return
     setSort(selection)
-
-    handleTabbedUrlParam(
-      !!useUrlParams,
-      !!isWholePage,
-      selection,
-      SORT_KEY,
-      router
-    )
     track('select search sort', { sort: selection })
   }
 
@@ -546,48 +521,19 @@ function SupabaseContractSearchControls(props: {
     if (selection === contractType) return
     if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
       setSort('bounty-amount')
-      handleTabbedUrlParam(
-        !!useUrlParams,
-        !!isWholePage,
-        'bounty-amount',
-        SORT_KEY,
-        router
-      )
     }
     if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
       setSort('score')
-      handleTabbedUrlParam(
-        !!useUrlParams,
-        !!isWholePage,
-        'score',
-        SORT_KEY,
-        router
-      )
     }
     setContractType(selection)
-    handleTabbedUrlParam(
-      !!useUrlParams,
-      !!isWholePage,
-      selection,
-      CONTRACT_TYPE_KEY,
-      router
-    )
     track('select contract type', { contractType: selection })
   }
 
   const selectTopic = (newTopic: string) => {
     if (newTopic === topic) {
       setTopic('')
-      handleTabbedUrlParam(!!useUrlParams, !!isWholePage, '', TOPIC_KEY, router)
     } else {
       setTopic(newTopic)
-      handleTabbedUrlParam(
-        !!useUrlParams,
-        !!isWholePage,
-        newTopic,
-        TOPIC_KEY,
-        router
-      )
     }
     track('select search topic', { topic: newTopic })
   }
