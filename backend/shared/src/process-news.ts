@@ -166,8 +166,7 @@ const processNewsArticle = async (
     .sort((a, b) => b.importanceScore - a.importanceScore)
     .slice(0, 5)
 
-  const totalItems = questions.length + groups.length
-  if (totalItems < 3) {
+  if (questions.length < 1) {
     console.log('Not enough related markets & groups found\n\n')
     return
   }

@@ -293,7 +293,7 @@ export const insertNewsToUsersFeeds = async (
         usersToReasons,
         eventTime,
         'news_with_related_contracts',
-        [],
+        ['FSqqnRObrqf0GX63gp5Hk4lUvqn1'], //bday present for SL
         {
           contractId: contract.id,
           creatorId: contract.creatorId,
