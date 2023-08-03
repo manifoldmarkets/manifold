@@ -6,10 +6,8 @@ import { Col } from './col'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from 'web/components/layout/row'
 import { Carousel } from 'web/components/widgets/carousel'
-import {
-  urlParamStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
+
+
 
 type Tab = {
   title: string
