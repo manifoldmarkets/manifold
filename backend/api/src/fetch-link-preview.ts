@@ -1,6 +1,6 @@
 import { jsonEndpoint, validate } from 'api/helpers'
 import { z } from 'zod'
-import { getLinkPreview, getPreviewFromContent } from 'link-preview-js'
+import { getLinkPreview } from 'link-preview-js'
 import { first } from 'lodash'
 
 const bodySchema = z.object({
@@ -10,7 +10,6 @@ export const fetchlinkpreview = jsonEndpoint(async (req) => {
   const { url } = validate(bodySchema, req.body)
   try {
     const metadata = await fetchLinkPreviewInternal(url)
-    console.log('meta', metadata)
     return {
       status: 'success',
       data: metadata,
