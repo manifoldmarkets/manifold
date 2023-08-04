@@ -8,7 +8,7 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { SELECTABLE_TOPICS, cleanTopic } from 'common/topics'
 import { debounce, isEqual, uniqBy } from 'lodash'
-import { NextRouter, useRouter } from 'next/router'
+import { useRouter } from 'next/router'
 import { createContext, useContext, useEffect, useRef } from 'react'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
@@ -501,82 +501,35 @@ function SupabaseContractSearchControls(props: {
 
   const updateQuery = (newQuery: string) => {
     setQuery(newQuery)
-    handleTabbedUrlParam(
-      !!useUrlParams,
-      !!isWholePage,
-      newQuery,
-      QUERY_KEY,
-      router
-    )
   }
 
   const selectFilter = (selection: filter) => {
     if (selection === filterState) return
     setFilter(selection)
-    handleTabbedUrlParam(
-      !!useUrlParams,
-      !!isWholePage,
-      selection,
-      FILTER_KEY,
-      router
-    )
     track('select search filter', { filter: selection })
   }
 
   const selectSort = (selection: Sort) => {
     if (selection === sort) return
     setSort(selection)
-
-    handleTabbedUrlParam(
-      !!useUrlParams,
-      !!isWholePage,
-      selection,
-      SORT_KEY,
-      router
-    )
     track('select search sort', { sort: selection })
   }
 
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
-    if (
-      (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) ||
-      (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort))
-    ) {
+    if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
+      setSort('bounty-amount')
+    }
+    if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
       setSort('score')
-      handleTabbedUrlParam(
-        !!useUrlParams,
-        !!isWholePage,
-        'score',
-        SORT_KEY,
-        router
-      )
     }
     setContractType(selection)
-    handleTabbedUrlParam(
-      !!useUrlParams,
-      !!isWholePage,
-      selection,
-      CONTRACT_TYPE_KEY,
-      router
-    )
     track('select contract type', { contractType: selection })
   }
 
   const selectTopic = (newTopic: string) => {
-    if (newTopic === topic) {
-      setTopic('')
-      handleTabbedUrlParam(!!useUrlParams, !!isWholePage, '', TOPIC_KEY, router)
-    } else {
-      setTopic(newTopic)
-      handleTabbedUrlParam(
-        !!useUrlParams,
-        !!isWholePage,
-        newTopic,
-        TOPIC_KEY,
-        router
-      )
-    }
+    if (newTopic === topic) return setTopic('')
+    setTopic(newTopic)
     track('select search topic', { topic: newTopic })
   }
 
@@ -758,22 +711,4 @@ export function SearchFilters(props: {
       )}
     </div>
   )
-}
-
-function handleTabbedUrlParam(
-  useUrlParams: boolean,
-  isWholePage: boolean,
-  selection: string,
-  key: string,
-  router: NextRouter
-) {
-  if (useUrlParams && !isWholePage) {
-    router.replace(
-      { query: { ...router.query, [key]: selection } },
-      undefined,
-      {
-        shallow: true,
-      }
-    )
-  }
 }
