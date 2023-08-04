@@ -43,7 +43,10 @@ import { getUser, htmlToRichText, isProd } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
@@ -168,11 +171,11 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
   if (answers && contract.mechanism === 'cpmm-multi-1')
     await createAnswers(contract)
 
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
   if (groups) {
     await Promise.all(
       groups.map(async (g) => {
-        await addGroupToContract(contract, g, db)
+        await addGroupToContract(contract, g, pg)
         if (contract.visibility == 'private') {
           const contractCreator = await getUser(contract.creatorId)
           if (!contractCreator)
@@ -188,6 +191,7 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
   }
 
   await generateAntes(userId, user, contract, outcomeType, ante)
+  const db = createSupabaseClient()
 
   await generateContractEmbeddings(contract, db)
 

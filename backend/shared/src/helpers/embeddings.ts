@@ -206,6 +206,8 @@ async function computeUserInterestEmbedding(
       from user_embeddings
       where user_id = $2
       union all 
+      -- TODO: perhaps select unique group embeddings of group contracts, 
+      -- otherwise group contracts like Technology/Science will be overrepresented.
       -- Append group embeddings of bet-on contracts to be averaged in.
       select embedding as combined_embedding
       from group_embeddings 

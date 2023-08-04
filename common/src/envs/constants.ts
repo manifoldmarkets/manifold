@@ -193,6 +193,11 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'olivia',
   'planecrash',
   'glowfic',
+  'all-stonks',
+  'destinygg',
+  'the-market',
+  'nonpredictive-profits',
+  'nonpredictive',
 ]
 
 export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [

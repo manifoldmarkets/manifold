@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { noop, uniq } from 'lodash'
 
 import { Col } from 'web/components/layout/col'
@@ -8,9 +8,7 @@ import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
-import { db } from 'web/lib/supabase/db'
 import { joinGroup, updateUserEmbedding } from 'web/lib/firebase/api'
-import { getUserInterestTopics } from 'web/lib/supabase/user'
 
 export function TopicSelectorDialog(props: {
   skippable: boolean
@@ -24,34 +22,6 @@ export function TopicSelectorDialog(props: {
   >()
   const [isLoading, setIsLoading] = useState(false)
   const [open, setOpen] = useState(true)
-
-  useEffect(() => {
-    if (user && userSelectedTopics !== undefined) {
-      userSelectedTopics.length > 0
-        ? db
-            .rpc('save_user_topics', {
-              p_user_id: user.id,
-              p_topics: userSelectedTopics,
-            })
-            .then((r) => {
-              console.log('saved user topics', r)
-            })
-        : db
-            .rpc('save_user_topics_blank', {
-              p_user_id: user.id,
-            })
-            .then((r) => {
-              console.log('saved blank user topics', r)
-            })
-    }
-  }, [userSelectedTopics])
-
-  useEffect(() => {
-    if (!user || userSelectedTopics !== undefined || !open) return
-    getUserInterestTopics(user.id).then((topics) => {
-      setUserSelectedTopics(topics)
-    })
-  }, [user, userSelectedTopics, open])
 
   const closeDialog = (skipUpdate: boolean) => {
     setIsLoading(true)
@@ -93,14 +63,12 @@ export function TopicSelectorDialog(props: {
                           setUserSelectedTopics(
                             selectedTopics.filter((t) => t !== subtopic)
                           )
-                          if (topic === '👥 Communities' && groupId && user)
-                            leaveGroup(groupId, user.id)
+                          if (groupId && user) leaveGroup(groupId, user.id)
                         } else {
                           setUserSelectedTopics(
                             uniq([...selectedTopics, subtopic])
                           )
-                          if (topic === '👥 Communities' && groupId && user)
-                            joinGroup({ groupId })
+                          if (groupId && user) joinGroup({ groupId })
                         }
                       }}
                     >
