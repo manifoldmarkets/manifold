@@ -6,7 +6,7 @@ import {
   getTopAnswer,
 } from './calculate'
 import { richTextToString } from './util/parse'
-import { formatMoney, formatPercent } from './util/format'
+import { formatPercent } from './util/format'
 
 export const getContractOGProps = (
   contract: Contract
