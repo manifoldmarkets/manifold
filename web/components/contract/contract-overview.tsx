@@ -98,7 +98,7 @@ const NumericOverview = (props: { contract: NumericContract }) => {
   return (
     <>
       <NumericResolutionOrExpectation contract={contract} />
-      <SizedContainer className="h-[150px] w-full pb-8 pr-10 sm:h-[250px]">
+      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <NumericContractChart width={w} height={h} contract={contract} />
         )}
@@ -129,7 +129,7 @@ const BinaryOverview = (props: {
         />
       </Row>
 
-      <SizedContainer className="h-[150px] w-full pb-8 pr-10 sm:h-[250px]">
+      <SizedContainer className="mb-8 h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <BinaryContractChart
             width={w}
@@ -220,7 +220,7 @@ const PseudoNumericOverview = (props: {
           color="indigo"
         />
       </Row>
-      <SizedContainer className="h-[150px] w-full pb-8 pr-10 sm:h-[250px]">
+      <SizedContainer className="mb-8 h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <PseudoNumericContractChart
             width={w}
@@ -260,7 +260,7 @@ const StonkOverview = (props: {
           color="green"
         />
       </Row>
-      <SizedContainer className="h-[150px] w-full pb-8 pr-10 sm:h-[250px]">
+      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <StonkContractChart
             width={w}

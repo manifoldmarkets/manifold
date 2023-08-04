@@ -443,7 +443,7 @@ export const ControllableSingleValueHistoryChart = <
           fullScale={props.xScale}
           visibleScale={xScale}
           setVisibleScale={rescale}
-          className="relative top-6"
+          className="relative top-5"
         />
       )}
     </>
