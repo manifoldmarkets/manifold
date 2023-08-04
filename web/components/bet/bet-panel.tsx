@@ -416,27 +416,26 @@ export function BuyPanel(props: {
         )}
       </Col>
 
-      {option === 'LIMIT' && (
-        <>
-          <LimitOrderPanel
-            className={clsx(
-              singularView ? '' : 'rounded-lg bg-indigo-400/10 px-4 py-2'
-            )}
-            contract={contract}
-            multiProps={multiProps}
-            hidden={!seeLimit}
-            user={user}
-            unfilledBets={unfilledBets}
-            balanceByUserId={balanceByUserId}
-          />
+      <Col className={clsx(option !== 'LIMIT' && 'hidden')}>
+        <LimitOrderPanel
+          className={clsx(
+            singularView ? '' : 'rounded-lg bg-indigo-400/10 px-4 py-2'
+          )}
+          contract={contract}
+          multiProps={multiProps}
+          hidden={!seeLimit}
+          user={user}
+          unfilledBets={unfilledBets}
+          balanceByUserId={balanceByUserId}
+        />
 
-          <YourOrders
-            className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
-            contract={contract}
-            bets={unfilledBetsMatchingAnswer}
-          />
-        </>
-      )}
+        <YourOrders
+          className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
+          contract={contract}
+          bets={unfilledBetsMatchingAnswer}
+        />
+      </Col>
+
       {/* Stonks don't allow limit orders but users may have them from before the conversion*/}
       {isStonk && unfilledBets.length > 0 && (
         <YourOrders

@@ -26,10 +26,12 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
-import { BinaryOutcomeLabel, HigherLabel, LowerLabel } from '../outcome-label'
+import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { OrderBookButton } from './order-book'
-import { LimitSlider, convertNumberToProb } from './limit-slider'
+import { YesNoSelector } from './yes-no-selector'
+import { ProbabilityOrNumericInput } from '../widgets/probability-input'
+import { getPseudoProbability } from 'common/pseudo-numeric'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -78,69 +80,34 @@ export default function LimitOrderPanel(props: {
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
 
-  const MAX_PROB = isPseudoNumeric ? contract.max : 100
-  const MIN_PROB = isPseudoNumeric ? contract.min : 0
-
-  const [lowLimitProb, setLowLimitProb] = useState<number | undefined>(
-    undefined
-  )
-  const [highLimitProb, setHighLimitProb] = useState<number | undefined>(
+  const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     undefined
   )
 
-  const hasYesLimitBet = lowLimitProb !== undefined && !!betAmount
-  const hasNoLimitBet = highLimitProb !== undefined && !!betAmount
+  const [isYes, setIsYes] = useState(true)
+  const outcome = isYes ? 'YES' : 'NO'
 
-  const hasTwoBets = hasYesLimitBet && hasNoLimitBet
-  const invalidLowAndHighBet =
-    !!lowLimitProb && !!highLimitProb && lowLimitProb >= highLimitProb
+  const hasLimitBet = !!limitProbInt && !!betAmount
 
-  const betDisabled =
-    isSubmitting ||
-    !betAmount ||
-    !!error ||
-    (!hasYesLimitBet && !hasNoLimitBet) ||
-    invalidLowAndHighBet
+  const betDisabled = isSubmitting || !betAmount || !!error || !hasLimitBet
 
-  const yesLimitProb =
-    lowLimitProb === undefined
+  const limitProb =
+    limitProbInt === undefined
       ? undefined
       : clamp(
-          convertNumberToProb(
-            lowLimitProb,
-            isPseudoNumeric,
-            MIN_PROB,
-            MAX_PROB
-          ) / 100,
-          0.001,
-          0.999
-        )
-  const noLimitProb =
-    highLimitProb === undefined
-      ? undefined
-      : clamp(
-          convertNumberToProb(
-            highLimitProb,
-            isPseudoNumeric,
-            MIN_PROB,
-            MAX_PROB
-          ) / 100,
+          isPseudoNumeric
+            ? getPseudoProbability(
+                limitProbInt,
+                contract.min,
+                contract.max,
+                contract.isLogScale
+              )
+            : limitProbInt / 100,
           0.001,
           0.999
         )
 
   const amount = betAmount ?? 0
-  const shares =
-    yesLimitProb !== undefined && noLimitProb !== undefined
-      ? Math.min(amount / yesLimitProb, amount / (1 - noLimitProb))
-      : yesLimitProb !== undefined
-      ? amount / yesLimitProb
-      : noLimitProb !== undefined
-      ? amount / (1 - noLimitProb)
-      : 0
-
-  const yesAmount = shares * (yesLimitProb ?? 1)
-  const noAmount = shares * (1 - (noLimitProb ?? 0))
 
   function onBetChange(newAmount: number | undefined) {
     setBetAmount(newAmount)
@@ -154,41 +121,16 @@ export default function LimitOrderPanel(props: {
 
     const answerId = multiProps?.answerToBuy.id
 
-    const betsPromise = hasTwoBets
-      ? Promise.all([
-          placeBet(
-            removeUndefinedProps({
-              outcome: 'YES',
-              amount: yesAmount,
-              limitProb: yesLimitProb,
-              contractId: contract.id,
-              answerId,
-              expiresAt,
-            })
-          ),
-          placeBet(
-            removeUndefinedProps({
-              outcome: 'NO',
-              amount: noAmount,
-              limitProb: noLimitProb,
-              contractId: contract.id,
-              answerId,
-              expiresAt,
-            })
-          ),
-        ])
-      : placeBet(
-          removeUndefinedProps({
-            outcome: hasYesLimitBet ? 'YES' : 'NO',
-            amount: betAmount,
-            contractId: contract.id,
-            answerId,
-            limitProb: hasYesLimitBet ? yesLimitProb : noLimitProb,
-            expiresAt,
-          })
-        )
-
-    betsPromise
+    await placeBet(
+      removeUndefinedProps({
+        outcome,
+        amount,
+        contractId: contract.id,
+        answerId,
+        limitProb: limitProb,
+        expiresAt,
+      })
+    )
       .catch((e) => {
         if (e instanceof APIError) {
           setError(e.toString())
@@ -202,39 +144,20 @@ export default function LimitOrderPanel(props: {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
         setBetAmount(undefined)
-        setLowLimitProb(undefined)
-        setHighLimitProb(undefined)
         if (onBuySuccess) onBuySuccess()
       })
 
-    if (hasYesLimitBet) {
-      track('bet', {
-        location: 'bet panel',
-        outcomeType: contract.outcomeType,
-        slug: contract.slug,
-        contractId: contract.id,
-        amount: yesAmount,
-        outcome: 'YES',
-        limitProb: yesLimitProb,
-        isLimitOrder: true,
-        isRangeOrder: hasTwoBets,
-        answerId: multiProps?.answerToBuy.id,
-      })
-    }
-    if (hasNoLimitBet) {
-      track('bet', {
-        location: 'bet panel',
-        outcomeType: contract.outcomeType,
-        slug: contract.slug,
-        contractId: contract.id,
-        amount: noAmount,
-        outcome: 'NO',
-        limitProb: noLimitProb,
-        isLimitOrder: true,
-        isRangeOrder: hasTwoBets,
-        answerId: multiProps?.answerToBuy.id,
-      })
-    }
+    await track('bet', {
+      location: 'bet panel',
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      amount,
+      outcome: isYes ? 'YES' : 'NO',
+      limitProb: limitProb,
+      isLimitOrder: true,
+      answerId: multiProps?.answerToBuy.id,
+    })
   }
 
   const cpmmState = isCpmmMulti
@@ -255,38 +178,20 @@ export default function LimitOrderPanel(props: {
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
 
   const {
-    currentPayout: yesPayout,
-    currentReturn: yesReturn,
-    orderAmount: yesOrderAmount,
-    amount: yesFilledAmount,
+    currentPayout,
+    currentReturn,
+    orderAmount,
+    amount: filledAmount,
   } = getBetReturns(
     cpmmState,
-    'YES',
-    yesAmount,
-    yesLimitProb ?? initialProb,
+    outcome,
+    amount,
+    limitProb ?? initialProb,
     unfilledBets,
     balanceByUserId,
     shouldAnswersSumToOne ? multiProps : undefined
   )
-  const yesReturnPercent = formatPercent(yesReturn)
-
-  const {
-    currentPayout: noPayout,
-    currentReturn: noReturn,
-    orderAmount: noOrderAmount,
-    amount: noFilledAmount,
-  } = getBetReturns(
-    cpmmState,
-    'NO',
-    noAmount,
-    noLimitProb ?? initialProb,
-    unfilledBets,
-    balanceByUserId,
-    multiProps
-  )
-  const noReturnPercent = formatPercent(noReturn)
-
-  const profitIfBothFilled = shares - (yesAmount + noAmount)
+  const returnPercent = formatPercent(currentReturn)
 
   const unfilledBetsMatchingAnswer = unfilledBets.filter(
     (b) => b.answerId === multiProps?.answerToBuy?.id
@@ -295,33 +200,35 @@ export default function LimitOrderPanel(props: {
   return (
     <Col className={clsx(className, hidden && 'hidden')}>
       <Row className="mb-4 items-center justify-between">
-        <div>Limit orders</div>
+        <div className="text-lg">Place a limit order</div>
 
         <OrderBookButton
           limitBets={unfilledBetsMatchingAnswer}
           contract={contract}
         />
       </Row>
-      <LimitSlider
-        isPseudoNumeric={isPseudoNumeric}
-        contract={contract}
-        lowLimitProb={lowLimitProb}
-        setLowLimitProb={setLowLimitProb}
-        highLimitProb={highLimitProb}
-        setHighLimitProb={setHighLimitProb}
-        maxProb={MAX_PROB}
-        minProb={MIN_PROB}
-        invalidLowAndHighBet={invalidLowAndHighBet}
-        disabled={isSubmitting}
-        inputError={inputError}
-        setInputError={setInputError}
-      />
 
-      <Spacer h={6} />
+      <Col className="relative mb-8 w-full gap-3">
+        <Row className="items-center gap-3">
+          Outcome
+          <YesNoSelector
+            selected={outcome}
+            onSelect={(selected) => setIsYes(selected === 'YES')}
+          />
+        </Row>
+        <Row className="w-full items-center gap-3">
+          Probability
+          <ProbabilityOrNumericInput
+            contract={contract}
+            prob={limitProbInt}
+            setProb={setLimitProbInt}
+            inputError={inputError}
+            setInputError={setInputError}
+          />
+        </Row>
+      </Col>
 
-      <span className="text-ink-800 mb-2 text-sm">
-        Max amount<span className="text-scarlet-500 ml-0.5">*</span>
-      </span>
+      <span className="text-ink-800 mb-2 text-sm">Amount</span>
 
       <BuyAmountInput
         inputClassName="w-full max-w-none"
@@ -370,97 +277,46 @@ export default function LimitOrderPanel(props: {
       </div>
 
       <Col className="mt-2 w-full gap-3">
-        {(hasTwoBets || (hasYesLimitBet && yesFilledAmount !== 0)) && (
+        {hasLimitBet && filledAmount > 0 && (
           <Row className="items-center justify-between gap-2 text-sm">
             <div className="text-ink-500 whitespace-nowrap">
               {isPseudoNumeric ? (
-                <HigherLabel />
+                <PseudoNumericOutcomeLabel outcome={outcome} />
               ) : (
-                <BinaryOutcomeLabel outcome={'YES'} />
+                <BinaryOutcomeLabel outcome={outcome} />
               )}{' '}
               filled now
             </div>
             <div className="mr-2 whitespace-nowrap">
-              {formatMoney(yesFilledAmount)} of {formatMoney(yesOrderAmount)}
+              {formatMoney(filledAmount)} of {formatMoney(orderAmount)}
             </div>
           </Row>
         )}
-        {(hasTwoBets || (hasNoLimitBet && noFilledAmount !== 0)) && (
-          <Row className="items-center justify-between gap-2 text-sm">
-            <div className="text-ink-500 whitespace-nowrap">
-              {isPseudoNumeric ? (
-                <LowerLabel />
-              ) : (
-                <BinaryOutcomeLabel outcome={'NO'} />
-              )}{' '}
-              filled now
-            </div>
-            <div className="mr-2 whitespace-nowrap">
-              {formatMoney(noFilledAmount)} of {formatMoney(noOrderAmount)}
-            </div>
-          </Row>
-        )}
-        {hasTwoBets && (
-          <Row className="items-center justify-between gap-2 text-sm">
-            <div className="text-ink-500 whitespace-nowrap">
-              Profit if both orders filled
-            </div>
-            <div className="mr-2 whitespace-nowrap">
-              {formatMoney(profitIfBothFilled)}
-            </div>
-          </Row>
-        )}
-        {hasYesLimitBet && !hasTwoBets && (
-          <Row className="items-center justify-between gap-2 text-sm">
-            <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
-              <div>
-                {isPseudoNumeric ? (
-                  'Shares'
-                ) : (
-                  <>
-                    Max <BinaryOutcomeLabel outcome={'YES'} /> payout
-                  </>
-                )}
-              </div>
-              {/* <InfoTooltip
-                text={`Includes ${formatMoneyWithDecimals(yesFees)} in fees`}
-              /> */}
-            </Row>
-            <div>
-              <span className="mr-2 whitespace-nowrap">
-                {formatMoney(yesPayout)}
-              </span>
-              (+{yesReturnPercent})
-            </div>
-          </Row>
-        )}
-        {hasNoLimitBet && !hasTwoBets && (
-          <Row className="items-center justify-between gap-2 text-sm">
-            <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
-              <div>
-                {isPseudoNumeric ? (
-                  'Shares'
-                ) : (
-                  <>
-                    Max <BinaryOutcomeLabel outcome={'NO'} /> payout
-                  </>
-                )}
-              </div>
-              {/* <InfoTooltip
-                text={`Includes ${formatMoneyWithDecimals(noFees)} in fees`}
-              /> */}
-            </Row>
-            <div>
-              <span className="mr-2 whitespace-nowrap">
-                {formatMoney(noPayout)}
-              </span>
-              (+{noReturnPercent})
-            </div>
-          </Row>
-        )}
-      </Col>
 
-      {(hasYesLimitBet || hasNoLimitBet) && <Spacer h={8} />}
+        {hasLimitBet && (
+          <Row className="items-center justify-between gap-2 text-sm">
+            <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
+              <div>
+                {isPseudoNumeric ? (
+                  'Shares'
+                ) : (
+                  <>
+                    Max <BinaryOutcomeLabel outcome={outcome} /> payout
+                  </>
+                )}
+              </div>
+            </Row>
+            <div>
+              <span className="mr-2 whitespace-nowrap">
+                {formatMoney(currentPayout)}
+              </span>
+              ({returnPercent})
+            </div>
+          </Row>
+        )}
+
+        {hasLimitBet && <Spacer h={8} />}
+      </Col>
 
       {user && (
         <Button
@@ -471,9 +327,7 @@ export default function LimitOrderPanel(props: {
           className="flex-1"
           onClick={submitBet}
         >
-          {isSubmitting
-            ? 'Submitting...'
-            : `Submit order${hasTwoBets ? 's' : ''}`}
+          {isSubmitting ? 'Submitting...' : `Submit order`}
         </Button>
       )}
     </Col>
