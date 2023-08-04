@@ -1,5 +1,8 @@
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { ExternalLink } from 'web/components/widgets/external-link'
 import { Title } from 'web/components/widgets/title'
 
 export default function Custom404(props: { customText?: string }) {
@@ -18,19 +21,26 @@ export default function Custom404(props: { customText?: string }) {
 export function Custom404Content(props: { customText?: string }) {
   const { customText } = props
   return (
-    <div className="flex h-full flex-col items-center justify-center">
-      <Title children="404: Oops!" />
-      {customText && <p>{customText}</p>}
-      {!customText && <p>Nothing exists at this location.</p>}
-      <p>If you didn't expect this, let us know on Discord!</p>
-      <br />
-      <iframe
+    <div className="flex h-[50vh] flex-col items-center justify-center">
+      <Col className="max-w-sm">
+        <Title children="404: Oops!" />
+        {customText && <p>{customText}</p>}
+        {!customText && <p>Less than 1% chance anything exists at this url.</p>}
+        <p>
+          If you didn't expect this, let us know{' '}
+          <ExternalLink
+            href="https://discord.com/widget?id=915138780216823849&theme=dark"
+            title="on Discord!"
+          />
+        </p>
+      </Col>
+      {/* <iframe
         src="https://discord.com/widget?id=915138780216823849&theme=dark"
         width="350"
         height="500"
         frameBorder="0"
         sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
-      ></iframe>
+      ></iframe> */}
     </div>
   )
 }

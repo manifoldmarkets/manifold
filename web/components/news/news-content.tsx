@@ -618,7 +618,7 @@ const STPSuper = createNewsDashboardTab(
         <NewsTopicsContentContainer
           header="Additional Context"
           containerContent={
-            <>
+            <Col className="gap-4">
               <ExternalLink
                 title="Main Paper"
                 href="https://arxiv.org/abs/2307.12008"
@@ -658,7 +658,7 @@ const STPSuper = createNewsDashboardTab(
                 Materials used are relatively cheap and not complicated, so it
                 should be easy for others to replicate.
               </p> */}
-            </>
+            </Col>
           }
         />
       ),
@@ -767,6 +767,7 @@ const CancerPill = createNewsDashboardTab(
               <p className="mb-4">The drug is in Phase I clinical trials.</p>
 
               <ExternalLink
+                className="mb-4"
                 title="Main paper"
                 href="https://www.cell.com/cell-chemical-biology/pdfExtended/S2451-9456(23)00221-0"
               />
