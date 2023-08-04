@@ -149,7 +149,9 @@ export function NonPrivateContractPage(props: {
     )
 }
 
-export function ContractPageContent(props: { contractParams: ContractParams }) {
+export function ContractPageContent(props: {
+  contractParams: ContractParams & { contract: Contract }
+}) {
   const { contractParams } = props
   const {
     userPositionsByOutcome,
@@ -158,12 +160,15 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     creatorTwitter,
     relatedContracts,
   } = contractParams
-  const contract: typeof contractParams.contract =
+  const contract =
     useFirebasePublicContract(
       contractParams.contract.visibility,
       contractParams.contract.id
     ) ?? contractParams.contract
-
+  const cachedContract = useMemo(
+    () => contract,
+    [contract.id, contract.resolution, contract.closeTime]
+  )
   if (
     'answers' in contractParams.contract &&
     contract.mechanism === 'cpmm-multi-1'
@@ -558,7 +563,8 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
 
             <div ref={tabsContainerRef}>
               <ContractTabs
-                contract={contract}
+                // Pass cached contract so it won't rerender so many times.
+                contract={cachedContract}
                 bets={bets}
                 totalBets={totalBets}
                 comments={comments}

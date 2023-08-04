@@ -81,6 +81,7 @@ export function ContractTabs(props: {
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
   const [replyToBet, setReplyToBet] = useState<Bet | undefined>(undefined)
+  const clearReply = useEvent(() => setReplyToBet(undefined))
   useEffect(() => {
     if (replyToBet) setActiveIndex(0)
   }, [replyToBet])
@@ -124,7 +125,7 @@ export function ContractTabs(props: {
         onCancelAnswerResponse={onCancelAnswerResponse}
         blockedUserIds={blockedUserIds}
         betResponse={replyToBet}
-        clearReply={() => setReplyToBet(undefined)}
+        clearReply={clearReply}
       />
     )
   }
@@ -148,7 +149,7 @@ export function ContractTabs(props: {
               onCancelAnswerResponse={onCancelAnswerResponse}
               blockedUserIds={blockedUserIds}
               betResponse={replyToBet}
-              clearReply={() => setReplyToBet(undefined)}
+              clearReply={clearReply}
             />
           ),
         },
