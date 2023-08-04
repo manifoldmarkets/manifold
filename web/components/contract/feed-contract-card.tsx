@@ -427,7 +427,7 @@ export const DislikeButton = (props: {
   }
 
   return (
-    <Tooltip text={'Hide this market'} className={className}>
+    <Tooltip text={'Show less of this'} className={className}>
       <button
         className={clsx(
           'text-ink-500 hover:text-ink-600 flex flex-col justify-center transition-transform disabled:cursor-not-allowed'
