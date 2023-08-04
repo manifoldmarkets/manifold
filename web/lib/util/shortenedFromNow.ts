@@ -1,6 +1,5 @@
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
-import {} from 'dayjs/plugin/duration'
 
 dayjs.extend(duration)
 
