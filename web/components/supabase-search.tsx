@@ -711,3 +711,4 @@ export function SearchFilters(props: {
       )}
     </div>
   )
+}
