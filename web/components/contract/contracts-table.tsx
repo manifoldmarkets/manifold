@@ -16,7 +16,7 @@ import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { Action } from './contract-table-action'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 import { buildArray } from 'common/util/array'
@@ -239,10 +239,8 @@ function ContractRow(props: {
   onClick?: () => void
 }) {
   const contract =
-    useFirebasePublicAndRealtimePrivateContract(
-      props.contract.visibility,
-      props.contract.id
-    ) ?? props.contract
+    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
+    props.contract
   const { columns, highlighted, faded, onClick } = props
 
   const visibleColumns = columns.map((key) => ({

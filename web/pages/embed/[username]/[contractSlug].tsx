@@ -27,12 +27,12 @@ import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useIsDarkMode } from 'web/hooks/dark-mode-context'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
 import { track } from 'web/lib/service/analytics'
 import { getBetFields } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
 import Custom404 from '../../404'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 
 type Points = HistoryPoint<any>[]
 
@@ -84,10 +84,8 @@ export default function ContractEmbedPage(props: {
   points: Points | null
 }) {
   const contract =
-    useFirebasePublicAndRealtimePrivateContract(
-      props.contract.visibility,
-      props.contract.id
-    ) ?? props.contract
+    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
+    props.contract
 
   useEffect(() => {
     if (contract?.id)

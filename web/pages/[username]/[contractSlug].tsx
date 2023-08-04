@@ -57,7 +57,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import {
-  useFirebasePublicAndRealtimePrivateContract,
+  useFirebasePublicContract,
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
 import { useEvent } from 'web/hooks/use-event'
@@ -159,7 +159,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     relatedContracts,
   } = contractParams
   const contract: typeof contractParams.contract =
-    useFirebasePublicAndRealtimePrivateContract(
+    useFirebasePublicContract(
       contractParams.contract.visibility,
       contractParams.contract.id
     ) ?? contractParams.contract

@@ -134,14 +134,12 @@ export function useRealtimeContracts(limit: number) {
   return (rows ?? []).map((r) => r.data as Contract)
 }
 
-export function useFirebasePublicAndRealtimePrivateContract(
+export function useFirebasePublicContract(
   visibility: Visibility,
   contractId: string
 ) {
   const contract =
-    visibility != 'private'
-      ? useContractFirebase(contractId)
-      : useRealtimeContract(contractId)
+    visibility != 'private' ? useContractFirebase(contractId) : undefined // useRealtimeContract(contractId)
 
   return contract
 }
