@@ -11,7 +11,10 @@ import { usePrivateUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { Tooltip } from '../widgets/tooltip'
 import { User } from 'common/user'
-import { useCommentsOnContract, useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
+import {
+  useCommentsOnContract,
+  useRealtimeCommentsOnContract,
+} from 'web/hooks/use-comments-supabase'
 
 export function SwipeComments(props: {
   contract: Contract
