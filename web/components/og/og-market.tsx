@@ -205,9 +205,9 @@ export function formatPercent(zeroToOne: number) {
 function BountyLeft(props: { bountyLeft: string }) {
   const { bountyLeft } = props
   return (
-    <div className="mx-auto flex flex-col text-center text-7xl">
-      <div className="mx-auto flex flex-row">M{bountyLeft}</div>
-      <span className="text-3xl text-gray-600">bounty</span>
+    <div className="mx-auto flex flex-col text-center text-9xl">
+      <div className="mx-auto flex flex-row text-teal-600">M{bountyLeft}</div>
+      <span className="mx-auto text-5xl text-gray-600">bounty</span>
     </div>
   )
 }
