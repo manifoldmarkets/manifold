@@ -143,7 +143,6 @@ export default function LimitOrderPanel(props: {
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
-        setBetAmount(undefined)
         if (onBuySuccess) onBuySuccess()
       })
 
