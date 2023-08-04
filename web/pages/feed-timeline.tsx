@@ -53,7 +53,7 @@ export function FeedTimeline() {
                 🎉 You've got {remaining} free questions! Use them before they
                 expire in{' '}
                 {shortenedFromNow(
-                  user.createdTime - DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
+                  user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
                 )}
                 .
               </span>
