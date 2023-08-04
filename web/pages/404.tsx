@@ -1,7 +1,6 @@
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { Row } from 'web/components/layout/row'
 import { ExternalLink } from 'web/components/widgets/external-link'
 import { Title } from 'web/components/widgets/title'
 
