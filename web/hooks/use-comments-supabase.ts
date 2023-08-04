@@ -80,6 +80,18 @@ export function useNumUserComments(userId: string) {
   return num
 }
 
+export function useCommentsOnContract(contractId: string) {
+  const [comments, setComments] = useState<ContractComment[] | undefined>(
+    undefined
+  )
+  useEffect(() => {
+    getCommentRows(contractId).then((result) => {
+      setComments(result.map(convertContractComment))
+    })
+  })
+  return comments
+}
+
 export function useRealtimeCommentsOnContract(contractId: string) {
   const { rows } = useSubscription(
     'contract_comments',

@@ -11,7 +11,7 @@ import { usePrivateUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { Tooltip } from '../widgets/tooltip'
 import { User } from 'common/user'
-import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
+import { useCommentsOnContract, useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 
 export function SwipeComments(props: {
   contract: Contract
@@ -58,7 +58,7 @@ export function CommentsButton(props: {
 
   const [open, setOpen] = useState(false)
 
-  const comments = useRealtimeCommentsOnContract(contract.id) ?? []
+  const comments = useCommentsOnContract(contract.id) ?? []
 
   return (
     <Tooltip text={`Comments`} placement="top" className={'z-10'}>
