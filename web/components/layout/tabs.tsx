@@ -7,7 +7,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from 'web/components/layout/row'
 import { Carousel } from 'web/components/widgets/carousel'
 
-type Tab = {
+export type Tab = {
   title: string
   content: ReactNode
   stackedTabIcon?: ReactNode

@@ -106,6 +106,7 @@ export const FeedTimelineItems = (props: {
                 author={(news as any)?.author}
                 published_time={(news as any)?.published_time}
                 {...news}
+                className={'h-24 object-cover'}
               />
               {item.contracts && item.contracts.length > 0 && (
                 <Col className="px-4 pt-2 pb-3">
