@@ -161,6 +161,7 @@ export function ContractTabs(props: {
                 positions={userPositionsByOutcome}
                 contract={contract as CPMMBinaryContract}
                 setTotalPositions={setTotalPositions}
+                enableRealtime
               />
             ),
           },
