@@ -51,6 +51,13 @@ export function ProbabilityInput(props: {
         value={prob ?? ''}
         disabled={disabled}
         onChange={(e) => onProbChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowUp') {
+            onProbChange(`${Math.min(99, (prob ?? 0) + 1)}`)
+          } else if (e.key === 'ArrowDown') {
+            onProbChange(`${Math.max(0, (prob ?? 0) - 1)}`)
+          }
+        }}
         error={error}
       />
       <span className="text-ink-400 absolute top-1/2 right-4 my-auto -translate-y-1/2">
