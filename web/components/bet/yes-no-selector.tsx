@@ -15,8 +15,15 @@ export function YesNoSelector(props: {
   noLabel?: string
   disabled?: boolean
 }) {
-  const { selected, onSelect, className, btnClassName, yesLabel, noLabel, disabled } =
-    props
+  const {
+    selected,
+    onSelect,
+    className,
+    btnClassName,
+    yesLabel,
+    noLabel,
+    disabled,
+  } = props
 
   return (
     <Row className={clsx('space-x-3', className)}>
