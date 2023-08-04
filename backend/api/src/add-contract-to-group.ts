@@ -90,7 +90,6 @@ export async function canUserAddGroupToMarket(props: {
   return (
     isManifoldAdmin ||
     isAdminOrMod ||
-    group.creator_id === userId ||
     // if user owns the contract and is a public group
     (group.privacy_status === 'public' && (isMarketCreator || trustworthy)) ||
     (group.privacy_status === 'private' && isMarketCreator && isMember)

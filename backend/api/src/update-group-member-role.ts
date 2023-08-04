@@ -50,7 +50,6 @@ export const updatememberrole = authEndpoint(async (req, auth) => {
     } else {
       if (
         requesterMembership.role !== 'admin' &&
-        requesterMembership.member_id !== group.creator_id &&
         auth.uid !== affectedMember.member_id
       )
         throw new APIError(400, 'User does not have permission to change roles')
