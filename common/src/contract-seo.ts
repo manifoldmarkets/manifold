@@ -6,7 +6,7 @@ import {
   getTopAnswer,
 } from './calculate'
 import { richTextToString } from './util/parse'
-import { formatPercent } from './util/format'
+import { formatMoney, formatPercent } from './util/format'
 
 export const getContractOGProps = (
   contract: Contract
@@ -31,8 +31,12 @@ export const getContractOGProps = (
   const probPercent =
     outcomeType === 'BINARY'
       ? formatPercent(getDisplayProbability(contract))
+      : outcomeType == 'BOUNTIED_QUESTION'
+      ? formatMoney(contract.bountyLeft)
       : topAnswer
-      ? formatPercent(getAnswerProbability(contract as MultiContract, topAnswer.id))
+      ? formatPercent(
+          getAnswerProbability(contract as MultiContract, topAnswer.id)
+        )
       : undefined
 
   const numericValue =
