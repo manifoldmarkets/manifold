@@ -7,7 +7,7 @@ import { Group } from 'common/group'
 import { debounce, startCase, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
-import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
+import { useMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { useYourRecentContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { searchContract } from 'web/lib/supabase/contracts'
@@ -363,7 +363,7 @@ const GroupResults = (props: {
   search?: string
 }) => {
   const me = useUser()
-  const myGroups = useRealtimeMemberGroupIds(me?.id) || []
+  const myGroupIds = useMemberGroupIds(me?.id) ?? []
   const { search } = props
   if (!props.groups.length) return null
   return (
@@ -386,7 +386,7 @@ const GroupResults = (props: {
               <JoinOrLeaveGroupButton
                 group={group}
                 user={me}
-                isMember={myGroups.includes(group.id)}
+                isMember={myGroupIds.includes(group.id)}
                 className="w-[80px] !px-0 !py-1"
               />
             </div>
