@@ -84,12 +84,12 @@ export default function LimitOrderPanel(props: {
     undefined
   )
 
-  const [isYes, setIsYes] = useState(true)
-  const outcome = isYes ? 'YES' : 'NO'
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   const hasLimitBet = !!limitProbInt && !!betAmount
 
-  const betDisabled = isSubmitting || !betAmount || !!error || !hasLimitBet
+  const betDisabled =
+    isSubmitting || !outcome || !betAmount || !!error || !hasLimitBet
 
   const limitProb =
     limitProbInt === undefined
@@ -152,7 +152,7 @@ export default function LimitOrderPanel(props: {
       slug: contract.slug,
       contractId: contract.id,
       amount,
-      outcome: isYes ? 'YES' : 'NO',
+      outcome,
       limitProb: limitProb,
       isLimitOrder: true,
       answerId: multiProps?.answerToBuy.id,
@@ -183,7 +183,7 @@ export default function LimitOrderPanel(props: {
     amount: filledAmount,
   } = getBetReturns(
     cpmmState,
-    outcome,
+    outcome!,
     amount,
     limitProb ?? initialProb,
     unfilledBets,
@@ -212,7 +212,8 @@ export default function LimitOrderPanel(props: {
           Outcome
           <YesNoSelector
             selected={outcome}
-            onSelect={(selected) => setIsYes(selected === 'YES')}
+            onSelect={(selected) => setOutcome(selected)}
+            disabled={isSubmitting}
           />
         </Row>
         <Row className="w-full items-center gap-3">
@@ -223,6 +224,7 @@ export default function LimitOrderPanel(props: {
             setProb={setLimitProbInt}
             inputError={inputError}
             setInputError={setInputError}
+            disabled={isSubmitting}
           />
         </Row>
       </Col>
@@ -245,6 +247,7 @@ export default function LimitOrderPanel(props: {
           className={'mt-4'}
           onClick={() => setAddExpiration(!addExpiration)}
           color={'indigo-outline'}
+          disabled={isSubmitting}
         >
           {addExpiration ? 'Remove expiration date' : 'Add expiration date'}
         </Button>
@@ -276,7 +279,7 @@ export default function LimitOrderPanel(props: {
       </div>
 
       <Col className="mt-2 w-full gap-3">
-        {hasLimitBet && filledAmount > 0 && (
+        {outcome && hasLimitBet && filledAmount > 0 && (
           <Row className="items-center justify-between gap-2 text-sm">
             <div className="text-ink-500 whitespace-nowrap">
               {isPseudoNumeric ? (
@@ -292,7 +295,7 @@ export default function LimitOrderPanel(props: {
           </Row>
         )}
 
-        {hasLimitBet && (
+        {outcome && hasLimitBet && (
           <Row className="items-center justify-between gap-2 text-sm">
             <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
               <div>

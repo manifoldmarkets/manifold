@@ -29,8 +29,9 @@ export function Slider(props: {
   marks?: { [key: number]: ReactNode }
   color?: keyof typeof colors
   className?: string
+  disabled?: boolean
 }) {
-  const { amount, onChange, min, max, step, marks, className } = props
+  const { amount, onChange, min, max, step, marks, className, disabled } = props
 
   const [light, dark] = colors[props.color ?? 'indigo']
 
@@ -50,6 +51,7 @@ export function Slider(props: {
         activeDotStyle={{ borderColor: dark }}
         trackStyle={{ backgroundColor: light }}
         handleStyle={{ ...handleStyle, backgroundColor: dark }}
+        disabled={disabled}
       />
     </div>
   )
