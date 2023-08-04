@@ -59,12 +59,11 @@ export const updatememberrole = authEndpoint(async (req, auth) => {
     if (auth.uid === affectedMember.member_id && role !== 'member')
       throw new APIError(400, 'User can only change their role to a lower role')
 
-    const realRole = role === 'member' ? null : role
     const ret = await tx.one(
       `update group_members
        set role = $1 where member_id = $2 and group_id = $3
        returning *`,
-      [realRole, memberId, groupId]
+      [role, memberId, groupId]
     )
 
     if (requesterUser && auth.uid != memberId) {
