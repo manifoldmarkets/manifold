@@ -2,14 +2,14 @@ import { mergeAttributes } from '@tiptap/core'
 import Mention from '@tiptap/extension-mention'
 import Link from 'next/link'
 import { ContractMention as LoadedContractMention } from 'web/components/contract/contract-mention'
-import { useRealtimeContract } from 'web/hooks/use-contract-supabase'
+import { useContract } from 'web/hooks/use-contract-supabase'
 import { contractMentionSuggestion } from './contract-mention-suggestion'
 
 const name = 'contract-mention-component'
 
 const ContractMention = (attrs: any) => {
   const { label, id } = attrs
-  const contract = useRealtimeContract(id)
+  const contract = useContract(id)
 
   return (
     <span className="not-prose">
