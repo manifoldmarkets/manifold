@@ -160,7 +160,7 @@ const FeedContractAndRelatedItems = (props: {
     childCommentsByParentCommentId,
     parentComments,
   } = props
-  const hasComments = parentComments.length > 0
+  const hasComments = parentComments && parentComments.length > 0
   const hasBets = groupedBetsByTime && groupedBetsByTime.length > 0
   // const hasRelatedItems = hasComments || (groupedBetsByTime ?? []).length > 0
   const [hidden, setHidden] = useState(false)
@@ -176,13 +176,10 @@ const FeedContractAndRelatedItems = (props: {
           children={
             hasBets && !hasComments ? (
               <>
-                {/* {(!parentComments || parentComments.length === 0) &&
-                  groupedBetsByTime?.length && ( */}
                 <FeedBetsItem
                   contract={contract}
                   groupedBets={groupedBetsByTime}
                 />
-                {/* )} */}
               </>
             ) : undefined
           }
