@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { last, maxBy, minBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { curveStepAfter } from 'd3-shape'
 import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'

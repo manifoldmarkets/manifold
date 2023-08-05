@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { last, max } from 'lodash'
-import { curveStepAfter } from 'd3-shape'
 import { CertContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import {
