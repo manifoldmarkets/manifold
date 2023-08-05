@@ -58,7 +58,7 @@ export function useMemberGroupIds(
           setGroupIds(groupIds)
         }
       })
-  })
+  }, [userId])
   return groupIds
 }
 
