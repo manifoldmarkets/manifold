@@ -88,7 +88,7 @@ export function useCommentsOnContract(contractId: string) {
     getCommentRows(contractId).then((result) => {
       setComments(result.map(convertContractComment))
     })
-  })
+  }, [contractId])
   return comments
 }
 
