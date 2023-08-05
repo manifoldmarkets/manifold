@@ -160,8 +160,8 @@ const FeedContractAndRelatedItems = (props: {
     childCommentsByParentCommentId,
     parentComments,
   } = props
-  const hasRelatedItems =
-    parentComments.length > 0 || (groupedBetsByTime ?? []).length > 0
+  const hasComments = parentComments && parentComments.length > 0
+  const hasBets = groupedBetsByTime && groupedBetsByTime.length > 0
   const [hidden, setHidden] = useState(false)
 
   return (
@@ -173,26 +173,25 @@ const FeedContractAndRelatedItems = (props: {
           trackingPostfix="feed"
           hide={() => setHidden(true)}
           children={
-            hasRelatedItems ? (
+            hasBets && !hasComments ? (
               <>
-                {parentComments.length > 0 && (
-                  <FeedCommentItem
-                    contract={contract}
-                    commentThreads={parentComments.map((parentComment) => ({
-                      parentComment,
-                      childComments:
-                        childCommentsByParentCommentId[parentComment.id] ?? [],
-                    }))}
-                  />
-                )}
-                {(!parentComments || parentComments.length === 0) &&
-                  groupedBetsByTime?.length && (
-                    <FeedBetsItem
-                      contract={contract}
-                      groupedBets={groupedBetsByTime}
-                    />
-                  )}
+                <FeedBetsItem
+                  contract={contract}
+                  groupedBets={groupedBetsByTime}
+                />
               </>
+            ) : undefined
+          }
+          bottomChildren={
+            hasComments ? (
+              <FeedCommentItem
+                contract={contract}
+                commentThreads={parentComments.map((parentComment) => ({
+                  parentComment,
+                  childComments:
+                    childCommentsByParentCommentId[parentComment.id] ?? [],
+                }))}
+              />
             ) : undefined
           }
           item={item}

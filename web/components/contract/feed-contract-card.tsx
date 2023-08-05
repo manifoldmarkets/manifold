@@ -42,6 +42,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 export function FeedContractCard(props: {
   contract: Contract
   children?: React.ReactNode
+  bottomChildren?: React.ReactNode
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
@@ -49,8 +50,15 @@ export function FeedContractCard(props: {
   className?: string
   hide?: () => void
 }) {
-  const { promotedData, trackingPostfix, item, className, children, hide } =
-    props
+  const {
+    promotedData,
+    trackingPostfix,
+    item,
+    className,
+    children,
+    bottomChildren,
+    hide,
+  } = props
   const user = useUser()
 
   const contract =
@@ -80,7 +88,7 @@ export function FeedContractCard(props: {
 
   return (
     <div ref={ref}>
-      {children ? (
+      {children || bottomChildren ? (
         <SimpleCard
           contract={contract}
           item={item}
@@ -88,6 +96,7 @@ export function FeedContractCard(props: {
           user={user}
           className={className}
           children={children}
+          bottomChildren={bottomChildren}
           hide={hide}
         />
       ) : (
@@ -110,12 +119,22 @@ function SimpleCard(props: {
   contract: Contract
   trackClick: () => void
   user: User | null | undefined
-  children: React.ReactNode
+  children?: React.ReactNode
+  bottomChildren?: React.ReactNode
   item?: FeedTimelineItem
   className?: string
   hide?: () => void
 }) {
-  const { contract, user, item, trackClick, className, children, hide } = props
+  const {
+    contract,
+    user,
+    item,
+    trackClick,
+    className,
+    children,
+    bottomChildren,
+    hide,
+  } = props
   const { outcomeType, mechanism, closeTime, isResolved } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
@@ -166,12 +185,16 @@ function SimpleCard(props: {
       )}
 
       {children}
-      <BottomActionRow
-        contract={contract}
-        item={item}
-        user={user}
-        hide={hide}
-      />
+      <Col>
+        <BottomActionRow
+          contract={contract}
+          item={item}
+          user={user}
+          hide={hide}
+          underline={!!bottomChildren}
+        />
+        {bottomChildren}
+      </Col>
     </ClickFrame>
   )
 }
@@ -365,12 +388,18 @@ const BottomActionRow = (props: {
   contract: Contract
   item: FeedTimelineItem | undefined
   user: User | null | undefined
+  underline?: boolean
   hide?: () => void
 }) => {
-  const { contract, user, item, hide } = props
+  const { contract, user, item, hide, underline } = props
   const { question } = contract
   return (
-    <Row className={'items-center justify-between py-2'}>
+    <Row
+      className={clsx(
+        'items-center justify-between pt-2',
+        underline ? 'border-1 border-ink-200 border-b pb-3' : 'pb-2'
+      )}
+    >
       <TradesButton contract={contract} />
       <CommentsButton contract={contract} user={user} />
       {hide && (
