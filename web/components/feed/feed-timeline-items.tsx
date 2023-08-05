@@ -162,7 +162,6 @@ const FeedContractAndRelatedItems = (props: {
   } = props
   const hasComments = parentComments && parentComments.length > 0
   const hasBets = groupedBetsByTime && groupedBetsByTime.length > 0
-  // const hasRelatedItems = hasComments || (groupedBetsByTime ?? []).length > 0
   const [hidden, setHidden] = useState(false)
 
   return (
