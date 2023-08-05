@@ -34,7 +34,6 @@ export const updategroupprivacy = authEndpoint(async (req, auth) => {
     throw new APIError(404, 'You cannot be found in group')
 
   const group = groupQuery.data[0]
-  const firebaseUser = await admin.auth().getUser(auth.uid)
 
   if (requester?.role !== 'admin' && !isAdminId(auth.uid))
     throw new APIError(

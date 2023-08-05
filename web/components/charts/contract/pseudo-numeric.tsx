@@ -110,7 +110,6 @@ export const PseudoNumericContractChart = (props: {
       viewScaleProps={viewScaleProps}
       showZoomer={showZoomer}
       data={data}
-      curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={PseudoNumericChartTooltip}
       color={color ?? NUMERIC_GRAPH_COLOR}

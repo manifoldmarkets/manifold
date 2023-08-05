@@ -61,7 +61,6 @@ export const CertContractChart = (props: {
       xScale={xScale}
       yScale={yScale}
       data={data}
-      curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={CertChartTooltip}
       color={color ?? NUMERIC_GRAPH_COLOR}

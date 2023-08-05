@@ -110,7 +110,6 @@ export const StonkContractChart = (props: {
       yScale={yScale}
       viewScaleProps={viewScaleProps}
       data={data}
-      curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={StonkChartTooltip}
       color={color ?? YES_GRAPH_COLOR}

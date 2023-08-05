@@ -9,6 +9,7 @@ import { SingleValueHistoryChart } from './generic-charts'
 import { TooltipProps } from './helpers'
 import { SizedContainer } from 'web/components/sized-container'
 import { HistoryPoint } from 'common/chart'
+import { curveLinear } from 'd3-shape'
 
 const getPoints = (startDate: number, dailyValues: number[]) => {
   const startDateDayJs = dayjs(startDate)
@@ -68,6 +69,7 @@ export function DailyChart(props: {
           data={data}
           Tooltip={pct ? DailyPercentTooltip : DailyCountTooltip}
           color="#11b981"
+          curve={curveLinear}
           showZoomer
         />
       )}

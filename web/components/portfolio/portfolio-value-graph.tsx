@@ -55,7 +55,6 @@ export const PortfolioGraph = (props: {
       viewScaleProps={viewScaleProps}
       yKind="Ṁ"
       data={points}
-      curve={curveStepAfter}
       Tooltip={PortfolioTooltip}
       onMouseOver={onMouseOver}
       color={
