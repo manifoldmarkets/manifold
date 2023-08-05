@@ -4,6 +4,7 @@ import {
   convertContractComment,
   getAllCommentRows,
   getCommentRows,
+  getCommentsOnContract,
   getNumContractComments,
   getNumUserComments,
   getPostCommentRows,
@@ -85,8 +86,8 @@ export function useCommentsOnContract(contractId: string) {
     undefined
   )
   useEffect(() => {
-    getCommentRows(contractId).then((result) => {
-      setComments(result.map(convertContractComment))
+    getCommentsOnContract(contractId).then((comments) => {
+      setComments(comments)
     })
   }, [contractId])
   return comments

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ChatIcon } from '@heroicons/react/outline'
 import { ChatIcon as ChatIconSolid } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -14,7 +14,6 @@ import {
   useCommentsOnContract,
   useRealtimeCommentsOnContract,
 } from 'web/hooks/use-comments-supabase'
-import { getNumContractComments } from 'web/lib/supabase/comments'
 
 export function SwipeComments(props: {
   contract: Contract
@@ -55,10 +54,7 @@ export function CommentsButton(props: {
   const { contract, user } = props
 
   const [open, setOpen] = useState(false)
-  const [totalComments, setTotalComments] = useState(0)
-  useEffect(() => {
-    getNumContractComments(contract.id).then(setTotalComments)
-  }, [contract.id])
+  const totalComments = 0 // useNumContractComments(contract.id)
 
   return (
     <Tooltip text={`Comments`} placement="top" className={'z-10'}>
