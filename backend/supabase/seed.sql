@@ -650,8 +650,6 @@ select
 
 create index contract_comments_data_likes_idx on contract_comments (((data -> 'likes')::numeric));
 
-create index contract_comments_data_created_time_idx on contract_comments (((data ->> 'createdTime')::bigint));
-
 create index contract_comments_created_time_idx on contract_comments (created_time desc);
 
 alter table contract_comments

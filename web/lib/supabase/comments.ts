@@ -159,7 +159,7 @@ export async function getNumContractComments(contractId: string) {
   const { count } = await run(
     db
       .from('contract_comments')
-      .select('comment_id', { count: 'exact' })
+      .select('*', { head: true, count: 'exact' })
       .eq('contract_id', contractId)
   )
   return count ?? 0
