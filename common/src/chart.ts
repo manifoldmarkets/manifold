@@ -50,13 +50,19 @@ export const maxMinBin = <P extends HistoryPoint>(
 
   //  for each bin, get the max, min, and median in that bin
   const result = []
+  let lastInBin = points[0]
   for (let i = 0; i < bins; i++) {
     const binStart = min + i * binWidth
     const binEnd = binStart + binWidth
     const binPoints = points.filter((p) => p.x >= binStart && p.x < binEnd)
-    if (binPoints.length <= 3) {
+    if (binPoints.length === 0) {
+      // insert a synthetic point at the start of the bin to prevent long diagonal lines
+      result.push({ ...lastInBin, x: binEnd })
+    } else if (binPoints.length <= 3) {
+      lastInBin = binPoints[binPoints.length - 1]
       result.push(...binPoints)
     } else {
+      lastInBin = binPoints[binPoints.length - 1]
       binPoints.sort((a, b) => a.y - b.y)
       const min = binPoints[0]
       const max = binPoints[binPoints.length - 1]
@@ -75,10 +81,10 @@ export const compressPoints = <P extends HistoryPoint>(
   max: number
 ) => {
   // add buffer of 100 points on each side for nice panning.
-  const smallIndex = Math.max(points.findIndex((p) => p.x >= min) - 100, 1)
+  const smallIndex = Math.max(points.findIndex((p) => p.x >= min) - 100, 0)
   const bigIndex = Math.min(
     points.findIndex((p) => p.x >= max) + 100,
-    points.length - 2
+    points.length
   )
 
   const toCompress = points.slice(smallIndex, bigIndex)

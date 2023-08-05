@@ -310,8 +310,10 @@ export const ControllableSingleValueHistoryChart = <
   const { viewXScale, setViewXScale, viewYScale, setViewYScale } =
     props.viewScaleProps
   const yKind = props.yKind ?? 'amount'
+  const xScale = viewXScale ?? props.xScale
+  const yScale = viewYScale ?? props.yScale
 
-  const [xMin, xMax] = viewXScale?.domain().map((d) => d.getTime()) ?? [
+  const [xMin, xMax] = xScale?.domain().map((d) => d.getTime()) ?? [
     data[0].x,
     data[data.length - 1].x,
   ]
@@ -324,8 +326,6 @@ export const ControllableSingleValueHistoryChart = <
   const curve = props.curve ?? isCompressed ? curveLinear : curveStepAfter
 
   const [mouse, setMouse] = useState<TooltipParams<P> & SliceExtent>()
-  const xScale = viewXScale ?? props.xScale
-  const yScale = viewYScale ?? props.yScale
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py0 = yScale(0)
