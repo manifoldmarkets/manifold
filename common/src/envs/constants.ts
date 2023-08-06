@@ -22,7 +22,7 @@ export function isTrustworthy(username?: string) {
   if (!username) {
     return false
   }
-  return CHECK_USERNAMES.includes(username)
+  return MOD_USERNAMES.includes(username)
 }
 export const DOMAIN = ENV_CONFIG.domain
 export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
@@ -105,19 +105,13 @@ export const CORE_USERNAMES = [
   'IngaWei',
 ]
 
-export const CHECK_USERNAMES = [
+export const MOD_USERNAMES = [
   'Manifold',
-  'EliezerYudkowsky',
   'memestiny',
-  'ScottAlexander',
-  'Aella',
   'BTE',
   'jack',
   'Yev',
-  'ZviMowshowitz',
-  'NathanpmYoung',
   'itsTomekK',
-  'SneakySly',
   'MattP',
   'egroj',
   'dreev',
@@ -125,7 +119,6 @@ export const CHECK_USERNAMES = [
   'LivInTheLookingGlass',
   'LarsDoucet',
   'Conflux',
-  'GavrielK',
   'NcyRocks',
   'MichaelWheatley',
   'dglid',
@@ -140,17 +133,32 @@ export const CHECK_USERNAMES = [
   'MatthewBarnett',
   'Jacy',
   'Gabrielle',
-  'CGPGrey',
   'KatjaGrace',
   'AndrewG',
   'MarcusAbramovitch',
   'KevinBurke',
-  'LexFridman',
   'PeterWildeford',
   'ScottLawrence',
   'NoaNabeshima',
   'Mira',
   'evergreenemily',
+]
+
+export const VERIFIED_USERNAMES = [
+  'EliezerYudkowsky',
+  'ScottAlexander',
+  'Aella',
+  'ZviMowshowitz',
+  'NathanpmYoung',
+  'SneakySly',
+  'GavrielK',
+  'CGPGrey',
+  'LexFridman',
+  'patio11',
+  'RichardHanania',
+  'Qualy',
+  'Roko',
+  'JonathanBlow',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
