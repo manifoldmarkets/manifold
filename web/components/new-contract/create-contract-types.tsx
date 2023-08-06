@@ -48,18 +48,18 @@ export const PREDICTIVE_CONTRACT_TYPES = {
       </Col>
     ),
   },
-  numeric: {
-    label: 'Numeric',
-    value: 'PSEUDO_NUMERIC',
-    name: 'numeric',
-    descriptor: 'A question with a numerical answer.',
-    example: 'How many people will come to Taco Tuesday?',
-    visual: (
-      <Col className="text-primary-400 relative my-auto h-12 w-12">
-        <GoNumber className="h-12 w-12" />
-      </Col>
-    ),
-  },
+  // numeric: {
+  //   label: 'Numeric',
+  //   value: 'PSEUDO_NUMERIC',
+  //   name: 'numeric',
+  //   descriptor: 'A question with a numerical answer.',
+  //   example: 'How many people will come to Taco Tuesday?',
+  //   visual: (
+  //     <Col className="text-primary-400 relative my-auto h-12 w-12">
+  //       <GoNumber className="h-12 w-12" />
+  //     </Col>
+  //   ),
+  // },
 }
 
 export const NON_PREDICTIVE_CONTRACT_TYPES = {
