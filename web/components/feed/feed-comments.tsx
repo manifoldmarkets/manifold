@@ -48,6 +48,7 @@ import { AwardBountyButton } from '../contract/bountied-question'
 import { Content } from '../widgets/editor'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
+import { isAdminId } from 'common/envs/constants'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -373,13 +374,14 @@ export function DotMenu(props: {
               else toast.error(`You can't report your own comment`)
             },
           },
-          comment.userId === user?.id && {
-            name: 'Edit',
-            icon: <PencilIcon className="h-5 w-5" />,
-            onClick: async () => {
-              setEditingComment(true)
+          user &&
+            (comment.userId === user.id || isAdminId(user?.id)) && {
+              name: 'Edit',
+              icon: <PencilIcon className="h-5 w-5" />,
+              onClick: async () => {
+                setEditingComment(true)
+              },
             },
-          },
           (isAdmin || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
