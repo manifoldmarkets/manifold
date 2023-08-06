@@ -55,8 +55,8 @@ export default Node.create<IframeOptions>({
 
   renderHTML({ HTMLAttributes }) {
     return [
-      'div',
-     {},
+      'iframe',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
     ]
   },
 
