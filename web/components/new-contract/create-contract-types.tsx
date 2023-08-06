@@ -5,7 +5,6 @@ import {
   BsUiChecks,
 } from 'react-icons/bs'
 import { GiReceiveMoney } from 'react-icons/gi'
-import { GoNumber } from 'react-icons/go'
 import { TfiWrite } from 'react-icons/tfi'
 import { Col } from '../layout/col'
 import { CgPoll } from 'react-icons/cg'
