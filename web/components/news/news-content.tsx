@@ -188,8 +188,10 @@ const ElonVersusZuck = createNewsDashboardTab(
   'Elon vs Zuck',
   'Elon Musk and Mark Zuckerberg cage fight?',
   [
+    {
+      url: 'https://abcnews.go.com/US/wireStory/musk-cage-fight-zuckerberg-streamed-102053512',
+    },
     { slug: 'will-elon-musk-and-mark-zuckerberg-bd28b2349d95' },
-    { url: 'https://www.bbc.com/news/business-65981876' },
     { slug: 'if-elon-zuck-fight-will-it-be-at-th' },
     {
       url: 'https://nypost.com/2023/06/30/elon-musk-mark-zuckerberg-can-fight-at-colosseum-italian-govt/',
@@ -786,6 +788,7 @@ const CancerPill = createNewsDashboardTab(
 
 export const newsContent = [
   STPSuper,
+  ElonVersusZuck,
   CancerPill,
   Trump,
   NigerCoup,
@@ -793,17 +796,6 @@ export const newsContent = [
   UFOs,
   XCom,
   Election2024,
-  IsraeliCourt,
-  // RPlace,
   Threads,
   OpenAI,
-  ElonVersusZuck,
-  // GlobalWarming,
-  // SummitNATO,
-  // SupremeCourt,
-  // WestBank,
-  // FrenchRiots,
-  // { title: 'Russian Coup?', content: <RussianCoupData /> },
-  // { title: 'Titanic Sub', content: <MissingSubData /> },
-  // { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
 ]
