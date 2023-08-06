@@ -159,6 +159,20 @@ export const VERIFIED_USERNAMES = [
   'Qualy',
   'Roko',
   'JonathanBlow',
+  'DwarkeshPatel',
+  'ByrneHobart',
+  'RobertWiblin',
+  'KelseyPiper',
+  'SpencerGreenberg',
+  'PaulChristiano',
+  'BuckShlegeris',
+  'Natalia',
+  'Zero',
+  'OzzieGooen',
+  'OliverHabryka',
+  'Alicorn',
+  'RazibKhan',
+  'JamesMedlock',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
