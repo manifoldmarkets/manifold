@@ -214,6 +214,8 @@ export default function LimitOrderPanel(props: {
             selected={outcome}
             onSelect={(selected) => setOutcome(selected)}
             disabled={isSubmitting}
+            yesLabel={isPseudoNumeric ? 'HIGHER' : undefined}
+            noLabel={isPseudoNumeric ? 'LOWER' : undefined}
           />
         </Row>
         <Row className="w-full items-center gap-3">
