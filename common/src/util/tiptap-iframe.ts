@@ -1,6 +1,6 @@
 // Adopted from https://github.com/ueberdosis/tiptap/blob/main/demos/src/Experiments/Embeds/Vue/iframe.ts
 
-import { mergeAttributes, Node } from '@tiptap/core'
+import { Node } from '@tiptap/core'
 
 export interface IframeOptions {
   allowFullscreen: boolean
