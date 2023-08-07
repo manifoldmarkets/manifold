@@ -601,7 +601,6 @@ export const createLimitBetCanceledNotification = async (
 export const createReferralNotification = async (
   toUser: User,
   referredUser: User,
-  idempotencyKey: string,
   bonusAmount: string,
   referredByContract?: Contract,
   referredByGroup?: { slug: string; name: string }
@@ -615,7 +614,7 @@ export const createReferralNotification = async (
   if (!sendToBrowser) return
 
   const notification: Notification = {
-    id: idempotencyKey,
+    id: referredUser.id + '-signup-referral-bonus',
     userId: toUser.id,
     reason: referredByGroup
       ? 'user_joined_from_your_group_invite'

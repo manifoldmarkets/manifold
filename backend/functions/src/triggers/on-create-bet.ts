@@ -531,7 +531,6 @@ async function handleReferral(staleUser: User, eventId: string) {
     await createReferralNotification(
       referredByUser,
       user,
-      eventId,
       txn.amount.toString(),
       referredByContract,
       referredByGroup
