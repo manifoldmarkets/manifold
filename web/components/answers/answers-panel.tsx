@@ -68,7 +68,7 @@ export function AnswersPanel(props: {
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
 
-  const sortByProb = addAnswersMode === 'ANYONE' || answers.length <= maxAnswers
+  const sortByProb = addAnswersMode === 'ANYONE' || answers.length > maxAnswers
   const sortedAnswers = sortBy(answers, [
     // winners before losers
     (answer) => (resolutions ? -1 * resolutions[answer.id] : 0),
