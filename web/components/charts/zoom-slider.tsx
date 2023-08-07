@@ -31,6 +31,7 @@ export const ZoomSlider = (props: {
           )
         }
         className="flex h-auto grow items-center px-4"
+        color="light"
       />
       {formatDateInRange(max, min, now)}
     </div>

@@ -80,6 +80,7 @@ const constrainExtent = (
   const minExtent = constraints.minExtent ?? 0
   const start = Math.max(extent[0], min)
   const end = Math.min(extent[1], max)
+
   const size = end - start
   if (size >= minExtent) {
     return [start, end]
