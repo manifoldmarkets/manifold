@@ -9,7 +9,17 @@ import { getBoosts } from 'web/lib/supabase/ads'
 import { BoostsType } from 'web/hooks/use-feed'
 import { Row, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { first, groupBy, last, orderBy, sortBy, uniq, uniqBy } from 'lodash'
+import {
+  countBy,
+  first,
+  groupBy,
+  last,
+  orderBy,
+  range,
+  sortBy,
+  uniq,
+  uniqBy,
+} from 'lodash'
 import { News } from 'common/news'
 import { FEED_DATA_TYPES, FEED_REASON_TYPES, getExplanation } from 'common/feed'
 import { isContractBlocked } from 'web/lib/firebase/users'
@@ -21,7 +31,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 50
 const OLDEST_UNSEEN_TIME_OF_INTEREST = new Date(
   Date.now() - 5 * DAY_MS
 ).toISOString()
@@ -46,6 +56,7 @@ export type FeedTimelineItem = {
   reasonDescription?: string
   isCopied?: boolean
   data?: Record<string, any>
+  manuallyCreatedFromContract?: boolean
 }
 const baseUserFeedQuery = (userId: string, privateUser: PrivateUser) =>
   db
@@ -85,7 +96,6 @@ export const useFeedTimeline = (
   const oldestCreatedTimestamp = useRef(
     last(savedFeedItems)?.supabaseTimestamp ?? new Date().toISOString()
   )
-  const fetching = useRef(false)
 
   const fetchFeedItems = async (
     userId: string,
@@ -94,8 +104,7 @@ export const useFeedTimeline = (
       old?: boolean
     }
   ) => {
-    if (fetching.current) return { timelineItems: [] as FeedTimelineItem[] }
-    const data = [] as Row<'user_feed'>[]
+    const newFeedRows = [] as Row<'user_feed'>[]
     let query = baseUserFeedQuery(userId, privateUser).limit(PAGE_SIZE)
     // TODO: if you're loading older, unseen stuff, newer stuff could be seen
     if (options.newerThan) {
@@ -110,17 +119,24 @@ export const useFeedTimeline = (
         .is('seen_time', null)
         .limit(15)
       const { data: highSignalData } = await run(bestFeedRowsQuery)
-      data.push(...highSignalData)
+      newFeedRows.push(...highSignalData)
 
       query = query
         .gt('created_time', OLDEST_UNSEEN_TIME_OF_INTEREST)
         .is('seen_time', null)
         .lt('created_time', oldestCreatedTimestamp.current)
-      if (highSignalData.length > 0)
-        query = query.not('id', 'in', `(${highSignalData.map((d) => d.id)})`)
+      if (highSignalData.length > 0) {
+        query = query
+          .not('id', 'in', `(${highSignalData.map((d) => d.id)})`)
+          .not(
+            'contract_id',
+            'in',
+            `(${filterDefined(highSignalData.map((d) => d.contract_id))})`
+          )
+      }
     }
     const { data: lowerSignalData } = await run(query)
-    data.push(...lowerSignalData)
+    newFeedRows.push(...lowerSignalData)
 
     const {
       newContractIds,
@@ -129,7 +145,7 @@ export const useFeedTimeline = (
       potentiallySeenCommentIds,
       newsIds,
       groupIds,
-    } = getNewContentIds(data, savedFeedItems, followedIds)
+    } = getNewContentIds(newFeedRows, savedFeedItems, followedIds)
 
     const [
       comments,
@@ -217,13 +233,12 @@ export const useFeedTimeline = (
 
     // It's possible we're missing contracts for news items bc of the duplicate filter
     const timelineItems = createFeedTimelineItems(
-      data,
+      newFeedRows,
       filteredNewContracts,
       filteredNewComments,
       news,
       groups
     )
-    fetching.current = false
 
     return { timelineItems }
   }
@@ -251,42 +266,34 @@ export const useFeedTimeline = (
         )
     }
   )
-
   const loadMore = useEvent(
     async (options: { old?: boolean; newerThan?: string }) => {
-      if (!userId) return 0
+      if (!userId) return []
       const res = await fetchFeedItems(userId, options)
       const { timelineItems } = res
       addTimelineItems(timelineItems, options)
-      return timelineItems.length
+      return timelineItems
     }
   )
 
-  const checkForNewer = useEvent(async () => {
-    if (!userId) return []
-    const { timelineItems } = await fetchFeedItems(userId, {
-      newerThan: newestCreatedTimestamp.current,
-    })
-    return timelineItems
-  })
-
-  const tryToLoadManyCardsAtStart = async () => {
-    let attempts = 0
-    while (attempts < 5) {
-      const res = await loadMore({ old: true })
-      if (res < 10) attempts++
-      else break
+  const tryToLoadManyCardsAtStart = useEvent(async () => {
+    for (const _ of range(0, 5)) {
+      const moreFeedItems = await loadMore({ old: true })
+      if (moreFeedItems.length > 5) break
     }
-  }
+  })
 
   useEffect(() => {
     if (savedFeedItems?.length || !userId) return
     tryToLoadManyCardsAtStart()
-  }, [loadMore, userId])
+  }, [userId])
 
   return {
     loadMoreOlder: async () => loadMore({ old: true }),
-    checkForNewer: async () => checkForNewer(),
+    checkForNewer: async () =>
+      loadMore({
+        newerThan: newestCreatedTimestamp.current,
+      }),
     addTimelineItems,
     boosts: boosts?.filter(
       (b) =>
@@ -353,15 +360,8 @@ function createFeedTimelineItems(
           (contract) => contract.id === item.contract_id
         )
         // We may not find a relevant contract if they've already seen the same contract in their feed
-        if (!relevantContract) return
-        // If the contract is closed/resolved, only show it due to market movements or trending.
-        // Otherwise, we don't need to see comments on closed/resolved markets
         if (
-          shouldIgnoreCommentsOnContract(relevantContract) &&
-          (dataType === 'new_comment' || dataType === 'popular_comment')
-        )
-          return
-        if (
+          !relevantContract ||
           getMarketMovementInfo(
             relevantContract,
             dataType,
@@ -399,13 +399,6 @@ function createFeedTimelineItems(
   )
 }
 
-const shouldIgnoreCommentsOnContract = (contract: Contract): boolean => {
-  return (
-    contract.isResolved ||
-    (contract.closeTime ? contract.closeTime < Date.now() : false)
-  )
-}
-
 const getNewContentIds = (
   data: Row<'user_feed'>[],
   savedFeedItems: FeedTimelineItem[] | undefined,
@@ -415,9 +408,37 @@ const getNewContentIds = (
   const alreadySavedContractIds = filterDefined(
     savedFeedItems?.map((item) => item.contractId) ?? []
   )
+  const alreadySavedNewsIds = filterDefined(
+    savedFeedItems?.map((item) => item.newsId) ?? []
+  )
+
+  const newsIds = filterDefined(
+    data
+      .filter(
+        (item) =>
+          item.news_id &&
+          item.contract_id &&
+          !alreadySavedNewsIds.includes(item.news_id)
+      )
+      .map((item) => item.news_id)
+  )
+  const counted = countBy(newsIds)
+  const mostImportantNewsId = first(
+    sortBy(Object.keys(counted), (newsId) => -counted[newsId])
+  )
+  const shouldGetNewsRelatedItem = (item: Row<'user_feed'>) =>
+    item.news_id ? item.news_id === mostImportantNewsId : true
+
   const newContractIds = uniq(
-    filterDefined(data.map((item) => item.contract_id)).filter(
-      (id) => !alreadySavedContractIds.includes(id)
+    filterDefined(
+      data
+        .filter(
+          (item) =>
+            item.contract_id &&
+            !alreadySavedContractIds.includes(item.contract_id) &&
+            shouldGetNewsRelatedItem(item)
+        )
+        .map((item) => item.contract_id)
     )
   )
   const newCommentIdsFromFollowed = filterDefined(
@@ -433,29 +454,24 @@ const getNewContentIds = (
     )
   )
 
-  const groupIds = uniq(filterDefined(data.map((item) => item.group_id)))
-
-  const potentiallySeenCommentIds = uniq(
-    filterDefined(data.map((item) => (item.seen_time ? null : item.comment_id)))
-  )
-  const alreadySavedNewsIds = filterDefined(
-    savedFeedItems?.map((item) => item.newsId) ?? []
-  )
-  const newsIds = uniq(
+  const groupIds = uniq(
     filterDefined(
-      data.map((item) =>
-        item.news_id && !alreadySavedNewsIds.includes(item.news_id)
-          ? item.news_id
-          : null
-      )
+      data
+        .filter((item) => item.group_id && shouldGetNewsRelatedItem(item))
+        .map((item) => item.group_id)
     )
   )
+
+  const potentiallySeenCommentIds = uniq(
+    filterDefined(data.map((item) => item.comment_id))
+  )
+
   return {
     newContractIds,
     newCommentIds,
     newCommentIdsFromFollowed,
     potentiallySeenCommentIds,
-    newsIds,
+    newsIds: [mostImportantNewsId],
     groupIds,
   }
 }

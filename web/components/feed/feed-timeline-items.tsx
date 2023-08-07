@@ -29,15 +29,9 @@ export const MIN_BET_AMOUNT = 20
 export const FeedTimelineItems = (props: {
   feedTimelineItems: FeedTimelineItem[]
   boosts?: BoostsType
-  manualContracts?: Contract[]
   user: User | null | undefined
 }) => {
-  const {
-    user,
-    manualContracts,
-    boosts,
-    feedTimelineItems: savedFeedTimelineItems,
-  } = props
+  const { user, boosts, feedTimelineItems: savedFeedTimelineItems } = props
   const savedFeedComments = filterDefined(
     savedFeedTimelineItems.map((item) => item.comments)
   ).flat()
@@ -60,6 +54,17 @@ export const FeedTimelineItems = (props: {
   return (
     <>
       {feedTimelineItems.map((item) => {
+        if (item.contract && 'manuallyCreatedFromContract' in item) {
+          return (
+            <FeedContractAndRelatedItems
+              user={user}
+              contract={item.contract}
+              parentComments={[]}
+              childCommentsByParentCommentId={{}}
+              key={item.contract.id}
+            />
+          )
+        }
         if (item.contract && ('ad_id' in item || 'contract' in item)) {
           const { contract } = item
           // Boosted contract
@@ -130,15 +135,6 @@ export const FeedTimelineItems = (props: {
           )
         }
       })}
-      {manualContracts?.map((contract) => (
-        <FeedContractAndRelatedItems
-          user={user}
-          contract={contract}
-          parentComments={[]}
-          childCommentsByParentCommentId={{}}
-          key={contract.id + 'feed-timeline-item'}
-        />
-      ))}
     </>
   )
 }
@@ -241,3 +237,22 @@ const FeedItemFrame = (props: {
     </div>
   )
 }
+
+export const convertContractToManualFeedItem = (
+  contract: Contract,
+  createdTime: number
+): FeedTimelineItem =>
+  ({
+    contract,
+    createdTime,
+    id: Math.random(),
+    contractId: contract.id,
+    dataType: 'trending_contract',
+    reason: 'similar_interest_vector_to_contract',
+    supabaseTimestamp: new Date(createdTime).toISOString(),
+    isCopied: true,
+    avatarUrl: contract.creatorAvatarUrl,
+    commentId: null,
+    newsId: null,
+    manuallyCreatedFromContract: true,
+  } as FeedTimelineItem)

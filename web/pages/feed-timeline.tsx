@@ -9,18 +9,19 @@ import { ArrowUpIcon, PencilAltIcon } from '@heroicons/react/solid'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { FeedTimelineItem, useFeedTimeline } from 'web/hooks/use-feed-timeline'
-import { FeedTimelineItems } from 'web/components/feed/feed-timeline-items'
+import {
+  convertContractToManualFeedItem,
+  FeedTimelineItems,
+} from 'web/components/feed/feed-timeline-items'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Avatar } from 'web/components/widgets/avatar'
-import { uniq } from 'lodash'
+import { last, range, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
 import { Page } from 'web/components/layout/page'
-import { DAY_MS, MINUTE_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import {
   DAYS_TO_USE_FREE_QUESTIONS,
   freeQuestionRemaining,
@@ -95,25 +96,19 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
     Date.now(),
     'last-seen-feed-timeline' + user?.id
   )
-  const [manualContracts, setManualContracts] = usePersistentInMemoryState<
-    Contract[] | undefined
-  >(undefined, `new-interesting-contracts-${user?.id}-feed-timeline`)
 
   const [topIsVisible, setTopIsVisible] = useState(false)
   const [newerTimelineItems, setNewerTimelineItems] = useState<
     FeedTimelineItem[]
   >([])
   const [loadingMore, setLoadingMore] = useState(false)
-  const checkForNewerFeedItems = async () => {
-    return await checkForNewer()
-  }
 
   // This queries for new items if they haven't looked at the page in a while like twitter
   useEffect(() => {
     if (newerTimelineItems.length > 0) return
     const now = Date.now()
     if (pageVisible && now - lastSeen > MINUTE_MS)
-      checkForNewerFeedItems().then(setNewerTimelineItems)
+      checkForNewer().then(setNewerTimelineItems)
     if (!pageVisible) setLastSeen(now)
     return () => setLastSeen(Date.now())
   }, [pageVisible])
@@ -124,7 +119,7 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
     const now = Date.now()
     if (topIsVisible && now - lastSeen > 10000) {
       setLoadingMore(true)
-      checkForNewerFeedItems().then((newerTimelineItems) => {
+      checkForNewer().then((newerTimelineItems) => {
         addTimelineItems(newerTimelineItems, { new: true })
         setLoadingMore(false)
       })
@@ -138,21 +133,28 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
     filterDefined(newerTimelineItems.map((item) => item.avatarUrl))
   ).slice(0, 3)
   const fetchMoreOlderContent = async () => {
-    const moreFeedItems = await loadMoreOlder()
-    if (moreFeedItems == 0 && user) {
-      const excludedContractIds = savedFeedItems
-        .map((i) => i.contractId)
-        .concat(manualContracts?.map((c) => c.id) ?? [])
-      const { data } = await db.rpc(
-        'get_recommended_contracts_embeddings_fast',
-        {
-          uid: user.id,
-          n: 10,
-          excluded_contract_ids: filterDefined(excludedContractIds),
-        }
-      )
-
-      setManualContracts((data ?? []).map((row: any) => row.data as Contract))
+    if (!user) return
+    for (const i of range(0, 2)) {
+      const moreFeedItems = await loadMoreOlder()
+      if (moreFeedItems.length > 5) break
+      if (i == 1) {
+        const excludedContractIds = savedFeedItems.map((i) => i.contractId)
+        const { data } = await db.rpc(
+          'get_recommended_contracts_embeddings_fast',
+          {
+            uid: user.id,
+            n: 20,
+            excluded_contract_ids: filterDefined(excludedContractIds),
+          }
+        )
+        const manualFeedItems = (data ?? []).map((row: any) =>
+          convertContractToManualFeedItem(
+            row.data,
+            (last(savedFeedItems)?.createdTime ?? Date.now()) - HOUR_MS
+          )
+        )
+        addTimelineItems(manualFeedItems, { old: true })
+      }
     }
   }
 
@@ -184,8 +186,7 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
       <FeedTimelineItems
         boosts={boosts}
         user={user}
-        feedTimelineItems={savedFeedItems}
-        manualContracts={manualContracts}
+        feedTimelineItems={uniqBy(savedFeedItems, (i) => i.newsId ?? i.id)}
       />
       <div className="relative">
         <VisibilityObserver
