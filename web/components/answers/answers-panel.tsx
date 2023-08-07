@@ -70,14 +70,13 @@ export function AnswersPanel(props: {
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
 
+  const sortByProb = addAnswersMode === 'ANYONE' || answers.length <= maxAnswers
   const sortedAnswers = sortBy(answers, [
     // winners before losers
     (answer) => (resolutions ? -1 * resolutions[answer.id] : 0),
     // then by prob or index
     (answer) =>
-      answers.length <= maxAnswers && 'index' in answer
-        ? answer.index
-        : -1 * answer.prob,
+      !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
   ])
 
   const answersToShow = (
@@ -173,6 +172,7 @@ function Answer(props: {
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
   const isDpm = contract.mechanism === 'dpm-2'
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
+  const isOther = 'isOther' in answer && answer.isOther
   const addAnswersMode =
     'addAnswersMode' in contract
       ? contract.addAnswersMode ?? 'DISABLED'
@@ -202,7 +202,9 @@ function Answer(props: {
         <AnswerLabel
           text={answer.text}
           creator={
-            addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
+            addAnswersMode === 'ANYONE' && !isOther
+              ? answerCreator ?? false
+              : undefined
           }
           className={clsx(
             'items-center text-sm !leading-none sm:flex sm:text-base',
