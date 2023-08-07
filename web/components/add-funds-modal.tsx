@@ -1,5 +1,5 @@
 import { formatMoney, manaToUSD } from 'common/util/format'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { Button } from './buttons/button'

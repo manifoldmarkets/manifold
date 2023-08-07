@@ -1,5 +1,5 @@
 import { sortBy, sumBy, uniqBy } from 'lodash'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/legacy/image'
 
 import { Col } from 'web/components/layout/col'

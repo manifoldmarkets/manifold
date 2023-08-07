@@ -1,4 +1,3 @@
-import React from 'react'
 import { CodeIcon } from '@heroicons/react/outline'
 import toast from 'react-hot-toast'
 

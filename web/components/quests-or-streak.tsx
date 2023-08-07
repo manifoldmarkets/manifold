@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { User } from 'common/user'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'

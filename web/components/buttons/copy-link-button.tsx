@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { trackShareEvent } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'

@@ -1,7 +1,6 @@
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { EyeIcon } from '@heroicons/react/outline'
-import React from 'react'
 import clsx from 'clsx'
 
 export const WatchMarketModal = (props: {

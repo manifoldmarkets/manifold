@@ -12,7 +12,7 @@ import {
 import { getUser, User } from 'web/lib/firebase/users'
 import { PencilIcon } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'

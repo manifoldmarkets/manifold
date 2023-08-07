@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { forwardRef, Ref } from 'react'
+import { forwardRef, Ref } from 'react'
 
 /** Text input. Wraps html `<input>` */
 export const Input = forwardRef(

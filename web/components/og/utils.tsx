@@ -1,4 +1,4 @@
-import React, { ReactElement, ReactNode } from 'react'
+import { createElement, ReactElement, ReactNode } from 'react'
 
 // new function for type reasons
 export function classToTw(element: ReactElement) {
@@ -30,7 +30,7 @@ function replaceTw(element: ReactNode): ReactNode {
     const component = element.type as (props: any) => ReactElement
 
     const newType = (props: any) => replaceTw(component(props)) as ReactElement
-    return React.createElement(newType, element.props)
+    return createElement(newType, element.props)
   }
 
   // pure element
@@ -51,5 +51,5 @@ function replaceTw(element: ReactNode): ReactNode {
       : [replaceTw(children)]
     : []
 
-  return React.createElement(element.type, newProps, newChildren)
+  return createElement(element.type, newProps, newChildren)
 }

@@ -19,7 +19,7 @@ import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { track } from 'web/lib/service/analytics'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { GroupTag } from 'web/pages/groups'
 

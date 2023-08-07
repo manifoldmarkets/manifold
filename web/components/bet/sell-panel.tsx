@@ -12,7 +12,7 @@ import {
   formatMoney,
 } from 'common/util/format'
 import { sumBy } from 'lodash'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { sellShares } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
