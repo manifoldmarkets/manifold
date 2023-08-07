@@ -15,6 +15,8 @@ const ANTES = {
   POLL: 10,
 }
 
+export const MINIMUM_BOUNTY = 5
+
 export const getAnte = (
   outcomeType: OutcomeType,
   numAnswers: number | undefined

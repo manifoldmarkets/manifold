@@ -14,7 +14,7 @@ import {
   Visibility,
   add_answers_mode,
 } from 'common/contract'
-import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
+import { MINIMUM_BOUNTY, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
@@ -501,7 +501,7 @@ export function ContractParamsForm(props: {
           {amountSuppliedByHouse === 0 ? (
             <BuyAmountInput
               inputClassName="w-full max-w-none"
-              minimumAmount={5}
+              minimumAmount={MINIMUM_BOUNTY}
               amount={bountyAmount}
               onChange={(newAmount) => setBountyAmount(newAmount)}
               error={bountyError}
