@@ -8,7 +8,6 @@ import { Bet } from 'common/bet'
 import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
 import {
   CPMMMultiContract,
-  FreeResponseContract,
   MultiContract,
   contractPath,
   tradingAllowed,
@@ -17,14 +16,13 @@ import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { nthColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { AnswerBar, AnswerLabel } from './answer-item'
-import { CreateAnswerCpmmPanel, CreateAnswerPanel } from './create-answer-panel'
 import {
   AddComment,
   ClosedProb,
@@ -88,7 +86,6 @@ export function AnswersPanel(props: {
   ).slice(0, maxAnswers)
 
   const user = useUser()
-  const privateUser = usePrivateUser()
 
   const answersArray = useChartAnswers(contract).map(
     (answer, _index) => answer.text
@@ -142,17 +139,6 @@ export function AnswersPanel(props: {
         (answers.length === 1 && outcomeType === 'MULTIPLE_CHOICE')) && (
         <div className="text-ink-500 pb-4">No answers yet...</div>
       )}
-
-      {addAnswersMode === 'ANYONE' &&
-        user &&
-        tradingAllowed(contract) &&
-        !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
-        (outcomeType === 'MULTIPLE_CHOICE' &&
-        contract.mechanism === 'cpmm-multi-1' ? (
-          <CreateAnswerCpmmPanel contract={contract} />
-        ) : (
-          <CreateAnswerPanel contract={contract as FreeResponseContract} />
-        ))}
     </Col>
   )
 }

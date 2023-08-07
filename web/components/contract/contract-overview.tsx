@@ -40,6 +40,7 @@ import { UserBetsSummary } from '../bet/bet-summary'
 import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
+import { CreateAnswerPanel } from '../answers/create-answer-panel'
 
 export const ContractOverview = memo(
   (props: {
@@ -190,6 +191,7 @@ const ChoiceOverview = (props: {
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
           />
+          <CreateAnswerPanel contract={contract} />
           <UserBetsSummary
             className="border-ink-200 mt-2 !mb-2 "
             contract={contract}
