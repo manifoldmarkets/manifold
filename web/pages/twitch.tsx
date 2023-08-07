@@ -139,10 +139,7 @@ function TwitchPlaysManifoldMarkets(props: {
           src="/twitch-glitch.svg"
           className="mb-[0.4rem] mr-4 inline h-10 w-10"
         ></img>
-        <Title
-          children={'Twitch plays Manifold'}
-          className={'!-my-0 md:block'}
-        />
+        <Title className={'!-my-0 md:block'}>Twitch plays manifold</Title>
       </Row>
       <Col className="mb-4 gap-4">
         Start betting on Twitch now by linking your account and typing commands
@@ -204,7 +201,7 @@ function Command(props: { command: string; desc: string }) {
 function TwitchChatCommands() {
   return (
     <div>
-      <Title children="Twitch Chat Commands" className="md:block" />
+      <Title className="md:block">Twitch Chat Commands</Title>
       <Col className="gap-4">
         <Subtitle text="For Chat" />
         <Command
@@ -397,10 +394,9 @@ function SetUpBot(props: {
 
   return (
     <>
-      <Title
-        children={'Set up the bot for your own stream'}
-        className={'!mb-0 md:block'}
-      />
+      <Title className={'!mb-0 md:block'}>
+        Set up the bot for your own stream
+      </Title>
       <Col className="gap-4">
         <img
           src="/twitch-bot-obs-screenshot.jpg"

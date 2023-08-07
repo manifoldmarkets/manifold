@@ -56,7 +56,7 @@ export const CommentEditHistoryButton = (props: { comment: Comment }) => {
       </span>
       <Modal size={'md'} open={showEditHistory} setOpen={setShowEditHistory}>
         <Col className={'bg-canvas-100 p-4'}>
-          <Title children={'Edit history'} />
+          <Title>Edit History</Title>
           {!edits ? (
             <LoadingIndicator />
           ) : (

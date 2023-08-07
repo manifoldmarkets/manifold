@@ -106,7 +106,7 @@ export default function PostPage(props: {
           onSave={(title) => updatePost({ id: post.id, title })}
           disabled={!canEdit}
         >
-          {(value) => <Title className="!my-0 p-2" children={value} />}
+          {(value) => <Title className="!my-0 p-2">{value}</Title>}
         </EditInPlaceInput>
         <div className="h-2" />
         <Row className="mt-4 items-center">

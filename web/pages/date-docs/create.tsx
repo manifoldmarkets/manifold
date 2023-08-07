@@ -79,7 +79,7 @@ export default function CreateDateDocPage() {
       <div className="mx-auto w-full max-w-3xl">
         <div className="rounded-lg px-6 py-4 pb-4 sm:py-0">
           <Row className="mb-8 items-center justify-between">
-            <Title className="!my-0" children="Your Date Doc" />
+            <Title className="!my-0">Your date doc</Title>
             <Button
               type="submit"
               loading={isSubmitting}

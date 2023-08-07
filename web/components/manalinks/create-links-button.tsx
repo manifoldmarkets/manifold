@@ -115,7 +115,8 @@ function CreateManalinkForm(props: {
             setFinishedCreating(true)
           }}
         >
-          <Title className="!my-0" children="Create a Manalink" />
+          <Title className="!my-0">Create a Manalink</Title>
+
           <div className="flex flex-col flex-wrap gap-x-5 gap-y-2">
             <div className="flex flex-auto flex-col">
               <label className="px-1 py-2">Amount</label>
@@ -196,7 +197,7 @@ function CreateManalinkForm(props: {
       )}
       {finishedCreating && (
         <>
-          <Title className="!my-0" children="Manalink Created!" />
+          <Title className="!my-0">Manalink Created!</Title>
           <ManalinkCard className="my-4" info={newManalink} preview />
           <CopyLinkButton url={url} eventTrackingName={'copy manalink'} />
           <QRCode url={url} className="self-center" />

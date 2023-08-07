@@ -168,16 +168,6 @@ const FeedContractAndRelatedItems = (props: {
           promotedData={promotedData}
           trackingPostfix="feed"
           hide={() => setHidden(true)}
-          children={
-            hasBets && !hasComments ? (
-              <>
-                <FeedBetsItem
-                  contract={contract}
-                  groupedBets={groupedBetsByTime}
-                />
-              </>
-            ) : undefined
-          }
           bottomChildren={
             hasComments ? (
               <FeedCommentItem
@@ -192,7 +182,11 @@ const FeedContractAndRelatedItems = (props: {
           }
           item={item}
           className="max-w-full"
-        />
+        >
+          {hasBets && !hasComments && (
+            <FeedBetsItem contract={contract} groupedBets={groupedBetsByTime} />
+          )}
+        </FeedContractCard>
       ) : (
         <Col
           className={clsx(

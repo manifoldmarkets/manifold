@@ -218,7 +218,7 @@ export default function RangePerformancePage(props: {
             />
           </Col>
         </Col>
-        <Title children="Also betting on" />
+        <Title>Also betting on</Title>
         {relatedMarkets ? (
           <ContractsGrid
             contracts={relatedMarkets}

@@ -76,7 +76,7 @@ export const ContractEditHistoryButton = (props: {
       </Button>
       <Modal size={'lg'} open={showEditHistory} setOpen={setShowEditHistory}>
         <Col className={'bg-canvas-100 p-4'}>
-          <Title children={'Edit history'} />
+          <Title>Edit history</Title>
           {edits?.map((edit, index) => (
             <Col
               className={'text-ink-500 bg-canvas-50 my-2 gap-2 rounded-md p-2'}

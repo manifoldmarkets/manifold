@@ -57,7 +57,7 @@ export const EditCommentModal = (props: {
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={'bg-canvas-50 rounded-md p-4'}>
-        <Title children={'Edit Comment'} />
+        <Title>Edit Comment</Title>
         <CommentInputTextArea
           editor={editor}
           user={user}

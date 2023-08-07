@@ -24,7 +24,7 @@ export function LiquidityModal(props: {
   return (
     <Modal open={isOpen} setOpen={setOpen} size="sm">
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
-        <Title className="!mb-2" children="💧 Add liquidity" />
+        <Title className="!mb-2">💧 Add liquidity</Title>
 
         <div>Total liquidity subsidies: {formatMoney(totalLiquidity)}</div>
         <AddLiquidityPanel contract={contract} />

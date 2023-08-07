@@ -145,7 +145,7 @@ export function CreateGroupButton(props: {
       disabled={editor?.storage.upload.mutation.isLoading}
     >
       <Col className={clsx('-mx-4 gap-4 px-4', SCROLLABLE_MODAL_CLASS)}>
-        <Title className="!my-0" children="Create a group" />
+        <Title className="!my-0">Create a group</Title>
 
         <Col className="text-ink-500">
           <div>You can add questions to your group after creation.</div>

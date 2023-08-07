@@ -316,7 +316,7 @@ export default function ProfilePage(props: {
                 }}
               >
                 <Col>
-                  <Title children={'Are you sure?'} />
+                  <Title>Are you sure?</Title>
                   <div>
                     Updating your API key will break any existing applications
                     connected to your account, <b>including the Twitch bot</b>.
@@ -374,7 +374,7 @@ export default function ProfilePage(props: {
                 }}
               >
                 <Col>
-                  <Title children={'Are you sure?'} />
+                  <Title>Are you sure?</Title>
                   <div>
                     Deleting your account means you will no longer be able to
                     use your account. You will lose access to all of your data.

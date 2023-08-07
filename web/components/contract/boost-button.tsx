@@ -59,7 +59,7 @@ export function BoostDialog(props: {
   return (
     <Modal open={isOpen} setOpen={setOpen} size="sm">
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
-        <Title className="!mb-2" children="🚀 Boost this question" />
+        <Title className="!mb-2">🚀 Boost this question</Title>
 
         <div className="text-ink-500 mb-2 text-base">
           Pay to boost this question in the feed.{' '}
