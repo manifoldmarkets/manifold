@@ -18,7 +18,7 @@ import { Post } from 'common/post'
 import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 
-export async function call(url: string, method: string, params?: any) {
+export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   const user = auth.currentUser
   if (user == null) {
     throw new Error('Must be signed in to make API calls.')
@@ -35,7 +35,7 @@ export async function call(url: string, method: string, params?: any) {
   return await fetch(req).then(async (resp) => {
     const json = (await resp.json()) as { [k: string]: any }
     if (!resp.ok) {
-      throw new APIError(resp.status, json?.message, json?.details)
+      throw new APIError(resp.status as any, json?.message, json?.details)
     }
     return json
   })
@@ -59,14 +59,14 @@ export async function maybeAuthedCall(
   return await fetch(req).then(async (resp) => {
     const json = (await resp.json()) as { [k: string]: any }
     if (!resp.ok) {
-      throw new APIError(resp.status, json?.message, json?.details)
+      throw new APIError(resp.status as any, json?.message, json?.details)
     }
     return json
   })
 }
 
-export function callApi(apiEndpoint: string, params?: any, method = 'POST') {
-  return call(getApiUrl(apiEndpoint), method, params)
+export function lootbox() {
+  return call(getApiUrl('lootbox'), 'POST')
 }
 
 export function createAnswer(params: any) {

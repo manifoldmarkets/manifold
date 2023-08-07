@@ -29,8 +29,7 @@ export const creategroup = authEndpoint(async (req, auth) => {
   )
 
   const creator = await getUser(auth.uid)
-  if (!creator)
-    throw new APIError(400, 'No user exists with the authenticated user ID.')
+  if (!creator) throw new APIError(401, 'Your account was not found')
 
   const pg = createSupabaseDirectClient()
 

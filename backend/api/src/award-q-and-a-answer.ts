@@ -57,7 +57,7 @@ export const awardQAndAAnswer = authEndpoint(async (req, auth) => {
   )
   const currentAwarded = +award_total
   if (question.bounty < currentAwarded + amount) {
-    throw new APIError(400, 'Bounty is too low for award amount')
+    throw new APIError(403, 'Bounty is too low for award amount')
   }
 
   const firestore = admin.firestore()

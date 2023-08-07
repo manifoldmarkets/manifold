@@ -19,8 +19,7 @@ export const redeemad = authEndpoint(async (req, auth) => {
 
   const { adId } = validate(schema, req.body)
   const user = await getUser(auth.uid)
-  if (!user)
-    throw new APIError(400, 'No user exists with the authenticated user ID')
+  if (!user) throw new APIError(401, 'Your account was not found')
 
   // stop bot redeems
   const isApiOrBot =

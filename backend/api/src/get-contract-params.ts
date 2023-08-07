@@ -36,18 +36,18 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
   const contract = await getContractFromSlug(contractSlug, db)
 
   if (!contract) {
-    throw new APIError(404, 'This contract does not exist!')
+    throw new APIError(404, 'This contract does not exist')
   }
 
   if (contract.visibility === 'private') {
     if (!contract.groupLinks) {
-      throw new APIError(400, 'No associated group with this private contract.')
+      throw new APIError(500, 'No associated group with this private contract')
     }
 
     if (contract.groupLinks.length > 1) {
       throw new APIError(
-        400,
-        'Too many groups associated with this private contract!'
+        500,
+        'Too many groups associated with this private contract'
       )
     }
   }

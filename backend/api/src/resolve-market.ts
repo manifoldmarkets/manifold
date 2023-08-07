@@ -95,7 +95,7 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
 
   const { creatorId, outcomeType } = contract
   if (outcomeType === 'STONK') {
-    throw new APIError(400, 'STONK contracts cannot be resolved')
+    throw new APIError(403, 'STONK contracts cannot be resolved')
   }
   const caller = await getUser(auth.uid)
 
@@ -105,7 +105,7 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
   if (creatorId !== auth.uid && !isAdminId(auth.uid) && !trustworthyResolvable)
     throw new APIError(403, 'User is not creator of contract')
 
-  if (contract.resolution) throw new APIError(400, 'Contract already resolved')
+  if (contract.resolution) throw new APIError(403, 'Contract already resolved')
 
   const creator = await getUser(creatorId)
   if (!creator) throw new APIError(500, 'Creator not found')
@@ -227,13 +227,13 @@ function getResolutionParams(contract: Contract, body: string) {
 function validateAnswer(contract: MultiContract, answer: number) {
   const validIds = contract.answers.map((a) => a.id)
   if (!validIds.includes(answer.toString())) {
-    throw new APIError(400, `${answer} is not a valid answer ID`)
+    throw new APIError(403, `${answer} is not a valid answer ID`)
   }
 }
 function validateAnswerCpmm(contract: CPMMMultiContract, answerId: string) {
   const validIds = contract.answers.map((a) => a.id)
   if (!validIds.includes(answerId)) {
-    throw new APIError(400, `${answerId} is not a valid answer ID`)
+    throw new APIError(403, `${answerId} is not a valid answer ID`)
   }
 }
 

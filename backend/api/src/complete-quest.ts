@@ -11,6 +11,6 @@ export const completequest = authEndpoint(async (req, auth) => {
   const { questType } = validate(bodySchema, req.body)
 
   const user = await getUser(auth.uid)
-  if (!user) throw new APIError(400, 'User not found')
+  if (!user) throw new APIError(401, 'Your account was not found')
   return await completeCalculatedQuest(user, questType)
 })

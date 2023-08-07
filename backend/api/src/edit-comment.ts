@@ -31,10 +31,10 @@ export const editcomment = authEndpoint(async (req, auth) => {
     .collection(`contracts/${contractId}/comments`)
     .doc(commentId)
   const refSnap = await ref.get()
-  if (!refSnap.exists) throw new APIError(400, 'Comment does not exist.')
+  if (!refSnap.exists) throw new APIError(404, 'Comment not found')
   const comment = refSnap.data() as Comment
   if (editor.id !== comment.userId && !isAdminId(editor.id))
-    throw new APIError(400, 'User is not the creator of the comment.')
+    throw new APIError(403, 'User is not the creator of the comment.')
 
   await ref.update({
     content: contentJson,

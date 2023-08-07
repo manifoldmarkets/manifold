@@ -45,7 +45,6 @@ import { redeemad } from './redeem-ad-reward'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
-import { auctionbid } from './auction-bid'
 import { supabasesearchcontracts } from './supabase-search-contract'
 import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
@@ -118,7 +117,6 @@ app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 
 app.post('/lootbox', ...apiRoute(lootbox))
-app.post('/auctionbid', ...apiRoute(auctionbid))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))

@@ -18,32 +18,14 @@ import {
 } from 'common/q-and-a'
 
 const bodySchema = z.object({
-  question: z.string(),
-  description: z.string(),
-  bounty: z.number(),
+  question: z.string().max(MAX_QA_QUESTION_LENGTH),
+  description: z.string().max(MAX_QA_DESCRIPTION_LENGTH),
+  bounty: z.number().gte(MIN_BOUNTY),
 })
 
 export const createQAndA = authEndpoint(async (req, auth) => {
   const { question, description, bounty } = validate(bodySchema, req.body)
   const userId = auth.uid
-
-  if (bounty < MIN_BOUNTY) {
-    throw new APIError(400, 'Bounty must be at least ' + MIN_BOUNTY)
-  }
-  if (question.length > MAX_QA_QUESTION_LENGTH) {
-    throw new APIError(
-      400,
-      'Question must be less than ' + MAX_QA_QUESTION_LENGTH + ' characters'
-    )
-  }
-  if (description.length > MAX_QA_DESCRIPTION_LENGTH) {
-    throw new APIError(
-      400,
-      'Description must be less than ' +
-        MAX_QA_DESCRIPTION_LENGTH +
-        ' characters'
-    )
-  }
 
   const pg = createSupabaseDirectClient()
   const firestore = admin.firestore()

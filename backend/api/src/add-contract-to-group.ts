@@ -44,12 +44,12 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
   const contract = contractSnap.data() as Contract
 
   if (contract.visibility == 'private') {
-    throw new APIError(400, 'You cannot add a group to a private contract')
+    throw new APIError(403, 'You cannot add a group to a private contract')
   }
 
   if (group.privacy_status == 'private') {
     throw new APIError(
-      400,
+      403,
       'You cannot add an existing public market to a private group'
     )
   }
@@ -62,7 +62,7 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
   })
   if (!canAdd) {
     throw new APIError(
-      400,
+      403,
       `User does not have permission to add this market to group "${group.name}".`
     )
   }

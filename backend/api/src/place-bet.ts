@@ -73,12 +73,12 @@ export const placeBetMain = async (
     const userDoc = firestore.doc(`users/${uid}`)
     const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
 
-    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
-    if (!userSnap.exists) throw new APIError(400, 'User not found.')
+    if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
+    if (!userSnap.exists) throw new APIError(404, 'User not found.')
 
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
-    if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
+    if (user.balance < amount) throw new APIError(403, 'Insufficient balance.')
     log(
       `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
     )
@@ -86,7 +86,7 @@ export const placeBetMain = async (
     const { closeTime, outcomeType, mechanism, collectedFees, volume } =
       contract
     if (closeTime && Date.now() > closeTime)
-      throw new APIError(400, 'Trading is closed.')
+      throw new APIError(403, 'Trading is closed.')
 
     const {
       newBet,
@@ -156,7 +156,7 @@ export const placeBetMain = async (
         const { answerId } = validate(multipleChoiceSchema, body)
         const answerDoc = contractDoc.collection('answers').doc(answerId)
         const answerSnap = await trans.get(answerDoc)
-        if (!answerSnap.exists) throw new APIError(400, 'Invalid answerId')
+        if (!answerSnap.exists) throw new APIError(404, 'Answer not found')
         return getNewMultiBetInfo(answerId, amount, contract)
       } else if (
         outcomeType === 'MULTIPLE_CHOICE' &&
@@ -173,10 +173,10 @@ export const placeBetMain = async (
         )
         const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
         const answer = answers.find((a) => a.id === answerId)
-        if (!answer) throw new APIError(400, 'Invalid answerId')
+        if (!answer) throw new APIError(404, 'Answer not found')
         if (answers.length < 2)
           throw new APIError(
-            400,
+            403,
             'Cannot bet until at least two answers are added.'
           )
 
@@ -209,7 +209,7 @@ export const placeBetMain = async (
         !isFinite(newP) ||
         Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY)
     ) {
-      throw new APIError(400, 'Trade too large for current liquidity pool.')
+      throw new APIError(403, 'Trade too large for current liquidity pool.')
     }
 
     const betDoc = contractDoc.collection('bets').doc()

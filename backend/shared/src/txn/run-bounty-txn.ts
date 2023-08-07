@@ -41,14 +41,14 @@ export async function runAddBountyTxn(
 
   const contractDoc = firestore.doc(`contracts/${toId}`)
   const contractSnap = await fbTransaction.get(contractDoc)
-  if (!contractSnap.exists) throw new APIError(400, 'Invalid contract')
+  if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
   const contract = contractSnap.data() as Contract
   if (
     contract.mechanism !== 'none' ||
     contract.outcomeType !== 'BOUNTIED_QUESTION'
   ) {
     throw new APIError(
-      400,
+      403,
       'Invalid contract, only bountied questions are supported'
     )
   }
@@ -58,7 +58,7 @@ export async function runAddBountyTxn(
   const user = userSnap.data() as User
 
   if (amount > user.balance)
-    throw new APIError(400, `Balance must be at least ${amount}.`)
+    throw new APIError(403, `Balance must be at least ${amount}.`)
 
   // update user
   fbTransaction.update(userDoc, {
@@ -88,21 +88,21 @@ export async function runAwardBountyTxn(
 
   const contractDoc = firestore.doc(`contracts/${fromId}`)
   const contractSnap = await fbTransaction.get(contractDoc)
-  if (!contractSnap.exists) throw new APIError(400, 'Invalid contract')
+  if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
   const contract = contractSnap.data() as Contract
   if (
     contract.mechanism !== 'none' ||
     contract.outcomeType !== 'BOUNTIED_QUESTION'
   ) {
     throw new APIError(
-      400,
+      403,
       'Invalid contract, only bountied questions are supported'
     )
   }
 
   if (contract.creatorId !== authUid) {
     throw new APIError(
-      400,
+      403,
       'A bounty can only be given by the creator of the question'
     )
   }
@@ -112,7 +112,7 @@ export async function runAwardBountyTxn(
   const { bountyLeft } = contract
   if (bountyLeft < amount) {
     throw new APIError(
-      400,
+      403,
       `There is only M${bountyLeft} of bounty left to award, which is less than M${amount}`
     )
   }
