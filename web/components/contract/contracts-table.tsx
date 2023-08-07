@@ -187,14 +187,13 @@ export function ContractsTable(props: {
   const columns = buildArray([
     'question',
     'prob',
-    'traders',
-    // 'visibility',
+    !isMobile && 'traders',
     !isMobile && !hideActions && 'action',
   ])
 
   return (
     <table>
-      {!isMobile && !hideHeader && (
+      {!hideHeader && (
         <thead
           className={clsx(
             'text-ink-600 bg-canvas-50 text-left text-sm font-semibold',
