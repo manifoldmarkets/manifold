@@ -279,7 +279,7 @@ export const useFeedTimeline = (
   const tryToLoadManyCardsAtStart = useEvent(async () => {
     for (const _ of range(0, 5)) {
       const moreFeedItems = await loadMore({ old: true })
-      if (moreFeedItems.length > 5) break
+      if (moreFeedItems.length > 10) break
     }
   })
 
