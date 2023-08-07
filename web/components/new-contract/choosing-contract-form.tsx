@@ -141,13 +141,15 @@ function AntePrice(props: { outcome: OutcomeType }) {
   const ante = formatMoney(getAnte(outcome, 1))
   if (outcome === 'BOUNTIED_QUESTION') {
     return (
-      <div className="text-ink-500 text-xs">
+      <div className="text-ink-500 text-xs sm:text-sm">
         {formatMoney(MINIMUM_BOUNTY)} minimum
       </div>
     )
   }
   if (outcome == 'MULTIPLE_CHOICE' || outcome == 'FREE_RESPONSE') {
-    return <div className="text-ink-500 text-xs">{ante} / option</div>
+    return (
+      <div className="text-ink-500 text-xs sm:text-sm">{ante} / option</div>
+    )
   }
-  return <div className="text-ink-500 text-xs">{ante}</div>
+  return <div className="text-ink-500 text-xs sm:text-sm">{ante}</div>
 }
