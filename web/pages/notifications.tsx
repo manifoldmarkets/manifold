@@ -218,9 +218,12 @@ function NotificationsList(props: {
 
   // Mark all notifications as seen. Rerun as new notifications come in.
   useEffect(() => {
-    if (privateUser && isPageVisible && isAuthorized) {
-      markAllNotifications({ seen: true })
-    }
+    if (!privateUser || !isPageVisible) return
+    if (isAuthorized) markAllNotifications({ seen: true })
+    groupedNotifications
+      ?.map((ng) => ng.notifications)
+      .flat()
+      .forEach((n) => (!n.isSeen ? (n.isSeen = true) : null))
   }, [privateUser, isPageVisible, mostRecentNotification?.id, isAuthorized])
 
   return (
