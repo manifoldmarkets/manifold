@@ -3,11 +3,14 @@ import { pgp, SupabaseDirectClient } from './supabase/init'
 import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import {
+  BRONZE_COHORT_SIZE,
   COHORT_SIZE,
   CURRENT_SEASON,
   getDivisionChange,
+  getDivisionNumber,
   getSeasonDates,
   league_user_info,
+  MASTERS_COHORT_SIZE,
   MAX_COHORT_SIZE,
   SEASONS,
 } from 'common/leagues'
@@ -113,7 +116,13 @@ const generateCohorts = async (
   for (const divisionStr in usersByDivision) {
     const divisionUserIds = usersByDivision[divisionStr]
     const division = Number(divisionStr)
-    const numCohorts = Math.ceil(divisionUserIds.length / COHORT_SIZE)
+    const cohortSize =
+      division === getDivisionNumber('Bronze')
+        ? BRONZE_COHORT_SIZE
+        : division === getDivisionNumber('Masters')
+        ? MASTERS_COHORT_SIZE
+        : COHORT_SIZE
+    const numCohorts = Math.ceil(divisionUserIds.length / cohortSize)
     const usersPerCohort = Math.ceil(divisionUserIds.length / numCohorts)
     const cohortsWithOneLess =
       usersPerCohort * numCohorts - divisionUserIds.length

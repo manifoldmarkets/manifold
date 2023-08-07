@@ -1,10 +1,7 @@
-import { XCircleIcon } from '@heroicons/react/solid'
-import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import toast from 'react-hot-toast'
-import { IconButton } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SiteLink } from 'web/components/widgets/site-link'
@@ -13,11 +10,12 @@ import {
   addContractToGroup,
   removeContractFromGroup,
 } from 'web/lib/firebase/api'
-import { GroupLinkItem } from 'web/pages/groups'
+import { GroupTag } from 'web/pages/groups'
 import { GroupSelector } from './group-selector'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
 import { useState } from 'react'
+import { XIcon } from '@heroicons/react/outline'
 
 export function ContractGroupsList(props: {
   contract: Contract
@@ -57,42 +55,30 @@ export function ContractGroupsList(props: {
           <Row className="my-2 flex-wrap gap-3">
             {groups.map((g) => {
               return (
-                <span
-                  key={g.id}
-                  className={clsx(
-                    'text-ink-1000 bg-ink-100 hover:bg-ink-200 group relative rounded-full p-1 px-4 text-sm transition-colors'
-                  )}
-                >
-                  <GroupLinkItem group={g} />
+                <GroupTag key={g.id} group={g} className="bg-ink-100">
                   {g && canRemoveFromGroup(g) && (
-                    <div className="absolute -top-2 -right-4 md:invisible md:group-hover:visible">
-                      <IconButton
-                        size={'xs'}
-                        onClick={() => {
-                          toast.promise(
-                            removeContractFromGroup({
-                              groupId: g.id,
-                              contractId: contract.id,
-                            }).catch((e) => {
-                              console.error(e.message)
-                              throw e
-                            }),
-                            {
-                              loading: `Removing question from "${g.name}"`,
-                              success: `Successfully removed question from "${g.name}"!`,
-                              error: `Error removing group. Try again?`,
-                            }
-                          )
-                        }}
-                      >
-                        <div className="group relative transition-colors">
-                          <div className="group-hover:bg-ink-600 bg-canvas-0 z-0 h-4 w-4 rounded-full" />
-                          <XCircleIcon className="text-ink-400 group-hover:text-ink-200 absolute -inset-1" />
-                        </div>
-                      </IconButton>
-                    </div>
+                    <button
+                      onClick={() => {
+                        toast.promise(
+                          removeContractFromGroup({
+                            groupId: g.id,
+                            contractId: contract.id,
+                          }).catch((e) => {
+                            console.error(e.message)
+                            throw e
+                          }),
+                          {
+                            loading: `Removing question from "${g.name}"`,
+                            success: `Successfully removed question from "${g.name}"!`,
+                            error: `Error removing group. Try again?`,
+                          }
+                        )
+                      }}
+                    >
+                      <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
+                    </button>
                   )}
-                </span>
+                </GroupTag>
               )
             })}
           </Row>

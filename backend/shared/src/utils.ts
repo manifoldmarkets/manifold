@@ -18,6 +18,7 @@ import { chunk, groupBy, mapValues, sumBy } from 'lodash'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
 import { DAY_MS } from 'common/util/time'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL } from 'common/envs/constants'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -224,6 +225,20 @@ export const getAllPrivateUsers = async () => {
   return users.docs.map((doc) => doc.data() as PrivateUser)
 }
 
+export const getAllPrivateUsersNotSent = async (
+  type: 'weeklyTrendingEmailSent' | 'weeklyPortfolioUpdateEmailSent',
+  preference: 'trending_markets' | 'profit_loss_updates'
+) => {
+  const firestore = admin.firestore()
+  // Unforunately firestore can't do 'array-not-contains' for the opt_out_all preference
+  const users = await firestore
+    .collection('private-users')
+    .where(`notificationPreferences.${preference}`, 'array-contains', 'email')
+    .where(type, '==', false)
+    .get()
+  return users.docs.map((doc) => doc.data() as PrivateUser)
+}
+
 export const getAllUsers = async () => {
   const firestore = admin.firestore()
   const users = await firestore.collection('users').get()
@@ -310,14 +325,18 @@ export function contractUrl(contract: Contract) {
   return `https://manifold.markets${contractPath(contract)}`
 }
 
-export async function getTrendingContracts() {
+export async function getTrendingContractsToEmail() {
   const pg = createSupabaseDirectClient()
   return await pg.map(
     `select data from contracts 
             where resolution_time is null 
               and visibility = 'public'
-              order by importance_score desc limit 500;`,
-    [],
+              and not (data -> 'groupSlugs' ?| $1)
+              and question not ilike '%stock%'
+              and question not ilike '%permanent%'
+              and close_time > current_date + interval '1 day'
+              order by importance_score desc limit 25;`,
+    [GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL],
     (r) => r.data as Contract
   )
 }

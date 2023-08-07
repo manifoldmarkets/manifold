@@ -19,7 +19,7 @@ import {
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
@@ -30,7 +30,7 @@ import { AnswersPanel } from '../answers/answers-panel'
 import { BetRow } from '../bet/bet-row'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { CommentsButton } from '../swipe/swipe-comments'
+import { CommentsButton } from '../comments/comments-button'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
@@ -42,6 +42,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 export function FeedContractCard(props: {
   contract: Contract
   children?: React.ReactNode
+  bottomChildren?: React.ReactNode
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
@@ -49,15 +50,20 @@ export function FeedContractCard(props: {
   className?: string
   hide?: () => void
 }) {
-  const { promotedData, trackingPostfix, item, className, children, hide } =
-    props
+  const {
+    promotedData,
+    trackingPostfix,
+    item,
+    className,
+    children,
+    bottomChildren,
+    hide,
+  } = props
   const user = useUser()
 
   const contract =
-    useFirebasePublicAndRealtimePrivateContract(
-      props.contract.visibility,
-      props.contract.id
-    ) ?? props.contract
+    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
+    props.contract
 
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 
@@ -82,7 +88,7 @@ export function FeedContractCard(props: {
 
   return (
     <div ref={ref}>
-      {children ? (
+      {children || bottomChildren ? (
         <SimpleCard
           contract={contract}
           item={item}
@@ -90,6 +96,7 @@ export function FeedContractCard(props: {
           user={user}
           className={className}
           children={children}
+          bottomChildren={bottomChildren}
           hide={hide}
         />
       ) : (
@@ -112,12 +119,22 @@ function SimpleCard(props: {
   contract: Contract
   trackClick: () => void
   user: User | null | undefined
-  children: React.ReactNode
+  children?: React.ReactNode
+  bottomChildren?: React.ReactNode
   item?: FeedTimelineItem
   className?: string
   hide?: () => void
 }) {
-  const { contract, user, item, trackClick, className, children, hide } = props
+  const {
+    contract,
+    user,
+    item,
+    trackClick,
+    className,
+    children,
+    bottomChildren,
+    hide,
+  } = props
   const { outcomeType, mechanism, closeTime, isResolved } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
@@ -168,12 +185,16 @@ function SimpleCard(props: {
       )}
 
       {children}
-      <BottomActionRow
-        contract={contract}
-        item={item}
-        user={user}
-        hide={hide}
-      />
+      <Col>
+        <BottomActionRow
+          contract={contract}
+          item={item}
+          user={user}
+          hide={hide}
+          underline={!!bottomChildren}
+        />
+        {bottomChildren}
+      </Col>
     </ClickFrame>
   )
 }
@@ -367,12 +388,18 @@ const BottomActionRow = (props: {
   contract: Contract
   item: FeedTimelineItem | undefined
   user: User | null | undefined
+  underline?: boolean
   hide?: () => void
 }) => {
-  const { contract, user, item, hide } = props
+  const { contract, user, item, hide, underline } = props
   const { question } = contract
   return (
-    <Row className={'items-center justify-between py-2'}>
+    <Row
+      className={clsx(
+        'items-center justify-between pt-2',
+        underline ? 'border-1 border-ink-200 border-b pb-3' : 'pb-2'
+      )}
+    >
       <TradesButton contract={contract} />
       <CommentsButton contract={contract} user={user} />
       {hide && (
@@ -429,7 +456,7 @@ export const DislikeButton = (props: {
   }
 
   return (
-    <Tooltip text={'Hide this market'} className={className}>
+    <Tooltip text={'Show less of this'} className={className}>
       <button
         className={clsx(
           'text-ink-500 hover:text-ink-600 flex flex-col justify-center transition-transform disabled:cursor-not-allowed'

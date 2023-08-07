@@ -6,6 +6,7 @@ import { Comment } from 'common/comment'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { run } from 'common/supabase/utils'
 import { contentSchema } from 'shared/zod-types'
+import { isAdminId } from 'common/envs/constants'
 
 const editSchema = z.object({
   contractId: z.string(),
@@ -21,7 +22,7 @@ export const editcomment = authEndpoint(async (req, auth) => {
     req.body
   )
   const {
-    creator: editor,
+    you: editor,
     contract,
     contentJson,
   } = await validateComment(contractId, auth.uid, content, html, markdown)
@@ -32,7 +33,7 @@ export const editcomment = authEndpoint(async (req, auth) => {
   const refSnap = await ref.get()
   if (!refSnap.exists) throw new APIError(404, 'Comment not found')
   const comment = refSnap.data() as Comment
-  if (editor.id !== comment.userId)
+  if (editor.id !== comment.userId && !isAdminId(editor.id))
     throw new APIError(403, 'User is not the creator of the comment.')
 
   await ref.update({

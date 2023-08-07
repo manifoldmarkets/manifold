@@ -25,7 +25,7 @@ export function pointsToBase64(points: SerializedPoint[]) {
 }
 
 /** Find every nth point so that less than limit points total in result */
-export function compressItems<T = unknown>(sorted: T[], limit = 100) {
+export function downsample<T = unknown>(sorted: T[], limit = 100) {
   const length = sorted.length
   if (length <= limit) {
     return sorted

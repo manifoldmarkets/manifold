@@ -39,13 +39,11 @@ export const createcomment = authEndpoint(async (req, auth) => {
     replyToBetId,
   } = validate(postSchema, req.body)
 
-  const { creator, contract, contentJson } = await validateComment(
-    contractId,
-    auth.uid,
-    content,
-    html,
-    markdown
-  )
+  const {
+    you: creator,
+    contract,
+    contentJson,
+  } = await validateComment(contractId, auth.uid, content, html, markdown)
 
   const ref = firestore.collection(`contracts/${contractId}/comments`).doc()
   const bet = replyToBetId
@@ -107,11 +105,11 @@ export const validateComment = async (
   html: string | undefined,
   markdown: string | undefined
 ) => {
-  const creator = await getUser(userId)
+  const you = await getUser(userId)
   const contract = await getContract(contractId)
 
-  if (!creator) throw new APIError(401, 'Your account was not found')
-  if (creator.isBannedFromPosting) throw new APIError(403, 'You are banned')
+  if (!you) throw new APIError(401, 'Your account was not found')
+  if (you.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
   if (!contract) throw new APIError(404, 'Contract not found')
 
@@ -135,5 +133,5 @@ export const validateComment = async (
       `Comment is too long; should be less than ${MAX_COMMENT_JSON_LENGTH} as a JSON string.`
     )
   }
-  return { contentJson, creator, contract }
+  return { contentJson, you, contract }
 }

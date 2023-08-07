@@ -21,8 +21,7 @@ import { ContractComment } from 'common/comment'
 import { track } from 'web/lib/service/analytics'
 import React, { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { GroupLinkItem } from 'web/pages/groups'
-import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
+import { GroupTag } from 'web/pages/groups'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
@@ -30,19 +29,12 @@ export const MIN_BET_AMOUNT = 20
 export const FeedTimelineItems = (props: {
   feedTimelineItems: FeedTimelineItem[]
   boosts?: BoostsType
-  manualContracts?: Contract[]
   user: User | null | undefined
 }) => {
-  const {
-    user,
-    manualContracts,
-    boosts,
-    feedTimelineItems: savedFeedTimelineItems,
-  } = props
+  const { user, boosts, feedTimelineItems: savedFeedTimelineItems } = props
   const savedFeedComments = filterDefined(
     savedFeedTimelineItems.map((item) => item.comments)
   ).flat()
-  const memberGroups = useRealtimeMemberGroupIds(user?.id)
 
   const boostedContractItems =
     boosts?.map((boost) => {
@@ -62,6 +54,17 @@ export const FeedTimelineItems = (props: {
   return (
     <>
       {feedTimelineItems.map((item) => {
+        if (item.contract && 'manuallyCreatedFromContract' in item) {
+          return (
+            <FeedContractAndRelatedItems
+              user={user}
+              contract={item.contract}
+              parentComments={[]}
+              childCommentsByParentCommentId={{}}
+              key={item.contract.id}
+            />
+          )
+        }
         if (item.contract && ('ad_id' in item || 'contract' in item)) {
           const { contract } = item
           // Boosted contract
@@ -108,6 +111,7 @@ export const FeedTimelineItems = (props: {
                 author={(news as any)?.author}
                 published_time={(news as any)?.published_time}
                 {...news}
+                className={'h-24 object-cover'}
               />
               {item.contracts && item.contracts.length > 0 && (
                 <Col className="px-4 pt-2 pb-3">
@@ -121,36 +125,16 @@ export const FeedTimelineItems = (props: {
                 </Col>
               )}
               {item.groups && item.groups.length > 0 && (
-                <Col className="px-4 pt-2 pb-3">
-                  <span className="text-ink-500 text-sm">Related Groups</span>
-                  <Row className={'gap-1'}>
-                    {item.groups.map((group) => (
-                      <div
-                        key={group.id}
-                        className={clsx(
-                          'bg-canvas-100 relative rounded-full px-4 py-1 hover:bg-blue-600 focus-visible:bg-blue-600',
-                          memberGroups?.includes(group.id) && 'bg-blue-800'
-                        )}
-                      >
-                        <GroupLinkItem group={group} />
-                      </div>
-                    ))}
-                  </Row>
-                </Col>
+                <Row className="mx-4 gap-1 overflow-hidden pt-1 pb-3">
+                  {item.groups.map((group) => (
+                    <GroupTag key={group.id} group={group} />
+                  ))}
+                </Row>
               )}
             </FeedItemFrame>
           )
         }
       })}
-      {manualContracts?.map((contract) => (
-        <FeedContractAndRelatedItems
-          user={user}
-          contract={contract}
-          parentComments={[]}
-          childCommentsByParentCommentId={{}}
-          key={contract.id + 'feed-timeline-item'}
-        />
-      ))}
     </>
   )
 }
@@ -172,8 +156,8 @@ const FeedContractAndRelatedItems = (props: {
     childCommentsByParentCommentId,
     parentComments,
   } = props
-  const hasRelatedItems =
-    parentComments.length > 0 || (groupedBetsByTime ?? []).length > 0
+  const hasComments = parentComments && parentComments.length > 0
+  const hasBets = groupedBetsByTime && groupedBetsByTime.length > 0
   const [hidden, setHidden] = useState(false)
 
   return (
@@ -185,26 +169,25 @@ const FeedContractAndRelatedItems = (props: {
           trackingPostfix="feed"
           hide={() => setHidden(true)}
           children={
-            hasRelatedItems ? (
+            hasBets && !hasComments ? (
               <>
-                {parentComments.length > 0 && (
-                  <FeedCommentItem
-                    contract={contract}
-                    commentThreads={parentComments.map((parentComment) => ({
-                      parentComment,
-                      childComments:
-                        childCommentsByParentCommentId[parentComment.id] ?? [],
-                    }))}
-                  />
-                )}
-                {(!parentComments || parentComments.length === 0) &&
-                  groupedBetsByTime?.length && (
-                    <FeedBetsItem
-                      contract={contract}
-                      groupedBets={groupedBetsByTime}
-                    />
-                  )}
+                <FeedBetsItem
+                  contract={contract}
+                  groupedBets={groupedBetsByTime}
+                />
               </>
+            ) : undefined
+          }
+          bottomChildren={
+            hasComments ? (
+              <FeedCommentItem
+                contract={contract}
+                commentThreads={parentComments.map((parentComment) => ({
+                  parentComment,
+                  childComments:
+                    childCommentsByParentCommentId[parentComment.id] ?? [],
+                }))}
+              />
             ) : undefined
           }
           item={item}
@@ -254,3 +237,22 @@ const FeedItemFrame = (props: {
     </div>
   )
 }
+
+export const convertContractToManualFeedItem = (
+  contract: Contract,
+  createdTime: number
+): FeedTimelineItem =>
+  ({
+    contract,
+    createdTime,
+    id: Math.random(),
+    contractId: contract.id,
+    dataType: 'trending_contract',
+    reason: 'similar_interest_vector_to_contract',
+    supabaseTimestamp: new Date(createdTime).toISOString(),
+    isCopied: true,
+    avatarUrl: contract.creatorAvatarUrl,
+    commentId: null,
+    newsId: null,
+    manuallyCreatedFromContract: true,
+  } as FeedTimelineItem)

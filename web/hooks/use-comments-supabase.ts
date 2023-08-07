@@ -4,6 +4,7 @@ import {
   convertContractComment,
   getAllCommentRows,
   getCommentRows,
+  getCommentsOnContract,
   getNumContractComments,
   getNumUserComments,
   getPostCommentRows,
@@ -78,6 +79,18 @@ export function useNumUserComments(userId: string) {
   }, [userId])
 
   return num
+}
+
+export function useCommentsOnContract(contractId: string) {
+  const [comments, setComments] = useState<ContractComment[] | undefined>(
+    undefined
+  )
+  useEffect(() => {
+    getCommentsOnContract(contractId).then((comments) => {
+      setComments(comments)
+    })
+  }, [contractId])
+  return comments
 }
 
 export function useRealtimeCommentsOnContract(contractId: string) {

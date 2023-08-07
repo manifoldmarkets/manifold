@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { OutcomeType } from 'common/contract'
-import { POLLS_ENABLED } from 'common/envs/constants'
 import { ReactNode, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -25,6 +24,7 @@ export function ChoosingContractForm(props: {
         {Object.entries(PREDICTIVE_CONTRACT_TYPES).map(
           ([_, { label, descriptor, example, value, visual }]) => (
             <OutcomeButton
+              key={value}
               label={label}
               descriptor={descriptor}
               example={example}
@@ -54,6 +54,7 @@ export function ChoosingContractForm(props: {
             },
           ]) => (
             <OutcomeButton
+              key={value}
               label={label}
               descriptor={descriptor}
               example={example}
@@ -99,7 +100,6 @@ function OutcomeButton(props: {
     setState,
   } = props
   const [touch, setTouch] = useState(false)
-  if (value == 'POLL' && !POLLS_ENABLED) return <></>
   return (
     <button
       className={clsx(

@@ -3,103 +3,15 @@ import clsx from 'clsx'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { TextButton } from 'web/components/buttons/text-button'
-import { Col } from 'web/components/layout/col'
-import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
-import { db } from 'web/lib/supabase/db'
-import {
-  leaveGroup,
-  SearchGroupInfo,
-  getMemberGroups,
-  getMemberGroupsCount,
-} from 'web/lib/supabase/groups'
+import { leaveGroup, SearchGroupInfo } from 'web/lib/supabase/groups'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
-import { GroupLinkItem } from 'web/pages/groups'
 import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Subtitle } from '../widgets/subtitle'
 import { joinGroup } from 'web/lib/firebase/api'
-
-export function GroupsButton(props: { user: User; className?: string }) {
-  const { user, className } = props
-  const [isOpen, setIsOpen] = useState(false)
-  const [groups, setGroups] = useState<SearchGroupInfo[] | undefined>(undefined)
-  const [groupsCount, setGroupsCount] = useState(0)
-  useEffect(() => {
-    if (isOpen) return
-    getMemberGroupsCount(user.id).then(setGroupsCount)
-  }, [user.id, isOpen])
-
-  useEffect(() => {
-    if (!isOpen) return
-    getMemberGroups(user.id, db).then(setGroups)
-  }, [isOpen, user.id])
-
-  return (
-    <>
-      <TextButton onClick={() => setIsOpen(true)} className={className}>
-        <span className="font-semibold">{groupsCount}</span> Groups
-      </TextButton>
-
-      <GroupsDialog
-        user={user}
-        groups={groups}
-        isOpen={isOpen}
-        setIsOpen={setIsOpen}
-      />
-    </>
-  )
-}
-
-function GroupsDialog(props: {
-  user: User
-  groups: SearchGroupInfo[] | undefined
-  isOpen: boolean
-  setIsOpen: (isOpen: boolean) => void
-}) {
-  const { user, isOpen, setIsOpen, groups } = props
-  const currentUser = useUser()
-  const isCurrentUser = currentUser?.id === user.id
-
-  return (
-    <Modal open={isOpen} setOpen={setIsOpen}>
-      <Col className="bg-canvas-0 rounded p-6">
-        <div className="p-2 pb-1 text-xl">{user.name}</div>
-        <div className="text-ink-500 p-2 pt-0 text-sm">@{user.username}</div>
-        <Col className="gap-2">
-          {groups === undefined ? (
-            <LoadingIndicator />
-          ) : groups.length === 0 ? (
-            <div className="text-ink-500">No groups yet...</div>
-          ) : (
-            groups.map((group) => (
-              <Row
-                className={clsx('items-center justify-between gap-2 p-2')}
-                key={group.id}
-              >
-                <Row className="line-clamp-1 items-center gap-2">
-                  <GroupLinkItem group={group} />
-                </Row>
-                {isCurrentUser && (
-                  <JoinOrLeaveGroupButton
-                    group={group}
-                    user={user}
-                    isMember={true}
-                  />
-                )}
-              </Row>
-            ))
-          )}
-        </Col>{' '}
-      </Col>
-    </Modal>
-  )
-}
 
 export function LeavePrivateGroupButton(props: {
   group: SearchGroupInfo

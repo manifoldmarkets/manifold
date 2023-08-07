@@ -7,8 +7,6 @@ export const ENV = (process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD') as
   | 'PROD'
   | 'DEV'
 
-export const POLLS_ENABLED = ENV === 'DEV'
-
 export const CONFIGS: { [env: string]: EnvConfig } = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,
@@ -24,7 +22,7 @@ export function isTrustworthy(username?: string) {
   if (!username) {
     return false
   }
-  return CHECK_USERNAMES.includes(username)
+  return MOD_USERNAMES.includes(username)
 }
 export const DOMAIN = ENV_CONFIG.domain
 export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
@@ -92,6 +90,7 @@ export const BOT_USERNAMES = [
   'NcyBot',
   'Seldon',
   'OnePercentBot',
+  'arrbit',
 ]
 
 export const CORE_USERNAMES = [
@@ -106,19 +105,13 @@ export const CORE_USERNAMES = [
   'IngaWei',
 ]
 
-export const CHECK_USERNAMES = [
+export const MOD_USERNAMES = [
   'Manifold',
-  'EliezerYudkowsky',
   'memestiny',
-  'ScottAlexander',
-  'Aella',
   'BTE',
   'jack',
   'Yev',
-  'ZviMowshowitz',
-  'NathanpmYoung',
   'itsTomekK',
-  'SneakySly',
   'MattP',
   'egroj',
   'dreev',
@@ -126,7 +119,6 @@ export const CHECK_USERNAMES = [
   'LivInTheLookingGlass',
   'LarsDoucet',
   'Conflux',
-  'GavrielK',
   'NcyRocks',
   'MichaelWheatley',
   'dglid',
@@ -141,17 +133,46 @@ export const CHECK_USERNAMES = [
   'MatthewBarnett',
   'Jacy',
   'Gabrielle',
-  'CGPGrey',
   'KatjaGrace',
   'AndrewG',
   'MarcusAbramovitch',
   'KevinBurke',
-  'LexFridman',
   'PeterWildeford',
   'ScottLawrence',
   'NoaNabeshima',
   'Mira',
   'evergreenemily',
+]
+
+export const VERIFIED_USERNAMES = [
+  'EliezerYudkowsky',
+  'ScottAlexander',
+  'Aella',
+  'ZviMowshowitz',
+  'NathanpmYoung',
+  'SneakySly',
+  'GavrielK',
+  'CGPGrey',
+  'LexFridman',
+  'patio11',
+  'RichardHanania',
+  'Qualy',
+  'Roko',
+  'JonathanBlow',
+  'DwarkeshPatel',
+  'ByrneHobart',
+  'RobertWiblin',
+  'KelseyPiper',
+  'SpencerGreenberg',
+  'PaulChristiano',
+  'BuckShlegeris',
+  'Natalia',
+  'Zero',
+  'OzzieGooen',
+  'OliverHabryka',
+  'Alicorn',
+  'RazibKhan',
+  'JamesMedlock',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -194,6 +215,21 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'olivia',
   'planecrash',
   'glowfic',
+  'all-stonks',
+  'destinygg',
+  'the-market',
+  'nonpredictive-profits',
+  'nonpredictive',
+]
+
+export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
+  'manifold-features',
+  'manifold-6748e065087e',
+  'destinygg',
+  'manifold-features-25bad7c7792e',
+  'bugs',
+  'manifold-leagues',
+  'nonpredictive',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

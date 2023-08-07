@@ -14,7 +14,7 @@ import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
 import { ChoiceContractChart } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
-import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
+import { useViewScale } from 'web/components/charts/generic-charts'
 import {
   BinaryResolutionOrChance,
   NumericResolutionOrExpectation,
@@ -40,6 +40,7 @@ import { UserBetsSummary } from '../bet/bet-summary'
 import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
+import { CreateAnswerPanel } from '../answers/create-answer-panel'
 
 export const ContractOverview = memo(
   (props: {
@@ -129,7 +130,7 @@ const BinaryOverview = (props: {
         />
       </Row>
 
-      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
+      <SizedContainer className="mb-8 h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <BinaryContractChart
             width={w}
@@ -138,6 +139,7 @@ const BinaryOverview = (props: {
             viewScaleProps={viewScale}
             controlledStart={start}
             contract={contract}
+            showZoomer
           />
         )}
       </SizedContainer>
@@ -189,6 +191,7 @@ const ChoiceOverview = (props: {
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
           />
+          <CreateAnswerPanel contract={contract} />
           <UserBetsSummary
             className="border-ink-200 mt-2 !mb-2 "
             contract={contract}
@@ -219,7 +222,7 @@ const PseudoNumericOverview = (props: {
           color="indigo"
         />
       </Row>
-      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
+      <SizedContainer className="mb-8 h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <PseudoNumericContractChart
             width={w}
@@ -228,6 +231,7 @@ const PseudoNumericOverview = (props: {
             viewScaleProps={viewScale}
             controlledStart={start}
             contract={contract}
+            showZoomer
           />
         )}
       </SizedContainer>
@@ -280,7 +284,7 @@ const StonkOverview = (props: {
 }
 
 export const useTimePicker = (contract: Contract) => {
-  const viewScale = useSingleValueHistoryChartViewScale()
+  const viewScale = useViewScale()
   const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('allTime')
 
   //zooms out of graph if zoomed in upon time selection change
@@ -290,13 +294,14 @@ export const useTimePicker = (contract: Contract) => {
     viewScale.setViewYScale(undefined)
   })
 
-  const [, endRange] = getDateRange(contract)
+  const [startRange, endRange] = getDateRange(contract)
   const end = endRange ?? Date.now()
+
   const start =
     currentTimePeriod === 'allTime'
       ? undefined
       : end - periodDurations[currentTimePeriod]
-  const maxRange = end - contract.createdTime
+  const maxRange = end - startRange
 
   return { viewScale, currentTimePeriod, setTimePeriod, start, maxRange }
 }

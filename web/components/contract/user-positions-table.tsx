@@ -36,8 +36,9 @@ export const BinaryUserPositionsTable = memo(
     contract: CPMMContract
     positions: ContractMetricsByOutcome
     setTotalPositions?: (totalPositions: number) => void
+    enableRealtime?: boolean
   }) {
-    const { contract, setTotalPositions } = props
+    const { contract, setTotalPositions, enableRealtime } = props
     const contractId = contract.id
     const [page, setPage] = useState(0)
     const pageSize = 20
@@ -66,8 +67,10 @@ export const BinaryUserPositionsTable = memo(
       return [positiveProfitPositions, negativeProfitPositions.reverse()]
     }, [contractMetricsByProfit])
 
-    const positions =
-      useRealtimeContractMetrics(contractId, outcomes) ?? props.positions
+    const positions = enableRealtime
+      ? // eslint-disable-next-line react-hooks/rules-of-hooks
+        useRealtimeContractMetrics(contractId, outcomes) ?? props.positions
+      : props.positions
 
     useEffect(() => {
       setTotalPositions?.(sum(Object.values(positions).map((a) => a.length)))

@@ -174,6 +174,11 @@ export const placeBetMain = async (
         const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
         const answer = answers.find((a) => a.id === answerId)
         if (!answer) throw new APIError(404, 'Answer not found')
+        if (answers.length < 2)
+          throw new APIError(
+            403,
+            'Cannot bet until at least two answers are added.'
+          )
 
         const { unfilledBets, balanceByUserId } =
           await getUnfilledBetsAndUserBalances(trans, contractDoc, uid)

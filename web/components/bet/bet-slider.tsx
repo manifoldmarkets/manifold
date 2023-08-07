@@ -9,8 +9,10 @@ export const BetSlider = (props: {
   binaryOutcome?: binaryOutcomes
   maximumAmount?: number
   customRange?: { rangeMin?: number; rangeMax?: number }
+  disabled?: boolean
 }) => {
-  const { amount, onAmountChange, binaryOutcome, maximumAmount } = props
+  const { amount, onAmountChange, binaryOutcome, maximumAmount, disabled } =
+    props
   const { rangeMin, rangeMax } = props.customRange ?? {}
 
   return (
@@ -37,6 +39,7 @@ export const BetSlider = (props: {
       amount={amount ?? 0}
       onChange={(value) => onAmountChange(value as number)}
       step={5}
+      disabled={disabled}
     />
   )
 }

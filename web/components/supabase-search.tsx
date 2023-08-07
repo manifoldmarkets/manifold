@@ -51,6 +51,7 @@ export const SORTS = [
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Just resolved', value: 'resolve-date' },
   { label: '🎲 rAnDoM', value: 'random' },
+  { label: 'Bounty amount', value: 'bounty-amount' },
 ] as const
 
 const predictionMarketSorts = new Set([
@@ -62,8 +63,18 @@ const predictionMarketSorts = new Set([
   'most-popular',
 ])
 
-export const NON_PREDICTION_MARKET_SORTS = SORTS.filter(
+const bountySorts = new Set(['bounty-amount'])
+
+export const BOUNTY_MARKET_SORTS = SORTS.filter(
   (item) => !predictionMarketSorts.has(item.value)
+)
+
+export const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
+  (item) => item.value != 'bounty-amount'
+)
+
+export const PREDICTION_MARKET_SORTS = SORTS.filter(
+  (item) => !bountySorts.has(item.value)
 )
 
 export type Sort = typeof SORTS[number]['value']
@@ -88,6 +99,7 @@ export const CONTRACT_TYPES = [
   { label: 'Numeric', value: 'PSEUDO_NUMERIC' },
   { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
   { label: 'Stock', value: 'STONK' },
+  { label: 'Poll', value: 'POLL' },
 ] as const
 
 export type ContractTypeType = typeof CONTRACT_TYPES[number]['value']
@@ -99,6 +111,12 @@ export type SupabaseSearchParameters = {
   contractType: ContractTypeType
   topic: string
 }
+
+const QUERY_KEY = 'q'
+const SORT_KEY = 's'
+const FILTER_KEY = 'f'
+const CONTRACT_TYPE_KEY = 'ct'
+const TOPIC_KEY = 't'
 
 function getShowTime(sort: Sort) {
   return sort === 'close-date' || sort === 'resolve-date' ? sort : null
@@ -154,6 +172,9 @@ export function SupabaseContractSearch(props: {
   headerClassName?: string
   inputRowClassName?: string
   isWholePage?: boolean
+
+  // used to determine if search params should be updated in the URL
+  useUrlParams?: boolean
   includeProbSorts?: boolean
   autoFocus?: boolean
   profile?: boolean | undefined
@@ -181,6 +202,7 @@ export function SupabaseContractSearch(props: {
     persistPrefix,
     includeProbSorts,
     isWholePage,
+    useUrlParams,
     autoFocus,
     profile,
     fromGroupProps,
@@ -322,7 +344,8 @@ export function SupabaseContractSearch(props: {
           defaultFilter={defaultFilter}
           persistPrefix={persistPrefix}
           hideOrderSelector={hideOrderSelector}
-          useQueryUrlParam={isWholePage}
+          isWholePage={isWholePage}
+          useUrlParams={useUrlParams}
           includeProbSorts={includeProbSorts}
           onSearchParametersChanged={onSearchParametersChanged}
           autoFocus={autoFocus}
@@ -390,7 +413,8 @@ function SupabaseContractSearchControls(props: {
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
   onSearchParametersChanged: (params: SupabaseSearchParameters) => void
-  useQueryUrlParam?: boolean
+  isWholePage?: boolean
+  useUrlParams?: boolean
   autoFocus?: boolean
   listViewDisabled?: boolean
   showTopics?: boolean
@@ -404,7 +428,8 @@ function SupabaseContractSearchControls(props: {
     persistPrefix,
     hideOrderSelector,
     onSearchParametersChanged,
-    useQueryUrlParam,
+    isWholePage,
+    useUrlParams,
     autoFocus,
     includeProbSorts,
     showTopics,
@@ -413,57 +438,58 @@ function SupabaseContractSearchControls(props: {
   } = props
 
   const router = useRouter()
+
   const [query, setQuery] = usePersistentState(
     '',
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 'q',
+    useUrlParams
+      ? {
+          key: QUERY_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const sortKey = `${persistPrefix}-search-sort`
   const savedSort = safeLocalStorage?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
-    savedSort ?? defaultSort,
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 's',
+    defaultSort,
+    useUrlParams
+      ? {
+          key: SORT_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const [filterState, setFilter] = usePersistentState(
     defaultFilter,
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 'f',
+    useUrlParams
+      ? {
+          key: FILTER_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const [contractType, setContractType] = usePersistentState(
     defaultContractType,
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 'search-contract-type',
+    useUrlParams
+      ? {
+          key: CONTRACT_TYPE_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const [topic, setTopic] = usePersistentState(
     '',
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 't',
+    useUrlParams
+      ? {
+          key: TOPIC_KEY,
           store: urlParamStore(router),
         }
+      : undefined
   )
 
   const filter =
@@ -492,6 +518,9 @@ function SupabaseContractSearchControls(props: {
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
     if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
+      setSort('bounty-amount')
+    }
+    if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
       setSort('score')
     }
     setContractType(selection)
@@ -646,8 +675,10 @@ export function SearchFilters(props: {
         <DropdownMenu
           Items={generateFilterDropdownItems(
             contractType == 'BOUNTIED_QUESTION'
-              ? NON_PREDICTION_MARKET_SORTS
-              : SORTS,
+              ? BOUNTY_MARKET_SORTS
+              : contractType == 'POLL'
+              ? POLL_SORTS
+              : PREDICTION_MARKET_SORTS,
             selectSort
           )}
           Icon={

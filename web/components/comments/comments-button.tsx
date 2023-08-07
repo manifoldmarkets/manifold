@@ -6,12 +6,14 @@ import { Contract } from 'common/contract'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Col } from '../layout/col'
 import { CommentsTabContent } from '../contract/contract-tabs'
-import { ContractComment } from 'common/comment'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { Tooltip } from '../widgets/tooltip'
 import { User } from 'common/user'
-import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
+import {
+  useCommentsOnContract,
+  useRealtimeCommentsOnContract,
+} from 'web/hooks/use-comments-supabase'
 
 export function SwipeComments(props: {
   contract: Contract
@@ -40,12 +42,7 @@ export function SwipeComments(props: {
         </div>
       </Col>
 
-      <CommentsDialog
-        contract={contract}
-        open={open}
-        setOpen={setAllOpen}
-        comments={comments}
-      />
+      <CommentsDialog contract={contract} open={open} setOpen={setAllOpen} />
     </button>
   )
 }
@@ -57,13 +54,12 @@ export function CommentsButton(props: {
   const { contract, user } = props
 
   const [open, setOpen] = useState(false)
-
-  const comments = useRealtimeCommentsOnContract(contract.id) ?? []
+  const totalComments = 0 // useNumContractComments(contract.id)
 
   return (
     <Tooltip text={`Comments`} placement="top" className={'z-10'}>
       <button
-        disabled={comments.length === 0 && !user}
+        disabled={totalComments === 0 && !user}
         className="hover:text-ink-600 text-ink-500 flex items-center gap-1.5 disabled:opacity-50"
         onClick={() => {
           setOpen(true)
@@ -71,17 +67,14 @@ export function CommentsButton(props: {
         }}
       >
         <ChatIcon className="h-6 w-6" />
-        {comments.length > 0 && (
+        {totalComments > 0 && (
           <div className="text-ink-500 h-5 align-middle text-sm disabled:opacity-50">
-            {comments.length}
+            {totalComments}
           </div>
         )}
-        <CommentsDialog
-          contract={contract}
-          open={open}
-          setOpen={setOpen}
-          comments={comments}
-        />
+        {open && (
+          <CommentsDialog contract={contract} open={open} setOpen={setOpen} />
+        )}
       </button>
     </Tooltip>
   )
@@ -91,9 +84,9 @@ function CommentsDialog(props: {
   contract: Contract
   open: boolean
   setOpen: (open: boolean) => void
-  comments: ContractComment[]
 }) {
-  const { contract, open, setOpen, comments } = props
+  const { contract, open, setOpen } = props
+  const comments = useCommentsOnContract(contract.id) ?? []
 
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []

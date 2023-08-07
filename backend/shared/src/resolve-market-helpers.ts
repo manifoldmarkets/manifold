@@ -85,7 +85,7 @@ export const resolveMarketHelper = async (
     contract.uniqueBettorCount < 10 ||
     contract.visibility !== 'public'
       ? -10
-      : -250
+      : -1000
 
   const userPayouts = groupPayoutsByUser(payouts)
   console.log('user payouts', userPayouts)

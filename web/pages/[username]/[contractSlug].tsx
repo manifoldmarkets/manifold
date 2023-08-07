@@ -57,7 +57,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import {
-  useFirebasePublicAndRealtimePrivateContract,
+  useFirebasePublicContract,
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
 import { useEvent } from 'web/hooks/use-event'
@@ -149,7 +149,9 @@ export function NonPrivateContractPage(props: {
     )
 }
 
-export function ContractPageContent(props: { contractParams: ContractParams }) {
+export function ContractPageContent(props: {
+  contractParams: ContractParams & { contract: Contract }
+}) {
   const { contractParams } = props
   const {
     userPositionsByOutcome,
@@ -158,12 +160,15 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     creatorTwitter,
     relatedContracts,
   } = contractParams
-  const contract: typeof contractParams.contract =
-    useFirebasePublicAndRealtimePrivateContract(
+  const contract =
+    useFirebasePublicContract(
       contractParams.contract.visibility,
       contractParams.contract.id
     ) ?? contractParams.contract
-
+  const cachedContract = useMemo(
+    () => contract,
+    [contract.id, contract.resolution, contract.closeTime]
+  )
   if (
     'answers' in contractParams.contract &&
     contract.mechanism === 'cpmm-multi-1'
@@ -300,7 +305,8 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   }, [titleRef])
 
   const showExplainerPanel =
-    !user || user.createdTime > Date.now() - 24 * 60 * 60 * 1000
+    user === null ||
+    (user && user.createdTime > Date.now() - 24 * 60 * 60 * 1000)
 
   return (
     <>
@@ -499,14 +505,17 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 </GradientContainer>
               ) : null)}
 
-            {isResolved && user && (
-              <ReviewPanel
-                marketId={contract.id}
-                author={contract.creatorName}
-                user={user}
-                className="my-2"
-              />
-            )}
+            {isResolved &&
+              user &&
+              user.id !== contract.creatorId &&
+              contract.outcomeType !== 'POLL' && (
+                <ReviewPanel
+                  marketId={contract.id}
+                  author={contract.creatorName}
+                  user={user}
+                  className="my-2"
+                />
+              )}
 
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2">
               <MarketGroups contract={contract} />
@@ -554,7 +563,8 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
 
             <div ref={tabsContainerRef}>
               <ContractTabs
-                contract={contract}
+                // Pass cached contract so it won't rerender so many times.
+                contract={cachedContract}
                 bets={bets}
                 totalBets={totalBets}
                 comments={comments}

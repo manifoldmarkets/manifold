@@ -453,20 +453,14 @@ export interface Database {
       group_contracts: {
         Row: {
           contract_id: string
-          data: Json | null
-          fs_updated_time: string | null
           group_id: string
         }
         Insert: {
           contract_id: string
-          data?: Json | null
-          fs_updated_time?: string | null
           group_id: string
         }
         Update: {
           contract_id?: string
-          data?: Json | null
-          fs_updated_time?: string | null
           group_id?: string
         }
         Relationships: []
@@ -547,27 +541,21 @@ export interface Database {
       group_members: {
         Row: {
           created_time: string | null
-          data: Json | null
-          fs_updated_time: string | null
           group_id: string
           member_id: string
-          role: string | null
+          role: string
         }
         Insert: {
           created_time?: string | null
-          data?: Json | null
-          fs_updated_time?: string | null
           group_id: string
           member_id: string
-          role?: string | null
+          role?: string
         }
         Update: {
           created_time?: string | null
-          data?: Json | null
-          fs_updated_time?: string | null
           group_id?: string
           member_id?: string
-          role?: string | null
+          role?: string
         }
         Relationships: []
       }

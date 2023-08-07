@@ -32,12 +32,19 @@ export const getContractOGProps = (
     outcomeType === 'BINARY'
       ? formatPercent(getDisplayProbability(contract))
       : topAnswer
-      ? formatPercent(getAnswerProbability(contract as MultiContract, topAnswer.id))
+      ? formatPercent(
+          getAnswerProbability(contract as MultiContract, topAnswer.id)
+        )
       : undefined
 
   const numericValue =
     outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'STONK'
       ? getFormattedMappedValue(contract, getDisplayProbability(contract))
+      : undefined
+
+  const bountyLeft =
+    outcomeType === 'BOUNTIED_QUESTION'
+      ? contract.bountyLeft.toString()
       : undefined
 
   return {
@@ -50,6 +57,7 @@ export const getContractOGProps = (
     numericValue,
     resolution,
     topAnswer: topAnswer?.text,
+    bountyLeft: bountyLeft,
   }
 }
 
@@ -63,6 +71,7 @@ export type OgCardProps = {
   numericValue?: string
   resolution?: string
   topAnswer?: string
+  bountyLeft?: string // number
   points?: string // base64ified points
 }
 

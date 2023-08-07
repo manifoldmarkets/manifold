@@ -11,10 +11,7 @@ import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-intern
 import { addContractToFeed } from 'shared/create-feed'
 import { INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 import { createNewContractNotification } from 'shared/create-notification'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isContractLikelyNonPredictive } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
@@ -70,7 +67,6 @@ export const onCreateContract = functions
       )
       log('likelyNonPredictive:', likelyNonPredictive)
       if (likelyNonPredictive) {
-        const db = createSupabaseClient()
         const added = await addGroupToContract(
           contract,
           {
@@ -78,7 +74,7 @@ export const onCreateContract = functions
             slug: 'nonpredictive',
             name: 'Non-Predictive',
           },
-          db
+          pg
         )
         log('Added contract to non-predictive group', added)
       }

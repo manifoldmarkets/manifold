@@ -2,7 +2,12 @@ import clsx from 'clsx'
 import React, { useState } from 'react'
 import { findBestMatch } from 'string-similarity'
 
-import { CPMMMultiContract, FreeResponseContract } from 'common/contract'
+import {
+  CPMMMultiContract,
+  Contract,
+  FreeResponseContract,
+  tradingAllowed,
+} from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
 import { APIError, createAnswer, createAnswerCpmm } from 'web/lib/firebase/api'
@@ -13,7 +18,7 @@ import {
   formatWithCommas,
 } from 'common/util/format'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import {
   calculateDpmShares,
   calculateDpmPayoutAfterCorrectBet,
@@ -31,7 +36,7 @@ import { ANSWER_COST } from 'common/economy'
 
 export function CreateAnswerCpmmPanel(props: {
   contract: CPMMMultiContract
-  onFinish: () => void
+  onFinish?: () => void
 }) {
   const { contract, onFinish } = props
   const user = useUser()
@@ -62,7 +67,7 @@ export function CreateAnswerCpmmPanel(props: {
       } catch (e) {}
 
       setIsSubmitting(false)
-      onFinish()
+      if (onFinish) onFinish()
     }
   }
 
@@ -99,47 +104,44 @@ export function CreateAnswerCpmmPanel(props: {
   if (user?.isBannedFromPosting) return <></>
 
   return (
-    <Col className="bg-canvas-50 gap-4 rounded p-4">
-      <Col className="flex-1 gap-2 px-4 xl:px-0">
-        <div className="mb-1">Add a new answer</div>
-        <ExpandingInput
-          value={text}
-          onChange={(e) => changeAnswer(e.target.value)}
-          className="w-full"
-          placeholder="Type your answer..."
-          rows={1}
-          maxLength={MAX_ANSWER_LENGTH}
-          autoFocus
+    <Col className="bg-canvas-50 gap-2 rounded-lg p-2">
+      <ExpandingInput
+        value={text}
+        onChange={(e) => changeAnswer(e.target.value)}
+        className="w-full"
+        placeholder="Add another answer"
+        rows={1}
+        maxLength={MAX_ANSWER_LENGTH}
+        autoFocus={!!onFinish}
+      />
+      {answerError ? (
+        <AnswerError key={1} level="error" text={answerError} />
+      ) : possibleDuplicateAnswer ? (
+        <AnswerError
+          key={2}
+          level="warning"
+          text={`Did you mean to bet on "${possibleDuplicateAnswer}"?`}
         />
-        {answerError ? (
-          <AnswerError key={1} level="error" text={answerError} />
-        ) : possibleDuplicateAnswer ? (
-          <AnswerError
-            key={2}
-            level="warning"
-            text={`Did you mean to bet on "${possibleDuplicateAnswer}"?`}
-          />
-        ) : undefined}
-        <div />
-        <Row className={'mt-3 justify-end gap-2 pl-2 sm:mt-0'}>
+      ) : undefined}
+      <Row className={'justify-end gap-2'}>
+        {onFinish && (
           <Button color="gray" onClick={onFinish}>
             Cancel
           </Button>
-          <Button
-            color="green"
-            loading={isSubmitting}
-            disabled={!canSubmit}
-            onClick={withTracking(submitAnswer, 'submit answer')}
-          >
-            Submit and pay {formatMoney(ANSWER_COST)}
-          </Button>
-        </Row>
-      </Col>
+        )}
+        <Button
+          loading={isSubmitting}
+          disabled={!canSubmit}
+          onClick={withTracking(submitAnswer, 'submit answer')}
+        >
+          Add answer ({formatMoney(ANSWER_COST)})
+        </Button>
+      </Row>
     </Col>
   )
 }
 
-export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
+function CreateAnswerDpmPanel(props: { contract: FreeResponseContract }) {
   const { contract } = props
   const user = useUser()
   const [text, setText] = useState('')
@@ -340,6 +342,37 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
       </Col>
     </Col>
   )
+}
+
+export function CreateAnswerPanel(props: { contract: Contract }) {
+  const { contract } = props
+  const addAnswersMode =
+    'addAnswersMode' in contract
+      ? contract.addAnswersMode
+      : contract.outcomeType === 'FREE_RESPONSE'
+      ? 'ANYONE'
+      : 'DISABLED'
+
+  const user = useUser()
+  const privateUser = usePrivateUser()
+
+  if (
+    addAnswersMode !== 'ANYONE' ||
+    !user ||
+    !tradingAllowed(contract) ||
+    privateUser?.blockedByUserIds.includes(contract.creatorId)
+  ) {
+    return null
+  }
+
+  if (
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
+    contract.mechanism === 'cpmm-multi-1'
+  ) {
+    return <CreateAnswerCpmmPanel contract={contract} />
+  } else {
+    return <CreateAnswerDpmPanel contract={contract as FreeResponseContract} />
+  }
 }
 
 type answerErrorLevel = 'warning' | 'error'

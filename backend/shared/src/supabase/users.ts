@@ -2,7 +2,7 @@ import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs } from 'lodash'
 import {
   ALL_FEED_USER_ID,
-  DEFAULT_USER_FEED_ID,
+  DEFAULT_FEED_USER_ID,
   FEED_REASON_TYPES,
   INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
@@ -10,6 +10,7 @@ import { Row } from 'common/supabase/utils'
 import { log } from 'shared/utils'
 import { ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
+import { MONTH_MS } from 'common/util/time'
 
 export const getUserFollowerIds = async (
   userId: string,
@@ -128,12 +129,10 @@ export const populateNewUsersFeedFromDefaultFeed = async (
           where user_feed.user_id = $2
           order by interesting_contracts.distance;
           `,
-      [userId, DEFAULT_USER_FEED_ID]
+      [userId, DEFAULT_FEED_USER_ID]
     )
 
     log('found', relatedFeedItems.length, 'feed items to copy')
-    if (relatedFeedItems.length === 0) return []
-
     return copyOverFeedItems(userId, relatedFeedItems, t)
   })
 }
@@ -143,6 +142,7 @@ const copyOverFeedItems = async (
   relatedFeedItems: userFeedRowAndDistance[],
   pg: ITask<IClient> & IClient
 ) => {
+  if (relatedFeedItems.length === 0) return []
   const now = Date.now()
   const updatedRows = relatedFeedItems.map((row, i) => {
     // assuming you want to change the 'columnToChange' column
@@ -163,4 +163,11 @@ const copyOverFeedItems = async (
   }
 
   return relatedFeedItems
+}
+
+export const getWhenToIgnoreUsersTime = () => {
+  // Always get the same time a month ago today so postgres can cache the query
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  return today.getTime() - MONTH_MS
 }

@@ -7,7 +7,7 @@ import { Group } from 'common/group'
 import { debounce, startCase, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
-import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
+import { useMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { useYourRecentContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { searchContract } from 'web/lib/supabase/contracts'
@@ -20,7 +20,7 @@ import { SORTS, Sort } from '../supabase-search'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { searchMarketSorts } from './query-market-sorts'
-import { PageData, defaultPages, searchPages } from './query-pages'
+import { PageData, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
 
 export interface Option {
@@ -104,7 +104,6 @@ const DefaultResults = (props: { recentMarkets: Contract[] }) => {
   return (
     <>
       <MarketResults markets={recentMarkets.slice(0, 7)} />
-      <PageResults pages={defaultPages} />
       <div className="mx-2 my-2 text-xs">
         <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
         Start with <Key>%</Key> for questions, <Key>@</Key> for users, or{' '}
@@ -340,7 +339,7 @@ const UserResults = (props: { users: UserSearchResult[]; search?: string }) => {
         Users
       </SectionTitle>
       {props.users.map(({ id, name, username, avatarUrl }) => (
-        <ResultOption value={{ id, slug: `/${username}` }}>
+        <ResultOption key={id} value={{ id, slug: `/${username}` }}>
           <div className="flex items-center gap-2">
             <Avatar
               username={username}
@@ -364,7 +363,7 @@ const GroupResults = (props: {
   search?: string
 }) => {
   const me = useUser()
-  const myGroups = useRealtimeMemberGroupIds(me?.id) || []
+  const myGroupIds = useMemberGroupIds(me?.id) ?? []
   const { search } = props
   if (!props.groups.length) return null
   return (
@@ -373,7 +372,10 @@ const GroupResults = (props: {
         Groups
       </SectionTitle>
       {props.groups.map((group) => (
-        <ResultOption value={{ id: group.id, slug: `/group/${group.slug}` }}>
+        <ResultOption
+          key={group.id}
+          value={{ id: group.id, slug: `/group/${group.slug}` }}
+        >
           <div className="flex items-center gap-3">
             <span className="line-clamp-1 grow">{group.name}</span>
             <span className="flex items-center">
@@ -384,7 +386,7 @@ const GroupResults = (props: {
               <JoinOrLeaveGroupButton
                 group={group}
                 user={me}
-                isMember={myGroups.includes(group.id)}
+                isMember={myGroupIds.includes(group.id)}
                 className="w-[80px] !px-0 !py-1"
               />
             </div>

@@ -12,6 +12,8 @@ import {
   userInterestEmbeddings,
 } from 'shared/supabase/vectors'
 import { filterDefined } from 'common/util/array'
+import { log } from 'shared/utils'
+import { isAdminId } from 'common/envs/constants'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -146,8 +148,10 @@ export const getUsersWithSimilarInterestVectorsToContractServerSide = async (
     )
   ).flat()
 
-  if (Object.keys(userInterestEmbeddings).length === 0)
+  const userEmbeddingsCount = Object.keys(userInterestEmbeddings).length
+  if (userEmbeddingsCount === 0)
     throw new Error('userInterestEmbeddings is not loaded')
+  else log('found ' + userEmbeddingsCount + ' user interest embeddings to use')
 
   const userIdsInterestedInContract = Object.entries(userInterestEmbeddings)
     .map(([userId, user]) => {
@@ -177,7 +181,8 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   userId: string,
   pg: SupabaseDirectClient,
   reasonsToInclude: CONTRACT_OR_USER_FEED_REASON_TYPES[],
-  userToContractDistanceThreshold: number
+  userToContractDistanceThreshold: number,
+  serverSideCalculation: boolean
 ): Promise<{ [userId: string]: CONTRACT_OR_USER_FEED_REASON_TYPES }> => {
   const { id: contractId } = contract
   const reasonsToRelevantUserIdsFunctions: {
@@ -203,11 +208,17 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       importance: 5,
     },
     similar_interest_vector_to_contract: {
-      promise: getUsersWithSimilarInterestVectorsToContractServerSide(
-        contractId,
-        pg,
-        userToContractDistanceThreshold
-      ),
+      promise: serverSideCalculation
+        ? getUsersWithSimilarInterestVectorsToContractServerSide(
+            contractId,
+            pg,
+            userToContractDistanceThreshold
+          )
+        : getUsersWithSimilarInterestVectorsToContract(
+            contractId,
+            pg,
+            userToContractDistanceThreshold
+          ),
       importance: 7,
     },
     private_contract_shared_with_you: {
@@ -276,6 +287,7 @@ export const getContractPrivacyWhereSQLFilter = (
 ) => {
   const otherVisibilitySQL = `
   OR (visibility = 'unlisted' AND creator_id='${uid}') 
+  OR (visibility = 'unlisted' AND ${isAdminId(uid ?? '_')}) 
   OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))
   `
   return (groupId && hasGroupAccess) ||

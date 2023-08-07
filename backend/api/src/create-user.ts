@@ -27,7 +27,6 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { populateNewUsersFeedFromDefaultFeed } from 'shared/supabase/users'
-import { DEFAULT_USER_FEED_ID } from 'common/feed'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -166,7 +165,7 @@ async function addContractsToSeenMarketsTable(
     visitedContractIds.map((contractId) =>
       pg.none(
         `insert into user_seen_markets (user_id, contract_id, type, data)
-            values ($1, $2, $3)`,
+            values ($1, $2, $3, $4)`,
         [userId, contractId, 'view market', {}]
       )
     )

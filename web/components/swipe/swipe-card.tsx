@@ -16,10 +16,10 @@ import { SiteLink } from '../widgets/site-link'
 import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize from './swipe-helpers'
 import { MoreSwipeInfo } from './more-swipe-info'
-import { SwipeComments } from './swipe-comments'
+import { SwipeComments } from '../comments/comments-button'
 import { Percent } from './percent'
 import { SwitchHorizontalIcon } from '@heroicons/react/solid'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 
 export const SwipeCard = memo(
   (props: {
@@ -49,7 +49,7 @@ export const SwipeCard = memo(
       small,
       toggleView,
     } = props
-    const contract = (useFirebasePublicAndRealtimePrivateContract(
+    const contract = (useFirebasePublicContract(
       props.contract.visibility,
       props.contract.id
     ) ?? props.contract) as BinaryContract

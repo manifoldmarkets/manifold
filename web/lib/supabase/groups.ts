@@ -85,6 +85,7 @@ export async function searchGroups(props: {
     addingToContract: addingToContract ?? false,
     newContract: newContract ?? false,
   })
+
   if (groups) {
     if (groups.length == limit) {
       return { fuzzyOffset: 0, data: groups }

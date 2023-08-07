@@ -10,6 +10,7 @@ export type notification_preferences = {
   // Watched Markets
   all_comments_on_watched_markets: notification_destination_types[]
   all_answers_on_watched_markets: notification_destination_types[]
+  poll_close_on_watched_markets: notification_destination_types[]
 
   // Comments
   tipped_comments_on_watched_markets: notification_destination_types[]
@@ -29,6 +30,7 @@ export type notification_preferences = {
   all_answers_on_my_markets: notification_destination_types[]
   subsidized_your_market: notification_destination_types[]
   vote_on_your_contract: notification_destination_types[]
+  your_poll_closed: notification_destination_types[]
 
   // Market updates
   resolutions_on_watched_markets: notification_destination_types[]
@@ -137,6 +139,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     all_answers_on_my_markets: constructPref(true, true, false),
     subsidized_your_market: constructPref(true, true, false),
     vote_on_your_contract: constructPref(true, true, false),
+    your_poll_closed: constructPref(true, true, false),
 
     // Market updates
     resolutions_on_watched_markets: constructPref(true, false, true),
@@ -146,7 +149,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
       false,
       false
     ),
-    all_votes_on_watched_markets: constructPref(true, false, false),
+    all_votes_on_watched_markets: constructPref(false, false, false),
     resolutions_on_watched_markets_with_shares_in: constructPref(
       true,
       true,
@@ -154,6 +157,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     ),
     bounty_awarded: constructPref(true, false, false),
     bounty_added: constructPref(true, false, false),
+    poll_close_on_watched_markets: constructPref(true, false, false),
 
     //Balance Changes
     loan_income: constructPref(true, false, false),
@@ -211,7 +215,6 @@ export const notificationReasonToSubscriptionType: Partial<
   answer_on_contract_you_follow: 'all_answers_on_watched_markets',
   update_on_contract_you_follow: 'market_updates_on_watched_markets',
   resolution_on_contract_you_follow: 'resolutions_on_watched_markets',
-  vote_on_poll_you_follow: 'all_votes_on_watched_markets',
   comment_on_contract_with_users_shares_in:
     'all_comments_on_contracts_with_shares_in_on_watched_markets',
   answer_on_contract_with_users_shares_in:
@@ -230,6 +233,7 @@ export const notificationReasonToSubscriptionType: Partial<
   resolution_on_contract_with_users_comment: 'resolutions_on_watched_markets',
   reply_to_users_answer: 'all_replies_to_my_answers_on_watched_markets',
   reply_to_users_comment: 'all_replies_to_my_comments_on_watched_markets',
+  poll_you_follow_closed: 'poll_close_on_watched_markets',
 }
 
 export function getNotificationPreference(reason: NotificationReason) {

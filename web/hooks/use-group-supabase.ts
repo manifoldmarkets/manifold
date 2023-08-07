@@ -44,6 +44,24 @@ export function useIsGroupMember(groupSlug: string) {
   return isMember
 }
 
+export function useMemberGroupIds(
+  userId: string | undefined | null
+): string[] | undefined {
+  const [groupIds, setGroupIds] = useState<string[] | undefined>(undefined)
+  useEffect(() => {
+    db.from('group_members')
+      .select('group_id')
+      .eq('member_id', userId)
+      .then((result) => {
+        if (result) {
+          const groupIds = (result as any).data.map((row: any) => row.group_id)
+          setGroupIds(groupIds)
+        }
+      })
+  }, [userId])
+  return groupIds
+}
+
 export function useRealtimeMemberGroupIds(
   userId: string | undefined | null
 ): string[] | undefined {

@@ -1,6 +1,8 @@
+import { LockClosedIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { groupPath } from 'common/group'
 import { User } from 'common/user'
+import Link from 'next/link'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import DiscoverGroups from 'web/components/groups/discover-groups'
 import YourGroups from 'web/components/groups/your-groups'
@@ -10,7 +12,6 @@ import { Row } from 'web/components/layout/row'
 import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
@@ -70,18 +71,41 @@ export function GroupsPageContent(props: { user: User | null | undefined }) {
   )
 }
 
-export function GroupLinkItem(props: {
+export function GroupTag(props: {
   group: { slug: string; name: string }
+  isPrivate?: boolean
   className?: string
+  children?: React.ReactNode // end element - usually for a remove button
 }) {
-  const { group, className } = props
+  const { group, isPrivate, className, children } = props
 
   return (
-    <SiteLink
-      href={groupPath(group.slug)}
-      className={clsx('z-10 truncate', className)}
+    <div
+      className={clsx(
+        'group flex w-fit min-w-0 max-w-[200px] shrink-0 truncate whitespace-nowrap rounded-sm px-1 py-0.5 text-sm transition-colors sm:max-w-[250px]',
+        isPrivate
+          ? 'text-ink-1000 bg-primary-100 hover:bg-primary-200'
+          : 'text-primary-700 hover:bg-primary-400/20',
+        className
+      )}
     >
-      {group.name}
-    </SiteLink>
+      <Link
+        prefetch={false}
+        href={groupPath(group.slug)}
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
+      >
+        {isPrivate ? (
+          <LockClosedIcon className="my-auto mr-0.5 h-3 w-3" />
+        ) : (
+          <span className="text-primary-700/50 mr-px transition-colors group-hover:text-inherit">
+            #
+          </span>
+        )}
+        {group.name}
+      </Link>
+      {children}
+    </div>
   )
 }

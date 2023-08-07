@@ -198,6 +198,7 @@ export function BuyAmountInput(props: {
               binaryOutcome={binaryOutcome}
               maximumAmount={maximumAmount}
               customRange={customRange}
+              disabled={disabled}
             />
           )}
         </Row>

@@ -74,7 +74,7 @@ export type notification_source_update_types =
   | 'deleted'
   | 'closed'
 
-/* Optional - if possible use a notification_preference */
+/** @deprecated - use a notification_preference (in user-notification-preferences.ts) */
 export type notification_reason_types =
   | 'tagged_user'
   | 'on_new_follow'
@@ -93,11 +93,9 @@ export type notification_reason_types =
   | 'liked_and_tipped_your_contract'
   | 'comment_on_your_contract'
   | 'answer_on_your_contract'
-  | 'vote_on_your_contract'
   | 'comment_on_contract_you_follow'
   | 'answer_on_contract_you_follow'
   | 'update_on_contract_you_follow'
-  | 'vote_on_poll_you_follow'
   | 'resolution_on_contract_you_follow'
   | 'comment_on_contract_with_users_shares_in'
   | 'answer_on_contract_with_users_shares_in'
@@ -120,6 +118,8 @@ export type notification_reason_types =
   | 'bounty_awarded'
   | 'bounty_added'
   | 'mana_payment_received'
+  | 'poll_you_follow_closed'
+  | 'your_poll_closed'
 
 type notification_descriptions = {
   [key in notification_preference]: {
@@ -314,6 +314,14 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   vote_on_your_contract: {
     simple: 'Votes on your polls',
     detailed: 'When a user votes on a poll you created',
+  },
+  poll_close_on_watched_markets: {
+    simple: 'Polls you follow close',
+    detailed: 'When a poll you follow closes',
+  },
+  your_poll_closed: {
+    simple: 'Your poll closes',
+    detailed: 'When a poll you created closes',
   },
 }
 

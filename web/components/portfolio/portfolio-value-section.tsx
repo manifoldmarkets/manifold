@@ -12,7 +12,7 @@ import { useEvent } from 'web/hooks/use-event'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { ColorType } from '../widgets/choices-toggle-group'
-import { useSingleValueHistoryChartViewScale } from '../charts/generic-charts'
+import { useViewScale } from '../charts/generic-charts'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
@@ -56,7 +56,7 @@ export const PortfolioValueSection = memo(
       setGraphDisplayNumber(null)
       graphView.setViewYScale(undefined)
     })
-    const graphView = useSingleValueHistoryChartViewScale()
+    const graphView = useViewScale()
     const isMobile = useIsMobile()
 
     //zooms out of graph if zoomed in upon time selection change
@@ -70,6 +70,7 @@ export const PortfolioValueSection = memo(
       <div className="text-ink-500 animate-pulse text-lg sm:text-xl">---</div>
     )
 
+    const showDisclaimer = graphPoints || !lastUpdatedTime
     if (
       !graphPoints ||
       graphPoints.length <= 1 ||
@@ -87,9 +88,9 @@ export const PortfolioValueSection = memo(
           profitElement={placeholderSection}
           balanceElement={placeholderSection}
           valueElement={placeholderSection}
-          className={'h-8'}
+          className={showDisclaimer ? 'h-8' : ''}
           graphElement={(_width, height) => {
-            if (graphPoints || !lastUpdatedTime) {
+            if (showDisclaimer) {
               return (
                 <Col className={'text-ink-500 mt-2'}>
                   <Row className={'gap-2'}>

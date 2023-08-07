@@ -32,6 +32,7 @@ export function UserBetsSummary(props: {
       metrics={metrics}
       className={className}
       includeSellButton={includeSellButton}
+      areYourBets
     />
   )
 }
@@ -39,6 +40,7 @@ export function UserBetsSummary(props: {
 export function BetsSummary(props: {
   contract: Contract
   metrics: ContractMetric
+  areYourBets: boolean
   className?: string
   hideTweet?: boolean
   hideProfit?: boolean
@@ -53,6 +55,7 @@ export function BetsSummary(props: {
     hideProfit,
     includeSellButton,
     hideValue,
+    areYourBets,
   } = props
   const { resolution, outcomeType } = contract
   const userBets = useUserContractBets(metrics.userId, contract.id)
@@ -97,7 +100,11 @@ export function BetsSummary(props: {
                 <Col>
                   <div className="text-ink-500 whitespace-nowrap text-sm">
                     Value
-                    <InfoTooltip text="How much your position in the question is worth right now according to the current stock price." />
+                    <InfoTooltip
+                      text={`How much ${
+                        areYourBets ? 'your' : 'their'
+                      } position in the question is worth right now according to the current stock price.`}
+                    />
                   </div>
                   <div className="whitespace-nowrap">
                     {formatMoney(expectation)}
@@ -109,7 +116,9 @@ export function BetsSummary(props: {
                 <div className="text-ink-500 whitespace-nowrap text-sm">
                   Payout{' '}
                   <InfoTooltip
-                    text={`You'll get ${formatMoney(
+                    text={`${
+                      areYourBets ? "You'll get" : "They'll get"
+                    } ${formatMoney(
                       Math.abs(position)
                     )} if this question resolves ${exampleOutcome} (and ${formatMoney(
                       0
@@ -135,7 +144,11 @@ export function BetsSummary(props: {
                 <Col className="hidden sm:inline">
                   <div className="text-ink-500 whitespace-nowrap text-sm">
                     Expected value{' '}
-                    <InfoTooltip text="How much your position in the question is worth right now according to the current probability." />
+                    <InfoTooltip
+                      text={`How much ${
+                        areYourBets ? 'your' : 'their'
+                      } position in the question is worth right now according to the current probability.`}
+                    />
                   </div>
                   <div className="whitespace-nowrap">{formatMoney(payout)}</div>
                 </Col>
@@ -165,7 +178,11 @@ export function BetsSummary(props: {
           <Col className="hidden sm:inline">
             <div className="text-ink-500 whitespace-nowrap text-sm">
               Expected value{' '}
-              <InfoTooltip text="How much your position in the question is worth right now according to the current probability." />
+              <InfoTooltip
+                text={`How much ${
+                  areYourBets ? 'your' : 'their'
+                } position in the question is worth right now according to the current probability.`}
+              />
             </div>
             <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
           </Col>
@@ -175,7 +192,11 @@ export function BetsSummary(props: {
           <Col>
             <div className="text-ink-500 whitespace-nowrap text-sm">
               Profit{' '}
-              <InfoTooltip text="How much you've made or lost on this question across all bets (includes both realized & unrealized profits)." />
+              <InfoTooltip
+                text={`How much ${
+                  areYourBets ? "you've" : "they've"
+                } made or lost on this question across all bets (includes both realized & unrealized profits).`}
+              />
             </div>
             <div className="whitespace-nowrap">
               {formatMoney(profit)}
@@ -188,7 +209,7 @@ export function BetsSummary(props: {
       {!hideTweet && resolution && profit >= 1 && (
         <Row className={'mt-4 items-center gap-2'}>
           <div>
-            You made {formatMoney(profit)} in profit!{' '}
+            {areYourBets ? 'You' : 'They'} made {formatMoney(profit)} in profit!{' '}
             <TweetButton
               tweetText={getWinningTweet(profit, contract, username)}
               className="ml-2"

@@ -71,13 +71,11 @@ export const creategroup = authEndpoint(async (req, auth) => {
   await bulkInsert(
     pg,
     'group_members',
-    memberIds.map((memberId) =>
-      removeUndefinedProps({
-        group_id: group.id,
-        member_id: memberId,
-        role: memberId === creator.id ? 'admin' : undefined,
-      })
-    )
+    memberIds.map((memberId) => ({
+      group_id: group.id,
+      member_id: memberId,
+      role: memberId === creator.id ? 'admin' : 'member',
+    }))
   )
 
   return { status: 'success', group: group }

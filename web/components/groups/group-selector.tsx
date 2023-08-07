@@ -1,6 +1,5 @@
 import { Combobox } from '@headlessui/react'
 import { PlusCircleIcon, SelectorIcon } from '@heroicons/react/outline'
-import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { useEffect, useRef, useState } from 'react'
@@ -11,6 +10,7 @@ import { useUser } from 'web/hooks/use-user'
 import { searchGroups } from 'web/lib/supabase/groups'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { PRIVACY_STATUS_ITEMS } from './group-privacy-modal'
+import { uniqBy } from 'lodash'
 
 export function GroupSelector(props: {
   setSelectedGroup: (group: Group) => void
@@ -47,7 +47,7 @@ export function GroupSelector(props: {
       newContract,
     }).then((result) => {
       if (requestNumber.current === requestId) {
-        setSearchedGroups(result.data)
+        setSearchedGroups(uniqBy(result.data, 'name'))
         setLoading(false)
       }
     })
@@ -136,10 +136,6 @@ export function GroupSelector(props: {
                                 {group.privacyStatus != 'public' &&
                                   PRIVACY_STATUS_ITEMS[group.privacyStatus]
                                     .icon}
-                                <Row className="w-12 items-center gap-0.5">
-                                  <UsersIcon className="h-4 w-4" />
-                                  {group.totalMembers}
-                                </Row>
                               </Row>
                             </span>
                           </>

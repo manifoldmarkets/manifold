@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { Axis, AxisScale } from 'd3-axis'
 import { pointer, select } from 'd3-selection'
 import { CurveFactory, area, line } from 'd3-shape'
-import { D3ZoomEvent, zoom } from 'd3-zoom'
+import { zoom } from 'd3-zoom'
 import dayjs from 'dayjs'
 import {
   ComponentType,
@@ -183,14 +183,15 @@ export const SliceMarker = (props: {
   )
 }
 
-export const SVGChart = <X, TT>(props: {
+export const SVGChart = <X, TT, S extends AxisScale<X>>(props: {
   children: ReactNode
   w: number
   h: number
   xAxis: Axis<X>
   yAxis: Axis<number>
   ttParams?: TooltipParams<TT> | undefined
-  onZoom?: (ev: D3ZoomEvent<any, any> | null) => void
+  fullScale?: S
+  onRescale?: (xScale: S | null) => void
   onMouseOver?: (mouseX: number, mouseY: number) => void
   onMouseLeave?: () => void
   Tooltip?: TooltipComponent<X, TT>
@@ -205,7 +206,8 @@ export const SVGChart = <X, TT>(props: {
     xAxis,
     yAxis,
     ttParams,
-    onZoom,
+    fullScale,
+    onRescale,
     onMouseOver,
     onMouseLeave,
     Tooltip,
@@ -216,7 +218,7 @@ export const SVGChart = <X, TT>(props: {
   const svgRef = useRef<SVGSVGElement>(null)
 
   useEffect(() => {
-    if (onZoom != null && svgRef.current) {
+    if (fullScale != null && onRescale != null && svgRef.current) {
       const zoomer = zoom<SVGSVGElement, unknown>()
         .scaleExtent([1, 100])
         .extent([
@@ -227,7 +229,7 @@ export const SVGChart = <X, TT>(props: {
           [0, 0],
           [w, h],
         ])
-        .on('zoom', (ev) => onZoom?.(ev))
+        .on('zoom', (ev) => onRescale(ev.transform.rescaleX(fullScale)))
         .filter((ev) => {
           if (ev instanceof WheelEvent) {
             return ev.ctrlKey || ev.metaKey || ev.altKey
@@ -235,14 +237,14 @@ export const SVGChart = <X, TT>(props: {
             // disable on touch devices entirely for now to not interfere with scroll
             return false
           }
-          return !ev.button
+          return !ev.butt
         })
 
       select(svgRef.current)
         .call(zoomer)
-        .on('dblclick.zoom', () => onZoom?.(null))
+        .on('dblclick.zoom', () => onRescale?.(null))
     }
-  }, [w, h, onZoom])
+  }, [w, h, fullScale, onRescale])
 
   const onPointerMove = (ev: React.PointerEvent) => {
     if (ev.pointerType === 'mouse' || ev.pointerType === 'pen') {

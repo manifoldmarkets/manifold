@@ -182,6 +182,7 @@ export type NonBet = {
 }
 
 export const NON_BETTING_OUTCOMES = ['BOUNTIED_QUESTION']
+
 /**
  * Implemented as a set of cpmm-1 binary contracts, one for each answer.
  * The mechanism is stored among the contract's answers, which each
@@ -191,6 +192,8 @@ export type CPMMMulti = {
   mechanism: 'cpmm-multi-1'
   outcomeType: 'MULTIPLE_CHOICE'
   shouldAnswersSumToOne: boolean
+  addAnswersMode?: add_answers_mode
+
   totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
   subsidyPool: number // current value of subsidy pool in Ṁ
 
@@ -201,6 +204,8 @@ export type CPMMMulti = {
   // NOTE: This field is stored in the answers table and must be denormalized to the client.
   answers: Answer[]
 }
+
+export type add_answers_mode = 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
 
 export type Cert = {
   outcomeType: 'CERT'
@@ -277,6 +282,7 @@ export type BountiedQuestion = {
 export type Poll = {
   outcomeType: 'POLL'
   options: PollOption[]
+  resolutions?: string[]
 }
 
 export type MultiContract = (

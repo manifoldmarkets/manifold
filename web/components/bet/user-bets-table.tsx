@@ -632,6 +632,7 @@ function BetsTable(props: {
                             includeSellButton={includeSellButtonForUser}
                             hideProfit={true}
                             hideValue={true}
+                            areYourBets={areYourBets}
                           />
                           {contract.mechanism === 'cpmm-1' &&
                             limitBets.length > 0 && (

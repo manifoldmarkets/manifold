@@ -1,11 +1,12 @@
 import { News } from 'common/news'
 import { useEffect, useState } from 'react'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export const useLinkPreviews = (urls: string[]) => {
   const [previews, setPreviews] = useState<News[]>([])
 
   useEffect(() => {
-    Promise.all(urls.map((url) => getLinkPreview(url))).then((l) =>
+    Promise.all(urls.map((url) => cachedLinkPreview(url))).then((l) =>
       setPreviews(l.filter((p) => !!p))
     )
   }, [urls.join(',')])
@@ -16,7 +17,7 @@ export const useLinkPreviews = (urls: string[]) => {
 export const useLinkPreview = (url: string) => {
   const [preview, setPreview] = useState<News | undefined>(undefined)
   useEffect(() => {
-    getLinkPreview(url).then((p) => setPreview(p))
+    cachedLinkPreview(url).then((p) => setPreview(p))
   }, [url])
   return preview
 }
@@ -37,4 +38,13 @@ export const getLinkPreview = async (url: string) => {
     const processedTitle = title?.split(' | ')[0]
     return { ...data, title: processedTitle, url }
   })
+}
+
+export const cachedLinkPreview = async (url: string) => {
+  const cacheKey = `link-preview-${url}`
+  const cached = safeLocalStorage?.getItem(cacheKey)
+  if (cached) return JSON.parse(cached) as News
+  const preview = await getLinkPreview(url)
+  safeLocalStorage?.setItem(cacheKey, JSON.stringify(preview))
+  return preview
 }

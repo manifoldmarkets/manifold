@@ -17,7 +17,7 @@ import { getContractFromSlug } from 'common/supabase/contracts'
 import { getUserIsMember } from 'common/supabase/groups'
 import { getRelatedContracts } from 'common/supabase/related-contracts'
 import { removeUndefinedProps } from 'common/util/object'
-import { compressItems, pointsToBase64 } from 'common/util/og'
+import { downsample, pointsToBase64 } from 'common/util/og'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
 import { z } from 'zod'
@@ -142,7 +142,7 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
 
   const pointsString =
     contract.visibility != 'private'
-      ? pointsToBase64(compressItems(betPoints))
+      ? pointsToBase64(downsample(betPoints))
       : undefined
 
   const creator = await getUser(contract.creatorId)

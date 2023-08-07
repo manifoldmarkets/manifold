@@ -228,10 +228,9 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
       {isMobile && (
         <TopGroupNavBar
           group={group}
-          isMember={!!userRole}
           groupUrl={groupUrl}
           privateUser={privateUser}
-          canEdit={isManifoldAdmin || userRole === 'admin'}
+          canEdit={userRole === 'admin'}
           setWritingNewAbout={setWritingNewAbout}
           bannerVisible={bannerVisible}
           onAddMemberClick={onAddMemberClick}
@@ -242,7 +241,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
           <BannerImage
             group={group}
             user={user}
-            canEdit={isManifoldAdmin || userRole === 'admin'}
+            canEdit={userRole === 'admin'}
             key={group.id}
           />
         </div>
@@ -266,7 +265,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                     group={group}
                     groupUrl={groupUrl}
                     privateUser={privateUser}
-                    canEdit={isManifoldAdmin || userRole === 'admin'}
+                    canEdit={userRole === 'admin'}
                     setWritingNewAbout={setWritingNewAbout}
                     onAddMemberClick={onAddMemberClick}
                   />
@@ -285,7 +284,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
             />
             <GroupPrivacyStatusWidget
               group={group}
-              canEdit={isManifoldAdmin || userRole === 'admin'}
+              canEdit={userRole === 'admin'}
             />
           </Row>
         </Col>
@@ -293,7 +292,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
 
       <GroupAboutSection
         group={group}
-        canEdit={isManifoldAdmin || userRole === 'admin'}
+        canEdit={userRole === 'admin'}
         writingNewAbout={writingNewAbout}
         setWritingNewAbout={setWritingNewAbout}
       />
@@ -325,8 +324,9 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                   includeProbSorts
                   fromGroupProps={{
                     group: group,
-                    userRole: isManifoldAdmin ? 'admin' : userRole ?? null,
+                    userRole: userRole ?? null,
                   }}
+                  useUrlParams
                 />
               ),
             },
@@ -364,7 +364,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
 
 export function TopGroupNavBar(props: {
   group: Group
-  isMember: boolean | undefined
   groupUrl: string
   privateUser: PrivateUser | undefined | null
   canEdit: boolean
@@ -374,7 +373,6 @@ export function TopGroupNavBar(props: {
 }) {
   const {
     group,
-    isMember,
     groupUrl,
     privateUser,
     canEdit,
@@ -382,7 +380,7 @@ export function TopGroupNavBar(props: {
     bannerVisible,
     onAddMemberClick,
   } = props
-  const user = useUser()
+
   const transitionClass = clsx(
     'transition-opacity',
     bannerVisible ? 'opacity-0' : 'opacity-100'

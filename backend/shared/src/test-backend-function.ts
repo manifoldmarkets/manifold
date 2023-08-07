@@ -4,7 +4,8 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { addInterestingContractsToFeed } from 'shared/add-interesting-contracts-to-feed'
+import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
+import * as admin from 'firebase-admin'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -13,8 +14,10 @@ export async function testBackendFunction() {
   try {
     const pg = createSupabaseDirectClient()
     const db = createSupabaseClient()
+    const firestore = admin.firestore()
     // await updateViewsAndViewersEmbeddings(pg)
-    await addInterestingContractsToFeed(db, pg)
+    // await addInterestingContractsToFeed(db, pg)
+    await sendOnboardingNotificationsInternal(firestore)
     // await calculateGroupImportanceScore(pg)
     // const apiKey = process.env.NEWS_API_KEY
     // if (!apiKey) {

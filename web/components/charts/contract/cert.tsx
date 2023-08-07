@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { last, max } from 'lodash'
-import { curveStepAfter } from 'd3-shape'
 import { CertContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import {
@@ -52,8 +51,7 @@ export const CertContractChart = (props: {
     [certPoints, start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(certPoints)?.x, now)
-  const visibleRange = [start, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width])
+  const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear([minY, maxY], [height, 0])
   return (
     <SingleValueHistoryChart
@@ -62,7 +60,6 @@ export const CertContractChart = (props: {
       xScale={xScale}
       yScale={yScale}
       data={data}
-      curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={CertChartTooltip}
       color={color ?? NUMERIC_GRAPH_COLOR}

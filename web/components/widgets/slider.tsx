@@ -8,6 +8,7 @@ const colors = {
   green: ['#14b8a6', '#0d9488'], // teal-500, teal-600
   red: ['#FF7C66', '#CC1D00'], // scarlet-300, scarlet-600
   indigo: ['#a5b4fc', '#6366f1'], // indigo-300, indigo-500
+  light: ['rgb(var(--color-primary-200))', 'rgb(var(--color-primary-300))'],
 } as const
 
 const handleStyle = {
@@ -29,8 +30,9 @@ export function Slider(props: {
   marks?: { [key: number]: ReactNode }
   color?: keyof typeof colors
   className?: string
+  disabled?: boolean
 }) {
-  const { amount, onChange, min, max, step, marks, className } = props
+  const { amount, onChange, min, max, step, marks, className, disabled } = props
 
   const [light, dark] = colors[props.color ?? 'indigo']
 
@@ -45,11 +47,12 @@ export function Slider(props: {
         marks={mapValues(marks, (value) => (
           <Mark>{value}</Mark>
         ))}
-        className={'[&>.rc-slider-rail]:bg-ink-200 !h-4'}
+        className={'[&>.rc-slider-rail]:bg-ink-200'}
         dotStyle={{ borderColor: 'lightgray' }}
         activeDotStyle={{ borderColor: dark }}
         trackStyle={{ backgroundColor: light }}
         handleStyle={{ ...handleStyle, backgroundColor: dark }}
+        disabled={disabled}
       />
     </div>
   )
@@ -58,8 +61,7 @@ export function Slider(props: {
 export function RangeSlider(props: {
   lowValue: number
   highValue: number
-  setLow: (low: number) => void
-  setHigh: (high: number) => void
+  setValues: (low: number, high: number) => void
   min?: number
   max?: number
   disabled?: boolean
@@ -67,13 +69,13 @@ export function RangeSlider(props: {
   marks?: { [key: number]: ReactNode }
   overlappable?: boolean
   color?: keyof typeof colors
+  handleSize?: number
   className?: string
 }) {
   const {
     lowValue,
     highValue,
-    setLow,
-    setHigh,
+    setValues,
     min,
     max,
     marks,
@@ -86,7 +88,7 @@ export function RangeSlider(props: {
   const [light, dark] = colors[props.color ?? 'indigo']
 
   return (
-    <div className={clsx('h-10 px-3 pt-1', className)}>
+    <div className={clsx('h-10', className)}>
       <RcSlider
         range
         draggableTrack
@@ -99,14 +101,13 @@ export function RangeSlider(props: {
             // eslint-disable-next-line prefer-const
             let [low, high] = value
             if (low === high && !overlappable) high++
-            setLow(low)
-            setHigh(high)
+            setValues(low, high)
           }
         }}
         marks={mapValues(marks, (value) => (
           <Mark>{value}</Mark>
         ))}
-        className={'[&>.rc-slider-rail]:bg-ink-200 !h-4 !bg-inherit'}
+        className={'[&>.rc-slider-rail]:bg-ink-200 !bg-inherit'}
         dotStyle={{ borderColor: 'lightgray' }}
         activeDotStyle={{ borderColor: dark }}
         trackStyle={{

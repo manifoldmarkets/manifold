@@ -1,5 +1,5 @@
 import { ArrowRightIcon, ChevronDoubleDownIcon } from '@heroicons/react/outline'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, sortBy, sumBy } from 'lodash'
 import { useState } from 'react'
 
 import clsx from 'clsx'
@@ -16,14 +16,13 @@ import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { nthColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { AnswerBar, AnswerLabel } from './answer-item'
-import { CreateAnswerPanel } from './create-answer-panel'
 import {
   AddComment,
   ClosedProb,
@@ -31,6 +30,7 @@ import {
   MultiBettor,
   OpenProb,
 } from './answer-options'
+import { floatingEqual } from 'common/util/math'
 
 export function getAnswerColor(
   answer: Answer | DpmAnswer,
@@ -55,6 +55,12 @@ export function AnswersPanel(props: {
   } = props
   const { resolutions, outcomeType } = contract
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
+  const addAnswersMode =
+    'addAnswersMode' in contract
+      ? contract.addAnswersMode
+      : outcomeType === 'FREE_RESPONSE'
+      ? 'ANYONE'
+      : 'DISABLED'
 
   const [showSmallAnswers, setShowSmallAnswers] = useState(isMultipleChoice)
 
@@ -62,14 +68,13 @@ export function AnswersPanel(props: {
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
 
+  const sortByProb = addAnswersMode === 'ANYONE' || answers.length <= maxAnswers
   const sortedAnswers = sortBy(answers, [
     // winners before losers
     (answer) => (resolutions ? -1 * resolutions[answer.id] : 0),
     // then by prob or index
     (answer) =>
-      answers.length <= maxAnswers && 'index' in answer
-        ? answer.index
-        : -1 * answer.prob,
+      !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
   ])
 
   const answersToShow = (
@@ -81,7 +86,6 @@ export function AnswersPanel(props: {
   ).slice(0, maxAnswers)
 
   const user = useUser()
-  const privateUser = usePrivateUser()
 
   const answersArray = useChartAnswers(contract).map(
     (answer, _index) => answer.text
@@ -94,48 +98,47 @@ export function AnswersPanel(props: {
 
   return (
     <Col className="gap-3">
-      <Col className="gap-2">
-        {answersToShow.map((answer) => (
-          <Answer
-            key={answer.id}
-            answer={answer}
-            contract={contract}
-            onAnswerCommentClick={onAnswerCommentClick}
-            color={getAnswerColor(answer, answersArray)}
-            userBets={userBetsByAnswer[answer.id]}
-          />
-        ))}
-        {moreCount > 0 &&
-          (linkToContract ? (
-            <Link
-              className="text-ink-500 hover:text-primary-500"
-              href={contractPath(contract)}
-            >
-              See {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}{' '}
-              <ArrowRightIcon className="inline h-4 w-4" />
-            </Link>
-          ) : (
-            <Button
-              color="gray-white"
-              onClick={() => setShowSmallAnswers(true)}
-              size="xs"
-            >
-              {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
-              <ChevronDoubleDownIcon className="ml-1 h-4 w-4" />
-            </Button>
+      {/* Note: Answers can be length 1 if it is "Other".
+          In that case, we'll wait until another answer is added before showing any answers.
+      */}
+      {answers.length !== 1 && (
+        <Col className="gap-2">
+          {answersToShow.map((answer) => (
+            <Answer
+              key={answer.id}
+              answer={answer}
+              contract={contract}
+              onAnswerCommentClick={onAnswerCommentClick}
+              color={getAnswerColor(answer, answersArray)}
+              userBets={userBetsByAnswer[answer.id]}
+            />
           ))}
-      </Col>
-
-      {answers.length === 0 && (
-        <div className="text-ink-500 pb-4">No answers yet...</div>
+          {moreCount > 0 &&
+            (linkToContract ? (
+              <Link
+                className="text-ink-500 hover:text-primary-500"
+                href={contractPath(contract)}
+              >
+                See {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}{' '}
+                <ArrowRightIcon className="inline h-4 w-4" />
+              </Link>
+            ) : (
+              <Button
+                color="gray-white"
+                onClick={() => setShowSmallAnswers(true)}
+                size="xs"
+              >
+                {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
+                <ChevronDoubleDownIcon className="ml-1 h-4 w-4" />
+              </Button>
+            ))}
+        </Col>
       )}
 
-      {outcomeType === 'FREE_RESPONSE' &&
-        user &&
-        tradingAllowed(contract) &&
-        !privateUser?.blockedByUserIds.includes(contract.creatorId) && (
-          <CreateAnswerPanel contract={contract} />
-        )}
+      {(answers.length === 0 ||
+        (answers.length === 1 && outcomeType === 'MULTIPLE_CHOICE')) && (
+        <div className="text-ink-500 pb-4">No answers yet...</div>
+      )}
     </Col>
   )
 }
@@ -155,6 +158,13 @@ function Answer(props: {
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
   const isDpm = contract.mechanism === 'dpm-2'
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
+  const isOther = 'isOther' in answer && answer.isOther
+  const addAnswersMode =
+    'addAnswersMode' in contract
+      ? contract.addAnswersMode ?? 'DISABLED'
+      : isFreeResponse
+      ? 'ANYONE'
+      : 'DISABLED'
 
   const { resolution, resolutions } = contract
   const resolvedProb =
@@ -164,9 +174,10 @@ function Answer(props: {
       ? 1
       : (resolutions?.[answer.id] ?? 0) / 100
 
-  const hasBets =
-    userBets &&
-    userBets.filter((b) => !b.isRedemption && b.amount != 0).length > 0
+  const sharesSum = sumBy(userBets, (bet) =>
+    bet.outcome === 'YES' ? bet.shares : -bet.shares
+  )
+  const hasBets = userBets && !floatingEqual(sharesSum, 0)
 
   return (
     <AnswerBar
@@ -176,7 +187,11 @@ function Answer(props: {
       label={
         <AnswerLabel
           text={answer.text}
-          creator={isFreeResponse ? answerCreator ?? false : undefined}
+          creator={
+            addAnswersMode === 'ANYONE' && !isOther
+              ? answerCreator ?? false
+              : undefined
+          }
           className={clsx(
             'items-center text-sm !leading-none sm:flex sm:text-base',
             resolvedProb === 0 ? 'text-ink-600' : 'text-ink-900'

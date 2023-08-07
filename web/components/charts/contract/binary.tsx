@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { last } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { curveStepAfter } from 'd3-shape'
 
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
@@ -46,6 +45,7 @@ export const BinaryContractChart = (props: {
   controlledStart?: number
   color?: string
   onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
+  showZoomer?: boolean
 }) => {
   const {
     contract,
@@ -56,6 +56,7 @@ export const BinaryContractChart = (props: {
     onMouseOver,
     color,
     betPoints,
+    showZoomer,
   } = props
   const [start, end] = getDateRange(contract)
   const rangeStart = controlledStart ?? start
@@ -69,8 +70,7 @@ export const BinaryContractChart = (props: {
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
 
-  const visibleRange = [rangeStart, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width])
+  const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
   return (
     <ControllableSingleValueHistoryChart
@@ -79,10 +79,10 @@ export const BinaryContractChart = (props: {
       xScale={xScale}
       yScale={yScale}
       viewScaleProps={viewScaleProps}
+      showZoomer={showZoomer}
       yKind="percent"
       data={data}
       color={color ?? YES_GRAPH_COLOR}
-      curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={BinaryChartTooltip}
     />

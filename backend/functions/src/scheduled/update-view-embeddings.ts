@@ -10,7 +10,7 @@ import {
 } from 'shared/helpers/embeddings'
 import { invokeFunction } from 'shared/utils'
 import { onRequest } from 'firebase-functions/v2/https'
-import { DEFAULT_USER_FEED_ID } from 'common/feed'
+import { DEFAULT_FEED_USER_ID } from 'common/feed'
 
 export const updateContractViewEmbeddings = functions
   .runWith({
@@ -35,11 +35,11 @@ export const updateDefaultUserEmbedding = functions
   .timeZone('America/Los_Angeles')
   .onRun(async () => {
     const pg = createSupabaseDirectClient()
-    await upsertDefaultUserEmbedding(DEFAULT_USER_FEED_ID, pg)
+    await upsertDefaultUserEmbedding(DEFAULT_FEED_USER_ID, pg)
   })
 
 export const updatecontractviewembeddings = onRequest(
-  { timeoutSeconds: 3600, memory: '1GiB', secrets },
+  { timeoutSeconds: 3600, memory: '2GiB', secrets },
   async (_req, res) => {
     const pg = createSupabaseDirectClient()
     await updateViewsAndViewersEmbeddings(pg)

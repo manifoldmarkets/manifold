@@ -15,7 +15,7 @@ import { query, where } from 'firebase/firestore'
 import { chunk, orderBy, sortBy, sum } from 'lodash'
 import React, { useMemo } from 'react'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
-import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
+import { useViewScale } from 'web/components/charts/generic-charts'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { ProfitChangeTable } from 'web/components/daily-profit'
 import { Col } from 'web/components/layout/col'
@@ -117,7 +117,7 @@ export default function RangePerformancePage(props: {
   useSaveReferral(currentUser, {
     defaultReferrerUsername: user?.username,
   })
-  const graphView = useSingleValueHistoryChartViewScale()
+  const graphView = useViewScale()
   const { contracts: relatedMarkets, loadMore } = useRecentlyBetOnContracts(
     user?.id ?? '_'
   )

@@ -1,6 +1,6 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { SupabaseClient } from 'common/supabase/utils'
-import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
@@ -14,6 +14,12 @@ import {
   getTodayComments,
 } from './importance-score'
 import { userInterestEmbeddings } from 'shared/supabase/vectors'
+import { getWhenToIgnoreUsersTime } from 'shared/supabase/users'
+const rowToContract = (row: any) =>
+  ({
+    ...(row.data as Contract),
+    importanceScore: row.importance_score,
+  } as Contract)
 
 export const MINUTE_INTERVAL = 20
 
@@ -29,20 +35,21 @@ export async function addInterestingContractsToFeed(
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
   const activeContracts = await pg.map(
-    `select data from contracts 
+    `select data, importance_score from contracts 
             where ((data->'lastUpdatedTime')::numeric) > $1
             order by importance_score desc`,
     [lastUpdatedTime],
-    (row) => row.data as Contract
+    rowToContract
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
-    `select data from contracts 
+    `select data, importance_score from contracts 
             where importance_score > 0.15
+            and id not in ($1:list)
             order by importance_score desc 
             `,
-    [],
-    (row) => row.data as Contract
+    [activeContracts.map((c) => c.id)],
+    rowToContract
   )
 
   const activeContractIds = activeContracts.map((c) => c.id)
@@ -133,8 +140,7 @@ export async function addInterestingContractsToFeed(
 }
 
 const loadUserEmbeddingsToStore = async (pg: SupabaseDirectClient) => {
-  const longAgo = Date.now() - MONTH_MS
-
+  const longAgo = getWhenToIgnoreUsersTime()
   await pg.map(
     `
       select u.id as user_id,

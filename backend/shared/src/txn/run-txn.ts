@@ -9,6 +9,12 @@ import {
   Txn,
 } from 'common/txn'
 import { createSupabaseDirectClient } from '../supabase/init'
+import { isProd } from 'shared/utils'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
+import { merge } from 'lodash'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
@@ -52,6 +58,41 @@ export async function runTxn(
     balance: FieldValue.increment(-amount),
     totalDeposits: FieldValue.increment(-amount),
   })
+
+  return { status: 'success', txn }
+}
+export async function runTxnFromBank(
+  fbTransaction: admin.firestore.Transaction,
+  data: Omit<TxnData, 'fromId'>
+) {
+  const { amount, fromType, toId, toType } = data
+  if (fromType !== 'BANK')
+    return {
+      status: 'error',
+      message: 'This method is only for fromType = BANK',
+    }
+
+  data = merge(data, {
+    fromId: isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  })
+
+  if (!isFinite(amount) || amount <= 0) {
+    return { status: 'error', message: 'Invalid amount' }
+  }
+
+  if (toType === 'USER') {
+    const toDoc = firestore.doc(`users/${toId}`)
+    fbTransaction.update(toDoc, {
+      balance: FieldValue.increment(amount),
+      totalDeposits: FieldValue.increment(amount),
+    })
+  }
+
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...data }
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
 
   return { status: 'success', txn }
 }

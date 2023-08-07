@@ -67,7 +67,7 @@ export async function addGroupMemberHelper(
           )
         }
       } else {
-        if (requester.role !== 'admin' && myId !== group.creator_id)
+        if (requester.role !== 'admin')
           throw new APIError(
             403,
             'User does not have permission to add members'
