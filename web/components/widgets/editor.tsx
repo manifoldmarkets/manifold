@@ -44,7 +44,17 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
     delete HTMLAttributes.class // only use our classes (don't duplicate on paste)
-    return ['a', mergeAttributes(HTMLAttributes, { class: linkClass }), 0]
+    return [
+      'a',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
+      0,
+    ]
+  },
+}).configure({
+  openOnClick: false, // stop link opening twice (browser still opens)
+  HTMLAttributes: {
+    rel: 'noopener ugc',
+    class: linkClass,
   },
 })
 
@@ -242,7 +252,7 @@ function RichContent(props: {
       generateReact(content, [
         StarterKit,
         size === 'sm' ? DisplayImage : BasicImage,
-        DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
+        DisplayLink,
         DisplayMention,
         DisplayContractMention,
         GridComponent,
