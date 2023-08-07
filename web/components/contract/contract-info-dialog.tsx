@@ -405,7 +405,7 @@ export function ContractInfoDialog(props: {
                         )}
                         <DuplicateContractButton contract={contract} />
                         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
-                          <AddBountyButton contract={contract} user={user} />
+                          <AddBountyButton contract={contract} />
                         )}
                       </Row>
                       <Row className="mt-4 flex-wrap gap-2">
