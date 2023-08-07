@@ -21,11 +21,13 @@ import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { LogoSEO } from 'web/components/LogoSEO'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 
 export const getServerSideProps = redirectIfLoggedIn('/home')
 
 export default function Home() {
   useSaveReferral()
+  useSaveCampaign()
   useRedirectIfSignedIn()
   const [isModalOpen, setIsModalOpen] = useState(false)
 
