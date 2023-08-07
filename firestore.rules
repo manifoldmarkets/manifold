@@ -212,5 +212,9 @@ service cloud.firestore {
       allow read;
       allow write;
     }
+
+    match /refresh-all-clients/{id} {
+      allow read;
+    }
   }
 }
