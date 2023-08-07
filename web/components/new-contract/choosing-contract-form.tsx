@@ -142,7 +142,7 @@ function AntePrice(props: { outcome: OutcomeType }) {
   if (outcome === 'BOUNTIED_QUESTION') {
     return (
       <div className="text-ink-500 text-xs">
-        Minimum {formatMoney(MINIMUM_BOUNTY)}
+        {formatMoney(MINIMUM_BOUNTY)} minimum
       </div>
     )
   }
