@@ -88,10 +88,9 @@ export function ContractGroupsList(props: {
             (adminGroups && adminGroups.length > 0)) && (
             <Col className={'my-2 items-center justify-between p-0.5'}>
               <Row className="text-ink-400 w-full justify-start text-sm">
-                Add to category
+                Add categories
               </Row>
               <GroupSelector
-                showLabel={false}
                 ignoreGroupIds={groups.map((g) => g.id)}
                 setSelectedGroup={(group) =>
                   group &&

@@ -551,7 +551,7 @@ export function ContractParamsForm(props: {
               )
             }}
             ignoreGroupIds={selectedGroups.map((g) => g.id)}
-            showLabel={true}
+            label={'Add categories'}
             isContractCreator={true}
             newContract={true}
           />

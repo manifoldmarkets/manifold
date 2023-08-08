@@ -15,14 +15,14 @@ import { uniqBy } from 'lodash'
 export function GroupSelector(props: {
   setSelectedGroup: (group: Group) => void
   isContractCreator: boolean
-  showLabel: boolean
+  label?: string
   ignoreGroupIds?: string[]
   newContract?: boolean
 }) {
   const {
     setSelectedGroup,
     isContractCreator,
-    showLabel,
+    label,
     ignoreGroupIds,
     newContract,
   } = props
@@ -69,9 +69,9 @@ export function GroupSelector(props: {
       >
         {() => (
           <>
-            {showLabel && (
+            {label && (
               <Combobox.Label className="justify-start gap-2 px-1 py-2 text-base">
-                Add to category{' '}
+                {label}{' '}
                 <InfoTooltip text="Question will be displayed alongside the other questions in the category." />
               </Combobox.Label>
             )}
