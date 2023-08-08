@@ -33,6 +33,7 @@ import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { Tabs } from 'web/components/layout/tabs'
 import { formatTime } from 'web/lib/util/time'
+import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
@@ -161,6 +162,12 @@ export default function Leagues(props: { rows: league_user_info[] }) {
 
   return (
     <Page>
+      <SEO
+        title="Leagues"
+        description="See the top-ranking users this season in each league."
+        url="/leagues"
+      />
+
       <Col className="mx-auto w-full max-w-lg gap-4 pb-8 pt-2 sm:pt-0">
         <Col className="px-2 sm:px-0">
           <Row className="mb-4 justify-between">

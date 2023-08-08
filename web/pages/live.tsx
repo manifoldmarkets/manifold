@@ -8,12 +8,19 @@ import {
   pill_options,
 } from 'web/components/activity-log'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { SEO } from 'web/components/SEO'
 
 export default function LivePage() {
   useTracking('view live page')
 
   return (
     <Page>
+      <SEO
+        title="Live"
+        description="Watch all site activity live, including bets, comments, and new questions."
+        url="/live"
+      />
+      
       <Col className="gap-4 sm:px-4 sm:pb-4">
         <Title className="mx-2 !mb-0 mt-2 sm:mx-0 lg:mt-0">Live feed</Title>
         <LiveFeed />

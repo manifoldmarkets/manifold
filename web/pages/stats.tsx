@@ -13,6 +13,7 @@ import { formatWithCommas } from 'common/util/format'
 import { InfoBox } from 'web/components/widgets/info-box'
 import { Linkify } from 'web/components/widgets/linkify'
 import { getIsNative } from 'web/lib/native/is-native'
+import { SEO } from 'web/components/SEO'
 
 export const getStaticProps = async () => {
   const stats = await getStats()
@@ -25,6 +26,11 @@ export const getStaticProps = async () => {
 export default function Analytics(props: Stats) {
   return (
     <Page>
+      <SEO
+        title="Stats"
+        description="See site-wide usage statistics."
+        url="/stats"
+      />
       <CustomAnalytics {...props} />
     </Page>
   )
