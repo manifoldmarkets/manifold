@@ -17,6 +17,7 @@ import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { RESERVED_PATHS } from 'common/envs/constants'
 import { isProd } from 'shared/utils'
+import { trackSignupFB } from 'shared/fb-analytics'
 import {
   getAverageContractEmbedding,
   getDefaultEmbedding,
@@ -146,10 +147,21 @@ export const createuser = authEndpoint(async (req, auth) => {
 
   console.log('created user', user.username, 'firebase id:', auth.uid)
   const pg = createSupabaseDirectClient()
+
   await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
   await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
   await populateNewUsersFeedFromDefaultFeed(auth.uid, pg)
+
   await track(auth.uid, 'create user', { username: user.username }, { ip })
+
+  if (process.env.FB_ACCESS_TOKEN)
+    await trackSignupFB(
+      process.env.FB_ACCESS_TOKEN,
+      user.id,
+      email ?? '',
+      ip
+    ).catch((e) => console.log('error fb tracking:', e))
+  else console.log('no FB_ACCESS_TOKEN')
 
   return { user, privateUser }
 })
