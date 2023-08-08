@@ -31,7 +31,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
 
-const PAGE_SIZE = 40
+const PAGE_SIZE = 50
 const OLDEST_UNSEEN_TIME_OF_INTEREST = new Date(
   Date.now() - 5 * DAY_MS
 ).toISOString()
@@ -238,7 +238,6 @@ export const useFeedTimeline = (
       news,
       groups
     )
-    console.log('got timeline items', timelineItems.length)
     return { timelineItems }
   }
 
