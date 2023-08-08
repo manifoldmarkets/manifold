@@ -104,8 +104,6 @@ export const onCreateCommentOnContract = functions
     const commentCreator = await getUser(comment.userId)
     if (!commentCreator) throw new Error('Could not find comment creator')
 
-    await addUserToContractFollowers(contract.id, commentCreator.id)
-
     await firestore
       .collection('contracts')
       .doc(contract.id)
