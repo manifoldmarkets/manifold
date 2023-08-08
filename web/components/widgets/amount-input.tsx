@@ -36,6 +36,7 @@ export function AmountInput(
     inputRef,
     quickAddMoreButton,
     allowFloat,
+    ...rest
   } = props
 
   const parse = (str: string) =>
@@ -60,7 +61,7 @@ export function AmountInput(
           )}
           <div className="flex">
             <Input
-              {...props}
+              {...rest}
               className={clsx(label && 'pl-9', ' !text-lg', inputClassName)}
               ref={inputRef}
               type={allowFloat ? 'number' : 'text'}
