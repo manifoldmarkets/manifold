@@ -308,7 +308,7 @@ export const computeContractScores = (
     outcomeType === 'BOUNTIED_QUESTION'
       ? bountiedImportanceScore(contract, newness, commentScore)
       : outcomeType === 'POLL'
-      ? normalize(rawPollImportance, 3) // increase max as polls catch on
+      ? normalize(rawPollImportance, 2) // increase max as polls catch on
       : normalize(rawImportance, 8)
 
   return {
