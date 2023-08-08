@@ -39,20 +39,20 @@ import { CreateQuestionButton } from 'web/components/buttons/create-question-but
 const CONTRACTS_PER_PAGE = 20
 
 export const SORTS = [
-  { label: 'Relevance', value: 'relevance' },
-  { label: 'Bounty amount', value: 'bounty-amount' },
-  { label: 'New', value: 'newest' },
   { label: 'Trending', value: 'score' },
+  { label: 'New', value: 'newest' },
+  { label: 'Closing soon', value: 'close-date' },
   { label: 'Daily change', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
   { label: 'Total traders', value: 'most-popular' },
   { label: 'High stakes', value: 'liquidity' },
   { label: 'Last activity', value: 'last-updated' },
-  { label: 'Closing soon', value: 'close-date' },
   { label: 'Just resolved', value: 'resolve-date' },
   { label: 'High %', value: 'prob-descending' },
   { label: 'Low %', value: 'prob-ascending' },
-  { label: '🎲 rAnDoM', value: 'random' },
+  { label: 'Bounty amount', value: 'bounty-amount' },
+  { label: 'Relevance', value: 'relevance' },
+  { label: '🎲 Random!', value: 'random' },
 ] as const
 
 const predictionMarketSorts = new Set([
@@ -89,18 +89,18 @@ export const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
 export type Sort = typeof SORTS[number]['value']
 
 export const FILTERS = [
+  { label: 'Any status', value: 'all' },
   { label: 'Open', value: 'open' },
   { label: 'Closing this month', value: 'closing-this-month' },
   { label: 'Closing next month', value: 'closing-next-month' },
   { label: 'Closed', value: 'closed' },
   { label: 'Resolved', value: 'resolved' },
-  { label: 'All', value: 'all' },
 ] as const
 
 export type filter = typeof FILTERS[number]['value']
 
 export const CONTRACT_TYPES = [
-  { label: 'All questions', value: 'ALL' },
+  { label: 'Any type', value: 'ALL' },
   { label: 'Yes/No', value: 'BINARY' },
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
   { label: 'Free Response', value: 'FREE_RESPONSE' },
@@ -580,7 +580,7 @@ function SupabaseContractSearchControls(props: {
         )}
       </Col>
       {showTopics && (
-        <Carousel>
+        <Carousel className="mt-0.5">
           {SELECTABLE_TOPICS.map((t) => (
             <PillButton
               key={'pill-' + t}
@@ -634,38 +634,6 @@ export function SearchFilters(props: {
 
   return (
     <div className={clsx(className, 'gap-4')}>
-      <DropdownMenu
-        Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
-        Icon={
-          <Row className="items-center gap-0.5 ">
-            <span className="whitespace-nowrap text-sm font-medium text-gray-500">
-              {contractTypeLabel}
-            </span>
-            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-          </Row>
-        }
-        menuWidth={'w-36'}
-        menuItemsClass="left-0 right-auto"
-        selectedItemName={contractTypeLabel}
-        closeOnClick={true}
-      />
-
-      {!hideFilter && (
-        <DropdownMenu
-          Items={generateFilterDropdownItems(FILTERS, selectFilter)}
-          Icon={
-            <Row className="items-center gap-0.5">
-              <span className="truncate whitespace-nowrap text-sm font-medium text-gray-500">
-                {filterLabel}
-              </span>
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-            </Row>
-          }
-          menuItemsClass="left-0 right-auto"
-          selectedItemName={filterLabel}
-          closeOnClick={true}
-        />
-      )}
       {!hideOrderSelector && (
         <DropdownMenu
           Items={generateFilterDropdownItems(
@@ -693,6 +661,38 @@ export function SearchFilters(props: {
           closeOnClick={true}
         />
       )}
+      {!hideFilter && (
+        <DropdownMenu
+          Items={generateFilterDropdownItems(FILTERS, selectFilter)}
+          Icon={
+            <Row className="items-center gap-0.5">
+              <span className="truncate whitespace-nowrap text-sm font-medium text-gray-500">
+                {filterLabel}
+              </span>
+              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+            </Row>
+          }
+          menuItemsClass="left-0 right-auto"
+          menuWidth={'w-40'}
+          selectedItemName={filterLabel}
+          closeOnClick={true}
+        />
+      )}
+      <DropdownMenu
+        Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
+        Icon={
+          <Row className="items-center gap-0.5 ">
+            <span className="whitespace-nowrap text-sm font-medium text-gray-500">
+              {contractTypeLabel}
+            </span>
+            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+          </Row>
+        }
+        menuWidth={'w-36'}
+        menuItemsClass="left-0 right-auto"
+        selectedItemName={contractTypeLabel}
+        closeOnClick={true}
+      />
 
       {!listViewDisabled && (
         <button
