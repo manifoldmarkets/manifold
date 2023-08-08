@@ -40,6 +40,7 @@ const CONTRACTS_PER_PAGE = 20
 
 export const SORTS = [
   { label: 'Trending', value: 'score' },
+  { label: 'Bounty amount', value: 'bounty-amount' },
   { label: 'New', value: 'newest' },
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Daily change', value: 'daily-score' },
@@ -50,8 +51,6 @@ export const SORTS = [
   { label: 'Just resolved', value: 'resolve-date' },
   { label: 'High %', value: 'prob-descending' },
   { label: 'Low %', value: 'prob-ascending' },
-  { label: 'Bounty amount', value: 'bounty-amount' },
-  { label: 'Relevance', value: 'relevance' },
   { label: '🎲 Random!', value: 'random' },
 ] as const
 
@@ -516,12 +515,14 @@ function SupabaseContractSearchControls(props: {
 
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
+
     if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
       setSort('bounty-amount')
     }
     if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
       setSort('score')
     }
+
     setContractType(selection)
     track('select contract type', { contractType: selection })
   }
