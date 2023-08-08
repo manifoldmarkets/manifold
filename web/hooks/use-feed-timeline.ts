@@ -31,7 +31,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
 
-const PAGE_SIZE = 50
+const PAGE_SIZE = 40
 const OLDEST_UNSEEN_TIME_OF_INTEREST = new Date(
   Date.now() - 5 * DAY_MS
 ).toISOString()
@@ -71,6 +71,10 @@ const baseUserFeedQuery = (userId: string, privateUser: PrivateUser) =>
     .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
     .order('created_time', { ascending: false })
 
+type loadProps = {
+  new?: boolean
+  old?: boolean
+}
 export const useFeedTimeline = (
   user: User | null | undefined,
   privateUser: PrivateUser,
@@ -96,19 +100,14 @@ export const useFeedTimeline = (
   const oldestCreatedTimestamp = useRef(
     last(savedFeedItems)?.supabaseTimestamp ?? new Date().toISOString()
   )
+  const loadingFirstCards = useRef(false)
 
-  const fetchFeedItems = async (
-    userId: string,
-    options: {
-      newerThan?: string
-      old?: boolean
-    }
-  ) => {
+  const fetchFeedItems = async (userId: string, options: loadProps) => {
     const newFeedRows = [] as Row<'user_feed'>[]
     let query = baseUserFeedQuery(userId, privateUser).limit(PAGE_SIZE)
     // TODO: if you're loading older, unseen stuff, newer stuff could be seen
-    if (options.newerThan) {
-      query = query.gt('created_time', options.newerThan)
+    if (options.new) {
+      query = query.gt('created_time', newestCreatedTimestamp.current)
     }
     if (options.old) {
       // get the highest priority items first
@@ -239,48 +238,57 @@ export const useFeedTimeline = (
       news,
       groups
     )
-
+    console.log('got timeline items', timelineItems.length)
     return { timelineItems }
   }
 
   const addTimelineItems = useEvent(
-    (
-      timelineItems: FeedTimelineItem[],
-      options: { new?: boolean; old?: boolean }
-    ) => {
-      if (options.new || !savedFeedItems?.length)
+    (newFeedItems: FeedTimelineItem[], options: loadProps) => {
+      // Don't signal we're done loading until we've loaded at least one page
+      if (
+        loadingFirstCards.current &&
+        newFeedItems.length === 0 &&
+        savedFeedItems === undefined
+      ) {
+        return
+      }
+      // Set the newest timestamp to the most recent item in the feed
+      if (options.new || savedFeedItems === undefined)
         newestCreatedTimestamp.current =
-          first(timelineItems)?.supabaseTimestamp ??
+          first(newFeedItems)?.supabaseTimestamp ??
           newestCreatedTimestamp.current
-      if (!options.new || options.old || !savedFeedItems?.length)
+      // Set the oldest timestamp to the last item in the feed
+      if (!options.new || options.old || savedFeedItems === undefined)
         oldestCreatedTimestamp.current =
-          last(timelineItems)?.supabaseTimestamp ??
+          last(newFeedItems)?.supabaseTimestamp ??
           oldestCreatedTimestamp.current
+      // Add newer items to the start of feed
       if (options.new) {
         setSavedFeedItems(
-          uniqBy(buildArray(timelineItems, savedFeedItems), 'id')
+          uniqBy(buildArray(newFeedItems, savedFeedItems), 'id')
         )
-      } else
+      }
+      // Add older items to the end of feed
+      else
         setSavedFeedItems(
-          uniqBy(buildArray(savedFeedItems, timelineItems), 'id')
+          uniqBy(buildArray(savedFeedItems, newFeedItems), 'id')
         )
     }
   )
-  const loadMore = useEvent(
-    async (options: { old?: boolean; newerThan?: string }) => {
-      if (!userId) return []
-      const res = await fetchFeedItems(userId, options)
-      const { timelineItems } = res
-      addTimelineItems(timelineItems, options)
-      return timelineItems
-    }
-  )
+  const loadMore = useEvent(async (options: loadProps) => {
+    if (!userId) return []
+    const { timelineItems } = await fetchFeedItems(userId, options)
+    addTimelineItems(timelineItems, options)
+    return timelineItems
+  })
 
   const tryToLoadManyCardsAtStart = useEvent(async () => {
+    loadingFirstCards.current = true
     for (const _ of range(0, 5)) {
       const moreFeedItems = await loadMore({ old: true })
       if (moreFeedItems.length > 10) break
     }
+    loadingFirstCards.current = false
   })
 
   useEffect(() => {
@@ -290,10 +298,7 @@ export const useFeedTimeline = (
 
   return {
     loadMoreOlder: async () => loadMore({ old: true }),
-    checkForNewer: async () =>
-      loadMore({
-        newerThan: newestCreatedTimestamp.current,
-      }),
+    checkForNewer: async () => loadMore({ new: true }),
     addTimelineItems,
     boosts: boosts?.filter(
       (b) =>
