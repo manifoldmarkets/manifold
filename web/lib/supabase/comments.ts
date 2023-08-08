@@ -73,6 +73,7 @@ export async function getUserComments(
       .from('contract_comments')
       .select()
       .eq('user_id', userId)
+      .eq('visibility', 'public')
       .order('created_time', { ascending: false } as any)
       .range(page * limit, page * limit + limit - 1)
   )
