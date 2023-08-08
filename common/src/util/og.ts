@@ -1,5 +1,6 @@
 import { SerializedPoint } from 'common/chart'
 import { DOMAIN } from 'common/envs/constants'
+import { average } from './math'
 
 // opengraph functions that run in static props or client-side, but not in the edge (in image creation)
 
@@ -24,17 +25,24 @@ export function pointsToBase64(points: SerializedPoint[]) {
   return Buffer.from(floats.buffer).toString('base64url')
 }
 
-/** Find every nth point so that less than limit points total in result */
-export function downsample<T = unknown>(sorted: T[], limit = 100) {
+export function binAvg(sorted: [number, number][], limit = 100) {
   const length = sorted.length
   if (length <= limit) {
     return sorted
   }
 
-  const stepSize = Math.ceil(length / limit)
+  const min = sorted[0][0]
+  const max = sorted[sorted.length - 1][0]
+  const binWidth = Math.ceil((max - min) / limit)
+
   const newPoints = []
-  for (let i = 0; i < length - 1; i += stepSize) {
-    newPoints.push(sorted[i])
+
+  for (let i = 0; i < limit; i++) {
+    const binStart = min + i * binWidth
+    const binEnd = binStart + binWidth
+    const binPoints = sorted.filter((p) => p[0] >= binStart && p[0] < binEnd)
+    newPoints.push([binEnd, average(binPoints.map((p) => p[1]))] as const)
   }
+
   return newPoints
 }
