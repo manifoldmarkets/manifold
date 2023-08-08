@@ -5,7 +5,7 @@ import {
   PresentationChartLineIcon,
 } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { FileUploadButton } from '../buttons/file-upload-button'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'

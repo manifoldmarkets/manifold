@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import React, { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -14,8 +14,8 @@ const SUCCESS_MESSAGE =
 export default function RegisterOnDiscord() {
   const router = useRouter()
   const privateUser = usePrivateUser()
-  const [error, setError] = React.useState<string>('')
-  const [status, setStatus] = React.useState<string>('')
+  const [error, setError] = useState<string>('')
+  const [status, setStatus] = useState<string>('')
   const register = async (discordId: string) =>
     registerDiscordId({ discordId })
       .then(() => setStatus(SUCCESS_MESSAGE))

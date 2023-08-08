@@ -22,7 +22,7 @@ export function Custom404Content(props: { customText?: string }) {
   return (
     <div className="flex h-[50vh] flex-col items-center justify-center">
       <Col className="max-w-sm">
-        <Title children="404: Oops!" />
+        <Title>404: Oops!</Title>
         {customText && <p>{customText}</p>}
         {!customText && <p>Less than 1% chance anything exists at this url.</p>}
         <p>

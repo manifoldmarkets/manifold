@@ -206,7 +206,7 @@ function ContractSmolView(props: {
             style={{
               color: textColor,
               filter: isDarkMode && textColor ? 'invert(1)' : undefined,
-            }}
+            }} rel="noreferrer"
           >
             {question}
           </a>

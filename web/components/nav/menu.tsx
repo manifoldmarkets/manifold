@@ -1,4 +1,4 @@
-import React, { Fragment } from 'react'
+import { Fragment } from 'react'
 import { Menu, Transition } from '@headlessui/react'
 import clsx from 'clsx'
 
@@ -44,6 +44,7 @@ export function MenuButton(props: {
                     active ? 'bg-ink-100' : '',
                     'line-clamp-3 text-ink-700 block cursor-pointer py-1.5 px-4 text-sm'
                   )}
+                  rel="noreferrer"
                 >
                   {item.name}
                 </a>

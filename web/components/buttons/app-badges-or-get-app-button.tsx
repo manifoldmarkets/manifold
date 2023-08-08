@@ -1,7 +1,7 @@
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { MobileAppsQRCodeButton } from 'web/components/buttons/mobile-apps-qr-code-button'
-import React, { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { Col } from 'web/components/layout/col'
 
@@ -11,7 +11,7 @@ export const AppBadgesOrGetAppButton = (props: {
 }) => {
   const { className, hideOnDesktop } = props
   const { isNative } = getNativePlatform()
-  const [navigatorReady, setNavigatorReady] = React.useState(false)
+  const [navigatorReady, setNavigatorReady] = useState(false)
   useEffect(() => {
     if (navigator) setNavigatorReady(true)
   }, [])

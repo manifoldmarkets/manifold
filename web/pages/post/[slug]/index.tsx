@@ -12,7 +12,7 @@ import {
 import { getUser, User } from 'web/lib/firebase/users'
 import { PencilIcon } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -106,7 +106,7 @@ export default function PostPage(props: {
           onSave={(title) => updatePost({ id: post.id, title })}
           disabled={!canEdit}
         >
-          {(value) => <Title className="!my-0 p-2" children={value} />}
+          {(value) => <Title className="!my-0 p-2">{value}</Title>}
         </EditInPlaceInput>
         <div className="h-2" />
         <Row className="mt-4 items-center">

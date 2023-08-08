@@ -83,7 +83,7 @@ export default function PortfolioPage(props: {
           onSave={(name) => updatePortfolio({ id: portfolio.id, name })}
           disabled={!canEdit}
         >
-          {(value) => <Title className="!mb-0" children={value} />}
+          {(value) => <Title className="!mb-0">{value}</Title>}
         </EditInPlaceInput>
 
         <Row className="items-center gap-2">
@@ -189,14 +189,13 @@ const PortfolioView = (props: {
           </div>
           <Row className="flex-wrap gap-2">
             {yesContracts.map((contract) => (
-              <Col>
-                <ContractCard
-                  className="max-w-[350px]"
-                  contract={contract}
-                  hideGroupLink
-                  hideQuickBet
-                />
-              </Col>
+              <ContractCard
+                key={contract.id}
+                className="max-w-[350px]"
+                contract={contract}
+                hideGroupLink
+                hideQuickBet
+              />
             ))}
           </Row>
         </Col>
@@ -208,14 +207,13 @@ const PortfolioView = (props: {
           </div>
           <Row className="flex-wrap gap-2">
             {noContracts.map((contract) => (
-              <Col>
-                <ContractCard
-                  className="max-w-[350px]"
-                  contract={contract}
-                  hideGroupLink
-                  hideQuickBet
-                />
-              </Col>
+              <ContractCard
+                key={contract.id}
+                className="max-w-[350px]"
+                contract={contract}
+                hideGroupLink
+                hideQuickBet
+              />
             ))}
           </Row>
         </Col>

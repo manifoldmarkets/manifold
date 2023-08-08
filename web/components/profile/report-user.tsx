@@ -1,5 +1,5 @@
 import { reportContent } from 'web/components/buttons/report-button'
-import React from 'react'
+import { useState } from 'react'
 import { PrivateUser, User } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -21,12 +21,10 @@ export const ReportUser = (props: {
     'Fraudulent activity',
     'Other',
   ]
-  const [selectedReportTypes, setSelectedReportTypes] = React.useState<
-    string[]
-  >([])
-  const [otherReportType, setOtherReportType] = React.useState('')
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [hasSubmitted, setHasSubmitted] = React.useState(false)
+  const [selectedReportTypes, setSelectedReportTypes] = useState<string[]>([])
+  const [otherReportType, setOtherReportType] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasSubmitted, setHasSubmitted] = useState(false)
   const canSubmit =
     selectedReportTypes.length > 0 &&
     otherReportType.length > 0 &&

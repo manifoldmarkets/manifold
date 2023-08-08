@@ -5,7 +5,7 @@ import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { Col } from 'web/components/layout/col'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { Modal } from 'web/components/layout/modal'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { User } from 'common/user'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { getApiUrl } from 'common/api'
@@ -57,7 +57,7 @@ export const EditCommentModal = (props: {
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={'bg-canvas-50 rounded-md p-4'}>
-        <Title children={'Edit Comment'} />
+        <Title>Edit Comment</Title>
         <CommentInputTextArea
           editor={editor}
           user={user}

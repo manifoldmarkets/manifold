@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { noop, uniq } from 'lodash'
 
 import { Col } from 'web/components/layout/col'

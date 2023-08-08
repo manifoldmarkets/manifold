@@ -1,7 +1,7 @@
 import { formatMoney } from 'common/util/format'
 
 import { BETTORS, User } from 'common/user'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ContractMetric } from 'common/contract-metric'
 import { removeUndefinedProps } from 'common/util/object'
 import { Leaderboard } from 'web/components/leaderboard'

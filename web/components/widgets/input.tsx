@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { forwardRef, Ref } from 'react'
+import { forwardRef, Ref } from 'react'
 
 /** Text input. Wraps html `<input>` */
 export const Input = forwardRef(
@@ -11,6 +11,7 @@ export const Input = forwardRef(
 
     return (
       <>
+        {/* eslint-disable-next-line react/no-unknown-property */}
         <style jsx>{`
           input::-webkit-inner-spin-button,
           input::-webkit-outer-spin-button {

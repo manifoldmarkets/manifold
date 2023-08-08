@@ -187,10 +187,9 @@ export function AwardBountyButton(props: {
 
 export function AddBountyButton(props: {
   contract: BountiedQuestionContract
-  user: User
   buttonClassName?: string
 }) {
-  const { contract, user, buttonClassName } = props
+  const { contract, buttonClassName } = props
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
   const [amount, setAmount] = useState<number | undefined>(undefined)

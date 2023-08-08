@@ -154,7 +154,7 @@ export function InfoCard(props: {
     <>
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="bg-canvas-0 text-ink-1000 rounded-md px-8 py-6 text-sm md:text-lg">
-          <Title children={text} />
+          <Title>{text}</Title>
           {modal}
         </Col>
       </Modal>

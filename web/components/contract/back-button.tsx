@@ -1,5 +1,5 @@
 import { ArrowLeftIcon } from '@heroicons/react/solid'
-import React, { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import clsx from 'clsx'
 
@@ -7,7 +7,7 @@ import clsx from 'clsx'
 export function BackButton(props: { className?: string }) {
   const { className } = props
   const router = useRouter()
-  const [canGoBack, setCanGoBack] = React.useState(false)
+  const [canGoBack, setCanGoBack] = useState(false)
 
   // Can't put this in a useMemo to avoid the page jump else we'll get hydration errors.
   useEffect(() => {

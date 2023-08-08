@@ -7,9 +7,9 @@ export default function HorizontalArrows(props: React.SVGProps<SVGSVGElement>) {
       fill="none"
       stroke="currentColor"
       xmlns="http://www.w3.org/2000/svg"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       {...props}
     >
       <path d="M18 8L22 12L18 16" />

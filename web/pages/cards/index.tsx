@@ -131,12 +131,12 @@ export default function CardsPage() {
         <Col className="justify-end">
           <h2 className="text-6xl">
             {/* Show a ✅ for each match */}{' '}
-            {Array.from({ length: matches }, () => (
-              <span>✅</span>
+            {Array.from({ length: matches }, (_, i) => (
+              <span key={i}>✅</span>
             ))}
             {/* And a ❌ for non-matches */}
-            {Array.from({ length: TOTAL_MARKETS - matches }, () => (
-              <span>🃏</span>
+            {Array.from({ length: TOTAL_MARKETS - matches }, (_, i) => (
+              <span key={i}>🃏</span>
             ))}
           </h2>
           <Spacer h={4} />
@@ -147,6 +147,7 @@ export default function CardsPage() {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
         {markets.map((contract, i) => (
           <MarketCard
+            key={contract.id}
             contract={contract}
             faceup={faceups[i]}
             onClick={() => click(i)}
@@ -156,6 +157,7 @@ export default function CardsPage() {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
         {creators.map((userId, i) => (
           <UserCard
+            key={userId}
             userId={userId}
             faceup={faceups[TOTAL_MARKETS + i]}
             onClick={() => click(TOTAL_MARKETS + i)}

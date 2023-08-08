@@ -2,7 +2,6 @@ import {
   DISCORD_BOT_INVITE_LINK,
   DISCORD_INVITE_LINK,
 } from 'common/envs/constants'
-import React from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -77,7 +76,7 @@ export default function DiscordBot() {
             <a
               href={DISCORD_INVITE_LINK}
               target={'_blank'}
-              className={'text-primary-500'}
+              className={'text-primary-500'} rel="noreferrer"
             >
               Discord!
             </a>{' '}

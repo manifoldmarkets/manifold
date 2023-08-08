@@ -248,7 +248,7 @@ export const Stats = (props: {
                 <a
                   href={firestoreConsolePath(id)}
                   target="_blank"
-                  className="text-primary-400"
+                  className="text-primary-400" rel="noreferrer"
                 >
                   {id}
                 </a>
@@ -405,7 +405,7 @@ export function ContractInfoDialog(props: {
                         )}
                         <DuplicateContractButton contract={contract} />
                         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
-                          <AddBountyButton contract={contract} user={user} />
+                          <AddBountyButton contract={contract} />
                         )}
                       </Row>
                       <Row className="mt-4 flex-wrap gap-2">

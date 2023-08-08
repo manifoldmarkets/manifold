@@ -1,7 +1,7 @@
 import { Comment } from 'common/comment'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
@@ -56,12 +56,13 @@ export const CommentEditHistoryButton = (props: { comment: Comment }) => {
       </span>
       <Modal size={'md'} open={showEditHistory} setOpen={setShowEditHistory}>
         <Col className={'bg-canvas-100 p-4'}>
-          <Title children={'Edit history'} />
+          <Title>Edit History</Title>
           {!edits ? (
             <LoadingIndicator />
           ) : (
             edits.map((edit, index) => (
               <Col
+                key={edit.id}
                 className={
                   'text-ink-500 bg-canvas-50 my-2 gap-2 rounded-md p-2'
                 }

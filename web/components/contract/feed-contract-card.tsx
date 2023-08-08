@@ -7,7 +7,6 @@ import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import React from 'react'
 import { toast } from 'react-hot-toast'
 import { FiThumbsDown } from 'react-icons/fi'
 import { TiVolumeMute } from 'react-icons/ti'
@@ -95,10 +94,11 @@ export function FeedContractCard(props: {
           trackClick={trackClick}
           user={user}
           className={className}
-          children={children}
           bottomChildren={bottomChildren}
           hide={hide}
-        />
+        >
+          {children}
+        </SimpleCard>
       ) : (
         <DetailedCard
           contract={contract}

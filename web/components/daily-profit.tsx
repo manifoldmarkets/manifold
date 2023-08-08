@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
 import { HOUR_MS } from 'common/util/time'
 import clsx from 'clsx'

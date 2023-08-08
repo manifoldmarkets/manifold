@@ -13,7 +13,7 @@ import {
 } from 'common/weekly-portfolio-update'
 import { query, where } from 'firebase/firestore'
 import { chunk, orderBy, sortBy, sum } from 'lodash'
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { useViewScale } from 'web/components/charts/generic-charts'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
@@ -218,7 +218,7 @@ export default function RangePerformancePage(props: {
             />
           </Col>
         </Col>
-        <Title children="Also betting on" />
+        <Title>Also betting on</Title>
         {relatedMarkets ? (
           <ContractsGrid
             contracts={relatedMarkets}
