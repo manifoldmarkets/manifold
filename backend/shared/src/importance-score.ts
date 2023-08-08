@@ -297,9 +297,9 @@ export const computeContractScores = (
     uncertainness
 
   const rawPollImportance =
-    3 * normalize(traderHour, 20) +
-    2 * normalize(todayScore, 100) +
-    2 * newness +
+    normalize(traderHour, 20) +
+    normalize(todayScore, 100) +
+    newness +
     commentScore +
     normalize(thisWeekScore, 200) +
     normalize(contract.uniqueBettorCount, 1000)
@@ -308,7 +308,7 @@ export const computeContractScores = (
     outcomeType === 'BOUNTIED_QUESTION'
       ? bountiedImportanceScore(contract, newness, commentScore)
       : outcomeType === 'POLL'
-      ? normalize(rawPollImportance, 2) // increase max as polls catch on
+      ? normalize(rawPollImportance, 4) // increase max as polls catch on
       : normalize(rawImportance, 8)
 
   return {
