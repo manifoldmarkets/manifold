@@ -12,7 +12,6 @@ import {
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import {
   formatLargeNumber,
   formatMoney,
