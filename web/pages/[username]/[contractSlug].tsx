@@ -193,7 +193,15 @@ export function ContractPageContent(props: {
   }, [contract.resolution, contract.id, topContractMetrics.length])
 
   useSaveCampaign()
-  useTracking('view market', {}, true)
+  useTracking(
+    'view market',
+    {
+      slug: contract.slug,
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+    },
+    true
+  )
   useSaveContractVisitsLocally(user === null, contract.id)
 
   // Static props load bets in descending order by time
