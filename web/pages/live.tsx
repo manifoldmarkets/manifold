@@ -20,7 +20,7 @@ export default function LivePage() {
         description="Watch all site activity live, including bets, comments, and new questions."
         url="/live"
       />
-      
+
       <Col className="gap-4 sm:px-4 sm:pb-4">
         <Title className="mx-2 !mb-0 mt-2 sm:mx-0 lg:mt-0">Live feed</Title>
         <LiveFeed />
