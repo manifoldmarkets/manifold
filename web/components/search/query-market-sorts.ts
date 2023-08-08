@@ -6,7 +6,7 @@ export const searchMarketSorts = (query: string) => {
     return []
   }
 
-  return SORTS.filter(
-    (sort) => sort.value !== 'relevance' && searchInAny(query, sort.label)
-  ).map((sort) => sort.value)
+  return SORTS.filter((sort) => searchInAny(query, sort.label)).map(
+    (sort) => sort.value
+  )
 }

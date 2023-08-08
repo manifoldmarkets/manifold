@@ -40,6 +40,7 @@ const CONTRACTS_PER_PAGE = 20
 
 export const SORTS = [
   { label: 'Trending', value: 'score' },
+  { label: 'Bounty amount', value: 'bounty-amount' },
   { label: 'New', value: 'newest' },
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Daily change', value: 'daily-score' },
@@ -50,8 +51,6 @@ export const SORTS = [
   { label: 'Just resolved', value: 'resolve-date' },
   { label: 'High %', value: 'prob-descending' },
   { label: 'Low %', value: 'prob-ascending' },
-  { label: 'Bounty amount', value: 'bounty-amount' },
-  { label: 'Relevance', value: 'relevance' },
   { label: '🎲 Random!', value: 'random' },
 ] as const
 
@@ -516,13 +515,17 @@ function SupabaseContractSearchControls(props: {
 
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
+
+    let newSort = sort
     if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
-      setSort('bounty-amount')
+      newSort = 'bounty-amount'
     }
     if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
-      setSort('score')
+      newSort = 'score'
     }
+
     setContractType(selection)
+    setSort(newSort)
     track('select contract type', { contractType: selection })
   }
 
@@ -534,7 +537,9 @@ function SupabaseContractSearchControls(props: {
 
   const isAuth = useIsAuthorized()
 
+  let prevContractType
   useEffect(() => {
+    prevContractType = contractType
     if (isAuth !== undefined) {
       onSearchParametersChanged({
         query: query,
