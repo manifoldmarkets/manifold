@@ -17,7 +17,6 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
-import { Spacer } from '../layout/spacer'
 import { getUserVote } from 'web/lib/supabase/polls'
 import { Tooltip } from '../widgets/tooltip'
 
