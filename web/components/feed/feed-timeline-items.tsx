@@ -19,7 +19,7 @@ import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { track } from 'web/lib/service/analytics'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { GroupTag } from 'web/pages/groups'
 
@@ -168,16 +168,6 @@ const FeedContractAndRelatedItems = (props: {
           promotedData={promotedData}
           trackingPostfix="feed"
           hide={() => setHidden(true)}
-          children={
-            hasBets && !hasComments ? (
-              <>
-                <FeedBetsItem
-                  contract={contract}
-                  groupedBets={groupedBetsByTime}
-                />
-              </>
-            ) : undefined
-          }
           bottomChildren={
             hasComments ? (
               <FeedCommentItem
@@ -192,7 +182,11 @@ const FeedContractAndRelatedItems = (props: {
           }
           item={item}
           className="max-w-full"
-        />
+        >
+          {hasBets && !hasComments && (
+            <FeedBetsItem contract={contract} groupedBets={groupedBetsByTime} />
+          )}
+        </FeedContractCard>
       ) : (
         <Col
           className={clsx(

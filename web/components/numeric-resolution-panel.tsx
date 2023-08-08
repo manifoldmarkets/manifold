@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 
 import { User } from 'web/lib/firebase/users'
 import { NumberCancelSelector } from './bet/yes-no-selector'

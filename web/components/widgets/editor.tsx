@@ -12,7 +12,7 @@ import {
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import React, { ReactNode, useCallback, useMemo, useRef } from 'react'
+import { ReactNode, useCallback, useMemo, useRef } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
 import GridComponent from '../editor/tiptap-grid-cards'

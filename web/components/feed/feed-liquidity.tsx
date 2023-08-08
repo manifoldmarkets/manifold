@@ -5,7 +5,6 @@ import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { formatMoney } from 'common/util/format'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import React from 'react'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { UserLink } from 'web/components/widgets/user-link'
 

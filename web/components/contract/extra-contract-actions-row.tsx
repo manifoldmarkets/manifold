@@ -2,7 +2,7 @@ import { DotsVerticalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getShareUrl } from 'common/util/share'
 import { ReactNode, useState } from 'react'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Contract } from 'web/lib/firebase/contracts'
@@ -42,13 +42,10 @@ export function ExtraContractActionsRow(props: {
         />
       </div>
 
-      <CopyLinkButton
+      <CopyLinkOrShareButton
         url={getShareUrl(contract, user?.username)}
-        linkIconOnlyProps={{
-          tooltip: 'Copy question share link',
-          //TODO: less spaghetti way of styling the button and icon
-          className: 'text-ink-500 hover:text-ink-600',
-        }}
+        tooltip="Copy question share link"
+        className="text-ink-500 hover:text-ink-600"
         eventTrackingName="copy market link"
       />
 

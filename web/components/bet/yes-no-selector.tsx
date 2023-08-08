@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import React from 'react'
 import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/solid'
 
 import { Row } from '../layout/row'

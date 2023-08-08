@@ -187,7 +187,7 @@ export function ChangePrivacyStatusButton(props: {
             {
               loading: `Updating privacy to ${selectedStatus}`,
               success: `Privacy successfully updated to ${selectedStatus}!`,
-              error: `Unable to update group privacy. Try again?`,
+              error: `Unable to update category privacy. Try again?`,
             }
           )
           .then(() => setOpen(false))
@@ -211,20 +211,20 @@ export const PRIVACY_STATUS_ITEMS = {
     bigIcon: <GlobeIcon className="h-6 w-6" />,
     status: 'Public',
     descriptor:
-      'Anyone can view, join, and add their own questions to this group.',
+      'Anyone can view, join, and add their own questions to this category.',
   },
   curated: {
     icon: <ShieldCheckIcon className="h-4 w-4" />,
     bigIcon: <ShieldCheckIcon className="h-6 w-6" />,
     status: 'Curated',
     descriptor:
-      'Anyone can view and join this group, but only admins and moderators can add/remove questions.',
+      'Anyone can view and join this category, but only admins and moderators can add/remove questions.',
   },
   private: {
     icon: <LockClosedIcon className="h-4 w-4" />,
     bigIcon: <LockClosedIcon className="h-6 w-6" />,
     status: 'Private',
     descriptor:
-      'The content in this group is not viewable by the public. Only approved users can join this group. Manifold devs may view for development reasons.',
+      'The content in this category is not viewable by the public. Only approved users can join this category. Manifold devs may view for development reasons.',
   },
 }

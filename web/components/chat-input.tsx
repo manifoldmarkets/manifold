@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import clsx from 'clsx'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'

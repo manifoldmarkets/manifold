@@ -1,4 +1,3 @@
-import React from 'react'
 import { buttonClass } from './button'
 import clsx from 'clsx'
 import Link from 'next/link'

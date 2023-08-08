@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+/* eslint-disable react/jsx-key */
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Image from 'next/image'
 import clsx from 'clsx'
@@ -156,10 +157,9 @@ function ThankYouPage() {
         width={200}
         height={100}
       />
-      <div
-        className="text-primary-700 mb-6 text-center text-2xl font-normal"
-        children="Start trading"
-      />
+      <div className="text-primary-700 mb-6 text-center text-2xl font-normal">
+        Start trading
+      </div>
       <p className="text-lg">
         As a thank you for signing up, we sent you{' '}
         <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
@@ -178,10 +178,7 @@ export function CharityPage(props: { className?: string }) {
   const { className } = props
   return (
     <Col className={clsx('bg-canvas-0', className)}>
-      <div
-        className="text-primary-700 mb-4 text-xl"
-        children="Donate to charity"
-      />
+      <div className="text-primary-700 mb-4 text-xl">Donate to charity</div>
       <img
         height={100}
         src="/welcome/charity.gif"

@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   ChatAlt2Icon,
   CurrencyDollarIcon,
@@ -57,12 +56,12 @@ import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { useAdmin } from 'web/hooks/use-admin'
 import { UserPayments } from 'web/pages/payments'
 import { FaMoneyBillTransfer } from 'react-icons/fa6'
-import { StarDisplay } from 'web/components/reviews/stars'
 import { useQuery } from 'react-query'
 import { getUserRating, getUserReviews } from 'web/lib/supabase/reviews'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { removeUndefinedProps } from 'common/util/object'
 import { Review } from 'web/components/reviews/review'
+import { db } from 'web/lib/supabase/db'
 
 export const getStaticProps = async (props: {
   params: {
@@ -121,7 +120,7 @@ const DeletedUser = () => {
   return (
     <Page>
       <div className="flex h-full flex-col items-center justify-center">
-        <Title children="Deleted account page" />
+        <Title>Deleted account page</Title>
         <p>This user has been deleted.</p>
         <p>If you didn't expect this, let us know on Discord!</p>
         <br />
@@ -149,6 +148,7 @@ function UserProfile(props: {
   const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
+  const [followsYou, setFollowsYou] = useState(false)
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -167,6 +167,20 @@ function UserProfile(props: {
       )
     }
   }, [])
+
+  useEffect(() => {
+    if (currentUser && currentUser.id !== user.id) {
+      db.from('user_follows')
+        .select('user_id')
+        .eq('follow_id', currentUser.id)
+        .eq('user_id', user.id)
+        .then(({ data }) => {
+          setFollowsYou(
+            data?.some(({ user_id }) => user_id === user.id) ?? false
+          )
+        })
+    }
+  }, [currentUser?.id])
 
   return (
     <Page key={user.id}>
@@ -217,9 +231,24 @@ function UserProfile(props: {
                 }
                 {user.isBannedFromPosting && <PostBanBadge />}
               </div>
-              <span className={'text-ink-400 text-sm sm:text-lg'}>
-                @{user.username}
-              </span>
+              <Row
+                className={
+                  'max-w-[8rem] flex-shrink flex-wrap gap-2 sm:max-w-none'
+                }
+              >
+                <span className={'text-ink-400  text-sm sm:text-base'}>
+                  @{user.username}{' '}
+                </span>
+                {followsYou && (
+                  <span
+                    className={
+                      'bg-canvas-100 w-fit self-center rounded-md p-0.5 px-1 text-xs'
+                    }
+                  >
+                    Follows you
+                  </span>
+                )}
+              </Row>
             </Col>
           </Row>
           {isCurrentUser ? (
@@ -435,14 +464,8 @@ function ProfilePublicStats(props: {
           className="group flex gap-0.5"
           onClick={() => setReviewsOpen(true)}
         >
-          <span className="font-semibold">{rating.toFixed(1)}</span>
-          <StarDisplay rating={rating} />
-          <span>
-            (
-            <span className="decoration-primary-400 decoration-2 group-hover:underline">
-              {reviewCount} Reviews
-            </span>
-            )
+          <span className="decoration-primary-400 decoration-2 group-hover:underline">
+            {reviewCount} Reviews
           </span>
         </button>
       )}

@@ -1,6 +1,6 @@
 import { Combobox } from '@headlessui/react'
 import { ChevronRightIcon } from '@heroicons/react/outline'
-import { SparklesIcon, UsersIcon } from '@heroicons/react/solid'
+import { SparklesIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
@@ -76,7 +76,7 @@ export const OmniSearch = (props: {
               }
             }}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search questions, users, & groups"
+            placeholder="Search questions, users, & categories"
             enterKeyHint="search"
             className={clsx(
               'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
@@ -107,7 +107,7 @@ const DefaultResults = (props: { recentMarkets: Contract[] }) => {
       <div className="mx-2 my-2 text-xs">
         <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
         Start with <Key>%</Key> for questions, <Key>@</Key> for users, or{' '}
-        <Key>#</Key> for groups
+        <Key>#</Key> for categories
       </div>
     </>
   )
@@ -369,7 +369,7 @@ const GroupResults = (props: {
   return (
     <>
       <SectionTitle link={`/groups?search=${encodeURIComponent(search ?? '')}`}>
-        Groups
+        Categories
       </SectionTitle>
       {props.groups.map((group) => (
         <ResultOption
@@ -378,16 +378,11 @@ const GroupResults = (props: {
         >
           <div className="flex items-center gap-3">
             <span className="line-clamp-1 grow">{group.name}</span>
-            <span className="flex items-center">
-              <UsersIcon className="mr-1 h-4 w-4" />
-              {group.totalMembers}
-            </span>
             <div onClick={(e) => e.stopPropagation()}>
               <JoinOrLeaveGroupButton
                 group={group}
                 user={me}
                 isMember={myGroupIds.includes(group.id)}
-                className="w-[80px] !px-0 !py-1"
               />
             </div>
           </div>

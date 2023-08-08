@@ -39,6 +39,7 @@ export const DashboardNewsItem = (props: {
         href={url}
         target="_blank"
         onClick={() => track('click news article', { article: title })}
+        rel="noreferrer"
       />
 
       <Col className="bg-canvas-0 border-canvas-0 rounded-b-lg border border-t-0 p-2 hover:underline">

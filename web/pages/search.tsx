@@ -1,5 +1,6 @@
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { useRouter } from 'next/router'
+import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import Welcome from 'web/components/onboarding/welcome'
@@ -31,6 +32,11 @@ export default function Search() {
     <>
       <Welcome />
       <Page>
+        <SEO
+          title="Questions"
+          description="Browse all questions."
+          url="/questions"
+        />
         <Col className="mx-auto w-full p-2">
           <Title className="hidden lg:flex">Questions</Title>
           <SupabaseContractSearch

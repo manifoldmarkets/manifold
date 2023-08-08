@@ -202,7 +202,7 @@ export function InfoCard(props: {
     <>
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="bg-canvas-0 rounded-md px-8 pb-6 pt-0 text-sm md:text-lg">
-          <Title children={text} />
+          <Title>{text}</Title>
           {modal}
           <Link
             href={link}

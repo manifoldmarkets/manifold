@@ -1,4 +1,3 @@
-import React from 'react'
 import { binaryOutcomes } from 'web/components/bet/bet-panel'
 import { Slider } from 'web/components/widgets/slider'
 import { formatMoney } from 'common/util/format'

@@ -10,9 +10,6 @@ export default function YourGroups(props: { yourGroupIds?: string[] }) {
     <>
       {isAuth ? (
         <GroupSearch
-          filter={{
-            yourGroups: true,
-          }}
           persistPrefix={'your-groups'}
           yourGroupIds={yourGroupIds}
           user={user}

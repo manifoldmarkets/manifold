@@ -13,8 +13,8 @@ import {
 } from 'common/weekly-portfolio-update'
 import { query, where } from 'firebase/firestore'
 import { chunk, orderBy, sortBy, sum } from 'lodash'
-import React, { useMemo } from 'react'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { useMemo } from 'react'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { useViewScale } from 'web/components/charts/generic-charts'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { ProfitChangeTable } from 'web/components/daily-profit'
@@ -177,9 +177,9 @@ export default function RangePerformancePage(props: {
             />{' '}
             {date} Profit
           </Title>
-          <CopyLinkButton
+          <CopyLinkOrShareButton
             url={`https://${ENV_CONFIG.domain}/week/${user.username}/${rangeEndDateSlug}`}
-            linkIconOnlyProps={{ tooltip: 'Copy link to this week' }}
+            tooltip="Copy link to this week"
             eventTrackingName={'copy weekly profit link'}
           />
         </Row>
@@ -218,7 +218,7 @@ export default function RangePerformancePage(props: {
             />
           </Col>
         </Col>
-        <Title children="Also betting on" />
+        <Title>Also betting on</Title>
         {relatedMarkets ? (
           <ContractsGrid
             contracts={relatedMarkets}

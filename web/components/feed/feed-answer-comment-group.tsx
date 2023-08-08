@@ -4,7 +4,7 @@ import {
   FreeResponseContract,
   MultipleChoiceContract,
 } from 'common/contract'
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'

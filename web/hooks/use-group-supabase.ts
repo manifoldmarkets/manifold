@@ -7,11 +7,11 @@ import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
 import {
-  MEMBER_LOAD_NUM,
   getGroupFromSlug,
   getGroupMembers,
   getGroupOfRole,
   getMemberRole,
+  MEMBER_LOAD_NUM,
 } from 'web/lib/supabase/group'
 import {
   getGroupsWhereUserHasRole,
@@ -49,6 +49,7 @@ export function useMemberGroupIds(
 ): string[] | undefined {
   const [groupIds, setGroupIds] = useState<string[] | undefined>(undefined)
   useEffect(() => {
+    if (!userId) return
     db.from('group_members')
       .select('group_id')
       .eq('member_id', userId)
@@ -134,10 +135,11 @@ export function useRealtimeGroupMemberIds(groupId: string) {
 export type Member = Row<'group_role'>
 
 export function useRealtimeGroupMembers(
-  groupId: string,
+  group: Group,
   hitBottom: boolean,
   numMembers: number | undefined
 ) {
+  const { id: groupId } = group
   const [admins, setAdmins] = useState<Member[] | undefined>(undefined)
   const [moderators, setModerators] = useState<Member[] | undefined>(undefined)
   const [members, setMembers] = useState<Member[] | undefined>(undefined)
@@ -149,8 +151,7 @@ export function useRealtimeGroupMembers(
     getGroupMembers(groupId, offsetPage + 1)
       .then((result) => {
         if (members) {
-          const prevMembers = members
-          setMembers([...prevMembers, ...result.data])
+          setMembers([...members, ...result.data])
         } else {
           setMembers(result.data)
         }
@@ -174,6 +175,7 @@ export function useRealtimeGroupMembers(
       })
       .catch((e) => console.log(e))
 
+    if (group.totalMembers > 250) return
     getGroupMembers(groupId, offsetPage, 0)
       .then((result) => {
         const members = result.data

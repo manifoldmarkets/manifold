@@ -37,7 +37,13 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
           <XIcon className={'text-ink-900 h-4'} />
         </button>
       )}
-      <a className="block" key={id} href={url} target="_blank">
+      <a
+        className="block"
+        key={id}
+        href={url}
+        target="_blank"
+        rel="noreferrer ugc"
+      >
         <img
           className="m-0 h-[200px] w-full object-cover"
           src={image}

@@ -22,7 +22,6 @@ import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import { searchContract } from 'web/lib/supabase/contracts'
-import { safeLocalStorage } from 'web/lib/util/local'
 import DropdownMenu from './comments/dropdown-menu'
 import { ShowTime } from './contract/contract-details'
 import { ContractsGrid } from './contract/contracts-grid'
@@ -40,18 +39,19 @@ import { CreateQuestionButton } from 'web/components/buttons/create-question-but
 const CONTRACTS_PER_PAGE = 20
 
 export const SORTS = [
-  { label: 'Relevance', value: 'relevance' },
-  { label: 'New', value: 'newest' },
   { label: 'Trending', value: 'score' },
+  { label: 'Bounty amount', value: 'bounty-amount' },
+  { label: 'New', value: 'newest' },
+  { label: 'Closing soon', value: 'close-date' },
   { label: 'Daily change', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
   { label: 'Total traders', value: 'most-popular' },
   { label: 'High stakes', value: 'liquidity' },
   { label: 'Last activity', value: 'last-updated' },
-  { label: 'Closing soon', value: 'close-date' },
   { label: 'Just resolved', value: 'resolve-date' },
-  { label: '🎲 rAnDoM', value: 'random' },
-  { label: 'Bounty amount', value: 'bounty-amount' },
+  { label: 'High %', value: 'prob-descending' },
+  { label: 'Low %', value: 'prob-ascending' },
+  { label: '🎲 Random!', value: 'random' },
 ] as const
 
 const predictionMarketSorts = new Set([
@@ -61,38 +61,45 @@ const predictionMarketSorts = new Set([
   'close-date',
   'resolve-date',
   'most-popular',
+  'prob-descending',
+  'prob-ascending',
 ])
 
 const bountySorts = new Set(['bounty-amount'])
+
+const probSorts = new Set(['prob-descending', 'prob-ascending'])
 
 export const BOUNTY_MARKET_SORTS = SORTS.filter(
   (item) => !predictionMarketSorts.has(item.value)
 )
 
 export const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
-  (item) => item.value != 'bounty-amount'
+  (item) => !bountySorts.has(item.value)
 )
 
 export const PREDICTION_MARKET_SORTS = SORTS.filter(
+  (item) => !bountySorts.has(item.value) && !probSorts.has(item.value)
+)
+
+export const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
 export type Sort = typeof SORTS[number]['value']
-export const PROB_SORTS = ['prob-descending', 'prob-ascending']
 
 export const FILTERS = [
+  { label: 'Any status', value: 'all' },
   { label: 'Open', value: 'open' },
   { label: 'Closing this month', value: 'closing-this-month' },
   { label: 'Closing next month', value: 'closing-next-month' },
   { label: 'Closed', value: 'closed' },
   { label: 'Resolved', value: 'resolved' },
-  { label: 'All', value: 'all' },
 ] as const
 
 export type filter = typeof FILTERS[number]['value']
 
 export const CONTRACT_TYPES = [
-  { label: 'All questions', value: 'ALL' },
+  { label: 'Any type', value: 'ALL' },
   { label: 'Yes/No', value: 'BINARY' },
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
   { label: 'Free Response', value: 'FREE_RESPONSE' },
@@ -342,9 +349,7 @@ export function SupabaseContractSearch(props: {
           inputRowClassName={inputRowClassName}
           defaultSort={defaultSort}
           defaultFilter={defaultFilter}
-          persistPrefix={persistPrefix}
           hideOrderSelector={hideOrderSelector}
-          isWholePage={isWholePage}
           useUrlParams={useUrlParams}
           includeProbSorts={includeProbSorts}
           onSearchParametersChanged={onSearchParametersChanged}
@@ -409,11 +414,9 @@ function SupabaseContractSearchControls(props: {
   defaultSort?: Sort
   defaultFilter?: filter
   defaultContractType?: ContractTypeType
-  persistPrefix?: string
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
   onSearchParametersChanged: (params: SupabaseSearchParameters) => void
-  isWholePage?: boolean
   useUrlParams?: boolean
   autoFocus?: boolean
   listViewDisabled?: boolean
@@ -425,10 +428,8 @@ function SupabaseContractSearchControls(props: {
     defaultSort = 'score',
     defaultFilter = 'open',
     defaultContractType = 'ALL',
-    persistPrefix,
     hideOrderSelector,
     onSearchParametersChanged,
-    isWholePage,
     useUrlParams,
     autoFocus,
     includeProbSorts,
@@ -448,9 +449,6 @@ function SupabaseContractSearchControls(props: {
         }
       : undefined
   )
-
-  const sortKey = `${persistPrefix}-search-sort`
-  const savedSort = safeLocalStorage?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
     defaultSort,
@@ -517,12 +515,14 @@ function SupabaseContractSearchControls(props: {
 
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
+
     if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
       setSort('bounty-amount')
     }
     if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
       setSort('score')
     }
+
     setContractType(selection)
     track('select contract type', { contractType: selection })
   }
@@ -581,7 +581,7 @@ function SupabaseContractSearchControls(props: {
         )}
       </Col>
       {showTopics && (
-        <Carousel>
+        <Carousel className="mt-0.5">
           {SELECTABLE_TOPICS.map((t) => (
             <PillButton
               key={'pill-' + t}
@@ -624,10 +624,6 @@ export function SearchFilters(props: {
     listViewDisabled,
   } = props
 
-  const sorts = includeProbSorts
-    ? SORTS
-    : SORTS.filter((sort) => !PROB_SORTS.includes(sort.value))
-
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -639,38 +635,6 @@ export function SearchFilters(props: {
 
   return (
     <div className={clsx(className, 'gap-4')}>
-      <DropdownMenu
-        Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
-        Icon={
-          <Row className="items-center gap-0.5 ">
-            <span className="whitespace-nowrap text-sm font-medium text-gray-500">
-              {contractTypeLabel}
-            </span>
-            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-          </Row>
-        }
-        menuWidth={'w-36'}
-        menuItemsClass="left-0 right-auto"
-        selectedItemName={contractTypeLabel}
-        closeOnClick={true}
-      />
-
-      {!hideFilter && (
-        <DropdownMenu
-          Items={generateFilterDropdownItems(FILTERS, selectFilter)}
-          Icon={
-            <Row className="items-center gap-0.5">
-              <span className="truncate whitespace-nowrap text-sm font-medium text-gray-500">
-                {filterLabel}
-              </span>
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-            </Row>
-          }
-          menuItemsClass="left-0 right-auto"
-          selectedItemName={filterLabel}
-          closeOnClick={true}
-        />
-      )}
       {!hideOrderSelector && (
         <DropdownMenu
           Items={generateFilterDropdownItems(
@@ -678,6 +642,9 @@ export function SearchFilters(props: {
               ? BOUNTY_MARKET_SORTS
               : contractType == 'POLL'
               ? POLL_SORTS
+              : includeProbSorts &&
+                (contractType === 'ALL' || contractType === 'BINARY')
+              ? PREDICTION_MARKET_PROB_SORTS
               : PREDICTION_MARKET_SORTS,
             selectSort
           )}
@@ -695,6 +662,38 @@ export function SearchFilters(props: {
           closeOnClick={true}
         />
       )}
+      {!hideFilter && (
+        <DropdownMenu
+          Items={generateFilterDropdownItems(FILTERS, selectFilter)}
+          Icon={
+            <Row className="items-center gap-0.5">
+              <span className="truncate whitespace-nowrap text-sm font-medium text-gray-500">
+                {filterLabel}
+              </span>
+              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+            </Row>
+          }
+          menuItemsClass="left-0 right-auto"
+          menuWidth={'w-40'}
+          selectedItemName={filterLabel}
+          closeOnClick={true}
+        />
+      )}
+      <DropdownMenu
+        Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
+        Icon={
+          <Row className="items-center gap-0.5 ">
+            <span className="whitespace-nowrap text-sm font-medium text-gray-500">
+              {contractTypeLabel}
+            </span>
+            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+          </Row>
+        }
+        menuWidth={'w-36'}
+        menuItemsClass="left-0 right-auto"
+        selectedItemName={contractTypeLabel}
+        closeOnClick={true}
+      />
 
       {!listViewDisabled && (
         <button

@@ -13,7 +13,7 @@ import {
 } from 'common/util/format'
 import { Spacer } from 'web/components/layout/spacer'
 import { Table } from 'web/components/widgets/table'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   calculatePayout,
   getAnswerProbability,

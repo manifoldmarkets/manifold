@@ -91,9 +91,21 @@ export function ContractStatusLabel(props: {
     }
     case 'BOUNTIED_QUESTION': {
       return (
-        <Col className="whitespace-nowrap text-sm font-bold text-teal-600">
+        <Col
+          className={clsx(
+            'whitespace-nowrap text-sm font-bold',
+            contract.bountyLeft == 0 ? 'text-ink-300' : 'text-teal-600'
+          )}
+        >
           {formatMoney(contract.bountyLeft)}{' '}
-          <span className="text-ink-600 -mt-1 text-xs font-normal">bounty</span>
+          <span
+            className={clsx(
+              'text-xs font-normal',
+              contract.bountyLeft == 0 ? 'text-ink-300' : 'text-ink-600'
+            )}
+          >
+            bounty
+          </span>
         </Col>
       )
     }

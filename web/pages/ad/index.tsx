@@ -18,7 +18,7 @@ import { track } from 'web/lib/service/analytics'
 import { uniq } from 'lodash'
 import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { postPath } from 'web/lib/supabase/post'
 import toast from 'react-hot-toast'
 import { useUser } from 'web/hooks/use-user'
@@ -83,9 +83,9 @@ function Ad(props: { ad: AdType; onNext: () => void }) {
           <span className="text-ink-500 mr-1">Created by</span>
           <UserLink username={ad.creatorUsername} name={ad.creatorName} />
         </div>
-        <CopyLinkButton
+        <CopyLinkOrShareButton
           url={shareUrl}
-          linkIconOnlyProps={{ tooltip: 'Copy link to ad' }}
+          tooltip="Copy link to ad"
           eventTrackingName={'copy ad link'}
         />
       </div>

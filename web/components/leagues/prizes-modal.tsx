@@ -28,8 +28,8 @@ export function PrizesModal(props: {
             <thead>
               <tr>
                 <th className="border border-gray-300 px-4 py-2">Rank</th>
-                {divisions.map(([, divisionName]) => (
-                  <th className="border border-gray-300 px-4 py-2">
+                {divisions.map(([, divisionName], i) => (
+                  <th key={i} className="border border-gray-300 px-4 py-2">
                     {divisionName}
                   </th>
                 ))}

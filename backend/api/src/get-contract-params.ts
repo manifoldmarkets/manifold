@@ -5,7 +5,7 @@ import {
   MaybeAuthedContractParams as Ret,
   PseudoNumericContract,
 } from 'common/contract'
-import { MultiSerializedPoint, SerializedPoint } from 'common/src/chart'
+import { MultiSerializedPoint, SerializedPoint, maxMinBin } from 'common/chart'
 import { getBets, getTotalBetCount } from 'common/supabase/bets'
 import { getAllComments } from 'common/supabase/comments'
 import {
@@ -17,7 +17,7 @@ import { getContractFromSlug } from 'common/supabase/contracts'
 import { getUserIsMember } from 'common/supabase/groups'
 import { getRelatedContracts } from 'common/supabase/related-contracts'
 import { removeUndefinedProps } from 'common/util/object'
-import { downsample, pointsToBase64 } from 'common/util/og'
+import { binAvg, pointsToBase64 } from 'common/util/og'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
 import { z } from 'zod'
@@ -106,6 +106,12 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
       )
     : []
 
+  const ogBetPoints = includingSingleBetPts
+    ? binAvg(
+        bets.map((bet) => [bet.createdTime, bet.probAfter] as any).reverse()
+      )
+    : []
+
   let multiBetPoints: MultiSerializedPoint[] = []
   if (includingMultiBetPts) {
     multiBetPoints = calculateMultiBets(
@@ -136,14 +142,13 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
       getInitialProbability(contract as BinaryContract | PseudoNumericContract),
     ] as const
 
+    ogBetPoints.unshift(firstPoint)
     betPoints.push(firstPoint)
     betPoints.reverse()
   }
 
   const pointsString =
-    contract.visibility != 'private'
-      ? pointsToBase64(downsample(betPoints))
-      : undefined
+    contract.visibility != 'private' ? pointsToBase64(ogBetPoints) : undefined
 
   const creator = await getUser(contract.creatorId)
 

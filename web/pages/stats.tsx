@@ -13,6 +13,7 @@ import { formatWithCommas } from 'common/util/format'
 import { InfoBox } from 'web/components/widgets/info-box'
 import { Linkify } from 'web/components/widgets/linkify'
 import { getIsNative } from 'web/lib/native/is-native'
+import { SEO } from 'web/components/SEO'
 
 export const getStaticProps = async () => {
   const stats = await getStats()
@@ -25,6 +26,11 @@ export const getStaticProps = async () => {
 export default function Analytics(props: Stats) {
   return (
     <Page>
+      <SEO
+        title="Stats"
+        description="See site-wide usage statistics."
+        url="/stats"
+      />
       <CustomAnalytics {...props} />
     </Page>
   )
@@ -78,7 +84,7 @@ export function CustomAnalytics(props: Stats) {
 
   return (
     <Col className="px-4 sm:pl-6 sm:pr-16">
-      <Title children="Active users" />
+      <Title>Active users</Title>
       <p className="text-ink-500">
         An active user is a user who has traded in, commented on, or created a
         question.
@@ -152,7 +158,7 @@ export function CustomAnalytics(props: Stats) {
 
       <Spacer h={8} />
 
-      <Title children="Engaged users" />
+      <Title>Engaged users</Title>
       <p className="text-ink-500">
         An engaged user is a user who has traded in, commented on, or created a
         question on at least 2 out of 7 days in each of the past 3 weeks.
@@ -165,7 +171,8 @@ export function CustomAnalytics(props: Stats) {
       <DailyChart dailyValues={engagedUsers} startDate={startDate} />
       <Spacer h={8} />
 
-      <Title children="Mana sales" />
+      <Title>Mana sales</Title>
+
       <p className="text-ink-500">
         <b>${formatWithCommas(last30dSales)}</b> of mana sold in the last 30d
       </p>
@@ -186,7 +193,7 @@ export function CustomAnalytics(props: Stats) {
       />
       <Spacer h={8} />
 
-      <Title children="Retention" />
+      <Title>Retention</Title>
       <p className="text-ink-500">
         What fraction of active users are still active after the given time
         period?
@@ -243,7 +250,7 @@ export function CustomAnalytics(props: Stats) {
       />
 
       <Spacer h={8} />
-      <Title children="New user retention" />
+      <Title>New user retention</Title>
       <p className="text-ink-500">
         What fraction of new users are still active after the given time period?
       </p>
@@ -290,7 +297,8 @@ export function CustomAnalytics(props: Stats) {
       />
       <Spacer h={8} />
 
-      <Title children="Daily activity" />
+      <Title>Daily activity</Title>
+
       <Tabs
         className="mb-4"
         defaultIndex={0}
@@ -330,7 +338,7 @@ export function CustomAnalytics(props: Stats) {
 
       <Spacer h={8} />
 
-      <Title children="Activation rate" />
+      <Title>Activation rate</Title>
       <p className="text-ink-500">
         Out of all new users, how many placed at least one bet?
       </p>
@@ -366,7 +374,7 @@ export function CustomAnalytics(props: Stats) {
       />
       <Spacer h={8} />
 
-      <Title children="Ratio of Active Users" />
+      <Title>Ratio of Active Users</Title>
       <Tabs
         className="mb-4"
         defaultIndex={1}
@@ -408,7 +416,7 @@ export function CustomAnalytics(props: Stats) {
       />
       <Spacer h={8} />
 
-      <Title children="Total mana bet" />
+      <Title>Total mana bet</Title>
       <p className="text-ink-500">
         Sum of bet amounts. (Divided by 100 to be more readable.)
       </p>

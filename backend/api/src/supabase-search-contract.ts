@@ -27,7 +27,6 @@ const bodySchema = z.object({
     z.literal('all'),
   ]),
   sort: z.union([
-    z.literal('relevance'),
     z.literal('newest'),
     z.literal('score'),
     z.literal('daily-score'),
@@ -39,6 +38,8 @@ const bodySchema = z.object({
     z.literal('resolve-date'),
     z.literal('random'),
     z.literal('bounty-amount'),
+    z.literal('prob-descending'),
+    z.literal('prob-ascending'),
   ]),
   contractType: z.union([
     z.literal('ALL'),
@@ -142,8 +143,7 @@ function getSearchContractSQL(contractInput: {
   let queryBuilder: SqlBuilder | undefined
   const emptyTerm = term.length === 0
 
-  const hideStonks =
-    (sort === 'relevance' || sort === 'score') && emptyTerm && !groupId
+  const hideStonks = sort === 'score' && emptyTerm && !groupId
 
   const whereSqlBuilder = getSearchContractWhereSQL(
     filter,
@@ -156,7 +156,6 @@ function getSearchContractSQL(contractInput: {
     hideStonks
   )
   const whereSQL = renderSql(whereSqlBuilder)
-  let sortAlgorithm: string | undefined = undefined
   const isUrl = term.startsWith('https://manifold.markets/')
 
   if (isUrl) {
@@ -167,7 +166,6 @@ function getSearchContractSQL(contractInput: {
       whereSqlBuilder,
       where('slug = $1', [slug])
     )
-    sortAlgorithm = 'importance_score'
   }
   // Searching markets within a group
   else if (groupId) {
@@ -245,8 +243,6 @@ function getSearchContractSQL(contractInput: {
     ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
     ) as relevant_group_contracts
       `
-      // We use importance score bc these are exact matches and can be low quality
-      sortAlgorithm = 'importance_score'
     }
   }
   // Searching markets by creator
@@ -387,8 +383,6 @@ select * from (
     ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
   ) as ranked_matches
     `
-      // We use importance score bc these are exact matches and can be low quality
-      sortAlgorithm = 'importance_score'
     }
     // Normal full text search for markets
     else {
@@ -410,7 +404,7 @@ select * from (
   return (
     query +
     ' ' +
-    getSearchContractSortSQL(sort, fuzzy, emptyTerm, sortAlgorithm) +
+    getSearchContractSortSQL(sort) +
     ' ' +
     `LIMIT ${limit} OFFSET ${offset}`
   )
@@ -461,20 +455,8 @@ function getSearchContractWhereSQL(
 
 type SortFields = Record<string, string>
 
-function getSearchContractSortSQL(
-  sort: string,
-  fuzzy: boolean | undefined,
-  empty: boolean,
-  sortingAlgorithm: string | undefined
-) {
+function getSearchContractSortSQL(sort: string) {
   const sortFields: SortFields = {
-    relevance: sortingAlgorithm
-      ? sortingAlgorithm
-      : empty
-      ? 'importance_score'
-      : fuzzy
-      ? 'similarity_score'
-      : 'ts_rank_cd(question_fts, query) * 1.0 + ts_rank_cd(description_fts, query) * 0.5',
     score: 'importance_score',
     'daily-score': "(data->>'dailyScore')::numeric",
     '24-hour-vol': "(data->>'volume24Hours')::numeric",
@@ -486,8 +468,15 @@ function getSearchContractSortSQL(
     'close-date': 'close_time',
     random: 'random()',
     'bounty-amount': "COALESCE((data->>'bountyLeft')::integer, -1)",
+    'prob-descending': "resolution DESC, (data->>'p')::numeric",
+    'prob-ascending': "resolution DESC, (data->>'p')::numeric",
   }
 
-  const ASCDESC = sort === 'close-date' || sort === 'liquidity' ? 'ASC' : 'DESC'
+  const ASCDESC =
+    sort === 'close-date' || sort === 'liquidity' || sort === 'prob-ascending'
+      ? 'ASC'
+      : sort === 'prob-descending'
+      ? 'DESC NULLS LAST'
+      : 'DESC'
   return `ORDER BY ${sortFields[sort]} ${ASCDESC}`
 }

@@ -458,3 +458,7 @@ export function getUserContractsMetricsWithContracts(params: {
 export function castPollVote(params: { contractId: string; voteId: string }) {
   return call(getApiUrl('cast-poll-vote'), 'POST', params)
 }
+
+export function getSimilarGroupsToContract(params: { question: string }) {
+  return call(getApiUrl('get-similar-groups-to-contract'), 'POST', params)
+}

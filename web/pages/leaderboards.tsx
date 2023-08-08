@@ -87,47 +87,57 @@ export default function Leaderboards(props: {
 
   const { topReferrals } = props
 
-  const LeaderboardWithPeriod = (myRankForPeriod?: ranking) => {
-    const { topTraders, topCreators } = props.allTime
+  useTracking('view leaderboards')
 
-    const user = useUser()
-    const topTraderEntries = topTraders.map((user, i) => ({
-      ...user,
-      rank: i + 1,
-    }))
-    const topCreatorEntries = topCreators.map((user, i) => ({
-      ...user,
-      rank: i + 1,
-    }))
-    if (user && myRankForPeriod != null) {
-      if (
-        myRankForPeriod.profitRank != null &&
-        !topTraderEntries.find((x) => x.id === user.id)
-      ) {
-        topTraderEntries.push({ ...user, rank: myRankForPeriod.profitRank })
-      }
-      if (
-        myRankForPeriod.tradersRank != null &&
-        !topCreatorEntries.find((x) => x.id === user.id)
-      ) {
-        topCreatorEntries.push({ ...user, rank: myRankForPeriod.tradersRank })
-      }
-      // Currently only set for allTime
-      if (
-        myRankForPeriod.referralsRank != null &&
-        !topReferrals.find((x) => x.id === user.id)
-      ) {
-        topReferrals.push({
-          ...user,
-          rank: myRankForPeriod.referralsRank,
-          totalReferrals: userReferralInfo?.total_referrals ?? 0,
-          totalReferredProfit: userReferralInfo?.total_referred_profit ?? 0,
-        })
-      }
+  const { topTraders, topCreators } = props.allTime
+
+  const topTraderEntries = topTraders.map((user, i) => ({
+    ...user,
+    rank: i + 1,
+  }))
+  const topCreatorEntries = topCreators.map((user, i) => ({
+    ...user,
+    rank: i + 1,
+  }))
+  if (user && myRanks != null) {
+    if (
+      myRanks.profitRank != null &&
+      !topTraderEntries.find((x) => x.id === user.id)
+    ) {
+      topTraderEntries.push({ ...user, rank: myRanks.profitRank })
     }
+    if (
+      myRanks.tradersRank != null &&
+      !topCreatorEntries.find((x) => x.id === user.id)
+    ) {
+      topCreatorEntries.push({ ...user, rank: myRanks.tradersRank })
+    }
+    // Currently only set for allTime
+    if (
+      myRanks.referralsRank != null &&
+      !topReferrals.find((x) => x.id === user.id)
+    ) {
+      topReferrals.push({
+        ...user,
+        rank: myRanks.referralsRank,
+        totalReferrals: userReferralInfo?.total_referrals ?? 0,
+        totalReferredProfit: userReferralInfo?.total_referred_profit ?? 0,
+      })
+    }
+  }
 
-    return (
-      <>
+  return (
+    <Page>
+      <SEO
+        title="Leaderboards"
+        description={`Manifold's leaderboards show the top ${BETTORS}, question creators, and referrers.`}
+        url="/leaderboards"
+      />
+      <Col className="mb-4 p-2">
+        <Title className={'hidden md:block'}>
+          Leaderboards <InfoTooltip text="Updated every 15 minutes" />
+        </Title>
+
         <Col className="items-center gap-10 lg:flex-row lg:items-start">
           <Leaderboard
             title={`🏅 Top ${BETTORS}`}
@@ -179,24 +189,6 @@ export default function Leaderboards(props: {
             highlightUsername={user?.username}
           />
         </Col>
-      </>
-    )
-  }
-  useTracking('view leaderboards')
-
-  return (
-    <Page>
-      <SEO
-        title="Leaderboards"
-        description={`Manifold's leaderboards show the top ${BETTORS}, question creators, and referrers.`}
-        url="/leaderboards"
-      />
-      <Col className="mb-4 p-2">
-        <Title className={'hidden md:block'}>
-          Leaderboards <InfoTooltip text="Updated every 15 minutes" />
-        </Title>
-
-        {LeaderboardWithPeriod(myRanks)}
       </Col>
     </Page>
   )

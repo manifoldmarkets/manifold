@@ -4,8 +4,7 @@ import { pointer, select } from 'd3-selection'
 import { CurveFactory, area, line } from 'd3-shape'
 import { zoom } from 'd3-zoom'
 import dayjs from 'dayjs'
-import {
-  ComponentType,
+import React, {
   ReactNode,
   SVGProps,
   useDeferredValue,
@@ -275,11 +274,11 @@ export const SVGChart = <X, TT, S extends AxisScale<X>>(props: {
             getTooltipPosition(ttParams.x, ttParams.y, w, h, ttw, tth)
           }
         >
-          <Tooltip
-            xScale={xAxis.scale()}
-            yScale={yAxis.scale() as ContinuousScale<number>}
-            {...ttParams}
-          />
+          {Tooltip({
+            xScale: xAxis.scale(),
+            yScale: yAxis.scale() as ContinuousScale<number>,
+            ...ttParams,
+          })}
         </TooltipContainer>
       )}
       <svg
@@ -361,7 +360,8 @@ export type TooltipProps<X, T> = TooltipParams<T> & {
   yScale?: ContinuousScale<number>
 }
 
-export type TooltipComponent<X, T> = ComponentType<TooltipProps<X, T>>
+export type TooltipComponent<X, T> = (props: TooltipProps<X, T>) => ReactNode
+
 export const TooltipContainer = (props: {
   calculatePos: (width: number, height: number) => TooltipPosition
   className?: string

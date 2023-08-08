@@ -1,4 +1,3 @@
-import React from 'react'
 import { Contract } from 'web/lib/firebase/contracts'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { getContractFromSlug } from 'common/supabase/contracts'

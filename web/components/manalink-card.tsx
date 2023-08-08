@@ -9,7 +9,7 @@ import { Row } from 'web/components/layout/row'
 import { Claim, Manalink } from 'common/manalink'
 import { useUserById } from 'web/hooks/use-user'
 import { IconButton } from './buttons/button'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 
 export type ManalinkInfo = {
   expiresTime: number | null
@@ -156,11 +156,9 @@ export function ManalinkCardFromView(props: {
             <QrcodeIcon className="h-6 w-6" />
           </IconButton>
 
-          <CopyLinkButton
+          <CopyLinkOrShareButton
             url={getManalinkUrl(link.slug)}
-            linkIconOnlyProps={{
-              tooltip: 'Copy link to Manalink',
-            }}
+            tooltip="Copy link to Manalink"
             eventTrackingName={'copy manalink'}
           />
           <IconButton

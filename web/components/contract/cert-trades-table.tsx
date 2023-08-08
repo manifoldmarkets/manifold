@@ -79,6 +79,7 @@ export default function CertTradesTable(props: { txns: CertTxn[] }) {
                 <tr>
                   {titles.map((title) => (
                     <th
+                      key={title}
                       scope="col"
                       className="text-ink-900 whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold"
                     >
@@ -94,7 +95,10 @@ export default function CertTradesTable(props: { txns: CertTxn[] }) {
                     className={i % 2 === 0 ? undefined : 'bg-ink-100'}
                   >
                     {keys.map((key) => (
-                      <td className="text-ink-500 whitespace-nowrap px-2 py-0.5 text-sm">
+                      <td
+                        key={key}
+                        className="text-ink-500 whitespace-nowrap px-2 py-0.5 text-sm"
+                      >
                         {
                           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                           // @ts-ignore

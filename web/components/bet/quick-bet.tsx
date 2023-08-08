@@ -530,7 +530,7 @@ export function ContractCardAnswers(props: {
     return <div>No answers yet...</div>
   }
   return (
-    <Col className={clsx('w-full gap-4', className)}>
+    <Col className={clsx('w-full gap-2', className)}>
       {answers.map((answer) => (
         <ContractCardAnswer
           key={answer.id}

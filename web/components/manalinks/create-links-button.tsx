@@ -14,7 +14,7 @@ import { Input } from '../widgets/input'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Select } from '../widgets/select'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { CopyLinkButton } from '../buttons/copy-link-button'
+import { CopyLinkRow } from '../buttons/copy-link-button'
 import { useCanCreateManalink } from 'web/hooks/use-can-create-manalink'
 
 export function CreateLinksButton(props: {
@@ -88,7 +88,11 @@ function CreateManalinkForm(props: {
   }
 
   const expireOptions = Object.entries(EXPIRE_OPTIONS).map(([key, value]) => {
-    return <option value={key}>{value}</option>
+    return (
+      <option key={key} value={key}>
+        {value}
+      </option>
+    )
   })
 
   function setExpireTime(timeDelta: dayjs.ManipulateType | 'never') {
@@ -115,7 +119,8 @@ function CreateManalinkForm(props: {
             setFinishedCreating(true)
           }}
         >
-          <Title className="!my-0" children="Create a Manalink" />
+          <Title className="!my-0">Create a Manalink</Title>
+
           <div className="flex flex-col flex-wrap gap-x-5 gap-y-2">
             <div className="flex flex-auto flex-col">
               <label className="px-1 py-2">Amount</label>
@@ -196,9 +201,9 @@ function CreateManalinkForm(props: {
       )}
       {finishedCreating && (
         <>
-          <Title className="!my-0" children="Manalink Created!" />
+          <Title className="!my-0">Manalink Created!</Title>
           <ManalinkCard className="my-4" info={newManalink} preview />
-          <CopyLinkButton url={url} eventTrackingName={'copy manalink'} />
+          <CopyLinkRow url={url} eventTrackingName={'copy manalink'} />
           <QRCode url={url} className="self-center" />
         </>
       )}
