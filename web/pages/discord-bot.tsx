@@ -76,7 +76,8 @@ export default function DiscordBot() {
             <a
               href={DISCORD_INVITE_LINK}
               target={'_blank'}
-              className={'text-primary-500'} rel="noreferrer"
+              className={'text-primary-500'}
+              rel="noreferrer"
             >
               Discord!
             </a>{' '}

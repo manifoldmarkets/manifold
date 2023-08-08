@@ -248,7 +248,8 @@ export const Stats = (props: {
                 <a
                   href={firestoreConsolePath(id)}
                   target="_blank"
-                  className="text-primary-400" rel="noreferrer"
+                  className="text-primary-400"
+                  rel="noreferrer"
                 >
                   {id}
                 </a>
