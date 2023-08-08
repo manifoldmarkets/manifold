@@ -522,9 +522,9 @@ export function ContractPageContent(props: {
               {outcomeType === 'BOUNTIED_QUESTION' && (
                 <Link
                   className={clsx(linkClass, 'text-primary-500 ml-2 text-sm')}
-                  href={`/questions?s=score&f=open&search-contract-type=BOUNTIED_QUESTION`}
+                  href={`/questions?s=score&f=open&ct=BOUNTIED_QUESTION`}
                 >
-                  More Bountied Questions &rarr;
+                  See all bounties &rarr;
                 </Link>
               )}
             </Row>
