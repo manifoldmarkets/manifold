@@ -3,7 +3,7 @@ import { last, sum, sortBy, groupBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 import { Bet } from 'common/bet'
-import { DpmAnswer } from 'common/answer'
+import { Answer, DpmAnswer } from 'common/answer'
 import { MultiContract } from 'common/contract'
 import { getAnswerProbability } from 'common/calculate'
 import {
@@ -148,38 +148,6 @@ export const ChoiceContractChart = (props: {
   const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
 
-  const ChoiceTooltip = useMemo(
-    () => (props: TooltipProps<Date, MultiPoint>) => {
-      const { prev, x, y, xScale, yScale } = props
-      const [start, end] = xScale.domain()
-
-      if (!yScale) return null
-      if (!prev) return null
-
-      const d = xScale.invert(x)
-      const prob = yScale.invert(y)
-
-      const index = cum(prev.y).findIndex((p) => p >= 1 - prob)
-      const answer = answers[index]?.text ?? 'Other'
-      const value = formatPct(prev.y[index])
-
-      return (
-        <>
-          <span className="font-semibold">
-            {formatDateInRange(d, start, end)}
-          </span>
-          <div className="flex max-w-xs flex-row justify-between gap-4">
-            <Row className="items-center gap-2 overflow-hidden">
-              <span className="overflow-hidden text-ellipsis">{answer}</span>
-            </Row>
-            <span className="text-ink-600">{value}</span>
-          </div>
-        </>
-      )
-    },
-    [answers]
-  )
-
   return (
     <MultiValueHistoryChart
       w={width}
@@ -190,8 +158,39 @@ export const ChoiceContractChart = (props: {
       data={data}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
-      Tooltip={ChoiceTooltip}
+      Tooltip={(props) => <ChoiceTooltip answers={answers} ttProps={props} />}
     />
+  )
+}
+
+const ChoiceTooltip = (props: {
+  ttProps: TooltipProps<Date, MultiPoint>
+  answers: (DpmAnswer | Answer)[]
+}) => {
+  const { ttProps, answers } = props
+  const { prev, x, y, xScale, yScale } = ttProps
+  const [start, end] = xScale.domain()
+
+  if (!yScale) return null
+  if (!prev) return null
+
+  const d = xScale.invert(x)
+  const prob = yScale.invert(y)
+
+  const index = cum(prev.y).findIndex((p) => p >= 1 - prob)
+  const answer = answers[index]?.text ?? 'Other'
+  const value = formatPct(prev.y[index])
+
+  return (
+    <>
+      <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
+      <div className="flex max-w-xs flex-row justify-between gap-4">
+        <Row className="items-center gap-2 overflow-hidden">
+          <span className="overflow-hidden text-ellipsis">{answer}</span>
+        </Row>
+        <span className="text-ink-600">{value}</span>
+      </div>
+    </>
   )
 }
 
