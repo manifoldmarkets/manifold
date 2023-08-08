@@ -135,7 +135,8 @@ export function JoinOrLeaveGroupButton(props: {
     ? withTracking(() => {
         joinGroup({ groupId: group.id })
           .then(() => setIsMember(true))
-          .catch(() => {
+          .catch((e) => {
+            console.error(e)
             toast.error('Failed to follow category')
           })
       }, 'join group')

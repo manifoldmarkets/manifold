@@ -10,9 +10,9 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
 import GroupSearch from 'web/components/groups/group-search'
+import { useMemberGroupIds } from 'web/hooks/use-group-supabase'
 
 export default function Groups() {
   const user = useUser()
@@ -44,7 +44,7 @@ export default function Groups() {
 
 export function GroupsPageContent(props: { user: User | null | undefined }) {
   const { user } = props
-  const yourGroupIds = useRealtimeMemberGroupIds(user?.id)
+  const yourGroupIds = useMemberGroupIds(user?.id)
   if (user === undefined || yourGroupIds === undefined) {
     return <LoadingIndicator />
   }

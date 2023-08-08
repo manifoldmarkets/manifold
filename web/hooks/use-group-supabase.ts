@@ -49,6 +49,7 @@ export function useMemberGroupIds(
 ): string[] | undefined {
   const [groupIds, setGroupIds] = useState<string[] | undefined>(undefined)
   useEffect(() => {
+    if (!userId) return
     db.from('group_members')
       .select('group_id')
       .eq('member_id', userId)
