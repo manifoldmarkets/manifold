@@ -107,7 +107,7 @@ const DefaultResults = (props: { recentMarkets: Contract[] }) => {
       <div className="mx-2 my-2 text-xs">
         <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
         Start with <Key>%</Key> for questions, <Key>@</Key> for users, or{' '}
-        <Key>#</Key> for groups
+        <Key>#</Key> for categories
       </div>
     </>
   )
