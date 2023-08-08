@@ -51,7 +51,7 @@ export function AmountInput(
 
   return (
     <>
-      <Col className={clsx('relative', error && 'mb-3', className)}>
+      <Col className={clsx('relative', className)}>
         <label className="font-sm md:font-lg relative">
           {label && (
             <span className="text-ink-400 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
@@ -203,15 +203,15 @@ export function BuyAmountInput(props: {
           )}
         </Row>
         {error ? (
-          <div className="text-scarlet-500 whitespace-nowrap text-xs font-medium tracking-wide">
+          <div className="text-scarlet-500 mt-0.5 whitespace-nowrap text-sm">
             {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
           </div>
         ) : (
           showBalance &&
           user && (
-            <div className="text-ink-500 whitespace-nowrap text-sm font-medium tracking-wide">
+            <div className="text-ink-500 mt-0.5 whitespace-nowrap text-sm">
               Balance{' '}
-              <span className="text-ink-1000">{formatMoney(user.balance)}</span>
+              <span className="text-ink-800">{formatMoney(user.balance)}</span>
             </div>
           )
         )}

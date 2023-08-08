@@ -290,12 +290,12 @@ export function BuyPanel(props: {
               ? 'bg-teal-500/10'
               : 'hidden'
             : '',
-          'rounded-lg',
+          'rounded-xl',
           singularView ? '' : ' px-4 py-2',
           singularView && option === 'LIMIT' ? 'hidden' : ''
         )}
       >
-        <div className="text-ink-800 mt-2 mb-1 text-sm">Amount</div>
+        <div className="text-ink-700 mt-2 mb-1 text-sm">Amount</div>
 
         <BuyAmountInput
           inputClassName="w-full max-w-none"
@@ -310,11 +310,9 @@ export function BuyPanel(props: {
           showBalance
         />
 
-        <Spacer h={6} />
-
-        <Row className="border-ink-200 w-full rounded border px-4 py-2">
+        <Row className="mb-4 mt-8 w-full">
           <Col className="w-1/2">
-            <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-xs">
+            <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-sm">
               {isPseudoNumeric || isStonk ? (
                 'Shares'
               ) : (
@@ -336,7 +334,7 @@ export function BuyPanel(props: {
           </Col>
           <Col className="w-1/2 text-sm">
             <Row>
-              <span className="text-ink-700 whitespace-nowrap text-xs">
+              <span className="text-ink-700 whitespace-nowrap text-sm">
                 {isPseudoNumeric
                   ? 'Estimated value'
                   : isStonk
@@ -383,7 +381,6 @@ export function BuyPanel(props: {
             )}
           </Col>
         </Row>
-        <Spacer h={2} />
 
         {user ? (
           <WarningConfirmationButton
