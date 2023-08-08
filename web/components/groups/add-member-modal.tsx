@@ -184,7 +184,8 @@ export function PrivateGroupLink(props: { group: Group }) {
         linkButtonClassName={'text-indigo-400'}
       />
       <div className="text-ink-700 text-sm">
-        This link will immediately allow anyone who has it to join your group
+        This link will immediately allow anyone who has it to follow your
+        category
       </div>
     </Col>
   )
