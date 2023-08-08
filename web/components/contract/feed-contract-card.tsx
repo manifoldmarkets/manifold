@@ -38,6 +38,7 @@ import { ClickFrame } from '../widgets/click-frame'
 import { HOUR_MS } from 'common/util/time'
 import { PollPanel } from '../poll/poll-panel'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
+import { CardReason } from '../feed/card-reason'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -248,8 +249,39 @@ function DetailedCard(props: {
     >
       {/* Title is link to contract for open in new tab and a11y */}
       <Col className={'w-full flex-col gap-1.5 pt-4'}>
+        <Row className="w-full justify-between">
+          <Row className={'text-ink-700 items-center gap-1 text-sm'}>
+            <Avatar
+              size={'xs'}
+              className={'mr-0.5'}
+              avatarUrl={creatorAvatarUrl}
+              username={creatorUsername}
+            />
+            <UserLink
+              name={contract.creatorName}
+              username={creatorUsername}
+              className={clsx(
+                'w-full text-ellipsis sm:max-w-[12rem]',
+                statusInlineWithUserlink ? 'max-w-[6.5rem]' : 'max-w-[10rem]'
+              )}
+            />
+            {statusInlineWithUserlink && (
+              <span className={'text-ink-400'}>
+                <Tooltip text={item?.reasonDescription} placement={'top'}>
+                  asked
+                </Tooltip>
+                <RelativeTimestamp
+                  time={item.createdTime}
+                  shortened={true}
+                  className="text-ink-400"
+                />
+              </span>
+            )}
+          </Row>
+          <CardReason item={item} />
+        </Row>
         <Row className={'justify-between gap-4'}>
-          <Link
+          {/* <Link
             href={path}
             className={clsx(
               '-mt-1 text-lg',
@@ -261,37 +293,9 @@ function DetailedCard(props: {
               trackClick()
               e.stopPropagation()
             }}
-          >
-            <VisibilityIcon contract={contract} /> {contract.question}
-            {item &&
-              !item.isCopied &&
-              (item.dataType === 'contract_probability_changed' ||
-                item.dataType === 'trending_contract') && (
-                <div className={'text-ink-400 text-sm'}>
-                  {item.dataType === 'contract_probability_changed' && (
-                    <RelativeTimestamp
-                      time={item.createdTime - 24 * HOUR_MS}
-                      shortened={true}
-                    />
-                  )}
-                  <Tooltip text={item?.reasonDescription} placement={'top'}>
-                    {item.dataType === 'contract_probability_changed'
-                      ? ' change'
-                      : item.dataType === 'trending_contract'
-                      ? ' trending'
-                      : item.dataType === 'new_subsidy'
-                      ? ' subsidized'
-                      : ''}
-                  </Tooltip>
-                  {item.dataType !== 'contract_probability_changed' && (
-                    <RelativeTimestamp
-                      time={item.createdTime}
-                      shortened={true}
-                    />
-                  )}
-                </div>
-              )}
-          </Link>
+          > */}
+          <VisibilityIcon contract={contract} /> {contract.question}
+          {/* </Link> */}
           <Col className={'items-end'}>
             {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
               <ContractStatusLabel
@@ -315,36 +319,6 @@ function DetailedCard(props: {
           </Col>
         </Row>
         <Row className={'items-center justify-between gap-1'}>
-          <Row className={'w-full items-center gap-1'}>
-            <Avatar
-              size={'xs'}
-              className={'mr-0.5'}
-              avatarUrl={creatorAvatarUrl}
-              username={creatorUsername}
-            />
-            <Row className={'text-ink-700 items-baseline gap-1 text-sm'}>
-              <UserLink
-                name={contract.creatorName}
-                username={creatorUsername}
-                className={clsx(
-                  'w-full text-ellipsis sm:max-w-[12rem]',
-                  statusInlineWithUserlink ? 'max-w-[6.5rem]' : 'max-w-[10rem]'
-                )}
-              />
-              {statusInlineWithUserlink && (
-                <span className={'text-ink-400'}>
-                  <Tooltip text={item?.reasonDescription} placement={'top'}>
-                    asked
-                  </Tooltip>
-                  <RelativeTimestamp
-                    time={item.createdTime}
-                    shortened={true}
-                    className="text-ink-400"
-                  />
-                </span>
-              )}
-            </Row>
-          </Row>
           {isBinaryCpmm && !isClosed && (
             <BetRow contract={contract} user={user} />
           )}
