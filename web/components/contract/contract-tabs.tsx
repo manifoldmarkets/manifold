@@ -1,5 +1,5 @@
-import { groupBy, last, sortBy } from 'lodash'
-import { memo, useEffect, useMemo, useState } from 'react'
+import { groupBy, keyBy, last, mapValues, sortBy, sumBy } from 'lodash'
+import { memo, useEffect, useMemo, useReducer, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
 import {
@@ -39,7 +39,7 @@ import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useComments } from 'web/hooks/use-comments'
+import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 
 export const EMPTY_USER = '_'
 
@@ -58,6 +58,7 @@ export function ContractTabs(props: {
 }) {
   const {
     contract,
+    comments,
     bets,
     answerResponse,
     onCancelAnswerResponse,
@@ -70,13 +71,6 @@ export function ContractTabs(props: {
   const betsWithoutAntesOrRedemptions = useMemo(
     () => bets.filter((bet) => !bet.isAnte && !bet.isRedemption),
     [bets]
-  )
-  const comments = useMemo(
-    () =>
-      props.comments.filter(
-        (comment) => !blockedUserIds.includes(comment.userId)
-      ),
-    [props.comments, blockedUserIds]
   )
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
@@ -221,9 +215,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     betResponse,
     clearReply,
   } = props
-  const comments = (useComments(contract.id) ?? props.comments).filter(
-    (c) => !blockedUserIds.includes(c.userId)
-  )
+  const comments = (
+    useRealtimeCommentsOnContract(contract.id) ?? props.comments
+  ).filter((c) => !blockedUserIds.includes(c.userId))
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     DEFAULT_PARENT_COMMENTS_TO_RENDER
@@ -243,55 +237,54 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   // replied to answers/comments are NOT newest, otherwise newest first
   const isReply = (c: ContractComment) => c.replyToCommentId !== undefined
 
-  const strictlySortedComments = useMemo(
-    () =>
-      sortBy(comments, [
-        sort === 'Best'
-          ? isBountiedQuestion
-            ? (c: ContractComment) =>
-                isReply(c)
-                  ? c.createdTime
-                  : // For your own recent comments, show first.
-                  c.createdTime > Date.now() - 10 * MINUTE_MS &&
-                    c.userId === user?.id
-                  ? -Infinity
-                  : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
-            : (c) =>
-                isReply(c)
-                  ? c.createdTime
-                  : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-                  likes &&
-                    c.createdTime > Date.now() - 10 * MINUTE_MS &&
-                    c.userId === user?.id
-                  ? -Infinity
-                  : -(c?.likes ?? 0)
-          : (c) => c,
-        (c) => (isReply(c) ? c.createdTime : -c.createdTime),
-      ]),
-    [comments, sort, likes, user?.id]
-  )
+  const strictlySortedComments = sortBy(comments, [
+    sort === 'Best'
+      ? isBountiedQuestion
+        ? (c) =>
+            isReply(c)
+              ? c.createdTime
+              : // For your own recent comments, show first.
+              c.createdTime > Date.now() - 10 * MINUTE_MS &&
+                c.userId === user?.id
+              ? -Infinity
+              : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
+        : (c) =>
+            isReply(c)
+              ? c.createdTime
+              : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+              likes &&
+                c.createdTime > Date.now() - 10 * MINUTE_MS &&
+                c.userId === user?.id
+              ? -Infinity
+              : -(c?.likes ?? 0)
+      : (c) => c,
+    (c) => (isReply(c) ? c.createdTime : -c.createdTime),
+  ])
+
   const commentsByParent = groupBy(
     strictlySortedComments,
     (c) => c.replyToCommentId ?? '_'
   )
 
-  const [originalComments, setOriginalComments] = useState(
-    strictlySortedComments
+  const commentById = keyBy(comments, 'id')
+
+  // lump comments on load/sort to prevent jumping
+  const [frozenCommentIds, refreezeIds] = useReducer(
+    () => strictlySortedComments.map((c) => c.id),
+    strictlySortedComments.map((c) => c.id)
   )
-  const originalCommentSet = useMemo(
-    () => new Set(originalComments.map((c) => c.id)),
-    [originalComments]
-  )
+
   const firstOldCommentIndex = strictlySortedComments.findIndex((c) =>
-    originalCommentSet.has(c.id)
+    frozenCommentIds.includes(c.id)
   )
+
   const sortedComments = [
     ...strictlySortedComments.slice(0, firstOldCommentIndex),
     // Lump the original comments in a contiguous chunk so they don't jump around.
-    ...originalComments,
+    ...frozenCommentIds.map((id) => commentById[id]).filter(Boolean),
     ...strictlySortedComments
       .slice(firstOldCommentIndex)
-      .filter((c) => !originalCommentSet.has(c.id)),
+      .filter((c) => !frozenCommentIds.includes(c.id)),
   ]
 
   const parentComments = sortedComments.filter(
@@ -299,15 +292,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
 
   const childrensBounties = isBountiedQuestion
-    ? Object.keys(commentsByParent).reduce(
-        (newObj: { [key: string]: number }, key) => {
-          newObj[key] = commentsByParent[key].reduce(
-            (sum, c) => sum + (c?.bountyAwarded ?? 0),
-            0
-          )
-          return newObj
-        },
-        {}
+    ? mapValues(commentsByParent, (comments) =>
+        sumBy(comments, (c) => c?.bountyAwarded ?? 0)
       )
     : {}
 
@@ -357,7 +343,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           sort={sort}
           onSortClick={() => {
             setSort(sort === 'Newest' ? 'Best' : 'Newest')
-            setOriginalComments([])
+            refreezeIds()
             track('change-comments-sort', {
               contractSlug: contract.slug,
               contractName: contract.question,
