@@ -55,7 +55,6 @@ import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import {
   useFirebasePublicContract,
   useIsPrivateContractMember,
@@ -79,6 +78,7 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { linkClass } from 'web/components/widgets/site-link'
+import { useBets } from 'web/hooks/use-bets'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -198,11 +198,12 @@ export function ContractPageContent(props: {
 
   // Static props load bets in descending order by time
   const lastBetTime = first(contractParams.historyData.bets)?.createdTime
-  const newBets = useRealtimeBets({
-    contractId: contract.id,
-    afterTime: lastBetTime,
-    filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
-  })
+  const newBets =
+    useBets({
+      contractId: contract.id,
+      afterTime: lastBetTime,
+      filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
+    }) ?? []
   const totalBets =
     contractParams.totalBets + newBets.filter((bet) => !bet.isRedemption).length
   const bets = useMemo(
