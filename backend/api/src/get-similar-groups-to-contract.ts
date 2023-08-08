@@ -1,5 +1,4 @@
 import { authEndpoint } from 'api/helpers'
-import { createMarketHelper } from 'api/create-market'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { z } from 'zod'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
@@ -20,7 +19,7 @@ const GROUPS_SLUGS_TO_IGNORE = [
   'test',
   'sf-bay-rationalists',
 ]
-export const getsimilargroupstocontract = authEndpoint(async (req, auth) => {
+export const getsimilargroupstocontract = authEndpoint(async (req) => {
   const { question } = bodySchema.parse(req.body)
   const embedding = await generateEmbeddings(question)
   if (!embedding) return { error: 'Failed to generate embeddings' }
