@@ -9,7 +9,10 @@ import {
   YEAR_MS,
 } from 'common/util/time'
 import { log } from 'shared/utils'
-import { BountiedQuestionContract, Contract } from 'common/contract'
+import {
+  BountiedQuestionContract,
+  Contract,
+} from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import { clamp, sortBy } from 'lodash'
 import { logit } from 'common/util/math'
@@ -59,21 +62,21 @@ export async function calculateImportanceScore(
   const todayComments = await getTodayComments(db)
   const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
   const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
-  const todayTradersByContract = await getContractTraders(
-    pg,
-    dayAgo,
-    contractIds
-  )
-  const hourAgoTradersByContract = await getContractTraders(
-    pg,
-    hourAgo,
-    contractIds
-  )
-  const thisWeekTradersByContract = await getContractTraders(
-    pg,
-    weekAgo,
-    contractIds
-  )
+
+  const todayTradersByContract = {
+    ...(await getContractTraders(pg, dayAgo, contractIds)),
+    ...(await getContractVoters(pg, dayAgo, contractIds)),
+  }
+
+  const hourAgoTradersByContract = {
+    ...(await getContractTraders(pg, hourAgo, contractIds)),
+    ...(await getContractVoters(pg, hourAgo, contractIds)),
+  }
+
+  const thisWeekTradersByContract = {
+    ...(await getContractTraders(pg, weekAgo, contractIds)),
+    ...(await getContractVoters(pg, weekAgo, contractIds)),
+  }
 
   const contractsWithUpdates: Contract[] = []
 
@@ -165,6 +168,26 @@ export const getContractTraders = async (
     await pg.map(
       `select cb.contract_id, count(distinct cb.user_id)::int as n
        from contract_bets cb
+                join users u on cb.user_id = u.id
+       where cb.created_time >= millis_to_ts($1)
+         and u.username <> ANY(ARRAY[$2])
+          and cb.contract_id = ANY(ARRAY[$3])
+       group by cb.contract_id`,
+      [since, BOT_USERNAMES, inContractIds],
+      (r) => [r.contract_id as string, r.n as number]
+    )
+  )
+}
+
+export const getContractVoters = async (
+  pg: SupabaseDirectClient,
+  since: number,
+  inContractIds: string[]
+) => {
+  return Object.fromEntries(
+    await pg.map(
+      `select cb.contract_id, count(distinct cb.user_id)::int as n
+       from votes cb
                 join users u on cb.user_id = u.id
        where cb.created_time >= millis_to_ts($1)
          and u.username <> ANY(ARRAY[$2])
@@ -273,9 +296,19 @@ export const computeContractScores = (
     liquidityScore +
     uncertainness
 
+  const rawPollImportance =
+    3 * normalize(traderHour, 20) +
+    2 * normalize(todayScore, 100) +
+    2 * newness +
+    commentScore +
+    normalize(thisWeekScore, 200) +
+    normalize(contract.uniqueBettorCount, 1000)
+
   const importanceScore =
     outcomeType === 'BOUNTIED_QUESTION'
       ? bountiedImportanceScore(contract, newness, commentScore)
+      : outcomeType === 'POLL'
+      ? normalize(rawPollImportance, 3) // increase max as polls catch on
       : normalize(rawImportance, 8)
 
   return {
