@@ -83,7 +83,7 @@ function VotesModalContent(props: { contract: Contract }) {
       ) : (
         voters.map((voter) => {
           return (
-            <Row className="items-center gap-2">
+            <Row className="items-center gap-2" key={voter.id}>
               <Avatar
                 username={voter.username}
                 avatarUrl={voter.avatarUrl}

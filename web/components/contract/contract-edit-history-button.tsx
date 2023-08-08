@@ -79,6 +79,7 @@ export const ContractEditHistoryButton = (props: {
           <Title>Edit history</Title>
           {edits?.map((edit, index) => (
             <Col
+              key={edit.id}
               className={'text-ink-500 bg-canvas-50 my-2 gap-2 rounded-md p-2'}
             >
               <Row>

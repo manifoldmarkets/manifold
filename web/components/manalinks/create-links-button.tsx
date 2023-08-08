@@ -88,7 +88,11 @@ function CreateManalinkForm(props: {
   }
 
   const expireOptions = Object.entries(EXPIRE_OPTIONS).map(([key, value]) => {
-    return <option value={key}>{value}</option>
+    return (
+      <option key={key} value={key}>
+        {value}
+      </option>
+    )
   })
 
   function setExpireTime(timeDelta: dayjs.ManipulateType | 'never') {

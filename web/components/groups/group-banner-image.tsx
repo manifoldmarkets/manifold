@@ -104,6 +104,7 @@ export function ChangeBannerModal(props: {
         <Row className="w-full gap-4">
           {DEFAULT_BANNERS.map((bannerUrl) => (
             <DefaultBannerIcon
+              key={bannerUrl}
               src={bannerUrl}
               width="w-1/3"
               bannerSelection={bannerSelection}

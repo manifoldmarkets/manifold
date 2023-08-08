@@ -546,6 +546,7 @@ export function ContractParamsForm(props: {
         <Row className={'mt-2 gap-2'}>
           {selectedGroups.map((group) => (
             <GroupTag
+              key={group.id}
               group={group}
               isPrivate={group.privacyStatus === 'private'}
               className="bg-ink-100"
