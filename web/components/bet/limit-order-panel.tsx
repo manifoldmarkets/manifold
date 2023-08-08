@@ -183,7 +183,7 @@ export default function LimitOrderPanel(props: {
     amount: filledAmount,
   } = getBetReturns(
     cpmmState,
-    outcome!,
+    outcome ?? 'YES',
     amount,
     limitProb ?? initialProb,
     unfilledBets,
