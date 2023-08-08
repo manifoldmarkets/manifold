@@ -662,6 +662,8 @@ export function ContractParamsForm(props: {
               text={
                 outcomeType == 'BOUNTIED_QUESTION'
                   ? 'Your bounty. This amount is put upfront.'
+                  : outcomeType == 'POLL'
+                  ? 'Cost to create your poll.'
                   : `Cost to create your question. This amount is used to subsidize predictions.`
               }
             />
