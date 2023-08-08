@@ -14,7 +14,7 @@ export function GroupContractOptions(props: {
   const contractOptions = [
     {
       icon: <MinusCircleIcon className="h-5 w-5" />,
-      name: 'Remove from group',
+      name: 'Remove from category',
       onClick: async () => {
         await removeContractFromGroup({
           groupId: group.id,

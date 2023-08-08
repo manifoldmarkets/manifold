@@ -71,8 +71,8 @@ export function GroupSelector(props: {
           <>
             {showLabel && (
               <Combobox.Label className="justify-start gap-2 px-1 py-2 text-base">
-                Add to Group{' '}
-                <InfoTooltip text="Question will be displayed alongside the other questions in the group." />
+                Add to Category{' '}
+                <InfoTooltip text="Question will be displayed alongside the other questions in the category." />
               </Combobox.Label>
             )}
             <div className="relative mt-2 w-full">
@@ -151,7 +151,7 @@ export function GroupSelector(props: {
                     className={
                       'text-ink-900 bg-canvas-0 hover:text-ink-0 hover:bg-primary-500 group flex w-full flex-row items-center rounded-none border-0 font-normal transition-colors'
                     }
-                    label={'Create a new Group'}
+                    label={'Create a new Category'}
                     addGroupIdParamOnSubmit
                     icon={
                       <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500 group-hover:text-teal-300" />

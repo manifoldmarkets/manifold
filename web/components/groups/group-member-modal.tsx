@@ -39,7 +39,7 @@ export function GroupMemberModalContent(props: {
           defaultIndex={defaultIndex ?? 0}
           tabs={[
             {
-              title: 'Members',
+              title: 'Followers',
               content: (
                 <MemberTab
                   query={query}
@@ -91,7 +91,7 @@ export function MemberTab(props: {
         autoFocus
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search members"
+        placeholder="Search followers"
         className={clsx('placeholder:text-ink-400 flex w-full flex-shrink-0')}
       />
       {query !== '' && (
@@ -173,7 +173,7 @@ export function NonSearchGroupMemberModalContent(props: {
   const loadingRef = useRef<HTMLDivElement | null>(null)
   const hitBottom = useIntersection(loadingRef, '0px', modalRootRef)
   const { admins, moderators, members, loadMore } = useRealtimeGroupMembers(
-    group.id,
+    group,
     hitBottom,
     numMembers
   )
@@ -195,12 +195,14 @@ export function NonSearchGroupMemberModalContent(props: {
         role={'moderator'}
         canEdit={canEdit}
       />
-      <MemberRoleSection
-        group={group}
-        members={members}
-        role={'member'}
-        canEdit={canEdit}
-      />
+      {group.totalMembers < 250 && (
+        <MemberRoleSection
+          group={group}
+          members={members}
+          role={'member'}
+          canEdit={canEdit}
+        />
+      )}
       <div
         ref={loadingRef}
         className={
@@ -222,9 +224,9 @@ export function NonSearchGroupMemberModalContent(props: {
 
 export type groupRoleType = 'admin' | 'moderator' | 'member'
 export const roleDescription = {
-  admin: `Can appoint roles, edit the group, and add or delete anyone's content from group`,
-  moderator: `Can add or delete anyone's content from group`,
-  member: 'Can only add their own content to group',
+  admin: `Can appoint roles, edit the category, and add or delete anyone's content from category`,
+  moderator: `Can add or delete anyone's content from category`,
+  member: 'Can only add their own content to category',
 }
 
 export function LoadingMember(props: { className?: string }) {
@@ -262,7 +264,10 @@ export function MemberRoleSection(props: {
   return (
     <Col className="w-full gap-3">
       <MemberRoleHeader
-        headerText={`${role.toLocaleUpperCase()}S`}
+        headerText={`${role.toLocaleUpperCase()}S`.replace(
+          'MEMBER',
+          'FOLLOWER'
+        )}
         description={
           group.privacyStatus === 'curated' && role === 'member'
             ? undefined
@@ -276,15 +281,10 @@ export function MemberRoleSection(props: {
       ) : (
         members.map((member, index) => {
           return (
-            <>
-              <Member
-                key={member.member_id}
-                group={group}
-                member={member}
-                canEdit={canEdit}
-              />
+            <div key={member.member_id}>
+              <Member group={group} member={member} canEdit={canEdit} />
               {role === 'member' && length - 1 === index && <Spacer h={24} />}
-            </>
+            </div>
           )
         })
       )}
@@ -321,7 +321,7 @@ export function MemberRoleTag(props: {
   return (
     <span
       className={clsx(
-        'text-ink-0 rounded px-1 py-0.5 text-xs font-semibold',
+        'text-ink-0 self-center rounded px-1 py-0.5 text-xs font-semibold',
         isCreator
           ? 'bg-primary-400'
           : role === 'admin'
@@ -330,7 +330,9 @@ export function MemberRoleTag(props: {
         className
       )}
     >
-      {isCreator ? 'CREATOR' : `${role.toLocaleUpperCase()}`}
+      {isCreator
+        ? 'CREATOR'
+        : `${role.toLocaleUpperCase().replace('MEMBER', 'FOLLOWER')}`}
     </span>
   )
 }

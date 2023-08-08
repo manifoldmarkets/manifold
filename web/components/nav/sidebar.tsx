@@ -8,7 +8,6 @@ import {
   SunIcon,
   SparklesIcon,
   StarIcon,
-  UserGroupIcon,
   QuestionMarkCircleIcon,
   NewspaperIcon,
   SearchIcon,
@@ -36,6 +35,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
+import SquaresIcon from 'web/lib/icons/squares-icon'
 
 export default function Sidebar(props: {
   className?: string
@@ -143,8 +143,8 @@ const getDesktopNav = (
         icon: TrophyIcon,
       },
       {
-        name: 'Groups',
-        icon: UserGroupIcon,
+        name: 'Categories',
+        icon: SquaresIcon,
         href: '/groups',
       }
     )
@@ -164,8 +164,8 @@ const getMobileNav = (toggleModal: () => void) => {
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
     {
-      name: 'Groups',
-      icon: UserGroupIcon,
+      name: 'Categories',
+      icon: SquaresIcon,
       href: '/groups',
     },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },

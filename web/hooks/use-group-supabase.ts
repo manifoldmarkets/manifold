@@ -134,10 +134,11 @@ export function useRealtimeGroupMemberIds(groupId: string) {
 export type Member = Row<'group_role'>
 
 export function useRealtimeGroupMembers(
-  groupId: string,
+  group: Group,
   hitBottom: boolean,
   numMembers: number | undefined
 ) {
+  const { id: groupId } = group
   const [admins, setAdmins] = useState<Member[] | undefined>(undefined)
   const [moderators, setModerators] = useState<Member[] | undefined>(undefined)
   const [members, setMembers] = useState<Member[] | undefined>(undefined)
@@ -174,6 +175,7 @@ export function useRealtimeGroupMembers(
       })
       .catch((e) => console.log(e))
 
+    if (group.totalMembers > 250) return
     getGroupMembers(groupId, offsetPage, 0)
       .then((result) => {
         const members = result.data

@@ -4,31 +4,29 @@ import { groupPath } from 'common/group'
 import { User } from 'common/user'
 import Link from 'next/link'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
-import DiscoverGroups from 'web/components/groups/discover-groups'
 import YourGroups from 'web/components/groups/your-groups'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Title } from 'web/components/widgets/title'
 import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
+import GroupSearch from 'web/components/groups/group-search'
 
 export default function Groups() {
   const user = useUser()
   return (
     <Page>
       <SEO
-        title="Groups"
-        description="Topics and communities centered questions."
+        title="Categories"
+        description="Categories of questions."
         url="/groups"
       />
       <Col className="items-center">
         <Col className="w-full max-w-2xl px-4 sm:px-2">
-          <Row className="items-start justify-between">
-            <Title>Groups</Title>
+          <Row className="mt-1 mb-3 items-start justify-between">
+            <span className={'text-primary-600 text-2xl'}>Categories</span>
             {user && (
               <CreateGroupButton
                 user={user}
@@ -51,24 +49,15 @@ export function GroupsPageContent(props: { user: User | null | undefined }) {
     return <LoadingIndicator />
   }
   if (user === null || (yourGroupIds && yourGroupIds.length < 1)) {
-    return <DiscoverGroups yourGroupIds={yourGroupIds} />
+    return (
+      <GroupSearch
+        persistPrefix={'discover-groups'}
+        yourGroupIds={yourGroupIds}
+      />
+    )
   }
 
-  return (
-    <UncontrolledTabs
-      className={'mb-4'}
-      tabs={[
-        {
-          title: 'Your Groups',
-          content: <YourGroups yourGroupIds={yourGroupIds} />,
-        },
-        {
-          title: 'Discover',
-          content: <DiscoverGroups yourGroupIds={yourGroupIds} />,
-        },
-      ]}
-    />
-  )
+  return <YourGroups yourGroupIds={yourGroupIds} />
 }
 
 export function GroupTag(props: {

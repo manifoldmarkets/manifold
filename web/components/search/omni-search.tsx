@@ -1,6 +1,6 @@
 import { Combobox } from '@headlessui/react'
 import { ChevronRightIcon } from '@heroicons/react/outline'
-import { SparklesIcon, UsersIcon } from '@heroicons/react/solid'
+import { SparklesIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
@@ -369,7 +369,7 @@ const GroupResults = (props: {
   return (
     <>
       <SectionTitle link={`/groups?search=${encodeURIComponent(search ?? '')}`}>
-        Groups
+        Categories
       </SectionTitle>
       {props.groups.map((group) => (
         <ResultOption
@@ -378,16 +378,11 @@ const GroupResults = (props: {
         >
           <div className="flex items-center gap-3">
             <span className="line-clamp-1 grow">{group.name}</span>
-            <span className="flex items-center">
-              <UsersIcon className="mr-1 h-4 w-4" />
-              {group.totalMembers}
-            </span>
             <div onClick={(e) => e.stopPropagation()}>
               <JoinOrLeaveGroupButton
                 group={group}
                 user={me}
                 isMember={myGroupIds.includes(group.id)}
-                className="w-[80px] !px-0 !py-1"
               />
             </div>
           </div>

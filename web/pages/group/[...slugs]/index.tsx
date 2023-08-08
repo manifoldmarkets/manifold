@@ -137,7 +137,7 @@ export function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
     <>
       <SEO
         title={group.name}
-        description={`Manifold ${group.privacyStatus} group with ${group.totalMembers} members`}
+        description={`Manifold ${group.privacyStatus} category with ${group.totalMembers} followers`}
         url={groupPath(group.slug)}
         image={group.bannerUrl}
       />

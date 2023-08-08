@@ -94,10 +94,21 @@ export function JoinOrLeaveGroupButton(props: {
   isMobile?: boolean
   disabled?: boolean
 }) {
-  const { group, className, user, isMobile, disabled, iconClassName } = props
+  const { group, user, isMobile, disabled, iconClassName } = props
+
   // Handle both non-live and live updating isMember state
   const [isMember, setIsMember] = useState(props.isMember)
   useEffect(() => setIsMember(props.isMember), [props.isMember])
+
+  const className = clsx(
+    isMobile ? 'rounded p-1' : '',
+    isMobile
+      ? isMember
+        ? 'dark:bg-ink-400 hover:bg-ink-700 bg-gray-500'
+        : 'bg-primary-500 hover:bg-primary-600'
+      : 'px-1 py-1',
+    props.className
+  )
   if (group.privacyStatus === 'private') {
     return (
       <LeavePrivateGroupButton
@@ -116,7 +127,7 @@ export function JoinOrLeaveGroupButton(props: {
         leaveGroup(group.id, user.id)
           .then(() => setIsMember(false))
           .catch(() => {
-            toast.error('Failed to unfollow group')
+            toast.error('Failed to unfollow category')
           })
       }, 'leave group')
     : firebaseLogin
@@ -125,7 +136,7 @@ export function JoinOrLeaveGroupButton(props: {
         joinGroup({ groupId: group.id })
           .then(() => setIsMember(true))
           .catch(() => {
-            toast.error('Failed to follow group')
+            toast.error('Failed to follow category')
           })
       }, 'join group')
     : firebaseLogin
@@ -133,7 +144,15 @@ export function JoinOrLeaveGroupButton(props: {
   if (isMember) {
     if (isMobile) {
       return (
-        <button className={className} onClick={unfollow} disabled={disabled}>
+        <button
+          className={className}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            unfollow()
+          }}
+          disabled={disabled}
+        >
           <UserRemoveIcon
             className={clsx('h-5 w-5', groupButtonClass, iconClassName)}
           />
@@ -153,7 +172,7 @@ export function JoinOrLeaveGroupButton(props: {
       >
         <Row className="gap-1">
           <UserRemoveIcon className="h-5 w-5" />
-          Leave
+          Unfollow
         </Row>
       </Button>
     )
@@ -163,7 +182,11 @@ export function JoinOrLeaveGroupButton(props: {
     return (
       <button
         className={className}
-        onClick={() => follow()}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          follow()
+        }}
         disabled={disabled}
       >
         <UserAddIcon
@@ -184,7 +207,7 @@ export function JoinOrLeaveGroupButton(props: {
     >
       <Row className="gap-1">
         <UserAddIcon className="h-5 w-5" />
-        Join
+        Follow
       </Row>
     </Button>
   )

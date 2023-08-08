@@ -1,12 +1,13 @@
 import { useUser } from 'web/hooks/use-user'
-import { GroupAndRoleType, SearchGroupInfo } from 'web/lib/supabase/groups'
+import { GroupAndRoleType } from 'web/lib/supabase/groups'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
-import { GroupLine } from './discover-groups'
+import { GroupLine } from './group-line'
+import { Group } from 'common/group'
 
 export function GroupsList(props: {
-  groups: SearchGroupInfo[] | undefined
+  groups: Group[] | undefined
   loadMore?: () => Promise<boolean>
   yourGroupIds?: string[]
   className?: string

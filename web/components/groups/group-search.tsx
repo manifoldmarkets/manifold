@@ -4,21 +4,20 @@ import { debounce, isEqual, partition, uniqBy } from 'lodash'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { GroupsList } from 'web/components/groups/groups-list'
 import { useEvent } from 'web/hooks/use-event'
-import {
-  useGroupsWhereUserHasRole,
-  useMyGroupRoles,
-} from 'web/hooks/use-group-supabase'
+import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import {
   historyStore,
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
+import { getMyGroupRoles, searchGroups } from 'web/lib/supabase/groups'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { Input } from '../widgets/input'
+import { google } from '@google-cloud/secret-manager/build/protos/protos'
+import type = google.type
 
 const INITIAL_STATE = {
   groups: undefined,
@@ -29,18 +28,17 @@ const INITIAL_STATE = {
 const GROUPS_PER_PAGE = 20
 
 export type groupStateType = {
-  groups: SearchGroupInfo[] | undefined
+  groups: Group[] | undefined
   fuzzyGroupOffset: number
   shouldLoadMore: boolean
 }
 
 export default function GroupSearch(props: {
-  filter?: { yourGroups?: boolean }
   persistPrefix: string
   yourGroupIds?: string[]
   user?: User | null
 }) {
-  const { filter, persistPrefix, yourGroupIds = [], user } = props
+  const { persistPrefix, yourGroupIds = [], user } = props
   const performQuery = useEvent(
     async (currentState, freshQuery?: boolean) =>
       (await debouncedQuery(currentState, freshQuery)) ?? false
@@ -80,7 +78,6 @@ export default function GroupSearch(props: {
         term: searchTerm.current,
         offset: offset,
         limit: GROUPS_PER_PAGE,
-        yourGroups: filter?.yourGroups,
       })
 
       if (id === requestId.current) {
@@ -132,7 +129,7 @@ export default function GroupSearch(props: {
   useEffect(() => {
     onSearchTermChanged(inputTerm)
   }, [inputTerm])
-
+  const showingPersonalGroups = user && (!inputTerm || inputTerm === '')
   return (
     <Col>
       <Input
@@ -140,37 +137,49 @@ export default function GroupSearch(props: {
         inputMode="search"
         value={inputTerm}
         onChange={(e) => setInputTerm(e.target.value)}
-        placeholder="Search groups"
+        placeholder="Search categories"
         className="w-full"
       />
       <Spacer h={1} />
-      {user && filter?.yourGroups && (!inputTerm || inputTerm === '') ? (
-        <YourGroupsList user={user} />
-      ) : (
-        <GroupsList
-          groups={groups}
-          loadMore={loadMoreGroups}
-          yourGroupIds={yourGroupIds}
-          yourGroupRoles={groupsYouModerate}
-          className="my-1"
-          emptyState={<div>No groups found</div>}
-        />
+      {showingPersonalGroups && (
+        <>
+          <YourGroupsList user={user} groupIds={yourGroupIds} />
+          <Row className="text-ink-400 mt-4 w-full items-center text-xs font-semibold">
+            <div className="whitespace-nowrap"> MORE CATEGORIES</div>
+            <hr className="border-ink-400 mx-2 w-full" />
+          </Row>
+        </>
       )}
+      <GroupsList
+        groups={groups?.filter((g) =>
+          showingPersonalGroups ? !yourGroupIds.includes(g.id) : true
+        )}
+        loadMore={loadMoreGroups}
+        yourGroupIds={yourGroupIds}
+        yourGroupRoles={groupsYouModerate}
+        className="my-1"
+        emptyState={<div>No categories found</div>}
+      />
     </Col>
   )
 }
 
-function YourGroupsList(props: { user: User }) {
-  const { user } = props
-  const roles = useMyGroupRoles(user?.id) ?? []
+function YourGroupsList(props: { user: User; groupIds: string[] }) {
+  const { user, groupIds } = props
+  const [roles, setRoles] =
+    useState<Awaited<ReturnType<typeof getMyGroupRoles>>>()
 
-  roles.sort(
+  useEffect(() => {
+    if (user) getMyGroupRoles(user.id).then(setRoles)
+  }, [groupIds.length])
+
+  roles?.sort(
     (a, b) =>
       (b.role === 'admin' ? 2 : b.role === 'moderator' ? 1 : 0) -
       (a.role === 'admin' ? 2 : a.role === 'moderator' ? 1 : 0)
   )
 
-  const groups: SearchGroupInfo[] | null =
+  const groups: Group[] | null =
     roles?.map((g) => ({
       id: g.group_id!,
       name: g.group_name!,
@@ -178,6 +187,9 @@ function YourGroupsList(props: { user: User }) {
       privacyStatus: g.privacy_status as any,
       totalMembers: g.total_members!,
       creatorId: g.creator_id!,
+      createdTime: g.createdtime!,
+      postIds: [],
+      importanceScore: 1,
     })) ?? null
 
   const [privateGroups, nonPrivateGroups] = partition(
@@ -187,13 +199,17 @@ function YourGroupsList(props: { user: User }) {
 
   return (
     <>
+      {privateGroups.length > 0 && (
+        <>
+          <Row className="text-ink-400 mt-4 w-full items-center text-xs font-semibold">
+            <div className="whitespace-nowrap">PRIVATE CATEGORIES</div>
+            <hr className="border-ink-400 mx-2 w-full" />
+          </Row>
+          <GroupsList groups={privateGroups} yourGroupRoles={roles} />
+        </>
+      )}
       <Row className="text-ink-400 mt-4 w-full items-center text-xs font-semibold">
-        <div className="whitespace-nowrap">PRIVATE GROUPS</div>
-        <hr className="border-ink-400 mx-2 w-full" />
-      </Row>
-      <GroupsList groups={privateGroups} yourGroupRoles={roles} />
-      <Row className="text-ink-400 mt-4 w-full items-center text-xs font-semibold">
-        <div className="whitespace-nowrap">NON-PRIVATE GROUPS</div>
+        <div className="whitespace-nowrap">YOUR CATEGORIES</div>
         <hr className="border-ink-400 mx-2 w-full" />
       </Row>
       <GroupsList groups={nonPrivateGroups} yourGroupRoles={roles} />

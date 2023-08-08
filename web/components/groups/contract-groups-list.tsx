@@ -45,12 +45,12 @@ export function ContractGroupsList(props: {
   return (
     <Col className={'gap-2'}>
       <span className={'text-primary-700 text-xl'}>
-        <SiteLink href={'/groups/'}>Groups</SiteLink>
+        <SiteLink href={'/groups/'}>Categories</SiteLink>
       </span>
       <Col className="h-96 justify-between overflow-auto">
         <Col>
           {groups.length === 0 && (
-            <Col className="text-ink-400">No groups yet...</Col>
+            <Col className="text-ink-400">No categories yet...</Col>
           )}
           <Row className="my-2 flex-wrap gap-3">
             {groups.map((g) => {
@@ -70,7 +70,7 @@ export function ContractGroupsList(props: {
                           {
                             loading: `Removing question from "${g.name}"`,
                             success: `Successfully removed question from "${g.name}"!`,
-                            error: `Error removing group. Try again?`,
+                            error: `Error removing category. Try again?`,
                           }
                         )
                       }}
@@ -88,7 +88,7 @@ export function ContractGroupsList(props: {
             (adminGroups && adminGroups.length > 0)) && (
             <Col className={'my-2 items-center justify-between p-0.5'}>
               <Row className="text-ink-400 w-full justify-start text-sm">
-                Add to group
+                Add to category
               </Row>
               <GroupSelector
                 showLabel={false}

@@ -18,22 +18,22 @@ export const DEFAULT_BANNERS = [
   '/group/default_group_banner_red.png',
 ]
 
-function isDefaultBanner(url: string) {
-  return DEFAULT_BANNERS.some((path) => path === url)
-}
 export default function BannerImage(props: {
   group: Group
   user: User | undefined | null
   canEdit: boolean
 }) {
   const { group, user, canEdit } = props
-  const [groupBannerUrl, setGroupBannerUrl] = useState(
-    group.bannerUrl ?? DEFAULT_BANNERS[0]
-  )
+  const [groupBannerUrl, setGroupBannerUrl] = useState(group.bannerUrl)
   const [changeBannerModalOpen, setChangeBannerModalOpen] = useState(false)
   return (
     <>
-      <figure className="group relative h-60 w-full sm:h-72">
+      <figure
+        className={clsx(
+          'group relative w-full',
+          groupBannerUrl ? ' h-60 sm:h-72' : 'h-24'
+        )}
+      >
         <div className="absolute top-2 right-4 z-20 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
           {user && canEdit && (
             <BannerDropdown
@@ -47,7 +47,9 @@ export default function BannerImage(props: {
             />
           )}
         </div>
-        <Image src={groupBannerUrl} alt="" fill className="object-cover" />
+        {groupBannerUrl && (
+          <Image src={groupBannerUrl} alt="" fill className="object-cover" />
+        )}
       </figure>
     </>
   )
@@ -67,14 +69,12 @@ export function ChangeBannerModal(props: {
   group: Group
   open: boolean
   setOpen: (open: boolean) => void
-  bannerUrl: string
+  bannerUrl: string | undefined
   setBannerUrl: (bannerUrl: string) => void
   user: User
 }) {
   const { group, open, setOpen, bannerUrl, setBannerUrl, user } = props
-  const [bannerSelection, setBannerSelection] = useState(
-    isDefaultBanner(bannerUrl) ? bannerUrl : undefined
-  )
+  const [bannerSelection, setBannerSelection] = useState(bannerUrl)
   const [fileUrl, setFileUrl] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(undefined)
@@ -216,7 +216,7 @@ function BannerDropdown(props: {
   group: Group
   open: boolean
   setOpen: (open: boolean) => void
-  bannerUrl: string
+  bannerUrl: string | undefined
   setBannerUrl: (bannerUrl: string) => void
   user: User
   onChangeBannerClick: () => void
