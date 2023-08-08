@@ -16,8 +16,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { Input } from '../widgets/input'
-import { google } from '@google-cloud/secret-manager/build/protos/protos'
-import type = google.type
 
 const INITIAL_STATE = {
   groups: undefined,

@@ -7,11 +7,11 @@ import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
 import {
-  MEMBER_LOAD_NUM,
   getGroupFromSlug,
   getGroupMembers,
   getGroupOfRole,
   getMemberRole,
+  MEMBER_LOAD_NUM,
 } from 'web/lib/supabase/group'
 import {
   getGroupsWhereUserHasRole,
@@ -150,8 +150,7 @@ export function useRealtimeGroupMembers(
     getGroupMembers(groupId, offsetPage + 1)
       .then((result) => {
         if (members) {
-          const prevMembers = members
-          setMembers([...prevMembers, ...result.data])
+          setMembers([...members, ...result.data])
         } else {
           setMembers(result.data)
         }
