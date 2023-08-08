@@ -157,19 +157,7 @@ function SimpleCard(props: {
       <Row className="items-start justify-between gap-1">
         <Col>
           <Row className={'items-start gap-2'}>
-            <Link
-              className={clsx(
-                'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
-                textColor
-              )}
-              onClick={(e) => {
-                trackClick()
-                e.stopPropagation()
-              }}
-              href={contractPath(contract)}
-            >
-              <VisibilityIcon contract={contract} /> {contract.question}
-            </Link>
+            <VisibilityIcon contract={contract} /> {contract.question}
           </Row>
         </Col>
         <Col className={'items-end'}>
