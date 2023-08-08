@@ -516,16 +516,14 @@ function SupabaseContractSearchControls(props: {
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
 
-    let newSort = sort
     if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
-      newSort = 'bounty-amount'
+      setSort('bounty-amount')
     }
     if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
-      newSort = 'score'
+      setSort('score')
     }
 
     setContractType(selection)
-    setSort(newSort)
     track('select contract type', { contractType: selection })
   }
 
@@ -537,9 +535,7 @@ function SupabaseContractSearchControls(props: {
 
   const isAuth = useIsAuthorized()
 
-  let prevContractType
   useEffect(() => {
-    prevContractType = contractType
     if (isAuth !== undefined) {
       onSearchParametersChanged({
         query: query,
