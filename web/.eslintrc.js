@@ -17,6 +17,7 @@ module.exports = {
   rules: {
     'react/display-name': 'off',
     'react/no-unescaped-entities': 'off',
+    'react/no-unstable-nested-components': ['error', { allowAsProps: true }],
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
