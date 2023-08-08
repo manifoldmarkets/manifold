@@ -1,13 +1,22 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
+  settings: {
+    react: {
+      version: 'detect',
+    },
+  },
   plugins: ['lodash', 'unused-imports'],
   extends: [
     'plugin:@typescript-eslint/recommended',
     'plugin:react-hooks/recommended',
+    'plugin:react/recommended',
+    'plugin:react/jsx-runtime',
     'plugin:@next/next/recommended',
     'prettier',
   ],
   rules: {
+    'react/display-name': 'off',
+    'react/no-unescaped-entities': 'off',
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
@@ -20,7 +29,6 @@ module.exports = {
       },
     ],
     '@next/next/no-img-element': 'off',
-    '@next/next/no-typos': 'off',
     'linebreak-style': [
       'error',
       process.platform === 'win32' ? 'windows' : 'unix',
