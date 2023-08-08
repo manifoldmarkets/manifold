@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   ChatAlt2Icon,
   CurrencyDollarIcon,
@@ -63,6 +62,7 @@ import { getUserRating, getUserReviews } from 'web/lib/supabase/reviews'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { removeUndefinedProps } from 'common/util/object'
 import { Review } from 'web/components/reviews/review'
+import { db } from 'web/lib/supabase/db'
 
 export const getStaticProps = async (props: {
   params: {
@@ -149,6 +149,7 @@ function UserProfile(props: {
   const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
+  const [followsYou, setFollowsYou] = useState(false)
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -167,6 +168,20 @@ function UserProfile(props: {
       )
     }
   }, [])
+
+  useEffect(() => {
+    if (currentUser && currentUser.id !== user.id) {
+      db.from('user_follows')
+        .select('user_id')
+        .eq('follow_id', currentUser.id)
+        .eq('user_id', user.id)
+        .then(({ data }) => {
+          setFollowsYou(
+            data?.some(({ user_id }) => user_id === user.id) ?? false
+          )
+        })
+    }
+  }, [currentUser?.id])
 
   return (
     <Page key={user.id}>
@@ -217,9 +232,24 @@ function UserProfile(props: {
                 }
                 {user.isBannedFromPosting && <PostBanBadge />}
               </div>
-              <span className={'text-ink-400 text-sm sm:text-lg'}>
-                @{user.username}
-              </span>
+              <Row
+                className={
+                  'max-w-[8rem] flex-shrink flex-wrap gap-2 sm:max-w-none'
+                }
+              >
+                <span className={'text-ink-400  text-sm sm:text-base'}>
+                  @{user.username}{' '}
+                </span>
+                {followsYou && (
+                  <span
+                    className={
+                      'bg-canvas-100 w-fit self-center rounded-md p-0.5 px-1 text-xs'
+                    }
+                  >
+                    Follows you
+                  </span>
+                )}
+              </Row>
             </Col>
           </Row>
           {isCurrentUser ? (
