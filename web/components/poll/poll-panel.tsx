@@ -153,29 +153,31 @@ export function SeeVotesModalContent(props: {
   const { option, contractId } = props
   const voters = useOptionVoters(contractId, option.id)
   return (
-    <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
-      <div className="bg-canvas-0 fixed inset-x-0 top-0 z-40 w-full rounded-t-md py-2 px-4 sm:px-8">
+    <Col className={clsx(MODAL_CLASS)}>
+      <div className="line-clamp-2 w-full">
         Votes on <b>{option.text}</b>
       </div>
-      <Spacer h={2} />
-      {!voters ? (
-        <LoadingIndicator />
-      ) : voters.length == 0 ? (
-        'No votes yet...'
-      ) : (
-        voters.map((voter) => {
-          return (
-            <Row className="w-full items-center gap-2" key={voter.id}>
-              <Avatar
-                username={voter.username}
-                avatarUrl={voter.avatarUrl}
-                size={'sm'}
-              />
-              <UserLink name={voter.name} username={voter.username} />
-            </Row>
-          )
-        })
-      )}
+      {/* <Spacer h={2} /> */}
+      <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'w-full gap-2')}>
+        {!voters ? (
+          <LoadingIndicator />
+        ) : voters.length == 0 ? (
+          'No votes yet...'
+        ) : (
+          voters.map((voter) => {
+            return (
+              <Row className="w-full items-center gap-2" key={voter.id}>
+                <Avatar
+                  username={voter.username}
+                  avatarUrl={voter.avatarUrl}
+                  size={'sm'}
+                />
+                <UserLink name={voter.name} username={voter.username} />
+              </Row>
+            )
+          })
+        )}
+      </Col>
     </Col>
   )
 }
