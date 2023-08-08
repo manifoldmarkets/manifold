@@ -22,7 +22,6 @@ import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import { searchContract } from 'web/lib/supabase/contracts'
-import { safeLocalStorage } from 'web/lib/util/local'
 import DropdownMenu from './comments/dropdown-menu'
 import { ShowTime } from './contract/contract-details'
 import { ContractsGrid } from './contract/contracts-grid'
@@ -41,6 +40,7 @@ const CONTRACTS_PER_PAGE = 20
 
 export const SORTS = [
   { label: 'Relevance', value: 'relevance' },
+  { label: 'Bounty amount', value: 'bounty-amount' },
   { label: 'New', value: 'newest' },
   { label: 'Trending', value: 'score' },
   { label: 'Daily change', value: 'daily-score' },
@@ -50,8 +50,9 @@ export const SORTS = [
   { label: 'Last activity', value: 'last-updated' },
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Just resolved', value: 'resolve-date' },
+  { label: 'High %', value: 'prob-descending' },
+  { label: 'Low %', value: 'prob-ascending' },
   { label: '🎲 rAnDoM', value: 'random' },
-  { label: 'Bounty amount', value: 'bounty-amount' },
 ] as const
 
 const predictionMarketSorts = new Set([
@@ -61,24 +62,31 @@ const predictionMarketSorts = new Set([
   'close-date',
   'resolve-date',
   'most-popular',
+  'prob-descending',
+  'prob-ascending',
 ])
 
 const bountySorts = new Set(['bounty-amount'])
+
+const probSorts = new Set(['prob-descending', 'prob-ascending'])
 
 export const BOUNTY_MARKET_SORTS = SORTS.filter(
   (item) => !predictionMarketSorts.has(item.value)
 )
 
 export const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
-  (item) => item.value != 'bounty-amount'
+  (item) => !bountySorts.has(item.value)
 )
 
 export const PREDICTION_MARKET_SORTS = SORTS.filter(
+  (item) => !bountySorts.has(item.value) && !probSorts.has(item.value)
+)
+
+export const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
 export type Sort = typeof SORTS[number]['value']
-export const PROB_SORTS = ['prob-descending', 'prob-ascending']
 
 export const FILTERS = [
   { label: 'Open', value: 'open' },
@@ -342,9 +350,7 @@ export function SupabaseContractSearch(props: {
           inputRowClassName={inputRowClassName}
           defaultSort={defaultSort}
           defaultFilter={defaultFilter}
-          persistPrefix={persistPrefix}
           hideOrderSelector={hideOrderSelector}
-          isWholePage={isWholePage}
           useUrlParams={useUrlParams}
           includeProbSorts={includeProbSorts}
           onSearchParametersChanged={onSearchParametersChanged}
@@ -409,11 +415,9 @@ function SupabaseContractSearchControls(props: {
   defaultSort?: Sort
   defaultFilter?: filter
   defaultContractType?: ContractTypeType
-  persistPrefix?: string
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
   onSearchParametersChanged: (params: SupabaseSearchParameters) => void
-  isWholePage?: boolean
   useUrlParams?: boolean
   autoFocus?: boolean
   listViewDisabled?: boolean
@@ -425,10 +429,8 @@ function SupabaseContractSearchControls(props: {
     defaultSort = 'score',
     defaultFilter = 'open',
     defaultContractType = 'ALL',
-    persistPrefix,
     hideOrderSelector,
     onSearchParametersChanged,
-    isWholePage,
     useUrlParams,
     autoFocus,
     includeProbSorts,
@@ -448,9 +450,6 @@ function SupabaseContractSearchControls(props: {
         }
       : undefined
   )
-
-  const sortKey = `${persistPrefix}-search-sort`
-  const savedSort = safeLocalStorage?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
     defaultSort,
@@ -624,10 +623,6 @@ export function SearchFilters(props: {
     listViewDisabled,
   } = props
 
-  const sorts = includeProbSorts
-    ? SORTS
-    : SORTS.filter((sort) => !PROB_SORTS.includes(sort.value))
-
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -678,6 +673,9 @@ export function SearchFilters(props: {
               ? BOUNTY_MARKET_SORTS
               : contractType == 'POLL'
               ? POLL_SORTS
+              : includeProbSorts &&
+                (contractType === 'ALL' || contractType === 'BINARY')
+              ? PREDICTION_MARKET_PROB_SORTS
               : PREDICTION_MARKET_SORTS,
             selectSort
           )}

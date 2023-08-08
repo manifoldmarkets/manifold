@@ -39,6 +39,8 @@ const bodySchema = z.object({
     z.literal('resolve-date'),
     z.literal('random'),
     z.literal('bounty-amount'),
+    z.literal('prob-descending'),
+    z.literal('prob-ascending'),
   ]),
   contractType: z.union([
     z.literal('ALL'),
@@ -486,8 +488,15 @@ function getSearchContractSortSQL(
     'close-date': 'close_time',
     random: 'random()',
     'bounty-amount': "COALESCE((data->>'bountyLeft')::integer, -1)",
+    'prob-descending': "resolution DESC, (data->>'p')::numeric",
+    'prob-ascending': "resolution DESC, (data->>'p')::numeric",
   }
 
-  const ASCDESC = sort === 'close-date' || sort === 'liquidity' ? 'ASC' : 'DESC'
+  const ASCDESC =
+    sort === 'close-date' || sort === 'liquidity' || sort === 'prob-ascending'
+      ? 'ASC'
+      : sort === 'prob-descending'
+      ? 'DESC NULLS LAST'
+      : 'DESC'
   return `ORDER BY ${sortFields[sort]} ${ASCDESC}`
 }
