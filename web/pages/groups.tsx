@@ -71,7 +71,7 @@ export function GroupTag(props: {
   return (
     <div
       className={clsx(
-        'group flex w-fit min-w-0 max-w-[200px] shrink-0 truncate whitespace-nowrap rounded-sm px-1 py-0.5 text-sm transition-colors sm:max-w-[250px]',
+        'group flex w-fit min-w-0 shrink-0 whitespace-nowrap rounded-sm px-1 py-0.5 text-sm transition-colors',
         isPrivate
           ? 'text-ink-1000 bg-primary-100 hover:bg-primary-200'
           : 'text-primary-700 hover:bg-primary-400/20',
@@ -84,6 +84,7 @@ export function GroupTag(props: {
         onClick={(e) => {
           e.stopPropagation()
         }}
+        className={' max-w-[200px] truncate sm:max-w-[250px]'}
       >
         {isPrivate ? (
           <LockClosedIcon className="my-auto mr-0.5 h-3 w-3" />

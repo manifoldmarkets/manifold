@@ -46,7 +46,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { extensions } from 'common/util/parse'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { createMarket } from 'web/lib/firebase/api'
+import { createMarket, getSimilarGroupsToContract } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { getGroup } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -352,6 +352,17 @@ export function ContractParamsForm(props: {
     }
   }, [selectedGroups?.length, toggleVisibility])
 
+  const finishedTypingQuestion = async () => {
+    setQuestion(question.trim())
+    if (question.trim().length == 0 || params?.groupIds?.length) return
+    try {
+      const { groups } = await getSimilarGroupsToContract({ question })
+      setSelectedGroups(groups)
+    } catch (e) {
+      console.error('error getting similar groups', e)
+    }
+  }
+
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
   const isMulti =
@@ -370,7 +381,9 @@ export function ContractParamsForm(props: {
             autoFocus
             maxLength={MAX_QUESTION_LENGTH}
             value={question}
+            // TODO: Search question titles as the user types with minimum of 5 unique traders
             onChange={(e) => setQuestion(e.target.value || '')}
+            onBlur={finishedTypingQuestion}
           />
         </div>
         <Spacer h={6} />
@@ -528,7 +541,7 @@ export function ContractParamsForm(props: {
                   selectedGroups.some((g) => g.privacyStatus === 'private'))
               ) {
                 toast(
-                  `Questions are only allowed one group if the group is private.`,
+                  `Questions are only allowed one category if the category is private.`,
                   { icon: '🚫' }
                 )
                 return
@@ -543,7 +556,7 @@ export function ContractParamsForm(props: {
             newContract={true}
           />
         </Row>
-        <Row className={'mt-2 gap-2'}>
+        <Row className={'mt-2 flex-wrap gap-2'}>
           {selectedGroups.map((group) => (
             <GroupTag
               key={group.id}

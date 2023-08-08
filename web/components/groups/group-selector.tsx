@@ -71,7 +71,7 @@ export function GroupSelector(props: {
           <>
             {showLabel && (
               <Combobox.Label className="justify-start gap-2 px-1 py-2 text-base">
-                Add to Category{' '}
+                Add to category{' '}
                 <InfoTooltip text="Question will be displayed alongside the other questions in the category." />
               </Combobox.Label>
             )}
