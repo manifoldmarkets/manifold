@@ -167,10 +167,10 @@ const ContractChart = (props: {
 }
 
 const numBars = (height: number) => {
-  if (height < 120) return 2
-  if (height < 150) return 3
-  if (height < 180) return 4
-  if (height < 210) return 5
+  if (height < 150) return 2
+  if (height < 200) return 3
+  if (height < 250) return 4
+  if (height < 300) return 5
   return 6
 }
 
