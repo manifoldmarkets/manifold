@@ -29,7 +29,7 @@ import { useUser } from 'web/hooks/use-user'
 import { SEO } from 'web/components/SEO'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
 import { richTextToString } from 'common/util/parse'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { getUsersWhoSkipped, getUsersWhoWatched } from 'web/lib/supabase/ads'
 import { formatMoney } from 'common/util/format'
 import { Ad } from 'common/ad'
@@ -119,10 +119,8 @@ export default function PostPage(props: {
             />
           </div>
           <Row className="items-center sm:pr-2">
-            <CopyLinkButton
-              linkIconOnlyProps={{
-                tooltip: 'Copy link to post',
-              }}
+            <CopyLinkOrShareButton
+              tooltip="Copy link to post"
               url={shareUrl}
               eventTrackingName={'copy post link'}
             />

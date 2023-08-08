@@ -16,8 +16,8 @@ import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { Input } from '../widgets/input'
 import { UserLink } from '../widgets/user-link'
-import { getGroupInviteUrl, truncatedUrl } from 'common/util/invite-group'
-import { CopyLinkButton } from '../buttons/copy-link-button'
+import { getGroupInviteUrl } from 'common/util/invite-group'
+import { CopyLinkRow } from '../buttons/copy-link-button'
 import { Select } from '../widgets/select'
 
 const QUERY_SIZE = 7
@@ -121,20 +121,16 @@ export function AddMemberContent(props: {
 export function PrivateGroupLink(props: { group: Group }) {
   const { group } = props
   const [inviteSlug, setInviteSlug] = useState<string | undefined>(undefined)
-  const [slugLoading, setSlugLoading] = useState(false)
   const [maxUsesKey, setMaxUsesKey] = useState<InviteMaxUsesKey>('Unlimited')
   const [durationKey, setDurationKey] = useState<InviteDurationKey>('1 week')
   const isAuth = useIsAuthorized()
   useEffect(() => {
     if (isAuth) {
-      setSlugLoading(true)
       createGroupInvite({
         groupId: group.id,
         maxUses: maxUsesOptions[maxUsesKey],
         duration: durationOptions[durationKey],
-      })
-        .then((result) => setInviteSlug(result.inviteSlug))
-        .finally(() => setSlugLoading(false))
+      }).then((result) => setInviteSlug(result.inviteSlug))
     }
   }, [isAuth, maxUsesKey, durationKey])
 
@@ -181,11 +177,9 @@ export function PrivateGroupLink(props: { group: Group }) {
           </Select>
         </Col>
       </Row>
-      <CopyLinkButton
+      <CopyLinkRow
         url={realUrl}
-        loading={slugLoading}
         eventTrackingName={'copy market link'}
-        displayUrl={realUrl ? truncatedUrl(realUrl) : ''}
         linkBoxClassName={'border-indigo-400 py-1 border-2 text-ink-900'}
         linkButtonClassName={'text-indigo-400'}
       />

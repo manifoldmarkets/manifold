@@ -7,7 +7,7 @@ import clsx from 'clsx'
 import { Group } from 'common/group'
 import { PrivateUser } from 'common/user'
 import { referralQuery } from 'common/util/share'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { useUser } from 'web/hooks/use-user'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
@@ -63,12 +63,10 @@ export function GroupOptions(props: {
     <>
       <Row className="items-center gap-2">
         {group.privacyStatus != 'private' && (
-          <CopyLinkButton
+          <CopyLinkOrShareButton
             url={shareUrl}
-            linkIconOnlyProps={{
-              tooltip: `Copy link to ${group.name}`,
-              className: groupButtonClass,
-            }}
+            tooltip={`Copy link to ${group.name}`}
+            className={groupButtonClass}
             eventTrackingName="copy group link"
           />
         )}

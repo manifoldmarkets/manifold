@@ -8,7 +8,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { SEO } from 'web/components/SEO'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { getPortfolioBySlug } from 'web/lib/supabase/portfolio'
 import { Portfolio, portfolioPath } from 'common/portfolio'
 import { buyPortfolio, updatePortfolio } from 'web/lib/firebase/api'
@@ -97,10 +97,8 @@ export default function PortfolioPage(props: {
             name={creator.name}
             username={creator.username}
           />
-          <CopyLinkButton
-            linkIconOnlyProps={{
-              tooltip: 'Copy link to portfolio',
-            }}
+          <CopyLinkOrShareButton
+            tooltip="Copy link to portfolio"
             url={shareUrl}
             eventTrackingName={'copy portfolio link'}
           />

@@ -21,7 +21,7 @@ import {
 import { updateContract } from 'web/lib/firebase/contracts'
 import { formatTime } from 'web/lib/util/time'
 import { Button } from '../buttons/button'
-import { CopyLinkButton } from '../buttons/copy-link-button'
+import { CopyLinkOrShareButton, CopyLinkRow } from '../buttons/copy-link-button'
 import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
 import { ReportButton } from '../buttons/report-button'
 import { ShareEmbedButton } from '../buttons/share-embed-button'
@@ -253,9 +253,9 @@ export const Stats = (props: {
                 >
                   {id}
                 </a>
-                <CopyLinkButton
+                <CopyLinkOrShareButton
                   url={id}
-                  linkIconOnlyProps={{ tooltip: 'Copy link to contract id' }}
+                  tooltip="Copy link to contract id"
                   eventTrackingName={'admin copy contract id'}
                 />
               </td>
@@ -264,11 +264,9 @@ export const Stats = (props: {
               <td>SQL query</td>
               <td>
                 <span>select * from contracts...</span>
-                <CopyLinkButton
+                <CopyLinkOrShareButton
                   url={`select * from contracts where id = '${id}';`}
-                  linkIconOnlyProps={{
-                    tooltip: 'Copy sql query to contract id',
-                  }}
+                  tooltip="Copy sql query to contract id"
                   eventTrackingName={'admin copy contract id'}
                 />
               </td>
@@ -451,7 +449,7 @@ export function ContractInfoDialog(props: {
                     </div>
                   )}
 
-                  <CopyLinkButton
+                  <CopyLinkRow
                     url={getShareUrl(contract, user?.username)}
                     eventTrackingName="copy market link"
                   />

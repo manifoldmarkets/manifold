@@ -28,7 +28,10 @@ import { copyToClipboard } from 'web/lib/util/copy'
 import { formatMoney } from 'common/util/format'
 import { REFERRAL_AMOUNT, STARTING_BALANCE } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import {
+  CopyLinkOrShareButton,
+  CopyLinkRow,
+} from 'web/components/buttons/copy-link-button'
 
 export default function TwitchLandingPage() {
   useSaveReferral()
@@ -465,7 +468,7 @@ function SetUpBot(props: {
               link.
             </div>
 
-            <CopyLinkButton
+            <CopyLinkRow
               url={'https://manifold.markets/twitch?referrer=' + user?.username}
               eventTrackingName="copy twitch link"
             />

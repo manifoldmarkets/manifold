@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import {
+  CopyLinkOrShareButton,
+  CopyLinkRow,
+} from 'web/components/buttons/copy-link-button'
 import { Page } from 'web/components/layout/page'
 import { StarPicker } from 'web/components/reviews/stars'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
@@ -46,10 +49,17 @@ export default function StylePage() {
       <EditorExample />
       <SliderExample />
       <Subtitle>Copy Link</Subtitle>
-      <CopyLinkButton
+      <CopyLinkOrShareButton
+        url="www.example.com"
+        eventTrackingName={'copy styles link'}
+        tooltip="Share"
+      />
+      <div />
+      <CopyLinkRow
         url="www.example.com"
         eventTrackingName={'copy styles link'}
       />
+      <CopyLinkRow eventTrackingName="copy styles link" />
       <RatingSection />
     </Page>
   )

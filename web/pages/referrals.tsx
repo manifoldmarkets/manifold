@@ -5,7 +5,7 @@ import { useUser } from 'web/hooks/use-user'
 import { Page } from 'web/components/layout/page'
 import { useTracking } from 'web/hooks/use-tracking'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { InfoBox } from 'web/components/widgets/info-box'
 import { QRCode } from 'web/components/widgets/qr-code'
@@ -47,7 +47,7 @@ export default function ReferralsPage() {
             if they sign up and place a trade!
           </div>
 
-          <CopyLinkButton url={url} eventTrackingName="copy referral link" />
+          <CopyLinkRow url={url} eventTrackingName="copy referral link" />
 
           <QRCode url={url} className="mt-4 self-center" />
 
