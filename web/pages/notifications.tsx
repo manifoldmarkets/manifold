@@ -137,12 +137,7 @@ function NotificationsContent(props: {
               },
               {
                 title: 'Settings',
-                content: (
-                  <NotificationSettings
-                    navigateToSection={section}
-                    privateUser={privateUser}
-                  />
-                ),
+                content: <NotificationSettings navigateToSection={section} />,
               },
             ]}
           />
