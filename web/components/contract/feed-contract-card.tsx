@@ -250,7 +250,7 @@ function DetailedCard(props: {
       {/* Title is link to contract for open in new tab and a11y */}
       <Col className={'w-full flex-col gap-1.5 pt-4'}>
         <Row className="w-full justify-between">
-          <Row className={'text-ink-700 items-center gap-1 text-sm'}>
+          <Row className={'text-ink-500 items-center gap-1 text-sm'}>
             <Avatar
               size={'xs'}
               className={'mr-0.5'}
@@ -281,21 +281,9 @@ function DetailedCard(props: {
           <CardReason item={item} />
         </Row>
         <Row className={'justify-between gap-4'}>
-          {/* <Link
-            href={path}
-            className={clsx(
-              '-mt-1 text-lg',
-              'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
-              textColor
-            )}
-            // if open in new tab, don't open in this one
-            onClick={(e) => {
-              trackClick()
-              e.stopPropagation()
-            }}
-          > */}
-          <VisibilityIcon contract={contract} /> {contract.question}
-          {/* </Link> */}
+          <Row className="grow">
+            <VisibilityIcon contract={contract} /> {contract.question}
+          </Row>
           <Col className={'items-end'}>
             {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
               <ContractStatusLabel
@@ -317,10 +305,8 @@ function DetailedCard(props: {
               )}
             </span>
           </Col>
-        </Row>
-        <Row className={'items-center justify-between gap-1'}>
           {isBinaryCpmm && !isClosed && (
-            <BetRow contract={contract} user={user} />
+            <BetRow contract={contract} user={user} className="h-min" />
           )}
         </Row>
       </Col>

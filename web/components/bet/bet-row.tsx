@@ -11,8 +11,9 @@ import { Button } from '../buttons/button'
 export function BetRow(props: {
   contract: CPMMBinaryContract
   user: User | null | undefined
+  className?: string
 }) {
-  const { contract, user } = props
+  const { contract, user, className } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const [dialogueThatIsOpen, setDialogueThatIsOpen] =
@@ -20,7 +21,7 @@ export function BetRow(props: {
   if (isClosed) return null
 
   return (
-    <Row className="text-sm">
+    <Row className={clsx('text-sm', className)}>
       <FeedBetButton
         dialogueThatIsOpen={dialogueThatIsOpen}
         setDialogueThatIsOpen={setDialogueThatIsOpen}
