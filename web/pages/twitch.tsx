@@ -29,7 +29,6 @@ import { formatMoney } from 'common/util/format'
 import { REFERRAL_AMOUNT, STARTING_BALANCE } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
-  CopyLinkOrShareButton,
   CopyLinkRow,
 } from 'web/components/buttons/copy-link-button'
 
