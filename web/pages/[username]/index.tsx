@@ -56,7 +56,6 @@ import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { useAdmin } from 'web/hooks/use-admin'
 import { UserPayments } from 'web/pages/payments'
 import { FaMoneyBillTransfer } from 'react-icons/fa6'
-import { StarDisplay } from 'web/components/reviews/stars'
 import { useQuery } from 'react-query'
 import { getUserRating, getUserReviews } from 'web/lib/supabase/reviews'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -465,14 +464,8 @@ function ProfilePublicStats(props: {
           className="group flex gap-0.5"
           onClick={() => setReviewsOpen(true)}
         >
-          <span className="font-semibold">{rating.toFixed(1)}</span>
-          <StarDisplay rating={rating} />
-          <span>
-            (
-            <span className="decoration-primary-400 decoration-2 group-hover:underline">
-              {reviewCount} Reviews
-            </span>
-            )
+          <span className="decoration-primary-400 decoration-2 group-hover:underline">
+            {reviewCount} Reviews
           </span>
         </button>
       )}
