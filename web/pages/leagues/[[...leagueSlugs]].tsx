@@ -47,6 +47,7 @@ import { getLeagueChatChannelId } from 'common/league-chat'
 import { useHasUnseenLeagueChat } from 'web/hooks/use-chats'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
+import { useLeagueChats } from 'web/hooks/use-leagues'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
@@ -185,6 +186,12 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     leagueChannelId,
     user?.id
   )
+
+  const leagueChats = useLeagueChats(season)
+  const yourOwnedLeagues = leagueChats.filter(
+    (chat) => chat.ownerId === user?.id
+  )
+  console.log('yourOwnedLeagues', yourOwnedLeagues)
 
   return (
     <Page>

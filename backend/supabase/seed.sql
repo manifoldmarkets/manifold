@@ -731,6 +731,7 @@ create table if not exists
                      season int not null, -- integer id of season, i.e. 1 for first season, 2 for second, etc.
                      division int not null, -- 1 (beginner) to 4 (expert)
                      cohort text not null, -- id of cohort (group of competing users). Unique across seasons.
+                     owner_id text,
                      unique (season, division, cohort)
 );
 

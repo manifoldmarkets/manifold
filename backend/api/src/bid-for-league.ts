@@ -10,6 +10,7 @@ import {
   MIN_BID_INCREASE_FACTOR,
   MIN_LEAGUE_BID,
 } from 'common/leagues'
+import { getLeagueChatChannelId } from 'common/league-chat'
 
 const schema = z.object({
   season: z.number(),
@@ -93,6 +94,18 @@ export const bidforleague = authEndpoint(async (req, auth) => {
     if (maxBid) {
       runReturnLeagueBidTxn(transaction, maxBid)
     }
+
+    const pg = createSupabaseDirectClient()
+    console.log(
+      'updating',
+      getLeagueChatChannelId(season, division, cohort),
+      'owner to',
+      auth.uid
+    )
+    await pg.none(
+      'update league_chats set owner_id = $1 where channel_id = $2',
+      [auth.uid, getLeagueChatChannelId(season, division, cohort)]
+    )
 
     return { status: 'success', txn }
   })

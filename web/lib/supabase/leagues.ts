@@ -21,3 +21,17 @@ export async function getLeagueRows() {
     .order('mana_earned', { ascending: false })
   return (rows ?? []) as league_user_info[]
 }
+
+export async function getLeagueChats(season: number) {
+  const { data: rows } = await db
+    .from('league_chats')
+    .select('*')
+    .eq('season', season)
+
+  return (rows ?? []).map((r) => ({
+    ...r,
+    ownerId: r.owner_id,
+    channelId: r.channel_id,
+    createdTime: new Date(r.created_time).getTime(),
+  }))
+}

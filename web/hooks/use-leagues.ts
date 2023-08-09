@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 import { league_user_info } from 'common/leagues'
-import { getLeagueInfo } from 'web/lib/supabase/leagues'
+import { getLeagueChats, getLeagueInfo } from 'web/lib/supabase/leagues'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 export const useLeagueInfo = (userId: string | null | undefined) => {
@@ -18,4 +18,19 @@ export const useLeagueInfo = (userId: string | null | undefined) => {
   }, [userId])
 
   return leagueInfo
+}
+
+export const useLeagueChats = (season: number) => {
+  const [leagueChats, setLeagueChats] = usePersistentInMemoryState<any[]>(
+    [],
+    `league-chats-${season}`
+  )
+
+  useEffect(() => {
+    getLeagueChats(season).then((result) => {
+      setLeagueChats(result)
+    })
+  }, [season])
+
+  return leagueChats
 }
