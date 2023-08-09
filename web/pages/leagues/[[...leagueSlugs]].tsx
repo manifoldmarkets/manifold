@@ -17,6 +17,7 @@ import {
   getSeasonStatus,
   MIN_LEAGUE_BID,
   MIN_BID_INCREASE_FACTOR,
+  IS_BIDDING_PERIOD,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -178,7 +179,6 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     : MIN_LEAGUE_BID
   const loadedOwner = useUserById(leagueBid?.fromId)
   const owner = leagueBid ? loadedOwner : undefined
-  const isBuyPeriod = true
 
   const leagueChannelId = getLeagueChatChannelId(season, division, cohort)
   const [unseenLeagueChat, setUnseen] = useHasUnseenLeagueChat(
@@ -300,7 +300,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
           </Col>
         )}
 
-        {isBuyPeriod && (
+        {IS_BIDDING_PERIOD && (
           <LeagueBidPanel
             season={season}
             division={division}
