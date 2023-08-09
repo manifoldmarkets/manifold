@@ -26,22 +26,28 @@ export function CardReason(props: {
 
   if (item.dataType == 'contract_probability_changed' && probChange) {
     return (
-      <Row
+      <span
         className={clsx(
-          'text-ink-500 items-center gap-1 rounded-full px-2 text-sm',
+          'text-ink-500 my-auto items-center gap-1 rounded-full px-2 text-sm',
           positiveChange
             ? 'bg-teal-300/20 text-teal-600 dark:text-teal-300'
             : 'dark:text-scarlet-200 text-scarlet-600 bg-scarlet-500/10'
         )}
       >
-        <span>
-          <span className="font-bold">
-            {positiveChange ? '+' : ''}
-            {probChange}%
-          </span>{' '}
-          today
-        </span>
-      </Row>
+        <span className="font-bold">
+          {positiveChange ? '+' : ''}
+          {probChange}%
+        </span>{' '}
+        today
+      </span>
+    )
+  }
+
+  if (item.dataType == 'trending_contract') {
+    return (
+      <span className="text-ink-800 my-auto items-center rounded-full bg-gradient-to-r from-indigo-300/40 to-pink-300/40 px-2 text-sm">
+        Trending
+      </span>
     )
   }
   return (

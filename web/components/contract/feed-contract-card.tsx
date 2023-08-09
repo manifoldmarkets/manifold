@@ -230,7 +230,7 @@ function DetailedCard(props: {
       }}
     >
       {/* Title is link to contract for open in new tab and a11y */}
-      <Col className={'w-full flex-col gap-1.5 pt-4'}>
+      <Col className={'w-full flex-col gap-1.5 pt-2'}>
         <Row className="w-full justify-between">
           <Row className={'text-ink-500 items-center gap-1 text-sm'}>
             <Avatar
