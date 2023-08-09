@@ -2,9 +2,11 @@ import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 import { Request, Response } from 'express'
 
-import { getPrivateUser, getUser, isProd, payUsers } from 'shared/utils'
+import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { sendThankYouEmail } from 'shared/emails'
 import { track } from 'shared/analytics'
+import { APIError } from './helpers'
+import { runTxnFromBank } from 'shared/txn/run-txn'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -141,20 +143,39 @@ const issueMoneys = async (session: StripeSession) => {
       session,
       timestamp: Date.now(),
     })
-    payUsers(trans, [{ userId, payout: deposit, deposit }])
-    return true
+
+    const manaPurchaseTxn = {
+      fromId: 'EXTERNAL',
+      fromType: 'BANK',
+      toId: userId,
+      toType: 'USER',
+      amount: deposit,
+      token: 'M$',
+      category: 'MANA_PURCHASE',
+      data: { stripeTransactionId: stripeDoc.id, type: 'stripe' },
+      description: `Deposit M$${deposit} from BANK for mana purchase`,
+    } as const
+
+    const result = await runTxnFromBank(trans, manaPurchaseTxn)
+
+    if (result.status === 'error') {
+      throw new APIError(500, result.message ?? 'An unknown error occurred')
+    }
+
+    return result
   })
 
   if (success) {
-    console.log('user', userId, 'paid M$', deposit)
+    log('user', userId, 'paid M$', deposit)
 
     const user = await getUser(userId)
-    if (!user) return
+    if (!user) throw new APIError(500, 'Your account was not found')
 
     const privateUser = await getPrivateUser(userId)
-    if (!privateUser) return
+    if (!privateUser) throw new APIError(500, 'Private user not found')
 
     await sendThankYouEmail(user, privateUser)
+    log('stripe revenue', deposit / 100)
 
     await track(
       userId,

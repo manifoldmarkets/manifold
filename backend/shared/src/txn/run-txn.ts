@@ -9,23 +9,24 @@ import {
   Txn,
 } from 'common/txn'
 import { createSupabaseDirectClient } from '../supabase/init'
-import { isProd } from 'shared/utils'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
-import { merge } from 'lodash'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
 export async function runTxn(
   fbTransaction: admin.firestore.Transaction,
-  data: TxnData
+  data: TxnData & { fromType: 'USER' }
 ) {
-  const { amount, fromId, toId, toType } = data
+  const { amount, fromType, fromId, toId, toType } = data
 
   if (!isFinite(amount) || amount <= 0) {
     return { status: 'error', message: 'Invalid amount' }
+  }
+
+  if (fromType !== 'USER') {
+    return {
+      status: 'error',
+      message: 'This method is only for transfers from users',
+    }
   }
 
   const fromDoc = firestore.doc(`users/${fromId}`)
@@ -63,20 +64,14 @@ export async function runTxn(
 }
 export async function runTxnFromBank(
   fbTransaction: admin.firestore.Transaction,
-  data: Omit<TxnData, 'fromId'>
+  data: Omit<TxnData, 'fromId'> & { fromType: 'BANK' }
 ) {
   const { amount, fromType, toId, toType } = data
   if (fromType !== 'BANK')
     return {
       status: 'error',
-      message: 'This method is only for fromType = BANK',
+      message: 'This method is only for transfers from banks',
     }
-
-  data = merge(data, {
-    fromId: isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  })
 
   if (!isFinite(amount) || amount <= 0) {
     return { status: 'error', message: 'Invalid amount' }
@@ -91,7 +86,12 @@ export async function runTxnFromBank(
   }
 
   const newTxnDoc = firestore.collection(`txns/`).doc()
-  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...data }
+  const txn = {
+    id: newTxnDoc.id,
+    createdTime: Date.now(),
+    fromId: 'BANK',
+    ...data,
+  }
   fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
 
   return { status: 'success', txn }

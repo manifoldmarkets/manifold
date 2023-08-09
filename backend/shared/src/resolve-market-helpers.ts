@@ -239,7 +239,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
     const totalBonusAmount = sumBy(bonusTxnsOnThisContract, (txn) => txn.amount)
     log('totalBonusAmount to be withdrawn', totalBonusAmount)
     const result = await firestore.runTransaction(async (trans) => {
-      const bonusTxn: TxnData = {
+      const bonusTxn = {
         fromId: contract.creatorId,
         fromType: 'USER',
         toId: isProd()
