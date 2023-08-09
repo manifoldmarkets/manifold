@@ -6,7 +6,11 @@ initAdmin()
 const firestore = admin.firestore()
 
 async function doIt() {
-  const purchases = await firestore.collection('stripe-purchases').get()
+  const purchases = await firestore
+    .collection('stripe-transactions')
+    .where('timestamp', '<', 1691610957301)
+    .select('manticDollarQuantity', 'userId', 'timestamp')
+    .get()
 
   if (purchases.empty) {
     throw new Error('No purchases found.')
@@ -16,7 +20,9 @@ async function doIt() {
     purchases.docs.forEach((doc) => {
       const purchase = doc.data()
       const { manticDollarQuantity, userId, timestamp } = purchase
-      const txnRef = firestore.collection('txns').doc()
+      // console.log({ manticDollarQuantity, userId, timestamp })
+
+      const txnRef = firestore.collection('txns/').doc()
       const txn: ManaPurchaseTxn = {
         id: txnRef.id,
         fromId: 'EXTERNAL',
@@ -32,7 +38,7 @@ async function doIt() {
         },
         createdTime: timestamp,
       }
-      trans.update(txnRef, txn)
+      trans.create(txnRef, txn)
     })
   })
 }
