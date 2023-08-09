@@ -45,7 +45,7 @@ function FeedBetButton(props: {
     <>
       <Button
         color="indigo-outline"
-        size="xs"
+        size="2xs"
         onClick={(e) => {
           e.stopPropagation()
           if (!user) {

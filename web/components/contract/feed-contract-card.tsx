@@ -267,11 +267,11 @@ function DetailedCard(props: {
             'flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:justify-between'
           }
         >
-          <Row className="grow items-start">
+          <Row className="grow items-start sm:text-lg">
             <VisibilityIcon contract={contract} /> {contract.question}
           </Row>
           <Col className="w-full sm:w-min">
-            <Row className="w-full items-center justify-between gap-2 sm:w-min">
+            <Row className="w-full items-center justify-end gap-4 sm:w-min sm:gap-3">
               {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
                 <ContractStatusLabel
                   className={'-mt-1 text-lg font-bold'}
