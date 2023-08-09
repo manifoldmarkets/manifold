@@ -34,6 +34,10 @@ import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { Tabs } from 'web/components/layout/tabs'
 import { formatTime } from 'web/lib/util/time'
 import { SEO } from 'web/components/SEO'
+import { Button } from 'web/components/buttons/button'
+import { formatMoney } from 'common/util/format'
+import { UserLink } from 'web/components/widgets/user-link'
+import { Avatar } from 'web/components/widgets/avatar'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
@@ -160,6 +164,9 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   const seasonStatus = getSeasonStatus(season)
   const seasonEnd = getSeasonDates(season).end
 
+  const isBuyPeriod = true
+  const owner = user
+
   return (
     <Page>
       <SEO
@@ -257,6 +264,47 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             </Select>
           </Row>
         </Col>
+
+        {owner && (
+          <Col className="gap-2">
+            <div className="text-ink-600 text-sm">
+              Owner of {toLabel(cohort)}
+            </div>
+            <Row className="items-center gap-2">
+              <Avatar
+                avatarUrl={owner.avatarUrl}
+                username={owner.username}
+                size={'xs'}
+              />
+              <UserLink name={owner.name} username={owner.username} />
+            </Row>
+          </Col>
+        )}
+
+        {isBuyPeriod && (
+          <Col className="gap-2 border px-3 py-2">
+            <Row className="items-center gap-2">
+              <div className="text-ink-600 text-sm">
+                Bid to own this league for the season{' '}
+                <InfoTooltip
+                  text={
+                    'At the end of the season, the owner of the league will gain mana equal to the total mana earned of every user in the league.'
+                  }
+                />
+              </div>
+            </Row>
+            <Row className="items-center gap-2">
+              <Col>
+                <div className="text-ink-600 text-sm">Price</div>
+                <div>{formatMoney(1000)}</div>
+              </Col>
+
+              <Button color="indigo" size="sm">
+                Place bid for {toLabel(cohort)}
+              </Button>
+            </Row>
+          </Col>
+        )}
 
         <Tabs
           key={`${season}-${division}-${cohort}`}
