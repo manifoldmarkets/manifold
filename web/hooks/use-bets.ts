@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Bet,
+  getBetsQuery,
   listenForBets,
   listenForUnfilledBets,
 } from 'web/lib/firebase/bets'
@@ -12,12 +13,22 @@ import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { db } from 'web/lib/supabase/db'
 import { getBets } from 'common/supabase/bets'
+import { getValues } from 'web/lib/firebase/utils'
 
-export const useBets = (options?: BetFilter) => {
+export const useListenBets = (options?: BetFilter) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
   useEffectCheckEquality(() => {
     return listenForBets(setBets, options)
   }, [options])
+
+  return bets
+}
+
+export const useBets = (options?: BetFilter) => {
+  const [bets, setBets] = useState<Bet[] | undefined>()
+  useEffect(() => {
+    getValues<Bet>(getBetsQuery(options)).then(setBets)
+  }, [])
 
   return bets
 }

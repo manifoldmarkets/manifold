@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { last, sum, sortBy, groupBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
-import { Bet } from 'common/bet'
+import { Bet, calculateMultiBets } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
 import { MultiContract } from 'common/contract'
 import { getAnswerProbability } from 'common/calculate'
@@ -16,7 +16,7 @@ import {
 import { MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { buildArray } from 'common/util/array'
-import { MultiPoint } from 'common/chart'
+import { MultiPoint, unserializePoints } from 'common/chart'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -76,7 +76,16 @@ const getAnswers = (contract: MultiContract) => {
   )
 }
 
-const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[]) => {
+export const getCpmmBetPoints = (answers: Answer[], bets: Bet[]) => {
+  return unserializePoints(
+    calculateMultiBets(
+      bets,
+      answers.map((a) => a.id)
+    )
+  )
+}
+
+export const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[]) => {
   const sortedBets = sortBy(bets, (b) => b.createdTime)
   const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
   const sharesByOutcome = Object.fromEntries(
@@ -103,28 +112,23 @@ export function useChartAnswers(contract: MultiContract) {
 
 export const ChoiceContractChart = (props: {
   contract: MultiContract
-  bets?: Bet[]
   points?: MultiPoint[]
   width: number
   height: number
   onMouseOver?: (p: MultiPoint | undefined) => void
 }) => {
-  const { contract, bets = [], points = [], width, height, onMouseOver } = props
+  const { contract, points = [], width, height, onMouseOver } = props
   const isMultipleChoice = contract.outcomeType === 'MULTIPLE_CHOICE'
-  const isDpm = contract.mechanism === 'dpm-2'
+
   const [start, end] = getDateRange(contract)
   const answers = useChartAnswers(contract)
 
-  const betPoints = useMemo(
-    () => (isDpm ? getDpmBetPoints(answers as DpmAnswer[], bets) : points),
-    [answers, bets, isDpm, points]
-  )
   const endProbs = useMemo(
     () => answers.map((a) => getAnswerProbability(contract, a.id)),
     [answers, contract]
   )
 
-  const now = useMemo(() => Date.now(), [betPoints])
+  const now = useMemo(() => Date.now(), [points])
 
   const data = useMemo(() => {
     if (!answers.length) return []
@@ -138,13 +142,13 @@ export const ChoiceContractChart = (props: {
       ...new Array(answers.length - startAnswers.length).fill(0),
     ]
 
-    return buildArray(isMultipleChoice && { x: start, y: startY }, betPoints, {
+    return buildArray(isMultipleChoice && { x: start, y: startY }, points, {
       x: end ?? now,
       y: endProbs,
     })
-  }, [answers.length, betPoints, endProbs, start, end, now])
+  }, [answers.length, points, endProbs, start, end, now])
 
-  const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
+  const rightmostDate = getRightmostVisibleDate(end, last(points)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
 

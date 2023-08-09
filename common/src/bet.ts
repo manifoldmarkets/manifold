@@ -116,21 +116,30 @@ export type BetFilter = {
 }
 
 type AnswerId = string
-/** Only for multi choice. Must include redemptions. Joins all prob shifts from a bet action into single object*/
+/** Only for new multi choice. Must include redemptions. Joins all prob shifts from a bet action into single object*/
 export const calculateMultiBets = (
   bets: Bet[],
   order: AnswerId[]
 ): MultiSerializedPoint[] => {
-  const grouped = groupBy(bets, 'createdTime')
+  const grouped = groupBy(
+    bets.filter((b) => b.limitProb == undefined),
+    'createdTime'
+  )
+
+  // multi bets are represented by one non-redemption alongside redemptions for each other outcome
+
   const points = Object.entries(grouped)
+    .filter(([, bets]) => bets.some((b) => !b.isRedemption))
     .map(
       ([timeStr, bets]) =>
         [
           +timeStr,
-          order.map((id) => bets.find((bet) => bet.answerId === id)?.probAfter),
+          order.map(
+            (id) => bets.find((bet) => bet.answerId === id)?.probAfter ?? 0
+          ),
         ] as const
     )
-    .filter(([_, probs]) => probs.every((p) => p != null))
     .sort(([a], [b]) => a - b)
+
   return points as any
 }

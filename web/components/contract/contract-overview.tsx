@@ -45,13 +45,11 @@ import { CreateAnswerPanel } from '../answers/create-answer-panel'
 export const ContractOverview = memo(
   (props: {
     contract: Contract
-    bets: Bet[]
     betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoint[]
     showResolver: boolean
     onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
   }) => {
-    const { bets, betPoints, contract, showResolver, onAnswerCommentClick } =
-      props
+    const { betPoints, contract, showResolver, onAnswerCommentClick } = props
 
     switch (contract.outcomeType) {
       case 'BINARY':
@@ -76,7 +74,6 @@ export const ContractOverview = memo(
         return (
           <ChoiceOverview
             contract={contract}
-            bets={bets}
             points={betPoints as any}
             showResolver={showResolver}
             onAnswerCommentClick={onAnswerCommentClick}
@@ -152,13 +149,12 @@ const BinaryOverview = (props: {
 }
 
 const ChoiceOverview = (props: {
-  bets?: Bet[]
   points: MultiPoint[]
   contract: MultiContract
   showResolver: boolean
   onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
 }) => {
-  const { bets, points, contract, showResolver, onAnswerCommentClick } = props
+  const { points, contract, showResolver, onAnswerCommentClick } = props
 
   if (!onAnswerCommentClick) return null
   return (
@@ -175,7 +171,6 @@ const ChoiceOverview = (props: {
             <ChoiceContractChart
               width={w}
               height={h}
-              bets={bets}
               points={points}
               contract={contract}
             />
