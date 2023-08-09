@@ -8,9 +8,13 @@ import { Json } from 'common/supabase/schema'
 import { contentSchema } from 'shared/zod-types'
 
 const postSchema = z.object({
-  content: contentSchema.optional(),
+  content: contentSchema,
   channelId: z.string(),
 })
+// TODO:
+// on create a league, create a league_chat for it, and add the first chat_message
+// when someone visits a league, get the league_chat via season, division, cohort,
+// get messages via the channel_id from that league_chat row
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 

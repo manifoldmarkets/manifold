@@ -471,3 +471,10 @@ export function bidForLeague(params: {
 }) {
   return call(getApiUrl('bidforleague'), 'POST', params)
 }
+
+export function createChatMessage(params: {
+  channelId: string
+  content: JSONContent
+}) {
+  return call(getApiUrl('create-chat-message'), 'POST', params)
+}

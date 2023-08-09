@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { groupBy, sortBy } from 'lodash'
-import { ClockIcon } from '@heroicons/react/outline'
+import { ChatIcon, ClockIcon } from '@heroicons/react/outline'
 import { useRouter } from 'next/router'
 
 import {
@@ -33,7 +33,7 @@ import { getLeagueRows } from 'web/lib/supabase/leagues'
 import { CohortTable } from 'web/components/leagues/cohort-table'
 import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { LeagueFeed } from 'web/components/leagues/league-feed'
-import { Tabs } from 'web/components/layout/tabs'
+import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { formatTime } from 'web/lib/util/time'
 import { SEO } from 'web/components/SEO'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -41,6 +41,11 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { LeagueBidPanel } from 'web/components/leagues/league-bid-panel'
 import { useLeagueBid } from 'web/hooks/use-league-bid-txn'
 import { useUserById } from 'web/hooks/use-user-supabase'
+import { LeagueChat } from 'web/components/groups/league-chat'
+import { getLeagueChatChannelId } from 'common/league-chat'
+import { useHasUnseenLeagueChat } from 'web/hooks/use-chats'
+import { run } from 'common/supabase/utils'
+import { db } from 'web/lib/supabase/db'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
@@ -175,6 +180,12 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   const owner = leagueBid ? loadedOwner : undefined
   const isBuyPeriod = true
 
+  const leagueChannelId = getLeagueChatChannelId(season, division, cohort)
+  const [unseenLeagueChat, setUnseen] = useHasUnseenLeagueChat(
+    leagueChannelId,
+    user?.id
+  )
+
   return (
     <Page>
       <SEO
@@ -298,7 +309,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
           />
         )}
 
-        <Tabs
+        <QueryUncontrolledTabs
           key={`${season}-${division}-${cohort}`}
           tabs={[
             {
@@ -320,7 +331,24 @@ export default function Leagues(props: { rows: league_user_info[] }) {
               title: 'Activity',
               content: <LeagueFeed season={season} cohort={cohort} />,
             },
+            {
+              title: 'Chat',
+              inlineTabIcon: unseenLeagueChat && (
+                <ChatIcon className="h-5 w-5 text-blue-600" />
+              ),
+              content: <LeagueChat user={user} channelId={leagueChannelId} />,
+            },
           ]}
+          onClick={(tab) => {
+            if (tab != 'Chat' || !user?.id) return
+            run(
+              db.from('user_seen_chats').insert({
+                user_id: user.id,
+                channel_id: leagueChannelId,
+              })
+            )
+            setUnseen(false)
+          }}
         />
       </Col>
     </Page>
