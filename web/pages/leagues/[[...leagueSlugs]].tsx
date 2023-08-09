@@ -171,6 +171,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     getDemotionAndPromotionCount(division)
 
   const MARKER = '●️'
+  const OWNER_MARKER = '★'
   const seasonStatus = getSeasonStatus(season)
   const seasonEnd = getSeasonDates(season).end
 
@@ -191,8 +192,12 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   const yourOwnedLeagues = leagueChats.filter(
     (chat) => chat.ownerId === user?.id
   )
-  console.log('yourOwnedLeagues', yourOwnedLeagues)
-
+  console.log(
+    yourOwnedLeagues,
+    yourOwnedLeagues.filter(
+      (l) => l.division === division && l.cohort === cohort
+    )
+  )
   return (
     <Page>
       <SEO
@@ -284,7 +289,14 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             >
               {divisionToCohorts[division]?.map((cohort) => (
                 <option key={cohort} value={cohort}>
-                  {cohort === userCohort && MARKER} {toLabel(cohort)}
+                  {cohort === userCohort
+                    ? MARKER
+                    : yourOwnedLeagues.filter(
+                        (l) => l.division === division && l.cohort === cohort
+                      )[0]
+                    ? OWNER_MARKER
+                    : ''}{' '}
+                  {toLabel(cohort)}
                 </option>
               ))}
             </Select>
