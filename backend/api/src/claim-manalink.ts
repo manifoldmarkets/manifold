@@ -80,7 +80,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
     }
 
     // Actually execute the txn
-    const data: TxnData = {
+    const data = {
       fromId,
       fromType: 'USER',
       toId: auth.uid,
@@ -89,7 +89,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       token: 'M$',
       category: 'MANALINK',
       description: `Manalink ${slug} claimed: ${amount} from ${fromUser.username} to ${auth.uid}`,
-    }
+    } as const
     const result = await runTxn(transaction, data)
     const txnId = result.txn?.id
     if (!txnId) {

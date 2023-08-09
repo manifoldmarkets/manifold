@@ -42,8 +42,7 @@ export const sendmana = authEndpoint(async (req, auth) => {
     const groupId = crypto.randomUUID()
     await Promise.all(
       toIds.map(async (toId) => {
-        // Actually execute the txn
-        const data: TxnData = {
+        const data = {
           fromId: auth.uid,
           fromType: 'USER',
           toId,
@@ -57,7 +56,7 @@ export const sendmana = authEndpoint(async (req, auth) => {
             visibility: 'public',
           },
           description: `Mana payment ${amount} from ${fromUser.username} to ${auth.uid}`,
-        }
+        } as const
         const result = await runTxn(transaction, data)
         const txnId = result.txn?.id
         if (!txnId) {
