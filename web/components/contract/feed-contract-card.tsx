@@ -144,23 +144,26 @@ function SimpleCard(props: {
     <ClickFrame
       className={clsx(
         className,
-        'bg-canvas-0 border-canvas-0 hover:border-primary-300 relative flex cursor-pointer flex-col justify-between gap-2 overflow-hidden rounded-xl border px-4 pt-2 drop-shadow-md transition-colors'
+        'bg-canvas-0 border-canvas-0 hover:border-primary-300 relative flex cursor-pointer flex-col justify-between gap-2 overflow-hidden rounded-xl border px-4 pt-2 drop-shadow-md transition-colors sm:px-6'
       )}
       onClick={(e) => {
         Router.push(path)
         e.currentTarget.focus()
       }}
     >
-      <div
+      {/* <div
         className={
           'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
         }
-      >
+      > */}
+      <Row className="justify-between gap-4">
         <Row className="grow items-start">
           <VisibilityIcon contract={contract} /> {contract.question}
         </Row>
-        <Col className="w-full sm:w-min sm:items-start">
-          <Row className="w-full items-center justify-end gap-3 sm:w-min">
+        {/* <Col className="w-full sm:w-min sm:items-start"> */}
+        <Col className="w-min items-start">
+          {/* <Row className="w-full items-center justify-end gap-3 sm:w-min"> */}
+          <Row className="w-min items-center justify-end gap-3">
             <ContractStatusLabel
               className={'text-lg font-bold'}
               contract={contract}
@@ -170,7 +173,8 @@ function SimpleCard(props: {
             )}
           </Row>
         </Col>
-      </div>
+      </Row>
+      {/* </div> */}
 
       {children}
       <Col>
@@ -220,7 +224,7 @@ function DetailedCard(props: {
         'relative rounded-xl',
         'bg-canvas-0 cursor-pointer overflow-hidden',
         'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border drop-shadow-md transition-colors',
-        'flex w-full flex-col gap-0.5 px-4'
+        'flex w-full flex-col gap-0.5 px-4 sm:px-6'
       )}
       onClick={(e) => {
         trackClick()
