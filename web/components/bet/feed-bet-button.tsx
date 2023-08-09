@@ -2,17 +2,17 @@ import clsx from 'clsx'
 import { CPMMBinaryContract } from 'common/contract'
 import { useState } from 'react'
 import { User, firebaseLogin } from 'web/lib/firebase/users'
+import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
-import { Row } from '../layout/row'
 import { BuyPanel, binaryOutcomes } from './bet-panel'
-import { Button } from '../buttons/button'
 
-export function BetRow(props: {
+export function BetButton(props: {
   contract: CPMMBinaryContract
   user: User | null | undefined
+  className?: string
 }) {
-  const { contract, user } = props
+  const { contract, user, className } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const [dialogueThatIsOpen, setDialogueThatIsOpen] =
@@ -20,7 +20,7 @@ export function BetRow(props: {
   if (isClosed) return null
 
   return (
-    <Row className="text-sm">
+    <div className={className}>
       <FeedBetButton
         dialogueThatIsOpen={dialogueThatIsOpen}
         setDialogueThatIsOpen={setDialogueThatIsOpen}
@@ -28,7 +28,7 @@ export function BetRow(props: {
         outcome="YES"
         user={user}
       />
-    </Row>
+    </div>
   )
 }
 
@@ -45,7 +45,7 @@ function FeedBetButton(props: {
     <>
       <Button
         color="indigo-outline"
-        size="xs"
+        size="2xs"
         onClick={(e) => {
           e.stopPropagation()
           if (!user) {

@@ -24,9 +24,9 @@ export function NewsTopicsTabs(props: {
   )
 
   return (
-    <Col className="w-full gap-2 px-2 pb-8 sm:mx-auto sm:gap-6 sm:px-2 lg:pr-4">
+    <Col className="w-full gap-2 px-1 pb-8 sm:mx-auto sm:gap-6 sm:px-2 lg:pr-4">
       <QueryUncontrolledTabs
-        className={'bg-canvas-50 sticky top-0 z-20'}
+        className={'bg-canvas-50 sticky top-0 z-20 px-1'}
         scrollToTop={!dontScroll}
         tabs={topics.map((tab) => ({
           ...tab,
