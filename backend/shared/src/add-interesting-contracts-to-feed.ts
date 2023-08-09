@@ -105,7 +105,7 @@ export async function addInterestingContractsToFeed(
     } else if (
       importanceScore > 0.6 ||
       (importanceScore > 0.25 &&
-        (hourAgoTradersByContract[contract.id] ?? 0) >= 4 &&
+        (hourAgoTradersByContract[contract.id] ?? 0) >= 8 &&
         !readOnly)
     ) {
       log(
@@ -117,7 +117,7 @@ export async function addInterestingContractsToFeed(
         hourAgoTradersByContract[contract.id],
         'traders in the past hour'
       )
-      await insertTrendingContractToUsersFeeds(contract, now - 3 * DAY_MS, {
+      await insertTrendingContractToUsersFeeds(contract, now - 7 * DAY_MS, {
         tradersInPastHour: hourAgoTradersByContract[contract.id] ?? 0,
         importanceScore: parseFloat(importanceScore.toPrecision(2)),
       })

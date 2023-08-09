@@ -1,6 +1,6 @@
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { first } from 'lodash'
+import { first, last } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -35,15 +35,13 @@ import { ContractLeaderboard } from 'web/components/contract/contract-leaderboar
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
-
-import { calculateMultiBets } from 'common/bet'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
-import { TitleOrEdit } from 'web/components/contract/title-edit'
+import { EditableQuestionTitle } from 'web/components/contract/title-edit'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -78,7 +76,11 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { linkClass } from 'web/components/widgets/site-link'
-import { useBets } from 'web/hooks/use-bets'
+import { useBets, useListenBets } from 'web/hooks/use-bets'
+import {
+  getDpmBetPoints,
+  getCpmmBetPoints,
+} from 'web/components/charts/contract/choice'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -205,9 +207,16 @@ export function ContractPageContent(props: {
   useSaveContractVisitsLocally(user === null, contract.id)
 
   // Static props load bets in descending order by time
+  const firstBetTime = last(contractParams.historyData.bets)?.createdTime
   const lastBetTime = first(contractParams.historyData.bets)?.createdTime
+  const oldBets = useBets({
+    contractId: contract.id,
+    beforeTime: firstBetTime,
+    filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
+  })
+
   const newBets =
-    useBets({
+    useListenBets({
       contractId: contract.id,
       afterTime: lastBetTime,
       filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
@@ -215,30 +224,36 @@ export function ContractPageContent(props: {
   const totalBets =
     contractParams.totalBets + newBets.filter((bet) => !bet.isRedemption).length
   const bets = useMemo(
-    () => contractParams.historyData.bets.concat(newBets ?? []),
+    () => [...contractParams.historyData.bets, ...(newBets ?? [])],
     [contractParams.historyData.bets, newBets]
   )
 
   const betPoints = useMemo(() => {
     const points = unserializePoints(contractParams.historyData.points)
 
-    points.concat(
+    const getMultiBetPoints =
+      contract.mechanism === 'dpm-2' ? getDpmBetPoints : getCpmmBetPoints
+
+    const oldPoints =
       contract.outcomeType === 'MULTIPLE_CHOICE'
-        ? unserializePoints(
-            calculateMultiBets(
-              newBets,
-              contract.answers.map((a) => a.id)
-            )
-          )
+        ? getMultiBetPoints(contract.answers as any, oldBets ?? [])
+        : (oldBets ?? []).map((bet) => ({
+            x: bet.createdTime,
+            y: bet.probAfter,
+            obj: { userAvatarUrl: bet.userAvatarUrl },
+          }))
+
+    const newPoints =
+      contract.outcomeType === 'MULTIPLE_CHOICE'
+        ? getMultiBetPoints(contract.answers as any, newBets)
         : newBets.map((bet) => ({
             x: bet.createdTime,
             y: bet.probAfter,
             obj: { userAvatarUrl: bet.userAvatarUrl },
           }))
-    )
 
-    return points
-  }, [contractParams.historyData.points, newBets])
+    return [...(oldPoints ?? []), ...points, ...newPoints]
+  }, [oldBets, contractParams.historyData.points, newBets])
 
   const {
     isResolved,
@@ -422,7 +437,7 @@ export function ContractPageContent(props: {
                     isLarge
                     className="mr-1"
                   />
-                  <TitleOrEdit
+                  <EditableQuestionTitle
                     contract={contract}
                     canEdit={isAdmin || isCreator}
                   />
@@ -462,7 +477,6 @@ export function ContractPageContent(props: {
 
               <ContractOverview
                 contract={contract}
-                bets={bets}
                 betPoints={betPoints as any}
                 showResolver={showResolver}
                 onAnswerCommentClick={onAnswerCommentClick}

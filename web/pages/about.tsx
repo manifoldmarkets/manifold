@@ -350,7 +350,7 @@ export const LabCard = (props: {
             <ExternalLinkIcon className="ml-auto inline-block h-4 w-4" />
           )}
         </div>
-        <p className="text-ink-600">{description}</p>
+        {description && <p className="text-ink-600">{description}</p>}
       </Card>
     </Link>
   )

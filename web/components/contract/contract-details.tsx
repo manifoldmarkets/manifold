@@ -221,7 +221,7 @@ export function PublicMarketGroups(props: {
               <PencilIcon className="h-6 w-6 px-1" />
             ) : (
               <span className={clsx('flex items-center py-0.5 px-1')}>
-                <PlusIcon className="mr-1 h-4 w-4" /> Group
+                <PlusIcon className="mr-1 h-4 w-4" /> Category
               </span>
             )}
           </button>
