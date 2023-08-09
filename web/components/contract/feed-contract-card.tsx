@@ -151,19 +151,16 @@ function SimpleCard(props: {
         e.currentTarget.focus()
       }}
     >
-      {/* <div
+      <div
         className={
           'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
         }
-      > */}
-      <Row className="justify-between gap-4">
+      >
         <Row className="grow items-start">
           <VisibilityIcon contract={contract} /> {contract.question}
         </Row>
-        {/* <Col className="w-full sm:w-min sm:items-start"> */}
-        <Col className="w-min items-start">
-          {/* <Row className="w-full items-center justify-end gap-3 sm:w-min"> */}
-          <Row className="w-min items-center justify-end gap-3">
+        <Col className="w-full sm:w-min sm:items-start">
+          <Row className="w-full items-center justify-end gap-3 sm:w-min">
             <ContractStatusLabel
               className={'text-lg font-bold'}
               contract={contract}
@@ -173,8 +170,7 @@ function SimpleCard(props: {
             )}
           </Row>
         </Col>
-      </Row>
-      {/* </div> */}
+      </div>
 
       {children}
       <Col>
