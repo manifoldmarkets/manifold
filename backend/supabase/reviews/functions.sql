@@ -30,7 +30,7 @@ AS $$
     FROM positive_counts, negative_counts
   )
 
-  SELECT rating.count,
+  SELECT rating.count - 5, -- subtract added positive reviews
          -- squash with sigmoid, multiply by 5
          5 / (1 + POW(2.71828, -10*(rating.rating-0.5))) AS rating
   FROM rating;
