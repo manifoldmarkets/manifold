@@ -5,7 +5,11 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runReturnLeagueBidTxn, runTxn } from 'shared/txn/run-txn'
 import { maxBy } from 'lodash'
 import { LeagueBidTxn } from 'common/txn'
-import { MIN_BID_INCREASE_FACTOR, MIN_LEAGUE_BID } from 'common/leagues'
+import {
+  IS_BIDDING_PERIOD,
+  MIN_BID_INCREASE_FACTOR,
+  MIN_LEAGUE_BID,
+} from 'common/leagues'
 
 const schema = z.object({
   season: z.number(),
@@ -24,6 +28,10 @@ export const bidforleague = authEndpoint(async (req, auth) => {
     [auth.uid],
     (row) => row.data
   )
+
+  if (!IS_BIDDING_PERIOD) {
+    throw new APIError(403, 'Bidding is not currently open')
+  }
 
   if (!user) {
     throw new APIError(401, 'Your account was not found')
