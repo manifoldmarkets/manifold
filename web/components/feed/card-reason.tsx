@@ -54,8 +54,7 @@ export function CardReason(props: {
     <>
       {item &&
         !item.isCopied &&
-        (item.dataType === 'contract_probability_changed' ||
-          item.dataType === 'trending_contract') && (
+        item.dataType === 'contract_probability_changed' && (
           <div className={'text-ink-400 text-sm'}>
             {item.dataType === 'contract_probability_changed' && (
               <RelativeTimestamp
