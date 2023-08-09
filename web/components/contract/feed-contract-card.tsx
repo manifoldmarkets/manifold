@@ -156,7 +156,7 @@ function SimpleCard(props: {
           'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
         }
       >
-        <Row className="grow items-start">
+        <Row className="grow items-start text-lg">
           <VisibilityIcon contract={contract} /> {contract.question}
         </Row>
         <Col className="w-full sm:w-min sm:items-start">
@@ -266,7 +266,7 @@ function DetailedCard(props: {
             'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
           }
         >
-          <Row className="grow items-start">
+          <Row className="grow items-start text-lg">
             <VisibilityIcon contract={contract} /> {contract.question}
           </Row>
           <Col className="w-full sm:w-min sm:items-start">
