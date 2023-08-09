@@ -2,20 +2,17 @@ import Link from 'next/link'
 
 import { User } from 'common/user'
 import { Col } from './layout/col'
-import { useLeagueInfo } from 'web/hooks/use-leagues'
-import { DIVISION_NAMES } from 'common/leagues'
+import { useLeagueInfo, useOwnedLeagueChats } from 'web/hooks/use-leagues'
+import { CURRENT_SEASON, DIVISION_NAMES } from 'common/leagues'
 import { dailyStatsClass } from 'web/components/daily-stats'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
-import { useHasUnseenLeagueChat } from 'web/hooks/use-chats'
-import { getLeagueChatChannelId } from 'common/league-chat'
+import { useAllUnseenChatsForLeages } from 'web/hooks/use-chats'
 
 export const DailyLeagueStat = (props: { user: User }) => {
   const { user } = props
   const info = useLeagueInfo(user.id)
-  const leagueChannelId = info
-    ? getLeagueChatChannelId(info.season, info.division, info.cohort)
-    : undefined
+
   if (!info || info.division === undefined) {
     return null
   }
@@ -27,24 +24,18 @@ export const DailyLeagueStat = (props: { user: User }) => {
         <div className="text-ink-600 text-xs">
           {DIVISION_NAMES[info.division]}
         </div>
-        {leagueChannelId && user?.id && (
-          <UnseenChatBubble
-            leagueChannelId={leagueChannelId}
-            userId={user.id}
-          />
-        )}
+        {user?.id && <UnseenChatBubble userId={user.id} />}
       </Col>
     </Link>
   )
 }
 
-const UnseenChatBubble = (props: {
-  leagueChannelId: string
-  userId: string
-}) => {
-  const { leagueChannelId, userId } = props
-  const [unseenLeagueChat] = useHasUnseenLeagueChat(leagueChannelId, userId)
-  if (!unseenLeagueChat) {
+const UnseenChatBubble = (props: { userId: string }) => {
+  const { userId } = props
+  const yourOwnedLeagues = useOwnedLeagueChats(CURRENT_SEASON, userId)
+
+  const unseenLeagueChats = useAllUnseenChatsForLeages(userId, yourOwnedLeagues)
+  if (!unseenLeagueChats.length) {
     return null
   }
   return (

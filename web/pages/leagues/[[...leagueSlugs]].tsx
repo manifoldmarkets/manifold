@@ -43,11 +43,17 @@ import { LeagueBidPanel } from 'web/components/leagues/league-bid-panel'
 import { useLeagueBid } from 'web/hooks/use-league-bid-txn'
 import { useUserById } from 'web/hooks/use-user-supabase'
 import { LeagueChat } from 'web/components/groups/league-chat'
-import { getLeagueChatChannelId } from 'common/league-chat'
-import { useHasUnseenLeagueChat } from 'web/hooks/use-chats'
+import {
+  getLeagueChatChannelId,
+  getSeasonDivisionCohort,
+} from 'common/league-chat'
+import {
+  useAllUnseenChatsForLeages,
+  useHasUnseenLeagueChat,
+} from 'web/hooks/use-chats'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { useLeagueChats } from 'web/hooks/use-leagues'
+import { useOwnedLeagueChats } from 'web/hooks/use-leagues'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
@@ -187,16 +193,16 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     leagueChannelId,
     user?.id
   )
+  const yourOwnedLeagues = useOwnedLeagueChats(season, user?.id)
+  console.log('yourOwnedLeagues', yourOwnedLeagues)
 
-  const leagueChats = useLeagueChats(season)
-  const yourOwnedLeagues = leagueChats.filter(
-    (chat) => chat.ownerId === user?.id
+  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
+  const unseenLeagueChats = useAllUnseenChatsForLeages(
+    user?.id,
+    yourOwnedLeagues
   )
-  console.log(
-    yourOwnedLeagues,
-    yourOwnedLeagues.filter(
-      (l) => l.division === division && l.cohort === cohort
-    )
+  const unseenCohortChats = unseenLeagueChats.map(
+    (c) => getSeasonDivisionCohort(c).cohort
   )
   return (
     <Page>
@@ -206,7 +212,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
         url="/leagues"
       />
 
-      <Col className="mx-auto w-full max-w-lg gap-4 pb-8 pt-2 sm:pt-0">
+      <Col className="mx-auto w-full max-w-lg gap-2 pb-8 pt-2 sm:pt-0">
         <Col className="px-2 sm:px-0">
           <Row className="mb-4 justify-between">
             <Title className="!mb-0">Leagues</Title>
@@ -277,6 +283,9 @@ export default function Leagues(props: { rows: league_user_info[] }) {
               {divisions.map((division) => (
                 <option key={division} value={division}>
                   {division === userDivision && MARKER}{' '}
+                  {unseenLeagueChats
+                    .map((c) => getSeasonDivisionCohort(c).division)
+                    .includes(division) && '🔵'}{' '}
                   {DIVISION_NAMES[division]}
                 </option>
               ))}
@@ -297,6 +306,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                     ? OWNER_MARKER
                     : ''}{' '}
                   {toLabel(cohort)}
+                  {unseenCohortChats.includes(cohort) && '🔵'}{' '}
                 </option>
               ))}
             </Select>
@@ -327,8 +337,9 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             amount={price}
           />
         )}
-
+        <div className={'h-0'} ref={setContainerRef} />
         <QueryUncontrolledTabs
+          labelClassName={'!pb-3 !pt-0'}
           key={`${season}-${division}-${cohort}`}
           tabs={[
             {
@@ -355,7 +366,14 @@ export default function Leagues(props: { rows: league_user_info[] }) {
               inlineTabIcon: unseenLeagueChat && (
                 <ChatIcon className="h-5 w-5 text-blue-600" />
               ),
-              content: <LeagueChat user={user} channelId={leagueChannelId} />,
+              content: (
+                <LeagueChat
+                  user={user}
+                  channelId={leagueChannelId}
+                  ownerId={owner?.id}
+                  offsetTop={(containerRef?.offsetTop ?? 0) + 47}
+                />
+              ),
             },
           ]}
           onClick={(tab) => {

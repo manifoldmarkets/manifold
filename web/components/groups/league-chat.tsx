@@ -17,24 +17,13 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { MINUTE_MS } from 'common/util/time'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
-export function LeagueChat(props: {
-  channelId: string
-  user: User | null | undefined
-}) {
-  const { user, channelId } = props
-
-  return (
-    <>
-      <LeagueChatContent user={user} channelId={channelId} />
-    </>
-  )
-}
-
-export const LeagueChatContent = (props: {
+export const LeagueChat = (props: {
   user: User | null | undefined
   channelId: string
+  ownerId: string | undefined
+  offsetTop?: number
 }) => {
-  const { user, channelId } = props
+  const { user, offsetTop, ownerId, channelId } = props
   const authed = useIsAuthorized()
   const realtimeMessages = useRealtimeChatsOnLeague(channelId, 100)
   const messages = realtimeMessages ?? []
@@ -49,11 +38,9 @@ export const LeagueChatContent = (props: {
 
   const { height } = useWindowSize()
   const isMobile = useIsMobile()
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
   // Subtract bottom bar when it's showing (less than lg screen)
   const bottomBarHeight = isMobile ? 50 : 0
-  const remainingHeight =
-    (height ?? 0) - (containerRef?.offsetTop || 320) - bottomBarHeight
+  const remainingHeight = (height ?? 0) - (offsetTop || 320) - bottomBarHeight
   useEffect(() => {
     if (isMobile) focusInput()
   }, [isMobile])
@@ -112,9 +99,9 @@ export const LeagueChatContent = (props: {
   }
 
   return (
-    <Col ref={setContainerRef} style={{ height: remainingHeight }}>
+    <Col style={{ height: remainingHeight }}>
       <Col
-        className={'w-full space-y-2 overflow-x-hidden overflow-y-scroll pt-2'}
+        className={'w-full space-y-1 overflow-x-hidden overflow-y-scroll pt-1'}
         ref={setScrollToBottomRef}
       >
         {realtimeMessages === undefined ? (
@@ -125,25 +112,20 @@ export const LeagueChatContent = (props: {
               key={messages[0].id}
               chats={messages}
               user={user}
+              isOwner={ownerId === user?.id}
               onReplyClick={onReplyClick}
             />
           ))
         )}
         {messages.length === 0 && (
           <div className="p-2 text-gray-500">
-            No messages yet. Why not{' '}
-            <button
-              className={'cursor-pointer font-bold text-gray-700'}
-              onClick={focusInput}
-            >
-              add one?
-            </button>
+            No messages yet. Say something why don't ya?
           </div>
         )}
       </Col>
       {user && (
         <div className="flex w-full justify-start gap-2 p-2">
-          <div className="mt-1">
+          <div className="mt-1 hidden sm:block">
             <Avatar
               username={user?.username}
               avatarUrl={user?.avatarUrl}

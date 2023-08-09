@@ -1,5 +1,6 @@
 import { db } from './db'
 import { CURRENT_SEASON, league_user_info } from 'common/leagues'
+import { mapTypes, tsToMillis } from 'common/supabase/utils'
 
 export async function getLeagueInfo(userId: string) {
   const { data } = await db
@@ -34,4 +35,17 @@ export async function getLeagueChats(season: number) {
     channelId: r.channel_id,
     createdTime: new Date(r.created_time).getTime(),
   }))
+}
+export async function getOwnedLeagueChats(season: number, ownerId: string) {
+  const { data: rows } = await db
+    .from('league_chats')
+    .select('*')
+    .eq('season', season)
+    .eq('owner_id', ownerId)
+
+  return (rows ?? []).map((r) =>
+    mapTypes(r, {
+      created_time: tsToMillis as any,
+    })
+  )
 }

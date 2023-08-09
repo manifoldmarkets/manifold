@@ -4,6 +4,8 @@ import { mapTypes, Row, run, tsToMillis } from 'common/supabase/utils'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffect, useState } from 'react'
 import { first, last } from 'lodash'
+import { getLeagueChatChannelId } from 'common/league-chat'
+import { filterDefined } from 'common/util/array'
 
 export const getChatMessages = async (channelId: string, limit: number) => {
   const { data } = await run(
@@ -30,6 +32,14 @@ const convertChatMessage = (row: Row<'chat_messages'>) =>
     created_time: tsToMillis as any,
   })
 
+const getLastChatInChannelQuery = (channelId: string, userId: string) =>
+  db
+    .from('user_seen_chats')
+    .select('created_time')
+    .eq('user_id', userId)
+    .eq('channel_id', channelId)
+    .order('created_time', { ascending: false })
+    .limit(1)
 export const useHasUnseenLeagueChat = (
   channelId: string,
   userId: string | undefined
@@ -39,15 +49,7 @@ export const useHasUnseenLeagueChat = (
   const chats = useRealtimeChatsOnLeague(channelId, 1)
   useEffect(() => {
     if (!userId || !channelId) return
-    run(
-      db
-        .from('user_seen_chats')
-        .select('created_time')
-        .eq('user_id', userId)
-        .eq('channel_id', channelId)
-        .order('created_time', { ascending: false })
-        .limit(1)
-    ).then(({ data }) =>
+    run(getLastChatInChannelQuery(channelId, userId)).then(({ data }) =>
       setLastSeenChat(tsToMillis(first(data)?.created_time ?? '0'))
     )
   }, [])
@@ -58,4 +60,59 @@ export const useHasUnseenLeagueChat = (
     unseen && lastChatMessage && lastSeenChat && lastChatMessage > lastSeenChat,
     setUnseen,
   ] as const
+}
+
+export const useAllUnseenChatsForLeages = (
+  userId: string | undefined,
+  leagueInfos: {
+    season: number
+    cohort: string
+    division: number
+  }[]
+) => {
+  const leagueChatChannelIds = leagueInfos.map(({ season, cohort, division }) =>
+    getLeagueChatChannelId(season, division, cohort)
+  )
+  const [lastSeenChats, setLastSeenChats] = useState<Record<string, number>>({})
+  const [lastMessageTimes, setLastMessageTimes] = useState<
+    Record<string, number>
+  >({})
+  const [unseenChats, setUnseenChats] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!userId) return
+    Promise.all(
+      leagueChatChannelIds.map((channelId) =>
+        getChatMessages(channelId, 1).then((data) =>
+          setLastMessageTimes((prev) => ({
+            ...prev,
+            [channelId]: tsToMillis(first(data)?.created_time ?? '0'),
+          }))
+        )
+      )
+    )
+    Promise.all(
+      leagueChatChannelIds.map((channelId) =>
+        run(getLastChatInChannelQuery(channelId, userId)).then(({ data }) =>
+          setLastSeenChats((prev) => ({
+            ...prev,
+            [channelId]: tsToMillis(first(data)?.created_time ?? '0'),
+          }))
+        )
+      )
+    )
+  }, [userId, JSON.stringify(leagueChatChannelIds)])
+
+  useEffect(() => {
+    setUnseenChats(
+      filterDefined(
+        leagueChatChannelIds.map((channelId) =>
+          lastMessageTimes[channelId] > lastSeenChats[channelId]
+            ? channelId
+            : null
+        )
+      )
+    )
+  }, [lastMessageTimes, lastSeenChats])
+  return unseenChats
 }

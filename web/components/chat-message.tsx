@@ -12,22 +12,23 @@ import { first } from 'lodash'
 export const ChatMessageItem = (props: {
   chats: ChatMessage[]
   user: User | undefined | null
+  isOwner: boolean
   onReplyClick?: (chat: ChatMessage) => void
 }) => {
-  const { chats, user, onReplyClick } = props
+  const { chats, isOwner, user, onReplyClick } = props
   const chat = first(chats)
   if (!chat) return null
   const { userUsername, userAvatarUrl, userId, userName } = chat
   return (
     <Col
       className={clsx(
-        'bg-canvas-0 p-2',
+        'bg-canvas-0 p-1',
         user?.id === userId ? 'items-end' : 'items-start'
       )}
     >
       <Col
         className={clsx(
-          'bg-canvas-100 max-w-[90%] rounded-md p-2',
+          'bg-canvas-100 max-w-[90%] rounded-md p-1',
           user?.id === userId ? 'items-end' : 'items-start'
         )}
       >
@@ -38,7 +39,7 @@ export const ChatMessageItem = (props: {
             username={userUsername}
           />
           <UserLink
-            className={'text-sm'}
+            className={clsx('text-sm', isOwner ? 'font-bold' : '')}
             name={userName}
             username={userUsername}
           />
