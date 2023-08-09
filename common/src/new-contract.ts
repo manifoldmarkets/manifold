@@ -5,8 +5,6 @@ import {
   Contract,
   CPMM,
   CPMMMulti,
-  DPM,
-  FreeResponse,
   NonBet,
   CREATEABLE_OUTCOME_TYPES,
   Poll,
