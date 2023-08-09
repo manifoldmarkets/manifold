@@ -334,7 +334,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             season={season}
             division={division}
             cohort={cohort}
-            amount={price}
+            minAmount={price}
           />
         )}
         <div className={'h-0'} ref={setContainerRef} />

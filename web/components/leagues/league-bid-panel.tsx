@@ -1,23 +1,25 @@
 import { toLabel } from 'common/util/adjective-animal'
-import { formatMoney } from 'common/util/format'
 import { bidForLeague } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { useState } from 'react'
+import { AmountInput } from '../widgets/amount-input'
 
 export const LeagueBidPanel = (props: {
   season: number
   division: number
   cohort: string
-  amount: number
+  minAmount: number
 }) => {
-  const { season, division, cohort, amount } = props
+  const { season, division, cohort, minAmount } = props
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [amount, setAmount] = useState<number | undefined>(minAmount)
+  const [error, setError] = useState<string | undefined>(undefined)
 
   const submitBid = async () => {
-    if (isSubmitting) {
+    if (isSubmitting || !amount) {
       return
     }
     setIsSubmitting(true)
@@ -28,6 +30,7 @@ export const LeagueBidPanel = (props: {
       amount,
     }).catch((e) => {
       console.error(e)
+      setError(e.message)
     })
     console.log('response', response)
     setIsSubmitting(false)
@@ -46,8 +49,13 @@ export const LeagueBidPanel = (props: {
       </Row>
       <Row className="items-center gap-2">
         <Col>
-          <div className="text-ink-600 text-sm">Price</div>
-          <div>{formatMoney(amount)}</div>
+          <AmountInput
+            inputClassName="w-[150px]"
+            amount={amount}
+            onChangeAmount={setAmount}
+            error={error}
+          />
+          <div className="text-sm text-red-500">{error}</div>
         </Col>
 
         <Button
