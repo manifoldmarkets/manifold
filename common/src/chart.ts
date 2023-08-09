@@ -95,3 +95,30 @@ export const compressPoints = <P extends HistoryPoint>(
 
   return { points: maxMinBin(toCompress, 500), isCompressed: true }
 }
+
+export const compressMultiPoints = <P extends MultiPoint>(
+  points: P[],
+  min: number,
+  max: number
+) => {
+  // add buffer of 100 points on each side for nice panning.
+  const smallIndex = Math.max(points.findIndex((p) => p.x >= min) - 100, 0)
+  const bigIndex = Math.min(
+    points.findIndex((p) => p.x >= max) + 100,
+    points.length
+  )
+
+  const toCompress = points.slice(smallIndex, bigIndex)
+  if (toCompress.length < 1500) {
+    return { points: toCompress, isCompressed: false }
+  }
+
+  // downsample to 1500 points
+  const downsampled = []
+  const skipLength = Math.ceil(toCompress.length / 1500)
+  for (let i = 0; i < toCompress.length; i += skipLength) {
+    downsampled.push(toCompress[i])
+  }
+
+  return { points: downsampled, isCompressed: true }
+}

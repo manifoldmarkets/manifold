@@ -20,6 +20,7 @@ import {
   MultiPoint,
   Point,
   ValueKind,
+  compressMultiPoints,
   compressPoints,
   viewScale,
 } from 'common/chart'
@@ -209,6 +210,16 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
 
+  const [xMin, xMax] = xScale?.domain().map((d) => d.getTime()) ?? [
+    data[0].x,
+    data[data.length - 1].x,
+  ]
+
+  const { points, isCompressed } = useMemo(
+    () => compressMultiPoints(data, xMin, xMax),
+    [data, xMin, xMax]
+  )
+
   type SP = SeriesPoint<P>
   const px = useCallback((p: SP) => xScale(p.data.x), [xScale])
   const py0 = useCallback((p: SP) => yScale(p[0]), [yScale])
@@ -234,13 +245,13 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
 
   const series = useMemo(() => {
     const d3Stack = stack<P, number>()
-      .keys(range(0, Math.max(0, ...data.map(({ y }) => y.length))))
+      .keys(range(0, Math.max(0, ...points.map(({ y }) => y.length))))
       .value(({ y }, k) => y[k])
       .order(stackOrderReverse)
-    return d3Stack(data)
-  }, [data])
+    return d3Stack(points)
+  }, [points])
 
-  const selector = dataAtTimeSelector(data, xScale)
+  const selector = dataAtTimeSelector(points, xScale)
   const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
     const p = selector(mouseX)
     props.onMouseOver?.(p.prev)
