@@ -192,3 +192,6 @@ export const parseLeaguePath = (
     highlightedUserId,
   }
 }
+
+export const MIN_LEAGUE_BID = 50
+export const MIN_BID_INCREASE_FACTOR = 1.2

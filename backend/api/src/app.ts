@@ -79,6 +79,7 @@ import { getusercontractmetricswithcontracts } from './get-user-contract-metrics
 import { claimdestinysub } from './claim-destiny-sub'
 import { castpollvote } from './cast-poll-vote'
 import { getsimilargroupstocontract } from 'api/get-similar-groups-to-contract'
+import { bidforleague } from './bid-for-league'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -199,8 +200,8 @@ app.post(
   '/get-similar-groups-to-contract',
   ...apiRoute(getsimilargroupstocontract)
 )
-
 app.post('/claimdestinysub', ...apiRoute(claimdestinysub))
+app.post('/bidforleague', ...apiRoute(bidforleague))
 
 // Catch 404 errors - this should be the last route
 app.use(allowCors, (req, res) => {

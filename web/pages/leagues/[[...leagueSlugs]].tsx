@@ -15,6 +15,8 @@ import {
   getSeasonDates,
   parseLeaguePath,
   getSeasonStatus,
+  MIN_LEAGUE_BID,
+  MIN_BID_INCREASE_FACTOR,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -34,10 +36,11 @@ import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { Tabs } from 'web/components/layout/tabs'
 import { formatTime } from 'web/lib/util/time'
 import { SEO } from 'web/components/SEO'
-import { Button } from 'web/components/buttons/button'
-import { formatMoney } from 'common/util/format'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
+import { LeagueBidPanel } from 'web/components/leagues/league-bid-panel'
+import { useLeagueBid } from 'web/hooks/use-league-bid-txn'
+import { useUserById } from 'web/hooks/use-user-supabase'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
@@ -164,8 +167,13 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   const seasonStatus = getSeasonStatus(season)
   const seasonEnd = getSeasonDates(season).end
 
+  const leagueBid = useLeagueBid(season, division, cohort)
+  const price = leagueBid
+    ? MIN_BID_INCREASE_FACTOR * leagueBid.amount
+    : MIN_LEAGUE_BID
+  const loadedOwner = useUserById(leagueBid?.fromId)
+  const owner = leagueBid ? loadedOwner : undefined
   const isBuyPeriod = true
-  const owner = user
 
   return (
     <Page>
@@ -282,28 +290,12 @@ export default function Leagues(props: { rows: league_user_info[] }) {
         )}
 
         {isBuyPeriod && (
-          <Col className="gap-2 border px-3 py-2">
-            <Row className="items-center gap-2">
-              <div className="text-ink-600 text-sm">
-                Bid to own this league for the season{' '}
-                <InfoTooltip
-                  text={
-                    'At the end of the season, the owner of the league will gain mana equal to the total mana earned of every user in the league.'
-                  }
-                />
-              </div>
-            </Row>
-            <Row className="items-center gap-2">
-              <Col>
-                <div className="text-ink-600 text-sm">Price</div>
-                <div>{formatMoney(1000)}</div>
-              </Col>
-
-              <Button color="indigo" size="sm">
-                Place bid for {toLabel(cohort)}
-              </Button>
-            </Row>
-          </Col>
+          <LeagueBidPanel
+            season={season}
+            division={division}
+            cohort={cohort}
+            amount={price}
+          />
         )}
 
         <Tabs
