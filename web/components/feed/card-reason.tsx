@@ -4,9 +4,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { HOUR_MS } from 'common/util/time'
 import { Contract } from 'common/contract'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
-import { Row } from '../layout/row'
 import clsx from 'clsx'
-import { BiTrendingDown, BiTrendingUp } from 'react-icons/bi'
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
