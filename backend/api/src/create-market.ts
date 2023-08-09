@@ -18,10 +18,10 @@ import {
   Contract,
   CPMMBinaryContract,
   CPMMMultiContract,
+  CREATEABLE_OUTCOME_TYPES,
   FreeResponseContract,
   MAX_QUESTION_LENGTH,
   NumericContract,
-  OUTCOME_TYPES,
   VISIBILITIES,
 } from 'common/contract'
 import { getAnte } from 'common/economy'
@@ -56,7 +56,7 @@ export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
 })
 
-export async function createMarketHelper(body: schema, auth: AuthedUser) {
+export async function createMarketHelper(body: any, auth: AuthedUser) {
   const {
     question,
     description,
@@ -129,7 +129,6 @@ export async function createMarketHelper(body: schema, auth: AuthedUser) {
       closeTimestamp,
       visibility,
       isTwitchContract ? true : undefined,
-      NUMERIC_BUCKET_COUNT,
       min ?? 0,
       max ?? 0,
       isLogScale ?? false,
@@ -361,7 +360,7 @@ function validateMarketBody(body: any) {
     )
   }
 
-  if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
+  if (outcomeType === 'PSEUDO_NUMERIC') {
     let initialValue
     ;({ min, max, initialValue, isLogScale } = validate(numericSchema, body))
     if (max - min <= 0.01 || initialValue <= min || initialValue >= max)
@@ -578,12 +577,14 @@ const bodySchema = z.object({
       'Close time must be in the future.'
     )
     .optional(),
-  outcomeType: z.enum(OUTCOME_TYPES),
+  outcomeType: z.enum(CREATEABLE_OUTCOME_TYPES),
   groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
   visibility: z.enum(VISIBILITIES).optional(),
   isTwitchContract: z.boolean().optional(),
   utcOffset: z.number().optional(),
 })
+
+export type CreateableOutcomeType = z.infer<typeof bodySchema>['outcomeType']
 
 const binarySchema = z.object({
   initialProb: z.number().min(1).max(99),
@@ -612,10 +613,3 @@ const bountiedQuestionSchema = z.object({
 const pollSchema = z.object({
   answers: z.string().trim().min(1).array().min(2).max(MAX_ANSWERS),
 })
-
-type schema = z.infer<typeof bodySchema> &
-  (z.infer<typeof binarySchema> | {}) &
-  (z.infer<typeof numericSchema> | {}) &
-  (z.infer<typeof multipleChoiceSchema> | {}) &
-  (z.infer<typeof bountiedQuestionSchema> | {}) &
-  (z.infer<typeof pollSchema> | {})

@@ -297,14 +297,10 @@ export type MultiContract = (
 export type OutcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
-export const OUTCOME_TYPES = [
+export const CREATEABLE_OUTCOME_TYPES = [
   'BINARY',
   'MULTIPLE_CHOICE',
-  'FREE_RESPONSE',
   'PSEUDO_NUMERIC',
-  'NUMERIC',
-  'CERT',
-  'QUADRATIC_FUNDING',
   'STONK',
   'BOUNTIED_QUESTION',
   'POLL',
