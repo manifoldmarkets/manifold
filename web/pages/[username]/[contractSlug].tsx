@@ -41,7 +41,7 @@ import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
-import { TitleOrEdit } from 'web/components/contract/title-edit'
+import { EditableQuestionTitle } from 'web/components/contract/title-edit'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -437,7 +437,7 @@ export function ContractPageContent(props: {
                     isLarge
                     className="mr-1"
                   />
-                  <TitleOrEdit
+                  <EditableQuestionTitle
                     contract={contract}
                     canEdit={isAdmin || isCreator}
                   />
