@@ -262,12 +262,16 @@ function DetailedCard(props: {
           </Row>
           <CardReason item={item} contract={contract} />
         </Row>
-        <Row className={'items-center justify-between gap-4'}>
-          <Row className="grow">
+        <div
+          className={
+            'flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:justify-between'
+          }
+        >
+          <Row className="grow items-start">
             <VisibilityIcon contract={contract} /> {contract.question}
           </Row>
-          <Col>
-            <Row className="items-center gap-2">
+          <Col className="w-full sm:w-min">
+            <Row className="w-full items-center justify-between gap-2 sm:w-min">
               {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
                 <ContractStatusLabel
                   className={'-mt-1 text-lg font-bold'}
@@ -279,7 +283,7 @@ function DetailedCard(props: {
               )}
             </Row>
           </Col>
-        </Row>
+        </div>
       </Col>
 
       {contract.outcomeType === 'POLL' && (
