@@ -19,7 +19,7 @@ export function useLeagueBid(season: number, division: number, cohort: string) {
       if (maxBid) setMaxBidTxn(maxBid)
       else setMaxBidTxn(undefined)
     })
-  }, [setMaxBidTxn])
+  }, [setMaxBidTxn, season, division, cohort])
 
   return maxBidTxn
 }
