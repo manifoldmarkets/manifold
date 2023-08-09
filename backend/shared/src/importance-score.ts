@@ -9,10 +9,7 @@ import {
   YEAR_MS,
 } from 'common/util/time'
 import { log } from 'shared/utils'
-import {
-  BountiedQuestionContract,
-  Contract,
-} from 'common/contract'
+import { BountiedQuestionContract, Contract } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import { clamp, sortBy } from 'lodash'
 import { logit } from 'common/util/math'
@@ -297,9 +294,9 @@ export const computeContractScores = (
     uncertainness
 
   const rawPollImportance =
-    normalize(traderHour, 20) +
-    normalize(todayScore, 100) +
-    newness +
+    2 * normalize(traderHour, 20) +
+    2 * normalize(todayScore, 100) +
+    2 * newness +
     commentScore +
     normalize(thisWeekScore, 200) +
     normalize(contract.uniqueBettorCount, 1000)
@@ -308,7 +305,7 @@ export const computeContractScores = (
     outcomeType === 'BOUNTIED_QUESTION'
       ? bountiedImportanceScore(contract, newness, commentScore)
       : outcomeType === 'POLL'
-      ? normalize(rawPollImportance, 4) // increase max as polls catch on
+      ? normalize(rawPollImportance, 5) // increase max as polls catch on
       : normalize(rawImportance, 8)
 
   return {
