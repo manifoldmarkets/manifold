@@ -460,19 +460,20 @@ function ProfilePublicStats(props: {
         Calibration
       </SiteLink>
 
-      {rating && (
+      {rating && reviewCount > 0 && (
         <button
           className="group flex gap-0.5"
           onClick={() => setReviewsOpen(true)}
         >
-          <span className="font-semibold">{rating.toFixed(1)}</span>
-          <StarDisplay rating={rating} />
-          <span>
-            (
-            <span className="decoration-primary-400 decoration-2 group-hover:underline">
-              {reviewCount} Reviews
-            </span>
-            )
+          {(reviewCount > 3 || rating < 3) && (
+            <>
+              <span className="font-semibold">{rating.toFixed(1)}</span>
+              <StarDisplay rating={rating} />
+            </>
+          )}
+
+          <span className="decoration-primary-400 decoration-2 group-hover:underline">
+            {reviewCount} Review{reviewCount === 1 ? '' : 's'}
           </span>
         </button>
       )}
