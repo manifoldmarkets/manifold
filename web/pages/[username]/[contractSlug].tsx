@@ -252,7 +252,7 @@ export function ContractPageContent(props: {
             obj: { userAvatarUrl: bet.userAvatarUrl },
           }))
 
-    return [...(oldPoints ?? []), ...newPoints, ...points]
+    return [...(oldPoints ?? []), ...points, ...newPoints]
   }, [oldBets, contractParams.historyData.points, newBets])
 
   const {
