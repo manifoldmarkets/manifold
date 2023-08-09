@@ -23,7 +23,7 @@ AS $$
   ),
 
   negative_counts AS (
-    SELECT 2 * COUNT(*) AS count FROM avg_ratings WHERE avg_rating < 4.0
+    SELECT COUNT(*) AS count FROM avg_ratings WHERE avg_rating < 4.0
   ),
 
   -- calculate lower bound of 95th percentile confidence interval: https://www.evanmiller.org/how-not-to-sort-by-average-rating.html
@@ -37,8 +37,8 @@ AS $$
     FROM positive_counts, negative_counts
   )
 
-  SELECT total_count.count as count,
+  SELECT total_count.count                               as count,
          -- squash with sigmoid, multiply by 5
          5 / (1 + POW(2.71828, -10*(rating.rating-0.5))) AS rating
-  FROM total_count, rating;
+  FROM total_count,rating;
 $$;
