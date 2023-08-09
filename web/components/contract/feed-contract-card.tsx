@@ -26,7 +26,7 @@ import { useUser } from 'web/hooks/use-user'
 import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { AnswersPanel } from '../answers/answers-panel'
-import { BetRow } from '../bet/bet-row'
+import { BetButton } from '../bet/feed-bet-button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { CommentsButton } from '../comments/comments-button'
@@ -169,7 +169,7 @@ function SimpleCard(props: {
 
       {isBinaryCpmm && (
         <div className="self-end">
-          <BetRow contract={contract} user={user} />
+          <BetButton contract={contract} user={user} />
         </div>
       )}
 
@@ -211,12 +211,6 @@ function DetailedCard(props: {
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
   const path = contractPath(contract)
-  const { probChange } = getMarketMovementInfo(
-    contract,
-    item?.dataType,
-    item?.data
-  )
-
   const statusInlineWithUserlink =
     item && !item.isCopied && item.dataType === 'new_contract'
   const metrics = useSavedContractMetrics(contract)
@@ -266,36 +260,25 @@ function DetailedCard(props: {
               </span>
             )}
           </Row>
-          <CardReason item={item} />
+          <CardReason item={item} contract={contract} />
         </Row>
-        <Row className={'justify-between gap-4'}>
+        <Row className={'items-center justify-between gap-4'}>
           <Row className="grow">
             <VisibilityIcon contract={contract} /> {contract.question}
           </Row>
-          <Col className={'items-end'}>
-            {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-              <ContractStatusLabel
-                className={'-mt-1 text-lg font-bold'}
-                contract={contract}
-              />
-            )}
-            <span>
-              {probChange && (
-                <span
-                  className={clsx(
-                    'font-normal',
-                    probChange > 0 ? 'text-teal-500' : 'text-scarlet-500'
-                  )}
-                >
-                  {probChange > 0 ? '+' : ''}
-                  {probChange}%
-                </span>
+          <Col>
+            <Row className="items-center gap-2">
+              {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
+                <ContractStatusLabel
+                  className={'-mt-1 text-lg font-bold'}
+                  contract={contract}
+                />
               )}
-            </span>
+              {isBinaryCpmm && !isClosed && (
+                <BetButton contract={contract} user={user} className="h-min" />
+              )}
+            </Row>
           </Col>
-          {isBinaryCpmm && !isClosed && (
-            <BetRow contract={contract} user={user} className="h-min" />
-          )}
         </Row>
       </Col>
 

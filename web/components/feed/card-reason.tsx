@@ -2,9 +2,48 @@ import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { Tooltip } from '../widgets/tooltip'
 import { HOUR_MS } from 'common/util/time'
+import { Contract } from 'common/contract'
+import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
+import { Row } from '../layout/row'
+import clsx from 'clsx'
+import { BiTrendingDown, BiTrendingUp } from 'react-icons/bi'
 
-export function CardReason(props: { item: FeedTimelineItem | undefined }) {
-  const { item } = props
+export function CardReason(props: {
+  item: FeedTimelineItem | undefined
+  contract: Contract
+}) {
+  const { item, contract } = props
+  const { probChange } = getMarketMovementInfo(
+    contract,
+    item?.dataType,
+    item?.data
+  )
+  const positiveChange = probChange && probChange > 0
+
+  if (!item || item.isCopied) {
+    return <></>
+  }
+
+  if (item.dataType == 'contract_probability_changed' && probChange) {
+    return (
+      <Row
+        className={clsx(
+          'text-ink-500 items-center gap-1 rounded-full px-2 text-sm',
+          positiveChange
+            ? 'bg-teal-300/20 text-teal-600 dark:text-teal-300'
+            : 'dark:text-scarlet-200 text-scarlet-600 bg-scarlet-500/10'
+        )}
+      >
+        <span>
+          <span className="font-bold">
+            {positiveChange ? '+' : ''}
+            {probChange}%
+          </span>{' '}
+          today
+        </span>
+      </Row>
+    )
+  }
   return (
     <>
       {item &&
