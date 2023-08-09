@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import Link from 'next/link'
 import Router from 'next/router'
 
 import { Contract, contractPath } from 'common/contract'
@@ -27,17 +26,15 @@ import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { AnswersPanel } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
+import { CommentsButton } from '../comments/comments-button'
+import { CardReason } from '../feed/card-reason'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { CommentsButton } from '../comments/comments-button'
+import { PollPanel } from '../poll/poll-panel'
+import { ClickFrame } from '../widgets/click-frame'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
-import { ClickFrame } from '../widgets/click-frame'
-import { HOUR_MS } from 'common/util/time'
-import { PollPanel } from '../poll/poll-panel'
-import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
-import { CardReason } from '../feed/card-reason'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -154,24 +151,26 @@ function SimpleCard(props: {
         e.currentTarget.focus()
       }}
     >
-      <Row className="items-start justify-between gap-1">
-        <Col>
-          <Row className={'items-start gap-2'}>
-            <VisibilityIcon contract={contract} /> {contract.question}
+      <div
+        className={
+          'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
+        }
+      >
+        <Row className="grow items-start">
+          <VisibilityIcon contract={contract} /> {contract.question}
+        </Row>
+        <Col className="w-full sm:w-min sm:items-start">
+          <Row className="w-full items-center justify-end gap-3 sm:w-min">
+            <ContractStatusLabel
+              className={'text-lg font-bold'}
+              contract={contract}
+            />
+            {isBinaryCpmm && !isClosed && (
+              <BetButton contract={contract} user={user} className="h-min" />
+            )}
           </Row>
         </Col>
-        <Col className={'items-end'}>
-          <Tooltip text={item?.reasonDescription} placement={'left'}>
-            <ContractStatusLabel className={'font-bold'} contract={contract} />
-          </Tooltip>
-        </Col>
-      </Row>
-
-      {isBinaryCpmm && (
-        <div className="self-end">
-          <BetButton contract={contract} user={user} />
-        </div>
-      )}
+      </div>
 
       {children}
       <Col>
