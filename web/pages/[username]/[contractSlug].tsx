@@ -39,7 +39,6 @@ import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
-import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
 import { EditableQuestionTitle } from 'web/components/contract/title-edit'
 import { Col } from 'web/components/layout/col'
@@ -521,10 +520,6 @@ export function ContractPageContent(props: {
                     isCreator={!isAdmin}
                     contract={contract}
                   />
-                </GradientContainer>
-              ) : outcomeType === 'QUADRATIC_FUNDING' ? (
-                <GradientContainer className="my-2">
-                  <QfResolutionPanel contract={contract} />
                 </GradientContainer>
               ) : null)}
 
