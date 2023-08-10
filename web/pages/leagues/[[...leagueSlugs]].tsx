@@ -187,8 +187,8 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   const { demotion, promotion, doublePromotion } =
     getDemotionAndPromotionCount(division)
 
-  const MARKER = '●️'
-  const OWNER_MARKER = '★'
+  const MARKER = '★'
+  const OWNER_MARKER = '🛒'
   const seasonStatus = getSeasonStatus(season)
   const seasonEnd = getSeasonDates(season).end
 
