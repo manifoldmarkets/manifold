@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { getProbability } from 'common/calculate'
-import { getValueFromBucket } from 'common/calculate-dpm'
 import {
   BinaryContract,
   Contract,
@@ -17,10 +16,9 @@ export function OutcomeLabel(props: {
   contract: Contract
   outcome: resolution | string
   truncate: 'short' | 'long' | 'none'
-  value?: number
   answerId?: string
 }) {
-  const { outcome, contract, truncate, value, answerId } = props
+  const { outcome, contract, truncate, answerId } = props
   const { outcomeType, mechanism } = contract
 
   if (outcomeType === 'PSEUDO_NUMERIC')
@@ -29,16 +27,11 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
 
-  if (outcomeType === 'NUMERIC')
-    return (
-      <span className="text-blue-500">
-        {value ?? getValueFromBucket(outcome, contract)}
-      </span>
-    )
+  if (outcomeType === 'NUMERIC') return <></>
 
-  if (outcomeType === 'CERT' || outcomeType === 'QUADRATIC_FUNDING') {
-    return <span>TODO Cert outcome label</span>
-  }
+  if (outcomeType === 'CERT' || outcomeType === 'QUADRATIC_FUNDING')
+    return <></>
+
   if (outcomeType === 'STONK') {
     return <StonkOutcomeLabel outcome={outcome as any} />
   }

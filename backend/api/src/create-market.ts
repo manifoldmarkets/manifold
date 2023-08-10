@@ -5,12 +5,10 @@ import { z } from 'zod'
 import { marked } from 'marked'
 import { runPostBountyTxn } from 'shared/txn/run-bounty-txn'
 
-import { MAX_ANSWERS, getNoneAnswer } from 'common/answer'
+import { MAX_ANSWERS } from 'common/answer'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   getCpmmInitialLiquidity,
-  getFreeAnswerAnte,
-  getNumericAnte,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import {
@@ -19,17 +17,13 @@ import {
   CPMMBinaryContract,
   CPMMMultiContract,
   CREATEABLE_OUTCOME_TYPES,
-  FreeResponseContract,
   MAX_QUESTION_LENGTH,
-  NumericContract,
   VISIBILITIES,
 } from 'common/contract'
 import { getAnte } from 'common/economy'
 import { MAX_ID_LENGTH } from 'common/group'
 import { getNewContract } from 'common/new-contract'
-import { NUMERIC_BUCKET_COUNT } from 'common/numeric-constants'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import { QfAddPoolTxn } from 'common/txn'
 import {
   getAvailableBalancePerQuestion,
   marketCreationCosts,
@@ -37,7 +31,6 @@ import {
 } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import { mintAndPoolCert } from 'shared/helpers/cert-txns'
 import { generateEmbeddings, getCloseDate } from 'shared/helpers/openai-utils'
 import { getUser, htmlToRichText, isProd } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
@@ -187,7 +180,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     )
   }
 
-  await generateAntes(userId, user, contract, outcomeType, ante)
+  await generateAntes(userId, contract, outcomeType, ante)
   const db = createSupabaseClient()
 
   await generateContractEmbeddings(contract, db)
@@ -488,7 +481,6 @@ async function createAnswers(contract: CPMMMultiContract) {
 
 async function generateAntes(
   providerId: string,
-  user: User,
   contract: Contract,
   outcomeType: string,
   ante: number
@@ -511,57 +503,6 @@ async function generateAntes(
     )
 
     await liquidityDoc.set(lp)
-  } else if (outcomeType === 'FREE_RESPONSE') {
-    const noneAnswerDoc = firestore
-      .collection(`contracts/${contract.id}/answers`)
-      .doc('0')
-
-    const noneAnswer = getNoneAnswer(contract.id, user)
-    await noneAnswerDoc.set(noneAnswer)
-
-    const anteBetDoc = firestore
-      .collection(`contracts/${contract.id}/bets`)
-      .doc()
-
-    const anteBet = getFreeAnswerAnte(
-      providerId,
-      contract as FreeResponseContract,
-      anteBetDoc.id
-    )
-    await anteBetDoc.set(anteBet)
-  } else if (outcomeType === 'NUMERIC') {
-    const anteBetDoc = firestore
-      .collection(`contracts/${contract.id}/bets`)
-      .doc()
-
-    const anteBet = getNumericAnte(
-      providerId,
-      contract as NumericContract,
-      ante,
-      anteBetDoc.id
-    )
-
-    await anteBetDoc.set(anteBet)
-  } else if (outcomeType === 'CERT') {
-    const DEFAULT_SHARES = 10_000
-    // Unlike other contracts which initializing info into the contract's doc or subcollection,
-    // certs have the mint and pool specified in txn
-    await mintAndPoolCert(providerId, contract.id, DEFAULT_SHARES, ante)
-  } else if (outcomeType === 'QUADRATIC_FUNDING') {
-    const txnDoc = firestore.collection('txns').doc()
-    const txn: QfAddPoolTxn = {
-      id: txnDoc.id,
-      category: 'QF_ADD_POOL',
-      createdTime: Date.now(),
-      fromId: providerId,
-      fromType: 'USER',
-      toId: contract.id,
-      toType: 'CONTRACT',
-      amount: ante,
-      token: 'M$',
-      qfId: contract.id,
-    }
-    await txnDoc.set(txn)
   }
 }
 

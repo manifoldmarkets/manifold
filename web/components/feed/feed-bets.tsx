@@ -236,7 +236,6 @@ export function BetStatusText(props: {
           <OutcomeLabel
             outcome={outcome}
             answerId={answerId}
-            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />{' '}
@@ -248,7 +247,6 @@ export function BetStatusText(props: {
           <OutcomeLabel
             outcome={outcome}
             answerId={answerId}
-            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />{' '}

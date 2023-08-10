@@ -33,22 +33,6 @@ export type DpmAnswer = {
   text: string
 }
 
-export const getNoneAnswer = (contractId: string, creator: User) => {
-  const { username, name, avatarUrl } = creator
-
-  return {
-    id: '0',
-    number: 0,
-    contractId,
-    createdTime: Date.now(),
-    userId: creator.id,
-    username,
-    name,
-    avatarUrl,
-    text: 'None',
-  }
-}
-
 export const MAX_ANSWER_LENGTH = 240
 
 export const MAX_ANSWERS = 100

@@ -1,14 +1,12 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
-import { Bet, NumericBet } from './bet'
-import { Contract, CPMMContract, DPMContract } from './contract'
+import { Bet } from './bet'
+import { Contract, CPMMContract, StillOpenDPMContract } from './contract'
 import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import {
   getDpmCancelPayouts,
-  getDpmMktPayouts,
   getDpmStandardPayouts,
-  getNumericDpmPayouts,
   getPayoutsMultiOutcome,
 } from './payouts-dpm'
 import {
@@ -68,13 +66,7 @@ export const getPayouts = (
     )
   }
   if (contract.mechanism === 'dpm-2') {
-    return getDpmPayouts(
-      outcome,
-      contract,
-      bets,
-      resolutions,
-      resolutionProbability
-    )
+    return getDpmPayouts(outcome, contract as any, bets, resolutions)
   }
   if (contract.mechanism === 'cpmm-multi-1') {
     if (outcome === 'CANCEL') {
@@ -117,17 +109,15 @@ export const getFixedPayouts = (
   }
 }
 
-export const getDpmPayouts = (
+const getDpmPayouts = (
   outcome: string | undefined,
-  contract: DPMContract,
+  contract: StillOpenDPMContract,
   bets: Bet[],
   resolutions?: {
     [outcome: string]: number
-  },
-  resolutionProbability?: number
+  }
 ): PayoutInfo => {
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
-  const { outcomeType } = contract
 
   switch (outcome) {
     case 'YES':
@@ -135,18 +125,13 @@ export const getDpmPayouts = (
       return getDpmStandardPayouts(outcome, contract, openBets)
 
     case 'MKT':
-      return outcomeType === 'FREE_RESPONSE' ||
-        outcomeType === 'MULTIPLE_CHOICE' // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        ? getPayoutsMultiOutcome(resolutions!, contract, openBets)
-        : getDpmMktPayouts(contract, openBets, resolutionProbability)
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return getPayoutsMultiOutcome(resolutions!, contract, openBets)
     case 'CANCEL':
     case undefined:
       return getDpmCancelPayouts(contract, openBets)
 
     default:
-      if (outcomeType === 'NUMERIC')
-        return getNumericDpmPayouts(outcome, contract, openBets as NumericBet[])
-
       // Outcome is a free response answer id.
       return getDpmStandardPayouts(outcome, contract, openBets)
   }

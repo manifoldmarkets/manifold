@@ -134,6 +134,10 @@ export type CPMMStonkContract = StonkContract & CPMM
 export type BountiedQuestionContract = Contract & BountiedQuestion & NonBet
 export type PollContract = Contract & Poll & NonBet
 
+export type StillOpenDPMContract =
+  | DpmMultipleChoiceContract
+  | (FreeResponseContract & DPM)
+
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
   | PseudoNumericContract

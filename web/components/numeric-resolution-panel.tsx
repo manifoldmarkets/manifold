@@ -4,7 +4,7 @@ import { User } from 'web/lib/firebase/users'
 import { NumberCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
-import { NumericContract, PseudoNumericContract } from 'common/contract'
+import { PseudoNumericContract } from 'common/contract'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { BucketInput } from './widgets/bucket-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
@@ -28,7 +28,7 @@ export function NumericResolutionPanel(props: {
   isAdmin: boolean
   isCreator: boolean
   creator: User
-  contract: NumericContract | PseudoNumericContract
+  contract: PseudoNumericContract
   modalSetOpen?: (open: boolean) => void
 }) {
   const { contract, isAdmin, isCreator, modalSetOpen } = props

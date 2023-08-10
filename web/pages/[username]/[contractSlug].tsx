@@ -19,7 +19,6 @@ import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { SEO } from 'web/components/SEO'
-import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { BackButton } from 'web/components/contract/back-button'
@@ -503,7 +502,7 @@ export function ContractPageContent(props: {
             {showResolver &&
               user &&
               !resolution &&
-              (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
+              (outcomeType === 'PSEUDO_NUMERIC' ? (
                 <GradientContainer className="my-2">
                   <NumericResolutionPanel
                     isAdmin={isAdmin}
@@ -563,9 +562,6 @@ export function ContractPageContent(props: {
                 showResolver={showResolver}
                 contract={contract}
               />
-            )}
-            {outcomeType === 'NUMERIC' && allowTrade && (
-              <NumericBetPanel className="xl:hidden" contract={contract} />
             )}
 
             {isResolved && resolution !== 'CANCEL' && (

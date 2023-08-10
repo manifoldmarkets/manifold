@@ -17,7 +17,6 @@ import {
   getBinaryCpmmBetInfo,
   getNewMultiBetInfo,
   getNewMultiCpmmBetInfo,
-  getNumericBetsInfo,
 } from 'common/new-bet'
 import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
@@ -194,11 +193,11 @@ export const placeBetMain = async (
           balanceByUserId,
           expiresAt
         )
-      } else if (outcomeType == 'NUMERIC' && mechanism == 'dpm-2') {
-        const { outcome, value } = validate(numericSchema, body)
-        return getNumericBetsInfo(value, outcome, amount, contract)
       } else {
-        throw new APIError(500, 'Contract has invalid type/mechanism.')
+        throw new APIError(
+          500,
+          'Contract type/mechaism not supported (or is no longer)'
+        )
       }
     })()
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
