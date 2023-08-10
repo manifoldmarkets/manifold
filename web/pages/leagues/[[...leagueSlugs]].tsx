@@ -317,7 +317,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
         </Col>
 
         {owner && (
-          <Col className="gap-2">
+          <Col className="mx-3 mb-2 gap-2">
             <div className="text-ink-600 text-sm">
               Owner of {toLabel(cohort)}
             </div>

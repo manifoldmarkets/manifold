@@ -1,4 +1,3 @@
-import { toLabel } from 'common/util/adjective-animal'
 import { bidForLeague } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
@@ -73,7 +72,7 @@ export const LeagueBidPanel = (props: {
           disabled={isSubmitting}
           loading={isSubmitting}
         >
-          Place bid for {toLabel(cohort)}
+          Place bid
         </Button>
       </Row>
     </Col>
