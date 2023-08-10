@@ -1,4 +1,4 @@
-import { cloneDeep, sum, sumBy, sortBy, mapValues } from 'lodash'
+import { sum, sumBy, mapValues } from 'lodash'
 import { Bet, NumericBet } from './bet'
 import { DPMBinaryContract, DPMContract } from './contract'
 import { DPM_FEES } from './fees'

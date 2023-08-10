@@ -1,7 +1,6 @@
 import { sum, groupBy, sumBy, mapValues } from 'lodash'
 
-import { Bet, NumericBet } from './bet'
-import { deductDpmFees, getDpmProbability } from './calculate-dpm'
+import { Bet } from './bet'
 import { DPMContract, StillOpenDPMContract } from './contract'
 import { DPM_CREATOR_FEE, DPM_FEES, DPM_PLATFORM_FEE } from './fees'
 import { addObjects } from './util/object'
