@@ -183,7 +183,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
 
   const leagueBid = useLeagueBid(season, division, cohort)
   const price = leagueBid
-    ? MIN_BID_INCREASE_FACTOR * leagueBid.amount
+    ? Math.ceil(MIN_BID_INCREASE_FACTOR * leagueBid.amount)
     : MIN_LEAGUE_BID
   const loadedOwner = useUserById(leagueBid?.fromId)
   const owner = leagueBid ? loadedOwner : undefined

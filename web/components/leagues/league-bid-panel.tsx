@@ -4,7 +4,7 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AmountInput } from '../widgets/amount-input'
 
 export const LeagueBidPanel = (props: {
@@ -17,6 +17,10 @@ export const LeagueBidPanel = (props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [amount, setAmount] = useState<number | undefined>(minAmount)
   const [error, setError] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    setAmount(minAmount)
+  }, [minAmount])
 
   const submitBid = async () => {
     if (isSubmitting || !amount) {
@@ -31,7 +35,11 @@ export const LeagueBidPanel = (props: {
     }).catch((e) => {
       console.error(e)
       setError(e.message)
+      return { error: e }
     })
+    if (!response.error) {
+      setError(undefined)
+    }
     console.log('response', response)
     setIsSubmitting(false)
   }

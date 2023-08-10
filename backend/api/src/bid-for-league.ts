@@ -11,6 +11,7 @@ import {
   MIN_LEAGUE_BID,
 } from 'common/leagues'
 import { getLeagueChatChannelId } from 'common/league-chat'
+import { formatMoney } from 'common/util/format'
 
 const schema = z.object({
   season: z.number(),
@@ -59,9 +60,9 @@ export const bidforleague = authEndpoint(async (req, auth) => {
     if (maxBid && amount < maxBid.amount * MIN_BID_INCREASE_FACTOR) {
       throw new APIError(
         403,
-        'Bid must be at least ' +
-          MIN_BID_INCREASE_FACTOR +
-          ' times higher than current.'
+        `Bid must be at least ${formatMoney(
+          Math.ceil(maxBid.amount * MIN_BID_INCREASE_FACTOR)
+        )}`
       )
     }
 
