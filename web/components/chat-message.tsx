@@ -28,7 +28,7 @@ export const ChatMessageItem = (props: {
     >
       <Col
         className={clsx(
-          'bg-canvas-100 w-full max-w-[90%] rounded-md px-2 py-1.5',
+          'bg-canvas-100 max-w-[90%] rounded-md px-2 py-1.5',
           user?.id === userId ? 'items-end' : 'items-start'
         )}
       >
