@@ -7,7 +7,7 @@ import {
 import { getContractMetricsForContractId } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { partition } from 'lodash'
+import { partition, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useState } from 'react'
 import { SortRow } from 'web/components/contract/contract-tabs'
 import { Col } from 'web/components/layout/col'
@@ -80,16 +80,8 @@ export const BinaryUserPositionsTable = memo(
           .from('user_contract_metrics')
           .select('*', { count: 'exact', head: true })
           .eq('contract_id', contractId)
-      ).then((res) => {
-        setTotalPositions?.(res.count)
-      })
-      run(
-        db
-          .from('user_contract_metrics')
-          .select('*', { count: 'exact', head: true })
-          .eq('contract_id', contractId)
           .not('total_shares_no', 'is', null)
-          .gt('total_shares_no', 1)
+          .gt('total_shares_no', 0)
       ).then((res) => {
         setTotalNoPositions?.(res.count)
       })
@@ -99,24 +91,28 @@ export const BinaryUserPositionsTable = memo(
           .select('*', { count: 'exact', head: true })
           .eq('contract_id', contractId)
           .not('total_shares_yes', 'is', null)
-          .gt('total_shares_yes', 1)
+          .gt('total_shares_yes', 0)
       ).then((res) => {
         setTotalYesPositions?.(res.count)
       })
     }, [JSON.stringify(positions)])
+
+    useEffect(() => {
+      setTotalPositions?.(totalYesPositions + totalNoPositions)
+    }, [totalNoPositions, totalYesPositions])
 
     const yesPositionsSorted =
       sortBy === 'shares' ? positions.YES ?? [] : positiveProfitPositions
     const noPositionsSorted =
       sortBy === 'shares' ? positions.NO ?? [] : negativeProfitPositions
 
-    const visibleYesPositions = yesPositionsSorted.slice(
-      page * pageSize,
-      (page + 1) * pageSize
+    const visibleYesPositions = uniqBy(
+      yesPositionsSorted.slice(page * pageSize, (page + 1) * pageSize),
+      'userId'
     )
-    const visibleNoPositions = noPositionsSorted.slice(
-      page * pageSize,
-      (page + 1) * pageSize
+    const visibleNoPositions = uniqBy(
+      noPositionsSorted.slice(page * pageSize, (page + 1) * pageSize),
+      'userId'
     )
     const largestColumnLength =
       yesPositionsSorted.length > noPositionsSorted.length
