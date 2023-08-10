@@ -15,12 +15,11 @@ export const ChatMessageItem = forwardRef(
     props: {
       chats: ChatMessage[]
       user: User | undefined | null
-      isOwner: boolean
       onReplyClick?: (chat: ChatMessage) => void
     },
     ref: React.Ref<HTMLDivElement>
   ) => {
-    const { chats, isOwner, user, onReplyClick } = props
+    const { chats, user, onReplyClick } = props
     const chat = first(chats)
     if (!chat) return null
     const { userUsername, userAvatarUrl, userId, userName } = chat
@@ -45,7 +44,7 @@ export const ChatMessageItem = forwardRef(
               username={userUsername}
             />
             <UserLink
-              className={clsx('text-sm', isOwner ? 'font-bold' : '')}
+              className={clsx('text-sm')}
               name={userName}
               username={userUsername}
             />

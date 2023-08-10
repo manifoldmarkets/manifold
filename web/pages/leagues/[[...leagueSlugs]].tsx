@@ -12,9 +12,6 @@ import {
   getSeasonDates,
   parseLeaguePath,
   getSeasonStatus,
-  MIN_LEAGUE_BID,
-  MIN_BID_INCREASE_FACTOR,
-  IS_BIDDING_PERIOD,
   SEASONS,
   getSeasonMonth,
   season,
@@ -34,18 +31,12 @@ import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
-import { UserLink } from 'web/components/widgets/user-link'
-import { Avatar } from 'web/components/widgets/avatar'
-import { LeagueBidPanel } from 'web/components/leagues/league-bid-panel'
-import { useLeagueBid } from 'web/hooks/use-league-bid-txn'
-import { useUserById } from 'web/hooks/use-user-supabase'
 import { LeagueChat } from 'web/components/groups/league-chat'
 import {
   getLeagueChatChannelId,
   getSeasonDivisionCohort,
 } from 'common/league-chat'
 import { useAllUnseenChatsForLeages } from 'web/hooks/use-chats'
-import { useOwnedLeagueChats } from 'web/hooks/use-leagues'
 import { Countdown } from 'web/components/widgets/countdown'
 import { formatTime } from 'web/lib/util/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -120,12 +111,11 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   const { query, isReady, replace } = useRouter()
   const { leagueSlugs } = query as { leagueSlugs: string[] }
   const leagueChannelId = getLeagueChatChannelId(season, division, cohort)
-  const yourOwnedLeagues = useOwnedLeagueChats(season, user?.id)
 
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
   const [unseenLeagueChats, setUnseenLeagueChats] = useAllUnseenChatsForLeages(
     user?.id,
-    yourOwnedLeagues,
+    [],
     {
       season,
       division,
@@ -188,20 +178,12 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     getDemotionAndPromotionCount(division)
 
   const MARKER = '★'
-  const OWNER_MARKER = '🛒'
   const seasonStatus = getSeasonStatus(season)
   const seasonEnd = getSeasonDates(season).end
 
-  const leagueBid = useLeagueBid(season, division, cohort)
-  const price = leagueBid
-    ? Math.ceil(MIN_BID_INCREASE_FACTOR * leagueBid.amount)
-    : MIN_LEAGUE_BID
-  const loadedOwner = useUserById(leagueBid?.fromId)
-  const owner = leagueBid ? loadedOwner : undefined
   const showNotif = (cohort: string) =>
     query.tab !== 'chat' && unseenCohortChats.includes(cohort)
 
-  const showBidding = IS_BIDDING_PERIOD && season === 4
   return (
     <Page>
       <SEO
@@ -277,11 +259,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             >
               {divisions.map((division) => (
                 <option key={division} value={division}>
-                  {division === userDivision
-                    ? MARKER
-                    : yourOwnedLeagues.filter((l) => l.division === division)[0]
-                    ? OWNER_MARKER
-                    : ''}{' '}
+                  {division === userDivision ? MARKER : ''}{' '}
                   {unseenLeagueChats
                     .map((c) => getSeasonDivisionCohort(c).division)
                     .includes(division) &&
@@ -299,48 +277,13 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             >
               {divisionToCohorts[division]?.map((cohort) => (
                 <option key={cohort} value={cohort}>
-                  {cohort === userCohort
-                    ? MARKER
-                    : yourOwnedLeagues.filter(
-                        (l) => l.division === division && l.cohort === cohort
-                      )[0]
-                    ? OWNER_MARKER
-                    : ''}{' '}
-                  {toLabel(cohort)}
+                  {cohort === userCohort ? MARKER : ''} {toLabel(cohort)}
                   {showNotif(cohort) && '🔵'}{' '}
                 </option>
               ))}
             </Select>
           </Row>
         </Col>
-
-        {(showBidding || owner) && (
-          <Row className="mx-3 justify-between gap-2 sm:mb-2">
-            {showBidding && (
-              <LeagueBidPanel
-                season={season}
-                division={division}
-                cohort={cohort}
-                minAmount={price}
-              />
-            )}
-            {owner && (
-              <Col className={'gap-2'}>
-                <div className="text-ink-600 text-sm">
-                  Owner of {toLabel(cohort)}
-                </div>
-                <Row className="items-center gap-2">
-                  <Avatar
-                    avatarUrl={owner.avatarUrl}
-                    username={owner.username}
-                    size={'xs'}
-                  />
-                  <UserLink name={owner.name} username={owner.username} />
-                </Row>
-              </Col>
-            )}
-          </Row>
-        )}
 
         <div className={'h-0'} ref={setContainerRef} />
         <QueryUncontrolledTabs
@@ -384,7 +327,6 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                 <LeagueChat
                   user={user}
                   channelId={leagueChannelId}
-                  ownerId={owner?.id}
                   offsetTop={(containerRef?.offsetTop ?? 0) + 47}
                 />
               ),

@@ -23,10 +23,9 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 export const LeagueChat = (props: {
   user: User | null | undefined
   channelId: string
-  ownerId: string | undefined
   offsetTop?: number
 }) => {
-  const { user, offsetTop, ownerId, channelId } = props
+  const { user, offsetTop, channelId } = props
   const [visible, setVisible] = useState(false)
   const authed = useIsAuthorized()
   const realtimeMessages = useRealtimeChatsOnLeague(channelId, 100)
@@ -129,7 +128,6 @@ export const LeagueChat = (props: {
                 key={messages[0].id}
                 chats={messages}
                 user={user}
-                isOwner={ownerId === messages[0].userId}
                 onReplyClick={onReplyClick}
                 ref={
                   i === groupedMessages.length - 1
