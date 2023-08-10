@@ -312,21 +312,23 @@ export default function Leagues(props: { rows: league_user_info[] }) {
           </Row>
         </Col>
 
-        {owner && (
+        {(IS_BIDDING_PERIOD || owner) && (
           <Row className="mx-3 gap-2 sm:mb-2 ">
-            <Col className={'gap-2'}>
-              <div className="text-ink-600 text-sm">
-                Owner of {toLabel(cohort)}
-              </div>
-              <Row className="items-center gap-2">
-                <Avatar
-                  avatarUrl={owner.avatarUrl}
-                  username={owner.username}
-                  size={'xs'}
-                />
-                <UserLink name={owner.name} username={owner.username} />
-              </Row>
-            </Col>
+            {owner && (
+              <Col className={'gap-2'}>
+                <div className="text-ink-600 text-sm">
+                  Owner of {toLabel(cohort)}
+                </div>
+                <Row className="items-center gap-2">
+                  <Avatar
+                    avatarUrl={owner.avatarUrl}
+                    username={owner.username}
+                    size={'xs'}
+                  />
+                  <UserLink name={owner.name} username={owner.username} />
+                </Row>
+              </Col>
+            )}
             {IS_BIDDING_PERIOD && (
               <LeagueBidPanel
                 season={season}
