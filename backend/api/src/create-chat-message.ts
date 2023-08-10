@@ -11,15 +11,7 @@ const postSchema = z.object({
   content: contentSchema,
   channelId: z.string(),
 })
-// TODO:
-// on create a league, create a league_chat for it, and add the first chat_message
-// when someone visits a league, get the league_chat via season, division, cohort,
-// get messages via the channel_id from that league_chat row
 
-export const MAX_COMMENT_JSON_LENGTH = 20000
-
-// For now, only supports creating a new top-level comment on a contract.
-// Replies, posts, chats are not supported yet.
 export const createchatmessage = authEndpoint(async (req, auth) => {
   const { content, channelId } = validate(postSchema, req.body)
 
