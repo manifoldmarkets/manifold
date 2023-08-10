@@ -194,7 +194,6 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     user?.id
   )
   const yourOwnedLeagues = useOwnedLeagueChats(season, user?.id)
-  console.log('yourOwnedLeagues', yourOwnedLeagues)
 
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
   const unseenLeagueChats = useAllUnseenChatsForLeages(

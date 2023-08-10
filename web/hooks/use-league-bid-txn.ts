@@ -15,7 +15,6 @@ export function useLeagueBid(season: number, division: number, cohort: string) {
   useEffect(() => {
     return listenForLeagueBidTxn(season, division, cohort, (txns) => {
       const maxBid = maxBy(txns, 'amount')
-      console.log('txns', txns)
       if (maxBid) setMaxBidTxn(maxBid)
       else setMaxBidTxn(undefined)
     })
