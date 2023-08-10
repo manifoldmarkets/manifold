@@ -49,7 +49,7 @@ export const LeagueBidPanel = (props: {
           Bid to own this league for the season{' '}
           <InfoTooltip
             text={
-              'At the end of the season, the owner of the league will gain mana equal to the total mana earned of every user in the league.'
+              'At the end of the season, the owner of the league will gain mana equal to the total mana earned of every user in the league. Note: you can lose mana if the total is negative!'
             }
           />
         </div>
