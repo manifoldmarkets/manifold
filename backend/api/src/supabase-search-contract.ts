@@ -431,7 +431,11 @@ function getSearchContractWhereSQL(
     all: 'true',
   }
   const contractTypeFilter =
-    contractType != 'ALL' ? `outcome_type = '${contractType}'` : ''
+    contractType === 'ALL'
+      ? ''
+      : contractType === 'FREE_RESPONSE'
+      ? `(outcome_type = 'FREE_RESPONSE' OR outcome_type = 'MULTIPLE_CHOICE' AND data->>'addAnswersMode' = 'ANYONE')`
+      : `outcome_type = '${contractType}'`
 
   const stonkFilter =
     hideStonks && contractType !== 'STONK' ? `outcome_type != 'STONK'` : ''
