@@ -200,6 +200,8 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   const owner = leagueBid ? loadedOwner : undefined
   const showNotif = (cohort: string) =>
     query.tab !== 'chat' && unseenCohortChats.includes(cohort)
+
+  const showBidding = IS_BIDDING_PERIOD && season === 4
   return (
     <Page>
       <SEO
@@ -312,7 +314,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
           </Row>
         </Col>
 
-        {(IS_BIDDING_PERIOD || owner) && (
+        {(showBidding || owner) && (
           <Row className="mx-3 gap-2 sm:mb-2 ">
             {owner && (
               <Col className={'gap-2'}>
@@ -329,7 +331,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                 </Row>
               </Col>
             )}
-            {IS_BIDDING_PERIOD && (
+            {showBidding && (
               <LeagueBidPanel
                 season={season}
                 division={division}
