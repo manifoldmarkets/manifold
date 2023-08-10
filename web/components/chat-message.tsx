@@ -21,11 +21,14 @@ export const ChatMessageItem = (props: {
   const { userUsername, userAvatarUrl, userId, userName } = chat
   return (
     <Col
-      className={clsx('p-1', user?.id === userId ? 'items-end' : 'items-start')}
+      className={clsx(
+        'p-0.5',
+        user?.id === userId ? 'items-end' : 'items-start'
+      )}
     >
       <Col
         className={clsx(
-          'bg-canvas-100 max-w-[90%] rounded-md p-1',
+          'bg-canvas-100 w-full max-w-[90%] rounded-md px-2 py-1.5',
           user?.id === userId ? 'items-end' : 'items-start'
         )}
       >
@@ -40,7 +43,7 @@ export const ChatMessageItem = (props: {
             name={userName}
             username={userUsername}
           />
-          <span className={' -ml-2 text-sm'}>
+          <span className={'text-sm'}>
             <RelativeTimestamp time={chat.createdTime} />
           </span>
         </Row>
