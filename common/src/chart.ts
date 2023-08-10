@@ -1,6 +1,7 @@
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
 import { Dispatch, SetStateAction } from 'react'
 import { removeUndefinedProps } from './util/object'
+import { average } from './util/math'
 
 export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
 export type MultiPoint<T = unknown> = Point<number, number[], T>
@@ -121,4 +122,26 @@ export const compressMultiPoints = <P extends MultiPoint>(
   }
 
   return { points: downsampled, isCompressed: true }
+}
+
+export function binAvg<P extends HistoryPoint>(sorted: P[], limit = 100) {
+  const length = sorted.length
+  if (length <= limit) {
+    return sorted
+  }
+
+  const min = sorted[0].x
+  const max = sorted[sorted.length - 1].x
+  const binWidth = Math.ceil((max - min) / limit)
+
+  const newPoints = []
+
+  for (let i = 0; i < limit; i++) {
+    const binStart = min + i * binWidth
+    const binEnd = binStart + binWidth
+    const binPoints = sorted.filter((p) => p.x >= binStart && p.x < binEnd)
+    newPoints.push({ x: binEnd, y: average(binPoints.map((p) => p.y)) })
+  }
+
+  return newPoints
 }

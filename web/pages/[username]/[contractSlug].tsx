@@ -1,6 +1,6 @@
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { first, last } from 'lodash'
+import { first } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -8,11 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
 import { unserializePoints } from 'common/chart'
-import {
-  ContractParams,
-  MaybeAuthedContractParams,
-  tradingAllowed,
-} from 'common/contract'
+import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
@@ -74,11 +70,8 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { linkClass } from 'web/components/widgets/site-link'
-import { useBets, useListenBets } from 'web/hooks/use-bets'
-import {
-  getDpmBetPoints,
-  getCpmmBetPoints,
-} from 'web/components/charts/contract/choice'
+import { useListenBets } from 'web/hooks/use-bets'
+import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -205,13 +198,7 @@ export function ContractPageContent(props: {
   useSaveContractVisitsLocally(user === null, contract.id)
 
   // Static props load bets in descending order by time
-  const firstBetTime = last(contractParams.historyData.bets)?.createdTime
   const lastBetTime = first(contractParams.historyData.bets)?.createdTime
-  const oldBets = useBets({
-    contractId: contract.id,
-    beforeTime: firstBetTime,
-    filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
-  })
 
   const newBets =
     useListenBets({
@@ -229,29 +216,19 @@ export function ContractPageContent(props: {
   const betPoints = useMemo(() => {
     const points = unserializePoints(contractParams.historyData.points)
 
-    const getMultiBetPoints =
-      contract.mechanism === 'dpm-2' ? getDpmBetPoints : getCpmmBetPoints
-
-    const oldPoints =
-      contract.outcomeType === 'MULTIPLE_CHOICE'
-        ? getMultiBetPoints(contract.answers as any, oldBets ?? [])
-        : (oldBets ?? []).map((bet) => ({
-            x: bet.createdTime,
-            y: bet.probAfter,
-            obj: { userAvatarUrl: bet.userAvatarUrl },
-          }))
-
     const newPoints =
       contract.outcomeType === 'MULTIPLE_CHOICE'
-        ? getMultiBetPoints(contract.answers as any, newBets)
+        ? contract.mechanism === 'cpmm-multi-1'
+          ? getMultiBetPoints(contract.answers, newBets)
+          : []
         : newBets.map((bet) => ({
             x: bet.createdTime,
             y: bet.probAfter,
             obj: { userAvatarUrl: bet.userAvatarUrl },
           }))
 
-    return [...(oldPoints ?? []), ...points, ...newPoints]
-  }, [oldBets, contractParams.historyData.points, newBets])
+    return [...points, ...newPoints]
+  }, [contractParams.historyData.points, newBets])
 
   const {
     isResolved,
@@ -283,8 +260,6 @@ export function ContractPageContent(props: {
       setShowResolver(true)
     }
   }, [isAdmin, isCreator, trustworthy, closeTime, isResolved])
-
-  const allowTrade = tradingAllowed(contract)
 
   useSaveReferral(user, {
     defaultReferrerUsername: contract.creatorUsername,
