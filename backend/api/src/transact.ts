@@ -17,7 +17,7 @@ const txnSchema = z.object({
 export const transact = authEndpoint(async (req, auth) => {
   const firestore = admin.firestore()
   const data = req.body
-  const { fromType, fromId } = validate(data, txnSchema)
+  const { fromId } = validate(txnSchema, data)
 
   if (fromId !== auth.uid)
     throw new APIError(403, 'You can only send txns from yourself!')
