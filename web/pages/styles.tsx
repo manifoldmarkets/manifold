@@ -11,6 +11,7 @@ import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { NumberInput } from 'web/components/widgets/number-input'
 import { Select } from 'web/components/widgets/select'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { RangeSlider, Slider } from 'web/components/widgets/slider'
@@ -36,11 +37,11 @@ export default function StylePage() {
         <LoadingIndicator />
       </div>
       <Subtitle>Inputs</Subtitle>
-      TODO: number input
       <div className="mb-4 flex flex-wrap gap-2">
         <Input placeholder="Input" />
         <Input disabled placeholder="Input disabled=true" />
         <Input error placeholder="Input error=true" />
+        <NumberInputExample />
       </div>
       <ExpandingInput
         className="mb-4 w-full"
@@ -201,6 +202,19 @@ function ToggleSection() {
         <ShortToggle on={disabled} setOn={setDisabled} />
       </label>
     </div>
+  )
+}
+
+function NumberInputExample() {
+  const [value, setValue] = useState<number>()
+  return (
+    <NumberInput
+      num={value}
+      onChange={setValue}
+      min={0}
+      max={69}
+      placeholder="NumberInput"
+    />
   )
 }
 

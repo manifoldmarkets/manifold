@@ -1,7 +1,6 @@
 import { ChatIcon, LockClosedIcon, UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
-import { getValueFromBucket } from 'common/calculate-dpm'
 import { Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
@@ -72,7 +71,8 @@ export function ContractStatusLabel(props: {
       )
     }
     case 'NUMERIC': {
-      const val = contract.resolutionValue ?? getValueFromBucket('', contract)
+      // all old numeric contracts are resolved
+      const val = contract.resolutionValue ?? NaN
       return (
         <span className={clsx(probTextColor, className)}>
           {getFormattedMappedValue(contract, val)}

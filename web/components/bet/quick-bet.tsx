@@ -7,22 +7,16 @@ import {
   getInvested,
   getAnswerProbability,
 } from 'common/calculate'
-import { getExpectedValue } from 'common/calculate-dpm'
 import { User } from 'common/user'
 import {
   BinaryContract,
   Contract,
   MultiContract,
-  NumericContract,
   PseudoNumericContract,
   resolution,
   StonkContract,
 } from 'common/contract'
-import {
-  formatLargeNumber,
-  formatMoney,
-  formatPercent,
-} from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -505,7 +499,7 @@ function cardText(contract: Contract, previewProb?: number) {
     case 'PSEUDO_NUMERIC':
       return formatNumericProbability(getProbability(contract), contract)
     case 'NUMERIC':
-      return formatLargeNumber(getExpectedValue(contract))
+      return 'DEPRECATED'
     // case 'MULTIPLE_CHOICE':
     case 'FREE_RESPONSE': {
       const topAnswer = getTopAnswer(contract)
@@ -602,15 +596,7 @@ function getProb(contract: Contract) {
     ? getProbability(contract)
     : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
     ? getAnswerProbability(contract, getTopAnswer(contract)?.id || '')
-    : outcomeType === 'NUMERIC'
-    ? getNumericScale(contract)
     : 1 // Should not happen
-}
-
-function getNumericScale(contract: NumericContract) {
-  const { min, max } = contract
-  const ev = getExpectedValue(contract)
-  return (ev - min) / (max - min)
 }
 
 const OUTCOME_TO_COLOR_BAR = {
