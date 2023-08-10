@@ -39,7 +39,7 @@ export const LeagueChat = (props: {
   const { height } = useWindowSize()
   const isMobile = useIsMobile()
   // Subtract bottom bar when it's showing (less than lg screen)
-  const bottomBarHeight = isMobile ? 50 : 0
+  const bottomBarHeight = isMobile ? 60 : 0
   const remainingHeight = (height ?? 0) - (offsetTop || 320) - bottomBarHeight
   useEffect(() => {
     if (isMobile) focusInput()
@@ -101,7 +101,9 @@ export const LeagueChat = (props: {
   return (
     <Col style={{ height: remainingHeight }}>
       <Col
-        className={'w-full space-y-1 overflow-x-hidden overflow-y-scroll pt-1'}
+        className={
+          'h-full w-full space-y-1 overflow-x-hidden overflow-y-scroll pt-1'
+        }
         ref={setScrollToBottomRef}
       >
         {realtimeMessages === undefined ? (

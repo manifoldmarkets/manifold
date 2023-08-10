@@ -21,10 +21,7 @@ export const ChatMessageItem = (props: {
   const { userUsername, userAvatarUrl, userId, userName } = chat
   return (
     <Col
-      className={clsx(
-        'bg-canvas-0 p-1',
-        user?.id === userId ? 'items-end' : 'items-start'
-      )}
+      className={clsx('p-1', user?.id === userId ? 'items-end' : 'items-start')}
     >
       <Col
         className={clsx(
