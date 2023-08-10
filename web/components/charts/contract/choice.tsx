@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { last, sum, sortBy, groupBy } from 'lodash'
+import { last, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 import { Bet, calculateMultiBets } from 'common/bet'

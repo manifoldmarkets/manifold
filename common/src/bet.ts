@@ -1,7 +1,6 @@
 import { groupBy } from 'lodash'
 import { Visibility } from './contract'
 import { Fees } from './fees'
-import { MultiSerializedPoint } from './chart'
 
 /************************************************
 
