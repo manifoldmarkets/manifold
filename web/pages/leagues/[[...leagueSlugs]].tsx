@@ -315,7 +315,15 @@ export default function Leagues(props: { rows: league_user_info[] }) {
         </Col>
 
         {(showBidding || owner) && (
-          <Row className="mx-3 gap-2 sm:mb-2 ">
+          <Row className="mx-3 justify-between gap-2 sm:mb-2">
+            {showBidding && (
+              <LeagueBidPanel
+                season={season}
+                division={division}
+                cohort={cohort}
+                minAmount={price}
+              />
+            )}
             {owner && (
               <Col className={'gap-2'}>
                 <div className="text-ink-600 text-sm">
@@ -330,14 +338,6 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                   <UserLink name={owner.name} username={owner.username} />
                 </Row>
               </Col>
-            )}
-            {showBidding && (
-              <LeagueBidPanel
-                season={season}
-                division={division}
-                cohort={cohort}
-                minAmount={price}
-              />
             )}
           </Row>
         )}

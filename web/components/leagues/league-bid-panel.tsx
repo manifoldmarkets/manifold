@@ -43,7 +43,7 @@ export const LeagueBidPanel = (props: {
     setIsSubmitting(false)
   }
   return (
-    <Col className="gap-2 px-2">
+    <Col className="gap-2">
       <Row className="items-center gap-2">
         <div className="text-ink-600 text-sm">
           Bid to own this league for the season{' '}
