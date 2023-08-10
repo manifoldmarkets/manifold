@@ -1,9 +1,6 @@
 import clsx from 'clsx'
 import { DpmAnswer } from 'common/answer'
-import {
-  calculateTotals,
-  totalPaid,
-} from 'common/calculate/qf'
+import { calculateTotals, totalPaid } from 'common/calculate/qf'
 import { QuadraticFundingContract, tradingAllowed } from 'common/contract'
 import { QfTxn } from 'common/txn'
 import { formatMoney } from 'common/util/format'
