@@ -33,8 +33,6 @@ import { FeedLiquidity } from '../feed/feed-liquidity'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
-import { CertInfo, CertTrades } from './cert-overview'
-import { QfTrades } from './qf-overview'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -109,20 +107,6 @@ export function ContractTabs(props: {
 
   const positionsTitle = shortFormatNumber(totalPositions) + ' Positions'
 
-  if (contract.outcomeType == 'BOUNTIED_QUESTION') {
-    return (
-      <CommentsTabContent
-        contract={contract}
-        comments={comments}
-        setCommentsLength={setTotalComments}
-        answerResponse={answerResponse}
-        onCancelAnswerResponse={onCancelAnswerResponse}
-        blockedUserIds={blockedUserIds}
-        betResponse={replyToBet}
-        clearReply={clearReply}
-      />
-    )
-  }
   return (
     <ControlledTabs
       className="mb-4"
@@ -147,7 +131,6 @@ export function ContractTabs(props: {
             />
           ),
         },
-
         totalBets > 0 &&
           contract.mechanism === 'cpmm-1' && {
             title: positionsTitle,
@@ -160,7 +143,6 @@ export function ContractTabs(props: {
               />
             ),
           },
-
         totalBets > 0 && {
           title: betsTitle,
           content: (
@@ -173,22 +155,12 @@ export function ContractTabs(props: {
             </Col>
           ),
         },
-
         userBets.length > 0 && {
           title: yourBetsTitle,
           content: (
             <ContractBetsTable contract={contract} bets={userBets} isYourBets />
           ),
-        },
-
-        contract.outcomeType === 'CERT' && [
-          { title: 'Trades', content: <CertTrades contract={contract} /> },
-          { title: 'Positions', content: <CertInfo contract={contract} /> },
-        ],
-
-        contract.outcomeType === 'QUADRATIC_FUNDING' && [
-          { title: 'History', content: <QfTrades contract={contract} /> },
-        ]
+        }
       )}
     />
   )
