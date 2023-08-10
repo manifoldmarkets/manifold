@@ -224,8 +224,8 @@ export default function LimitOrderPanel(props: {
             contract={contract}
             prob={limitProbInt}
             setProb={setLimitProbInt}
-            inputError={inputError}
-            setInputError={setInputError}
+            error={inputError}
+            onRangeError={setInputError}
             disabled={isSubmitting}
           />
         </Row>
