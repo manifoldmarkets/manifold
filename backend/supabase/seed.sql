@@ -717,6 +717,60 @@ drop policy if exists "public read" on chat_messages;
 create policy "public read" on chat_messages for
 select
   using (true);
+create index if not exists chat_messages_channel_id_idx
+    on chat_messages (channel_id, created_time desc);
+
+alter table chat_messages
+    cluster on chat_messages_channel_id_idx;
+
+create table if not exists
+    league_chats (
+                     id serial primary key,
+                     channel_id text not null, -- link to chat_messages table
+                     created_time timestamptz not null default now(),
+                     season int not null, -- integer id of season, i.e. 1 for first season, 2 for second, etc.
+                     division int not null, -- 1 (beginner) to 4 (expert)
+                     cohort text not null, -- id of cohort (group of competing users). Unique across seasons.
+                     owner_id text,
+                     unique (season, division, cohort)
+);
+
+alter table league_chats enable row level security;
+
+drop policy if exists "public read" on league_chats;
+
+create policy "public read" on league_chats for
+    select
+    using (true);
+
+create table if not exists
+    user_seen_chats (
+      id bigint generated always as identity primary key,
+      user_id text not null,
+      channel_id text not null,
+      created_time timestamptz not null default now()
+);
+
+alter table user_seen_chats enable row level security;
+
+drop policy if exists "public read" on user_seen_chats;
+
+create policy "public read" on user_seen_chats for
+    select
+    using (true);
+
+drop policy if exists "user can insert" on user_seen_chats;
+
+create policy "user can insert" on user_seen_chats for insert
+    with
+    check (true);
+
+create index if not exists user_seen_chats_created_time_desc_idx
+    on user_seen_chats (user_id, channel_id, created_time desc);
+
+alter table user_seen_chats
+    cluster on user_seen_chats_created_time_desc_idx;
+
 
 create table if not exists
   contract_follows (
@@ -1269,6 +1323,9 @@ add table user_notifications;
 
 alter publication supabase_realtime
 add table user_contract_metrics;
+
+alter publication supabase_realtime
+add table chat_messages;
 
 commit;
 

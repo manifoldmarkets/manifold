@@ -7,43 +7,62 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Content } from 'web/components/widgets/editor'
 import { User } from 'common/user'
 import { ChatMessage } from 'common/chat-message'
+import { first } from 'lodash'
 
 export const ChatMessageItem = (props: {
-  chat: ChatMessage
+  chats: ChatMessage[]
   user: User | undefined | null
+  isOwner: boolean
+  onReplyClick?: (chat: ChatMessage) => void
 }) => {
-  const { chat, user } = props
+  const { chats, isOwner, user, onReplyClick } = props
+  const chat = first(chats)
+  if (!chat) return null
+  const { userUsername, userAvatarUrl, userId, userName } = chat
   return (
     <Col
       className={clsx(
-        'bg-canvas-0 p-2',
-        user?.id === chat.userId ? 'items-end' : 'items-start'
+        'p-0.5',
+        user?.id === userId ? 'items-end' : 'items-start'
       )}
-      key={chat.id}
     >
       <Col
         className={clsx(
-          'bg-canvas-100 max-w-[90%] rounded-md p-2',
-          user?.id === chat.userId ? 'items-end' : 'items-start'
+          'bg-canvas-100 max-w-[90%] rounded-md px-2 py-1.5',
+          user?.id === userId ? 'items-end' : 'items-start'
         )}
       >
         <Row className={'items-center gap-2'}>
           <Avatar
             size={'xs'}
-            avatarUrl={chat.userAvatarUrl}
-            username={chat.userUsername}
+            avatarUrl={userAvatarUrl}
+            username={userUsername}
           />
           <UserLink
-            className={'text-sm'}
-            name={chat.userName}
-            username={chat.userUsername}
+            className={clsx('text-sm', isOwner ? 'font-bold' : '')}
+            name={userName}
+            username={userUsername}
           />
-          <span className={' -ml-2 text-sm'}>
+          <span className={'text-sm'}>
             <RelativeTimestamp time={chat.createdTime} />
           </span>
         </Row>
-        <Row className={'ml-1'}>
-          <Content content={chat.content} />
+        {chats.map((chat) => (
+          <Row key={chat.id + 'content'} className={'ml-1'}>
+            <Content content={chat.content} />
+          </Row>
+        ))}
+        <Row>
+          {user?.id !== chats[0].userId && onReplyClick && (
+            <button
+              className={
+                'self-start py-1 text-xs font-bold text-gray-500 hover:underline'
+              }
+              onClick={() => onReplyClick(chat)}
+            >
+              Reply
+            </button>
+          )}
         </Row>
       </Col>
     </Col>

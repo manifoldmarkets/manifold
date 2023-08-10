@@ -7,6 +7,7 @@ import {
   ContractResolutionPayoutTxn,
   ContractUndoResolutionPayoutTxn,
   Txn,
+  LeagueBidTxn,
 } from 'common/txn'
 import { createSupabaseDirectClient } from '../supabase/init'
 
@@ -167,6 +168,39 @@ export function runRedeemAdRewardTxn(
   const newTxnDoc = firestore.collection(`txns/`).doc()
   const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
   fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
+
+  return { status: 'success', txn }
+}
+
+export function runReturnLeagueBidTxn(
+  transaction: admin.firestore.Transaction,
+  bidTxn: LeagueBidTxn
+) {
+  const { amount, data } = bidTxn
+  if (!isFinite(amount) || amount <= 0) {
+    return { status: 'error', message: 'Invalid amount' }
+  }
+
+  const userDoc = firestore.doc(`users/${bidTxn.fromId}`)
+  transaction.update(userDoc, {
+    balance: FieldValue.increment(amount),
+    totalDeposits: FieldValue.increment(amount),
+  })
+
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn = {
+    id: newTxnDoc.id,
+    createdTime: Date.now(),
+    amount,
+    fromId: bidTxn.toId,
+    fromType: 'LEAGUE',
+    toId: bidTxn.fromId,
+    toType: 'USER',
+    category: 'LEAGUE_BID',
+    token: 'M$',
+    data,
+  }
+  transaction.create(newTxnDoc, txn)
 
   return { status: 'success', txn }
 }

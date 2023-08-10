@@ -1,4 +1,4 @@
-import { ManalinkTxn, DonationTxn, TipTxn, Txn } from 'common/txn'
+import { ManalinkTxn, DonationTxn, TipTxn, Txn, LeagueBidTxn } from 'common/txn'
 import { orderBy, query, where } from 'firebase/firestore'
 import { coll, getValues, listenForValues } from './utils'
 import { useState, useEffect } from 'react'
@@ -92,4 +92,28 @@ export function useManalinkTxns(userId: string) {
   }, [userId])
 
   return _orderBy([...fromTxns, ...toTxns], ['createdTime'], ['desc'])
+}
+
+const getLeagueBidsTxnQuery = (
+  season: number,
+  division: number,
+  cohort: string
+) =>
+  query(
+    txns,
+    where('category', '==', 'LEAGUE_BID'),
+    where('toId', '==', `${season}-${division}-${cohort}`),
+    orderBy('createdTime', 'desc')
+  )
+
+export function listenForLeagueBidTxn(
+  season: number,
+  division: number,
+  cohort: string,
+  setTxns: (txns: LeagueBidTxn[]) => void
+) {
+  return listenForValues<LeagueBidTxn>(
+    getLeagueBidsTxnQuery(season, division, cohort),
+    setTxns
+  )
 }

@@ -192,9 +192,11 @@ export function CommentInputTextArea(props: {
   editor: Editor | null
   submit: () => void
   isSubmitting: boolean
+  submitOnEnter?: boolean
   size?: EditorSize
 }) {
-  const { user, editor, submit, isSubmitting, replyTo, size } = props
+  const { user, submitOnEnter, editor, submit, isSubmitting, replyTo, size } =
+    props
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
@@ -209,7 +211,7 @@ export function CommentInputTextArea(props: {
           if (
             event.key === 'Enter' &&
             !event.shiftKey &&
-            (event.ctrlKey || event.metaKey) &&
+            (!submitOnEnter ? event.ctrlKey || event.metaKey : true) &&
             // mention list is closed
             !(view.state as any).mention$.active
           ) {
