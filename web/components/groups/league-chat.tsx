@@ -3,7 +3,7 @@ import { User } from 'common/user'
 import { useEffect, useState, useMemo } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { forEach, last, sortBy } from 'lodash'
+import { forEach, last } from 'lodash'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { ChatMessage } from 'common/chat-message'
@@ -16,6 +16,8 @@ import { useRealtimeChatsOnLeague } from 'web/hooks/use-chats'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { MINUTE_MS } from 'common/util/time'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { run } from 'common/supabase/utils'
+import { db } from 'web/lib/supabase/db'
 
 export const LeagueChat = (props: {
   user: User | null | undefined
@@ -49,7 +51,7 @@ export const LeagueChat = (props: {
   const groupedMessages = useMemo(() => {
     // Group messages with createdTime within 2 minutes of each other.
     const tempGrouped: ChatMessage[][] = []
-    forEach(sortBy(messages, 'createdTime', 'asc'), (message, i) => {
+    forEach(messages, (message, i) => {
       if (i === 0) {
         tempGrouped.push([message])
       } else {
@@ -65,13 +67,23 @@ export const LeagueChat = (props: {
     })
 
     return tempGrouped
-  }, [messages])
+  }, [messages.length])
+
+  useEffect(() => {
+    if (!user) return
+    run(
+      db.from('user_seen_chats').insert({
+        user_id: user.id,
+        channel_id: channelId,
+      })
+    )
+  }, [messages.length])
 
   useEffect(() => {
     if (scrollToBottomRef)
       scrollToBottomRef.scrollTo({ top: scrollToBottomRef.scrollHeight || 0 })
     // Must also listen to groupedMessages as they update the height of the messaging window
-  }, [scrollToBottomRef, groupedMessages])
+  }, [scrollToBottomRef, JSON.stringify(groupedMessages)])
 
   function onReplyClick(message: ChatMessage) {
     setReplyToUser({ id: message.userId, username: message.userUsername })

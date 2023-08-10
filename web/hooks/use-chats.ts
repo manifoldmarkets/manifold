@@ -16,7 +16,7 @@ export const getChatMessages = async (channelId: string, limit: number) => {
       .order('created_time', { ascending: false })
       .limit(limit)
   )
-  return data
+  return data.reverse()
 }
 
 export function useRealtimeChatsOnLeague(channelId: string, limit: number) {

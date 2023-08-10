@@ -47,10 +47,7 @@ import {
   getLeagueChatChannelId,
   getSeasonDivisionCohort,
 } from 'common/league-chat'
-import {
-  useAllUnseenChatsForLeages,
-  useHasUnseenLeagueChat,
-} from 'web/hooks/use-chats'
+import { useAllUnseenChatsForLeages } from 'web/hooks/use-chats'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { useOwnedLeagueChats } from 'web/hooks/use-leagues'
@@ -124,7 +121,19 @@ export default function Leagues(props: { rows: league_user_info[] }) {
 
   const { query, isReady, replace } = useRouter()
   const { leagueSlugs } = query as { leagueSlugs: string[] }
+  const leagueChannelId = getLeagueChatChannelId(season, division, cohort)
+  const [unseenLeagueChat, setUnseenLeagueChat] = useState<boolean>(false)
+  const yourOwnedLeagues = useOwnedLeagueChats(season, user?.id)
+  console.log('yourOwnedLeagues', yourOwnedLeagues)
 
+  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
+  const unseenLeagueChats = useAllUnseenChatsForLeages(
+    user?.id,
+    yourOwnedLeagues
+  )
+  const unseenCohortChats = unseenLeagueChats.map(
+    (c) => getSeasonDivisionCohort(c).cohort
+  )
   const onSetSeason = (newSeason: number) => {
     const { season, division, cohort } = parseLeaguePath(
       [newSeason.toString()],
@@ -153,6 +162,12 @@ export default function Leagues(props: { rows: league_user_info[] }) {
       shallow: true,
     })
   }
+
+  useEffect(() => {
+    if (unseenCohortChats.includes(cohort)) {
+      setUnseenLeagueChat(true)
+    }
+  }, [cohort])
 
   useEffect(() => {
     if (
@@ -188,21 +203,6 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   const loadedOwner = useUserById(leagueBid?.fromId)
   const owner = leagueBid ? loadedOwner : undefined
 
-  const leagueChannelId = getLeagueChatChannelId(season, division, cohort)
-  const [unseenLeagueChat, setUnseen] = useHasUnseenLeagueChat(
-    leagueChannelId,
-    user?.id
-  )
-  const yourOwnedLeagues = useOwnedLeagueChats(season, user?.id)
-
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
-  const unseenLeagueChats = useAllUnseenChatsForLeages(
-    user?.id,
-    yourOwnedLeagues
-  )
-  const unseenCohortChats = unseenLeagueChats.map(
-    (c) => getSeasonDivisionCohort(c).cohort
-  )
   return (
     <Page>
       <SEO
@@ -387,7 +387,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                 channel_id: leagueChannelId,
               })
             )
-            setUnseen(false)
+            setUnseenLeagueChat(false)
           }}
         />
       </Col>

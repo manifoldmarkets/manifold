@@ -11,6 +11,16 @@ import {
   MIN_LEAGUE_BID,
 } from 'common/leagues'
 import { getLeagueChatChannelId } from 'common/league-chat'
+import { isProd } from 'shared/utils'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+} from 'common/user'
 import { formatMoney } from 'common/util/format'
 
 const schema = z.object({
@@ -106,6 +116,36 @@ export const bidforleague = authEndpoint(async (req, auth) => {
     await pg.none(
       'update league_chats set owner_id = $1 where channel_id = $2',
       [auth.uid, getLeagueChatChannelId(season, division, cohort)]
+    )
+    const content = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              text: `${user.name} just bought this league for ${formatMoney(
+                amount
+              )}!`,
+              type: 'text',
+            },
+          ],
+        },
+      ],
+    }
+    await pg.none(
+      `insert into chat_messages (channel_id, user_id, user_avatar_url, user_name, user_username,content)
+    values ($1, $2, $3, $4, $5, $6)`,
+      [
+        getLeagueChatChannelId(season, division, cohort),
+        isProd()
+          ? HOUSE_LIQUIDITY_PROVIDER_ID
+          : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+        MANIFOLD_AVATAR_URL,
+        MANIFOLD_USER_NAME,
+        MANIFOLD_USER_USERNAME,
+        content,
+      ]
     )
 
     return { status: 'success', txn }
