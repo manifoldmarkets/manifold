@@ -76,34 +76,14 @@ const getAnswers = (contract: MultiContract) => {
   )
 }
 
-export const getCpmmBetPoints = (answers: Answer[], bets: Bet[]) => {
+// new multi only
+export const getMultiBetPoints = (answers: Answer[], bets: Bet[]) => {
   return unserializePoints(
     calculateMultiBets(
-      bets,
+      bets.map((b) => ({ x: b.createdTime, y: b.probAfter, ...b })),
       answers.map((a) => a.id)
     )
   )
-}
-
-export const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[]) => {
-  const sortedBets = sortBy(bets, (b) => b.createdTime)
-  const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
-  const sharesByOutcome = Object.fromEntries(
-    Object.keys(betsByOutcome).map((outcome) => [outcome, 0])
-  )
-  const points: MultiPoint<Bet>[] = []
-  for (const bet of sortedBets) {
-    const { outcome, shares } = bet
-    sharesByOutcome[outcome] += shares
-
-    const sharesSquared = sum(
-      Object.values(sharesByOutcome).map((shares) => shares ** 2)
-    )
-    const probs = answers.map((a) => sharesByOutcome[a.id] ** 2 / sharesSquared)
-
-    points.push({ x: bet.createdTime, y: probs, obj: bet })
-  }
-  return points
 }
 
 export function useChartAnswers(contract: MultiContract) {
