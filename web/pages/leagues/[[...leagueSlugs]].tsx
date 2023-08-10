@@ -282,7 +282,11 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             >
               {divisions.map((division) => (
                 <option key={division} value={division}>
-                  {division === userDivision && MARKER}{' '}
+                  {division === userDivision
+                    ? MARKER
+                    : yourOwnedLeagues.filter((l) => l.division === division)[0]
+                    ? OWNER_MARKER
+                    : ''}{' '}
                   {unseenLeagueChats
                     .map((c) => getSeasonDivisionCohort(c).division)
                     .includes(division) && '🔵'}{' '}
