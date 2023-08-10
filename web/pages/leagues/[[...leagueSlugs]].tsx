@@ -198,7 +198,8 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     : MIN_LEAGUE_BID
   const loadedOwner = useUserById(leagueBid?.fromId)
   const owner = leagueBid ? loadedOwner : undefined
-  const showNotif = query.tab !== 'chat' && unseenCohortChats.includes(cohort)
+  const showNotif = (cohort: string) =>
+    query.tab !== 'chat' && unseenCohortChats.includes(cohort)
   return (
     <Page>
       <SEO
@@ -304,7 +305,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                     ? OWNER_MARKER
                     : ''}{' '}
                   {toLabel(cohort)}
-                  {showNotif && '🔵'}{' '}
+                  {showNotif(cohort) && '🔵'}{' '}
                 </option>
               ))}
             </Select>
@@ -363,7 +364,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             },
             {
               title: 'Chat',
-              inlineTabIcon: showNotif && (
+              inlineTabIcon: showNotif(cohort) && (
                 <ChatIcon className="h-5 w-5 text-blue-600" />
               ),
               content: (

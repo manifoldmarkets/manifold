@@ -55,14 +55,13 @@ const UnseenRealtimeChatBubble = (props: {
   yourLeagueInfo: league_user_info
 }) => {
   const { userId, ownedLeagues, yourLeagueInfo } = props
-  const unseenLeagueChats = useAllUnseenChatsForLeages(
+  const [unseenLeagueChats, setUnseenLeagueChats] = useAllUnseenChatsForLeages(
     userId,
     ownedLeagues,
     yourLeagueInfo
   )
-  if (!unseenLeagueChats.length) {
-    return null
-  }
+  if (!unseenLeagueChats.length) return null
+
   return (
     <div className="absolute -right-1 -top-1">
       <div className="h-3 w-3 rounded-full bg-blue-500" />
