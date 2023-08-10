@@ -345,6 +345,15 @@ export default function Leagues(props: { rows: league_user_info[] }) {
         <div className={'h-0'} ref={setContainerRef} />
         <QueryUncontrolledTabs
           labelClassName={'!pb-3 !pt-0'}
+          onClick={(tab) => {
+            if (tab === 'Chat') {
+              setUnseenLeagueChats(
+                unseenLeagueChats.filter(
+                  (c) => c != getLeagueChatChannelId(season, division, cohort)
+                )
+              )
+            }
+          }}
           key={`${season}-${division}-${cohort}`}
           tabs={[
             {
@@ -377,11 +386,6 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                   channelId={leagueChannelId}
                   ownerId={owner?.id}
                   offsetTop={(containerRef?.offsetTop ?? 0) + 47}
-                  setSeen={(channelId) => {
-                    setUnseenLeagueChats(
-                      unseenLeagueChats.filter((c) => c !== channelId)
-                    )
-                  }}
                 />
               ),
             },

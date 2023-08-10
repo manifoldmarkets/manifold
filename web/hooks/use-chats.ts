@@ -111,7 +111,6 @@ export const useAllUnseenChatsForLeages = (
 
   useEffect(() => {
     if (!userId) return
-
     Promise.all(
       leagueChatChannelIds.map((channelId) =>
         run(getLastChatInChannelQuery(channelId, userId)).then(({ data }) =>
@@ -126,6 +125,7 @@ export const useAllUnseenChatsForLeages = (
     userId,
     JSON.stringify(leagueChatChannelIds),
     JSON.stringify(lastMessageTimes),
+    JSON.stringify(unseenChats),
   ])
   useEffect(() => {
     setUnseenChats(

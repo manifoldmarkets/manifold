@@ -24,10 +24,10 @@ export const LeagueChat = (props: {
   user: User | null | undefined
   channelId: string
   ownerId: string | undefined
-  setSeen: (channelId: string) => void
   offsetTop?: number
 }) => {
-  const { user, setSeen, offsetTop, ownerId, channelId } = props
+  const { user, offsetTop, ownerId, channelId } = props
+  const [visible, setVisible] = useState(false)
   const authed = useIsAuthorized()
   const realtimeMessages = useRealtimeChatsOnLeague(channelId, 100)
   const messages = realtimeMessages ?? []
@@ -37,12 +37,13 @@ export const LeagueChat = (props: {
   })
   const { ref } = useIsVisible(() => {
     user && setAsSeen(user, channelId)
-    setSeen(channelId)
-  })
+    setVisible(true)
+  }, true)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [scrollToBottomRef, setScrollToBottomRef] =
     useState<HTMLDivElement | null>(null)
+  const [scrollerRef, setScrollerRef] = useState<HTMLDivElement | null>(null)
   const [replyToUser, setReplyToUser] = useState<any>()
 
   const { height } = useWindowSize()
@@ -75,12 +76,15 @@ export const LeagueChat = (props: {
 
     return tempGrouped
   }, [messages.length])
-
   useEffect(() => {
-    if (scrollToBottomRef)
-      scrollToBottomRef.scrollTo({ top: scrollToBottomRef.scrollHeight || 0 })
-    // Must also listen to groupedMessages as they update the height of the messaging window
-  }, [scrollToBottomRef, JSON.stringify(groupedMessages)])
+    if (scrollToBottomRef && scrollerRef && visible && realtimeMessages?.length)
+      scrollerRef.scrollTo({ top: scrollToBottomRef.offsetTop || 0 })
+  }, [
+    scrollToBottomRef,
+    scrollerRef,
+    JSON.stringify(realtimeMessages),
+    visible,
+  ])
 
   function onReplyClick(message: ChatMessage) {
     setReplyToUser({ id: message.userId, username: message.userUsername })
@@ -108,55 +112,63 @@ export const LeagueChat = (props: {
   }
 
   return (
-    <Col ref={ref} style={{ height: remainingHeight }}>
-      <Col
-        className={
-          'h-full w-full space-y-1 overflow-x-hidden overflow-y-scroll pt-1'
-        }
-        ref={setScrollToBottomRef}
-      >
-        {realtimeMessages === undefined ? (
-          <LoadingIndicator />
-        ) : (
-          groupedMessages.map((messages) => (
-            <ChatMessageItem
-              key={messages[0].id}
-              chats={messages}
-              user={user}
-              isOwner={ownerId === messages[0].userId}
-              onReplyClick={onReplyClick}
-            />
-          ))
-        )}
-        {messages.length === 0 && (
-          <div className="p-2 text-gray-500">
-            No messages yet. Say something why don't ya?
+    <>
+      <div ref={ref} className={'h-1'} />
+      <Col style={{ height: remainingHeight }}>
+        <Col
+          ref={setScrollerRef}
+          className={
+            'h-full w-full space-y-1 overflow-x-hidden overflow-y-scroll pt-1'
+          }
+        >
+          {realtimeMessages === undefined ? (
+            <LoadingIndicator />
+          ) : (
+            groupedMessages.map((messages, i) => (
+              <ChatMessageItem
+                key={messages[0].id}
+                chats={messages}
+                user={user}
+                isOwner={ownerId === messages[0].userId}
+                onReplyClick={onReplyClick}
+                ref={
+                  i === groupedMessages.length - 1
+                    ? setScrollToBottomRef
+                    : undefined
+                }
+              />
+            ))
+          )}
+          {messages.length === 0 && (
+            <div className="p-2 text-gray-500">
+              No messages yet. Say something why don't ya?
+            </div>
+          )}
+        </Col>
+        {user && (
+          <div className="flex w-full justify-start gap-2 p-2">
+            <div className="mt-1 hidden sm:block">
+              <Avatar
+                username={user?.username}
+                avatarUrl={user?.avatarUrl}
+                size={'sm'}
+              />
+            </div>
+            <div className={'flex-1'}>
+              <CommentInputTextArea
+                editor={editor}
+                user={user}
+                submit={submitMessage}
+                isSubmitting={isSubmitting}
+                size={'xs'}
+                replyTo={replyToUser}
+                submitOnEnter={true}
+              />
+            </div>
           </div>
         )}
       </Col>
-      {user && (
-        <div className="flex w-full justify-start gap-2 p-2">
-          <div className="mt-1 hidden sm:block">
-            <Avatar
-              username={user?.username}
-              avatarUrl={user?.avatarUrl}
-              size={'sm'}
-            />
-          </div>
-          <div className={'flex-1'}>
-            <CommentInputTextArea
-              editor={editor}
-              user={user}
-              submit={submitMessage}
-              isSubmitting={isSubmitting}
-              size={'xs'}
-              replyTo={replyToUser}
-              submitOnEnter={true}
-            />
-          </div>
-        </div>
-      )}
-    </Col>
+    </>
   )
 }
 
