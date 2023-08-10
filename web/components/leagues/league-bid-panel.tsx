@@ -43,7 +43,7 @@ export const LeagueBidPanel = (props: {
     setIsSubmitting(false)
   }
   return (
-    <Col className="gap-2 border px-3 py-2">
+    <Col className="gap-2 px-2">
       <Row className="items-center gap-2">
         <div className="text-ink-600 text-sm">
           Bid to own this league for the season{' '}
@@ -54,10 +54,10 @@ export const LeagueBidPanel = (props: {
           />
         </div>
       </Row>
-      <Row className="items-center gap-2">
+      <Row className="items-center gap-2 ">
         <Col>
           <AmountInput
-            inputClassName="w-[150px]"
+            inputClassName="sm:w-[150px] w-[100px]"
             amount={amount}
             onChangeAmount={setAmount}
             error={error}
@@ -69,6 +69,7 @@ export const LeagueBidPanel = (props: {
           color="indigo"
           size="sm"
           onClick={submitBid}
+          className={'whitespace-nowrap'}
           disabled={isSubmitting}
           loading={isSubmitting}
         >

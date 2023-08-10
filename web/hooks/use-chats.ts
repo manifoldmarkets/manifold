@@ -7,15 +7,21 @@ import { first, last } from 'lodash'
 import { getLeagueChatChannelId } from 'common/league-chat'
 import { filterDefined } from 'common/util/array'
 
-export const getChatMessages = async (channelId: string, limit: number) => {
-  const { data } = await run(
-    db
-      .from('chat_messages')
-      .select('*')
-      .eq('channel_id', channelId)
-      .order('created_time', { ascending: false })
-      .limit(limit)
-  )
+export const getChatMessages = async (
+  channelId: string,
+  limit: number,
+  ignoreId?: string
+) => {
+  let q = db
+    .from('chat_messages')
+    .select('*')
+    .eq('channel_id', channelId)
+    .order('created_time', { ascending: false })
+    .limit(limit)
+  if (ignoreId) {
+    q = q.neq('user_id', ignoreId)
+  }
+  const { data } = await run(q)
   return data.reverse()
 }
 
@@ -68,7 +74,12 @@ export const useAllUnseenChatsForLeages = (
     season: number
     cohort: string
     division: number
-  }[]
+  }[],
+  currentLeagueInfo: {
+    season: number
+    cohort: string
+    division: number
+  }
 ) => {
   const leagueChatChannelIds = leagueInfos.map(({ season, cohort, division }) =>
     getLeagueChatChannelId(season, division, cohort)
@@ -78,6 +89,11 @@ export const useAllUnseenChatsForLeages = (
     Record<string, number>
   >({})
   const [unseenChats, setUnseenChats] = useState<string[]>([])
+  const { season, division, cohort } = currentLeagueInfo
+  const realtimeMessages = useRealtimeChatsOnLeague(
+    getLeagueChatChannelId(season, division, cohort),
+    1
+  )?.filter((c) => c.userId !== userId)
 
   useEffect(() => {
     if (!userId) return
@@ -91,6 +107,11 @@ export const useAllUnseenChatsForLeages = (
         )
       )
     )
+  }, [userId, JSON.stringify(leagueChatChannelIds), realtimeMessages?.length])
+
+  useEffect(() => {
+    if (!userId) return
+
     Promise.all(
       leagueChatChannelIds.map((channelId) =>
         run(getLastChatInChannelQuery(channelId, userId)).then(({ data }) =>
@@ -101,8 +122,11 @@ export const useAllUnseenChatsForLeages = (
         )
       )
     )
-  }, [userId, JSON.stringify(leagueChatChannelIds)])
-
+  }, [
+    userId,
+    JSON.stringify(leagueChatChannelIds),
+    JSON.stringify(lastMessageTimes),
+  ])
   useEffect(() => {
     setUnseenChats(
       filterDefined(
@@ -113,6 +137,6 @@ export const useAllUnseenChatsForLeages = (
         )
       )
     )
-  }, [lastMessageTimes, lastSeenChats])
-  return unseenChats
+  }, [JSON.stringify(lastMessageTimes), JSON.stringify(lastSeenChats)])
+  return [unseenChats, setUnseenChats] as const
 }

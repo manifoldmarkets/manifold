@@ -5,19 +5,19 @@ import { useRouter } from 'next/router'
 
 import {
   DIVISION_NAMES,
-  SEASONS,
   getDemotionAndPromotionCount,
-  season,
   CURRENT_SEASON,
   getLeaguePath,
   league_user_info,
-  getSeasonMonth,
   getSeasonDates,
   parseLeaguePath,
   getSeasonStatus,
   MIN_LEAGUE_BID,
   MIN_BID_INCREASE_FACTOR,
   IS_BIDDING_PERIOD,
+  SEASONS,
+  getSeasonMonth,
+  season,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -26,8 +26,6 @@ import { Row } from 'web/components/layout/row'
 import { Select } from 'web/components/widgets/select'
 import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
-import { Countdown } from 'web/components/widgets/countdown'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getLeagueRows } from 'web/lib/supabase/leagues'
@@ -35,7 +33,6 @@ import { CohortTable } from 'web/components/leagues/cohort-table'
 import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
-import { formatTime } from 'web/lib/util/time'
 import { SEO } from 'web/components/SEO'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -48,9 +45,10 @@ import {
   getSeasonDivisionCohort,
 } from 'common/league-chat'
 import { useAllUnseenChatsForLeages } from 'web/hooks/use-chats'
-import { run } from 'common/supabase/utils'
-import { db } from 'web/lib/supabase/db'
 import { useOwnedLeagueChats } from 'web/hooks/use-leagues'
+import { Countdown } from 'web/components/widgets/countdown'
+import { formatTime } from 'web/lib/util/time'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export async function getStaticProps() {
   const rows = await getLeagueRows()
@@ -122,18 +120,22 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   const { query, isReady, replace } = useRouter()
   const { leagueSlugs } = query as { leagueSlugs: string[] }
   const leagueChannelId = getLeagueChatChannelId(season, division, cohort)
-  const [unseenLeagueChat, setUnseenLeagueChat] = useState<boolean>(false)
   const yourOwnedLeagues = useOwnedLeagueChats(season, user?.id)
-  console.log('yourOwnedLeagues', yourOwnedLeagues)
 
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
-  const unseenLeagueChats = useAllUnseenChatsForLeages(
+  const [unseenLeagueChats, setUnseenLeagueChats] = useAllUnseenChatsForLeages(
     user?.id,
-    yourOwnedLeagues
+    yourOwnedLeagues,
+    {
+      season,
+      division,
+      cohort,
+    }
   )
   const unseenCohortChats = unseenLeagueChats.map(
     (c) => getSeasonDivisionCohort(c).cohort
   )
+
   const onSetSeason = (newSeason: number) => {
     const { season, division, cohort } = parseLeaguePath(
       [newSeason.toString()],
@@ -162,12 +164,6 @@ export default function Leagues(props: { rows: league_user_info[] }) {
       shallow: true,
     })
   }
-
-  useEffect(() => {
-    if (unseenCohortChats.includes(cohort)) {
-      setUnseenLeagueChat(true)
-    }
-  }, [cohort])
 
   useEffect(() => {
     if (
@@ -202,7 +198,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     : MIN_LEAGUE_BID
   const loadedOwner = useUserById(leagueBid?.fromId)
   const owner = leagueBid ? loadedOwner : undefined
-
+  const showNotif = query.tab !== 'chat' && unseenCohortChats.includes(cohort)
   return (
     <Page>
       <SEO
@@ -211,26 +207,10 @@ export default function Leagues(props: { rows: league_user_info[] }) {
         url="/leagues"
       />
 
-      <Col className="mx-auto w-full max-w-lg gap-2 pb-8 pt-2 sm:pt-0">
-        <Col className="px-2 sm:px-0">
-          <Row className="mb-4 justify-between">
-            <Title className="!mb-0">Leagues</Title>
-          </Row>
-
-          <Row className="mb-4 items-center gap-3">
-            <text className="">
-              Compete against similarly skilled users for{' '}
-              <span
-                className="cursor-pointer border-b border-dotted border-blue-600 text-blue-600 hover:text-blue-800"
-                onClick={togglePrizesModal}
-              >
-                prizes
-              </span>{' '}
-              and promotion by earning the most mana this month!
-            </text>
-            <PrizesModal open={prizesModalOpen} setOpen={setPrizesModalOpen} />
-          </Row>
-          <Row className="items-center gap-3">
+      <Col className="mx-auto w-full max-w-lg gap-2 pt-2 sm:pt-0">
+        <Col className="px-2 sm:mt-2 sm:px-0">
+          <Row className="mb-2 items-center gap-4">
+            <Title className="!mb-0 hidden sm:block">Leagues</Title>
             <Col className="items-center gap-1">
               <Select
                 className="!border-ink-200 !h-10"
@@ -264,7 +244,6 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                       }
                     >
                       <>
-                        Countdown:{' '}
                         <Countdown className=" text-sm" endDate={seasonEnd} />
                       </>
                     </InfoTooltip>
@@ -272,6 +251,20 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                 </div>
               </Row>
             </Col>
+          </Row>
+
+          <Row className="mb-2 items-center gap-3">
+            <text className="">
+              Compete against similar users for{' '}
+              <span
+                className="cursor-pointer border-b border-dotted border-blue-600 text-blue-600 hover:text-blue-800"
+                onClick={togglePrizesModal}
+              >
+                prizes
+              </span>{' '}
+              and promotion by earning the most mana this month!
+            </text>
+            <PrizesModal open={prizesModalOpen} setOpen={setPrizesModalOpen} />
           </Row>
           <Row className="mt-2 gap-2">
             <Select
@@ -288,7 +281,9 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                     : ''}{' '}
                   {unseenLeagueChats
                     .map((c) => getSeasonDivisionCohort(c).division)
-                    .includes(division) && '🔵'}{' '}
+                    .includes(division) &&
+                    query.tab != 'chat' &&
+                    '🔵'}{' '}
                   {DIVISION_NAMES[division]}
                 </option>
               ))}
@@ -309,7 +304,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                     ? OWNER_MARKER
                     : ''}{' '}
                   {toLabel(cohort)}
-                  {unseenCohortChats.includes(cohort) && '🔵'}{' '}
+                  {showNotif && '🔵'}{' '}
                 </option>
               ))}
             </Select>
@@ -317,29 +312,31 @@ export default function Leagues(props: { rows: league_user_info[] }) {
         </Col>
 
         {owner && (
-          <Col className="mx-3 mb-2 gap-2">
-            <div className="text-ink-600 text-sm">
-              Owner of {toLabel(cohort)}
-            </div>
-            <Row className="items-center gap-2">
-              <Avatar
-                avatarUrl={owner.avatarUrl}
-                username={owner.username}
-                size={'xs'}
+          <Row className="mx-3 gap-2 sm:mb-2 ">
+            <Col className={'gap-2'}>
+              <div className="text-ink-600 text-sm">
+                Owner of {toLabel(cohort)}
+              </div>
+              <Row className="items-center gap-2">
+                <Avatar
+                  avatarUrl={owner.avatarUrl}
+                  username={owner.username}
+                  size={'xs'}
+                />
+                <UserLink name={owner.name} username={owner.username} />
+              </Row>
+            </Col>
+            {IS_BIDDING_PERIOD && (
+              <LeagueBidPanel
+                season={season}
+                division={division}
+                cohort={cohort}
+                minAmount={price}
               />
-              <UserLink name={owner.name} username={owner.username} />
-            </Row>
-          </Col>
+            )}
+          </Row>
         )}
 
-        {IS_BIDDING_PERIOD && (
-          <LeagueBidPanel
-            season={season}
-            division={division}
-            cohort={cohort}
-            minAmount={price}
-          />
-        )}
         <div className={'h-0'} ref={setContainerRef} />
         <QueryUncontrolledTabs
           labelClassName={'!pb-3 !pt-0'}
@@ -366,7 +363,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             },
             {
               title: 'Chat',
-              inlineTabIcon: unseenLeagueChat && (
+              inlineTabIcon: showNotif && (
                 <ChatIcon className="h-5 w-5 text-blue-600" />
               ),
               content: (
@@ -375,20 +372,15 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                   channelId={leagueChannelId}
                   ownerId={owner?.id}
                   offsetTop={(containerRef?.offsetTop ?? 0) + 47}
+                  setSeen={(channelId) => {
+                    setUnseenLeagueChats(
+                      unseenLeagueChats.filter((c) => c !== channelId)
+                    )
+                  }}
                 />
               ),
             },
           ]}
-          onClick={(tab) => {
-            if (tab != 'Chat' || !user?.id) return
-            run(
-              db.from('user_seen_chats').insert({
-                user_id: user.id,
-                channel_id: leagueChannelId,
-              })
-            )
-            setUnseenLeagueChat(false)
-          }}
         />
       </Col>
     </Page>

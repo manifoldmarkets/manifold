@@ -3,7 +3,11 @@ import Link from 'next/link'
 import { User } from 'common/user'
 import { Col } from './layout/col'
 import { useLeagueInfo, useOwnedLeagueChats } from 'web/hooks/use-leagues'
-import { CURRENT_SEASON, DIVISION_NAMES } from 'common/leagues'
+import {
+  CURRENT_SEASON,
+  DIVISION_NAMES,
+  league_user_info,
+} from 'common/leagues'
 import { dailyStatsClass } from 'web/components/daily-stats'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
@@ -33,8 +37,29 @@ export const DailyLeagueStat = (props: { user: User }) => {
 const UnseenChatBubble = (props: { userId: string }) => {
   const { userId } = props
   const yourOwnedLeagues = useOwnedLeagueChats(CURRENT_SEASON, userId)
-
-  const unseenLeagueChats = useAllUnseenChatsForLeages(userId, yourOwnedLeagues)
+  const yourLeague = useLeagueInfo(userId)
+  if (!yourOwnedLeagues.length || !yourLeague) {
+    return null
+  }
+  return (
+    <UnseenRealtimeChatBubble
+      userId={userId}
+      ownedLeagues={yourOwnedLeagues}
+      yourLeagueInfo={yourLeague}
+    />
+  )
+}
+const UnseenRealtimeChatBubble = (props: {
+  userId: string
+  ownedLeagues: any[]
+  yourLeagueInfo: league_user_info
+}) => {
+  const { userId, ownedLeagues, yourLeagueInfo } = props
+  const unseenLeagueChats = useAllUnseenChatsForLeages(
+    userId,
+    ownedLeagues,
+    yourLeagueInfo
+  )
   if (!unseenLeagueChats.length) {
     return null
   }

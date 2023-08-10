@@ -18,14 +18,16 @@ import { MINUTE_MS } from 'common/util/time'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
+import { useIsVisible } from 'web/hooks/use-is-visible'
 
 export const LeagueChat = (props: {
   user: User | null | undefined
   channelId: string
   ownerId: string | undefined
+  setSeen: (channelId: string) => void
   offsetTop?: number
 }) => {
-  const { user, offsetTop, ownerId, channelId } = props
+  const { user, setSeen, offsetTop, ownerId, channelId } = props
   const authed = useIsAuthorized()
   const realtimeMessages = useRealtimeChatsOnLeague(channelId, 100)
   const messages = realtimeMessages ?? []
@@ -33,6 +35,11 @@ export const LeagueChat = (props: {
     size: 'sm',
     placeholder: 'Send a message',
   })
+  const { ref } = useIsVisible(() => {
+    user && setAsSeen(user, channelId)
+    setSeen(channelId)
+  })
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [scrollToBottomRef, setScrollToBottomRef] =
     useState<HTMLDivElement | null>(null)
@@ -70,16 +77,6 @@ export const LeagueChat = (props: {
   }, [messages.length])
 
   useEffect(() => {
-    if (!user) return
-    run(
-      db.from('user_seen_chats').insert({
-        user_id: user.id,
-        channel_id: channelId,
-      })
-    )
-  }, [messages.length])
-
-  useEffect(() => {
     if (scrollToBottomRef)
       scrollToBottomRef.scrollTo({ top: scrollToBottomRef.scrollHeight || 0 })
     // Must also listen to groupedMessages as they update the height of the messaging window
@@ -111,7 +108,7 @@ export const LeagueChat = (props: {
   }
 
   return (
-    <Col style={{ height: remainingHeight }}>
+    <Col ref={ref} style={{ height: remainingHeight }}>
       <Col
         className={
           'h-full w-full space-y-1 overflow-x-hidden overflow-y-scroll pt-1'
@@ -126,7 +123,7 @@ export const LeagueChat = (props: {
               key={messages[0].id}
               chats={messages}
               user={user}
-              isOwner={ownerId === user?.id}
+              isOwner={ownerId === messages[0].userId}
               onReplyClick={onReplyClick}
             />
           ))
@@ -162,3 +159,11 @@ export const LeagueChat = (props: {
     </Col>
   )
 }
+
+const setAsSeen = async (user: User, leagueChannelId: string) =>
+  run(
+    db.from('user_seen_chats').insert({
+      user_id: user.id,
+      channel_id: leagueChannelId,
+    })
+  )
