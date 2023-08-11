@@ -1,5 +1,5 @@
 import { groupBy, keyBy, last, mapValues, sortBy, sumBy } from 'lodash'
-import { memo, useEffect, useMemo, useReducer, useState } from 'react'
+import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
 import {
@@ -429,9 +429,11 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       : undefined
   ).slice(start, end)
 
+  const scrollRef = useRef<HTMLDivElement>(null)
+
   return (
     <>
-      <Col className="mb-4 items-start gap-7">
+      <Col className="mb-4 items-start gap-7" ref={scrollRef}>
         {shouldLoadMore ? (
           <LoadingIndicator />
         ) : (
@@ -453,7 +455,10 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         page={page}
         itemsPerPage={ITEMS_PER_PAGE}
         totalItems={totalItems}
-        setPage={setPage}
+        setPage={(page) => {
+          setPage(page)
+          scrollRef.current?.scrollIntoView()
+        }}
       />
     </>
   )
