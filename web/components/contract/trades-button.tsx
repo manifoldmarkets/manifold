@@ -111,7 +111,11 @@ function BetsModalContent(props: { contract: Contract }) {
     if (!bets) return <LoadingIndicator />
     return (
       <Col className={'mt-2'}>
-        <BetsTabContent contract={contract} bets={bets} />
+        <BetsTabContent
+          contract={contract}
+          bets={bets}
+          totalBets={bets.length}
+        />
       </Col>
     )
   }
@@ -131,12 +135,16 @@ function BetsModalContent(props: { contract: Contract }) {
           ),
         },
         {
-          title: 'Trades',
+          title: 'Recent Trades',
           content: !bets ? (
             <LoadingIndicator />
           ) : (
             <Col className={'mt-2'}>
-              <BetsTabContent contract={contract} bets={bets} />
+              <BetsTabContent
+                contract={contract}
+                bets={bets}
+                totalBets={bets.length}
+              />
             </Col>
           ),
         },
