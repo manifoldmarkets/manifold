@@ -97,13 +97,10 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
           order: 'asc',
         })
 
-  const last = allBetPoints[allBetPoints.length - 1]
-
   let chartPoints = isSingle
     ? [
         { x: contract.createdTime, y: getInitialProbability(contract) },
         ...maxMinBin(allBetPoints, 500),
-        last,
       ].map((p) => [p.x, p.y] as const)
     : isMulti
     ? calculateMultiBets(
