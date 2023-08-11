@@ -14,6 +14,7 @@ import { copyToClipboard } from 'web/lib/util/copy'
 import { trackShareEvent } from 'web/lib/service/analytics'
 import toast from 'react-hot-toast'
 import { Row } from '../layout/row'
+import { useUser } from 'web/hooks/use-user'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -47,23 +48,26 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
 
 export function NonCreatorSharePanel(props: { contract: Contract }) {
   const { contract } = props
+  const user = useUser()
 
   return (
     <Row className="my-4 gap-4">
-      <Button color="indigo-outline" size="lg" onClick={getOnClick(contract)}>
+      <Button
+        color="indigo-outline"
+        size="lg"
+        onClick={getOnClick(contract, user?.username)}
+      >
         <LinkIcon className={'mr-1 h-4 w-4'} aria-hidden="true" />
         Share
       </Button>
-      <TweetButton
-        tweetText={getShareUrl(contract, contract.creatorUsername)}
-      />
+      <TweetButton tweetText={getShareUrl(contract, user?.username)} />
     </Row>
   )
 }
 
-const getOnClick = (contract: Contract) => {
+const getOnClick = (contract: Contract, username?: string) => {
   const isNative = getIsNative()
-  const url = getShareUrl(contract, contract.creatorUsername)
+  const url = getShareUrl(contract, username ?? contract.creatorUsername)
 
   return () => {
     if (!url) return

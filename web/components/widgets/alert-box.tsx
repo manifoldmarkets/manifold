@@ -6,11 +6,10 @@ import clsx from 'clsx'
 
 export function AlertBox(props: {
   title: string
-  text: string
-  children?: React.ReactNode
+  text?: string
   className?: string
 }) {
-  const { title, text, children, className } = props
+  const { title, text, className } = props
   return (
     <Col
       className={clsx(
@@ -18,7 +17,7 @@ export function AlertBox(props: {
         className
       )}
     >
-      <Row className="mb-2 flex-shrink-0">
+      <Row className="flex-shrink-0">
         <ExclamationIcon
           className="h-5 w-5 text-amber-400"
           aria-hidden="true"
@@ -29,13 +28,12 @@ export function AlertBox(props: {
         </div>
       </Row>
 
-      <div className="text-ink-700 mt-2 whitespace-pre-line text-sm">
-        {children ? (
-          children
-        ) : (
-          <Linkify text={text} className="block whitespace-pre-line" />
-        )}
-      </div>
+      {text && (
+        <Linkify
+          text={text}
+          className="text-ink-700 mt-4 block whitespace-pre-line text-sm"
+        />
+      )}
     </Col>
   )
 }

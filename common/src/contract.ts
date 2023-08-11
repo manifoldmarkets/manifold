@@ -134,6 +134,10 @@ export type CPMMStonkContract = StonkContract & CPMM
 export type BountiedQuestionContract = Contract & BountiedQuestion & NonBet
 export type PollContract = Contract & Poll & NonBet
 
+export type StillOpenDPMContract =
+  | DpmMultipleChoiceContract
+  | (FreeResponseContract & DPM)
+
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
   | PseudoNumericContract
@@ -297,14 +301,10 @@ export type MultiContract = (
 export type OutcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
-export const OUTCOME_TYPES = [
+export const CREATEABLE_OUTCOME_TYPES = [
   'BINARY',
   'MULTIPLE_CHOICE',
-  'FREE_RESPONSE',
   'PSEUDO_NUMERIC',
-  'NUMERIC',
-  'CERT',
-  'QUADRATIC_FUNDING',
   'STONK',
   'BOUNTIED_QUESTION',
   'POLL',

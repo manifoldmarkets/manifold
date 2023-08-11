@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import Link from 'next/link'
 import Router from 'next/router'
 
 import { Contract, contractPath } from 'common/contract'
@@ -26,17 +25,16 @@ import { useUser } from 'web/hooks/use-user'
 import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { AnswersPanel } from '../answers/answers-panel'
-import { BetRow } from '../bet/bet-row'
+import { BetButton } from '../bet/feed-bet-button'
+import { CommentsButton } from '../comments/comments-button'
+import { CardReason } from '../feed/card-reason'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { CommentsButton } from '../comments/comments-button'
+import { PollPanel } from '../poll/poll-panel'
+import { ClickFrame } from '../widgets/click-frame'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
-import { ClickFrame } from '../widgets/click-frame'
-import { HOUR_MS } from 'common/util/time'
-import { PollPanel } from '../poll/poll-panel'
-import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -146,43 +144,33 @@ function SimpleCard(props: {
     <ClickFrame
       className={clsx(
         className,
-        'bg-canvas-0 border-canvas-0 hover:border-primary-300 relative flex cursor-pointer flex-col justify-between gap-2 overflow-hidden rounded-xl border px-4 pt-2 drop-shadow-md transition-colors'
+        'bg-canvas-0 border-canvas-0 hover:border-primary-300 relative flex cursor-pointer flex-col justify-between gap-2 overflow-hidden rounded-xl border px-4 pt-2 drop-shadow-md transition-colors sm:px-6'
       )}
       onClick={(e) => {
         Router.push(path)
         e.currentTarget.focus()
       }}
     >
-      <Row className="items-start justify-between gap-1">
-        <Col>
-          <Row className={'items-start gap-2'}>
-            <Link
-              className={clsx(
-                'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal outline-none',
-                textColor
-              )}
-              onClick={(e) => {
-                trackClick()
-                e.stopPropagation()
-              }}
-              href={contractPath(contract)}
-            >
-              <VisibilityIcon contract={contract} /> {contract.question}
-            </Link>
+      <div
+        className={
+          'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
+        }
+      >
+        <Row className="grow items-start text-lg">
+          <VisibilityIcon contract={contract} /> {contract.question}
+        </Row>
+        <Col className="w-full sm:w-min sm:items-start">
+          <Row className="w-full items-center justify-end gap-3 sm:w-min">
+            <ContractStatusLabel
+              className={'text-lg font-bold'}
+              contract={contract}
+            />
+            {isBinaryCpmm && !isClosed && (
+              <BetButton contract={contract} user={user} className="h-min" />
+            )}
           </Row>
         </Col>
-        <Col className={'items-end'}>
-          <Tooltip text={item?.reasonDescription} placement={'left'}>
-            <ContractStatusLabel className={'font-bold'} contract={contract} />
-          </Tooltip>
-        </Col>
-      </Row>
-
-      {isBinaryCpmm && (
-        <div className="self-end">
-          <BetRow contract={contract} user={user} />
-        </div>
-      )}
+      </div>
 
       {children}
       <Col>
@@ -222,12 +210,6 @@ function DetailedCard(props: {
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
   const path = contractPath(contract)
-  const { probChange } = getMarketMovementInfo(
-    contract,
-    item?.dataType,
-    item?.data
-  )
-
   const statusInlineWithUserlink =
     item && !item.isCopied && item.dataType === 'new_contract'
   const metrics = useSavedContractMetrics(contract)
@@ -238,7 +220,7 @@ function DetailedCard(props: {
         'relative rounded-xl',
         'bg-canvas-0 cursor-pointer overflow-hidden',
         'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border drop-shadow-md transition-colors',
-        'flex w-full flex-col gap-0.5 px-4'
+        'flex w-full flex-col gap-0.5 px-4 sm:px-6'
       )}
       onClick={(e) => {
         trackClick()
@@ -247,108 +229,60 @@ function DetailedCard(props: {
       }}
     >
       {/* Title is link to contract for open in new tab and a11y */}
-      <Col className={'w-full flex-col gap-1.5 pt-4'}>
-        <Row className={'justify-between gap-4'}>
-          <Link
-            href={path}
-            className={clsx(
-              '-mt-1 text-lg',
-              'break-anywhere transition-color hover:text-primary-700 focus:text-primary-700 whitespace-normal font-medium outline-none',
-              textColor
-            )}
-            // if open in new tab, don't open in this one
-            onClick={(e) => {
-              trackClick()
-              e.stopPropagation()
-            }}
-          >
-            <VisibilityIcon contract={contract} /> {contract.question}
-            {item &&
-              !item.isCopied &&
-              (item.dataType === 'contract_probability_changed' ||
-                item.dataType === 'trending_contract') && (
-                <div className={'text-ink-400 text-sm'}>
-                  {item.dataType === 'contract_probability_changed' && (
-                    <RelativeTimestamp
-                      time={item.createdTime - 24 * HOUR_MS}
-                      shortened={true}
-                    />
-                  )}
-                  <Tooltip text={item?.reasonDescription} placement={'top'}>
-                    {item.dataType === 'contract_probability_changed'
-                      ? ' change'
-                      : item.dataType === 'trending_contract'
-                      ? ' trending'
-                      : item.dataType === 'new_subsidy'
-                      ? ' subsidized'
-                      : ''}
-                  </Tooltip>
-                  {item.dataType !== 'contract_probability_changed' && (
-                    <RelativeTimestamp
-                      time={item.createdTime}
-                      shortened={true}
-                    />
-                  )}
-                </div>
-              )}
-          </Link>
-          <Col className={'items-end'}>
-            {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-              <ContractStatusLabel
-                className={'-mt-1 text-lg font-bold'}
-                contract={contract}
-              />
-            )}
-            <span>
-              {probChange && (
-                <span
-                  className={clsx(
-                    'font-normal',
-                    probChange > 0 ? 'text-teal-500' : 'text-scarlet-500'
-                  )}
-                >
-                  {probChange > 0 ? '+' : ''}
-                  {probChange}%
-                </span>
-              )}
-            </span>
-          </Col>
-        </Row>
-        <Row className={'items-center justify-between gap-1'}>
-          <Row className={'w-full items-center gap-1'}>
+      <Col className={'w-full flex-col gap-1.5 pt-2'}>
+        <Row className="w-full justify-between">
+          <Row className={'text-ink-500 items-center gap-1 text-sm'}>
             <Avatar
               size={'xs'}
               className={'mr-0.5'}
               avatarUrl={creatorAvatarUrl}
               username={creatorUsername}
             />
-            <Row className={'text-ink-700 items-baseline gap-1 text-sm'}>
-              <UserLink
-                name={contract.creatorName}
-                username={creatorUsername}
-                className={clsx(
-                  'w-full text-ellipsis sm:max-w-[12rem]',
-                  statusInlineWithUserlink ? 'max-w-[6.5rem]' : 'max-w-[10rem]'
-                )}
-              />
-              {statusInlineWithUserlink && (
-                <span className={'text-ink-400'}>
-                  <Tooltip text={item?.reasonDescription} placement={'top'}>
-                    asked
-                  </Tooltip>
-                  <RelativeTimestamp
-                    time={item.createdTime}
-                    shortened={true}
-                    className="text-ink-400"
-                  />
-                </span>
+            <UserLink
+              name={contract.creatorName}
+              username={creatorUsername}
+              className={clsx(
+                'w-full text-ellipsis sm:max-w-[12rem]',
+                statusInlineWithUserlink ? 'max-w-[6.5rem]' : 'max-w-[10rem]'
+              )}
+            />
+            {statusInlineWithUserlink && (
+              <span className={'text-ink-400'}>
+                <Tooltip text={item?.reasonDescription} placement={'top'}>
+                  asked
+                </Tooltip>
+                <RelativeTimestamp
+                  time={item.createdTime}
+                  shortened={true}
+                  className="text-ink-400"
+                />
+              </span>
+            )}
+          </Row>
+          <CardReason item={item} contract={contract} />
+        </Row>
+        <div
+          className={
+            'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
+          }
+        >
+          <Row className="grow items-start text-lg">
+            <VisibilityIcon contract={contract} /> {contract.question}
+          </Row>
+          <Col className="w-full sm:w-min sm:items-start">
+            <Row className="w-full items-center justify-end gap-3 sm:w-min">
+              {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
+                <ContractStatusLabel
+                  className={'text-lg font-bold'}
+                  contract={contract}
+                />
+              )}
+              {isBinaryCpmm && !isClosed && (
+                <BetButton contract={contract} user={user} className="h-min" />
               )}
             </Row>
-          </Row>
-          {isBinaryCpmm && !isClosed && (
-            <BetRow contract={contract} user={user} />
-          )}
-        </Row>
+          </Col>
+        </div>
       </Col>
 
       {contract.outcomeType === 'POLL' && (

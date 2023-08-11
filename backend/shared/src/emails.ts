@@ -8,7 +8,6 @@ import {
   formatMoney,
   formatPercent,
 } from 'common/util/format'
-import { getValueFromBucket } from 'common/calculate-dpm'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getUser, log } from 'shared/utils'
@@ -166,10 +165,7 @@ const toDisplayResolution = (
   if (resolution === 'CANCEL') return 'N/A'
 
   if (contract.outcomeType === 'NUMERIC' && contract.mechanism === 'dpm-2')
-    return (
-      contract.resolutionValue?.toString() ??
-      getValueFromBucket(resolution, contract).toString()
-    )
+    return '[ERROR: if you can see this, Sinclair owes you 1000 mana]' // unless you see this comment
 
   const answer = (contract as MultiContract).answers.find(
     (a) => a.id === resolution

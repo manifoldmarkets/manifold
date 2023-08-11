@@ -1,5 +1,4 @@
 import * as functions from 'firebase-functions'
-import * as admin from 'firebase-admin'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
@@ -28,8 +27,7 @@ import {
 import { secrets } from 'common/secrets'
 import { bulkUpsert } from 'shared/supabase/utils'
 import { saveCalibrationData } from './calculate-calibration'
-
-const firestore = admin.firestore()
+import { ManaPurchaseTxn } from 'common/txn'
 
 const numberOfDays = 180
 
@@ -141,29 +139,26 @@ async function getDailyNewUsers(
   return usersByDay
 }
 
-const getStripeSalesQuery = (startTime: number, endTime: number) =>
-  firestore
-    .collection('stripe-transactions')
-    .where('timestamp', '>=', startTime)
-    .where('timestamp', '<', endTime)
-    .orderBy('timestamp', 'asc')
-    .select('manticDollarQuantity', 'timestamp', 'userId', 'sessionId')
-
-export async function getStripeSales(startTime: number, numberOfDays: number) {
-  const query = getStripeSalesQuery(
-    startTime,
-    startTime + DAY_MS * numberOfDays
+export async function getSales(
+  pg: SupabaseDirectClient,
+  startTime: number,
+  numberOfDays: number
+) {
+  const sales: { data: ManaPurchaseTxn }[] = await pg.manyOrNone(
+    `select data from txns
+      where data->'category' = '"MANA_PURCHASE"'
+      and (data->'createdTime')::bigint >= $1 and (data->'createdTime')::bigint < $2`,
+    [startTime, startTime + numberOfDays * DAY_MS]
   )
-  const sales = (await query.get()).docs
 
   const salesByDay = range(0, numberOfDays).map(() => [] as any[])
-  for (const sale of sales) {
-    const ts = sale.get('timestamp')
-    const amount = sale.get('manticDollarQuantity') / 100 // convert to dollars
-    const userId = sale.get('userId')
-    const sessionId = sale.get('sessionId')
+  for (const { data: sale } of sales) {
+    const ts = sale.createdTime
+    const amount = sale.amount / 100 // convert to dollars
+    const userId = sale.toId
+    const id = sale.id
     const dayIndex = Math.floor((ts - startTime) / DAY_MS)
-    salesByDay[dayIndex].push({ id: sessionId, userId, ts, amount })
+    salesByDay[dayIndex].push({ id, userId, ts, amount })
   }
 
   return salesByDay
@@ -184,13 +179,13 @@ export const updateStatsCore = async () => {
     dailyContracts,
     dailyComments,
     dailyNewUsers,
-    dailyStripeSales,
+    dailyManaSales,
   ] = await Promise.all([
     getDailyBets(pg, start, numberOfDays),
     getDailyContracts(pg, start, numberOfDays),
     getDailyComments(pg, start, numberOfDays),
     getDailyNewUsers(pg, start, numberOfDays),
-    getStripeSales(start, numberOfDays),
+    getSales(pg, start, numberOfDays),
   ])
   logMemory()
 
@@ -202,7 +197,7 @@ export const updateStatsCore = async () => {
   const dailyCommentCounts = dailyComments.map((comments) => comments.length)
   const dailyNewUserCounts = dailyNewUsers.map((users) => users.length)
 
-  const dailySales = dailyStripeSales.map((sales) =>
+  const dailySales = dailyManaSales.map((sales) =>
     sum(sales.map((s) => s.amount))
   )
 

@@ -1,8 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import * as admin from 'firebase-admin'
-import { groupBy, mapValues, sumBy } from 'lodash'
-import { FieldValue, Transaction } from 'firebase-admin/firestore'
-import { APIError } from 'common/api'
 import { ENV } from 'common/envs/constants'
 import { getServiceAccountCredentials } from 'common/secrets'
 
@@ -34,74 +31,4 @@ export async function getUserId(req: NextApiRequest, res: NextApiResponse) {
   // Seems to involve a roundtrip to Firebase; could we skip? (Or locate Vercel server such that this is fast?)
   const decodedToken = await admin.auth().verifyIdToken(payload)
   return decodedToken.uid
-}
-
-export async function safeGet<T>(
-  path: string,
-  transaction?: admin.firestore.Transaction
-): Promise<T> {
-  const doc = transaction
-    ? await transaction.get(admin.firestore().doc(path))
-    : await admin.firestore().doc(path).get()
-  if (!doc.exists) {
-    throw new APIError(404, `Document not found: ${path}`)
-  }
-  return doc.data() as T
-}
-
-// Copied from backend/src/utils
-export const payUsers = (
-  transaction: Transaction,
-  payouts: {
-    userId: string
-    payout: number
-    deposit?: number
-  }[]
-) => {
-  const mergedPayouts = checkAndMergePayouts(payouts)
-  for (const { userId, payout, deposit } of mergedPayouts) {
-    updateUserBalance(transaction, userId, payout, deposit)
-  }
-}
-
-const updateUserBalance = (
-  transaction: Transaction,
-  userId: string,
-  balanceDelta: number,
-  depositDelta: number
-) => {
-  const firestore = admin.firestore()
-  const userDoc = firestore.doc(`users/${userId}`)
-
-  // Note: Balance is allowed to go negative.
-  transaction.update(userDoc, {
-    balance: FieldValue.increment(balanceDelta),
-    totalDeposits: FieldValue.increment(depositDelta),
-  })
-}
-
-const checkAndMergePayouts = (
-  payouts: {
-    userId: string
-    payout: number
-    deposit?: number
-  }[]
-) => {
-  for (const { payout, deposit } of payouts) {
-    if (!isFinite(payout)) {
-      throw new Error('Payout is not finite: ' + payout)
-    }
-    if (deposit !== undefined && !isFinite(deposit)) {
-      throw new Error('Deposit is not finite: ' + deposit)
-    }
-  }
-
-  const groupedPayouts = groupBy(payouts, 'userId')
-  return Object.values(
-    mapValues(groupedPayouts, (payouts, userId) => ({
-      userId,
-      payout: sumBy(payouts, 'payout'),
-      deposit: sumBy(payouts, (p) => p.deposit ?? 0),
-    }))
-  )
 }

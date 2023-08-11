@@ -9,7 +9,7 @@ import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { Card } from '../widgets/card'
 
-export function CharityCard(props: { charity: Charity; match?: number }) {
+export function CharityCard(props: { charity: Charity }) {
   const { charity } = props
   const { slug, photo, preview, id, tags } = charity
 
@@ -40,12 +40,6 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
                   </span>
                   raised
                 </Row>
-                {/* {match && (
-                <Col className="text-ink-500">
-                  <span className="text-xl">+{formatUsd(match)}</span>
-                  <span className="">match</span>
-                </Col>
-              )} */}
               </Row>
             </>
           )}

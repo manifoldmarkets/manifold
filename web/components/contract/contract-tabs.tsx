@@ -1,5 +1,5 @@
 import { groupBy, keyBy, last, mapValues, sortBy, sumBy } from 'lodash'
-import { memo, useEffect, useMemo, useReducer, useState } from 'react'
+import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
 import {
@@ -22,7 +22,6 @@ import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
-import { getTotalBetCount } from 'web/lib/firebase/bets'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { track } from 'web/lib/service/analytics'
 import { getOlderBets } from 'web/lib/supabase/bets'
@@ -33,8 +32,6 @@ import { FeedLiquidity } from '../feed/feed-liquidity'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
-import { CertInfo, CertTrades } from './cert-overview'
-import { QfTrades } from './qf-overview'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -68,10 +65,7 @@ export function ContractTabs(props: {
     totalBets,
     userPositionsByOutcome,
   } = props
-  const betsWithoutAntesOrRedemptions = useMemo(
-    () => bets.filter((bet) => !bet.isAnte && !bet.isRedemption),
-    [bets]
-  )
+
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
   const [replyToBet, setReplyToBet] = useState<Bet | undefined>(undefined)
@@ -109,20 +103,6 @@ export function ContractTabs(props: {
 
   const positionsTitle = shortFormatNumber(totalPositions) + ' Positions'
 
-  if (contract.outcomeType == 'BOUNTIED_QUESTION') {
-    return (
-      <CommentsTabContent
-        contract={contract}
-        comments={comments}
-        setCommentsLength={setTotalComments}
-        answerResponse={answerResponse}
-        onCancelAnswerResponse={onCancelAnswerResponse}
-        blockedUserIds={blockedUserIds}
-        betResponse={replyToBet}
-        clearReply={clearReply}
-      />
-    )
-  }
   return (
     <ControlledTabs
       className="mb-4"
@@ -147,7 +127,6 @@ export function ContractTabs(props: {
             />
           ),
         },
-
         totalBets > 0 &&
           contract.mechanism === 'cpmm-1' && {
             title: positionsTitle,
@@ -160,35 +139,25 @@ export function ContractTabs(props: {
               />
             ),
           },
-
         totalBets > 0 && {
           title: betsTitle,
           content: (
             <Col className={'gap-4'}>
               <BetsTabContent
                 contract={contract}
-                bets={betsWithoutAntesOrRedemptions}
+                bets={bets}
+                totalBets={totalBets}
                 setReplyToBet={setReplyToBet}
               />
             </Col>
           ),
         },
-
         userBets.length > 0 && {
           title: yourBetsTitle,
           content: (
             <ContractBetsTable contract={contract} bets={userBets} isYourBets />
           ),
-        },
-
-        contract.outcomeType === 'CERT' && [
-          { title: 'Trades', content: <CertTrades contract={contract} /> },
-          { title: 'Positions', content: <CertInfo contract={contract} /> },
-        ],
-
-        contract.outcomeType === 'QUADRATIC_FUNDING' && [
-          { title: 'History', content: <QfTrades contract={contract} /> },
-        ]
+        }
       )}
     />
   )
@@ -402,9 +371,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 export const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract
   bets: Bet[]
+  totalBets: number
   setReplyToBet?: (bet: Bet) => void
 }) {
-  const { contract, setReplyToBet } = props
+  const { contract, setReplyToBet, totalBets } = props
   const [olderBets, setOlderBets] = useState<Bet[]>([])
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
@@ -433,15 +403,8 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       lp,
     })),
   ]
-  const [totalItems, setTotalItems] = useState(items.length)
 
-  useEffect(() => {
-    const willNeedMoreBets = totalItems % ITEMS_PER_PAGE === 0
-    if (!willNeedMoreBets) return
-    getTotalBetCount(contract.id).then((totalBetCount) => {
-      setTotalItems(totalBetCount + visibleLps.length)
-    })
-  }, [contract.id, totalItems, visibleLps.length])
+  const totalItems = totalBets + visibleLps.length
 
   const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
   const shouldLoadMore = limit > 0 && bets.length < totalItems
@@ -466,9 +429,11 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       : undefined
   ).slice(start, end)
 
+  const scrollRef = useRef<HTMLDivElement>(null)
+
   return (
     <>
-      <Col className="mb-4 items-start gap-7">
+      <Col className="mb-4 items-start gap-7" ref={scrollRef}>
         {shouldLoadMore ? (
           <LoadingIndicator />
         ) : (
@@ -490,7 +455,10 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         page={page}
         itemsPerPage={ITEMS_PER_PAGE}
         totalItems={totalItems}
-        setPage={setPage}
+        setPage={(page) => {
+          setPage(page)
+          scrollRef.current?.scrollIntoView()
+        }}
       />
     </>
   )

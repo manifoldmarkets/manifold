@@ -1,10 +1,6 @@
 import { auth } from './users'
 import { APIError, getApiUrl } from 'common/api'
 import { JSONContent } from '@tiptap/core'
-import { QfAnswerReq } from 'web/pages/api/v0/qf/answer'
-import { QfPayReq } from 'web/pages/api/v0/qf/pay'
-import { QfAddPoolReq } from 'web/pages/api/v0/qf/add-pool'
-import { QfResolveReq } from 'web/pages/api/v0/qf/resolve'
 import { Group, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
@@ -206,22 +202,6 @@ export function removeContractFromGroup(params: {
   contractId: string
 }) {
   return call(getApiUrl('removecontractfromgroup'), 'POST', params)
-}
-
-export function createQfAnswer(params: QfAnswerReq) {
-  return call('/api/v0/qf/answer', 'POST', params)
-}
-
-export function payQfAnswer(params: QfPayReq) {
-  return call('/api/v0/qf/pay', 'POST', params)
-}
-
-export function addQfAddPool(params: QfAddPoolReq) {
-  return call('/api/v0/qf/add-pool', 'POST', params)
-}
-
-export function resolveQf(params: QfResolveReq) {
-  return call('/api/v0/qf/resolve', 'POST', params)
 }
 
 export function unresolveMarket(params: { marketId: string }) {
@@ -461,4 +441,20 @@ export function castPollVote(params: { contractId: string; voteId: string }) {
 
 export function getSimilarGroupsToContract(params: { question: string }) {
   return call(getApiUrl('get-similar-groups-to-contract'), 'POST', params)
+}
+
+export function bidForLeague(params: {
+  season: number
+  division: number
+  cohort: string
+  amount: number
+}) {
+  return call(getApiUrl('bidforleague'), 'POST', params)
+}
+
+export function createChatMessage(params: {
+  channelId: string
+  content: JSONContent
+}) {
+  return call(getApiUrl('create-chat-message'), 'POST', params)
 }

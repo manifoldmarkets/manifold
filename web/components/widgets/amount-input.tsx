@@ -15,7 +15,7 @@ export function AmountInput(
     amount: number | undefined
     onChangeAmount: (newAmount: number | undefined) => void
     error?: string
-    label: string
+    label?: string
     disabled?: boolean
     className?: string
     inputClassName?: string
@@ -29,7 +29,7 @@ export function AmountInput(
     amount,
     onChangeAmount,
     error,
-    label,
+    label = ENV_CONFIG.moneyMoniker,
     disabled,
     className,
     inputClassName,
@@ -68,7 +68,7 @@ export function AmountInput(
               inputMode={allowFloat ? 'decimal' : 'numeric'}
               step={allowFloat ? 'any' : '1'}
               placeholder="0"
-              maxLength={6}
+              maxLength={7}
               value={amount ?? ''}
               error={!!error}
               disabled={disabled}

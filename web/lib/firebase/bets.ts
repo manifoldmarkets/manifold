@@ -6,7 +6,6 @@ import {
   orderBy,
   limit,
   Query,
-  getCountFromServer,
 } from 'firebase/firestore'
 
 import { db } from './init'
@@ -60,17 +59,6 @@ export const getBetsQuery = (options?: BetFilter) => {
     q = query(q, limit(options.limit))
   }
   return q
-}
-
-export async function getTotalBetCount(contractId: string) {
-  const betsRef = query(
-    collection(db, `contracts/${contractId}/bets`),
-    where('isChallenge', '==', false),
-    where('isRedemption', '==', false),
-    where('isAnte', '==', false)
-  )
-  const snap = await getCountFromServer(betsRef)
-  return snap.data().count
 }
 
 export function listenForBets(

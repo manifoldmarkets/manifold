@@ -81,8 +81,7 @@ export function ProbabilityOrNumericInput(props: {
   placeholder?: string
   width?: string
   error?: boolean
-  inputError: boolean
-  setInputError: (error: boolean) => void
+  onRangeError?: (error: boolean) => void
 }) {
   const {
     contract,
@@ -93,7 +92,8 @@ export function ProbabilityOrNumericInput(props: {
     className,
     inputClassName,
     width = 'w-24',
-    error,
+    error = false,
+    onRangeError,
   } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
@@ -102,13 +102,12 @@ export function ProbabilityOrNumericInput(props: {
       num={prob}
       className={clsx(className, width, inputClassName)}
       onChange={setProb}
-      minValue={contract.min}
-      maxValue={contract.max}
+      min={contract.min}
+      max={contract.max}
       disabled={disabled}
       placeholder={placeholder}
       error={error}
-      inputError={props.inputError}
-      setInputError={props.setInputError}
+      setError={(error) => onRangeError?.(error)}
     />
   ) : (
     <ProbabilityInput

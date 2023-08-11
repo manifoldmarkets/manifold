@@ -8,14 +8,10 @@ import { Json } from 'common/supabase/schema'
 import { contentSchema } from 'shared/zod-types'
 
 const postSchema = z.object({
-  content: contentSchema.optional(),
+  content: contentSchema,
   channelId: z.string(),
 })
 
-export const MAX_COMMENT_JSON_LENGTH = 20000
-
-// For now, only supports creating a new top-level comment on a contract.
-// Replies, posts, chats are not supported yet.
 export const createchatmessage = authEndpoint(async (req, auth) => {
   const { content, channelId } = validate(postSchema, req.body)
 

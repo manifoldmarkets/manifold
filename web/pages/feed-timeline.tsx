@@ -159,7 +159,7 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
   }
 
   return (
-    <Col className={'relative w-full gap-6'}>
+    <Col className={'relative w-full gap-4'}>
       <VisibilityObserver
         className="pointer-events-none absolute top-0 h-5 w-full select-none "
         onVisibilityUpdated={(visible) => {

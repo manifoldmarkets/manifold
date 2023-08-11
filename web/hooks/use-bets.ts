@@ -14,6 +14,7 @@ import { filterDefined } from 'common/util/array'
 import { db } from 'web/lib/supabase/db'
 import { getBets } from 'common/supabase/bets'
 import { getValues } from 'web/lib/firebase/utils'
+import { getUnfilledLimitOrders } from 'web/lib/supabase/bets'
 
 export const useListenBets = (options?: BetFilter) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
@@ -35,10 +36,12 @@ export const useBets = (options?: BetFilter) => {
 
 export const useUnfilledBets = (contractId: string) => {
   const [unfilledBets, setUnfilledBets] = useState<LimitBet[] | undefined>()
-  useEffect(
-    () => listenForUnfilledBets(contractId, setUnfilledBets),
-    [contractId]
-  )
+  useEffect(() => {
+    // Load first with supabase b/c it's faster.
+    getUnfilledLimitOrders(contractId).then(setUnfilledBets)
+    // Then listen for updates w/ firebase.
+    return listenForUnfilledBets(contractId, setUnfilledBets)
+  }, [contractId])
   return unfilledBets
 }
 

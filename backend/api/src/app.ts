@@ -123,7 +123,7 @@ app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/createcomment', ...apiRoute(createcomment))
-app.post('/createchatmessage', ...apiRoute(createchatmessage))
+app.post('/create-chat-message', ...apiRoute(createchatmessage))
 app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
@@ -199,7 +199,6 @@ app.post(
   '/get-similar-groups-to-contract',
   ...apiRoute(getsimilargroupstocontract)
 )
-
 app.post('/claimdestinysub', ...apiRoute(claimdestinysub))
 
 // Catch 404 errors - this should be the last route

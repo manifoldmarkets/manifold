@@ -451,6 +451,19 @@ function ProfilePublicStats(props: {
           Rank {leagueInfo.rank}
         </Link>
       )}
+
+      {reviewCount > 0 && (
+        <button
+          className="group flex gap-0.5"
+          onClick={() => setReviewsOpen(true)}
+        >
+          <span className="decoration-primary-400 decoration-2 group-hover:underline">
+            <span className="font-semibold">{reviewCount}</span> Review
+            {reviewCount === 1 ? '' : 's'}
+          </span>
+        </button>
+      )}
+
       <SiteLink
         href={'/' + user.username + '/calibration'}
         className={clsx(linkClass, 'cursor-pointer text-sm')}
@@ -458,17 +471,6 @@ function ProfilePublicStats(props: {
         <ChartBarIcon className="mr-1 mb-1 inline h-4 w-4" />
         Calibration
       </SiteLink>
-
-      {rating && (
-        <button
-          className="group flex gap-0.5"
-          onClick={() => setReviewsOpen(true)}
-        >
-          <span className="decoration-primary-400 decoration-2 group-hover:underline">
-            {reviewCount} Reviews
-          </span>
-        </button>
-      )}
 
       <FollowsDialog
         user={user}
@@ -482,6 +484,7 @@ function ProfilePublicStats(props: {
         isOpen={reviewsOpen}
         setIsOpen={setReviewsOpen}
         userId={user.id}
+        rating={rating ?? 4}
       />
       {/*{isCurrentUser && <ReferralsButton user={user} className={className} />}
       {isCurrentUser && (
@@ -562,15 +565,33 @@ function ReviewsDialog(props: {
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
   userId: string
+  rating: number
 }) {
-  const { isOpen, setIsOpen, userId } = props
+  const { isOpen, setIsOpen, userId, rating } = props
 
   const reviews = useQuery([`reviews ${userId}`], () => getUserReviews(userId))
+
+  const ratingLabel =
+    rating > 4.8 ? (
+      <span className="font-semibold text-green-600">Exceptional</span>
+    ) : rating > 4.5 ? (
+      <span className="font-semibold text-green-600">Great</span>
+    ) : rating > 3.3 ? (
+      <span className="font-semibold text-green-600">Good</span>
+    ) : rating > 2.5 ? (
+      <span className="font-semibold text-yellow-600">Okay</span>
+    ) : rating > 2 ? (
+      <span className="font-semibold text-red-600">Poor</span>
+    ) : (
+      <span className="font-semibold text-red-600">Very Poor</span>
+    )
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
       <div className="bg-canvas-0 max-h-[90vh] overflow-y-auto rounded p-6">
         <Title>Reviews</Title>
+
+        <div className="mb-4">Resolution reliability: {ratingLabel}</div>
         {reviews.isLoading && <LoadingIndicator className="text-center" />}
 
         <Col className="divide-ink-300 divide-y-2">
