@@ -6,7 +6,6 @@ import {
   orderBy,
   limit,
   Query,
-  getCountFromServer,
 } from 'firebase/firestore'
 
 import { db } from './init'
