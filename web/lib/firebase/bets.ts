@@ -62,17 +62,6 @@ export const getBetsQuery = (options?: BetFilter) => {
   return q
 }
 
-export async function getTotalBetCount(contractId: string) {
-  const betsRef = query(
-    collection(db, `contracts/${contractId}/bets`),
-    where('isChallenge', '==', false),
-    where('isRedemption', '==', false),
-    where('isAnte', '==', false)
-  )
-  const snap = await getCountFromServer(betsRef)
-  return snap.data().count
-}
-
 export function listenForBets(
   setBets: (bets: Bet[]) => void,
   options?: BetFilter

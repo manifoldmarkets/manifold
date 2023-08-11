@@ -22,7 +22,6 @@ import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
-import { getTotalBetCount } from 'web/lib/firebase/bets'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { track } from 'web/lib/service/analytics'
 import { getOlderBets } from 'web/lib/supabase/bets'
@@ -66,10 +65,7 @@ export function ContractTabs(props: {
     totalBets,
     userPositionsByOutcome,
   } = props
-  const betsWithoutAntesOrRedemptions = useMemo(
-    () => bets.filter((bet) => !bet.isAnte && !bet.isRedemption),
-    [bets]
-  )
+
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
   const [replyToBet, setReplyToBet] = useState<Bet | undefined>(undefined)
@@ -149,7 +145,8 @@ export function ContractTabs(props: {
             <Col className={'gap-4'}>
               <BetsTabContent
                 contract={contract}
-                bets={betsWithoutAntesOrRedemptions}
+                bets={bets}
+                totalBets={totalBets}
                 setReplyToBet={setReplyToBet}
               />
             </Col>
@@ -374,9 +371,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 export const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract
   bets: Bet[]
+  totalBets: number
   setReplyToBet?: (bet: Bet) => void
 }) {
-  const { contract, setReplyToBet } = props
+  const { contract, setReplyToBet, totalBets } = props
   const [olderBets, setOlderBets] = useState<Bet[]>([])
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
@@ -405,15 +403,8 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       lp,
     })),
   ]
-  const [totalItems, setTotalItems] = useState(items.length)
 
-  useEffect(() => {
-    const willNeedMoreBets = totalItems % ITEMS_PER_PAGE === 0
-    if (!willNeedMoreBets) return
-    getTotalBetCount(contract.id).then((totalBetCount) => {
-      setTotalItems(totalBetCount + visibleLps.length)
-    })
-  }, [contract.id, totalItems, visibleLps.length])
+  const totalItems = totalBets + visibleLps.length
 
   const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
   const shouldLoadMore = limit > 0 && bets.length < totalItems

@@ -15,6 +15,8 @@ export async function getOlderBets(
 ) {
   const query = selectJson(db, 'contract_bets')
     .eq('contract_id', contractId)
+    .eq('is_redemption', false)
+    .eq('is_ante', false)
     .lt('created_time', millisToTs(beforeTime))
     .order('created_time', { ascending: false })
     .limit(limit)
