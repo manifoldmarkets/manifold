@@ -5,7 +5,6 @@ import toast from 'react-hot-toast'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { useAdmin } from 'web/hooks/use-admin'
 import {
   addContractToGroup,
   removeContractFromGroup,
@@ -13,34 +12,20 @@ import {
 import { GroupTag } from 'web/pages/groups'
 import { GroupSelector } from './group-selector'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
-import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
 import { useState } from 'react'
 import { XIcon } from '@heroicons/react/outline'
 
 export function ContractGroupsList(props: {
   contract: Contract
   user: User | null | undefined
+  canEdit: boolean
+  onlyGroupIds?: string[]
+  canEditGroup: (group: Group) => boolean
 }) {
-  const { user, contract } = props
+  const { user, canEditGroup, onlyGroupIds, contract, canEdit } = props
   const groups = useGroupsWithContract(contract) ?? []
-
   const isCreator = contract.creatorId === user?.id
-  const adminGroups = useGroupsWhereUserHasRole(user?.id)
   const [error, setError] = useState<string>('')
-  const isAdmin = useAdmin()
-  function canRemoveFromGroup(group: Group) {
-    if (!user) {
-      return false
-    }
-    return (
-      // if user is contract creator
-      contract.creatorId === user.id ||
-      // if user is manifoldAdmin
-      isAdmin ||
-      // if user has admin role in that group
-      (adminGroups && adminGroups.some((g) => g.group_id === group.id))
-    )
-  }
 
   return (
     <Col className={'gap-2'}>
@@ -56,7 +41,7 @@ export function ContractGroupsList(props: {
             {groups.map((g) => {
               return (
                 <GroupTag key={g.id} group={g} className="bg-ink-100">
-                  {g && canRemoveFromGroup(g) && (
+                  {g && canEditGroup(g) && (
                     <button
                       onClick={() => {
                         toast.promise(
@@ -82,10 +67,7 @@ export function ContractGroupsList(props: {
               )
             })}
           </Row>
-          {/* if is manifold admin, show all possible groups */}
-          {(isAdmin ||
-            isCreator ||
-            (adminGroups && adminGroups.length > 0)) && (
+          {canEdit && (
             <Col className={'my-2 items-center justify-between p-0.5'}>
               <Row className="text-ink-400 w-full justify-start text-sm">
                 Add categories
@@ -103,6 +85,7 @@ export function ContractGroupsList(props: {
                   })
                 }
                 isContractCreator={isCreator}
+                onlyGroupIds={onlyGroupIds}
               />
               <span className={'text-sm text-red-400'}>{error}</span>
             </Col>
