@@ -84,7 +84,7 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
       ? []
       : await getBets(db, {
           contractId: contract.id,
-          limit: isSingle ? 100 : isMulti ? 50000 : 4000,
+          limit: 100,
           order: 'desc',
         })
 
