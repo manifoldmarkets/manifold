@@ -69,11 +69,6 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { linkClass } from 'web/components/widgets/site-link'
-import { useBets, useListenBets } from 'web/hooks/use-bets'
-import {
-  getDpmBetPoints,
-  getCpmmBetPoints,
-} from 'web/components/charts/contract/choice'
 import { MarketGroups } from 'web/components/contract/market-groups'
 import { useListenBets } from 'web/hooks/use-bets'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
