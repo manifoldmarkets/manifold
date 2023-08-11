@@ -25,6 +25,7 @@ import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized, useUser } from './use-user'
 import { Row } from 'common/supabase/utils'
 import { convertGroup } from 'common/supabase/groups'
+import { useAsyncData } from 'web/hooks/use-async-data'
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<
@@ -236,18 +237,6 @@ export async function setTranslatedMemberRole(
   } else {
     setRole(null)
   }
-}
-
-// TODO: maybe this belongs in a more general file
-function useAsyncData<T, R>(
-  prop: T | undefined,
-  asyncFn: (prop: T) => Promise<R>
-) {
-  const [data, setData] = useState<R | null>(null)
-  useEffect(() => {
-    if (prop) asyncFn(prop).then(setData).catch(console.error)
-  }, [prop])
-  return data
 }
 
 export function useGroupFromSlug(groupSlug: string) {

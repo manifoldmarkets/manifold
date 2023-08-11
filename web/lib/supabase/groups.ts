@@ -180,7 +180,7 @@ export type GroupAndRoleType = Row<'group_role'>
 
 // gets all groups where the user is an admin or moderator
 export async function getGroupsWhereUserHasRole(userId: string) {
-  const groupThings = await run(
+  const { data } = await run(
     db
       .from('group_role')
       .select()
@@ -188,7 +188,7 @@ export async function getGroupsWhereUserHasRole(userId: string) {
       .or('role.eq.admin,role.eq.moderator')
   )
 
-  return groupThings.data
+  return data as GroupAndRoleType[]
 }
 
 export async function getMyGroupRoles(userId: string) {
@@ -218,11 +218,11 @@ export async function getGroupBySlug(groupSlug: string) {
   return data?.length ? convertGroup(data[0]) : null
 }
 
-export async function getGroup(groupId: string) {
+export async function getGroups(groupIds: string[]) {
   const { data } = await run(
-    db.from('groups').select().eq('id', groupId).limit(1)
+    db.from('groups').select('id,data').in('id', groupIds)
   )
-  return data?.length ? convertGroup(data[0]) : null
+  return data?.map(convertGroup)
 }
 
 export async function getGroupContractIds(groupId: string) {

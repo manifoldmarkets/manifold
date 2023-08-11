@@ -1,5 +1,5 @@
 import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
-import { FireIcon, PencilIcon, PlusIcon } from '@heroicons/react/solid'
+import { FireIcon, PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
@@ -8,21 +8,17 @@ import { Contract, updateContract } from 'web/lib/firebase/contracts'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { getGroupLinkToDisplay, groupPath, sortGroups } from 'common/group'
+import { getGroupLinkToDisplay, groupPath } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { GroupTag } from 'web/pages/groups'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -88,27 +84,6 @@ export function MiscDetails(props: {
       )}
     </Row>
   )
-}
-
-export function MarketGroups(props: { contract: Contract }) {
-  const { contract } = props
-  if (contract.visibility === 'private') {
-    return <PrivateMarketGroups contract={contract} />
-  } else {
-    return <PublicMarketGroups contract={contract} />
-  }
-}
-
-function PrivateMarketGroups(props: { contract: Contract }) {
-  const { contract } = props
-  if (contract.groupLinks) {
-    return (
-      <div className="flex">
-        <GroupTag group={contract.groupLinks[0]} isPrivate />
-      </div>
-    )
-  }
-  return <></>
 }
 
 export function AuthorInfo(props: { contract: Contract }) {
@@ -179,65 +154,6 @@ export function CloseOrResolveTime(props: {
       </Row>
     )
   } else return <></>
-}
-
-export function PublicMarketGroups(props: {
-  contract: Contract
-  className?: string
-  justGroups?: boolean
-}) {
-  const [open, setOpen] = useState(false)
-  const user = useUser()
-  const isMobile = useIsMobile()
-  const { contract, className, justGroups } = props
-
-  const groupsToDisplay = sortGroups(contract).slice(0, isMobile ? 3 : 5)
-
-  return (
-    <>
-      <Row
-        className={clsx(
-          'flex-wrap items-end gap-1',
-          (!groupsToDisplay || groupsToDisplay.length == 0) && justGroups
-            ? 'hidden'
-            : '',
-          className
-        )}
-      >
-        {groupsToDisplay.map((group) => (
-          <GroupTag key={group.groupId} group={group} />
-        ))}
-
-        {user && (
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              setOpen(true)
-            }}
-            className="hover:bg-primary-400/20 text-primary-700 rounded-sm text-sm"
-          >
-            {groupsToDisplay.length ? (
-              <PencilIcon className="h-6 w-6 px-1" />
-            ) : (
-              <span className={clsx('flex items-center py-0.5 px-1')}>
-                <PlusIcon className="mr-1 h-4 w-4" /> Category
-              </span>
-            )}
-          </button>
-        )}
-      </Row>
-      <Modal open={open} setOpen={setOpen} size={'md'}>
-        <Col
-          className={
-            'bg-canvas-0 max-h-[70vh] min-h-[20rem] overflow-auto rounded p-6'
-          }
-        >
-          <ContractGroupsList contract={contract} user={user} />
-        </Col>
-      </Modal>
-    </>
-  )
 }
 
 function EditableCloseDate(props: {

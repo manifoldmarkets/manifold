@@ -29,7 +29,6 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import {
   AuthorInfo,
   CloseOrResolveTime,
-  MarketGroups,
 } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
@@ -81,6 +80,7 @@ import {
   getDpmBetPoints,
   getCpmmBetPoints,
 } from 'web/components/charts/contract/choice'
+import { MarketGroups } from 'web/components/contract/market-groups'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -442,6 +442,7 @@ export function ContractPageContent(props: {
                     canEdit={isAdmin || isCreator}
                   />
                 </div>
+                <MarketGroups contract={contract} />
               </Col>
 
               <div className="text-ink-600 flex items-center justify-between text-sm">
@@ -541,7 +542,6 @@ export function ContractPageContent(props: {
               )}
 
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2">
-              <MarketGroups contract={contract} />
               {outcomeType === 'BOUNTIED_QUESTION' && (
                 <Link
                   className={clsx(linkClass, 'text-primary-500 ml-2 text-sm')}
