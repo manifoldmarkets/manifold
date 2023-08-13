@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { ReactNode } from 'react'
 import { toast } from 'react-hot-toast'
 import { DateTimeTooltip } from 'web/components/widgets/datetime-tooltip'
 import { useIsClient } from 'web/hooks/use-is-client'
