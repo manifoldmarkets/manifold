@@ -7,14 +7,10 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { ContractDescription } from 'web/components/contract/contract-description'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { Row } from 'web/components/layout/row'
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import { uniqBy } from 'lodash'
+import { formatTimeShort } from 'web/lib/util/time'
 
-type EditHistory = Contract & {
-  editCreatedTime: number
-}
 export const ContractEditHistoryButton = (props: {
   contract: Contract
   className?: string
@@ -22,7 +18,9 @@ export const ContractEditHistoryButton = (props: {
   const { contract, className } = props
   const [showEditHistory, setShowEditHistory] = useState(false)
   const [contractHasEdits, setContractHasEdits] = useState(false)
-  const [edits, setEdits] = useState<EditHistory[] | undefined>(undefined)
+  const [edits, setEdits] = useState<Contract[] | undefined>(undefined)
+  const [editTimes, setEditTimes] = useState<number[]>([])
+
   const getCount = async () => {
     const { count } = await db
       .from('contract_edits')
@@ -43,12 +41,13 @@ export const ContractEditHistoryButton = (props: {
         .order('created_time', { ascending: false })
     )
 
+    // created_time is the time the row is created, but the row's content is the content before the edit, aka created_time is when the content is deleted and replaced
     const contracts = uniqBy(
       data.map((edit) => {
         const contract = edit.data as Contract
         return {
           ...contract,
-          editCreatedTime: new Date(edit.created_time).valueOf(),
+          versionDeletedTime: new Date(edit.created_time).valueOf(),
           idempotencyKey: edit.idempotency_key
             ? edit.idempotency_key
             : Math.random(),
@@ -56,6 +55,12 @@ export const ContractEditHistoryButton = (props: {
       }),
       'idempotencyKey'
     )
+
+    setEditTimes([
+      ...contracts.map((c) => c.versionDeletedTime).slice(1),
+      contract.createdTime,
+    ])
+
     setEdits(contracts)
   }
   useEffect(() => {
@@ -75,35 +80,28 @@ export const ContractEditHistoryButton = (props: {
         See history
       </Button>
       <Modal size={'lg'} open={showEditHistory} setOpen={setShowEditHistory}>
-        <Col className={'bg-canvas-100 p-4'}>
+        <div className={'bg-canvas-100 border-canvas-50 rounded border p-4'}>
           <Title>Edit history</Title>
-          {edits?.map((edit, index) => (
-            <Col
-              key={edit.id}
-              className={'text-ink-500 bg-canvas-50 my-2 gap-2 rounded-md p-2'}
-            >
-              <Row>
-                Edit {'#' + (edits?.length - index)} (
-                <RelativeTimestamp
-                  className={'-ml-1'}
-                  time={edit.editCreatedTime}
-                />
-                )
-              </Row>
-              <Row className={'gap-1'}>
-                <span className={'text-ink-1000 font-bold'}>
+          <Col className="gap-4">
+            {edits?.map((edit, i) => (
+              <Col key={edit.id} className="bg-canvas-0 gap-2 p-2">
+                <div className="text-ink-500 text-sm">
+                  {i === edits.length - 1 ? 'Created' : 'Saved'}{' '}
+                  {formatTimeShort(editTimes[i])}
+                </div>
+
+                <div className={'text-ink-1000 text-xl font-medium'}>
                   {edit.question}
-                </span>
-              </Row>
-              <Col className={'gap-1'}>
+                </div>
                 <ContractDescription contract={edit} defaultCollapse={true} />
+                <CloseOrResolveTime
+                  className="text-ink-700 text-sm"
+                  contract={edit}
+                />
               </Col>
-              <Row>
-                <CloseOrResolveTime contract={edit} editable={false} />
-              </Row>
-            </Col>
-          ))}
-        </Col>
+            ))}
+          </Col>
+        </div>
       </Modal>
     </>
   )

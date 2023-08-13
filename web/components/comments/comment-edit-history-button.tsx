@@ -5,10 +5,9 @@ import { useEffect, useState } from 'react'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { Row } from 'web/components/layout/row'
 import { Content } from 'web/components/widgets/editor'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { formatTimeShort } from 'web/lib/util/time'
 
 type EditHistory = Comment & {
   editCreatedTime: number
@@ -27,12 +26,15 @@ export const CommentEditHistoryButton = (props: { comment: Comment }) => {
         .order('created_time', { ascending: false })
     )
 
-    const comments = data.map((edit) => {
+    // created_time is the time the row is created, but the row's content is the content before the edit, aka created_time is when the content is deleted and replaced
+    const comments = data.map((edit, i) => {
       const comment = edit.data as Comment
-      return {
-        ...comment,
-        editCreatedTime: new Date(edit.created_time).valueOf(),
-      }
+      const editCreatedTime =
+        i === data.length - 1
+          ? comment.createdTime
+          : new Date(data[i + 1].created_time).valueOf()
+
+      return { ...comment, editCreatedTime }
     })
 
     setEdits(comments)
@@ -48,44 +50,39 @@ export const CommentEditHistoryButton = (props: { comment: Comment }) => {
 
   return (
     <>
-      <span
-        className={' text-ink-400 ml-1 cursor-pointer text-xs hover:underline'}
+      <button
+        className={
+          'text-ink-400 hover:bg-ink-50 inline-block rounded px-0.5 text-sm'
+        }
         onClick={() => setShowEditHistory(true)}
       >
         (edited)
-      </span>
+      </button>
       <Modal size={'md'} open={showEditHistory} setOpen={setShowEditHistory}>
-        <Col className={'bg-canvas-100 p-4'}>
-          <Title>Edit History</Title>
+        <div className={'bg-canvas-50 rounded-2xl p-4'}>
+          <Title className="w-full text-center">Edit History</Title>
           {!edits ? (
             <LoadingIndicator />
           ) : (
-            edits.map((edit, index) => (
-              <Col
-                key={edit.id}
-                className={
-                  'text-ink-500 bg-canvas-50 my-2 gap-2 rounded-md p-2'
-                }
-              >
-                <Row>
-                  Edit {'#' + (edits?.length - index)} (
-                  <RelativeTimestamp
-                    className={'-ml-1'}
-                    time={edit.editCreatedTime}
-                  />
-                  )
-                </Row>
-                <Row>
+            <Col className="gap-4">
+              {edits.map((edit) => (
+                <Col
+                  key={edit.id}
+                  className={'bg-ink-100 gap-2 rounded-xl rounded-tl-none p-2'}
+                >
+                  <div className="text-ink-500 text-sm">
+                    {formatTimeShort(edit.editCreatedTime)}
+                  </div>
                   <Content
                     size="sm"
                     className="mt-1 grow"
                     content={edit.content || edit.text}
                   />
-                </Row>
-              </Col>
-            ))
+                </Col>
+              ))}
+            </Col>
           )}
-        </Col>
+        </div>
       </Modal>
     </>
   )
