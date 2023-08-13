@@ -625,21 +625,24 @@ function FeedCommentHeader(props: {
                 )}
               </span>
             )}
+            {editedTime ? (
+              <CommentEditHistoryButton comment={comment} />
+            ) : (
+              <CopyLinkDateTimeComponent
+                prefix={contract.creatorUsername}
+                slug={contract.slug}
+                createdTime={editedTime ? editedTime : createdTime}
+                elementId={comment.id}
+                size={'sm'}
+                linkClassName="text-ink-500"
+              />
+            )}
+            {!inTimeline && isApi && (
+              <InfoTooltip text="Placed via API" className="mx-1">
+                🤖
+              </InfoTooltip>
+            )}
           </span>
-          <CopyLinkDateTimeComponent
-            prefix={contract.creatorUsername}
-            slug={contract.slug}
-            createdTime={editedTime ? editedTime : createdTime}
-            elementId={comment.id}
-            seeEditsButton={<CommentEditHistoryButton comment={comment} />}
-            size={'sm'}
-            linkClassName="text-ink-500"
-          />
-          {!inTimeline && isApi && (
-            <InfoTooltip text="Placed via API" className="mr-1">
-              🤖
-            </InfoTooltip>
-          )}
           {!inTimeline && <DotMenu comment={comment} contract={contract} />}
         </Row>
         {bountyAwarded && bountyAwarded > 0 && (

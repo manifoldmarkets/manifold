@@ -15,7 +15,7 @@ export function ReplyToggle(props: {
     <Row className="items-center gap-2 text-sm">
       <button
         className={clsx(
-          'text-ink-500 text-left',
+          'text-ink-500 hover:bg-ink-0 -mx-0.5 rounded px-0.5 text-left transition-colors',
           numComments === 0 ? 'hidden' : ''
         )}
         onClick={onClick}

@@ -8,6 +8,9 @@ import { Title } from 'web/components/widgets/title'
 import { Content } from 'web/components/widgets/editor'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { formatTimeShort } from 'web/lib/util/time'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { useIsClient } from 'web/hooks/use-is-client'
+import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 
 type EditHistory = Comment & {
   editCreatedTime: number
@@ -16,6 +19,8 @@ export const CommentEditHistoryButton = (props: { comment: Comment }) => {
   const { comment } = props
   const [showEditHistory, setShowEditHistory] = useState(false)
   const [edits, setEdits] = useState<EditHistory[] | undefined>(undefined)
+
+  const isClient = useIsClient()
 
   const loadEdits = async () => {
     const { data } = await run(
@@ -50,14 +55,16 @@ export const CommentEditHistoryButton = (props: { comment: Comment }) => {
 
   return (
     <>
-      <button
-        className={
-          'text-ink-400 hover:bg-ink-50 inline-block rounded px-0.5 text-sm'
-        }
-        onClick={() => setShowEditHistory(true)}
-      >
-        (edited)
-      </button>
+      <DateTimeTooltip time={comment.editedTime} placement={'top'}>
+        <button
+          className={
+            'text-ink-400 hover:bg-ink-50 mx-1 inline-block whitespace-nowrap rounded px-0.5 text-sm'
+          }
+          onClick={() => setShowEditHistory(true)}
+        >
+          (edited) {isClient && shortenedFromNow(comment.editedTime)}
+        </button>
+      </DateTimeTooltip>
       <Modal size={'md'} open={showEditHistory} setOpen={setShowEditHistory}>
         <div className={'bg-canvas-50 rounded-2xl p-4'}>
           <Title className="w-full text-center">Edit History</Title>
