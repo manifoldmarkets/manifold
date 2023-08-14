@@ -61,6 +61,7 @@ export function PollPanel(props: {
   }
 
   const optionsToShow = maxOptions ? options.slice(0, maxOptions) : options
+  const isCreator = user?.id === contract.creatorId
 
   return (
     <Col className="text-ink-1000 gap-2">
@@ -80,8 +81,8 @@ export function PollPanel(props: {
             }
             label={<div>{option.text}</div>}
             end={
-              <>
-                {(hasVoted || !votingOpen) && (
+              <Row className="gap-3">
+                {(hasVoted || !votingOpen || isCreator) && (
                   <SeeVotesButton
                     option={option}
                     contractId={contract.id}
@@ -95,9 +96,11 @@ export function PollPanel(props: {
                     disabled={!!userVotedId}
                   />
                 )}
-              </>
+              </Row>
             }
-            hideBar={!hasVoted && !!closeTime && closeTime > Date.now()}
+            hideBar={
+              !hasVoted && !!closeTime && closeTime > Date.now() && !isCreator
+            }
             className={'min-h-[40px]'}
           />
         )
