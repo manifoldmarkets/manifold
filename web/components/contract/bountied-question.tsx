@@ -148,7 +148,10 @@ export function AwardBountyButton(props: {
         color={'gray-outline'}
         size="xs"
         disabled={disabled}
-        onClick={() => setOpen(true)}
+        onClick={(e) => {
+          e.preventDefault()
+          setOpen(true)
+        }}
       >
         Award bounty
       </Button>

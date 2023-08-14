@@ -47,6 +47,7 @@ function FeedBetButton(props: {
         color="indigo-outline"
         size="2xs"
         onClick={(e) => {
+          e.preventDefault()
           e.stopPropagation()
           if (!user) {
             firebaseLogin()

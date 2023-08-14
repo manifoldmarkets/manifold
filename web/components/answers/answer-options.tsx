@@ -40,7 +40,13 @@ export const DPMMultiBettor = (props: {
         />
       </Modal>
 
-      <Button size="2xs" onClick={() => setOpen(true)}>
+      <Button
+        size="2xs"
+        onClick={(e) => {
+          e.preventDefault()
+          setOpen(true)
+        }}
+      >
         Bet
       </Button>
     </>

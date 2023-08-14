@@ -31,7 +31,7 @@ import { CardReason } from '../feed/card-reason'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PollPanel } from '../poll/poll-panel'
-import { ClickFrame } from '../widgets/click-frame'
+import { ClickFrame, LinkFrame } from '../widgets/click-frame'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
@@ -141,15 +141,15 @@ function SimpleCard(props: {
   const path = contractPath(contract)
 
   return (
-    <ClickFrame
+    <LinkFrame
       className={clsx(
         className,
         'bg-canvas-0 border-canvas-0 hover:border-primary-300 relative flex cursor-pointer flex-col justify-between gap-2 overflow-hidden rounded-xl border px-4 pt-2 drop-shadow-md transition-colors sm:px-6'
       )}
       onClick={(e) => {
-        Router.push(path)
         e.currentTarget.focus()
       }}
+      href={path}
     >
       <div
         className={
@@ -183,7 +183,7 @@ function SimpleCard(props: {
         />
         {bottomChildren}
       </Col>
-    </ClickFrame>
+    </LinkFrame>
   )
 }
 
@@ -214,7 +214,7 @@ function DetailedCard(props: {
     item && !item.isCopied && item.dataType === 'new_contract'
   const metrics = useSavedContractMetrics(contract)
   return (
-    <ClickFrame
+    <LinkFrame
       className={clsx(
         className,
         'relative rounded-xl',
@@ -224,9 +224,9 @@ function DetailedCard(props: {
       )}
       onClick={(e) => {
         trackClick()
-        Router.push(path)
         e.currentTarget.focus() // focus the div like a button, for style
       }}
+      href={path}
     >
       {/* Title is link to contract for open in new tab and a11y */}
       <Col className={'w-full flex-col gap-1.5 pt-2'}>
@@ -291,7 +291,7 @@ function DetailedCard(props: {
         </div>
       )}
       {contract.outcomeType === 'MULTIPLE_CHOICE' && (
-        <div className="mt-2">
+        <div className="mt-2" onClick={(e) => e.preventDefault()}>
           <AnswersPanel contract={contract} maxAnswers={4} linkToContract />
         </div>
       )}
@@ -314,7 +314,7 @@ function DetailedCard(props: {
         user={user}
         hide={hide}
       />
-    </ClickFrame>
+    </LinkFrame>
   )
 }
 
@@ -395,7 +395,10 @@ export const DislikeButton = (props: {
         className={clsx(
           'text-ink-500 hover:text-ink-600 flex flex-col justify-center transition-transform disabled:cursor-not-allowed'
         )}
-        onClick={markUninteresting}
+        onClick={(e) => {
+          e.preventDefault()
+          markUninteresting()
+        }}
       >
         <FiThumbsDown
           className={clsx('h-5 w-5', !interesting ? 'text-primary-500' : '')}

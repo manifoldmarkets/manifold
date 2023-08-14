@@ -132,7 +132,10 @@ export function SeeVotesButton(props: {
       )}
       <button
         className="disabled:text-ink-900/60 disabled:pointer-none group whitespace-nowrap transition-colors hover:text-indigo-800 disabled:cursor-not-allowed hover:dark:text-indigo-300"
-        onClick={() => setOpen(true)}
+        onClick={(e) => {
+          e.preventDefault()
+          setOpen(true)
+        }}
         disabled={disabled}
       >
         <span>{option.votes}</span>{' '}
@@ -189,7 +192,10 @@ export function VoteButton(props: {
   const { loading, onClick, disabled } = props
   return (
     <Button
-      onClick={onClick}
+      onClick={(e) => {
+        e.preventDefault()
+        onClick()
+      }}
       size="2xs"
       loading={loading}
       color="indigo-outline"

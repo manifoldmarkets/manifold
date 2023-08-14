@@ -442,7 +442,8 @@ export function CommentActions(props: {
         <Tooltip text="Reply" placement="bottom">
           <IconButton
             size={'xs'}
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault()
               onReplyClick(comment)
             }}
           >
