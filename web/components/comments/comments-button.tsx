@@ -61,7 +61,8 @@ export function CommentsButton(props: {
       <button
         disabled={totalComments === 0 && !user}
         className="hover:text-ink-600 text-ink-500 flex items-center gap-1.5 disabled:opacity-50"
-        onClick={() => {
+        onClick={(e) => {
+          e.preventDefault()
           setOpen(true)
           track('view comments', { contractId: contract.id })
         }}
