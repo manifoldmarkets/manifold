@@ -195,7 +195,7 @@ export function ContractsTable(props: {
   const columns = buildArray(['traders', 'prob', !hideActions && 'action'])
 
   return (
-    <Col className="relative w-full">
+    <Col className="w-full">
       {!hideHeader && (
         <Row
           className={clsx(
@@ -266,11 +266,11 @@ function ContractRow(props: {
         e.preventDefault()
       }}
       className={clsx(
-        'hover:bg-primary-50 focus:bg-primary-50 border-ink-200 sticky top-0 z-10 flex w-full flex-row border-b px-4 py-2 transition-colors sm:rounded-md sm:border-none',
+        'hover:bg-primary-50 focus:bg-primary-50 border-ink-200 flex w-full flex-row border-b px-4 py-2 transition-colors sm:rounded-md sm:border-none',
         highlighted && 'bg-primary-100'
       )}
     >
-      <div className="flex w-full flex-col sm:flex-row">
+      <div className="flex w-full flex-col gap-1 sm:flex-row sm:gap-0">
         <ContractQuestion
           contract={contract}
           className={'w-full sm:w-[calc(100%-12rem)]'}
