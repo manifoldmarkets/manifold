@@ -115,15 +115,13 @@ export function AnswersPanel(props: {
           ))}
           {moreCount > 0 &&
             (linkToContract ? (
-              <Row className="w-full justify-end">
-                <Link
-                  className="text-ink-500 hover:text-primary-500 text-sm"
-                  href={contractPath(contract)}
-                >
-                  See {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}{' '}
-                  <ArrowRightIcon className="inline h-4 w-4" />
-                </Link>
-              </Row>
+              <Link
+                className="text-ink-500 hover:text-primary-500"
+                href={contractPath(contract)}
+              >
+                See {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}{' '}
+                <ArrowRightIcon className="inline h-4 w-4" />
+              </Link>
             ) : (
               <Button
                 color="gray-white"

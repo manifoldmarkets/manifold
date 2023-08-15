@@ -142,6 +142,7 @@ export const MOD_USERNAMES = [
   'NoaNabeshima',
   'Mira',
   'evergreenemily',
+  'SneakySly',
 ]
 
 export const VERIFIED_USERNAMES = [
@@ -150,7 +151,7 @@ export const VERIFIED_USERNAMES = [
   'Aella',
   'ZviMowshowitz',
   'NathanpmYoung',
-  'SneakySly',
+
   'GavrielK',
   'CGPGrey',
   'LexFridman',
