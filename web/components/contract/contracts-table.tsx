@@ -20,6 +20,9 @@ import { Col } from '../layout/col'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 import { buildArray } from 'common/util/array'
 
+const cellClassName =
+  'pr-2 first:rounded-l first:pl-2 last:rounded-r last:pr-2 sm:pr-4'
+
 export function isClosed(contract: Contract) {
   return (contract.closeTime &&
     contract.closeTime < Date.now() &&
@@ -118,50 +121,54 @@ export function ContractStatusLabel(props: {
   }
 }
 
-function ContractQuestion(props: { contract: Contract; className?: string }) {
-  const { contract, className } = props
-  return (
-    <Row className={clsx('gap-2 sm:gap-4', className)}>
-      <Avatar
-        username={contract.creatorUsername}
-        avatarUrl={contract.creatorAvatarUrl}
-        size="xs"
-        preventDefault={true}
-      />
-      <div className="">
-        <VisibilityIcon contract={contract} /> {contract.question}
-      </div>
-    </Row>
-  )
-}
-
 const contractColumns = {
-  traders: {
-    header: 'Traders',
-    content: (contract: Contract) =>
-      contract.outcomeType == 'BOUNTIED_QUESTION' ? (
-        <div className="h-min align-top opacity-70 sm:opacity-100">
-          <BountiedContractComments contractId={contract.id} />
+  question: {
+    header: 'Question',
+    content: (contract: Contract) => (
+      <Row className="gap-2 sm:gap-4">
+        <Avatar
+          username={contract.creatorUsername}
+          avatarUrl={contract.creatorAvatarUrl}
+          size="xs"
+          preventDefault={true}
+        />
+        <div className="">
+          <VisibilityIcon contract={contract} /> {contract.question}
         </div>
-      ) : (
-        <div className="h-min align-top opacity-70 sm:opacity-100">
-          <Row className="align-center shrink-0 items-center gap-0.5">
-            <UserIcon className="h-4 w-4" />
-            {shortenNumber(contract.uniqueBettorCount)}
-          </Row>
-        </div>
-      ),
+      </Row>
+    ),
   },
   prob: {
-    header: 'Stat',
+    header: 'Prob',
     content: (contract: Contract) => (
-      <div className="font-semibold opacity-70 sm:opacity-100">
+      <div className="font-semibold">
         <ContractStatusLabel contract={contract} />
       </div>
     ),
   },
+
+  traders: {
+    header: 'Traders',
+    content: (contract: Contract) =>
+      contract.outcomeType == 'BOUNTIED_QUESTION' ? (
+        <BountiedContractComments contractId={contract.id} />
+      ) : (
+        <Row className="align-center shrink-0 items-center gap-0.5">
+          <UserIcon className="h-4 w-4" />
+          {shortenNumber(contract.uniqueBettorCount)}
+        </Row>
+      ),
+  },
+  // visibility: {
+  //   header: '',
+  //   content: (contract: Contract) => (
+  //     <div className="mt-1">
+  //       <Visibility contract={contract} />
+  //     </div>
+  //   ),
+  // },
   action: {
-    header: 'Action',
+    header: '',
     content: (contract: Contract) => <Action contract={contract} />,
   },
 } as const
@@ -189,59 +196,54 @@ export function ContractsTable(props: {
 
   const user = useUser()
 
-  const columns = buildArray(['traders', 'prob', !hideActions && 'action'])
+  const columns = buildArray([
+    'question',
+    'prob',
+    !isMobile && 'traders',
+    !isMobile && !hideActions && 'action',
+  ])
 
   return (
-    <Col className="w-full">
+    <table>
       {!hideHeader && (
-        <Row
+        <thead
           className={clsx(
-            'bg-canvas-50 text-ink-500 sticky top-0 z-10 w-full justify-end px-4 py-1 text-sm font-semibold sm:justify-between',
+            'text-ink-600 bg-canvas-50 text-left text-sm font-semibold',
             headerClassName
           )}
         >
-          <div className={' invisible w-[calc(100%-12rem)] sm:visible'}>
-            Question
-          </div>
-          <Row>
+          <tr>
             {columns.map((key) => (
-              <div
-                key={key}
-                className={clsx(
-                  'text-left',
-                  key == 'action' ? 'w-[3rem]' : 'w-[4rem]'
-                )}
-              >
+              <th key={key} className={cellClassName}>
                 {contractColumns[key].header}
-              </div>
+              </th>
             ))}
-          </Row>
-        </Row>
+          </tr>
+        </thead>
       )}
-
-      {contracts.map((contract, index) => (
-        <ContractRow
-          key={contract.id}
-          isLast={index === contracts.length - 1}
-          contract={contract}
-          columns={columns}
-          highlighted={highlightContractIds?.includes(contract.id)}
-          faded={
-            (isClosed(contract) && contract.creatorId !== user?.id) ||
-            contract.isResolved
-          }
-          onClick={
-            onContractClick ? () => onContractClick(contract) : undefined
-          }
-        />
-      ))}
-    </Col>
+      <tbody>
+        {contracts.map((contract) => (
+          <ContractRow
+            key={contract.id}
+            contract={contract}
+            columns={columns}
+            highlighted={highlightContractIds?.includes(contract.id)}
+            faded={
+              (isClosed(contract) && contract.creatorId !== user?.id) ||
+              contract.isResolved
+            }
+            onClick={
+              onContractClick ? () => onContractClick(contract) : undefined
+            }
+          />
+        ))}
+      </tbody>
+    </table>
   )
 }
 
 function ContractRow(props: {
   contract: Contract
-  isLast: boolean
   columns: ColumnKey[]
   highlighted?: boolean
   faded?: boolean
@@ -250,48 +252,43 @@ function ContractRow(props: {
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
-  const { columns, isLast, highlighted, faded, onClick } = props
+  const { columns, highlighted, faded, onClick } = props
 
   const visibleColumns = columns.map((key) => ({
     key,
     ...contractColumns[key],
   }))
 
+  const dataCellClassName = 'py-2 align-top'
   return (
-    <Link
-      href={contractPath(contract)}
-      onClick={(e) => {
-        if (!onClick) return
-        onClick()
-        e.preventDefault()
-      }}
+    <tr
+      key={contract.id}
       className={clsx(
-        'hover:bg-primary-50 focus:bg-primary-50 flex w-full flex-row  px-2 py-2 transition-colors sm:rounded-md',
         highlighted && 'bg-primary-100',
-        isLast ? '' : 'border-ink-200 border-b  sm:border-none'
+        faded && 'text-ink-500',
+        'hover:bg-primary-50 focus:bg-primary-50 group relative cursor-pointer'
       )}
     >
-      <div className="flex w-full flex-col justify-between gap-1 sm:flex-row sm:gap-0">
-        <ContractQuestion
-          contract={contract}
-          className={'w-full sm:w-[calc(100%-12rem)]'}
-        />
-        <Row className="w-full justify-end sm:w-fit">
-          {visibleColumns.map((column) => (
-            <Row
-              key={contract.id}
-              className={clsx(
-                'group relative cursor-pointer text-left',
-                faded && 'text-ink-500',
-                column.key == 'action' ? 'w-[3rem]' : 'w-[4rem]'
-              )}
-            >
-              {column.content(contract)}
-            </Row>
-          ))}
-        </Row>
-      </div>
-    </Link>
+      {visibleColumns.map((column) => (
+        <td
+          key={column.key}
+          className={clsx(cellClassName, dataCellClassName)}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Link
+            onClick={(e) => {
+              if (!onClick) return
+              onClick()
+              e.preventDefault()
+            }}
+            href={contractPath(contract)}
+            className="contents"
+          >
+            {column.content(contract)}
+          </Link>
+        </td>
+      ))}
+    </tr>
   )
 }
 

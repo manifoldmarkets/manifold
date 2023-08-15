@@ -18,7 +18,7 @@ export function Action(props: { contract: Contract }) {
   const { contract } = props
   const user = useUser()
   return (
-    <Row className="h-min flex-wrap gap-2 align-top">
+    <Row className="flex-wrap gap-2">
       <BetButton contract={contract} user={user} />
       <ResolveButton contract={contract} user={user} />
     </Row>
@@ -40,6 +40,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
         <Button
           size="2xs"
           color="indigo-outline"
+          className="!ring-1"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
