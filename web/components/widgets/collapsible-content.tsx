@@ -26,7 +26,6 @@ export function ShowMoreLessButton(props: {
 
   return (
     <button
-      color="override"
       className={clsx(
         'bg-canvas-0 text-primary-500 hover:text-primary-700 z-10 select-none text-sm',
         className
@@ -126,8 +125,10 @@ function ActuallyCollapsibleContent(props: {
           'transition-height relative w-full overflow-hidden rounded-b-md'
         )}
       >
-        <Content content={content} />
-        {!hideButton && <Row className="justify-end">{button}</Row>}
+        <div>
+          {!hideButton && <Row className="justify-end">{button}</Row>}
+          <Content content={content} />
+        </div>
         {isCollapsed && (
           <>
             <div className="absolute bottom-0 w-full">

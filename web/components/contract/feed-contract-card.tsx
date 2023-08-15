@@ -290,15 +290,6 @@ function DetailedCard(props: {
         )}
       </Col>
 
-      {item?.dataType == 'new_contract' && (
-        <ContractDescription
-          className="mt-2"
-          contract={contract}
-          highlightResolver={false}
-          showEditHistory={false}
-        />
-      )}
-
       {isBinaryCpmm && metrics && metrics.hasShares && (
         <YourMetricsFooter metrics={metrics} />
       )}
