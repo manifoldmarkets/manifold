@@ -41,6 +41,10 @@ export type User = {
   referredByGroupId?: string
   lastPingTime?: number
   shouldShowWelcome?: boolean
+
+  // Salem center fields.
+  totalBets: number
+  betMoreThanFiftyOnContractsCount: number
 }
 
 export const STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 1000
