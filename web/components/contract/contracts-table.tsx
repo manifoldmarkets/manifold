@@ -20,8 +20,8 @@ import { Col } from '../layout/col'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 import { buildArray } from 'common/util/array'
 
-const cellClassName =
-  'pr-2 first:rounded-l first:pl-2 last:rounded-r last:pr-2 sm:pr-4'
+// const cellClassName =
+//   'pr-2 first:rounded-l first:pl-2 last:rounded-r last:pr-2 sm:pr-4'
 
 export function isClosed(contract: Contract) {
   return (contract.closeTime &&
@@ -121,10 +121,7 @@ export function ContractStatusLabel(props: {
   }
 }
 
-function ContractQuestionLabel(props: {
-  contract: Contract
-  className?: string
-}) {
+function ContractQuestion(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
   return (
     <Row className={clsx('gap-2 sm:gap-4', className)}>
@@ -167,7 +164,7 @@ const contractColumns = {
     ),
   },
   action: {
-    header: '',
+    header: 'Action',
     content: (contract: Contract) => <Action contract={contract} />,
   },
 } as const
@@ -202,19 +199,20 @@ export function ContractsTable(props: {
       {!hideHeader && (
         <Row
           className={clsx(
-            'bg-canvas-50 sticky top-0 z-10 w-full justify-end px-4 py-2 text-sm font-semibold',
+            'bg-canvas-50 text-ink-500 sticky top-0 z-10 w-full justify-end px-4 py-1 text-sm font-semibold sm:justify-start',
             headerClassName
           )}
         >
-          <div className={'w-[calc(100%-9rem)]'}></div>
+          <div className={' invisible w-[calc(100%-12rem)] sm:visible'}>
+            Question
+          </div>
           {columns.map((key) => (
             <div
               key={key}
               className={clsx(
-                'flex w-[4rem] flex-row text-left',
+                'text-left',
                 // key == 'question' ? 'grow' : 'w-20',
-                cellClassName,
-                key == 'action' ? 'w-[2rem]' : 'w-[4rem]'
+                key == 'action' ? 'w-[3rem]' : 'w-[4rem]'
               )}
             >
               {contractColumns[key].header}
@@ -268,23 +266,23 @@ function ContractRow(props: {
         e.preventDefault()
       }}
       className={clsx(
-        ' hover:bg-primary-50 focus:bg-primary-50 border-ink-200 sticky top-0 z-10 flex w-full flex-row border-b px-4 py-2 text-sm font-semibold sm:border-none',
+        'hover:bg-primary-50 focus:bg-primary-50 border-ink-200 sticky top-0 z-10 flex w-full flex-row border-b px-4 py-2 transition-colors sm:rounded-md sm:border-none',
         highlighted && 'bg-primary-100'
       )}
     >
-      <div className="flex w-full flex-col gap-1 sm:flex-row">
-        <ContractQuestionLabel
+      <div className="flex w-full flex-col sm:flex-row">
+        <ContractQuestion
           contract={contract}
-          className={'w-full sm:w-[calc(100%-9rem)]'}
+          className={'w-full sm:w-[calc(100%-12rem)]'}
         />
         <Row className="w-full justify-end sm:w-fit">
           {visibleColumns.map((column) => (
             <Row
               key={contract.id}
               className={clsx(
-                'group relative cursor-pointer gap-1 text-left',
+                'group relative cursor-pointer text-left',
                 faded && 'text-ink-500',
-                column.key == 'action' ? 'w-[2rem]' : 'w-[4rem]'
+                column.key == 'action' ? 'w-[3rem]' : 'w-[4rem]'
               )}
             >
               {column.content(contract)}
