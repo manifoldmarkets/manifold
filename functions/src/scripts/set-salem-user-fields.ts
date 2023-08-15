@@ -45,22 +45,18 @@ async function setSalemUserFields() {
     )
     const betMoreThanFiftyOnContractsCount = contractIdsWithMoreThan50Bet.length
 
-    console.log(
-      'got bets',
-      totalBets,
-      'betMoreThanFiftyOnContractsCount',
-      betMoreThanFiftyOnContractsCount
-    )
-
     const midtermProfit = sumBy(midtermContracts, (c) => {
       const { profit } = getContractBetMetrics(c, betsByContractId[c.id] ?? [])
       return profit
     })
+
     console.log(
+      'got bets',
+      totalBets,
+      'betMoreThanFiftyOnContractsCount',
+      betMoreThanFiftyOnContractsCount,
       'midterm profit',
-      midtermProfit,
-      'total profit',
-      user.profitCached.allTime
+      midtermProfit
     )
 
     await firestore.collection('users').doc(user.id).update({
