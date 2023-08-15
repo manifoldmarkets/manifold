@@ -142,31 +142,15 @@ function ContractQuestionLabel(props: {
 }
 
 const contractColumns = {
-  // question: {
-  //   header: 'Question',
-  //   content: (contract: Contract) => (
-  //     <Row className="gap-2 sm:gap-4">
-  //       <Avatar
-  //         username={contract.creatorUsername}
-  //         avatarUrl={contract.creatorAvatarUrl}
-  //         size="xs"
-  //         preventDefault={true}
-  //       />
-  //       <div className="">
-  //         <VisibilityIcon contract={contract} /> {contract.question}
-  //       </div>
-  //     </Row>
-  //   ),
-  // },
   traders: {
     header: 'Traders',
     content: (contract: Contract) =>
       contract.outcomeType == 'BOUNTIED_QUESTION' ? (
-        <div className="h-min align-top opacity-70">
+        <div className="h-min align-top opacity-70 sm:opacity-100">
           <BountiedContractComments contractId={contract.id} />
         </div>
       ) : (
-        <div className="h-min align-top opacity-70">
+        <div className="h-min align-top opacity-70 sm:opacity-100">
           <Row className="align-center shrink-0 items-center gap-0.5">
             <UserIcon className="h-4 w-4" />
             {shortenNumber(contract.uniqueBettorCount)}
@@ -177,7 +161,7 @@ const contractColumns = {
   prob: {
     header: 'Prob',
     content: (contract: Contract) => (
-      <div className="font-semibold opacity-70">
+      <div className="font-semibold opacity-70 sm:opacity-100">
         <ContractStatusLabel contract={contract} />
       </div>
     ),
@@ -211,19 +195,14 @@ export function ContractsTable(props: {
 
   const user = useUser()
 
-  const columns = buildArray([
-    // 'question',
-    'traders',
-    'prob',
-    !hideActions && 'action',
-  ])
+  const columns = buildArray(['traders', 'prob', !hideActions && 'action'])
 
   return (
     <Col className="relative w-full">
       {!hideHeader && (
         <Row
           className={clsx(
-            'bg-canvas-50 sticky top-0 z-10 w-full px-4 py-2 text-sm font-semibold',
+            'bg-canvas-50 sticky top-0 z-10 w-full justify-end gap-1 px-4 py-2 text-sm font-semibold',
             headerClassName
           )}
         >
@@ -231,7 +210,7 @@ export function ContractsTable(props: {
             <div
               key={key}
               className={clsx(
-                'flex flex-row text-left',
+                'flex w-[4rem] flex-row text-left',
                 // key == 'question' ? 'grow' : 'w-20',
                 cellClassName
               )}
@@ -301,9 +280,8 @@ function ContractRow(props: {
             <Row
               key={contract.id}
               className={clsx(
-                'w-[4rem] gap-1 text-left',
-                faded && 'text-ink-500',
-                ' group relative cursor-pointer'
+                'group relative w-[4rem] cursor-pointer gap-1 text-left',
+                faded && 'text-ink-500'
               )}
             >
               {column.content(contract)}
