@@ -223,9 +223,10 @@ export function ContractsTable(props: {
         </Row>
       )}
 
-      {contracts.map((contract) => (
+      {contracts.map((contract, index) => (
         <ContractRow
           key={contract.id}
+          isLast={index === contracts.length - 1}
           contract={contract}
           columns={columns}
           highlighted={highlightContractIds?.includes(contract.id)}
@@ -244,6 +245,7 @@ export function ContractsTable(props: {
 
 function ContractRow(props: {
   contract: Contract
+  isLast: boolean
   columns: ColumnKey[]
   highlighted?: boolean
   faded?: boolean
@@ -252,7 +254,7 @@ function ContractRow(props: {
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
-  const { columns, highlighted, faded, onClick } = props
+  const { columns, isLast, highlighted, faded, onClick } = props
 
   const visibleColumns = columns.map((key) => ({
     key,
@@ -268,8 +270,9 @@ function ContractRow(props: {
         e.preventDefault()
       }}
       className={clsx(
-        'hover:bg-primary-50 focus:bg-primary-50 border-ink-200 flex w-full flex-row border-b px-4 py-2 transition-colors sm:rounded-md sm:border-none',
-        highlighted && 'bg-primary-100'
+        'hover:bg-primary-50 focus:bg-primary-50 flex w-full flex-row  px-4 py-2 transition-colors sm:rounded-md',
+        highlighted && 'bg-primary-100',
+        isLast ? '' : 'border-ink-200 border-b  sm:border-none'
       )}
     >
       <div className="flex w-full flex-col justify-between gap-1 sm:flex-row sm:gap-0">
