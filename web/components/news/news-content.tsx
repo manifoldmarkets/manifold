@@ -722,17 +722,45 @@ const UFOs = createNewsDashboardTab(
         />
       ),
     },
+    { slug: 'if-eliezer-yudkowsky-loses-his-bet' },
   ]
 )
 
 const Trump = createNewsDashboardTab('Trump', 'Trump indicted', [
   {
-    url: 'https://apnews.com/article/trump-indicted-jan-6-investigation-special-counsel-debb59bb7a4d9f93f7e2dace01feccdc',
+    url: 'https://apnews.com/article/trump-georgia-election-investigation-grand-jury-willis-d39562cedfc60d64948708de1b011ed3',
   },
-  { slug: 'will-donald-trump-be-the-2024-nomin' },
+  {
+    content: (
+      <NewsTopicsContentContainer
+        header="Trump charged with racketeering"
+        containerContent={
+          <Col className="gap-4">
+            <div>Trump faces 4th criminal case, August 14th</div>
+            <div>
+              “The indictment alleges that rather than abide by Georgia’s legal
+              process for election challenges, the defendants engaged in a
+              criminal racketeering enterprise to overturn Georgia’s
+              presidential election result,” Fulton County District Attorney
+              Fani Willis
+            </div>
+            <div>Odds of Trump avoiding prison were at 60% but fell to 23%</div>
+            <div>
+              The type of charges (RICO) being pressed is novel in this context
+              and is usually used against criminal organisations{' '}
+            </div>
+          </Col>
+        }
+      />
+    ),
+  },
+  { slug: 'when-will-trump-be-imprisoned' },
+  { slug: 'will-donald-trump-be-the-republican' },
+  { slug: 'will-a-trump-mugshot-be-available-b' },
+  { slug: 'will-one-of-the-18-indicted-coconsp' },
   { slug: 'will-trump-be-indicted-by-three-or' },
   { slug: 'who-will-be-the-republican-presiden-7bf11c066154' },
-  { slug: 'when-will-trump-be-imprisoned' },
+  { slug: 'is-trump-more-likely-to-spend-1-nig' },
   { slug: 'will-there-be-large-scale-protests' },
 ])
 
@@ -745,6 +773,7 @@ const NigerCoup = createNewsDashboardTab('Niger coup', 'Niger coup', [
   { slug: 'will-president-bazoum-of-niger-be-r' },
   { slug: 'will-us-troops-participate-in-a-mil' },
   { slug: 'conditional-upon-a-military-interve' },
+  { slug: 'what-will-the-human-development-ind-11efb7344aca' },
 ])
 
 const CancerPill = createNewsDashboardTab(
@@ -788,12 +817,12 @@ const CancerPill = createNewsDashboardTab(
 )
 
 export const newsContent = [
+  Trump,
   STPSuper,
   ElonVersusZuck,
-  CancerPill,
-  Trump,
-  NigerCoup,
   UkraineWar,
+  CancerPill,
+  NigerCoup,
   UFOs,
   XCom,
   Election2024,
