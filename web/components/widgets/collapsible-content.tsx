@@ -5,7 +5,6 @@ import {
 import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
 import { MouseEventHandler, useRef, useState } from 'react'
-import { Button } from 'web/components/buttons/button'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { Row } from '../layout/row'
 import { Content } from './editor'

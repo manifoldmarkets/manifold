@@ -13,7 +13,6 @@ import {
   ContractStatusLabel,
   VisibilityIcon,
 } from 'web/components/contract/contracts-table'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
@@ -34,7 +33,6 @@ import { LinkFrame } from '../widgets/click-frame'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
-import { ContractDescription } from './contract-description'
 
 export function FeedContractCard(props: {
   contract: Contract
