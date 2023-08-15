@@ -63,14 +63,24 @@ function UsersTable() {
     .sort((a, b) => b.createdTime - a.createdTime)
 
   function exportCsv() {
-    const lines = [['Email', 'Name', 'Balance', 'Profit', 'Number bets', 'Number markets with S$50 bet', 'IP Address']].concat(
+    const lines = [
+      [
+        'Email',
+        'Name',
+        'Balance',
+        'Profit',
+        'Number bets',
+        'Number markets with S$50 bet',
+        'IP Address',
+      ],
+    ].concat(
       fullUsers.map((u) => [
         u.email ?? '',
         u.name,
         Math.round(u.balance).toString(),
         Math.round(profitByUser[u.id] ?? 0).toString(),
-        u.totalBets.toString(),
-        u.betMoreThanFiftyOnContractsCount.toString(),
+        (u.totalBets ?? 0).toString(),
+        (u.betMoreThanFiftyOnContractsCount ?? 0).toString(),
         u.ip ?? '',
       ])
     )

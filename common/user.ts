@@ -43,8 +43,8 @@ export type User = {
   shouldShowWelcome?: boolean
 
   // Salem center fields.
-  totalBets: number
-  betMoreThanFiftyOnContractsCount: number
+  totalBets?: number
+  betMoreThanFiftyOnContractsCount?: number
 }
 
 export const STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 1000
