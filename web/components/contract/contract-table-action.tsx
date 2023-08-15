@@ -18,7 +18,7 @@ export function Action(props: { contract: Contract }) {
   const { contract } = props
   const user = useUser()
   return (
-    <Row className="flex-wrap gap-2">
+    <Row className="h-min flex-wrap gap-2 align-top">
       <BetButton contract={contract} user={user} />
       <ResolveButton contract={contract} user={user} />
     </Row>
