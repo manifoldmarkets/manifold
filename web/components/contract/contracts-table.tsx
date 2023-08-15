@@ -156,7 +156,7 @@ const contractColumns = {
       ),
   },
   prob: {
-    header: 'Prob',
+    header: 'Stat',
     content: (contract: Contract) => (
       <div className="font-semibold opacity-70 sm:opacity-100">
         <ContractStatusLabel contract={contract} />
@@ -199,25 +199,27 @@ export function ContractsTable(props: {
       {!hideHeader && (
         <Row
           className={clsx(
-            'bg-canvas-50 text-ink-500 sticky top-0 z-10 w-full justify-end px-4 py-1 text-sm font-semibold sm:justify-start',
+            'bg-canvas-50 text-ink-500 sticky top-0 z-10 w-full justify-end px-4 py-1 text-sm font-semibold sm:justify-between',
             headerClassName
           )}
         >
           <div className={' invisible w-[calc(100%-12rem)] sm:visible'}>
             Question
           </div>
-          {columns.map((key) => (
-            <div
-              key={key}
-              className={clsx(
-                'text-left',
-                // key == 'question' ? 'grow' : 'w-20',
-                key == 'action' ? 'w-[3rem]' : 'w-[4rem]'
-              )}
-            >
-              {contractColumns[key].header}
-            </div>
-          ))}
+          <Row>
+            {columns.map((key) => (
+              <div
+                key={key}
+                className={clsx(
+                  'text-left',
+                  // key == 'question' ? 'grow' : 'w-20',
+                  key == 'action' ? 'w-[3rem]' : 'w-[4rem]'
+                )}
+              >
+                {contractColumns[key].header}
+              </div>
+            ))}
+          </Row>
         </Row>
       )}
 
@@ -270,7 +272,7 @@ function ContractRow(props: {
         highlighted && 'bg-primary-100'
       )}
     >
-      <div className="flex w-full flex-col gap-1 sm:flex-row sm:gap-0">
+      <div className="flex w-full flex-col justify-between gap-1 sm:flex-row sm:gap-0">
         <ContractQuestion
           contract={contract}
           className={'w-full sm:w-[calc(100%-12rem)]'}
