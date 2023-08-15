@@ -202,17 +202,19 @@ export function ContractsTable(props: {
       {!hideHeader && (
         <Row
           className={clsx(
-            'bg-canvas-50 sticky top-0 z-10 w-full justify-end gap-1 px-4 py-2 text-sm font-semibold',
+            'bg-canvas-50 sticky top-0 z-10 w-full justify-end px-4 py-2 text-sm font-semibold',
             headerClassName
           )}
         >
+          <div className={'w-[calc(100%-9rem)]'}></div>
           {columns.map((key) => (
             <div
               key={key}
               className={clsx(
                 'flex w-[4rem] flex-row text-left',
                 // key == 'question' ? 'grow' : 'w-20',
-                cellClassName
+                cellClassName,
+                key == 'action' ? 'w-[2rem]' : 'w-[4rem]'
               )}
             >
               {contractColumns[key].header}
@@ -266,7 +268,7 @@ function ContractRow(props: {
         e.preventDefault()
       }}
       className={clsx(
-        'bg-canvas-50 hover:bg-primary-50 focus:bg-primary-50 border-ink-200 sticky top-0 z-10 flex w-full flex-row border-b px-4 py-2 text-sm font-semibold sm:border-none',
+        ' hover:bg-primary-50 focus:bg-primary-50 border-ink-200 sticky top-0 z-10 flex w-full flex-row border-b px-4 py-2 text-sm font-semibold sm:border-none',
         highlighted && 'bg-primary-100'
       )}
     >
@@ -280,8 +282,9 @@ function ContractRow(props: {
             <Row
               key={contract.id}
               className={clsx(
-                'group relative w-[4rem] cursor-pointer gap-1 text-left',
-                faded && 'text-ink-500'
+                'group relative cursor-pointer gap-1 text-left',
+                faded && 'text-ink-500',
+                column.key == 'action' ? 'w-[2rem]' : 'w-[4rem]'
               )}
             >
               {column.content(contract)}
