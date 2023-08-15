@@ -266,7 +266,7 @@ function ContractRow(props: {
         e.preventDefault()
       }}
       className={clsx(
-        'hover:bg-primary-50 focus:bg-primary-50 flex w-full flex-row  px-4 py-2 transition-colors sm:rounded-md',
+        'hover:bg-primary-50 focus:bg-primary-50 flex w-full flex-row  px-2 py-2 transition-colors sm:rounded-md',
         highlighted && 'bg-primary-100',
         isLast ? '' : 'border-ink-200 border-b  sm:border-none'
       )}
