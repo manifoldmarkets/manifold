@@ -5,6 +5,8 @@ import { HOUR_MS } from 'common/util/time'
 import { Contract } from 'common/contract'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import clsx from 'clsx'
+import { Row } from '../layout/row'
+import { HiSparkles } from 'react-icons/hi'
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
@@ -38,6 +40,22 @@ export function CardReason(props: {
         </span>{' '}
         today
       </span>
+    )
+  }
+
+  if (item.dataType == 'new_contract') {
+    return (
+      <Row className={'text-ink-400 items-center gap-1 text-sm'}>
+        <HiSparkles className={'h-4 w-4 text-yellow-400'} />
+        <span>
+          created
+          <RelativeTimestamp
+            time={item.createdTime}
+            shortened={true}
+            className="text-ink-400"
+          />
+        </span>
+      </Row>
     )
   }
 
