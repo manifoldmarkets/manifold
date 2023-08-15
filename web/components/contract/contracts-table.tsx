@@ -20,9 +20,6 @@ import { Col } from '../layout/col'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 import { buildArray } from 'common/util/array'
 
-// const cellClassName =
-//   'pr-2 first:rounded-l first:pl-2 last:rounded-r last:pr-2 sm:pr-4'
-
 export function isClosed(contract: Contract) {
   return (contract.closeTime &&
     contract.closeTime < Date.now() &&
@@ -212,7 +209,6 @@ export function ContractsTable(props: {
                 key={key}
                 className={clsx(
                   'text-left',
-                  // key == 'question' ? 'grow' : 'w-20',
                   key == 'action' ? 'w-[3rem]' : 'w-[4rem]'
                 )}
               >
