@@ -34,6 +34,7 @@ import { LinkFrame } from '../widgets/click-frame'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
+import { ContractDescription } from './contract-description'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -209,8 +210,6 @@ function DetailedCard(props: {
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
   const path = contractPath(contract)
-  const statusInlineWithUserlink =
-    item && !item.isCopied && item.dataType === 'new_contract'
   const metrics = useSavedContractMetrics(contract)
   return (
     <LinkFrame
@@ -241,22 +240,9 @@ function DetailedCard(props: {
               name={contract.creatorName}
               username={creatorUsername}
               className={clsx(
-                'w-full text-ellipsis sm:max-w-[12rem]',
-                statusInlineWithUserlink ? 'max-w-[6.5rem]' : 'max-w-[10rem]'
+                'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
               )}
             />
-            {statusInlineWithUserlink && (
-              <span className={'text-ink-400'}>
-                <Tooltip text={item?.reasonDescription} placement={'top'}>
-                  asked
-                </Tooltip>
-                <RelativeTimestamp
-                  time={item.createdTime}
-                  shortened={true}
-                  className="text-ink-400"
-                />
-              </span>
-            )}
           </Row>
           <CardReason item={item} contract={contract} />
         </Row>
@@ -303,6 +289,15 @@ function DetailedCard(props: {
           />
         )}
       </Col>
+
+      {item?.dataType == 'new_contract' && (
+        <ContractDescription
+          className="mt-2"
+          contract={contract}
+          highlightResolver={false}
+          showEditHistory={false}
+        />
+      )}
 
       {isBinaryCpmm && metrics && metrics.hasShares && (
         <YourMetricsFooter metrics={metrics} />

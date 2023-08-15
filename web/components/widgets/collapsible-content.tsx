@@ -25,14 +25,13 @@ export function ShowMoreLessButton(props: {
   const howManyMoreText = howManyMore ? howManyMore + ' ' : ''
 
   return (
-    <Button
+    <button
       color="override"
       className={clsx(
         'bg-canvas-0 text-primary-500 hover:text-primary-700 z-10 select-none text-sm',
         className
       )}
       onClick={onClick}
-      size={'xs'}
     >
       <Row className="items-center gap-0.5">
         {isCollapsed
@@ -44,7 +43,7 @@ export function ShowMoreLessButton(props: {
           <ChevronDoubleUpIcon className="h-4 w-4" />
         )}
       </Row>
-    </Button>
+    </button>
   )
 }
 
@@ -127,10 +126,8 @@ function ActuallyCollapsibleContent(props: {
           'transition-height relative w-full overflow-hidden rounded-b-md'
         )}
       >
-        <div>
-          {!hideButton && <Row className="justify-end">{button}</Row>}
-          <Content content={content} />
-        </div>
+        <Content content={content} />
+        {!hideButton && <Row className="justify-end">{button}</Row>}
         {isCollapsed && (
           <>
             <div className="absolute bottom-0 w-full">
