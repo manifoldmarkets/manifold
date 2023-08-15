@@ -69,6 +69,7 @@ function UsersTable() {
         'Name',
         'Balance',
         'Profit',
+        'Profit excluding midterms',
         'Number bets',
         'Number markets with S$50 bet',
         'IP Address',
@@ -79,6 +80,9 @@ function UsersTable() {
         u.name,
         Math.round(u.balance).toString(),
         Math.round(profitByUser[u.id] ?? 0).toString(),
+        Math.round(
+          (profitByUser[u.id] ?? 0) - (u.midtermProfit ?? 0)
+        ).toString(),
         (u.totalBets ?? 0).toString(),
         (u.betMoreThanFiftyOnContractsCount ?? 0).toString(),
         u.ip ?? '',

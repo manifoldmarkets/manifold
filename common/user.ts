@@ -45,6 +45,7 @@ export type User = {
   // Salem center fields.
   totalBets?: number
   betMoreThanFiftyOnContractsCount?: number
+  midtermProfit?: number
 }
 
 export const STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 1000
