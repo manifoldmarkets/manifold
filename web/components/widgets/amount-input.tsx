@@ -39,15 +39,24 @@ export function AmountInput(
     ...rest
   } = props
 
-  const parse = (str: string) =>
-    !allowFloat
-      ? parseInt(str.replace(/\D/g, ''))
-      : parseFloat(str.replace(/[^0-9.]/g, ''))
+  const [amountString, setAmountString] = useState(amount?.toString() ?? '')
+
+  const parse = allowFloat ? parseFloat : parseInt
+  const bannedChars = allowFloat ? /[^\d.]/g : /\D/g
+
+  useEffect(() => {
+    if (amount !== parse(amountString))
+      setAmountString(amount?.toString() ?? '')
+  }, [amount])
 
   const onAmountChange = (str: string) => {
-    const amount = parse(str)
-    const isInvalid = !str || isNaN(amount)
-    onChangeAmount(isInvalid ? undefined : amount)
+    const s = str.replace(bannedChars, '')
+    if (s !== amountString) {
+      setAmountString(s)
+      const amount = parse(s)
+      const isInvalid = !s || isNaN(amount)
+      onChangeAmount(isInvalid ? undefined : amount)
+    }
   }
 
   return (
@@ -66,13 +75,13 @@ export function AmountInput(
               ref={inputRef}
               type={allowFloat ? 'number' : 'text'}
               inputMode={allowFloat ? 'decimal' : 'numeric'}
-              step={allowFloat ? 'any' : '1'}
               placeholder="0"
               maxLength={7}
-              value={amount ?? ''}
+              value={amountString}
               error={!!error}
               disabled={disabled}
               onChange={(e) => onAmountChange(e.target.value)}
+              onBlur={() => setAmountString(amount?.toString() ?? '')}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowUp') {
                   onChangeAmount((amount ?? 0) + 5)
