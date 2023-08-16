@@ -70,8 +70,8 @@ import { ExplainerPanel } from 'web/components/explainer-panel'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { linkClass } from 'web/components/widgets/site-link'
 import { MarketGroups } from 'web/components/contract/market-groups'
-import { useListenBets } from 'web/hooks/use-bets'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -201,7 +201,7 @@ export function ContractPageContent(props: {
   const lastBetTime = first(contractParams.historyData.bets)?.createdTime
 
   const newBets =
-    useListenBets({
+    useRealtimeBets({
       contractId: contract.id,
       afterTime: lastBetTime,
       filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',

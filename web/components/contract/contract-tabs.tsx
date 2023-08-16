@@ -36,7 +36,7 @@ import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useComments } from 'web/hooks/use-comments'
-import { useListenBets } from 'web/hooks/use-bets'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 
 export const EMPTY_USER = '_'
 
@@ -82,7 +82,7 @@ export function ContractTabs(props: {
   const user = useUser()
 
   const userBets =
-    useListenBets({
+    useRealtimeBets({
       contractId: contract.id,
       userId: user === undefined ? 'loading' : user?.id ?? EMPTY_USER,
       filterAntes: true,
