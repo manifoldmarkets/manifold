@@ -33,6 +33,7 @@ select
     )
   );
 
+drop policy "Enable all read access for manifold team members" on public.groups;
 
 create policy "Enable all read access for manifold team members" on public.groups for
 select

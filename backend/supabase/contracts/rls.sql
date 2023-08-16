@@ -10,3 +10,4 @@ drop policy if exists "Enable read access for admins" on public.contracts;
 create policy "Enable read access for admins" on public.contracts for
 select
   to service_role using (true);
+
