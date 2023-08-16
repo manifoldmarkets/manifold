@@ -75,6 +75,7 @@ import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
 import { sendmana } from './send-mana'
 import { leavereview } from './leave-review'
+import { createannouncement } from './create-announcement'
 import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
 import { claimdestinysub } from './claim-destiny-sub'
 import { castpollvote } from './cast-poll-vote'
@@ -190,6 +191,7 @@ app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/send-mana', ...apiRoute(sendmana))
 app.post('/leave-review', ...apiRoute(leavereview))
+app.post('/create-announcement', ...apiRoute(createannouncement))
 app.post(
   '/get-user-contract-metrics-with-contracts',
   ...apiRoute(getusercontractmetricswithcontracts)

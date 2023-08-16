@@ -66,6 +66,7 @@ export type notification_source_types =
   | 'league_change'
   | 'bounty_added'
   | 'mana_payment'
+  | 'announcement'
 
 export type notification_source_update_types =
   | 'created'
@@ -118,6 +119,7 @@ export type notification_reason_types =
   | 'bounty_awarded'
   | 'bounty_added'
   | 'mana_payment_received'
+  | 'announcement_created'
   | 'poll_you_follow_closed'
   | 'your_poll_closed'
 
@@ -363,6 +365,10 @@ export type UniqueBettorData = {
   min?: number
   max?: number
   isLogScale?: boolean
+}
+
+export type AnnouncementData = {
+  url?: string
 }
 
 export function getSourceIdForLinkComponent(

@@ -73,6 +73,8 @@ export const PROD_CONFIG: EnvConfig = {
     'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
     'GRwzCexe5PM6ThrSsodKZT9ziln2', //Inga
     '62TNqzdBx7X2q621HltsJm8UFht2', // Marshall
+    'Qu6WThSGcOQOjdW3gQC4byDPMop1', // david dev
+    '6hHpzvRG0pMq8PNJs7RZj2qlZGn2', // ian dev
   ],
   visibility: 'PUBLIC',
 

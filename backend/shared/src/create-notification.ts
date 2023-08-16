@@ -1786,3 +1786,27 @@ export const createPollClosedNotification = async (
   log('notifying followers')
   await notifyContractFollowers()
 }
+
+export const createCustomNotification = async (
+  recipientId: string,
+  title: string,
+  sender: User,
+  url?: string
+) => {
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: recipientId,
+    reason: 'announcement_created',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: '',
+    sourceType: 'announcement',
+    sourceUserName: sender.name,
+    sourceUserUsername: sender.username,
+    sourceUserAvatarUrl: sender.avatarUrl,
+    sourceText: title,
+    data: { url },
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}

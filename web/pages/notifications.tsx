@@ -18,7 +18,7 @@ import {
   PARENT_NOTIFICATION_STYLE,
   QuestionOrGroupLink,
 } from 'web/components/notifications/notification-helpers'
-import { markAllNotifications } from 'web/lib/firebase/api'
+import { createAnnouncement, markAllNotifications } from 'web/lib/firebase/api'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'
@@ -33,11 +33,15 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser, useIsAuthorized } from 'web/hooks/use-user'
-import { XIcon } from '@heroicons/react/outline'
+import { ExclamationIcon, XIcon } from '@heroicons/react/outline'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { useAdmin } from 'web/hooks/use-admin'
+import { Input } from 'web/components/widgets/input'
+import { Button, ColorType, SizeType } from 'web/components/buttons/button'
+import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -98,6 +102,72 @@ function NotificationsAppBanner(props: { userId: string }) {
   )
 }
 
+function SendCustomNotification() {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorText, setErrorText] = useState('')
+  const [url, setUrl] = useState('')
+  const [title, setTitle] = useState('')
+
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    setIsSubmitting(true)
+
+    const result = await createAnnouncement({ url, title }).catch((e) => {
+      const errorDetails = e.details[0]
+      if (errorDetails)
+        setErrorText(
+          `Error with ${errorDetails.field} field - ${errorDetails.error} `
+        )
+      else setErrorText(e.message)
+      setIsSubmitting(false)
+      console.error(e)
+      return e
+    })
+
+    if (!result.notification) {
+      setIsSubmitting(false)
+      return false
+    }
+  }
+
+  function handleOnSubmit(): void {
+    throw new Error('Function not implemented.')
+  }
+
+  return (
+    <form onSubmit={onSubmit}>
+      <Row className={'flex flex-col py-4 md:flex-row'}>
+        <textarea
+          className={clsx(
+            'border-ink-300 bg-canvas-0 focus-within:border-primary-500 focus-within:ring-primary-500 resize-1  mb-4 w-full resize-y overflow-hidden rounded-lg border shadow-sm transition-colors focus-within:ring-1 md:mb-0 md:mr-1'
+          )}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Enter announcement"
+          rows={3}
+        />
+        <Input
+          className={'w-full md:mb-0 md:ml-1'}
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="Optional URL"
+        />
+      </Row>
+
+      <AnnouncementConfirmationButton
+        isSubmitting={isSubmitting}
+        disabled={false}
+        onSubmit={handleOnSubmit}
+        color="indigo"
+        size="xl"
+        title={title}
+      />
+    </form>
+  )
+}
+
 function NotificationsContent(props: {
   privateUser: PrivateUser
   section?: string
@@ -107,6 +177,44 @@ function NotificationsContent(props: {
     useGroupedNonBalanceChangeNotifications(privateUser.id)
   const balanceChangeGroupedNotifications =
     useGroupedBalanceChangeNotifications(privateUser.id)
+  const isAdmin = useAdmin()
+
+  const tabs = [
+    {
+      title: 'Notifications',
+      content: (
+        <NotificationsList
+          privateUser={privateUser}
+          groupedNotifications={groupedNotifications}
+          mostRecentNotification={mostRecentNotification}
+        />
+      ),
+    },
+    {
+      title: 'Balance Changes',
+      content: (
+        <NotificationsList
+          groupedNotifications={balanceChangeGroupedNotifications}
+        />
+      ),
+    },
+    {
+      title: 'Settings',
+      content: (
+        <NotificationSettings
+          navigateToSection={section}
+          privateUser={privateUser}
+        />
+      ),
+    },
+  ]
+
+  if (isAdmin) {
+    tabs.push({
+      title: 'Send Notif',
+      content: <SendCustomNotification />,
+    })
+  }
 
   return (
     <div className="relative h-full w-full">
@@ -116,30 +224,7 @@ function NotificationsContent(props: {
             currentPageForAnalytics={'notifications'}
             labelClassName={'pb-2 pt-1 '}
             className={'mb-0 sm:mb-2'}
-            tabs={[
-              {
-                title: 'Notifications',
-                content: (
-                  <NotificationsList
-                    privateUser={privateUser}
-                    groupedNotifications={groupedNotifications}
-                    mostRecentNotification={mostRecentNotification}
-                  />
-                ),
-              },
-              {
-                title: 'Balance Changes',
-                content: (
-                  <NotificationsList
-                    groupedNotifications={balanceChangeGroupedNotifications}
-                  />
-                ),
-              },
-              {
-                title: 'Settings',
-                content: <NotificationSettings navigateToSection={section} />,
-              },
-            ]}
+            tabs={tabs}
           />
         )}
       </div>
@@ -350,5 +435,53 @@ export function NotificationGroupItemComponent(props: {
         )}
       </div>
     </div>
+  )
+}
+
+export function AnnouncementConfirmationButton(props: {
+  isSubmitting: boolean
+  disabled: boolean
+  onSubmit: () => void
+  color: ColorType
+  size: SizeType
+  title: string
+  className?: string
+}) {
+  const { isSubmitting, disabled, onSubmit, color, size, title } = props
+
+  const buttonText = isSubmitting ? 'Creating...' : 'Send announcement'
+
+  return (
+    <ConfirmationButton
+      openModalBtn={{
+        label: buttonText,
+        size: size,
+
+        color: 'indigo',
+        disabled: isSubmitting || disabled || !title,
+      }}
+      cancelBtn={{
+        label: 'Cancel',
+        color: 'yellow',
+        disabled: isSubmitting,
+      }}
+      submitBtn={{
+        label: 'Submit',
+        color: 'indigo',
+        isSubmitting,
+      }}
+      onSubmit={onSubmit}
+    >
+      <Row className="items-center text-xl">
+        <ExclamationIcon
+          className="h-16 w-16 p-1 text-yellow-400"
+          aria-hidden="true"
+        />
+      </Row>
+      <p>
+        Are you sure you want to send this to notification to all users on the
+        site?
+      </p>
+    </ConfirmationButton>
   )
 }

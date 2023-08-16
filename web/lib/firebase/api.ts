@@ -458,3 +458,7 @@ export function createChatMessage(params: {
 }) {
   return call(getApiUrl('create-chat-message'), 'POST', params)
 }
+
+export function createAnnouncement(params: { url: string; title: string }) {
+  return call(getApiUrl('create-announcement'), 'POST', params)
+}
