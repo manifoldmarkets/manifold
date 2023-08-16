@@ -94,7 +94,10 @@ export function ContractStatusLabel(props: {
             contract.bountyLeft == 0 ? 'text-ink-300' : 'text-teal-600'
           )}
         >
-          {formatMoney(contract.bountyLeft)}{' '}
+          <span>
+            {ENV_CONFIG.moneyMoniker}
+            {shortenNumber(contract.bountyLeft)}
+          </span>
           <span
             className={clsx(
               'text-xs font-normal',
@@ -107,11 +110,7 @@ export function ContractStatusLabel(props: {
       )
     }
     case 'POLL': {
-      return (
-        <div className="w-min gap-0.5 rounded-full bg-indigo-500/20 px-2 py-0.5 text-sm text-indigo-500">
-          Poll
-        </div>
-      )
+      return <span className="text-fuchsia-500/70">POLL</span>
     }
     default:
       return <span>-</span>
@@ -155,7 +154,7 @@ const contractColumns = {
   prob: {
     header: 'Stat',
     content: (contract: Contract) => (
-      <div className="font-semibold opacity-70 sm:opacity-100">
+      <div className="font-semibold ">
         <ContractStatusLabel contract={contract} />
       </div>
     ),
