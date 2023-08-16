@@ -96,7 +96,7 @@ export function ContractStatusLabel(props: {
         >
           <span>
             {ENV_CONFIG.moneyMoniker}
-            {shortenNumber(contract.bountyLeft)}
+            {shortenNumber(contract.bountyLeft ?? 0)}
           </span>
           <span
             className={clsx(
