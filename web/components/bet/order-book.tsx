@@ -57,7 +57,7 @@ export function YourOrders(props: {
         <Subtitle className="!my-0">Your orders</Subtitle>
       </Row>
 
-      <OrderTable limitBets={yourBets} contract={contract} isYou={true} />
+      <OrderTable limitBets={yourBets} contract={contract} isYou />
     </Col>
   )
 }
@@ -69,7 +69,7 @@ export function OrderTable(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
-  isYou: boolean
+  isYou?: boolean
   side?: 'YES' | 'NO'
 }) {
   const { limitBets, contract, isYou, side } = props
@@ -124,7 +124,7 @@ export function OrderTable(props: {
               key={bet.id}
               bet={bet}
               contract={contract}
-              isYou={isYou}
+              isYou={!!isYou}
               showOutcome={!side}
             />
           ))}
@@ -270,9 +270,7 @@ export function OrderBookButton(props: {
             />
           </Title>
 
-          <h2 className="mb-1 text-center">
-            Cumulative order size vs probability
-          </h2>
+          <h2 className="mb-1 text-center">Cum shares vs probability</h2>
           {!isCPMMMulti && !isPseudoNumeric && (
             <SizedContainer className="mb-6 h-[200px] px-16">
               {(w, h) => (
@@ -304,13 +302,11 @@ export function OrderBookButton(props: {
                     <OrderTable
                       limitBets={answerYesBets}
                       contract={contract}
-                      isYou={false}
                       side="YES"
                     />
                     <OrderTable
                       limitBets={answerNoBets}
                       contract={contract}
-                      isYou={false}
                       side="NO"
                     />
                   </Row>

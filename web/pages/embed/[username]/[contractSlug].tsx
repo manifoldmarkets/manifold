@@ -1,35 +1,38 @@
+import clsx from 'clsx'
+import { HistoryPoint } from 'common/chart'
 import { Contract, contractPath } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
+import { getContractFromSlug } from 'common/supabase/contracts'
+import { formatMoney } from 'common/util/format'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
 import { useEffect } from 'react'
-import { CloseOrResolveTime } from 'web/components/contract/contract-details'
+import { NoSEO } from 'web/components/NoSEO'
+import { ContractCardAnswers } from 'web/components/bet/quick-bet'
 import { BinaryContractChart } from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import Custom404 from '../../404'
-import { track } from 'web/lib/service/analytics'
-import { useRouter } from 'next/router'
-import { Avatar } from 'web/components/widgets/avatar'
-import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
-import { getBetFields } from 'web/lib/supabase/bets'
-import { NoSEO } from 'web/components/NoSEO'
-import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
-import { useIsDarkMode } from 'web/hooks/dark-mode-context'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
+import { useViewScale } from 'web/components/charts/generic-charts'
+import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import {
   BinaryResolutionOrChance,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
-import { db } from 'web/lib/supabase/db'
-import { getContractFromSlug } from 'common/supabase/contracts'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
-import { HistoryPoint } from 'common/chart'
-import { ContractCardAnswers } from 'web/components/bet/quick-bet'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { SizedContainer } from 'web/components/sized-container'
-import clsx from 'clsx'
+import { Avatar } from 'web/components/widgets/avatar'
+import { useIsDarkMode } from 'web/hooks/dark-mode-context'
+import { useNumContractComments } from 'web/hooks/use-comments-supabase'
+import { track } from 'web/lib/service/analytics'
+import { getBetFields } from 'web/lib/supabase/bets'
+import { db } from 'web/lib/supabase/db'
+import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
+import Custom404 from '../../404'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 
 type Points = HistoryPoint<any>[]
 
@@ -81,10 +84,8 @@ export default function ContractEmbedPage(props: {
   points: Points | null
 }) {
   const contract =
-    useFirebasePublicAndRealtimePrivateContract(
-      props.contract.visibility,
-      props.contract.id
-    ) ?? props.contract
+    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
+    props.contract
 
   useEffect(() => {
     if (contract?.id)
@@ -117,7 +118,7 @@ const ContractChart = (props: {
   color?: string
 }) => {
   const { contract, points, ...rest } = props
-  const viewScale = useSingleValueHistoryChartViewScale()
+  const viewScale = useViewScale()
 
   switch (contract.outcomeType) {
     case 'BINARY':
@@ -144,7 +145,7 @@ const ContractChart = (props: {
         <ContractCardAnswers
           contract={contract}
           numAnswersFR={numBars(props.height)}
-          className="h-full justify-center"
+          className="isolate h-full justify-center"
         />
       )
 
@@ -166,10 +167,10 @@ const ContractChart = (props: {
 }
 
 const numBars = (height: number) => {
-  if (height < 120) return 2
-  if (height < 150) return 3
-  if (height < 180) return 4
-  if (height < 210) return 5
+  if (height < 150) return 2
+  if (height < 200) return 3
+  if (height < 250) return 4
+  if (height < 300) return 5
   return 6
 }
 
@@ -188,6 +189,7 @@ function ContractSmolView(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isMulti =
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
+  const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
@@ -205,6 +207,7 @@ function ContractSmolView(props: {
               color: textColor,
               filter: isDarkMode && textColor ? 'invert(1)' : undefined,
             }}
+            rel="noreferrer"
           >
             {question}
           </a>
@@ -231,31 +234,55 @@ function ContractSmolView(props: {
         )}
       </Row>
       <Details contract={contract} />
-
-      <SizedContainer
-        className={clsx(
-          'text-ink-1000 my-4 min-h-0 flex-1',
-          !isMulti && 'pr-10'
-        )}
-      >
-        {(w, h) => (
-          <ContractChart
-            contract={contract}
-            points={points}
-            width={w}
-            height={h}
-            color={graphColor}
+      {!isBountiedQuestion && (
+        <SizedContainer
+          className={clsx(
+            'text-ink-1000 my-4 min-h-0 flex-1',
+            !isMulti && 'pr-10'
+          )}
+        >
+          {(w, h) => (
+            <ContractChart
+              contract={contract}
+              points={points}
+              width={w}
+              height={h}
+              color={graphColor}
+            />
+          )}
+        </SizedContainer>
+      )}
+      {isBountiedQuestion && (
+        <Col className="relative h-full w-full">
+          <Image
+            className="mx-auto my-auto opacity-40"
+            height={200}
+            width={200}
+            src={'/money-bag.svg'}
+            alt={''}
           />
-        )}
-      </SizedContainer>
+          <Col className="absolute top-12 bottom-0 left-0 right-0">
+            <Col className="mx-auto my-auto text-center">
+              <div className="text-3xl">{formatMoney(contract.bountyLeft)}</div>
+              <div className="text-ink-500">bounty</div>
+            </Col>
+          </Col>
+        </Col>
+      )}
     </Col>
   )
 }
 
 const Details = (props: { contract: Contract }) => {
-  const { creatorAvatarUrl, creatorUsername, creatorName, uniqueBettorCount } =
-    props.contract
+  const {
+    creatorAvatarUrl,
+    creatorUsername,
+    creatorName,
+    uniqueBettorCount,
+    outcomeType,
+  } = props.contract
 
+  const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
   return (
     <div className="text-ink-400 relative right-0 mt-2 flex flex-wrap items-center gap-4 text-xs">
       <span className="text-ink-600 flex gap-1">
@@ -267,8 +294,23 @@ const Details = (props: { contract: Contract }) => {
         />
         {creatorName}
       </span>
-      <CloseOrResolveTime contract={props.contract} />
-      <span>{uniqueBettorCount} traders</span>
+      {!isBountiedQuestion && (
+        <>
+          <CloseOrResolveTime contract={props.contract} />{' '}
+          <span>{uniqueBettorCount} traders</span>
+        </>
+      )}
+      {isBountiedQuestion && (
+        <>
+          <NumComments contract={props.contract} />
+        </>
+      )}
     </div>
   )
+}
+
+const NumComments = (props: { contract: Contract }) => {
+  const { contract } = props
+  const numComments = useNumContractComments(contract.id)
+  return <span>{numComments} comments</span>
 }

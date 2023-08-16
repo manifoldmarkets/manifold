@@ -21,7 +21,7 @@ import {
 import { updateContract } from 'web/lib/firebase/contracts'
 import { formatTime } from 'web/lib/util/time'
 import { Button } from '../buttons/button'
-import { CopyLinkButton } from '../buttons/copy-link-button'
+import { CopyLinkOrShareButton, CopyLinkRow } from '../buttons/copy-link-button'
 import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
 import { ReportButton } from '../buttons/report-button'
 import { ShareEmbedButton } from '../buttons/share-embed-button'
@@ -76,7 +76,9 @@ export const Stats = (props: {
       : outcomeType === 'MULTIPLE_CHOICE'
       ? 'Multiple choice'
       : outcomeType === 'BOUNTIED_QUESTION'
-      ? 'Bountied question'
+      ? 'Bounty'
+      : outcomeType === 'POLL'
+      ? 'Poll'
       : 'Numeric'
 
   const isBettingContract = contract.mechanism !== 'none'
@@ -247,9 +249,26 @@ export const Stats = (props: {
                   href={firestoreConsolePath(id)}
                   target="_blank"
                   className="text-primary-400"
+                  rel="noreferrer"
                 >
                   {id}
                 </a>
+                <CopyLinkOrShareButton
+                  url={id}
+                  tooltip="Copy link to contract id"
+                  eventTrackingName={'admin copy contract id'}
+                />
+              </td>
+            </tr>
+            <tr className="bg-scarlet-500/20">
+              <td>SQL query</td>
+              <td>
+                <span>select * from contracts...</span>
+                <CopyLinkOrShareButton
+                  url={`select * from contracts where id = '${id}';`}
+                  tooltip="Copy sql query to contract id"
+                  eventTrackingName={'admin copy contract id'}
+                />
               </td>
             </tr>
             {contract.isResolved && (
@@ -385,7 +404,7 @@ export function ContractInfoDialog(props: {
                         )}
                         <DuplicateContractButton contract={contract} />
                         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
-                          <AddBountyButton contract={contract} user={user} />
+                          <AddBountyButton contract={contract} />
                         )}
                       </Row>
                       <Row className="mt-4 flex-wrap gap-2">
@@ -430,7 +449,7 @@ export function ContractInfoDialog(props: {
                     </div>
                   )}
 
-                  <CopyLinkButton
+                  <CopyLinkRow
                     url={getShareUrl(contract, user?.username)}
                     eventTrackingName="copy market link"
                   />

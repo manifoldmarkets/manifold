@@ -22,7 +22,7 @@ export function isTrustworthy(username?: string) {
   if (!username) {
     return false
   }
-  return CHECK_USERNAMES.includes(username)
+  return MOD_USERNAMES.includes(username)
 }
 export const DOMAIN = ENV_CONFIG.domain
 export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
@@ -87,6 +87,10 @@ export const BOT_USERNAMES = [
   'Botflux',
   '7',
   'hyperkaehler',
+  'NcyBot',
+  'Seldon',
+  'OnePercentBot',
+  'arrbit',
 ]
 
 export const CORE_USERNAMES = [
@@ -99,21 +103,15 @@ export const CORE_USERNAMES = [
   'DavidChee',
   'mqp',
   'IngaWei',
-  'ManifoldMarkets',
 ]
 
-export const CHECK_USERNAMES = [
-  'EliezerYudkowsky',
+export const MOD_USERNAMES = [
+  'Manifold',
   'memestiny',
-  'ScottAlexander',
-  'Aella',
   'BTE',
   'jack',
   'Yev',
-  'ZviMowshowitz',
-  'NathanpmYoung',
   'itsTomekK',
-  'SneakySly',
   'MattP',
   'egroj',
   'dreev',
@@ -121,7 +119,6 @@ export const CHECK_USERNAMES = [
   'LivInTheLookingGlass',
   'LarsDoucet',
   'Conflux',
-  'GavrielK',
   'NcyRocks',
   'MichaelWheatley',
   'dglid',
@@ -136,12 +133,48 @@ export const CHECK_USERNAMES = [
   'MatthewBarnett',
   'Jacy',
   'Gabrielle',
-  'CGPGrey',
   'KatjaGrace',
   'AndrewG',
   'MarcusAbramovitch',
   'KevinBurke',
+  'PeterWildeford',
+  'ScottLawrence',
+  'NoaNabeshima',
+  'Mira',
+  'evergreenemily',
+  'SneakySly',
+]
+
+export const VERIFIED_USERNAMES = [
+  'EliezerYudkowsky',
+  'ScottAlexander',
+  'Aella',
+  'ZviMowshowitz',
+  'NathanpmYoung',
+
+  'GavrielK',
+  'CGPGrey',
   'LexFridman',
+  'patio11',
+  'RichardHanania',
+  'Qualy',
+  'Roko',
+  'JonathanBlow',
+  'DwarkeshPatel',
+  'ByrneHobart',
+  'RobertWiblin',
+  'KelseyPiper',
+  'SpencerGreenberg',
+  'PaulChristiano',
+  'BuckShlegeris',
+  'Natalia',
+  'Zero',
+  'OzzieGooen',
+  'OliverHabryka',
+  'Alicorn',
+  'RazibKhan',
+  'JamesMedlock',
+  'Writer',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -164,7 +197,7 @@ export const DESTINY_GROUP_SLUGS = [
   'mumbowl-stonks',
 ]
 
-export const HOME_BLOCKED_GROUP_SLUGS = [
+export const DEEMPHASIZED_GROUP_SLUGS = [
   'fun',
   'selfresolving',
   'experimental',
@@ -174,6 +207,31 @@ export const HOME_BLOCKED_GROUP_SLUGS = [
   'whale-watching',
   'spam',
   'test',
+  'no-resolution',
+  'eto',
+  'friend-stocks',
+  'austin-less-wrong-2023-predictions',
+  'fantasy-football-stock-exchange',
+  'ancient-markets',
+  'jokes',
+  'olivia',
+  'planecrash',
+  'glowfic',
+  'all-stonks',
+  'destinygg',
+  'the-market',
+  'nonpredictive-profits',
+  'nonpredictive',
+]
+
+export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
+  'manifold-features',
+  'manifold-6748e065087e',
+  'destinygg',
+  'manifold-features-25bad7c7792e',
+  'bugs',
+  'manifold-leagues',
+  'nonpredictive',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

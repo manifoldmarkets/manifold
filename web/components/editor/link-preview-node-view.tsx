@@ -24,7 +24,7 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
   }
   return (
     <div
-      className="border-ink-300 not-prose relative w-[17rem] overflow-hidden rounded-lg border sm:w-[22rem] md:w-[25rem]"
+      className="border-ink-300 not-prose relative w-full max-w-[25rem] overflow-hidden rounded-lg border "
       key={id}
     >
       {!hideCloseButton && (
@@ -37,8 +37,19 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
           <XIcon className={'text-ink-900 h-4'} />
         </button>
       )}
-      <a className="block" key={id} href={url} target="_blank">
-        <img className="m-0 object-contain" src={image} alt="" height={200} />
+      <a
+        className="block"
+        key={id}
+        href={url}
+        target="_blank"
+        rel="noreferrer ugc"
+      >
+        <img
+          className="m-0 h-[200px] w-full object-cover"
+          src={image}
+          alt=""
+          height={200}
+        />
         <Col className="bg-canvas-0 p-2 hover:underline">
           <div className="line-clamp-2 text-ink-900 text-base">{title}</div>
           <div className="line-clamp-3 text-ink-600 text-xs">{description}</div>

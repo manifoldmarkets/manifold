@@ -19,14 +19,14 @@ export const lootbox = authEndpoint(async (req, auth) => {
   const box = await firestore.runTransaction(async (transaction) => {
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const userSnap = await transaction.get(userDoc)
-    if (!userSnap.exists) throw new APIError(400, 'User not found')
+    if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
     const user = userSnap.data() as User
 
     if (user.balance < LOOTBOX_COST)
-      throw new APIError(400, 'Insufficient balance')
+      throw new APIError(403, 'Insufficient balance')
 
     const contracts = await loadUserContracts(db, auth.uid)
-    if (contracts.length === 0) throw new APIError(400, 'No contracts found')
+    if (contracts.length === 0) throw new APIError(500, 'No contracts found')
 
     const box = createLootBox(contracts)
     console.log(
@@ -100,5 +100,10 @@ const loadUserContracts = async (db: SupabaseClient, userId: string, n = 100) =>
     .then((res) =>
       (res.data ?? [])
         .map((row) => row.data as BinaryContract)
-        .filter((c) => c.outcomeType === 'BINARY' && c.volume > 100 && c.visibility === 'public')
+        .filter(
+          (c) =>
+            c.outcomeType === 'BINARY' &&
+            c.volume > 100 &&
+            c.visibility === 'public'
+        )
     )

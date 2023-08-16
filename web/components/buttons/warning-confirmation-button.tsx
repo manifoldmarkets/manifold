@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import React from 'react'
 import { ExclamationIcon } from '@heroicons/react/solid'
 
 import { Row } from '../layout/row'

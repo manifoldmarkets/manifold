@@ -114,13 +114,7 @@ create view
       users.data ->> 'name' as name,
       users.username as username,
       users.data ->> 'avatarUrl' as avatar_url,
-      (
-        select
-          case
-            when gp.creator_id = member_id then 'admin'
-            else gm.role
-          end
-      ) as role,
+      gm.role as role,
       ts_to_millis (gm.created_time) as createdTime,
       gp.privacy_status as privacy_status
     from

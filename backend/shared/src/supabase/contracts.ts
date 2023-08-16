@@ -1,7 +1,19 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs, map, merge, sortBy } from 'lodash'
 import { getUserFollowerIds } from 'shared/supabase/users'
-import { CONTRACT_OR_USER_FEED_REASON_TYPES, MINIMUM_SCORE } from 'common/feed'
+import {
+  ALL_FEED_USER_ID,
+  CONTRACT_OR_USER_FEED_REASON_TYPES,
+  MINIMUM_SCORE,
+} from 'common/feed'
+import { Contract } from 'common/contract'
+import {
+  unitVectorCosineDistance,
+  userInterestEmbeddings,
+} from 'shared/supabase/vectors'
+import { filterDefined } from 'common/util/array'
+import { log } from 'shared/utils'
+import { isAdminId } from 'common/envs/constants'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -94,20 +106,12 @@ export const getContractGroupMemberIds = async (
 export const getUsersWithSimilarInterestVectorsToContract = async (
   contractId: string,
   pg: SupabaseDirectClient,
-  // -- distance of .125, probes at 10, lists at 500
-  // -- chatbot 2k traders: 2k users, contract id: 5ssg7ccYrrsEwZLYh9tP
-  // -- isaac king 40 traders: 1.8k users, contract id:  CPa23v0jJykJMhUjgT9J
-  // -- taiwan fighter 5 traders, 500 users, contract id:  a4tsshKK3MCE8PvS7Yfv
   interestDistanceThreshold = 0.125,
-  // -- contract id used: 5ssg7ccYrrsEwZLYh9tP, distance: .125
-  // -- probes at 10: 2k rows, 200 ms
-  // -- probes at 5: 600 rows, 65 ms
-  // -- probes at 1: 71 rows, 10ms
   probes = 10
 ): Promise<string[]> => {
   const userIdsAndDistances = await pg.tx(async (t) => {
     await t.none('SET LOCAL ivfflat.probes = $1', [probes])
-    const res = await t.manyOrNone(
+    return await t.manyOrNone(
       `with ce as (
         select embedding
         from contract_embeddings
@@ -127,19 +131,60 @@ export const getUsersWithSimilarInterestVectorsToContract = async (
       `,
       [contractId, interestDistanceThreshold, MINIMUM_SCORE]
     )
-    return res
   })
   return userIdsAndDistances.map((r) => r.user_id)
 }
-// Helpful firebase deploy arguments after changing the following function
-// functions:onCreateContract,functions:onCreateCommentOnContract,functions:onCreateLiquidityProvision,functions:scorecontracts
-export const getUserToReasonsInterestedInContractAndUser = async (
+
+export const getUsersWithSimilarInterestVectorsToContractServerSide = async (
   contractId: string,
+  pg: SupabaseDirectClient,
+  interestDistanceThreshold = 0.125
+): Promise<string[]> => {
+  const contractEmbedding = (
+    await pg.map(
+      'select embedding from contract_embeddings where contract_id = $1',
+      [contractId],
+      (row) => JSON.parse(row.embedding) as number[]
+    )
+  ).flat()
+
+  const userEmbeddingsCount = Object.keys(userInterestEmbeddings).length
+  if (userEmbeddingsCount === 0)
+    throw new Error('userInterestEmbeddings is not loaded')
+  else log('found ' + userEmbeddingsCount + ' user interest embeddings to use')
+
+  const userIdsInterestedInContract = Object.entries(userInterestEmbeddings)
+    .map(([userId, user]) => {
+      const interestDistance = unitVectorCosineDistance(
+        contractEmbedding,
+        user.interest
+      )
+      if (interestDistance > interestDistanceThreshold) return null
+
+      const disinterestDistance = user.disinterest
+        ? unitVectorCosineDistance(contractEmbedding, user.disinterest)
+        : 1
+      const score = disinterestDistance - interestDistance
+      if (score < MINIMUM_SCORE) return null
+
+      return userId
+    })
+    .map((userId) => userId)
+
+  return filterDefined(userIdsInterestedInContract)
+}
+
+// Helpful firebase deploy arguments after changing the following function
+// functions:onCreateContract,functions:onCreateCommentOnContract,functions:onCreateLiquidityProvision,functions:addcontractstofeed
+export const getUserToReasonsInterestedInContractAndUser = async (
+  contract: Contract,
   userId: string,
   pg: SupabaseDirectClient,
   reasonsToInclude: CONTRACT_OR_USER_FEED_REASON_TYPES[],
-  userToContractDistanceThreshold: number
+  userToContractDistanceThreshold: number,
+  serverSideCalculation: boolean
 ): Promise<{ [userId: string]: CONTRACT_OR_USER_FEED_REASON_TYPES }> => {
+  const { id: contractId } = contract
   const reasonsToRelevantUserIdsFunctions: {
     [key in CONTRACT_OR_USER_FEED_REASON_TYPES]: {
       promise: Promise<string[]>
@@ -163,23 +208,36 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       importance: 5,
     },
     similar_interest_vector_to_contract: {
-      promise: getUsersWithSimilarInterestVectorsToContract(
-        contractId,
-        pg,
-        userToContractDistanceThreshold
-      ),
+      promise: serverSideCalculation
+        ? getUsersWithSimilarInterestVectorsToContractServerSide(
+            contractId,
+            pg,
+            userToContractDistanceThreshold
+          )
+        : getUsersWithSimilarInterestVectorsToContract(
+            contractId,
+            pg,
+            userToContractDistanceThreshold
+          ),
       importance: 7,
+    },
+    private_contract_shared_with_you: {
+      promise: getUsersWithAccessToContract(contract, pg),
+      importance: 8,
     },
   }
 
-  const reasons = sortBy(
-    reasonsToInclude
-      ? reasonsToInclude
-      : (Object.keys(
-          reasonsToRelevantUserIdsFunctions
-        ) as CONTRACT_OR_USER_FEED_REASON_TYPES[]),
-    (reason) => reasonsToRelevantUserIdsFunctions[reason].importance
-  )
+  const reasons =
+    contract.visibility === 'private'
+      ? ['private_contract_shared_with_you' as const]
+      : sortBy(
+          reasonsToInclude
+            ? reasonsToInclude
+            : (Object.keys(
+                reasonsToRelevantUserIdsFunctions
+              ) as CONTRACT_OR_USER_FEED_REASON_TYPES[]),
+          (reason) => reasonsToRelevantUserIdsFunctions[reason].importance
+        )
 
   const promises = reasons.map(
     (reason) => reasonsToRelevantUserIdsFunctions[reason].promise
@@ -188,7 +246,7 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   const results = await Promise.all(promises)
 
   return merge(
-    {},
+    { [ALL_FEED_USER_ID]: 'similar_interest_vector_to_contract' },
     ...results
       .map((result, index) => {
         const reason = reasons[index]
@@ -219,4 +277,36 @@ export const isContractLikelyNonPredictive = async (
       (row) => row.distance < 0.1
     )
   )[0]
+}
+
+export const getContractPrivacyWhereSQLFilter = (
+  uid: string | undefined,
+  creatorId?: string,
+  groupId?: string,
+  hasGroupAccess?: boolean
+) => {
+  const otherVisibilitySQL = `
+  OR (visibility = 'unlisted' AND creator_id='${uid}') 
+  OR (visibility = 'unlisted' AND ${isAdminId(uid ?? '_')}) 
+  OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))
+  `
+  return (groupId && hasGroupAccess) ||
+    (!!creatorId && !!uid && creatorId === uid)
+    ? ''
+    : `(visibility = 'public' ${uid ? otherVisibilitySQL : ''})`
+}
+
+export const getUsersWithAccessToContract = async (
+  contract: Contract,
+  pg: SupabaseDirectClient
+): Promise<string[]> => {
+  return await pg.map(
+    `
+    select member_id FROM group_members
+    JOIN group_contracts ON group_members.group_id = group_contracts.group_id
+    WHERE group_contracts.contract_id = $1
+    `,
+    [contract.id],
+    (row: { member_id: string }) => row.member_id
+  )
 }

@@ -1,22 +1,21 @@
 import clsx from 'clsx'
-import React, { ReactNode, useEffect, useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
-import { formatMoney } from 'common/util/format'
-import { Col } from '../layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { Row } from '../layout/row'
-import { AddFundsModal } from '../add-funds-modal'
-import { Input } from './input'
-import 'rc-slider/assets/index.css'
-import { binaryOutcomes } from '../bet/bet-panel'
+import { formatMoney } from 'common/util/format'
+import { ReactNode, useEffect, useState } from 'react'
 import { BetSlider } from 'web/components/bet/bet-slider'
+import { useUser } from 'web/hooks/use-user'
+import { AddFundsModal } from '../add-funds-modal'
+import { binaryOutcomes } from '../bet/bet-panel'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { Input } from './input'
 
 export function AmountInput(
   props: {
     amount: number | undefined
     onChangeAmount: (newAmount: number | undefined) => void
     error?: string
-    label: string
+    label?: string
     disabled?: boolean
     className?: string
     inputClassName?: string
@@ -30,29 +29,39 @@ export function AmountInput(
     amount,
     onChangeAmount,
     error,
-    label,
+    label = ENV_CONFIG.moneyMoniker,
     disabled,
     className,
     inputClassName,
     inputRef,
     quickAddMoreButton,
     allowFloat,
+    ...rest
   } = props
 
-  const parse = (str: string) =>
-    !allowFloat
-      ? parseInt(str.replace(/\D/g, ''))
-      : parseFloat(str.replace(/[^0-9.]/g, ''))
+  const [amountString, setAmountString] = useState(amount?.toString() ?? '')
+
+  const parse = allowFloat ? parseFloat : parseInt
+  const bannedChars = allowFloat ? /[^\d.]/g : /\D/g
+
+  useEffect(() => {
+    if (amount !== parse(amountString))
+      setAmountString(amount?.toString() ?? '')
+  }, [amount])
 
   const onAmountChange = (str: string) => {
-    const amount = parse(str)
-    const isInvalid = !str || isNaN(amount)
-    onChangeAmount(isInvalid ? undefined : amount)
+    const s = str.replace(bannedChars, '')
+    if (s !== amountString) {
+      setAmountString(s)
+      const amount = parse(s)
+      const isInvalid = !s || isNaN(amount)
+      onChangeAmount(isInvalid ? undefined : amount)
+    }
   }
 
   return (
     <>
-      <Col className={clsx('relative', error && 'mb-3', className)}>
+      <Col className={clsx('relative', className)}>
         <label className="font-sm md:font-lg relative">
           {label && (
             <span className="text-ink-400 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
@@ -61,18 +70,18 @@ export function AmountInput(
           )}
           <div className="flex">
             <Input
-              {...props}
+              {...rest}
               className={clsx(label && 'pl-9', ' !text-lg', inputClassName)}
               ref={inputRef}
               type={allowFloat ? 'number' : 'text'}
               inputMode={allowFloat ? 'decimal' : 'numeric'}
-              step={allowFloat ? 'any' : '1'}
               placeholder="0"
-              maxLength={6}
-              value={amount ?? ''}
+              maxLength={7}
+              value={amountString}
               error={!!error}
               disabled={disabled}
               onChange={(e) => onAmountChange(e.target.value)}
+              onBlur={() => setAmountString(amount?.toString() ?? '')}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowUp') {
                   onChangeAmount((amount ?? 0) + 5)
@@ -199,19 +208,20 @@ export function BuyAmountInput(props: {
               binaryOutcome={binaryOutcome}
               maximumAmount={maximumAmount}
               customRange={customRange}
+              disabled={disabled}
             />
           )}
         </Row>
         {error ? (
-          <div className="text-scarlet-500 whitespace-nowrap text-xs font-medium tracking-wide">
+          <div className="text-scarlet-500 mt-0.5 whitespace-nowrap text-sm">
             {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
           </div>
         ) : (
           showBalance &&
           user && (
-            <div className="text-ink-500 whitespace-nowrap text-sm font-medium tracking-wide">
+            <div className="text-ink-500 mt-0.5 whitespace-nowrap text-sm">
               Balance{' '}
-              <span className="text-ink-1000">{formatMoney(user.balance)}</span>
+              <span className="text-ink-800">{formatMoney(user.balance)}</span>
             </div>
           )
         )}

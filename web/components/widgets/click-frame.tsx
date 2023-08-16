@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import Link from 'next/link'
 import { MouseEventHandler } from 'react'
 
 /**
@@ -28,5 +29,33 @@ export const ClickFrame = (props: {
         {children}
       </div>
     </div>
+  )
+}
+
+export const LinkFrame = (props: {
+  children: React.ReactNode
+  onClick: React.MouseEventHandler<HTMLAnchorElement>
+  href: string
+  className?: string
+}) => {
+  const { children, onClick, className, href } = props
+
+  return (
+    <Link
+      className={clsx('stop-prop', className)}
+      href={href}
+      tabIndex={-1}
+      onClick={onClick}
+    >
+      <div
+        // pointer-events:none causes click events to fall through to parent.
+        // we put pointer-events:auto on links, buttons, and elements with class stop-prop,
+        // so they get caught by the stopPropagation below
+        className="pointer-events-none contents [&_a]:pointer-events-auto [&_button]:pointer-events-auto [&_.stop-prop]:pointer-events-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </Link>
   )
 }

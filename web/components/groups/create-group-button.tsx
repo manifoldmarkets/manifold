@@ -45,9 +45,9 @@ export function CreateGroupButton(props: {
   const router = useRouter()
 
   const editor = useTextEditor({
-    key: 'create a group',
+    key: 'create a category',
     size: 'lg',
-    placeholder: 'Tell us what your group is about',
+    placeholder: 'Tell us what your category is about',
     defaultValue: undefined,
     max: MAX_DESCRIPTION_LENGTH,
   })
@@ -125,7 +125,7 @@ export function CreateGroupButton(props: {
   return (
     <ConfirmationButton
       openModalBtn={{
-        label: label ? label : 'New Group',
+        label: label ? label : 'New Category',
         icon: icon,
         className: className,
         disabled: isSubmitting,
@@ -145,17 +145,17 @@ export function CreateGroupButton(props: {
       disabled={editor?.storage.upload.mutation.isLoading}
     >
       <Col className={clsx('-mx-4 gap-4 px-4', SCROLLABLE_MODAL_CLASS)}>
-        <Title className="!my-0" children="Create a group" />
+        <Title className="!my-0">Create a category</Title>
 
         <Col className="text-ink-500">
-          <div>You can add questions to your group after creation.</div>
+          <div>You can add questions to your category after creation.</div>
         </Col>
         {errorText && <div className={'text-error'}>{errorText}</div>}
 
         <div className="flex w-full flex-col">
-          <label className="mb-2 ml-1 mt-0">Group name</label>
+          <label className="mb-2 ml-1 mt-0">Category name</label>
           <Input
-            placeholder={'Your group name'}
+            placeholder={'Your category name'}
             disabled={isSubmitting}
             value={name}
             maxLength={MAX_GROUP_NAME_LENGTH}
@@ -176,12 +176,6 @@ export function CreateGroupButton(props: {
               viewStatus={'curated'}
               isSelected={privacy == 'curated'}
               onClick={() => setPrivacy('curated')}
-              size="sm"
-            />
-            <PrivacyStatusView
-              viewStatus={'private'}
-              isSelected={privacy == 'private'}
-              onClick={() => setPrivacy('private')}
               size="sm"
             />
           </Col>

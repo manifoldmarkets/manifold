@@ -6,7 +6,6 @@ import {
   FreeResponseContract,
   MultipleChoiceContract,
 } from 'common/contract'
-import { ContractMetric } from 'common/contract-metric'
 import { User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
@@ -21,8 +20,8 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
 const bodySchema = z.object({
-  username: z.string().optional(),
-  name: z.string().optional(),
+  username: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
   avatarUrl: z.string().optional(),
 })
 
@@ -30,15 +29,15 @@ export const changeuserinfo = authEndpoint(async (req, auth) => {
   const { username, name, avatarUrl } = validate(bodySchema, req.body)
 
   const user = await getUser(auth.uid)
-  if (!user) throw new APIError(400, 'User not found')
+  if (!user) throw new APIError(401, 'Your account was not found')
   const cleanedUsername = username ? cleanUsername(username) : undefined
 
   if (username) {
     if (!cleanedUsername) throw new APIError(400, 'Invalid username')
     const reservedName = RESERVED_PATHS.includes(cleanedUsername)
-    if (reservedName) throw new APIError(400, 'This username is reserved')
+    if (reservedName) throw new APIError(403, 'This username is reserved')
     const otherUserExists = await getUserByUsername(cleanedUsername)
-    if (otherUserExists) throw new APIError(400, 'Username already taken')
+    if (otherUserExists) throw new APIError(403, 'Username already taken')
   }
 
   // TODO not sure about denying duplicate display names
@@ -128,26 +127,6 @@ export const changeUser = async (
     bulkWriter.update(ref, betUpdate)
   }
   log(`Updated ${betRows.length} bets.`)
-
-  log('Updating denormalized user data on contract metrics docs...')
-  const contractMetricsRows = await pg.manyOrNone(
-    `select contract_id from user_contract_metrics where user_id = $1`,
-    [user.id]
-  )
-  const contractMetricsUpdate: Partial<ContractMetric> = removeUndefinedProps({
-    userName: update.name,
-    userUsername: update.username,
-    userAvatarUrl: update.avatarUrl,
-  })
-  for (const row of contractMetricsRows) {
-    const ref = firestore
-      .collection('users')
-      .doc(user.id)
-      .collection('contract-metrics')
-      .doc(row.contract_id)
-    bulkWriter.update(ref, contractMetricsUpdate)
-  }
-  log(`Updated ${contractMetricsRows.length} contract metrics docs.`)
 
   log('Updating denormalized user data on answers...')
   const answerRows = await pg.manyOrNone(

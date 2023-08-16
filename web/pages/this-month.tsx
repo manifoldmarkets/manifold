@@ -1,12 +1,12 @@
 import { Contract } from 'common/contract'
-import { HOME_BLOCKED_GROUP_SLUGS } from 'common/envs/constants'
+import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 import { CURRENT_SEASON, getSeasonDates } from 'common/leagues'
 import { ContractsTable } from 'web/components/contract/contracts-table'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { db } from 'web/lib/supabase/db'
 
-const blockedGroupSlugs = HOME_BLOCKED_GROUP_SLUGS
+const blockedGroupSlugs = DEEMPHASIZED_GROUP_SLUGS
 
 export const getStaticProps = async () => {
   const { data } = await db

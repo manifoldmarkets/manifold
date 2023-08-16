@@ -4,13 +4,9 @@ import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { track } from 'shared/analytics'
 import * as admin from 'firebase-admin'
 import { IapTransaction, PurchaseData } from 'common/iap'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
 import { ManaPurchaseTxn } from 'common/txn'
 import { sendThankYouEmail } from 'shared/emails'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnFromBank } from 'shared/txn/run-txn'
 
 const bodySchema = z.object({
   receipt: z.string(),
@@ -36,12 +32,12 @@ export const validateiap = authEndpoint(async (req, auth) => {
   })
   await iap.setup().catch((error: any) => {
     log('Error setting up iap', error)
-    throw new APIError(400, 'iap setup failed')
+    throw new APIError(500, 'iap setup failed')
   })
 
   const validatedData = await iap.validate(receipt).catch((error: any) => {
     log('error on validate data:', error)
-    throw new APIError(400, 'iap receipt validation failed')
+    throw new APIError(500, 'iap receipt validation failed')
   })
 
   // TODO uncomment this after app is accepted by Apple.
@@ -72,7 +68,7 @@ export const validateiap = authEndpoint(async (req, auth) => {
 
   if (!query.empty) {
     log('transactionId', transactionId, 'already processed')
-    throw new APIError(400, 'iap transaction already processed')
+    throw new APIError(403, 'iap transaction already processed')
   }
 
   const payout = PRODUCTS_TO_AMOUNTS[productId] * quantity
@@ -97,9 +93,7 @@ export const validateiap = authEndpoint(async (req, auth) => {
   await firestore.collection('iaps').doc(iapTransRef.id).set(iapTransaction)
 
   const manaPurchaseTxn = {
-    fromId: isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+    fromId: 'EXTERNAL',
     fromType: 'BANK',
     toId: userId,
     toType: 'USER',
@@ -114,7 +108,7 @@ export const validateiap = authEndpoint(async (req, auth) => {
   } as Omit<ManaPurchaseTxn, 'id' | 'createdTime'>
 
   await firestore.runTransaction(async (transaction) => {
-    const result = await runTxn(transaction, manaPurchaseTxn)
+    const result = await runTxnFromBank(transaction, manaPurchaseTxn)
     if (result.status == 'error') {
       throw new APIError(500, result.message ?? 'An unknown error occurred.')
     }
@@ -124,10 +118,10 @@ export const validateiap = authEndpoint(async (req, auth) => {
   log('user', userId, 'paid M$', payout)
 
   const user = await getUser(userId)
-  if (!user) throw new APIError(400, 'user not found')
+  if (!user) throw new APIError(500, 'Your account was not found')
 
   const privateUser = await getPrivateUser(userId)
-  if (!privateUser) throw new APIError(400, 'private user not found')
+  if (!privateUser) throw new APIError(500, 'Private user not found')
 
   await sendThankYouEmail(user, privateUser)
   log('iap revenue', revenue)

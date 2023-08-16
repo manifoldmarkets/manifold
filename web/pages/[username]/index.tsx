@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   ChatAlt2Icon,
   CurrencyDollarIcon,
@@ -21,12 +20,9 @@ import { Title } from 'web/components/widgets/title'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
-import { usePostsByUser } from 'web/hooks/use-post'
 import { usePrefetchUsers, useUser, useUserById } from 'web/hooks/use-user'
 import { useDiscoverUsers } from 'web/hooks/use-users'
-import { track } from 'web/lib/service/analytics'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
-import { buttonClass } from 'web/components/buttons/button'
 import { TextButton } from 'web/components/buttons/text-button'
 import { UserFollowButton } from 'web/components/buttons/follow-button'
 import { UserCommentsList } from 'web/components/comments/comments-list'
@@ -38,7 +34,6 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
-import { PostCardList } from 'web/components/posts/post-card'
 import { SEO } from 'web/components/SEO'
 import { Avatar } from 'web/components/widgets/avatar'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
@@ -50,7 +45,6 @@ import {
   UserBadge,
 } from 'web/components/widgets/user-link'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
-import { Subtitle } from 'web/components/widgets/subtitle'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import { getPostsByUser } from 'web/lib/supabase/post'
@@ -62,12 +56,12 @@ import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { useAdmin } from 'web/hooks/use-admin'
 import { UserPayments } from 'web/pages/payments'
 import { FaMoneyBillTransfer } from 'react-icons/fa6'
-import { StarDisplay } from 'web/components/reviews/stars'
 import { useQuery } from 'react-query'
 import { getUserRating, getUserReviews } from 'web/lib/supabase/reviews'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { removeUndefinedProps } from 'common/util/object'
 import { Review } from 'web/components/reviews/review'
+import { db } from 'web/lib/supabase/db'
 
 export const getStaticProps = async (props: {
   params: {
@@ -126,7 +120,7 @@ const DeletedUser = () => {
   return (
     <Page>
       <div className="flex h-full flex-col items-center justify-center">
-        <Title children="Deleted account page" />
+        <Title>Deleted account page</Title>
         <p>This user has been deleted.</p>
         <p>If you didn't expect this, let us know on Discord!</p>
         <br />
@@ -154,7 +148,7 @@ function UserProfile(props: {
   const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
-  const userPosts = usePostsByUser(user.id) ?? props.posts
+  const [followsYou, setFollowsYou] = useState(false)
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -173,6 +167,20 @@ function UserProfile(props: {
       )
     }
   }, [])
+
+  useEffect(() => {
+    if (currentUser && currentUser.id !== user.id) {
+      db.from('user_follows')
+        .select('user_id')
+        .eq('follow_id', currentUser.id)
+        .eq('user_id', user.id)
+        .then(({ data }) => {
+          setFollowsYou(
+            data?.some(({ user_id }) => user_id === user.id) ?? false
+          )
+        })
+    }
+  }, [currentUser?.id])
 
   return (
     <Page key={user.id}>
@@ -223,9 +231,24 @@ function UserProfile(props: {
                 }
                 {user.isBannedFromPosting && <PostBanBadge />}
               </div>
-              <span className={'text-ink-400 text-sm sm:text-lg'}>
-                @{user.username}
-              </span>
+              <Row
+                className={
+                  'max-w-[8rem] flex-shrink flex-wrap gap-2 sm:max-w-none'
+                }
+              >
+                <span className={'text-ink-400  text-sm sm:text-base'}>
+                  @{user.username}{' '}
+                </span>
+                {followsYou && (
+                  <span
+                    className={
+                      'bg-canvas-100 w-fit self-center rounded-md p-0.5 px-1 text-xs'
+                    }
+                  >
+                    Follows you
+                  </span>
+                )}
+              </Row>
             </Col>
           </Row>
           {isCurrentUser ? (
@@ -319,7 +342,9 @@ function UserProfile(props: {
                     <Spacer h={4} />
                     <PortfolioValueSection
                       userId={user.id}
-                      defaultTimePeriod={isCurrentUser ? 'daily' : 'allTime'}
+                      defaultTimePeriod={'weekly'}
+                      lastUpdatedTime={user.metricsLastUpdated}
+                      isCurrentUser={isCurrentUser}
                     />
                     <Spacer h={4} />
                     <UserBetsTable user={user} />
@@ -340,31 +365,9 @@ function UserProfile(props: {
                 title: 'Comments',
                 stackedTabIcon: <ChatAlt2Icon className="h-5" />,
                 content: (
-                  <>
-                    {userPosts && userPosts.length > 0 && (
-                      <>
-                        <Spacer h={4} />
-                        <Row className="mb-3 flex items-center justify-between">
-                          <Subtitle className="!my-0">Posts</Subtitle>
-                          {isCurrentUser && (
-                            <Link
-                              className={clsx(buttonClass('md', 'indigo'))}
-                              href={'/create-post'}
-                              onClick={() => track('profile click create post')}
-                            >
-                              Create Post
-                            </Link>
-                          )}
-                        </Row>
-
-                        <PostCardList posts={userPosts} limit={6} />
-                        <Subtitle>Comments</Subtitle>
-                      </>
-                    )}
-                    <Col>
-                      <UserCommentsList user={user} />
-                    </Col>
-                  </>
+                  <Col>
+                    <UserCommentsList user={user} />
+                  </Col>
                 ),
               },
               {
@@ -448,6 +451,19 @@ function ProfilePublicStats(props: {
           Rank {leagueInfo.rank}
         </Link>
       )}
+
+      {reviewCount > 0 && (
+        <button
+          className="group flex gap-0.5"
+          onClick={() => setReviewsOpen(true)}
+        >
+          <span className="decoration-primary-400 decoration-2 group-hover:underline">
+            <span className="font-semibold">{reviewCount}</span> Review
+            {reviewCount === 1 ? '' : 's'}
+          </span>
+        </button>
+      )}
+
       <SiteLink
         href={'/' + user.username + '/calibration'}
         className={clsx(linkClass, 'cursor-pointer text-sm')}
@@ -455,14 +471,6 @@ function ProfilePublicStats(props: {
         <ChartBarIcon className="mr-1 mb-1 inline h-4 w-4" />
         Calibration
       </SiteLink>
-
-      {rating && (
-        <button className="flex gap-0.5" onClick={() => setReviewsOpen(true)}>
-          <span className="font-semibold">{rating.toFixed(1)}</span>
-          <StarDisplay rating={rating} />
-          <span className="font-semibold">({reviewCount} reviews)</span>
-        </button>
-      )}
 
       <FollowsDialog
         user={user}
@@ -476,9 +484,9 @@ function ProfilePublicStats(props: {
         isOpen={reviewsOpen}
         setIsOpen={setReviewsOpen}
         userId={user.id}
+        rating={rating ?? 4}
       />
-      {/* {isCurrentUser && <GroupsButton user={user} className={className} />}
-      {isCurrentUser && <ReferralsButton user={user} className={className} />}
+      {/*{isCurrentUser && <ReferralsButton user={user} className={className} />}
       {isCurrentUser && (
         <UserLikedContractsButton user={user} className={className} />
       )} */}
@@ -513,10 +521,10 @@ function FollowsDialog(props: {
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
-      <Col className="bg-canvas-0 max-h-[90vh] rounded p-6 pb-2">
-        <div className="p-2 pb-1 text-xl">{user.name}</div>
-        <div className="text-ink-500 p-2 pt-0 text-sm">@{user.username}</div>
+      <Col className="bg-canvas-0 max-h-[90vh] rounded pt-6">
+        <div className="px-6 pb-1 text-center text-xl">{user.name}</div>
         <Tabs
+          className="mx-6"
           tabs={[
             {
               title: 'Following',
@@ -557,15 +565,33 @@ function ReviewsDialog(props: {
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
   userId: string
+  rating: number
 }) {
-  const { isOpen, setIsOpen, userId } = props
+  const { isOpen, setIsOpen, userId, rating } = props
 
   const reviews = useQuery([`reviews ${userId}`], () => getUserReviews(userId))
+
+  const ratingLabel =
+    rating > 4.8 ? (
+      <span className="font-semibold text-green-600">Exceptional</span>
+    ) : rating > 4.5 ? (
+      <span className="font-semibold text-green-600">Great</span>
+    ) : rating > 3.3 ? (
+      <span className="font-semibold text-green-600">Good</span>
+    ) : rating > 2.5 ? (
+      <span className="font-semibold text-yellow-600">Okay</span>
+    ) : rating > 2 ? (
+      <span className="font-semibold text-red-600">Poor</span>
+    ) : (
+      <span className="font-semibold text-red-600">Very Poor</span>
+    )
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
       <div className="bg-canvas-0 max-h-[90vh] overflow-y-auto rounded p-6">
         <Title>Reviews</Title>
+
+        <div className="mb-4">Resolution reliability: {ratingLabel}</div>
         {reviews.isLoading && <LoadingIndicator className="text-center" />}
 
         <Col className="divide-ink-300 divide-y-2">

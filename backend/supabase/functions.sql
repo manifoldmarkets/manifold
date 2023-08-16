@@ -598,9 +598,9 @@ create
 or replace function get_contract_metrics_with_contracts (uid text, count int, start int) returns table (contract_id text, metrics jsonb, contract jsonb) stable parallel safe language sql as $$
 select ucm.contract_id,
   ucm.data as metrics,
-  c.data as contract
+    c.data as contract
 from user_contract_metrics as ucm
-  join contracts_rbac as c on c.id = ucm.contract_id
+    join contracts_rbac as c on c.id = ucm.contract_id
 where ucm.user_id = uid
   and ucm.data->'lastBetTime' is not null
 order by ((ucm.data)->'lastBetTime')::bigint desc offset start
@@ -733,22 +733,41 @@ where is_valid_contract(contracts)
 order by score desc
 limit n offset start $$;
 
--- Your most recent contracts by bets or likes.
+-- Your most recent contracts by bets, likes, or views.
 create
-or replace function get_your_recent_contracts (uid text, n int, start int) returns table (data jsonb, max_ts bigint) stable parallel safe language sql as $$ with your_bet_on_contracts as (
-    select contract_id,
-      (data->>'lastBetTime')::bigint as ts
-    from user_contract_metrics
-    where user_id = uid
-      and (data->>'lastBetTime')::bigint is not null
-  ),
-  your_liked_contracts as (
-    select (data->>'contentId') as contract_id,
-      (data->>'createdTime')::bigint as ts
-    from user_reactions
-    where user_id = uid
-  ),
+or replace function get_your_recent_contracts (uid text, n int, start int) returns table (data jsonb, max_ts bigint) stable parallel safe language sql as $$
+    with your_bet_on_contracts as (
+        select contract_id,
+               (data->>'lastBetTime')::bigint as ts
+        from user_contract_metrics
+        where user_id = uid
+          and ((data -> 'lastBetTime')::bigint) is not null
+        order by ((data -> 'lastBetTime')::bigint) desc
+        limit n),
+    your_liked_contracts as (
+         select (data->>'contentId') as contract_id,
+                (data->>'createdTime')::bigint as ts
+         from user_reactions
+         where user_id = uid
+         order by ((data->'createdTime')::bigint) desc
+         limit n
+    ),
+     your_viewed_contracts as (
+         select contract_id,
+                ts_to_millis(created_time) as ts
+         from user_seen_markets
+         where user_id = uid
+           and type = 'view market'
+         order by created_time desc
+         limit n
+     ),
   recent_contract_ids as (
+      select contract_id,ts
+      from your_viewed_contracts
+      union all
+    select contract_id,ts
+    from your_viewed_contracts
+    union all
     select contract_id,
       ts
     from your_bet_on_contracts
@@ -945,22 +964,11 @@ user_embedding as (
 $$ language sql;
 
 create
-or replace function save_user_topics (p_user_id text, p_topics text[]) returns void language sql as $$ with chosen_embedding as (
+or replace function save_user_topics (p_user_id text, p_topics text[]) returns void language sql as $$
+with topic_embedding as (
     select avg(embedding) as average
     from topic_embeddings
     where topic = any(p_topics)
-  ),
-  not_chosen_embedding as (
-    select avg(embedding) as average
-    from topic_embeddings
-    where topic not in (
-        select unnest(p_topics)
-      )
-  ),
-  topic_embedding as (
-    select (chosen.average - not_chosen.average) as average
-    from chosen_embedding as chosen,
-      not_chosen_embedding as not_chosen
   )
 insert into user_topics (user_id, topics, topic_embedding)
 values (
@@ -979,22 +987,12 @@ $$;
 create
 or replace function save_user_topics_blank (p_user_id text) returns void language sql as $$
 with
-  average_all as (
+    topic_embedding as (
     select avg(embedding) as average
-    from topic_embeddings
-  ),
-  ignore_embeddings as (
-    select avg(embedding) as average
-    from topic_embeddings
-    where topic in (
+    from topic_embeddings where topic not in (
       select unnest(ARRAY['destiny.gg', 'stock', 'planecrash', 'proofnik', 'permanent', 'personal']::text[])
+        )
     )
-  ),
-  topic_embedding as (
-    select (avg_all.average - not_chosen.average) as average
-    from average_all as avg_all,
-         ignore_embeddings as not_chosen
-  )
 insert into user_topics (user_id, topics, topic_embedding)
 values (
          p_user_id,

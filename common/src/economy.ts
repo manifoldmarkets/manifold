@@ -1,29 +1,29 @@
+import { OutcomeType } from 'common/contract'
+
 export const FIXED_ANTE = 50
 export const ANSWER_COST = FIXED_ANTE / 2
 const ANTES = {
   BINARY: FIXED_ANTE,
   MULTIPLE_CHOICE: ANSWER_COST, // Amount per answer.
-  FREE_RESPONSE: FIXED_ANTE * 2,
   PSEUDO_NUMERIC: FIXED_ANTE * 5,
-  NUMERIC: FIXED_ANTE * 5,
-  CERT: FIXED_ANTE * 10,
-  QUADRATIC_FUNDING: FIXED_ANTE * 10,
   STONK: FIXED_ANTE,
   BOUNTIED_QUESTION: 0,
+  POLL: 10,
 }
 
+export const MINIMUM_BOUNTY = 5
+
 export const getAnte = (
-  outcomeType: string,
-  numAnswers: number | undefined,
-  isPrivate: boolean
+  outcomeType: OutcomeType,
+  numAnswers: number | undefined
 ) => {
   const ante = ANTES[outcomeType as keyof typeof ANTES] ?? FIXED_ANTE
-  const privateFee = isPrivate ? 200 : 0
 
-  return (
-    privateFee +
-    (outcomeType === 'MULTIPLE_CHOICE' && numAnswers ? ante * numAnswers : ante)
-  )
+  if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE') {
+    return ante * (numAnswers ?? 0)
+  }
+
+  return ante
 }
 
 export const STARTING_BALANCE = 500

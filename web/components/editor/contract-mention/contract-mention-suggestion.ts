@@ -20,7 +20,7 @@ export const contractMentionSuggestion: Suggestion = {
       await searchContract({
         query,
         filter: 'all',
-        sort: 'relevance',
+        sort: 'score',
         limit: 5,
       })
     ).data,

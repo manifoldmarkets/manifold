@@ -41,8 +41,9 @@ export const ReviewPanel = (props: {
   marketId: string
   author: string
   user: User
+  className?: string
 }) => {
-  const { marketId, author, user } = props
+  const { marketId, author, user, className } = props
   const [rating, setRating] = useState<Rating>()
 
   const editor = useTextEditor({
@@ -72,7 +73,7 @@ export const ReviewPanel = (props: {
   })
 
   return (
-    <GradientContainer>
+    <GradientContainer className={className}>
       <Col className="items-center gap-2">
         <h2 className="text-primary-500 text-xl">Rate {author}</h2>
         <span className="text-sm italic">
@@ -98,28 +99,26 @@ export const ReviewPanel = (props: {
 
 export const StarDisplay = (props: { rating: number }) => {
   const rating = clamp(props.rating, 0, 5)
-  const fullStars = Math.floor(rating)
-  const fraction = rating - fullStars
 
-  // star path is about 15 px in a 20px wide viewbox
-  const clipPx = (1 - fraction) * 15 + 2.5
+  // like 3.7 -> [1, 1, 1, 0.7, 0]
+  const starFullness = range(1, 6).map((i) => clamp(i - rating, 0, 1))
 
   return (
     <div className="inline-flex align-top">
-      {range(1, fullStars + 1).map((star) => (
-        <StarIcon key={'star' + star} className="h-5 w-5 text-yellow-500" />
-      ))}
-      <div className="relative">
-        <StarIcon
-          className="absolute h-5 w-5 text-yellow-500"
-          viewBox={`${-clipPx} 0 20 20`}
-          style={{ left: -clipPx }}
-        />
-        <StarOutline className="text-ink-300 h-5 w-5" />
-      </div>
-      {range(fullStars + 2, 6).map((star) => (
-        <StarOutline key={'star' + star} className="text-ink-300 h-5 w-5" />
-      ))}
+      {starFullness.map((fraction, i) => {
+        // star path is about 15 px in a 20px wide viewbox
+        const clipPx = fraction * 15 + 2.5
+        return (
+          <div className="relative" key={i}>
+            <StarIcon
+              className="absolute h-5 w-5 text-yellow-500"
+              viewBox={`${-clipPx} 0 20 20`}
+              style={{ left: -clipPx }}
+            />
+            <StarOutline className="text-ink-300 h-5 w-5" />
+          </div>
+        )
+      })}
     </div>
   )
 }

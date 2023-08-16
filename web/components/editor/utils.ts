@@ -7,7 +7,7 @@ import {
   AnyExtension,
 } from '@tiptap/react'
 import { keyBy } from 'lodash'
-import React, { ReactNode } from 'react'
+import { createElement, Fragment, ReactNode } from 'react'
 
 export function insertContent(editor: Editor | null, ...contents: Content[]) {
   if (!editor) {
@@ -37,7 +37,7 @@ const pmdToJSX = (dom: ProsemirrorDOM, children: ReactNode): ReactNode => {
     const [tag, attrs, ...content] = dom
     const { class: className, ...rest } = attrs
 
-    return React.createElement(
+    return createElement(
       tag,
       { className, ...rest },
       ...content.map((c) => pmdToJSX(c, children))
@@ -45,7 +45,7 @@ const pmdToJSX = (dom: ProsemirrorDOM, children: ReactNode): ReactNode => {
   } else if (dom === 0) {
     if (Array.isArray(children)) {
       // wrap in fragment to stop missing key warnings
-      return React.createElement(React.Fragment, {}, ...children)
+      return createElement(Fragment, {}, ...children)
     }
     return children
   } else {
@@ -62,7 +62,7 @@ export function getField(extension: AnyExtension, field: string) {
  * Generate jsx from the json content without an Editor.
  * If you want to render an actual text editor you should probably use Editor instead. This is for ssr.
  *
- * We can't use prosemirror node views (this is what tiptap `generateHTML` does) because it uses document which is on the
+ * We can't use prosemirror node views (this is what tiptap `generateHTML` does) because it uses document which is on the client.
  */
 export const generateReact = (doc: JSONContent, extensions: Extensions) => {
   const extensionsIncludingStarterKit = extensions.flatMap(

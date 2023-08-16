@@ -3,7 +3,7 @@ export type Json =
   | number
   | boolean
   | null
-  | { [key: string]: Json }
+  | { [key: string]: Json | undefined }
   | Json[]
 
 export interface Database {
@@ -49,6 +49,7 @@ export interface Database {
           total_subsidy?: number
           user_id?: string
         }
+        Relationships: []
       }
       chat_messages: {
         Row: {
@@ -452,20 +453,32 @@ export interface Database {
       group_contracts: {
         Row: {
           contract_id: string
-          data: Json | null
-          fs_updated_time: string | null
           group_id: string
         }
         Insert: {
           contract_id: string
-          data?: Json | null
-          fs_updated_time?: string | null
           group_id: string
         }
         Update: {
           contract_id?: string
-          data?: Json | null
-          fs_updated_time?: string | null
+          group_id?: string
+        }
+        Relationships: []
+      }
+      group_embeddings: {
+        Row: {
+          created_time: string
+          embedding: string
+          group_id: string
+        }
+        Insert: {
+          created_time?: string
+          embedding: string
+          group_id: string
+        }
+        Update: {
+          created_time?: string
+          embedding?: string
           group_id?: string
         }
         Relationships: []
@@ -528,27 +541,21 @@ export interface Database {
       group_members: {
         Row: {
           created_time: string | null
-          data: Json | null
-          fs_updated_time: string | null
           group_id: string
           member_id: string
-          role: string | null
+          role: string
         }
         Insert: {
           created_time?: string | null
-          data?: Json | null
-          fs_updated_time?: string | null
           group_id: string
           member_id: string
-          role?: string | null
+          role?: string
         }
         Update: {
           created_time?: string | null
-          data?: Json | null
-          fs_updated_time?: string | null
           group_id?: string
           member_id?: string
-          role?: string | null
+          role?: string
         }
         Relationships: []
       }
@@ -558,6 +565,7 @@ export interface Database {
           data: Json
           fs_updated_time: string | null
           id: string
+          importance_score: number | null
           name: string
           name_fts: unknown | null
           privacy_status: string | null
@@ -569,6 +577,7 @@ export interface Database {
           data: Json
           fs_updated_time?: string | null
           id?: string
+          importance_score?: number | null
           name: string
           name_fts?: unknown | null
           privacy_status?: string | null
@@ -580,6 +589,7 @@ export interface Database {
           data?: Json
           fs_updated_time?: string | null
           id?: string
+          importance_score?: number | null
           name?: string
           name_fts?: unknown | null
           privacy_status?: string | null
@@ -748,9 +758,10 @@ export interface Database {
       news: {
         Row: {
           author: string | null
-          contract_ids: string[]
+          contract_ids: string[] | null
           created_time: string
           description: string | null
+          group_ids: string[] | null
           id: number
           image_url: string | null
           published_time: string
@@ -762,9 +773,10 @@ export interface Database {
         }
         Insert: {
           author?: string | null
-          contract_ids: string[]
+          contract_ids?: string[] | null
           created_time?: string
           description?: string | null
+          group_ids?: string[] | null
           id?: number
           image_url?: string | null
           published_time: string
@@ -776,9 +788,10 @@ export interface Database {
         }
         Update: {
           author?: string | null
-          contract_ids?: string[]
+          contract_ids?: string[] | null
           created_time?: string
           description?: string | null
+          group_ids?: string[] | null
           id?: number
           image_url?: string | null
           published_time?: string
@@ -787,6 +800,51 @@ export interface Database {
           title?: string
           title_embedding?: string
           url?: string
+        }
+        Relationships: []
+      }
+      platform_calibration: {
+        Row: {
+          created_time: string
+          data: Json
+          id: number
+        }
+        Insert: {
+          created_time?: string
+          data: Json
+          id?: never
+        }
+        Update: {
+          created_time?: string
+          data?: Json
+          id?: never
+        }
+        Relationships: []
+      }
+      portfolios: {
+        Row: {
+          created_time: string
+          creator_id: string
+          id: string
+          items: Json
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_time?: string
+          creator_id: string
+          id: string
+          items: Json
+          name: string
+          slug: string
+        }
+        Update: {
+          created_time?: string
+          creator_id?: string
+          id?: string
+          items?: Json
+          name?: string
+          slug?: string
         }
         Relationships: []
       }
@@ -1016,7 +1074,7 @@ export interface Database {
         Row: {
           contract_id: string
           data: Json
-          fs_updated_time: string
+          fs_updated_time: string | null
           has_no_shares: boolean | null
           has_shares: boolean | null
           has_yes_shares: boolean | null
@@ -1028,7 +1086,7 @@ export interface Database {
         Insert: {
           contract_id: string
           data: Json
-          fs_updated_time: string
+          fs_updated_time?: string | null
           has_no_shares?: boolean | null
           has_shares?: boolean | null
           has_yes_shares?: boolean | null
@@ -1040,7 +1098,7 @@ export interface Database {
         Update: {
           contract_id?: string
           data?: Json
-          fs_updated_time?: string
+          fs_updated_time?: string | null
           has_no_shares?: boolean | null
           has_shares?: boolean | null
           has_yes_shares?: boolean | null
@@ -1083,30 +1141,24 @@ export interface Database {
       }
       user_embeddings: {
         Row: {
-          card_view_embedding: string | null
+          contract_view_embedding: string | null
           created_at: string
           disinterest_embedding: string | null
           interest_embedding: string
-          pre_signup_embedding_is_default: boolean | null
-          pre_signup_interest_embedding: string | null
           user_id: string
         }
         Insert: {
-          card_view_embedding?: string | null
+          contract_view_embedding?: string | null
           created_at?: string
           disinterest_embedding?: string | null
           interest_embedding: string
-          pre_signup_embedding_is_default?: boolean | null
-          pre_signup_interest_embedding?: string | null
           user_id: string
         }
         Update: {
-          card_view_embedding?: string | null
+          contract_view_embedding?: string | null
           created_at?: string
           disinterest_embedding?: string | null
           interest_embedding?: string
-          pre_signup_embedding_is_default?: boolean | null
-          pre_signup_interest_embedding?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1253,6 +1305,7 @@ export interface Database {
         Row: {
           balance: number | null
           investment_value: number | null
+          loan_total: number | null
           portfolio_id: string
           total_deposits: number | null
           ts: string | null
@@ -1261,6 +1314,7 @@ export interface Database {
         Insert: {
           balance?: number | null
           investment_value?: number | null
+          loan_total?: number | null
           portfolio_id: string
           total_deposits?: number | null
           ts?: string | null
@@ -1269,6 +1323,7 @@ export interface Database {
         Update: {
           balance?: number | null
           investment_value?: number | null
+          loan_total?: number | null
           portfolio_id?: string
           total_deposits?: number | null
           ts?: string | null
@@ -2095,6 +2150,19 @@ export interface Database {
         }
         Returns: Record<string, unknown>
       }
+      count_recent_comments: {
+        Args: {
+          contract_id: string
+        }
+        Returns: number
+      }
+      count_recent_comments_by_contract: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          contract_id: string
+          comment_count: number
+        }[]
+      }
       count_users_above_similarity: {
         Args: {
           nid: number
@@ -2284,6 +2352,12 @@ export interface Database {
         }
         Returns: string
       }
+      get_profit: {
+        Args: {
+          portfolio: Json
+        }
+        Returns: number
+      }
       get_rating: {
         Args: {
           user_id: string
@@ -2292,12 +2366,6 @@ export interface Database {
           count: number
           rating: number
         }[]
-      }
-      get_profit: {
-        Args: {
-          portfolio: Json
-        }
-        Returns: number
       }
       get_recommended_contracts_by_score: {
         Args: {
@@ -2863,6 +2931,19 @@ export interface Database {
         }
         Returns: string
       }
+      search_group_embeddings: {
+        Args: {
+          query_embedding: string
+          similarity_threshold: number
+          max_count: number
+          name_similarity_threshold: number
+        }
+        Returns: {
+          name: string
+          group_id: string
+          similarity: number
+        }[]
+      }
       search_groups: {
         Args: {
           query: string
@@ -2873,6 +2954,7 @@ export interface Database {
           data: Json
           fs_updated_time: string | null
           id: string
+          importance_score: number | null
           name: string
           name_fts: unknown | null
           privacy_status: string | null
@@ -3056,6 +3138,19 @@ export interface Database {
           '': unknown[]
         }
         Returns: number
+      }
+      get_contract_voters: {
+        Args: {
+          this_contract_id: string
+        }
+        Returns: { data: Json }[]
+      }
+      get_option_voters: {
+        Args: {
+          this_contract_id: string
+          this_option_id: string
+        }
+        Returns: { data: Json }[]
       }
     }
     Enums: {

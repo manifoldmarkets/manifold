@@ -11,35 +11,33 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 
 const bodySchema = z.object({
   contractId: z.string().max(MAX_ANSWER_LENGTH),
-  amount: z.number().gt(0),
+  amount: z.number().gt(0).int().finite(),
   text: z.string(),
 })
 
 export const createanswer = authEndpoint(async (req, auth) => {
   const { contractId, amount, text } = validate(bodySchema, req.body)
 
-  if (!isFinite(amount)) throw new APIError(400, 'Invalid amount')
-
   // Run as transaction to prevent race conditions.
   const answer = await firestore.runTransaction(async (transaction) => {
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const userSnap = await transaction.get(userDoc)
-    if (!userSnap.exists) throw new APIError(400, 'User not found')
+    if (!userSnap.exists) throw new APIError(403, 'Your account was not found')
     const user = userSnap.data() as User
 
-    if (user.balance < amount) throw new APIError(400, 'Insufficient balance')
+    if (user.balance < amount) throw new APIError(403, 'Insufficient balance')
 
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const contractSnap = await transaction.get(contractDoc)
-    if (!contractSnap.exists) throw new APIError(400, 'Invalid contract')
+    if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
     const contract = contractSnap.data() as Contract
 
     if (contract.outcomeType !== 'FREE_RESPONSE')
-      throw new APIError(400, 'Requires a free response contract')
+      throw new APIError(403, 'Requires a free response contract')
 
     const { closeTime, volume } = contract
     if (closeTime && Date.now() > closeTime)
-      throw new APIError(400, 'Trading is closed')
+      throw new APIError(403, 'Trading is closed')
 
     const [lastAnswer] = await getValues<DpmAnswer>(
       firestore

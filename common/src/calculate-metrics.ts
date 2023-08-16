@@ -1,4 +1,4 @@
-import { Dictionary, partition, sumBy, uniq } from 'lodash'
+import { Dictionary, first, partition, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetrics } from './calculate'
 import { Bet, LimitBet } from './bet'
 import { Contract, CPMMContract, DPMContract } from './contract'
@@ -53,6 +53,18 @@ export const computeInvestmentValueCustomProb = (
     const value = betP * shares
     if (isNaN(value)) return 0
     return value
+  })
+}
+
+const getLoanTotal = (
+  bets: Bet[],
+  contractsDict: { [k: string]: Contract }
+) => {
+  return sumBy(bets, (bet) => {
+    const contract = contractsDict[bet.contractId]
+    if (!contract || contract.isResolved) return 0
+    if (bet.sale || bet.isSold) return 0
+    return bet.loanAmount ?? 0
   })
 }
 
@@ -171,14 +183,15 @@ export const calculateNewPortfolioMetrics = (
   unresolvedBets: Bet[]
 ) => {
   const investmentValue = computeInvestmentValue(unresolvedBets, contractsById)
-  const newPortfolio = {
+  const loanTotal = getLoanTotal(unresolvedBets, contractsById)
+  return {
     investmentValue: investmentValue,
     balance: user.balance,
     totalDeposits: user.totalDeposits,
+    loanTotal,
     timestamp: Date.now(),
     userId: user.id,
   }
-  return newPortfolio
 }
 
 export const calculateMetricsByContract = (
@@ -209,15 +222,15 @@ export const calculateUserMetrics = (
       ])
     )
   }
-
+  const bet = first(bets)
   return removeUndefinedProps({
     contractId: contract.id,
     ...current,
     from: periodMetrics,
-    userName: user?.name,
-    userId: user?.id,
-    userUsername: user?.username,
-    userAvatarUrl: user?.avatarUrl,
+    userName: user?.name ?? bet?.userName,
+    userId: user?.id ?? bet?.userId,
+    userUsername: user?.username ?? bet?.userUsername,
+    userAvatarUrl: user?.avatarUrl ?? bet?.userAvatarUrl,
   } as ContractMetric)
 }
 

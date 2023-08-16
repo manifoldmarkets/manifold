@@ -13,7 +13,7 @@ import {
 } from 'common/util/format'
 import { Spacer } from 'web/components/layout/spacer'
 import { Table } from 'web/components/widgets/table'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   calculatePayout,
   getAnswerProbability,
@@ -213,7 +213,7 @@ function BetRow(props: {
   const payoutIfChosenDisplay =
     bet.isAnte && outcomeType === 'FREE_RESPONSE' && bet.outcome === '0'
       ? 'N/A'
-      : formatMoney(calculatePayout(contract, bet, bet.outcome))
+      : formatMoney(calculatePayout(contract as any, bet, bet.outcome))
 
   const hadPoolMatch =
     (bet.limitProb === undefined ||
@@ -251,7 +251,6 @@ function BetRow(props: {
         ) : (
           <OutcomeLabel
             outcome={outcome}
-            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />

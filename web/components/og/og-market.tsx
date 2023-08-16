@@ -15,6 +15,7 @@ export function OgMarket(props: OgCardProps) {
     resolution,
     topAnswer,
     points,
+    bountyLeft,
   } = props
 
   const data = points ? (base64toPoints(points) as Point[]) : []
@@ -61,6 +62,8 @@ export function OgMarket(props: OgCardProps) {
             />
           )}
         </div>
+      ) : bountyLeft ? (
+        <BountyLeft bountyLeft={bountyLeft} />
       ) : (
         <div className="flex w-full flex-row items-center justify-end px-24">
           {resolution ? (
@@ -197,4 +200,14 @@ export function formatPercent(zeroToOne: number) {
   const decimalPlaces = zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
   const percent = zeroToOne * 100
   return percent.toFixed(decimalPlaces) + '%'
+}
+
+function BountyLeft(props: { bountyLeft: string }) {
+  const { bountyLeft } = props
+  return (
+    <div className="mx-auto flex flex-col text-center text-9xl">
+      <div className="mx-auto flex flex-row text-teal-600">M{bountyLeft}</div>
+      <span className="mx-auto text-5xl text-gray-600">bounty</span>
+    </div>
+  )
 }

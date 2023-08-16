@@ -16,7 +16,6 @@ import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { getAllCharityTxns } from 'web/lib/firebase/txns'
 import { formatMoney, manaToUSD } from 'common/util/format'
-import { quadraticMatches } from 'common/quadratic-funding'
 import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
@@ -35,7 +34,6 @@ export async function getStaticProps() {
   )
   const totalRaised = sum(Object.values(totals))
   const sortedCharities = sortBy(charities, [(charity) => -totals[charity.id]])
-  const matches = quadraticMatches(txns, totalRaised, 'toId')
   const numDonors = uniqBy(txns, (txn) => txn.fromId).length
   const mostRecentDonor = txns[0] ? await getUser(txns[0].fromId) : null
   const mostRecentCharity = txns[0]?.toId ?? ''
@@ -44,7 +42,6 @@ export async function getStaticProps() {
     props: {
       totalRaised,
       charities: sortedCharities,
-      matches,
       numDonors,
       mostRecentDonor,
       mostRecentCharity,
@@ -88,18 +85,11 @@ function DonatedStats(props: { stats: Stat[] }) {
 export default function Charity(props: {
   totalRaised: number
   charities: CharityType[]
-  matches: { [charityId: string]: number }
   numDonors: number
   mostRecentDonor?: User | null
   mostRecentCharity?: string
 }) {
-  const {
-    totalRaised,
-    charities,
-    matches,
-    mostRecentCharity,
-    mostRecentDonor,
-  } = props
+  const { totalRaised, charities, mostRecentCharity, mostRecentDonor } = props
 
   const [query, setQuery] = useState('')
   const debouncedQuery = debounce(setQuery, 50)
@@ -174,11 +164,7 @@ export default function Charity(props: {
         </Col>
         <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 self-center lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
           {filterCharities.map((charity) => (
-            <CharityCard
-              charity={charity}
-              key={charity.name}
-              match={matches[charity.id]}
-            />
+            <CharityCard charity={charity} key={charity.name} />
           ))}
         </div>
         {filterCharities.length === 0 && (

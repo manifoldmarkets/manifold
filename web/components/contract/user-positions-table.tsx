@@ -7,7 +7,7 @@ import {
 import { getContractMetricsForContractId } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { partition, sum } from 'lodash'
+import { partition, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useState } from 'react'
 import { SortRow } from 'web/components/contract/contract-tabs'
 import { Col } from 'web/components/layout/col'
@@ -30,24 +30,27 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { db } from 'web/lib/supabase/db'
 import { getStonkDisplayShares } from 'common/stonk'
+import { run } from 'common/supabase/utils'
 
 export const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
     contract: CPMMContract
     positions: ContractMetricsByOutcome
     setTotalPositions?: (totalPositions: number) => void
+    enableRealtime?: boolean
   }) {
-    const { contract, setTotalPositions } = props
+    const { contract, setTotalPositions, enableRealtime } = props
     const contractId = contract.id
     const [page, setPage] = useState(0)
     const pageSize = 20
-    const outcomes = ['YES', 'NO']
     const currentUser = useUser()
     const followedUsers = useFollows(currentUser?.id)
     const [contractMetricsByProfit, setContractMetricsByProfit] = useState<
       ContractMetric[] | undefined
     >()
 
+    const [totalYesPositions, setTotalYesPositions] = useState(0)
+    const [totalNoPositions, setTotalNoPositions] = useState(0)
     const [sortBy, setSortBy] = useState<'profit' | 'shares'>('shares')
 
     useEffect(() => {
@@ -66,25 +69,50 @@ export const BinaryUserPositionsTable = memo(
       return [positiveProfitPositions, negativeProfitPositions.reverse()]
     }, [contractMetricsByProfit])
 
-    const positions =
-      useRealtimeContractMetrics(contractId, outcomes) ?? props.positions
+    const positions = enableRealtime
+      ? // eslint-disable-next-line react-hooks/rules-of-hooks
+        useRealtimeContractMetrics(contractId, ['YES', 'NO']) ?? props.positions
+      : props.positions
 
     useEffect(() => {
-      setTotalPositions?.(sum(Object.values(positions).map((a) => a.length)))
-    }, [positions])
+      run(
+        db
+          .from('user_contract_metrics')
+          .select('*', { count: 'exact', head: true })
+          .eq('contract_id', contractId)
+          .not('total_shares_no', 'is', null)
+          .gt('total_shares_no', 0)
+      ).then((res) => {
+        setTotalNoPositions?.(res.count)
+      })
+      run(
+        db
+          .from('user_contract_metrics')
+          .select('*', { count: 'exact', head: true })
+          .eq('contract_id', contractId)
+          .not('total_shares_yes', 'is', null)
+          .gt('total_shares_yes', 0)
+      ).then((res) => {
+        setTotalYesPositions?.(res.count)
+      })
+    }, [JSON.stringify(positions)])
+
+    useEffect(() => {
+      setTotalPositions?.(totalYesPositions + totalNoPositions)
+    }, [totalNoPositions, totalYesPositions])
 
     const yesPositionsSorted =
       sortBy === 'shares' ? positions.YES ?? [] : positiveProfitPositions
     const noPositionsSorted =
       sortBy === 'shares' ? positions.NO ?? [] : negativeProfitPositions
 
-    const visibleYesPositions = yesPositionsSorted.slice(
-      page * pageSize,
-      (page + 1) * pageSize
+    const visibleYesPositions = uniqBy(
+      yesPositionsSorted.slice(page * pageSize, (page + 1) * pageSize),
+      'userId'
     )
-    const visibleNoPositions = noPositionsSorted.slice(
-      page * pageSize,
-      (page + 1) * pageSize
+    const visibleNoPositions = uniqBy(
+      noPositionsSorted.slice(page * pageSize, (page + 1) * pageSize),
+      'userId'
     )
     const largestColumnLength =
       yesPositionsSorted.length > noPositionsSorted.length
@@ -98,7 +126,7 @@ export const BinaryUserPositionsTable = memo(
     const getPositionsTitle = (outcome: 'YES' | 'NO') => {
       return outcome === 'YES' ? (
         <span>
-          {yesPositionsSorted.length}{' '}
+          {totalYesPositions}{' '}
           {isBinary ? (
             <>
               <YesLabel /> payouts
@@ -117,7 +145,7 @@ export const BinaryUserPositionsTable = memo(
         </span>
       ) : (
         <span>
-          {noPositionsSorted.length}{' '}
+          {totalNoPositions}{' '}
           {isBinary ? (
             <>
               <NoLabel /> payouts
@@ -153,8 +181,8 @@ export const BinaryUserPositionsTable = memo(
         </Row>
 
         <Row className={'gap-1'}>
-          <Col className={'w-1/2 gap-2'}>
-            <Row className={'text-ink-500 justify-end px-2'}>
+          <Col className={'w-1/2'}>
+            <Row className={'text-ink-500 justify-end p-2'}>
               {sortBy === 'profit' ? (
                 <span className={'text-ink-500'}>Profit</span>
               ) : (
@@ -185,8 +213,8 @@ export const BinaryUserPositionsTable = memo(
               )
             })}
           </Col>
-          <Col className={'w-1/2 gap-2'}>
-            <Row className={'text-ink-500 justify-end px-2'}>
+          <Col className={'w-1/2'}>
+            <Row className={'text-ink-500 justify-end p-2'}>
               {sortBy === 'profit' ? (
                 <span className={'text-ink-500'}>Loss</span>
               ) : (
@@ -242,7 +270,7 @@ const PositionRow = memo(function PositionRow(props: {
   return (
     <Row
       className={clsx(
-        'border-ink-300 items-center justify-between gap-2 rounded-sm border-b p-2',
+        'border-ink-300 items-center justify-between gap-2 border-b px-2 py-3',
         currentUser?.id === position.userId && 'bg-amber-500/20',
         followedUsers?.includes(position.userId) && 'bg-blue-500/20'
       )}

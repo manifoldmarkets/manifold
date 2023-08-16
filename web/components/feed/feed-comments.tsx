@@ -48,6 +48,7 @@ import { AwardBountyButton } from '../contract/bountied-question'
 import { Content } from '../widgets/editor'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
+import { isAdminId } from 'common/envs/constants'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -80,7 +81,9 @@ export function FeedCommentThread(props: {
   const idInThisThread =
     idInUrl && threadComments.map((comment) => comment.id).includes(idInUrl)
 
-  const [seeReplies, setSeeReplies] = useState(showReplies || !!idInThisThread)
+  const [seeReplies, setSeeReplies] = useState(
+    !parentComment.hidden && (showReplies || !!idInThisThread)
+  )
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const clearReply = useEvent(() => setReplyToUserInfo(undefined))
@@ -218,7 +221,9 @@ export const FeedComment = memo(function FeedComment(props: {
         <Col
           className={clsx(
             'w-full rounded-xl rounded-tl-none px-4 py-1',
-            highlighted ? 'bg-primary-50' : 'bg-ink-100'
+            highlighted
+              ? 'bg-primary-100 border-primary-300 border-2'
+              : 'bg-ink-100'
           )}
         >
           <FeedCommentHeader
@@ -369,13 +374,14 @@ export function DotMenu(props: {
               else toast.error(`You can't report your own comment`)
             },
           },
-          comment.userId === user?.id && {
-            name: 'Edit',
-            icon: <PencilIcon className="h-5 w-5" />,
-            onClick: async () => {
-              setEditingComment(true)
+          user &&
+            (comment.userId === user.id || isAdminId(user?.id)) && {
+              name: 'Edit',
+              icon: <PencilIcon className="h-5 w-5" />,
+              onClick: async () => {
+                setEditingComment(true)
+              },
             },
-          },
           (isAdmin || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
@@ -436,7 +442,8 @@ export function CommentActions(props: {
         <Tooltip text="Reply" placement="bottom">
           <IconButton
             size={'xs'}
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault()
               onReplyClick(comment)
             }}
           >
@@ -619,21 +626,24 @@ function FeedCommentHeader(props: {
                 )}
               </span>
             )}
+            {editedTime ? (
+              <CommentEditHistoryButton comment={comment} />
+            ) : (
+              <CopyLinkDateTimeComponent
+                prefix={contract.creatorUsername}
+                slug={contract.slug}
+                createdTime={editedTime ? editedTime : createdTime}
+                elementId={comment.id}
+                size={'sm'}
+                linkClassName="text-ink-500"
+              />
+            )}
+            {!inTimeline && isApi && (
+              <InfoTooltip text="Placed via API" className="mx-1">
+                🤖
+              </InfoTooltip>
+            )}
           </span>
-          <CopyLinkDateTimeComponent
-            prefix={contract.creatorUsername}
-            slug={contract.slug}
-            createdTime={editedTime ? editedTime : createdTime}
-            elementId={comment.id}
-            seeEditsButton={<CommentEditHistoryButton comment={comment} />}
-            size={'sm'}
-            linkClassName="text-ink-500"
-          />
-          {!inTimeline && isApi && (
-            <InfoTooltip text="Placed via API" className="mr-1">
-              🤖
-            </InfoTooltip>
-          )}
           {!inTimeline && <DotMenu comment={comment} contract={contract} />}
         </Row>
         {bountyAwarded && bountyAwarded > 0 && (
@@ -694,7 +704,6 @@ export function CommentOnBetRow(props: {
     betAnswerId,
     contract,
     clearReply,
-    className,
   } = props
   const { bought, money } = getBoughtMoney(betAmount)
 

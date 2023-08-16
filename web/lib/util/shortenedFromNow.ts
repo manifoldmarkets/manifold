@@ -1,11 +1,10 @@
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
-import {} from 'dayjs/plugin/duration'
 
 dayjs.extend(duration)
 
-export function shortenedFromNow(timeInPast: number): string {
-  const diff = dayjs.duration(dayjs().diff(timeInPast))
+export function shortenedFromNow(time: number): string {
+  const diff = dayjs.duration(Math.abs(dayjs().diff(time)))
 
   const units: { [key: string]: number } = {
     y: diff.years(),

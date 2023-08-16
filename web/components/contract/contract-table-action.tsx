@@ -10,14 +10,15 @@ import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { NumericResolutionPanel } from '../numeric-resolution-panel'
 import { ResolutionPanel } from '../resolution-panel'
-import { QfResolutionPanel } from './qf-overview'
 import { isClosed } from './contracts-table'
 import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
+import { useUser } from 'web/hooks/use-user'
 
-export function Action(props: { contract: Contract; user?: User | null }) {
-  const { contract, user } = props
+export function Action(props: { contract: Contract }) {
+  const { contract } = props
+  const user = useUser()
   return (
-    <Row className="flex-wrap gap-2">
+    <Row className="h-min flex-wrap gap-2 align-top">
       <BetButton contract={contract} user={user} />
       <ResolveButton contract={contract} user={user} />
     </Row>
@@ -39,7 +40,6 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
         <Button
           size="2xs"
           color="indigo-outline"
-          className="!ring-1"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -77,8 +77,7 @@ export function ResolveButton(props: {
     isClosed &&
     !contract.isResolved &&
     contract.creatorId === user?.id &&
-    (contract.outcomeType === 'NUMERIC' ||
-      contract.outcomeType === 'PSEUDO_NUMERIC' ||
+    (contract.outcomeType === 'PSEUDO_NUMERIC' ||
       contract.outcomeType === 'BINARY' ||
       contract.outcomeType === 'QUADRATIC_FUNDING' ||
       contract.outcomeType === 'MULTIPLE_CHOICE' ||
@@ -122,7 +121,7 @@ export function SmallResolutionPanel(props: {
   const { contract, user, setOpen } = props
   const outcomeType = contract.outcomeType
   const isAdmin = useAdmin()
-  return outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
+  return outcomeType === 'PSEUDO_NUMERIC' ? (
     <NumericResolutionPanel
       isAdmin={!!isAdmin}
       creator={user}
@@ -138,8 +137,6 @@ export function SmallResolutionPanel(props: {
       contract={contract}
       modalSetOpen={setOpen}
     />
-  ) : outcomeType === 'QUADRATIC_FUNDING' ? (
-    <QfResolutionPanel contract={contract} />
   ) : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE' ? (
     <Col className="w-full">
       <AnswersResolvePanel contract={contract} />

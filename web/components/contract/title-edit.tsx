@@ -6,7 +6,7 @@ import { IconButton } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Linkify } from '../widgets/linkify'
 
-export const TitleOrEdit = (props: {
+export const EditableQuestionTitle = (props: {
   contract: Contract
   canEdit?: boolean
 }) => {

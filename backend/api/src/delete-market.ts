@@ -19,18 +19,17 @@ export const deleteMarket = authEndpoint(async (req, auth) => {
     throw new APIError(404, 'No contract exists with the provided ID')
   const contract = contractSnap.data() as Contract
   const { creatorId } = contract
-  const firebaseUser = await admin.auth().getUser(auth.uid)
 
   if (creatorId !== auth.uid && !isAdminId(auth.uid))
     throw new APIError(403, 'User is not creator of contract')
 
   const { resolution, uniqueBettorCount } = contract
   if (resolution !== 'CANCEL')
-    throw new APIError(400, 'Contract must be resolved N/A to be deleted')
+    throw new APIError(403, 'Contract must be resolved N/A to be deleted')
 
   if (uniqueBettorCount && uniqueBettorCount >= 2)
     throw new APIError(
-      400,
+      403,
       'Contract must have less than 2 bettors to be deleted'
     )
 

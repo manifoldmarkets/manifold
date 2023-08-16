@@ -171,6 +171,7 @@ export async function updateLeagueCore() {
     for (const [contractId, contractBets] of Object.entries(betsByContract)) {
       const contract = contractsById[contractId]
       if (
+        contract &&
         contract.visibility === 'public' &&
         !contract.nonPredictive &&
         !EXCLUDED_CONTRACT_SLUGS.has(contract.slug)

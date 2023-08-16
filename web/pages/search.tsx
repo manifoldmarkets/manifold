@@ -1,7 +1,9 @@
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { useRouter } from 'next/router'
+import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import Welcome from 'web/components/onboarding/welcome'
 import { Sort, SupabaseContractSearch } from 'web/components/supabase-search'
 import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -11,7 +13,6 @@ import {
   useShouldBlockDestiny,
   useUser,
 } from 'web/hooks/use-user'
-import Welcome from 'web/components/onboarding/welcome'
 
 export default function Search() {
   const user = useUser()
@@ -31,6 +32,11 @@ export default function Search() {
     <>
       <Welcome />
       <Page>
+        <SEO
+          title="Questions"
+          description="Browse all questions."
+          url="/questions"
+        />
         <Col className="mx-auto w-full p-2">
           <Title className="hidden lg:flex">Questions</Title>
           <SupabaseContractSearch
@@ -45,9 +51,10 @@ export default function Search() {
               ],
               excludeUserIds: privateUser?.blockedUserIds,
             }}
+            useUrlParams
             isWholePage
             headerClassName={'bg-canvas-0'}
-            showTopics={true}
+            showTopics
           />
         </Col>
       </Page>

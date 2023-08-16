@@ -3,12 +3,8 @@ import * as admin from 'firebase-admin'
 import { getLeaguePrize, league_user_info } from 'common/leagues'
 import { SupabaseDirectClient } from './supabase/init'
 import { createLeagueChangedNotification } from './create-notification'
-import { runTxn } from './txn/run-txn'
-import { isProd } from './utils'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
+import { runTxnFromBank } from './txn/run-txn'
+
 import { LeaguePrizeTxn } from 'common/txn'
 import { chunk } from 'lodash'
 
@@ -31,7 +27,7 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
     prevRows.map((r) => [r.user_id, r])
   )
 
-  for (const rows of chunk(newRows, 10)) {
+  for (const rows of chunk(newRows, 20)) {
     await Promise.all(
       rows.map((newRow) => {
         const prevRow = prevRowsByUserId[newRow.user_id] as
@@ -67,12 +63,7 @@ const sendEndOfSeasonNotificationAndBonus = async (
 
   if (prize) {
     const firestore = admin.firestore()
-    const ref = firestore.collection('txns').doc()
-    const data: LeaguePrizeTxn = {
-      id: ref.id,
-      fromId: isProd()
-        ? HOUSE_LIQUIDITY_PROVIDER_ID
-        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+    const data: Omit<LeaguePrizeTxn, 'fromId' | 'id' | 'createdTime'> = {
       fromType: 'BANK',
       toId: userId,
       toType: 'USER',
@@ -80,10 +71,9 @@ const sendEndOfSeasonNotificationAndBonus = async (
       token: 'M$',
       category: 'LEAGUE_PRIZE',
       data: prevRow,
-      createdTime: Date.now(),
     }
     await firestore.runTransaction(async (transaction) => {
-      await runTxn(transaction, data)
+      await runTxnFromBank(transaction, data)
     })
   }
   await createLeagueChangedNotification(userId, prevRow, newRow, prize, pg)

@@ -1,5 +1,5 @@
-import { groupBy, last, sortBy } from 'lodash'
-import { memo, useEffect, useMemo, useState } from 'react'
+import { groupBy, keyBy, last, mapValues, sortBy, sumBy } from 'lodash'
+import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
 import {
@@ -17,17 +17,11 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useComments } from 'web/hooks/use-comments'
 import { useEvent } from 'web/hooks/use-event'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLiquidity } from 'web/hooks/use-liquidity'
-import {
-  inMemoryStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
 import { useUser } from 'web/hooks/use-user'
-import { getTotalBetCount } from 'web/lib/firebase/bets'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { track } from 'web/lib/service/analytics'
 import { getOlderBets } from 'web/lib/supabase/bets'
@@ -38,11 +32,11 @@ import { FeedLiquidity } from '../feed/feed-liquidity'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
-import { CertInfo, CertTrades } from './cert-overview'
-import { QfTrades } from './qf-overview'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useComments } from 'web/hooks/use-comments'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 
 export const EMPTY_USER = '_'
 
@@ -61,6 +55,7 @@ export function ContractTabs(props: {
 }) {
   const {
     contract,
+    comments,
     bets,
     answerResponse,
     onCancelAnswerResponse,
@@ -70,20 +65,11 @@ export function ContractTabs(props: {
     totalBets,
     userPositionsByOutcome,
   } = props
-  const betsWithoutAntes = useMemo(
-    () => bets.filter((bet) => !bet.isAnte),
-    [bets]
-  )
-  const comments = useMemo(
-    () =>
-      props.comments.filter(
-        (comment) => !blockedUserIds.includes(comment.userId)
-      ),
-    [props.comments, blockedUserIds]
-  )
+
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
   const [replyToBet, setReplyToBet] = useState<Bet | undefined>(undefined)
+  const clearReply = useEvent(() => setReplyToBet(undefined))
   useEffect(() => {
     if (replyToBet) setActiveIndex(0)
   }, [replyToBet])
@@ -117,20 +103,6 @@ export function ContractTabs(props: {
 
   const positionsTitle = shortFormatNumber(totalPositions) + ' Positions'
 
-  if (contract.outcomeType == 'BOUNTIED_QUESTION') {
-    return (
-      <CommentsTabContent
-        contract={contract}
-        comments={comments}
-        setCommentsLength={setTotalComments}
-        answerResponse={answerResponse}
-        onCancelAnswerResponse={onCancelAnswerResponse}
-        blockedUserIds={blockedUserIds}
-        betResponse={replyToBet}
-        clearReply={() => setReplyToBet(undefined)}
-      />
-    )
-  }
   return (
     <ControlledTabs
       className="mb-4"
@@ -151,11 +123,10 @@ export function ContractTabs(props: {
               onCancelAnswerResponse={onCancelAnswerResponse}
               blockedUserIds={blockedUserIds}
               betResponse={replyToBet}
-              clearReply={() => setReplyToBet(undefined)}
+              clearReply={clearReply}
             />
           ),
         },
-
         totalBets > 0 &&
           contract.mechanism === 'cpmm-1' && {
             title: positionsTitle,
@@ -164,38 +135,29 @@ export function ContractTabs(props: {
                 positions={userPositionsByOutcome}
                 contract={contract as CPMMBinaryContract}
                 setTotalPositions={setTotalPositions}
+                enableRealtime
               />
             ),
           },
-
         totalBets > 0 && {
           title: betsTitle,
           content: (
             <Col className={'gap-4'}>
               <BetsTabContent
                 contract={contract}
-                bets={betsWithoutAntes}
+                bets={bets}
+                totalBets={totalBets}
                 setReplyToBet={setReplyToBet}
               />
             </Col>
           ),
         },
-
         userBets.length > 0 && {
           title: yourBetsTitle,
           content: (
             <ContractBetsTable contract={contract} bets={userBets} isYourBets />
           ),
-        },
-
-        contract.outcomeType === 'CERT' && [
-          { title: 'Trades', content: <CertTrades contract={contract} /> },
-          { title: 'Positions', content: <CertInfo contract={contract} /> },
-        ],
-
-        contract.outcomeType === 'QUADRATIC_FUNDING' && [
-          { title: 'History', content: <QfTrades contract={contract} /> },
-        ]
+        }
       )}
     />
   )
@@ -225,6 +187,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const comments = (useComments(contract.id) ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)
   )
+
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     DEFAULT_PARENT_COMMENTS_TO_RENDER
   )
@@ -232,70 +195,81 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const user = useUser()
 
   const isBountiedQuestion = contract.outcomeType == 'BOUNTIED_QUESTION'
-  const [sort, setSort] = usePersistentState<'Newest' | 'Best'>(
+  const [sort, setSort] = usePersistentInMemoryState<'Newest' | 'Best'>(
     isBountiedQuestion && (!user || user.id !== contract.creatorId)
       ? 'Best'
       : 'Newest',
-    {
-      key: `comments-sort-${contract.id}`,
-      store: inMemoryStore(),
-    }
+    `comments-sort-${contract.id}`
   )
   const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const isReply = (c: ContractComment) => c.replyToCommentId !== undefined
 
-  const sortedComments = useMemo(
-    () =>
-      sortBy(comments, [
-        sort === 'Best'
-          ? isBountiedQuestion
-            ? (c: ContractComment) =>
-                isReply(c)
-                  ? c.createdTime
-                  : c.bountyAwarded
-                  ? -c.bountyAwarded * 1000
-                  : -(c.likes ?? 0)
-            : (c) =>
-                isReply(c)
-                  ? c.createdTime
-                  : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-                  likes &&
-                    c.createdTime > Date.now() - 10 * MINUTE_MS &&
-                    c.userId === user?.id
-                  ? -Infinity
-                  : -(c?.likes ?? 0)
-          : (c) => c,
-        (c) => (isReply(c) ? c.createdTime : -c.createdTime),
-      ]),
-    [comments, sort, likes, user?.id]
+  const strictlySortedComments = sortBy(comments, [
+    sort === 'Best'
+      ? isBountiedQuestion
+        ? (c) =>
+            isReply(c)
+              ? c.createdTime
+              : // For your own recent comments, show first.
+              c.createdTime > Date.now() - 10 * MINUTE_MS &&
+                c.userId === user?.id
+              ? -Infinity
+              : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
+        : (c) =>
+            isReply(c)
+              ? c.createdTime
+              : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+              likes &&
+                c.createdTime > Date.now() - 10 * MINUTE_MS &&
+                c.userId === user?.id
+              ? -Infinity
+              : -(c?.likes ?? 0)
+      : (c) => c,
+    (c) => (isReply(c) ? c.createdTime : -c.createdTime),
+  ])
+
+  const commentsByParent = groupBy(
+    strictlySortedComments,
+    (c) => c.replyToCommentId ?? '_'
   )
 
-  const commentsByParent = useMemo(
-    () => groupBy(sortedComments, (c) => c.replyToCommentId ?? '_'),
-    [sortedComments]
+  const commentById = keyBy(comments, 'id')
+
+  // lump comments on load/sort to prevent jumping
+  const [frozenCommentIds, refreezeIds] = useReducer(
+    () => strictlySortedComments.map((c) => c.id),
+    strictlySortedComments.map((c) => c.id)
   )
 
-  const parentComments = commentsByParent['_'] ?? []
+  const firstOldCommentIndex = strictlySortedComments.findIndex((c) =>
+    frozenCommentIds.includes(c.id)
+  )
 
-  const childrensBounties =
-    contract.outcomeType == 'BOUNTIED_QUESTION'
-      ? Object.keys(commentsByParent).reduce(
-          (newObj: { [key: string]: number }, key) => {
-            newObj[key] = commentsByParent[key].reduce(
-              (sum, c) => sum + (c?.bountyAwarded ?? 0),
-              0
-            )
-            return newObj
-          },
-          {}
-        )
-      : {}
+  const sortedComments = [
+    ...strictlySortedComments.slice(0, firstOldCommentIndex),
+    // Lump the original comments in a contiguous chunk so they don't jump around.
+    ...frozenCommentIds.map((id) => commentById[id]).filter(Boolean),
+    ...strictlySortedComments
+      .slice(firstOldCommentIndex)
+      .filter((c) => !frozenCommentIds.includes(c.id)),
+  ]
+
+  const parentComments = sortedComments.filter(
+    (c) => c.replyToCommentId === undefined
+  )
+
+  const childrensBounties = isBountiedQuestion
+    ? mapValues(commentsByParent, (comments) =>
+        sumBy(comments, (c) => c?.bountyAwarded ?? 0)
+      )
+    : {}
 
   const visibleCommentIds = useMemo(
     () =>
       parentComments
+        .slice(0, parentCommentsToRender)
         .map((c) => [c.id, ...(commentsByParent[c.id] ?? []).map((c) => c.id)])
         .flat(),
     [comments.length]
@@ -327,7 +301,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 }
               : undefined
           }
-          className="mb-4"
+          className="mb-4 mt-px mr-px"
           contract={contract}
           clearReply={clearReply}
           trackingLocation={'contract page'}
@@ -338,6 +312,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           sort={sort}
           onSortClick={() => {
             setSort(sort === 'Newest' ? 'Best' : 'Newest')
+            refreezeIds()
             track('change-comments-sort', {
               contractSlug: contract.slug,
               contractName: contract.question,
@@ -396,13 +371,14 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 export const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract
   bets: Bet[]
+  totalBets: number
   setReplyToBet?: (bet: Bet) => void
 }) {
-  const { contract, setReplyToBet } = props
+  const { contract, setReplyToBet, totalBets } = props
   const [olderBets, setOlderBets] = useState<Bet[]>([])
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
-  const bets = [...props.bets.filter((b) => !b.isRedemption), ...olderBets]
+  const bets = [...props.bets, ...olderBets]
   const oldestBet = last(bets)
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
@@ -427,15 +403,8 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       lp,
     })),
   ]
-  const [totalItems, setTotalItems] = useState(items.length)
 
-  useEffect(() => {
-    const willNeedMoreBets = totalItems % ITEMS_PER_PAGE === 0
-    if (!willNeedMoreBets) return
-    getTotalBetCount(contract.id).then((totalBetCount) => {
-      setTotalItems(totalBetCount + visibleLps.length)
-    })
-  }, [contract.id, totalItems, visibleLps.length])
+  const totalItems = totalBets + visibleLps.length
 
   const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
   const shouldLoadMore = limit > 0 && bets.length < totalItems
@@ -460,9 +429,11 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       : undefined
   ).slice(start, end)
 
+  const scrollRef = useRef<HTMLDivElement>(null)
+
   return (
     <>
-      <Col className="mb-4 items-start gap-7">
+      <Col className="mb-4 items-start gap-7" ref={scrollRef}>
         {shouldLoadMore ? (
           <LoadingIndicator />
         ) : (
@@ -484,7 +455,10 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         page={page}
         itemsPerPage={ITEMS_PER_PAGE}
         totalItems={totalItems}
-        setPage={setPage}
+        setPage={(page) => {
+          setPage(page)
+          scrollRef.current?.scrollIntoView()
+        }}
       />
     </>
   )

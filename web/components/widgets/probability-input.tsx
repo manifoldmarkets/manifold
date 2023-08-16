@@ -51,6 +51,13 @@ export function ProbabilityInput(props: {
         value={prob ?? ''}
         disabled={disabled}
         onChange={(e) => onProbChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowUp') {
+            onProbChange(`${Math.min(99, (prob ?? 0) + 1)}`)
+          } else if (e.key === 'ArrowDown') {
+            onProbChange(`${Math.max(0, (prob ?? 0) - 1)}`)
+          }
+        }}
         error={error}
       />
       <span className="text-ink-400 absolute top-1/2 right-4 my-auto -translate-y-1/2">
@@ -68,23 +75,25 @@ export function ProbabilityOrNumericInput(props: {
     | CPMMMultiContract
   prob: number | undefined
   setProb: (prob: number | undefined) => void
-  isSubmitting: boolean
+  disabled?: boolean
   className?: string
   inputClassName?: string
   placeholder?: string
   width?: string
   error?: boolean
+  onRangeError?: (error: boolean) => void
 }) {
   const {
     contract,
     prob,
     setProb,
-    isSubmitting,
+    disabled,
     placeholder,
     className,
     inputClassName,
     width = 'w-24',
-    error,
+    error = false,
+    onRangeError,
   } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
@@ -93,11 +102,12 @@ export function ProbabilityOrNumericInput(props: {
       num={prob}
       className={clsx(className, width, inputClassName)}
       onChange={setProb}
-      minValue={contract.min}
-      maxValue={contract.max}
-      disabled={isSubmitting}
+      min={contract.min}
+      max={contract.max}
+      disabled={disabled}
       placeholder={placeholder}
       error={error}
+      setError={(error) => onRangeError?.(error)}
     />
   ) : (
     <ProbabilityInput
@@ -105,7 +115,7 @@ export function ProbabilityOrNumericInput(props: {
       inputClassName={inputClassName}
       prob={prob}
       onChange={setProb}
-      disabled={isSubmitting}
+      disabled={disabled}
       placeholder={placeholder}
       error={error}
     />

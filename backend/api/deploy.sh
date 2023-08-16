@@ -31,7 +31,7 @@ yarn build && \
          --set-env-vars ENVIRONMENT=${ENVIRONMENT} \
          --set-env-vars GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
          --execution-environment gen2 \
-         --cpu 2 \
+         --cpu 4 \
          --memory 2Gi \
          --concurrency 1000 \
          --min-instances 1

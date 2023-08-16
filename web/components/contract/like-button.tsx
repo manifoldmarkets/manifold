@@ -36,6 +36,7 @@ export const LikeButton = memo(function LikeButton(props: {
   size?: LikeButtonSizeType
   color?: 'gray' | 'white'
   isSwipe?: boolean
+  placement?: 'top' | 'bottom'
 }) {
   const {
     user,
@@ -49,6 +50,7 @@ export const LikeButton = memo(function LikeButton(props: {
     color = 'gray',
     isSwipe,
     trackingLocation,
+    placement = 'bottom',
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
   const disabled = !user || contentCreatorId === user?.id
@@ -119,7 +121,7 @@ export const LikeButton = memo(function LikeButton(props: {
             'Like'
           )
         }
-        placement={'top'}
+        placement={placement}
         noTap
         hasSafePolygon={showList}
       >

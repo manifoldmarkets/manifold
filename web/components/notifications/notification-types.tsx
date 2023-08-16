@@ -8,7 +8,9 @@ import {
   ReactionNotificationTypes,
 } from 'common/notification'
 import { formatMoney } from 'common/util/format'
+import { floatingEqual } from 'common/util/math'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
+import { sortBy } from 'lodash'
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -29,8 +31,13 @@ import {
   NumericValueLabel,
   ProbPercentLabel,
 } from 'web/components/outcome-label'
+import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
+import { useContract } from 'web/hooks/use-contract-supabase'
+import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
+import { StarDisplay } from '../reviews/stars'
 import { Linkify } from '../widgets/linkify'
+import { linkClass, SiteLink } from '../widgets/site-link'
 import {
   AvatarNotificationIcon,
   NOTIFICATION_ICON_SIZE,
@@ -40,13 +47,6 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { Avatar } from 'web/components/widgets/avatar'
-import { sortBy } from 'lodash'
-import { floatingEqual } from 'common/util/math'
-import { useContract } from 'web/hooks/use-contract-supabase'
-import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
-import { linkClass, SiteLink } from '../widgets/site-link'
-import { StarDisplay } from '../reviews/stars'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -201,6 +201,30 @@ export function NotificationItem(props: {
     } else if (reason === 'bounty_awarded') {
       return (
         <BountyAwardedNotification
+          notification={notification}
+          highlighted={highlighted}
+          setHighlighted={setHighlighted}
+          isChildOfGroup={isChildOfGroup}
+        />
+      )
+    } else if (
+      reason === 'vote_on_your_contract' ||
+      reason === 'all_votes_on_watched_markets'
+    ) {
+      return (
+        <VotedNotification
+          notification={notification}
+          highlighted={highlighted}
+          setHighlighted={setHighlighted}
+          isChildOfGroup={isChildOfGroup}
+        />
+      )
+    } else if (
+      reason == 'poll_close_on_watched_markets' ||
+      reason == 'your_poll_closed'
+    ) {
+      return (
+        <PollClosedNotification
           notification={notification}
           highlighted={highlighted}
           setHighlighted={setHighlighted}
@@ -1349,7 +1373,6 @@ function BountyAwardedNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
-  const sourceUrl = getSourceUrl(notification)
   return (
     <NotificationFrame
       notification={notification}
@@ -1394,7 +1417,6 @@ function BountyAddedNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
-  const sourceUrl = getSourceUrl(notification)
   return (
     <NotificationFrame
       notification={notification}
@@ -1411,7 +1433,7 @@ function BountyAddedNotification(props: {
           <UserLink
             name={notification.sourceUserName}
             username={notification.sourceUserUsername}
-          />
+          />{' '}
           added{' '}
           <span className="font-semibold text-teal-600 dark:text-teal-400">
             {formatMoney(+notification?.sourceText)}
@@ -1419,6 +1441,45 @@ function BountyAddedNotification(props: {
           to your bountied question{' '}
           {!isChildOfGroup && (
             <span>
+              <PrimaryNotificationLink
+                text={notification.sourceContractTitle}
+              />
+            </span>
+          )}
+        </span>
+      </>
+    </NotificationFrame>
+  )
+}
+function VotedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'🗳️'} />
+      }
+    >
+      <>
+        <span>
+          <UserLink
+            name={notification.sourceUserName}
+            username={notification.sourceUserUsername}
+          />{' '}
+          voted on <b>{notification.sourceText}</b>
+          {!isChildOfGroup && (
+            <span>
+              {' '}
+              on{' '}
               <PrimaryNotificationLink
                 text={notification.sourceContractTitle}
               />
@@ -1474,6 +1535,56 @@ function AnnouncementNotification(props: {
         )}{' '}
         {!isChildOfGroup && <span>announced</span>}
       </div>
+    </NotificationFrame>
+  )
+}
+
+function PollClosedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <NotificationIcon
+          symbol={'🗳️'}
+          symbolBackgroundClass="bg-gradient-to-br from-fuchsia-500 to-fuchsia-200"
+        />
+      }
+      subtitle={notification.sourceText}
+    >
+      <>
+        <span>
+          {notification.reason == 'your_poll_closed' ? (
+            <span>Your poll</span>
+          ) : (
+            <span>
+              <UserLink
+                name={notification.sourceUserName}
+                username={notification.sourceUserUsername}
+              />
+              {`'s poll`}
+            </span>
+          )}
+          {!isChildOfGroup && (
+            <span>
+              {' '}
+              <PrimaryNotificationLink
+                text={notification.sourceContractTitle}
+              />
+            </span>
+          )}{' '}
+          has autoclosed!
+        </span>
+      </>
     </NotificationFrame>
   )
 }

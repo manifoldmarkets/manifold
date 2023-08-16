@@ -21,6 +21,7 @@ export function TweetButton(props: { tweetText: string; className?: string }) {
       href={getTweetHref(tweetText)}
       onClick={trackCallback('share tweet')}
       target="_blank"
+      rel="noreferrer"
     >
       <TwitterLogo width={15} height={15} />
       <div>Tweet</div>

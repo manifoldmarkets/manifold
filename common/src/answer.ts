@@ -1,4 +1,3 @@
-import { User } from './user'
 
 export type Answer = {
   id: string
@@ -14,6 +13,9 @@ export type Answer = {
   prob: number // Computed from poolYes and poolNo.
   totalLiquidity: number // for historical reasons, this the total subsidy amount added in M
   subsidyPool: number // current value of subsidy pool in M
+
+  // Is this 'Other', the answer that represents all other answers, including answers added in the future.
+  isOther?: boolean
 }
 
 export type DpmAnswer = {
@@ -30,22 +32,6 @@ export type DpmAnswer = {
   text: string
 }
 
-export const getNoneAnswer = (contractId: string, creator: User) => {
-  const { username, name, avatarUrl } = creator
-
-  return {
-    id: '0',
-    number: 0,
-    contractId,
-    createdTime: Date.now(),
-    userId: creator.id,
-    username,
-    name,
-    avatarUrl,
-    text: 'None',
-  }
-}
-
 export const MAX_ANSWER_LENGTH = 240
 
-export const MULTIPLE_CHOICE_MAX_ANSWERS = 100
+export const MAX_ANSWERS = 100

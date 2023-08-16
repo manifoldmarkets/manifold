@@ -1,4 +1,4 @@
-import React, { memo } from 'react'
+import { memo } from 'react'
 import dayjs from 'dayjs'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
@@ -236,7 +236,6 @@ export function BetStatusText(props: {
           <OutcomeLabel
             outcome={outcome}
             answerId={answerId}
-            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />{' '}
@@ -248,7 +247,6 @@ export function BetStatusText(props: {
           <OutcomeLabel
             outcome={outcome}
             answerId={answerId}
-            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />{' '}

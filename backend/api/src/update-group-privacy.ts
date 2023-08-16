@@ -34,27 +34,22 @@ export const updategroupprivacy = authEndpoint(async (req, auth) => {
     throw new APIError(404, 'You cannot be found in group')
 
   const group = groupQuery.data[0]
-  const firebaseUser = await admin.auth().getUser(auth.uid)
 
-  if (
-    requester?.role !== 'admin' &&
-    auth.uid !== group.creator_id &&
-    !isAdminId(auth.uid)
-  )
+  if (requester?.role !== 'admin' && !isAdminId(auth.uid))
     throw new APIError(
       403,
       'You do not have permission to change group privacy'
     )
 
   if (group.privacy_status == 'private')
-    throw new APIError(400, 'Private groups must remain private')
+    throw new APIError(403, 'Private groups must remain private')
 
   if (privacy == 'private') {
-    throw new APIError(400, 'You can not retroactively make a group private')
+    throw new APIError(403, 'You can not retroactively make a group private')
   }
 
   if (privacy == group.privacy_status) {
-    throw new APIError(400, 'Group privacy is already set to this!')
+    throw new APIError(403, 'Group privacy is already set to this!')
   }
 
   await db

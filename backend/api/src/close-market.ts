@@ -26,7 +26,7 @@ export const closemarket = authEndpoint(async (req, auth) => {
 
   const now = Date.now()
   if (!closeTime && contract.closeTime && contract.closeTime < now)
-    throw new APIError(400, 'Contract already closed')
+    throw new APIError(403, 'Contract already closed')
 
   if (closeTime && closeTime < now)
     throw new APIError(

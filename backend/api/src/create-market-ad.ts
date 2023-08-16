@@ -11,18 +11,11 @@ import { runTxn } from 'shared/txn/run-txn'
 const schema = z.object({
   marketId: z.string(),
   totalCost: z.number().positive(),
-  costPerView: z.number().positive(),
+  costPerView: z.number().positive().min(MIN_AD_COST_PER_VIEW),
 })
 
 export const boostmarket = authEndpoint(async (req, auth) => {
   const { marketId, totalCost, costPerView } = validate(schema, req.body)
-
-  if (costPerView < MIN_AD_COST_PER_VIEW) {
-    throw new APIError(
-      400,
-      `Cost per view must be at least ${MIN_AD_COST_PER_VIEW}`
-    )
-  }
 
   if (totalCost < costPerView) {
     throw new APIError(400, `Total cost must be at least ${costPerView}`)

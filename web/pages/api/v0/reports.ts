@@ -6,8 +6,7 @@ import { db } from 'web/lib/firebase/init'
 import { Report } from 'common/report'
 import { contractUrl } from 'common/contract'
 import { filterDefined } from 'common/util/array'
-import { listAllComments } from 'web/lib/firebase/comments'
-import { getCommentsOnPost } from 'web/lib/supabase/comments'
+import { getComment, getCommentsOnPost } from 'web/lib/supabase/comments'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { postPath } from 'web/lib/supabase/post'
 import { getPost } from 'web/lib/supabase/post'
@@ -66,19 +65,13 @@ export default async function handler(
         ) {
           const contract = await getContract(parentId)
           if (contract) {
-            const comments = (await listAllComments(contract.id)).filter(
-              (comment) => comment.id === contentId
-            )
-            const comment = comments[0]
-            partialReport =
-              comments.length > 0
-                ? {
-                    slug: contractUrl(contract) + '#' + comment.id,
-                    text: comment.text
-                      ? comment.text
-                      : richTextToString(comment.content),
-                  }
-                : null
+            const comment = await getComment(contentId)
+            partialReport = comment && {
+              slug: contractUrl(contract) + '#' + comment.id,
+              text: comment.text
+                ? comment.text
+                : richTextToString(comment.content),
+            }
           }
           // Reported comment on a post
         } else if (

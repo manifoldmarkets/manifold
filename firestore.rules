@@ -27,7 +27,7 @@ service cloud.firestore {
       allow read;
     }
 
-     match /destiny-subs/{sub} {
+     match /destiny-subs2/{sub} {
       allow read;
     }
 
@@ -66,11 +66,7 @@ service cloud.firestore {
   	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {
       allow read;
     }
-
-    match /{somePath=**}/contract-metrics/{contractId} {
-      allow read;
-    }
-
+    
     match /{somePath=**}/challenges/{challengeId}{
       allow read;
     }
@@ -215,6 +211,10 @@ service cloud.firestore {
     match /test/{id} {
       allow read;
       allow write;
+    }
+
+    match /refresh-all-clients/{id} {
+      allow read;
     }
   }
 }

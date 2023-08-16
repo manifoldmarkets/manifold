@@ -1,6 +1,8 @@
 import type { JSONContent } from '@tiptap/core'
 import { Visibility } from './contract'
 
+export const MAX_COMMENT_LENGTH = 10000
+
 export type AnyCommentType = OnContract | OnPost
 
 // Currently, comments are created after the bet, not atomically with the bet.

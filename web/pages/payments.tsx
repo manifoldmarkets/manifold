@@ -24,11 +24,17 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import SquaresIcon from 'web/lib/icons/squares-icon'
+import { SEO } from 'web/components/SEO'
 
 export default function Payments() {
   const { payments, load } = useManaPayments()
   return (
     <Page>
+      <SEO
+        title="Managrams"
+        description="See all mana transfers (managrams!) between users."
+        url="/payments"
+      />
       <Col>
         <span className={'text-primary-700 py-4 text-2xl'}>Managrams</span>
         {payments ? (

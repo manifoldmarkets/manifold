@@ -15,7 +15,6 @@ import {
   LootBox,
   LootBoxItem,
 } from 'common/loot-box'
-import { callApi } from 'web/lib/firebase/api'
 import { sleep } from 'common/util/time'
 import { contractPath } from 'common/contract'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -27,6 +26,7 @@ import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { track } from 'web/lib/service/analytics'
 import { useUser } from 'web/hooks/use-user'
 import { SEO } from 'web/components/SEO'
+import { lootbox } from 'web/lib/firebase/api'
 
 const loadLottie = () => import('react-lottie')
 const loadAnimationJson = () => import('../public/lottie/lootbox.json')
@@ -109,7 +109,7 @@ export default function LootBoxPage() {
     setError(false)
     setLoading(true)
 
-    const { box } = await callApi('lootbox').catch((e) => {
+    const { box } = await lootbox().catch((e) => {
       console.error('Loot error', e)
       return { box: undefined }
     })

@@ -50,12 +50,17 @@ app.post('/replay-failed', async (_req, res) => {
   }
 })
 
-app.post('/repack', async (_req, res) => {
+app.post('/repack', async (req, res) => {
   log('INFO', '[repack] Starting...')
   try {
-    const host = `db.${getInstanceHostname(SUPABASE_INSTANCE_ID)}`
     await new Promise<void>((resolve, reject) => {
-      const args = ['-h', host, '-p', '5432', '-d', 'postgres', '-c', 'public']
+      const { tableName } = req.body
+      const host = `db.${getInstanceHostname(SUPABASE_INSTANCE_ID)}`
+      const args = ['-h', host, '-p', '5432', '-d', 'postgres']
+      // If table name is provided, add it to the arguments
+      if (tableName) args.push('-t', tableName)
+      else args.push(...['-c', 'public'])
+
       const proc = spawn('/usr/libexec/postgresql15/pg_repack', args, {
         env: {
           PGUSER: 'postgres',

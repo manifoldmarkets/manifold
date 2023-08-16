@@ -26,7 +26,7 @@ async function main() {
     .orderBy('createdTime', 'desc')
     .get()
 
-  const users = usersSnap.docs.slice(0, -20000).map((doc) => ({
+  const users = usersSnap.docs.slice(0, -30000).map((doc) => ({
     id: doc.id,
     username: doc.data().username || '',
     email: emailData[doc.id] || '',

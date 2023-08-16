@@ -1,21 +1,17 @@
 import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
-import { usePersistentState, storageStore } from './use-persistent-state'
 import { useUser } from './use-user'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { getUserContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { useEffect } from 'react'
+import { usePersistentLocalState } from './use-persistent-local-state'
 
 export const useSavedContractMetrics = (contract: Contract) => {
   const user = useUser()
 
-  const [savedMetrics, setSavedMetrics] = usePersistentState<
+  const [savedMetrics, setSavedMetrics] = usePersistentLocalState<
     ContractMetric | undefined
-  >(undefined, {
-    key: `contract-metrics-${contract.id}`,
-    store: storageStore(safeLocalStorage),
-  })
+  >(undefined, `contract-metrics-${contract.id}`)
 
   useEffect(() => {
     getUserContractMetrics(user?.id ?? '_', contract.id, db).then((metrics) => {

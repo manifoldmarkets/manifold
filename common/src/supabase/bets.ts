@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { millisToTs, run, selectJson } from './utils'
+import { millisToTs, run, selectJson, tsToMillis } from './utils'
 import { BetFilter } from 'common/bet'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
@@ -35,6 +35,29 @@ export const getBets = async (db: SupabaseClient, options?: BetFilter) => {
   q = applyBetsFilter(q, options)
   const { data } = await run(q)
   return data.map((r) => r.data)
+}
+
+export const getBetPoints = async <S extends SupabaseClient>(
+  db: S,
+  options?: BetFilter
+) => {
+  let q = db
+    .from('contract_bets')
+    .select(
+      'created_time, prob_after, is_redemption, data->answerId, data->limitProb'
+    )
+    .order('created_time', { ascending: options?.order === 'asc' })
+  q = applyBetsFilter(q, options)
+  const { data } = await run(q)
+
+  return data
+    .filter((r: any) => r.limitProb == null)
+    .map((r: any) => ({
+      x: tsToMillis(r.created_time),
+      y: r.prob_after,
+      isRedemption: r.is_redemption,
+      answerId: r.answerId,
+    }))
 }
 
 // mqp: good luck typing q

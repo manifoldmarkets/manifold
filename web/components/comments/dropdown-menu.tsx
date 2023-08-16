@@ -2,7 +2,6 @@ import { Menu, Transition } from '@headlessui/react'
 import { DotsHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Fragment, ReactNode } from 'react'
-import { Row } from 'web/components/layout/row'
 
 export type DropdownItem = {
   name: string
@@ -19,6 +18,7 @@ export default function DropdownMenu(props: {
   menuItemsClass?: string
   buttonDisabled?: boolean
   selectedItemName?: string
+  closeOnClick?: boolean
 }) {
   const {
     Items,
@@ -29,6 +29,7 @@ export default function DropdownMenu(props: {
     className,
     buttonDisabled,
     selectedItemName,
+    closeOnClick,
   } = props
   const icon = Icon ?? (
     <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
@@ -71,12 +72,15 @@ export default function DropdownMenu(props: {
           <div className="py-1">
             {Items.map((item) => (
               <Menu.Item key={item.name}>
-                {({ active }) => (
+                {({ active, close }) => (
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       e.preventDefault()
                       item.onClick()
+                      if (closeOnClick) {
+                        close()
+                      }
                     }}
                     className={clsx(
                       selectedItemName && item.name == selectedItemName
@@ -84,13 +88,11 @@ export default function DropdownMenu(props: {
                         : active
                         ? 'bg-ink-100 text-ink-900'
                         : 'text-ink-700',
-                      'block w-full px-4 py-2 text-sm'
+                      'flex w-full gap-2 px-4 py-2 text-left text-sm'
                     )}
                   >
-                    <Row className={'gap-2'}>
-                      {item.icon && <div className="w-5">{item.icon}</div>}
-                      <div className="text-left">{item.name}</div>
-                    </Row>
+                    {item.icon && <div className="w-5">{item.icon}</div>}
+                    {item.name}
                   </button>
                 )}
               </Menu.Item>

@@ -3,7 +3,7 @@ import { Notification, ReactionNotificationTypes } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import { sortBy } from 'lodash'
 import { useRouter } from 'next/router'
-import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
+import { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -93,14 +93,9 @@ function NotificationsAppBanner(props: { userId: string }) {
         }
       />
       <span className={'text-ink-600 text-sm sm:text-base'}>
-        <Row className={'items-center'}>
-          Get notified when markets resolve, your streak is expiring, or when
-          someone @'s you.
-          <Col
-            className={'min-w-fit items-center justify-center p-2 md:flex-row'}
-          >
-            <AppBadgesOrGetAppButton />
-          </Col>
+        <Row className={'items-center gap-2'}>
+          Get the app for the best experience
+          <AppBadgesOrGetAppButton />
         </Row>
       </span>
     </Row>
@@ -303,9 +298,12 @@ function NotificationsList(props: {
 
   // Mark all notifications as seen. Rerun as new notifications come in.
   useEffect(() => {
-    if (privateUser && isPageVisible && isAuthorized) {
-      markAllNotifications({ seen: true })
-    }
+    if (!privateUser || !isPageVisible) return
+    if (isAuthorized) markAllNotifications({ seen: true })
+    groupedNotifications
+      ?.map((ng) => ng.notifications)
+      .flat()
+      .forEach((n) => (!n.isSeen ? (n.isSeen = true) : null))
   }, [privateUser, isPageVisible, mostRecentNotification?.id, isAuthorized])
 
   return (

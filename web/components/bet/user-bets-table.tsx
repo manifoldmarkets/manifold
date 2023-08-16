@@ -1,11 +1,10 @@
-import { Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
-import React, { ReactNode, useEffect, useMemo, useState } from 'react'
+import { debounce, Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
+import { ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { LimitBet } from 'common/bet'
 import { getContractBetNullMetrics } from 'common/calculate'
 import { contractPath, CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
 import { buildArray } from 'common/util/array'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
@@ -38,6 +37,8 @@ import { BetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { ProfitBadge } from 'web/components/profit-badge'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { getUserContractsMetricsWithContracts } from 'web/lib/firebase/api'
+import { useEvent } from 'web/hooks/use-event'
 
 type BetSort =
   | 'newest'
@@ -79,18 +80,27 @@ export function UserBetsTable(props: { user: User }) {
       key: `user-open-limit-bets-${user.id}`,
       store: inMemoryStore(),
     })
-
+  const debounceGetMetrics = useEvent(debounce(() => getMetrics(), 100))
   useEffect(() => {
-    getUserContractMetricsWithContracts(user.id, db, 5000).then(
-      (metricsWithContracts) => {
-        const { contracts, metricsByContract } = metricsWithContracts
-        setMetricsByContract(metricsByContract)
-        setInitialContracts((c) =>
-          uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
-        )
+    debounceGetMetrics()
+  }, [user.id, isAuth])
+  const getMetrics = () =>
+    getUserContractsMetricsWithContracts({
+      userId: user.id,
+      offset: 0,
+      limit: 5000,
+    }).then((res) => {
+      const { data, error } = res
+      if (error) {
+        console.error(error)
+        return
       }
-    )
-  }, [user.id, setMetricsByContract, setInitialContracts, isAuth])
+      const { contracts, metricsByContract } = data
+      setMetricsByContract(metricsByContract)
+      setInitialContracts((c) =>
+        uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
+      )
+    })
 
   useEffect(() => {
     getOpenLimitOrdersWithContracts(user.id, 5000).then((betsWithContracts) => {
@@ -220,16 +230,13 @@ export function UserBetsTable(props: { user: User }) {
 const NoBets = ({ user }: { user: User }) => {
   const me = useUser()
   return (
-    <div className="text-ink-500 py-4 text-center">
-      {user.id === me?.id ? (
+    <div className="text-ink-500">
+      {user.id === me?.id && (
         <>
-          You have not made any bets yet.{' '}
           <SiteLink href="/home" className="text-primary-500 hover:underline">
             Find a prediction market!
           </SiteLink>
         </>
-      ) : (
-        <>{user.name} has not made any bets yet</>
       )}
     </div>
   )
@@ -323,64 +330,9 @@ function BetsTable(props: {
   const currentSlice = page * rowsPerSection
   const isMobile = useIsMobile(600)
 
-  const NumberCell = (props: { num: number; change?: boolean }) => {
-    const { num, change } = props
-    const formattedNum =
-      num < 1000 && num > -1000
-        ? formatMoney(num)
-        : ENV_CONFIG.moneyMoniker + shortFormatNumber(num)
-    return (
-      <Row className="items-start justify-end ">
-        {change && formattedNum !== formatMoney(0) ? (
-          num > 0 ? (
-            <span className="text-teal-500">{formattedNum}</span>
-          ) : (
-            <span className="text-scarlet-500">{formattedNum}</span>
-          )
-        ) : (
-          <span>{formatMoney(num)}</span>
-        )}
-      </Row>
-    )
-  }
-  const Header = (props: {
-    children: ReactNode
-    id: BetSort
-    className?: string
-  }) => {
-    const { id, className } = props
-    return (
-      <Row
-        className={clsx(
-          className ? className : 'justify-end',
-          'cursor-pointer'
-        )}
-        onClick={() => onSetSort(id)}
-      >
-        {sort.field === id ? (
-          sort.direction === 'asc' ? (
-            <BiCaretUp className=" h-4" />
-          ) : (
-            <BiCaretDown className="mt-1.5 h-4" />
-          )
-        ) : (
-          <Col className={'items-center justify-center'}>
-            <BiCaretUp className="text-ink-300 -mb-2 h-4" />
-            <BiCaretDown className="text-ink-300 h-4" />
-          </Col>
-        )}
-        <span>{props.children}</span>
-      </Row>
-    )
-  }
-
   const dataColumns = buildArray([
     {
-      header: (
-        <Header id="probChangeDay" className={'justify-left'}>
-          Prob
-        </Header>
-      ),
+      header: { sort: 'probChangeDay', label: 'Prob' },
       span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => {
         let change: string | undefined
@@ -412,7 +364,7 @@ function BetsTable(props: {
       },
     },
     {
-      header: <Header id="newest">Bet</Header>,
+      header: { sort: 'newest', label: 'Bet' },
       span: isMobile ? 2 : 1,
       renderCell: (c: Contract) => (
         <Row className={'justify-end'}>
@@ -424,7 +376,7 @@ function BetsTable(props: {
       ),
     },
     !isMobile && {
-      header: <Header id="closeTime">Close</Header>,
+      header: { sort: 'closeTime', label: 'Close' },
       span: 3,
       renderCell: (c: Contract) => {
         const date = new Date(c.resolutionTime ?? c.closeTime ?? Infinity)
@@ -442,21 +394,21 @@ function BetsTable(props: {
       },
     },
     {
-      header: <Header id="value">Value</Header>,
+      header: { sort: 'value', label: 'Value' },
       span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => (
         <NumberCell num={metricsByContractId[c.id].payout} />
       ),
     },
     {
-      header: <Header id="profit">Profit</Header>,
+      header: { sort: 'profit', label: 'Profit' },
       span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => (
         <NumberCell num={metricsByContractId[c.id].profit} change={true} />
       ),
     },
     !isMobile && {
-      header: <Header id="profitPercent">%</Header>,
+      header: { sort: 'profitPercent', label: '%' },
       span: 1,
       renderCell: (c: Contract) => {
         const cm = metricsByContractId[c.id]
@@ -475,7 +427,7 @@ function BetsTable(props: {
       },
     },
     {
-      header: <Header id="day">1d Profit</Header>,
+      header: { sort: 'day', label: '1d Profit' },
       span: isMobile ? 4 : 2,
       renderCell: (c: Contract) => (
         <NumberCell
@@ -485,7 +437,7 @@ function BetsTable(props: {
       ),
     },
     !isMobile && {
-      header: <Header id="dayPercent">%</Header>,
+      header: { sort: 'dayPercent', label: '%' },
       span: 1,
       renderCell: (c: Contract) => {
         const cm = metricsByContractId[c.id]
@@ -551,8 +503,23 @@ function BetsTable(props: {
           }
         >
           {dataColumns.map((c) => (
-            <span key={c.header?.props.id} className={clsx(getColSpan(c.span))}>
-              {c.header}
+            <span
+              key={c.header.sort}
+              className={clsx(
+                getColSpan(c.span),
+                'flex justify-end first:justify-start'
+              )}
+            >
+              <Header
+                onClick={() => onSetSort(c.header.sort as BetSort)}
+                up={
+                  sort.field === c.header.sort
+                    ? sort.direction === 'asc'
+                    : undefined
+                }
+              >
+                {c.header.label}
+              </Header>
             </span>
           ))}
         </Row>
@@ -603,7 +570,7 @@ function BetsTable(props: {
                     {dataColumns.map((c) => (
                       <div
                         className={clsx(getColSpan(c.span))}
-                        key={c.header?.props.id + contract.id + 'row'}
+                        key={c.header.sort + contract.id + 'row'}
                       >
                         {c.renderCell(contract)}
                       </div>
@@ -625,6 +592,7 @@ function BetsTable(props: {
                             includeSellButton={includeSellButtonForUser}
                             hideProfit={true}
                             hideValue={true}
+                            areYourBets={areYourBets}
                           />
                           {contract.mechanism === 'cpmm-1' &&
                             limitBets.length > 0 && (
@@ -661,5 +629,52 @@ function BetsTable(props: {
         setPage={setPage}
       />
     </Col>
+  )
+}
+
+const NumberCell = (props: { num: number; change?: boolean }) => {
+  const { num, change } = props
+  const formattedNum =
+    num < 1000 && num > -1000
+      ? formatMoney(num)
+      : ENV_CONFIG.moneyMoniker + shortFormatNumber(num)
+  return (
+    <Row className="items-start justify-end ">
+      {change && formattedNum !== formatMoney(0) ? (
+        num > 0 ? (
+          <span className="text-teal-500">{formattedNum}</span>
+        ) : (
+          <span className="text-scarlet-500">{formattedNum}</span>
+        )
+      ) : (
+        <span>{formatMoney(num)}</span>
+      )}
+    </Row>
+  )
+}
+
+const Header = (props: {
+  children: ReactNode
+  onClick?: () => void
+  up?: boolean
+  className?: string
+}) => {
+  const { onClick, up, className, children } = props
+  return (
+    <Row className={clsx(className, 'cursor-pointer')} onClick={onClick}>
+      {up != undefined ? (
+        up ? (
+          <BiCaretUp className=" h-4" />
+        ) : (
+          <BiCaretDown className="mt-1.5 h-4" />
+        )
+      ) : (
+        <Col className={'items-center justify-center'}>
+          <BiCaretUp className="text-ink-300 -mb-2 h-4" />
+          <BiCaretDown className="text-ink-300 h-4" />
+        </Col>
+      )}
+      <span>{children}</span>
+    </Row>
   )
 }

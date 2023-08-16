@@ -23,17 +23,7 @@ export const updategroup = authEndpoint(async (req, auth) => {
     [id, auth.uid]
   )
 
-  // TODO: remove after migrating all creators to be admins
-  const creator = await db.oneOrNone(
-    'select creator_id from groups where id = $1',
-    [id]
-  )
-
-  if (
-    requester?.role !== 'admin' &&
-    creator?.creator_id !== auth.uid &&
-    !isAdminId(auth.uid)
-  ) {
+  if (requester?.role !== 'admin' && !isAdminId(auth.uid)) {
     throw new APIError(403, 'You do not have permission to update this group')
   }
 

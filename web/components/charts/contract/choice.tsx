@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
-import { last, sum, sortBy, groupBy } from 'lodash'
+import { last, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
-import { Bet } from 'common/bet'
-import { DpmAnswer } from 'common/answer'
+import { Bet, calculateMultiBets } from 'common/bet'
+import { Answer, DpmAnswer } from 'common/answer'
 import { MultiContract } from 'common/contract'
 import { getAnswerProbability } from 'common/calculate'
 import {
@@ -16,16 +16,14 @@ import {
 import { MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { buildArray } from 'common/util/array'
-import { MultiPoint } from 'common/chart'
+import { MultiPoint, unserializePoints } from 'common/chart'
 
 const CHOICE_ANSWER_COLORS = [
-  // The PEOPLE have SPOKEN
   '#99DDFF', // sky
-  '#4A412A', // drab brown (please change oh my god)
-  '#BBCC33', // piss yellow (please change oh my god)
+  '#FFDD99', // sand
+  '#FFAABB', // pink
   '#77AADD', // navy
   '#9932CC', // 🍆
-  '#FFAABB', // pink
   '#C70020', // blood red
   '#FF8C00', // orange
   '#44BB99', // forest
@@ -35,19 +33,16 @@ const CHOICE_ANSWER_COLORS = [
   '#9F00C5', // Grimace
   '#FF8900', // octarine
   '#EEDD88', // yellow
-
-  // The AI's favorite colors :)
   '#3498DB', // Blue
   '#2ECC71', // Green
   '#F1C40F', // Yellow
   '#9B59B6', // Purple
   '#E67E22', // Orange
-  '#95A5A6', // Gray
+  '#90BE6D', // Green
   '#FFA500', // Orange
   '#FFC0CB', // Pink
   '#FF69B4', // Hot Pink
   '#F9C74F', // Yellow
-  '#90BE6D', // Green
   '#FF6B6B', // Red
   '#FF9F1C', // Orange
   '#D3A8FF', // Purple
@@ -63,12 +58,11 @@ const CHOICE_ANSWER_COLORS = [
   '#C3CED0', // Silver Blue
   '#FFA69E', // Coral
   '#DBD56E', // Mustard
-  '#C6E2E9', // Sky Blue
 ]
-const CHOICE_OTHER_COLOR = '#B1B1C7'
+// const CHOICE_OTHER_COLOR = '#B1B1C7'
 
 export const nthColor = (index: number) =>
-  CHOICE_ANSWER_COLORS[index] ?? CHOICE_OTHER_COLOR
+  CHOICE_ANSWER_COLORS[index % CHOICE_ANSWER_COLORS.length]
 
 const getAnswers = (contract: MultiContract) => {
   const { answers, outcomeType } = contract
@@ -82,25 +76,14 @@ const getAnswers = (contract: MultiContract) => {
   )
 }
 
-const getDpmBetPoints = (answers: DpmAnswer[], bets: Bet[]) => {
-  const sortedBets = sortBy(bets, (b) => b.createdTime)
-  const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
-  const sharesByOutcome = Object.fromEntries(
-    Object.keys(betsByOutcome).map((outcome) => [outcome, 0])
-  )
-  const points: MultiPoint<Bet>[] = []
-  for (const bet of sortedBets) {
-    const { outcome, shares } = bet
-    sharesByOutcome[outcome] += shares
-
-    const sharesSquared = sum(
-      Object.values(sharesByOutcome).map((shares) => shares ** 2)
+// new multi only
+export const getMultiBetPoints = (answers: Answer[], bets: Bet[]) => {
+  return unserializePoints(
+    calculateMultiBets(
+      bets.map((b) => ({ x: b.createdTime, y: b.probAfter, ...b })),
+      answers.map((a) => a.id)
     )
-    const probs = answers.map((a) => sharesByOutcome[a.id] ** 2 / sharesSquared)
-
-    points.push({ x: bet.createdTime, y: probs, obj: bet })
-  }
-  return points
+  )
 }
 
 export function useChartAnswers(contract: MultiContract) {
@@ -109,28 +92,23 @@ export function useChartAnswers(contract: MultiContract) {
 
 export const ChoiceContractChart = (props: {
   contract: MultiContract
-  bets?: Bet[]
   points?: MultiPoint[]
   width: number
   height: number
   onMouseOver?: (p: MultiPoint | undefined) => void
 }) => {
-  const { contract, bets = [], points = [], width, height, onMouseOver } = props
+  const { contract, points = [], width, height, onMouseOver } = props
   const isMultipleChoice = contract.outcomeType === 'MULTIPLE_CHOICE'
-  const isDpm = contract.mechanism === 'dpm-2'
+
   const [start, end] = getDateRange(contract)
   const answers = useChartAnswers(contract)
 
-  const betPoints = useMemo(
-    () => (isDpm ? getDpmBetPoints(answers as DpmAnswer[], bets) : points),
-    [answers, bets, isDpm, points]
-  )
   const endProbs = useMemo(
     () => answers.map((a) => getAnswerProbability(contract, a.id)),
     [answers, contract]
   )
 
-  const now = useMemo(() => Date.now(), [betPoints])
+  const now = useMemo(() => Date.now(), [points])
 
   const data = useMemo(() => {
     if (!answers.length) return []
@@ -144,48 +122,15 @@ export const ChoiceContractChart = (props: {
       ...new Array(answers.length - startAnswers.length).fill(0),
     ]
 
-    return buildArray(isMultipleChoice && { x: start, y: startY }, betPoints, {
+    return buildArray(isMultipleChoice && { x: start, y: startY }, points, {
       x: end ?? now,
       y: endProbs,
     })
-  }, [answers.length, betPoints, endProbs, start, end, now])
+  }, [answers.length, points, endProbs, start, end, now])
 
-  const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
-  const visibleRange = [start, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width])
+  const rightmostDate = getRightmostVisibleDate(end, last(points)?.x, now)
+  const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
-
-  const ChoiceTooltip = useMemo(
-    () => (props: TooltipProps<Date, MultiPoint>) => {
-      const { prev, x, y, xScale, yScale } = props
-      const [start, end] = xScale.domain()
-
-      if (!yScale) return null
-      if (!prev) return null
-
-      const d = xScale.invert(x)
-      const prob = yScale.invert(y)
-
-      const index = cum(prev.y).findIndex((p) => p >= 1 - prob)
-      const answer = answers[index]?.text ?? 'Other'
-      const value = formatPct(prev.y[index])
-
-      return (
-        <>
-          <span className="font-semibold">
-            {formatDateInRange(d, start, end)}
-          </span>
-          <div className="flex max-w-xs flex-row justify-between gap-4">
-            <Row className="items-center gap-2 overflow-hidden">
-              <span className="overflow-hidden text-ellipsis">{answer}</span>
-            </Row>
-            <span className="text-ink-600">{value}</span>
-          </div>
-        </>
-      )
-    },
-    [answers]
-  )
 
   return (
     <MultiValueHistoryChart
@@ -197,8 +142,39 @@ export const ChoiceContractChart = (props: {
       data={data}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
-      Tooltip={ChoiceTooltip}
+      Tooltip={(props) => <ChoiceTooltip answers={answers} ttProps={props} />}
     />
+  )
+}
+
+const ChoiceTooltip = (props: {
+  ttProps: TooltipProps<Date, MultiPoint>
+  answers: (DpmAnswer | Answer)[]
+}) => {
+  const { ttProps, answers } = props
+  const { prev, x, y, xScale, yScale } = ttProps
+  const [start, end] = xScale.domain()
+
+  if (!yScale) return null
+  if (!prev) return null
+
+  const d = xScale.invert(x)
+  const prob = yScale.invert(y)
+
+  const index = cum(prev.y).findIndex((p) => p >= 1 - prob)
+  const answer = answers[index]?.text ?? 'Other'
+  const value = formatPct(prev.y[index])
+
+  return (
+    <>
+      <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
+      <div className="flex max-w-xs flex-row justify-between gap-4">
+        <Row className="items-center gap-2 overflow-hidden">
+          <span className="overflow-hidden text-ellipsis">{answer}</span>
+        </Row>
+        <span className="text-ink-600">{value}</span>
+      </div>
+    </>
   )
 }
 

@@ -1,5 +1,5 @@
 import { sortBy, sumBy, uniqBy } from 'lodash'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/legacy/image'
 
 import { Col } from 'web/components/layout/col'
@@ -71,7 +71,7 @@ function CharityPage(props: { charity: Charity }) {
 
       <Col className="mx-1 w-full items-center sm:px-0">
         <Col className="bg-canvas-0 max-w-2xl rounded px-8 py-6">
-          <Title children={name} />
+          <Title>{name}</Title>
           {/* TODO: donations over time chart */}
           <Row className="justify-between">
             {photo && (

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Col } from 'web/components/layout/col'
 import { useContracts } from 'web/hooks/use-contract-supabase'
 import { SimpleContractRow } from 'web/components/simple-contract-row'
@@ -7,6 +8,7 @@ import { NewsTopicsContentContainer } from 'web/components/widgets/news-topics-c
 import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
 import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
+import { ExternalLink } from '../widgets/external-link'
 
 const SummitNATO = createNewsDashboardTab('NATO Summit', 'NATO Summit', [
   { slug: 'will-ukraine-be-an-official-member' },
@@ -104,20 +106,14 @@ const OpenAI = createNewsDashboardTab(
 
 const UkraineWar = createNewsDashboardTab('Ukraine War', 'War in Ukraine', [
   {
-    url: 'https://www.washingtonpost.com/national-security/2023/07/06/biden-cluster-bombs-ukraine/',
+    url: 'https://apnews.com/article/russia-ukraine-war-drone-strikes-odesa-kyiv-8b20147a55f29a0c0bc465b59274357e',
   },
-  { slug: 'will-the-us-openly-commit-in-2023-t' },
-  {
-    url: 'https://www.cbsnews.com/news/ukraine-russia-war-zaporizhzhia-nuclear-power-plant-attack-plot-claims/',
-  },
-  { slug: 'will-there-be-a-nuclear-disaster-at' },
+  { slug: 'will-moscow-be-hit-by-another-drone' },
+  { url: 'https://www.bbc.co.uk/news/world-europe-66374032' },
+
+  { slug: 'how-will-the-ukrainerussia-border-l' },
   { slug: 'will-any-part-of-the-zaporizhzhia-n' },
   { slug: 'will-russia-nuke-ukraine' },
-  {
-    url: 'https://www.cnn.com/europe/live-news/russia-ukraine-war-news-07-05-23/index.html',
-  },
-  { slug: 'will-the-wagner-group-stop-operatin-ad2bc1b87277' },
-  { slug: 'will-the-black-sea-grain-deal-be-ex' },
   {
     slug: 'will-vladimir-putin-still-be-the-le',
   },
@@ -193,8 +189,10 @@ const ElonVersusZuck = createNewsDashboardTab(
   'Elon vs Zuck',
   'Elon Musk and Mark Zuckerberg cage fight?',
   [
+    {
+      url: 'https://abcnews.go.com/US/wireStory/musk-cage-fight-zuckerberg-streamed-102053512',
+    },
     { slug: 'will-elon-musk-and-mark-zuckerberg-bd28b2349d95' },
-    { url: 'https://www.bbc.com/news/business-65981876' },
     { slug: 'if-elon-zuck-fight-will-it-be-at-th' },
     {
       url: 'https://nypost.com/2023/06/30/elon-musk-mark-zuckerberg-can-fight-at-colosseum-italian-govt/',
@@ -556,18 +554,278 @@ const Election2024 = createNewsDashboardTab(
   ]
 )
 
+const RPlace = createNewsDashboardTab('r/place', 'r/place', [
+  { slug: 'will-rplace-say-fuck-spez-when-it-c' },
+  {
+    content: (
+      <NewsTopicsContentContainer
+        containerContent={
+          <>
+            Redditors create live animation of the anime Bad Apple:
+            <Link
+              className="text-indigo-500 underline"
+              href="https://twitter.com/MrFoxWasTaken/status/1683184769012748288"
+            >
+              Watch on Twitter
+            </Link>
+          </>
+        }
+      />
+    ),
+  },
+  { slug: 'how-long-will-rplace-last' },
+  { slug: 'what-will-the-final-color-be-at-0-0' },
+  { slug: 'is-this-rplace-a-good-business-move' },
+
+  { slug: 'will-i-be-convinced-that-the-destin' },
+  { slug: 'will-manifold-make-it-on-rplace' },
+  { slug: 'will-destiny-be-the-most-represente' },
+])
+
+const XCom = createNewsDashboardTab('X.com', 'Twitter rebrands to X.com', [
+  { url: 'https://www.bbc.co.uk/news/business-66284304' },
+  { slug: 'will-twitter-rename-to-x-in-a-week' },
+  { slug: 'will-graphic-designers-think-twitte' },
+  { slug: 'will-x-formerly-twitter-release-cre' },
+  { slug: 'at-the-end-of-2023-will-manifold-us' },
+  { slug: 'will-twitter-remove-rate-limits-by' },
+  { slug: '28-will-twitters-net-income-be-high' },
+  { slug: 'when-will-twitter-actually-collapse' },
+  { slug: 'will-xeeting-catch-on-as-the-new-te' },
+  { slug: 'will-microsoft-win-10-million-from' },
+])
+
+const IsraeliCourt = createNewsDashboardTab(
+  'Israel',
+  'Israeli gov limits Supreme Court',
+  [
+    {
+      url: 'https://www.cnn.com/2023/07/24/middleeast/israel-supreme-court-power-stripped-intl/index.html',
+    },
+    { slug: 'will-israel-pass-the-judicial-refor-8c16e795af91' },
+    { slug: 'will-israel-pass-the-judicial-refor' },
+    { slug: 'will-the-israeli-supreme-justice-co' },
+    { slug: 'will-an-israeli-protester-be-killed' },
+    { slug: 'will-there-be-restrictions-on-israe' },
+  ]
+)
+
+const STPSuper = createNewsDashboardTab(
+  'Superconductor',
+  'Scientists announce room temp superconductor',
+  [
+    { slug: 'will-the-lk99-room-temp-ambient-pre' },
+    { slug: 'when-will-we-know-whether-the-room' },
+    {
+      content: (
+        <NewsTopicsContentContainer
+          header="Additional Context"
+          containerContent={
+            <Col className="gap-4">
+              <ExternalLink
+                title="Main Paper"
+                href="https://arxiv.org/abs/2307.12008"
+              />
+
+              <ExternalLink
+                title="Companion Paper"
+                href="https://arxiv.org/abs/2307.12037"
+              />
+
+              <ExternalLink
+                title="First claims of replication from China"
+                href="https://www.zhihu.com/question/613850973/answer/3136316439?utm_id=0"
+              />
+
+              <ExternalLink
+                title="What would RTP superconductors mean?"
+                href="https://theconversation.com/room-temperature-superconductors-could-revolutionize-electronics-an-electrical-engineer-explains-the-materials-potential-201849"
+              />
+
+              <ExternalLink
+                title="Hacker News thread discussion"
+                href="https://news.ycombinator.com/item?id=36864624"
+              />
+
+              <ExternalLink
+                title="Table of all current replication attempts"
+                href="https://forums.spacebattles.com/threads/claims-of-room-temperature-and-ambient-pressure-superconductor.1106083/page-11?post=94266395#post-94266395"
+              />
+
+              <ExternalLink
+                title="Chinese team finds theoretical basis for LK-99 superconductivity"
+                href="https://arxiv.org/abs/2307.16040"
+              />
+
+              {/* <p className="mb-4">
+                Materials used are relatively cheap and not complicated, so it
+                should be easy for others to replicate.
+              </p> */}
+            </Col>
+          }
+        />
+      ),
+    },
+
+    { slug: 'will-there-be-a-highcredibility-spu' },
+    { slug: 'will-the-first-roomtemperature-ambi' },
+    { slug: 'will-we-have-the-first-roomtemperat' },
+    { slug: 'will-a-roomtemperature-atmospheric' },
+    { slug: 'will-the-first-roomtemperature-ambi-61c98e502e09' },
+    { slug: 'which-financial-instruments-should' },
+  ]
+)
+
+const UFOs = createNewsDashboardTab(
+  'UFOs',
+  'Intel officer claims UFOs recovered',
+  [
+    {
+      url: 'https://www.npr.org/2023/07/27/1190390376/ufo-hearing-non-human-biologics-uaps',
+    },
+    { slug: 'will-claims-of-a-retrieved-craft-of' },
+    { slug: 'will-a-highranking-us-official-endo' },
+    { slug: 'will-the-us-government-confirm-the' },
+    { slug: 'will-the-ufo-retrieval-program-clai' },
+    { slug: 'will-the-next-state-of-the-union-ad' },
+    { slug: 'will-the-us-government-reveal-that' },
+    {
+      content: (
+        <img
+          className="mb-4"
+          alt="Tic Tac UFO"
+          src="https://nybreaking.com/wp-content/uploads/2023/07/1690479621_174_What-was-the-Tic-Tac-UFO-The-story-behind-retired.jpg"
+        />
+      ),
+    },
+    { slug: 'will-the-president-of-the-usa-ackno' },
+    { slug: 'by-2025-over-60-of-americans-will-b' },
+    { slug: 'will-a-clear-4k-video-of-a-uap-be-r' },
+    { slug: 'will-eliezer-yudkowsky-win-his-1500' },
+    { slug: 'will-the-ufo-shot-down-in-alaska-on' },
+    {
+      content: (
+        <iframe
+          className="mb-4 h-48 w-full"
+          src="https://www.youtube.com/embed/KQ7Dw-739VY?start=2550"
+          title="Grusch UFO testimony"
+          allow=""
+        ></iframe>
+      ),
+    },
+    {
+      content: (
+        <img
+          className="mb-4"
+          alt="Alien"
+          src="https://preview.redd.it/tell-me-this-lil-fella-didnt-just-steal-your-heart-at-this-v0-7ukx8e9u8tbb1.png?auto=webp&s=8e0b01e616a9442dc64ededd657e9643bbdadcb0"
+        />
+      ),
+    },
+    { slug: 'if-eliezer-yudkowsky-loses-his-bet' },
+  ]
+)
+
+const Trump = createNewsDashboardTab('Trump', 'Trump indicted', [
+  {
+    url: 'https://apnews.com/article/trump-georgia-election-investigation-grand-jury-willis-d39562cedfc60d64948708de1b011ed3',
+  },
+  {
+    content: (
+      <NewsTopicsContentContainer
+        header="Trump charged with racketeering"
+        containerContent={
+          <Col className="gap-4">
+            <div>Trump faces 4th criminal case, August 14th</div>
+            <div>
+              “The indictment alleges that rather than abide by Georgia’s legal
+              process for election challenges, the defendants engaged in a
+              criminal racketeering enterprise to overturn Georgia’s
+              presidential election result,” Fulton County District Attorney
+              Fani Willis
+            </div>
+            <div>Odds of Trump avoiding prison were at 60% but fell to 23%</div>
+            <div>
+              The type of charges (RICO) being pressed is novel in this context
+              and is usually used against criminal organisations{' '}
+            </div>
+          </Col>
+        }
+      />
+    ),
+  },
+  { slug: 'when-will-trump-be-imprisoned' },
+  { slug: 'will-donald-trump-be-the-republican' },
+  { slug: 'will-a-trump-mugshot-be-available-b' },
+  { slug: 'will-one-of-the-18-indicted-coconsp' },
+  { slug: 'will-trump-be-indicted-by-three-or' },
+  { slug: 'who-will-be-the-republican-presiden-7bf11c066154' },
+  { slug: 'is-trump-more-likely-to-spend-1-nig' },
+  { slug: 'will-there-be-large-scale-protests' },
+])
+
+const NigerCoup = createNewsDashboardTab('Niger coup', 'Niger coup', [
+  {
+    url: 'https://apnews.com/article/niger-coup-west-africa-use-of-force-mali-burkina-faso-0b951ec77a89033c84e6f0972cc21b5f',
+  },
+  { slug: 'will-the-coup-in-niger-succeed' },
+  { slug: 'will-ecowas-militarily-intervene-in' },
+  { slug: 'will-president-bazoum-of-niger-be-r' },
+  { slug: 'will-us-troops-participate-in-a-mil' },
+  { slug: 'conditional-upon-a-military-interve' },
+  { slug: 'what-will-the-human-development-ind-11efb7344aca' },
+])
+
+const CancerPill = createNewsDashboardTab(
+  'Cancer pill',
+  'AOH1996 = miracle cancer pill?',
+  [
+    { slug: 'is-the-pcnatargeting-cancer-drug-pa' },
+    {
+      content: (
+        <NewsTopicsContentContainer
+          header="Facts"
+          containerContent={
+            <>
+              <p className="mb-4">
+                A new study claims oral cancer drug AOH1996 kills 100% of solid
+                tumors across many cancer types in animals with no discernible
+                side effects.
+              </p>
+              <p className="mb-4">
+                The drug works by interfering with PCNA which clamps DNA to
+                allow replication tools to attach.
+              </p>
+              <p className="mb-4">The drug is in Phase I clinical trials.</p>
+
+              <ExternalLink
+                className="mb-4"
+                title="Main paper"
+                href="https://www.cell.com/cell-chemical-biology/pdfExtended/S2451-9456(23)00221-0"
+              />
+            </>
+          }
+        />
+      ),
+    },
+
+    { slug: 'will-aoh1996-be-fda-approved-before' },
+    { slug: 'when-will-the-100-effective-against-7a6fcbc9b217' },
+    { slug: 'will-aoh1996-succeed-in-phase-i-tri' },
+    { slug: 'will-the-preclinical-results-on-the' },
+  ]
+)
+
 export const newsContent = [
-  SummitNATO,
+  Trump,
+  STPSuper,
+  ElonVersusZuck,
+  UkraineWar,
+  CancerPill,
+  NigerCoup,
+  UFOs,
+  XCom,
+  Election2024,
   Threads,
   OpenAI,
-  UkraineWar,
-  GlobalWarming,
-  ElonVersusZuck,
-  Election2024,
-  WestBank,
-  FrenchRiots,
-  SupremeCourt,
-  // { title: 'Russian Coup?', content: <RussianCoupData /> },
-  // { title: 'Titanic Sub', content: <MissingSubData /> },
-  // { title: 'Reddit Blackout', content: <RedditBlackoutData /> },
 ]

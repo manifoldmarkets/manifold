@@ -7,9 +7,9 @@ export default function CornerDownRightIcon(props: { className?: string }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={props.className}
     >
       <polyline points="15 10 20 15 15 20"></polyline>

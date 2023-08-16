@@ -18,12 +18,11 @@ const TOPICS_TO_WORDS: { [key: string]: string } = {
     'effective altruism, charity, donations, philanthropy, animal rights, existential risk',
   AI: 'artificial intelligence, AI, machine learning, deep learning, neural networks, LLMs, large language models, GPT-4',
   Science: 'science, physics, chemistry, biology, neuroscience',
-  Religion: 'religion, christianity, islam, judaism, buddhism, hinduism',
+  Religion: 'religion, God, Christianity, LDS, church',
   Education:
     'education, school, college, university, student, teacher, professor',
-  'TV Shows': 'television, tv shows, Netflix series, HBO, Disney+',
-  Music:
-    'music, pop music, rock music, hip hop, rap, country, classical music, concert tours',
+  'TV Shows': 'tv shows, television, Netflix series, HBO, Hulu, season finale',
+  Music: 'music, release full length album, next album, concert',
   Movies:
     'movies, films, cinema, movie reviews, movie ratings, Hollywood, box office, IMDB, Rotten Tomatoes, Academy Awards',
   Books: 'books, novels, fiction, non-fiction, book reviews, book ratings',
@@ -39,7 +38,7 @@ const TOPICS_TO_WORDS: { [key: string]: string } = {
     'climate change, global warming, climate science, global temperatures, carbon emissions, renewable energy',
   Biotech:
     'biotech, biotechnology, CRISPR, drug trials, pharmaceuticals, vaccines, gene editing',
-  Math: 'math, mathematics, algebra, calculus, geometry, number theory, topology, analysis',
+  Math: 'mathematics, Millenium Prize, math olympiad, proof, puzzle, paradox, numbers, equation',
   Nuclear: 'nuclear, nuclear power, fission, fusion',
   Space:
     'space, astronomy, astrophysics, space exploration, NASA, SpaceX, Mars, Moon, solar system, planets, stars, galaxies',

@@ -8,7 +8,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import SquiggleVerticalIcon from 'web/lib/icons/squiggle_vertical'
 import clsx from 'clsx'
 import { Button } from './buttons/button'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import SquiggleHorizontalIcon from 'web/lib/icons/squiggle_horizontal'
 import TypewriterComponent from 'typewriter-effect'
 import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
@@ -121,7 +121,7 @@ export function LandingPagePanel() {
               color="gradient-pink"
               size={isMobile ? 'xl' : '2xl'}
             >
-              Start trading
+              Get started
             </Button>
             <div
               className={clsx(
@@ -131,7 +131,7 @@ export function LandingPagePanel() {
                   : 'px-6 py-3 text-xl font-semibold'
               )}
             >
-              Start trading
+              Get started
             </div>
           </div>
           <div className="absolute top-6 right-8 sm:top-48 md:right-12">

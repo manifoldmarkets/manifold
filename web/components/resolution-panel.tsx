@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 
 import { User } from 'web/lib/firebase/users'
 import { YesNoCancelSelector } from './bet/yes-no-selector'
@@ -129,7 +129,7 @@ export function ResolutionPanel(props: {
           ) : outcome === 'CANCEL' ? (
             <>Cancel all trades and return money back to {BETTORS}.</>
           ) : outcome === 'MKT' ? (
-            <Row className="flex-wrap gap-2">
+            <Row className="flex-wrap items-center gap-2">
               <span>
                 {capitalize(PLURAL_BETS)} will be paid out at the probability
                 you specify:

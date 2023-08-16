@@ -5,7 +5,7 @@ import {
   PresentationChartLineIcon,
 } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { FileUploadButton } from '../buttons/file-upload-button'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
@@ -13,6 +13,8 @@ import { EmbedModal } from './embed-modal'
 import { DreamModal } from './image-modal'
 import { MarketModal } from './market-modal'
 import type { UploadMutation } from './upload-extension'
+import { PiGifFill } from 'react-icons/pi'
+import { GIFModal } from './gif-modal'
 
 /* Toolbar, with buttons for images and embeds */
 export function StickyFormatMenu(props: {
@@ -24,6 +26,7 @@ export function StickyFormatMenu(props: {
 
   const [dreamOpen, setDreamOpen] = useState(false)
   const [iframeOpen, setIframeOpen] = useState(false)
+  const [GIFOpen, setGIFOpen] = useState(false)
   const [marketOpen, setMarketOpen] = useState(false)
 
   return (
@@ -36,6 +39,10 @@ export function StickyFormatMenu(props: {
       <ToolbarButton label="Add embed" onClick={() => setIframeOpen(true)}>
         <EmbedModal editor={editor} open={iframeOpen} setOpen={setIframeOpen} />
         <CodeIcon className="h-5 w-5" aria-hidden="true" />
+      </ToolbarButton>
+      <ToolbarButton label="Add GIF" onClick={() => setGIFOpen(true)}>
+        <GIFModal editor={editor} open={GIFOpen} setOpen={setGIFOpen} />
+        <PiGifFill className="h-5 w-5" aria-hidden />
       </ToolbarButton>
       <ToolbarButton label="Add question" onClick={() => setMarketOpen(true)}>
         <MarketModal

@@ -17,7 +17,6 @@ import {
   getBinaryCpmmBetInfo,
   getNewMultiBetInfo,
   getNewMultiCpmmBetInfo,
-  getNumericBetsInfo,
 } from 'common/new-bet'
 import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
@@ -56,20 +55,29 @@ const numericSchema = z.object({
 
 export const placebet = authEndpoint(async (req, auth) => {
   log(`Inside endpoint handler for ${auth.uid}.`)
-  const { amount, contractId } = validate(bodySchema, req.body)
+  const isApi = auth.creds.kind === 'key'
+  return await placeBetMain(req.body, auth.uid, isApi)
+})
+
+export const placeBetMain = async (
+  body: unknown,
+  uid: string,
+  isApi: boolean
+) => {
+  const { amount, contractId } = validate(bodySchema, body)
 
   const result = await firestore.runTransaction(async (trans) => {
-    log(`Inside main transaction for ${auth.uid}.`)
+    log(`Inside main transaction for ${uid}.`)
     const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const userDoc = firestore.doc(`users/${auth.uid}`)
+    const userDoc = firestore.doc(`users/${uid}`)
     const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
 
-    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
-    if (!userSnap.exists) throw new APIError(400, 'User not found.')
+    if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
+    if (!userSnap.exists) throw new APIError(404, 'User not found.')
 
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
-    if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
+    if (user.balance < amount) throw new APIError(403, 'Insufficient balance.')
     log(
       `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
     )
@@ -77,7 +85,7 @@ export const placebet = authEndpoint(async (req, auth) => {
     const { closeTime, outcomeType, mechanism, collectedFees, volume } =
       contract
     if (closeTime && Date.now() > closeTime)
-      throw new APIError(400, 'Trading is closed.')
+      throw new APIError(403, 'Trading is closed.')
 
     const {
       newBet,
@@ -109,7 +117,7 @@ export const placebet = authEndpoint(async (req, auth) => {
         mechanism == 'cpmm-1'
       ) {
         // eslint-disable-next-line prefer-const
-        let { outcome, limitProb, expiresAt } = validate(binarySchema, req.body)
+        let { outcome, limitProb, expiresAt } = validate(binarySchema, body)
 
         if (limitProb !== undefined && outcomeType === 'BINARY') {
           const isRounded = floatingEqual(
@@ -126,10 +134,10 @@ export const placebet = authEndpoint(async (req, auth) => {
         }
 
         log(
-          `Checking for limit orders in placebet for user ${auth.uid} on contract id ${contractId}.`
+          `Checking for limit orders in placebet for user ${uid} on contract id ${contractId}.`
         )
         const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(trans, contractDoc, auth.uid)
+          await getUnfilledBetsAndUserBalances(trans, contractDoc, uid)
 
         return getBinaryCpmmBetInfo(
           contract,
@@ -144,10 +152,10 @@ export const placebet = authEndpoint(async (req, auth) => {
         (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
         mechanism == 'dpm-2'
       ) {
-        const { answerId } = validate(multipleChoiceSchema, req.body)
+        const { answerId } = validate(multipleChoiceSchema, body)
         const answerDoc = contractDoc.collection('answers').doc(answerId)
         const answerSnap = await trans.get(answerDoc)
-        if (!answerSnap.exists) throw new APIError(400, 'Invalid answerId')
+        if (!answerSnap.exists) throw new APIError(404, 'Answer not found')
         return getNewMultiBetInfo(answerId, amount, contract)
       } else if (
         outcomeType === 'MULTIPLE_CHOICE' &&
@@ -158,16 +166,21 @@ export const placebet = authEndpoint(async (req, auth) => {
           outcome = 'YES',
           limitProb,
           expiresAt,
-        } = validate(multipleChoiceSchema, req.body)
+        } = validate(multipleChoiceSchema, body)
         const answersSnap = await trans.get(
           contractDoc.collection('answersCpmm')
         )
         const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
         const answer = answers.find((a) => a.id === answerId)
-        if (!answer) throw new APIError(400, 'Invalid answerId')
+        if (!answer) throw new APIError(404, 'Answer not found')
+        if (answers.length < 2)
+          throw new APIError(
+            403,
+            'Cannot bet until at least two answers are added.'
+          )
 
         const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(trans, contractDoc, auth.uid)
+          await getUnfilledBetsAndUserBalances(trans, contractDoc, uid)
 
         return getNewMultiCpmmBetInfo(
           contract,
@@ -180,16 +193,14 @@ export const placebet = authEndpoint(async (req, auth) => {
           balanceByUserId,
           expiresAt
         )
-      } else if (outcomeType == 'NUMERIC' && mechanism == 'dpm-2') {
-        const { outcome, value } = validate(numericSchema, req.body)
-        return getNumericBetsInfo(value, outcome, amount, contract)
       } else {
-        throw new APIError(500, 'Contract has invalid type/mechanism.')
+        throw new APIError(
+          500,
+          'Contract type/mechaism not supported (or is no longer)'
+        )
       }
     })()
-    log(
-      `Calculated new bet information for ${user.username} - auth ${auth.uid}.`
-    )
+    log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
 
     if (
       mechanism == 'cpmm-1' &&
@@ -197,11 +208,10 @@ export const placebet = authEndpoint(async (req, auth) => {
         !isFinite(newP) ||
         Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY)
     ) {
-      throw new APIError(400, 'Trade too large for current liquidity pool.')
+      throw new APIError(403, 'Trade too large for current liquidity pool.')
     }
 
     const betDoc = contractDoc.collection('bets').doc()
-    const isApi = auth.creds.kind === 'key'
 
     trans.create(betDoc, {
       id: betDoc.id,
@@ -212,7 +222,7 @@ export const placebet = authEndpoint(async (req, auth) => {
       isApi,
       ...newBet,
     })
-    log(`Created new bet document for ${user.username} - auth ${auth.uid}.`)
+    log(`Created new bet document for ${user.username} - auth ${uid}.`)
 
     if (makers) {
       updateMakers(makers, betDoc.id, contractDoc, trans)
@@ -226,7 +236,7 @@ export const placebet = authEndpoint(async (req, auth) => {
     }
 
     trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
-    log(`Updated user ${user.username} balance - auth ${auth.uid}.`)
+    log(`Updated user ${user.username} balance - auth ${uid}.`)
 
     if (newBet.amount !== 0) {
       if (newBet.answerId) {
@@ -296,13 +306,13 @@ export const placebet = authEndpoint(async (req, auth) => {
         }
       }
 
-      log(`Updated contract ${contract.slug} properties - auth ${auth.uid}.`)
+      log(`Updated contract ${contract.slug} properties - auth ${uid}.`)
     }
 
     return { newBet, betId: betDoc.id, contract, makers, ordersToCancel, user }
   })
 
-  log(`Main transaction finished - auth ${auth.uid}.`)
+  log(`Main transaction finished - auth ${uid}.`)
 
   const { newBet, betId, contract, makers, ordersToCancel, user } = result
   const { mechanism } = contract
@@ -312,11 +322,11 @@ export const placebet = authEndpoint(async (req, auth) => {
     newBet.amount !== 0
   ) {
     const userIds = uniq([
-      auth.uid,
+      uid,
       ...(makers ?? []).map((maker) => maker.bet.userId),
     ])
     await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
-    log(`Share redemption transaction finished - auth ${auth.uid}.`)
+    log(`Share redemption transaction finished - auth ${uid}.`)
   }
   if (ordersToCancel) {
     await Promise.all(
@@ -333,7 +343,7 @@ export const placebet = authEndpoint(async (req, auth) => {
   }
 
   return { ...newBet, betId: betId }
-})
+}
 
 const firestore = admin.firestore()
 

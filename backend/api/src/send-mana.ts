@@ -9,7 +9,7 @@ import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
 
 const bodySchema = z.object({
-  amount: z.number(),
+  amount: z.number().gt(0).finite(),
   toIds: z.array(z.string()),
   message: z.string(),
 })
@@ -20,10 +20,6 @@ export const sendmana = authEndpoint(async (req, auth) => {
   // Run as transaction to prevent race conditions.
   return await firestore.runTransaction(async (transaction) => {
     // Look up the manalink
-
-    if (amount <= 0 || isNaN(amount) || !isFinite(amount))
-      throw new APIError(400, 'Invalid amount')
-
     const fromDoc = firestore.doc(`users/${fromId}`)
     const fromSnap = await transaction.get(fromDoc)
     if (!fromSnap.exists) {
@@ -33,15 +29,12 @@ export const sendmana = authEndpoint(async (req, auth) => {
 
     const canCreate = await canSendMana(fromUser)
     if (!canCreate) {
-      throw new APIError(
-        401,
-        `You don't have at least 1000 mana or your account isn't 1 week old.`
-      )
+      throw new APIError(403, `You must have at least 1000 mana.`)
     }
 
     if (fromUser.balance < amount) {
       throw new APIError(
-        400,
+        403,
         `Insufficient balance: ${fromUser.name} needed ${amount} but only had ${fromUser.balance} `
       )
     }
@@ -49,8 +42,7 @@ export const sendmana = authEndpoint(async (req, auth) => {
     const groupId = crypto.randomUUID()
     await Promise.all(
       toIds.map(async (toId) => {
-        // Actually execute the txn
-        const data: TxnData = {
+        const data = {
           fromId: auth.uid,
           fromType: 'USER',
           toId,
@@ -64,7 +56,7 @@ export const sendmana = authEndpoint(async (req, auth) => {
             visibility: 'public',
           },
           description: `Mana payment ${amount} from ${fromUser.username} to ${auth.uid}`,
-        }
+        } as const
         const result = await runTxn(transaction, data)
         const txnId = result.txn?.id
         if (!txnId) {

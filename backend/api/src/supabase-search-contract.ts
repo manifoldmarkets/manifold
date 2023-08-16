@@ -12,19 +12,21 @@ import {
   withClause,
 } from 'shared/supabase/sql-builder'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
+import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
-const TOPIC_DISTANCE_THRESHOLD = 0.24
+const TOPIC_DISTANCE_THRESHOLD = 0.23
 const bodySchema = z.object({
   term: z.string(),
   filter: z.union([
     z.literal('open'),
+    z.literal('closing-this-month'),
+    z.literal('closing-next-month'),
     z.literal('closed'),
     z.literal('resolved'),
     z.literal('all'),
   ]),
   sort: z.union([
-    z.literal('relevance'),
     z.literal('newest'),
     z.literal('score'),
     z.literal('daily-score'),
@@ -35,6 +37,9 @@ const bodySchema = z.object({
     z.literal('close-date'),
     z.literal('resolve-date'),
     z.literal('random'),
+    z.literal('bounty-amount'),
+    z.literal('prob-descending'),
+    z.literal('prob-ascending'),
   ]),
   contractType: z.union([
     z.literal('ALL'),
@@ -43,6 +48,8 @@ const bodySchema = z.object({
     z.literal('FREE_RESPONSE'),
     z.literal('PSEUDO_NUMERIC'),
     z.literal('BOUNTIED_QUESTION'),
+    z.literal('STONK'),
+    z.literal('POLL'),
   ]),
   topic: z.string().optional(),
   offset: z.number().gte(0),
@@ -136,8 +143,7 @@ function getSearchContractSQL(contractInput: {
   let queryBuilder: SqlBuilder | undefined
   const emptyTerm = term.length === 0
 
-  const hideStonks =
-    (sort === 'relevance' || sort === 'score') && emptyTerm && !groupId
+  const hideStonks = sort === 'score' && emptyTerm && !groupId
 
   const whereSqlBuilder = getSearchContractWhereSQL(
     filter,
@@ -150,7 +156,6 @@ function getSearchContractSQL(contractInput: {
     hideStonks
   )
   const whereSQL = renderSql(whereSqlBuilder)
-  let sortAlgorithm: string | undefined = undefined
   const isUrl = term.startsWith('https://manifold.markets/')
 
   if (isUrl) {
@@ -161,7 +166,6 @@ function getSearchContractSQL(contractInput: {
       whereSqlBuilder,
       where('slug = $1', [slug])
     )
-    sortAlgorithm = 'importance_score'
   }
   // Searching markets within a group
   else if (groupId) {
@@ -239,8 +243,6 @@ function getSearchContractSQL(contractInput: {
     ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
     ) as relevant_group_contracts
       `
-      // We use importance score bc these are exact matches and can be low quality
-      sortAlgorithm = 'importance_score'
     }
   }
   // Searching markets by creator
@@ -381,8 +383,6 @@ select * from (
     ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
   ) as ranked_matches
     `
-      // We use importance score bc these are exact matches and can be low quality
-      sortAlgorithm = 'importance_score'
     }
     // Normal full text search for markets
     else {
@@ -404,7 +404,7 @@ select * from (
   return (
     query +
     ' ' +
-    getSearchContractSortSQL(sort, fuzzy, emptyTerm, sortAlgorithm) +
+    getSearchContractSortSQL(sort) +
     ' ' +
     `LIMIT ${limit} OFFSET ${offset}`
   )
@@ -424,24 +424,29 @@ function getSearchContractWhereSQL(
   const filterSQL: FilterSQL = {
     open: 'resolution_time IS NULL AND close_time > NOW()',
     closed: 'close_time < NOW() AND resolution_time IS NULL',
+    // Include an extra day to capture markets that close on the first of the month. Add 7 hours to shift UTC time zone to PT.
+    'closing-this-month': `close_time > now() AND close_time < (date_trunc('month', now()) + interval '1 month' + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
+    'closing-next-month': `close_time > ((date_trunc('month', now()) + interval '1 month') + interval '1 day' + interval '7 hours') AND close_time < (date_trunc('month', now()) + interval '2 month' + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
     resolved: 'resolution_time IS NOT NULL',
     all: 'true',
   }
   const contractTypeFilter =
-    contractType != 'ALL' ? `outcome_type = '${contractType}'` : ''
+    contractType === 'ALL'
+      ? ''
+      : contractType === 'FREE_RESPONSE'
+      ? `(outcome_type = 'FREE_RESPONSE' OR outcome_type = 'MULTIPLE_CHOICE' AND data->>'addAnswersMode' = 'ANYONE')`
+      : `outcome_type = '${contractType}'`
 
-  const stonkFilter = hideStonks ? `outcome_type != 'STONK'` : ''
+  const stonkFilter =
+    hideStonks && contractType !== 'STONK' ? `outcome_type != 'STONK'` : ''
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
-  const otherVisibilitySQL = `
-  OR (visibility = 'unlisted' AND creator_id='${uid}') 
-  OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))
-  `
-  const visibilitySQL =
-    (groupId && hasGroupAccess) || (!!creatorId && !!uid && creatorId === uid)
-      ? ''
-      : `(visibility = 'public' ${uid ? otherVisibilitySQL : ''})`
-
+  const visibilitySQL = getContractPrivacyWhereSQLFilter(
+    uid,
+    groupId,
+    creatorId,
+    hasGroupAccess
+  )
   return buildSql(
     where(filterSQL[filter]),
     where(stonkFilter),
@@ -454,20 +459,8 @@ function getSearchContractWhereSQL(
 
 type SortFields = Record<string, string>
 
-function getSearchContractSortSQL(
-  sort: string,
-  fuzzy: boolean | undefined,
-  empty: boolean,
-  sortingAlgorithm: string | undefined
-) {
+function getSearchContractSortSQL(sort: string) {
   const sortFields: SortFields = {
-    relevance: sortingAlgorithm
-      ? sortingAlgorithm
-      : empty
-      ? 'importance_score'
-      : fuzzy
-      ? 'similarity_score'
-      : 'ts_rank_cd(question_fts, query) * 1.0 + ts_rank_cd(description_fts, query) * 0.5',
     score: 'importance_score',
     'daily-score': "(data->>'dailyScore')::numeric",
     '24-hour-vol': "(data->>'volume24Hours')::numeric",
@@ -478,8 +471,16 @@ function getSearchContractSortSQL(
     'resolve-date': 'resolution_time',
     'close-date': 'close_time',
     random: 'random()',
+    'bounty-amount': "COALESCE((data->>'bountyLeft')::integer, -1)",
+    'prob-descending': "resolution DESC, (data->>'p')::numeric",
+    'prob-ascending': "resolution DESC, (data->>'p')::numeric",
   }
 
-  const ASCDESC = sort === 'close-date' || sort === 'liquidity' ? 'ASC' : 'DESC'
+  const ASCDESC =
+    sort === 'close-date' || sort === 'liquidity' || sort === 'prob-ascending'
+      ? 'ASC'
+      : sort === 'prob-descending'
+      ? 'DESC NULLS LAST'
+      : 'DESC'
   return `ORDER BY ${sortFields[sort]} ${ASCDESC}`
 }

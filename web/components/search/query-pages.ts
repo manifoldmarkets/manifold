@@ -1,5 +1,5 @@
 import { beginsWith, searchInAny } from 'common/util/parse'
-import { keyBy, orderBy } from 'lodash'
+import { orderBy } from 'lodash'
 
 export interface PageData {
   label: string
@@ -33,11 +33,19 @@ const pages: PageData[] = [
 ]
 
 export function searchPages(query: string, limit: number) {
-  const filtered = pages.filter((page) => {
-    return query.length > 2
-      ? searchInAny(query, page.label, ...(page.keywords ?? []))
-      : beginsWith(page.label, query)
-  })
+  const filtered = pages
+    // No need to repeat the pages we have results for or are in the sidebar
+    .filter(
+      (page) =>
+        page.label !== 'Questions' &&
+        page.label !== 'Groups' &&
+        page.label !== 'Users'
+    )
+    .filter((page) => {
+      return query.length > 2
+        ? searchInAny(query, page.label, ...(page.keywords ?? []))
+        : beginsWith(page.label, query)
+    })
 
   return orderBy(
     filtered,
@@ -45,11 +53,3 @@ export function searchPages(query: string, limit: number) {
     ['desc']
   ).slice(0, limit)
 }
-
-const pagesByLabel = keyBy(pages, 'label')
-
-export const defaultPages = [
-  pagesByLabel['Users'],
-  pagesByLabel['Groups'],
-  pagesByLabel['Live feed'],
-]

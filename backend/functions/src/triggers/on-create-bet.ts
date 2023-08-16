@@ -43,14 +43,13 @@ import {
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { calculateUserMetrics } from 'common/calculate-metrics'
-import { runTxn, TxnData } from 'shared/txn/run-txn'
+import { runTxnFromBank } from 'shared/txn/run-txn'
 import { GroupResponse } from 'common/group'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
-import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { completeReferralsQuest } from 'shared/complete-quest-internal'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { FieldValue } from 'firebase-admin/firestore'
@@ -60,6 +59,9 @@ import {
   getUniqueBettorIdsForAnswer,
 } from 'shared/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
+import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
+import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
+import { Answer } from 'common/answer'
 
 const firestore = admin.firestore()
 
@@ -93,7 +95,7 @@ export const onCreateBet = functions
       eventId,
       bettor
     )
-    
+
     if (bet.shares !== 0) {
       await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
     }
@@ -166,15 +168,15 @@ const updateBettingStreak = async (
       BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
       BETTING_STREAK_BONUS_MAX
     )
-    const fromUserId = isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+
     const bonusTxnDetails = {
       currentBettingStreak: newBettingStreak,
     }
 
-    const bonusTxn: TxnData = {
-      fromId: fromUserId,
+    const bonusTxn: Omit<
+      BettingStreakBonusTxn,
+      'id' | 'createdTime' | 'fromId'
+    > = {
       fromType: 'BANK',
       toId: user.id,
       toType: 'USER',
@@ -183,8 +185,8 @@ const updateBettingStreak = async (
       category: 'BETTING_STREAK_BONUS',
       description: JSON.stringify(bonusTxnDetails),
       data: bonusTxnDetails,
-    } as Omit<BettingStreakBonusTxn, 'id' | 'createdTime'>
-    const { message, txn, status } = await runTxn(trans, bonusTxn)
+    }
+    const { message, txn, status } = await runTxnFromBank(trans, bonusTxn)
     return { message, txn, status, bonusAmount }
   })
   if (result.status != 'success') {
@@ -273,6 +275,12 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   // Check max bonus exceeded.
   if (uniqueBettorIds.length > MAX_TRADERS_FOR_BONUS) return
 
+  const answer =
+    answerId && 'answers' in contract
+      ? (contract.answers as Answer[]).find((a) => a.id == answerId)
+      : undefined
+  const answerCreatorId = answer?.userId
+
   // They may still have bet on this previously, use a transaction to be sure
   // we haven't sent creator a bonus already
   const result = await firestore.runTransaction(async (trans) => {
@@ -282,7 +290,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
     const query = firestore
       .collection('txns')
       .where('fromId', '==', fromUserId)
-      .where('toId', '==', contract.creatorId)
+      .where('toId', '==', answerCreatorId ?? contract.creatorId)
       .where('category', '==', 'UNIQUE_BETTOR_BONUS')
       .where('data.uniqueNewBettorId', '==', bettor.id)
       .where('data.contractId', '==', contract.id)
@@ -307,19 +315,21 @@ export const giveUniqueBettorAndLiquidityBonus = async (
         ? Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
         : UNIQUE_BETTOR_BONUS_AMOUNT
 
-    const bonusTxn: TxnData = {
-      fromId: fromUserId,
+    const bonusTxn: Omit<
+      UniqueBettorBonusTxn,
+      'id' | 'createdTime' | 'fromId'
+    > = {
       fromType: 'BANK',
-      toId: contract.creatorId,
+      toId: answerCreatorId ?? contract.creatorId,
       toType: 'USER',
       amount: bonusAmount,
       token: 'M$',
       category: 'UNIQUE_BETTOR_BONUS',
       description: JSON.stringify(bonusTxnData),
       data: bonusTxnData,
-    } as Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'>
+    }
 
-    const { status, message, txn } = await runTxn(trans, bonusTxn)
+    const { status, message, txn } = await runTxnFromBank(trans, bonusTxn)
     return { status, message, txn }
   })
   if (!result) return
@@ -410,7 +420,7 @@ const notifyUsersOfLimitFills = async (
 }
 
 const updateContractMetrics = async (contract: Contract, users: User[]) => {
-  await Promise.all(
+  const metrics = await Promise.all(
     users.map(async (user) => {
       const betSnap = await firestore
         .collection(`contracts/${contract.id}/bets`)
@@ -418,14 +428,11 @@ const updateContractMetrics = async (contract: Contract, users: User[]) => {
         .get()
 
       const bets = betSnap.docs.map((doc) => doc.data() as Bet)
-      const newMetrics = calculateUserMetrics(contract, bets, user)
-
-      await firestore
-        .collection(`users/${user.id}/contract-metrics`)
-        .doc(contract.id)
-        .set(newMetrics)
+      return calculateUserMetrics(contract, bets, user)
     })
   )
+
+  await bulkUpdateContractMetrics(metrics)
 }
 
 async function handleReferral(staleUser: User, eventId: string) {
@@ -524,7 +531,6 @@ async function handleReferral(staleUser: User, eventId: string) {
     await createReferralNotification(
       referredByUser,
       user,
-      eventId,
       txn.amount.toString(),
       referredByContract,
       referredByGroup

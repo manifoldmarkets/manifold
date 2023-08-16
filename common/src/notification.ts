@@ -75,7 +75,7 @@ export type notification_source_update_types =
   | 'deleted'
   | 'closed'
 
-/* Optional - if possible use a notification_preference */
+/** @deprecated - use a notification_preference (in user-notification-preferences.ts) */
 export type notification_reason_types =
   | 'tagged_user'
   | 'on_new_follow'
@@ -120,6 +120,8 @@ export type notification_reason_types =
   | 'bounty_added'
   | 'mana_payment_received'
   | 'announcement_created'
+  | 'poll_you_follow_closed'
+  | 'your_poll_closed'
 
 type notification_descriptions = {
   [key in notification_preference]: {
@@ -307,6 +309,22 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Bounties added to your question',
     detailed: 'When another user adds a bounty to your question',
   },
+  all_votes_on_watched_markets: {
+    simple: 'Votes on polls you follow',
+    detailed: 'When a user votes on a poll you follow',
+  },
+  vote_on_your_contract: {
+    simple: 'Votes on your polls',
+    detailed: 'When a user votes on a poll you created',
+  },
+  poll_close_on_watched_markets: {
+    simple: 'Polls you follow close',
+    detailed: 'When a poll you follow closes',
+  },
+  your_poll_closed: {
+    simple: 'Your poll closes',
+    detailed: 'When a poll you created closes',
+  },
 }
 
 export type BettingStreakData = {
@@ -431,4 +449,5 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
   'user_joined_from_your_group_invite',
   'quest_payout',
   'bet_fill',
+  'mana_payment_received',
 ]

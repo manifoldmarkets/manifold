@@ -17,13 +17,17 @@ import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { RESERVED_PATHS } from 'common/envs/constants'
 import { isProd } from 'shared/utils'
-import { getAverageContractEmbedding } from 'shared/helpers/embeddings'
+import { trackSignupFB } from 'shared/fb-analytics'
+import {
+  getAverageContractEmbedding,
+  getDefaultEmbedding,
+} from 'shared/helpers/embeddings'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
+  SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { populateNewUsersFeed } from 'shared/supabase/users'
-import { DEFAULT_USER_FEED_ID } from 'common/feed'
+import { populateNewUsersFeedFromDefaultFeed } from 'shared/supabase/users'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -43,7 +47,7 @@ export const createuser = authEndpoint(async (req, auth) => {
   const isTestUser = firebaseUser.providerData[0].providerId === 'password'
   if (isTestUser && adminToken !== process.env.TEST_CREATE_USER_KEY) {
     throw new APIError(
-      400,
+      401,
       'Must use correct TEST_CREATE_USER_KEY to create user with email/password'
     )
   }
@@ -85,7 +89,7 @@ export const createuser = authEndpoint(async (req, auth) => {
 
       const preexistingUser = await trans.get(userRef)
       if (preexistingUser.exists)
-        throw new APIError(400, 'User already exists', {
+        throw new APIError(403, 'User already exists', {
           userId: auth.uid,
         })
 
@@ -94,7 +98,7 @@ export const createuser = authEndpoint(async (req, auth) => {
         firestore.collection('users').where('username', '==', username)
       )
       if (!sameNameUser.empty)
-        throw new APIError(400, 'Username already taken', { username })
+        throw new APIError(403, 'Username already taken', { username })
 
       // Only undefined prop should be avatarUrl
       const user: User = removeUndefinedProps({
@@ -142,39 +146,61 @@ export const createuser = authEndpoint(async (req, auth) => {
   )
 
   console.log('created user', user.username, 'firebase id:', auth.uid)
-  await upsertUserEmbedding(auth.uid, visitedContractIds)
   const pg = createSupabaseDirectClient()
-  await populateNewUsersFeed(auth.uid, pg, false)
-  await updateDefaultUserEmbeddings()
+
+  await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
+  await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
+  await populateNewUsersFeedFromDefaultFeed(auth.uid, pg)
+
   await track(auth.uid, 'create user', { username: user.username }, { ip })
+
+  if (process.env.FB_ACCESS_TOKEN)
+    await trackSignupFB(
+      process.env.FB_ACCESS_TOKEN,
+      user.id,
+      email ?? '',
+      ip
+    ).catch((e) => console.log('error fb tracking:', e))
+  else console.log('no FB_ACCESS_TOKEN')
 
   return { user, privateUser }
 })
 
-async function updateDefaultUserEmbeddings() {
-  await upsertUserEmbedding(DEFAULT_USER_FEED_ID, undefined)
+async function addContractsToSeenMarketsTable(
+  userId: string,
+  visitedContractIds: string[] | undefined,
+  pg: SupabaseDirectClient
+) {
+  if (!visitedContractIds || visitedContractIds.length === 0) return
+
+  await Promise.all(
+    visitedContractIds.map((contractId) =>
+      pg.none(
+        `insert into user_seen_markets (user_id, contract_id, type, data)
+            values ($1, $2, $3, $4)`,
+        [userId, contractId, 'view market', {}]
+      )
+    )
+  )
 }
 
-async function upsertUserEmbedding(
+async function upsertNewUserEmbeddings(
   userId: string,
-  visitedContractIds: string[] | undefined
+  visitedContractIds: string[] | undefined,
+  pg: SupabaseDirectClient
 ): Promise<void> {
-  const pg = createSupabaseDirectClient()
-
-  const { embed, defaultEmbed } = await getAverageContractEmbedding(
-    pg,
-    visitedContractIds
-  )
+  let embed = await getAverageContractEmbedding(pg, visitedContractIds)
+  if (!embed) embed = await getDefaultEmbedding(pg)
 
   await pg.none(
-    `insert into user_embeddings (user_id, interest_embedding, pre_signup_interest_embedding, pre_signup_embedding_is_default)
-            values ($1, $2, $3, $4)
+    `insert into user_embeddings (user_id, interest_embedding, contract_view_embedding)
+            values ($1, $2, $2)
             on conflict (user_id)
             do update set
-            interest_embedding = EXCLUDED.interest_embedding,
-            pre_signup_interest_embedding = EXCLUDED.pre_signup_interest_embedding,
-            pre_signup_embedding_is_default = EXCLUDED.pre_signup_embedding_is_default`,
-    [userId, embed, embed, defaultEmbed]
+            interest_embedding = $2,
+            contract_view_embedding = $2
+            `,
+    [userId, embed]
   )
 }
 

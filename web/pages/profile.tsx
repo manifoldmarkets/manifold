@@ -3,7 +3,7 @@ import { TrashIcon } from '@heroicons/react/solid'
 import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import Link from 'next/link'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { buttonClass } from 'web/components/buttons/button'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
@@ -179,12 +179,6 @@ export default function ProfilePage(props: {
       <Col className="bg-canvas-0 max-w-lg rounded p-6 shadow-md sm:mx-auto">
         <Row className="items-start justify-between">
           <Title>Edit Profile</Title>
-          <Link
-            href={`/${user.username}`}
-            className={buttonClass('md', 'green')}
-          >
-            Done
-          </Link>
         </Row>
         <Col className="gap-4">
           <Row className="items-center gap-4">
@@ -268,7 +262,14 @@ export default function ProfilePage(props: {
             />
           ))}
 
-          <div>
+          <Link
+            href={`/${user.username}`}
+            className={buttonClass('lg', 'green')}
+          >
+            Done
+          </Link>
+
+          <div className={'mt-8'}>
             <label className="mb-1 block">Email</label>
             <div className="text-ink-500">{privateUser.email ?? '\u00a0'}</div>
           </div>
@@ -315,7 +316,7 @@ export default function ProfilePage(props: {
                 }}
               >
                 <Col>
-                  <Title children={'Are you sure?'} />
+                  <Title>Are you sure?</Title>
                   <div>
                     Updating your API key will break any existing applications
                     connected to your account, <b>including the Twitch bot</b>.
@@ -373,7 +374,7 @@ export default function ProfilePage(props: {
                 }}
               >
                 <Col>
-                  <Title children={'Are you sure?'} />
+                  <Title>Are you sure?</Title>
                   <div>
                     Deleting your account means you will no longer be able to
                     use your account. You will lose access to all of your data.

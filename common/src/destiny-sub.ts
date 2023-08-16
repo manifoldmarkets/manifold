@@ -7,3 +7,5 @@ export type DestinySub = {
   cost: number
   destinySubId: string
 }
+
+export const DESTINY_SUB_COST = 1000

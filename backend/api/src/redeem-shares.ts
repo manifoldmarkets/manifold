@@ -6,6 +6,7 @@ import { Bet } from 'common/bet'
 import { getBinaryRedeemableAmount, getRedemptionBets } from 'common/redeem'
 import { floatingEqual } from 'common/util/math'
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
+import { APIError } from './helpers'
 
 export const redeemShares = async (
   userId: string,
@@ -27,7 +28,8 @@ export const redeemShares = async (
         continue
       }
       if (!isFinite(netAmount)) {
-        throw new Error(
+        throw new APIError(
+          500,
           'Invalid redemption amount, no clue what happened here.'
         )
       }

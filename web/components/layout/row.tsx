@@ -1,7 +1,7 @@
 import clsx from 'clsx'
-import React from 'react'
+import { forwardRef } from 'react'
 
-export const Row = React.forwardRef(function Row(
+export const Row = forwardRef(function Row(
   props: JSX.IntrinsicElements['div'],
   ref: React.Ref<HTMLDivElement>
 ) {

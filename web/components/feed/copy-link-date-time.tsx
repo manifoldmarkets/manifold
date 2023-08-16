@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { ReactNode } from 'react'
 import { toast } from 'react-hot-toast'
 import { DateTimeTooltip } from 'web/components/widgets/datetime-tooltip'
 import { useIsClient } from 'web/hooks/use-is-client'
@@ -40,13 +39,11 @@ export function CopyLinkDateTimeComponent(props: {
   createdTime: number
   elementId: string
   className?: string
-  seeEditsButton?: ReactNode
   linkClassName?: string
   size?: 'xs' | 'sm'
 }) {
   const {
     prefix,
-    seeEditsButton,
     slug,
     elementId,
     createdTime,
@@ -58,14 +55,12 @@ export function CopyLinkDateTimeComponent(props: {
 
   return (
     <DateTimeTooltip className={className} time={createdTime} noTap>
-      {seeEditsButton}
       <Link
         href={`/${prefix}/${slug}#${elementId}`}
         replace
         onClick={() => copyLinkToComment(prefix, slug, elementId)}
         className={clsx(
-          'text-ink-500 hover:bg-ink-100 mx-1 whitespace-nowrap rounded-sm transition-colors',
-          seeEditsButton ? '' : 'px-1',
+          'text-ink-500 hover:bg-ink-0 mx-1 whitespace-nowrap rounded-sm',
           linkClassName,
           size == 'xs' ? 'text-xs' : 'text-sm'
         )}

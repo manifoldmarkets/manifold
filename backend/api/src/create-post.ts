@@ -39,8 +39,7 @@ export const createpost = authEndpoint(async (req, auth) => {
   )
 
   const creator = await getUser(auth.uid)
-  if (!creator)
-    throw new APIError(400, 'No user exists with the authenticated user ID.')
+  if (!creator) throw new APIError(401, 'Your account was not found')
 
   console.log('creating post owned by', creator.username, 'titled', title)
 
@@ -60,7 +59,7 @@ export const createpost = authEndpoint(async (req, auth) => {
           visibility: 'unlisted',
           initialProb: 50,
           // Dating group!
-          groupId: 'j3ZE8fkeqiKmRGumy3O1',
+          groupIds: ['j3ZE8fkeqiKmRGumy3O1'],
         },
         auth
       )
@@ -102,7 +101,7 @@ export const createpost = authEndpoint(async (req, auth) => {
   }
 
   // currently uses the trigger to populate group_id, creator_id, created_time.
-  pg.none(`insert into posts (id, data) values ($1, $2)`, [post.id, post])
+  await pg.none(`insert into posts (id, data) values ($1, $2)`, [post.id, post])
 
   return { status: 'success', post }
 })

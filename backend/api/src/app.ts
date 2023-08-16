@@ -45,7 +45,6 @@ import { redeemad } from './redeem-ad-reward'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
-import { auctionbid } from './auction-bid'
 import { supabasesearchcontracts } from './supabase-search-contract'
 import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
@@ -69,10 +68,18 @@ import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
 import { awardbounty } from './award-bounty'
 import { addbounty } from './add-bounty'
 import { createanswercpmm } from './create-answer-cpmm'
+import { createportfolio } from './create-portfolio'
+import { updateportfolio } from './update-portfolio'
+import { buyportfolio } from './buy-portfolio'
+import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
 import { sendmana } from './send-mana'
 import { leavereview } from './leave-review'
 import { createannouncement } from './create-announcement'
+import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
+import { claimdestinysub } from './claim-destiny-sub'
+import { castpollvote } from './cast-poll-vote'
+import { getsimilargroupstocontract } from 'api/get-similar-groups-to-contract'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -112,13 +119,12 @@ app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 
 app.post('/lootbox', ...apiRoute(lootbox))
-app.post('/auctionbid', ...apiRoute(auctionbid))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/createcomment', ...apiRoute(createcomment))
-app.post('/createchatmessage', ...apiRoute(createchatmessage))
+app.post('/create-chat-message', ...apiRoute(createchatmessage))
 app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
@@ -178,19 +184,31 @@ app.post('/award-q-and-a-answer', ...apiRoute(awardQAndAAnswer))
 app.post('/award-bounty', ...apiRoute(awardbounty))
 app.post('/add-bounty', ...apiRoute(addbounty))
 app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
+app.post('/createportfolio', ...apiRoute(createportfolio))
+app.post('/updateportfolio', ...apiRoute(updateportfolio))
+app.post('/buyportfolio', ...apiRoute(buyportfolio))
+app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/send-mana', ...apiRoute(sendmana))
 app.post('/leave-review', ...apiRoute(leavereview))
 app.post('/create-announcement', ...apiRoute(createannouncement))
+app.post(
+  '/get-user-contract-metrics-with-contracts',
+  ...apiRoute(getusercontractmetricswithcontracts)
+)
+app.post('/cast-poll-vote', ...apiRoute(castpollvote))
+app.post(
+  '/get-similar-groups-to-contract',
+  ...apiRoute(getsimilargroupstocontract)
+)
+app.post('/claimdestinysub', ...apiRoute(claimdestinysub))
 
 // Catch 404 errors - this should be the last route
-app.use((req, res, next) => {
+app.use(allowCors, (req, res) => {
   res
     .status(404)
     .set('Content-Type', 'application/json')
     .json({
-      error: {
-        message: `The requested route '${req.path}' does not exist. Please check your URL for any misspellings or refer to app.ts`,
-      },
+      message: `The requested route '${req.path}' does not exist. Please check your URL for any misspellings or refer to app.ts`,
     })
 })

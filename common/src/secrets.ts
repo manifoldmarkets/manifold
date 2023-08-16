@@ -19,7 +19,10 @@ export const secrets = (
     'SUPABASE_PASSWORD',
     'TEST_CREATE_USER_KEY',
     'NEWS_API_KEY',
+    'REACT_APP_GIPHY_KEY',
     'TWITTER_API_KEY_JSON',
+    'DESTINY_API_KEY',
+    'FB_ACCESS_TOKEN',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()

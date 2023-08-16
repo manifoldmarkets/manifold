@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { last } from 'lodash'
 import { scaleTime, scaleLog, scaleLinear } from 'd3-scale'
-import { curveStepAfter } from 'd3-shape'
 import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
@@ -60,6 +59,7 @@ export const PseudoNumericContractChart = (props: {
   width: number
   height: number
   viewScaleProps: viewScale
+  showZoomer?: boolean
   controlledStart?: number
   color?: string
   onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
@@ -69,6 +69,7 @@ export const PseudoNumericContractChart = (props: {
     width,
     height,
     viewScaleProps,
+    showZoomer,
     controlledStart,
     color,
     onMouseOver,
@@ -94,8 +95,7 @@ export const PseudoNumericContractChart = (props: {
     [betPoints, start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
-  const visibleRange = [rangeStart, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width])
+  const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = isLogScale
     ? scaleLog([Math.max(min, 1), max], [height, 0]).clamp(true)
@@ -107,8 +107,8 @@ export const PseudoNumericContractChart = (props: {
       xScale={xScale}
       yScale={yScale}
       viewScaleProps={viewScaleProps}
+      showZoomer={showZoomer}
       data={data}
-      curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={PseudoNumericChartTooltip}
       color={color ?? NUMERIC_GRAPH_COLOR}

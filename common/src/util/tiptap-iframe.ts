@@ -1,9 +1,8 @@
 // Adopted from https://github.com/ueberdosis/tiptap/blob/main/demos/src/Experiments/Embeds/Vue/iframe.ts
 
-import { mergeAttributes, Node } from '@tiptap/core'
+import { Node, mergeAttributes } from '@tiptap/core'
 
 export interface IframeOptions {
-  allowFullscreen: boolean
   HTMLAttributes: {
     [key: string]: any
   }
@@ -17,8 +16,6 @@ declare module '@tiptap/core' {
   }
 }
 
-const iframeClasses = 'w-full h-80'
-
 export default Node.create<IframeOptions>({
   name: 'iframe',
 
@@ -28,8 +25,11 @@ export default Node.create<IframeOptions>({
 
   addOptions() {
     return {
-      allowFullscreen: true,
-      HTMLAttributes: {},
+      HTMLAttributes: {
+        class: 'w-full h-80',
+        height: 80 * 4,
+        sandbox: 'allow-scripts allow-same-origin allow-forms',
+      },
     }
   },
 
@@ -41,10 +41,6 @@ export default Node.create<IframeOptions>({
       frameBorder: {
         default: 0,
       },
-      allowFullScreen: {
-        default: this.options.allowFullscreen,
-        parseHTML: () => this.options.allowFullscreen,
-      },
     }
   },
 
@@ -55,9 +51,7 @@ export default Node.create<IframeOptions>({
   renderHTML({ HTMLAttributes }) {
     return [
       'iframe',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        class: iframeClasses,
-      }),
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
     ]
   },
 

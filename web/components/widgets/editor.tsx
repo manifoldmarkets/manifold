@@ -12,7 +12,7 @@ import {
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import React, { ReactNode, useCallback, useMemo, useRef } from 'react'
+import { ReactNode, useCallback, useMemo, useRef } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
 import GridComponent from '../editor/tiptap-grid-cards'
@@ -21,11 +21,6 @@ import { linkClass } from './site-link'
 import Iframe from 'common/util/tiptap-iframe'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
 import { debounce, noop } from 'lodash'
-import {
-  storageStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { FloatingFormatMenu } from '../editor/floating-format-menu'
 import { StickyFormatMenu } from '../editor/sticky-format-menu'
 import { DisplayTweet } from '../editor/tweet'
@@ -44,11 +39,22 @@ import {
   findLinksInContent,
   insertLinkPreviews,
 } from 'web/components/editor/link-preview-node-view'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
     delete HTMLAttributes.class // only use our classes (don't duplicate on paste)
-    return ['a', mergeAttributes(HTMLAttributes, { class: linkClass }), 0]
+    return [
+      'a',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
+      0,
+    ]
+  },
+}).configure({
+  openOnClick: false, // stop link opening twice (browser still opens)
+  HTMLAttributes: {
+    rel: 'noopener ugc',
+    class: linkClass,
   },
 })
 
@@ -93,13 +99,9 @@ export function useTextEditor(props: {
   const { placeholder, max, defaultValue, size = 'md', key } = props
   const simple = size === 'sm'
 
-  const [content, saveContent] = usePersistentState<JSONContent | undefined>(
-    undefined,
-    {
-      key: `text ${key}`,
-      store: storageStore(safeLocalStorage),
-    }
-  )
+  const [content, saveContent] = usePersistentLocalState<
+    JSONContent | undefined
+  >(undefined, `text ${key}`)
   const fetchingLinks = useRef<boolean>(false)
 
   const save = useCallback(debounce(saveContent, 500), [])
@@ -250,7 +252,7 @@ function RichContent(props: {
       generateReact(content, [
         StarterKit,
         size === 'sm' ? DisplayImage : BasicImage,
-        DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
+        DisplayLink,
         DisplayMention,
         DisplayContractMention,
         GridComponent,

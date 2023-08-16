@@ -1,10 +1,5 @@
 import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
-import {
-  FireIcon,
-  LockClosedIcon,
-  PencilIcon,
-  PlusIcon,
-} from '@heroicons/react/solid'
+import { FireIcon, PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
@@ -13,20 +8,12 @@ import { Contract, updateContract } from 'web/lib/firebase/contracts'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import {
-  GroupLink,
-  getGroupLinkToDisplay,
-  getGroupLinksToDisplay,
-  groupPath,
-  canEditContractGroup,
-} from 'common/group'
+import { getGroupLinkToDisplay, groupPath } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
@@ -99,27 +86,6 @@ export function MiscDetails(props: {
   )
 }
 
-export function MarketGroups(props: { contract: Contract }) {
-  const { contract } = props
-  if (contract.visibility === 'private') {
-    return <PrivateMarketGroups contract={contract} />
-  } else {
-    return <PublicMarketGroups contract={contract} />
-  }
-}
-
-function PrivateMarketGroups(props: { contract: Contract }) {
-  const { contract } = props
-  if (contract.groupLinks) {
-    return (
-      <div className="flex">
-        <GroupDisplay groupToDisplay={contract.groupLinks[0]} isPrivate />
-      </div>
-    )
-  }
-  return <></>
-}
-
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
   const { creatorName, creatorUsername, creatorAvatarUrl, creatorCreatedTime } =
@@ -155,6 +121,15 @@ export function CloseOrResolveTime(props: {
     return <></>
   }
 
+  const almostForeverTime = dayjs(contract.createdTime).add(
+    dayjs.duration(900, 'year')
+  )
+  if (
+    contract.outcomeType === 'POLL' &&
+    dayjs(closeTime).isAfter(almostForeverTime)
+  ) {
+    return <>Never closes</>
+  }
   if (!!closeTime || !!isResolved) {
     return (
       <Row className={clsx('select-none items-center', className)}>
@@ -179,94 +154,6 @@ export function CloseOrResolveTime(props: {
       </Row>
     )
   } else return <></>
-}
-
-export function PublicMarketGroups(props: {
-  contract: Contract
-  className?: string
-  justGroups?: boolean
-}) {
-  const [open, setOpen] = useState(false)
-  const user = useUser()
-  const { contract, className, justGroups } = props
-  const groupsToDisplay = getGroupLinksToDisplay(contract)
-
-  return (
-    <>
-      <Row
-        className={clsx(
-          'w-full flex-wrap items-end gap-1',
-          (!groupsToDisplay || groupsToDisplay.length == 0) && justGroups
-            ? 'hidden'
-            : '',
-          className
-        )}
-      >
-        {groupsToDisplay.map((group) => (
-          <GroupDisplay key={group.groupId} groupToDisplay={group} />
-        ))}
-
-        {user && canEditContractGroup(contract, user) && (
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              setOpen(true)
-            }}
-          >
-            {groupsToDisplay.length ? (
-              <PencilIcon className="text-ink-1000 bg-ink-100 hover:bg-ink-200 h-6 w-6 rounded-full bg-opacity-90 px-1" />
-            ) : (
-              <span
-                className={clsx(
-                  'bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-sm'
-                )}
-              >
-                <PlusIcon className="mr-1 h-4 w-4" /> Group
-              </span>
-            )}
-          </button>
-        )}
-      </Row>
-      <Modal open={open} setOpen={setOpen} size={'md'}>
-        <Col
-          className={
-            'bg-canvas-0 max-h-[70vh] min-h-[20rem] overflow-auto rounded p-6'
-          }
-        >
-          <ContractGroupsList contract={contract} user={user} />
-        </Col>
-      </Modal>
-    </>
-  )
-}
-
-function GroupDisplay(props: {
-  groupToDisplay: GroupLink
-  isPrivate?: boolean
-}) {
-  const { groupToDisplay, isPrivate } = props
-
-  return (
-    <Link
-      prefetch={false}
-      href={groupPath(groupToDisplay.slug)}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
-      className={clsx(
-        'text-ink-1000 bg-ink-100 hover:bg-ink-200 w-fit max-w-[200px] truncate whitespace-nowrap rounded-full bg-opacity-90 py-0.5 px-2 text-sm sm:max-w-[250px]',
-        isPrivate
-          ? 'text-ink-1000 bg-indigo-200 dark:bg-indigo-700'
-          : 'bg-ink-400 text-ink-0'
-      )}
-    >
-      <Row className="gap-0.5">
-        {isPrivate && <LockClosedIcon className="my-auto h-3 w-3" />}
-        {groupToDisplay.name}
-      </Row>
-    </Link>
-  )
 }
 
 function EditableCloseDate(props: {

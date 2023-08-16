@@ -17,10 +17,10 @@ export function Carousel(props: {
 
   const th = (f: () => any) => throttle(f, 500, { trailing: false })
   const scrollLeft = th(() =>
-    ref.current?.scrollBy({ left: -ref.current.clientWidth })
+    ref.current?.scrollBy({ left: -(ref.current.clientWidth - 80) })
   )
   const scrollRight = th(() =>
-    ref.current?.scrollBy({ left: ref.current.clientWidth })
+    ref.current?.scrollBy({ left: ref.current.clientWidth - 80 })
   )
 
   const [atFront, setAtFront] = useState(true)

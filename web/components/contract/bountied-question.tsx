@@ -8,6 +8,7 @@ import { addBounty, awardBounty } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
+import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
 
@@ -61,8 +62,12 @@ export const LootboxAnimation = forwardRef(() => {
   )
 })
 
-export function BountyLeft(props: { bountyLeft: number; totalBounty: number }) {
-  const { bountyLeft, totalBounty } = props
+export function BountyLeft(props: {
+  bountyLeft: number
+  totalBounty: number
+  inEmbed?: boolean
+}) {
+  const { bountyLeft, totalBounty, inEmbed } = props
   if (!bountyLeft || bountyLeft < 1) {
     return (
       <span>
@@ -73,6 +78,19 @@ export function BountyLeft(props: { bountyLeft: number; totalBounty: number }) {
           tooltipParams={{ placement: 'bottom-end' }}
         />
       </span>
+    )
+  }
+  if (inEmbed) {
+    return (
+      <Col className="text-ink-500">
+        <Row className="items-center gap-2 font-normal">
+          <span className="text-lg font-semibold text-teal-600 dark:text-teal-400">
+            {formatMoney(bountyLeft)}
+          </span>
+          <span> / {totalBounty}</span>{' '}
+        </Row>
+        <div className="text-sm">bounty left</div>
+      </Col>
     )
   }
   return (
@@ -103,12 +121,14 @@ export function AwardBountyButton(props: {
   const [error, setError] = useState<string | undefined>(undefined)
   const { bountyLeft } = contract
   const [amount, setAmount] = useState<number | undefined>(bountyLeft)
+  const [loading, setLoading] = useState(false)
   if (!user || user.id !== contract.creatorId) {
     return <></>
   }
 
   async function onAwardBounty() {
     if (amount) {
+      setLoading(true)
       const newDefault = bountyLeft - amount
       awardBounty({
         contractId: contract.id,
@@ -117,6 +137,7 @@ export function AwardBountyButton(props: {
       }).then((_result) => {
         setOpen(false)
         setAmount(newDefault)
+        setLoading(false)
       })
     }
   }
@@ -127,7 +148,10 @@ export function AwardBountyButton(props: {
         color={'gray-outline'}
         size="xs"
         disabled={disabled}
-        onClick={() => setOpen(true)}
+        onClick={(e) => {
+          e.preventDefault()
+          setOpen(true)
+        }}
       >
         Award bounty
       </Button>
@@ -154,6 +178,7 @@ export function AwardBountyButton(props: {
             className="w-full"
             disabled={!!error}
             onClick={onAwardBounty}
+            loading={loading}
           >
             Award {amount ? formatMoney(amount) : ''}
           </Button>
@@ -165,10 +190,9 @@ export function AwardBountyButton(props: {
 
 export function AddBountyButton(props: {
   contract: BountiedQuestionContract
-  user: User
   buttonClassName?: string
 }) {
-  const { contract, user, buttonClassName } = props
+  const { contract, buttonClassName } = props
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
   const [amount, setAmount] = useState<number | undefined>(undefined)

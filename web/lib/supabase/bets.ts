@@ -15,6 +15,8 @@ export async function getOlderBets(
 ) {
   const query = selectJson(db, 'contract_bets')
     .eq('contract_id', contractId)
+    .eq('is_redemption', false)
+    .eq('is_ante', false)
     .lt('created_time', millisToTs(beforeTime))
     .order('created_time', { ascending: false })
     .limit(limit)
@@ -47,6 +49,16 @@ export const getBetsOnContracts = async (
   q = applyBetsFilter(q, options)
   const { data } = await run(q)
   return data.map((r) => r.data)
+}
+
+export const getUnfilledLimitOrders = async (contractId: string) => {
+  const q = selectJson(db, 'contract_bets')
+    .eq('contract_id', contractId)
+    .eq('data->>isFilled', false)
+    .eq('data->>isCancelled', false)
+    .order('created_time', { ascending: false })
+  const { data } = await run(q)
+  return data.map((r) => r.data as LimitBet)
 }
 
 export const getBetFields = async <T extends (keyof Bet)[]>(

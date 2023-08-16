@@ -10,7 +10,7 @@ const firestore = admin.firestore()
 // Deduct M1000 from totalDeposits from users with destiny sub purchases before: 1671304324034
 async function fixDestinySubProfit() {
   const snap = await firestore
-    .collection('destiny-subs')
+    .collection('destiny-subs2')
     .where('createdTime', '<', 1671304324034)
     .get()
 

@@ -6,7 +6,10 @@ import { isAdminId, isTrustworthy } from 'common/envs/constants'
 import { GroupResponse } from 'common/group'
 import { APIError, authEndpoint, validate } from './helpers'
 import { getUser } from 'shared/utils'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { GroupMember } from 'common/group-member'
 
@@ -41,12 +44,12 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
   const contract = contractSnap.data() as Contract
 
   if (contract.visibility == 'private') {
-    throw new APIError(400, 'You cannot add a group to a private contract')
+    throw new APIError(403, 'You cannot add a group to a private contract')
   }
 
   if (group.privacy_status == 'private') {
     throw new APIError(
-      400,
+      403,
       'You cannot add an existing public market to a private group'
     )
   }
@@ -59,12 +62,12 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
   })
   if (!canAdd) {
     throw new APIError(
-      400,
+      403,
       `User does not have permission to add this market to group "${group.name}".`
     )
   }
-
-  const isNew = await addGroupToContract(contract, group)
+  const pg = createSupabaseDirectClient()
+  const isNew = await addGroupToContract(contract, group, pg)
 
   return { status: 'success', existed: !isNew }
 })
@@ -91,7 +94,6 @@ export async function canUserAddGroupToMarket(props: {
   return (
     isManifoldAdmin ||
     isAdminOrMod ||
-    group.creator_id === userId ||
     // if user owns the contract and is a public group
     (group.privacy_status === 'public' && (isMarketCreator || trustworthy)) ||
     (group.privacy_status === 'private' && isMarketCreator && isMember)

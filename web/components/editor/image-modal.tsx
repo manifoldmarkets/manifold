@@ -5,7 +5,7 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { CopyLinkButton } from '../buttons/copy-link-button'
+import { CopyLinkRow } from '../buttons/copy-link-button'
 
 const MODIFIERS =
   '8k, beautiful, illustration, trending on art station, picture of the day, epic composition'
@@ -33,7 +33,7 @@ export function DreamModal(props: {
             {/* Show the current imageUrl */}
             {/* TODO: Keep the other generated images, so the user can play with different attempts. */}
             <Col className="gap-2 p-6">
-              <CopyLinkButton
+              <CopyLinkRow
                 url={imageUrl}
                 eventTrackingName={'copy dream link'}
               />
