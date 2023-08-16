@@ -77,7 +77,7 @@ export type NumericBet = Bet & {
 export type LimitBet = Bet & LimitProps
 
 type LimitProps = {
-  orderAmount: number // Amount of limit order.
+  orderAmount: number // Amount of mana in the order
   limitProb: number // [0, 1]. Bet to this probability.
   isFilled: boolean // Whether all of the bet amount has been filled.
   isCancelled: boolean // Whether to prevent any further fills.
