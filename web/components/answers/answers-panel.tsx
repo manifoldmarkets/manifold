@@ -31,6 +31,7 @@ import {
   OpenProb,
 } from './answer-options'
 import { floatingEqual } from 'common/util/math'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export function getAnswerColor(
   answer: Answer | DpmAnswer,
@@ -187,18 +188,23 @@ function Answer(props: {
       prob={prob}
       resolvedProb={resolvedProb}
       label={
-        <AnswerLabel
-          text={answer.text}
-          creator={
-            addAnswersMode === 'ANYONE' && !isOther
-              ? answerCreator ?? false
-              : undefined
-          }
-          className={clsx(
-            'items-center text-sm !leading-none sm:flex sm:text-base',
-            resolvedProb === 0 ? 'text-ink-600' : 'text-ink-900'
-          )}
-        />
+        isOther ? (
+          <span>
+            Other{' '}
+            <InfoTooltip text="Represents all answers not listed. New answers are split out of this answer." />
+          </span>
+        ) : (
+          <AnswerLabel
+            text={answer.text}
+            creator={
+              addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
+            }
+            className={clsx(
+              'items-center text-sm !leading-none sm:flex sm:text-base',
+              resolvedProb === 0 ? 'text-ink-600' : 'text-ink-900'
+            )}
+          />
+        )
       }
       end={
         <>
