@@ -236,7 +236,7 @@ export const SVGChart = <X, TT, S extends AxisScale<X>>(props: {
             // disable on touch devices entirely for now to not interfere with scroll
             return false
           }
-          return !ev.butt
+          return !ev.button
         })
 
       select(svgRef.current)
