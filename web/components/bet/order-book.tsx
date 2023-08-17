@@ -270,7 +270,7 @@ export function OrderBookButton(props: {
             />
           </Title>
 
-          <h2 className="mb-1 text-center">Cum shares vs probability</h2>
+          <h2 className="mb-1 text-center">Cumulative shares vs probability</h2>
           {!isCPMMMulti && !isPseudoNumeric && (
             <SizedContainer className="mb-6 h-[200px] px-16">
               {(w, h) => (
