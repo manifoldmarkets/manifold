@@ -34,26 +34,44 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { ENV_CONFIG } from 'common/envs/constants'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { useCanCreateManalink } from 'web/hooks/use-can-create-manalink'
+import { getUserManalinks } from 'web/lib/supabase/manalinks'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
 const LINKS_PER_PAGE = 24
-
+// export async function getServerSideProps(props: {
+//   params: { inviteid: string }
+// }) {
+//   const { inviteid } = props.params
+//   const adminDb = await initSupabaseAdmin()
+//   const invite = await getInvite(inviteid, adminDb)
+//   const group = invite ? await getGroup(adminDb, invite.group_id) : null
+//   return { props: { invite, groupName: group?.name, groupSlug: group?.slug } }
+// }
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
+  const adminDb = await initSupabaseAdmin()
+  return {
+    props: {
+      auth: await getUserAndPrivateUser(creds.uid),
+      userLinks: await getUserManalinks(creds.uid, adminDb),
+    },
+  }
 })
 
 export function getManalinkUrl(slug: string) {
   return `${location.protocol}//${location.host}/link/${slug}`
 }
 
-export default function LinkPage(props: { auth: { user: User } }) {
+export default function LinkPage(props: {
+  auth: { user: User }
+  userLinks: Manalink[]
+}) {
   const { user } = props.auth
-  const links = useUserManalinks(user.id ?? '')
-  // const manalinkTxns = useManalinkTxns(user?.id ?? '')
+  const { userLinks } = props
   const [highlightedSlug, setHighlightedSlug] = useState('')
   const [showDisabled, setShowDisabled] = useState(false)
   const displayedLinks = showDisabled
-    ? links
-    : links.filter((l) => !linkClaimed(toInfo(l)))
+    ? userLinks
+    : userLinks.filter((l) => !linkClaimed(toInfo(l)))
   const authorized = useCanCreateManalink(user)
 
   return (
