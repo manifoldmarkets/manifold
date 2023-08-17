@@ -318,7 +318,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       <ReplyToggle
         seeReplies={seeReplies}
         numComments={numReplies}
-        onClick={onSeeReplyClick}
         childrenBountyTotal={childrenBountyTotal}
       />
     </FeedComment>
@@ -460,6 +459,7 @@ export function CommentActions(props: {
             size={'xs'}
             onClick={(e) => {
               e.preventDefault()
+              e.stopPropagation()
               onReplyClick(comment)
             }}
           >
