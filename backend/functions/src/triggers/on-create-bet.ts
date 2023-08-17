@@ -7,7 +7,6 @@ import {
   getBettingStreakResetTimeBeforeNow,
   getUser,
   getValues,
-  isProd,
   log,
 } from 'shared/utils'
 import {
@@ -26,10 +25,6 @@ import {
   UNIQUE_BETTOR_LIQUIDITY,
   REFERRAL_AMOUNT,
 } from 'common/economy'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
 import { User } from 'common/user'
 import {
   BettingStreakBonusTxn,
@@ -284,12 +279,9 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   // They may still have bet on this previously, use a transaction to be sure
   // we haven't sent creator a bonus already
   const result = await firestore.runTransaction(async (trans) => {
-    const fromUserId = isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
     const query = firestore
       .collection('txns')
-      .where('fromId', '==', fromUserId)
+      .where('fromType', '==', 'BANK')
       .where('toId', '==', answerCreatorId ?? contract.creatorId)
       .where('category', '==', 'UNIQUE_BETTOR_BONUS')
       .where('data.uniqueNewBettorId', '==', bettor.id)
@@ -498,13 +490,12 @@ async function handleReferral(staleUser: User, eventId: string) {
       }
     }
     console.log('creating referral txns')
-    const fromId = HOUSE_LIQUIDITY_PROVIDER_ID
 
     // if they're updating their referredId, create a txn for both
     const txn: ReferralTxn = {
       id: eventId,
       createdTime: Date.now(),
-      fromId,
+      fromId: 'BANK',
       fromType: 'BANK',
       toId: referredByUserId,
       toType: 'USER',
@@ -519,8 +510,8 @@ async function handleReferral(staleUser: User, eventId: string) {
     console.log('created referral with txn id:', txn.id)
 
     transaction.update(referredByUserDoc, {
-      balance: referredByUser.balance + REFERRAL_AMOUNT,
-      totalDeposits: referredByUser.totalDeposits + REFERRAL_AMOUNT,
+      balance: FieldValue.increment(REFERRAL_AMOUNT),
+      totalDeposits: FieldValue.increment(REFERRAL_AMOUNT),
     })
 
     // Set lastBetTime to 0 the first time they bet so they still get a streak bonus, but we don't hand out multiple referral txns
