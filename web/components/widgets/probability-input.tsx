@@ -7,7 +7,7 @@ import {
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { Input } from './input'
-import { ControllableNumberInput } from './number-input'
+import { AmountInput } from './amount-input'
 
 export function ProbabilityInput(props: {
   prob: number | undefined
@@ -76,10 +76,7 @@ export function ProbabilityOrNumericInput(props: {
   prob: number | undefined
   setProb: (prob: number | undefined) => void
   disabled?: boolean
-  className?: string
-  inputClassName?: string
   placeholder?: string
-  width?: string
   error?: boolean
   onRangeError?: (error: boolean) => void
 }) {
@@ -89,30 +86,30 @@ export function ProbabilityOrNumericInput(props: {
     setProb,
     disabled,
     placeholder,
-    className,
-    inputClassName,
-    width = 'w-24',
     error = false,
     onRangeError,
   } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   return isPseudoNumeric ? (
-    <ControllableNumberInput
-      num={prob}
-      className={clsx(className, width, inputClassName)}
-      onChange={setProb}
-      min={contract.min}
-      max={contract.max}
+    <AmountInput
+      inputClassName="w-24"
+      label=""
+      amount={prob}
+      onChangeAmount={(val) => {
+        onRangeError?.(
+          val !== undefined && (val < contract.min || val > contract.max)
+        )
+        setProb(val)
+      }}
+      allowNegative
       disabled={disabled}
       placeholder={placeholder}
       error={error}
-      setError={(error) => onRangeError?.(error)}
     />
   ) : (
     <ProbabilityInput
-      className={clsx(className, width)}
-      inputClassName={inputClassName}
+      className={'w-24'}
       prob={prob}
       onChange={setProb}
       disabled={disabled}

@@ -14,7 +14,7 @@ export function AmountInput(
   props: {
     amount: number | undefined
     onChangeAmount: (newAmount: number | undefined) => void
-    error?: string
+    error?: boolean
     label?: string
     disabled?: boolean
     className?: string
@@ -23,6 +23,7 @@ export function AmountInput(
     inputRef?: React.MutableRefObject<any>
     quickAddMoreButton?: ReactNode
     allowFloat?: boolean
+    allowNegative?: boolean
   } & JSX.IntrinsicElements['input']
 ) {
   const {
@@ -36,13 +37,18 @@ export function AmountInput(
     inputRef,
     quickAddMoreButton,
     allowFloat,
+    allowNegative,
     ...rest
   } = props
 
   const [amountString, setAmountString] = useState(amount?.toString() ?? '')
 
   const parse = allowFloat ? parseFloat : parseInt
-  const bannedChars = allowFloat ? /[^\d.]/g : /\D/g
+
+  const bannedChars = new RegExp(
+    `[^\\d${allowFloat && '.'}${allowNegative && '-'}]`,
+    'g'
+  )
 
   useEffect(() => {
     if (amount !== parse(amountString))
@@ -78,7 +84,7 @@ export function AmountInput(
               placeholder="0"
               maxLength={7}
               value={amountString}
-              error={!!error}
+              error={error}
               disabled={disabled}
               onChange={(e) => onAmountChange(e.target.value)}
               onBlur={() => setAmountString(amount?.toString() ?? '')}
@@ -194,7 +200,7 @@ export function BuyAmountInput(props: {
             amount={amount}
             onChangeAmount={onChange}
             label={ENV_CONFIG.moneyMoniker}
-            error={error}
+            error={!!error}
             disabled={disabled}
             className={className}
             inputClassName={clsx('pr-12', inputClassName)}

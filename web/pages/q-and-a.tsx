@@ -256,11 +256,7 @@ function AwardAnswerDialog(props: {
           className="w-full"
           amount={amount}
           onChangeAmount={setAmount}
-          error={
-            isValid || bountyRemaining === undefined
-              ? undefined
-              : 'Invalid amount'
-          }
+          error={isValid || bountyRemaining === undefined}
           label={ENV_CONFIG.moneyMoniker}
         />
         <Row className="mt-4">
@@ -382,11 +378,7 @@ function CreateQAndA() {
           amount={bounty}
           onChangeAmount={setBounty}
           disabled={isSubmitting}
-          error={
-            bounty !== undefined && bounty < 10
-              ? 'Minimum bounty is 10'
-              : undefined
-          }
+          error={bounty !== undefined && bounty < 10}
         />
       </Col>
 

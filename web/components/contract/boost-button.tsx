@@ -143,7 +143,7 @@ function BoostFormRow(props: { contract: Contract }) {
               amount={costPerView}
               onChangeAmount={setCostPerView}
               label={ENV_CONFIG.moneyMoniker}
-              error={error}
+              error={!!error}
               inputClassName="mr-2 w-36"
             />
           </Row>

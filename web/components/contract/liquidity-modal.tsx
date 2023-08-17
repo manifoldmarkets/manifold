@@ -92,14 +92,16 @@ function AddLiquidityPanel(props: {
           amount={amount}
           onChangeAmount={onAmountChange}
           label={ENV_CONFIG.moneyMoniker}
-          error={error}
+          error={!!error}
           disabled={isLoading}
           inputClassName="w-28 mr-4"
         />
-        <Button onClick={submit} disabled={isLoading}>
+        <Button onClick={submit} disabled={isLoading || !!error}>
           Add
         </Button>
       </Row>
+
+      {error && <div className="text-red-500">{error}</div>}
 
       {isSuccess && amount && (
         <div>Success! Added {formatMoney(amount)} in liquidity.</div>

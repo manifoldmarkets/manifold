@@ -6,10 +6,10 @@ import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { PseudoNumericContract } from 'common/contract'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
-import { NumberInput } from './widgets/number-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTORS } from 'common/user'
 import { Button } from './buttons/button'
+import { AmountInput } from './widgets/amount-input'
 
 function getNumericResolveButtonColor(
   outcomeMode: 'NUMBER' | 'CANCEL' | undefined
@@ -111,14 +111,16 @@ export function NumericResolutionPanel(props: {
             <>Cancel all trades and return money back to {BETTORS}.</>
           ) : outcomeMode === 'NUMBER' ? (
             <>
-              Trades will be paid out a the value you specify:
-              <NumberInput
+              Traders will be paid out at the value you specify:
+              <AmountInput
+                amount={value}
+                onChangeAmount={setValue}
                 disabled={isSubmitting}
-                num={value}
-                min={min}
-                max={max}
-                onChange={setValue}
-                className="mr-3 !h-11 w-28"
+                error={value !== undefined && (value < min || value > max)}
+                allowNegative
+                label=""
+                className="mr-3"
+                inputClassName="w-28"
               />
             </>
           ) : (

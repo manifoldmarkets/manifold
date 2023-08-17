@@ -6,12 +6,12 @@ import {
 } from 'web/components/buttons/copy-link-button'
 import { Page } from 'web/components/layout/page'
 import { StarPicker } from 'web/components/reviews/stars'
+import { AmountInput } from 'web/components/widgets/amount-input'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { NumberInput } from 'web/components/widgets/number-input'
 import { Select } from 'web/components/widgets/select'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { RangeSlider, Slider } from 'web/components/widgets/slider'
@@ -207,15 +207,7 @@ function ToggleSection() {
 
 function NumberInputExample() {
   const [value, setValue] = useState<number>()
-  return (
-    <NumberInput
-      num={value}
-      onChange={setValue}
-      min={0}
-      max={69}
-      placeholder="NumberInput"
-    />
-  )
+  return <AmountInput amount={value} onChangeAmount={setValue} />
 }
 
 function EditorExample() {

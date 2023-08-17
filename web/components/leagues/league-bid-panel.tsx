@@ -60,7 +60,7 @@ export const LeagueBidPanel = (props: {
             inputClassName="sm:w-[150px] w-[100px]"
             amount={amount}
             onChangeAmount={setAmount}
-            error={error}
+            error={!!error}
           />
           <div className="text-sm text-red-500">{error}</div>
         </Col>
