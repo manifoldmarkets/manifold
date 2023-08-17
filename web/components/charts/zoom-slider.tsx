@@ -3,6 +3,8 @@ import { ScaleTime } from 'd3-scale'
 import { formatDateInRange } from './helpers'
 import clsx from 'clsx'
 import { useMemo } from 'react'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 
 // assumes x is time and we're zooming over a time period
 export const ZoomSlider = (props: {
@@ -18,8 +20,7 @@ export const ZoomSlider = (props: {
   const now = useMemo(() => new Date(), [])
 
   return (
-    <div className={clsx('flex w-full items-center py-1 text-xs', className)}>
-      {formatDateInRange(min, min, max)}
+    <Col className={clsx('w-full items-stretch gap-1 py-1 text-xs', className)}>
       <RangeSlider
         lowValue={low.valueOf()}
         highValue={hi.valueOf()}
@@ -30,10 +31,13 @@ export const ZoomSlider = (props: {
             fullScale.copy().domain([new Date(newLow), new Date(newHigh)])
           )
         }
-        className="flex h-auto grow items-center px-4"
-        color="light"
+        className="flex h-auto grow items-center"
+        color="light-green"
       />
-      {formatDateInRange(max, min, now)}
-    </div>
+      <Row className="justify-between">
+        <div>{formatDateInRange(min, min, max)}</div>
+        <div>{formatDateInRange(max, min, now)}</div>
+      </Row>
+    </Col>
   )
 }

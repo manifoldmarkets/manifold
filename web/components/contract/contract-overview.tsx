@@ -127,7 +127,7 @@ const BinaryOverview = (props: {
         />
       </Row>
 
-      <SizedContainer className="mb-8 h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
+      <SizedContainer className="mb-8 h-[150px] w-full pb-3 pr-10 sm:h-[250px]">
         {(w, h) => (
           <BinaryContractChart
             width={w}
