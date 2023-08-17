@@ -4,56 +4,65 @@ import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 dayjs.extend(customParseFormat)
 
-import { formatMoney } from 'common/util/format'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/layout/page'
-import { SEO } from 'web/components/SEO'
-import { Title } from 'web/components/widgets/title'
-import { Subtitle } from 'web/components/widgets/subtitle'
-import { getUserAndPrivateUser } from 'web/lib/firebase/users'
-import { useUserManalinks } from 'web/lib/firebase/manalinks'
-import { useUserById } from 'web/hooks/use-user'
 import { ManalinkTxn } from 'common/txn'
 import { User } from 'common/user'
-import { Avatar } from 'web/components/widgets/avatar'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { formatMoney } from 'common/util/format'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
 import { CreateLinksButton } from 'web/components/manalinks/create-links-button'
+import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { SEO } from 'web/components/SEO'
+import { Avatar } from 'web/components/widgets/avatar'
+import { Subtitle } from 'web/components/widgets/subtitle'
+import { Title } from 'web/components/widgets/title'
+import { useUserById } from 'web/hooks/use-user'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 
+import { REFERRAL_AMOUNT } from 'common/economy'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { Manalink } from 'common/manalink'
 import {
   linkClaimed,
   ManalinkCardFromView,
   toInfo,
 } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/widgets/pagination'
-import { Manalink } from 'common/manalink'
-import { SiteLink } from 'web/components/widgets/site-link'
-import { REFERRAL_AMOUNT } from 'common/economy'
-import { UserLink } from 'web/components/widgets/user-link'
-import { ENV_CONFIG } from 'common/envs/constants'
 import ShortToggle from 'web/components/widgets/short-toggle'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { UserLink } from 'web/components/widgets/user-link'
 import { useCanCreateManalink } from 'web/hooks/use-can-create-manalink'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { getUserManalinks } from 'web/lib/supabase/manalinks'
 
 const LINKS_PER_PAGE = 24
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
+  const adminDb = await initSupabaseAdmin()
+  return {
+    props: {
+      auth: await getUserAndPrivateUser(creds.uid),
+      userLinks: await getUserManalinks(creds.uid, adminDb),
+    },
+  }
 })
 
 export function getManalinkUrl(slug: string) {
   return `${location.protocol}//${location.host}/link/${slug}`
 }
 
-export default function LinkPage(props: { auth: { user: User } }) {
+export default function LinkPage(props: {
+  auth: { user: User }
+  userLinks: Manalink[]
+}) {
   const { user } = props.auth
-  const links = useUserManalinks(user.id ?? '')
-  // const manalinkTxns = useManalinkTxns(user?.id ?? '')
+  const { userLinks } = props
   const [highlightedSlug, setHighlightedSlug] = useState('')
   const [showDisabled, setShowDisabled] = useState(false)
   const displayedLinks = showDisabled
-    ? links
-    : links.filter((l) => !linkClaimed(toInfo(l)))
+    ? userLinks
+    : userLinks.filter((l) => !linkClaimed(toInfo(l)))
   const authorized = useCanCreateManalink(user)
 
   return (
