@@ -165,7 +165,10 @@ export const FeedComment = memo(function FeedComment(props: {
   trackingLocation: string
   highlighted?: boolean
   showLike?: boolean
+  seeReplies?: boolean
+  hasReplies?: boolean
   onReplyClick?: (comment: ContractComment) => void
+  onSeeReplyClick?: () => void
   children?: ReactNode
   className?: string
   inTimeline?: boolean
@@ -178,7 +181,10 @@ export const FeedComment = memo(function FeedComment(props: {
     comment,
     highlighted,
     showLike,
+    seeReplies,
+    hasReplies,
     onReplyClick,
+    onSeeReplyClick,
     children,
     trackingLocation,
     inTimeline,
@@ -200,31 +206,38 @@ export const FeedComment = memo(function FeedComment(props: {
       {isReplyToBet(comment) && (
         <FeedCommentReplyHeader comment={comment} contract={contract} />
       )}
-      <Row ref={ref} className={clsx(className ? className : 'ml-9 gap-2')}>
+      <Row ref={ref} className={clsx(className ? className : 'gap-2')}>
         <Col className="relative">
-          {!isParent && (
-            <div className="bg-ink-200 absolute -top-3 left-4 h-3 w-0.5 grow" />
-          )}
-          <Avatar
-            username={userUsername}
-            size={'sm'}
-            avatarUrl={userAvatarUrl}
-            className={clsx(
-              marketCreator ? 'shadow shadow-amber-300' : '',
-              'z-10'
+          <Row>
+            {!isParent && (
+              <div className="border-ink-200 -mt-4 ml-4 h-6 w-4 rounded-bl-xl border-b-2 border-l-2" />
             )}
-          />
+            <Avatar
+              username={userUsername}
+              size={isParent ? 'sm' : '2xs'}
+              avatarUrl={userAvatarUrl}
+              className={clsx(
+                marketCreator ? 'shadow shadow-amber-300' : '',
+                'z-10'
+              )}
+            />
+          </Row>
+          {isParent && seeReplies && hasReplies && (
+            <div className="bg-ink-200 absolute -top-0 left-4 bottom-0 w-0.5" />
+          )}
           {!isParent && !isLastReplyInThread && (
-            <div className="bg-ink-200 ml-4 w-0.5 grow" />
+            <div className="bg-ink-200 absolute -top-1 left-4 bottom-0 w-0.5" />
           )}
         </Col>
         <Col
           className={clsx(
-            'w-full rounded-xl rounded-tl-none px-4 py-1',
+            'group w-full rounded-xl rounded-tl-none px-4 py-1 transition-colors',
+            isParent && hasReplies ? 'hover:bg-primary-50' : '',
             highlighted
               ? 'bg-primary-100 border-primary-300 border-2'
               : 'bg-ink-100'
           )}
+          onClick={onSeeReplyClick}
         >
           <FeedCommentHeader
             comment={comment}
@@ -290,7 +303,10 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     <FeedComment
       contract={contract}
       comment={comment}
+      seeReplies={seeReplies}
+      hasReplies={numReplies > 0}
       onReplyClick={onReplyClick}
+      onSeeReplyClick={onSeeReplyClick}
       highlighted={highlighted}
       showLike={showLike}
       className={clsx('gap-2', commentKind)}
@@ -302,7 +318,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       <ReplyToggle
         seeReplies={seeReplies}
         numComments={numReplies}
-        onClick={onSeeReplyClick}
         childrenBountyTotal={childrenBountyTotal}
       />
     </FeedComment>
@@ -444,10 +459,11 @@ export function CommentActions(props: {
             size={'xs'}
             onClick={(e) => {
               e.preventDefault()
+              e.stopPropagation()
               onReplyClick(comment)
             }}
           >
-            <ReplyIcon className="h-5 w-5" />
+            <ReplyIcon className="h-5 w-5 " />
           </IconButton>
         </Tooltip>
       )}

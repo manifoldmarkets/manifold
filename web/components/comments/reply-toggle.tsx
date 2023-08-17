@@ -6,19 +6,17 @@ import { formatMoney } from 'common/util/format'
 export function ReplyToggle(props: {
   seeReplies: boolean
   numComments: number
-  onClick: () => void
   childrenBountyTotal?: number
 }) {
-  const { seeReplies, numComments, onClick, childrenBountyTotal } = props
+  const { seeReplies, numComments, childrenBountyTotal } = props
 
   return (
     <Row className="items-center gap-2 text-sm">
-      <button
+      <div
         className={clsx(
-          'text-ink-500 hover:bg-ink-0 -mx-0.5 rounded px-0.5 text-left transition-colors',
+          'text-ink-500 group-hover:text-primary-500 -mx-0.5 cursor-pointer select-none rounded px-0.5 text-left transition-colors',
           numComments === 0 ? 'hidden' : ''
         )}
-        onClick={onClick}
       >
         <Row className="items-center gap-1">
           <div>
@@ -28,7 +26,7 @@ export function ReplyToggle(props: {
             className={clsx('h-2 w-2', seeReplies ? 'rotate-180' : '')}
           />
         </Row>
-      </button>
+      </div>
       {childrenBountyTotal && childrenBountyTotal > 0 ? (
         <span className="text-teal-600 opacity-70 dark:text-teal-400">
           +{formatMoney(childrenBountyTotal)}

@@ -140,7 +140,10 @@ export const LikeButton = memo(function LikeButton(props: {
             size === 'xl' && ' px-4',
             className
           )}
-          onClick={(e) => e.preventDefault()}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+          }}
           {...likeLongPress}
         >
           <div className="relative">
