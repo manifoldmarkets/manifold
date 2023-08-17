@@ -17,6 +17,7 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { HistoryPoint, viewScale } from 'common/chart'
+import { HOUR_MS } from 'common/util/time'
 
 const BinaryChartTooltip = (
   props: TooltipProps<Date, HistoryPoint<Partial<Bet>>>
@@ -62,7 +63,7 @@ export const BinaryContractChart = (props: {
   const rangeStart = controlledStart ?? start
   const endP = getProbability(contract)
 
-  const now = useMemo(Date.now, [betPoints])
+  const now = useMemo(() => Date.now() + 2 * HOUR_MS, [betPoints])
 
   const data = useMemo(() => {
     return [...betPoints, { x: end ?? now, y: endP }]

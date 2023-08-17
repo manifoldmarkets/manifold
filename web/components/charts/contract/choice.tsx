@@ -17,6 +17,7 @@ import { MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { buildArray } from 'common/util/array'
 import { MultiPoint, unserializePoints } from 'common/chart'
+import { HOUR_MS } from 'common/util/time'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -108,7 +109,7 @@ export const ChoiceContractChart = (props: {
     [answers, contract]
   )
 
-  const now = useMemo(() => Date.now(), [points])
+  const now = useMemo(() => Date.now() + 2 * HOUR_MS, [points])
 
   const data = useMemo(() => {
     if (!answers.length) return []
