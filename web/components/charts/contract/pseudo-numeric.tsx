@@ -29,26 +29,30 @@ const getScaleP = (min: number, max: number, isLogScale: boolean) => {
       : p * (max - min) + min
 }
 
-const getBetPoints = (
-  bets: HistoryPoint<Partial<Bet>>[],
-  scaleP: (p: number) => number
-) => {
+// same as BinaryPoint
+type NumericPoint = HistoryPoint<{
+  userAvatarUrl?: string
+  isLast?: boolean
+}>
+
+const getBetPoints = (bets: NumericPoint[], scaleP: (p: number) => number) => {
   return bets.map((pt) => ({ x: pt.x, y: scaleP(pt.y), obj: pt.obj }))
 }
 
-const PseudoNumericChartTooltip = (
-  props: TooltipProps<Date, HistoryPoint<Partial<Bet>>>
-) => {
-  const { prev, x, xScale } = props
+const PseudoNumericChartTooltip = (props: TooltipProps<Date, NumericPoint>) => {
+  const { prev, next, x, xScale } = props
+  if (!prev) return null
   const [start, end] = xScale.domain()
   const d = xScale.invert(x)
-  if (!prev) return null
+  const dateLabel =
+    !next || next.obj?.isLast ? 'Now' : formatDateInRange(d, start, end)
+
   return (
     <Row className="items-center gap-2">
       {prev.obj?.userAvatarUrl && (
         <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
-      )}{' '}
-      <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
+      )}
+      <span className="font-semibold">{dateLabel}</span>
       <span className="text-ink-600">{formatLargeNumber(prev.y)}</span>
     </Row>
   )
@@ -56,14 +60,14 @@ const PseudoNumericChartTooltip = (
 
 export const PseudoNumericContractChart = (props: {
   contract: PseudoNumericContract
-  betPoints: HistoryPoint<Partial<Bet>>[]
+  betPoints: NumericPoint[]
   width: number
   height: number
   viewScaleProps: viewScale
   showZoomer?: boolean
   controlledStart?: number
   color?: string
-  onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
+  onMouseOver?: (p: NumericPoint | undefined) => void
 }) => {
   const {
     contract,
@@ -92,7 +96,11 @@ export const PseudoNumericContractChart = (props: {
   const now = useMemo(() => Date.now() + 2 * HOUR_MS, [betPoints])
 
   const data = useMemo(
-    () => [{ x: start, y: startP }, ...betPoints, { x: end ?? now, y: endP }],
+    () => [
+      { x: start, y: startP },
+      ...betPoints,
+      { x: end ?? now, y: endP, obj: { isLast: true } },
+    ],
     [betPoints, start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
