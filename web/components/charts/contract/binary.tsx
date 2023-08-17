@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import { last } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 
-import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import { BinaryContract } from 'common/contract'
 import {

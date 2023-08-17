@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { last } from 'lodash'
 import { scaleTime, scaleLog, scaleLinear } from 'd3-scale'
-import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
 import { PseudoNumericContract } from 'common/contract'

@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { last, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { curveStepAfter } from 'd3-shape'
 import { Bet, calculateMultiBets } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
 import { MultiContract } from 'common/contract'
