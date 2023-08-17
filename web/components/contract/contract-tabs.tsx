@@ -23,7 +23,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
-import { track } from 'web/lib/service/analytics'
+import { track, withTracking } from 'web/lib/service/analytics'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { FreeResponseComments } from '../feed/feed-answer-comment-group'
 import { FeedBet } from '../feed/feed-bets'
@@ -37,6 +37,8 @@ import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useComments } from 'web/hooks/use-comments'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
+import { Button } from '../buttons/button'
+import { firebaseLogin } from 'web/lib/firebase/users'
 
 export const EMPTY_USER = '_'
 
@@ -290,7 +292,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   return (
     <>
-      {user && (
+      {user ? (
         <ContractCommentInput
           replyToBet={betResponse}
           replyToUserInfo={
@@ -306,6 +308,15 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           clearReply={clearReply}
           trackingLocation={'contract page'}
         />
+      ) : (
+        <Button
+          onClick={withTracking(
+            firebaseLogin,
+            'sign up to comment button click'
+          )}
+        >
+          Sign up to comment
+        </Button>
       )}
       {comments.length > 0 && (
         <SortRow
