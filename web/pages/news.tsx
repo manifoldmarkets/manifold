@@ -5,9 +5,13 @@ import { Title } from 'web/components/widgets/title'
 import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
 import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 
 export default function NewsPage() {
   useTracking('view news page')
+  useSaveReferral()
+  useSaveCampaign()
 
   return (
     <Page>
