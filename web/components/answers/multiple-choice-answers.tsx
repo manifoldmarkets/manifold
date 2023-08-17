@@ -48,7 +48,7 @@ export function MultipleChoiceAnswers(props: {
             className="cursor-pointer"
             onClick={() => setIncludeOtherAnswer(!includeOtherAnswer)}
           >
-            Support adding new answers later
+            Allow yourself to add new answers later
           </div>
           <div>
             <InfoTooltip
@@ -94,7 +94,7 @@ export function MultipleChoiceAnswers(props: {
             rows={1}
             maxLength={MAX_ANSWER_LENGTH}
           />
-          <div>
+          <div className="mx-1.5">
             <InfoTooltip
               text={
                 'The "Other" answer represents all answers that are not listed. New answers are split off from it.'
@@ -102,6 +102,11 @@ export function MultipleChoiceAnswers(props: {
             />
           </div>
         </Row>
+      )}
+      {outcomeType === 'FREE_RESPONSE' && (
+        <div className="text-primary-500 ml-1 mb-2 text-sm">
+          Users can submit their own answers to this question.
+        </div>
       )}
       {numAnswers < MAX_ANSWERS && (
         <Row className="justify-end">
