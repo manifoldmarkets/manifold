@@ -10,6 +10,8 @@ import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { useTracking } from 'web/hooks/use-tracking'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { Button } from 'web/components/button'
+import { SiteLink } from 'web/components/site-link'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 

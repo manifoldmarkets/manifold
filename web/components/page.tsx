@@ -3,6 +3,9 @@ import { ReactNode } from 'react'
 import { BottomNavBar } from './nav/nav-bar'
 import Sidebar from './nav/sidebar'
 import { Toaster } from 'react-hot-toast'
+import { Button } from './button'
+import { Col } from './layout/col'
+import { SiteLink } from './site-link'
 
 export function Page(props: {
   rightSidebar?: ReactNode
@@ -33,6 +36,15 @@ export function Page(props: {
             rightSidebar ? 'xl:col-span-7' : 'xl:col-span-8'
           )}
         >
+          <Col className="mb-4 items-start gap-4 rounded border border-indigo-200 bg-indigo-100 px-6 py-4 shadow">
+            <div className="text-2xl">Tournament complete!</div>
+            <div>
+              Winners to be announced soon. Keep betting on the main site:
+            </div>
+            <SiteLink href="https://manifold.markets">
+              <Button>Continue to Manifold</Button>
+            </SiteLink>
+          </Col>
           {children}
 
           {/* If right sidebar is hidden, place its content at the bottom of the page. */}
