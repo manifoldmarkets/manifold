@@ -207,16 +207,13 @@ function EditableCloseDate(props: {
         setOpen={setIsEditingCloseTime}
         position="top"
       >
-        <Col className="bg-canvas-0 rounded p-8">
-          <Title className="!text-2xl">Question close time</Title>
-          <div className="mb-4">
-            Change when this question closes. All trading will be halted at this
-            time.
-          </div>
-          <Row className="flex-wrap items-center justify-end gap-2">
+        <Col className="bg-canvas-0 rounded-lg p-8">
+          <Title className="!text-2xl">Close time</Title>
+          <div className="mb-4">Trading will halt at this time</div>
+          <Row className="items-stretch gap-2">
             <Input
               type="date"
-              className="w-full shrink-0 sm:w-fit"
+              className="shrink-0 sm:w-fit"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseDate(e.target.value)}
               min={isClient ? Date.now() : undefined}
@@ -224,27 +221,25 @@ function EditableCloseDate(props: {
             />
             <Input
               type="time"
-              className="w-full shrink-0 sm:w-max"
+              className="shrink-0 sm:w-max"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseHoursMinutes(e.target.value)}
               min="00:00"
               value={closeHoursMinutes}
             />
-            <Button color={'indigo'} onClick={() => onSave()}>
+            <Button size="xl" onClick={() => onSave()}>
               Save
             </Button>
           </Row>
 
           {(contract.closeTime ?? Date.now() + 1) > Date.now() && (
-            <Row className="align-center mt-8">
-              <div className="mt-1 mr-2">Or close question now:</div>
+            <Row className="mt-8 justify-center">
               <Button
-                className=""
                 size={'xs'}
-                color="gray"
+                color="yellow"
                 onClick={() => onSave(Date.now())}
               >
-                Close question
+                Close question now
               </Button>
             </Row>
           )}
