@@ -22,8 +22,6 @@ export function ContractsList(props: {
     headerClassName,
   } = props
 
-  const isMobile = useIsMobile()
-
   if (contracts === undefined) {
     return <LoadingIndicator />
   }
@@ -33,7 +31,6 @@ export function ContractsList(props: {
       <ContractsTable
         contracts={contracts}
         onContractClick={onContractClick}
-        isMobile={isMobile}
         highlightContractIds={highlightContractIds}
         hideActions={hideActions}
         headerClassName={headerClassName}

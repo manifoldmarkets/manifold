@@ -170,7 +170,6 @@ type ColumnKey = keyof typeof contractColumns
 export function ContractsTable(props: {
   contracts: Contract[]
   onContractClick?: (contract: Contract) => void
-  isMobile?: boolean
   highlightContractIds?: string[]
   headerClassName?: string
   hideHeader?: boolean
@@ -179,7 +178,6 @@ export function ContractsTable(props: {
   const {
     contracts,
     onContractClick,
-    isMobile,
     highlightContractIds,
     headerClassName,
     hideHeader,
