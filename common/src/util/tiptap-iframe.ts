@@ -28,7 +28,7 @@ export default Node.create<IframeOptions>({
       HTMLAttributes: {
         class: 'w-full h-80',
         height: 80 * 4,
-        sandbox: 'allow-scripts allow-same-origin allow-forms',
+        sandbox: 'allow-scripts allow-same-origin allow-forms allow-popups',
       },
     }
   },
