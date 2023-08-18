@@ -81,10 +81,10 @@ const embedPatterns: EmbedPattern[] = [
     rewrite: (id) =>
       `<iframe src="https://www.tiktok.com/embed/v2/${id}"></iframe>`,
   },
-  {
-    regex: /^(https?:\/\/.*)/,
-    rewrite: (url) => `<iframe src="${url}"></iframe>`,
-  },
+  // {
+  //   regex: /^(https?:\/\/.*)/,
+  //   rewrite: (url) => `<iframe src="${url}"></iframe>`,
+  // },
 ]
 
 function embedCode(text: string) {
@@ -134,7 +134,6 @@ export function EmbedModal(props: {
             onClick={() => {
               if (editor && embed) {
                 editor.chain().insertContent(embed).run()
-                console.log('editorjson', editor.getJSON())
                 setInput('')
                 setOpen(false)
               }
