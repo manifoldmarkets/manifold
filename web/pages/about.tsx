@@ -271,6 +271,11 @@ export default function AboutPage() {
             </div>
             <LabSection>
               <LabCard
+                title="👻 Ancient questions"
+                description="Markets as dead as these projects"
+                href="/ancient"
+              />
+              <LabCard
                 title="🏆 CSPI/Salem tournament"
                 description="Seperate site hosting special contest"
                 href="https://salemcenter.manifold.markets/"

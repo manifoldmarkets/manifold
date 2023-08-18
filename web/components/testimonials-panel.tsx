@@ -19,7 +19,7 @@ import StartQuoteIcon from 'web/lib/icons/start_quote'
 import EndQuoteIcon from 'web/lib/icons/start_quote copy'
 import testimonials from '../public/testimonials/testimonials.json'
 
-export default function TestimonialsPanel() {
+export function TestimonialsPanel() {
   const isMobile = useIsMobile()
   const [pageNumber, setPageNumber] = useState(0)
   const testimonialList = testimonials.testimonials
@@ -129,7 +129,7 @@ export default function TestimonialsPanel() {
   )
 }
 
-export function Testimonial(props: {
+function Testimonial(props: {
   testimonial: string
   name: string
   credit: string
