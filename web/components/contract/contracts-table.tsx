@@ -146,7 +146,7 @@ const contractColumns = {
         <div className="h-min align-top opacity-70 sm:opacity-100">
           <Row className="align-center shrink-0 items-center gap-0.5">
             <UserIcon className="h-4 w-4" />
-            {shortenNumber(contract.uniqueBettorCount)}
+            {shortenNumber(contract.uniqueBettorCount ?? 0)}
           </Row>
         </div>
       ),
