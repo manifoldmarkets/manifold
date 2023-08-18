@@ -17,7 +17,7 @@ import {
 import { computeCpmmBet } from 'common/new-bet'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
-import { DAY_MS, MINUTE_MS } from 'common/util/time'
+import { DAY_MS } from 'common/util/time'
 import { Input } from 'web/components/widgets/input'
 import { APIError, placeBet } from 'web/lib/firebase/api'
 import { User } from 'web/lib/firebase/users'

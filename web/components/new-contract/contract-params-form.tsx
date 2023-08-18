@@ -17,7 +17,6 @@ import {
 import { MINIMUM_BOUNTY, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
-import { MINUTE_MS } from 'common/util/time'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
