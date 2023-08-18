@@ -1,5 +1,4 @@
 import { Contract } from 'common/contract'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
