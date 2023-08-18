@@ -2311,6 +2311,30 @@ export interface Database {
         }
         Returns: string
       }
+      get_noob_questions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          close_time: string | null
+          created_time: string | null
+          creator_id: string | null
+          data: Json
+          description_fts: unknown | null
+          fs_updated_time: string
+          id: string
+          importance_score: number | null
+          mechanism: string | null
+          outcome_type: string | null
+          popularity_score: number | null
+          question: string | null
+          question_fts: unknown | null
+          question_nostop_fts: unknown | null
+          resolution: string | null
+          resolution_probability: number | null
+          resolution_time: string | null
+          slug: string | null
+          visibility: string | null
+        }[]
+      }
       get_notifications: {
         Args: {
           uid: string

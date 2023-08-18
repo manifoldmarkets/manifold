@@ -146,7 +146,7 @@ const contractColumns = {
         <div className="h-min align-top opacity-70 sm:opacity-100">
           <Row className="align-center shrink-0 items-center gap-0.5">
             <UserIcon className="h-4 w-4" />
-            {shortenNumber(contract.uniqueBettorCount)}
+            {shortenNumber(contract.uniqueBettorCount ?? 0)}
           </Row>
         </div>
       ),
@@ -170,7 +170,6 @@ type ColumnKey = keyof typeof contractColumns
 export function ContractsTable(props: {
   contracts: Contract[]
   onContractClick?: (contract: Contract) => void
-  isMobile?: boolean
   highlightContractIds?: string[]
   headerClassName?: string
   hideHeader?: boolean
@@ -179,7 +178,6 @@ export function ContractsTable(props: {
   const {
     contracts,
     onContractClick,
-    isMobile,
     highlightContractIds,
     headerClassName,
     hideHeader,

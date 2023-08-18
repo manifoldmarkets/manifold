@@ -79,7 +79,7 @@ const getAnswers = (contract: MultiContract) => {
   )
 }
 
-type MultiPoint = GenericMultiPoint<{ isLast?: boolean }>
+export type MultiPoint = GenericMultiPoint<{ isLast?: boolean }>
 
 // new multi only
 export const getMultiBetPoints = (answers: Answer[], bets: Bet[]) => {

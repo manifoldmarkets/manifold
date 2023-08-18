@@ -174,15 +174,14 @@ export default function AboutPage() {
             href="/payments"
           />
           <LabCard
+            title="🥩 Fresh meat"
+            description="Questions created by new users"
+            href="/newbies"
+          />
+          <LabCard
             title="📏 Platform calibration"
             description="Manifold's overall track record"
             href="/calibration"
-          />
-          <LabCard
-            title="🏆 CSPI/Salem tournament"
-            description="Seperate site hosting special contest"
-            href="https://salemcenter.manifold.markets/"
-            target="_blank"
           />
           <LabCard
             title="📜 Community guidelines"
@@ -271,6 +270,12 @@ export default function AboutPage() {
               exorcise them.
             </div>
             <LabSection>
+              <LabCard
+                title="🏆 CSPI/Salem tournament"
+                description="Seperate site hosting special contest"
+                href="https://salemcenter.manifold.markets/"
+                target="_blank"
+              />
               <LabCard
                 title="🔥 Swipe"
                 description="Swipe-to-bet UI. Try via iOS/Android app."
