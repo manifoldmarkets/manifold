@@ -33,6 +33,8 @@ import { LinkFrame } from '../widgets/click-frame'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
+import { ContractDescription } from './contract-description'
+import FeedContractCardDescription from '../feed/feed-contract-card-description'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -287,6 +289,10 @@ function DetailedCard(props: {
           />
         )}
       </Col>
+
+      {item?.dataType == 'new_contract' && (
+        <FeedContractCardDescription contract={contract} />
+      )}
 
       {isBinaryCpmm && metrics && metrics.hasShares && (
         <YourMetricsFooter metrics={metrics} />
