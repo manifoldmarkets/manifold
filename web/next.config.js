@@ -89,7 +89,7 @@ module.exports = {
         permanent: false,
       },
       {
-        source: 'this-month',
+        source: '/this-month',
         destination: '/markets?f=closing-this-month&s=most-popular',
         permanent: true,
       },
