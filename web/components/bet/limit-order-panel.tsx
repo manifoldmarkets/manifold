@@ -264,7 +264,8 @@ export default function LimitOrderPanel(props: {
                   setExpirationHoursMinutes(initTime)
                 }
               }}
-              min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
+              min={dayjs().format('YYYY-MM-DD')}
+              max="9999-12-31"
               disabled={isSubmitting}
               value={expirationDate}
             />
@@ -272,7 +273,6 @@ export default function LimitOrderPanel(props: {
               type={'time'}
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setExpirationHoursMinutes(e.target.value)}
-              min={'00:00'}
               disabled={isSubmitting}
               value={expirationHoursMinutes}
             />

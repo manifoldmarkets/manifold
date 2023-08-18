@@ -624,7 +624,8 @@ export function ContractParamsForm(props: {
                     setCloseHoursMinutes(initTime)
                   }
                 }}
-                min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
+                min={dayjs().format('YYYY-MM-DD')}
+                max="9999-12-31"
                 disabled={isSubmitting}
                 value={closeDate}
               />

@@ -101,7 +101,8 @@ export default function CreateDateDocPage() {
                 type={'date'}
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setBirthday(e.target.value)}
-                max={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
+                min="1900-01-01"
+                max={dayjs().format('YYYY-MM-DD')}
                 disabled={isSubmitting}
                 value={birthday}
               />

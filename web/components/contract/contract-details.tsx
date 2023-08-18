@@ -216,7 +216,8 @@ function EditableCloseDate(props: {
               className="shrink-0 sm:w-fit"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseDate(e.target.value)}
-              min={isClient ? Date.now() : undefined}
+              min={isClient ? dayJsNow.format('YYYY-MM-DD') : undefined}
+              max="9999-12-31"
               value={closeDate}
             />
             <Input
@@ -224,7 +225,6 @@ function EditableCloseDate(props: {
               className="shrink-0 sm:w-max"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseHoursMinutes(e.target.value)}
-              min="00:00"
               value={closeHoursMinutes}
             />
             <Button size="xl" onClick={() => onSave()}>
