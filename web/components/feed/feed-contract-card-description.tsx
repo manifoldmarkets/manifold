@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Content } from '../widgets/editor'
 import { ArrowRightIcon } from '@heroicons/react/solid'
 import { Row } from '../layout/row'
