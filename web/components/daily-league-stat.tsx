@@ -20,7 +20,7 @@ export const DailyLeagueStat = (props: { user: User }) => {
   return (
     <Link href="/leagues" onClick={() => track('click daily leagues button')}>
       <Col className={clsx(dailyStatsClass, 'relative')}>
-        <div>Rank {info.rank}</div>
+        <div className="whitespace-nowrap">Rank {info.rank}</div>
         <div className="text-ink-600 text-xs">
           {DIVISION_NAMES[info.division]}
         </div>

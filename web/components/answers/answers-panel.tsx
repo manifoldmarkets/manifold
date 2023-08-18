@@ -191,7 +191,10 @@ function Answer(props: {
         isOther ? (
           <span>
             Other{' '}
-            <InfoTooltip text="Represents all answers not listed. New answers are split out of this answer." />
+            <InfoTooltip
+              className="text-ink-900"
+              text="Represents all answers not listed. New answers are split out of this answer."
+            />
           </span>
         ) : (
           <AnswerLabel

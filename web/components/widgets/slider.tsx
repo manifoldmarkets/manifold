@@ -6,7 +6,7 @@ import { ReactNode } from 'react'
 
 const colors = {
   green: ['#14b8a6', '#0d9488'], // teal-500, teal-600
-  'light-green': ['#d8f1e6', '#a5dcc4'],
+  'light-green': ['#d8f1e6aa', '#a5dcc4'],
   red: ['#FF7C66', '#CC1D00'], // scarlet-300, scarlet-600
   indigo: ['#a5b4fc', '#6366f1'], // indigo-300, indigo-500
   light: ['rgb(var(--color-primary-200))', 'rgb(var(--color-primary-300))'],
